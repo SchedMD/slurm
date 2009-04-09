@@ -93,6 +93,7 @@
 #include "src/srun/srun.h"
 #include "src/srun/srun_pty.h"
 #include "src/srun/multi_prog.h"
+#include "src/srun/task_state.h"
 #include "src/api/pmi_server.h"
 #include "src/api/step_launch.h"
 
@@ -120,18 +121,12 @@ mpi_plugin_client_info_t mpi_job_info[1];
 static struct termios termdefaults;
 uint32_t global_rc = 0;
 srun_job_t *job = NULL;
+task_state_t task_state;
 
 #define MAX_STEP_RETRIES 4
 time_t launch_start_time;
 bool   retry_step_begin = false;
 int    retry_step_cnt = 0;
-
-struct {
-	bitstr_t *start_success;
-	bitstr_t *start_failure;
-	bitstr_t *finish_normal;
-	bitstr_t *finish_abnormal;
-} task_state;
 
 /*
  * forward declaration of static funcs
@@ -157,9 +152,6 @@ static int   _set_umask_env(void);
 static int   _slurm_debug_env_val (void);
 static void  _task_start(launch_tasks_response_msg_t *msg);
 static void  _task_finish(task_exit_msg_t *msg);
-static void  _task_state_struct_init(int num_tasks);
-static void  _task_state_struct_print(void);
-static void  _task_state_struct_free(void);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
 
 int srun(int ac, char **av)
@@ -359,7 +351,7 @@ int srun(int ac, char **av)
 	xfree(env);
 	
  re_launch:
-	_task_state_struct_init(opt.nprocs);
+	task_state = task_state_create(opt.nprocs);
 	slurm_step_launch_params_t_init(&launch_params);
 	launch_params.gid = opt.gid;
 	launch_params.argc = opt.argc;
@@ -453,6 +445,7 @@ int srun(int ac, char **av)
 			if (create_job_step(job, true) < 0)
 				exit(1);
 		}
+		task_state_destroy(task_state);
 		goto re_launch;
 	}
 
@@ -464,7 +457,7 @@ cleanup:
 	_run_srun_epilog(job);
 	slurm_step_ctx_destroy(job->step_ctx);
 	mpir_cleanup();
-	_task_state_struct_free();
+	task_state_destroy(task_state);
 	log_fini();
 
 	return (int)global_rc;
@@ -927,9 +920,9 @@ _task_start(launch_tasks_response_msg_t *msg)
 		table->pid = msg->local_pids[i];
 
 		if (msg->return_code == 0) {
-			bit_set(task_state.start_success, taskid);
+			task_state_update(task_state, taskid, TS_START_SUCCESS);
 		} else {
-			bit_set(task_state.start_failure, taskid);
+			task_state_update(task_state, taskid, TS_START_FAILURE);
 		}
 	}
 
@@ -943,6 +936,7 @@ _terminate_job_step(slurm_step_ctx_t *step_ctx)
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
 	info("Terminating job step %u.%u", job_id, step_id);
+	update_job_state(job, SRUN_JOB_CANCELLED);
 	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
 
@@ -950,7 +944,7 @@ static void
 _handle_max_wait(int signo)
 {
 	info("First task exited %ds ago", opt.max_wait);
-	_task_state_struct_print();
+	task_state_print(task_state, (log_f) info);
 	_terminate_job_step(job->step_ctx);
 }
 
@@ -986,6 +980,32 @@ _taskids_to_nodelist(bitstr_t *tasks_exited)
 }
 
 static void
+_update_task_exit_state(uint32_t ntasks, uint32_t taskids[], int abnormal)
+{
+	int i;
+	task_state_type_t t = abnormal ? TS_ABNORMAL_EXIT : TS_NORMAL_EXIT;
+
+	for (i = 0; i < ntasks; i++)
+		task_state_update(task_state, taskids[i], t);
+}
+
+static int _kill_on_bad_exit(void)
+{
+	return (opt.kill_bad_exit || slurm_get_kill_on_bad_exit());
+}
+
+static void _setup_max_wait_timer(void)
+{
+	/*  If these are the first tasks to finish we need to
+	 *   start a timer to kill off the job step if the other
+	 *   tasks don't finish within opt.max_wait seconds.
+	 */
+	verbose("First task exited. Terminating job in %ds.", opt.max_wait);
+	xsignal(SIGALRM, _handle_max_wait);
+	alarm(opt.max_wait);
+}
+
+static void
 _task_finish(task_exit_msg_t *msg)
 {
 	bitstr_t *tasks_exited = NULL;
@@ -1004,7 +1024,8 @@ _task_finish(task_exit_msg_t *msg)
 	if (WIFEXITED(msg->return_code)) {
 		rc = WEXITSTATUS(msg->return_code);
 		if (rc != 0) {
-			bit_or(task_state.finish_abnormal, tasks_exited);
+			_update_task_exit_state(msg->num_tasks,
+						msg->task_id_list, 1);
 			node_list = _taskids_to_nodelist(tasks_exited);
 			if ((rc == OPEN_MPI_PORT_ERROR) &&
 			    (opt.resv_port_cnt != NO_VAL) &&
@@ -1029,11 +1050,13 @@ _task_finish(task_exit_msg_t *msg)
 				      node_list, buf, rc);
 			}
 		} else {
-			bit_or(task_state.finish_normal, tasks_exited);
 			verbose("task %s: Completed", buf);
+			_update_task_exit_state(msg->num_tasks,
+						msg->task_id_list, 0);
 		}
+
 	} else if (WIFSIGNALED(msg->return_code)) {
-		bit_or(task_state.finish_abnormal, tasks_exited);
+		_update_task_exit_state(msg->num_tasks, msg->task_id_list, 0);
 		msg_str = strsignal(WTERMSIG(msg->return_code));
 #ifdef WCOREDUMP
 		if (WCOREDUMP(msg->return_code))
@@ -1052,100 +1075,23 @@ _task_finish(task_exit_msg_t *msg)
 	}
 	xfree(node_list);
 	bit_free(tasks_exited);
+
+	/*
+	 *  Update global srun return code
+	 */
 	global_rc = MAX(global_rc, rc);
 
-	if (first_error && (rc > 0) &&
-	    (opt.kill_bad_exit || slurm_get_kill_on_bad_exit())) {
+	if (first_error && (task_state_abnormal_count(task_state) > 0) &&
+	    _kill_on_bad_exit()) {
+  		_terminate_job_step(job->step_ctx);
 		first_error = false;
-		_terminate_job_step(job->step_ctx);
-	} else if (first_done && opt.max_wait > 0) {
-		/* If these are the first tasks to finish we need to
-		 * start a timer to kill off the job step if the other
-		 * tasks don't finish within opt.max_wait seconds.
-		 */
+	}
+
+	if (first_done && (task_state_exited_count(task_state) > 0) &&
+	    (opt.max_wait > 0)) {
+		_setup_max_wait_timer();
 		first_done = false;
-		debug2("First task has exited");
-		xsignal(SIGALRM, _handle_max_wait);
-		verbose("starting alarm of %d seconds", opt.max_wait);
-		alarm(opt.max_wait);
 	}
-}
-
-static void
-_task_state_struct_init(int num_tasks)
-{
-	task_state.start_success = bit_alloc(num_tasks);
-	task_state.start_failure = bit_alloc(num_tasks);
-	task_state.finish_normal = bit_alloc(num_tasks);
-	task_state.finish_abnormal = bit_alloc(num_tasks);
-}
-
-/*
- * Tasks will most likely have bits set in multiple of the task_state
- * bit strings (e.g. a task can start normally and then later exit normally)
- * so we ensure that a task is only "seen" once.
- */
-static void
-_task_state_struct_print(void)
-{
-	bitstr_t *tmp, *seen, *not_seen;
-	char buf[65536];
-	int len;
-
-	len = bit_size(task_state.finish_abnormal); /* all the same length */
-	tmp = bit_alloc(len);
-	seen = bit_alloc(len);
-	not_seen = bit_alloc(len);
-	bit_not(not_seen);
-
-	if (bit_set_count(task_state.finish_abnormal) > 0) {
-		bit_copybits(tmp, task_state.finish_abnormal);
-		bit_and(tmp, not_seen);
-		bit_fmt(buf, sizeof(buf), tmp);
-		info("task %s: exited abnormally", buf);
-		bit_or(seen, tmp);
-		bit_copybits(not_seen, seen);
-		bit_not(not_seen);
-	}
-
-	if (bit_set_count(task_state.finish_normal) > 0) {
-		bit_copybits(tmp, task_state.finish_normal);
-		bit_and(tmp, not_seen);
-		bit_fmt(buf, sizeof(buf), tmp);
-		info("task %s: exited", buf);
-		bit_or(seen, tmp);
-		bit_copybits(not_seen, seen);
-		bit_not(not_seen);
-	}
-
-	if (bit_set_count(task_state.start_failure) > 0) {
-		bit_copybits(tmp, task_state.start_failure);
-		bit_and(tmp, not_seen);
-		bit_fmt(buf, sizeof(buf), tmp);
-		info("task %s: failed to start", buf);
-		bit_or(seen, tmp);
-		bit_copybits(not_seen, seen);
-		bit_not(not_seen);
-	}
-
-	if (bit_set_count(task_state.start_success) > 0) {
-		bit_copybits(tmp, task_state.start_success);
-		bit_and(tmp, not_seen);
-		bit_fmt(buf, BUFSIZ, tmp);
-		info("task %s: running", buf);
-		bit_or(seen, tmp);
-		bit_copybits(not_seen, seen);
-		bit_not(not_seen);
-	}
-}
-
-static void
-_task_state_struct_free(void)
-{
-	bit_free(task_state.start_success);
-	bit_free(task_state.start_failure);
-	bit_free(task_state.finish_normal);
-	bit_free(task_state.finish_abnormal);
 }
 
 static void _handle_intr()
@@ -1163,7 +1109,7 @@ static void _handle_intr()
 			info("interrupt (one more within 1 sec to abort)");
 		else
 			info("interrupt (abort already in progress)");
-		_task_state_struct_print();
+		task_state_print(task_state, (log_f) info);
 		last_intr = time(NULL);
 	} else  { /* second Ctrl-C in half as many seconds */
 		update_job_state(job, SRUN_JOB_CANCELLED);
