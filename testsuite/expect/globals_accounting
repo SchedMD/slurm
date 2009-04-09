@@ -45,7 +45,7 @@ set timeout 60
 #
 # Use sacctmgr to create a cluster
 #	
-proc add_cluster {name qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall} {
+proc add_cluster {name qos fairshare grpcpu grpjob grpnode grpsubmit maxcpumin maxcpu maxjob maxnode maxsubmit maxwall} {
         global sacctmgr timeout
 
 	set exit_code 0
@@ -60,11 +60,6 @@ proc add_cluster {name qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit g
 
 	if { [string length $fairshare] } {
 		set command "$command fairshare=$fairshare"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpcpumin] } {
-		set command "$command GrpCPUMins=$grpcpumin"
 		set assoc_stuff 1
 	}
 
@@ -85,11 +80,6 @@ proc add_cluster {name qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit g
 
 	if { [string length $grpsubmit] } {
 		set command "$command GrpSubmitJobs=$grpsubmit"
-		set assoc_stuff 1
-	}
-
-	if { [string length $grpwall] } {
-		set command "$command GrpWall=$grpwall"
 		set assoc_stuff 1
 	}
 
