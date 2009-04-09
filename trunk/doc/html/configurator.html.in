@@ -234,6 +234,7 @@ function displayfile()
    "#PriorityDecayHalfLife= <br>" +
    "#PriorityFavorSmall= <br>" +
    "#PriorityMaxAge= <br>" +
+   "#PriorityUsageResetPeriod= <br>" +
    "#PriorityWeightAge= <br>" +
    "#PriorityWeightFairshare= <br>" +
    "#PriorityWeightJobSize= <br>" +
@@ -838,6 +839,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 4 March 2009</P>
+Last modified 9 April 2009</P>
 </BODY>
 
