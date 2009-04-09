@@ -1038,11 +1038,11 @@ _task_finish(task_exit_msg_t *msg)
 				if (retry_step_cnt < MAX_STEP_RETRIES) {
 					error("%s: task %s unable to claim "
 					      "reserved port, retrying",
-					      node_list, buf, rc);
+					      node_list, buf);
 				} else {
 					error("%s: task %s unable to claim "
 					      "reserved port, aborting",
-					      node_list, buf, rc);
+					      node_list, buf);
 					opt.kill_bad_exit = true;
 				}
 			} else {
