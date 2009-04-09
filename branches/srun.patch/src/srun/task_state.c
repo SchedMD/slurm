@@ -50,9 +50,10 @@
 #include "src/srun/task_state.h"
 
 struct task_state_struct {
-	int ntasks;
-	int nstarted;
-	int nexited;
+	int n_tasks;
+	int n_started;
+	int n_abnormal;
+	int n_exited;
 	bitstr_t *start_failed;
 	bitstr_t *running;
 	bitstr_t *normal_exit;
@@ -63,9 +64,8 @@ task_state_t task_state_create (int ntasks)
 {
 	task_state_t ts = xmalloc (sizeof (*ts));
 
-	memset (ts, 0, sizeof (*ts));
-
-	ts->ntasks = ntasks;
+	/* ts is zero filled by xmalloc() */
+	ts->n_tasks = ntasks;
 	ts->running = bit_alloc (ntasks);
 	ts->start_failed = bit_alloc (ntasks);
 	ts->normal_exit = bit_alloc (ntasks);
@@ -89,7 +89,7 @@ void task_state_destroy (task_state_t ts)
 	xfree (ts);
 }
 
-static const char *task_state_type_str (task_state_type_t t)
+static const char *_task_state_type_str (task_state_type_t t)
 {
 	switch (t) {
 	case TS_START_SUCCESS:
@@ -108,15 +108,15 @@ void task_state_update (task_state_t ts, int taskid, task_state_type_t t)
 {
 	xassert (ts != NULL);
 	xassert (taskid >= 0);
-	xassert (taskid < ts->ntasks);
+	xassert (taskid < ts->n_tasks);
 
 	debug3("task_state_update(taskid=%d, %s)",
-	       taskid, task_state_type_str (t));
+	       taskid, _task_state_type_str (t));
 
 	switch (t) {
 	case TS_START_SUCCESS:
 		bit_set (ts->running, taskid);
-		ts->nstarted++;
+		ts->n_started++;
 		break;
 	case TS_START_FAILURE:
 		bit_set (ts->start_failed, taskid);
@@ -124,30 +124,31 @@ void task_state_update (task_state_t ts, int taskid, task_state_type_t t)
 	case TS_NORMAL_EXIT:
 		bit_set (ts->normal_exit, taskid);
 		bit_clear (ts->running, taskid);
-		ts->nexited++;
+		ts->n_exited++;
 		break;
 	case TS_ABNORMAL_EXIT:
 		bit_clear (ts->running, taskid);
 		bit_set (ts->abnormal_exit, taskid);
-		ts->nexited++;
+		ts->n_exited++;
+		ts->n_abnormal++;
 		break;
 	}
 
 	xassert ((bit_set_count(ts->abnormal_exit) +
-		  bit_set_count(ts->normal_exit)) == ts->nexited);
+		  bit_set_count(ts->normal_exit)) == ts->n_exited);
 }
 
-int task_state_first_task_exited (task_state_t ts)
+int task_state_exited_count (task_state_t ts)
 {
-	return (ts->nexited == 1);
+	return (ts->n_exited);
 }
 
-int task_state_first_task_failed (task_state_t ts)
+int task_state_abnormal_count (task_state_t ts)
 {
-	return (ts->nexited == 1 && !bit_set_count(ts->normal_exit));
+	return (ts->n_abnormal);
 }
 
-static void do_log_msg (bitstr_t *b, log_f fn, const char *msg)
+static void _do_log_msg (bitstr_t *b, log_f fn, const char *msg)
 {
 	char buf [65536];
 	char *s = bit_set_count (b) == 1 ? "" : "s";
@@ -156,27 +157,27 @@ static void do_log_msg (bitstr_t *b, log_f fn, const char *msg)
 
 void task_state_print (task_state_t ts, log_f fn)
 {
-	bitstr_t *unseen = bit_alloc (ts->ntasks);
+	bitstr_t *unseen = bit_alloc (ts->n_tasks);
 
 	if (bit_set_count (ts->start_failed)) {
-		do_log_msg (ts->start_failed, fn, "failed to start");
+		_do_log_msg (ts->start_failed, fn, "failed to start");
 		bit_or (unseen, ts->start_failed);
 	}
 	if (bit_set_count (ts->running)) {
-		do_log_msg (ts->running, fn, "running");
+		_do_log_msg (ts->running, fn, "running");
 		bit_or (unseen, ts->running);
 	}
 	if (bit_set_count (ts->abnormal_exit)) {
-		do_log_msg (ts->abnormal_exit, fn, "exited abnormally");
+		_do_log_msg (ts->abnormal_exit, fn, "exited abnormally");
 		bit_or (unseen, ts->abnormal_exit);
 	}
 	if (bit_set_count (ts->normal_exit)) {
-		do_log_msg (ts->normal_exit, fn, "exited");
+		_do_log_msg (ts->normal_exit, fn, "exited");
 		bit_or (unseen, ts->normal_exit);
 	}
 	bit_not (unseen);
 	if (bit_set_count (unseen))
-		do_log_msg (unseen, fn, "unkown");
+		_do_log_msg (unseen, fn, "unknown");
 	bit_free (unseen);
 }
 
