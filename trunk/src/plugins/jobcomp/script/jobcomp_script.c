@@ -52,6 +52,7 @@
  *  START		Time of job start, UTS
  *  SUBMIT		Time of job submission, UTS
  *  UID			User ID of job owner
+ *  WORK_DIR		Job's working directory
  *
  *  BlueGene specific environment variables:
  *  BLOCKID		Name of Block ID
@@ -183,6 +184,7 @@ struct jobcomp_info {
 	char *partition;
 	char *jobstate;
 	char *account;
+	char *work_dir;
 #ifdef HAVE_BG
 	char *connect_type;
 	char *geometry;
@@ -218,6 +220,10 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->nprocs = job->total_procs;
 	j->nnodes = job->node_cnt;
 	j->account = job->account ? xstrdup (job->account) : NULL;
+	if (job->details && job->details->work_dir)
+		j->work_dir = xstrdup(job->details->work_dir);
+	else
+		j->work_dir = xstrdup("unknown");
 #ifdef HAVE_BG
 	j->connect_type = select_g_xstrdup_jobinfo(job->select_jobinfo,
 						   SELECT_PRINT_CONNECTION);
@@ -238,6 +244,7 @@ static void _jobcomp_info_destroy (struct jobcomp_info *j)
 	xfree (j->nodes);
 	xfree (j->jobstate);
 	xfree (j->account);
+	xfree (j->work_dir);
 #ifdef HAVE_BG
 	xfree (j->connect_type);
 	xfree (j->geometry);
@@ -346,7 +353,8 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append (&env, "JOBNAME",   job->name);
 	_env_append (&env, "JOBSTATE",  job->jobstate);
 	_env_append (&env, "PARTITION", job->partition);
-	
+	_env_append (&env, "WORK_DIR",  job->work_dir);
+
 #ifdef HAVE_BG
 	_env_append (&env, "BLOCKID",      job->blockid);
 	_env_append (&env, "CONNECT_TYPE", job->connect_type);
