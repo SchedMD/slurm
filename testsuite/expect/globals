@@ -639,6 +639,33 @@ proc test_assoc_enforced { } {
 
 ################################################################
 #
+# Proc: slurmd_user_root
+#
+# Return 1 if the SlurmdUser is root, 0 otherwise
+#
+################################################################
+proc slurmd_user_root { } {
+	global scontrol
+
+	log_user 0
+	set rc 0
+	spawn $scontrol show config
+	expect {
+		-re "SlurmdUser *= root" {
+			set rc 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $rc
+}
+
+################################################################
+#
 # Proc: test_topology
 #
 # Purpose: Determine if system is topology aware
