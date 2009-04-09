@@ -1061,18 +1061,24 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
 		debug3("running non-dynamic mode");
 		if(delete_list) {
+			int cnt_set = 0;
 			/* don't lock here since it is handled inside
 			   the put_block_in_error_state
 			*/
 			itr = list_iterator_create(delete_list);
 			while ((bg_record = list_next(itr))) {
 				/* we already handled this */
-				if(bg_record->state == RM_PARTITION_ERROR) 
+				if(bg_record->state == RM_PARTITION_ERROR) {
+					rc = SLURM_NO_CHANGE_IN_DATA;
 					continue;
+				}
 								
 				rc = put_block_in_error_state(
 					bg_record, BLOCK_ERROR_STATE);
+				cnt_set++;
 			}
+			if(cnt_set)
+				rc = SLURM_SUCCESS;
 			list_iterator_destroy(itr);
 			list_destroy(delete_list);
 			goto cleanup;
@@ -1096,9 +1102,10 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 
 	
 	if(smallest_bg_record) {
-		debug("smallest block is %s", smallest_bg_record->bg_block_id);
+		debug2("smallest dynamic block is %s",
+		       smallest_bg_record->bg_block_id);
 		if(smallest_bg_record->state == RM_PARTITION_ERROR) {
-			rc = SLURM_SUCCESS;
+			rc = SLURM_NO_CHANGE_IN_DATA;
 			goto cleanup;
 		}
 		
@@ -1134,11 +1141,8 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			blockreq.small32 = 4;			
 			break;
 		case 512:
-			blockreq.small32 = 16;
-			break;
 		default:
-			rc = SLURM_ERROR;
-			goto cleanup;
+			blockreq.small32 = 16;
 			break;
 		}
 
@@ -1183,6 +1187,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			goto cleanup;
 			break;
 		default:
+			error("Unknown create size of %d", create_size);
 			break;
 		}
 		/* since we don't have a block in this midplane
@@ -1199,7 +1204,6 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	*/
 	requests = list_create(destroy_bg_record);
 	add_bg_record(requests, NULL, &blockreq, 1, io_start);
-
 		
 	delete_list = list_create(NULL);
 	while((bg_record = list_pop(requests))) {
