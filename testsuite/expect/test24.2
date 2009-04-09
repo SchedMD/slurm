@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM sshare functionality
-#          sshare h, n, p, P, v and V options.
+#          sshare h, p, P, v and V options.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -65,7 +65,7 @@ proc sshare_opt { soption } {
 	set not_support 0
 	send_user "$sshare -$soption \n"
 
-	if { $soption == "-help"|| $soption == "-usage" || $soption == "h" } {
+	if { $soption == "-help"|| $soption == "-usage" } {
 		
 		spawn $sshare -$soption
 		expect {
@@ -77,17 +77,17 @@ proc sshare_opt { soption } {
 				set not_support 2
 				exp_continue
 			}
-			-re "sshare...OPTION.....COMMAND" {
+			-re "Usage: *sshare *.OPTION" {
 				if {$debug} {send_user "\nmatch1\n"}
 				incr matches
 				exp_continue
 			}
-			-re "Valid .OPTION. values are" {
+			-re "Valid OPTIONs are" {
 				if {$debug} {send_user "\nmatch2\n"}
 				incr matches
 				exp_continue
 			}
-			-re "Valid .COMMAND. values are" {
+			-re "verbose *display more information" {
 				if {$debug} {send_user "\nmatch3\n"}
 				incr matches
 				exp_continue
@@ -118,7 +118,7 @@ proc sshare_opt { soption } {
 		return $matches
 	}
 
-	if { $soption == "-noheader" || $soption == "n" } {
+	if { $soption == "-noheader" || $soption == "h" } {
 
 		spawn $sshare -$soption
 		expect {
@@ -178,7 +178,7 @@ proc sshare_opt { soption } {
 				incr matches
 				exp_continue
 			}
-			-re "Raw Usage\\|Norm Usage\\|Effectv Usage\\|" {
+			-re "Raw Usage\\|Effectv Usage\\|Fair-share\\|" {
 				if {$debug} {send_user "\nmatch5\n"}
 				incr matches
 				exp_continue
@@ -220,13 +220,8 @@ proc sshare_opt { soption } {
 				incr matches
 				exp_continue
 			}
-			-re "Raw Usage\\|Norm Usage\\|Effectv Usage" {
+			-re "Raw Usage\\|Effectv Usage\\|Fair-share" {
 				if {$debug} {send_user "\nmatch7\n"}
-				incr matches
-				exp_continue
-			}
-			-re "Raw Usage\\|Norm Usage\\|Effectv Usage\\|" {
-				if {$debug} {send_user "\nmatch8\n"}
 				incr matches
 				exp_continue
 			}
@@ -269,17 +264,17 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			-re "Users requested" {
-				if {$debug} {send_user "\nmatch9\n"}
+				if {$debug} {send_user "\nmatch8\n"}
 				incr matches
 				exp_continue
 			}
 			-re "Accounts requested" {
-				if {$debug} {send_user "\nmatch10\n"}
+				if {$debug} {send_user "\nmatch9\n"}
 				incr matches
 				exp_continue
 			}
 			-re "sshare: .* loaded" {
-				if {$debug} {send_user "\nmatch11\n"}
+				if {$debug} {send_user "\nmatch10\n"}
 				incr matches
 				exp_continue
 			}
@@ -323,7 +318,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			-re "slurm $number.$number.$number" {
-				if {$debug} {send_user "\nmatch12\n"}
+				if {$debug} {send_user "\nmatch11\n"}
 				incr matches
 				exp_continue
 			}
@@ -356,12 +351,6 @@ proc sshare_opt { soption } {
 
 ################################################################
 
-set matches [sshare_opt h ]
-if {$matches != 3} {
-	send_user "\nFAILURE: sshare -h failed ($matches)\n"
-	set exit_code 1
-}
-
 set matches [sshare_opt -help ]
 if {$matches != 3} {
 	send_user "\nFAILURE: sshare --help failed ($matches)\n"
@@ -374,7 +363,7 @@ if {$matches != 3} {
 	set exit_code 1
 }
 
-set matches [sshare_opt n ]
+set matches [sshare_opt h ]
 if {$matches != 0} {
 	send_user "\nFAILURE: sshare -n failed ($matches)\n"
 	set exit_code 1
