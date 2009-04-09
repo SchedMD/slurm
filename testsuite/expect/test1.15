@@ -62,12 +62,8 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "task \\\[0,2-9\\\]: running" {
+	-re "tasks \\\[0,2-9\\\]: running" {
 		incr matches
-		exp_continue
-	}
-	-re "Exited with exit code" {
-		send_user "This error is expected, no worries\n"
 		exp_continue
 	}
 	timeout {
