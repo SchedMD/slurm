@@ -116,6 +116,13 @@ if {[wait_for_file $file_err] == 0} {
 			incr matches
 			exp_continue
 		}
+		-re "REQUEST_FILE_BCAST.* Operation not permitted" {
+#			variation on Permission denied if initgroups() fails
+#			due to not running slurmd as root
+			send_user "These errors are expected, no worries\n"
+			incr matches
+			exp_continue
+		}
 		-re "REQUEST_FILE_BCAST.* File exists" {
 			send_user "Vestigial file should be removed\n"
 			incr matches
