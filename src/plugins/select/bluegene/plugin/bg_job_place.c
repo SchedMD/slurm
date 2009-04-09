@@ -659,12 +659,26 @@ static int _check_for_booted_overlapping_blocks(
 					}
 					destroy_bg_record(bg_record);
 					if(!found_record) {
-						debug2("This record wasn't "
-						       "found in the bg_list, "
-						       "no big deal, it "
-						       "probably wasn't added");
+						/* There may be a bug
+						   here where on a real
+						   system we don't go
+						   destroy this block
+						   in the real system.
+						   If that is the case we
+						   need to add the
+						   bg_record to the
+						   free_block_list
+						   instead of destroying
+						   it like above.
+						*/ 
+						debug("This record wasn't "
+						      "found in the bg_list, "
+						      "no big deal, it "
+						      "probably wasn't added");
 						//rc = SLURM_ERROR;
 					} else {
+						debug("removing the block "
+						      "from the system");
 						List temp_list =
 							list_create(NULL);
 						list_push(temp_list, 
