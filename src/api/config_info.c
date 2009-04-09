@@ -91,6 +91,29 @@ _select_info(uint16_t select_type_param)
 	}
 }
 
+static char *
+_reset_period_str(uint16_t reset_period)
+{
+	switch (reset_period) {
+		case PRIORITY_RESET_NONE:
+			return "NONE";
+		case PRIORITY_RESET_NOW:
+			return "NOW";
+		case PRIORITY_RESET_DAILY:
+			return "DAILY";
+		case PRIORITY_RESET_WEEKLY:
+			return "WEEKLY";
+		case PRIORITY_RESET_MONTHLY:
+			return "MONTHLY";
+		case PRIORITY_RESET_QUARTERLY:
+			return "QUARTERLY";
+		case PRIORITY_RESET_YEARLY:
+			return "YEARLY";
+		default:
+			return "UNKNOWN";
+	}
+}
+
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration 
  *	message as loaded using slurm_load_ctl_conf
@@ -274,10 +297,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		secs2time_str((time_t) slurm_ctl_conf_ptr->priority_max_age,
 			      tmp_str, sizeof(tmp_str));
 		fprintf(out, "PriorityMaxAge          = %s\n", tmp_str);
-		secs2time_str((time_t) 
-			      slurm_ctl_conf_ptr->priority_reset_period,
-			      tmp_str, sizeof(tmp_str));
-		fprintf(out, "PriorityUsageResetPeriod= %s\n", tmp_str);
+		fprintf(out, "PriorityUsageResetPeriod = %s\n", 
+			_reset_period_str(slurm_ctl_conf_ptr->
+					  priority_reset_period));
 		fprintf(out, "PriorityType            = %s\n",
 			slurm_ctl_conf_ptr->priority_type);
 		fprintf(out, "PriorityWeightAge       = %u\n",
@@ -346,9 +368,6 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "SlurmUser               = %s(%u)\n", 
 		slurm_ctl_conf_ptr->slurm_user_name,
 		slurm_ctl_conf_ptr->slurm_user_id);
-	fprintf(out, "SlurmdUser              = %s(%u)\n", 
-		slurm_ctl_conf_ptr->slurmd_user_name,
-		slurm_ctl_conf_ptr->slurmd_user_id);
 	fprintf(out, "SlurmctldDebug          = %u\n", 
 		slurm_ctl_conf_ptr->slurmctld_debug);
 	fprintf(out, "SlurmctldLogFile        = %s\n", 
@@ -373,6 +392,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout           = %u sec\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
+	fprintf(out, "SlurmdUser              = %s(%u)\n", 
+		slurm_ctl_conf_ptr->slurmd_user_name,
+		slurm_ctl_conf_ptr->slurmd_user_id);
 	fprintf(out, "SLURM_CONF              = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SLURM_VERSION           = %s\n", SLURM_VERSION);

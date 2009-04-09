@@ -63,7 +63,9 @@
 
 #include "src/slurmctld/locks.h"
 
-#define DECAY_INTERVAL 300 /* sleep for this many seconds */
+#define DECAY_INTERVAL	300 /* sleep for this many seconds */
+#define SECS_PER_DAY	(24 * 60 * 60)
+#define SECS_PER_WEEK	(7 * 24 * 60 * 60)
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -520,6 +522,67 @@ static uint32_t _get_priority_internal(time_t start_time,
 	return (uint32_t)priority;
 }
 
+/* based upon the last reset time, compute when the next reset should be */
+static time_t _next_reset(uint16_t reset_period, time_t last_reset)
+{
+	struct tm last_tm;
+	time_t tmp_time, now = time(NULL);
+
+	if(localtime_r(&last_reset, &last_tm) == NULL)
+		return (time_t) 0;
+
+	last_tm.tm_sec   = 0;
+	last_tm.tm_min   = 0;
+	last_tm.tm_hour  = 0;
+/*	last_tm.tm_wday = 0	ignored */
+/*	last_tm.tm_yday = 0;	ignored */
+	last_tm.tm_isdst = -1;
+	switch (reset_period) {
+		case PRIORITY_RESET_DAILY:
+			tmp_time = mktime(&last_tm);
+			tmp_time += SECS_PER_DAY;
+			while ((tmp_time + SECS_PER_DAY) < now)
+				tmp_time += SECS_PER_DAY;
+			return tmp_time;
+		case PRIORITY_RESET_WEEKLY:
+			tmp_time = mktime(&last_tm);
+			tmp_time += (SECS_PER_DAY * (7 - last_tm.tm_wday));
+			while ((tmp_time + SECS_PER_WEEK) < now)
+				tmp_time += SECS_PER_WEEK;
+			return tmp_time;
+		case PRIORITY_RESET_MONTHLY:
+			last_tm.tm_mday = 0;
+			if(last_tm.tm_mon < 11)
+				last_tm.tm_mon++;
+			else {
+				last_tm.tm_mon  = 0;
+				last_tm.tm_year++;
+			}
+			break;
+		case PRIORITY_RESET_QUARTERLY:
+			last_tm.tm_mday = 0;
+			if(last_tm.tm_mon < 3)
+				last_tm.tm_mon = 3;
+			else if(last_tm.tm_mon < 6)
+				last_tm.tm_mon = 6;
+			else if(last_tm.tm_mon < 9)
+				last_tm.tm_mon = 9;
+			else {
+				last_tm.tm_mon  = 0;
+				last_tm.tm_year++;
+			}
+			break;
+		case PRIORITY_RESET_YEARLY:
+			last_tm.tm_mday = 0;
+			last_tm.tm_mon  = 0;
+			last_tm.tm_year++;
+			break;
+		default:
+			return (time_t) 0;
+	}
+	return mktime(&last_tm);
+}
+
 static void *_decay_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
@@ -529,14 +592,11 @@ static void *_decay_thread(void *no_data)
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
 	time_t last_ran = 0;
-	time_t last_reset = 0;
+	time_t last_reset = 0, next_reset = 0;
 	double decay_hl = (double)slurm_get_priority_decay_hl();
 	double decay_factor = 1;
-	uint32_t reset_period = slurm_get_priority_reset_period();
-	/* if decay_hl is 0 or less that means no decay is to be had.
-	   This also means we flush the used time at a certain time
-	   set by PriorityUsageResetPeriod in the slurm.conf
-	*/
+	uint16_t reset_period = slurm_get_priority_reset_period();
+
 	if(decay_hl > 0)
 		decay_factor = 1 - (0.693 / decay_hl);
 
@@ -555,8 +615,11 @@ static void *_decay_thread(void *no_data)
 	}
 
 	_read_last_decay_ran(&last_ran, &last_reset);
+	if (last_reset == 0)
+		last_reset = start_time;
 
 	while(1) {
+		time_t now = time(NULL);
 		int run_delta = 0;
 		double real_decay = 0.0;
 
@@ -572,6 +635,7 @@ static void *_decay_thread(void *no_data)
 			   set by PriorityUsageResetPeriod in the slurm.conf
 			*/
 			reset_period = slurm_get_priority_reset_period();
+			next_reset = 0;
 			decay_hl = (double)slurm_get_priority_decay_hl();
 			if(decay_hl > 0)
 				decay_factor = 1 - (0.693 / decay_hl);
@@ -582,15 +646,36 @@ static void *_decay_thread(void *no_data)
 		}
 
 		/* this needs to be done right away so as to
-		   incorporate it into the decay loop.
-		*/
-		if(reset_period != (uint32_t)NO_VAL) {
-			if(!last_reset)
-				last_reset = start_time;
-			else if(start_time >= last_reset+reset_period) {
+		 * incorporate it into the decay loop.
+		 */
+		switch(reset_period) {
+//char tmp_str[128];
+			case PRIORITY_RESET_NONE:
+				break;
+			case PRIORITY_RESET_NOW:	/* do once */
 				_reset_usage();
-				last_reset = start_time;
-			}
+				reset_period = PRIORITY_RESET_NONE;
+				last_reset = now;
+				break;
+			case PRIORITY_RESET_DAILY:
+			case PRIORITY_RESET_WEEKLY:
+			case PRIORITY_RESET_MONTHLY:
+			case PRIORITY_RESET_QUARTERLY:
+			case PRIORITY_RESET_YEARLY:
+				if(next_reset == 0) {
+					next_reset = _next_reset(reset_period, 
+								 last_reset);
+//slurm_make_time_str(&next_reset, tmp_str, 128);
+//info("next_reset:%s", tmp_str);
+				}
+				if(now >= next_reset) {
+					_reset_usage();
+					last_reset = next_reset;
+					next_reset = _next_reset(reset_period, 
+								 last_reset);
+//slurm_make_time_str(&next_reset, tmp_str, 128);
+//info("next_reset:%s", tmp_str);
+				}
 		}
 
 		if(!last_ran) 

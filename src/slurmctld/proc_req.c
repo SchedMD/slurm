@@ -467,6 +467,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->priority_decay_hl   = conf->priority_decay_hl;
 	conf_ptr->priority_favor_small= conf->priority_favor_small;
 	conf_ptr->priority_max_age    = conf->priority_max_age;
+	conf_ptr->priority_reset_period = conf->priority_reset_period;
 	conf_ptr->priority_type       = xstrdup(conf->priority_type);
 	conf_ptr->priority_weight_age = conf->priority_weight_age;
 	conf_ptr->priority_weight_fs  = conf->priority_weight_fs;
@@ -514,6 +515,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_port         = conf->slurmd_port;
 	conf_ptr->slurmd_spooldir     = xstrdup(conf->slurmd_spooldir);
 	conf_ptr->slurmd_timeout      = conf->slurmd_timeout;
+	conf_ptr->slurmd_user_id      = conf->slurmd_user_id;
+	conf_ptr->slurmd_user_name    = xstrdup(conf->slurmd_user_name);
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);
 	conf_ptr->srun_prolog         = xstrdup(conf->srun_prolog);
 	conf_ptr->srun_epilog         = xstrdup(conf->srun_epilog);
