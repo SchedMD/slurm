@@ -551,7 +551,7 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 				tmp_time += SECS_PER_WEEK;
 			return tmp_time;
 		case PRIORITY_RESET_MONTHLY:
-			last_tm.tm_mday = 0;
+			last_tm.tm_mday = 1;
 			if(last_tm.tm_mon < 11)
 				last_tm.tm_mon++;
 			else {
@@ -560,7 +560,7 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 			}
 			break;
 		case PRIORITY_RESET_QUARTERLY:
-			last_tm.tm_mday = 0;
+			last_tm.tm_mday = 1;
 			if(last_tm.tm_mon < 3)
 				last_tm.tm_mon = 3;
 			else if(last_tm.tm_mon < 6)
@@ -573,7 +573,7 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 			}
 			break;
 		case PRIORITY_RESET_YEARLY:
-			last_tm.tm_mday = 0;
+			last_tm.tm_mday = 1;
 			last_tm.tm_mon  = 0;
 			last_tm.tm_year++;
 			break;
@@ -649,7 +649,6 @@ static void *_decay_thread(void *no_data)
 		 * incorporate it into the decay loop.
 		 */
 		switch(reset_period) {
-//char tmp_str[128];
 			case PRIORITY_RESET_NONE:
 				break;
 			case PRIORITY_RESET_NOW:	/* do once */
@@ -665,16 +664,12 @@ static void *_decay_thread(void *no_data)
 				if(next_reset == 0) {
 					next_reset = _next_reset(reset_period, 
 								 last_reset);
-//slurm_make_time_str(&next_reset, tmp_str, 128);
-//info("next_reset:%s", tmp_str);
 				}
 				if(now >= next_reset) {
 					_reset_usage();
 					last_reset = next_reset;
 					next_reset = _next_reset(reset_period, 
 								 last_reset);
-//slurm_make_time_str(&next_reset, tmp_str, 128);
-//info("next_reset:%s", tmp_str);
 				}
 		}
 
