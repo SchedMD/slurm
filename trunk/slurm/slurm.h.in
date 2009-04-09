@@ -477,6 +477,14 @@ typedef enum select_type_plugin_info {
 #define PRIVATE_DATA_ACCOUNTS	  0x0020 /* accounting account data is private*/
 #define PRIVATE_DATA_RESERVATIONS 0x0040 /* reservation data is private */
 
+#define PRIORITY_RESET_NONE	0x0000	/* never clear */
+#define PRIORITY_RESET_NOW	0x0001	/* clear now (when slurmctld restarts) */
+#define PRIORITY_RESET_DAILY	0x0002	/* clear daily at midnight */
+#define PRIORITY_RESET_WEEKLY	0x0003	/* clear weekly at Sunday 00:00 */
+#define PRIORITY_RESET_MONTHLY	0x0004	/* clear monthly on first at 00:00 */
+#define PRIORITY_RESET_QUARTERLY 0x0005	/* clear quarterly on first at 00:00 */
+#define PRIORITY_RESET_YEARLY	0x0006	/* clear yearly on first at 00:00 */
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -1118,8 +1126,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t priority_favor_small; /* favor small jobs over large */
 	uint32_t priority_max_age; /* time when not to add any more
 				    * priority to a job if reached */
-	uint32_t priority_reset_period; /* time period to wait before
-					 * resetting usage in seconds */
+	uint16_t priority_reset_period; /* when to clear usage,
+					 * see PRIORITY_RESET_* */
 	char *priority_type;    /* priority type plugin */
 	uint32_t priority_weight_age; /* weight for age factor */
 	uint32_t priority_weight_fs; /* weight for Fairshare factor */

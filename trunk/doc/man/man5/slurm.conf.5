@@ -741,8 +741,30 @@ turned off and it is advised to use the PriorityDecayHalfLife option to avoid
 not having anything running on your cluster, but if your schema is set up to 
 only allow certain amounts of time on your system this is the way to do it.
 Applicable only if PriorityType=priority/multifactor.
-The unit is a time string (i.e. min, hr:min:00, days\-hr:min:00, 
-or days\-hr).  The default value is not set (turned off).
+.RS
+.TP 12
+\fBNONE\fR
+Never clear historic usage. The default value.
+.TP
+\fBNOW\fR
+Clear the historic usage now. 
+Executed at startup and reconfiguration time.
+.TP
+\fBDAILY\fR
+Cleared every day at midnight.
+.TP
+\fBWEEKLY\fR
+Cleared every week on Sunday at time 00:00.
+.TP
+\fBMONTHLY\fR
+Cleared on the first day of each month at time 00:00.
+.TP
+\fBQUARTERLY\fR
+Cleared on the first day of each quarter at time 00:00.
+.TP
+\fBYEARLY\fR
+Cleared on the first day of each year at time 00:00.
+.RE
 
 .TP
 \fBPriorityType\fR

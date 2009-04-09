@@ -1234,12 +1234,12 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
 	xfree (ctl_conf_ptr->slurm_user_name);
-	xfree (ctl_conf_ptr->slurmd_user_name);
 	xfree (ctl_conf_ptr->slurmctld_logfile);
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	xfree (ctl_conf_ptr->slurmd_logfile);
 	xfree (ctl_conf_ptr->slurmd_pidfile);
 	xfree (ctl_conf_ptr->slurmd_spooldir);
+	xfree (ctl_conf_ptr->slurmd_user_name);
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->state_save_location);
@@ -1980,15 +1980,27 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->priority_max_age = DEFAULT_PRIORITY_DECAY;
 
 	if (s_p_get_string(&temp_str, "PriorityUsageResetPeriod", hashtbl)) {
-		int max_time = time_str2mins(temp_str);
-		if ((max_time < 0) && (max_time != INFINITE)) {
+		if (strcasecmp(temp_str, "none") == 0)
+			conf->priority_reset_period = PRIORITY_RESET_NONE;
+		else if (strcasecmp(temp_str, "now") == 0)
+			conf->priority_reset_period = PRIORITY_RESET_NOW;
+		else if (strcasecmp(temp_str, "daily") == 0)
+			conf->priority_reset_period = PRIORITY_RESET_DAILY;
+		else if (strcasecmp(temp_str, "weekly") == 0)
+			conf->priority_reset_period = PRIORITY_RESET_WEEKLY;
+		else if (strcasecmp(temp_str, "monthly") == 0)
+			conf->priority_reset_period = PRIORITY_RESET_MONTHLY;
+		else if (strcasecmp(temp_str, "quarterly") == 0)
+			conf->priority_reset_period = PRIORITY_RESET_QUARTERLY;
+		else if (strcasecmp(temp_str, "yearly") == 0)
+			conf->priority_reset_period = PRIORITY_RESET_YEARLY;
+		else {
 			fatal("Bad value \"%s\" for PriorityUsageResetPeriod",
 			      temp_str);
 		}
-		conf->priority_reset_period = max_time * 60;
 		xfree(temp_str);
 	} else {
-		conf->priority_reset_period = NO_VAL;
+		conf->priority_reset_period = PRIORITY_RESET_NONE;
 		if(!conf->priority_decay_hl) {
 			fatal("You have to either have "
 			      "PriorityDecayHalfLife != 0 or "

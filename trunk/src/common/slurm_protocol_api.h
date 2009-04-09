@@ -204,9 +204,9 @@ uint32_t slurm_get_priority_max_age(void);
 
 /* slurm_get_priority_reset_period
  * returns the priority usage reset period in seconds from slurmctld_conf object
- * RET uint32_t - decay_hl in secs.
+ * RET uint16_t - flag, see PRIORITY_RESET_* in slurm/slurm.h.
  */
-uint32_t slurm_get_priority_reset_period(void);
+uint16_t slurm_get_priority_reset_period(void);
 
 /* slurm_get_priority_type
  * returns the priority type from slurmctld_conf object
