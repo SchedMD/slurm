@@ -957,32 +957,77 @@ _handle_max_wait(int signo)
 }
 
 static char *
-_taskids_to_nodelist(bitstr_t *tasks_exited)
+_hostset_to_string(hostset_t hs)
+{
+	size_t n = 1024;
+	size_t maxsize = 1024*64;
+	char *str = NULL;
+
+	do {
+		str = xrealloc(str, n);
+	} while (hostset_ranged_string(hs, n*=2, str) < 0 && (n < maxsize));
+
+	/*
+	 *  If string was truncated, indicate this with a '+' suffix.
+	 */
+	if (n >= maxsize)
+		strcpy(str + (maxsize - 2), "+");
+
+	return str;
+}
+
+/* Convert an array of task IDs into a list of host names
+ * RET: the string, caller must xfree() this value */ 
+static char *
+_task_ids_to_host_list(int ntasks, uint32_t taskids[])
 {
 	int i;
-	char *hostname, *hostlist_str;
-	hostlist_t hostlist;
-	slurm_step_layout_t *step_layout;
+	hostset_t hs;
+	char *hosts;
+	slurm_step_layout_t *sl;
 
-	if (!job->step_ctx) {
-		error("No step_ctx");
-		hostlist_str = xstrdup("Unknown");
-		return hostlist_str;
+	if ((sl = _get_slurm_step_layout(job)) == NULL)
+		return (xstrdup("Unknown"));
+
+	hs = hostset_create(NULL);
+	for (i = 0; i < ntasks; i++) {
+		char *host = slurm_step_layout_host_name(sl, taskids[i]);
+		if (host) {
+			hostset_insert(hs, host);
+			free(host);
+		} else {
+			error("Could not identify host name for task %u",
+			      taskids[i]);
+		}
 	}
 
-	step_layout = _get_slurm_step_layout(job);
-	hostlist = hostlist_create(NULL);
-	for (i=0; i<job->ntasks; i++) {
-		if (!bit_test(tasks_exited, i))
-			continue;
-		hostname = slurm_step_layout_host_name(step_layout, i);
-		hostlist_push(hostlist, hostname);
-	}
-	hostlist_uniq(hostlist);
-	hostlist_str = xmalloc(2048);
-	hostlist_ranged_string(hostlist, 2048, hostlist_str);
-	hostlist_destroy(hostlist);
-	return hostlist_str;
+	hosts = _hostset_to_string(hs);
+	hostset_destroy(hs);
+
+	return (hosts);
+}
+
+/* Convert an array of task IDs into a string.
+ * RET: the string, caller must xfree() this value
+ * NOTE: the taskids array is not necessarily in numeric order, 
+ *       so we use existing bitmap functions to format */
+static char *
+_task_array_to_string(int ntasks, uint32_t taskids[])
+{
+	bitstr_t *tasks_bitmap = NULL;
+	char *str;
+	int i;
+
+	tasks_bitmap = bit_alloc(ntasks);
+	if (!tasks_bitmap)
+		fatal("bit_alloc: memory allocation failure");
+	for (i=0; i<ntasks; i++)
+		bit_set(tasks_bitmap, taskids[i]);
+	str = xmalloc(2048);
+	bit_fmt(str, 2048, tasks_bitmap);
+	bit_free(tasks_bitmap);
+
+	return str;
 }
 
 static void
@@ -1014,23 +1059,21 @@ static void _setup_max_wait_timer(void)
 static void
 _task_finish(task_exit_msg_t *msg)
 {
-	bitstr_t *tasks_exited = NULL;
-	char buf[65536], *core_str = "", *msg_str, *node_list = NULL;
+	char *tasks;
+	char *hosts;
 	uint32_t rc = 0;
-	int i;
 
 	verbose("%u tasks finished (rc=%u)",
 		msg->num_tasks, msg->return_code);
-	tasks_exited = bit_alloc(job->ntasks);
-	for (i=0; i<msg->num_tasks; i++)
-		bit_set(tasks_exited,  msg->task_id_list[i]);
-	bit_fmt(buf, sizeof(buf), tasks_exited);
+
+	tasks = _task_array_to_string(msg->num_tasks, msg->task_id_list);
+	hosts = _task_ids_to_host_list(msg->num_tasks, msg->task_id_list);
+
 	if (WIFEXITED(msg->return_code)) {
 		rc = WEXITSTATUS(msg->return_code);
 		if (rc != 0) {
 			_update_task_exit_state(msg->num_tasks,
 						msg->task_id_list, 1);
-			node_list = _taskids_to_nodelist(tasks_exited);
 			if ((rc == OPEN_MPI_PORT_ERROR) &&
 			    (opt.resv_port_cnt != NO_VAL) &&
 			    (difftime(time(NULL), launch_start_time) <= 
@@ -1042,43 +1085,44 @@ _task_finish(task_exit_msg_t *msg)
 				if (retry_step_cnt < MAX_STEP_RETRIES) {
 					error("%s: task %s unable to claim "
 					      "reserved port, retrying",
-					      node_list, buf);
+					      hosts, tasks);
 				} else {
 					error("%s: task %s unable to claim "
 					      "reserved port, aborting",
-					      node_list, buf);
+					      hosts, tasks);
 					opt.kill_bad_exit = true;
 				}
 			} else {
 				error("%s: task %s: Exited with exit code %d",
-				      node_list, buf, rc);
+				      hosts, tasks, rc);
 			}
 		} else {
-			verbose("task %s: Completed", buf);
+			verbose("task %s: Completed", tasks);
 			_update_task_exit_state(msg->num_tasks,
 						msg->task_id_list, 0);
 		}
 
 	} else if (WIFSIGNALED(msg->return_code)) {
 		_update_task_exit_state(msg->num_tasks, msg->task_id_list, 0);
-		msg_str = strsignal(WTERMSIG(msg->return_code));
+		const char *msg_str = strsignal(WTERMSIG(msg->return_code));
+		char * core_str = "";
 #ifdef WCOREDUMP
 		if (WCOREDUMP(msg->return_code))
 			core_str = " (core dumped)";
 #endif
-		node_list = _taskids_to_nodelist(tasks_exited);
 		if (job->state >= SRUN_JOB_CANCELLED) {
 			rc = NO_VAL;
 			verbose("%s: task %s: %s%s", 
-				node_list, buf, msg_str, core_str);
+				hosts, tasks, msg_str, core_str);
 		} else {
 			rc = msg->return_code;
 			error("%s: task %s: %s%s", 
-			      node_list, buf, msg_str, core_str);
+			      hosts, tasks, msg_str, core_str);
 		}
 	}
-	xfree(node_list);
-	bit_free(tasks_exited);
+
+	xfree(tasks);
+	xfree(hosts);
 
 	/*
 	 *  Update global srun return code
