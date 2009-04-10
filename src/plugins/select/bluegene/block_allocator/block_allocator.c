@@ -597,7 +597,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 				  ba_request->elongate_geos,
 				  ba_request->rotate);
 		}	
-	startagain:		
+//	startagain:		
 		picked=0;
 		for(i=0;i<8;i++)
 			checked[i]=0;
@@ -648,9 +648,21 @@ extern int new_ba_request(ba_request_t* ba_request)
 							break;
 					}		
 				}				
+				/* This size can not be made into a
+				   block return.  If you want to try
+				   until we find the next largest block
+				   uncomment the code below and the goto
+				   above. If a user specifies a max
+				   node count the job will never
+				   run.  
+				*/
 				if(i2==1) {
-					ba_request->size +=1;
-					goto startagain;
+					error("Can't make a block of "
+					      "%d into a cube.",
+					      ba_request->size);
+					return 0;
+/* 					ba_request->size +=1; */
+/* 					goto startagain; */
 				}
 						
 			} else {
