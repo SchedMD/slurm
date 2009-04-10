@@ -150,8 +150,6 @@ int main(int argc, char *argv[])
 
 	if (gethostname_short(node_name, sizeof(node_name)))
 		fatal("getnodename: %m");
-	info("node = %s pri = %s backup = %s", node_name, 
-	     slurmdbd_conf->dbd_host, slurmdbd_conf->dbd_backup);
 
 	while(1) {
 		if (slurmdbd_conf->dbd_backup &&
