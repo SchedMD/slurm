@@ -48,6 +48,21 @@ print_header $test_id
 # Build stdin file
 #
 exec $bin_rm -f $file_in $file_out $file_err
+if {[file exists /tmp/$file_err]} {
+	send_user "\nWARNING: can not delete /tmp/$file_err to run test\n"
+	set random 0
+	spawn $bin_date +%N
+	expect {
+		-re "($number)" {
+			set random $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	set file_err $file_err.$random
+}
 make_bash_script $file_in "
   $bin_pwd
   $bin_cat /no/such/file
@@ -103,7 +118,7 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: sbatch failed to change working directory\n"
+	send_user "\nFAILURE: sbatch failed to get expected stdout\n"
 	set exit_code 1
 }
 
