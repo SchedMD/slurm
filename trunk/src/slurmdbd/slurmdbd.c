@@ -64,8 +64,6 @@
 
 /* Global variables */
 time_t shutdown_time = 0;		/* when shutdown request arrived */
-bool backup = false;
-bool have_control = false;
 
 /* Local variables */
 static int    dbd_sigarray[] = {	/* blocked signals for this process */
@@ -89,6 +87,7 @@ static void  _init_config(void);
 static void  _init_pidfile(void);
 static void  _kill_old_slurmdbd(void);
 static void  _parse_commandline(int argc, char *argv[]);
+static void  _rollup_handler_cancel();
 static void *_rollup_handler(void *no_data);
 static void *_signal_handler(void *no_data);
 static void  _update_logging(void);
@@ -159,6 +158,7 @@ int main(int argc, char *argv[])
 		    (!strcmp(node_name, slurmdbd_conf->dbd_backup) ||
 		     !strcmp(slurmdbd_conf->dbd_backup, "localhost"))) {
 			info("slurmdbd running in background mode");
+			have_control = false;
 			backup = true;
 			run_backup();
 			if(!shutdown_time)
@@ -195,7 +195,8 @@ int main(int argc, char *argv[])
 		}
 
 		/* Daemon is fully operational here */
-		if(!shutdown_time) {
+		if(!shutdown_time || primary_resumed) {
+			shutdown_time = 0;
 			info("slurmdbd version %s started", SLURM_VERSION);
 			if(backup)
 				run_backup();
@@ -207,11 +208,13 @@ int main(int argc, char *argv[])
 		if(rpc_handler_thread)
 			pthread_join(rpc_handler_thread, NULL);
 
+		if(backup && primary_resumed) { 
+			shutdown_time = 0;
+			info("Backup has given up control");
+		}
+
 		if(shutdown_time)
 			break;
-
-		if(backup) 
-			info("Backup has given up control");
 	}
 	/* Daemon termination handled here */
 	
@@ -235,17 +238,12 @@ end_it:
 	exit(0);
 }
 
-extern void rollup_handler_cancel()
+extern void shutdown_threads()
 {
-	if(running_rollup)
-		debug("Waiting for rollup thread to finish.");
-	slurm_mutex_lock(&rollup_lock);
-	if(rollup_handler_thread)
-		pthread_cancel(rollup_handler_thread);
-	slurm_mutex_unlock(&rollup_lock);	
+	shutdown_time = time(NULL);
+	rpc_mgr_wake();
+	_rollup_handler_cancel();
 }
-
-
 
 /* Reset some of the processes resource limits to the hard limits */
 static void  _init_config(void)
@@ -409,6 +407,16 @@ static void _daemonize(void)
 	}
 }
 
+static void _rollup_handler_cancel()
+{
+	if(running_rollup)
+		debug("Waiting for rollup thread to finish.");
+	slurm_mutex_lock(&rollup_lock);
+	if(rollup_handler_thread)
+		pthread_cancel(rollup_handler_thread);
+	slurm_mutex_unlock(&rollup_lock);	
+}
+
 /* _rollup_handler - Process rollup duties */
 static void *_rollup_handler(void *db_conn)
 {
@@ -492,16 +500,12 @@ static void *_signal_handler(void *no_data)
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */
 			info("Terminate signal (SIGINT or SIGTERM) received");
-			shutdown_time = time(NULL);
-			rpc_mgr_wake();
-			rollup_handler_cancel();
+			shutdown_threads();
 			return NULL;	/* Normal termination */
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
 			abort();	/* Should terminate here */
-			shutdown_time = time(NULL);
-			rpc_mgr_wake();
-			rollup_handler_cancel();
+			shutdown_threads();
 			return NULL;
 		default:
 			error("Invalid signal (%d) received", sig);
