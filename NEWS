@@ -294,6 +294,11 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - on job cancellation we call jm_cancel_job and then wait until
     the system cleans up the job.  Before we would send a SIGKILL right 
     at the beginning. 
+ -- BLUEGENE - if a user specifies a node count that can not be met the job 
+    will be refused instead of before the plugin would search for the next 
+    larger size that could be created.  This prevents users asking for 
+    things that can't be created, and then getting something back they might 
+    not be expecting.
 
 * Changes in SLURM 1.3.14
 =========================

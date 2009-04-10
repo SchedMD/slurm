@@ -195,12 +195,19 @@ extern List create_dynamic_block(List block_list,
 	if(request->conn_type == SELECT_NAV)
 		request->conn_type = SELECT_TORUS;
 	
+	//debug("going to create %d", request->size);
 	if(!new_ba_request(request)) {
-		error("Problems with request for size %d geo %dx%dx%d", 
-		      request->size,
-		      request->geometry[X], 
-		      request->geometry[Y], 
-		      request->geometry[Z]);
+		if(geo[X] == (uint16_t)NO_VAL) {
+			error("Problems with request for size %d geo %dx%dx%d", 
+			      request->size,
+			      request->geometry[X], 
+			      request->geometry[Y], 
+			      request->geometry[Z]);
+		} else {
+			error("Problems with request for size %d.  "
+			      "No geo given.", 
+			      request->size);
+		}
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto finished;
 	} 
