@@ -1010,8 +1010,6 @@ _task_finish(task_exit_msg_t *msg)
 {
 	bitstr_t *tasks_exited = NULL;
 	char buf[65536], *core_str = "", *msg_str, *node_list = NULL;
-	static bool first_done = true;
-	static bool first_error = true;
 	uint32_t rc = 0;
 	int i;
 
@@ -1081,17 +1079,11 @@ _task_finish(task_exit_msg_t *msg)
 	 */
 	global_rc = MAX(global_rc, rc);
 
-	if (first_error && (task_state_abnormal_count(task_state) > 0) &&
-	    _kill_on_bad_exit()) {
+	if (task_state_first_abnormal_exit(task_state) && _kill_on_bad_exit())
   		_terminate_job_step(job->step_ctx);
-		first_error = false;
-	}
 
-	if (first_done && (task_state_exited_count(task_state) > 0) &&
-	    (opt.max_wait > 0)) {
+	if (task_state_first_exit(task_state) && (opt.max_wait > 0))
 		_setup_max_wait_timer();
-		first_done = false;
-	}
 }
 
 static void _handle_intr()
