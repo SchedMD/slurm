@@ -1129,7 +1129,6 @@ _task_finish(task_exit_msg_t *msg)
 			core_str = " (core dumped)";
 #endif
 		if (job->state >= SRUN_JOB_CANCELLED) {
-			rc = NO_VAL;
 			verbose("%s: %s %s: %s%s",
 				hosts, task_str, tasks, signal_str, core_str);
 		} else {
