@@ -1056,12 +1056,53 @@ static void _setup_max_wait_timer(void)
 	alarm(opt.max_wait);
 }
 
+static const char *
+_taskstr(int n)
+{
+	if (n == 1)
+		return "task";
+	else
+		return "tasks";
+}
+
+static int
+_is_openmpi_port_error(int errcode)
+{
+	if (errcode != OPEN_MPI_PORT_ERROR)
+		return 0;
+	if (opt.resv_port_cnt == NO_VAL)
+		return 0;
+	if (difftime(time(NULL), launch_start_time) > slurm_get_msg_timeout())
+		return 0;
+	return 1;
+}
+
+static void
+_handle_openmpi_port_error(const char *tasks, const char *hosts)
+{
+	char *msg = "retrying";
+
+	if (!retry_step_begin) {
+		retry_step_begin = true;
+		retry_step_cnt++;
+	}
+	if (retry_step_cnt >= MAX_STEP_RETRIES) {
+		msg = "aborting";
+		opt.kill_bad_exit = true;
+	}
+	error("%s: tasks %s unable to claim reserved port, %s.",
+	      hosts, tasks, msg);
+}
+
 static void
 _task_finish(task_exit_msg_t *msg)
 {
 	char *tasks;
 	char *hosts;
 	uint32_t rc = 0;
+	int normal_exit = 0;
+
+	const char *task_str = _taskstr(msg->num_tasks);
 
 	verbose("%u tasks finished (rc=%u)",
 		msg->num_tasks, msg->return_code);
@@ -1070,41 +1111,18 @@ _task_finish(task_exit_msg_t *msg)
 	hosts = _task_ids_to_host_list(msg->num_tasks, msg->task_id_list);
 
 	if (WIFEXITED(msg->return_code)) {
-		rc = WEXITSTATUS(msg->return_code);
-		if (rc != 0) {
-			_update_task_exit_state(msg->num_tasks,
-						msg->task_id_list, 1);
-			if ((rc == OPEN_MPI_PORT_ERROR) &&
-			    (opt.resv_port_cnt != NO_VAL) &&
-			    (difftime(time(NULL), launch_start_time) <= 
-			     slurm_get_msg_timeout())) {
-				if (!retry_step_begin) {
-					retry_step_begin = true;
-					retry_step_cnt++;
-				}
-				if (retry_step_cnt < MAX_STEP_RETRIES) {
-					error("%s: task %s unable to claim "
-					      "reserved port, retrying",
-					      hosts, tasks);
-				} else {
-					error("%s: task %s unable to claim "
-					      "reserved port, aborting",
-					      hosts, tasks);
-					opt.kill_bad_exit = true;
-				}
-			} else {
-				error("%s: task %s: Exited with exit code %d",
-				      hosts, tasks, rc);
-			}
-		} else {
-			verbose("task %s: Completed", tasks);
-			_update_task_exit_state(msg->num_tasks,
-						msg->task_id_list, 0);
+		if ((rc = WEXITSTATUS(msg->return_code)) == 0) {
+			verbose("%s: %s %s: Completed", hosts, task_str, tasks);
+			normal_exit = 1;
 		}
-
-	} else if (WIFSIGNALED(msg->return_code)) {
-		_update_task_exit_state(msg->num_tasks, msg->task_id_list, 0);
-		const char *msg_str = strsignal(WTERMSIG(msg->return_code));
+		else if (_is_openmpi_port_error(rc))
+			_handle_openmpi_port_error(tasks, hosts);
+		else
+			error("%s: %s %s: Exited with exit code %d",
+			      hosts, task_str, tasks, rc);
+	}
+	else if (WIFSIGNALED(msg->return_code)) {
+		const char *signal_str = strsignal(WTERMSIG(msg->return_code));
 		char * core_str = "";
 #ifdef WCOREDUMP
 		if (WCOREDUMP(msg->return_code))
@@ -1112,18 +1130,20 @@ _task_finish(task_exit_msg_t *msg)
 #endif
 		if (job->state >= SRUN_JOB_CANCELLED) {
 			rc = NO_VAL;
-			verbose("%s: task %s: %s%s", 
-				hosts, tasks, msg_str, core_str);
+			verbose("%s: %s %s: %s%s",
+				hosts, task_str, tasks, signal_str, core_str);
 		} else {
 			rc = msg->return_code;
-			error("%s: task %s: %s%s", 
-			      hosts, tasks, msg_str, core_str);
+			error("%s: %s %s: %s%s",
+			      hosts, task_str, tasks, signal_str, core_str);
 		}
 	}
 
 	xfree(tasks);
 	xfree(hosts);
 
+	_update_task_exit_state(msg->num_tasks, msg->task_id_list,
+			!normal_exit);
 	/*
 	 *  Update global srun return code
 	 */
