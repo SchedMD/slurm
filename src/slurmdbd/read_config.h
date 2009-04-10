@@ -76,6 +76,7 @@ typedef struct slurm_dbd_conf {
 	char *		auth_info;	/* authentication info		*/
 	char *		auth_type;	/* authentication mechanism	*/
 	char *		dbd_addr;	/* network address of Slurm DBD	*/
+	char *		dbd_backup;	/* hostname of Slurm DBD backup */
 	char *		dbd_host;	/* hostname of Slurm DBD	*/
 	uint16_t	dbd_port;	/* port number for RPCs to DBD	*/
 	uint16_t	debug_level;	/* Debug level, default=3	*/
@@ -89,7 +90,11 @@ typedef struct slurm_dbd_conf {
 	uint16_t        private_data;   /* restrict information         */
 	uint32_t	slurm_user_id;	/* uid of slurm_user_name	*/
 	char *		slurm_user_name;/* user that slurmcdtld runs as	*/
+	uint16_t        control_timeout;/* how long to wait before
+					 * backup takes control         */   
 	uint16_t	step_purge;	/* purge time for step info	*/
+	char *		storage_backup_host;/* backup host where DB is
+					     * running */
 	char *		storage_host;	/* host where DB is running	*/
 	char *		storage_loc;	/* database name		*/
 	char *		storage_pass;   /* password for DB write	*/

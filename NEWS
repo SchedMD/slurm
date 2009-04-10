@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     clear the record of time used. This is currently only available with the 
     priority/multifactor plugin.
  -- Added SLURM_SUBMIT_DIR to sbatch's output environment variables.
+ -- Backup slurmdbd support implemented.
 
 * Changes in SLURM 1.4.0-pre11
 ==============================

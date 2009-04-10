@@ -128,6 +128,7 @@ static void validate_and_set_defaults(slurm_ctl_conf_t *conf,
 s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageEnforce", S_P_STRING},
 	{"AccountingStorageHost", S_P_STRING},
+	{"AccountingStorageBackupHost", S_P_STRING},
 	{"AccountingStorageLoc", S_P_STRING},
 	{"AccountingStoragePass", S_P_STRING},
 	{"AccountingStoragePort", S_P_UINT32},
@@ -1191,6 +1192,7 @@ gethostname_short (char *name, size_t len)
 extern void
 free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 {
+	xfree (ctl_conf_ptr->accounting_storage_backup_host);
 	xfree (ctl_conf_ptr->accounting_storage_host);
 	xfree (ctl_conf_ptr->accounting_storage_loc);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
@@ -1269,6 +1271,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	ctl_conf_ptr->last_update		= time(NULL);
 	ctl_conf_ptr->cache_groups		= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->accounting_storage_backup_host);
 	xfree (ctl_conf_ptr->accounting_storage_host);
 	xfree (ctl_conf_ptr->accounting_storage_loc);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
@@ -1892,6 +1895,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 	}
 
+	/* if no backup we don't care */
+	s_p_get_string(&conf->accounting_storage_backup_host,
+		       "AccountingStorageBackupHost", hashtbl);
+	
 	if (!s_p_get_string(&conf->accounting_storage_host,
 			    "AccountingStorageHost", hashtbl)) {
 		if(default_storage_host)

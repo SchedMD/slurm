@@ -326,6 +326,12 @@ char *slurm_get_accounting_storage_type(void);
  */
 char *slurm_get_accounting_storage_user(void);
 
+/* slurm_get_accounting_storage_backup_host
+ * returns the storage host from slurmctld_conf object
+ * RET char *    - storage backup host,  MUST be xfreed by caller
+ */
+char *slurm_get_accounting_storage_backup_host(void);
+
 /* slurm_get_accounting_storage_host
  * returns the storage host from slurmctld_conf object
  * RET char *    - storage host,  MUST be xfreed by caller

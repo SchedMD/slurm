@@ -1047,6 +1047,8 @@ typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	uint16_t accounting_storage_enforce; /* job requires valid association:
 					 * user/account/partition/cluster */
+	char *accounting_storage_backup_host;	/* accounting storage
+						 * backup host */
 	char *accounting_storage_host;	/* accounting storage host */
 	char *accounting_storage_loc;	/* accounting storage (db table)
 					 * location */

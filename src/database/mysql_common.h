@@ -71,6 +71,7 @@ typedef struct {
 } mysql_conn_t;
 
 typedef struct {
+	char *backup;	
 	uint32_t port;	
 	char *host;	
 	char *user;	
