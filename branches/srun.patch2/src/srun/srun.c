@@ -463,17 +463,29 @@ cleanup:
 	return (int)global_rc;
 }
 
+static slurm_step_layout_t *
+_get_slurm_step_layout(srun_job_t *job)
+{
+	job_step_create_response_msg_t *resp;
+
+	if (!job || !job->step_ctx)
+		return (NULL);
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
+	if (!resp)
+	    return (NULL);
+	return (resp->step_layout);
+}
+
 static int _call_spank_local_user (srun_job_t *job)
 {
 	struct spank_launcher_job_info info[1];
-	job_step_create_response_msg_t *step_resp;
 
 	info->uid = opt.uid;
 	info->gid = opt.gid;
 	info->jobid = job->jobid;
 	info->stepid = job->stepid;
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &step_resp);
-	info->step_layout = step_resp->step_layout;
+	info->step_layout = _get_slurm_step_layout(job);
 	info->argc = opt.argc;
 	info->argv = opt.argv;
 
@@ -817,14 +829,10 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 				fatal("Could not open stdin file: %m");
 		}
 		if (job->ifname->type == IO_ONE) {
-			job_step_create_response_msg_t *step_resp = NULL;
-			
-			slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP,
-					   &step_resp);
-		
 			cio_fds->in.taskid = job->ifname->taskid;
 			cio_fds->in.nodeid = slurm_step_layout_host_id(
-				step_resp->step_layout, job->ifname->taskid);
+				_get_slurm_step_layout(job),
+				job->ifname->taskid);
 		}
 	}
 
@@ -954,7 +962,6 @@ _taskids_to_nodelist(bitstr_t *tasks_exited)
 	int i;
 	char *hostname, *hostlist_str;
 	hostlist_t hostlist;
-	job_step_create_response_msg_t *step_resp;
 	slurm_step_layout_t *step_layout;
 
 	if (!job->step_ctx) {
@@ -963,8 +970,7 @@ _taskids_to_nodelist(bitstr_t *tasks_exited)
 		return hostlist_str;
 	}
 
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &step_resp);
-	step_layout = step_resp->step_layout;
+	step_layout = _get_slurm_step_layout(job);
 	hostlist = hostlist_create(NULL);
 	for (i=0; i<job->ntasks; i++) {
 		if (!bit_test(tasks_exited, i))
