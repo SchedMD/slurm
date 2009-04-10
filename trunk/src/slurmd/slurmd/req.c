@@ -727,7 +727,6 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			error("cons_res: zero processors allocated to step");
 			alloc_lps = 1;
 		}
-		alloc_lps *= conf->threads;	/* core to thread count */
 		if (tasks_to_launch > alloc_lps) {
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */
