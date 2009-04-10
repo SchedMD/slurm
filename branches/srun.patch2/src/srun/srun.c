@@ -1018,7 +1018,7 @@ _task_array_to_string(int ntasks, uint32_t taskids[])
 	char *str;
 	int i;
 
-	tasks_bitmap = bit_alloc(ntasks);
+	tasks_bitmap = bit_alloc(job->ntasks);
 	if (!tasks_bitmap)
 		fatal("bit_alloc: memory allocation failure");
 	for (i=0; i<ntasks; i++)
