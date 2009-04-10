@@ -447,6 +447,12 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 /* 		debug2("host %d = %s", i, name); */
 /* 		free(name); */
 		cpus[i] = (cpus_per_node[cpu_inx] / cpus_per_task);
+		if (cpus[i] == 0) {
+			/* this can be a result of a heterogeneous allocation
+			 * (e.g. 4 cpus on one node and 2 on the second with
+			 *  cpus_per_task=3)  */
+			cpus[i] = 1;
+		}
 		//info("got %d cpus", cpus[i]);
 		if ((++cpu_cnt) >= cpu_count_reps[cpu_inx]) {
 			/* move to next record */
