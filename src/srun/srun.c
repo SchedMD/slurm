@@ -463,17 +463,29 @@ cleanup:
 	return (int)global_rc;
 }
 
+static slurm_step_layout_t *
+_get_slurm_step_layout(srun_job_t *job)
+{
+	job_step_create_response_msg_t *resp;
+
+	if (!job || !job->step_ctx)
+		return (NULL);
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
+	if (!resp)
+	    return (NULL);
+	return (resp->step_layout);
+}
+
 static int _call_spank_local_user (srun_job_t *job)
 {
 	struct spank_launcher_job_info info[1];
-	job_step_create_response_msg_t *step_resp;
 
 	info->uid = opt.uid;
 	info->gid = opt.gid;
 	info->jobid = job->jobid;
 	info->stepid = job->stepid;
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &step_resp);
-	info->step_layout = step_resp->step_layout;
+	info->step_layout = _get_slurm_step_layout(job);
 	info->argc = opt.argc;
 	info->argv = opt.argv;
 
@@ -817,14 +829,10 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 				fatal("Could not open stdin file: %m");
 		}
 		if (job->ifname->type == IO_ONE) {
-			job_step_create_response_msg_t *step_resp = NULL;
-			
-			slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP,
-					   &step_resp);
-		
 			cio_fds->in.taskid = job->ifname->taskid;
 			cio_fds->in.nodeid = slurm_step_layout_host_id(
-				step_resp->step_layout, job->ifname->taskid);
+				_get_slurm_step_layout(job),
+				job->ifname->taskid);
 		}
 	}
 
@@ -949,34 +957,77 @@ _handle_max_wait(int signo)
 }
 
 static char *
-_taskids_to_nodelist(bitstr_t *tasks_exited)
+_hostset_to_string(hostset_t hs)
+{
+	size_t n = 1024;
+	size_t maxsize = 1024*64;
+	char *str = NULL;
+
+	do {
+		str = xrealloc(str, n);
+	} while (hostset_ranged_string(hs, n*=2, str) < 0 && (n < maxsize));
+
+	/*
+	 *  If string was truncated, indicate this with a '+' suffix.
+	 */
+	if (n >= maxsize)
+		strcpy(str + (maxsize - 2), "+");
+
+	return str;
+}
+
+/* Convert an array of task IDs into a list of host names
+ * RET: the string, caller must xfree() this value */ 
+static char *
+_task_ids_to_host_list(int ntasks, uint32_t taskids[])
 {
 	int i;
-	char *hostname, *hostlist_str;
-	hostlist_t hostlist;
-	job_step_create_response_msg_t *step_resp;
-	slurm_step_layout_t *step_layout;
+	hostset_t hs;
+	char *hosts;
+	slurm_step_layout_t *sl;
 
-	if (!job->step_ctx) {
-		error("No step_ctx");
-		hostlist_str = xstrdup("Unknown");
-		return hostlist_str;
+	if ((sl = _get_slurm_step_layout(job)) == NULL)
+		return (xstrdup("Unknown"));
+
+	hs = hostset_create(NULL);
+	for (i = 0; i < ntasks; i++) {
+		char *host = slurm_step_layout_host_name(sl, taskids[i]);
+		if (host) {
+			hostset_insert(hs, host);
+			free(host);
+		} else {
+			error("Could not identify host name for task %u",
+			      taskids[i]);
+		}
 	}
 
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &step_resp);
-	step_layout = step_resp->step_layout;
-	hostlist = hostlist_create(NULL);
-	for (i=0; i<job->ntasks; i++) {
-		if (!bit_test(tasks_exited, i))
-			continue;
-		hostname = slurm_step_layout_host_name(step_layout, i);
-		hostlist_push(hostlist, hostname);
-	}
-	hostlist_uniq(hostlist);
-	hostlist_str = xmalloc(2048);
-	hostlist_ranged_string(hostlist, 2048, hostlist_str);
-	hostlist_destroy(hostlist);
-	return hostlist_str;
+	hosts = _hostset_to_string(hs);
+	hostset_destroy(hs);
+
+	return (hosts);
+}
+
+/* Convert an array of task IDs into a string.
+ * RET: the string, caller must xfree() this value
+ * NOTE: the taskids array is not necessarily in numeric order, 
+ *       so we use existing bitmap functions to format */
+static char *
+_task_array_to_string(int ntasks, uint32_t taskids[])
+{
+	bitstr_t *tasks_bitmap = NULL;
+	char *str;
+	int i;
+
+	tasks_bitmap = bit_alloc(job->ntasks);
+	if (!tasks_bitmap)
+		fatal("bit_alloc: memory allocation failure");
+	for (i=0; i<ntasks; i++)
+		bit_set(tasks_bitmap, taskids[i]);
+	str = xmalloc(2048);
+	bit_fmt(str, 2048, tasks_bitmap);
+	bit_free(tasks_bitmap);
+
+	return str;
 }
 
 static void
@@ -1005,93 +1056,103 @@ static void _setup_max_wait_timer(void)
 	alarm(opt.max_wait);
 }
 
+static const char *
+_taskstr(int n)
+{
+	if (n == 1)
+		return "task";
+	else
+		return "tasks";
+}
+
+static int
+_is_openmpi_port_error(int errcode)
+{
+	if (errcode != OPEN_MPI_PORT_ERROR)
+		return 0;
+	if (opt.resv_port_cnt == NO_VAL)
+		return 0;
+	if (difftime(time(NULL), launch_start_time) > slurm_get_msg_timeout())
+		return 0;
+	return 1;
+}
+
+static void
+_handle_openmpi_port_error(const char *tasks, const char *hosts)
+{
+	char *msg = "retrying";
+
+	if (!retry_step_begin) {
+		retry_step_begin = true;
+		retry_step_cnt++;
+	}
+	if (retry_step_cnt >= MAX_STEP_RETRIES) {
+		msg = "aborting";
+		opt.kill_bad_exit = true;
+	}
+	error("%s: tasks %s unable to claim reserved port, %s.",
+	      hosts, tasks, msg);
+}
+
 static void
 _task_finish(task_exit_msg_t *msg)
 {
-	bitstr_t *tasks_exited = NULL;
-	char buf[65536], *core_str = "", *msg_str, *node_list = NULL;
-	static bool first_done = true;
-	static bool first_error = true;
+	char *tasks;
+	char *hosts;
 	uint32_t rc = 0;
-	int i;
+	int normal_exit = 0;
 
-	verbose("%u tasks finished (rc=%u)",
-		msg->num_tasks, msg->return_code);
-	tasks_exited = bit_alloc(job->ntasks);
-	for (i=0; i<msg->num_tasks; i++)
-		bit_set(tasks_exited,  msg->task_id_list[i]);
-	bit_fmt(buf, sizeof(buf), tasks_exited);
+	const char *task_str = _taskstr(msg->num_tasks);
+
+	verbose("Received task exit notification for %d %s (status=0x%04x).",
+	      msg->num_tasks, task_str, msg->return_code);
+
+	tasks = _task_array_to_string(msg->num_tasks, msg->task_id_list);
+	hosts = _task_ids_to_host_list(msg->num_tasks, msg->task_id_list);
+
 	if (WIFEXITED(msg->return_code)) {
-		rc = WEXITSTATUS(msg->return_code);
-		if (rc != 0) {
-			_update_task_exit_state(msg->num_tasks,
-						msg->task_id_list, 1);
-			node_list = _taskids_to_nodelist(tasks_exited);
-			if ((rc == OPEN_MPI_PORT_ERROR) &&
-			    (opt.resv_port_cnt != NO_VAL) &&
-			    (difftime(time(NULL), launch_start_time) <= 
-			     slurm_get_msg_timeout())) {
-				if (!retry_step_begin) {
-					retry_step_begin = true;
-					retry_step_cnt++;
-				}
-				if (retry_step_cnt < MAX_STEP_RETRIES) {
-					error("%s: task %s unable to claim "
-					      "reserved port, retrying",
-					      node_list, buf);
-				} else {
-					error("%s: task %s unable to claim "
-					      "reserved port, aborting",
-					      node_list, buf);
-					opt.kill_bad_exit = true;
-				}
-			} else {
-				error("%s: task %s: Exited with exit code %d",
-				      node_list, buf, rc);
-			}
-		} else {
-			verbose("task %s: Completed", buf);
-			_update_task_exit_state(msg->num_tasks,
-						msg->task_id_list, 0);
+		if ((rc = WEXITSTATUS(msg->return_code)) == 0) {
+			verbose("%s: %s %s: Completed", hosts, task_str, tasks);
+			normal_exit = 1;
 		}
-
-	} else if (WIFSIGNALED(msg->return_code)) {
-		_update_task_exit_state(msg->num_tasks, msg->task_id_list, 0);
-		msg_str = strsignal(WTERMSIG(msg->return_code));
+		else if (_is_openmpi_port_error(rc))
+			_handle_openmpi_port_error(tasks, hosts);
+		else
+			error("%s: %s %s: Exited with exit code %d",
+			      hosts, task_str, tasks, rc);
+	}
+	else if (WIFSIGNALED(msg->return_code)) {
+		const char *signal_str = strsignal(WTERMSIG(msg->return_code));
+		char * core_str = "";
 #ifdef WCOREDUMP
 		if (WCOREDUMP(msg->return_code))
 			core_str = " (core dumped)";
 #endif
-		node_list = _taskids_to_nodelist(tasks_exited);
 		if (job->state >= SRUN_JOB_CANCELLED) {
-			rc = NO_VAL;
-			verbose("%s: task %s: %s%s", 
-				node_list, buf, msg_str, core_str);
+			verbose("%s: %s %s: %s%s",
+				hosts, task_str, tasks, signal_str, core_str);
 		} else {
 			rc = msg->return_code;
-			error("%s: task %s: %s%s", 
-			      node_list, buf, msg_str, core_str);
+			error("%s: %s %s: %s%s",
+			      hosts, task_str, tasks, signal_str, core_str);
 		}
 	}
-	xfree(node_list);
-	bit_free(tasks_exited);
 
+	xfree(tasks);
+	xfree(hosts);
+
+	_update_task_exit_state(msg->num_tasks, msg->task_id_list,
+			!normal_exit);
 	/*
 	 *  Update global srun return code
 	 */
 	global_rc = MAX(global_rc, rc);
 
-	if (first_error && (task_state_abnormal_count(task_state) > 0) &&
-	    _kill_on_bad_exit()) {
+	if (task_state_first_abnormal_exit(task_state) && _kill_on_bad_exit())
   		_terminate_job_step(job->step_ctx);
-		first_error = false;
-	}
 
-	if (first_done && (task_state_exited_count(task_state) > 0) &&
-	    (opt.max_wait > 0)) {
+	if (task_state_first_exit(task_state) && (opt.max_wait > 0))
 		_setup_max_wait_timer();
-		first_done = false;
-	}
 }
 
 static void _handle_intr()

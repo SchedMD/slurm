@@ -828,6 +828,7 @@ job_manager(slurmd_job_t *job)
 
 	if (rc) {
 		error("IO setup failed: %m");
+		rc = SLURM_SUCCESS;	/* drains node otherwise */
 		goto fail2;
 	} else {
 		io_initialized = true;

@@ -53,6 +53,10 @@ if {[test_multiple_slurmd] != 0} {
 	send_user "\nWARNING: This test is incompatable with multiple slurmd systems\n"
 	exit 0
 }
+if {[slurmd_user_root] == 0} {
+	send_user "\nWARNING: This test is incompatable with SlurmdUser != root\n"
+	exit 0
+}
 
 #
 # Delete left-over stdout/err files

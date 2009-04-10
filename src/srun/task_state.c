@@ -54,6 +54,8 @@ struct task_state_struct {
 	int n_started;
 	int n_abnormal;
 	int n_exited;
+	unsigned int first_exit:1;
+	unsigned int first_abnormal_exit:1;
 	bitstr_t *start_failed;
 	bitstr_t *running;
 	bitstr_t *normal_exit;
@@ -138,14 +140,22 @@ void task_state_update (task_state_t ts, int taskid, task_state_type_t t)
 		  bit_set_count(ts->normal_exit)) == ts->n_exited);
 }
 
-int task_state_exited_count (task_state_t ts)
+int task_state_first_exit (task_state_t ts)
 {
-	return (ts->n_exited);
+	if (!ts->first_exit && ts->n_exited) {
+		ts->first_exit = 1;
+		return (1);
+	}
+	return (0);
 }
 
-int task_state_abnormal_count (task_state_t ts)
+int task_state_first_abnormal_exit (task_state_t ts)
 {
-	return (ts->n_abnormal);
+	if (!ts->first_abnormal_exit && ts->n_abnormal) {
+		ts->first_abnormal_exit = 1;
+		return (1);
+	}
+	return (0);
 }
 
 static void _do_log_msg (bitstr_t *b, log_f fn, const char *msg)
