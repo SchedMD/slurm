@@ -76,8 +76,9 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
-am_slurmdbd_OBJECTS = agent.$(OBJEXT) proc_req.$(OBJEXT) \
-	read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) slurmdbd.$(OBJEXT)
+am_slurmdbd_OBJECTS = agent.$(OBJEXT) backup.$(OBJEXT) \
+	proc_req.$(OBJEXT) read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) \
+	slurmdbd.$(OBJEXT)
 slurmdbd_OBJECTS = $(am_slurmdbd_OBJECTS)
 slurmdbd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o
@@ -284,6 +285,8 @@ slurmdbd_LDADD = \
 slurmdbd_SOURCES = \
 	agent.c			\
 	agent.h			\
+	backup.c		\
+	backup.h		\
 	proc_req.c		\
 	proc_req.h		\
 	read_config.c		\
@@ -366,6 +369,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agent.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_req.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc_mgr.Po@am__quote@

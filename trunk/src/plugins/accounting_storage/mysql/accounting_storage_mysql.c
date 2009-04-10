@@ -2815,6 +2815,11 @@ static mysql_db_info_t *_mysql_acct_create_db_info()
 		slurm_set_accounting_storage_port(db_info->port);
 	}
 	db_info->host = slurm_get_accounting_storage_host();	
+	db_info->backup = slurm_get_accounting_storage_backup_host();
+	if(db_info->backup) 
+		fatal("Backup not implemented yet in "
+		      "accounting_storage_mysql plugin yet.");
+	
 	db_info->user = slurm_get_accounting_storage_user();	
 	db_info->pass = slurm_get_accounting_storage_pass();	
 	return db_info;

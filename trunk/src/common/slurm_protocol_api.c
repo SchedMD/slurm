@@ -895,6 +895,25 @@ char *slurm_get_accounting_storage_user(void)
 	return storage_user;	
 }
 
+/* slurm_get_accounting_storage_backup_host
+ * returns the storage backup host from slurmctld_conf object
+ * RET char *    - storage backup host,  MUST be xfreed by caller
+ */
+char *slurm_get_accounting_storage_backup_host(void)
+{
+	char *storage_host;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		storage_host = xstrdup(slurmdbd_conf->storage_backup_host);
+	} else {
+		conf = slurm_conf_lock();
+		storage_host = xstrdup(conf->accounting_storage_backup_host);
+		slurm_conf_unlock();
+	}
+	return storage_host;	
+}
+
 /* slurm_get_accounting_storage_host
  * returns the storage host from slurmctld_conf object
  * RET char *    - storage host,  MUST be xfreed by caller

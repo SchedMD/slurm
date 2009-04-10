@@ -42,4 +42,6 @@
 
 extern time_t shutdown_time;		/* when shutdown request arrived */
 
+extern void rollup_handler_cancel();
+
 #endif /* !_SLURM_DBD_H */

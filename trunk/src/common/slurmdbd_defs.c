@@ -326,7 +326,7 @@ static void _open_slurmdbd_fd(void)
 	slurm_addr dbd_addr;
 	uint16_t slurmdbd_port;
 	char *   slurmdbd_host;
-
+	bool try_backup = true;
 	if (slurmdbd_fd >= 0) {
 		debug("Attempt to re-open slurmdbd socket");
 		/* clear errno (checked after this for errors) */
@@ -343,6 +343,7 @@ static void _open_slurmdbd_fd(void)
 		slurmdbd_port = SLURMDBD_PORT;
 		slurm_set_accounting_storage_port(slurmdbd_port);
 	}
+again:
 	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_host);
 	if (dbd_addr.sin_port == 0)
 		error("Unable to locate SlurmDBD host %s:%u", 
@@ -350,9 +351,17 @@ static void _open_slurmdbd_fd(void)
 	else {
 		slurmdbd_fd = slurm_open_msg_conn(&dbd_addr);
 
-		if (slurmdbd_fd < 0)
-			error("slurmdbd: slurm_open_msg_conn: %m");
-		else {
+		if (slurmdbd_fd < 0) {
+			error("slurmdbd: slurm_open_msg_conn to %s:%u: %m",
+			      slurmdbd_host, slurmdbd_port);
+			if(try_backup) {
+				try_backup = false;
+				xfree(slurmdbd_host);
+				if((slurmdbd_host = 
+				    slurm_get_accounting_storage_backup_host()))
+					goto again;			
+			}
+		} else {
 			fd_set_nonblocking(slurmdbd_fd);
 			if (_send_init_msg() != SLURM_SUCCESS)  {
 				error("slurmdbd: Sending DdbInit msg: %m");

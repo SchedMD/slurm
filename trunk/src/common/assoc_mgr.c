@@ -2602,7 +2602,8 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 			return SLURM_ERROR;
 
 	if(cache_level & ASSOC_MGR_CACHE_USER)
-		if(_refresh_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
+		if(_refresh_assoc_mgr_user_list(db_conn, enforce)
+		   == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if(cache_level & ASSOC_MGR_CACHE_WCKEY)

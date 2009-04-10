@@ -323,7 +323,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 	char create_line[50];
 	MYSQL *mysql_db = NULL;
 	int rc = SLURM_ERROR;
-
+	
 	while(rc == SLURM_ERROR) {
 		rc = SLURM_SUCCESS;
 #ifdef MYSQL_NOT_THREAD_SAFE
@@ -369,6 +369,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 extern int *destroy_mysql_db_info(mysql_db_info_t *db_info)
 {
 	if(db_info) {
+		xfree(db_info->backup);
 		xfree(db_info->host);
 		xfree(db_info->user);
 		xfree(db_info->pass);

@@ -90,6 +90,7 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->auth_info);
 		xfree(slurmdbd_conf->auth_type);
 		xfree(slurmdbd_conf->dbd_addr);
+		xfree(slurmdbd_conf->dbd_backup);
 		xfree(slurmdbd_conf->dbd_host);
 		slurmdbd_conf->dbd_port = 0;
 		slurmdbd_conf->debug_level = 0;
@@ -102,6 +103,7 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->slurm_user_id = NO_VAL;
 		xfree(slurmdbd_conf->slurm_user_name);
 		slurmdbd_conf->step_purge = 0;
+		xfree(slurmdbd_conf->storage_backup_host);
 		xfree(slurmdbd_conf->storage_host);
 		xfree(slurmdbd_conf->storage_loc);
 		xfree(slurmdbd_conf->storage_pass);
@@ -128,6 +130,7 @@ extern int read_slurmdbd_conf(void)
 		{"AuthInfo", S_P_STRING},
 		{"AuthType", S_P_STRING},
 		{"DbdAddr", S_P_STRING},
+		{"DbdBackup", S_P_STRING},
 		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
 		{"DebugLevel", S_P_UINT16},
@@ -140,6 +143,7 @@ extern int read_slurmdbd_conf(void)
 		{"PrivateData", S_P_STRING},
 		{"SlurmUser", S_P_STRING},
 		{"StepPurge", S_P_UINT16},
+		{"StorageBackupHost", S_P_STRING},
 		{"StorageHost", S_P_STRING},
 		{"StorageLoc", S_P_STRING},
 		{"StoragePass", S_P_STRING},
@@ -187,6 +191,7 @@ extern int read_slurmdbd_conf(void)
 				"ArchiveSteps", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_info, "AuthInfo", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
+		s_p_get_string(&slurmdbd_conf->dbd_backup, "DbdBackup", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
@@ -234,6 +239,8 @@ extern int read_slurmdbd_conf(void)
 			       tbl);
 		s_p_get_uint16(&slurmdbd_conf->step_purge, "StepPurge", tbl);
 
+		s_p_get_string(&slurmdbd_conf->storage_backup_host,
+				"StorageBackupHost", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_host,
 				"StorageHost", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_loc,
@@ -325,6 +332,7 @@ extern void log_config(void)
 	debug2("AuthInfo          = %s", slurmdbd_conf->auth_info);
 	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
 	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
+	debug2("DbdBackup         = %s", slurmdbd_conf->dbd_backup);
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
@@ -354,6 +362,7 @@ extern void log_config(void)
 	else
 		debug2("StepPurge         = NONE"); 
 		
+	debug2("StorageBackupHost = %s", slurmdbd_conf->storage_backup_host);
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
 	debug2("StoragePass       = %s", slurmdbd_conf->storage_pass);
@@ -452,6 +461,11 @@ extern List dump_config(void)
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("DbdBackup");
+	key_pair->value = xstrdup(slurmdbd_conf->dbd_backup);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DbdHost");
 	key_pair->value = xstrdup(slurmdbd_conf->dbd_host);
 	list_append(my_list, key_pair);
@@ -537,6 +551,11 @@ extern List dump_config(void)
 			 slurmdbd_conf->step_purge);
 	} else
 		key_pair->value = xstrdup("NONE");
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("StorageBackupHost");
+	key_pair->value = xstrdup(slurmdbd_conf->storage_backup_host);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
