@@ -67,7 +67,7 @@ set host           ""
 set timeout        $max_job_delay
 set task_cnt       0
 
-set srun_pid [spawn $srun -N1 --cpus-per-task=1 -l -t1 $file_in]
+set srun_pid [spawn $srun -N1 --cpus-per-task=1 --exclusive -l -t1 $file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -124,7 +124,7 @@ if {$cpu_cnt < 2} {
 # Submit a 1 node job to determine the node's CPU count
 #
 set task_cnt  0
-set srun_pid [spawn $srun -N1 -t1 --nodelist=$host --cpus-per-task=2 -l $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N1 -t1 --nodelist=$host --cpus-per-task=2 --exclusive -l $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "
