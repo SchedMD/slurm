@@ -46,65 +46,11 @@
 
 #include "src/slurmdbd/backup.h"
 
+bool primary_resumed = false;
+bool backup = false;
+bool have_control = false;
+
 static slurm_fd  slurmdbd_fd         = -1;
-
-/* Return time in msec since "start time" */
-static int _tot_wait (struct timeval *start_time)
-{
-	struct timeval end_time;
-	int msec_delay;
-
-	gettimeofday(&end_time, NULL);
-	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
-	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
-	return msec_delay;
-}
-
-/* Wait until a file is readable, 
- * RET false if can not be read */
-static bool _fd_readable(slurm_fd fd, int read_timeout)
-{
-	struct pollfd ufds;
-	int rc, time_left;
-	struct timeval tstart;
-
-	ufds.fd     = fd;
-	ufds.events = POLLIN;
-	gettimeofday(&tstart, NULL);
-	while (shutdown_time == 0) {
-		time_left = read_timeout - _tot_wait(&tstart);
-		rc = poll(&ufds, 1, time_left);
-		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			return false;
-		}
-		if (rc == 0)
-			return false;
-		if (ufds.revents & POLLHUP) {
-			debug2("Primary SlurmDBD connection closed");
-			return false;
-		}
-		if (ufds.revents & POLLNVAL) {
-			error("Primary SlurmDBD connection is invalid");
-			return false;
-		}
-		if (ufds.revents & POLLERR) {
-			error("Primary SlurmDBD connection "
-			      "experienced an error");
-			return false;
-		}
-		if ((ufds.revents & POLLIN) == 0) {
-			error("SlurmDBD connection %d events %d", 
-			      fd, ufds.revents);
-			return false;
-		}
-		/* revents == POLLIN */
-		return true;
-	}
-	return false;
-}
 
 /* Open a connection to the Slurm DBD and set slurmdbd_fd */
 static void _open_slurmdbd_fd(slurm_addr dbd_addr)
@@ -142,7 +88,7 @@ extern void run_backup(void)
 {
 	slurm_addr dbd_addr;
 		
-	sleep(5);       /* Give the primary slurmdbd set-up time */
+	primary_resumed = false;
 
 	/* get a connection */
 	slurm_set_addr(&dbd_addr, slurmdbd_conf->dbd_port,
@@ -157,20 +103,23 @@ extern void run_backup(void)
 
 	/* repeatedly ping Primary */
 	while (!shutdown_time) {
-		bool readable = _fd_readable(
-			slurmdbd_fd, slurm_get_msg_timeout() * 1000);
-		
-		if (have_control && readable) {
-			rpc_mgr_wake();
-			rollup_handler_cancel();
+		bool writeable = fd_writeable(slurmdbd_fd);
+		//info("%d %d", have_control, writeable);
+
+		if (have_control && writeable) {
+			info("Primary has come back");
+			primary_resumed = true;
+			shutdown_threads();
 			have_control = false;
-		} else if(!have_control && !readable) {
+			break;
+		} else if(!have_control && !writeable) {
 			have_control = true;
+			info("Taking Control");
 			break;
 		}
 		
 		sleep(1);
-		if(!readable)
+		if(!writeable) 
 			_reopen_slurmdbd_fd(dbd_addr);
 	}
 

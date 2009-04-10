@@ -352,7 +352,7 @@ again:
 		slurmdbd_fd = slurm_open_msg_conn(&dbd_addr);
 
 		if (slurmdbd_fd < 0) {
-			error("slurmdbd: slurm_open_msg_conn to %s:%u: %m",
+			debug("slurmdbd: slurm_open_msg_conn to %s:%u: %m",
 			      slurmdbd_host, slurmdbd_port);
 			if(try_backup) {
 				try_backup = false;
@@ -1543,7 +1543,7 @@ static bool _fd_readable(slurm_fd fd, int read_timeout)
 	return false;
 }
 
-/* Wait until a file is writable, 
+/* Wait until a file is writeable, 
  * RET 1 if file can be written now,
  *     0 if can not be written to within 5 seconds
  *     -1 if file has been closed POLLHUP

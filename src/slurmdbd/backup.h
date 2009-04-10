@@ -43,6 +43,7 @@
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/slurmdbd.h"
 
+extern bool primary_resumed;
 extern bool backup;
 extern bool have_control;
 

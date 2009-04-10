@@ -63,7 +63,6 @@
 
 /* Local functions */
 static bool   _fd_readable(slurm_fd fd);
-static bool   _fd_writeable(slurm_fd fd);
 static void   _free_server_thread(pthread_t my_tid);
 static int    _send_resp(slurm_fd fd, Buf buffer);
 static void * _service_connection(void *arg);
@@ -274,12 +273,12 @@ static int _send_resp(slurm_fd fd, Buf buffer)
 	ssize_t msg_wrote;
 	char *out_buf;
 
-	if ((fd < 0) || (!_fd_writeable(fd)))
+	if ((fd < 0) || (!fd_writeable(fd)))
 		goto io_err;
 
 	msg_size = get_buf_offset(buffer);
 	nw_size = htonl(msg_size);
-	if (!_fd_writeable(fd))
+	if (!fd_writeable(fd))
 		goto io_err;
 	msg_wrote = write(fd, &nw_size, sizeof(nw_size));
 	if (msg_wrote != sizeof(nw_size))
@@ -287,7 +286,7 @@ static int _send_resp(slurm_fd fd, Buf buffer)
 
 	out_buf = get_buf_data(buffer);
 	while (msg_size > 0) {
-		if (!_fd_writeable(fd))
+		if (!fd_writeable(fd))
 			goto io_err;
 		msg_wrote = write(fd, out_buf, msg_size);
 		if (msg_wrote <= 0)
@@ -356,17 +355,18 @@ static bool _fd_readable(slurm_fd fd)
 
 /* Wait until a file is writeable, 
  * RET false if can not be written to within 5 seconds */
-static bool _fd_writeable(slurm_fd fd)
+extern bool fd_writeable(slurm_fd fd)
 {
 	struct pollfd ufds;
 	int msg_timeout = 5000;
 	int rc, time_left;
 	struct timeval tstart;
+	char temp[2];
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
 	gettimeofday(&tstart, NULL);
-	while (1) {
+	while (shutdown_time == 0) {
 		time_left = msg_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
 		if (shutdown_time)
@@ -378,10 +378,18 @@ static bool _fd_writeable(slurm_fd fd)
 			return false;
 		}
 		if (rc == 0) {
-			error("write timeout");
+			debug2("write timeout");
 			return false;
 		}
-		if (ufds.revents & POLLHUP) {
+
+		/*
+		 * Check here to make sure the socket really is there.
+		 * If not then exit out and notify the sender.  This
+ 		 * is here since a write doesn't always tell you the
+		 * socket is gone, but getting 0 back from a
+		 * nonblocking read means just that. 
+		 */
+		if (ufds.revents & POLLHUP || (recv(fd, &temp, 1, 0) == 0)) {
 			debug3("Write connection %d closed", fd);
 			return false;
 		}
