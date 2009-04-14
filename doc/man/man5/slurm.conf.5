@@ -38,14 +38,20 @@ The overall configuration parameters available include:
 
 .TP
 \fBAccountingStorageEnforce\fR
-Contains a bitmap coding of account enforcement.  If bit zero is set
-(0x0001), the job will not be scheduled if the user/cluster/account
-association is not defined for a job in the accounting database. If
-bit one is set (0x0002), the job will not be scheduled if the
-association limits are exceeded.  If bit three is set (0x0004), the
-job will not be scheduled if a valid workload characterization key is
-not specified.  The default value of zero imposes no limitations on
-job scheduling.
+This controls what level of enforcement you want on associations when new
+jobs are submitted.  Valid options are any combination of associations, limits,
+and wckeys, or all for all things.  If limits is set associations is implied.  
+If wckeys is set both limits and associations are implied along with 
+TrackWckey being set.  By enforcing Associations no new job is allowed to run 
+unless a corresponding association exists in the system.  If limits are 
+enforced users can be limited by association to how many nodes or how long 
+jobs can run or other limits.  With wckeys enforced jobs will not be scheduled 
+unless a valid workload characterization key is specified.
+
+.TP
+\fBAccountingStorageBackupHost\fR
+The name of the backup machine hosting the accounting storage database.
+Only used for accounting_storage/slurmdbd plugin, ignored otherwise.
 
 .TP
 \fBAccountingStorageHost\fR
@@ -57,7 +63,7 @@ Also see \fBDefaultStorageHost\fR.
 \fBAccountingStorageLoc\fR
 The fully qualified file name where accounting records are written
 when the \fBAccountingStorageType\fR is "accounting_storage/filetxt"
-or else the database where accounting records are stored when the
+or else the name of the database where accounting records are stored when the
 \fBAccountingStorageType\fR is a database.
 Also see \fBDefaultStorageLoc\fR.
 
@@ -147,7 +153,9 @@ executed in the event that \fBControlMachine\fR fails. This node
 may also be used as a compute server if so desired. It will come into service 
 as a controller only upon the failure of ControlMachine and will revert 
 to a "standby" mode when the ControlMachine becomes available once again. 
-This should be a node name without the full domain name (e.g. "lx0002"). 
+This should be a node name without the full domain name.   I.e., the hostname
+returned by the \fIgethostname()\fR function cut at the first dot (e.g. use 
+"tux001" rather than "tux001.my.com"). 
 While not essential, it is recommended that you specify a backup controller.
 See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
@@ -287,7 +295,7 @@ defined.
 \fBDefaultStorageLoc\fR
 The fully qualified file name where accounting records and/or job
 completion records are written when the \fBDefaultStorageType\fR is
-"filetxt" or the database where accounting records and/or job
+"filetxt" or the name of the database where accounting records and/or job
 completion records are stored when the \fBDefaultStorageType\fR is a
 database.
 Also see \fBAccountingStorageLoc\fR and \fBJobCompLoc\fR.
