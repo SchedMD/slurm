@@ -20,13 +20,6 @@ extern void slurm_api_clear_config(void);
         slurm_xfree((void **)&(__p), __FILE__, __LINE__, "")
 extern void slurm_xfree(void **, const char *, int, const char *);
 
-extern int slurm_hostlist_count(hostlist_t hl);
-extern int slurm_hostlist_push(hostlist_t hl, const char *hosts);
-extern int slurm_hostlist_push_host(hostlist_t hl, const char *host);
-extern int slurm_hostlist_find(hostlist_t hl, const char *hostname);
-extern size_t slurm_hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
-extern void slurm_hostlist_uniq(hostlist_t hl);
-
 struct slurm {
 	node_info_msg_t *node_info_msg;
 	partition_info_msg_t *part_info_msg;
@@ -753,14 +746,19 @@ slurm_get_triggers(slurm_t self)
 ##################################################################
 MODULE=Slurm PACKAGE=Slurm::Hostlist PREFIX=slurm_hostlist_
 
-hostlist_t
-slurm_hostlist_create(char* hostlist)
-
 int
 slurm_hostlist_count(hostlist_t hl = NULL)
 	OUTPUT:
 		RETVAL
 	
+hostlist_t
+slurm_hostlist_create(char* hostlist)
+
+int
+slurm_hostlist_find(hostlist_t hl = NULL, char* hostname)
+	OUTPUT:
+		RETVAL
+
 int
 slurm_hostlist_push(hostlist_t hl = NULL, char* hosts)
 	OUTPUT:
@@ -771,8 +769,17 @@ slurm_hostlist_push_host(hostlist_t hl = NULL, char* host)
 	OUTPUT:
 		RETVAL
 
-int
-slurm_hostlist_find(hostlist_t hl = NULL, char* hostname)
+char*
+slurm_hostlist_ranged_string(hostlist_t hl = NULL)
+	PREINIT:
+		size_t size = 1024;
+		int rc = 0;
+	CODE:
+		Newz(0, RETVAL, size, char);
+		while((rc = slurm_hostlist_ranged_string(hl, size, RETVAL)) == -1) {
+			size *= 2;
+			Renew(RETVAL, size, char);
+		}
 	OUTPUT:
 		RETVAL
 
@@ -788,20 +795,6 @@ slurm_hostlist_shift(hostlist_t hl = NULL)
 		Newz(0, RETVAL, strlen(host) + 1, char);
 		Copy(host, RETVAL, strlen(host) + 1, char);
 		free(host);
-	OUTPUT:
-		RETVAL
-
-char*
-slurm_hostlist_ranged_string(hostlist_t hl = NULL)
-	PREINIT:
-		size_t size = 1024;
-		int rc = 0;
-	CODE:
-		Newz(0, RETVAL, size, char);
-		while((rc = slurm_hostlist_ranged_string(hl, size, RETVAL)) == -1) {
-			size *= 2;
-			Renew(RETVAL, size, char);
-		}
 	OUTPUT:
 		RETVAL
 

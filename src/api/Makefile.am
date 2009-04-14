@@ -78,6 +78,7 @@ slurmapi_src =           \
 	partition_info.c \
 	reservation_info.c \
 	signal.c         \
+	slurm_hostlist.c \
 	slurm_pmi.c slurm_pmi.h	\
 	step_ctx.c step_ctx.h \
 	step_io.c step_io.h \
