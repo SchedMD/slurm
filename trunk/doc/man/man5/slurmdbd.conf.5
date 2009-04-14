@@ -86,22 +86,20 @@ SlurmDbd must be terminated prior to changing the value of \fBAuthType\fR
 and later restarted.
 
 .TP
-\fBDbdAddr\fR
-Name that \fBDbdHost\fR should be referred to in 
-establishing a communications path to the Slurm Database Daemon. 
-This name will be used as an argument to the gethostbyname() 
-function for identification. For example, "elx0000" might be used 
-to designate the ethernet address for node "lx0000". 
-By default the \fBDbdAddr\fR will be identical in value to 
-\fBDbdHost\fR.
-This value must be equal to the \fBSlurmDbdAddr\fR parameter in 
-the slurm.conf file.
+\fBDbdBackupHost\fR
+The name of the machine where the backup Slurm Database Daemon is executed. 
+This host must have access to the same underlying database specified by the 
+'Storage' options mentioned below.
+This should be a node name without the full domain name.  I.e., the hostname
+returned by the \fIgethostname()\fR function cut at the first dot (e.g. use 
+"tux001" rather than "tux001.my.com").
 
 .TP
 \fBDbdHost\fR
 The name of the machine where the Slurm Database Daemon is executed. 
-This should be a node name without the full domain name (e.g. "lx0001"). 
-This value must be specified.
+This should be a node name without the full domain name.  I.e., the hostname
+returned by the \fIgethostname()\fR function cut at the first dot (e.g. use 
+"tux001" rather than "tux001.my.com").  This value must be specified.
 
 .TP
 \fBDbdPort\fR
