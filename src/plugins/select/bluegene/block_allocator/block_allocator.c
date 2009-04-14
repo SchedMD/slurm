@@ -597,7 +597,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 				  ba_request->elongate_geos,
 				  ba_request->rotate);
 		}	
-	startagain:		
+//	startagain:		
 		picked=0;
 		for(i=0;i<8;i++)
 			checked[i]=0;
@@ -648,9 +648,21 @@ extern int new_ba_request(ba_request_t* ba_request)
 							break;
 					}		
 				}				
+				/* This size can not be made into a
+				   block return.  If you want to try
+				   until we find the next largest block
+				   uncomment the code below and the goto
+				   above. If a user specifies a max
+				   node count the job will never
+				   run.  
+				*/
 				if(i2==1) {
-					ba_request->size +=1;
-					goto startagain;
+					error("Can't make a block of "
+					      "%d into a cube.",
+					      ba_request->size);
+					return 0;
+/* 					ba_request->size +=1; */
+/* 					goto startagain; */
 				}
 						
 			} else {
@@ -2894,7 +2906,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 
 /*
  * Fill in the paths and extra midplanes we need for the block.
- * Basically copy the x path sent in with the start_list in each Y anx
+ * Basically copy the x path sent in with the start_list in each Y and
  * Z dimension filling in every midplane for the block and then
  * completing the Y and Z wiring, tying the whole block together.
  *
@@ -2929,14 +2941,12 @@ static int _fill_in_coords(List results, List start_list,
 		curr_switch = &check_node->axis_switch[X];
 	
 		for(y=0; y<geometry[Y]; y++) {
-			if((check_node->coord[Y]+y) 
-			   >= DIM_SIZE[Y]) {
+			if((check_node->coord[Y]+y) >= DIM_SIZE[Y]) {
 				rc = 0;
 				goto failed;
 			}
 			for(z=0; z<geometry[Z]; z++) {
-				if((check_node->coord[Z]+z) 
-				   >= DIM_SIZE[Z]) {
+				if((check_node->coord[Z]+z) >= DIM_SIZE[Z]) {
 					rc = 0;
 					goto failed;
 				}
@@ -3304,7 +3314,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 				      geometry[i2], i2, count);
 				return 0;
 			}
-		} else if(geometry[i2] == 1) {
+		} else if((geometry[i2] == 1) && (conn_type == SELECT_TORUS)) {
 			/* FIX ME: This is put here because we got
 			   into a state where the Y dim was not being
 			   processed correctly.  This will set up the
@@ -4247,10 +4257,16 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 
 	/* we don't need to go any further */
 	if(x_size == 1) {
-		curr_switch->int_wire[source_port].used = 1;
-		curr_switch->int_wire[source_port].port_tar = target_port;
-		curr_switch->int_wire[target_port].used = 1;
-		curr_switch->int_wire[target_port].port_tar = source_port;
+		/* Only set this if Torus since mesh doesn't have any
+		 * connections in this path */
+		if(conn_type == SELECT_TORUS) {
+			curr_switch->int_wire[source_port].used = 1;
+			curr_switch->int_wire[source_port].port_tar = 
+				target_port;
+			curr_switch->int_wire[target_port].used = 1;
+			curr_switch->int_wire[target_port].port_tar = 
+				source_port;
+		}
 		return 1;
 	}
 

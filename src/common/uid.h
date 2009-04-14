@@ -60,6 +60,12 @@
 uid_t uid_from_string (char *name);
 
 /*
+ * Return the primary group id for a given user id, or 
+ * (gid_t) -1 on failure.
+ */
+gid_t gid_from_uid (uid_t uid);
+
+/*
  * Same as uid_from_name(), but for group name/id.
  */
 gid_t gid_from_string (char *name);

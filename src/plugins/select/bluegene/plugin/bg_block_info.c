@@ -197,6 +197,8 @@ extern int block_ready(struct job_record *job_ptr)
 		xfree(block_id);
 	} else
 		rc = READY_JOB_ERROR;
+/* 	info("returning %d for job %u %d %d", */
+/* 	     rc, job_ptr->job_id, READY_JOB_ERROR, READY_JOB_FATAL); */
 	return rc;
 }				
 
@@ -211,8 +213,8 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer)
 	pack16((uint16_t)bg_record->conn_type, buffer);
 #ifdef HAVE_BGL
 	pack16((uint16_t)bg_record->node_use, buffer);	
-	pack16((uint16_t)bg_record->quarter, buffer);	
-	pack16((uint16_t)bg_record->nodecard, buffer);	
+	pack16((uint16_t)0, buffer);	
+	pack16((uint16_t)0, buffer);	
 #endif
 	pack32((uint32_t)bg_record->node_cnt, buffer);
 	pack_bit_fmt(bg_record->bitmap, buffer);
@@ -624,6 +626,7 @@ extern int update_freeing_block_list()
 			      state);
 
 			bg_record->state = state;
+			updated = 1;
 		}
 	next_block:
 		if ((rc = bridge_free_block(block_ptr)) 

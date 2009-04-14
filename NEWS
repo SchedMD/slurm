@@ -56,11 +56,25 @@ documents those changes that are of interest to users and admins.
     count from a range rather than minimum (e.g. "sbatch -N1-4 my.sh").
  -- In accounting_storage/filetxt and accounting_storage/pgsql fix 
     possible invalid memory reference when a job lacks a name.
+ -- Give srun command an exit code of 1 if the prolog fails.
+ -- BLUEGENE - allows for checking nodecard states in the system instead 
+    of midplane state so as to not down an entire midplane if you don't 
+    have to.
+ -- BLUEGENE - fix creation of MESH blocks 
+ -- BLUEGENE - on job cancellation we call jm_cancel_job and then wait until
+    the system cleans up the job.  Before we would send a SIGKILL right 
+    at the beginning. 
+ -- BLUEGENE - if a user specifies a node count that can not be met the job 
+    will be refused instead of before the plugin would search for the next 
+    larger size that could be created.  This prevents users asking for 
+    things that can't be created, and then getting something back they might 
+    not be expecting.
 
 * Changes in SLURM 1.3.14
 =========================
  -- SECURITY BUG: Fix in sbcast logic that permits users to write files based
-    upon supplimental groups of the slurmd daemon.
+    upon supplimental groups of the slurmd daemon. Similar logic for event
+    triggers if slurmctld is run as user root (not typical).
 
 * Changes in SLURM 1.3.13
 =========================

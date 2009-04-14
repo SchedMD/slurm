@@ -40,7 +40,7 @@
 #include "defined_block.h"
 #include <stdio.h>
 
-#define MMCS_POLL_TIME 120	/* poll MMCS for down switches and nodes 
+#define MMCS_POLL_TIME 30	/* poll MMCS for down switches and nodes 
 				 * every 120 secs */
 #define BG_POLL_TIME 0	        /* poll bg blocks every 3 secs */
 
@@ -233,29 +233,13 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	if (!bit_overlap(rec_a->bitmap, rec_b->bitmap)) 
 		return false;
 
-#ifdef HAVE_BGL
-
-	if(rec_a->quarter != (uint16_t) NO_VAL) {
-		if(rec_b->quarter == (uint16_t) NO_VAL)
-			return true;
-		else if(rec_a->quarter != rec_b->quarter)
-			return false;
-		if(rec_a->nodecard != (uint16_t) NO_VAL) {
-			if(rec_b->nodecard == (uint16_t) NO_VAL)
-				return true;
-			else if(rec_a->nodecard
-				!= rec_b->nodecard)
-				return false;
-		}
-	}
-#else
 	if((rec_a->node_cnt >= bluegene_bp_node_cnt)
 	   || (rec_b->node_cnt >= bluegene_bp_node_cnt))
 		return true;
 	
 	if (!bit_overlap(rec_a->ionode_bitmap, rec_b->ionode_bitmap)) 
 		return false;
-#endif	
+
 	return true;
 }
 
@@ -429,22 +413,18 @@ extern void sort_bg_record_inc_size(List records){
 }
 
 /*
- * bluegene_agent - detached thread periodically updates status of
- * bluegene nodes. 
+ * block_agent - thread periodically updates status of
+ * bluegene blocks. 
  * 
- * NOTE: I don't grab any locks here because slurm_drain_nodes grabs
- * the necessary locks.
  */
-extern void *bluegene_agent(void *args)
+extern void *block_agent(void *args)
 {
-	static time_t last_mmcs_test;
 	static time_t last_bg_test;
 	int rc;
+	time_t now = time(NULL);
 
-	last_mmcs_test = time(NULL) + MMCS_POLL_TIME;
-	last_bg_test = time(NULL) + BG_POLL_TIME;
+	last_bg_test = now - BG_POLL_TIME;
 	while (!agent_fini) {
-		time_t now = time(NULL);
 
 		if (difftime(now, last_bg_test) >= BG_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
@@ -452,28 +432,50 @@ extern void *bluegene_agent(void *args)
 			if(blocks_are_created) {
 				last_bg_test = now;
 				if((rc = update_block_list()) == 1) {
-					slurm_mutex_lock(&block_state_mutex);
 					last_bg_update = now;
-					slurm_mutex_unlock(&block_state_mutex);
 				} else if(rc == -1)
 					error("Error with update_block_list");
 				if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
 					if((rc = update_freeing_block_list())
-					   == -1)
+					   == 1) {
+						last_bg_update = now;
+					} else if(rc == -1)
 						error("Error with "
 						      "update_block_list 2");
 				}
 			}
+			now = time(NULL);
 		}
+		
+		sleep(1);
+	}
+	return NULL;
+}
 
+/*
+ * state_agent - thread periodically updates status of
+ * bluegene nodes. 
+ * 
+ */
+extern void *state_agent(void *args)
+{
+	static time_t last_mmcs_test;
+	time_t now = time(NULL);
+
+	last_mmcs_test = now - MMCS_POLL_TIME;
+	while (!agent_fini) {
 		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
 				break; 	/* quit now */
-			last_mmcs_test = now;
-			test_mmcs_failures();	/* can run for a while */
-		}	
+			if(blocks_are_created) {
+				last_mmcs_test = now;
+				/* can run for a while */
+				test_mmcs_failures();
+			}
+		} 	
 				
 		sleep(1);
+		now = time(NULL);
 	}
 	return NULL;
 }
@@ -741,6 +743,7 @@ extern void *mult_destroy_block(void *args)
 		slurm_mutex_lock(&block_state_mutex);
 		destroy_bg_record(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
+		last_bg_update = time(NULL);
 		debug2("destroyed");
 		
 	already_here:
@@ -1280,7 +1283,7 @@ no_calc:
 		}
 		
 		for (i = 0; i < count; i++) {
-			add_bg_record(bg_list, NULL, blockreq_array[i]);
+			add_bg_record(bg_list, NULL, blockreq_array[i], 0, 0);
 		}
 	}
 	s_p_hashtbl_destroy(tbl);
@@ -1293,6 +1296,8 @@ extern int validate_current_blocks(char *dir)
 	/* found bg blocks already on system */
 	List bg_found_block_list = NULL;
 	static time_t last_config_update = (time_t) 0;
+	ListIterator itr = NULL;
+	bg_record_t *bg_record = NULL;
 
 	/* only run on startup */
 	if(last_config_update)
@@ -1323,6 +1328,17 @@ extern int validate_current_blocks(char *dir)
 		}
 	} 
 	
+	/* ok now since bg_list has been made we now can put blocks in
+	   an error state this needs to be done outside of a lock
+	   it doesn't matter much in the first place though since
+	   no threads are started before this function. */
+	itr = list_iterator_create(bg_list);
+	while((bg_record = list_next(itr))) {
+		if(bg_record->state == RM_PARTITION_ERROR) 
+			put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
+	}
+	list_iterator_destroy(itr);
+
 	slurm_mutex_lock(&block_state_mutex);
 	list_destroy(bg_curr_block_list);
 	bg_curr_block_list = NULL;
@@ -1330,6 +1346,7 @@ extern int validate_current_blocks(char *dir)
 		list_destroy(bg_found_block_list);
 		bg_found_block_list = NULL;
 	}
+
 	last_bg_update = time(NULL);
 	blocks_are_created = 1;
 	sort_bg_record_inc_size(bg_list);
@@ -1400,8 +1417,12 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 	 * happens in the state load before this in emulation mode */
 	if (read_bg_blocks() == SLURM_ERROR)
 		return SLURM_ERROR;
+	/* since we only care about error states here we don't care
+	   about the return code this must be done after the bg_list
+	   is created */
+	load_state_file(dir);
 #else
-	/* read in state from last run.  Only for emulation mode */
+	/* read in state from last run. */
 	if ((rc = load_state_file(dir)) != SLURM_SUCCESS)
 		return rc;
 	/* This needs to be reset to SLURM_ERROR or it will never we
@@ -1424,13 +1445,12 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 		while ((init_bg_record = list_next(itr_curr))) {
 			if (strcasecmp(bg_record->nodes, init_bg_record->nodes))
 				continue; /* wrong nodes */
+			if(!bit_equal(bg_record->ionode_bitmap,
+				      init_bg_record->ionode_bitmap))
+				continue;
 #ifdef HAVE_BGL
 			if (bg_record->conn_type != init_bg_record->conn_type)
 				continue; /* wrong conn_type */
-			if(bg_record->quarter != init_bg_record->quarter)
-				continue; /* wrong quart */
-			if(bg_record->nodecard != init_bg_record->nodecard)
-				continue; /* wrong nodecard */
 			if(bg_record->blrtsimage &&
 			   strcasecmp(bg_record->blrtsimage,
 				      init_bg_record->blrtsimage)) 
@@ -1440,9 +1460,6 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 			    && ((bg_record->conn_type < SELECT_SMALL)
 				&& (init_bg_record->conn_type < SELECT_SMALL)))
 				continue; /* wrong conn_type */
-			if(!bit_equal(bg_record->ionode_bitmap,
-				     init_bg_record->ionode_bitmap))
-				continue;
 #endif
 			if(bg_record->linuximage &&
 			   strcasecmp(bg_record->linuximage,
@@ -1635,6 +1652,8 @@ static int _delete_old_blocks(List bg_found_block_list)
 		
 	retries=30;
 	while(num_block_to_free > num_block_freed) {
+		/* no need to check for return code here, things
+		   haven't started up yet. */
 		update_freeing_block_list();
 		if(retries==30) {
 			info("Waiting for old blocks to be "
