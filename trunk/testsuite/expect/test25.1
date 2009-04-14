@@ -56,6 +56,27 @@ if { [string compare [priority_type] multifactor] } {
 #
 make_bash_script $file_in "$bin_sleep 600"
 
+proc def_node_cnt { } {
+	global sinfo alpha_numeric_under number exit_code
+
+	set node_cnt 1
+	spawn $sinfo -h -o "name=%20P node_cnt=%D"
+	expect {
+		-re "name=($alpha_numeric_under) *node_cnt=($number)" {
+			set node_cnt $expect_out(2,string) 
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $node_cnt
+}
+
 ################################################################
 #
 # Proc: sub_job
@@ -66,13 +87,13 @@ make_bash_script $file_in "$bin_sleep 600"
 #
 ################################################################
 
-proc sub_job { } {
+proc sub_job { node_cnt } {
 
 	global exit_code file_in number sbatch test_id
 	set file_in	test${test_id}.input
 
 	set job_id	0
-	spawn $sbatch --output=/dev/null --error=/dev/null --exclusive $file_in
+	spawn $sbatch --output=/dev/null --error=/dev/null -N $node_cnt --exclusive $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string) 
@@ -614,20 +635,15 @@ proc sprio_args { soption sargs jobid} {
 ################################################################
 # Start a group of jobs
 
-set jobid1 [sub_job]
-set jobid2 [sub_job]
-set jobid3 [sub_job]
-set jobid4 [sub_job]
-set jobid5 [sub_job]
+set node_cnt [def_node_cnt]
+set jobid1 [sub_job $node_cnt]
+set jobid2 [sub_job $node_cnt]
 if {$exit_code != 0} {
 	cancel_job $jobid1
 	cancel_job $jobid2
-	cancel_job $jobid3
-	cancel_job $jobid4
-	cancel_job $jobid5
 	exit $exit_code
 }
-send_user "\nSubmitted 5 jobs successfully\n\n"
+send_user "\nSubmitted 2 jobs successfully\n\n"
 
 #
 # Collect uid
@@ -637,20 +653,20 @@ set nuid [get_my_nuid]
 #
 # Start testing sprio options and arguments
 #
-sprio_args -h -j $jobid5
-sprio_args --noheader -j $jobid5
-sprio_args -j -j $jobid5
-sprio_args --jobs -j $jobid5
-sprio_args -l -j $jobid5
-sprio_args --long -j $jobid5
-sprio_args -n -j $jobid5
-sprio_args --norm -j $jobid5
-sprio_args -o -j $jobid5
-sprio_args --format -j $jobid5
-sprio_args -u $nuid $jobid5
-sprio_args --user= $nuid $jobid5
-sprio_args -v -j $jobid5
-sprio_args -verbose -j $jobid5
+sprio_args -h -j $jobid2
+sprio_args --noheader -j $jobid2
+sprio_args -j -j $jobid2
+sprio_args --jobs -j $jobid2
+sprio_args -l -j $jobid2
+sprio_args --long -j $jobid2
+sprio_args -n -j $jobid2
+sprio_args --norm -j $jobid2
+sprio_args -o -j $jobid2
+sprio_args --format -j $jobid2
+sprio_args -u $nuid $jobid2
+sprio_args --user= $nuid $jobid2
+sprio_args -v -j $jobid2
+sprio_args -verbose -j $jobid2
 sprio_opt -V
 sprio_opt --version
 sprio_opt -w
@@ -663,9 +679,6 @@ sprio_opt --usage
 #
 cancel_job $jobid1 
 cancel_job $jobid2
-cancel_job $jobid3 
-cancel_job $jobid4 
-cancel_job $jobid5
 
 #
 # Exit with code as appropriate
