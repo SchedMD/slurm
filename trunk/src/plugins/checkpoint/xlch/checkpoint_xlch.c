@@ -67,8 +67,9 @@
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#define SIGCKPT 20
+#define SIGCKPT SIGUSR2
 
 struct check_job_info {
 	uint16_t disabled;	/* counter, checkpointable only if zero */
@@ -86,10 +87,9 @@ struct check_job_info {
 
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal, 
 		      char *nodelist);
-static void _send_ckpt(uint32_t job_id, uint32_t step_id, uint16_t signal, 
-		       time_t timestamp, char *nodelist);
+
 static int _step_ckpt(struct step_record * step_ptr, uint16_t wait, 
-		      uint16_t signal, uint16_t sig_timeout);
+		      char *image_dir, uint16_t sig_timeout);
 
 /* checkpoint request timeout processing */
 static pthread_t	ckpt_agent_tid = 0;
@@ -199,6 +199,10 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 	int rc = SLURM_SUCCESS;
 	struct check_job_info *check_ptr;
 
+	/* checkpoint/xlch does not support checkpoint batch jobs */
+	if (step_id == SLURM_BATCH_SCRIPT)
+		return ESLURM_NOT_SUPPORTED;
+	
 	xassert(step_ptr);
 	check_ptr = (struct check_job_info *) step_ptr->check_job;
 	check_ptr->task_cnt = step_ptr->step_layout->task_cnt; /* set it early */
@@ -233,7 +237,7 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 			check_ptr->error_code = 0;
 			check_ptr->sig_done = 0;
 			xfree(check_ptr->error_msg);
-			rc = _step_ckpt(step_ptr, data, SIGCKPT, SIGKILL);
+			rc = _step_ckpt(step_ptr, data, image_dir, SIGKILL);
 			break;
 		case CHECK_VACATE:
 			if (check_ptr->time_stamp != 0) {
@@ -246,7 +250,7 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 			check_ptr->error_code = 0;
 			check_ptr->sig_done = SIGTERM; /* exit elegantly */
 			xfree(check_ptr->error_msg);
-			rc = _step_ckpt(step_ptr, data, SIGCKPT, SIGKILL);
+			rc = _step_ckpt(step_ptr, data, image_dir, SIGKILL);
 			break;
 		case CHECK_RESTART:
 			rc = ESLURM_NOT_SUPPORTED;
@@ -273,7 +277,7 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		uint32_t error_code, char *error_msg )
 {
 	error("checkpoint/xlch: slurm_ckpt_comp not implemented");
-	return SLURM_FAILURE; 
+	return ESLURM_NOT_SUPPORTED; 
 }
 
 extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_id,
@@ -427,28 +431,6 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 	return SLURM_ERROR;
 }
 
-/* Send a checkpoint RPC to a specific job step */
-static void _send_ckpt(uint32_t job_id, uint32_t step_id, uint16_t signal, 
-		       time_t timestamp, char *nodelist)
-{
-	agent_arg_t *agent_args;
-	checkpoint_tasks_msg_t *ckpt_tasks_msg;
-
-	ckpt_tasks_msg = xmalloc(sizeof(checkpoint_tasks_msg_t));
-	ckpt_tasks_msg->job_id		= job_id;
-	ckpt_tasks_msg->job_step_id	= step_id;
-	ckpt_tasks_msg->timestamp       = timestamp;
-
-	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type		= REQUEST_CHECKPOINT_TASKS;
-	agent_args->retry		= 1; /* keep retrying until all nodes receives the request */
-	agent_args->msg_args		= ckpt_tasks_msg;
-	agent_args->hostlist 		= hostlist_create(nodelist);
-	agent_args->node_count		= hostlist_count(agent_args->hostlist);
-
-	agent_queue_request(agent_args);
-}
-
 /* Send a signal RPC to a list of nodes */
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal, 
 		      char *nodelist)
@@ -473,8 +455,8 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 
 /* Send checkpoint request to the processes of a job step.
  * If the request times out, send sig_timeout. */
-static int _step_ckpt(struct step_record * step_ptr, uint16_t wait, 
-		      uint16_t signal, uint16_t sig_timeout)
+static int _step_ckpt(struct step_record * step_ptr, uint16_t wait,
+		      char *image_dir, uint16_t sig_timeout)
 {
 	struct check_job_info *check_ptr;
 	struct job_record *job_ptr;
@@ -500,9 +482,9 @@ static int _step_ckpt(struct step_record * step_ptr, uint16_t wait,
 	char* nodelist = xstrdup (step_ptr->step_layout->node_list);
 	check_ptr->wait_time  = wait; /* TODO: how about change wait_time according to task_cnt? */
 
-	_send_ckpt(step_ptr->job_ptr->job_id, step_ptr->step_id,
-		   signal, check_ptr->time_stamp, nodelist);
-
+	checkpoint_tasks(step_ptr->job_ptr->job_id, step_ptr->step_id,
+			 check_ptr->time_stamp, image_dir, wait, nodelist);
+	
 	_ckpt_enqueue_timeout(step_ptr->job_ptr->job_id, 
 			      step_ptr->step_id, check_ptr->time_stamp, 
 			      sig_timeout, check_ptr->wait_time, nodelist);  
@@ -701,10 +683,23 @@ extern int slurm_ckpt_stepd_prefork(void *slurmd_job)
 
 extern int slurm_ckpt_signal_tasks(void *slurmd_job)
 {
-	return ESLURM_NOT_SUPPORTED;
+	/* send SIGCKPT to all tasks */
+	return killpg(((slurmd_job_t *)slurmd_job)->pgid, SIGCKPT);
 }
 
 extern int slurm_ckpt_restart_task(void *slurmd_job, char *image_dir, int gtid)
 {
-	return ESLURM_NOT_SUPPORTED;
+	char buf[256];
+	
+	if (snprintf(buf, sizeof(buf), "%s/task.%d.ckpt", image_dir, gtid) >= sizeof(buf)) {
+		error("slurm buffer size too small");
+		return SLURM_FAILURE;
+	}
+	/* restart the task and update its environment */
+#if 0
+	restart(buf, ((slurmd_job_t *)slurmd_job)->env);
+#endif
+
+	error("restart() failed: rank=%d, file=%s: %m", gtid, buf);
+	return SLURM_FAILURE;
 }
