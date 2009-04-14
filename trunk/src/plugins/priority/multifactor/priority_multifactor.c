@@ -866,19 +866,13 @@ static void *_cleanup_thread(void *no_data)
 static void _internal_setup()
 {
 	favor_small = slurm_get_priority_favor_small();
-	if (favor_small == NO_VAL) favor_small = 0;
+
 	max_age = slurm_get_priority_max_age();
-	if (max_age == NO_VAL) max_age = DEFAULT_PRIORITY_DECAY;
 	weight_age = slurm_get_priority_weight_age();
-	if (weight_age == NO_VAL) weight_age = 0;
 	weight_fs = slurm_get_priority_weight_fairshare();
-	if (weight_fs == NO_VAL) weight_fs = 0;
 	weight_js = slurm_get_priority_weight_job_size();
-	if (weight_js == NO_VAL) weight_js = 0;
 	weight_part = slurm_get_priority_weight_partition();
-	if (weight_part == NO_VAL) weight_part = 0;
 	weight_qos = slurm_get_priority_weight_qos();
-	if (weight_qos == NO_VAL) weight_qos = 0;
 
 	debug3("priority: Max Age is %u", max_age);
 	debug3("priority: Weight Age is %u", weight_age);
