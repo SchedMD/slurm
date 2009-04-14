@@ -2380,6 +2380,64 @@ extern int slurm_checkpoint_tasks PARAMS(( uint32_t job_id, uint16_t step_id,
  */
 extern hostlist_t slurm_hostlist_create PARAMS(( const char *hostlist ));
 
+/* slurm_hostlist_count():
+ *
+ * Return the number of hosts in hostlist hl.
+ */ 
+extern int slurm_hostlist_count PARAMS((hostlist_t hl));
+
+/*
+ * slurm_hostlist_destroy():
+ *
+ * Destroy a hostlist object. Frees all memory allocated to the hostlist.
+ */
+extern void slurm_hostlist_destroy PARAMS(( hostlist_t hl ));
+
+/* slurm_hostlist_find():
+ *
+ * Searches hostlist hl for the first host matching hostname 
+ * and returns position in list if found. 
+ *
+ * Returns -1 if host is not found.
+ *
+ */
+extern int slurm_hostlist_find PARAMS((hostlist_t hl, const char *hostname));
+
+/* slurm_hostlist_push():
+ *
+ * push a string representation of hostnames onto a hostlist.
+ *
+ * The hosts argument may take the same form as in slurm_hostlist_create()
+ *
+ * Returns the number of hostnames inserted into the list, 
+ * or 0 on failure.
+ */
+extern int slurm_hostlist_push PARAMS((hostlist_t hl, const char *hosts));
+
+/* slurm_hostlist_push_host():
+ *
+ * Push a single host onto the hostlist hl. 
+ * This function is more efficient than slurm_hostlist_push() for a single
+ * hostname, since the argument does not need to be checked for ranges.
+ *
+ * return value is 1 for success, 0 for failure.
+ */
+extern int slurm_hostlist_push_host PARAMS((hostlist_t hl, const char *host));
+
+/* slurm_hostlist_ranged_string():
+ *
+ * Write the string representation of the hostlist hl into buf,
+ * writing at most n chars. Returns the number of bytes written,
+ * or -1 if truncation occurred.
+ *
+ * The result will be NULL terminated.
+ * 
+ * slurm_hostlist_ranged_string() will write a bracketed hostlist representation
+ * where possible.
+ */
+extern size_t slurm_hostlist_ranged_string PARAMS((hostlist_t hl,
+						   size_t n, char *buf));
+
 /*
  * slurm_hostlist_shift():
  *
@@ -2391,12 +2449,12 @@ extern hostlist_t slurm_hostlist_create PARAMS(( const char *hostlist ));
  */
 extern char * slurm_hostlist_shift PARAMS(( hostlist_t hl ));
 
-/*
- * slurm_hostlist_destroy():
+/* slurm_hostlist_uniq():
  *
- * Destroy a hostlist object. Frees all memory allocated to the hostlist.
+ * Sort the hostlist hl and remove duplicate entries.
+ * 
  */
-extern void slurm_hostlist_destroy PARAMS(( hostlist_t hl ));
+extern void slurm_hostlist_uniq PARAMS((hostlist_t hl));
 
 /*****************************************************************************\
  *      SLURM TRIGGER FUNCTIONS
