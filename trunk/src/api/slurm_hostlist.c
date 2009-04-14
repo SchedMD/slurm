@@ -77,7 +77,7 @@ extern int slurm_hostlist_push_host(hostlist_t hl, const char *host)
 	return hostlist_push_host(hl, host);
 }
 
-extern size_t slurm_hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
+extern ssize_t slurm_hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 {
 	return hostlist_ranged_string(hl, n, buf);
 }

@@ -1272,9 +1272,15 @@ _log_task_exit(unsigned long taskid, unsigned long pid, int status)
 		verbose("task %lu (%lu) exited with exit code %d.",
 		        taskid, pid, WEXITSTATUS(status));
 	else if (WIFSIGNALED(status))
+		/* WCOREDUMP isn't available on AIX */
 		verbose("task %lu (%lu) exited. Killed by signal %d%s.",
 		        taskid, pid, WTERMSIG(status),
-		        WCOREDUMP(status) ? " (core dumped)" : "");
+#ifdef WCOREDUMP
+		        WCOREDUMP(status) ? " (core dumped)" : ""
+#else
+			""
+#endif
+			);
 	else
 		verbose("task %lu (%lu) exited with status 0x%04x.",
 		        taskid, pid, status);

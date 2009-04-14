@@ -4595,7 +4595,7 @@ end_it:
 			 * since you can't query on mod time here and I don't
 			 * want to rewrite code to make it happen
 			 */
-			//bzero(&assoc_cond, sizeof(acct_association_cond_t));
+			//memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 			
 			if(!(assoc_list = 
 			     acct_storage_p_get_associations(mysql_conn,
@@ -5804,7 +5804,7 @@ extern List acct_storage_p_modify_associations(
 		 * want to rewrite code to make it happen
 		 */
 
-		//bzero(&local_assoc_cond, sizeof(acct_association_cond_t));
+		//memset(&local_assoc_cond, 0, sizeof(acct_association_cond_t));
 		
 		if(!(local_assoc_list = 
 		     acct_storage_p_get_associations(mysql_conn,
@@ -11002,7 +11002,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 
 	if (jobacct == NULL) {
 		/* JobAcctGather=jobacct_gather/none, no data to process */
-		bzero(&dummy_jobacct, sizeof(dummy_jobacct));
+		memset(&dummy_jobacct, 0, sizeof(dummy_jobacct));
 		jobacct = &dummy_jobacct;
 	}
 

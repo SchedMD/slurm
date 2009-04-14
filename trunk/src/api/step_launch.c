@@ -618,7 +618,7 @@ static int _connect_srun_cr(char *addr)
 		error("failed creating cr socket: %m");
 		return -1;
 	}
-	bzero(&sa, sizeof(sa));
+	memset(&sa, 0, sizeof(sa));
 
 	sa.sun_family = AF_UNIX;
 	strcpy(sa.sun_path, addr);

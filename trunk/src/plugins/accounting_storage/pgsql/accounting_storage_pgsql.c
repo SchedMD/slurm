@@ -1532,7 +1532,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 	
 	if (jobacct == NULL) {
 		/* JobAcctGather=jobacct_gather/none, no data to process */
-		bzero(&dummy_jobacct, sizeof(dummy_jobacct));
+		memset(&dummy_jobacct, 0, sizeof(dummy_jobacct));
 		jobacct = &dummy_jobacct;
 	}
 
