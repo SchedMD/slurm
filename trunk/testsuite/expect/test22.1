@@ -147,7 +147,7 @@ remove_user "" "" $users
 remove_acct "" $accounts
 remove_cluster "$cluster"
 #add cluster
-incr exit_code [add_cluster "$cluster" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster "$cluster" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
  	remove_cluster "$cluster"
 	exit $exit_code
