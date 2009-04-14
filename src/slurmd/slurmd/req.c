@@ -735,7 +735,16 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			      tasks_to_launch, alloc_lps, arg.jobid,
 			      arg.stepid, (long) arg.uid, arg.hostlist);
 		}
-        } else
+		/* NOTE: alloc_lps is the count of allocated resources
+		 * (typically cores). Convert to CPU count as needed */
+		if (i_last_bit <= i_first_bit)
+			error("step credential has no CPUs selected");
+		else {
+			i = conf->conf_cpus / (i_last_bit - i_first_bit);
+			if (i > 1)
+				alloc_lps *= i;
+		}
+	} else
 		alloc_lps = 1;
 
 	/* Overwrite any memory limits in the RPC with contents of the 
@@ -968,7 +977,7 @@ _set_batch_job_limits(slurm_msg_t *msg)
 		
 	if (arg.job_mem & MEM_PER_CPU) {
 		int i;
-		uint32_t alloc_lps = 0, last_bit;
+		uint32_t alloc_lps = 0, last_bit = 0;   
 		if (arg.job_nhosts > 0) {
 			last_bit = arg.sockets_per_node[0] * 
 				   arg.cores_per_socket[0];
@@ -981,6 +990,17 @@ _set_batch_job_limits(slurm_msg_t *msg)
 			error("_set_batch_job_limit: alloc_lps is zero");
 			alloc_lps = 1;
 		}
+
+		/* NOTE: alloc_lps is the count of allocated resources
+		 * (typically cores). Convert to CPU count as needed */
+		if (last_bit < 1)
+			error("Batch job credential allocates no CPUs");
+		else {
+			i = conf->conf_cpus / last_bit;
+			if (i > 1)
+				alloc_lps *= i;
+		}
+
 		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
 		req->job_mem *= alloc_lps;
 	} else
