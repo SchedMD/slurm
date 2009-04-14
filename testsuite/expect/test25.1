@@ -64,8 +64,6 @@ proc def_node_cnt { } {
 	expect {
 		-re "name=($alpha_numeric_under)\\\* *node_cnt=($number)" {
 			set node_cnt $expect_out(2,string) 
-			send_user "hey node_cnt = $node_cnt\n"
-			
 			exp_continue
 		}
 		timeout {
