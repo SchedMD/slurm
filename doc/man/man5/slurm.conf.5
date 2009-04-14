@@ -843,6 +843,12 @@ prevents users from viewing node state information.
 \fBpartitions\fR 
 prevents users from viewing partition state information.
 .TP
+\fBreservations\fR 
+prevents regular users from viewing reservations.
+.TP
+\fBusage\fR 
+(NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
+usage of any other user.  This applys to sreport.
 \fBusers\fR 
 (NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
 information of any user other than themselves, this also makes it so users can 
@@ -850,9 +856,6 @@ only see associations they deal with.
 Coordinators can see associations of all users they are coordinator of, 
 but can only see themselves when listing users.
 .TP
-\fBusage\fR 
-(NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
-usage of any other user.  This applys to sreport.
 .RE
 
 

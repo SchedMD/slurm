@@ -171,16 +171,20 @@ prevents users from viewing job records belonging
 to other users unless they are coordinators of the association running the job
 when using sacct.
 .TP
+\fBreservations\fR 
+restricts getting reservation information to users with operator status 
+and above.
+.TP
+\fBusage\fR  
+prevents users from viewing usage of any other user.  
+This applys to sreport.
+.TP
 \fBusers\fR  
 prevents users from viewing information of any user 
 other than themselves, this also makes it so users can only see 
 associations they deal with.  
 Coordinators can see associations of all users they are coordinator of, 
 but can only see themselves when listing users.
-.TP
-\fBusage\fR  
-prevents users from viewing usage of any other user.  
-This applys to sreport.
 .RE
 
 .TP
