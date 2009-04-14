@@ -1754,7 +1754,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	/* Reservation includes DOWN, DRAINED/DRAINING, FAILING or 
 	 * NO_RESPOND nodes. Generate new request using _select_nodes()
 	 * in attempt to replace this nodes */
-	bzero(&resv_desc, sizeof(reserve_request_msg_t));
+	memset(&resv_desc, 0, sizeof(reserve_request_msg_t));
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
@@ -1994,7 +1994,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 
 	/* Must increase node count. Make this look like new request so 
 	 * we can use _select_nodes() for selecting the nodes */
-	bzero(&resv_desc, sizeof(reserve_request_msg_t));
+	memset(&resv_desc, 0, sizeof(reserve_request_msg_t));
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;

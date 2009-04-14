@@ -2551,7 +2551,7 @@ _get_boxes(char *buf, int max_len)
 static void
 _clear_grid(void)
 {
-	bzero(axis, sizeof(axis));
+	memset(axis, 0, sizeof(axis));
 
 	axis_min_x = HOSTLIST_BASE;
 	axis_min_y = HOSTLIST_BASE;

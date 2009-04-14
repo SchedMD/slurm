@@ -42,7 +42,9 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 #include <strings.h>
+
 #ifndef   __USE_ISOC99
 #  define __USE_ISOC99 /* isblank() */
 #endif
@@ -470,7 +472,7 @@ extern time_t parse_time(char *time_str, int past)
 	}
 
 	/* convert the time into time_t format */
-	bzero(&res_tm, sizeof(res_tm));
+	memset(&res_tm, 0, sizeof(res_tm));
 	res_tm.tm_sec   = second;
 	res_tm.tm_min   = minute;
 	res_tm.tm_hour  = hour;

@@ -792,7 +792,7 @@ static int _load_job_state(Buf buffer)
 	}
 
 	if(qos) {
-		bzero(&qos_rec, sizeof(acct_qos_rec_t));
+		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 		qos_rec.id = qos;
 		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce, 
@@ -3167,7 +3167,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	    strstr(job_ptr->comment, "QOS:")) {
 		acct_qos_rec_t qos_rec;
 
-		bzero(&qos_rec, sizeof(acct_qos_rec_t));
+		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 
 		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
 			qos_rec.name = "expedite";
@@ -4579,7 +4579,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
 			acct_qos_rec_t qos_rec;
 
-			bzero(&qos_rec, sizeof(acct_qos_rec_t));
+			memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 
 			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
 				qos_rec.name = "expedite";
@@ -6813,7 +6813,7 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 		goto reply;
 	}
 
-	bzero((void *)&resp_data, sizeof(checkpoint_resp_msg_t));
+	memset((void *)&resp_data, 0, sizeof(checkpoint_resp_msg_t));
 
 	if (job_ptr->batch_flag) { /* operate on batch job */
 		if ((ckpt_ptr->op == CHECK_CREATE) ||

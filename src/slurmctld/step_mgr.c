@@ -1711,7 +1711,7 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 		goto reply;
 	}
 
-	bzero((void *)&resp_data, sizeof(checkpoint_resp_msg_t));
+	memset((void *)&resp_data, 0, sizeof(checkpoint_resp_msg_t));
 	step_ptr = find_step_record(job_ptr, ckpt_ptr->step_id);
 	if (step_ptr == NULL) {
 		rc = ESLURM_INVALID_JOB_ID;

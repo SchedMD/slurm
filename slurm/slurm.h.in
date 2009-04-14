@@ -2435,8 +2435,8 @@ extern int slurm_hostlist_push_host PARAMS((hostlist_t hl, const char *host));
  * slurm_hostlist_ranged_string() will write a bracketed hostlist representation
  * where possible.
  */
-extern size_t slurm_hostlist_ranged_string PARAMS((hostlist_t hl,
-						   size_t n, char *buf));
+extern ssize_t slurm_hostlist_ranged_string PARAMS((hostlist_t hl,
+						    size_t n, char *buf));
 
 /*
  * slurm_hostlist_shift():

@@ -227,7 +227,7 @@ static int _gmpi_establish_map(gmpi_state_t *st)
 		if (setsockopt(newfd, SOL_SOCKET, SO_REUSEADDR,
 			       (void *)&j, sizeof(j)))
 			error("setsockopt in GMPI master: %m");
-		bzero(&addr, sizeof(addr));
+		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
 		addr.sin_addr.s_addr = htonl(iaddrs[i]);
 		addr.sin_port = htons(dp->remote_port);

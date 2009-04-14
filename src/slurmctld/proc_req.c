@@ -374,7 +374,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
-	bzero(conf_ptr, sizeof(slurm_ctl_conf_t));
+	memset(conf_ptr, 0, sizeof(slurm_ctl_conf_t));
 
 	conf_ptr->last_update         = time(NULL);
 	conf_ptr->accounting_storage_enforce = 
@@ -1252,7 +1252,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		      slurm_strerror(comp_msg->slurm_rc));
 		if (error_code == SLURM_SUCCESS) {
 			update_node_msg_t update_node_msg;
-			bzero(&update_node_msg, sizeof(update_node_msg_t));
+			memset(&update_node_msg, 0, sizeof(update_node_msg_t));
 			update_node_msg.node_names =
 				comp_msg->node_name;
 			update_node_msg.node_state = NODE_STATE_DRAIN;

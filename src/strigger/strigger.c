@@ -99,7 +99,7 @@ static int _clear_trigger(void)
 	trigger_info_t ti;
 	char tmp_c[128];
 
-	bzero(&ti, sizeof(trigger_info_t));
+	memset(&ti, 0, sizeof(trigger_info_t));
 	ti.trig_id	= params.trigger_id;
 	ti.user_id	= params.user_id;
 	if (params.job_id) {
@@ -129,7 +129,7 @@ static int _set_trigger(void)
 	trigger_info_t ti;
 	char tmp_c[128];
 
-	bzero(&ti, sizeof(trigger_info_t));
+	memset(&ti, 0, sizeof(trigger_info_t));
 	if (params.job_id) {
 		ti.res_type = TRIGGER_RES_TYPE_JOB;
 		snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
