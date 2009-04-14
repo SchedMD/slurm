@@ -209,6 +209,9 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
 		s_p_get_string(&slurmdbd_conf->plugindir, "PluginDir", tbl);
 		if (s_p_get_string(&temp_str, "PrivateData", tbl)) {
+			if (strstr(temp_str, "account"))
+				slurmdbd_conf->private_data 
+					|= PRIVATE_DATA_ACCOUNTS;
 			if (strstr(temp_str, "job"))
 				slurmdbd_conf->private_data 
 					|= PRIVATE_DATA_JOBS;
@@ -218,18 +221,15 @@ extern int read_slurmdbd_conf(void)
 			if (strstr(temp_str, "partition"))
 				slurmdbd_conf->private_data 
 					|= PRIVATE_DATA_PARTITIONS;
+			if (strstr(temp_str, "reservation"))
+				slurmdbd_conf->private_data
+					|= PRIVATE_DATA_RESERVATIONS;
 			if (strstr(temp_str, "usage"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_USAGE;
-			if (strstr(temp_str, "users"))
+			if (strstr(temp_str, "user"))
 				slurmdbd_conf->private_data 
 					|= PRIVATE_DATA_USERS;
-			if (strstr(temp_str, "accounts"))
-				slurmdbd_conf->private_data 
-					|= PRIVATE_DATA_ACCOUNTS;
-			if (strstr(temp_str, "reservations"))
-				slurmdbd_conf->private_data
-					|= PRIVATE_DATA_RESERVATIONS;
 			if (strstr(temp_str, "all"))
 				slurmdbd_conf->private_data = 0xffff;
 			xfree(temp_str);

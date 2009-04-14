@@ -2048,20 +2048,20 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		fatal("proctrack/linuxproc is incompatable with switch/elan");
 
 	if (s_p_get_string(&temp_str, "PrivateData", hashtbl)) {
+		if (strstr(temp_str, "account"))
+			conf->private_data |= PRIVATE_DATA_ACCOUNTS;
 		if (strstr(temp_str, "job"))
 			conf->private_data |= PRIVATE_DATA_JOBS;
 		if (strstr(temp_str, "node"))
 			conf->private_data |= PRIVATE_DATA_NODES;
 		if (strstr(temp_str, "partition"))
 			conf->private_data |= PRIVATE_DATA_PARTITIONS;
+		if (strstr(temp_str, "reservation"))
+			conf->private_data |= PRIVATE_DATA_RESERVATIONS;
 		if (strstr(temp_str, "usage"))
 			conf->private_data |= PRIVATE_DATA_USAGE;
-		if (strstr(temp_str, "users"))
+		if (strstr(temp_str, "user"))
 			conf->private_data |= PRIVATE_DATA_USERS;
-		if (strstr(temp_str, "accounts"))
-			conf->private_data |= PRIVATE_DATA_ACCOUNTS;
-		if (strstr(temp_str, "reservations"))
-			conf->private_data |= PRIVATE_DATA_RESERVATIONS;
 		if (strstr(temp_str, "all"))
 			conf->private_data = 0xffff;
 		xfree(temp_str);
