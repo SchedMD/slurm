@@ -72,11 +72,10 @@ proc sub_job {} {
 	set file_in	test${test_id}.input
 
 	set job_id	0
-	spawn $sbatch --output=/dev/null --error=/dev/null $file_in
+	spawn $sbatch --output=/dev/null --error=/dev/null --exclusive $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string) 
-			send_user "\nFOUND JobID to be $job_id\n"
 			exp_continue
 		}
 		timeout {
@@ -108,17 +107,16 @@ proc sub_job {} {
 ################################################################
 
 proc sprio_opt { soption } {
-	global number sprio
+	global number sprio exit_code
 	set debug       0
-	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "$sprio -$soption \n"
+	send_user "$sprio $soption \n"
 
 ############# sprio help option
-	if { $soption == "-help" } {
+	if { $soption == "--help" } {
 
-	spawn $sprio -$soption
+	spawn $sprio $soption
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -159,16 +157,16 @@ proc sprio_opt { soption } {
 	}
 
 	if {$matches != 4} {
-		send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+		send_user "\nFAILURE: sprio $soption failed ($matches)\n"
 		set exit_code 1
 	}
 	return $matches
 }
 
 ############# sprio usage option
-	if { $soption == "-usage" } {
+	if { $soption == "--usage" } {
 
-	spawn $sprio -$soption job sizes
+	spawn $sprio $soption job sizes
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -200,9 +198,9 @@ proc sprio_opt { soption } {
 }
 
 ############# sprio version options
-	if { $soption == "-version" || $soption == "V" } {
+	if { $soption == "--version" || $soption == "-V" } {
 
-	spawn $sprio -$soption
+	spawn $sprio $soption
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -235,20 +233,20 @@ proc sprio_opt { soption } {
 	}
 
 ############# sprio weights options
-	if { $soption == "-weights" || $soption == "w" } {
+	if { $soption == "--weights" || $soption == "-w" } {
 
-	spawn $sprio -$soption
+	spawn $sprio $soption
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION" {
+		-re "JOBID *PRIORITY" {
 			if {$debug} {send_user "\nmatch7\n"}
 			incr matches
 			exp_continue
 		}
-		-re "Weights.*$number *$number *$number *$number" {
+		-re "Weights" {
 			if {$debug} {send_user "\nmatch8\n"}
 			incr matches
 			exp_continue
@@ -288,17 +286,16 @@ proc sprio_opt { soption } {
 ################################################################
 
 proc sprio_args { soption sargs jobid} {
-	global number float sprio
+	global number float sprio exit_code
 	set debug       0
-	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "$sprio -$soption $sargs $jobid\n"
+	send_user "$sprio $soption $sargs $jobid\n"
 
 ############# sprio noheader options
-	if { $soption == "-noheader" || $soption == "h" } {
+	if { $soption == "--noheader" || $soption == "-h" } {
 
-	spawn $sprio -$soption $sargs $jobid
+	spawn $sprio $soption $sargs $jobid
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -323,27 +320,27 @@ proc sprio_args { soption sargs jobid} {
 		exit 0
 	}
 	if {$matches != 0} {
-		send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+		send_user "\nFAILURE: sprio $soption failed ($matches)\n"
 		set exit_code 1
 	}
 	return $matches
 	}
 
 ############# sprio jobs options
-	if { $soption == "-jobs" || $soption == "j" } {
+	if { $soption == "--jobs" || $soption == "-j" } {
 
-	spawn $sprio -$soption $jobid
+	spawn $sprio $soption $jobid
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION" {	
+		-re "JOBID.*PRIORITY" {	
 			if {$debug} {send_user "\nmatch10\n"}
 			incr matches
 			exp_continue
 		}
-		-re "$jobid *$number *$number *$number *$number *$number *$number" {	
+		-re "$jobid *$number" {	
 			if {$debug} {send_user "\nmatch11\n"}
 			incr matches
 			exp_continue
@@ -362,16 +359,16 @@ proc sprio_args { soption sargs jobid} {
 		exit 0
 	}
 	if {$matches != 2} {
-		send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+		send_user "\nFAILURE: sprio $soption failed ($matches)\n"
 		set exit_code 1
 	}
 	return $matches
 	}
 
 ############# sprio long options
-	if { $soption == "-long" || $soption == "l" } {
+	if { $soption == "--long" || $soption == "-l" } {
 
-	spawn $sprio -$soption $sargs $jobid
+	spawn $sprio $soption $sargs $jobid
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -401,27 +398,27 @@ proc sprio_args { soption sargs jobid} {
 		exit 0
 	}
 	if {$matches != 2} {
-		send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+		send_user "\nFAILURE: sprio $soption failed ($matches)\n"
 		set exit_code 1
 	}
 	return $matches
 	}
 
 ############# sprio norm options
-	if { $soption == "-norm" || $soption == "n" } {
+	if { $soption == "--norm" || $soption == "-n" } {
 
-	spawn $sprio -$soption $sargs $jobid
+	spawn $sprio $soption $sargs $jobid
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "JOBID PRIORITY   AGE        FAIRSHARE  JOBSIZE    PARTITION" {	
+		-re "JOBID *PRIORITY" {	
 			if {$debug} {send_user "\nmatch14\n"}
 			incr matches
 			exp_continue
 		}
-		-re "$jobid *$float *$float *$float *$float *$float" {	
+		-re "$jobid *$float" {	
 			if {$debug} {send_user "\nmatch15\n"}
 			incr matches
 			exp_continue
@@ -440,16 +437,16 @@ proc sprio_args { soption sargs jobid} {
 		exit 0
 	}
 	if {$matches != 2} {
-		send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+		send_user "\nFAILURE: sprio $soption failed ($matches)\n"
 		set exit_code 1
 	}
 	return $matches
 	}
 
 ############# sprio format options
-	if { $soption == "-format" || $soption == "o" } {
+	if { $soption == "--format" || $soption == "-o" } {
 
-	spawn $sprio -$soption "%.7i %.8u %.10y %.10Y %.10a %.10A %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
+	spawn $sprio $soption "%.7i %.8u %.10y %.10Y %.10a %.10A %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -484,27 +481,27 @@ proc sprio_args { soption sargs jobid} {
 		exit 0
 	}
 	if {$matches != 3} {
-		send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+		send_user "\nFAILURE: sprio $soption failed ($matches)\n"
 		set exit_code 1
 	}
 	return $matches
 	}
 
 ############# sprio u option
-	if { $soption == "u" } {
+	if { $soption == "-u" } {
 
-	spawn $sprio -$soption $sargs
+	spawn $sprio $soption $sargs
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "JOBID *USER *PRIORITY *AGE *FAIRSHARE *JOBSIZE *PARTITION" {	
+		-re "JOBID *USER" {	
 			if {$debug} {send_user "\nmatch19\n"}
 			incr matches
 			exp_continue
 		}
-		-re "$jobid *$sargs.*$number *$number *$number *$number *$number" {	
+		-re "$jobid *$sargs" {	
 			if {$debug} {send_user "\nmatch20\n"}
 			incr matches
 			exp_continue
@@ -523,27 +520,27 @@ proc sprio_args { soption sargs jobid} {
 		exit 0
 	}
 	if {$matches != 2} {
-		send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+		send_user "\nFAILURE: sprio $soption failed ($matches)\n"
 		set exit_code 1
 	}
 	return $matches
 	}
 
 ############# sprio usage option
-	if { $soption == "-user=" } {
+	if { $soption == "--user=" } {
 
-	spawn $sprio -$soption$sargs
+	spawn $sprio $soption$sargs
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "JOBID *USER *PRIORITY *AGE *FAIRSHARE *JOBSIZE *PARTITION" {	
+		-re "JOBID *USER" {	
 			if {$debug} {send_user "\nmatch21\n"}
 			incr matches
 			exp_continue
 		}
-		-re "$jobid *$sargs.*$number *$number *$number *$number *$number" {	
+		-re "$jobid *$sargs" {	
 			if {$debug} {send_user "\nmatch22\n"}
 			incr matches
 			exp_continue
@@ -562,16 +559,16 @@ proc sprio_args { soption sargs jobid} {
 		exit 0
 	}
 	if {$matches != 2} {
-		send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+		send_user "\nFAILURE: sprio $soption failed ($matches)\n"
 		set exit_code 1
 	}
 	return $matches
 	}
 
 ############# sprio verbose options
-	if { $soption == "-verbose" || $soption == "v" } {
+	if { $soption == "--verbose" || $soption == "-v" } {
 
-	spawn $sprio -$soption $sargs $jobid
+	spawn $sprio $soption $sargs $jobid
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -582,12 +579,12 @@ proc sprio_args { soption sargs jobid} {
 			incr matches
 			exp_continue
 		}
-		-re "JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION" {	
+		-re "JOBID *PRIORITY" {	
 			if {$debug} {send_user "\nmatch24\n"}
 			incr matches
 			exp_continue
 		}
-		-re "$jobid *$number *$number *$number *$number *$number" {	
+		-re "$jobid *$number *$number" {	
 			if {$debug} {send_user "\nmatch25\n"}
 			incr matches
 			exp_continue
@@ -605,7 +602,7 @@ proc sprio_args { soption sargs jobid} {
 		exit 0
 	}
 	if {$matches != 3} {
-		send_user "\nFAILURE: sprio -$soption failed ($matches)\n"
+		send_user "\nFAILURE: sprio $soption failed ($matches)\n"
 		set exit_code 1
 	}
 	return $matches
@@ -629,11 +626,7 @@ if {$exit_code != 0} {
 	[cancel_job $jobid5]
 	exit $exit_code
 }
-send_user "\nFirst job ID is $jobid1\n"
-send_user "\nSecond job ID is $jobid2\n"
-send_user "\nThird job ID is $jobid3\n"
-send_user "\nFourth job ID is $jobid4\n"
-send_user "\nFifth job ID is $jobid5\n"
+send_user "\nSubmitted 5 jobs successfully\n\n"
 
 #
 # Collect uid
@@ -643,125 +636,26 @@ set nuid [get_my_nuid]
 #
 # Start testing sprio options and arguments
 #
-set matches [sprio_args h -j $jobid5]
-if {$matches != 0} {
-	send_user "\nFAILURE: sprio -h failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args -noheader -j $jobid5]
-if {$matches != 0} {
-	send_user "\nFAILURE: sprio --noheader failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args j j $jobid5]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio -j failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args -jobs j $jobid5]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio --jobs failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args l -j $jobid5]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio -l failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args -long -j $jobid5]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio --long failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args n -j $jobid5]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio -n failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args -norm -j $jobid5]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio -n failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args o -j $jobid5]
-if {$matches != 3} {
-	send_user "\nFAILURE: sprio -o failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args -format -j $jobid5]
-if {$matches != 3} {
-	send_user "\nFAILURE: sprio --format failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args u $nuid $jobid5]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio -u failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args -user= $nuid $jobid5]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio --user failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_args v -j $jobid5]
-if {$matches != 3} {
-	send_user "\nFAILURE: sprio -v failed ($matches)\n"
-	set exit_code 1
-}
-
+set matches [sprio_args -h -j $jobid5]
+set matches [sprio_args --noheader -j $jobid5]
+set matches [sprio_args -j -j $jobid5]
+set matches [sprio_args --jobs -j $jobid5]
+set matches [sprio_args -l -j $jobid5]
+set matches [sprio_args --long -j $jobid5]
+set matches [sprio_args -n -j $jobid5]
+set matches [sprio_args --norm -j $jobid5]
+set matches [sprio_args -o -j $jobid5]
+set matches [sprio_args --format -j $jobid5]
+set matches [sprio_args -u $nuid $jobid5]
+set matches [sprio_args --user= $nuid $jobid5]
+set matches [sprio_args -v -j $jobid5]
 set matches [sprio_args -verbose -j $jobid5]
-if {$matches != 3} {
-	send_user "\nFAILURE: sprio --verbose failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_opt V]
-if {$matches != 1} {
-	send_user "\nFAILURE: sprio -V failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_opt -version]
-if {$matches != 1} {
-	send_user "\nFAILURE: sprio --version failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_opt w]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio -w failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_opt -weights]
-if {$matches != 2} {
-	send_user "\nFAILURE: sprio --weights failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_opt -help]
-if {$matches != 4} {
-	send_user "\nFAILURE: sprio --help failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sprio_opt -usage]
-if {$matches != 1} {
-	send_user "\nFAILURE: sprio --usage failed ($matches)\n"
-	set exit_code 1
-}
+set matches [sprio_opt -V]
+set matches [sprio_opt --version]
+set matches [sprio_opt -w]
+set matches [sprio_opt --weights]
+set matches [sprio_opt --help]
+set matches [sprio_opt --usage]
 
 #
 # Cancel jobs
