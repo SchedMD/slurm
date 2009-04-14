@@ -90,7 +90,7 @@ if {$access_err != 0} {
 remove_acct "" "$nm1,$nm2,$nm3"
 
 #add cluster
-incr exit_code [add_cluster "$tc1,$tc2" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster "$tc1,$tc2" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2"
