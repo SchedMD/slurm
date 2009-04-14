@@ -172,6 +172,8 @@ expect {
 if {$job_prio1 == 0 || $job_prio2 == 0 || $job_prio3 == 0} {
 	send_user "\nFAILURE: failed to job priorities of each submitted job\n"
 	set exit_code 1
+} elseif {$job_prio1 < 1000 || $job_prio2 < 1000 || $job_prio3 < 1000} {
+	send_user "\nWARNING: PriorityWeight factors result in a job priority too low for this test\n"
 } else {
 	set diff2 [expr $job_prio1 - $job_prio2]
 	set diff3 [expr $job_prio1 - $job_prio3]
