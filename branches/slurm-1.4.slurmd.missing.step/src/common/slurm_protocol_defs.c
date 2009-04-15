@@ -676,6 +676,14 @@ void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
 	}
 }
 
+void inline slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->nodelist);
+		xfree(msg);
+	}
+}
+
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
 {
 	xfree(msg);

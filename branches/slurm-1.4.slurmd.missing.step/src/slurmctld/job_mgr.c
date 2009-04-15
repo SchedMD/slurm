@@ -139,6 +139,8 @@ static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer);
 static int  _load_job_state(Buf buffer);
+static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
+				      time_t now);
 static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer);
 static void _pack_default_job_details(struct job_details *detail_ptr,
 				      Buf buffer);
@@ -5276,6 +5278,7 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	int i, node_inx, jobs_on_node;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
+	struct step_record *step_ptr;
 	time_t now = time(NULL);
 
 	node_ptr = find_node_record(reg_msg->node_name);
@@ -5318,6 +5321,11 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 					 * batch jobs */
 					job_ptr->time_last_active = now;
 				}
+				step_ptr = find_step_record(job_ptr, 
+							    reg_msg->
+							    step_id[i]);
+				if (step_ptr)
+					step_ptr->time_last_active = now;
 			} else {
 				/* Typically indicates a job requeue and
 				 * restart on another nodes. A node from the
@@ -5374,7 +5382,10 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 }
 
 /* Purge any batch job that should have its script running on node 
- * node_inx, but is not. Allow "batch_start_timeout" secs for startup. */
+ * node_inx, but is not. Allow "batch_start_timeout" secs for startup. 
+ *
+ * Also notify srun if any job steps should be active on this node
+ * but are not found. */
 static void _purge_lost_batch_jobs(int node_inx, time_t now)
 {
 	ListIterator job_iterator;
@@ -5386,18 +5397,45 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool job_active = ((job_ptr->job_state == JOB_RUNNING) ||
 				   (job_ptr->job_state == JOB_SUSPENDED));
-		if ((!job_active)                           ||
-		    (job_ptr->batch_flag == 0)              ||
-		    ((job_ptr->time_last_active+batch_start_timeout) > now) ||
+		if (!job_active)
+			continue;
+		if (job_ptr->batch_flag == 0) {
+			_notify_srun_missing_step(job_ptr, node_inx, now);
+			continue;
+		}
+		if (((job_ptr->time_last_active+batch_start_timeout) > now) ||
 		    (job_ptr->start_time >= recent)     ||
 		    (node_inx != bit_ffs(job_ptr->node_bitmap)))
 			continue;
-
 		info("Batch JobId=%u missing from master node, killing it", 
 			job_ptr->job_id);
 		job_complete(job_ptr->job_id, 0, false, NO_VAL);
 	}
 	list_iterator_destroy(job_iterator);
+}
+
+static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx, 
+				      time_t now)
+{
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+	char *node_name = node_record_table_ptr[node_inx].name;
+
+	xassert(job_ptr);
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (step_ptr->time_last_active >= now) {
+			/* Back up timer in case more than one node 
+			 * registration happens at this same time.
+			 * We don't want this node's registration
+			 * to count toward a different node's 
+			 * registration message. */
+			step_ptr->time_last_active = now - 1;
+		} else if (step_ptr->host && step_ptr->port) {
+			srun_step_missing(step_ptr, node_name);
+		}
+	}		
+	list_iterator_destroy (step_iterator);
 }
 
 /*

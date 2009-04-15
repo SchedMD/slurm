@@ -979,6 +979,21 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 }
 
 /*
+ * FIXME: Verify that tasks on these nodes(s) are still alive.
+ * This message could be the result of the slurmd daemon cold-starting
+ * or a race condition when tasks are starting or terminating.
+ */
+static void
+_step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
+{
+	srun_step_missing_msg_t *step_missing = missing_msg->data;
+
+	error("Step %u.%u missing from node(s) %s", 
+	      step_missing->job_id, step_missing->step_id,
+	      step_missing->nodelist);
+}
+
+/*
  * The TCP connection that was used to send the task_spawn_io_msg_t message
  * will be used as the user managed IO stream.  The remote end of the TCP stream
  * will be connected to the stdin, stdout, and stderr of the task.  The
@@ -1075,6 +1090,11 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 		debug2("received srun node fail");
 		_node_fail_handler(sls, msg);
 		slurm_free_srun_node_fail_msg(msg->data);
+		break;
+	case SRUN_STEP_MISSING:
+		debug2("received notice of missing job step");
+		_step_missing_handler(sls, msg);
+		slurm_free_srun_step_missing_msg(msg->data);
 		break;
 	case PMI_KVS_PUT_REQ:
 		debug2("PMI_KVS_PUT_REQ received");

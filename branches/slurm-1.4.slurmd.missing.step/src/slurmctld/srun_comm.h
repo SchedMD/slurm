@@ -78,6 +78,15 @@ extern void srun_job_complete (struct job_record *job_ptr);
 extern void srun_step_complete (struct step_record *step_ptr);
 
 /*
+ * srun_step_missing - notify srun that a job step is missing from
+ *		       a node we expect to find it on
+ * IN step_ptr  - pointer to the slurmctld job step record
+ * IN node_list - name of nodes we did not find the step on
+ */
+extern void srun_step_missing (struct step_record *step_ptr,
+			       char *node_list);
+
+/*
  * srun_node_fail - notify srun of a node's failure
  * IN job_id    - id of job to notify
  * IN node_name - name of failed node

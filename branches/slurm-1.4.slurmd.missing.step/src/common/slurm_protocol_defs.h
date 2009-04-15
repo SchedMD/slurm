@@ -207,6 +207,7 @@ typedef enum {
 	SRUN_JOB_COMPLETE,
 	SRUN_USER_MSG,
 	SRUN_EXEC,
+	SRUN_STEP_MISSING,
 
 	PMI_KVS_PUT_REQ = 7201,
 	PMI_KVS_PUT_RESP,
@@ -912,6 +913,7 @@ void inline slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg);
 void inline slurm_free_srun_exec_msg(srun_exec_msg_t *msg);
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
+void inline slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg);
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 void inline slurm_free_srun_user_msg(srun_user_msg_t * msg);
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg);

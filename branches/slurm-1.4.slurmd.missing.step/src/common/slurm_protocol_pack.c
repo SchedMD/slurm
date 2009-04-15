@@ -315,6 +315,11 @@ static void _pack_srun_node_fail_msg(srun_node_fail_msg_t * msg, Buf buffer);
 static int  _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, 
 				       Buf buffer);
 
+static void _pack_srun_step_missing_msg(srun_step_missing_msg_t * msg, 
+					Buf buffer);
+static int  _unpack_srun_step_missing_msg(srun_step_missing_msg_t ** msg_ptr, 
+					  Buf buffer);
+
 static void _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer);
 static int  _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, 
 					Buf buffer);
@@ -717,6 +722,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_srun_node_fail_msg((srun_node_fail_msg_t *)msg->data, 
 					 buffer);
 		break;
+	case SRUN_STEP_MISSING:
+		_pack_srun_step_missing_msg((srun_step_missing_msg_t *)
+					    msg->data, buffer);
+		break;
 	case SRUN_TIMEOUT:
 		_pack_srun_timeout_msg((srun_timeout_msg_t *)msg->data, buffer);
 		break;
@@ -1101,6 +1110,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case SRUN_NODE_FAIL:
 		rc = _unpack_srun_node_fail_msg((srun_node_fail_msg_t **)
 						& msg->data, buffer);
+		break;
+	case SRUN_STEP_MISSING:
+		rc = _unpack_srun_step_missing_msg((srun_step_missing_msg_t **)
+						    & msg->data, buffer);
 		break;
 	case SRUN_TIMEOUT:
 		rc = _unpack_srun_timeout_msg((srun_timeout_msg_t **)
@@ -4608,8 +4621,8 @@ _pack_srun_node_fail_msg(srun_node_fail_msg_t * msg, Buf buffer)
 {
 	xassert ( msg != NULL );
 
-	pack32((uint32_t)msg->job_id  , buffer ) ;
-	pack32((uint32_t)msg->step_id , buffer ) ;
+	pack32(msg->job_id  , buffer ) ;
+	pack32(msg->step_id , buffer ) ;
 	packstr(msg->nodelist, buffer ) ;
 }
 
@@ -4631,6 +4644,38 @@ _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, Buf buffer)
 
 unpack_error:
 	slurm_free_srun_node_fail_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void 
+_pack_srun_step_missing_msg(srun_step_missing_msg_t * msg, Buf buffer)
+{
+	xassert ( msg != NULL );
+
+	pack32(msg->job_id  , buffer ) ;
+	pack32(msg->step_id , buffer ) ;
+	packstr(msg->nodelist, buffer ) ;
+}
+
+static int 
+_unpack_srun_step_missing_msg(srun_step_missing_msg_t ** msg_ptr, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	srun_step_missing_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (srun_step_missing_msg_t) ) ;
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id  , buffer ) ;
+	safe_unpack32(&msg->step_id , buffer ) ;
+	safe_unpackstr_xmalloc ( & msg->nodelist, &uint32_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_srun_step_missing_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
