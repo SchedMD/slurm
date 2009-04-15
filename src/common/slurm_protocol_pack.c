@@ -1990,6 +1990,8 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer)
 	pack16(msg-> priority,     buffer);
 	pack16(msg-> root_only,    buffer);
 	pack16(msg-> state_up,     buffer);
+
+	packstr(msg->allow_alloc_nodes, buffer);
 }
 
 static int
@@ -2018,6 +2020,10 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer)
 	safe_unpack16(&tmp_ptr->priority,  buffer);
 	safe_unpack16(&tmp_ptr->root_only, buffer);
 	safe_unpack16(&tmp_ptr->state_up,  buffer);
+
+	safe_unpackstr_xmalloc(&tmp_ptr->allow_alloc_nodes, &uint32_tmp,
+			       buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2455,6 +2461,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 
 	safe_unpack16(&part->state_up, buffer);
 	safe_unpackstr_xmalloc(&part->allow_groups, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&part->allow_alloc_nodes, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&part->nodes, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
 	if (node_inx_str == NULL)
@@ -2469,6 +2476,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 unpack_error:
 	xfree(part->name);
 	xfree(part->allow_groups);
+	xfree(part->allow_alloc_nodes);
 	xfree(part->nodes);
 	xfree(node_inx_str);
 	return SLURM_ERROR;

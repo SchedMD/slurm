@@ -164,6 +164,7 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->max_share 	= (uint16_t) NO_VAL;
 	update_part_msg->priority 	= (uint16_t) NO_VAL;
 	update_part_msg->state_up 	= (uint16_t) NO_VAL;
+	update_part_msg->allow_alloc_nodes = NULL;
 }
 
 /*

@@ -2291,6 +2291,15 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		return error_code;
 	}
 
+	if (validate_alloc_node(part_ptr, job_desc->alloc_node) == 0) {
+		info("_job_create: uid %u access to partition %s denied, "
+		     "bad allocating node: %s",
+		     (unsigned int) job_desc->user_id, part_ptr->name,
+		     job_desc->alloc_node);
+		error_code = ESLURM_ACCESS_DENIED;
+		return error_code;
+	}
+
 	memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 	assoc_rec.uid       = job_desc->user_id;
 	assoc_rec.partition = part_ptr->name;

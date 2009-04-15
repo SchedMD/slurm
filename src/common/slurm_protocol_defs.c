@@ -433,9 +433,10 @@ void slurm_free_update_node_msg(update_node_msg_t * msg)
 void slurm_free_update_part_msg(update_part_msg_t * msg)
 {
 	if (msg) {
+		xfree(msg->allow_alloc_nodes);
+		xfree(msg->allow_groups);
 		xfree(msg->name);
 		xfree(msg->nodes);
-		xfree(msg->allow_groups);
 		xfree(msg);
 	}
 }
@@ -1393,8 +1394,9 @@ static void  _free_all_partitions(partition_info_msg_t *msg)
 static void _slurm_free_partition_info_members(partition_info_t * part)
 {
 	if (part) {
-		xfree(part->name);
+		xfree(part->allow_alloc_nodes);
 		xfree(part->allow_groups);
+		xfree(part->name);
 		xfree(part->nodes);
 		xfree(part->node_inx);
 	}

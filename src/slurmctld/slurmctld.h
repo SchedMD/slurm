@@ -309,6 +309,10 @@ struct part_record {
 	char *nodes;		/* comma delimited list names of nodes */
 	char *allow_groups;	/* comma delimited list of groups, 
 				 * NULL indicates all */
+	char *allow_alloc_nodes;/* comma delimited list of allowed 
+				 * allocating nodes
+				 * NULL indicates all */
+
 	uid_t *allow_uids;	/* zero terminated list of allowed users */
 	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
 };
@@ -1613,6 +1617,15 @@ extern int update_node ( update_node_msg_t * update_node_msg )  ;
  *	last_part_update - update time of partition records
  */
 extern int update_part (update_part_msg_t * part_desc, bool create_flag);
+
+/*
+ * validate_alloc_node - validate that the allocating node
+ * is allowed to use this partition
+ * IN part_ptr - pointer to a partition
+ * IN alloc_node - allocting node of the request
+ * RET 1 if permitted to run, 0 otherwise
+ */
+extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node);
 
 /*
  * validate_group - validate that the submit uid is authorized to run in 

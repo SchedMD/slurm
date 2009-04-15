@@ -922,6 +922,7 @@ typedef struct job_alloc_info_msg {
 } job_alloc_info_msg_t;
 
 typedef struct partition_info {
+	char *allow_alloc_nodes;/* list names of allowed allocating nodes */
 	char *allow_groups;	/* comma delimited list of groups, 
 				 * null indicates all */
 	uint16_t default_part;	/* 1 if this is default partition */

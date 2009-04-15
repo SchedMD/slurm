@@ -242,6 +242,12 @@ struct part_record *create_part_record(void)
 	else
 		part_ptr->allow_groups = NULL;
 
+	if (default_part.allow_alloc_nodes)
+		part_ptr->allow_alloc_nodes = xstrdup(default_part.
+						      allow_alloc_nodes);
+	else
+		part_ptr->allow_alloc_nodes = NULL;
+
 	if (default_part.nodes)
 		part_ptr->nodes = xstrdup(default_part.nodes);
 	else
@@ -393,6 +399,7 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 
 	pack16(part_ptr->state_up,       buffer);
 	packstr(part_ptr->allow_groups,  buffer);
+	packstr(part_ptr->allow_alloc_nodes, buffer);
 	packstr(part_ptr->nodes,         buffer);
 }
 
@@ -415,6 +422,7 @@ int load_all_part_state(void)
 	int state_fd;
 	Buf buffer;
 	char *ver_str = NULL;
+	char* allow_alloc_nodes = NULL;
 
 	/* read the file */
 	state_file = xstrdup(slurmctld_conf.state_save_location);
@@ -483,6 +491,7 @@ int load_all_part_state(void)
 
 		safe_unpack16(&state_up, buffer);
 		safe_unpackstr_xmalloc(&allow_groups, &name_len, buffer);
+		safe_unpackstr_xmalloc(&allow_alloc_nodes, &name_len, buffer);
 		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 
 		/* validity test as possible */
@@ -530,6 +539,8 @@ int load_all_part_state(void)
 			part_ptr->state_up       = state_up;
 			xfree(part_ptr->allow_groups);
 			part_ptr->allow_groups   = allow_groups;
+			xfree(part_ptr->allow_alloc_nodes);
+			part_ptr->allow_alloc_nodes   = allow_alloc_nodes;
 			xfree(part_ptr->nodes);
 			part_ptr->nodes = nodes;
 		} else {
@@ -595,6 +606,7 @@ int init_part_conf(void)
 	xfree(default_part.nodes);
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_uids);
+	xfree(default_part.allow_alloc_nodes);
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */
@@ -640,6 +652,7 @@ static void _list_delete_part(void *part_entry)
 	xfree(part_ptr->name);
 	xfree(part_ptr->allow_groups);
 	xfree(part_ptr->allow_uids);
+	xfree(part_ptr->allow_alloc_nodes);
 	xfree(part_ptr->nodes);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
 	xfree(part_entry);
@@ -796,6 +809,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 
 	pack16(part_ptr->state_up, buffer);
 	packstr(part_ptr->allow_groups, buffer);
+	packstr(part_ptr->allow_alloc_nodes, buffer);
 	packstr(part_ptr->nodes, buffer);
 	if (part_ptr->node_bitmap) {
 		bit_fmt(node_inx_ptr, BUF_SIZE,
@@ -976,6 +990,24 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		}
 	}
 
+	if (part_desc->allow_alloc_nodes != NULL) {
+		xfree(part_ptr->allow_alloc_nodes);
+		if ((part_desc->allow_alloc_nodes[0] == '\0') ||
+		    (strcasecmp(part_desc->allow_alloc_nodes, "ALL") == 0)) {
+			part_ptr->allow_alloc_nodes = NULL;
+			info("update_part: setting allow_alloc_nodes to ALL"
+			     " for partition %s",part_desc->name);
+		}
+		else {
+			part_ptr->allow_alloc_nodes = part_desc->
+						      allow_alloc_nodes;
+			part_desc->allow_alloc_nodes = NULL;
+			info("update_part: setting allow_alloc_nodes to %s for "
+			     "partition %s", 
+			     part_ptr->allow_alloc_nodes, part_desc->name);
+		}
+	}
+
 	if (part_desc->nodes != NULL) {
 		char *backup_node_list = part_ptr->nodes;
 
@@ -1042,6 +1074,37 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	}
 	return 0;		/* not in this group's list */
 
+}
+
+/*
+ * validate_alloc_node - validate that the allocating node
+ * is allowed to use this partition
+ * IN part_ptr - pointer to a partition
+ * IN alloc_node - allocting node of the request
+ * RET 1 if permitted to run, 0 otherwise
+ */
+extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node)
+{
+	int status;
+	
+ 	int i = 0;
+	
+ 	if (part_ptr->allow_alloc_nodes == NULL)
+ 		return 1;	/* all allocating nodes allowed */
+ 	if (alloc_node == NULL)
+ 		return 1;	/* if no allocating node defined
+				 * let it go */
+ 
+ 	hostlist_t hl = hostlist_create(part_ptr->allow_alloc_nodes);
+ 	status=hostlist_find(hl,alloc_node);
+ 	hostlist_destroy(hl);
+	
+ 	if(status==-1)
+		status=0;
+ 	else
+		status=1;
+	
+ 	return status;
 }
 
 /*

@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.4.0-pre13
 ==============================
+ -- Added new partition option AllocNodes which controls the hosts from 
+    which jobs can be submitted to this partition. From Matthieu Hautreux, CEA.
 
 * Changes in SLURM 1.4.0-pre12
 ==============================
