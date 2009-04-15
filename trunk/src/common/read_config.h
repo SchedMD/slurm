@@ -151,26 +151,30 @@ typedef struct slurm_conf_node {
 } slurm_conf_node_t;
 
 typedef struct slurm_conf_partition {
+	char *allow_alloc_nodes;/* comma delimited list of allowed
+				 * allocating nodes 
+				 * NULL indicates all */
+	char *allow_groups;	/* comma delimited list of groups, 
+				 * NULL indicates all */
+	bool default_flag;	/* Set if default partition */
+	uint32_t default_time;	/* minutes or INFINITE */
 	uint16_t disable_root_jobs; /* if set then user root can't run
 				     * jobs if NO_VAL use global
 				     * default */
-	char	*name;		/* name of the partition */
+
 	bool     hidden_flag;	/* 1 if hidden by default */
-	uint32_t default_time;	/* minutes or INFINITE */
+	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t min_nodes;	/* per job */
-	uint32_t total_nodes;	/* total number of nodes in the partition */
-	uint32_t total_cpus;	/* total number of cpus in the partition */
+	char	*name;		/* name of the partition */
+	char 	*nodes;		/* comma delimited list names of nodes */
 	uint16_t priority;	/* scheduling priority for jobs */
 	bool     root_only_flag;/* 1 if allocate/submit RPC can only be 
 				   issued by user root */
-	uint16_t max_share;	/* number of jobs to gang schedule */
 	bool     state_up_flag;	/* 1 if state is up, 0 if down */
-	char *nodes;		/* comma delimited list names of nodes */
-	char *allow_groups;	/* comma delimited list of groups, 
-				 * NULL indicates all */
-	bool default_flag;
+	uint32_t total_nodes;	/* total number of nodes in the partition */
+	uint32_t total_cpus;	/* total number of cpus in the partition */
 } slurm_conf_partition_t;
 
 typedef struct slurm_conf_downnodes {

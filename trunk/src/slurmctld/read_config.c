@@ -668,6 +668,32 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		xfree(part_ptr->allow_groups);
 		part_ptr->allow_groups = xstrdup(part->allow_groups);
 	}
+ 	if (part->allow_alloc_nodes) {
+ 		if (part_ptr->allow_alloc_nodes) {
+ 			int cnt_tot, cnt_uniq, buf_size;
+ 			hostlist_t hl = hostlist_create(part_ptr->
+							allow_alloc_nodes);
+ 			
+ 			hostlist_push(hl, part->allow_alloc_nodes);
+ 			cnt_tot = hostlist_count(hl);
+ 			hostlist_uniq(hl);
+ 			cnt_uniq = hostlist_count(hl);
+ 			if (cnt_tot != cnt_uniq) {
+ 				fatal("Duplicate Allowed Allocating Nodes for "
+				      "Partition %s", part->name);
+ 			}
+ 			buf_size = strlen(part_ptr->allow_alloc_nodes) + 1 +
+				   strlen(part->allow_alloc_nodes) + 1;
+ 			xfree(part_ptr->allow_alloc_nodes);
+ 			part_ptr->allow_alloc_nodes = xmalloc(buf_size);
+ 			hostlist_ranged_string(hl, buf_size, 
+					       part_ptr->allow_alloc_nodes);
+ 			hostlist_destroy(hl);
+ 		} else {
+ 			part_ptr->allow_alloc_nodes = 
+					xstrdup(part->allow_alloc_nodes);
+ 		}
+ 	}
 	if (part->nodes) {
 		if (part_ptr->nodes) {
 			int cnt_tot, cnt_uniq, buf_size;

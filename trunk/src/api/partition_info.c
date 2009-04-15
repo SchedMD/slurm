@@ -222,6 +222,19 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, "\n   ");
 	
 	/****** Line 4 ******/
+	if (part_ptr->allow_alloc_nodes == NULL)
+		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s","ALL");
+	else
+		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s",
+			 part_ptr->allow_alloc_nodes);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+	
+
+	/****** Line 5 ******/
 #ifdef HAVE_BG
 	snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s BPIndices=", 
 		part_ptr->nodes);

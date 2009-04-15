@@ -2,6 +2,7 @@
  *  print.c - sinfo print job functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov> and 
  *  Morris Jette <jette1@llnl.gov>
@@ -481,6 +482,25 @@ int _print_groups(sinfo_data_t * sinfo_data, int width,
 	} else
 		_print_str("GROUPS", width, right_justify, true);
 
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_alloc_nodes(sinfo_data_t * sinfo_data, int width,
+		       bool right_justify, char *suffix)
+{
+	if (sinfo_data) {
+		if (sinfo_data->part_info == NULL)
+			_print_str("n/a", width, right_justify, true);
+		else if (sinfo_data->part_info->allow_alloc_nodes)
+			_print_str(sinfo_data->part_info->allow_alloc_nodes, 
+				   width, right_justify, true);
+		else
+			_print_str("all", width, right_justify, true);
+	} else
+		_print_str("ALLOCNODES", width, right_justify, true);
+	
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

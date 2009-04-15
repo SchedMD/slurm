@@ -220,6 +220,10 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->allow_groups = val;
 			(*update_cnt_ptr)++;
 		}
+		else if (strncasecmp(tag, "AllocNodes", MAX(taglen, 1)) == 0) {
+			part_msg_ptr->allow_alloc_nodes = val;
+			(*update_cnt_ptr)++;
+		}
 		else {
 			exit_code = 1;
 			error("Invalid input: %s", argv[i]);

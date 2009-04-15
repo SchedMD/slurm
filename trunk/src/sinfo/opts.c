@@ -554,9 +554,14 @@ _parse_format( char* format )
 		} else if (field[0] == 's') {
 			params.match_flags.job_size_flag = true;
 			format_add_size( params.format_list, 
-					field_size, 
-					right_justify, 
-					suffix );
+					 field_size, 
+					 right_justify, 
+					 suffix );
+		} else if (field[0] == 'S') {
+			format_add_alloc_nodes( params.format_list, 
+						field_size, 
+						right_justify, 
+						suffix );
 		} else if (field[0] == 't') {
 			params.match_flags.state_flag = true;
 			format_add_state_compact( params.format_list, 

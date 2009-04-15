@@ -498,6 +498,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_BOOLEAN}, /* UP or DOWN */
+		{"AllocNodes", S_P_STRING},
 		{NULL}
 	};
 
@@ -523,6 +524,16 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (p->allow_groups && strcasecmp(p->allow_groups, "ALL")==0) {
 			xfree(p->allow_groups);
 			p->allow_groups = NULL; /* NULL means allow all */
+		}
+
+		if (!s_p_get_string(&p->allow_alloc_nodes, "AllocNodes", tbl)) {
+			s_p_get_string(&p->allow_alloc_nodes, "AllocNodes", 
+				       dflt);
+			if (p->allow_alloc_nodes && 
+			    (strcasecmp(p->allow_alloc_nodes, "ALL") == 0)) {
+				/* NULL means to allow all submit notes */
+				xfree(p->allow_alloc_nodes);
+			}
 		}
 
 		if (!s_p_get_boolean(&p->default_flag, "Default", tbl)
@@ -655,9 +666,10 @@ static void destroy_partitionname(void *ptr)
 {
 	slurm_conf_partition_t *p = (slurm_conf_partition_t *)ptr;
 
+	xfree(p->allow_alloc_nodes);
+	xfree(p->allow_groups);
 	xfree(p->name);
 	xfree(p->nodes);
-	xfree(p->allow_groups);
 	xfree(ptr);
 }
 
