@@ -226,7 +226,7 @@ if {$completing_jobs != 0} {
 	set completing_jobs 0
 	spawn $squeue --noheader --user $user_name
 	expect {
-		-re "$user_name *CG" {
+		-re "$job_name *$user_name *CG" {
 			incr completing_jobs
 			exp_continue
 		}
@@ -246,7 +246,7 @@ if {$completing_jobs != 0} {
 		exec $bin_sleep $max_wait
 		spawn $squeue --noheader --user $user_name
 		expect {
-			-re "$user_name *CG" {
+			-re "$job_name *$user_name *CG" {
 				incr completing_jobs
 				exp_continue
 			}
