@@ -1,0 +1,89 @@
+.TH "sattach" "1" "SLURM 2.0" "September 2006" "SLURM Commands"
+.SH "NAME"
+.LP 
+sattach \- Attach to a SLURM job step.
+.SH "SYNOPSIS"
+.LP 
+sattach [\fIoptions\fP] <jobid.stepid>
+.SH "DESCRIPTION"
+.LP 
+sattach attaches to a running SLURM job step.  By attaching, it makes available
+the IO streams of all of the tasks of a running SLURM job step.  It also
+suitable for use with a parallel debugger like TotalView.
+
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h\fR, \fB\-\-help\fR
+Display help information and exit.
+
+.TP 
+\fB\-\-input\-filter\fR[=]<\fItask number\fR>
+.PD 0
+.TP
+\fB\-\-output\-filter\fR[=]<\fItask number\fR>
+.PD 0
+.TP 
+\fB\-\-error\-filter\fR[=]<\fItask number\fR>
+.PD
+Only transmit standard input to a single task, or print the standard output
+or standard error from a single task.  The filtering is performed locally in
+sattach.
+
+.TP
+\fB\-l\fR, \fB\-\-label\fR
+Prepend each line of task standard output or standard error with the task
+number of its origin.
+
+.TP
+\fB\-\-layout\fR
+Contacts the slurmctld to obtain the task layout information for the job step,
+prints the task layout information, and then exits without attaching to the
+job step.
+
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+Suppress informational messages from sattach. Errors will still be displayed.
+
+.TP
+\fB\-u\fR, \fB\-\-usage\fR
+Display brief usage message and exit.
+
+.TP 
+\fB\-V\fR, \fB\-\-version\fR
+Display SLURM version number and exit.
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Increase the verbosity of sattach's informational messages.  Multiple \-v's
+will further increase sattach's verbosity.
+
+
+.SH "EXAMPLES"
+.LP 
+sattach 15.0
+
+sattach \-\-output\-filter 5 65386.15
+
+.SH "COPYING"
+Copyright (C) 2006 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP 
+sinfo(1), salloc(1), sbatch(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)
