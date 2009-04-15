@@ -134,6 +134,8 @@ ACCOUNTING CHANGES
 * Added support for Workload Characterization Key (WCKey) in accounting 
   records. This is an optional string that can be used to identify the type of
   work being performed (in addition to user ID, account name, job name, etc.).
+* Added configuration parameter AccountingStorageBackupHost for fault-tolerance
+  in communications to SlurmDBD.
 
 OTHER CHANGES
 * Modify PMI_Get_clique_ranks() to return an array of integers rather
