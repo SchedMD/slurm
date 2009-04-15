@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "February 2009" "scancel 2.0" "Slurm components"
+.TH SCANCEL "1" "April 2009" "scancel 2.0" "Slurm components"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -96,9 +96,17 @@ The Slurm job ID to be signaled.
 \fIstep_id\fP
 The step ID of the job step to be signaled. 
 If not specified, the operation is performed at the level of a job.
+
+If neither \fB\-\-batch\fR nor \fB\-\-signal\fR are used, 
+the entire job will be terminated.
+
 When \fB\-\-batch\fR is used, the batch shell processes will be signaled.
-Otherwise the processes associated with all job steps, but not the 
-batch script itself, will be signaled.
+The child processes of the shell will not be signalled by SLURM, but 
+the shell may forward the signal.
+
+When \fB\-\-batch\fR is not used but \fB\-\-signal\fR is used, 
+then all job steps will be signalled, but the batch script itself 
+will not be signalled.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
@@ -155,8 +163,12 @@ Cancel job 1234 along with all of its steps:
 scancel 1234
 
 .TP
-Send SIGUSR1 to the batch shell processes of job 1235:
-scancel \-\-signal=USR1 \-\-batch 1235
+Send SIGKILL to all steps of job 1235, but do not cancel the job itself:
+scancel \-\-signal=KILL 1235
+
+.TP
+Send SIGUSR1 to the batch shell processes of job 1236:
+scancel \-\-signal=USR1 \-\-batch 1236
 
 .TP
 Cancel job all pending jobs belonging to user "bob" in partition "debug":
@@ -164,6 +176,7 @@ scancel \-\-state=PENDING \-\-user=bob \-\-partition=debug
 
 .SH "COPYING"
 Copyright (C) 2002-2007 The Regents of the University of California.
+Copyright (C) 2008-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
