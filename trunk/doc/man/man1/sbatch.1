@@ -83,6 +83,26 @@ The value may be changed after job submission using the
 \fBscontrol\fR command.
 
 .TP
+\fB\-\-checkpoint\fR=\fItime\fR
+Specifies the interval between creating checkpoints of the job step. 
+By default, the job step will no checkpoints created.
+Acceptable time formats include "minutes", "minutes:seconds", 
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
+"days\-hours:minutes:seconds".
+
+.TP
+\fB\-\-checkpoint\-dir\fR=\fIdirectory\fR
+Specifies the directory into which the job or job step's checkpoint should 
+be written (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
+The default value is the current working directory.
+Checkpoint files will be of the form "<job_id>.ckpt" for jobs
+and "<job_id>.<step_id>.ckpt" for job steps.
+
+.TP
+\fB\-\-comment\fR=<\fIstring\fR>
+An arbitrary comment.
+
+.TP
 \fB\-C\fR, \fB\-\-constraint\fR[=]<\fIlist\fR>
 Specify a list of constraints. 
 The constraints are features that have been assigned to the nodes by 
@@ -109,6 +129,12 @@ nodes must have the feature "graphics."
 Constraints with node counts may only be combined with AND operators.
 If no nodes have the requested features, then the job will be rejected 
 by the slurm job manager.
+
+.TP
+\fB\-\-contiguous\fR
+If set, then the allocated nodes must form a contiguous set.
+Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
+plugins, both of which can modify the node ordering.
 
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -167,22 +193,6 @@ auto\-generated masks bind to threads
 show this help message
 .RE
 
-.TP
-\fB\-\-checkpoint\fR=\fItime\fR
-Specifies the interval between creating checkpoints of the job step. 
-By default, the job step will no checkpoints created.
-Acceptable time formats include "minutes", "minutes:seconds", 
-"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
-"days\-hours:minutes:seconds".
-
-.TP
-\fB\-\-checkpoint\-dir\fR=\fIdirectory\fR
-Specifies the directory into which the job or job step's checkpoint should 
-be written (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
-The default value is the current working directory.
-Checkpoint files will be of the form "<job_id>.ckpt" for jobs
-and "<job_id>.<step_id>.ckpt" for job steps.
-
 .TP 
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR[=]<\fIncpus\fR>
 Advise the SLURM controller that ensuing job steps will require \fIncpus\fR 
@@ -196,16 +206,6 @@ cluster is comprised of quad\-processors nodes and we simply ask for
 the \-\-cpus\-per\-task=3 options, the controller knows that each task requires
 3 processors on the same node, and the controller will grant an allocation
 of 4 nodes, one for each of the 4 tasks.
-
-.TP
-\fB\-\-comment\fR=<\fIstring\fR>
-An arbitrary comment.
-
-.TP
-\fB\-\-contiguous\fR
-If set, then the allocated nodes must form a contiguous set.
-Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
-plugins, both of which can modify the node ordering.
 
 .TP 
 \fB\-D\fR, \fB\-\-workdir\fR[=]<\fIdirectory\fR>

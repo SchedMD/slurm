@@ -93,6 +93,10 @@ if the allocation is pending for more than ten seconds (and only if stdout
 is a tty). Also see the option \fB\-\-no\-bell\fR.
 
 .TP
+\fB\-\-comment\fR=<\fIstring\fR>
+An arbitrary comment.
+
+.TP
 \fB\-C\fR, \fB\-\-constraint\fR[=]<\fIlist\fR>
 Specify a list of constraints. 
 The constraints are features that have been assigned to the nodes by 
@@ -119,10 +123,6 @@ nodes must have the feature "graphics."
 Constraints with node counts may only be combined with AND operators.
 If no nodes have the requested features, then the job will be rejected 
 by the slurm job manager.
-
-.TP
-\fB\-\-comment\fR=<\fIstring\fR>
-An arbitrary comment.
 
 .TP
 \fB\-\-contiguous\fR
