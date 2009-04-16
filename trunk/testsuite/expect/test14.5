@@ -110,27 +110,30 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 set record    0
 set preserved 1
 set reset     1
+set time1     0
+set time2     0
+set time3     0
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "($number):($number)" {
+		-re "($number) *($number):($number)" {
 			incr record
+			set date   $expect_out(1,string)
+			set hour   $expect_out(2,string)
+			set minute $expect_out(3,string)
 			if {$record == 1} {
-				set hour   $expect_out(1,string)
-				set minute $expect_out(2,string)
+				set time1 [expr $date * 10000 + $hour * 100 + $minute]
 			}
 			if {$record == 2} {
-				if {$hour != $expect_out(1,string)} {
-					if {$minute != $expect_out(2,string)} {
-						set preserved 0
-					}
+				set time2 [expr $date * 10000 + $hour * 100 + $minute]
+				if {$time2 != $time1} {
+					set preserved 0
 				}
 			}
 			if {$record == 3} {
-				if {$hour == $expect_out(1,string)} {
-					if {$minute == $expect_out(2,string)} {
-						set reset 0
-					}
+				set time3 [expr $date * 10000 + $hour * 100 + $minute]
+				if {$time3 == $time1} {
+					set reset 0
 				}
 			}
 			exp_continue;
