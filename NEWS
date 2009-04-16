@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- Added new partition option AllocNodes which controls the hosts from 
     which jobs can be submitted to this partition. From Matthieu Hautreux, CEA.
+ -- Better support the --contiguous option for job allocations.
 
 * Changes in SLURM 1.4.0-pre12
 ==============================

@@ -1,4 +1,4 @@
-.TH SRUN "1" "March 2009" "srun 2.0" "slurm components"
+.TH SRUN "1" "April 2009" "srun 2.0" "slurm components"
 
 .SH "NAME"
 srun \- run parallel jobs
@@ -265,8 +265,10 @@ An arbitrary comment.
 
 .TP
 \fB\-\-contiguous\fR
-Demand a contiguous range of nodes. The default is "yes". Specify
-\-\-contiguous=no if a contiguous range of nodes is not a constraint.
+If set, then the job's allocated nodes must form a contiguous set.
+Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
+plugins, both of which can modify the node ordering.
+Not honored for a job step's allocation.
 
 .TP
 \fB\-\-core\fR=\fItype\fR

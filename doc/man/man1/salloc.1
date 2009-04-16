@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 2.0" "February 2009" "SLURM Commands"
+.TH "salloc" "1" "SLURM 2.0" "April 2009" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, 
@@ -126,8 +126,9 @@ An arbitrary comment.
 
 .TP
 \fB\-\-contiguous\fR
-Demand a contiguous range of nodes. The default is "yes". Specify
-\-\-contiguous=no if a contiguous range of nodes is not required.
+If set, then the allocated nodes must form a contiguous set.
+Not honored with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
+plugins, both of which can modify the node ordering.  
 
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
