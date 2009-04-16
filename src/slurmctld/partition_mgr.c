@@ -1087,8 +1087,6 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node)
 {
 	int status;
 	
- 	int i = 0;
-	
  	if (part_ptr->allow_alloc_nodes == NULL)
  		return 1;	/* all allocating nodes allowed */
  	if (alloc_node == NULL)
