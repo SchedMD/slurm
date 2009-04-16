@@ -864,7 +864,7 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST GET SHARES from uid=%u",
+	debug2("Processing RPC: REQUEST_SHARE_INFO from uid=%u",
 	       (unsigned int)uid);
 	resp_msg.assoc_shares_list = assoc_mgr_get_shares(acct_db_conn,
 							  uid,
@@ -892,10 +892,10 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST GET PRIORITY FACTORS from uid=%u",
+	debug2("Processing RPC: REQUEST_PRIORITY_FACTORS from uid=%u",
 	       (unsigned int)uid);
 	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
-		req_msg);
+					 req_msg);
 	slurm_msg_t_init(&response_msg);
 	response_msg.address  = msg->address;
 	response_msg.msg_type = RESPONSE_PRIORITY_FACTORS;
@@ -922,7 +922,7 @@ static void _slurm_rpc_end_time(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST JOB_END_TIME from uid=%u",
+	debug2("Processing RPC: REQUEST_JOB_END_TIME from uid=%u",
 		(unsigned int) uid);
 	lock_slurmctld(job_read_lock);
 	rc = job_end_time(time_req_msg, &timeout_msg);
