@@ -1,0 +1,2 @@
+#!/bin/sh
+exec @BLCR_HOME@/bin/cr_restart $1
