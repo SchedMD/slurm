@@ -225,6 +225,10 @@ entity: the configuration parameter name, job ID, node name, partition name,
 reservation name, or job step ID for \fIconfig\fP, \fIjob\fP, \fInode\fP, 
 \fIpartition\fP, or \fIstep\fP respectively. 
 For an \fIENTITY\fP of \fItopology\fP, the \fIID\fP may be a node or switch name.
+If one node name is specified, all switches connected to that node (and 
+their parent switches) will be shown.
+If more than one node name is specified, only switches that connect to all 
+named nodes will be shown.
 \fIhostnames\fP takes an optional hostlist expression as input and 
 writes a list of individual host names to standard output (one per 
 line). If no hostlist expression is supplied, the contents of the 
