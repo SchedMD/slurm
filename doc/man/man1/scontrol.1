@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "March 2009" "scontrol 2.0" "Slurm components"
+.TH SCONTROL "1" "April 2009" "scontrol 2.0" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -217,11 +217,14 @@ is restarted or "scontrol reconfigure" is executed).
 \fBshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIconfig\fP, \fIdaemons\fP, \fIjob\fP, \fInode\fP, 
-\fIpartition\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP, \fIhostlist\fP or \fIhostnames\fP (also \fIblock\fP or \fIsubbp\fP on BlueGene systems).
+\fIpartition\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP, \fItopology\fP,
+\fIhostlist\fP or \fIhostnames\fP 
+(also \fIblock\fP or \fIsubbp\fP on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified 
 entity: the configuration parameter name, job ID, node name, partition name, 
-reservation name, or job step ID \fIconfig\fP, \fIjob\fP, \fInode\fP, 
+reservation name, or job step ID for \fIconfig\fP, \fIjob\fP, \fInode\fP, 
 \fIpartition\fP, or \fIstep\fP respectively. 
+For an \fIENTITY\fP of \fItopology\fP, the \fIID\fP may be a node or switch name.
 \fIhostnames\fP takes an optional hostlist expression as input and 
 writes a list of individual host names to standard output (one per 
 line). If no hostlist expression is supplied, the contents of the 

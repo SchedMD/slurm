@@ -917,6 +917,19 @@ typedef struct node_info_msg {
 	node_info_t *node_array;	/* the node records */
 } node_info_msg_t;
 
+typedef struct topo_info {
+	uint16_t level;			/* level in hierarchy, leaf=0 */
+	uint32_t link_speed;		/* link speed, arbitrary units */
+	char *name;			/* switch name */
+	char *nodes;			/* name if direct descendent nodes */
+	char *switches;			/* name if direct descendent switches */
+} topo_info_t;
+
+typedef struct topo_info_response_msg {
+	uint32_t record_count;		/* number of records */
+	topo_info_t *topo_array;	/* the switch topology records */
+} topo_info_response_msg_t;
+
 typedef struct job_alloc_info_msg {
 	uint32_t job_id;	/* job ID */
 } job_alloc_info_msg_t;
@@ -1952,6 +1965,39 @@ void slurm_init_update_node_msg (update_node_msg_t * update_node_msg);
  */
 extern int slurm_update_node PARAMS(( update_node_msg_t * node_msg ));
 
+
+/*****************************************************************************\
+ *	SLURM SWITCH TOPOLOGY CONFIGURATION READ/PRINT FUNCTIONS
+\*****************************************************************************/
+
+/*
+ * slurm_load_topo - issue RPC to get slurm all switch topology configuration 
+ *	information 
+ * IN node_info_msg_pptr - place to store a node configuration pointer
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_topo_info_msg
+ */
+extern int slurm_load_topo PARAMS(( 
+	topo_info_response_msg_t **topo_info_msg_pptr ));
+
+/*
+ * slurm_free_topo_info_msg - free the switch topology configuration 
+ *	information response message
+ * IN msg - pointer to switch topology configuration response message
+ * NOTE: buffer is loaded by slurm_load_topo.
+ */
+extern void slurm_free_topo_info_msg PARAMS(( topo_info_response_msg_t *msg ));
+
+/*
+ * slurm_print_topo_info_msg - output information about all switch topology 
+ *	configuration information based upon message as loaded using 
+ *	slurm_load_topo
+ * IN out - file to write to
+ * IN topo_info_msg_ptr - switch topology information message pointer
+ * IN one_liner - print as a single line if not zero
+ */
+extern void slurm_print_topo_info_msg PARAMS(( 
+	FILE * out, topo_info_response_msg_t *topo_info_msg_ptr, int one_liner )) ;
 
 /*****************************************************************************\
  *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

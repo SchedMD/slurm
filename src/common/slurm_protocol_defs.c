@@ -1445,6 +1445,27 @@ static void _slurm_free_reserve_info_members(reserve_info_t * resv)
 	}
 }
 
+/*
+ * slurm_free_topo_info_msg - free the switch topology configuration 
+ *	information response message
+ * IN msg - pointer to switch topology configuration response message
+ * NOTE: buffer is loaded by slurm_load_topo.
+ */
+extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
+{
+	int i;
+
+	if (msg) {
+		for (i = 0; i < msg->record_count; i++) {
+			xfree(msg->topo_array[i].name);
+			xfree(msg->topo_array[i].nodes);
+			xfree(msg->topo_array[i].switches);
+		}
+		xfree(msg);
+	}
+}
+
+
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 {
 	if (msg) {
@@ -1731,10 +1752,14 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
+	case REQUEST_TOPO_INFO:
 		/* No body to free */
 		break;
 	case ACCOUNTING_UPDATE_MSG:
 		slurm_free_accounting_update_msg(data);
+		break;
+	case RESPONSE_TOPO_INFO:
+		slurm_free_topo_info_msg(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);

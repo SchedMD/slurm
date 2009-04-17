@@ -384,6 +384,9 @@ static int  _unpack_update_resv_msg(reserve_request_msg_t ** msg, Buf buffer);
 static void _pack_resv_name_msg(reservation_name_msg_t * msg, Buf buffer);
 static int  _unpack_resv_name_msg(reservation_name_msg_t ** msg, Buf buffer);
 
+static void _pack_topo_info_msg(topo_info_response_msg_t *msg, Buf buffer);
+static int  _unpack_topo_info_msg(topo_info_response_msg_t **msg,
+				 Buf buffer);
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * IN header - the header structure to pack
@@ -525,6 +528,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
+	case REQUEST_TOPO_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_SHUTDOWN:
@@ -809,6 +813,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(accounting_update_msg_t *)msg->data,
 			buffer);
 		break;
+	case RESPONSE_TOPO_INFO:
+		_pack_topo_info_msg(
+			(topo_info_response_msg_t *)msg->data, buffer);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -892,6 +900,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
+	case REQUEST_TOPO_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_SHUTDOWN:
@@ -1206,6 +1215,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_accounting_update_msg(
 			(accounting_update_msg_t **)&msg->data,
 			buffer);
+		break;
+	case RESPONSE_TOPO_INFO:
+		rc = _unpack_topo_info_msg(
+			(topo_info_response_msg_t **)&msg->data, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -5387,6 +5400,51 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 	
 unpack_error:
 	slurm_free_accounting_update_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_topo_info_msg(topo_info_response_msg_t *msg, Buf buffer)
+{
+	int i;
+
+	pack32(msg->record_count, buffer);
+	for (i=0; i<msg->record_count; i++) {
+		pack16(msg->topo_array[i].level,      buffer);
+		pack32(msg->topo_array[i].link_speed, buffer);
+  		packstr(msg->topo_array[i].name,      buffer);
+  		packstr(msg->topo_array[i].nodes,     buffer);
+  		packstr(msg->topo_array[i].switches,  buffer);
+	}
+}
+
+static int _unpack_topo_info_msg(topo_info_response_msg_t **msg,
+				 Buf buffer)
+{
+	int i = 0;
+	uint32_t uint32_tmp;
+	topo_info_response_msg_t *msg_ptr =
+		xmalloc(sizeof(topo_info_response_msg_t));
+
+	*msg = msg_ptr;
+	safe_unpack32(&msg_ptr->record_count, buffer);
+	msg_ptr->topo_array = xmalloc(sizeof(topo_info_t) * 
+				      msg_ptr->record_count);
+	for (i=0; i<msg_ptr->record_count; i++) {
+		safe_unpack16(&msg_ptr->topo_array[i].level,      buffer);
+		safe_unpack32(&msg_ptr->topo_array[i].link_speed, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->topo_array[i].name, 
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->topo_array[i].nodes, 
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->topo_array[i].switches, 
+				       &uint32_tmp, buffer);
+	}
+	
+	return SLURM_SUCCESS;
+	
+unpack_error:
+	slurm_free_topo_info_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

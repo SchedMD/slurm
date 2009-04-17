@@ -988,6 +988,9 @@ _show_it (int argc, char *argv[])
 	else if (strncasecmp (tag, "steps", MAX(taglen, 2)) == 0) {
 		scontrol_print_step (val);
 	}
+	else if (strncasecmp (tag, "topology", MAX(taglen, 1)) == 0) {
+		scontrol_print_topo (val);
+	}
 	else {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -1280,7 +1283,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
-       \"reservation\", \"hostlist\", \"hostnames\", \"slurmd\",           \n\
+       \"reservation\", \"hostlist\", \"hostnames\", \"slurmd\", \"topology\"\n\
        (for BlueGene only: \"block\", \"subbp\" or \"step\").              \n\
                                                                            \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
