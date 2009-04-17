@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  info_node.c - node information functions for scontrol.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -184,3 +185,19 @@ scontrol_print_node_list (char *node_list)
 	return;
 }
 
+/*
+ * scontrol_print_topo - print the switch topology above the specified node
+ * IN node_name - NULL to print all topology information
+ */
+extern void	scontrol_print_topo (char *node_list)
+{
+	static topo_info_response_msg_t *topo_info_msg = NULL;
+
+	if ((topo_info_msg == NULL) &&
+	    slurm_load_topo(&topo_info_msg)) {
+		slurm_perror ("slurm_load_topo error");
+		return;
+	}
+
+	slurm_print_topo_info_msg(stdout, topo_info_msg, one_liner);
+}

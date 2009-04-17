@@ -103,8 +103,8 @@ am__objects_1 = allocate.lo allocate_msg.lo cancel.lo checkpoint.lo \
 	job_step_info.lo node_info.lo node_select_info.lo \
 	partition_info.lo reservation_info.lo signal.lo \
 	slurm_hostlist.lo slurm_pmi.lo step_ctx.lo step_io.lo \
-	step_launch.lo pmi_server.lo submit.lo suspend.lo triggers.lo \
-	reconfigure.lo update_config.lo
+	step_launch.lo pmi_server.lo submit.lo suspend.lo topo_info.lo \
+	triggers.lo reconfigure.lo update_config.lo
 am_libslurmhelper_la_OBJECTS = $(am__objects_1)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 PROGRAMS = $(noinst_PROGRAMS)
@@ -387,6 +387,7 @@ slurmapi_src = \
 	pmi_server.c pmi_server.h \
 	submit.c         \
 	suspend.c        \
+	topology.c       \
 	triggers.c       \
 	reconfigure.c    \
 	update_config.c
@@ -554,6 +555,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/submit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suspend.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/triggers.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topo_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_config.Plo@am__quote@
 
 .c.o:
