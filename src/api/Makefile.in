@@ -387,7 +387,7 @@ slurmapi_src = \
 	pmi_server.c pmi_server.h \
 	submit.c         \
 	suspend.c        \
-	topology.c       \
+	topo_info.c      \
 	triggers.c       \
 	reconfigure.c    \
 	update_config.c
@@ -554,8 +554,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_launch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/submit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suspend.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/triggers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topo_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/triggers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_config.Plo@am__quote@
 
 .c.o:
