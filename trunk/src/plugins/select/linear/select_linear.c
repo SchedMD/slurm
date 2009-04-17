@@ -983,7 +983,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (job_ptr->details->contiguous &&
 			    job_ptr->details->req_node_bitmap &&
 			    (consec_req[i] == -1))
-				break;	/* not required nodes */
+				continue;	/* no required nodes here */
 
 			sufficient = (consec_cpus[i] >= rem_cpus) &&
 				     _enough_nodes(consec_nodes[i], rem_nodes,
