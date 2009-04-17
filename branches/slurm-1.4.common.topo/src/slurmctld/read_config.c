@@ -67,6 +67,7 @@
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/switch.h"
+#include "src/common/topo_plugin.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/acct_policy.h"
@@ -82,7 +83,6 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "src/slurmctld/topo_plugin.h"
 
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);

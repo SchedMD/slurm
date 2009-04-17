@@ -102,7 +102,8 @@ libcommon_la_SOURCES = 			\
 	stepd_api.c stepd_api.h		\
 	write_labelled_message.c	\
 	write_labelled_message.h	\
-	proc_args.c proc_args.h		
+	proc_args.c proc_args.h		\
+	topo_plugin.c topo_plugin.h		
 
 EXTRA_libcommon_la_SOURCES = 	\
 	$(extra_unsetenv_src)

@@ -52,8 +52,6 @@ slurmctld_SOURCES = 	\
 	state_save.c	\
 	state_save.h	\
 	step_mgr.c	\
-	topo_plugin.c	\
-	topo_plugin.h	\
 	trigger_mgr.c	\
 	trigger_mgr.h
 

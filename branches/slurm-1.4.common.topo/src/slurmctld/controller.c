@@ -77,6 +77,7 @@
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
+#include "src/common/topo_plugin.h"
 #include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -95,7 +96,6 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
-#include "src/slurmctld/topo_plugin.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 
