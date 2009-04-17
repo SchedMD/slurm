@@ -118,9 +118,9 @@ if {[wait_for_file $file_out] == 0} {
 	expect {
 		-re "($number) *($number):($number)" {
 			incr record
-			set date   $expect_out(1,string)
-			set hour   $expect_out(2,string)
-			set minute $expect_out(3,string)
+			set date   int($expect_out(1,string))
+			set hour   int($expect_out(2,string))
+			set minute int($expect_out(3,string))
 			if {$record == 1} {
 				set time1 [expr $date * 10000 + $hour * 100 + $minute]
 			}
