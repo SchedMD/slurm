@@ -47,6 +47,7 @@
 #ifndef HAVE_SETPROCTITLE
 void setproctitle(const char *fmt, ...);
 void init_setproctitle(int argc, char *argv[]);
+void fini_setproctitle(void);
 #endif
 
 #endif /* _BSD_SETPROCTITLE_H */

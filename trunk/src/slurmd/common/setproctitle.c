@@ -2,7 +2,8 @@
  * src/slurmd/common/setproctitle.c - argv manipulation 
  * $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -305,6 +306,21 @@ init_setproctitle(int argc, char *argv[])
 /* 		free(environ); */
 	new_environ[i] = NULL;
 	environ = new_environ;
+#endif /* PS_USE_CLOBBER_ARGV */
+}
+
+/* Free memory allocated by init_setproctitle.
+ * Used to verify that all allocated memory gets freed */
+void fini_setproctitle(void)
+{
+#if SETPROCTITLE_STRATEGY == PS_USE_CLOBBER_ARGV
+	int i;
+
+	for (i = 0; environ[i] != NULL; i++) {
+		free(environ[i]);
+	}
+	free(environ);
+	environ = (char **) NULL;
 #endif /* PS_USE_CLOBBER_ARGV */
 }
 
