@@ -192,6 +192,8 @@ scontrol_print_node_list (char *node_list)
 extern void	scontrol_print_topo (char *node_list)
 {
 	static topo_info_response_msg_t *topo_info_msg = NULL;
+	int i, match, match_cnt = 0;
+	hostset_t hs;
 
 	if ((topo_info_msg == NULL) &&
 	    slurm_load_topo(&topo_info_msg)) {
@@ -199,5 +201,39 @@ extern void	scontrol_print_topo (char *node_list)
 		return;
 	}
 
-	slurm_print_topo_info_msg(stdout, topo_info_msg, one_liner);
+	if ((node_list == NULL) || (node_list[0] == '\0')) {
+		slurm_print_topo_info_msg(stdout, topo_info_msg, one_liner);
+		return;
+	}
+
+	/* Search for matching switch name */
+	for (i=0; i<topo_info_msg->record_count; i++) {
+		if (strcmp(topo_info_msg->topo_array[i].name, node_list))
+			continue;
+		slurm_print_topo_record(stdout, &topo_info_msg->topo_array[i], 
+					one_liner);
+		return;
+	}
+
+	/* Search for matching node name */
+	for (i=0; i<topo_info_msg->record_count; i++) {
+		if ((topo_info_msg->topo_array[i].nodes == NULL) ||
+		    (topo_info_msg->topo_array[i].nodes[0] == '\0')) 
+			continue;
+		hs = hostset_create(topo_info_msg->topo_array[i].nodes);
+		if (hs == NULL)
+			fatal("hostset_create: memory allocation failure");
+		match = hostset_within(hs, node_list);
+		hostset_destroy(hs);
+		if (!match)
+			continue;
+		match_cnt++;
+		slurm_print_topo_record(stdout, &topo_info_msg->topo_array[i], 
+					one_liner);
+	}
+
+	if (match_cnt == 0) {
+		error("Topology information contains no switch or "
+		      "node named %s", node_list);
+	}
 }
