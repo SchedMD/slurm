@@ -495,6 +495,8 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
+	if (ctx->exkey)
+		(*(g_crypto_context->ops.crypto_destroy_key))(ctx->exkey);
 	if (ctx->key)
 		(*(g_crypto_context->ops.crypto_destroy_key))(ctx->key);
 	if (ctx->job_list)
