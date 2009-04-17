@@ -116,23 +116,23 @@ set time3     0
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "($number) *($number):($number)" {
+		-re "($number) *($number):0?($number)" {
 			incr record
-			set date   int($expect_out(1,string))
-			set hour   int($expect_out(2,string))
-			set minute int($expect_out(3,string))
+			set date      $expect_out(1,string)
+			set hour      $expect_out(2,string)
+			set minute    $expect_out(3,string)
+			set this_time [expr $date * 10000 + $hour * 100 + $minute]
+
 			if {$record == 1} {
-				set time1 [expr $date * 10000 + $hour * 100 + $minute]
+				set base_time $this_time
 			}
 			if {$record == 2} {
-				set time2 [expr $date * 10000 + $hour * 100 + $minute]
-				if {$time2 != $time1} {
+				if {$this_time != $base_time} {
 					set preserved 0
 				}
 			}
 			if {$record == 3} {
-				set time3 [expr $date * 10000 + $hour * 100 + $minute]
-				if {$time3 == $time1} {
+				if {$this_time == $base_time} {
 					set reset 0
 				}
 			}
