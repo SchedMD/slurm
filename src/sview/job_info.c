@@ -63,6 +63,9 @@ enum {
 	SORTID_ACTION,
 	SORTID_ALLOC, 
 	SORTID_ALLOC_NODE,
+#ifdef HAVE_CRAY_XT
+	SORTID_ALPS_RESV_ID,
+#endif
 	SORTID_BATCH,
 #ifdef HAVE_BG
 	SORTID_BLRTSIMAGE,
@@ -123,9 +126,7 @@ enum {
 	SORTID_REASON,
 	SORTID_REQ_NODELIST,
 	SORTID_REQ_PROCS,
-#ifdef HAVE_CRAY_XT
-	SORTID_ALPS_RESV_ID, 
-#endif
+	SORTID_RESV_NAME,
 #ifdef HAVE_BG
 	SORTID_ROTATE,
 #endif
@@ -142,9 +143,9 @@ enum {
 	SORTID_TIME,
 	SORTID_TIMELIMIT,
 	SORTID_TMP_DISK,
-	SORTID_WCKEY,
 	SORTID_UPDATED,
 	SORTID_USER, 
+	SORTID_WCKEY,
 	SORTID_CNT
 };
 
@@ -249,6 +250,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "Cpus per Task", 
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REQ_PROCS, "Requested Procs", 
+	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_RESV_NAME, "Reservation Name",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MIN_NODES, "Min Nodes", 
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
@@ -613,7 +616,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			goto return_error;
 		}
 		job_msg->nice = NICE_OFFSET + temp_int;
-		
 		break;
 	case SORTID_REQ_PROCS:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -622,6 +624,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		if(temp_int <= 0)
 			goto return_error;
 		job_msg->num_procs = (uint32_t)temp_int;
+		break;
+	case SORTID_RESV_NAME:
+		job_msg->reservation = xstrdup(new_text);
+		type = "reservation name";
 		break;
 	case SORTID_MIN_NODES:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -1697,6 +1703,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	sprintf(tmp_char, "%u", job_ptr->job_min_procs);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_REQ_PROCS, tmp_char, -1);
+
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_RESV_NAME, job_ptr->resv_name, -1);
 
 	sprintf(tmp_char, "%u", job_ptr->min_sockets);
 	gtk_tree_store_set(treestore, iter,
