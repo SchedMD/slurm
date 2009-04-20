@@ -1018,7 +1018,6 @@ typedef struct reserve_info {
 				 * start_range_2, .., -1  */
 	char *node_list;	/* list of reserved nodes or ALL */
 	char *partition;	/* name of partition to be used */
-/* Access control specification for the reservation */
 	time_t start_time;	/* start time of reservation */
 	char *users;		/* names of users permitted to use */
 } reserve_info_t;
@@ -1030,18 +1029,17 @@ typedef struct reserve_info_msg {
 } reserve_info_msg_t;
 
 typedef struct reserve_request_msg {
-	char *name;		/* name of reservation */
-	time_t start_time;	/* start time of reservation */
-	time_t end_time;	/* end time of reservation */
+	char *accounts;		/* names of accounts permitted to use */
 	uint32_t duration;	/* duration of reservation in seconds */
+	time_t end_time;	/* end time of reservation */
+	char *features;		/* required node features */
 	uint16_t flags;		/* see RESERVE_FLAG_* above */
+	char *name;		/* name of reservation (optional on create) */
 	uint32_t node_cnt;	/* count of nodes required */
 	char *node_list;	/* list of reserved nodes or ALL */
-	char *features;		/* required node features */
 	char *partition;	/* name of partition to be used */
-/* Access control specification for the reservation */
+	time_t start_time;	/* start time of reservation */
 	char *users;		/* names of users permitted to use */
-	char *accounts;		/* names of accounts permitted to use */
 } reserve_request_msg_t;
 
 typedef struct reserve_response_msg {
