@@ -124,7 +124,7 @@ enum {
 	SORTID_REQ_NODELIST,
 	SORTID_REQ_PROCS,
 #ifdef HAVE_CRAY_XT
-	SORTID_RESV_ID, 
+	SORTID_ALPS_RESV_ID, 
 #endif
 #ifdef HAVE_BG
 	SORTID_ROTATE,
@@ -185,7 +185,7 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #endif
 #ifdef HAVE_CRAY_XT
-	{G_TYPE_STRING, SORTID_RESV_ID, "Reservation ID", TRUE, EDIT_NONE, 
+	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, "ALPS Resv ID", TRUE, EDIT_NONE, 
 	 refresh_job, create_model_job, admin_edit_job},
 #endif
 	{G_TYPE_STRING, SORTID_USER, "User", TRUE, EDIT_NONE, refresh_job,
@@ -1146,7 +1146,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 #ifdef HAVE_CRAY_XT
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_RESV_ID), 
+						 SORTID_ALPS_RESV_ID), 
 				   select_g_sprint_jobinfo(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
@@ -1337,7 +1337,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 #ifdef HAVE_CRAY_XT
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_RESV_ID), 
+						 SORTID_ALPS_RESV_ID), 
 				   select_g_sprint_jobinfo(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
@@ -1604,7 +1604,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 #endif
 #ifdef HAVE_CRAY_XT
 	gtk_tree_store_set(treestore, iter, 
-			   SORTID_RESV_ID, 
+			   SORTID_ALPS_RESV_ID, 
 			   select_g_sprint_jobinfo(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
