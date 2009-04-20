@@ -46,8 +46,9 @@ static void _print_text_resv(reserve_info_t * resv_ptr);
 
 extern void get_reservation(void)
 {
-	int error_code = -1, i, recs;
+	int error_code = -1, active, i, recs;
 	reserve_info_t resv;
+	time_t now = time(NULL);
 	static int printed_resv = 0;
 	static int count = 0;
 	static reserve_info_msg_t *resv_info_ptr = NULL, *new_resv_ptr = NULL;
@@ -96,8 +97,12 @@ extern void get_reservation(void)
 	count = 0;
 	for (i = 0; i < recs; i++) {
 		resv = new_resv_ptr->reservation_array[i];
+		if ((resv.start_time <= now) && (resv.end_time >= now))
+			active = 1;
+		else
+			active = 0;
 
-		if (resv.node_inx[0] != -1) {
+		if (active && (resv.node_inx[0] != -1)) {
 #ifdef HAVE_SUN_CONST
 			set_grid_name(job.node_list, count);
 #else
@@ -112,6 +117,9 @@ extern void get_reservation(void)
 				j += 2;
 			}
 #endif
+		}
+
+		if (resv.node_inx[0] != -1) {
 			if (!params.commandline) {
 				if ((count >= text_line_cnt) &&
 				    (printed_resv  < (text_win->_maxy-3))) {
