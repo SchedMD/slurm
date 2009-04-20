@@ -49,12 +49,12 @@ gather and report incomplete information for these calls;
 \f2getrusage(3)\fP man page for information about which data are
 actually available on your system.
 .IP
-If --dump is specified, the field selection options (--brief,
---fields, ...) have no effect. 
+If \-\-dump is specified, the field selection options (\-\-brief,
+\-\-format, ...) have no effect. 
 .IP
 Elapsed time fields are presented as 2 fields, integral seconds and integral microseconds
 .IP
-If --dump is not specified, elapsed time fields are presented as
+If \-\-dump is not specified, elapsed time fields are presented as
 [[days-]hours:]minutes:seconds.hundredths.
 .IP
 The default input file is the file named in the jobacct_logfile
@@ -118,21 +118,15 @@ data output when this option is used.
 .TP 
 \f3\-\-duplicates\fP
 If SLURM job ids are reset, but the job accounting log file isn't
-reset at the same time (with -e, for example), some job numbers will
+reset at the same time (with \-e, for example), some job numbers will
 probably appear more than once in the accounting log file to refer to
 different jobs; such jobs can be distinguished by the "submit" time
 stamp in the data records.
 .IP 
-When data for specific jobs are requested with the --jobs option, we
+When data for specific jobs are requested with the \-\-jobs option, we
 assume that the user wants to see only the most recent job with that
-number. This behavior can be overridden by specifying --duplicates, in
+number. This behavior can be overridden by specifying \-\-duplicates, in
 which case all records that match the selection criteria will be returned.
-.IP
-When --jobs is not specified, we report data for all jobs that match
-the selection criteria, even if some of the job numbers are
-reused. Specify that you only want the most recent job for each
-selected job number with the --noduplicates option.
-
 
 .TP
 \f3\-e \fP\f3,\fP \f3\-\-helpformat\fP

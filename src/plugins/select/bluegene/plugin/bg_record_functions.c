@@ -990,6 +990,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		/* Translate 1 nodecard count to ionode count */
 		if((io_cnt *= bluegene_io_ratio))
 			io_cnt--;
+
 		/* make sure we create something that is able to be
 		   created */
 		if(bluegene_smallest_block < bluegene_nodecard_node_cnt)
@@ -1002,6 +1003,16 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	if (!node_ptr) {
 		error ("down_sub_node_blocks: invalid node specified '%s'",
 		       bp_name);
+		return EINVAL;
+	}
+
+	/* this is here for sanity check to make sure we don't core on
+	   these bits when we set them below. */
+	if(io_start >= bluegene_numpsets 
+	   || (io_start+io_cnt) >= bluegene_numpsets) {
+		debug("io %d-%d not configured on this "
+		      "system, only %d ionodes per midplane",
+		      io_start, io_start+io_cnt, bluegene_numpsets);
 		return EINVAL;
 	}
 	bp_bit = (node_ptr - node_record_table_ptr);
