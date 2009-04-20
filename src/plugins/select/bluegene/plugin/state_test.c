@@ -182,7 +182,16 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 		rc = SLURM_ERROR;
 		goto clean_up;
 	}
-	
+
+	/* make sure we have this midplane in the system */
+	if(coord[X] >= DIM_SIZE[X]
+	   || coord[Y] >= DIM_SIZE[Y]
+	   || coord[Z] >= DIM_SIZE[Z]) {
+		debug4("node %s isn't configured", bp_id);
+		rc = SLURM_SUCCESS;
+		goto clean_up;
+	}
+
 	node_name = xstrdup_printf("%s%c%c%c",
 				   bg_slurm_node_prefix,
 				   alpha_num[coord[X]], 
@@ -262,11 +271,28 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 		io_start = atoi((char*)nc_name+1);
 		io_start *= bluegene_io_ratio;
 #endif
-
+		/* On small systems with less than a midplane the
+		   database may see the nodecards there but in missing
+		   state.  To avoid getting a bunch of warnings here just
+		   skip over the ones missing.
+		*/
+		if(io_start >= bluegene_numpsets) {
+			if(state == RM_NODECARD_MISSING) {
+				debug3("Nodecard %s is missing continue",
+				       nc_name);
+			} else {
+				error("We don't have the system configured "
+				      "for this nodecard %s, we only have "
+				      "%d ionodes and this starts at %d", 
+				      nc_name, io_start, bluegene_numpsets);
+			}
+			free(nc_name);
+			continue;
+		}
 /* 		if(!ionode_bitmap)  */
 /* 			ionode_bitmap = bit_alloc(bluegene_numpsets); */
-/* 		info("setting %d-%d of %d", */
-/* 		     io_start, io_start+io_cnt, bluegene_numpsets); */
+/* 		info("setting %s start %d of %d", */
+/* 		     nc_name,  io_start, bluegene_numpsets); */
 /* 		bit_nset(ionode_bitmap, io_start, io_start+io_cnt); */
 		/* we have to handle each nodecard separately to make
 		   sure we don't create holes in the system */
