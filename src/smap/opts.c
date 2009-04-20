@@ -1,7 +1,8 @@
 /****************************************************************************\
  *  opts.c - smap command line option processing functions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -83,6 +84,8 @@ extern void parse_command_line(int argc, char *argv[])
 				tmp = BGPART;
 			else if (!strcmp(optarg, "c"))
 				tmp = COMMANDS;
+			else if (!strcmp(optarg, "r"))
+				tmp = RESERVATIONS;
 
 			params.display = tmp;
 			break;
@@ -155,8 +158,11 @@ static void _print_version(void)
 
 static void _usage(void)
 {
-	printf("\
-Usage: smap [-hVcp] [-D jsbc] [-i seconds]\n");
+#ifdef HAVE_BG
+	printf("Usage: smap [-hVcp] [-D bcjrs] [-i seconds]\n");
+#else
+	printf("Usage: smap [-hVcp] [-D jrs] [-i seconds]\n");
+#endif
 }
 
 static void _help(void)
@@ -164,10 +170,11 @@ static void _help(void)
 	printf("\
 Usage: smap [OPTIONS]\n\
   -D, --display              set which display mode to use\n\
-                             j=jobs\n\
-                             s=slurm partitions\n\
                              b=bluegene blocks\n\
-                             c=set configuration\n\
+                             c=set bluegene configuration\n\
+                             j=jobs\n\
+                             r=reservations\n\
+                             s=slurm partitions\n\
   -h, --noheader             no headers on output\n\
   -i, --iterate=seconds      specify an interation period\n\
   -V, --version              output version information and exit\n\

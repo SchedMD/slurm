@@ -1600,6 +1600,6 @@ void get_command(void)
 	main_xcord = 1;
 	main_ycord = 1;
 	print_date();
-	get_job(0);
+	get_job();
 	return;
 }

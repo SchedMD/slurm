@@ -49,7 +49,7 @@ static int  _nodes_in_list(char *node_list);
 static void _print_header_job(void);
 static int  _print_text_job(job_info_t * job_ptr);
 
-extern void get_job()
+extern void get_job(void)
 {
 	int error_code = -1, i, recs;
 	static int printed_jobs = 0;
