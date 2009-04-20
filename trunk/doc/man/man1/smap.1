@@ -1,4 +1,4 @@
-.TH SMAP "1" "February 2009" "smap 2.0" "Slurm components"
+.TH SMAP "1" "April 2009" "smap 2.0" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -30,17 +30,22 @@ Note that unallocated nodes are indicated by a '.' and nodes in the
 DOWN, DRAINED or FAIL state by a '#'.
 .RS
 .TP 15
+.I "b"
+Displays information about BlueGene partitions on the system
+.TP
+.I "c"
+Displays current BlueGene node states and allows users to configure the system.
+.TP
 .I "j"
 Displays information about jobs running on system.
+.TP
+.I "r"
+Display information about advanced reservations. 
+While all current and future reservations will be listed, 
+only currently active reservations will appear on the node map.
 .TP 
 .I "s"
 Displays information about slurm partitions on the system
-.TP
-.I "b"
-Displays information about BG partitions on the system
-.TP
-.I "c"
-Displays current node states and allows users to configure the system.
 .RE
 
 .TP
@@ -90,6 +95,11 @@ scroll the window containing the text information.
 
 .SH "OUTPUT FIELD DESCRIPTIONS"
 .TP
+\fBACCESS_CONTROL\fR
+Identifies the users or bank accounts which can use this advanced reservation.
+A prefix of "A:" indicates that the following account names may use this reservation.
+A prefix of "U:" indicates that the following user names may use this reservation.
+.TP
 \fBAVAIL\fR
 Partition state: \fBup\fR or \fBdown\fR.
 .TP
@@ -99,6 +109,9 @@ BlueGene Block Name\fR.
 \fBCONN\fR
 Connection Type: \fBTORUS\fR or \fBMESH\fR or \fBSMALL\fR (for small blocks).
 .TP
+\fBEND_TIME\fR
+The time when an advanced reservation ended.
+.TP
 \fBID\fR
 Key to identify the nodes associated with this entity in the node chart.
 .TP
@@ -106,10 +119,11 @@ Key to identify the nodes associated with this entity in the node chart.
 Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 .TP
 \fBNAME\fR
-Name of the job.
+Name of the job or advanced reservation.
 .TP
 \fBNODELIST\fR or \fBBP_LIST\fR
-Names of nodes or base partitions associated with this configuration/partition.
+Names of nodes or base partitions associated with this configuration, 
+partition or reservation.
 .TP
 \fBNODES\fR
 Count of nodes or base partitions with this particular configuration.
@@ -124,6 +138,9 @@ PD (pending), R (running), S (suspended),
 CG (completing), CD  (completed), 
 F (failed), TO (timeout), and NF (node failure). See 
 \fBJOB STATE CODES\fR section below for more information.
+.TP
+\fBSTART_TIME\fR
+The time when an advanced reservation started.
 .TP
 \fBSTATE\fR
 State of the nodes. 
@@ -439,6 +456,7 @@ The location of the SLURM configuration file.
 
 .SH "COPYING"
 Copyright (C) 2004\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
