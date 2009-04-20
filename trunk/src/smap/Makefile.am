@@ -20,7 +20,8 @@ smap_LDADD = \
 noinst_HEADERS = smap.h 
 smap_SOURCES = smap.c \
 	job_functions.c partition_functions.c \
-	configure_functions.c grid_functions.c opts.c
+	configure_functions.c grid_functions.c \
+	reservation_functions.c opts.c
 
 force:
 $(smap_LDADD) : force
@@ -32,7 +33,8 @@ else
 
 EXTRA_smap_SOURCES = smap.h smap.c \
 	job_functions.c partition_functions.c \
-	configure_functions.c grid_functions.c opts.c
+	configure_functions.c grid_functions.c \
+	reservation_functions.c opts.c
 
 endif
 

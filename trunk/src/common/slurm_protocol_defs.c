@@ -1439,6 +1439,7 @@ static void _slurm_free_reserve_info_members(reserve_info_t * resv)
 		xfree(resv->accounts);
 		xfree(resv->features);
 		xfree(resv->name);
+		xfree(resv->node_inx);
 		xfree(resv->node_list);
 		xfree(resv->partition);
 		xfree(resv->users);

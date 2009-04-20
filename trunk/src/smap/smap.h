@@ -103,7 +103,7 @@
 #define OPT_LONG_USAGE	0x101
 #define OPT_LONG_HIDE	0x102
 
-enum { JOBS, SLURMPART, BGPART, COMMANDS };
+enum { JOBS, RESERVATIONS, SLURMPART, BGPART, COMMANDS };
 
 //typedef void (*sighandler_t) (int);
 
@@ -153,12 +153,13 @@ extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
 
 extern void parse_command_line(int argc, char *argv[]);
-extern void print_date();
+extern void print_date(void);
 extern void clear_window(WINDOW *win);
 
-extern void get_slurm_part();
-extern void get_bg_part();
-extern void get_job();
-extern void get_command();
+extern void get_slurm_part(void);
+extern void get_bg_part(void);
+extern void get_job(void);
+extern void get_command(void);
+extern void get_reservation(void);
 
 #endif

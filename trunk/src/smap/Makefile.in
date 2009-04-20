@@ -82,15 +82,18 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am__smap_SOURCES_DIST = smap.c job_functions.c partition_functions.c \
-	configure_functions.c grid_functions.c opts.c
+	configure_functions.c grid_functions.c reservation_functions.c \
+	opts.c
 @HAVE_SOME_CURSES_TRUE@am_smap_OBJECTS = smap.$(OBJEXT) \
 @HAVE_SOME_CURSES_TRUE@	job_functions.$(OBJEXT) \
 @HAVE_SOME_CURSES_TRUE@	partition_functions.$(OBJEXT) \
 @HAVE_SOME_CURSES_TRUE@	configure_functions.$(OBJEXT) \
-@HAVE_SOME_CURSES_TRUE@	grid_functions.$(OBJEXT) opts.$(OBJEXT)
+@HAVE_SOME_CURSES_TRUE@	grid_functions.$(OBJEXT) \
+@HAVE_SOME_CURSES_TRUE@	reservation_functions.$(OBJEXT) \
+@HAVE_SOME_CURSES_TRUE@	opts.$(OBJEXT)
 am__EXTRA_smap_SOURCES_DIST = smap.h smap.c job_functions.c \
 	partition_functions.c configure_functions.c grid_functions.c \
-	opts.c
+	reservation_functions.c opts.c
 smap_OBJECTS = $(am_smap_OBJECTS)
 @HAVE_SOME_CURSES_TRUE@smap_DEPENDENCIES = $(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la \
 @HAVE_SOME_CURSES_TRUE@	$(top_builddir)/src/api/libslurm.o
@@ -298,12 +301,14 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @HAVE_SOME_CURSES_TRUE@noinst_HEADERS = smap.h 
 @HAVE_SOME_CURSES_TRUE@smap_SOURCES = smap.c \
 @HAVE_SOME_CURSES_TRUE@	job_functions.c partition_functions.c \
-@HAVE_SOME_CURSES_TRUE@	configure_functions.c grid_functions.c opts.c
+@HAVE_SOME_CURSES_TRUE@	configure_functions.c grid_functions.c \
+@HAVE_SOME_CURSES_TRUE@	reservation_functions.c opts.c
 
 @HAVE_SOME_CURSES_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @HAVE_SOME_CURSES_FALSE@EXTRA_smap_SOURCES = smap.h smap.c \
 @HAVE_SOME_CURSES_FALSE@	job_functions.c partition_functions.c \
-@HAVE_SOME_CURSES_FALSE@	configure_functions.c grid_functions.c opts.c
+@HAVE_SOME_CURSES_FALSE@	configure_functions.c grid_functions.c \
+@HAVE_SOME_CURSES_FALSE@	reservation_functions.c opts.c
 
 all: all-am
 
@@ -381,6 +386,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_functions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/smap.Po@am__quote@
 
 .c.o:

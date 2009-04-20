@@ -2528,6 +2528,7 @@ unpack_error:
 static int
 _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer)
 {
+	char *node_inx_str = NULL;
 	uint32_t uint32_tmp;
 
 	safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
@@ -2535,6 +2536,14 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer)
 	safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
 	safe_unpack32(&resv->node_cnt,		buffer);
+	safe_unpackstr_xmalloc(&node_inx_str,	&uint32_tmp, buffer);
+	if (node_inx_str == NULL)
+		resv->node_inx = bitfmt2int("");
+	else {
+		resv->node_inx = bitfmt2int(node_inx_str);
+		xfree(node_inx_str);
+		node_inx_str = NULL;
+	}
 	safe_unpackstr_xmalloc(&resv->node_list,&uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&resv->partition,&uint32_tmp, buffer);
 	safe_unpack_time(&resv->start_time,	buffer);
@@ -2546,6 +2555,8 @@ unpack_error:
 	xfree(resv->accounts);
 	xfree(resv->features);
 	xfree(resv->name);
+	xfree(node_inx_str);
+	xfree(resv->node_inx);
 	xfree(resv->node_list);
 	xfree(resv->partition);
 	xfree(resv->users);
