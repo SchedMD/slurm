@@ -315,7 +315,7 @@ job allocation?</b></a><br>
 There is a srun option <i>--jobid</i> that can be used to specify 
 a job's ID. 
 For a batch job or within an existing resource allocation, the 
-environment variable <i>SLURM_JOBID</i> has already been defined, 
+environment variable <i>SLURM_JOB_ID</i> has already been defined, 
 so all job steps will run within that job allocation unless 
 otherwise specified.
 The one exception to this is when submitting batch jobs. 
@@ -460,7 +460,7 @@ named <i>_interactive</i>.</p>
 # 
 # Simple batch script that starts SCREEN.
 
-exec screen -Dm -S slurm$SLURM_JOBID
+exec screen -Dm -S slurm$SLURM_JOB_ID
 </pre>
 
 <p>The following script named <i>_interactive_screen</i> is also used.</p>
@@ -1143,7 +1143,7 @@ job ID and allocated hosts for a batch job only.
 if [ X"$SLURM_STEP_ID" = "X" -a X"$SLURM_PROCID" = "X"0 ]
 then
   echo "print =========================================="
-  echo "print SLURM_JOBID = $SLURM_JOBID"
+  echo "print SLURM_JOB_ID = $SLURM_JOB_ID"
   echo "print SLURM_NODELIST = $SLURM_NODELIST"
   echo "print =========================================="
 fi

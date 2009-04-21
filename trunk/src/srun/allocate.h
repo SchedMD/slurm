@@ -89,20 +89,12 @@ job_desc_msg_t * job_desc_msg_create_from_opts ();
 void job_desc_msg_destroy (job_desc_msg_t *j);
 
 /*
- * Check for SLURM_JOBID environment variable, and if it is a valid
+ * Check for SLURM_JOB_ID environment variable, and if it is a valid
  * jobid, return a pseudo allocation response pointer.
  *
- * Returns NULL if SLURM_JOBID is not present or is invalid.
+ * Returns NULL if SLURM_JOB_ID is not present or is invalid.
  */
 resource_allocation_response_msg_t * existing_allocation(void);
-
-/*
- * Return the jobid number stored in SLURM_JOBID env var
- *
- * Returns 0 if SLURM_JOBID is not set in current environment, or
- * is invalid.
- */
-uint32_t jobid_from_env(void);
 
 /*
  * Create a job step given the job information stored in 'j'

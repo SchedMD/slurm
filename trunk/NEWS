@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Add new scontrol option: show topology (reports contents of topology.conf 
     file via RPC if topology/tree plugin is configured).
  -- Add advanced reservation display to smap command.
+ -- Replaced remaining references to SLURM_JOBID with SLURM_JOB_ID - except
+    when needed for backwards compatibility.
 
 * Changes in SLURM 1.4.0-pre12
 ==============================

@@ -117,7 +117,7 @@ static void _get_job_info(void)
 	char *jobid_str;
 	uint32_t jobid;
 
-	jobid_str = getenv("SLURM_JOBID");
+	jobid_str = getenv("SLURM_JOB_ID");
 	if (!jobid_str) {
 		error("Command only valid from within SLURM job");
 		exit(1);

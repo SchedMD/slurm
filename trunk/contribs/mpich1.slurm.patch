@@ -76,7 +76,7 @@ Index: mpid/ch_p4/p4/lib/p4_args.c
 +     * for a truly parallel job launch using the existing "execer"
 +     * mode of operation with slight modification.
 +     */
-+    if (getenv("SLURM_JOBID")) {
++    if (getenv("SLURM_JOB_ID")) {
 +	int i;
 +	char *tmp, *hostlist, *host2, *tasks_per_node, *task2;
 +

@@ -80,15 +80,15 @@ int main(int argc, char *argv[])
 	char *job_id_char = NULL;
 	uint32_t job_id;
 
-	job_id_char = getenv("SLURM_JOBID");		/* get SLURM job ID */
+	job_id_char = getenv("SLURM_JOB_ID");		/* get SLURM job ID */
 	if (!job_id_char) {
-		fprintf(stderr, "SLURM_JOBID not set\n");
+		fprintf(stderr, "SLURM_JOB_ID not set\n");
 		exit(1);				/* abort job */
 	}
 
 	job_id = (uint32_t) atol(job_id_char);
 	if (job_id == 0) {
-		fprintf(stderr, "SLURM_JOBID invalid: %s\n", job_id_char);
+		fprintf(stderr, "SLURM_JOB_ID invalid: %s\n", job_id_char);
 		exit(1);				/* abort job */
 	}
 

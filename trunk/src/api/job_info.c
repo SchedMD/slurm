@@ -767,11 +767,11 @@ extern int32_t islurm_get_rem_time__(uint32_t *jobid)
 extern int32_t islurm_get_rem_time2__()
 {
 	uint32_t jobid;
-	char *slurm_jobid = getenv("SLURM_JOBID");
+	char *slurm_job_id = getenv("SLURM_JOB_ID");
 
-	if (slurm_jobid == NULL)
+	if (slurm_job_id == NULL)
 		return 0;
-	jobid = atol(slurm_jobid);
+	jobid = atol(slurm_job_id);
 	return islurm_get_rem_time__(&jobid);
 }
 
@@ -806,7 +806,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 		if (jobid_env) {
 			jobid = jobid_env;
 		} else {
-			char *env = getenv("SLURM_JOBID");
+			char *env = getenv("SLURM_JOB_ID");
 			if (env) {
 				jobid = (uint32_t) atol(env);
 				jobid_env = jobid;

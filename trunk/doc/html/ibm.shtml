@@ -23,7 +23,7 @@ This architecture insures proper operation of all IBM tools.</p>
 This script should contain one or more invocations of poe to launch 
 the tasks.
 If you want to run a job interactively, just execute poe directly. 
-Poe will recognize that it lacks a SLURM job allocation (the SLURM_JOBID 
+Poe will recognize that it lacks a SLURM job allocation (the SLURM_JOB_ID 
 environment variable will be missing) and create the SLURM allocation 
 prior to launching tasks.</p>
 

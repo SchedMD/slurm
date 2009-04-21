@@ -41,7 +41,7 @@ print_header $test_id
 
 #
 # Submit a slurm allocate job
-# Interactively print $SLURM_JOBID
+# Interactively print $SLURM_JOB_ID
 #
 set timeout $max_job_delay
 set match 0
@@ -50,14 +50,14 @@ set salloc_pid [spawn $salloc -t1 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "$bin_echo MY_ID=\$SLURM_JOBID \n"
+		send "$bin_echo MY_ID=\$SLURM_JOB_ID \n"
 		array unset expect_out
 		exp_continue
 	}
 	-re "MY_ID=($number)?" {
 		foreach name [array names expect_out] {
 			if {$name == "1,string"} {
-				# SLURM_JOBID is set
+				# SLURM_JOB_ID is set
 				set slurm_jobid $expect_out(1,string)
 				break
 			}
@@ -91,7 +91,7 @@ if { $job_id == 0 } {
 	set exit_code 1
 } else {
 	if { $job_id != $slurm_jobid } {
-		send_user "\nFAILURE: salloc failed to set valid SLURM_JOBID\n"
+		send_user "\nFAILURE: salloc failed to set valid SLURM_JOB_ID\n"
 		set exit_code 1
 	}
 }
