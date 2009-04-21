@@ -64,13 +64,13 @@ extern List create_dynamic_block(List block_list,
 	int geo[BA_SYSTEM_DIMENSIONS];
 	int i;
 	blockreq_t blockreq;
-	int cnodes = request->procs / bluegene_proc_ratio;
+	int cnodes = request->procs / bg_conf->proc_ratio;
 
-	if(cnodes < bluegene_smallest_block) {
+	if(cnodes < bg_conf->smallest_block) {
 		error("Can't create this size %d "
 		      "on this system numpsets is %d",
 		      request->procs,
-		      bluegene_numpsets);
+		      bg_conf->numpsets);
 		goto finished;
 	}
 	memset(&blockreq, 0, sizeof(blockreq_t));
@@ -136,7 +136,7 @@ extern List create_dynamic_block(List block_list,
 		FREE_NULL_BITMAP(bitmap);
 	}
 
-	if(request->size==1 && cnodes < bluegene_bp_node_cnt) {
+	if(request->size==1 && cnodes < bg_conf->bp_node_cnt) {
 		switch(cnodes) {
 #ifdef HAVE_BGL
 		case 32:
@@ -227,11 +227,11 @@ extern List create_dynamic_block(List block_list,
 			/* Here we are only looking for the first
 			   block on the midplane.  So either the count
 			   is greater or equal than
-			   bluegene_bp_node_cnt or the first bit is
+			   bg_conf->bp_node_cnt or the first bit is
 			   set in the ionode_bitmap.
 			*/
 			if(bg_record->job_running == NO_JOB_RUNNING 
-			   && ((bg_record->node_cnt >= bluegene_bp_node_cnt)
+			   && ((bg_record->node_cnt >= bg_conf->bp_node_cnt)
 			       || (bit_ffs(bg_record->ionode_bitmap) == 0))) {
 				
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
@@ -359,7 +359,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		found_record->bp_count = 1;
 		found_record->nodes = xstrdup_printf(
 			"%s%c%c%c", 
-			bg_slurm_node_prefix, 
+			bg_conf->slurm_node_prefix, 
 			alpha_num[ba_node->coord[X]],
 			alpha_num[ba_node->coord[Y]],
 			alpha_num[ba_node->coord[Z]]);
@@ -376,8 +376,8 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 				
 	found_record->conn_type = SELECT_SMALL;
 				
-	xassert(bluegene_proc_ratio);
-	found_record->cpu_cnt = bluegene_proc_ratio * size;
+	xassert(bg_conf->proc_ratio);
+	found_record->cpu_cnt = bg_conf->proc_ratio * size;
 	found_record->node_cnt = size;
 
 	found_record->ionode_bitmap = bit_copy(ionodes);
@@ -585,8 +585,8 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	int search_cnt = 0;
 	int total_cnode_cnt=0;
 	char tmp_char[256];
-	bitstr_t *ionodes = bit_alloc(bluegene_numpsets);
-	int cnodes = request->procs / bluegene_proc_ratio;
+	bitstr_t *ionodes = bit_alloc(bg_conf->numpsets);
+	int cnodes = request->procs / bg_conf->proc_ratio;
 	
 	debug2("proc count = %d cnodes = %d size = %d",
 	       request->procs, cnodes, request->size);
@@ -596,16 +596,16 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		/* a 16 can go anywhere */
 		break;
 	case 32:
-		bit_itr = list_iterator_create(bg_valid_small32);
+		bit_itr = list_iterator_create(bg_lists->valid_small32);
 		break;
 	case 64:
-		bit_itr = list_iterator_create(bg_valid_small64);
+		bit_itr = list_iterator_create(bg_lists->valid_small64);
 		break;
 	case 128:
-		bit_itr = list_iterator_create(bg_valid_small128);
+		bit_itr = list_iterator_create(bg_lists->valid_small128);
 		break;
 	case 256:
-		bit_itr = list_iterator_create(bg_valid_small256);
+		bit_itr = list_iterator_create(bg_lists->valid_small256);
 		break;
 	default:
 		error("We shouldn't be here with this size %d", cnodes);
@@ -630,7 +630,7 @@ again:
 				continue;
 		/* check small blocks first */
 		if((search_cnt == 0)
-		   && (bg_record->node_cnt > bluegene_bp_node_cnt))
+		   && (bg_record->node_cnt > bg_conf->bp_node_cnt))
 				continue;
 		
 		if (request->avail_node_bitmap &&
@@ -691,7 +691,7 @@ again:
 				list_iterator_reset(bit_itr);
 			}
 			if(!bitstr) {
-				bit_nclear(ionodes, 0, (bluegene_numpsets-1));
+				bit_nclear(ionodes, 0, (bg_conf->numpsets-1));
 				bit_or(ionodes, bg_record->ionode_bitmap);
 				total_cnode_cnt = bg_record->node_cnt;
 			} else
@@ -731,7 +731,7 @@ again:
 	if(!bg_record && (search_cnt < 2)) {
 		search_cnt++;
 		list_iterator_reset(itr);
-		bit_nclear(ionodes, 0, (bluegene_numpsets-1));
+		bit_nclear(ionodes, 0, (bg_conf->numpsets-1));
 		total_cnode_cnt = 0;		
 		goto again;
 	}
@@ -746,7 +746,7 @@ again:
 		} else {
 			debug3("looking for original");
 			found_record = find_org_in_bg_list(
-				bg_list, bg_record);
+				bg_lists->main, bg_record);
 		}
 		if(!found_record) {
 			error("this record wasn't found in the list!");
@@ -771,7 +771,7 @@ again:
 		_split_block(block_list, new_blocks, found_record, cnodes);
 		remove_from_bg_list(block_list, bg_record);
 		destroy_bg_record(bg_record);
-		remove_from_bg_list(bg_list, found_record);
+		remove_from_bg_list(bg_lists->main, found_record);
 		temp_list = list_create(NULL);
 		list_push(temp_list, found_record);
 		num_block_to_free++;

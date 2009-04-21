@@ -91,7 +91,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 	if(bg_record->modifying)
 		return SLURM_SUCCESS;
 	
-	user_name = xstrdup(bg_slurm_user_name);
+	user_name = xstrdup(bg_conf->slurm_user_name);
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
 	   == REMOVE_USER_ERR) {
 		error("Something happened removing "
@@ -137,9 +137,9 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		bg_record->target_name = xstrdup(bg_record->user_name);
 	}
 
-	if(remove_from_bg_list(bg_job_block_list, bg_record) == SLURM_SUCCESS) 
+	if(remove_from_bg_list(bg_lists->job_running, bg_record) == SLURM_SUCCESS) 
 		num_unused_cpus += bg_record->cpu_cnt;			       
-	remove_from_bg_list(bg_booted_block_list, bg_record);
+	remove_from_bg_list(bg_lists->booted, bg_record);
 
 	xfree(user_name);
 			
@@ -175,7 +175,7 @@ extern int block_ready(struct job_record *job_ptr)
 	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
 				  SELECT_DATA_BLOCK_ID, &block_id);
 	if (rc == SLURM_SUCCESS) {
-		bg_record = find_bg_record_in_list(bg_list, block_id);
+		bg_record = find_bg_record_in_list(bg_lists->main, block_id);
 		slurm_mutex_lock(&block_state_mutex);
 		
 		if(bg_record) {
@@ -190,7 +190,7 @@ extern int block_ready(struct job_record *job_ptr)
 			else
 				rc = READY_JOB_ERROR;	/* try again */
 		} else {
-			error("block_ready: block %s not in bg_list.",
+			error("block_ready: block %s not in bg_lists->main.",
 			      block_id);
 			rc = READY_JOB_FATAL;	/* fatal error */
 		}
@@ -247,18 +247,18 @@ extern int update_block_list()
 	if(!kill_job_list)
 		kill_job_list = list_create(_destroy_kill_struct);
 
-	if(!bg_list) 
+	if(!bg_lists->main) 
 		return updated;
 	
 	slurm_mutex_lock(&block_state_mutex);
-	itr = list_iterator_create(bg_list);
+	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 		if(!bg_record->bg_block_id)
 			continue;
 		name = bg_record->bg_block_id;
 		if ((rc = bridge_get_block_info(name, &block_ptr)) 
 		    != STATUS_OK) {
-			if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+			if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 				switch(rc) {
 				case INCONSISTENT_DATA:
 					debug2("got inconsistent data when "
@@ -300,8 +300,8 @@ extern int update_block_list()
 			updated = 1;
 		}
 #else
-		if((bg_record->node_cnt < bluegene_bp_node_cnt) 
-		   || (bluegene_bp_node_cnt == bluegene_nodecard_node_cnt)) {
+		if((bg_record->node_cnt < bg_conf->bp_node_cnt) 
+		   || (bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)) {
 			char *mode = NULL;
 			uint16_t conn_type = SELECT_SMALL;
 			if ((rc = bridge_get_data(block_ptr,
@@ -403,12 +403,12 @@ extern int update_block_list()
 			else if(bg_record->state == RM_PARTITION_CONFIGURING) 
 				bg_record->boot_state = 1;
 			else if(bg_record->state == RM_PARTITION_FREE) {
-				if(remove_from_bg_list(bg_job_block_list, 
+				if(remove_from_bg_list(bg_lists->job_running, 
 						       bg_record) 
 				   == SLURM_SUCCESS) {
 					num_unused_cpus += bg_record->cpu_cnt;
 				}
-				remove_from_bg_list(bg_booted_block_list,
+				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
 			} 
 			updated = 1;
@@ -444,7 +444,7 @@ extern int update_block_list()
 					freeit->jobid = bg_record->job_running;
 					list_push(kill_job_list, freeit);
 					if(remove_from_bg_list(
-						   bg_job_block_list, 
+						   bg_lists->job_running, 
 						   bg_record) 
 					   == SLURM_SUCCESS) {
 						num_unused_cpus += 
@@ -454,7 +454,7 @@ extern int update_block_list()
 					error("block %s in an error "
 					      "state while booting.",
 					      bg_record->bg_block_id);
-				remove_from_bg_list(bg_booted_block_list,
+				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
 				trigger_block_error();
 				break;
@@ -494,14 +494,14 @@ extern int update_block_list()
 					bg_record->boot_state = 0;
 					bg_record->boot_count = 0;
 					if(remove_from_bg_list(
-						   bg_job_block_list, 
+						   bg_lists->job_running, 
 						   bg_record) 
 					   == SLURM_SUCCESS) {
 						num_unused_cpus += 
 							bg_record->cpu_cnt;
 					} 
 					remove_from_bg_list(
-						bg_booted_block_list,
+						bg_lists->booted,
 						bg_record);
 				}
 				break;
@@ -575,11 +575,11 @@ extern int update_freeing_block_list()
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
 	
-	if(!bg_freeing_list) 
+	if(!bg_lists->freeing) 
 		return updated;
 	
 	slurm_mutex_lock(&block_state_mutex);
-	itr = list_iterator_create(bg_freeing_list);
+	itr = list_iterator_create(bg_lists->freeing);
 	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 		if(!bg_record->bg_block_id)
 			continue;
@@ -587,7 +587,7 @@ extern int update_freeing_block_list()
 		name = bg_record->bg_block_id;
 		if ((rc = bridge_get_block_info(name, &block_ptr)) 
 		    != STATUS_OK) {
-			if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+			if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 				switch(rc) {
 				case INCONSISTENT_DATA:
 					debug2("got inconsistent data when "

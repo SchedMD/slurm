@@ -122,7 +122,7 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 		}
 		
 		snprintf(bg_down_node, sizeof(bg_down_node), "%s%c%c%c", 
-			 bg_slurm_node_prefix,
+			 bg_conf->slurm_node_prefix,
 			 alpha_num[bp_loc.X], alpha_num[bp_loc.Y],
 			 alpha_num[bp_loc.Z]);
 		
@@ -158,7 +158,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 	//int io_cnt = 1;
 
 	/* Translate 1 nodecard count to ionode count */
-/* 	if((io_cnt *= bluegene_io_ratio)) */
+/* 	if((io_cnt *= bg_conf->io_ratio)) */
 /* 		io_cnt--; */
 
 	if ((rc = bridge_get_data(bp_ptr, RM_BPID, &bp_id))
@@ -194,7 +194,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 	}
 
 	node_name = xstrdup_printf("%s%c%c%c",
-				   bg_slurm_node_prefix,
+				   bg_conf->slurm_node_prefix,
 				   alpha_num[coord[X]], 
 				   alpha_num[coord[Y]],
 				   alpha_num[coord[Z]]);
@@ -263,21 +263,21 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 			error("bridge_get_data(CardQuarter): %d",rc);
 			goto clean_up;
 		}
-		io_start *= bluegene_quarter_ionode_cnt;
-		io_start += bluegene_nodecard_ionode_cnt * (i%4);
+		io_start *= bg_conf->quarter_ionode_cnt;
+		io_start += bg_conf->nodecard_ionode_cnt * (i%4);
 #else
 		/* From the first nodecard id we can figure
 		   out where to start from with the alloc of ionodes.
 		*/
 		io_start = atoi((char*)nc_name+1);
-		io_start *= bluegene_io_ratio;
+		io_start *= bg_conf->io_ratio;
 #endif
 		/* On small systems with less than a midplane the
 		   database may see the nodecards there but in missing
 		   state.  To avoid getting a bunch of warnings here just
 		   skip over the ones missing.
 		*/
-		if(io_start >= bluegene_numpsets) {
+		if(io_start >= bg_conf->numpsets) {
 			if(state == RM_NODECARD_MISSING) {
 				debug3("Nodecard %s is missing continue",
 				       nc_name);
@@ -285,15 +285,15 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 				error("We don't have the system configured "
 				      "for this nodecard %s, we only have "
 				      "%d ionodes and this starts at %d", 
-				      nc_name, io_start, bluegene_numpsets);
+				      nc_name, io_start, bg_conf->numpsets);
 			}
 			free(nc_name);
 			continue;
 		}
 /* 		if(!ionode_bitmap)  */
-/* 			ionode_bitmap = bit_alloc(bluegene_numpsets); */
+/* 			ionode_bitmap = bit_alloc(bg_conf->numpsets); */
 /* 		info("setting %s start %d of %d", */
-/* 		     nc_name,  io_start, bluegene_numpsets); */
+/* 		     nc_name,  io_start, bg_conf->numpsets); */
 /* 		bit_nset(ionode_bitmap, io_start, io_start+io_cnt); */
 		/* we have to handle each nodecard separately to make
 		   sure we don't create holes in the system */
@@ -321,7 +321,7 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 /* 		info("no ionode_bitmap"); */
 /* 		ListIterator itr = NULL; */
 /* 		slurm_mutex_lock(&block_state_mutex); */
-/* 		itr = list_iterator_create(bg_list); */
+/* 		itr = list_iterator_create(bg_lists->main); */
 /* 		while ((bg_record = list_next(itr))) { */
 /* 			if(bg_record->job_running != BLOCK_ERROR_STATE) */
 /* 				continue; */

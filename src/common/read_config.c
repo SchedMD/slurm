@@ -2439,3 +2439,39 @@ extern uint32_t debug_str2flags(char *debug_flags)
 
 	return rc;
 }
+
+extern void destroy_config_key_pair(void *object)
+{
+	config_key_pair_t *key_pair_ptr = (config_key_pair_t *)object;
+
+	if(key_pair_ptr) {
+		xfree(key_pair_ptr->name);
+		xfree(key_pair_ptr->value);
+		xfree(key_pair_ptr);
+	}
+}
+
+extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer)
+{
+	config_key_pair_t *object = (config_key_pair_t *)in;
+	packstr(object->name,  buffer);
+	packstr(object->value, buffer);
+}
+
+extern int unpack_config_key_pair(void **object, uint16_t rpc_version,
+				  Buf buffer)
+{
+	uint32_t uint32_tmp;
+	config_key_pair_t *object_ptr = xmalloc(sizeof(config_key_pair_t));
+	
+	*object = object_ptr;
+	safe_unpackstr_xmalloc(&object_ptr->name,  &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->value, &uint32_tmp, buffer);
+	
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_config_key_pair(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}

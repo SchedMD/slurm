@@ -46,6 +46,16 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#ifdef HAVE_BG
+typedef enum bg_layout_type {
+	LAYOUT_STATIC,  /* no overlaps, except for full system block
+			   blocks never change */
+	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in 
+			   bluegene.conf file */
+	LAYOUT_DYNAMIC	/* slurm will make all blocks */
+} bg_layout_t;
+#endif
+
 typedef struct {
 	bitstr_t *avail_nodes;      /* usable nodes are set on input, nodes
 				     * not required to satisfy the request
@@ -342,5 +352,11 @@ extern int select_g_free_node_info(node_select_info_msg_t **
 
 /* Note reconfiguration or change in partition configuration */
 extern int select_g_reconfigure(void);
+
+/*  Get configuration specific for this plugin */
+extern List select_g_get_config(void);
+
+/*  Print out list returned by select_g_get_config */
+extern void select_g_print_config(List config_list);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

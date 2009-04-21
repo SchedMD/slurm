@@ -236,15 +236,6 @@ typedef struct {
 } acct_cluster_cond_t;
 
 typedef struct {
-	List config_list;	/* list of config_key_pairs_t *'s */
-} acct_config_rec_t;
-
-typedef struct {
-	char *name;
-	char *value;
-} config_key_pair_t;
-
-typedef struct {
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
 	char *control_host;
 	uint32_t control_port;
@@ -536,7 +527,6 @@ extern void destroy_acct_account_rec(void *object);
 extern void destroy_acct_coord_rec(void *object);
 extern void destroy_cluster_accounting_rec(void *object);
 extern void destroy_acct_cluster_rec(void *object);
-extern void destroy_acct_config_rec(void *object);
 extern void destroy_acct_accounting_rec(void *object);
 extern void destroy_acct_association_rec(void *object);
 extern void destroy_acct_qos_rec(void *object);
@@ -581,9 +571,6 @@ extern int unpack_cluster_accounting_rec(void **object, uint16_t rpc_version,
 					 Buf buffer);
 extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
-				   Buf buffer);
-extern void pack_acct_config_rec(void *in, uint16_t rpc_version, Buf buffer);
-extern int unpack_acct_config_rec(void **object, uint16_t rpc_version,
 				   Buf buffer);
 extern void pack_acct_accounting_rec(void *in, uint16_t rpc_version,
 				     Buf buffer);

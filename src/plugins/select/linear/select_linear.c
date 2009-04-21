@@ -1550,6 +1550,11 @@ extern int select_p_reconfigure(void)
 	return SLURM_SUCCESS;
 }
 
+extern List select_p_get_config(void)
+{
+	return NULL;
+}
+
 /*
  * deallocate resources that were assigned to this job 
  *
