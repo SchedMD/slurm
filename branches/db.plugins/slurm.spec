@@ -325,19 +325,19 @@ if [ -d /etc/init.d ]; then
 fi
 
 LIST=./plugins.files
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_mysql.so
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_mysql.so &&
    echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_pgsql.so
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_pgsql.so &&
    echo %{_libdir}/slurm/accounting_storage_pgsql.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so &&
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so          &&
    echo %{_libdir}/slurm/checkpoint_blcr.so          >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
    echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
    echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
    echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so             >> $LIST
 
 #############################################################################
