@@ -780,6 +780,12 @@ typedef struct srun_node_fail_msg {
 	uint32_t step_id;	/* step_id or NO_VAL */
 } srun_node_fail_msg_t;
 
+typedef struct srun_step_missing_msg {
+	uint32_t job_id;	/* slurm job_id */
+	char *nodelist;		/* name of node(s) lacking this step */
+	uint32_t step_id;	/* step_id or NO_VAL */
+} srun_step_missing_msg_t;
+
 typedef struct {
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	uint32_t cpu_count;	/* number of required processors */

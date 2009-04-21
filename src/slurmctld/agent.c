@@ -3,7 +3,7 @@
  *	logic could be placed for broadcast communications.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
@@ -388,13 +388,14 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
 	
-	if ((agent_arg_ptr->msg_type != REQUEST_SHUTDOWN)
-	&&  (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)
-	&&  (agent_arg_ptr->msg_type != SRUN_EXEC)
-	&&  (agent_arg_ptr->msg_type != SRUN_TIMEOUT)
-	&&  (agent_arg_ptr->msg_type != SRUN_NODE_FAIL)
-	&&  (agent_arg_ptr->msg_type != SRUN_USER_MSG)
-	&&  (agent_arg_ptr->msg_type != SRUN_JOB_COMPLETE)) {
+	if ((agent_arg_ptr->msg_type != REQUEST_SHUTDOWN)	&&
+	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)	&&
+	    (agent_arg_ptr->msg_type != SRUN_EXEC)		&&
+	    (agent_arg_ptr->msg_type != SRUN_TIMEOUT)		&&
+	    (agent_arg_ptr->msg_type != SRUN_NODE_FAIL)		&&
+	    (agent_arg_ptr->msg_type != SRUN_USER_MSG)		&&
+	    (agent_arg_ptr->msg_type != SRUN_STEP_MISSING)	&&
+	    (agent_arg_ptr->msg_type != SRUN_JOB_COMPLETE)) {
 		/* Sending message to a possibly large number of slurmd.
 		 * Push all message forwarding to slurmd in order to 
 		 * offload as much work from slurmctld as possible. */
@@ -513,13 +514,14 @@ static void *_wdog(void *args)
 	thd_complete_t thd_comp;
 	ret_data_info_t *ret_data_info = NULL;
 
-	if ( (agent_ptr->msg_type == SRUN_JOB_COMPLETE)
-	||   (agent_ptr->msg_type == SRUN_EXEC)
-	||   (agent_ptr->msg_type == SRUN_PING)
-	||   (agent_ptr->msg_type == SRUN_TIMEOUT)
-	||   (agent_ptr->msg_type == SRUN_USER_MSG)
-	||   (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION)
-	||   (agent_ptr->msg_type == SRUN_NODE_FAIL) )
+	if ( (agent_ptr->msg_type == SRUN_JOB_COMPLETE)			||
+	     (agent_ptr->msg_type == SRUN_STEP_MISSING)			||
+	     (agent_ptr->msg_type == SRUN_EXEC)				||
+	     (agent_ptr->msg_type == SRUN_PING)				||
+	     (agent_ptr->msg_type == SRUN_TIMEOUT)			||
+	     (agent_ptr->msg_type == SRUN_USER_MSG)			||
+	     (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION)	||
+	     (agent_ptr->msg_type == SRUN_NODE_FAIL) )
 		srun_agent = true;
 
 	thd_comp.max_delay = 0;
@@ -601,9 +603,10 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 			*agent_ptr->msg_args_pptr;
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
-	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)
-	||         (agent_ptr->msg_type == SRUN_EXEC)
-	||         (agent_ptr->msg_type == SRUN_USER_MSG)) {
+	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)		||
+		   (agent_ptr->msg_type == SRUN_STEP_MISSING)		||
+	           (agent_ptr->msg_type == SRUN_EXEC)			||
+	           (agent_ptr->msg_type == SRUN_USER_MSG)) {
 		return;		/* no need to note srun response */
 	} else if (agent_ptr->msg_type == SRUN_NODE_FAIL) {
 		return;		/* no need to note srun response */
@@ -809,13 +812,14 @@ static void *_thread_per_group_rpc(void *args)
 	xassert(args != NULL);
 	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sig_array);
-	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT) ||
+	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT)	||
 			(msg_type == REQUEST_TERMINATE_JOB) );
-	srun_agent = (	(msg_type == SRUN_PING)    ||
-			(msg_type == SRUN_EXEC)    ||
-			(msg_type == SRUN_JOB_COMPLETE) ||
-			(msg_type == SRUN_TIMEOUT) ||
-			(msg_type == SRUN_USER_MSG) ||
+	srun_agent = (	(msg_type == SRUN_PING)			||
+			(msg_type == SRUN_EXEC)			||
+			(msg_type == SRUN_JOB_COMPLETE)		||
+			(msg_type == SRUN_STEP_MISSING)		||
+			(msg_type == SRUN_TIMEOUT)		||
+			(msg_type == SRUN_USER_MSG)		||
 			(msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
 			(msg_type == SRUN_NODE_FAIL) );
 
