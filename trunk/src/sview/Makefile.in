@@ -80,20 +80,21 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am__sview_SOURCES_DIST = sview.c popups.c grid.c part_info.c \
-	job_info.c block_info.c node_info.c submit_info.c admin_info.c \
-	common.c
+	job_info.c block_info.c node_info.c resv_info.c submit_info.c \
+	admin_info.c common.c
 @HAVE_GTK_TRUE@am_sview_OBJECTS = sview-sview.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-popups.$(OBJEXT) sview-grid.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-part_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-job_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-block_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-node_info.$(OBJEXT) \
+@HAVE_GTK_TRUE@	sview-resv_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-submit_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-admin_info.$(OBJEXT) \
 @HAVE_GTK_TRUE@	sview-common.$(OBJEXT)
 am__EXTRA_sview_SOURCES_DIST = sview.h sview.c popups.c grid.c \
-	part_info.c job_info.c block_info.c node_info.c submit_info.c \
-	admin_info.c common.c
+	part_info.c job_info.c block_info.c node_info.c resv_info.c \
+	submit_info.c admin_info.c common.c
 sview_OBJECTS = $(am_sview_OBJECTS)
 @HAVE_GTK_TRUE@sview_DEPENDENCIES = $(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la \
 @HAVE_GTK_TRUE@	$(top_builddir)/src/api/libslurm.o
@@ -301,13 +302,13 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
 @HAVE_GTK_TRUE@noinst_HEADERS = sview.h
 @HAVE_GTK_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
-@HAVE_GTK_TRUE@	block_info.c node_info.c \
+@HAVE_GTK_TRUE@	block_info.c node_info.c resv_info.c \
 @HAVE_GTK_TRUE@	submit_info.c admin_info.c common.c
 
 @HAVE_GTK_TRUE@sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK2_LIBS) 
 @HAVE_GTK_TRUE@sview_CFLAGS = $(GTK2_CFLAGS)
 @HAVE_GTK_FALSE@EXTRA_sview_SOURCES = sview.h sview.c popups.c grid.c part_info.c job_info.c \
-@HAVE_GTK_FALSE@	block_info.c node_info.c \
+@HAVE_GTK_FALSE@	block_info.c node_info.c resv_info.c \
 @HAVE_GTK_FALSE@	submit_info.c admin_info.c common.c
 
 all: all-am
@@ -389,6 +390,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-node_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-part_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-popups.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-resv_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-submit_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sview-sview.Po@am__quote@
 
@@ -510,6 +512,20 @@ sview-node_info.obj: node_info.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='node_info.c' object='sview-node_info.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-node_info.obj `if test -f 'node_info.c'; then $(CYGPATH_W) 'node_info.c'; else $(CYGPATH_W) '$(srcdir)/node_info.c'; fi`
+
+sview-resv_info.o: resv_info.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-resv_info.o -MD -MP -MF $(DEPDIR)/sview-resv_info.Tpo -c -o sview-resv_info.o `test -f 'resv_info.c' || echo '$(srcdir)/'`resv_info.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/sview-resv_info.Tpo $(DEPDIR)/sview-resv_info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='resv_info.c' object='sview-resv_info.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-resv_info.o `test -f 'resv_info.c' || echo '$(srcdir)/'`resv_info.c
+
+sview-resv_info.obj: resv_info.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-resv_info.obj -MD -MP -MF $(DEPDIR)/sview-resv_info.Tpo -c -o sview-resv_info.obj `if test -f 'resv_info.c'; then $(CYGPATH_W) 'resv_info.c'; else $(CYGPATH_W) '$(srcdir)/resv_info.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/sview-resv_info.Tpo $(DEPDIR)/sview-resv_info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='resv_info.c' object='sview-resv_info.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -c -o sview-resv_info.obj `if test -f 'resv_info.c'; then $(CYGPATH_W) 'resv_info.c'; else $(CYGPATH_W) '$(srcdir)/resv_info.c'; fi`
 
 sview-submit_info.o: submit_info.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(sview_CFLAGS) $(CFLAGS) -MT sview-submit_info.o -MD -MP -MF $(DEPDIR)/sview-submit_info.Tpo -c -o sview-submit_info.o `test -f 'submit_info.c' || echo '$(srcdir)/'`submit_info.c

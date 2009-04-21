@@ -85,7 +85,8 @@
 
 enum { JOB_PAGE, 
        STEP_PAGE, 
-       PART_PAGE, 
+       PART_PAGE,
+       RESV_PAGE,
        NODE_PAGE, 
        BLOCK_PAGE, 
        SUBMIT_PAGE,
@@ -353,6 +354,20 @@ extern void set_menus_node(void *arg, GtkTreePath *path,
 			   GtkMenu *menu, int type);
 extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+
+// resv_info.c
+extern void admin_edit_resv(GtkCellRendererText *cell,
+			    const char *path_string,
+			    const char *new_text,
+			    gpointer data);
+extern GtkListStore *create_model_resv(int type);
+extern void get_info_resv(GtkTable *table, display_data_t *display_data);
+extern int  get_new_info_resv(reserve_info_msg_t **info_ptr, 
+			      int force);
+extern void set_menus_resv(void *arg, GtkTreePath *path, 
+			   GtkMenu *menu, int type);
+extern void specific_info_resv(popup_info_t *popup_win);
+extern void refresh_resv(GtkAction *action, gpointer user_data);
 
 // submit_info.c
 extern void get_info_submit(GtkTable *table, display_data_t *display_data);
