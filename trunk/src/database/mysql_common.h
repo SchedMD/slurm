@@ -56,10 +56,6 @@
 #include <slurm/slurm_errno.h>
 #include "src/common/list.h"
 #include "src/common/xstring.h"
-
-#ifndef HAVE_MYSQL
-typedef void mysql_conn_t;
-#else
 #include <mysql.h>
 #include <mysqld_error.h>
 
@@ -105,7 +101,5 @@ extern int mysql_insert_ret_id(MYSQL *mysql_db, char *query);
 extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 				 storage_field_t *fields, char *ending);
 
-
-#endif
 
 #endif

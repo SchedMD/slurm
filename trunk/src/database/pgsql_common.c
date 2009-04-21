@@ -44,8 +44,6 @@
 
 pthread_mutex_t pgsql_lock = PTHREAD_MUTEX_INITIALIZER;
 
-#ifdef HAVE_PGSQL
-
 extern int *destroy_pgsql_db_info(pgsql_db_info_t *db_info)
 {
 	if(db_info) {
@@ -385,7 +383,3 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 	END_TIMER2("make table current");
 	return SLURM_SUCCESS;
 }
-
-
-#endif
-

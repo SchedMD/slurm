@@ -81,18 +81,24 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-accounting_storage_pgsql_la_DEPENDENCIES =  \
-	$(top_builddir)/src/database/libslurm_pgsql.la \
-	$(am__DEPENDENCIES_1)
-am_accounting_storage_pgsql_la_OBJECTS =  \
-	accounting_storage_pgsql_la-accounting_storage_pgsql.lo \
-	accounting_storage_pgsql_la-pgsql_jobacct_process.lo
+@WITH_PGSQL_TRUE@accounting_storage_pgsql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_pgsql.la \
+@WITH_PGSQL_TRUE@	$(am__DEPENDENCIES_1)
+am__accounting_storage_pgsql_la_SOURCES_DIST =  \
+	accounting_storage_pgsql.c pgsql_jobacct_process.c \
+	pgsql_jobacct_process.h
+@WITH_PGSQL_TRUE@am_accounting_storage_pgsql_la_OBJECTS = accounting_storage_pgsql_la-accounting_storage_pgsql.lo \
+@WITH_PGSQL_TRUE@	accounting_storage_pgsql_la-pgsql_jobacct_process.lo
+am__EXTRA_accounting_storage_pgsql_la_SOURCES_DIST =  \
+	accounting_storage_pgsql.c pgsql_jobacct_process.c \
+	pgsql_jobacct_process.h
 accounting_storage_pgsql_la_OBJECTS =  \
 	$(am_accounting_storage_pgsql_la_OBJECTS)
 accounting_storage_pgsql_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(accounting_storage_pgsql_la_CFLAGS) $(CFLAGS) \
 	$(accounting_storage_pgsql_la_LDFLAGS) $(LDFLAGS) -o $@
+@WITH_PGSQL_TRUE@am_accounting_storage_pgsql_la_rpath = -rpath \
+@WITH_PGSQL_TRUE@	$(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -105,8 +111,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(accounting_storage_pgsql_la_SOURCES)
-DIST_SOURCES = $(accounting_storage_pgsql_la_SOURCES)
+SOURCES = $(accounting_storage_pgsql_la_SOURCES) \
+	$(EXTRA_accounting_storage_pgsql_la_SOURCES)
+DIST_SOURCES = $(am__accounting_storage_pgsql_la_SOURCES_DIST) \
+	$(am__EXTRA_accounting_storage_pgsql_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -286,16 +294,19 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = accounting_storage_pgsql.la
+@WITH_PGSQL_TRUE@pkglib_LTLIBRARIES = accounting_storage_pgsql.la
 
 # Pgsql storage plugin.
-accounting_storage_pgsql_la_SOURCES = accounting_storage_pgsql.c \
-		pgsql_jobacct_process.c pgsql_jobacct_process.h
+@WITH_PGSQL_TRUE@accounting_storage_pgsql_la_SOURCES = accounting_storage_pgsql.c \
+@WITH_PGSQL_TRUE@		pgsql_jobacct_process.c pgsql_jobacct_process.h
 
-accounting_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-accounting_storage_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
-accounting_storage_pgsql_la_LIBADD = \
-	$(top_builddir)/src/database/libslurm_pgsql.la $(PGSQL_LIBS)
+@WITH_PGSQL_TRUE@accounting_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@WITH_PGSQL_TRUE@accounting_storage_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
+@WITH_PGSQL_TRUE@accounting_storage_pgsql_la_LIBADD = \
+@WITH_PGSQL_TRUE@	$(top_builddir)/src/database/libslurm_pgsql.la $(PGSQL_LIBS)
+
+@WITH_PGSQL_FALSE@EXTRA_accounting_storage_pgsql_la_SOURCES = accounting_storage_pgsql.c \
+@WITH_PGSQL_FALSE@		pgsql_jobacct_process.c pgsql_jobacct_process.h
 
 all: all-am
 
@@ -358,7 +369,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 accounting_storage_pgsql.la: $(accounting_storage_pgsql_la_OBJECTS) $(accounting_storage_pgsql_la_DEPENDENCIES) 
-	$(accounting_storage_pgsql_la_LINK) -rpath $(pkglibdir) $(accounting_storage_pgsql_la_OBJECTS) $(accounting_storage_pgsql_la_LIBADD) $(LIBS)
+	$(accounting_storage_pgsql_la_LINK) $(am_accounting_storage_pgsql_la_rpath) $(accounting_storage_pgsql_la_OBJECTS) $(accounting_storage_pgsql_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -590,9 +601,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
 
-force:
-$(accounting_storage_pgsql_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@WITH_PGSQL_TRUE@force:
+@WITH_PGSQL_TRUE@$(accounting_storage_pgsql_la_LIBADD) : force
+@WITH_PGSQL_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

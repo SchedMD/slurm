@@ -81,12 +81,18 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am_jobcomp_mysql_la_OBJECTS = jobcomp_mysql_la-jobcomp_mysql.lo \
-	jobcomp_mysql_la-mysql_jobcomp_process.lo
+am__jobcomp_mysql_la_SOURCES_DIST = jobcomp_mysql.c \
+	mysql_jobcomp_process.c mysql_jobcomp_process.h
+@WITH_MYSQL_TRUE@am_jobcomp_mysql_la_OBJECTS =  \
+@WITH_MYSQL_TRUE@	jobcomp_mysql_la-jobcomp_mysql.lo \
+@WITH_MYSQL_TRUE@	jobcomp_mysql_la-mysql_jobcomp_process.lo
+am__EXTRA_jobcomp_mysql_la_SOURCES_DIST = jobcomp_mysql.c \
+	mysql_jobcomp_process.c mysql_jobcomp_process.h
 jobcomp_mysql_la_OBJECTS = $(am_jobcomp_mysql_la_OBJECTS)
 jobcomp_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(jobcomp_mysql_la_CFLAGS) \
 	$(CFLAGS) $(jobcomp_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
+@WITH_MYSQL_TRUE@am_jobcomp_mysql_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -99,8 +105,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(jobcomp_mysql_la_SOURCES)
-DIST_SOURCES = $(jobcomp_mysql_la_SOURCES)
+SOURCES = $(jobcomp_mysql_la_SOURCES) \
+	$(EXTRA_jobcomp_mysql_la_SOURCES)
+DIST_SOURCES = $(am__jobcomp_mysql_la_SOURCES_DIST) \
+	$(am__EXTRA_jobcomp_mysql_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -280,18 +288,21 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = jobcomp_mysql.la
+@WITH_MYSQL_TRUE@pkglib_LTLIBRARIES = jobcomp_mysql.la
 
 # Mysql storage plugin.
-jobcomp_mysql_la_SOURCES = jobcomp_mysql.c \
-			mysql_jobcomp_process.c mysql_jobcomp_process.h
+@WITH_MYSQL_TRUE@jobcomp_mysql_la_SOURCES = jobcomp_mysql.c \
+@WITH_MYSQL_TRUE@			mysql_jobcomp_process.c mysql_jobcomp_process.h
 
-jobcomp_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-jobcomp_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
-jobcomp_mysql_la_LIBADD = $(top_builddir)/src/database/libslurm_mysql.la \
-	$(MYSQL_LIBS)
+@WITH_MYSQL_TRUE@jobcomp_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@WITH_MYSQL_TRUE@jobcomp_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
+@WITH_MYSQL_TRUE@jobcomp_mysql_la_LIBADD = $(top_builddir)/src/database/libslurm_mysql.la \
+@WITH_MYSQL_TRUE@	$(MYSQL_LIBS)
 
-jobcomp_mysql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_mysql.la
+@WITH_MYSQL_TRUE@jobcomp_mysql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_mysql.la
+@WITH_MYSQL_FALSE@EXTRA_jobcomp_mysql_la_SOURCES = jobcomp_mysql.c \
+@WITH_MYSQL_FALSE@		mysql_jobcomp_process.c mysql_jobcomp_process.h
+
 all: all-am
 
 .SUFFIXES:
@@ -353,7 +364,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 jobcomp_mysql.la: $(jobcomp_mysql_la_OBJECTS) $(jobcomp_mysql_la_DEPENDENCIES) 
-	$(jobcomp_mysql_la_LINK) -rpath $(pkglibdir) $(jobcomp_mysql_la_OBJECTS) $(jobcomp_mysql_la_LIBADD) $(LIBS)
+	$(jobcomp_mysql_la_LINK) $(am_jobcomp_mysql_la_rpath) $(jobcomp_mysql_la_OBJECTS) $(jobcomp_mysql_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
