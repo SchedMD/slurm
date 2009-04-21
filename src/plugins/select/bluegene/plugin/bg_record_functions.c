@@ -45,10 +45,8 @@
 #include "src/slurmctld/locks.h"
 
 /* some local functions */
-#ifdef HAVE_BG
 static int  _addto_node_list(bg_record_t *bg_record, int *start, int *end);
 static int  _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b);
-#endif
 
 extern void print_bg_record(bg_record_t* bg_record)
 {
@@ -164,7 +162,6 @@ extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record)
 
 extern void process_nodes(bg_record_t *bg_record, bool startup)
 {
-#ifdef HAVE_BG
 	int j=0, number;
 	int diff=0;
 	int largest_diff=-1;
@@ -342,7 +339,6 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		fatal("1 Unable to convert nodes %s to bitmap", 
 		      bg_record->nodes);
 	}
-#endif
 	return;
 }
 
@@ -1399,7 +1395,6 @@ extern int resume_block(bg_record_t *bg_record)
 
 /************************* local functions ***************************/
 
-#ifdef HAVE_BG
 static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 {
 	int node_count=0;
@@ -1472,8 +1467,5 @@ static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b)
 	      alpha_num[node_a->coord[Z]]); 
 	return 0;
 }
-
-
-#endif //HAVE_BG
 
 
