@@ -46,7 +46,6 @@
 #include "src/common/xstring.h"
 #include "mysql_jobcomp_process.h"
 
-#ifdef HAVE_MYSQL
 static void _do_fdump(MYSQL_ROW row, int lc)
 {	
 	int i = 0;
@@ -210,5 +209,3 @@ extern int mysql_jobcomp_process_archive(acct_archive_cond_t *arch_cond)
 {
 	return SLURM_SUCCESS;
 }
-
-#endif	

@@ -48,7 +48,6 @@
 #include "mysql_jobacct_process.h"
 #include <fcntl.h>
 
-#ifdef HAVE_MYSQL
 static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
@@ -1846,5 +1845,3 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 
 	return SLURM_SUCCESS;
 }
-
-#endif	

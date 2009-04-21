@@ -41,8 +41,6 @@
 
 #include "mysql_rollup.h"
 
-#ifdef HAVE_MYSQL
-
 typedef struct {
 	int id;
 	uint64_t a_cpu;
@@ -1165,5 +1163,3 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 
 	return mysql_jobacct_process_archive(mysql_conn, &arch_cond);
 }
-
-#endif

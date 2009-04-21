@@ -325,13 +325,20 @@ if [ -d /etc/init.d ]; then
 fi
 
 LIST=./plugins.files
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_mysql.so
+   echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_pgsql.so
+   echo %{_libdir}/slurm/accounting_storage_pgsql.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so &&
-   echo %{_libdir}/slurm/checkpoint_blcr.so >> $LIST
+   echo %{_libdir}/slurm/checkpoint_blcr.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
-   echo %{_libdir}/slurm/crypto_openssl.so >> $LIST
+   echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so
+   echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so
+   echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
-   echo %{_libdir}/slurm/task_affinity.so >> $LIST
-
+   echo %{_libdir}/slurm/task_affinity.so             >> $LIST
 
 #############################################################################
 
@@ -446,9 +453,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %dir %{_libdir}/slurm
 %{_libdir}/slurm/accounting_storage_filetxt.so
-%{_libdir}/slurm/accounting_storage_mysql.so
 %{_libdir}/slurm/accounting_storage_none.so
-%{_libdir}/slurm/accounting_storage_pgsql.so
 %{_libdir}/slurm/accounting_storage_slurmdbd.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
@@ -458,8 +463,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobacct_gather_none.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
-%{_libdir}/slurm/jobcomp_mysql.so
-%{_libdir}/slurm/jobcomp_pgsql.so
 %{_libdir}/slurm/jobcomp_script.so
 %{_libdir}/slurm/priority_basic.so
 %{_libdir}/slurm/priority_multifactor.so

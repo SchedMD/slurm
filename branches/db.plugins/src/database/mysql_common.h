@@ -56,10 +56,6 @@
 #include <slurm/slurm_errno.h>
 #include "src/common/list.h"
 #include "src/common/xstring.h"
-
-#ifndef HAVE_MYSQL
-typedef void mysql_conn_t;
-#else
 #include <mysql.h>
 #include <mysqld_error.h>
 
