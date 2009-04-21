@@ -103,5 +103,3 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 
 
 #endif
-
-#endif
