@@ -353,6 +353,31 @@ extern void srun_step_complete (struct step_record *step_ptr)
 }
 
 /*
+ * srun_step_missing - notify srun that a job step is missing from
+ *		       a node we expect to find it on
+ * IN step_ptr  - pointer to the slurmctld job step record
+ * IN node_list - name of nodes we did not find the step on
+ */
+extern void srun_step_missing (struct step_record *step_ptr,
+			       char *node_list)
+{
+	slurm_addr * addr;
+	srun_step_missing_msg_t *msg_arg;
+
+	xassert(step_ptr);
+	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
+		msg_arg = xmalloc(sizeof(srun_step_missing_msg_t));
+		msg_arg->job_id   = step_ptr->job_ptr->job_id;
+		msg_arg->step_id  = step_ptr->step_id;
+		msg_arg->nodelist = xstrdup(node_list);
+		_srun_agent_launch(addr, step_ptr->host, SRUN_STEP_MISSING,
+				   msg_arg);
+	}
+}
+
+/*
  * srun_exec - request that srun execute a specific command
  *	and route it's output to stdout
  * IN step_ptr - pointer to the slurmctld job step record
