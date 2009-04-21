@@ -113,7 +113,6 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	List info_list = NULL;
 	int i = 0, j = 0;
 		
 	if(display_data)
