@@ -933,9 +933,13 @@ HAVE_GTK_FALSE
 HAVEMYSQLCONFIG
 MYSQL_LIBS
 MYSQL_CFLAGS
+WITH_MYSQL_TRUE
+WITH_MYSQL_FALSE
 HAVEPGCONFIG
 PGSQL_LIBS
 PGSQL_CFLAGS
+WITH_PGSQL_TRUE
+WITH_PGSQL_FALSE
 DEBUG_MODULES_TRUE
 DEBUG_MODULES_FALSE
 SLURMCTLD_PORT
@@ -7536,7 +7540,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 7539 "configure"' > conftest.$ac_ext
+  echo '#line 7543 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9642,11 +9646,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9645: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9649: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9649: \$? = $ac_status" >&5
+   echo "$as_me:9653: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9932,11 +9936,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9935: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9939: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9939: \$? = $ac_status" >&5
+   echo "$as_me:9943: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10036,11 +10040,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10039: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10043: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10043: \$? = $ac_status" >&5
+   echo "$as_me:10047: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12413,7 +12417,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12416 "configure"
+#line 12420 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12513,7 +12517,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12516 "configure"
+#line 12520 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14914,11 +14918,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14917: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14921: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14921: \$? = $ac_status" >&5
+   echo "$as_me:14925: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15018,11 +15022,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15021: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15025: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15025: \$? = $ac_status" >&5
+   echo "$as_me:15029: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16616,11 +16620,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16619: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16623: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16623: \$? = $ac_status" >&5
+   echo "$as_me:16627: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16720,11 +16724,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16723: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16727: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16727: \$? = $ac_status" >&5
+   echo "$as_me:16731: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18940,11 +18944,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18943: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18947: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18947: \$? = $ac_status" >&5
+   echo "$as_me:18951: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -19230,11 +19234,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:19233: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:19237: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:19237: \$? = $ac_status" >&5
+   echo "$as_me:19241: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -19334,11 +19338,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:19337: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:19341: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:19341: \$? = $ac_status" >&5
+   echo "$as_me:19345: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -26090,6 +26094,13 @@ echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
 			fi
 		fi
       	fi
+	 if test x"$ac_have_mysql" == x"yes"; then
+  WITH_MYSQL_TRUE=
+  WITH_MYSQL_FALSE='#'
+else
+  WITH_MYSQL_TRUE='#'
+  WITH_MYSQL_FALSE=
+fi
 
 
 	#Check for PostgreSQL
@@ -26271,6 +26282,15 @@ _ACEOF
 echo "$as_me: WARNING: *** PostgreSQL test program execution failed." >&2;}
 		fi
       	fi
+	 if test x"$ac_have_pgsql" == x"yes"; then
+  WITH_PGSQL_TRUE=
+  WITH_PGSQL_FALSE='#'
+else
+  WITH_PGSQL_TRUE='#'
+  WITH_PGSQL_FALSE=
+fi
+
+
 
 
 
@@ -27976,6 +27996,20 @@ echo "$as_me: error: conditional \"HAVE_GTK\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${WITH_MYSQL_TRUE}" && test -z "${WITH_MYSQL_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"WITH_MYSQL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"WITH_MYSQL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${WITH_PGSQL_TRUE}" && test -z "${WITH_PGSQL_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"WITH_PGSQL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"WITH_PGSQL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${DEBUG_MODULES_TRUE}" && test -z "${DEBUG_MODULES_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"DEBUG_MODULES\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -28899,9 +28933,13 @@ HAVE_GTK_FALSE!$HAVE_GTK_FALSE$ac_delim
 HAVEMYSQLCONFIG!$HAVEMYSQLCONFIG$ac_delim
 MYSQL_LIBS!$MYSQL_LIBS$ac_delim
 MYSQL_CFLAGS!$MYSQL_CFLAGS$ac_delim
+WITH_MYSQL_TRUE!$WITH_MYSQL_TRUE$ac_delim
+WITH_MYSQL_FALSE!$WITH_MYSQL_FALSE$ac_delim
 HAVEPGCONFIG!$HAVEPGCONFIG$ac_delim
 PGSQL_LIBS!$PGSQL_LIBS$ac_delim
 PGSQL_CFLAGS!$PGSQL_CFLAGS$ac_delim
+WITH_PGSQL_TRUE!$WITH_PGSQL_TRUE$ac_delim
+WITH_PGSQL_FALSE!$WITH_PGSQL_FALSE$ac_delim
 DEBUG_MODULES_TRUE!$DEBUG_MODULES_TRUE$ac_delim
 DEBUG_MODULES_FALSE!$DEBUG_MODULES_FALSE$ac_delim
 SLURMCTLD_PORT!$SLURMCTLD_PORT$ac_delim
@@ -28923,10 +28961,6 @@ SSL_LDFLAGS!$SSL_LDFLAGS$ac_delim
 SSL_LIBS!$SSL_LIBS$ac_delim
 SSL_CPPFLAGS!$SSL_CPPFLAGS$ac_delim
 HAVE_OPENSSL_TRUE!$HAVE_OPENSSL_TRUE$ac_delim
-HAVE_OPENSSL_FALSE!$HAVE_OPENSSL_FALSE$ac_delim
-HAVE_OPENSSL!$HAVE_OPENSSL$ac_delim
-MUNGE_LIBS!$MUNGE_LIBS$ac_delim
-MUNGE_CPPFLAGS!$MUNGE_CPPFLAGS$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -28968,6 +29002,10 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+HAVE_OPENSSL_FALSE!$HAVE_OPENSSL_FALSE$ac_delim
+HAVE_OPENSSL!$HAVE_OPENSSL$ac_delim
+MUNGE_LIBS!$MUNGE_LIBS$ac_delim
+MUNGE_CPPFLAGS!$MUNGE_CPPFLAGS$ac_delim
 MUNGE_LDFLAGS!$MUNGE_LDFLAGS$ac_delim
 WITH_MUNGE_TRUE!$WITH_MUNGE_TRUE$ac_delim
 WITH_MUNGE_FALSE!$WITH_MUNGE_FALSE$ac_delim
@@ -28985,7 +29023,7 @@ WITH_BLCR_FALSE!$WITH_BLCR_FALSE$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 15; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 19; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

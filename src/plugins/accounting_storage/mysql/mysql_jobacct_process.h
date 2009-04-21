@@ -54,8 +54,6 @@
 #include "src/database/mysql_common.h"
 #include "src/common/slurm_accounting_storage.h"
 
-#ifdef HAVE_MYSQL
-
 //extern int acct_db_init;
 extern char *acct_coord_table;
 extern char *acct_table;
@@ -98,7 +96,4 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 
 extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 					      acct_archive_rec_t *arch_rec);
-
-#endif
-
 #endif

@@ -81,19 +81,25 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-accounting_storage_mysql_la_DEPENDENCIES =  \
-	$(top_builddir)/src/database/libslurm_mysql.la \
-	$(am__DEPENDENCIES_1)
-am_accounting_storage_mysql_la_OBJECTS =  \
-	accounting_storage_mysql_la-accounting_storage_mysql.lo \
-	accounting_storage_mysql_la-mysql_jobacct_process.lo \
-	accounting_storage_mysql_la-mysql_rollup.lo
+@WITH_MYSQL_TRUE@accounting_storage_mysql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_mysql.la \
+@WITH_MYSQL_TRUE@	$(am__DEPENDENCIES_1)
+am__accounting_storage_mysql_la_SOURCES_DIST =  \
+	accounting_storage_mysql.c mysql_jobacct_process.c \
+	mysql_jobacct_process.h mysql_rollup.c mysql_rollup.h
+@WITH_MYSQL_TRUE@am_accounting_storage_mysql_la_OBJECTS = accounting_storage_mysql_la-accounting_storage_mysql.lo \
+@WITH_MYSQL_TRUE@	accounting_storage_mysql_la-mysql_jobacct_process.lo \
+@WITH_MYSQL_TRUE@	accounting_storage_mysql_la-mysql_rollup.lo
+am__EXTRA_accounting_storage_mysql_la_SOURCES_DIST =  \
+	accounting_storage_mysql.c mysql_jobacct_process.c \
+	mysql_jobacct_process.h mysql_rollup.c mysql_rollup.h
 accounting_storage_mysql_la_OBJECTS =  \
 	$(am_accounting_storage_mysql_la_OBJECTS)
 accounting_storage_mysql_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) \
 	$(accounting_storage_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
+@WITH_MYSQL_TRUE@am_accounting_storage_mysql_la_rpath = -rpath \
+@WITH_MYSQL_TRUE@	$(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -106,8 +112,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(accounting_storage_mysql_la_SOURCES)
-DIST_SOURCES = $(accounting_storage_mysql_la_SOURCES)
+SOURCES = $(accounting_storage_mysql_la_SOURCES) \
+	$(EXTRA_accounting_storage_mysql_la_SOURCES)
+DIST_SOURCES = $(am__accounting_storage_mysql_la_SOURCES_DIST) \
+	$(am__EXTRA_accounting_storage_mysql_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -287,17 +295,21 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = accounting_storage_mysql.la
+@WITH_MYSQL_TRUE@pkglib_LTLIBRARIES = accounting_storage_mysql.la
 
 # Mysql storage plugin.
-accounting_storage_mysql_la_SOURCES = accounting_storage_mysql.c \
-		mysql_jobacct_process.c mysql_jobacct_process.h \
-		mysql_rollup.c mysql_rollup.h
+@WITH_MYSQL_TRUE@accounting_storage_mysql_la_SOURCES = accounting_storage_mysql.c \
+@WITH_MYSQL_TRUE@		mysql_jobacct_process.c mysql_jobacct_process.h \
+@WITH_MYSQL_TRUE@		mysql_rollup.c mysql_rollup.h
 
-accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
-accounting_storage_mysql_la_LIBADD = \
-	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
+@WITH_MYSQL_TRUE@accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@WITH_MYSQL_TRUE@accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
+@WITH_MYSQL_TRUE@accounting_storage_mysql_la_LIBADD = \
+@WITH_MYSQL_TRUE@	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
+
+@WITH_MYSQL_FALSE@EXTRA_accounting_storage_mysql_la_SOURCES = accounting_storage_mysql.c \
+@WITH_MYSQL_FALSE@		mysql_jobacct_process.c mysql_jobacct_process.h \
+@WITH_MYSQL_FALSE@		mysql_rollup.c mysql_rollup.h
 
 all: all-am
 
@@ -360,7 +372,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 accounting_storage_mysql.la: $(accounting_storage_mysql_la_OBJECTS) $(accounting_storage_mysql_la_DEPENDENCIES) 
-	$(accounting_storage_mysql_la_LINK) -rpath $(pkglibdir) $(accounting_storage_mysql_la_OBJECTS) $(accounting_storage_mysql_la_LIBADD) $(LIBS)
+	$(accounting_storage_mysql_la_LINK) $(am_accounting_storage_mysql_la_rpath) $(accounting_storage_mysql_la_OBJECTS) $(accounting_storage_mysql_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -600,9 +612,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
 
-force:
-$(accounting_storage_mysql_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@WITH_MYSQL_TRUE@force:
+@WITH_MYSQL_TRUE@$(accounting_storage_mysql_la_LIBADD) : force
+@WITH_MYSQL_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

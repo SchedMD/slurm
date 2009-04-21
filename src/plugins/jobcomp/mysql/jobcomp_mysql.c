@@ -79,8 +79,6 @@ const char plugin_name[] = "Job completion MYSQL plugin";
 const char plugin_type[] = "jobcomp/mysql";
 const uint32_t plugin_version = 100;
 
-#ifdef HAVE_MYSQL
-
 #define DEFAULT_JOBCOMP_DB "slurm_jobcomp_db"
 
 MYSQL *jobcomp_mysql_db = NULL;
@@ -211,7 +209,6 @@ static char *_lookup_slurm_api_errtab(int errnum)
 	}
 	return res;
 }
-#endif
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -220,11 +217,7 @@ static char *_lookup_slurm_api_errtab(int errnum)
 extern int init ( void )
 {
 	static int first = 1;
-#ifndef HAVE_MYSQL
-	fatal("No MySQL storage was found on the machine. "
-	      "Please check the config.log from the run of configure "
-	      "and run again.");	
-#endif
+
 	if(first) {
 		/* since this can be loaded from many different places
 		   only tell us once. */
@@ -239,20 +232,15 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-#ifdef HAVE_MYSQL
 	if (jobcomp_mysql_db) {
 		mysql_close(jobcomp_mysql_db);
 		jobcomp_mysql_db = NULL;
 	}
 	return SLURM_SUCCESS;
-#else
-	return SLURM_ERROR;
-#endif 
 }
 
 extern int slurm_jobcomp_set_location(char *location)
 {
-#ifdef HAVE_MYSQL
 	mysql_db_info_t *db_info = _mysql_jobcomp_create_db_info();
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
@@ -292,14 +280,10 @@ extern int slurm_jobcomp_set_location(char *location)
 	else
 		debug("Jobcomp database init failed");
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif 
 }
 
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
-#ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32];
 	char *connect_type = NULL, *reboot = NULL, *rotate = NULL,
@@ -417,28 +401,17 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	xfree(grp_str);
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif 
 }
 
 extern int slurm_jobcomp_get_errno(void)
 {
-#ifdef HAVE_MYSQL
 	return plugin_errno;
-#else
-	return SLURM_ERROR;
-#endif 
 }
 
 extern char *slurm_jobcomp_strerror(int errnum)
 {
-#ifdef HAVE_MYSQL
 	char *res = _lookup_slurm_api_errtab(errnum);
 	return (res ? res : strerror(errnum));
-#else
-	return NULL;
-#endif 
 }
 
 /* 
@@ -450,7 +423,6 @@ extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 				   
-#ifdef HAVE_MYSQL
 	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
@@ -461,7 +433,7 @@ extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 	}
 
 	job_list = mysql_jobcomp_process_get_jobs(job_cond);	
-#endif 
+
 	return job_list;
 }
 
@@ -470,7 +442,6 @@ extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
  */
 extern int slurm_jobcomp_archive(acct_archive_cond_t *arch_cond)
 {
-#ifdef HAVE_MYSQL
 	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
@@ -481,6 +452,4 @@ extern int slurm_jobcomp_archive(acct_archive_cond_t *arch_cond)
 	}
 
 	return mysql_jobcomp_process_archive(arch_cond);
-#endif 
-	return SLURM_ERROR;
 }

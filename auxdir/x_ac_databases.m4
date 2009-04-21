@@ -103,7 +103,7 @@ AC_DEFUN([X_AC_DATABASES],
 			fi
 		fi
       	fi
-
+	AM_CONDITIONAL(WITH_MYSQL, test x"$ac_have_mysql" == x"yes")
 
 	#Check for PostgreSQL
 	ac_have_postgres="no"
@@ -156,4 +156,6 @@ AC_DEFUN([X_AC_DATABASES],
        			AC_MSG_WARN([*** PostgreSQL test program execution failed.])
 		fi        	
       	fi
+	AM_CONDITIONAL(WITH_PGSQL, test x"$ac_have_pgsql" == x"yes")
+
 ])

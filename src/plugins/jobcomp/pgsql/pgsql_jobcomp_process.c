@@ -46,7 +46,6 @@
 #include "src/common/xstring.h"
 #include "pgsql_jobcomp_process.h"
 
-#ifdef HAVE_PGSQL
 static void _do_fdump(PGresult *result, int lc)
 {
 	int i = 0;
@@ -225,5 +224,3 @@ extern int pgsql_jobcomp_process_archive(acct_archive_cond_t *arch_cond)
 {
 	return SLURM_SUCCESS;
 }
-
-#endif	

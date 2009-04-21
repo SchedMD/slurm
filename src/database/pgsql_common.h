@@ -56,10 +56,6 @@
 #include <slurm/slurm_errno.h>
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/xstring.h"
-
-#ifndef HAVE_PGSQL
-typedef void pgsql_conn_t;
-#else
 #include <libpq-fe.h>
 
 typedef struct {
@@ -105,6 +101,4 @@ extern int pgsql_db_create_table(PGconn *pgsql_db,
 
 extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 				       storage_field_t *fields);
-#endif
-
 #endif

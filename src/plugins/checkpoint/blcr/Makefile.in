@@ -37,7 +37,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 subdir = src/plugins/checkpoint/blcr
-DIST_COMMON = $(dist_bin_SCRIPTS) $(srcdir)/Makefile.am \
+DIST_COMMON = $(am__dist_bin_SCRIPTS_DIST) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/cr_checkpoint.sh.in \
 	$(srcdir)/cr_restart.sh.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -84,11 +84,15 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 checkpoint_blcr_la_LIBADD =
-am_checkpoint_blcr_la_OBJECTS = checkpoint_blcr.lo
+am__checkpoint_blcr_la_SOURCES_DIST = checkpoint_blcr.c
+@WITH_BLCR_TRUE@am_checkpoint_blcr_la_OBJECTS = checkpoint_blcr.lo
+am__EXTRA_checkpoint_blcr_la_SOURCES_DIST = checkpoint_blcr.c
 checkpoint_blcr_la_OBJECTS = $(am_checkpoint_blcr_la_OBJECTS)
 checkpoint_blcr_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(checkpoint_blcr_la_LDFLAGS) $(LDFLAGS) -o $@
+@WITH_BLCR_TRUE@am_checkpoint_blcr_la_rpath = -rpath $(pkglibdir)
+am__dist_bin_SCRIPTS_DIST = cr_checkpoint.sh cr_restart.sh
 dist_binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(dist_bin_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
@@ -103,8 +107,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(checkpoint_blcr_la_SOURCES)
-DIST_SOURCES = $(checkpoint_blcr_la_SOURCES)
+SOURCES = $(checkpoint_blcr_la_SOURCES) \
+	$(EXTRA_checkpoint_blcr_la_SOURCES)
+DIST_SOURCES = $(am__checkpoint_blcr_la_SOURCES_DIST) \
+	$(am__EXTRA_checkpoint_blcr_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -284,10 +290,11 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = checkpoint_blcr.la
-checkpoint_blcr_la_SOURCES = checkpoint_blcr.c
-checkpoint_blcr_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-dist_bin_SCRIPTS = cr_checkpoint.sh cr_restart.sh
+@WITH_BLCR_TRUE@pkglib_LTLIBRARIES = checkpoint_blcr.la
+@WITH_BLCR_TRUE@checkpoint_blcr_la_SOURCES = checkpoint_blcr.c
+@WITH_BLCR_TRUE@checkpoint_blcr_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@WITH_BLCR_TRUE@dist_bin_SCRIPTS = cr_checkpoint.sh cr_restart.sh
+@WITH_BLCR_FALSE@EXTRA_checkpoint_blcr_la_SOURCES = checkpoint_blcr.c
 all: all-am
 
 .SUFFIXES:
@@ -353,7 +360,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 checkpoint_blcr.la: $(checkpoint_blcr_la_OBJECTS) $(checkpoint_blcr_la_DEPENDENCIES) 
-	$(checkpoint_blcr_la_LINK) -rpath $(pkglibdir) $(checkpoint_blcr_la_OBJECTS) $(checkpoint_blcr_la_LIBADD) $(LIBS)
+	$(checkpoint_blcr_la_LINK) $(am_checkpoint_blcr_la_rpath) $(checkpoint_blcr_la_OBJECTS) $(checkpoint_blcr_la_LIBADD) $(LIBS)
 install-dist_binSCRIPTS: $(dist_bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -591,10 +598,10 @@ uninstall-am: uninstall-dist_binSCRIPTS uninstall-pkglibLTLIBRARIES
 	uninstall-pkglibLTLIBRARIES
 
 
-force:
+@WITH_BLCR_TRUE@force:
 
-$(checkpoint_blcr_LDADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@WITH_BLCR_TRUE@$(checkpoint_blcr_LDADD) : force
+@WITH_BLCR_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

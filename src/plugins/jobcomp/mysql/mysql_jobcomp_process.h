@@ -49,7 +49,6 @@
 #include "src/common/jobacct_common.h"
 #include "src/common/slurm_accounting_storage.h"
 
-#ifdef HAVE_MYSQL
 extern MYSQL *jobcomp_mysql_db;
 extern int jobcomp_db_init;
 
@@ -86,6 +85,5 @@ enum {
 extern List mysql_jobcomp_process_get_jobs(acct_job_cond_t *job_cond);
 
 extern int mysql_jobcomp_process_archive(acct_archive_cond_t *arch_cond);
-#endif
 
 #endif

@@ -48,8 +48,6 @@
 pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-#ifdef HAVE_MYSQL
-
 static char *table_defs_table = "table_defs_table";
 
 static MYSQL_RES *_get_first_result(MYSQL *mysql_db)
@@ -653,7 +651,3 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 	return _mysql_make_table_current(mysql_db, table_name,
 					 first_field, ending);
 }
-
-
-#endif
-

@@ -88,8 +88,6 @@ const char plugin_name[] = "Accounting storage MYSQL plugin";
 const char plugin_type[] = "accounting_storage/mysql";
 const uint32_t plugin_version = 100;
 
-#ifdef HAVE_MYSQL
-
 static mysql_db_info_t *mysql_db_info = NULL;
 static char *mysql_db_name = NULL;
 static time_t global_last_rollup = 0;
@@ -2595,7 +2593,6 @@ static int _get_usage_for_list(mysql_conn_t *mysql_conn,
 			       slurmdbd_msg_type_t type, List object_list, 
 			       time_t start, time_t end)
 {
-#ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	MYSQL_RES *result = NULL;
@@ -2801,9 +2798,6 @@ static int _get_usage_for_list(mysql_conn_t *mysql_conn,
 
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 static mysql_db_info_t *_mysql_acct_create_db_info()
@@ -3374,7 +3368,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 
 	return rc;
 }
-#endif
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -3384,14 +3377,8 @@ extern int init ( void )
 {
 	static int first = 1;
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_MYSQL
 	MYSQL *db_conn = NULL;
 	char *location = NULL;
-#else
-	fatal("No MySQL database was found on the machine. "
-	      "Please check the config.log from the run of configure "
-	      "and run again.");
-#endif
 
 	/* since this can be loaded from many different places
 	   only tell us once. */
@@ -3408,7 +3395,6 @@ extern int init ( void )
 		xfree(cluster_name);
 	}
 
-#ifdef HAVE_MYSQL
 	mysql_db_info = _mysql_acct_create_db_info();
 
 	location = slurm_get_accounting_storage_loc();
@@ -3441,9 +3427,7 @@ extern int init ( void )
 
 	rc = _mysql_acct_check_tables(db_conn);
 
-	mysql_close_db_connection(&db_conn);
-	
-#endif		
+	mysql_close_db_connection(&db_conn);	
 
 	if(rc == SLURM_SUCCESS)
 		verbose("%s loaded", plugin_name);
@@ -3455,21 +3439,16 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-#ifdef HAVE_MYSQL
 	destroy_mysql_db_info(mysql_db_info);		
 	xfree(mysql_db_name);
 	xfree(default_qos_str);
 	mysql_cleanup();
 	return SLURM_SUCCESS;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 					   bool rollback)
 {
-#ifdef HAVE_MYSQL
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));
 	
 	if(!mysql_db_info)
@@ -3489,15 +3468,10 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 		errno = SLURM_SUCCESS;
 	}
 	return (void *)mysql_conn;
-#else
-	return NULL;
-#endif
 }
 
 extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 {
-#ifdef HAVE_MYSQL
-
 	if(!mysql_conn || !(*mysql_conn))
 		return SLURM_SUCCESS;
 
@@ -3507,14 +3481,10 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 	xfree((*mysql_conn));
 
 	return SLURM_SUCCESS;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 {
-#ifdef HAVE_MYSQL
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
@@ -3645,15 +3615,11 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 	list_flush(mysql_conn->update_list);
 
 	return SLURM_SUCCESS;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				    List user_list)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	acct_user_rec_t *object = NULL;
@@ -3785,15 +3751,11 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_destroy(wckey_list);
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid, 
 				    List acct_list, acct_user_cond_t *user_cond)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL, *user = NULL, *acct = NULL;
 	char *user_name = NULL, *txn_query = NULL;
 	ListIterator itr, itr2;
@@ -3877,15 +3839,11 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	
 	return SLURM_SUCCESS;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid, 
 				    List acct_list)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	acct_account_rec_t *object = NULL;
@@ -3996,15 +3954,11 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_destroy(assoc_list);
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid, 
 				       List cluster_list)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	acct_cluster_rec_t *object = NULL;
@@ -4151,16 +4105,12 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 					   uint32_t uid, 
 					   List association_list)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	int i=0;
@@ -4628,15 +4578,11 @@ end_it:
 	}
 					
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, 
 				  List qos_list)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	acct_qos_rec_t *object = NULL;
@@ -4737,15 +4683,11 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid, 
 				     List wckey_list)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	acct_wckey_rec_t *object = NULL;
@@ -4849,15 +4791,11 @@ extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,
 					  acct_reservation_rec_t *resv)
 {
-#ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
 	char *cols = NULL, *vals = NULL, *extra = NULL, 
 		*query = NULL;//, *tmp_extra = NULL;
@@ -4900,16 +4838,12 @@ extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,
 	xfree(extra);
 	
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid, 
 					acct_user_cond_t *user_cond,
 					acct_user_rec_t *user)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -5046,9 +4980,6 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 				
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_modify_accounts(
@@ -5056,7 +4987,6 @@ extern List acct_storage_p_modify_accounts(
 	acct_account_cond_t *acct_cond,
 	acct_account_rec_t *acct)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -5184,9 +5114,6 @@ extern List acct_storage_p_modify_accounts(
 	xfree(vals);
 
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn, 
@@ -5194,7 +5121,6 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 					   acct_cluster_cond_t *cluster_cond,
 					   acct_cluster_rec_t *cluster)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -5376,9 +5302,6 @@ end_it:
 	xfree(send_char);
 
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_modify_associations(
@@ -5386,7 +5309,6 @@ extern List acct_storage_p_modify_associations(
 	acct_association_cond_t *assoc_cond,
 	acct_association_rec_t *assoc)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -5834,16 +5756,12 @@ end_it:
 	xfree(vals);
 
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid, 
 					acct_qos_cond_t *qos_cond,
 					acct_qos_rec_t *qos)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -6163,9 +6081,6 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 				
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
@@ -6179,7 +6094,6 @@ extern List acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
 extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 					     acct_reservation_rec_t *resv)
 {
-#ifdef HAVE_MYSQL
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int rc = SLURM_SUCCESS;
@@ -6378,15 +6292,11 @@ end_it:
 	xfree(extra);
 	
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid, 
 					acct_user_cond_t *user_cond)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	List coord_list = NULL;
@@ -6556,17 +6466,12 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}		
 
 	return ret_list;
-
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid, 
 					List acct_list,
 					acct_user_cond_t *user_cond)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL, *object = NULL, *extra = NULL, *last_user = NULL;
 	char *user_name = NULL;
 	time_t now = time(NULL);
@@ -6752,15 +6657,11 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_destroy(user_list);
 
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid, 
 					acct_account_cond_t *acct_cond)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	List coord_list = NULL;
@@ -6884,16 +6785,12 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 					   uint32_t uid, 
 					   acct_cluster_cond_t *cluster_cond)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	List tmp_list = NULL;
@@ -7019,16 +6916,12 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	}
 
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_remove_associations(
 	mysql_conn_t *mysql_conn, uint32_t uid, 
 	acct_association_cond_t *assoc_cond)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -7265,15 +7158,11 @@ end_it:
 	mysql_free_result(result);
 
 	return NULL;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid, 
 				      acct_qos_cond_t *qos_cond)
 {
-#ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -7397,16 +7286,12 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
 					 uint32_t uid, 
 					 acct_wckey_cond_t *wckey_cond)
 {
-#ifdef HAVE_MYSQL
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *query = NULL,
@@ -7481,15 +7366,11 @@ empty:
 	}
 
 	return ret_list;
-#else
-	return NULL;
-#endif
 }
 
 extern int acct_storage_p_remove_reservation(mysql_conn_t *mysql_conn,
 					     acct_reservation_rec_t *resv)
 {
-#ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;//, *tmp_extra = NULL;
 
@@ -7532,15 +7413,11 @@ extern int acct_storage_p_remove_reservation(mysql_conn_t *mysql_conn,
 	xfree(query);
 	
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid, 
 				     acct_user_cond_t *user_cond)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
@@ -7806,15 +7683,11 @@ get_wckeys:
 	}
 
 	return user_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 				     acct_account_cond_t *acct_cond)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
@@ -8051,15 +7924,11 @@ empty:
 	}
 
 	return acct_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid, 
 					acct_cluster_cond_t *cluster_cond)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
@@ -8243,16 +8112,12 @@ empty:
 	list_destroy(assoc_list);
 
 	return cluster_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 					    uid_t uid, 
 					    acct_association_cond_t *assoc_cond)
 {
-#ifdef HAVE_MYSQL
 	//DEF_TIMERS;
 	char *query = NULL;	
 	char *extra = NULL;	
@@ -8742,9 +8607,6 @@ empty:
 	xfree(parent_qos);
 	//END_TIMER2("get_associations");
 	return assoc_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_get_config(void *db_conn)
@@ -8755,7 +8617,6 @@ extern List acct_storage_p_get_config(void *db_conn)
 extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 				   acct_qos_cond_t *qos_cond)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
@@ -8983,15 +8844,11 @@ empty:
 	mysql_free_result(result);
 
 	return qos_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 				      acct_wckey_cond_t *wckey_cond)
 {
-#ifdef HAVE_MYSQL
 	//DEF_TIMERS;
 	char *query = NULL;	
 	char *extra = NULL;	
@@ -9118,15 +8975,11 @@ empty:
 
 	//END_TIMER2("get_wckeys");
 	return wckey_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_get_reservations(mysql_conn_t *mysql_conn, uid_t uid,
 					    acct_reservation_cond_t *resv_cond)
 {
-#ifdef HAVE_MYSQL
 	//DEF_TIMERS;
 	char *query = NULL;	
 	char *extra = NULL;	
@@ -9339,15 +9192,11 @@ empty:
 
 	//END_TIMER2("get_resvs");
 	return resv_list;
-#else
-	return NULL;
-#endif
 }
 
 extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 				   acct_txn_cond_t *txn_cond)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL;	
 	char *assoc_extra = NULL;	
 	char *name_extra = NULL;	
@@ -9727,16 +9576,12 @@ empty:
 	mysql_free_result(result);
 
 	return txn_list;
-#else
-	return NULL;
-#endif
 }
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				    void *in, slurmdbd_msg_type_t type,
 				    time_t start, time_t end)
 {
-#ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
@@ -9931,16 +9776,12 @@ is_user:
 	mysql_free_result(result);
 	
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn, 
 				     time_t sent_start, time_t sent_end,
 				     uint16_t archive_data)
 {
-#ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
 	int i = 0;
 	time_t my_time = sent_end;
@@ -10184,9 +10025,6 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 		xfree(query);
 	}
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn, 
@@ -10194,7 +10032,6 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason)
 {
-#ifdef HAVE_MYSQL
 	uint16_t cpus;
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
@@ -10246,16 +10083,12 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn, 
 					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
-#ifdef HAVE_MYSQL
 	char* query;
 	int rc = SLURM_SUCCESS;
 
@@ -10270,9 +10103,6 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 /* This is only called when not running from the slurmdbd so we can
@@ -10282,7 +10112,6 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 					       char *cluster,
 					       uint16_t port)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL;
 	char *address = NULL;
 	char hostname[255];
@@ -10324,10 +10153,6 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	
 	return mysql_db_query(mysql_conn->db_conn, query);
-	
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn, 
@@ -10336,7 +10161,6 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 					       uint32_t procs,
 					       time_t event_time)
 {
-#ifdef HAVE_MYSQL
 	char* query;
 	int rc = SLURM_SUCCESS;
 	int first = 0;
@@ -10434,9 +10258,6 @@ end_it:
 		rc = ACCOUNTING_FIRST_REG;
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int clusteracct_storage_p_get_usage(
@@ -10444,7 +10265,6 @@ extern int clusteracct_storage_p_get_usage(
 	acct_cluster_rec_t *cluster_rec, slurmdbd_msg_type_t type,
 	time_t start, time_t end)
 {
-#ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	MYSQL_RES *result = NULL;
@@ -10526,9 +10346,6 @@ extern int clusteracct_storage_p_get_usage(
 	mysql_free_result(result);
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 /* 
@@ -10538,7 +10355,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				       char *cluster_name,
 				       struct job_record *job_ptr)
 {
-#ifdef HAVE_MYSQL
 	int	rc=SLURM_SUCCESS;
 	char	*nodes = NULL, *jname = NULL, *node_inx = NULL;
 	int track_steps = 0;
@@ -10763,9 +10579,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	if(no_cluster)
 		xfree(cluster_name);
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 /* 
@@ -10774,7 +10587,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn, 
 					  struct job_record *job_ptr)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL, *nodes = NULL;
 	int rc=SLURM_SUCCESS;
 	time_t start_time = job_ptr->start_time;
@@ -10850,9 +10662,6 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 	xfree(query);
 	
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 /* 
@@ -10861,7 +10670,6 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn, 
 					struct step_record *step_ptr)
 {
-#ifdef HAVE_MYSQL
 	int cpus = 0, tasks = 0, nodes = 0, task_dist = 0;
 	int rc=SLURM_SUCCESS;
 	char node_list[BUFFER_SIZE];
@@ -10968,9 +10776,6 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 /* 
@@ -10979,7 +10784,6 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn, 
 					   struct step_record *step_ptr)
 {
-#ifdef HAVE_MYSQL
 	time_t now;
 	int elapsed;
 	int comp_status;
@@ -11126,9 +10930,6 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	xfree(query);
 	 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 /* 
@@ -11137,7 +10938,6 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn, 
 				     struct job_record *job_ptr)
 {
-#ifdef HAVE_MYSQL
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 	bool suspended = false;
@@ -11198,9 +10998,6 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 	}
 	
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 /* 
@@ -11213,11 +11010,11 @@ extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 					    acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
-#ifdef HAVE_MYSQL
+
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 	job_list = mysql_jobacct_process_get_jobs(mysql_conn, uid, job_cond);	
-#endif
+
 	return job_list;
 }
 
@@ -11227,13 +11024,10 @@ extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 extern int jobacct_storage_p_archive(mysql_conn_t *mysql_conn, 
 				     acct_archive_cond_t *arch_cond)
 {
-#ifdef HAVE_MYSQL
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	
 	return mysql_jobacct_process_archive(mysql_conn, arch_cond);
-#endif
-	return SLURM_ERROR;
 }
 
 /* 
@@ -11242,13 +11036,10 @@ extern int jobacct_storage_p_archive(mysql_conn_t *mysql_conn,
 extern int jobacct_storage_p_archive_load(mysql_conn_t *mysql_conn, 
 					  acct_archive_rec_t *arch_rec)
 {
-#ifdef HAVE_MYSQL
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	return mysql_jobacct_process_archive_load(mysql_conn, arch_rec);
-#endif
-	return SLURM_ERROR;
 }
 
 extern int acct_storage_p_update_shares_used(mysql_conn_t *mysql_conn, 
@@ -11262,7 +11053,6 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 	mysql_conn_t *mysql_conn, char *cluster, time_t event_time)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_MYSQL
 	/* put end times for a clean start */
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -11339,7 +11129,6 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 	}
-#endif
 
 	return rc;
 }
