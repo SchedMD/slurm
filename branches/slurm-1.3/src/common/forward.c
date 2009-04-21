@@ -392,6 +392,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		hostlist_uniq(forward_hl);
 		hostlist_ranged_string(forward_hl, sizeof(buf), buf);
 		hostlist_destroy(forward_hl);
+		forward_init(&forward_msg->header.forward, NULL);
 		forward_msg->header.forward.nodelist = xstrdup(buf);
 		while(pthread_create(&thread_agent, &attr_agent,
 				   _forward_thread, 
