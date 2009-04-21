@@ -59,7 +59,7 @@ if { [string length $partition] == 0 } {
 global env
 set env(CHECKPOINT) "yes"
 make_bash_script $file_in "
-  echo BEGIN=\$SLURM_JOBID
+  echo BEGIN=\$SLURM_JOB_ID
   $bin_sleep 30
   echo FINI
 "
@@ -86,7 +86,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: SLURM_JOBID missing\n"
+	send_user "\nFAILURE: SLURM_JOB_ID missing\n"
 	exit 0
 }
 

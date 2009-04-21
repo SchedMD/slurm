@@ -397,7 +397,7 @@ is the supplied \fBexecutable\fR program's name.
 \fB\-\-jobid\fR=\fIid\fR
 Initiate a job step under an already allocated job with job id \fIid\fR.
 Using this option will cause \fBsrun\fR to behave exactly as if the
-SLURM_JOBID environment variable was set.
+SLURM_JOB_ID environment variable was set.
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR
@@ -877,7 +877,7 @@ step will begin at node \fIn\fR of the allocated nodelist, where
 the first node is considered node 0.  The \fB\-r\fR option is not 
 permitted along with \fB\-w\fR or \fB\-x\fR, and will be silently
 ignored when not running within a prior allocation (i.e. when
-SLURM_JOBID is not set). The default for \fIn\fR is 0. If the 
+SLURM_JOB_ID is not set). The default for \fIn\fR is 0. If the 
 value of \fB\-\-nodes\fR exceeds the number of nodes identified 
 with the \fB\-\-relative\fR option, a warning message will be 
 printed and the \fB\-\-relative\fR option will take precedence.
@@ -1429,7 +1429,7 @@ Zero origin and comma separated.
 \fBSLURM_JOB_DEPENDENCY\fR
 Set to value of the \-\-dependency option.
 .TP
-\fBSLURM_JOBID\fR
+\fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
 Job id of the executing job
 
 .TP
@@ -1670,7 +1670,7 @@ the script to be executed follow.
 
 > cat test.sh
 #!/bin/sh
-MACHINEFILE="nodes.$SLURM_JOBID"
+MACHINEFILE="nodes.$SLURM_JOB_ID"
 
 # Generate Machinefile for mpich such that hosts are in the same
 #  order as if run via srun

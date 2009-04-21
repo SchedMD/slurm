@@ -264,7 +264,7 @@ etc.).  Sample prolog and epilog scripts follow. </p>
 #
 # Cancel job to start the termination process for this job
 # and release the bgblock
-/usr/bin/scancel $SLURM_JOBID
+/usr/bin/scancel $SLURM_JOB_ID
 #
 # Wait for bgblock to be released from this job's use
 /usr/sbin/slurm_epilog

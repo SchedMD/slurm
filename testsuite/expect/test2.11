@@ -50,9 +50,9 @@ file delete $file_out
 make_bash_script $file_in "
   $srun $bin_sleep 10 &
   $bin_sleep 1
-  $scontrol listpids \$SLURM_JOBID.10 \$SLURMD_NODENAME
-  $scontrol listpids \$SLURM_JOBID.0 \$SLURMD_NODENAME
-  $scontrol listpids \$SLURM_JOBID \$SLURMD_NODENAME
+  $scontrol listpids \$SLURM_JOB_ID.10 \$SLURMD_NODENAME
+  $scontrol listpids \$SLURM_JOB_ID.0 \$SLURMD_NODENAME
+  $scontrol listpids \$SLURM_JOB_ID \$SLURMD_NODENAME
 "
 
 #

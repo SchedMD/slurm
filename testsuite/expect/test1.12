@@ -46,7 +46,7 @@ print_header $test_id
 #
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-  $scontrol show step \$SLURM_JOBID.\$SLURM_STEPID
+  $scontrol show step \$SLURM_JOB_ID.\$SLURM_STEPID
 "
 
 set srun_pid [spawn $srun -N1 -t1 --checkpoint=$ckpt_in $file_in]

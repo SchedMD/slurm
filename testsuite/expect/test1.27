@@ -44,7 +44,7 @@ print_header $test_id
 array set good_vars {
     SLURM_CPUS_ON_NODE 1
     SLURM_CPUS_PER_TASK 1
-    SLURM_JOBID 1
+    SLURM_JOB_ID 1
     SLURM_LAUNCH_NODE_IPADDR 0
     SLURM_LOCALID 0
     SLURM_NNODES 0

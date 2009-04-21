@@ -479,7 +479,7 @@ env_vars_t env_vars[] = {
 {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL             },
 {"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,      
 					&opt.job_name_set_env},
-{"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL             },
+{"SLURM_JOB_ID",        OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL             },
 {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL             },
 {"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL             },

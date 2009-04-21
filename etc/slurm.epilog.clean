@@ -11,7 +11,7 @@
 if [ x$SLURM_UID == "x" ] ; then 
 	exit 0
 fi
-if [ x$SLURM_JOBID == "x" ] ; then 
+if [ x$SLURM_JOB_ID == "x" ] ; then 
         exit 0
 fi
 
@@ -25,7 +25,7 @@ fi
 job_list=`${SLURM_BIN}squeue --noheader --format=%i --user=$SLURM_UID --node=localhost`
 for job_id in $job_list
 do
-	if [ $job_id -ne $SLURM_JOBID ] ; then
+	if [ $job_id -ne $SLURM_JOB_ID ] ; then
 		exit 0
 	fi
 done

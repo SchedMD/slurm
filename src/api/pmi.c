@@ -185,7 +185,7 @@ int PMI_Init( int *spawned )
 	if (pmi_init)
 		goto replay;
 
-	env = getenv("SLURM_JOBID");
+	env = getenv("SLURM_JOB_ID");
 	if (env)
 		pmi_jobid = atoi(env);
 	else
@@ -446,7 +446,7 @@ int PMI_Get_appnum( int *appnum )
 	if (appnum == NULL)
 		return PMI_ERR_INVALID_ARG;
 
-	env = getenv("SLURM_JOBID");
+	env = getenv("SLURM_JOB_ID");
 	if (env) {
 		*appnum = atoi(env);
 		return PMI_SUCCESS;

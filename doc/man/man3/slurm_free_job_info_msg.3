@@ -110,7 +110,7 @@ REM_TIME = ISLURM_GET_REM_TIME(JOBID)
 REM_TIME = ISLURM_GET_REM_TIME2()
 .LP
 ISLURM_GET_REM_TIME2() is equivalent to ISLURM_GET_REM_TIME() except 
-that the JOBID is taken from the SLURM_JOBID environment variable, 
+that the JOBID is taken from the SLURM_JOB_ID environment variable, 
 which is set by SLURM for tasks which it launches.
 Both functions return the number of seconds remaining before the job 
 reaches the end of it's allocated time.
@@ -143,7 +143,7 @@ number into the node information records and the data is terminated with a
 value of \-1. See slurm.h for full details on the data structure's contents. 
 .TP 
 \fIjob_id\fP
-Specifies a slurm job id. If zero, use the SLURM_JOBID environment variable
+Specifies a slurm job id. If zero, use the SLURM_JOB_ID environment variable
 to get the jobid.
 .TP 
 \fIjob_id_ptr\fP

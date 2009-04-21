@@ -295,7 +295,7 @@ existing_allocation(void)
                 else
                         error ("Unable to confirm allocation for job %u: %m",
                               old_job_id);
-                info ("Check SLURM_JOBID environment variable "
+                info ("Check SLURM_JOB_ID environment variable "
                       "for expired or invalid job.");
                 exit(1);
         }
@@ -632,7 +632,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, &job->stepid);
 	/*  Number of hosts in job may not have been initialized yet if 
-	 *    --jobid was used or only SLURM_JOBID was set in user env.
+	 *    --jobid was used or only SLURM_JOB_ID was set in user env.
 	 *    Reset the value here just in case.
 	 */
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NUM_HOSTS,
