@@ -3427,7 +3427,7 @@ extern int init ( void )
 
 	rc = _mysql_acct_check_tables(db_conn);
 
-	mysql_close_db_connection(&db_conn);	
+	mysql_close_db_connection(&db_conn);
 
 	if(rc == SLURM_SUCCESS)
 		verbose("%s loaded", plugin_name);
