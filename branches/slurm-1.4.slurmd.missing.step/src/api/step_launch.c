@@ -988,7 +988,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 {
 	srun_step_missing_msg_t *step_missing = missing_msg->data;
 
-	error("Step %u.%u missing from node(s) %s", 
+	debug("Step %u.%u missing from node(s) %s", 
 	      step_missing->job_id, step_missing->step_id,
 	      step_missing->nodelist);
 }
