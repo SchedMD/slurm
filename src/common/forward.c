@@ -402,6 +402,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 				fatal("Can't create pthread");
 			sleep(1);	/* sleep and try again */
 		}
+		slurm_attr_destroy(&attr_agent);
 		thr_count++; 
 	}
 	hostlist_destroy(hl);
