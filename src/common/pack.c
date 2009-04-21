@@ -138,7 +138,8 @@ Buf init_buf(int size)
 		error("init_buf: buffer size too large");
 		return NULL;
 	}
-
+	if(size <= 0)
+		size = BUF_SIZE;
 	my_buf = xmalloc(sizeof(struct slurm_buf));
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;

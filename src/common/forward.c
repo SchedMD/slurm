@@ -65,7 +65,7 @@
 void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
-	Buf buffer = init_buf(0);
+	Buf buffer = init_buf(fwd_msg->buf_len);
 	int i=0;
 	List ret_list = NULL;
 	slurm_fd fd = -1;
@@ -147,7 +147,7 @@ void *_forward_thread(void *arg)
 			free(name);
 			if(hostlist_count(hl) > 0) {
 				free_buf(buffer);	
-				buffer = init_buf(0);
+				buffer = init_buf(fwd_msg->buf_len);
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
 				slurm_close_accepted_conn(fd);
 				fd = -1;
@@ -202,7 +202,7 @@ void *_forward_thread(void *arg)
 				list_destroy(ret_list);
 			if (hostlist_count(hl) > 0) {
 				free_buf(buffer);	
-				buffer = init_buf(0);
+				buffer = init_buf(fwd_msg->buf_len);
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
 				slurm_close_accepted_conn(fd);
 				fd = -1;
@@ -258,7 +258,6 @@ void *_forward_thread(void *arg)
 		}
 		break;
 	}
-
 	slurm_mutex_lock(fwd_msg->forward_mutex);
 	if(ret_list) {
 		while((ret_data_info = list_pop(ret_list)) != NULL) {
@@ -336,11 +335,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		return SLURM_ERROR;
 	}
 	hl = hostlist_create(header->forward.nodelist);	
-	slurm_mutex_init(&forward_struct->forward_mutex);
-	pthread_cond_init(&forward_struct->notify, NULL);
 	
-	forward_struct->forward_msg = 
-		xmalloc(sizeof(forward_msg_t) * header->forward.cnt);
 	i = 0;
 	
 	while((name = hostlist_shift(hl))) {
@@ -393,10 +388,11 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		hostlist_uniq(forward_hl);
 		hostlist_ranged_string(forward_hl, sizeof(buf), buf);
 		hostlist_destroy(forward_hl);
+		forward_init(&forward_msg->header.forward, NULL);
 		forward_msg->header.forward.nodelist = xstrdup(buf);
 		while(pthread_create(&thread_agent, &attr_agent,
-				   _forward_thread, 
-				   (void *)forward_msg)) {
+				     _forward_thread, 
+				     (void *)forward_msg)) {
 			error("pthread_create error %m");
 			if (++retries > MAX_RETRIES)
 				fatal("Can't create pthread");
@@ -482,6 +478,8 @@ void destroy_forward(forward_t *forward)
 	if(forward->init == FORWARD_INIT) {
 		xfree(forward->nodelist);
 		forward->init = 0;
+	} else {
+		error("destroy_forward: no init");
 	}
 }
 

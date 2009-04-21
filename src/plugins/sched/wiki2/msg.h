@@ -85,8 +85,8 @@
 
 /* Global configuration parameters */
 #define E_HOST_SIZE	256
-#define EXC_PART_CNT	10
-#define HIDE_PART_CNT	10
+#define EXC_PART_CNT	32
+#define HIDE_PART_CNT	32
 #define KEY_SIZE	32
 #define PRIO_HOLD	0
 #define PRIO_DECREMENT	1
