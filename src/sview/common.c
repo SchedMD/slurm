@@ -592,7 +592,7 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 	
 	treestore = gtk_tree_store_newv(count, types);
 	if(!treestore) {
-		g_error("Can't create treestore.\n");
+		g_print("Can't create treestore.\n");
 		return NULL;
 	}
 	
