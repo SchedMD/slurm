@@ -424,7 +424,7 @@ static char * _get_conf_path(void)
 extern List dump_config(void)
 {
 	config_key_pair_t *key_pair;
-	List my_list = list_create(destroy_acct_config_rec);
+	List my_list = list_create(destroy_config_key_pair);
 
 	if (!my_list)
 		fatal("malloc failure on list_create");

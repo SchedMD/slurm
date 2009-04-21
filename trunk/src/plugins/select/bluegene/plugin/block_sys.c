@@ -104,7 +104,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 {
 #ifdef HAVE_BG_FILES
 	int rc;
-	int send_psets=bluegene_numpsets;
+	int send_psets=bg_conf->numpsets;
 
 #ifdef HAVE_BGL
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,   
@@ -154,9 +154,9 @@ static void _pre_allocate(bg_record_t *bg_record)
 		error("bridge_set_data(RM_PartitionConnection)", 
 		      bg_err_str(rc));
 	
-	/* rc = bluegene_bp_node_cnt/bg_record->node_cnt; */
+	/* rc = bg_conf->bp_node_cnt/bg_record->node_cnt; */
 /* 	if(rc > 1) */
-/* 		send_psets = bluegene_numpsets/rc; */
+/* 		send_psets = bg_conf->numpsets/rc; */
 	
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionPsetsPerBP, 
 				  &send_psets)) != STATUS_OK)
@@ -164,7 +164,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 		      bg_err_str(rc));
 	
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionUserName, 
-				  bg_slurm_user_name)) 
+				  bg_conf->slurm_user_name)) 
 	    != STATUS_OK)
 		error("bridge_set_data(RM_PartitionUserName)", bg_err_str(rc));
 	
@@ -224,11 +224,11 @@ static int _post_allocate(bg_record_t *bg_record)
 
 		
 		bg_record->target_name = 
-			xstrdup(bg_slurm_user_name);
+			xstrdup(bg_conf->slurm_user_name);
 
 		xfree(bg_record->user_name);
 		bg_record->user_name = 
-			xstrdup(bg_slurm_user_name);
+			xstrdup(bg_conf->slurm_user_name);
 		
 
 		my_uid = uid_from_string(bg_record->user_name);
@@ -382,7 +382,7 @@ extern int configure_block(bg_record_t *bg_record)
 #endif
 	_pre_allocate(bg_record);
 
-	if(bg_record->cpu_cnt < procs_per_node)
+	if(bg_record->cpu_cnt < bg_conf->procs_per_bp)
 		configure_small_block(bg_record);
 	else
 		configure_block_switches(bg_record);
@@ -395,7 +395,7 @@ extern int configure_block(bg_record_t *bg_record)
 /*
  * Download from MMCS the initial BG block information
  */
-int read_bg_blocks()
+int read_bg_blocks(List curr_block_list)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -486,7 +486,7 @@ int read_bg_blocks()
 		/* New BG Block record */		
 		
 		bg_record = xmalloc(sizeof(bg_record_t));
-		list_push(bg_curr_block_list, bg_record);
+		list_push(curr_block_list, bg_record);
 		
 		bg_record->bg_block_id = xstrdup(tmp_char);
 		free(tmp_char);
@@ -506,7 +506,7 @@ int read_bg_blocks()
 			goto clean_up;
 
 		bg_record->node_cnt = bp_cnt;
-		bg_record->cpu_cnt = bluegene_proc_ratio * bg_record->node_cnt;
+		bg_record->cpu_cnt = bg_conf->proc_ratio * bg_record->node_cnt;
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
 		
@@ -593,7 +593,7 @@ int read_bg_blocks()
 			}
 #ifdef HAVE_BGL
 			/* Translate nodecard count to ionode count */
-			if((io_cnt = nc_cnt * bluegene_io_ratio))
+			if((io_cnt = nc_cnt * bg_conf->io_ratio))
 				io_cnt--;
 
 			nc_id = 0;
@@ -601,9 +601,9 @@ int read_bg_blocks()
 				_find_nodecard(block_ptr, &nc_id);
 			
 			bg_record->node_cnt = 
-				nc_cnt * bluegene_nodecard_node_cnt;
+				nc_cnt * bg_conf->nodecard_node_cnt;
 			bg_record->cpu_cnt =
-				bluegene_proc_ratio * bg_record->node_cnt;
+				bg_conf->proc_ratio * bg_record->node_cnt;
 
 			if ((rc = bridge_get_data(ncard, 
 						  RM_NodeCardQuarter, 
@@ -611,11 +611,11 @@ int read_bg_blocks()
 				error("bridge_get_data(CardQuarter): %d",rc);
 				goto clean_up;
 			}
-			io_start *= bluegene_quarter_ionode_cnt;
-			io_start += bluegene_nodecard_ionode_cnt * (nc_id%4);
+			io_start *= bg_conf->quarter_ionode_cnt;
+			io_start += bg_conf->nodecard_ionode_cnt * (nc_id%4);
 #else
 			/* Translate nodecard count to ionode count */
-			if((io_cnt = nc_cnt * bluegene_io_ratio))
+			if((io_cnt = nc_cnt * bg_conf->io_ratio))
 				io_cnt--;
 
 			if ((rc = bridge_get_data(ncard, 
@@ -633,8 +633,8 @@ int read_bg_blocks()
 			*/
 			nc_id = atoi((char*)tmp_char+1);
 			free(tmp_char);
-			io_start = nc_id * bluegene_io_ratio;
-			if(bg_record->node_cnt < bluegene_nodecard_node_cnt) {
+			io_start = nc_id * bg_conf->io_ratio;
+			if(bg_record->node_cnt < bg_conf->nodecard_node_cnt) {
 				rm_ionode_t *ionode;
 
 				/* figure out the ionode we are using */
@@ -680,9 +680,9 @@ int read_bg_blocks()
 			       bg_record->ionodes);
 		} else {
 #ifdef HAVE_BGL
-			bg_record->cpu_cnt = procs_per_node 
+			bg_record->cpu_cnt = bg_conf->procs_per_bp 
 				* bg_record->bp_count;
-			bg_record->node_cnt =  bluegene_bp_node_cnt
+			bg_record->node_cnt =  bg_conf->bp_node_cnt
 				* bg_record->bp_count;
 #endif
 			if ((rc = bridge_get_data(block_ptr, 
@@ -698,7 +698,7 @@ int read_bg_blocks()
 			   node we don't want anything set we also
 			   don't want the bg_record->ionodes set.
 			*/
-			bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
+			bg_record->ionode_bitmap = bit_alloc(bg_conf->numpsets);
 		}		
 		
 		bg_record->bg_block_list =
@@ -758,7 +758,7 @@ int read_bg_blocks()
 			snprintf(node_name_tmp, 
 				 sizeof(node_name_tmp),
 				 "%s%c%c%c", 
-				 bg_slurm_node_prefix,
+				 bg_conf->slurm_node_prefix,
 				 alpha_num[coord[X]], alpha_num[coord[Y]],
 				 alpha_num[coord[Z]]);
 			
@@ -804,10 +804,10 @@ int read_bg_blocks()
 		/* We can stop processing information now since we
 		   don't need to rest of the information to decide if
 		   this is the correct block. */
-		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+		if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 			bg_record_t *tmp_record = xmalloc(sizeof(bg_record_t));
 			copy_bg_record(bg_record, tmp_record);
-			list_push(bg_list, tmp_record);
+			list_push(bg_lists->main, tmp_record);
 		}
 
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionUsersNum,
@@ -819,9 +819,9 @@ int read_bg_blocks()
 			if(bp_cnt==0) {
 				
 				bg_record->user_name = 
-					xstrdup(bg_slurm_user_name);
+					xstrdup(bg_conf->slurm_user_name);
 				bg_record->target_name = 
-					xstrdup(bg_slurm_user_name);
+					xstrdup(bg_conf->slurm_user_name);
 				
 			} else {
 				user_name = NULL;
@@ -845,7 +845,7 @@ int read_bg_blocks()
 				if(!bg_record->boot_state) {
 					
 					bg_record->target_name = 
-						xstrdup(bg_slurm_user_name);
+						xstrdup(bg_conf->slurm_user_name);
 					
 				} else
 					bg_record->target_name = 
@@ -965,7 +965,7 @@ int read_bg_blocks()
 
 #endif
 
-extern int load_state_file(char *dir_name)
+extern int load_state_file(List curr_block_list, char *dir_name)
 {
 	int state_fd, i, j=0;
 	char *state_file = NULL;
@@ -996,7 +996,7 @@ extern int load_state_file(char *dir_name)
 		return SLURM_SUCCESS;
 	}
 
-	xassert(bg_curr_block_list);
+	xassert(curr_block_list);
 
 	state_file = xstrdup(dir_name);
 	xstrcat(state_file, "/block_state");
@@ -1065,13 +1065,13 @@ extern int load_state_file(char *dir_name)
 		 * everthing else should have been set up already */
 		if(bg_info_record->state == RM_PARTITION_ERROR) {
 			if((bg_record = find_bg_record_in_list(
-				    bg_curr_block_list,
+				    curr_block_list,
 				    bg_info_record->bg_block_id)))
 				/* put_block_in_error_state should be
-				   called after the bg_list has been
+				   called after the bg_lists->main has been
 				   made.  We can't call it here since
 				   this record isn't the record kept
-				   around in bg_list.
+				   around in bg_lists->main.
 				*/
 				bg_record->state = bg_info_record->state;
 		}
@@ -1101,7 +1101,7 @@ extern int load_state_file(char *dir_name)
 	removable_set_bps(non_usable_nodes);
 
 	node_bitmap = bit_alloc(node_record_count);	
-	ionode_bitmap = bit_alloc(bluegene_numpsets);	
+	ionode_bitmap = bit_alloc(bg_conf->numpsets);	
 	for (i=0; i<node_select_ptr->record_count; i++) {
 		bg_info_record = &(node_select_ptr->bg_info_array[i]);
 		
@@ -1126,10 +1126,10 @@ extern int load_state_file(char *dir_name)
 		j = 0;
 		while(bg_info_record->ionode_inx[j] >= 0) {
 			if (bg_info_record->ionode_inx[j+1]
-			    >= bluegene_numpsets) {
+			    >= bg_conf->numpsets) {
 				fatal("Job state recovered incompatable with "
 					"bluegene.conf. ionodes=%u state=%d",
-					bluegene_numpsets,
+					bg_conf->numpsets,
 					bg_info_record->ionode_inx[j+1]);
 			}
 			bit_nset(ionode_bitmap,
@@ -1147,22 +1147,22 @@ extern int load_state_file(char *dir_name)
 			xstrdup(bg_info_record->ionodes);
 		bg_record->ionode_bitmap = bit_copy(ionode_bitmap);
 		/* put_block_in_error_state should be
-		   called after the bg_list has been
+		   called after the bg_lists->main has been
 		   made.  We can't call it here since
 		   this record isn't the record kept
-		   around in bg_list.
+		   around in bg_lists->main.
 		*/
 		bg_record->state = bg_info_record->state;
 		bg_record->job_running = NO_JOB_RUNNING;
 
 		bg_record->bp_count = bit_size(node_bitmap);
 		bg_record->node_cnt = bg_info_record->node_cnt;
-		if(bluegene_bp_node_cnt > bg_record->node_cnt) {
-			ionodes = bluegene_bp_node_cnt 
+		if(bg_conf->bp_node_cnt > bg_record->node_cnt) {
+			ionodes = bg_conf->bp_node_cnt 
 				/ bg_record->node_cnt;
-			bg_record->cpu_cnt = procs_per_node / ionodes;
+			bg_record->cpu_cnt = bg_conf->procs_per_bp / ionodes;
 		} else {
-			bg_record->cpu_cnt = procs_per_node
+			bg_record->cpu_cnt = bg_conf->procs_per_bp
 				* bg_record->bp_count;
 		}
 #ifdef HAVE_BGL
@@ -1173,8 +1173,8 @@ extern int load_state_file(char *dir_name)
 
 		process_nodes(bg_record, true);
 
-		bg_record->target_name = xstrdup(bg_slurm_user_name);
-		bg_record->user_name = xstrdup(bg_slurm_user_name);
+		bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
+		bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 			
 		my_uid = uid_from_string(bg_record->user_name);
 		if (my_uid == (uid_t) -1) {
@@ -1198,7 +1198,7 @@ extern int load_state_file(char *dir_name)
 		for(j=0; j<BA_SYSTEM_DIMENSIONS; j++) 
 			geo[j] = bg_record->geo[j];
 				
-		if(bluegene_layout_mode == LAYOUT_OVERLAP) {
+		if(bg_conf->layout_mode == LAYOUT_OVERLAP) {
 			reset_ba_system(false);
 			removable_set_bps(non_usable_nodes);
 		}
@@ -1219,7 +1219,7 @@ extern int load_state_file(char *dir_name)
 
 			
 		snprintf(temp, sizeof(temp), "%s%s",
-			 bg_slurm_node_prefix,
+			 bg_conf->slurm_node_prefix,
 			 name);
 		
 		xfree(name);
@@ -1238,11 +1238,11 @@ extern int load_state_file(char *dir_name)
 			
 		configure_block(bg_record);
 		blocks++;
-		list_push(bg_curr_block_list, bg_record);		
-		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+		list_push(curr_block_list, bg_record);		
+		if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 			bg_record_t *tmp_record = xmalloc(sizeof(bg_record_t));
 			copy_bg_record(bg_record, tmp_record);
-			list_push(bg_list, tmp_record);
+			list_push(bg_lists->main, tmp_record);
 		}
 	}
 
@@ -1250,7 +1250,7 @@ extern int load_state_file(char *dir_name)
 	FREE_NULL_BITMAP(ionode_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 
-	sort_bg_record_inc_size(bg_curr_block_list);
+	sort_bg_record_inc_size(curr_block_list);
 	slurm_mutex_unlock(&block_state_mutex);
 		
 	info("Recovered %d blocks", blocks);

@@ -3026,7 +3026,7 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 		my_function = pack_acct_cluster_rec;
 		break;
 	case DBD_GOT_CONFIG:
-		my_function = pack_acct_config_rec;
+		my_function = pack_config_key_pair;
 		break;
 	case DBD_GOT_JOBS:
 		my_function = pack_jobacct_job_rec;
@@ -3100,8 +3100,8 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 		my_destroy = destroy_acct_cluster_rec;
 		break;
 	case DBD_GOT_CONFIG:
-		my_function = unpack_acct_config_rec;
-		my_destroy = destroy_acct_config_rec;
+		my_function = unpack_config_key_pair;
+		my_destroy = destroy_config_key_pair;
 		break;
 	case DBD_GOT_JOBS:
 		my_function = unpack_jobacct_job_rec;

@@ -339,7 +339,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	rm_nodecard_t *ncard;
 	rm_nodecard_list_t *ncard_list = NULL;
 	int num, i;
-	int use_nc[bluegene_bp_nodecard_cnt];
+	int use_nc[bg_conf->bp_nodecard_cnt];
 	double nc_pos = 0;
 #endif
 	xassert(bg_record->ionode_bitmap);
@@ -349,7 +349,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 /* 	info("configuring small block on ionodes %s out of %d ncs",  */
-/* 	     bg_record->ionodes, bluegene_bp_nodecard_cnt); */
+/* 	     bg_record->ionodes, bg_conf->bp_nodecard_cnt); */
 #ifdef HAVE_BG_FILES	
 	/* set that we are doing a small block */
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionSmall, 
@@ -359,7 +359,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		      bg_err_str(rc));
 	}
 
-	num_ncards = bg_record->node_cnt/bluegene_nodecard_node_cnt;
+	num_ncards = bg_record->node_cnt/bg_conf->nodecard_node_cnt;
 	if(num_ncards < 1) {
 		num_ncards = 1;
 		sub_nodecard = 1;
@@ -368,11 +368,11 @@ extern int configure_small_block(bg_record_t *bg_record)
 
 	/* find out how many nodecards to get for each ionode */
 		
-	for(i = 0; i<bluegene_numpsets; i++) {
+	for(i = 0; i<bg_conf->numpsets; i++) {
 		if(bit_test(bg_record->ionode_bitmap, i)) {
-			if(bluegene_nc_ratio > 1) {
+			if(bg_conf->nc_ratio > 1) {
 				int j=0;
-				for(j=0; j<bluegene_nc_ratio; j++)
+				for(j=0; j<bg_conf->nc_ratio; j++)
 					use_nc[(int)nc_pos+j] = 1;
 			} else {
 				use_nc[(int)nc_pos] = 1;
@@ -380,7 +380,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 					ionode_card = 1;
 			}
 		}
-		nc_pos += bluegene_nc_ratio;
+		nc_pos += bg_conf->nc_ratio;
 	}
 
 	if ((rc = bridge_set_data(bg_record->bg_block,

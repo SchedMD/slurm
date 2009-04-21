@@ -183,6 +183,11 @@ typedef struct slurm_conf_downnodes {
 	char *state;
 } slurm_conf_downnodes_t;
 
+typedef struct {
+	char *name;
+	char *value;
+} config_key_pair_t;
+
 /*
  * slurm_conf_init - load the slurm configuration from the a file.
  * IN file_name - name of the slurm configuration file to be read
@@ -360,5 +365,11 @@ extern char *debug_flags2str(uint32_t debug_flags);
  * Returns NO_VAL if invalid
  */
 extern uint32_t debug_str2flags(char *debug_flags);
+
+extern void destroy_config_key_pair(void *object);
+extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_config_key_pair(void **object, uint16_t rpc_version, 
+				  Buf buffer);
+
 
 #endif /* !_READ_CONFIG_H */

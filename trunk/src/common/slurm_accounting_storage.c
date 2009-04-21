@@ -517,17 +517,6 @@ extern void destroy_acct_cluster_rec(void *object)
 	}
 }
 
-extern void destroy_acct_config_rec(void *object)
-{
-	config_key_pair_t *key_pair_ptr = (config_key_pair_t *)object;
-
-	if(key_pair_ptr) {
-		xfree(key_pair_ptr->name);
-		xfree(key_pair_ptr->value);
-		xfree(key_pair_ptr);
-	}
-}
-
 extern void destroy_acct_accounting_rec(void *object)
 {
 	acct_accounting_rec_t *acct_accounting =
@@ -1597,31 +1586,6 @@ extern int unpack_cluster_accounting_rec(void **object, uint16_t rpc_version,
 
 unpack_error:
 	destroy_cluster_accounting_rec(object_ptr);
-	*object = NULL;
-	return SLURM_ERROR;
-}
-
-extern void pack_acct_config_rec(void *in, uint16_t rpc_version, Buf buffer)
-{
-	config_key_pair_t *object = (config_key_pair_t *)in;
-	packstr(object->name,  buffer);
-	packstr(object->value, buffer);
-}
-
-extern int unpack_acct_config_rec(void **object, uint16_t rpc_version,
-				  Buf buffer)
-{
-	uint32_t uint32_tmp;
-	config_key_pair_t *object_ptr = xmalloc(sizeof(config_key_pair_t));
-	
-	*object = object_ptr;
-	safe_unpackstr_xmalloc(&object_ptr->name,  &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->value, &uint32_tmp, buffer);
-	
-	return SLURM_SUCCESS;
-
-unpack_error:
-	destroy_acct_config_rec(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }

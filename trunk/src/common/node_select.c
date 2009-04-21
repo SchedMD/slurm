@@ -105,6 +105,7 @@ typedef struct slurm_select_ops {
 	int             (*alter_node_cnt)      (enum select_node_cnt type,
 						void *data);
 	int		(*reconfigure)         (void);
+	List		(*get_config)          (void);
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -120,7 +121,9 @@ static pthread_mutex_t		g_select_context_lock =
 					PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_BG			/* node selection specific logic */
+
 #  define JOBINFO_MAGIC 0x83ac
+
 struct select_jobinfo {
 	uint16_t start[SYSTEM_DIMENSIONS];	/* start position of block
 						 *  e.g. XYZ */
@@ -143,6 +146,7 @@ struct select_jobinfo {
 	char *mloaderimage;     /* mloaderImage for this block */
 	char *ramdiskimage;     /* RamDiskImage for this block */
 };
+
 #endif	/* HAVE_BG */
 
 #ifdef HAVE_CRAY_XT		/* node selection specific logic */
@@ -189,7 +193,8 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
                 "select_p_get_info_from_plugin",
 		"select_p_update_node_state",
 		"select_p_alter_node_cnt",
-		"select_p_reconfigure"
+		"select_p_reconfigure",
+		"select_p_get_config"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -510,6 +515,17 @@ extern int select_g_reconfigure (void)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.reconfigure))();
+}
+
+/* 
+ * Get configuration specific for this plugin.
+ */
+extern List select_g_get_config(void)
+{
+	if (slurm_select_init() < 0)
+		return NULL;
+
+	return (*(g_select_context->ops.get_config))();
 }
 
 /*
@@ -1523,6 +1539,22 @@ extern int select_g_free_node_info(node_select_info_msg_t **
 	return SLURM_SUCCESS;
 }
 
+extern void select_g_print_config(List config_list)
+{
+	ListIterator iter = NULL;
+	config_key_pair_t *key_pair;
+
+	if (!config_list)
+		return;
+	
+	printf("\nBluegene configuration:\n");
+	iter = list_iterator_create(config_list);
+	while((key_pair = list_next(iter))) {
+		printf("%-22s = %s\n", key_pair->name, key_pair->value);
+	}
+	list_iterator_destroy(iter);
+}
+
 #else	/* !HAVE_BG */
 
 #ifdef HAVE_CRAY_XT
@@ -1815,6 +1847,22 @@ extern int select_g_free_node_info(node_select_info_msg_t **
 	return SLURM_ERROR;
 }
 
+extern void select_g_print_config(List config_list)
+{
+	ListIterator iter = NULL;
+	config_key_pair_t *key_pair;
+
+	if (!config_list)
+		return;
+	
+	printf("\nCRAY XT configuration:\n");
+	iter = list_iterator_create(config_list);
+	while((key_pair = list_next(iter))) {
+		printf("%-22s = %s\n", key_pair->name, key_pair->value);
+	}
+	list_iterator_destroy(iter);
+}
+
 #else	/* !HAVE_CRAY_XT */
 /* allocate storage for a select job credential
  * OUT jobinfo - storage for a select job credential
@@ -1923,6 +1971,22 @@ extern int select_g_free_node_info(node_select_info_msg_t **
 		node_select_info_msg_pptr)
 {
 	return SLURM_ERROR;
+}
+
+extern void select_g_print_config(List config_list)
+{
+	ListIterator iter = NULL;
+	config_key_pair_t *key_pair;
+
+	if (!config_list)
+		return;
+	
+	printf("\nSelect configuration:\n");
+	iter = list_iterator_create(config_list);
+	while((key_pair = list_next(iter))) {
+		printf("%-22s = %s\n", key_pair->name, key_pair->value);
+	}
+	list_iterator_destroy(iter);
 }
 
 #endif	/* HAVE_CRAY_XT */

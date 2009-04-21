@@ -49,9 +49,6 @@
 
 #define HUGE_BUF_SIZE (1024*16)
 
-/* global */
-int procs_per_node = 512;
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -209,21 +206,29 @@ extern int fini ( void )
  */
  extern int select_p_block_init(List part_list)
 {
-	xfree(bg_slurm_user_name);
-	xfree(bg_slurm_node_prefix);
+	xfree(bg_conf->slurm_user_name);
+	xfree(bg_conf->slurm_node_prefix);
 
 	slurm_conf_lock();
 	xassert(slurmctld_conf.slurm_user_name);
 	xassert(slurmctld_conf.node_prefix);
-	bg_slurm_user_name = xstrdup(slurmctld_conf.slurm_user_name);
-	bg_slurm_node_prefix = xstrdup(slurmctld_conf.node_prefix);
+	bg_conf->slurm_user_name = xstrdup(slurmctld_conf.slurm_user_name);
+	bg_conf->slurm_node_prefix = xstrdup(slurmctld_conf.node_prefix);
 	slurm_conf_unlock();	
 
-#ifdef HAVE_BG
-	if(read_bg_conf() == SLURM_ERROR) {
-		fatal("Error, could not read the file");
-		return SLURM_ERROR;
-	}
+	/* select_p_node_init needs to be called before this to set
+	   this up correctly
+	*/
+	bg_conf->proc_ratio = bg_conf->procs_per_bp/bg_conf->bp_node_cnt;
+	if(!bg_conf->proc_ratio)
+		fatal("We appear to have less than 1 proc on a cnode.  "
+		      "You specified %u for BasePartitionNodeCnt "
+		      "in the blugene.conf and %u procs "
+		      "for each node in the slurm.conf",
+		      bg_conf->bp_node_cnt, bg_conf->procs_per_bp);
+	num_unused_cpus = 
+		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] * bg_conf->procs_per_bp;
+
 	if(part_list) {
 		struct part_record *part_ptr = NULL;
 		ListIterator itr = list_iterator_create(part_list);
@@ -237,18 +242,6 @@ extern int fini ( void )
 		}
 		list_iterator_destroy(itr);
 	}
-#else
-	/*looking for blocks only I created */
-	if (create_defined_blocks(bluegene_layout_mode, NULL) 
-			== SLURM_ERROR) {
-		/* error in creating the static blocks, so
-		 * blocks referenced by submitted jobs won't
-		 * correspond to actual slurm blocks.
-		 */
-		fatal("Error, could not create the static blocks");
-		return SLURM_ERROR;
-	}
-#endif
 
 	return SLURM_SUCCESS; 
 }
@@ -274,7 +267,7 @@ extern int select_p_state_save(char *dir_name)
 
 	/* write block records to buffer */
 	slurm_mutex_lock(&block_state_mutex);
-	itr = list_iterator_create(bg_list);
+	itr = list_iterator_create(bg_lists->main);
 	while((bg_record = list_next(itr))) {
 		/* on real bluegene systems we only want to keep track of
 		 * the blocks in an error state
@@ -360,12 +353,13 @@ extern int select_p_job_init(List job_list)
 	return sync_jobs(job_list);
 }
 
-/* All initialization is performed by select_p_block_init() */
+/* All initialization is performed by init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 	if(node_cnt>0)
-		if(node_ptr->cpus >= bluegene_bp_node_cnt)
-			procs_per_node = node_ptr->cpus;
+		if(node_ptr->cpus >= bg_conf->bp_node_cnt) 
+			bg_conf->procs_per_bp = node_ptr->cpus;
+		
 	return SLURM_SUCCESS;
 }
 
@@ -471,9 +465,9 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		pack32(blocks_packed, buffer);
 		pack_time(last_bg_update, buffer);
 
-		if(bg_list) {
+		if(bg_lists->main) {
 			slurm_mutex_lock(&block_state_mutex);
-			itr = list_iterator_create(bg_list);
+			itr = list_iterator_create(bg_lists->main);
 			while ((bg_record = list_next(itr))) {
 				pack_block(bg_record, buffer);
 				blocks_packed++;
@@ -481,16 +475,16 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 			list_iterator_destroy(itr);
 			slurm_mutex_unlock(&block_state_mutex);
 		} else {
-			error("select_p_pack_node_info: no bg_list");
+			error("select_p_pack_node_info: no bg_lists->main");
 			return SLURM_ERROR;
 		}
 		/*
 		 * get all the blocks we are freeing since they have
 		 * been moved here
 		 */
-		if(bg_freeing_list) {
+		if(bg_lists->freeing) {
 			slurm_mutex_lock(&block_state_mutex);
-			itr = list_iterator_create(bg_freeing_list);
+			itr = list_iterator_create(bg_lists->freeing);
 			while ((bg_record = (bg_record_t *) list_next(itr)) 
 			       != NULL) {
 				xassert(bg_record->bg_block_id != NULL);
@@ -508,7 +502,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		
 		*buffer_ptr = buffer;
 	} else {
-		error("select_p_pack_node_info: bg_list not ready yet");
+		error("select_p_pack_node_info: bg_lists->main not ready yet");
 		return SLURM_ERROR;
 	}
 
@@ -535,7 +529,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	time_t now;
 	char reason[128], tmp[64], time_str[32];
 
-	bg_record = find_bg_record_in_list(bg_list, part_desc_ptr->name);
+	bg_record = find_bg_record_in_list(bg_lists->main, part_desc_ptr->name);
 	if(!bg_record)
 		return SLURM_ERROR;
 
@@ -561,14 +555,14 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	
 	/* Free all overlapping blocks and kill any jobs only
 	 * if we are going into an error state */ 
-	if (bluegene_layout_mode != LAYOUT_DYNAMIC
+	if (bg_conf->layout_mode != LAYOUT_DYNAMIC
 	    && !part_desc_ptr->state_up) {
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
 		
 		slurm_mutex_lock(&block_state_mutex);
-		itr = list_iterator_create(bg_list);
+		itr = list_iterator_create(bg_lists->main);
 		while ((found_record = list_next(itr))) {
 			if (bg_record == found_record)
 				continue;
@@ -634,7 +628,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 	double nc_pos = 0, last_pos = -1;
 	bitstr_t *ionode_bitmap = NULL;
 	
-	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
+	if(bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		info("You can't use this call unless you are on a Dynamically "
 		     "allocated system.  Please use update BlockName instead");
 		rc = SLURM_ERROR;
@@ -714,7 +708,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	ionode_bitmap = bit_alloc(bluegene_numpsets);
+	ionode_bitmap = bit_alloc(bg_conf->numpsets);
 	bit_unfmt(ionode_bitmap, ionodes);
 	if(bit_ffs(ionode_bitmap) == -1) {
 		error("update_sub_node: Invalid ionode '%s' given.", ionodes);
@@ -722,19 +716,19 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 		FREE_NULL_BITMAP(ionode_bitmap);
 		goto end_it;		
 	}
-	node_name = xstrdup_printf("%s%s", bg_slurm_node_prefix, coord);
+	node_name = xstrdup_printf("%s%s", bg_conf->slurm_node_prefix, coord);
 	/* find out how many nodecards to get for each ionode */
 	if(!part_desc_ptr->state_up) {
 		info("Admin setting %s[%s] in an error state",
 		     node_name, ionodes);
-		for(i = 0; i<bluegene_numpsets; i++) {
+		for(i = 0; i<bg_conf->numpsets; i++) {
 			if(bit_test(ionode_bitmap, i)) {
 				if((int)nc_pos != (int)last_pos) {
 					down_nodecard(node_name, i);
 					last_pos = nc_pos;
 				}
 			}
-			nc_pos += bluegene_nc_ratio;
+			nc_pos += bg_conf->nc_ratio;
 		}
 	} else if(part_desc_ptr->state_up){
 		info("Admin setting %s[%s] in an free state",
@@ -760,7 +754,7 @@ extern int select_p_get_info_from_plugin (enum select_data_info info,
 {
 	if (info == SELECT_STATIC_PART) {
 		uint16_t *tmp16 = (uint16_t *) data;
-		if (bluegene_layout_mode == LAYOUT_STATIC)
+		if (bg_conf->layout_mode == LAYOUT_STATIC)
 			*tmp16 = 1;
 		else
 			*tmp16 = 0;
@@ -806,22 +800,22 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	int i;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 
-	if(!bluegene_bp_node_cnt) {
+	if(!bg_conf->bp_node_cnt) {
 		fatal("select_g_alter_node_cnt: This can't be called "
-		      "before select_g_block_init");
+		      "before init");
 	}
 
 	switch (type) {
 	case SELECT_GET_NODE_SCALING:
 		if((*nodes) != INFINITE)
-			(*nodes) = bluegene_bp_node_cnt;
+			(*nodes) = bg_conf->bp_node_cnt;
 		break;
 	case SELECT_SET_BP_CNT:
 		if(((*nodes) == INFINITE) || ((*nodes) == NO_VAL))
 			tmp = (*nodes);
-		else if((*nodes) > bluegene_bp_node_cnt) {
+		else if((*nodes) > bg_conf->bp_node_cnt) {
 			tmp = (*nodes);
-			tmp /= bluegene_bp_node_cnt;
+			tmp /= bg_conf->bp_node_cnt;
 			if(tmp < 1) 
 				tmp = 1;
 		} else 
@@ -835,11 +829,11 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			 * don't scale up this value. */
 			break;
 		}
-		(*nodes) *= bluegene_bp_node_cnt;
+		(*nodes) *= bg_conf->bp_node_cnt;
 		break;
 	case SELECT_APPLY_NODE_MAX_OFFSET:
 		if((*nodes) != INFINITE)
-			(*nodes) *= bluegene_bp_node_cnt;
+			(*nodes) *= bg_conf->bp_node_cnt;
 		break;
 	case SELECT_SET_NODE_CNT:
 		select_g_get_jobinfo(job_desc->select_jobinfo,
@@ -866,7 +860,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
 				job_desc->min_nodes *= 
 					(uint16_t)req_geometry[i];
-			job_desc->min_nodes *= bluegene_bp_node_cnt;
+			job_desc->min_nodes *= bg_conf->bp_node_cnt;
 			job_desc->max_nodes = job_desc->min_nodes;
 		}
 
@@ -877,18 +871,18 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				job_desc->max_nodes = job_desc->num_procs;
 		}
 		/* See if min_nodes is greater than one base partition */
-		if(job_desc->min_nodes > bluegene_bp_node_cnt) {
+		if(job_desc->min_nodes > bg_conf->bp_node_cnt) {
 			/*
 			 * if it is make sure it is a factor of 
-			 * bluegene_bp_node_cnt, if it isn't make it 
+			 * bg_conf->bp_node_cnt, if it isn't make it 
 			 * that way 
 			 */
-			tmp = job_desc->min_nodes % bluegene_bp_node_cnt;
+			tmp = job_desc->min_nodes % bg_conf->bp_node_cnt;
 			if(tmp > 0)
 				job_desc->min_nodes += 
-					(bluegene_bp_node_cnt-tmp);
+					(bg_conf->bp_node_cnt-tmp);
 		}				
-		tmp = job_desc->min_nodes / bluegene_bp_node_cnt;
+		tmp = job_desc->min_nodes / bg_conf->bp_node_cnt;
 		
 		/* this means it is greater or equal to one bp */
 		if(tmp > 0) {
@@ -896,32 +890,32 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					     SELECT_DATA_NODE_CNT,
 					     &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
-			job_desc->num_procs = procs_per_node * tmp;
+			job_desc->num_procs = bg_conf->procs_per_bp * tmp;
 		} else { 
 #ifdef HAVE_BGL
-			if(job_desc->min_nodes <= bluegene_nodecard_node_cnt
-			   && bluegene_nodecard_ionode_cnt)
+			if(job_desc->min_nodes <= bg_conf->nodecard_node_cnt
+			   && bg_conf->nodecard_ionode_cnt)
 				job_desc->min_nodes = 
-					bluegene_nodecard_node_cnt;
+					bg_conf->nodecard_node_cnt;
 			else if(job_desc->min_nodes 
-				<= bluegene_quarter_node_cnt)
+				<= bg_conf->quarter_node_cnt)
 				job_desc->min_nodes = 
-					bluegene_quarter_node_cnt;
+					bg_conf->quarter_node_cnt;
 			else 
 				job_desc->min_nodes = 
-					bluegene_bp_node_cnt;
+					bg_conf->bp_node_cnt;
 			
 			select_g_set_jobinfo(job_desc->select_jobinfo,
 					     SELECT_DATA_NODE_CNT,
 					     &job_desc->min_nodes);
 
-			tmp = bluegene_bp_node_cnt/job_desc->min_nodes;
+			tmp = bg_conf->bp_node_cnt/job_desc->min_nodes;
 			
-			job_desc->num_procs = procs_per_node/tmp;
+			job_desc->num_procs = bg_conf->procs_per_bp/tmp;
 			job_desc->min_nodes = 1;
 #else
-			i = bluegene_smallest_block;
-			while(i <= bluegene_bp_node_cnt) {
+			i = bg_conf->smallest_block;
+			while(i <= bg_conf->bp_node_cnt) {
 				if(job_desc->min_nodes <= i) {
 					job_desc->min_nodes = i;
 					break;
@@ -934,7 +928,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					     &job_desc->min_nodes);
 
 			job_desc->num_procs = job_desc->min_nodes 
-				* bluegene_proc_ratio;
+				* bg_conf->proc_ratio;
 			job_desc->min_nodes = 1;
 #endif
 		}
@@ -942,40 +936,40 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		if(job_desc->max_nodes == (uint32_t) NO_VAL) 
 			return SLURM_SUCCESS;
 		
-		if(job_desc->max_nodes > bluegene_bp_node_cnt) {
-			tmp = job_desc->max_nodes % bluegene_bp_node_cnt;
+		if(job_desc->max_nodes > bg_conf->bp_node_cnt) {
+			tmp = job_desc->max_nodes % bg_conf->bp_node_cnt;
 			if(tmp > 0)
 				job_desc->max_nodes += 
-					(bluegene_bp_node_cnt-tmp);
+					(bg_conf->bp_node_cnt-tmp);
 		}
-		tmp = job_desc->max_nodes / bluegene_bp_node_cnt;
+		tmp = job_desc->max_nodes / bg_conf->bp_node_cnt;
 		if(tmp > 0) {
 			job_desc->max_nodes = tmp;
 			tmp = NO_VAL;
 		} else {
 #ifdef HAVE_BGL
-			if(job_desc->max_nodes <= bluegene_nodecard_node_cnt
-			   && bluegene_nodecard_ionode_cnt)
+			if(job_desc->max_nodes <= bg_conf->nodecard_node_cnt
+			   && bg_conf->nodecard_ionode_cnt)
 				job_desc->max_nodes = 
-					bluegene_nodecard_node_cnt;
+					bg_conf->nodecard_node_cnt;
 			else if(job_desc->max_nodes 
-				<= bluegene_quarter_node_cnt)
+				<= bg_conf->quarter_node_cnt)
 				job_desc->max_nodes = 
-					bluegene_quarter_node_cnt;
+					bg_conf->quarter_node_cnt;
 			else 
 				job_desc->max_nodes = 
-					bluegene_bp_node_cnt;
+					bg_conf->bp_node_cnt;
 		
-			tmp = bluegene_bp_node_cnt/job_desc->max_nodes;
-			tmp = procs_per_node/tmp;
+			tmp = bg_conf->bp_node_cnt/job_desc->max_nodes;
+			tmp = bg_conf->procs_per_bp/tmp;
 			
 			select_g_set_jobinfo(job_desc->select_jobinfo,
 					     SELECT_DATA_MAX_PROCS, 
 					     &tmp);
 			job_desc->max_nodes = 1;
 #else
-			i = bluegene_smallest_block;
-			while(i <= bluegene_bp_node_cnt) {
+			i = bg_conf->smallest_block;
+			while(i <= bg_conf->bp_node_cnt) {
 				if(job_desc->max_nodes <= i) {
 					job_desc->max_nodes = i;
 					break;
@@ -983,7 +977,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				i *= 2;
 			}
 			
-			tmp = job_desc->max_nodes * bluegene_proc_ratio;
+			tmp = job_desc->max_nodes * bg_conf->proc_ratio;
 			select_g_set_jobinfo(job_desc->select_jobinfo,
 					     SELECT_DATA_MAX_PROCS,
 					     &tmp);
@@ -1003,5 +997,41 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 extern int select_p_reconfigure(void)
 {
+	if(read_bg_conf() == SLURM_ERROR) {
+		fatal("Error, could not read the file");
+		return SLURM_ERROR;
+	}
+	
 	return SLURM_SUCCESS;
+}
+
+extern List select_p_get_config(void)
+{
+//	config_key_pair_t *key_pair;
+	List my_list = list_create(destroy_config_key_pair);
+
+/* 	if (!my_list) */
+/* 		fatal("malloc failure on list_create"); */
+
+/* 	key_pair = xmalloc(sizeof(config_key_pair_t)); */
+/* 	key_pair->name = xstrdup("ArchiveDir"); */
+/* 	key_pair->value = xstrdup(bg_conf->archive_dir); */
+/* 	list_append(my_list, key_pair); */
+
+/* 	key_pair = xmalloc(sizeof(config_key_pair_t)); */
+/* 	key_pair->name = xstrdup("ArchiveScript"); */
+/* 	key_pair->value = xstrdup(bg_conf->archive_script); */
+/* 	list_append(my_list, key_pair); */
+
+/* 	key_pair = xmalloc(sizeof(config_key_pair_t)); */
+/* 	key_pair->name = xstrdup("AuthInfo"); */
+/* 	key_pair->value = xstrdup(bg_conf->auth_info); */
+/* 	list_append(my_list, key_pair); */
+
+/* 	key_pair = xmalloc(sizeof(config_key_pair_t)); */
+/* 	key_pair->name = xstrdup("AuthType"); */
+/* 	key_pair->value = xstrdup(bg_conf->auth_type); */
+/* 	list_append(my_list, key_pair); */
+
+	return my_list;
 }
