@@ -46,8 +46,6 @@
 #include "bluegene.h"
 #include "dynamic_block.h"
 
-#ifdef HAVE_BG 
-
 #define _DEBUG 0
 #define MAX_GROUPS 128
 
@@ -1327,8 +1325,6 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	}
 }
 
-#endif	/* ifdef HAVE_BG */
-
 /*
  * Try to find resources for a given job request
  * IN job_ptr - pointer to job record in slurmctld
@@ -1346,7 +1342,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		      uint32_t req_nodes, int mode)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_BG
 	bg_record_t* bg_record = NULL;
 	char buf[100];
 	uint16_t conn_type = (uint16_t)NO_VAL;
@@ -1528,14 +1523,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	}
 
 	list_destroy(block_list);
-#endif
 	return rc;
 }
 
 extern int test_job_list(List req_list)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_BG
 	bg_record_t* bg_record = NULL;
 	bg_record_t* new_record = NULL;
 	char buf[100];
@@ -1780,6 +1773,5 @@ extern int test_job_list(List req_list)
 	list_destroy(job_block_test_list);
 	
 	slurm_mutex_unlock(&job_list_test_mutex);
-#endif
 	return rc;
 }

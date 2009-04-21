@@ -39,10 +39,6 @@
 
 #include "bluegene.h"
 
-#ifndef HAVE_BG
-#include "defined_block.h"
-#endif
-
 //#include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include <fcntl.h>
@@ -98,9 +94,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
  */
 extern int init ( void )
 {
-#ifndef HAVE_BG
-	fatal("Plugin select/bluegene is illegal on non-BlueGene computers");
-#endif
+
 #if (SYSTEM_DIMENSIONS != 3)
 	fatal("SYSTEM_DIMENSIONS value (%d) invalid for Blue Gene",
 		SYSTEM_DIMENSIONS);
@@ -161,14 +155,12 @@ static char *_block_state_str(int state)
 {
 	static char tmp[16];
 
-#ifdef HAVE_BG
 	switch (state) {
 		case 0: 
 			return "ERROR";
 		case 1:
 			return "FREE";
 	}
-#endif
 
 	snprintf(tmp, sizeof(tmp), "%d", state);
 	return tmp;
@@ -765,9 +757,7 @@ extern int select_p_get_info_from_plugin (enum select_data_info info,
 
 extern int select_p_update_node_state (int index, uint16_t state)
 {
-	int x;
-#ifdef HAVE_BG
-	int y, z;
+	int x, y, z;
 	
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
@@ -782,14 +772,7 @@ extern int select_p_update_node_state (int index, uint16_t state)
 			}
 		}
 	}
-#else
-	for (x = 0; x < DIM_SIZE[X]; x++) {
-		if (ba_system_ptr->grid[x].index == index) {
-			ba_update_node_state(&ba_system_ptr->grid[x], state);
-			return SLURM_SUCCESS;
-		}
-	}
-#endif
+
 	return SLURM_ERROR;
 }
 
