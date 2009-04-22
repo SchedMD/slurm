@@ -1539,22 +1539,6 @@ extern int select_g_free_node_info(node_select_info_msg_t **
 	return SLURM_SUCCESS;
 }
 
-extern void select_g_print_config(List config_list)
-{
-	ListIterator iter = NULL;
-	config_key_pair_t *key_pair;
-
-	if (!config_list)
-		return;
-	
-	printf("\nBluegene configuration:\n");
-	iter = list_iterator_create(config_list);
-	while((key_pair = list_next(iter))) {
-		printf("%-22s = %s\n", key_pair->name, key_pair->value);
-	}
-	list_iterator_destroy(iter);
-}
-
 #else	/* !HAVE_BG */
 
 #ifdef HAVE_CRAY_XT

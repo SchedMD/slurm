@@ -1181,6 +1181,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t schedrootfltr;	/* 1 if rootOnly partitions should be
 				 * filtered from scheduling (if needed) */
 	char *select_type;	/* type of node selector to use */
+	void *select_conf_key_pairs; /* key-pair list which can be
+				      * listed with slurm_print_key_pairs */
 	uint16_t select_type_param; /* Parameters 
 				 * describing the select_type plugin */
 	uint32_t slurm_user_id;	/* uid of slurm_user_name */
@@ -1709,6 +1711,16 @@ extern void slurm_free_slurmd_status PARAMS((
  */
 void slurm_print_slurmd_status PARAMS((
 		FILE* out, slurmd_status_t * slurmd_status_ptr));
+
+/*
+ * slurm_print_key_pairs - output the contents of key_pairs 
+ *	which is a list of opaque data type config_key_pair_t
+ * IN out - file to write to
+ * IN key_pairs - List contianing key pairs to be printed
+ * IN title - title of key pair list
+ */
+void slurm_print_key_pairs PARAMS((
+                FILE* out, void* key_pairs, char *title));
 
 /*****************************************************************************\
  *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

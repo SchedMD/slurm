@@ -990,16 +990,16 @@ extern int select_p_reconfigure(void)
 
 extern List select_p_get_config(void)
 {
-//	config_key_pair_t *key_pair;
+	config_key_pair_t *key_pair;
 	List my_list = list_create(destroy_config_key_pair);
 
-/* 	if (!my_list) */
-/* 		fatal("malloc failure on list_create"); */
+	if (!my_list)
+		fatal("malloc failure on list_create");
 
-/* 	key_pair = xmalloc(sizeof(config_key_pair_t)); */
-/* 	key_pair->name = xstrdup("ArchiveDir"); */
-/* 	key_pair->value = xstrdup(bg_conf->archive_dir); */
-/* 	list_append(my_list, key_pair); */
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BridgeAPILogFile");
+	key_pair->value = xstrdup(bg_conf->bridge_api_file);
+	list_append(my_list, key_pair);
 
 /* 	key_pair = xmalloc(sizeof(config_key_pair_t)); */
 /* 	key_pair->name = xstrdup("ArchiveScript"); */

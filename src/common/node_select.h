@@ -356,7 +356,4 @@ extern int select_g_reconfigure(void);
 /*  Get configuration specific for this plugin */
 extern List select_g_get_config(void);
 
-/*  Print out list returned by select_g_get_config */
-extern void select_g_print_config(List config_list);
-
 #endif /*__SELECT_PLUGIN_API_H__*/

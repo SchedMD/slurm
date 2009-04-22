@@ -53,6 +53,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xmalloc.h"
+#include "src/common/list.h"
 
 /*
  * slurm_api_version - Return a single number reflecting the SLURM API's 
@@ -124,7 +125,10 @@ void slurm_print_ctl_conf ( FILE* out,
                             slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
 	char time_str[32], tmp_str[128], *xbuf;
-
+	char *select_title = "";
+#ifdef HAVE_BG
+	select_title = "Bluegene configuration";
+#endif
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
 
@@ -443,6 +447,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->unkillable_timeout);
 	fprintf(out, "WaitTime                = %u sec\n", 
 		slurm_ctl_conf_ptr->wait_time);
+
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
+			      select_title);
 }
 
 /*
@@ -598,4 +605,21 @@ void slurm_print_slurmd_status (FILE* out,
 	fprintf(out, "Version                  = %s\n",
 		slurmd_status_ptr->version);
 	return;
+}
+
+extern void slurm_print_key_pairs(FILE* out, void *key_pairs, char *title)
+{
+	List config_list = (List)key_pairs;
+	ListIterator iter = NULL;
+	config_key_pair_t *key_pair;
+
+	if (!config_list)
+		return;
+	
+	fprintf(out, "\n%s:\n", title);
+	iter = list_iterator_create(config_list);
+	while((key_pair = list_next(iter))) {
+		fprintf(out, "%-23s = %s\n", key_pair->name, key_pair->value);
+	}
+	list_iterator_destroy(iter);
 }
