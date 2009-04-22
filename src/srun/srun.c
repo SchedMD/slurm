@@ -1120,6 +1120,8 @@ _task_finish(task_exit_msg_t *msg)
 		else
 			error("%s: %s %s: Exited with exit code %d",
 			      hosts, task_str, tasks, rc);
+		if (!WIFEXITED(global_rc) || (rc > WEXITSTATUS(global_rc)))
+			global_rc = msg->return_code;
 	}
 	else if (WIFSIGNALED(msg->return_code)) {
 		const char *signal_str = strsignal(WTERMSIG(msg->return_code));
@@ -1136,6 +1138,8 @@ _task_finish(task_exit_msg_t *msg)
 			error("%s: %s %s: %s%s",
 			      hosts, task_str, tasks, signal_str, core_str);
 		}
+		if (global_rc == 0)
+			global_rc = msg->return_code;
 	}
 
 	xfree(tasks);
@@ -1143,10 +1147,6 @@ _task_finish(task_exit_msg_t *msg)
 
 	_update_task_exit_state(msg->num_tasks, msg->task_id_list,
 			!normal_exit);
-	/*
-	 *  Update global srun return code
-	 */
-	global_rc = MAX(global_rc, rc);
 
 	if (task_state_first_abnormal_exit(task_state) && _kill_on_bad_exit())
   		_terminate_job_step(job->step_ctx);
