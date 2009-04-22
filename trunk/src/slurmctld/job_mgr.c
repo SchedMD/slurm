@@ -2141,14 +2141,16 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->state_reason = FAIL_EXIT_CODE;
 			xfree(job_ptr->state_desc);
 		} else if (job_comp_flag &&		/* job was running */
-			 (job_ptr->end_time < now)) {	/* over time limit */
+			   (job_ptr->end_time < now)) {	/* over time limit */
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_TIMEOUT;
 			xfree(job_ptr->state_desc);
-		} else
+		} else {
 			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
-		
+			job_ptr->exit_code = job_return_code;
+		}
+
 		if (suspended) {
 			job_ptr->end_time = job_ptr->suspend_time;
 			job_ptr->tot_sus_time += 
