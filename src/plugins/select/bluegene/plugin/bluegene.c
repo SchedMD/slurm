@@ -915,7 +915,8 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set RamDiskImage",
 		     bg_conf->default_ramdiskimage); 
 	} else {
-		debug3("default RamDiskImage %s", bg_conf->default_ramdiskimage);
+		debug3("default RamDiskImage %s",
+		       bg_conf->default_ramdiskimage);
 		image = xmalloc(sizeof(image_t));
 		image->name = xstrdup(bg_conf->default_ramdiskimage);
 		image->def = true;
@@ -1006,7 +1007,8 @@ extern int read_bg_conf(void)
 		     "If this isn't correct please set MloaderImage",
 		     bg_conf->default_mloaderimage); 
 	} else {
-		debug3("default MloaderImage %s", bg_conf->default_mloaderimage);
+		debug3("default MloaderImage %s",
+		       bg_conf->default_mloaderimage);
 		image = xmalloc(sizeof(image_t));
 		image->name = xstrdup(bg_conf->default_mloaderimage);
 		image->def = true;

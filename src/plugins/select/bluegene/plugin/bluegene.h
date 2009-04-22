@@ -42,6 +42,14 @@
 
 #include "bg_record_functions.h"
 
+typedef enum bg_layout_type {
+	LAYOUT_STATIC,  /* no overlaps, except for full system block
+			   blocks never change */
+	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in 
+			   bluegene.conf file */
+	LAYOUT_DYNAMIC	/* slurm will make all blocks */
+} bg_layout_t;
+
 typedef struct {
 #ifdef HAVE_BGL
 	List blrts_list;

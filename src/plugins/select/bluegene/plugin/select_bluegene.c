@@ -997,24 +997,95 @@ extern List select_p_get_config(void)
 		fatal("malloc failure on list_create");
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BasePartitionNodeCnt");
+	key_pair->value = xstrdup_printf("%u", bg_conf->bp_node_cnt);
+	list_append(my_list, key_pair);
+
+#ifdef HAVE_BGL
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BlrtsImage");
+	key_pair->value = xstrdup(bg_conf->default_blrtsimage);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("LinuxImage");
+	key_pair->value = xstrdup(bg_conf->default_linuximage);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("RamDiskImage");
+	key_pair->value = xstrdup(bg_conf->default_ramdiskimage);
+	list_append(my_list, key_pair);
+#else
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CnloadImage");
+	key_pair->value = xstrdup(bg_conf->default_linuximage);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("IoloadImage");
+	key_pair->value = xstrdup(bg_conf->default_ramdiskimage);
+	list_append(my_list, key_pair);
+#endif
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("BridgeAPILogFile");
 	key_pair->value = xstrdup(bg_conf->bridge_api_file);
 	list_append(my_list, key_pair);
 
-/* 	key_pair = xmalloc(sizeof(config_key_pair_t)); */
-/* 	key_pair->name = xstrdup("ArchiveScript"); */
-/* 	key_pair->value = xstrdup(bg_conf->archive_script); */
-/* 	list_append(my_list, key_pair); */
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BridgeAPIVerbose");
+	key_pair->value = xstrdup_printf("%u", bg_conf->bridge_api_verb);
+	list_append(my_list, key_pair);
 
-/* 	key_pair = xmalloc(sizeof(config_key_pair_t)); */
-/* 	key_pair->name = xstrdup("AuthInfo"); */
-/* 	key_pair->value = xstrdup(bg_conf->auth_info); */
-/* 	list_append(my_list, key_pair); */
+	if(bg_conf->deny_pass) {
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("DenyPassThrough");
+		if(bg_conf->deny_pass & PASS_DENY_X)
+			xstrcat(key_pair->value, "X,");
+		if(bg_conf->deny_pass & PASS_DENY_Y)
+			xstrcat(key_pair->value, "Y,");
+		if(bg_conf->deny_pass & PASS_DENY_Z)
+			xstrcat(key_pair->value, "Z,");
+		if(key_pair->value)
+			key_pair->value[strlen(key_pair->value)-1] = '\0';
+		list_append(my_list, key_pair);
+	}
 
-/* 	key_pair = xmalloc(sizeof(config_key_pair_t)); */
-/* 	key_pair->name = xstrdup("AuthType"); */
-/* 	key_pair->value = xstrdup(bg_conf->auth_type); */
-/* 	list_append(my_list, key_pair); */
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("LayoutMode");
+	switch(bg_conf->layout_mode) {
+	case LAYOUT_STATIC:
+		key_pair->value = xstrdup("Static");
+		break;
+	case LAYOUT_OVERLAP:
+		key_pair->value = xstrdup("Overlap");
+		break;
+	case LAYOUT_DYNAMIC:
+		key_pair->value = xstrdup("Dynamic");
+		break;
+	default:
+		key_pair->value = xstrdup("Unknown");
+		break;
+	}
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MloaderImage");
+	key_pair->value = xstrdup(bg_conf->default_mloaderimage);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("NodeCardNodeCnt");
+	key_pair->value = xstrdup_printf("%u", bg_conf->nodecard_node_cnt);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("Numpsets");
+	key_pair->value = xstrdup_printf("%u", bg_conf->numpsets);
+	list_append(my_list, key_pair);
+
+	list_sort(my_list, (ListCmpF) sort_key_pairs);
 
 	return my_list;
 }
