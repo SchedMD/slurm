@@ -987,6 +987,8 @@ _task_finish(task_exit_msg_t *msg)
 			bit_or(task_state.finish_normal, tasks_exited);
 			verbose("task %s: Completed", buf);
 		}
+		if (!WIFEXITED(global_rc) || (rc > WEXITSTATUS(global_rc)))
+			global_rc = msg->return_code;
 	} else if (WIFSIGNALED(msg->return_code)) {
 		bit_or(task_state.finish_abnormal, tasks_exited);
 		msg_str = strsignal(WTERMSIG(msg->return_code));
@@ -1004,10 +1006,11 @@ _task_finish(task_exit_msg_t *msg)
 			error("%s: task %s: %s%s", 
 			      node_list, buf, msg_str, core_str);
 		}
+		if (global_rc == 0)
+			global_rc = msg->return_code;
 	}
 	xfree(node_list);
 	bit_free(tasks_exited);
-	global_rc = MAX(global_rc, rc);
 
 	if (first_error && rc > 0 && opt.kill_bad_exit) {
 		first_error = false;
