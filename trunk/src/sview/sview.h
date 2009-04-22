@@ -356,18 +356,20 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id);
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 
 // resv_info.c
+extern void refresh_resv(GtkAction *action, gpointer user_data);
+extern GtkListStore *create_model_resv(int type);
 extern void admin_edit_resv(GtkCellRendererText *cell,
 			    const char *path_string,
 			    const char *new_text,
 			    gpointer data);
-extern GtkListStore *create_model_resv(int type);
+extern int get_new_info_resv(reserve_info_msg_t **info_ptr, int force);
 extern void get_info_resv(GtkTable *table, display_data_t *display_data);
-extern int  get_new_info_resv(reserve_info_msg_t **info_ptr, 
-			      int force);
+extern void specific_info_resv(popup_info_t *popup_win);
 extern void set_menus_resv(void *arg, GtkTreePath *path, 
 			   GtkMenu *menu, int type);
-extern void specific_info_resv(popup_info_t *popup_win);
-extern void refresh_resv(GtkAction *action, gpointer user_data);
+extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id);
+extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type);
+
 
 // submit_info.c
 extern void get_info_submit(GtkTable *table, display_data_t *display_data);

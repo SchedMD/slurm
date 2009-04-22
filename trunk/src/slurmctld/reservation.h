@@ -48,10 +48,10 @@
 extern time_t last_resv_update;
 
 /* Create a resource reservation */
-extern int create_resv(reserve_request_msg_t *resv_desc_ptr);
+extern int create_resv(resv_desc_msg_t *resv_desc_ptr);
 
 /* Update an exiting resource reservation */
-extern int update_resv(reserve_request_msg_t *resv_desc_ptr);
+extern int update_resv(resv_desc_msg_t *resv_desc_ptr);
 
 /* Delete an exiting resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr);

@@ -41,13 +41,12 @@
 
 
 /*
- *  process_plus_minus is used to convert a string like
+ *  _process_plus_minus is used to convert a string like
  *       Users+=a,b,c
  *  to   Users=+a,+b,+c
  */
 
-static char *
-process_plus_minus(char plus_or_minus, char *src)
+static char * _process_plus_minus(char plus_or_minus, char *src)
 {
 	int num_commas = 0;
 	int ii;
@@ -76,12 +75,11 @@ process_plus_minus(char plus_or_minus, char *src)
 
 
 /*
- *  parse_flags  is used to parse the Flags= option.  It handles
+ *  _parse_flags  is used to parse the Flags= option.  It handles
  *  daily, weekly, and maint, optionally preceded by + or -, 
  *  separated by a comma but no spaces.
  */
-static uint32_t
-parse_flags(const char *flagstr, const char *msg)
+static uint32_t _parse_flags(const char *flagstr, const char *msg)
 {
 	int flip;
 	uint32_t outflags = 0;
@@ -145,7 +143,7 @@ parse_flags(const char *flagstr, const char *msg)
  */
 extern int
 scontrol_parse_res_options(int argc, char *argv[], const char *msg, 
-			   reserve_request_msg_t  *resv_msg_ptr, 
+			   resv_desc_msg_t  *resv_msg_ptr, 
 			   int *free_user_str, int *free_acct_str)
 {
 	int i;
@@ -210,11 +208,12 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		} else if (strncasecmp(tag, "Flags", MAX(taglen, 2)) == 0) {
 			uint32_t f;
 			if (plus_minus) {
-				char *tmp = process_plus_minus(plus_minus, val);
-				f = parse_flags(tmp, msg);
+				char *tmp =
+					_process_plus_minus(plus_minus, val);
+				f = _parse_flags(tmp, msg);
 				xfree(tmp);
 			} else {
-				f = parse_flags(val, msg);
+				f = _parse_flags(val, msg);
 			}
 			if (f == 0xffffffff) {
 				return -1;
@@ -245,7 +244,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		} else if (strncasecmp(tag, "Users", MAX(taglen, 1)) == 0) {
 			if (plus_minus) {
 				resv_msg_ptr->users = 
-					process_plus_minus(plus_minus, val);
+					_process_plus_minus(plus_minus, val);
 				*free_user_str = 1;
 			} else {
 				resv_msg_ptr->users = val;
@@ -253,7 +252,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		} else if (strncasecmp(tag, "Accounts", MAX(taglen, 1)) == 0) {
 			if (plus_minus) {
 				resv_msg_ptr->accounts = 
-					process_plus_minus(plus_minus, val);
+					_process_plus_minus(plus_minus, val);
 				*free_acct_str = 1;
 			} else {
 				resv_msg_ptr->accounts = val;
@@ -282,7 +281,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 extern int
 scontrol_update_res(int argc, char *argv[])
 {
-	reserve_request_msg_t   resv_msg;
+	resv_desc_msg_t   resv_msg;
 	int err, ret = 0;
 	int free_user_str = 0, free_acct_str = 0;
 
@@ -329,7 +328,7 @@ SCONTROL_UPDATE_RES_CLEANUP:
 extern int
 scontrol_create_res(int argc, char *argv[])
 {
-	reserve_request_msg_t   resv_msg;
+	resv_desc_msg_t   resv_msg;
 	char *new_res_name = NULL;
 	int free_user_str = 0, free_acct_str = 0;
 	int err, ret = 0;

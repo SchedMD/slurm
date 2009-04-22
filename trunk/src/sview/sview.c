@@ -83,8 +83,6 @@ display_data_t main_display_data[] = {
 	 refresh_main, create_model_resv, admin_edit_resv,
 	 get_info_resv, specific_info_resv, 
 	 set_menus_resv, NULL},
-
-
 #ifdef HAVE_BG
 	{G_TYPE_NONE, BLOCK_PAGE, "BG Blocks", TRUE, -1,
 	 refresh_main, NULL, NULL,

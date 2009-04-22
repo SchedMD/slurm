@@ -91,11 +91,11 @@ static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list);
 static void _clear_job_resv(slurmctld_resv_t *resv_ptr);
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr);
 static void _del_resv_rec(void *x);
-static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
+static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode);
 static int  _find_resv_id(void *x, void *key);
 static int  _find_resv_name(void *x, void *key);
 static void _generate_resv_id(void);
-static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
+static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
@@ -105,12 +105,12 @@ static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
 			      slurmctld_resv_t *old_resv_ptr);
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes, 
-				  reserve_request_msg_t *resv_desc_ptr);
+				  resv_desc_msg_t *resv_desc_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
 static bool _resv_overlap(time_t start_time, time_t end_time, 
 			  uint16_t flags, bitstr_t *node_bitmap,
 			  slurmctld_resv_t *this_resv_ptr);
-static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr, 
+static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr, 
 			  struct part_record **part_ptr,
 			  bitstr_t **resv_bitmap);
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
@@ -172,7 +172,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 static void _swap_resv(slurmctld_resv_t *resv_backup, 
 		       slurmctld_resv_t *resv_ptr)
 {
-	reserve_request_msg_t *resv_copy_ptr;
+	resv_desc_msg_t *resv_copy_ptr;
 
 	xassert(resv_backup->magic == RESV_MAGIC);
 	xassert(resv_ptr->magic    == RESV_MAGIC);
@@ -233,7 +233,7 @@ static int _find_resv_name(void *x, void *key)
 		return 1;	/* match */
 }
 
-static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
+static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 {
 	
 #if _RESV_DEBUG
@@ -274,7 +274,7 @@ static void _generate_resv_id(void)
 	}
 }
 
-static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
+static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 {
 	char *key, *name, *sep;
 	int len;
@@ -1016,7 +1016,7 @@ static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr)
 }
 
 /* Create a resource reservation */
-extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
+extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 {
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
@@ -1206,7 +1206,7 @@ extern void resv_fini(void)
 }
 
 /* Update an exiting resource reservation */
-extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
+extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 {
 	time_t now = time(NULL);
 	slurmctld_resv_t *resv_backup, *resv_ptr;
@@ -1743,7 +1743,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 {
 	bitstr_t *tmp_bitmap = NULL;
 	int i;
-	reserve_request_msg_t resv_desc;
+	resv_desc_msg_t resv_desc;
 
 	if (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES)
 		return;
@@ -1755,7 +1755,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	/* Reservation includes DOWN, DRAINED/DRAINING, FAILING or 
 	 * NO_RESPOND nodes. Generate new request using _select_nodes()
 	 * in attempt to replace this nodes */
-	memset(&resv_desc, 0, sizeof(reserve_request_msg_t));
+	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
@@ -1948,7 +1948,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 {
 	bitstr_t *tmp1_bitmap = NULL, *tmp2_bitmap = NULL;
 	int delta_node_cnt, i;
-	reserve_request_msg_t resv_desc;
+	resv_desc_msg_t resv_desc;
 
 	delta_node_cnt = resv_ptr->node_cnt - node_cnt;
 	if (delta_node_cnt == 0)	/* Already correct node count */
@@ -1995,7 +1995,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 
 	/* Must increase node count. Make this look like new request so 
 	 * we can use _select_nodes() for selecting the nodes */
-	memset(&resv_desc, 0, sizeof(reserve_request_msg_t));
+	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
@@ -2014,7 +2014,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 }
 
 /* Given a reservation create request, select appropriate nodes for use */
-static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr, 
+static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr, 
 			  struct part_record **part_ptr,
 			  bitstr_t **resv_bitmap)
 {
@@ -2110,7 +2110,7 @@ static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr,
  * RET bitmap of selected nodes or NULL if request can not be satisfied
  */
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes, 
-				  reserve_request_msg_t *resv_desc_ptr)
+				  resv_desc_msg_t *resv_desc_ptr)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;

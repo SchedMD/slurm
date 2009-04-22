@@ -276,11 +276,11 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_CREATE_RESERVATION:
 		_slurm_rpc_resv_create(msg);
-		slurm_free_update_resv_msg(msg->data);
+		slurm_free_resv_desc_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_RESERVATION:
 		_slurm_rpc_resv_update(msg);
-		slurm_free_update_resv_msg(msg->data);
+		slurm_free_resv_desc_msg(msg->data);
 		break;
 	case REQUEST_DELETE_RESERVATION:
 		_slurm_rpc_resv_delete(msg);
@@ -2405,7 +2405,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	reserve_request_msg_t *resv_desc_ptr = (reserve_request_msg_t *) 
+	resv_desc_msg_t *resv_desc_ptr = (resv_desc_msg_t *) 
 						msg->data;
 	/* Locks: write node, read partition */
 	slurmctld_lock_t node_write_lock = { 
@@ -2461,7 +2461,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	reserve_request_msg_t *resv_desc_ptr = (reserve_request_msg_t *) 
+	resv_desc_msg_t *resv_desc_ptr = (resv_desc_msg_t *) 
 						msg->data;
 	/* Locks: write node, read partition */
 	slurmctld_lock_t node_write_lock = { 

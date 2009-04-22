@@ -384,8 +384,8 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 					 Buf buffer);
 
-static void _pack_update_resv_msg(reserve_request_msg_t * msg, Buf buffer);
-static int  _unpack_update_resv_msg(reserve_request_msg_t ** msg, Buf buffer);
+static void _pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer);
+static int  _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer);
 static void _pack_resv_name_msg(reservation_name_msg_t * msg, Buf buffer);
 static int  _unpack_resv_name_msg(reservation_name_msg_t ** msg, Buf buffer);
 
@@ -573,7 +573,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_CREATE_RESERVATION:
 	case REQUEST_UPDATE_RESERVATION:
-		_pack_update_resv_msg((reserve_request_msg_t *) msg->
+		_pack_update_resv_msg((resv_desc_msg_t *) msg->
 				      data, buffer);
 		break;
 	case RESPONSE_RESERVATION_INFO:
@@ -950,7 +950,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_CREATE_RESERVATION:
 	case REQUEST_UPDATE_RESERVATION:
-		rc = _unpack_update_resv_msg((reserve_request_msg_t **)
+		rc = _unpack_update_resv_msg((resv_desc_msg_t **)
 					     &(msg->data), buffer);
 		break;
 	case REQUEST_DELETE_RESERVATION:
@@ -2059,7 +2059,7 @@ unpack_error:
 }
 
 static void
-_pack_update_resv_msg(reserve_request_msg_t * msg, Buf buffer)
+_pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer)
 {
 	xassert(msg != NULL);
 
@@ -2078,15 +2078,15 @@ _pack_update_resv_msg(reserve_request_msg_t * msg, Buf buffer)
 }
 
 static int
-_unpack_update_resv_msg(reserve_request_msg_t ** msg, Buf buffer)
+_unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer)
 {
 	uint32_t uint32_tmp;
-	reserve_request_msg_t *tmp_ptr;
+	resv_desc_msg_t *tmp_ptr;
 
 	xassert(msg != NULL);
 
 	/* alloc memory for structure */
-	tmp_ptr = xmalloc(sizeof(reserve_request_msg_t));
+	tmp_ptr = xmalloc(sizeof(resv_desc_msg_t));
 	*msg = tmp_ptr;
 
 	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
@@ -2104,7 +2104,7 @@ _unpack_update_resv_msg(reserve_request_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_update_resv_msg(tmp_ptr);
+	slurm_free_resv_desc_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
