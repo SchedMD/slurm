@@ -449,7 +449,7 @@ void slurm_free_delete_part_msg(delete_part_msg_t * msg)
 	}
 }
 
-void slurm_free_update_resv_msg(reserve_request_msg_t * msg)
+void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->accounts);
@@ -1657,7 +1657,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_CREATE_RESERVATION:
 	case REQUEST_UPDATE_RESERVATION:
-		slurm_free_update_resv_msg(data);
+		slurm_free_resv_desc_msg(data);
 		break;
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:		

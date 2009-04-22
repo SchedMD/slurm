@@ -288,6 +288,10 @@ static void _selected_page(GtkMenuItem *menuitem,
 		popup_all_block(treedata->model, &treedata->iter, 
 				display_data->id);
 		break;
+	case RESV_PAGE: 
+		popup_all_resv(treedata->model, &treedata->iter, 
+			       display_data->id);
+		break;
 	case ADMIN_PAGE:
 		switch(display_data->id) {
 		case JOB_PAGE:
@@ -301,6 +305,10 @@ static void _selected_page(GtkMenuItem *menuitem,
 		case BLOCK_PAGE:
 			admin_block(treedata->model, &treedata->iter, 
 				    display_data->name);
+			break;
+		case RESV_PAGE:
+			admin_resv(treedata->model, &treedata->iter, 
+				   display_data->name);
 			break;
 		case NODE_PAGE:
 			admin_node(treedata->model, &treedata->iter, 
@@ -935,6 +943,9 @@ extern void *popup_thr(popup_info_t *popup_win)
 		break;
 	case BLOCK_PAGE: 
 		specifc_info = specific_info_block;
+		break;
+	case RESV_PAGE: 
+		specifc_info = specific_info_resv;
 		break;
 	case SUBMIT_PAGE: 
 	default:

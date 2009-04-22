@@ -172,19 +172,19 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
  *	default values 
  * OUT job_desc_msg - user defined partition descriptor
  */
-void slurm_init_resv_desc_msg (reserve_request_msg_t * update_resv_msg)
+void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
 {
-	update_resv_msg->name		= NULL;
-	update_resv_msg->start_time	= (time_t) NO_VAL;
-	update_resv_msg->end_time	= (time_t) NO_VAL;
-	update_resv_msg->duration	= NO_VAL;
-	update_resv_msg->flags		= (uint16_t) NO_VAL;
-	update_resv_msg->node_cnt	= NO_VAL;
-	update_resv_msg->node_list	= NULL;
-	update_resv_msg->features	= NULL;
-	update_resv_msg->partition	= NULL;
-	update_resv_msg->users		= NULL;
-	update_resv_msg->accounts	= NULL;
+	resv_msg->name		= NULL;
+	resv_msg->start_time	= (time_t) NO_VAL;
+	resv_msg->end_time	= (time_t) NO_VAL;
+	resv_msg->duration	= NO_VAL;
+	resv_msg->flags		= (uint16_t) NO_VAL;
+	resv_msg->node_cnt	= NO_VAL;
+	resv_msg->node_list	= NULL;
+	resv_msg->features	= NULL;
+	resv_msg->partition	= NULL;
+	resv_msg->users		= NULL;
+	resv_msg->accounts	= NULL;
 }
 
 /*

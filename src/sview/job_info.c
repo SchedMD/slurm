@@ -320,6 +320,7 @@ static display_data_t options_data_job[] = {
 #else
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, JOB_PAGE},
 #endif
+	{G_TYPE_STRING, RESV_PAGE, "Reservation", TRUE, JOB_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -3072,6 +3073,13 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			snprintf(title, 100, "Partition with job %d.%d",
 				 jobid, stepid);			
 		break;
+	case RESV_PAGE:
+		if(stepid == NO_VAL)
+			snprintf(title, 100, "Reservation with job %d", jobid);
+		else
+			snprintf(title, 100, "Reservation with job %d.%d",
+				 jobid, stepid);			
+		break;
 	case NODE_PAGE:
 		if(stepid == NO_VAL) {
 #ifdef HAVE_BG
@@ -3143,6 +3151,10 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		break;
 	case PART_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_PARTITION, &name, -1);
+		popup_win->spec_info->search_info->gchar_data = name;
+		break;
+	case RESV_PAGE:
+		gtk_tree_model_get(model, iter, SORTID_RESV_NAME, &name, -1);
 		popup_win->spec_info->search_info->gchar_data = name;
 		break;
 #ifdef HAVE_BG

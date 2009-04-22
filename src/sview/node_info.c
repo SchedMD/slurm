@@ -107,6 +107,7 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
 #endif
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, NODE_PAGE},
+	{G_TYPE_STRING, RESV_PAGE, "Reservation", TRUE, NODE_PAGE},
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, NODE_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };

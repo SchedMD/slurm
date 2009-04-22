@@ -1034,7 +1034,7 @@ typedef struct reserve_info_msg {
 	reserve_info_t *reservation_array; /* the reservation records */
 } reserve_info_msg_t;
 
-typedef struct reserve_request_msg {
+typedef struct resv_desc_msg {
 	char *accounts;		/* names of accounts permitted to use */
 	uint32_t duration;	/* duration of reservation in seconds */
 	time_t end_time;	/* end time of reservation */
@@ -1046,7 +1046,7 @@ typedef struct reserve_request_msg {
 	char *partition;	/* name of partition to be used */
 	time_t start_time;	/* start time of reservation */
 	char *users;		/* names of users permitted to use */
-} reserve_request_msg_t;
+} resv_desc_msg_t;
 
 typedef struct reserve_response_msg {
 	char *name;		/* name of reservation */
@@ -2127,7 +2127,7 @@ extern int slurm_delete_partition PARAMS(( delete_part_msg_t * part_msg ));
  * OUT job_desc_msg - user defined partition descriptor
  */
 extern void slurm_init_resv_desc_msg PARAMS(( 
-		reserve_request_msg_t * update_resv_msg ));
+		resv_desc_msg_t * update_resv_msg ));
 /*
  * slurm_create_reservation - create a new reservation, only usable by user root
  * IN resv_msg - description of reservation
@@ -2135,7 +2135,7 @@ extern void slurm_init_resv_desc_msg PARAMS((
  *	otherwise return NULL and set errno to indicate the error
  */
 extern char * slurm_create_reservation PARAMS((
-		reserve_request_msg_t * resv_msg ));
+		resv_desc_msg_t * resv_msg ));
 
 /*
  * slurm_update_reservation - modify an existing reservation, only usable by 
@@ -2143,7 +2143,7 @@ extern char * slurm_create_reservation PARAMS((
  * IN resv_msg - description of reservation
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_reservation PARAMS((reserve_request_msg_t * resv_msg));
+extern int slurm_update_reservation PARAMS((resv_desc_msg_t * resv_msg));
 
 /*
  * slurm_delete_reservation - issue RPC to delete a reservation, only usable 
