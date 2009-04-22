@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
  -- The MySQL and PgSQL plugins for accounting storage and job completion are
     now only built if the underlying database libraries exists (previously
     the plugins were built to produce a fatal error when used).
+ -- BLUEGENE - scontrol show config will now display bluegene.conf information.
 
 * Changes in SLURM 1.4.0-pre12
 ==============================

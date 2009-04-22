@@ -370,6 +370,7 @@ extern void destroy_config_key_pair(void *object);
 extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_config_key_pair(void **object, uint16_t rpc_version, 
 				  Buf buffer);
+extern int sort_key_pairs(config_key_pair_t *key_a, config_key_pair_t *key_b);
 
 
 #endif /* !_READ_CONFIG_H */

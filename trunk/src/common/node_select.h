@@ -46,16 +46,6 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
-#ifdef HAVE_BG
-typedef enum bg_layout_type {
-	LAYOUT_STATIC,  /* no overlaps, except for full system block
-			   blocks never change */
-	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in 
-			   bluegene.conf file */
-	LAYOUT_DYNAMIC	/* slurm will make all blocks */
-} bg_layout_t;
-#endif
-
 typedef struct {
 	bitstr_t *avail_nodes;      /* usable nodes are set on input, nodes
 				     * not required to satisfy the request
