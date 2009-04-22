@@ -13,7 +13,10 @@ documents those changes that are of interest to users and admins.
     when needed for backwards compatibility.
  -- Fix logic to properly excise a DOWN node from the allocation of a job
     with the --no-kill option.
- 
+ -- The MySQL and PgSQL plugins for accounting storage and job completion are
+    now only built if the underlying database libraries exists (previously
+    the plugins were built to produce a fatal error when used).
+
 * Changes in SLURM 1.4.0-pre12
 ==============================
  -- Added support for hard time limit by associations with added configuration 
