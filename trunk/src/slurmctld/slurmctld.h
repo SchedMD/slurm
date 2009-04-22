@@ -776,6 +776,10 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer);
  */
 extern void dump_step_desc(job_step_create_request_msg_t *step_spec);
 
+/* Remove one node from a job's allocation */
+extern void excise_node_from_job(struct job_record *job_ptr,
+                                 struct node_record *node_ptr);
+
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
  * IN job_id - requested job's id
@@ -803,6 +807,16 @@ extern struct node_record *find_node_record (char *name);
  */
 extern struct part_record *find_part_record (char *name);
 
+/* 
+ * find_step_record - return a pointer to the step record with the given 
+ *	job_id and step_id
+ * IN job_ptr - pointer to job table entry to have step record added
+ * IN step_id - id of the desired job step
+ * RET pointer to the job step's record, NULL on error
+ */
+extern struct step_record * find_step_record(struct job_record *job_ptr, 
+					     uint32_t step_id);
+
 /*
  * get_job_env - return the environment variables and their count for a 
  *	given job
@@ -824,16 +838,6 @@ extern char *get_job_script (struct job_record *job_ptr);
  *	the next job
  */
 extern uint32_t get_next_job_id(void);
-
-/* 
- * find_step_record - return a pointer to the step record with the given 
- *	job_id and step_id
- * IN job_ptr - pointer to job table entry to have step record added
- * IN step_id - id of the desired job step
- * RET pointer to the job step's record, NULL on error
- */
-extern struct step_record * find_step_record(struct job_record *job_ptr, 
-					     uint32_t step_id);
 
 /* 
  * init_job_conf - initialize the job configuration tables and values. 

@@ -127,8 +127,6 @@ static void _delete_job_desc_files(uint32_t job_id);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
-static void _excise_node_from_job(struct job_record *job_ptr, 
-				  struct node_record *node_ptr);
 static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static void _job_timed_out(struct job_record *job_ptr);
@@ -1373,7 +1371,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				error("Removing failed node %s from job_id %u",
 				      node_name, job_ptr->job_id);
 				kill_step_on_node(job_ptr, node_ptr);
-				_excise_node_from_job(job_ptr, node_ptr);
+				excise_node_from_job(job_ptr, node_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 			           (job_ptr->details->requeue > 0)) {
 				char requeue_msg[128];
@@ -1458,8 +1456,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 }
 
 /* Remove one node from a job's allocation */
-static void _excise_node_from_job(struct job_record *job_ptr, 
-				  struct node_record *node_ptr)
+extern void excise_node_from_job(struct job_record *job_ptr, 
+				 struct node_record *node_ptr)
 {
 	int i, orig_pos = -1, new_pos = -1;
 	bitstr_t *orig_bitmap = bit_copy(job_ptr->node_bitmap);
