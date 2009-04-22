@@ -442,6 +442,8 @@ cleanup:
 	_task_state_struct_free();
 	log_fini();
 
+	if (WIFEXITED(global_rc))
+		global_rc = WEXITSTATUS(global_rc);
 	return (int)global_rc;
 }
 
