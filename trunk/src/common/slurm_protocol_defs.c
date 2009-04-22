@@ -1220,6 +1220,8 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->sched_params);
 		xfree(config_ptr->schedtype);
 		xfree(config_ptr->select_type);
+		if(config_ptr->select_conf_key_pairs) 
+			list_destroy((List)config_ptr->select_conf_key_pairs);
 		xfree(config_ptr->slurm_conf);
 		xfree(config_ptr->slurm_user_name);
 		xfree(config_ptr->slurmctld_pidfile);

@@ -2813,6 +2813,8 @@ unpack_error:
 static void
 _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 {
+	uint32_t count = NO_VAL;
+
 	pack_time(build_ptr->last_update, buffer);
 
 	pack16(build_ptr->accounting_storage_enforce, buffer);
@@ -2926,6 +2928,22 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->sched_time_slice, buffer);
 	packstr(build_ptr->schedtype, buffer);
 	packstr(build_ptr->select_type, buffer);
+	if(build_ptr->select_conf_key_pairs) 
+		count = list_count((List)build_ptr->select_conf_key_pairs);
+	
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		ListIterator itr = list_iterator_create(
+			(List)build_ptr->select_conf_key_pairs);
+		config_key_pair_t *key_pair = NULL;
+		while((key_pair = list_next(itr))) {
+			pack_config_key_pair(key_pair,
+					     SLURMDBD_VERSION, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
+	
 	pack16(build_ptr->select_type_param, buffer);
 
 	packstr(build_ptr->slurm_conf, buffer);
@@ -2979,6 +2997,7 @@ static int
 _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			   build_buffer_ptr, Buf buffer)
 {
+	uint32_t count = NO_VAL;
 	uint32_t uint32_tmp;
 	slurm_ctl_conf_info_msg_t *build_ptr;
 
@@ -3124,6 +3143,21 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->sched_time_slice, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->schedtype, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->select_type, &uint32_tmp, buffer);
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		List tmp_list = list_create(destroy_config_key_pair);
+		config_key_pair_t *object = NULL;
+		int i;
+		for(i=0; i<count; i++) {
+			if(unpack_config_key_pair(
+				   (void *)&object, SLURMDBD_VERSION, buffer)
+			   == SLURM_ERROR)
+				goto unpack_error;
+			list_append(tmp_list, object);
+		}
+		build_ptr->select_conf_key_pairs = (void *)tmp_list;
+	}
+	
 	safe_unpack16(&build_ptr->select_type_param, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->slurm_conf,
