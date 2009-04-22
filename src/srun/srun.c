@@ -460,6 +460,8 @@ cleanup:
 	task_state_destroy(task_state);
 	log_fini();
 
+	if (WIFEXITED(global_rc))
+		global_rc = WEXITSTATUS(global_rc);
 	return (int)global_rc;
 }
 
