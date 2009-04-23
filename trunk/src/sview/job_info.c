@@ -146,6 +146,7 @@ enum {
 	SORTID_UPDATED,
 	SORTID_USER, 
 	SORTID_WCKEY,
+	SORTID_NODE_INX, 
 	SORTID_CNT
 };
 
@@ -301,6 +302,8 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COMMENT, "Comment", 
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE, 
+	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -1662,6 +1665,10 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_NUM_PROCS, tmp_char, -1);
 	
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, nodes, -1);
+
+	gtk_tree_store_set(treestore, iter, 
+			   SORTID_NODE_INX, job_ptr->node_inx, -1);
+
 	gtk_tree_store_set(treestore, iter, SORTID_REQ_NODELIST,
 			   job_ptr->req_nodes, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_EXC_NODELIST,
@@ -2262,14 +2269,11 @@ void _display_info_job(List info_list, popup_info_t *popup_win)
 	GtkTreeView *treeview = NULL;
 	int update = 0;
 	int i = -1, j = 0;
-	int first_time = 0;
 
 	if(spec_info->search_info->int_data == NO_VAL) {
 	/* 	info = xstrdup("No pointer given!"); */
 		goto finished;
 	}
-	if(!list_count(popup_win->grid_button_list)) 
-		first_time = 1;
 
 need_refresh:
 	if(!spec_info->display_widget) {
@@ -2296,15 +2300,8 @@ need_refresh:
 	} else if(spec_info->search_info->int_data2 == NO_VAL) {
 		j=0;
 		while(sview_job_info->job_ptr->node_inx[j] >= 0) {
-			if(!first_time)
 				change_grid_color(
 					popup_win->grid_button_list,
-					sview_job_info->job_ptr->node_inx[j],
-					sview_job_info->job_ptr->node_inx[j+1],
-					i);
-			else
-				get_button_list_from_main(
-					&popup_win->grid_button_list,
 					sview_job_info->job_ptr->node_inx[j],
 					sview_job_info->job_ptr->node_inx[j+1],
 					i);
@@ -2321,23 +2318,13 @@ need_refresh:
 			   spec_info->search_info->int_data2) {
 				j=0;
 				while(step_ptr->node_inx[j] >= 0) {
-					if(!first_time) 
-						change_grid_color(
-							popup_win->
-							grid_button_list,
-							step_ptr->node_inx[j],
-							step_ptr->
-							node_inx[j+1],
-							i);
-					else
-						get_button_list_from_main(
-							&popup_win->
-							grid_button_list,
-							step_ptr->node_inx[j],
-							step_ptr->
-							node_inx[j+1],
-							i);
-
+					change_grid_color(
+						popup_win->
+						grid_button_list,
+						step_ptr->node_inx[j],
+						step_ptr->
+						node_inx[j+1],
+						i);
 					j += 2;
 				}
 				_layout_step_record(treeview, 
@@ -2378,9 +2365,6 @@ need_refresh:
 			
 			goto need_refresh;
 		}
-		
-		put_buttons_in_table(popup_win->grid_table,
-				     popup_win->grid_button_list);
 	}
 	gtk_widget_show_all(spec_info->display_widget);
 
@@ -2875,15 +2859,7 @@ display_it:
 				 SORTID_CNT);
 	}
 
-	if(popup_win->grid_button_list) {
-		list_destroy(popup_win->grid_button_list);
-	}	       
-	
-#ifdef HAVE_3D
-	popup_win->grid_button_list = copy_main_button_list();
-#else
-	popup_win->grid_button_list = list_create(destroy_grid_button);
-#endif	
+	setup_popup_grid_list(popup_win);
 
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
@@ -2989,24 +2965,14 @@ display_it:
 		list_push(send_info_list, sview_job_info_ptr);
 		j=0;
 		while(job_ptr->node_inx[j] >= 0) {
-#ifdef HAVE_3D
 			change_grid_color(
 				popup_win->grid_button_list,
 				job_ptr->node_inx[j],
 				job_ptr->node_inx[j+1], i);
-#else
-			get_button_list_from_main(
-				&popup_win->grid_button_list,
-				job_ptr->node_inx[j],
-				job_ptr->node_inx[j+1], i);
-#endif
 			j += 2;
 		}
 	}
 	list_iterator_destroy(itr);
-
-	put_buttons_in_table(popup_win->grid_table,
-			     popup_win->grid_button_list);
 
 	_update_info_job(send_info_list,
 			 GTK_TREE_VIEW(spec_info->display_widget));
@@ -3042,6 +3008,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
 	char title[100];
+	int *node_inx = NULL;
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	int jobid = NO_VAL;
@@ -3050,6 +3017,8 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &jobid, -1);
 	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);
+	gtk_tree_model_get(model, iter, SORTID_NODE_INX, &node_inx, -1);
+
 	if(stepid)
 		stepid = NO_VAL;
 	else {
@@ -3128,9 +3097,11 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	
 	if(!popup_win) {
 		if(id == INFO_PAGE)
-			popup_win = create_popup_info(id, JOB_PAGE, title);
+			popup_win = create_popup_info(
+				id, JOB_PAGE, title, node_inx);
 		else
-			popup_win = create_popup_info(JOB_PAGE, id, title);
+			popup_win = create_popup_info(
+				JOB_PAGE, id, title, node_inx);
 	} else {
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
 		return;

@@ -702,7 +702,8 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	return did_something;
 }
 
-extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
+extern popup_info_t *create_popup_info(int type, int dest_type,
+				       char *title, int *node_inx)
 {
 	GtkScrolledWindow *window = NULL;
 	GtkBin *bin = NULL;
@@ -711,7 +712,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	GtkWidget *label = NULL;
 	GtkWidget *table = NULL;
 	popup_info_t *popup_win = xmalloc(sizeof(popup_info_t));
-	
+
 	list_push(popup_list, popup_win);
 	
 	popup_win->spec_info = xmalloc(sizeof(specific_info_t));
@@ -721,7 +722,7 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	popup_win->spec_info->search_info->gchar_data = NULL;
 	popup_win->spec_info->search_info->int_data = NO_VAL;
 	popup_win->spec_info->search_info->int_data2 = NO_VAL;
-	
+
 	popup_win->spec_info->type = type;
 	popup_win->spec_info->title = xstrdup(title);
 	popup_win->popup = gtk_dialog_new_with_buttons(
@@ -769,17 +770,10 @@ extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 	bin = GTK_BIN(&view->bin);
 	popup_win->grid_table = GTK_TABLE(bin->child);
 	popup_win->grid_button_list = NULL;
-#ifdef HAVE_BG
-	if(dest_type != NODE_PAGE || type != INFO_PAGE) {
-//	gtk_widget_set_size_request(GTK_WIDGET(window), 164, -1);
-		popup_win->grid_button_list = copy_main_button_list();
-		put_buttons_in_table(popup_win->grid_table,
-				     popup_win->grid_button_list);
-	}
-#endif
+	popup_win->node_inx = node_inx;
 
 	table = gtk_table_new(1, 2, FALSE);
-
+	
 	gtk_table_attach(GTK_TABLE(table), GTK_WIDGET(window), 0, 1, 0, 1,
 			 GTK_SHRINK, GTK_EXPAND | GTK_FILL,
 			 0, 0);

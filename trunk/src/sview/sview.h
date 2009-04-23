@@ -83,6 +83,9 @@
 #define POS_LOC 0
 #define DEFAULT_ENTRY_LENGTH 500
 
+#define MAKE_BLACK -2
+#define MAKE_WHITE -1
+
 enum { JOB_PAGE, 
        STEP_PAGE, 
        PART_PAGE,
@@ -199,7 +202,9 @@ struct popup_info {
 	int toggled;
 	int force_refresh;
 	int *running;
+	int *node_inx;
 	int show_grid;
+	int full_grid;
 	bool not_found;
 	GtkWidget *popup;
 	GtkWidget *event_box;
@@ -284,6 +289,7 @@ extern int get_system_stats(GtkTable *table);
 extern int setup_grid_table(GtkTable *table, List button_list, List node_list);
 extern void sview_init_grid();
 extern void sview_reset_grid();
+extern void setup_popup_grid_list(popup_info_t *popup_win);
 
 // part_info.c
 extern void refresh_part(GtkAction *action, gpointer user_data);
@@ -400,7 +406,8 @@ extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path,
 				 int type);
 extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
 			    const display_data_t *display_data);
-extern popup_info_t *create_popup_info(int type, int dest_type, char *title);
+extern popup_info_t *create_popup_info(int type, int dest_type, char *title,
+				       int *node_inx);
 extern void setup_popup_info(popup_info_t *popup_win, 
 			     display_data_t *display_data, 
 			     int cnt);

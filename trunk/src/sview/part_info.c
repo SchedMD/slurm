@@ -87,6 +87,7 @@ enum {
 #ifndef HAVE_BG
 	SORTID_NODELIST, 
 #endif
+	SORTID_NODE_INX,
 	SORTID_NODES, 
 	SORTID_ONLY_LINE, 
 	SORTID_PRIORITY,
@@ -155,6 +156,8 @@ static display_data_t display_data_part[] = {
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
+	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE, 
+	 refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
 
@@ -1051,6 +1054,9 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
 			   part_ptr->nodes, -1);
+
+	gtk_tree_store_set(treestore, iter, 
+			   SORTID_NODE_INX, part_ptr->node_inx, -1);
 	
 	gtk_tree_store_set(treestore, iter, SORTID_ONLY_LINE, 0, -1);
 	/* clear out info for the main listing */
@@ -2309,6 +2315,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
 	char *state = NULL;
+	int *node_inx = NULL;
 	char title[100];
 	int only_line = 0;
 	ListIterator itr = NULL;
@@ -2316,6 +2323,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	GError *error = NULL;
 				
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	gtk_tree_model_get(model, iter, SORTID_NODE_INX, &node_inx, -1);
 	
 	switch(id) {
 	case JOB_PAGE:
@@ -2375,9 +2383,11 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	if(!popup_win) {
 		if(id == INFO_PAGE)
-			popup_win = create_popup_info(id, PART_PAGE, title);
+			popup_win = create_popup_info(
+				id, PART_PAGE, title, node_inx);
 		else
-			popup_win = create_popup_info(PART_PAGE, id, title);
+			popup_win = create_popup_info(
+				PART_PAGE, id, title, node_inx);
 	} else {
 		g_free(name);
 		g_free(state);
