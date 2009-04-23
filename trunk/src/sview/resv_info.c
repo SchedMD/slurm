@@ -865,10 +865,12 @@ extern void admin_edit_resv(GtkCellRendererText *cell,
 
 	slurm_init_resv_desc_msg(resv_msg);	
 	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
-			   SORTID_NAME, &resv_msg->name, 
+			   SORTID_NAME, &temp, 
 			   column, &old_text,
 			   -1);
-	
+	resv_msg->name = xstrdup(temp);
+	g_free(temp);
+
 	type = _set_resv_msg(resv_msg, new_text, column);
 	if(errno) 
 		goto print_error;
