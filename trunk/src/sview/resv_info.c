@@ -1152,10 +1152,17 @@ display_it:
 		list_push(send_resv_list, sview_resv_info_ptr);
 		j=0;
 		while(resv_ptr->node_inx[j] >= 0) {
+#ifdef HAVE_3D
 			change_grid_color(
 				popup_win->grid_button_list,
 				resv_ptr->node_inx[j],
 				resv_ptr->node_inx[j+1], i);
+#else
+			get_button_list_from_main(
+				&popup_win->grid_button_list,
+				resv_ptr->node_inx[j],
+				resv_ptr->node_inx[j+1], i);
+#endif
 			j += 2;
 		}
 	}
