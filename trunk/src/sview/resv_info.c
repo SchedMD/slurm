@@ -234,12 +234,11 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			got_edit_signal = xstrdup(new_text);
 		break;
 	case SORTID_DURATION:
-		temp_int = strtol(new_text, (char **)NULL, 10);
-		
-		type = "duration";
+		temp_int = time_str2mins((char *)new_text);
 		if(temp_int <= 0)
 			goto return_error;
 		resv_msg->duration = temp_int;
+		type = "duration";
 		break;
 	case SORTID_END_TIME:
 		resv_msg->end_time = parse_time((char *)new_text, 0);
@@ -862,8 +861,6 @@ extern void admin_edit_resv(GtkCellRendererText *cell,
 	if(!new_text || !strcmp(new_text, ""))
 		goto no_input;
 	
-	slurm_init_resv_desc_msg(resv_msg);
-
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 
 	slurm_init_resv_desc_msg(resv_msg);	
