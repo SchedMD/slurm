@@ -907,8 +907,11 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job->associd = atoi(row[JOB_REQ_ASSOCID]);
 		job->resvid = atoi(row[JOB_REQ_RESVID]);
 
-		if(row[JOB_REQ_WCKEY] && row[JOB_REQ_WCKEY][0])
+		/* we want a blank wckey if the name is null */
+		if(row[JOB_REQ_WCKEY])
 			job->wckey = xstrdup(row[JOB_REQ_WCKEY]);
+		else
+			job->wckey = xstrdup("");
 		job->wckeyid = atoi(row[JOB_REQ_WCKEYID]);
 
 		if(row[JOB_REQ_CLUSTER] && row[JOB_REQ_CLUSTER][0])
