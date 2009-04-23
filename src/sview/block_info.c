@@ -77,6 +77,7 @@ enum {
 #ifdef HAVE_BGL
 	SORTID_USE,
 #endif
+	SORTID_NODE_INX,
 	SORTID_USER,
 	SORTID_CNT
 };
@@ -118,6 +119,8 @@ static display_data_t display_data_block[] = {
 #endif
 	{G_TYPE_STRING, SORTID_MLOADERIMAGE, "Mloader Image",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE, 
+	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -337,6 +340,9 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST,
 			   block_ptr->nodes, -1);
+
+	gtk_tree_store_set(treestore, iter, 
+			   SORTID_NODE_INX, block_ptr->bp_inx, -1);
 
 #ifdef HAVE_BGL
 	gtk_tree_store_set(treestore, iter, SORTID_BLRTSIMAGE,
@@ -1135,6 +1141,7 @@ extern void set_menus_block(void *arg, GtkTreePath *path,
 extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
+	int *node_inx = NULL;
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
@@ -1142,6 +1149,8 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	int i=0;
 
 	gtk_tree_model_get(model, iter, SORTID_BLOCK, &name, -1);
+	gtk_tree_model_get(model, iter, SORTID_NODE_INX, &node_inx, -1);
+
 	switch(id) {
 	case JOB_PAGE:
 		snprintf(title, 100, "Jobs(s) in block %s", name);
@@ -1177,9 +1186,11 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	
 	if(!popup_win) {
 		if(id == INFO_PAGE)
-			popup_win = create_popup_info(id, BLOCK_PAGE, title);
+			popup_win = create_popup_info(
+				id, BLOCK_PAGE, title, node_inx);
 		else
-			popup_win = create_popup_info(BLOCK_PAGE, id, title);
+			popup_win = create_popup_info(
+				BLOCK_PAGE, id, title, node_inx);
 	} else {
 		g_free(name);
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
