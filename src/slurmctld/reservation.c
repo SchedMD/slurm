@@ -237,11 +237,17 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 {
 	
 #if _RESV_DEBUG
-	char start_str[32] = "", end_str[32] = "", *flag_str = NULL;
+	char start_str[32] = "-1", end_str[32] = "-1", *flag_str = NULL;
 	int duration;
 
-	slurm_make_time_str(&resv_ptr->start_time,start_str,sizeof(start_str));
-	slurm_make_time_str(&resv_ptr->end_time,  end_str,  sizeof(end_str));
+	if (resv_ptr->start_time != (time_t) NO_VAL) {
+		slurm_make_time_str(&resv_ptr->start_time,
+				    start_str, sizeof(start_str));
+	}
+	if (resv_ptr->end_time != (time_t) NO_VAL) {
+		slurm_make_time_str(&resv_ptr->end_time, 
+				    end_str,  sizeof(end_str));
+	}
 	if (resv_ptr->flags != (uint16_t) NO_VAL)
 		flag_str = reservation_flags_string(resv_ptr->flags);
 
@@ -251,7 +257,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 		duration = resv_ptr->duration;
 
 	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
-	     "Flags=%s NodeCnt=%u NodeList=%s Features=%s "
+	     "Flags=%s NodeCnt=%d NodeList=%s Features=%s "
 	     "PartitionName=%s Users=%s Accounts=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, resv_ptr->node_cnt, resv_ptr->node_list, 
