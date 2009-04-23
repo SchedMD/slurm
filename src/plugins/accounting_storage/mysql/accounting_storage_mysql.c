@@ -2513,7 +2513,7 @@ static int _get_usage_for_list(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf(
 			"select %s from %s "
 			"where (period_start < %d && period_start >= %d) "
-			"&& %s order by id, period_start;",
+			"&& (%s) order by id, period_start;",
 			tmp, my_usage_table, end, start, id_str);
 		break;
 	default:
