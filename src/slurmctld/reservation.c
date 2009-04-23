@@ -921,7 +921,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	packstr(resv_ptr->features,	buffer);
 	packstr(resv_ptr->name,		buffer);
 	pack32(resv_ptr->node_cnt,	buffer);
-	pack_bit_fmt(resv_ptr->node_bitmap, buffer);
 	packstr(resv_ptr->node_list,	buffer);
 	packstr(resv_ptr->partition,	buffer);
 	pack_time(resv_ptr->start_time,	buffer);
@@ -933,6 +932,8 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->cpu_cnt,	buffer);
 		pack32(resv_ptr->resv_id,	buffer);
 		pack_time(resv_ptr->start_time_prev,	buffer);
+	} else {
+		pack_bit_fmt(resv_ptr->node_bitmap, buffer);
 	}
 }
 

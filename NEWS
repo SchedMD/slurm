@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.4.0-pre14
+==============================
+ -- Fix bug in preservation of advanced reservations when slurmctld restarts.
+
 * Changes in SLURM 1.4.0-pre13
 ==============================
  -- Added new partition option AllocNodes which controls the hosts from 

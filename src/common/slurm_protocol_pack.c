@@ -2549,7 +2549,12 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer)
 	safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
 	safe_unpack32(&resv->node_cnt,		buffer);
-	safe_unpackstr_xmalloc(&node_inx_str,	&uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&resv->node_list,&uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&resv->partition,&uint32_tmp, buffer);
+	safe_unpack_time(&resv->start_time,	buffer);
+	safe_unpack16(&resv->flags,		buffer);
+	safe_unpackstr_xmalloc(&resv->users,	&uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&node_inx_str,   &uint32_tmp, buffer);
 	if (node_inx_str == NULL)
 		resv->node_inx = bitfmt2int("");
 	else {
@@ -2557,11 +2562,6 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer)
 		xfree(node_inx_str);
 		node_inx_str = NULL;
 	}
-	safe_unpackstr_xmalloc(&resv->node_list,&uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&resv->partition,&uint32_tmp, buffer);
-	safe_unpack_time(&resv->start_time,	buffer);
-	safe_unpack16(&resv->flags,		buffer);
-	safe_unpackstr_xmalloc(&resv->users,	&uint32_tmp, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
