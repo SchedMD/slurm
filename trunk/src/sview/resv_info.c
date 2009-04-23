@@ -48,6 +48,7 @@ enum {
 	SORTID_POS = POS_LOC,
 	SORTID_ACCOUNTS,
 	SORTID_ACTION,
+	SORTID_DURATION,
 	SORTID_END_TIME,
 	SORTID_FEATURES,
 	SORTID_FLAGS,
@@ -77,9 +78,11 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODE_LIST,  "NodeList", TRUE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_START_TIME, "StartTime", FALSE, EDIT_TEXTBOX, 
+	{G_TYPE_STRING, SORTID_START_TIME, "StartTime", TRUE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_END_TIME,   "EndTime", FALSE, EDIT_TEXTBOX, 
+	{G_TYPE_STRING, SORTID_END_TIME,   "EndTime", TRUE, EDIT_TEXTBOX, 
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_DURATION, "Duration", FALSE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", FALSE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -229,6 +232,14 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 			got_edit_signal = NULL;
 		else
 			got_edit_signal = xstrdup(new_text);
+		break;
+	case SORTID_DURATION:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+		
+		type = "duration";
+		if(temp_int <= 0)
+			goto return_error;
+		resv_msg->duration = temp_int;
 		break;
 	case SORTID_END_TIME:
 		resv_msg->end_time = parse_time((char *)new_text, 0);
@@ -467,6 +478,14 @@ static void _layout_resv_record(GtkTreeView *treeview,
 						 SORTID_END_TIME), 
 				   time_buf);
 
+	secs2time_str((uint32_t)difftime(resv_ptr->end_time,
+					 resv_ptr->start_time),
+		      time_buf, sizeof(time_buf));
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_resv,
+						 SORTID_DURATION), 
+				   time_buf);
+
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_resv,
 						 SORTID_ACCOUNTS),
@@ -507,6 +526,11 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_ACCOUNTS, resv_ptr->accounts, -1);
+
+	secs2time_str((uint32_t)difftime(resv_ptr->end_time, 
+					  resv_ptr->start_time), 
+		      tmp_char, sizeof(tmp_char));
+	gtk_tree_store_set(treestore, iter, SORTID_DURATION, tmp_char, -1);
 
 	slurm_make_time_str((time_t *)&resv_ptr->end_time, tmp_char,
 			    sizeof(tmp_char));
@@ -907,6 +931,7 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	ListIterator itr = NULL;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	reserve_info_t *resv_ptr = NULL;
+	time_t now = time(NULL);
 		
 	if(display_data)
 		local_display_data = display_data;
@@ -946,6 +971,9 @@ display_it:
 	itr = list_iterator_create(info_list);
 	while ((sview_resv_info_ptr = list_next(itr))) {
 		resv_ptr = sview_resv_info_ptr->resv_ptr;
+		if ((resv_ptr->start_time > now) ||
+		    (resv_ptr->end_time   < now))
+			continue;	/* only map current reservations */
 		j=0;
 		while(resv_ptr->node_inx[j] >= 0) {
 			sview_resv_info_ptr->color = 
