@@ -191,7 +191,7 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PART_PAGE},
 #endif
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, PART_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Reservation", TRUE, PART_PAGE},
+	{G_TYPE_STRING, RESV_PAGE, "Reservations", TRUE, PART_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -238,12 +238,11 @@ static void _update_nodes_for_bg(int node_scaling,
        		   
 	hl = hostlist_create(bg_info_record->nodes);
 	while (1) {
-		if (node_name)
-			free(node_name);
 		node_name = hostlist_shift(hl);
 		if (!node_name)
 			break;
 		node_ptr = _find_node(node_name, node_msg);
+		free(node_name);
 		if (!node_ptr)
 			continue;
 		/* cores is overloaded to be the cnodes in an error
@@ -2098,9 +2097,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 	sview_part_info_t *sview_part_info_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
-	char *host = NULL, *host2 = NULL;
-	hostlist_t hostlist = NULL;
-	int found = 0;
+	hostset_t hostset = NULL;
 	
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_part, SORTID_CNT);
@@ -2230,30 +2227,19 @@ display_it:
 		i++;
 		part_ptr = sview_part_info_ptr->part_ptr;	
 		switch(spec_info->type) {
+		case RESV_PAGE:
 		case NODE_PAGE:
 			if(!part_ptr->nodes)
 				continue;
 
-			hostlist = hostlist_create(
-				spec_info->search_info->gchar_data);
-			host = hostlist_shift(hostlist);
-			hostlist_destroy(hostlist);
-			if(!host) 
+			if(!(hostset = hostset_create(
+				     spec_info->search_info->gchar_data)))
 				continue;
-			
-			hostlist = hostlist_create(part_ptr->nodes);
-			found = 0;
-			while((host2 = hostlist_shift(hostlist))) { 
-				if(!strcmp(host, host2)) {
-					free(host2);
-					found = 1;
-					break; 
-				}
-				free(host2);
+			if(!hostset_intersects(hostset, part_ptr->nodes)) {
+				hostset_destroy(hostset);
+				continue;
 			}
-			hostlist_destroy(hostlist);
-			if(!found)
-				continue;
+			hostset_destroy(hostset);				
 			break;
 		case PART_PAGE:
 		case BLOCK_PAGE:
@@ -2335,6 +2321,9 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case JOB_PAGE:
 		snprintf(title, 100, "Job(s) in partition %s", name);
 		break;
+	case RESV_PAGE:
+		snprintf(title, 100, "Reservation(s) in partition %s", name);
+		break;
 	case NODE_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_ONLY_LINE,
 				   &only_line, -1);
@@ -2403,6 +2392,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		popup_win->spec_info->search_info->gchar_data = name;
 		//specific_info_job(popup_win);
 		break;
+	case RESV_PAGE:
 	case NODE_PAGE:
 		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);

@@ -384,6 +384,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"      <separator/>"
 		"        <menuitem action='node_name'/>"
 		"        <menuitem action='node_state'/>"
+		"      <separator/>"
+		"        <menuitem action='reservation_name'/>"
 		"      </menu>"
 		"      <menuitem action='refresh'/>"
 		"      <menuitem action='reconfig'/>"
@@ -464,6 +466,9 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 "", "Search for a Node in a given state", 
 #endif
 		 G_CALLBACK(create_search_popup)},		
+		{"reservation_name", NULL, "Reservation Name", 
+		 "", "Search for reservation", 
+		 G_CALLBACK(create_search_popup)},
 		{"tab_pos", NULL, "_Tab Pos"},
 		{"interval", GTK_STOCK_REFRESH, "Set Refresh _Interval", 
 		 "<control>i", "Change Refresh Interval", 

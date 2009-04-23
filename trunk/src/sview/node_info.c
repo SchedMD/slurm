@@ -909,7 +909,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 					  label,
 					  0, 1, 0, 1); 
 		gtk_widget_show(label);	
-		spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
+		spec_info->display_widget = gtk_widget_ref(label);
 		return;
 	}
 display_it:	
@@ -1095,6 +1095,9 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		break;
 	case PART_PAGE:
 		snprintf(title, 100, "Partition(s) with %s %s", node, name);
+		break;
+	case RESV_PAGE:
+		snprintf(title, 100, "Reservation(s) with %s %s", node, name);
 		break;
 	case BLOCK_PAGE: 
 		snprintf(title, 100, "Blocks(s) with %s %s", node, name);

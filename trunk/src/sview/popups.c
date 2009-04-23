@@ -152,6 +152,11 @@ void _search_entry(sview_search_info_t *sview_search_info)
 		xfree(lower);
 		
 		break;
+	case SEARCH_RESERVATION_NAME:
+		id = RESV_PAGE;
+		snprintf(title, 100, "Reservation %s info",
+			 sview_search_info->gchar_data);
+		break;
 	default:
 		g_print("unknown search type %d.\n",
 			sview_search_info->search_type);
@@ -799,7 +804,11 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		label = gtk_label_new("Which state?");
 	}
 #endif
-	else {
+	else if(!strcmp(name, "reservation_name")) {
+		sview_search_info.search_type = SEARCH_RESERVATION_NAME;
+		entry = create_entry();
+		label = gtk_label_new("Which reservation");
+	} else {
 		sview_search_info.search_type = 0;
 		goto end_it;
 	}
@@ -841,6 +850,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		case SEARCH_BLOCK_SIZE:
 		case SEARCH_PARTITION_NAME:
 		case SEARCH_NODE_NAME:
+		case SEARCH_RESERVATION_NAME:
 			sview_search_info.gchar_data =
 				g_strdup(gtk_entry_get_text(GTK_ENTRY(entry)));
 			break;

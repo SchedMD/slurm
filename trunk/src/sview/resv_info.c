@@ -105,9 +105,9 @@ static display_data_t options_data_resv[] = {
 	{G_TYPE_STRING, RESV_PAGE, "Remove", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Edit Reservation", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, RESV_PAGE},
-	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, RESV_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, RESV_PAGE},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, BLOCK_PAGE, "Block", TRUE, RESV_PAGE},
+	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, RESV_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, RESV_PAGE},
 #else
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, RESV_PAGE},
@@ -520,7 +520,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	char *tmp_ptr = NULL;
 	char tmp_char[50];
 	reserve_info_t *resv_ptr = sview_resv_info_ptr->resv_ptr;
-		     
+
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 
 	gtk_tree_store_set(treestore, iter,
@@ -1026,9 +1026,7 @@ extern void specific_info_resv(popup_info_t *popup_win)
 	int changed = 1;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	int j=0, i=-1;
-	char *host = NULL, *host2 = NULL;
-	hostlist_t hostlist = NULL;
-	int found = 0;
+	hostset_t hostset = NULL;
 	ListIterator itr = NULL;
 	
 	if(!spec_info->display_widget) {
@@ -1044,19 +1042,16 @@ extern void specific_info_resv(popup_info_t *popup_win)
 	if((resv_error_code = 
 	    get_new_info_resv(&resv_info_ptr, popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
-		if(!spec_info->display_widget 
-		   || spec_info->view == ERROR_VIEW) {
+		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
-		}
-		changed = 0;
-		
+		changed = 0;		
 	} else if (resv_error_code != SLURM_SUCCESS) {
 		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
 		spec_info->view = ERROR_VIEW;
 		if(spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
-		sprintf(error_char, "slurm_load_node_select: %s",
+		sprintf(error_char, "get_new_info_resv: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(popup_win->table, 
@@ -1118,45 +1113,43 @@ display_it:
 		resv_ptr = sview_resv_info_ptr->resv_ptr;	
 		switch(spec_info->type) {
 		case PART_PAGE:
-			if(strcmp(resv_ptr->partition, 
-				  search_info->gchar_data)) 
-				continue;
-			break;
 		case BLOCK_PAGE:
 		case NODE_PAGE:
 			if(!resv_ptr->node_list)
 				continue;
 			
-			hostlist = hostlist_create(search_info->gchar_data);
-			host = hostlist_shift(hostlist);
-			hostlist_destroy(hostlist);
-			if(!host) 
+			if(!(hostset = hostset_create(search_info->gchar_data)))
 				continue;
-
-			hostlist = hostlist_create(resv_ptr->node_list);
-			found = 0;
-			while((host2 = hostlist_shift(hostlist))) { 
-				if(!strcmp(host, host2)) {
-					free(host2);
-					found = 1;
-					break; 
-				}
-				free(host2);
+			if(!hostset_intersects(hostset, resv_ptr->node_list)) {
+				hostset_destroy(hostset);
+				continue;
 			}
-			hostlist_destroy(hostlist);
-			if(!found)
-				continue;
+			hostset_destroy(hostset);				
 			break;
 		case JOB_PAGE:
 			if(strcmp(resv_ptr->name, 
 				  search_info->gchar_data)) 
 				continue;
 			break;
+		case RESV_PAGE:
+			switch(search_info->search_type) {
+			case SEARCH_RESERVATION_NAME:
+				if(!search_info->gchar_data)
+					continue;
+				
+				if(strcmp(resv_ptr->name, 
+					  search_info->gchar_data)) 
+					continue;
+				break;
+			default:
+				continue;
+			}
+			break;
 		default:
 			g_print("Unknown type %d\n", spec_info->type);
 			continue;
 		}
-		list_push(send_resv_list, resv_ptr);
+		list_push(send_resv_list, sview_resv_info_ptr);
 		j=0;
 		while(resv_ptr->node_inx[j] >= 0) {
 			change_grid_color(
@@ -1168,8 +1161,11 @@ display_it:
 	}
 	list_iterator_destroy(itr);
 	 
+	put_buttons_in_table(popup_win->grid_table,
+			     popup_win->grid_button_list);
+
 	_update_info_resv(send_resv_list, 
-			   GTK_TREE_VIEW(spec_info->display_widget));
+			  GTK_TREE_VIEW(spec_info->display_widget));
 	list_destroy(send_resv_list);
 end_it:
 	popup_win->toggled = 0;
@@ -1262,12 +1258,13 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	switch(id) {
 	case JOB_PAGE:
-	case BLOCK_PAGE: 
 	case INFO_PAGE:
 		popup_win->spec_info->search_info->gchar_data = name;
 		//specific_info_job(popup_win);
 		break;
+	case BLOCK_PAGE: 
 	case NODE_PAGE:
+	case PART_PAGE:
 		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_NODE_LIST, &name, -1);
 		popup_win->spec_info->search_info->gchar_data = name;

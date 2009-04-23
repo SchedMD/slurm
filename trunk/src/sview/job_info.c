@@ -2792,9 +2792,8 @@ extern void specific_info_job(popup_info_t *popup_win)
 	job_info_t *job_ptr = NULL;	
 	ListIterator itr = NULL;
 	char name[30], *uname = NULL;
-	char *host = NULL, *host2 = NULL;
-	hostlist_t hostlist = NULL;
-	int found = 0, name_diff;
+	hostset_t hostset = NULL;
+	int name_diff;
 	
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_job, SORTID_CNT);
@@ -2957,6 +2956,11 @@ display_it:
 				  job_ptr->partition))
 				continue;
 			break;
+		case RESV_PAGE:
+			if(strcmp(search_info->gchar_data,
+				  job_ptr->resv_name))
+				continue;
+			break;
 		case BLOCK_PAGE:
 			select_g_sprint_jobinfo(
 				job_ptr->select_jobinfo, 
@@ -2970,25 +2974,13 @@ display_it:
 			if(!job_ptr->nodes)
 				continue;
 			
-			hostlist = hostlist_create(search_info->gchar_data);
-			host = hostlist_shift(hostlist);
-			hostlist_destroy(hostlist);
-			if(!host)
+			if(!(hostset = hostset_create(search_info->gchar_data)))
 				continue;
-			
-			hostlist = hostlist_create(job_ptr->nodes);
-			found = 0;
-			while((host2 = hostlist_shift(hostlist))) { 
-				if(!strcmp(host, host2)) {
-					free(host2);
-					found = 1;
-					break; 
-				}
-				free(host2);
+			if(!hostset_intersects(hostset, job_ptr->nodes)) {
+				hostset_destroy(hostset);
+				continue;
 			}
-			hostlist_destroy(hostlist);
-			if(!found)
-				continue;
+			hostset_destroy(hostset);				
 			break;
 		default:
 			continue;
