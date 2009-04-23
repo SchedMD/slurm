@@ -928,9 +928,7 @@ extern void specific_info_block(popup_info_t *popup_win)
 	int changed = 1;
 	sview_block_info_t *block_ptr = NULL;
 	int j=0, i=-1;
-	char *host = NULL, *host2 = NULL;
-	hostlist_t hostlist = NULL;
-	int found = 0;
+	hostset_t hostset = NULL;
 	ListIterator itr = NULL;
 	
 	if(!spec_info->display_widget) {
@@ -1041,29 +1039,18 @@ display_it:
 				  search_info->gchar_data)) 
 				continue;
 			break;
+		case RESV_PAGE:
 		case NODE_PAGE:
 			if(!block_ptr->nodes)
 				continue;
 			
-			hostlist = hostlist_create(search_info->gchar_data);
-			host = hostlist_shift(hostlist);
-			hostlist_destroy(hostlist);
-			if(!host) 
+			if(!(hostset = hostset_create(search_info->gchar_data)))
 				continue;
-
-			hostlist = hostlist_create(block_ptr->nodes);
-			found = 0;
-			while((host2 = hostlist_shift(hostlist))) { 
-				if(!strcmp(host, host2)) {
-					free(host2);
-					found = 1;
-					break; 
-				}
-				free(host2);
+			if(!hostset_intersects(hostset, block_ptr->nodes)) {
+				hostset_destroy(hostset);
+				continue;
 			}
-			hostlist_destroy(hostlist);
-			if(!found)
-				continue;
+			hostset_destroy(hostset);				
 			break;
 		case BLOCK_PAGE:
 			switch(search_info->search_type) {
@@ -1162,6 +1149,10 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case PART_PAGE:
 		snprintf(title, 100, "Partition(s) containing block %s", name);
 		break;
+	case RESV_PAGE:
+		snprintf(title, 100, "Reservations(s) containing block %s",
+			 name);
+		break;
 	case NODE_PAGE:
 		snprintf(title, 100, "Base Partition(s) in block %s", name);
 		break;
@@ -1203,6 +1194,7 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		gtk_tree_model_get(model, iter, SORTID_PARTITION, &name, -1);
 		popup_win->spec_info->search_info->gchar_data = name;
 		break;
+	case RESV_PAGE: 
 	case NODE_PAGE: 
 		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);

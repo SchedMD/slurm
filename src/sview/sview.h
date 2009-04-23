@@ -86,9 +86,9 @@
 enum { JOB_PAGE, 
        STEP_PAGE, 
        PART_PAGE,
-       RESV_PAGE,
        NODE_PAGE, 
        BLOCK_PAGE, 
+       RESV_PAGE,
        SUBMIT_PAGE,
        ADMIN_PAGE,
        INFO_PAGE,
@@ -127,7 +127,8 @@ typedef enum { SEARCH_JOB_ID = 1,
 	       SEARCH_PARTITION_NAME,
 	       SEARCH_PARTITION_STATE,
 	       SEARCH_NODE_NAME,
-	       SEARCH_NODE_STATE
+	       SEARCH_NODE_STATE,
+	       SEARCH_RESERVATION_NAME,
 } sview_search_type_t;
 
 
