@@ -283,7 +283,7 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ACCOUNT, "Account Charged", 
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_REASON, "Wait Reason", 
+	{G_TYPE_STRING, SORTID_REASON, "Reason Waiting", 
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", 
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
