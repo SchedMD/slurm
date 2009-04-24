@@ -87,8 +87,7 @@ static void _open_node(GtkWidget *widget, GdkEventButton *event,
 	list_iterator_destroy(itr);
 
 	if(!popup_win) {
-		popup_win = create_popup_info(INFO_PAGE, NODE_PAGE,
-					      title, NULL);
+		popup_win = create_popup_info(INFO_PAGE, NODE_PAGE, title);
 		popup_win->spec_info->search_info->gchar_data =
 			g_strdup(grid_button->node_name);
 		if (!g_thread_create((gpointer)popup_thr, popup_win,
@@ -126,8 +125,7 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 	list_iterator_destroy(itr);
 
 	if(!popup_win) {
-		popup_win = create_popup_info(INFO_PAGE, BLOCK_PAGE,
-					      title, NULL);
+		popup_win = create_popup_info(INFO_PAGE, BLOCK_PAGE, title);
 		popup_win->spec_info->search_info->search_type =
 			SEARCH_BLOCK_NODENAME;
 		popup_win->spec_info->search_info->gchar_data =
@@ -172,6 +170,7 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 	GdkColor color;
 
 	if(GTK_IS_EVENT_BOX(grid_button->button)) {
+		//gtk_widget_set_sensitive (grid_button->button, TRUE);
 		return;
 	}
 	gtk_widget_destroy(grid_button->button);		
@@ -217,11 +216,43 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 void _put_button_as_up(grid_button_t *grid_button)
 {
 	if(GTK_IS_BUTTON(grid_button->button)) {
+		//gtk_widget_set_sensitive (grid_button->button, TRUE);
 		return;
 	}
 	gtk_widget_destroy(grid_button->button);		
 	grid_button->button = gtk_button_new();
 	gtk_widget_set_size_request(grid_button->button, 10, 10);
+	gtk_tooltips_set_tip(grid_button->tip,
+			     grid_button->button,
+			     grid_button->node_name,
+			     "click for node stats");
+	g_signal_connect(G_OBJECT(grid_button->button), 
+			 "button-press-event",
+			 G_CALLBACK(_open_node),
+			 grid_button);
+	if(grid_button->table) 
+		gtk_table_attach(grid_button->table, grid_button->button,
+				 grid_button->table_x,
+				 (grid_button->table_x+1), 
+				 grid_button->table_y,
+				 (grid_button->table_y+1),
+				 GTK_SHRINK, GTK_SHRINK,
+				 1, 1);
+	gtk_widget_show_all(grid_button->button);
+	return;
+}
+
+void _put_button_as_inactive(grid_button_t *grid_button)
+{
+	if(GTK_IS_BUTTON(grid_button->button)) {
+		//gtk_widget_set_sensitive (grid_button->button, FALSE);
+		return;
+	}
+	gtk_widget_destroy(grid_button->button);		
+	grid_button->button = gtk_button_new();
+	gtk_widget_set_size_request(grid_button->button, 10, 10);
+	//gtk_widget_set_sensitive (grid_button->button, FALSE);
+
 	gtk_tooltips_set_tip(grid_button->tip,
 			     grid_button->button,
 			     grid_button->node_name,
@@ -295,6 +326,7 @@ extern grid_button_t *create_grid_button_from_another(
 	send_grid_button->table = NULL;
 	if(color_inx == MAKE_BLACK) {
 		send_grid_button->button = gtk_button_new();
+		//gtk_widget_set_sensitive (send_grid_button->button, FALSE);
 		gdk_color_parse(blank_color, &color);
 		gtk_widget_modify_bg(send_grid_button->button, 
 				     GTK_STATE_NORMAL, &color);
@@ -387,7 +419,7 @@ extern char *change_grid_color(List button_list, int start, int end,
 				continue;
 		
 		if(color_inx == MAKE_BLACK) {
-			_put_button_as_up(grid_button);
+			_put_button_as_inactive(grid_button);
 			grid_button->color = blank_color;
 			gtk_widget_modify_bg(grid_button->button, 
 					     GTK_STATE_NORMAL, &color);
@@ -897,18 +929,24 @@ extern void setup_popup_grid_list(popup_info_t *popup_win)
 {
 	int def_color = MAKE_BLACK;
 
-	if(!popup_win->node_inx || popup_win->spec_info->type == INFO_PAGE) 
+	if(!popup_win->model || popup_win->spec_info->type == INFO_PAGE) 
 		def_color = MAKE_WHITE;
 
 	if(popup_win->grid_button_list) {
 		change_grid_color(popup_win->grid_button_list, -1, -1,
 				  def_color);
-	} else {	       
+	} else {	     
 		popup_win->grid_button_list = copy_main_button_list(def_color);
 		put_buttons_in_table(popup_win->grid_table,
 				     popup_win->grid_button_list);
 		popup_win->full_grid = 1;
 	}
+
+	/* refresh the pointer */
+	if(popup_win->model) 
+		gtk_tree_model_get(popup_win->model, &popup_win->iter,
+				   popup_win->node_inx_id,
+				   &popup_win->node_inx, -1);
 
 	if(popup_win->node_inx) {
 		int j=0;

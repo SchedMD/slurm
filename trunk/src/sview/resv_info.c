@@ -523,7 +523,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	char *tmp_ptr = NULL;
 	char tmp_char[50];
 	reserve_info_t *resv_ptr = sview_resv_info_ptr->resv_ptr;
-
+      
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 
 	gtk_tree_store_set(treestore, iter,
@@ -1189,14 +1189,12 @@ extern void set_menus_resv(void *arg, GtkTreePath *path,
 extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
-	int *node_inx = NULL;
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 				
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-	gtk_tree_model_get(model, iter, SORTID_NODE_INX, &node_inx, -1);
 
 	switch(id) {
 	case PART_PAGE:
@@ -1239,17 +1237,22 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	if(!popup_win) {
 		if(id == INFO_PAGE)
-			popup_win = create_popup_info(
-				id, RESV_PAGE, title, node_inx);
+			popup_win = create_popup_info(id, RESV_PAGE, title);
 		else
-			popup_win = create_popup_info(
-				RESV_PAGE, id, title, node_inx);
+			popup_win = create_popup_info(RESV_PAGE, id, title);
 	} else {
 		g_free(name);
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
 		return;
 	}
-	
+
+	/* Pass the model and the structs from the iter so we can always get
+	   the current node_inx.
+	*/
+	popup_win->model = model;
+	popup_win->iter = *iter;
+	popup_win->node_inx_id = SORTID_NODE_INX;
+
 	switch(id) {
 	case JOB_PAGE:
 	case INFO_PAGE:

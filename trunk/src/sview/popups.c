@@ -174,7 +174,7 @@ void _search_entry(sview_search_info_t *sview_search_info)
 	list_iterator_destroy(itr);
 
 	if(!popup_win) {
-		popup_win = create_popup_info(id, id, title, NULL);
+		popup_win = create_popup_info(id, id, title);
 	} else {
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
 		return;

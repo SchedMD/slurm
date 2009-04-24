@@ -2315,7 +2315,6 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
 	char *state = NULL;
-	int *node_inx = NULL;
 	char title[100];
 	int only_line = 0;
 	ListIterator itr = NULL;
@@ -2323,7 +2322,6 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	GError *error = NULL;
 				
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-	gtk_tree_model_get(model, iter, SORTID_NODE_INX, &node_inx, -1);
 	
 	switch(id) {
 	case JOB_PAGE:
@@ -2383,17 +2381,22 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 	if(!popup_win) {
 		if(id == INFO_PAGE)
-			popup_win = create_popup_info(
-				id, PART_PAGE, title, node_inx);
+			popup_win = create_popup_info(id, PART_PAGE, title);
 		else
-			popup_win = create_popup_info(
-				PART_PAGE, id, title, node_inx);
+			popup_win = create_popup_info(PART_PAGE, id, title);
 	} else {
 		g_free(name);
 		g_free(state);
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
 		return;
 	}
+
+	/* Pass the model and the structs from the iter so we can always get
+	   the current node_inx.
+	*/
+	popup_win->model = model;
+	popup_win->iter = *iter;
+	popup_win->node_inx_id = SORTID_NODE_INX;
 
 	switch(id) {
 	case JOB_PAGE:

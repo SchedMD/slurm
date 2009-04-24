@@ -702,8 +702,7 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	return did_something;
 }
 
-extern popup_info_t *create_popup_info(int type, int dest_type,
-				       char *title, int *node_inx)
+extern popup_info_t *create_popup_info(int type, int dest_type, char *title)
 {
 	GtkScrolledWindow *window = NULL;
 	GtkBin *bin = NULL;
@@ -770,7 +769,6 @@ extern popup_info_t *create_popup_info(int type, int dest_type,
 	bin = GTK_BIN(&view->bin);
 	popup_win->grid_table = GTK_TABLE(bin->child);
 	popup_win->grid_button_list = NULL;
-	popup_win->node_inx = node_inx;
 
 	table = gtk_table_new(1, 2, FALSE);
 	
