@@ -126,7 +126,8 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 	list_iterator_destroy(itr);
 
 	if(!popup_win) {
-		popup_win = create_popup_info(INFO_PAGE, BLOCK_PAGE, title);
+		popup_win = create_popup_info(INFO_PAGE, BLOCK_PAGE,
+					      title, NULL);
 		popup_win->spec_info->search_info->search_type =
 			SEARCH_BLOCK_NODENAME;
 		popup_win->spec_info->search_info->gchar_data =
