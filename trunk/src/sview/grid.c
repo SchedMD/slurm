@@ -859,6 +859,8 @@ extern void sview_init_grid()
 
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
+		/* need to clear out old data */
+		sview_reset_grid();
 		return;
 	} else if (error_code != SLURM_SUCCESS) {
 		return;
@@ -870,7 +872,6 @@ extern void sview_init_grid()
 	}
 	
 	gdk_color_parse("white", &color);
-	
 	itr = list_iterator_create(grid_button_list);
 	for(i=0; i<node_info_ptr->record_count; i++) {
 		node_ptr = &node_info_ptr->node_array[i];
