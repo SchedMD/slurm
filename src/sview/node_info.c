@@ -1123,11 +1123,9 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	
 	if(!popup_win) {
 		if(id == INFO_PAGE)
-			popup_win = create_popup_info(
-				id, NODE_PAGE, title, NULL);
+			popup_win = create_popup_info(id, NODE_PAGE, title);
 		else
-			popup_win = create_popup_info(
-				NODE_PAGE, id, title, NULL);
+			popup_win = create_popup_info(NODE_PAGE, id, title);
 		popup_win->spec_info->search_info->gchar_data = name;
 		if (!g_thread_create((gpointer)popup_thr, popup_win, 
 				     FALSE, &error))

@@ -213,6 +213,9 @@ struct popup_info {
 	List grid_button_list;
 	specific_info_t *spec_info;
 	display_data_t *display_data;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	int node_inx_id;
 };
 
 typedef struct {
@@ -406,8 +409,7 @@ extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path,
 				 int type);
 extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
 			    const display_data_t *display_data);
-extern popup_info_t *create_popup_info(int type, int dest_type, char *title,
-				       int *node_inx);
+extern popup_info_t *create_popup_info(int type, int dest_type, char *title);
 extern void setup_popup_info(popup_info_t *popup_win, 
 			     display_data_t *display_data, 
 			     int cnt);
