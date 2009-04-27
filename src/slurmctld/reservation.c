@@ -939,7 +939,12 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->resv_id,	buffer);
 		pack_time(resv_ptr->start_time_prev,	buffer);
 	} else {
-		pack_bit_fmt(resv_ptr->node_bitmap, buffer);
+		time_t now = time(NULL);
+		/* only send the bitmap if it is valid now. */
+		if(resv_ptr->start_time > now || resv_ptr->end_time < now)
+			pack_bit_fmt(NULL, buffer);
+		else
+			pack_bit_fmt(resv_ptr->node_bitmap, buffer);
 	}
 }
 
