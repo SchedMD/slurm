@@ -318,38 +318,6 @@ static int _state_str2int(const char *state_str)
 	return state_val;
 }
 
-#ifdef HAVE_3D
-/* Used to get the general name of the machine, used primarily 
- * for bluegene systems.  Not in general use because some systems 
- * have multiple prefix's such as foo[1-1000],bar[1-1000].
- */
-/* Caller must be holding slurm_conf_lock() */
-static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
-{
-	int i;
-	char *tmp;
-
-	xassert(nodenames != NULL);
-	for (i = 1; nodenames[i] != '\0'; i++) {
-		if((nodenames[i-1] == '[') 
-		   || (nodenames[i-1] <= '9'
-		       && nodenames[i-1] >= '0'))
-			break;
-	}
-	xfree(conf->node_prefix);
-	if(nodenames[i] == '\0')
-		conf->node_prefix = xstrdup(nodenames);
-	else {
-		tmp = xmalloc(sizeof(char)*i+1);
-		memset(tmp, 0, i+1);
-		snprintf(tmp, i, "%s", nodenames);
-		conf->node_prefix = tmp;
-		tmp = NULL;
-	}
-	debug3("Prefix is %s %s %d", conf->node_prefix, nodenames, i);
-}
-#endif /* HAVE_BG */
-
 /* 
  * _build_single_nodeline_info - From the slurm.conf reader, build table,
  * 	and set values
@@ -395,11 +363,6 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		error_code = errno;
 		goto cleanup;
 	}
-
-#ifdef HAVE_3D
-	if (conf->node_prefix == NULL)
-		_set_node_prefix(node_ptr->nodenames, conf);
-#endif
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END

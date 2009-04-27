@@ -666,11 +666,12 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	int i, len;
 	int small_count = 0;
 
+	xassert(bg_conf->slurm_user_name);
+
 	if(!records) {
 		fatal("add_bg_record: no records list given");
 	}
-	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
-	
+	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));	
 	
 	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);

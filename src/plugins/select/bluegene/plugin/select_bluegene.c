@@ -198,29 +198,14 @@ extern int fini ( void )
  */
  extern int select_p_block_init(List part_list)
 {
-	xfree(bg_conf->slurm_user_name);
-	xfree(bg_conf->slurm_node_prefix);
-
-	slurm_conf_lock();
-	xassert(slurmctld_conf.slurm_user_name);
-	xassert(slurmctld_conf.node_prefix);
-	bg_conf->slurm_user_name = xstrdup(slurmctld_conf.slurm_user_name);
-	bg_conf->slurm_node_prefix = xstrdup(slurmctld_conf.node_prefix);
-	slurm_conf_unlock();	
-
 	/* select_p_node_init needs to be called before this to set
 	   this up correctly
 	*/
-	bg_conf->proc_ratio = bg_conf->procs_per_bp/bg_conf->bp_node_cnt;
-	if(!bg_conf->proc_ratio)
-		fatal("We appear to have less than 1 proc on a cnode.  "
-		      "You specified %u for BasePartitionNodeCnt "
-		      "in the blugene.conf and %u procs "
-		      "for each node in the slurm.conf",
-		      bg_conf->bp_node_cnt, bg_conf->procs_per_bp);
-	num_unused_cpus = 
-		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] * bg_conf->procs_per_bp;
-
+	if(read_bg_conf() == SLURM_ERROR) {
+		fatal("Error, could not read the file");
+		return SLURM_ERROR;
+	}
+	
 	if(part_list) {
 		struct part_record *part_ptr = NULL;
 		ListIterator itr = list_iterator_create(part_list);

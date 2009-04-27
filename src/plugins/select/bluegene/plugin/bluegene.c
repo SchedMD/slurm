@@ -96,6 +96,15 @@ extern int init_bg(void)
 	if(!bg_conf)
 		bg_conf = xmalloc(sizeof(bg_config_t));
 
+	xfree(bg_conf->slurm_user_name);
+	xfree(bg_conf->slurm_node_prefix);
+	slurm_conf_lock();
+	xassert(slurmctld_conf.slurm_user_name);
+	xassert(slurmctld_conf.node_prefix);
+	bg_conf->slurm_user_name = xstrdup(slurmctld_conf.slurm_user_name);
+	bg_conf->slurm_node_prefix = xstrdup(slurmctld_conf.node_prefix);
+	slurm_conf_unlock();	
+
 #ifdef HAVE_BGL
 	if(bg_conf->blrts_list)
 		list_destroy(bg_conf->blrts_list);
@@ -115,11 +124,6 @@ extern int init_bg(void)
 	bg_conf->bp_node_cnt = 512;
 	bg_conf->procs_per_bp = 512;
 
-	if(read_bg_conf() == SLURM_ERROR) {
-		fatal("Error, could not read the file");
-		return SLURM_ERROR;
-	}
-	
 	ba_init(NULL);
 
 	info("BlueGene plugin loaded successfully");
@@ -1030,6 +1034,16 @@ extern int read_bg_conf(void)
 
 		bg_conf->quarter_node_cnt = bg_conf->bp_node_cnt/4;
 	}
+
+	bg_conf->proc_ratio = bg_conf->procs_per_bp/bg_conf->bp_node_cnt;
+	if(!bg_conf->proc_ratio)
+		fatal("We appear to have less than 1 proc on a cnode.  "
+		      "You specified %u for BasePartitionNodeCnt "
+		      "in the blugene.conf and %u procs "
+		      "for each node in the slurm.conf",
+		      bg_conf->bp_node_cnt, bg_conf->procs_per_bp);
+	num_unused_cpus = 
+		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] * bg_conf->procs_per_bp;
 
 	if (!s_p_get_uint16(
 		    &bg_conf->nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {
