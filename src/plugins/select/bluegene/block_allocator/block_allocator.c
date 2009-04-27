@@ -1037,12 +1037,15 @@ node_info_error:
 					  % (HOSTLIST_BASE * HOSTLIST_BASE))
 					/ HOSTLIST_BASE;
 				end[Z] = (number % HOSTLIST_BASE);
+				j += 3;
+
 				DIM_SIZE[X] = MAX(DIM_SIZE[X], end[X]);
 				DIM_SIZE[Y] = MAX(DIM_SIZE[Y], end[Y]);
 				DIM_SIZE[Z] = MAX(DIM_SIZE[Z], end[Z]);
-				break;
-			}
-				
+
+				if(node->nodenames[j] != ',')
+					break;
+			}			
 		}
 		if ((DIM_SIZE[X]==0) && (DIM_SIZE[Y]==0) && (DIM_SIZE[Z]==0)) 
 			info("are you sure you only have 1 midplane? %s",

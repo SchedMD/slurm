@@ -511,8 +511,8 @@ extern int bg_free_block(bg_record_t *bg_record)
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
+			debug2("bridge_destroy %s", bg_record->bg_block_id);
 #ifdef HAVE_BG_FILES
-			debug2("bridge_destroy %s",bg_record->bg_block_id);
 			
 			rc = bridge_destroy_block(bg_record->bg_block_id);
 			if (rc != STATUS_OK) {
