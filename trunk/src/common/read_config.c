@@ -282,6 +282,39 @@ static int defunct_option(void **dest, slurm_parser_enum_t type,
 	return 0;
 }
 
+#ifdef HAVE_3D
+/* Used to get the general name of the machine, used primarily 
+ * for bluegene systems.  Not in general use because some systems 
+ * have multiple prefix's such as foo[1-1000],bar[1-1000].
+ */
+/* Caller must be holding slurm_conf_lock() */
+static void _set_node_prefix(const char *nodenames)
+{
+	int i;
+	char *tmp;
+
+	xassert(nodenames != NULL);
+	for (i = 1; nodenames[i] != '\0'; i++) {
+		if((nodenames[i-1] == '[') 
+		   || (nodenames[i-1] <= '9'
+		       && nodenames[i-1] >= '0'))
+			break;
+	}
+	xfree(conf_ptr->node_prefix);
+	if(nodenames[i] == '\0')
+		conf_ptr->node_prefix = xstrdup(nodenames);
+	else {
+		tmp = xmalloc(sizeof(char)*i+1);
+		memset(tmp, 0, i+1);
+		snprintf(tmp, i, "%s", nodenames);
+		conf_ptr->node_prefix = tmp;
+		tmp = NULL;
+	}
+	debug3("Prefix is %s %s %d", conf_ptr->node_prefix, nodenames, i);
+}
+#endif /* HAVE_BG */
+
+
 static int parse_nodename(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line, char **leftover)
@@ -340,6 +373,11 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		dflt = default_nodename_tbl;
 
 		n->nodenames = xstrdup(value);
+#ifdef HAVE_3D
+		if (conf_ptr->node_prefix == NULL)
+			_set_node_prefix(n->nodenames);
+#endif
+
 		if (!s_p_get_string(&n->hostnames, "NodeHostname", tbl))
 			n->hostnames = xstrdup(n->nodenames);
 		if (!s_p_get_string(&n->addresses, "NodeAddr", tbl))
@@ -476,6 +514,7 @@ int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 		return 0;
 	}
 }
+
 
 static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			       const char *key, const char *value,
@@ -867,6 +906,11 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		error_code = errno;
 		goto cleanup;
 	}
+
+#ifdef HAVE_3D
+	if (conf_ptr->node_prefix == NULL)
+		_set_node_prefix(node_ptr->nodenames);
+#endif
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END
