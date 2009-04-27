@@ -292,10 +292,17 @@ static int _free_block(delete_record_t *delete_record)
 				if(rc == PARTITION_NOT_FOUND) {
 					info("block %s is not found");
 					break;
+				} else if(rc == INCOMPATIBLE_STATE) {
+					debug2("bridge_destroy_partition"
+					       "(%s): %s State = %d",
+					       delete_record->bg_block_id, 
+					       bg_err_str(rc), 
+					       delete_record->state);
+				} else {
+					error("bridge_destroy_block(%s): %s",
+					      delete_record->bg_block_id,
+					      _bg_err_str(rc));
 				}
-				error("bridge_destroy_block(%s): %s",
-				      delete_record->bg_block_id,
-				      _bg_err_str(rc));
 			}
 #else
 			bg_record->state = RM_PARTITION_FREE;	

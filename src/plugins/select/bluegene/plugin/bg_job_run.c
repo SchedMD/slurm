@@ -160,7 +160,6 @@ static int _remove_job(db_job_id_t job_id)
 		if(job_state == RM_JOB_TERMINATED)
 			return STATUS_OK;
 		else if(job_state == RM_JOB_DYING) {
-			/* start sending sigkills for the last 5 tries */
 			if(count > MAX_POLL_RETRIES) 
 				error("Job %d isn't dying, trying for "
 				      "%d seconds", count*POLL_INTERVAL);
