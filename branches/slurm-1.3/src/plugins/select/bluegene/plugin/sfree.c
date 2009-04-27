@@ -39,7 +39,7 @@
 
 #include "sfree.h"
 
-#define MAX_POLL_RETRIES    110
+#define MAX_POLL_RETRIES    220
 #define POLL_INTERVAL        3
 #define MAX_PTHREAD_RETRIES  1
 
@@ -524,9 +524,10 @@ static int _remove_job(db_job_id_t job_id)
 	rm_job_state_t job_state;
 
 	info("removing job %d from MMCS", job_id);
-	for (i=0; i<MAX_POLL_RETRIES; i++) {
-		if (i > 0)
+	while(1) {
+		if (count)
 			sleep(POLL_INTERVAL);
+		count++;
 
 		/* Find the job */
 		if ((rc = bridge_get_job(job_id, &job_rec)) != STATUS_OK) {
@@ -560,17 +561,30 @@ static int _remove_job(db_job_id_t job_id)
 		/* check the state and process accordingly */
 		if(job_state == RM_JOB_TERMINATED)
 			return STATUS_OK;
-		else if(job_state == RM_JOB_DYING)
+		else if(job_state == RM_JOB_DYING) {
+			if(count > MAX_POLL_RETRIES) 
+				error("Job %d isn't dying, trying for "
+				      "%d seconds", count*POLL_INTERVAL);
 			continue;
-		else if(job_state == RM_JOB_ERROR) {
+		} else if(job_state == RM_JOB_ERROR) {
 			error("job %d is in a error state.", job_id);
 			
 			//free_bg_block();
 			return STATUS_OK;
 		}
 
-		(void) bridge_signal_job(job_id, SIGKILL);
-		rc = bridge_cancel_job(job_id);
+		/* we have been told the next 2 lines do the same
+		 * thing, but I don't believe it to be true.  In most
+		 * cases when you do a signal of SIGTERM the mpirun
+		 * process gets killed with a SIGTERM.  In the case of
+		 * bridge_cancel_job it always gets killed with a
+		 * SIGKILL.  From IBM's point of view that is a bad
+		 * deally, so we are going to use signal ;).
+		 */
+
+//		 rc = bridge_cancel_job(job_id);
+		 rc = bridge_signal_job(job_id, SIGTERM);
+
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
