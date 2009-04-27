@@ -631,6 +631,8 @@ typedef struct job_info {
 	char *command;		/* command to be executed */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
+	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
+	uint16_t *cpus_per_node;/* cpus per node */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
 	char *dependency;	/* syncrhonize job execution with other jobs */
 	time_t end_time;	/* time of termination, actual or expected */
@@ -650,6 +652,13 @@ typedef struct job_info {
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	char *licenses;		/* licenses required by the job */
+	uint16_t max_cores;	/* maximum number of cores per cpu */
+	uint32_t max_nodes;	/* maximum number of nodes usable by job */
+	uint16_t max_sockets;	/* maximum number of sockets per node */
+	uint16_t max_threads;	/* maximum number of threads per core */
+	uint16_t min_cores;	/* minimum number of cores per cpu */
+	uint16_t min_sockets;	/* minimum number of sockets per node */
+	uint16_t min_threads;	/* minimum number of threads per core */
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */
@@ -659,6 +668,10 @@ typedef struct job_info {
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
+	uint32_t num_cpu_groups;/* elements in cpu arrays below */
+
+	uint32_t num_nodes;	/* minimum number of nodes required by job */
+	uint32_t num_procs;	/* number of processors required by job */
 	char *partition;	/* name of assigned partition */
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job, 
@@ -681,22 +694,8 @@ typedef struct job_info {
 	time_t suspend_time;	/* time job last suspended or resumed */
 	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
 	uint32_t user_id;	/* user the job runs as */
-	char *work_dir;		/* pathname of working directory */
-
-	uint32_t num_cpu_groups;/* elements in cpu arrays below */
-	uint16_t *cpus_per_node;/* cpus per node */
-	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
-
-	uint32_t num_procs;	/* number of processors required by job */
-	uint32_t num_nodes;	/* minimum number of nodes required by job */
-	uint32_t max_nodes;	/* maximum number of nodes usable by job */
-	uint16_t min_sockets;	/* minimum number of sockets per node */
-	uint16_t max_sockets;	/* maximum number of sockets per node */
-	uint16_t min_cores;	/* minimum number of cores per cpu */
-	uint16_t max_cores;	/* maximum number of cores per cpu */
-	uint16_t min_threads;	/* minimum number of threads per core */
-	uint16_t max_threads;	/* maximum number of threads per core */
 	char *wckey;            /* wckey for job */
+	char *work_dir;		/* pathname of working directory */
 } job_info_t;
 
 typedef struct job_info_msg {
@@ -707,21 +706,18 @@ typedef struct job_info_msg {
 
 typedef struct slurm_step_layout {
 	uint32_t node_cnt;	/* node count */
-	uint32_t task_cnt;	/* total number of tasks in the step */
-
 	char *node_list;        /* list of nodes in step */
+	uint16_t plane_size;	/* plane size when task_dist =
+				 * SLURM_DIST_PLANE */
 	/* Array of length "node_cnt". Each element of the array
 	 * is the number of tasks assigned to the corresponding node */
 	uint16_t *tasks;
-
+	uint32_t task_cnt;	/* total number of tasks in the step */
+	uint16_t task_dist;	/* see enum task_dist_state */
 	/* Array (of length "node_cnt") of task ID arrays.  The length
 	 * of each subarray is designated by the corresponding value in
          * the tasks array. */
 	uint32_t **tids;	/* host id => task id mapping */
-
-	uint16_t task_dist;	/* see enum task_dist_state */
-	uint16_t plane_size;	/* plane size when task_dist =
-				 * SLURM_DIST_PLANE */
 } slurm_step_layout_t;
 
 typedef struct slurm_step_io_fds {
@@ -875,22 +871,22 @@ typedef struct {
 } slurm_allocation_callbacks_t;
 
 typedef struct {
+	char *ckpt_dir;	        /* path to store checkpoint image files */
+	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	uint32_t job_id;	/* job ID */
-	uint32_t step_id;	/* step ID */
-	uint32_t user_id;	/* user the job runs as */
-	uint32_t num_tasks;	/* number of tasks */
-	time_t start_time;	/* step start time */
-	time_t run_time;	/* net run time (factor out time suspended) */
-	char *partition;	/* name of assigned partition */
-	char *resv_ports;	/* ports allocated for MPI */
-	char *nodes;		/* list of nodes allocated to job_step */
 	char *name;		/* name of job step */
 	char *network;		/* network specs for job step */
+	char *nodes;		/* list of nodes allocated to job_step */
 	int *node_inx;		/* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
-	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
-	char *ckpt_dir;	        /* path to store checkpoint image files */
+	uint32_t num_tasks;	/* number of tasks */
+	char *partition;	/* name of assigned partition */
+	char *resv_ports;	/* ports allocated for MPI */
+	time_t run_time;	/* net run time (factor out time suspended) */
+	time_t start_time;	/* step start time */
+	uint32_t step_id;	/* step ID */
+	uint32_t user_id;	/* user the job runs as */
 } job_step_info_t;
 
 typedef struct job_step_info_response_msg {
@@ -900,21 +896,21 @@ typedef struct job_step_info_response_msg {
 } job_step_info_response_msg_t;
 
 typedef struct node_info {
-	char *name;		/* node name */
-	uint16_t node_state;	/* see enum node_states */
+	char *arch;		/* computer architecture */
+	uint16_t cores;         /* number of cores per CPU */
 	uint16_t cpus;		/* configured count of cpus running on 
 				 * the node */
-	uint16_t used_cpus;	/* count of used cpus on this node */
-	uint16_t sockets;       /* number of sockets per node */
-	uint16_t cores;         /* number of cores per CPU */
-	uint16_t threads;       /* number of threads per core */
-	uint32_t real_memory;	/* configured MB of real memory on the node */
-	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
-	uint32_t weight;	/* arbitrary priority of node for scheduling */
-	char *arch;		/* computer architecture */
 	char *features;		/* arbitrary list of features for node */
+	char *name;		/* node name */
+	uint16_t node_state;	/* see enum node_states */
 	char *os;		/* operating system currently running */
+	uint32_t real_memory;	/* configured MB of real memory on the node */
 	char *reason;   	/* reason for node being DOWN or DRAINING */
+	uint16_t sockets;       /* number of sockets per node */
+	uint16_t threads;       /* number of threads per core */
+	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
+	uint16_t used_cpus;	/* count of used cpus on this node */
+	uint32_t weight;	/* arbitrary priority of node for scheduling */
 } node_info_t;
 
 typedef struct node_info_msg {
@@ -945,12 +941,12 @@ typedef struct partition_info {
 	char *allow_groups;	/* comma delimited list of groups, 
 				 * null indicates all */
 	uint16_t default_part;	/* 1 if this is default partition */
+	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	uint16_t disable_root_jobs; /* 1 if user root jobs disabled */
 	uint16_t hidden;	/* 1 if partition is hidden by default */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
-	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	uint32_t min_nodes;	/* per job */
 	char *name;		/* name of the partition */
 	int *node_inx;		/* list index pairs into node_table:
@@ -1103,15 +1099,14 @@ typedef struct slurm_ctl_conf {
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node
 				 * (only check configuration file, faster) */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
-	uint32_t next_job_id;	/* next slurm generated job_id to assign */
 	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
 	uint16_t health_check_interval;	/* secs between health checks */
 	char * health_check_program;	/* pathname of health check program */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
-	char *job_acct_gather_type; /* job accounting gather type */
 	uint16_t job_acct_gather_freq; /* poll frequency for job accounting 
 					* gather plugins */
+	char *job_acct_gather_type; /* job accounting gather type */
 	char *job_ckpt_dir;	/* directory saving job record checkpoint */
 	char *job_comp_host;	/* job completion logging host */
 	char *job_comp_loc;	/* job completion logging location */
@@ -1137,6 +1132,7 @@ typedef struct slurm_ctl_conf {
 	char *mpi_default;	/* Default version of MPI in use */
 	char *mpi_params;	/* MPI parameters */
 	uint16_t msg_timeout;	/* message timeout */
+	uint32_t next_job_id;	/* next slurm generated job_id to assign */
 	char *node_prefix;      /* prefix of nodes in partition, only set in 
 				   bluegene clusters NULL otherwise */
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this

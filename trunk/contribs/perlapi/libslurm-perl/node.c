@@ -15,6 +15,12 @@
 int
 node_info_to_hv(node_info_t* node_info, HV* hv)
 {
+	if(node_info->arch)
+		STORE_FIELD(hv, node_info, arch, charp);
+	STORE_FIELD(hv, node_info, cores, uint16_t);
+	STORE_FIELD(hv, node_info, cpus, uint16_t);
+	if(node_info->features)
+		STORE_FIELD(hv, node_info, features, charp);
 	if (node_info->name)
 		STORE_FIELD(hv, node_info, name, charp);
 	else {
@@ -22,17 +28,16 @@ node_info_to_hv(node_info_t* node_info, HV* hv)
 		return -1;
 	}
 	STORE_FIELD(hv, node_info, node_state, uint16_t);
-	STORE_FIELD(hv, node_info, cpus, uint16_t);
-	STORE_FIELD(hv, node_info, used_cpus, uint16_t);
-	STORE_FIELD(hv, node_info, sockets, uint16_t);
-	STORE_FIELD(hv, node_info, cores, uint16_t);
+	if(node_info->os)
+		STORE_FIELD(hv, node_info, os, charp);
 	STORE_FIELD(hv, node_info, real_memory, uint32_t);
-	STORE_FIELD(hv, node_info, tmp_disk, uint32_t);
-	STORE_FIELD(hv, node_info, weight, uint32_t);
-	if(node_info->features)
-		STORE_FIELD(hv, node_info, features, charp);
 	if(node_info->reason)
 		STORE_FIELD(hv, node_info, reason, charp);
+	STORE_FIELD(hv, node_info, sockets, uint16_t);
+	STORE_FIELD(hv, node_info, threads, uint16_t);
+	STORE_FIELD(hv, node_info, tmp_disk, uint32_t);
+	STORE_FIELD(hv, node_info, used_cpus, uint16_t);
+	STORE_FIELD(hv, node_info, weight, uint32_t);
 	return 0;
 }
 /*
@@ -71,11 +76,13 @@ hv_to_update_node_msg(HV* hv, update_node_msg_t *update_msg)
 	update_msg->features = NULL;
 	update_msg->reason = NULL;
 	update_msg->node_state = (uint16_t) NO_VAL;
+	update_msg->weight = (uint32_t) NO_VAL;
 
 	FETCH_FIELD(hv, update_msg, node_names, charp, TRUE);
 	FETCH_FIELD(hv, update_msg, node_state, uint16_t, FALSE);
 	FETCH_FIELD(hv, update_msg, reason, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, features, charp, FALSE);
+	FETCH_FIELD(hv, update_msg, weight, uint32_t, FALSE);
 	return 0;
 }
 
