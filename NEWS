@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.4.0-pre14
 ==============================
  -- Fix bug in preservation of advanced reservations when slurmctld restarts.
+ -- updated perlapi to match correctly with slurm.h structures
 
 * Changes in SLURM 1.4.0-pre13
 ==============================

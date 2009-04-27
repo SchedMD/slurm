@@ -37,7 +37,6 @@ inline static int av_store_uint32_t(AV* av, int index, uint32_t val)
 	return 0;
 }
 
-
 /*
  * store an int into AV 
  */
