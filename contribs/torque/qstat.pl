@@ -145,6 +145,32 @@ if(defined($queueList)) {
 		}	
 		$rc = 0;
 	}
+} elsif($queueStatus) {
+	my $jresp = Slurm->load_jobs(1);
+	die "Problem loading jobs.\n" if(!$jresp);
+	my $resp = Slurm->load_partitions(1);
+	die "Problem loading partitions.\n" if(!$resp);
+	my $total_running = 0;
+	my $total_queued = 0;
+	my $line = 0;
+	foreach my $part (@{$resp->{partition_array}}) {
+		$part->{'running_jobs'} = 0;
+		$part->{'queued_jobs'} = 0;
+		foreach my $job (@{$jresp->{job_array}}) {
+			next if($job->{'partition'} ne $part->{'name'});
+			$part->{'running_jobs'}++
+				if($job->{'job_state'} = JOB_RUNNING);
+			$part->{'queued_jobs'}++
+				if($job->{'job_state'} = JOB_PENDING);
+		}
+		$total_running += $part->{'running_jobs'};
+		$total_queued += $part->{'queued_jobs'};
+		print_part_limits($part, $line);
+		$line++;
+        }
+	printf("                                               ----- -----\n");
+	printf("                                               %5d %5d\n",
+	       $total_running, $total_queued);
 } else {
 	my @jobIds = @ARGV;
 	my @userIds = split(/,/, $userList) if $userList;
@@ -361,6 +387,20 @@ sub yes_no
 	return "no";
 }
 
+sub en_dis
+{
+	my ($query) = @_;
+	return "E" if $query;
+	return "D";
+}
+
+sub running_stopped
+{
+	my ($query) = @_;
+	return "R" if $query;
+	return "S";
+}
+
 sub get_exec_host 
 {
 	my ($job) = @_;
@@ -511,17 +551,18 @@ sub print_part_brief
 	my ($part, $line_num) = @_;
 
 	if(!$line_num) {
-		printf("%-16s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %1s\n\n",
+		printf("%-16s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %1s\n",
 		       "Queue", "Max", "Tot", "Ena",  "Str", "Que", "Run",
 		       "Hld", "Wat", "Trn", "Ext", "T");
-		printf("%-16s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %1s\n\n",
+		printf("%-16s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %1s\n",
 		       "----------------", "---", "---", "---",  "---", "---", 
 		       "---", "---", "---", "---", "---", "-");
 	}
 	printf("%-16.16s %5.5s %5.5s %5.5s %5.5s %5.5s %5.5s %5.5s " .
 	       "%5.5s %5.5s %5.5s %1.1s\n",
 	       $part->{'name'}, '?', '?', yes_no($part->{'state_up'}),
-	       yes_no($part->{'state_up'}), '?', '?', '?', '?', '?', '?', 'E');
+	       yes_no($part->{'state_up'}), '?', '?', '?', '?', '?', '?',
+	       en_dis($part->{'state_up'}));
 }
 
 sub print_part_full
@@ -539,6 +580,40 @@ sub print_part_full
 	print "\n";
 }
 
+sub print_part_limits 
+{
+	my ($part, $line_num) = @_;
+
+	if(!$line_num) {
+		printf("%-16s %6s %8s %8s %4s  %3s %3s %2s %5s\n",
+		       "Queue", "Memory", "CPU Time", "Walltime",
+		       "Node", "Run", "Que", "Lm", "State");
+		printf("%-16s %6s %8s %8s %4s  %3s %3s %2s %5s\n",
+		       "----------------", "------", "--------", "--------",
+		       "----", "---", "---", "--", "-----");
+	}
+
+	
+	printf("%-16.16s   --      --    ", $part->{'name'});
+	if($part->{'max_time'} != INFINITE) {
+		printf("%8u ", $part->{'max_time'});
+	} else {
+		printf("   --    ");
+		
+	}
+
+	if($part->{'max_nodes'} != INFINITE) {
+		printf("%4u  ", $part->{'max_nodes'});
+	} else {
+		printf("  --  ");
+	}
+
+	printf("%3u %3u --  %1.1s %1.1s \n", $part->{'running_jobs'},
+	       $part->{'queued_jobs'}, en_dis($part->{'state_up'}),
+	       running_stopped($part->{'state_up'}));
+}
+
+
 ##############################################################################
 
 __END__
@@ -550,6 +625,10 @@ B<qstat> - display job/partition information in a familiar pbs format
 =head1 SYNOPSIS
 
 B<qstat> [B<-f>] [B<-a>|B<-i>|B<-r>] [B<-n> [B<-1>]] [B<-G>|B<-M>] [B<-u> I<user_list>] [B<-? | --help>] [B<--man>] [I<job_id>...]
+
+B<qstat> -Q [-f]
+
+B<qstat> -q
 
 =head1 DESCRIPTION
 
