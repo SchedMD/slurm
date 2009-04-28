@@ -965,11 +965,23 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 extern int select_p_reconfigure(void)
 {
-	if(read_bg_conf() == SLURM_ERROR) {
-		fatal("Error, could not read the file");
-		return SLURM_ERROR;
-	}
-	
+	slurm_conf_lock();
+	if(!slurmctld_conf.slurm_user_name 
+	   || strcmp(bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name))
+		error("The slurm user has changed from '%s' to '%s'.  "
+		      "If this is really what you "
+		      "want you will need to restart slurm for this "
+		      "change to be enforced in the bluegene plugin.",
+		      bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name);
+	if(!slurmctld_conf.node_prefix
+	   || strcmp(bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix))
+		error("Node Prefix has changed from '%s' to '%s'.  "
+		      "If this is really what you "
+		      "want you will need to restart slurm for this "
+		      "change to be enforced in the bluegene plugin.",
+		      bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix);
+	slurm_conf_unlock();	
+
 	return SLURM_SUCCESS;
 }
 
