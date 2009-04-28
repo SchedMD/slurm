@@ -297,7 +297,7 @@ static int _free_block(delete_record_t *delete_record)
 					debug2("bridge_destroy_partition"
 					       "(%s): %s State = %d",
 					       delete_record->bg_block_id, 
-					       bg_err_str(rc), 
+					       _bg_err_str(rc), 
 					       delete_record->state);
 				} else {
 					error("bridge_destroy_block(%s): %s",
@@ -527,7 +527,7 @@ static char *_bg_err_str(status_t inx)
 /* Kill a job and remove its record from MMCS */
 static int _remove_job(db_job_id_t job_id)
 {
-	int i, rc;
+	int rc, count = 0;
 	rm_job_t *job_rec = NULL;
 	rm_job_state_t job_state;
 
