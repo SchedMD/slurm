@@ -322,6 +322,9 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 	MYSQL *mysql_db = NULL;
 	int rc = SLURM_ERROR;
 	
+	MYSQL *db_ptr = NULL;
+	char *db_host = NULL;
+
 	while(rc == SLURM_ERROR) {
 		rc = SLURM_SUCCESS;
 #ifdef MYSQL_NOT_THREAD_SAFE
@@ -330,10 +333,25 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 		if(!(mysql_db = mysql_init(mysql_db)))
 			fatal("mysql_init failed: %s", mysql_error(mysql_db));
 		
-		if(mysql_real_connect(mysql_db, 
-				      db_info->host, db_info->user,
-				      db_info->pass, NULL, 
-				      db_info->port, NULL, 0)) {
+		db_host = db_info->host;
+		db_ptr = mysql_real_connect(mysql_db,
+					    db_host, db_info->user,
+					    db_info->pass, NULL,
+					    db_info->port, NULL, 0);
+
+		if (!db_ptr && db_info->backup) {
+			info("Connection failed to host = %s "
+			     "user = %s port = %u",
+			     db_host, db_info->user,
+			     db_info->port);  
+			db_host = db_info->backup;
+			db_ptr = mysql_real_connect(mysql_db, db_host,
+						    db_info->user,
+						    db_info->pass, NULL,
+						    db_info->port, NULL, 0);
+		}
+
+		if (db_ptr) {
 			snprintf(create_line, sizeof(create_line),
 				 "create database %s", db_name);
 			if(mysql_query(mysql_db, create_line)) {
@@ -344,9 +362,9 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 			mysql_close_db_connection(&mysql_db);
 		} else {
 			info("Connection failed to host = %s "
-			     "user = %s pass = %s port = %u",
-			     db_info->host, db_info->user,
-			     db_info->pass, db_info->port);
+			     "user = %s port = %u",
+			     db_host, db_info->user,
+			     db_info->port);
 #ifdef MYSQL_NOT_THREAD_SAFE
 			slurm_mutex_unlock(&mysql_lock);
 #endif
@@ -382,6 +400,8 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
 	
+	char *db_host = db_info->host;
+
 	if(!(*mysql_db = mysql_init(*mysql_db)))
 		fatal("mysql_init failed: %s", mysql_error(*mysql_db));
 	else {
@@ -394,7 +414,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 		mysql_options(*mysql_db, MYSQL_OPT_CONNECT_TIMEOUT,
 			      (char *)&my_timeout);
 		while(!storage_init) {
-			if(!mysql_real_connect(*mysql_db, db_info->host,
+			if(!mysql_real_connect(*mysql_db, db_host,
 					       db_info->user, db_info->pass,
 					       db_name, db_info->port,
 					       NULL, CLIENT_MULTI_STATEMENTS)) {
@@ -407,6 +427,11 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 					      "%d %s",
 					      mysql_errno(*mysql_db),
 					      mysql_error(*mysql_db));
+					if ((db_host == db_info->host)
+					    && db_info->backup) {
+						db_host = db_info->backup;
+						continue;
+					}
 					rc = SLURM_ERROR;
 					break;
 				}
