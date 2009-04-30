@@ -166,6 +166,56 @@ cleanup:
 	return ret;
 }
 
+static int _sort_iter_compare_func_bp_list(GtkTreeModel *model,
+					   GtkTreeIter  *a,
+					   GtkTreeIter  *b,
+					   gpointer      userdata)
+{
+	int sortcol = GPOINTER_TO_INT(userdata);
+	int ret = 0;
+	int len1 = 0, len2 = 0;
+	gchar *name1 = NULL, *name2 = NULL;
+	
+	gtk_tree_model_get(model, a, sortcol, &name1, -1);
+	gtk_tree_model_get(model, b, sortcol, &name2, -1);
+	
+	if (name1 == NULL || name2 == NULL) {
+		if (name1 == NULL && name2 == NULL)
+			goto cleanup; /* both equal => ret = 0 */
+		
+		ret = (name1 == NULL) ? -1 : 1;
+	} else {
+		/* sort like a human would 
+		   meaning snowflake2 would be greater than
+		   snowflake12 */
+		len1 = strlen(name1);
+		len2 = strlen(name2);
+		while((ret < len1) && (!g_ascii_isdigit(name1[ret]))) 
+			ret++;
+		if(ret < len1) {
+			if(!g_ascii_strncasecmp(name1, name2, ret)) {
+				if(len1 > len2)
+					ret = 1;
+				else if(len1 < len2)
+					ret = -1;
+				else {
+					ret = g_ascii_strcasecmp(name1, name2);
+				}
+			} else {
+				ret = g_ascii_strcasecmp(name1, name2);
+			}
+			
+		} else {
+			ret = g_ascii_strcasecmp(name1, name2);
+		}
+	}
+cleanup:
+	g_free(name1);
+	g_free(name2);
+	
+	return ret;
+}
+
 static void _editing_started(GtkCellRenderer *cell,
 			     GtkCellEditable *editable,
 			     const gchar     *path,
@@ -621,11 +671,22 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 			
 			break;
 		case G_TYPE_STRING:
-			if(!strcasecmp(display_data[i].name, "Nodes")) {
+			if(!strcasecmp(display_data[i].name, "Nodes")
+			   || !strcasecmp(display_data[i].name, "Real Memory")
+			   || !strcasecmp(display_data[i].name, "Tmp Disk")) {
 				gtk_tree_sortable_set_sort_func(
 					GTK_TREE_SORTABLE(treestore), 
 					display_data[i].id, 
 					_sort_iter_compare_func_nodes,
+					GINT_TO_POINTER(display_data[i].id), 
+					NULL); 
+				break;
+			} else if(!strcasecmp(display_data[i].name,
+					      "BP List")) {
+				gtk_tree_sortable_set_sort_func(
+					GTK_TREE_SORTABLE(treestore), 
+					display_data[i].id, 
+					_sort_iter_compare_func_bp_list,
 					GINT_TO_POINTER(display_data[i].id), 
 					NULL); 
 				break;

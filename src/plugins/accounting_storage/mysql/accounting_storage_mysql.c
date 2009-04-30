@@ -2890,6 +2890,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "control_host", "tinytext not null default ''" },
 		{ "control_port", "mediumint not null default 0" },
 		{ "rpc_version", "mediumint not null default 0" },
+		{ "classification", "tinyint unsigned default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -6225,7 +6226,7 @@ try_again:
 		resv->cpus = atoi(row[RESV_CPU]);
 
 		
-	if(resv->flags == (uint16_t)NO_VAL) 
+	if(resv->flags != (uint16_t)NO_VAL) 
 		set = 1;
 	else
 		resv->flags = atoi(row[RESV_FLAGS]);
@@ -6243,13 +6244,12 @@ try_again:
 
 	mysql_free_result(result);
 
-	_setup_resv_limits(resv, &cols, &vals, &extra);
 	/* use start below instead of resv->time_start_prev
 	 * just incase we have a different one from being out
 	 * of sync
 	 */
-
-	if((start < now) || !set) {
+	if((start > now) || !set) {
+		_setup_resv_limits(resv, &cols, &vals, &extra);
 		/* we haven't started the reservation yet, or
 		   we are changing the associations or end
 		   time which we can just update it */
@@ -6260,6 +6260,10 @@ try_again:
 				       start,
 				       resv->cluster);
 	} else {
+		/* since we change the start time here to now we can't
+		   run the setup before here */
+/* 		resv->time_start = now; */
+		_setup_resv_limits(resv, &cols, &vals, &extra);
 		/* time_start is already done above and we
 		 * changed something that is in need on a new
 		 * entry. */

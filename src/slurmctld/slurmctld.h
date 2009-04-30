@@ -349,6 +349,7 @@ typedef struct slurmctld_resv {
 	struct part_record *part_ptr;	/* pointer to partition used	*/
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	time_t start_time;	/* start time of reservation		*/
+	time_t start_time_first;/* when the reservation first started	*/
 	time_t start_time_prev;	/* If start time was changed this is
 				 * the pervious start time.  Needed
 				 * for accounting */
