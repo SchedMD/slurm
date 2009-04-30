@@ -141,7 +141,9 @@ static void _validate_switches(void)
 	struct switch_record *switch_ptr;
 	hostlist_t hl;
 	char *child;
-	bitstr_t *switches_bitmap = NULL;
+	bitstr_t *multi_homed_bitmap = NULL;	/* nodes on >1 leaf switch */
+	bitstr_t *switches_bitmap = NULL;	/* nodes on any leaf switch */
+	bitstr_t *tmp_bitmap = NULL;
 
 	_free_switch_record_table();
 
@@ -154,6 +156,7 @@ static void _validate_switches(void)
 
 	switch_record_table = xmalloc(sizeof(struct switch_record) * 
 				      switch_record_cnt);
+	multi_homed_bitmap = bit_alloc(node_record_count);
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
 		ptr = ptr_array[i];
@@ -167,6 +170,17 @@ static void _validate_switches(void)
 				fatal("Invalid node name (%s) in switch "
 				      "config (%s)", 
 				      ptr->nodes, ptr->switch_name);
+			}
+			if (switches_bitmap) {
+				tmp_bitmap = bit_copy(switch_ptr->node_bitmap);
+				bit_and(tmp_bitmap, switches_bitmap);
+				bit_or(multi_homed_bitmap, tmp_bitmap);
+				bit_free(tmp_bitmap);
+				bit_or(switches_bitmap, 
+				       switch_ptr->node_bitmap);
+			} else {
+				switches_bitmap = bit_copy(switch_ptr->
+							   node_bitmap);
 			}
 		} else if (ptr->switches) {
 			switch_ptr->level = -1;	/* determine later */
@@ -227,27 +241,32 @@ static void _validate_switches(void)
 
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
-		if (switch_ptr->node_bitmap == NULL) {
+		if (switch_ptr->node_bitmap == NULL)
 			error("switch %s has no nodes", switch_ptr->name);
-			continue;
-		}
-		if (switches_bitmap)
-			bit_or(switches_bitmap, switch_ptr->node_bitmap);
-		else
-			switches_bitmap = bit_copy(switch_ptr->node_bitmap);
 	}
 	if (switches_bitmap) {
 		bit_not(switches_bitmap);
 		i = bit_set_count(switches_bitmap);
 		if (i > 0) {
 			child = bitmap2node_name(switches_bitmap);
-			error("switches lack access to %d nodes: %s", 
+			error("WARNING: switches lack access to %d nodes: %s", 
 			      i, child);
 			xfree(child);
 		}
 		bit_free(switches_bitmap);
 	} else
 		fatal("switches contain no nodes");
+
+	/* Report nodes on multiple leaf switches, 
+	 * possibly due to bad configuration file */
+	i = bit_set_count(multi_homed_bitmap);
+	if (i > 0) {
+		child = bitmap2node_name(multi_homed_bitmap);
+		error("WARNING: Multiple leaf switches contain nodes: %s", 
+		      child);
+		xfree(child);
+	}
+	bit_free(multi_homed_bitmap);
 
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches();
