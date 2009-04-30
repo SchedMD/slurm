@@ -157,6 +157,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->part_ptr = resv_orig_ptr->part_ptr;
 	resv_copy_ptr->resv_id = resv_orig_ptr->resv_id;
 	resv_copy_ptr->start_time = resv_orig_ptr->start_time;
+	resv_copy_ptr->start_time_first = resv_orig_ptr->start_time_first;
 	resv_copy_ptr->start_time_prev = resv_orig_ptr->start_time_prev;
 	resv_copy_ptr->users = xstrdup(resv_orig_ptr->users);
 	resv_copy_ptr->user_cnt = resv_orig_ptr->user_cnt;
@@ -481,8 +482,6 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.cluster = slurmctld_cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
-	resv.time_start = resv_ptr->start_time;
-	resv.time_start_prev = resv_ptr->start_time_prev;
 	
 	if(!old_resv_ptr) {
 		resv.assocs = resv_ptr->assoc_list;
@@ -490,9 +489,11 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		resv.flags = resv_ptr->flags;
 		resv.nodes = resv_ptr->node_list;
 	} else {
+		time_t now = time(NULL);
+		
 		if(old_resv_ptr->assoc_list && resv_ptr->assoc_list) {
 			if(strcmp(old_resv_ptr->assoc_list,
-				  resv_ptr->assoc_list))
+				  resv_ptr->assoc_list)) 
 				resv.assocs = resv_ptr->assoc_list;
 		} else if(resv_ptr->assoc_list)
 			resv.assocs = resv_ptr->assoc_list;
@@ -513,7 +514,23 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 				resv.nodes = resv_ptr->node_list;
 		} else if(resv_ptr->node_list) 
 			resv.nodes = resv_ptr->node_list;
+		
+		/* Here if the reservation has started already we need
+		   to mark a new start time for it if certain
+		   variables are needed in accounting.  Right now if
+		   the flags, nodes, or cpu count changes we need a
+		   new start time of now. */
+		if((resv_ptr->start_time < now)
+		   && (resv.nodes 
+		       || (resv.flags != (uint16_t)NO_VAL)
+		       || (resv.cpus != (uint32_t)NO_VAL))) {
+			resv_ptr->start_time_prev = resv_ptr->start_time;
+			resv_ptr->start_time = now;
+		}
 	}
+	/* now set the (maybe new) start_times */
+	resv.time_start = resv_ptr->start_time;
+	resv.time_start_prev = resv_ptr->start_time_prev;
 
 	if(resv.nodes && resv_ptr->node_bitmap) 
 		resv.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
@@ -929,7 +946,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	pack32(resv_ptr->node_cnt,	buffer);
 	packstr(resv_ptr->node_list,	buffer);
 	packstr(resv_ptr->partition,	buffer);
-	pack_time(resv_ptr->start_time,	buffer);
+	pack_time(resv_ptr->start_time_first,	buffer);
 	pack16(resv_ptr->flags,		buffer);
 	packstr(resv_ptr->users,	buffer);
 
@@ -938,13 +955,9 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->cpu_cnt,	buffer);
 		pack32(resv_ptr->resv_id,	buffer);
 		pack_time(resv_ptr->start_time_prev,	buffer);
+		pack_time(resv_ptr->start_time,	buffer);
 	} else {
-		time_t now = time(NULL);
-		/* only send the bitmap if it is valid now. */
-		if(resv_ptr->start_time > now || resv_ptr->end_time < now)
-			pack_bit_fmt(NULL, buffer);
-		else
-			pack_bit_fmt(resv_ptr->node_bitmap, buffer);
+		pack_bit_fmt(resv_ptr->node_bitmap, buffer);
 	}
 }
 
@@ -1051,9 +1064,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
 		}
-	} else
+	} else 
 		resv_desc_ptr->start_time = now;
-	
+
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->end_time < (now - 60)) {
 			info("Reservation requestion has invalid end time");
@@ -1172,6 +1185,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
 	resv_ptr->start_time	= resv_desc_ptr->start_time;
+	resv_ptr->start_time_first = resv_ptr->start_time;
 	resv_ptr->start_time_prev = resv_ptr->start_time;
 	resv_ptr->flags		= resv_desc_ptr->flags;
 	resv_ptr->users		= resv_desc_ptr->users;
@@ -1322,7 +1336,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->end_time = resv_desc_ptr->end_time;
 	}
 	if (resv_desc_ptr->duration != NO_VAL) {
-		resv_ptr->end_time = resv_ptr->start_time + 
+		resv_ptr->end_time = resv_ptr->start_time_first + 
 				     (resv_desc_ptr->duration * 60);
 	}
 	if (resv_ptr->start_time >= resv_ptr->end_time) {
@@ -1887,7 +1901,7 @@ extern int load_all_resv_state(int recover)
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->partition,
 				       &uint32_tmp, 	buffer);
-		safe_unpack_time(&resv_ptr->start_time,	buffer);
+		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpack16(&resv_ptr->flags,		buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->users,&uint32_tmp, buffer);
 
@@ -1897,6 +1911,7 @@ extern int load_all_resv_state(int recover)
 		safe_unpack32(&resv_ptr->cpu_cnt,	buffer);
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
+		safe_unpack_time(&resv_ptr->start_time, buffer);
 
 		list_append(resv_list, resv_ptr);
 		info("Recovered state of reservation %s", resv_ptr->name);
@@ -2391,8 +2406,9 @@ extern void fini_job_resv_check(void)
 		    (resv_ptr->flags & RESERVE_FLAG_DAILY)) {
 			verbose("Advance reservation %s one day",
 			resv_ptr->name);
-			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time += 24 * 60 * 60;
+			resv_ptr->start_time_prev = resv_ptr->start_time;
+			resv_ptr->start_time_first = resv_ptr->start_time;
 			resv_ptr->end_time   += 24 * 60 * 60;
 			_post_resv_update(resv_ptr, NULL);
 			last_resv_update = now;
@@ -2403,8 +2419,9 @@ extern void fini_job_resv_check(void)
 		    (resv_ptr->flags & RESERVE_FLAG_WEEKLY)) {
 			verbose("Advance reservation %s one week",
 				resv_ptr->name);
-			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time += 7 * 24 * 60 * 60;
+			resv_ptr->start_time_prev = resv_ptr->start_time;
+			resv_ptr->start_time_first = resv_ptr->start_time;
 			resv_ptr->end_time   += 7 * 24 * 60 * 60;
 			_post_resv_update(resv_ptr, NULL);
 			last_resv_update = now;
