@@ -142,6 +142,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 		resv_copy_ptr->account_list[i] = 
 				xstrdup(resv_orig_ptr->account_list[i]);
 	}
+	resv_copy_ptr->assoc_list = xstrdup(resv_orig_ptr->assoc_list);
 	resv_copy_ptr->cpu_cnt = resv_orig_ptr->cpu_cnt;
 	resv_copy_ptr->end_time = resv_orig_ptr->end_time;
 	resv_copy_ptr->features = xstrdup(resv_orig_ptr->features);
@@ -367,10 +368,11 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 
 	if(resv_ptr->user_cnt) {
 		for(i=0; i < resv_ptr->user_cnt; i++) {
-			assoc.uid = (uint32_t)resv_ptr->user_list[i];
-			
 			if(resv_ptr->account_cnt) {
 				for(j=0; j < resv_ptr->account_cnt; j++) {
+					memset(&assoc, 0, 
+					       sizeof(acct_association_rec_t));
+					assoc.uid = resv_ptr->user_list[i];
 					assoc.acct = resv_ptr->account_list[j];
 					if((rc = _append_assoc_list(
 						    assoc_list, &assoc))
@@ -379,6 +381,9 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					}
 				}	
 			} else {
+				memset(&assoc, 0, 
+				       sizeof(acct_association_rec_t));
+				assoc.uid = resv_ptr->user_list[i];
 				if((rc = assoc_mgr_get_user_assocs(
 					    acct_db_conn, &assoc,
 					    accounting_enforce, assoc_list))
@@ -389,8 +394,10 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 			}
 		}
 	} else if(resv_ptr->account_cnt) {
-		assoc.uid = (uint32_t)NO_VAL;
 		for(i=0; i < resv_ptr->account_cnt; i++) {
+			memset(&assoc, 0, 
+			       sizeof(acct_association_rec_t));
+			assoc.uid = (uint32_t)NO_VAL;
 			assoc.acct = resv_ptr->account_list[j];
 			if((rc = _append_assoc_list(assoc_list, &assoc))
 			   != SLURM_SUCCESS) {
@@ -496,7 +503,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 			if(strcmp(old_resv_ptr->assoc_list,
 				  resv_ptr->assoc_list)) 
 				resv.assocs = resv_ptr->assoc_list;
-		} else if(resv_ptr->assoc_list)
+		} else if(resv_ptr->assoc_list) 
 			resv.assocs = resv_ptr->assoc_list;
 
 		if(old_resv_ptr->cpu_cnt != resv_ptr->cpu_cnt) 
@@ -2412,7 +2419,7 @@ extern void fini_job_resv_check(void)
 			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time_first = resv_ptr->start_time;
 			resv_ptr->end_time   += 24 * 60 * 60;
-			_post_resv_update(resv_ptr, NULL);
+			_post_resv_create(resv_ptr);
 			last_resv_update = now;
 			schedule_resv_save();
 			continue;
@@ -2425,7 +2432,7 @@ extern void fini_job_resv_check(void)
 			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time_first = resv_ptr->start_time;
 			resv_ptr->end_time   += 7 * 24 * 60 * 60;
-			_post_resv_update(resv_ptr, NULL);
+			_post_resv_create(resv_ptr);
 			last_resv_update = now;
 			schedule_resv_save();
 			continue;
