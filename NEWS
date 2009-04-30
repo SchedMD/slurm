@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Updated perlapi to match correctly with slurm.h structures
  -- Do not install the srun command on BlueGene systems (mpirun must be used to
     launch tasks).
+ -- Corrections to scheduling logic for topology/tree in configurations where 
+    nodes are configured in multiple leaf switches.
 
 * Changes in SLURM 1.4.0-pre13
 ==============================

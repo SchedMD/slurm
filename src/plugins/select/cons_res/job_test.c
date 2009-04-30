@@ -1305,10 +1305,15 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				i = bit_ffs(switches_bitmap[j]);
 				if (i == -1)
 					break;
-				bit_set(bitmap, i);
-				bit_clear(avail_nodes_bitmap, i);
 				bit_clear(switches_bitmap[j], i);
 				switches_node_cnt[j]--;
+				if (bit_test(bitmap, i)) {
+					/* node on multiple leaf switches
+					 * and already selected */
+					continue;
+				}
+				bit_set(bitmap, i);
+				bit_clear(avail_nodes_bitmap, i);
 				rem_nodes--;
 				max_nodes--;
 				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
@@ -1419,33 +1424,34 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 		if (best_fit_nodes == 0)
 			break;
-		if ((switches_node_cnt[best_fit_location] <= max_nodes) &&
-		    ((switches_node_cnt[best_fit_location] <= rem_nodes) ||
-		     (switches_cpu_cnt[best_fit_location]  <= rem_cpus))) {
-			/* Use the entire leaf */
-			bit_or(bitmap, switches_bitmap[best_fit_location]);
-			rem_nodes  -= switches_node_cnt[best_fit_location];
-			max_nodes  -= switches_node_cnt[best_fit_location];
-			rem_cpus   -= switches_cpu_cnt[best_fit_location];
-			alloc_cpus += switches_cpu_cnt[best_fit_location];
-		} else {/* Use select nodes from this leaf */
-			first = bit_ffs(switches_bitmap[best_fit_location]);
-			last  = bit_fls(switches_bitmap[best_fit_location]);
-			for (i=first; ((i<=last) && (first>=0)); i++) {
-				if (!bit_test(switches_bitmap
-						[best_fit_location], i))
-					continue;
-				bit_set(bitmap, i);
-				rem_nodes--;
-				max_nodes--;
-				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
-							  freq, size);
-				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
-				if ((max_nodes <= 0) || 
-				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
-					break;
+
+		/* Use select nodes from this leaf */
+		first = bit_ffs(switches_bitmap[best_fit_location]);
+		last  = bit_fls(switches_bitmap[best_fit_location]);
+		for (i=first; ((i<=last) && (first>=0)); i++) {
+			if (!bit_test(switches_bitmap[best_fit_location], i))
+				continue;
+
+			bit_clear(switches_bitmap[best_fit_location], i);
+			switches_node_cnt[best_fit_location]--;
+			avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
+						  freq, size);
+			switches_cpu_cnt[best_fit_location] -= avail_cpus;
+
+			if (bit_test(bitmap, i)) {
+				/* node on multiple leaf switches
+				 * and already selected */
+				continue;
 			}
+
+			bit_set(bitmap, i);
+			rem_nodes--;
+			max_nodes--;
+			rem_cpus   -= avail_cpus;
+			alloc_cpus += avail_cpus;
+			if ((max_nodes <= 0) || 
+			    ((rem_nodes <= 0) && (rem_cpus <= 0)))
+				break;
 		}
 		switches_node_cnt[best_fit_location] = 0;
 	}
