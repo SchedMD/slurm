@@ -6204,14 +6204,6 @@ try_again:
 	
 	/* check differences here */
 		
-	if(!resv->assocs 
-	   && row[RESV_ASSOCS] && row[RESV_ASSOCS][0])
-		// if this changes we just update the
-		// record, no need to create a new one since
-		// this doesn't really effect the
-		// reservation accounting wise
-		resv->assocs = xstrdup(row[RESV_ASSOCS]);
-
 	if(!resv->name 
 	   && row[RESV_NAME] && row[RESV_NAME][0])
 		// if this changes we just update the
@@ -6220,17 +6212,20 @@ try_again:
 		// reservation accounting wise
 		resv->name = xstrdup(row[RESV_NAME]);
 
+	if(resv->assocs)
+		set = 1;
+	else if(row[RESV_ASSOCS] && row[RESV_ASSOCS][0])
+		resv->assocs = xstrdup(row[RESV_ASSOCS]);
+
 	if(resv->cpus != (uint32_t)NO_VAL) 
 		set = 1;
 	else 
 		resv->cpus = atoi(row[RESV_CPU]);
-
 		
 	if(resv->flags != (uint16_t)NO_VAL) 
 		set = 1;
 	else
 		resv->flags = atoi(row[RESV_FLAGS]);
-
 		
 	if(resv->nodes) 
 		set = 1;
