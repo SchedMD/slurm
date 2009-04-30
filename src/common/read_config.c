@@ -2223,7 +2223,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else {
 		uid_t my_uid = uid_from_string(conf->slurm_user_name);
 		if (my_uid == (uid_t) -1) {
-			error ("Invalid user for SlurmUser %s, ignored",
+			fatal ("Invalid user for SlurmUser %s, ignored",
 			       conf->slurm_user_name);
 			xfree(conf->slurm_user_name);
 		} else {
@@ -2237,7 +2237,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else {
 		uid_t my_uid = uid_from_string(conf->slurmd_user_name);
 		if (my_uid == (uid_t) -1) {
-			error ("Invalid user for SlurmdUser %s, ignored",
+			fatal ("Invalid user for SlurmdUser %s, ignored",
 			       conf->slurmd_user_name);
 			xfree(conf->slurmd_user_name);
 		} else {
