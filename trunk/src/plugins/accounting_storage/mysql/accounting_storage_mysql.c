@@ -6155,12 +6155,17 @@ extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 		xstrcat(cols, resv_req_inx[i]);
 	}
 	
+	/* check for both the last start and the start because most
+	   likely the start time hasn't changed, but something else
+	   may have since the last time we did an update to the
+	   reservation. */
 	query = xstrdup_printf("select %s from %s where id=%u "
-			       "and start=%d and cluster='%s' "
+			       "and (start=%d || start=%d) and cluster='%s' "
 			       "and deleted=0 order by start desc "
 			       "limit 1 FOR UPDATE;",
 			       cols, resv_table, resv->id, 
-			       resv->time_start_prev, resv->cluster);
+			       resv->time_start, resv->time_start_prev,
+			       resv->cluster);
 try_again:
 	debug4("%d(%d) query\n%s",
 	       mysql_conn->conn, __LINE__, query);
@@ -6239,12 +6244,12 @@ try_again:
 
 	mysql_free_result(result);
 
+	_setup_resv_limits(resv, &cols, &vals, &extra);
 	/* use start below instead of resv->time_start_prev
 	 * just incase we have a different one from being out
 	 * of sync
 	 */
 	if((start > now) || !set) {
-		_setup_resv_limits(resv, &cols, &vals, &extra);
 		/* we haven't started the reservation yet, or
 		   we are changing the associations or end
 		   time which we can just update it */
@@ -6255,10 +6260,6 @@ try_again:
 				       start,
 				       resv->cluster);
 	} else {
-		/* since we change the start time here to now we can't
-		   run the setup before here */
-/* 		resv->time_start = now; */
-		_setup_resv_limits(resv, &cols, &vals, &extra);
 		/* time_start is already done above and we
 		 * changed something that is in need on a new
 		 * entry. */
