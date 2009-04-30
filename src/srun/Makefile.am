@@ -5,7 +5,9 @@ CLEANFILES = core.*
 
 INCLUDES = -I$(top_srcdir) 
 
-SRUN_SOURCES = \
+bin_PROGRAMS = srun
+
+srun_SOURCES = \
 	srun.c srun.h \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
@@ -21,13 +23,6 @@ SRUN_SOURCES = \
 	multi_prog.c multi_prog.h \
 	task_state.c task_state.h \
 	srun.wrapper.c
-
-if BLUEGENE_LOADED
-EXTRA_srun_SOURCES = $(SRUN_SOURCES)
-
-else
-bin_PROGRAMS = srun
-srun_SOURCES = $(SRUN_SOURCES)
 
 convenience_libs = \
 	$(top_builddir)/src/api/libslurm.o -ldl
@@ -55,4 +50,4 @@ install-exec-local:
 	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/srun
 	$(INSTALL) -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
 		$(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
-endif
+

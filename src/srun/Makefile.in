@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BLUEGENE_LOADED_FALSE@bin_PROGRAMS = srun$(EXEEXT)
+bin_PROGRAMS = srun$(EXEEXT)
 subdir = src/srun
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -75,25 +75,13 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__srun_SOURCES_DIST = srun.c srun.h opt.c opt.h srun_job.c \
-	srun_job.h srun_pty.c srun_pty.h debugger.h debugger.c fname.c \
-	fname.h allocate.c allocate.h core-format.c core-format.h \
-	multi_prog.c multi_prog.h task_state.c task_state.h \
-	srun.wrapper.c
-am__objects_1 = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
+am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
 	srun_pty.$(OBJEXT) debugger.$(OBJEXT) fname.$(OBJEXT) \
 	allocate.$(OBJEXT) core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
 	task_state.$(OBJEXT) srun.wrapper.$(OBJEXT)
-@BLUEGENE_LOADED_FALSE@am_srun_OBJECTS = $(am__objects_1)
-am__EXTRA_srun_SOURCES_DIST = srun.c srun.h opt.c opt.h srun_job.c \
-	srun_job.h srun_pty.c srun_pty.h debugger.h debugger.c fname.c \
-	fname.h allocate.c allocate.h core-format.c core-format.h \
-	multi_prog.c multi_prog.h task_state.c task_state.h \
-	srun.wrapper.c
 srun_OBJECTS = $(am_srun_OBJECTS)
-@BLUEGENE_LOADED_FALSE@am__DEPENDENCIES_1 =  \
-@BLUEGENE_LOADED_FALSE@	$(top_builddir)/src/api/libslurm.o
-@BLUEGENE_LOADED_FALSE@srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
+srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
 srun_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(srun_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -109,8 +97,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(srun_SOURCES) $(EXTRA_srun_SOURCES)
-DIST_SOURCES = $(am__srun_SOURCES_DIST) $(am__EXTRA_srun_SOURCES_DIST)
+SOURCES = $(srun_SOURCES)
+DIST_SOURCES = $(srun_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -290,7 +278,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) 
-SRUN_SOURCES = \
+srun_SOURCES = \
 	srun.c srun.h \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
@@ -307,15 +295,13 @@ SRUN_SOURCES = \
 	task_state.c task_state.h \
 	srun.wrapper.c
 
-@BLUEGENE_LOADED_TRUE@EXTRA_srun_SOURCES = $(SRUN_SOURCES)
-@BLUEGENE_LOADED_FALSE@srun_SOURCES = $(SRUN_SOURCES)
-@BLUEGENE_LOADED_FALSE@convenience_libs = \
-@BLUEGENE_LOADED_FALSE@	$(top_builddir)/src/api/libslurm.o -ldl
+convenience_libs = \
+	$(top_builddir)/src/api/libslurm.o -ldl
 
-@BLUEGENE_LOADED_FALSE@srun_LDADD = \
-@BLUEGENE_LOADED_FALSE@	$(convenience_libs) 
+srun_LDADD = \
+	$(convenience_libs) 
 
-@BLUEGENE_LOADED_FALSE@srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -531,7 +517,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@BLUEGENE_LOADED_TRUE@install-exec-local:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
@@ -607,24 +592,24 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-am uninstall-binPROGRAMS
 
 
-@BLUEGENE_LOADED_FALSE@force:
-@BLUEGENE_LOADED_FALSE@$(convenience_libs) : force
-@BLUEGENE_LOADED_FALSE@	@cd `dirname $@` && $(MAKE) `basename $@`
+force:
+$(convenience_libs) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # debugging information is required for symbols in the debugger 
 # module so that a debugger can debugger to spawned tasks
-@BLUEGENE_LOADED_FALSE@debugger.o : debugger.c
-@BLUEGENE_LOADED_FALSE@	$(COMPILE) -c -g -o debugger.o $(srcdir)/debugger.c 
+debugger.o : debugger.c
+	$(COMPILE) -c -g -o debugger.o $(srcdir)/debugger.c 
 
-@BLUEGENE_LOADED_FALSE@install-exec-local:
-@BLUEGENE_LOADED_FALSE@	umask 022; \
-@BLUEGENE_LOADED_FALSE@	if [ -x /usr/lib/rpm/debugedit ]; then \
-@BLUEGENE_LOADED_FALSE@	  srcdir=`cd $(top_srcdir) && pwd`; \
-@BLUEGENE_LOADED_FALSE@	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
-@BLUEGENE_LOADED_FALSE@	                         $(DESTDIR)$(bindir)/srun; fi; \
-@BLUEGENE_LOADED_FALSE@	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/srun
-@BLUEGENE_LOADED_FALSE@	$(INSTALL) -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
-@BLUEGENE_LOADED_FALSE@		$(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
+install-exec-local:
+	umask 022; \
+	if [ -x /usr/lib/rpm/debugedit ]; then \
+	  srcdir=`cd $(top_srcdir) && pwd`; \
+	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
+	                         $(DESTDIR)$(bindir)/srun; fi; \
+	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/srun
+	$(INSTALL) -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
+		$(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
