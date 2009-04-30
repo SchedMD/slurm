@@ -130,7 +130,7 @@ extern int read_slurmdbd_conf(void)
 		{"AuthInfo", S_P_STRING},
 		{"AuthType", S_P_STRING},
 		{"DbdAddr", S_P_STRING},
-		{"DbdBackup", S_P_STRING},
+		{"DbdBackupHost", S_P_STRING},
 		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
 		{"DebugLevel", S_P_UINT16},
@@ -191,7 +191,8 @@ extern int read_slurmdbd_conf(void)
 				"ArchiveSteps", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_info, "AuthInfo", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
-		s_p_get_string(&slurmdbd_conf->dbd_backup, "DbdBackup", tbl);
+		s_p_get_string(&slurmdbd_conf->dbd_backup,
+			       "DbdBackupHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
@@ -332,7 +333,7 @@ extern void log_config(void)
 	debug2("AuthInfo          = %s", slurmdbd_conf->auth_info);
 	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
 	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
-	debug2("DbdBackup         = %s", slurmdbd_conf->dbd_backup);
+	debug2("DbdBackupHost     = %s", slurmdbd_conf->dbd_backup);
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
@@ -461,7 +462,7 @@ extern List dump_config(void)
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("DbdBackup");
+	key_pair->name = xstrdup("DbdBackupHost");
 	key_pair->value = xstrdup(slurmdbd_conf->dbd_backup);
 	list_append(my_list, key_pair);
 
