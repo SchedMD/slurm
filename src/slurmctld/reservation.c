@@ -459,6 +459,7 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 
 	resv.cluster = slurmctld_cluster_name;
 	resv.id = resv_ptr->resv_id;
+	resv.name = resv_ptr->name;
 	resv.time_start = resv_ptr->start_time;
 	/* This is just a time stamp here to delete if the reservation
 	 * hasn't started yet so we don't get trash records in the
@@ -518,10 +519,11 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		/* Here if the reservation has started already we need
 		   to mark a new start time for it if certain
 		   variables are needed in accounting.  Right now if
-		   the flags, nodes, or cpu count changes we need a
+		   the assocs, nodes, flags or cpu count changes we need a
 		   new start time of now. */
 		if((resv_ptr->start_time < now)
-		   && (resv.nodes 
+		   && (resv.assocs
+		       || resv.nodes 
 		       || (resv.flags != (uint16_t)NO_VAL)
 		       || (resv.cpus != (uint32_t)NO_VAL))) {
 			resv_ptr->start_time_prev = resv_ptr->start_time;
