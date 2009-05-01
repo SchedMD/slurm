@@ -43,7 +43,12 @@
 #  include "config.h"
 #endif
 
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #include <pthread.h>
+#include <string.h>
 
 #include "src/common/list.h"
 #include "src/common/slurm_accounting_storage.h"
@@ -1600,6 +1605,7 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 	if(rpc_version >= 5) {
 		if(!object) {
 			pack32(NO_VAL, buffer);
+			pack16(0, buffer);
 			packnull(buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
@@ -1628,6 +1634,7 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		count = NO_VAL;
 
+		pack16(object->classification, buffer);
 		packstr(object->control_host, buffer);
 		pack32(object->control_port, buffer);
 		pack32(object->cpu_count, buffer);
@@ -1757,6 +1764,7 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
 			}
 		}
 
+		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->control_host,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
@@ -3419,6 +3427,7 @@ extern void pack_acct_cluster_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 	if(rpc_version >= 5) {
 		if(!object) {
+			pack16(0, buffer);
 			pack32(NO_VAL, buffer);
 			pack_time(0, buffer);
 			pack_time(0, buffer);
@@ -3426,6 +3435,8 @@ extern void pack_acct_cluster_cond(void *in, uint16_t rpc_version, Buf buffer)
 			pack16(0, buffer);
 			return;
 		}
+
+		pack16(object->classification, buffer);
 		
 		if(object->cluster_list)
 			count = list_count(object->cluster_list);
@@ -3490,6 +3501,7 @@ extern int unpack_acct_cluster_cond(void **object, uint16_t rpc_version,
 	*object = object_ptr;
 
 	if(rpc_version >= 5) {
+		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpack32(&count, buffer);
 		if(count && count != NO_VAL) {
 			object_ptr->cluster_list =
@@ -7211,6 +7223,57 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 	return print_this;
 }
 
+extern char *get_classification_str(uint16_t class)
+{
+	bool classified = class & ACCT_CLASSIFIED_FLAG;
+	acct_classification_type_t type = class & ACCT_CLASS_BASE;
+
+	switch(type) {
+	case ACCT_CLASS_CAPACITY:
+		if(classified)
+			return "*Capacity";
+		else
+			return "Capacity";
+		break;
+	case ACCT_CLASS_CAPABILITY:
+		if(classified)
+			return "*Capability";
+		else
+			return "Capability";
+		break;
+	case ACCT_CLASS_CAPAPACITY:
+		if(classified)
+			return "*Capapacity";
+		else
+			return "Capapacity";
+		break;
+	default:
+		if(classified)
+			return "*Unknown";
+		else
+			return "Unknown";
+		break;
+	}
+}
+
+extern uint16_t str_2_classification(char *class)
+{
+	uint16_t type = 0;
+	if(!class)
+		return type;
+
+	if(strcasestr(class, "capac"))
+		type = ACCT_CLASS_CAPACITY;
+	else if(strcasestr(class, "capab"))
+		type = ACCT_CLASS_CAPABILITY;
+	else if(strcasestr(class, "capap"))
+		type = ACCT_CLASS_CAPAPACITY;
+	
+	if(strcasestr(class, "class")) 
+		type |= ACCT_CLASSIFIED_FLAG;
+
+	return type;
+}
 
 extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 {

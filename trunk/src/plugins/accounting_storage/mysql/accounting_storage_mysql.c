@@ -2887,7 +2887,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "control_host", "tinytext not null default ''" },
 		{ "control_port", "mediumint not null default 0" },
 		{ "rpc_version", "mediumint not null default 0" },
-		{ "classification", "tinyint unsigned default 0" },
+		{ "classification", "smallint unsigned default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -3983,21 +3983,23 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		xstrcat(cols, "creation_time, mod_time, acct, cluster");
+		xstrcat(cols, "creation_time, mod_time, acct, "
+			"cluster, classification");
 		xstrfmtcat(vals, "%d, %d, 'root', \"%s\"",
-			   now, now, object->name);
+			   now, now, object->name, object->classification);
 		xstrfmtcat(extra, ", mod_time=%d", now);
 		if(object->root_assoc)
 			_setup_association_limits(object->root_assoc, &cols, 
 						  &vals, &extra,
 						  QOS_LEVEL_SET, 1);
 		xstrfmtcat(query, 
-			   "insert into %s (creation_time, mod_time, name) "
-			   "values (%d, %d, \"%s\") "
+			   "insert into %s (creation_time, mod_time, "
+			   "name, classification) "
+			   "values (%d, %d, \"%s\", %u) "
 			   "on duplicate key update deleted=0, mod_time=%d, "
 			   "control_host='', control_port=0;",
 			   cluster_table, 
-			   now, now, object->name,
+			   now, now, object->name, object->classification,
 			   now);
 		debug3("%d(%d) query\n%s",
 		       mysql_conn->conn, __LINE__, query);
@@ -5130,6 +5132,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	bool clust_reg = false;
 
 	/* If you need to alter the default values of the cluster use
 	 * modify_associations since this is used only for registering
@@ -5160,20 +5163,33 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		xstrcat(extra, ")");
 	}
 
+	if(cluster_cond->classification) {
+		xstrfmtcat(extra, " && (classification & %u)",
+			   cluster_cond->classification);
+	}
+
 	set = 0;
 	if(cluster->control_host) {
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
 		set++;
+		clust_reg = true;
 	}
 
 	if(cluster->control_port) {
 		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
 		set++;
+		clust_reg = true;
 	}
 
 	if(cluster->rpc_version) {
 		xstrfmtcat(vals, ", rpc_version=%u", cluster->rpc_version);
 		set++;
+		clust_reg = true;
+	}
+
+	if(cluster->classification) {
+		xstrfmtcat(vals, ", classification=%u", 
+			   cluster->classification);
 	}
 
 	if(!vals) {
@@ -5181,7 +5197,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
-	} else if(set != 3) {
+	} else if(clust_reg && (set != 3)) {
 		xfree(vals);
 		xfree(extra);
 		errno = EFAULT;
@@ -5215,7 +5231,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		object = xstrdup(row[0]);
 
 		/* check to see if this is the first time to register */
-		if(row[1][0] == '0')
+		if(clust_reg && (row[1][0] == '0'))
 			set = 0;
 
 		list_append(ret_list, object);
@@ -7945,12 +7961,14 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	/* if this changes you will need to edit the corresponding enum */
 	char *cluster_req_inx[] = {
 		"name",
+		"classification",
 		"control_host",
 		"control_port",
 		"rpc_version",
 	};
 	enum {
 		CLUSTER_REQ_NAME,
+		CLUSTER_REQ_CLASS,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
 		CLUSTER_REQ_VERSION,
@@ -8040,6 +8058,7 @@ empty:
 				cluster_cond->usage_end);
 		}
 
+		cluster->classification = atoi(row[CLUSTER_REQ_CLASS]);
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
