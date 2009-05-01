@@ -140,11 +140,24 @@ plugin_peek( const char *fq_path,
 	return SLURM_SUCCESS;
 }
 
-plugin_handle_t
-plugin_load_from_file(const char *fq_path)
+plugin_err_t
+plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 {
+	struct stat st;
 	plugin_handle_t plug;
 	int (*init)(void);
+
+	*p = PLUGIN_INVALID_HANDLE;
+
+	/*
+	 *  Check for file existence and access permissions
+	 */
+	if (access(fq_path, R_OK) < 0) {
+		if (errno == ENOENT)
+			return EPLUGIN_NOTFOUND;
+		else
+			return EPLUGIN_ACCESS_ERROR;
+	}
 
 	/*
 	 * Try to open the shared object.
@@ -161,16 +174,15 @@ plugin_load_from_file(const char *fq_path)
 		error("plugin_load_from_file: dlopen(%s): %s",
 		      fq_path,
 		      _dlerror());
-		return PLUGIN_INVALID_HANDLE;
+		return EPLUGIN_DLOPEN_FAILED;
 	}
 
 	/* Now see if our required symbols are defined. */
 	if ((dlsym(plug, PLUGIN_NAME) == NULL) ||
 	    (dlsym(plug, PLUGIN_TYPE) == NULL) ||
 	    (dlsym(plug, PLUGIN_VERSION) == NULL)) {
-		debug("plugin_load_from_file: invalid symbol");
-		/* slurm_seterrno( SLURM_PLUGIN_SYMBOLS ); */
-		return PLUGIN_INVALID_HANDLE;
+		dlclose (plug);
+		return EPLUGIN_MISSING_SYMBOL;
 	}
 
 	/*
@@ -179,14 +191,13 @@ plugin_load_from_file(const char *fq_path)
 	 */
 	if ((init = dlsym(plug, "init")) != NULL) {
 		if ((*init)() != 0) {
-			error("plugin_load_from_file(%s): init() returned SLURM_ERROR",
-			      fq_path);
-			(void) dlclose(plug);
-			return PLUGIN_INVALID_HANDLE;
+			dlclose(plug);
+			return EPLUGIN_INIT_FAILED;
 		}
 	}
 
-	return plug;
+	*p = plug;
+	return EPLUGIN_SUCCESS;
 }
 
 plugin_handle_t
@@ -230,7 +241,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 			debug4("No Good.");
 			xfree(file_name);
 		} else {
-			plug = plugin_load_from_file(file_name);
+			plugin_load_from_file(&plug, file_name);
 			xfree(file_name);
 			if (plugin_get_syms(plug, n_syms, names, ptrs) >= 
 			    n_syms) {

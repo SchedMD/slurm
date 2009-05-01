@@ -548,7 +548,7 @@ plugrack_load_all( plugrack_t rack )
         it = list_iterator_create( rack->entries );
         while ( ( e = list_next( it ) ) != NULL ) {
                 if ( e->plug == PLUGIN_INVALID_HANDLE ) {
-                        e->plug = plugin_load_from_file( e->fq_path );
+                        plugin_load_from_file(&e->plug, e->fq_path);
                 }
         }
 
@@ -585,7 +585,7 @@ plugrack_use_by_type( plugrack_t rack,
 		
                 /* See if plugin is loaded. */
                 if ( e->plug == PLUGIN_INVALID_HANDLE ) 
-			e->plug = plugin_load_from_file( e->fq_path );
+                        plugin_load_from_file(&e->plug, e->fq_path);
 
                 /* If load was successful, increment the reference count. */
                 if ( e->plug == PLUGIN_INVALID_HANDLE )
