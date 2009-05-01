@@ -43,7 +43,8 @@
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     List cluster_list,
-		     List format_list)
+		     List format_list,
+		     uint16_t *classification)
 {
 	int i;
 	int set = 0;
@@ -72,10 +73,18 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end || !strncasecmp (argv[i], "Names",
 						MAX(command_len, 1))
 			  || !strncasecmp (argv[i], "Clusters",
-					   MAX(command_len, 1))) {
+					   MAX(command_len, 3))) {
 			if(cluster_list) {
 				if(slurm_addto_char_list(cluster_list,
 							 argv[i]+end))
+					set = 1;
+			}
+		} else if (!strncasecmp (argv[i], "Classification", 
+					 MAX(command_len, 3))) {
+			if(classification) {
+				*classification = 
+					str_2_classification(argv[i]+end);
+				if(*classification)
 					set = 1;
 			}
 		} else if (!strncasecmp (argv[i], "Format",
@@ -96,7 +105,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 static int _set_rec(int *start, int argc, char *argv[],
 		    List name_list,
-		    acct_association_rec_t *assoc)
+		    acct_association_rec_t *assoc,
+		    uint16_t *classification)
 {
 	int i, mins;
 	int set = 0;
@@ -127,9 +137,18 @@ static int _set_rec(int *start, int argc, char *argv[],
 			  || !strncasecmp (argv[i], "Names",
 					   MAX(command_len, 1)) 
 			  || !strncasecmp (argv[i], "Clusters", 
-					   MAX(command_len, 1))) {
+					   MAX(command_len, 3))) {
 			if(name_list)
-				slurm_addto_char_list(name_list, argv[i]+end);
+				slurm_addto_char_list(name_list,
+						      argv[i]+end);
+		} else if (!strncasecmp (argv[i], "Classification", 
+					 MAX(command_len, 3))) {
+			if(classification) {
+				*classification = 
+					str_2_classification(argv[i]+end);
+				if(*classification)
+					set = 1;
+			}
 		} else if (!strncasecmp (argv[i], "FairShare", 
 					 MAX(command_len, 1))
 			   || !strncasecmp (argv[i], "Shares",
@@ -251,11 +270,13 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	int limit_set = 0;
 	ListIterator itr = NULL, itr_c = NULL;
 	char *name = NULL;
+	uint16_t class = 0;
 
 	init_acct_association_rec(&start_assoc);
 
 	for (i=0; i<argc; i++) 
-		limit_set = _set_rec(&i, argc, argv, name_list, &start_assoc);
+		limit_set = _set_rec(&i, argc, argv,
+				     name_list, &start_assoc, &class);
 
 	if(exit_code) {
 		list_destroy(name_list);
@@ -272,6 +293,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 		cluster_cond.cluster_list = name_list;
+		cluster_cond.classification = class;
 
 		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
 							&cluster_cond);
@@ -422,7 +444,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
-	_set_cond(&i, argc, argv, cluster_cond->cluster_list, format_list);
+	_set_cond(&i, argc, argv, cluster_cond->cluster_list, format_list,
+		  &cluster_cond->classification);
 	if(exit_code) {
 		destroy_acct_cluster_cond(cluster_cond);
 		list_destroy(format_list);
@@ -778,7 +801,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		xmalloc(sizeof(acct_association_cond_t));
 	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
-
+	uint16_t class_cond = 0, class_rec = 0;
 
 	init_acct_association_rec(assoc);
 
@@ -790,15 +813,17 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i++;
 			if(_set_cond(&i, argc, argv,
-				     assoc_cond->cluster_list, NULL))
+				     assoc_cond->cluster_list,
+				     NULL, &class_cond))
 				cond_set = 1;
 		} else if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i++;
-			if(_set_rec(&i, argc, argv, NULL, assoc))
+			if(_set_rec(&i, argc, argv, NULL, assoc, &class_rec))
 				rec_set = 1;
 		} else {
 			if(_set_cond(&i, argc, argv,
-				     assoc_cond->cluster_list, NULL))
+				     assoc_cond->cluster_list,
+				     NULL, &class_cond))
 				cond_set = 1;
 		}
 	}
@@ -822,11 +847,50 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;		
 	}
+	
+	if(class_cond) {
+		List temp_list = NULL;
+		acct_cluster_cond_t cluster_cond;
 
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+		cluster_cond.cluster_list = assoc_cond->cluster_list;
+		cluster_cond.classification = class_cond;
+		
+		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
+							&cluster_cond);
+		if(!temp_list) {
+			exit_code=1;
+			fprintf(stderr,
+				" Problem getting clusters from database.  "
+				"Contact your admin.\n");
+			destroy_acct_association_rec(assoc);
+			destroy_acct_association_cond(assoc_cond);
+			return SLURM_ERROR;
+		} else if(!list_count(temp_list)) {
+			fprintf(stderr,
+				" The class you gave %s didn't "
+				"return any clusters.\n", 
+				get_classification_str(class_cond));
+			destroy_acct_association_rec(assoc);
+			destroy_acct_association_cond(assoc_cond);
+			list_destroy(temp_list);
+			return SLURM_ERROR;
+		}
+		/* we are only looking for the clusters returned from
+		   this query, so we free the cluster_list and replace
+		   it */
+		if(assoc_cond->cluster_list)
+			list_destroy(assoc_cond->cluster_list);
+		assoc_cond->cluster_list = temp_list;
+	}
+	
 	printf(" Setting\n");
 	if(rec_set) {
 		printf(" Default Limits =\n");
 		sacctmgr_print_assoc_limits(assoc);
+		if(class_rec) 
+			printf(" Cluster Classification = %s\n", 
+			       get_classification_str(class_rec));
 	}
 
 	list_append(assoc_cond->acct_list, "root");
@@ -853,6 +917,43 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 
 	if(ret_list)
 		list_destroy(ret_list);
+
+	if(class_rec) {
+		acct_cluster_cond_t cluster_cond;
+		acct_cluster_rec_t cluster_rec;
+		
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+		memset(&cluster_rec, 0, sizeof(acct_cluster_rec_t));
+		/* the class has already returned these clusters so
+		   just go with it */
+		cluster_cond.cluster_list = assoc_cond->cluster_list;
+
+		cluster_rec.classification = class_rec;
+
+		ret_list = acct_storage_g_modify_clusters(
+			db_conn, my_uid, &cluster_cond, &cluster_rec);
+	
+		if(ret_list && list_count(ret_list)) {
+			char *object = NULL;
+			ListIterator itr = list_iterator_create(ret_list);
+			printf(" Modified cluster classifications...\n");
+			while((object = list_next(itr))) {
+				printf("  %s\n", object);
+			}
+			list_iterator_destroy(itr);
+			set = 1;
+		} else if(ret_list) {
+			printf(" Nothing modified\n");
+		} else {
+			exit_code=1;
+			fprintf(stderr, " Error with request\n");
+			rc = SLURM_ERROR;
+		}
+		
+		if(ret_list)
+			list_destroy(ret_list);
+	}
+
 	notice_thread_fini();
 
 	if(set) {
@@ -876,10 +977,11 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		xmalloc(sizeof(acct_cluster_cond_t));
 	int i=0;
 	List ret_list = NULL;
-
+	
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	
-	if(!_set_cond(&i, argc, argv, cluster_cond->cluster_list, NULL)) {
+	if(!_set_cond(&i, argc, argv, cluster_cond->cluster_list,
+		      NULL, &cluster_cond->classification)) {
 		exit_code=1;
 		fprintf(stderr, 
 			" No conditions given to remove, not executing.\n");
@@ -887,7 +989,8 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	if(!list_count(cluster_cond->cluster_list)) {
+	if(!list_count(cluster_cond->cluster_list) 
+	   || !cluster_cond->classification) {
 		destroy_acct_cluster_cond(cluster_cond);
 		return SLURM_SUCCESS;
 	}
