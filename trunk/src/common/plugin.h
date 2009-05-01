@@ -119,15 +119,17 @@ int plugin_peek( const char *fq_path,
 /*
  * Simplest way to get a plugin -- load it from a file.
  *
+ * pph     - Pointer to a plugin handle
  * fq_path - the fully-qualified pathname (i.e., from root) to
  * the plugin to load.
  *
- * Returns a handle if successful, or NULL if not.
+ * Returns EPLUGIN_SUCCESS on success, and an plugin_err_t error
+ * code on failure.
  *
  * The plugin's initialization code will be executed prior
  * to this function's return.
  */
-plugin_handle_t plugin_load_from_file( const char *fq_path );
+plugin_err_t plugin_load_from_file(plugin_handle_t *pph, const char *fq_path);
 
 /*
  * load plugin and link hooks.

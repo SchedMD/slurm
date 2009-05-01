@@ -260,10 +260,13 @@ static struct spank_plugin *_spank_plugin_create(char *path, int ac,
 {
 	struct spank_plugin *plugin;
 	plugin_handle_t p;
+	plugin_err_t e;
 	struct spank_plugin_operations ops;
 
-	if (!(p = plugin_load_from_file(path)))
+	if ((e = plugin_load_from_file(&p, path)) != EPLUGIN_SUCCESS) {
+		error ("spank: %s: %s\n", path, plugin_strerror(e));
 		return NULL;
+	}
 
 	if (plugin_get_syms(p, n_spank_syms, spank_syms, (void **)&ops) == 0) {
 		error("spank: \"%s\" exports 0 symbols\n", path);
