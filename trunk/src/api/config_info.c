@@ -406,6 +406,8 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "SLURM_VERSION           = %s\n", SLURM_VERSION);
 	fprintf(out, "SrunEpilog              = %s\n",
 		slurm_ctl_conf_ptr->srun_epilog);
+	fprintf(out, "SrunIOTimeout           = %u sec\n", 
+		slurm_ctl_conf_ptr->srun_io_timeout);
 	fprintf(out, "SrunProlog              = %s\n",
 		slurm_ctl_conf_ptr->srun_prolog);
 	fprintf(out, "StateSaveLocation       = %s\n", 

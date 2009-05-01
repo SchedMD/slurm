@@ -244,6 +244,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
+	{"SrunIOTimeout", S_P_UINT16},
 	{"SrunProlog", S_P_STRING},
 	{"StateSaveLocation", S_P_STRING},
 	{"SuspendExcNodes", S_P_STRING},
@@ -1417,6 +1418,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->srun_prolog);
+	ctl_conf_ptr->srun_io_timeout		= 0;
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
@@ -2283,6 +2285,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
 	s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
+	s_p_get_uint16(&conf->srun_io_timeout, "SrunIOTimeout", hashtbl);
 	s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);
 
 	if (!s_p_get_string(&conf->state_save_location,
