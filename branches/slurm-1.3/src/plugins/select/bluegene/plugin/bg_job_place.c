@@ -1134,12 +1134,7 @@ static int _find_best_block_match(List block_list,
 						debug2("taking off (%s) "
 						       "which is in an error "
 						       "state",
-						       bg_record->job_running,
-						       bg_record->bg_block_id,
-						       bg_record->job_ptr->
-						       start_time,
-						       bg_record->job_ptr->
-						       end_time);
+						       bg_record->bg_block_id);
 				} else 
 					/* This means we didn't have
 					   any jobs to take off
