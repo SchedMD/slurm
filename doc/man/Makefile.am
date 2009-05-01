@@ -137,7 +137,6 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_suspend.3 \
 	man3/slurm_terminate_job.3 \
 	man3/slurm_terminate_job_step.3 \
-	man3/slurm_trigger.3 \
 	man3/slurm_update_job.3 \
 	man3/slurm_update_node.3 \
 	man3/slurm_update_partition.3 \
