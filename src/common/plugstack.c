@@ -1483,6 +1483,36 @@ static spank_err_t _check_spank_item_validity (spank_item_t item, void *job)
  *  Global functions for SPANK plugins
  */
 
+const char * spank_strerror (spank_err_t err)
+{
+	switch (err) {
+	case ESPANK_SUCCESS:
+		return "Success";
+	case ESPANK_ERROR:
+		return "Generic error";
+	case ESPANK_BAD_ARG:
+		return "Bad argument";
+	case ESPANK_NOT_TASK:
+		return "Not in task context";
+	case ESPANK_ENV_EXISTS:
+		return "Environment variable exists";
+	case ESPANK_ENV_NOEXIST:
+		return "No such environment variable";
+	case ESPANK_NOSPACE:
+		return "Buffer too small";
+	case ESPANK_NOT_REMOTE:
+		return "Valid only in remote context";
+	case ESPANK_NOEXIST:
+		return "Id/PID does not exist on this node";
+	case ESPANK_NOT_EXECD:
+		return "Lookup by PID requested, but no tasks running";
+	case ESPANK_NOT_AVAIL:
+		return "Item not available from this callback";
+	}
+
+	return "Unknown";
+}
+
 int spank_symbol_supported (const char *name)
 {
 	int i;
