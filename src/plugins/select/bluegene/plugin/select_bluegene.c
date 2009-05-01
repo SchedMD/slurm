@@ -587,6 +587,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	} else if(part_desc_ptr->state_up){
 		resume_block(bg_record);
 	} else {
+		error("state is ? %d", part_desc_ptr->state_up);
 		return rc;
 	}
 				

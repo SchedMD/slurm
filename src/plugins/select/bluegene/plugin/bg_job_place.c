@@ -637,6 +637,7 @@ static int _check_for_booted_overlapping_blocks(
 					      found_record->bg_block_id);
 				
 				if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+					List temp_list = list_create(NULL);
 					/* this will remove and
 					 * destroy the memory for
 					 * bg_record
@@ -657,36 +658,26 @@ static int _check_for_booted_overlapping_blocks(
 								bg_lists->main,
 								bg_record);
 					}
-					destroy_bg_record(bg_record);
+
 					if(!found_record) {
-						/* There may be a bug
-						   here where on a real
-						   system we don't go
-						   destroy this block
-						   in the real system.
-						   If that is the case we
-						   need to add the
-						   bg_record to the
-						   free_block_list
-						   instead of destroying
-						   it like above.
-						*/ 
-						debug("This record wasn't "
+						debug("This record %s wasn't "
 						      "found in the bg_lists->main, "
 						      "no big deal, it "
-						      "probably wasn't added");
-						//rc = SLURM_ERROR;
-					} else {
-						debug("removing the block "
-						      "from the system");
-						List temp_list =
-							list_create(NULL);
-						list_push(temp_list, 
-							  found_record);
-						num_block_to_free++;
-						free_block_list(temp_list);
-						list_destroy(temp_list);
-					}
+						      "probably wasn't added",
+						      bg_record->bg_block_id);
+						found_record = bg_record;
+					} else
+						destroy_bg_record(bg_record);
+					
+					debug("removing the block %s"
+					      "from the system",
+					      bg_record->bg_block_id);
+					
+					list_push(temp_list, found_record);
+					num_block_to_free++;
+					free_block_list(temp_list);
+					list_destroy(temp_list);
+					
 					slurm_mutex_unlock(&block_state_mutex);
 				} 
 				rc = 1;
@@ -1134,12 +1125,7 @@ static int _find_best_block_match(List block_list,
 						debug2("taking off (%s) "
 						       "which is in an error "
 						       "state",
-						       bg_record->job_running,
-						       bg_record->bg_block_id,
-						       bg_record->job_ptr->
-						       start_time,
-						       bg_record->job_ptr->
-						       end_time);
+						       bg_record->bg_block_id);
 				} else 
 					/* This means we didn't have
 					   any jobs to take off
