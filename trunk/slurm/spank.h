@@ -230,6 +230,11 @@ extern struct spank_option spank_options [];
 BEGIN_C_DECLS
 
 /*
+ *  Return the string representation of a spank_err_t error code.
+ */
+const char *spank_strerror (spank_err_t err);
+
+/*
  *  Determine whether a given spank plugin symbol is supported
  *   in this version of SPANK interface.
  *

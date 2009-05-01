@@ -171,6 +171,19 @@ and \fBunsetenv\fR(3) may be used in local context.
 .LP
 See \fBspank.h\fR for more information, and \fBEXAMPLES\fR below for an example
 for \fBspank_getenv\fR usage.
+.LP
+Many of the described \fBSPANK\fR functions available to plugins return
+errors via the \fBspank_err_t\fR error type. On success, the return value
+will be set to \fBESPANK_SUCCESS\fR, while on failure, the return value
+will be set to one of many error values defined in slurm/spank.h. The
+\fBSPANK\fR interface provides a simple function
+.nf
+
+  const char * \fBspank_strerror (spank_err_t err);
+
+.fi
+which may be used to translate a \fBspank_err_t\fR value into its
+string representation.
 
 .SH "SPANK OPTIONS"
 .LP
