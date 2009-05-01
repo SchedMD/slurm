@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     nodes are configured in multiple leaf switches.
  -- Patch from Matthieu Hautreux for backup mysql deamon support.
  -- Changed DbdBackup to DbdBackupHost for slurmdbd.conf file
+ -- Add support for spank_strerror() function and improve error handling in
+    general for SPANK plugins.
 
 * Changes in SLURM 1.4.0-pre13
 ==============================
