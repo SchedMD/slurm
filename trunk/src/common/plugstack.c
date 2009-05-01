@@ -2,7 +2,7 @@
  *  plugstack.c -- stackable plugin architecture for node job kontrol (SPANK)
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  CODE-OCEC-09-009. All rights reserved.
  *
@@ -1441,7 +1441,7 @@ static int _valid_in_allocator_context (spank_item_t item)
 	}
 }
 
-static spank_err_t _check_spank_item_validity (spank_item_t item)
+static spank_err_t _check_spank_item_validity (spank_item_t item, void *job)
 {
 	/*
 	 *  Valid in all contexts:
@@ -1457,14 +1457,18 @@ static spank_err_t _check_spank_item_validity (spank_item_t item)
 	}
 
 	if (spank_ctx == S_TYPE_LOCAL) {
-		if (_valid_in_local_context (item))
-			return ESPANK_SUCCESS;
-		else
+		if (!_valid_in_local_context (item))
 			return ESPANK_NOT_REMOTE;
+		else if (job == NULL)
+			return ESPANK_NOT_AVAIL;
 	}
 	else if (spank_ctx == S_TYPE_ALLOCATOR) {
-		if (_valid_in_allocator_context (item))
-			return ESPANK_SUCCESS;
+		if (_valid_in_allocator_context (item)) {
+			if (job)
+				return ESPANK_SUCCESS;
+			else
+				return ESPANK_NOT_AVAIL;
+		}
 		else if (_valid_in_local_context (item))
 			return ESPANK_BAD_ARG;
 		else
@@ -1545,7 +1549,8 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	/*
 	 *  Check for validity of the given item in the current context
 	 */
-	if ((rc = _check_spank_item_validity (item)) != ESPANK_SUCCESS)
+	rc = _check_spank_item_validity (item, spank->job);
+	if (rc != ESPANK_SUCCESS)
 		return (rc);
 
 	if (spank_ctx == S_TYPE_LOCAL)
