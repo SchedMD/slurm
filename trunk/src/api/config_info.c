@@ -53,6 +53,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/list.h"
 
 /*
@@ -511,15 +512,21 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 	int rc;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	
+	char this_host[256], *this_addr;
+
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
 	/*
 	 *  Set request message address to slurmd on localhost
 	 */
+	gethostname_short(this_host, sizeof(this_host));
+	this_addr = slurm_conf_get_nodeaddr(this_host);
+	if (this_addr == NULL)
+		this_addr = xstrdup("localhost");
 	slurm_set_addr(&req_msg.address, (uint16_t)slurm_get_slurmd_port(), 
-		       "localhost");
+		       this_addr);
+	xfree(this_addr);
 
 	req_msg.msg_type = REQUEST_DAEMON_STATUS;
 	req_msg.data     = NULL;
