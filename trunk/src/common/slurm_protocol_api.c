@@ -1627,12 +1627,16 @@ slurm_fd slurm_init_msg_engine_port(uint16_t port)
  */
 slurm_fd slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
 {
-	slurm_addr addr;
+        slurm_addr addr;
 
+#ifdef BIND_SPECIFIC_ADDR
 	if (addr_name != NULL)
 		slurm_set_addr(&addr, port, addr_name);
 	else
 		slurm_set_addr_any(&addr, port);
+#else
+        slurm_set_addr_any(&addr, port);
+#endif
 
 	return _slurm_init_msg_engine(&addr);
 }

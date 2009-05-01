@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
  -- Add slurmctld and slurmd binding to appropriate communications address
     based upon NodeAddr, ControllerAddr and BackupAddr configuration 
     parameters. Patch from Matthieu Hautreux, CEA.
+    NOTE: Failing on Debian Linux. 
+    NOTE: You must define BIND_SPECIFIC_ADDR to enable this option.
 
 * Changes in SLURM 1.4.0-pre13
 ==============================
