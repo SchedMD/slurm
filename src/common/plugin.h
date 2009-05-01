@@ -81,6 +81,17 @@ typedef void *plugin_handle_t;
 
 #define PLUGIN_INVALID_HANDLE ((void*)0)
 
+typedef enum {
+	EPLUGIN_SUCCESS = 0,     /* Success                             */
+	EPLUGIN_NOTFOUND,        /* Plugin file does not exist          */
+	EPLUGIN_ACCESS_ERROR,    /* Access denied                       */
+	EPLUGIN_DLOPEN_FAILED,   /* Dlopen not successful               */
+	EPLUGIN_INIT_FAILED,     /* Plugin's init() callback failed     */
+	EPLUGIN_MISSING_SYMBOL   /* plugin_name/type/version missing    */
+} plugin_err_t;
+
+const char *plugin_strerror(plugin_err_t err);
+
 /*
  * "Peek" into a plugin to discover its type and version.  This does
  * not run the plugin's init() or fini() functions (as defined in this
