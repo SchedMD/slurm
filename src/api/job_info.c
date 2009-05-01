@@ -685,15 +685,21 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	job_id_request_msg_t req;
-	
+	char this_host[256], *this_addr;
+
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
 	/*
 	 *  Set request message address to slurmd on localhost
 	 */
+	gethostname_short(this_host, sizeof(this_host));
+	this_addr = slurm_conf_get_nodeaddr(this_host);
+	if (this_addr == NULL)
+		this_addr = xstrdup("localhost");
 	slurm_set_addr(&req_msg.address, (uint16_t)slurm_get_slurmd_port(), 
-		       "localhost");
+		       this_addr);
+	xfree(this_addr);
 
 	req.job_pid      = job_pid;
 	req_msg.msg_type = REQUEST_JOB_ID;
