@@ -1439,6 +1439,23 @@ char *slurm_get_select_type(void)
 	return select_type;
 }
 
+/* slurm_get_srun_io_timeout
+ * get default srun I/O task timeout value from slurmctld_conf object
+ */
+uint16_t slurm_get_srun_io_timeout(void)
+{
+	uint16_t srun_io_timeout = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		srun_io_timeout = conf->srun_io_timeout;
+		slurm_conf_unlock();
+	}
+	return srun_io_timeout;
+}
+
 /* slurm_get_switch_type
  * get switch type from slurmctld_conf object
  * RET char *   - switch type, MUST be xfreed by caller

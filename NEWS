@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
  -- Changed DbdBackup to DbdBackupHost for slurmdbd.conf file
  -- Add support for spank_strerror() function and improve error handling in
     general for SPANK plugins.
+ -- Added configuration parameter SrunIOTimeout to optionally ping srun's tasks
+    for better fault tolerance (e.g. killed and restarteed SLURM daemons on 
+    compute node).
 
 * Changes in SLURM 1.4.0-pre13
 ==============================
