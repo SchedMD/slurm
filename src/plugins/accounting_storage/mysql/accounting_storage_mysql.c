@@ -489,8 +489,7 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*vals, ", 1");
 		xstrcat(*extra, ", fairshare=1");
 		assoc->shares_raw = 1;
-	} else 
-		assoc->shares_raw = 1;
+	} 
 
 	if((int)assoc->grp_cpu_mins >= 0) {
 		xstrcat(*cols, ", grp_cpu_mins");
