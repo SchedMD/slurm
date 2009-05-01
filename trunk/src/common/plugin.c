@@ -80,6 +80,25 @@ static char *_dlerror(void)
 	return rc;
 }
 
+const char * plugin_strerror(plugin_err_t e)
+{
+	switch (e) {
+		case EPLUGIN_SUCCESS:
+			return ("Success");
+		case EPLUGIN_NOTFOUND:
+			return ("Plugin file not found");
+		case EPLUGIN_ACCESS_ERROR:
+			return ("Plugin access denied");
+		case EPLUGIN_DLOPEN_FAILED:
+			return ("Dlopen of plugin file failed");
+		case EPLUGIN_INIT_FAILED:
+			return ("Plugin init() callback failed");
+		case EPLUGIN_MISSING_SYMBOL:
+			return ("Plugin name/type/version symbol missing");
+	}
+	return ("Unknown error");
+}
+
 int
 plugin_peek( const char *fq_path,
 			 char *plugin_type,
