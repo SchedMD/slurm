@@ -143,7 +143,6 @@ plugin_peek( const char *fq_path,
 plugin_err_t
 plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 {
-	struct stat st;
 	plugin_handle_t plug;
 	int (*init)(void);
 
