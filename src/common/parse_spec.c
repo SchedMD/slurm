@@ -41,6 +41,10 @@
 #  include "config.h"
 #endif
 
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,7 +64,6 @@
 static int   _load_long (long *destination, char *keyword, char *in_line) ;
 static int   _load_integer (int *destination, char *keyword, char *in_line) ;
 static int   _load_float (float *destination, char *keyword, char *in_line) ;
-static char *_strcasestr(char *haystack, char *needle);
 
 /* 
  * slurm_parser - parse the supplied specification into keyword/value pairs
@@ -137,7 +140,7 @@ _load_float (float *destination, char *keyword, char *in_line)
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
-	str_ptr1 = (char *) _strcasestr (in_line, keyword);
+	str_ptr1 = (char *) strcasestr (in_line, keyword);
 	if (str_ptr1 != NULL) {
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
@@ -175,7 +178,7 @@ _load_integer (int *destination, char *keyword, char *in_line)
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
-	str_ptr1 = (char *) _strcasestr (in_line, keyword);
+	str_ptr1 = (char *) strcasestr (in_line, keyword);
 	if (str_ptr1 != NULL) {
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
@@ -232,7 +235,7 @@ _load_long (long *destination, char *keyword, char *in_line)
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
-	str_ptr1 = (char *) _strcasestr (in_line, keyword);
+	str_ptr1 = (char *) strcasestr (in_line, keyword);
 	if (str_ptr1 != NULL) {
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
@@ -290,7 +293,7 @@ load_string  (char **destination, char *keyword, char *in_line)
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
-	str_ptr1 = (char *) _strcasestr (in_line, keyword);
+	str_ptr1 = (char *) strcasestr (in_line, keyword);
 	if (str_ptr1 != NULL) {
 		int quoted = 0;
 		str_len1 = strlen (keyword);
@@ -315,28 +318,4 @@ load_string  (char **destination, char *keyword, char *in_line)
 			str_ptr1[i] = ' ';
 	}
 	return 0;
-}
-
-/* case insensitve version of strstr() */
-static char *
-_strcasestr(char *haystack, char *needle)
-{
-	int hay_inx,  hay_size  = strlen(haystack);
-	int need_inx, need_size = strlen(needle);
-	char *hay_ptr = haystack;
-
-	for (hay_inx=0; hay_inx<hay_size; hay_inx++) {
-		for (need_inx=0; need_inx<need_size; need_inx++) {
-			if (tolower((int) hay_ptr[need_inx]) != 
-			    tolower((int) needle [need_inx]))
-				break;		/* mis-match */
-		}
-
-		if (need_inx == need_size)	/* it matched */
-			return hay_ptr;
-		else				/* keep looking */
-			hay_ptr++;
-	}
-
-	return NULL;	/* no match anywhere in string */
 }
