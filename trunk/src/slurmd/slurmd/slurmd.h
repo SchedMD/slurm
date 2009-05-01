@@ -96,7 +96,8 @@ typedef struct slurmd_config {
 	uint16_t      cr_type;           /* Consumable Resource Type:       *
 					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
 					 * CR_DEFAULT, etc.                */
-        char         *node_name;        /* node name                       */
+	char         *node_name;	/* node name                       */
+	char         *node_addr;	/* node's address                  */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
 	char         *spooldir;		/* SlurmdSpoolDir	           */

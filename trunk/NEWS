@@ -16,6 +16,9 @@ documents those changes that are of interest to users and admins.
  -- Added configuration parameter SrunIOTimeout to optionally ping srun's tasks
     for better fault tolerance (e.g. killed and restarteed SLURM daemons on 
     compute node).
+ -- Add slurmctld and slurmd binding to appropriate communications address
+    based upon NodeAddr, ControllerAddr and BackupAddr configuration 
+    parameters. Patch from Matthieu Hautreux, CEA.
 
 * Changes in SLURM 1.4.0-pre13
 ==============================

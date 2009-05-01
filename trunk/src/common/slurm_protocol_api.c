@@ -1604,8 +1604,8 @@ static void _remap_slurmctld_errno(void)
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/
 
-/* 
- *  Initialize a slurm server at port "port"
+/* In the socket implementation it creates a socket, binds to it, and 
+ *	listens for connections.
  * 
  * IN  port     - port to bind the msg server to
  * RET slurm_fd - file descriptor of the connection created
@@ -1615,6 +1615,25 @@ slurm_fd slurm_init_msg_engine_port(uint16_t port)
 	slurm_addr addr;
 
 	slurm_set_addr_any(&addr, port);
+	return _slurm_init_msg_engine(&addr);
+}
+
+/* In the socket implementation it creates a socket, binds to it, and 
+ *	listens for connections.
+ *
+ * IN  addr_name - address to bind the msg server to (NULL means any)
+ * IN  port      - port to bind the msg server to
+ * RET slurm_fd  - file descriptor of the connection created
+ */
+slurm_fd slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
+{
+	slurm_addr addr;
+
+	if (addr_name != NULL)
+		slurm_set_addr(&addr, port, addr_name);
+	else
+		slurm_set_addr_any(&addr, port);
+
 	return _slurm_init_msg_engine(&addr);
 }
 

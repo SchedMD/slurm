@@ -648,6 +648,11 @@ _read_config()
 
 	_massage_pathname(&conf->logfile);
 
+	/* set node_addr if relevant */
+	conf->node_addr = slurm_conf_get_nodeaddr(conf->hostname);
+	if (strcmp(conf->node_addr, conf->hostname) == 0)
+		xfree(conf->node_addr);	/* Sets to NULL */
+
 	conf->port = slurm_conf_get_port(conf->node_name);
 	slurm_conf_get_cpus_sct(conf->node_name,
 				&conf->conf_cpus,  &conf->conf_sockets,
@@ -787,6 +792,7 @@ _print_conf()
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
 	debug3("HealthCheck = `%s'",     conf->health_check_program);
 	debug3("NodeName    = %s",       conf->node_name);
+	debug3("NodeAddr    = %s",       conf->node_addr);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     conf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);
@@ -835,6 +841,7 @@ _destroy_conf()
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
 		xfree(conf->node_name);
+		xfree(conf->node_addr);
 		xfree(conf->conffile);
 		xfree(conf->prolog);
 		xfree(conf->epilog);
@@ -906,10 +913,18 @@ _process_cmdline(int ac, char **av)
 static void
 _create_msg_socket()
 {
-	slurm_fd ld = slurm_init_msg_engine_port(conf->port);
+	char* node_addr;
+
+	slurm_fd ld = slurm_init_msg_engine_addrname_port(conf->node_addr,
+							  conf->port);
+	if (conf->node_addr == NULL)
+		node_addr = "*";
+	else
+		node_addr = conf->node_addr;
 
 	if (ld < 0) {
-		error("Unable to bind listen port (%d): %m", conf->port);
+		error("Unable to bind listen port (%s:%d): %m",
+		      node_addr, conf->port);
 		exit(1);
 	}
 
@@ -917,7 +932,8 @@ _create_msg_socket()
 
 	conf->lfd = ld;
 
-	debug3("succesfully opened slurm listen port %d", conf->port);
+	debug3("succesfully opened slurm listen port %s:%d",
+	       node_addr, conf->port);
 
 	return;
 }
