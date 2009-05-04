@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  common.c - common functions used by tabs in sview
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -166,6 +167,32 @@ cleanup:
 	return ret;
 }
 
+/* Make a BlueGene node name into a numeric representation of 
+ * its location. 
+ * Value is coordinate * 1000 + I/O node (999 if none)
+ * (e.g. bg123[4] -> 123004, bg[234x233] -> 234999)
+ */
+static int _bp_coordinate(const char *name)
+{
+	int i, io_val = 999, coord_val = -1;
+
+	for (i=0; name[i]; i++) {
+		if (name[i] == '[') {
+			i++;
+			if (coord_val < 0)
+				coord_val = atoi(name+i);
+			else
+				io_val = atoi(name+i);
+			break;
+		} else if ((coord_val < 0) && (isdigit(name[i])))
+			coord_val = atoi(name+i);
+	}
+
+	if (coord_val < 0)
+		return coord_val;
+	return ((coord_val * 1000) + io_val);
+}
+
 static int _sort_iter_compare_func_bp_list(GtkTreeModel *model,
 					   GtkTreeIter  *a,
 					   GtkTreeIter  *b,
@@ -173,41 +200,19 @@ static int _sort_iter_compare_func_bp_list(GtkTreeModel *model,
 {
 	int sortcol = GPOINTER_TO_INT(userdata);
 	int ret = 0;
-	int len1 = 0, len2 = 0;
 	gchar *name1 = NULL, *name2 = NULL;
 	
 	gtk_tree_model_get(model, a, sortcol, &name1, -1);
 	gtk_tree_model_get(model, b, sortcol, &name2, -1);
 	
-	if (name1 == NULL || name2 == NULL) {
-		if (name1 == NULL && name2 == NULL)
+	if ((name1 == NULL) || (name2 == NULL)) {
+		if ((name1 == NULL) && (name2 == NULL))
 			goto cleanup; /* both equal => ret = 0 */
 		
 		ret = (name1 == NULL) ? -1 : 1;
 	} else {
-		/* sort like a human would 
-		   meaning snowflake2 would be greater than
-		   snowflake12 */
-		len1 = strlen(name1);
-		len2 = strlen(name2);
-		while((ret < len1) && (!g_ascii_isdigit(name1[ret]))) 
-			ret++;
-		if(ret < len1) {
-			if(!g_ascii_strncasecmp(name1, name2, ret)) {
-				if(len1 > len2)
-					ret = 1;
-				else if(len1 < len2)
-					ret = -1;
-				else {
-					ret = g_ascii_strcasecmp(name1, name2);
-				}
-			} else {
-				ret = g_ascii_strcasecmp(name1, name2);
-			}
-			
-		} else {
-			ret = g_ascii_strcasecmp(name1, name2);
-		}
+		/* Sort in numeric order based upon coordinates */
+		ret = _bp_coordinate(name1) - _bp_coordinate(name2);
 	}
 cleanup:
 	g_free(name1);
