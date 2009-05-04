@@ -649,9 +649,9 @@ _read_config()
 	_massage_pathname(&conf->logfile);
 
 	/* set node_addr if relevant */
-	conf->node_addr = slurm_conf_get_nodeaddr(conf->hostname);
-	if (strcmp(conf->node_addr, conf->hostname) == 0)
-		xfree(conf->node_addr);	/* Sets to NULL */
+	if((conf->node_addr = slurm_conf_get_nodeaddr(conf->hostname)))
+		if (strcmp(conf->node_addr, conf->hostname) == 0)
+			xfree(conf->node_addr);	/* Sets to NULL */
 
 	conf->port = slurm_conf_get_port(conf->node_name);
 	slurm_conf_get_cpus_sct(conf->node_name,
