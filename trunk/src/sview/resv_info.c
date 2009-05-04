@@ -652,6 +652,28 @@ static void _update_info_resv(List info_list,
 	return;
 }
 
+static int _sview_resv_sort_aval_dec(sview_resv_info_t* rec_a,
+				     sview_resv_info_t* rec_b)
+{
+	int size_a = rec_a->resv_ptr->node_cnt;
+	int size_b = rec_b->resv_ptr->node_cnt;
+
+	if (size_a > size_b)
+		return -1;
+	else if (size_a < size_b)
+		return 1;
+
+	if(rec_a->resv_ptr->node_list && rec_b->resv_ptr->node_list) {
+		size_a = strcmp(rec_a->resv_ptr->node_list, 
+				rec_b->resv_ptr->node_list);
+		if (size_a > 0)
+			return -1;
+		else if (size_a < 0)
+			return 1;
+	}
+	return 0;
+}
+
 static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
 				   int changed)
 {
@@ -679,6 +701,9 @@ static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
 		sview_resv_info_ptr->resv_ptr = resv_ptr;
 		list_append(info_list, sview_resv_info_ptr);
 	}
+
+	list_sort(info_list,
+		  (ListCmpF)_sview_resv_sort_aval_dec);
 
 update_color:
 	return info_list;

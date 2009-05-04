@@ -1423,6 +1423,27 @@ static sview_part_info_t *_create_sview_part_info(partition_info_t* part_ptr)
 	return sview_part_info;
 }
 
+static int _sview_part_sort_aval_dec(sview_part_info_t* rec_a,
+				     sview_part_info_t* rec_b)
+{
+	int size_a = rec_a->part_ptr->total_nodes;
+	int size_b = rec_b->part_ptr->total_nodes;
+
+	if (size_a > size_b)
+		return -1;
+	else if (size_a < size_b)
+		return 1;
+
+	if(rec_a->part_ptr->nodes && rec_b->part_ptr->nodes) {
+		size_a = strcmp(rec_a->part_ptr->nodes, rec_b->part_ptr->nodes);
+		if (size_a > 0)
+			return -1;
+		else if (size_a < 0)
+			return 1;
+	}
+	return 0;
+}
+
 static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				   node_info_msg_t *node_info_ptr,
 				   node_select_info_msg_t *node_select_ptr,
@@ -1599,6 +1620,10 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		hostlist_destroy(hl);
 		list_append(info_list, sview_part_info);
 	}
+
+	list_sort(info_list,
+		  (ListCmpF)_sview_part_sort_aval_dec);
+
 	return info_list;
 }
 
