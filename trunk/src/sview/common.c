@@ -169,28 +169,35 @@ cleanup:
 
 /* Make a BlueGene node name into a numeric representation of 
  * its location. 
- * Value is coordinate * 1000 + I/O node (999 if none)
- * (e.g. bg123[4] -> 123004, bg[234x233] -> 234999)
+ * Value is low_coordinate * 1,000,000 + 
+ *          high_coordinate * 1,000 + I/O node (999 if none)
+ * (e.g. bg123[4] -> 123,123,004, bg[234x235] -> 234,235,999)
  */
 static int _bp_coordinate(const char *name)
 {
-	int i, io_val = 999, coord_val = -1;
+	int i, io_val = 999, low_val = -1, high_val;
 
 	for (i=0; name[i]; i++) {
 		if (name[i] == '[') {
 			i++;
-			if (coord_val < 0)
-				coord_val = atoi(name+i);
-			else
+			if (low_val < 0) {
+				char *end_ptr;
+				low_val = strtol(name+i, &end_ptr, 10);
+				if ((end_ptr[0] != '\0') &&
+				    (isdigit(end_ptr[1])))
+					high_val = atoi(end_ptr + 1);
+				else
+					high_val = low_val;
+			} else
 				io_val = atoi(name+i);
 			break;
-		} else if ((coord_val < 0) && (isdigit(name[i])))
-			coord_val = atoi(name+i);
+		} else if ((low_val < 0) && (isdigit(name[i])))
+			low_val = high_val = atoi(name+i);
 	}
 
-	if (coord_val < 0)
-		return coord_val;
-	return ((coord_val * 1000) + io_val);
+	if (low_val < 0)
+		return low_val;
+	return ((low_val * 1000000) + (high_val * 1000) + io_val);
 }
 
 static int _sort_iter_compare_func_bp_list(GtkTreeModel *model,
