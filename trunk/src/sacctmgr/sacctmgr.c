@@ -857,8 +857,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        list wckey         - Clusters=, End=, Format=, IDs=, Names=,        \n\
                             Start=, User=, and WCKeys=                     \n\
                                                                            \n\
-       archive dump       - Directory=, Jobs, PurgeJobsBefore=,            \n\
-                            PurgeStepsBefore=, Script=, and Steps          \n\
+       archive dump       - Directory=, Events, Jobs, PurgeEventMonths=,   \n\
+                            PurgeJobMonths=, PurgeStepMonths=,             \n\
+                            PurgeSuspendMonths=, Script=, Steps and Suspend\n\
                                                                            \n\
        archive load       - File=, or Insert=                              \n\
                                                                            \n\

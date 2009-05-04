@@ -990,7 +990,11 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	}
 
 	if(!list_count(cluster_cond->cluster_list) 
-	   || !cluster_cond->classification) {
+	   && !cluster_cond->classification) {
+		exit_code=1;
+		fprintf(stderr, 
+			"problem with delete request.  "
+			"Nothing given to delete.\n");
 		destroy_acct_cluster_cond(cluster_cond);
 		return SLURM_SUCCESS;
 	}

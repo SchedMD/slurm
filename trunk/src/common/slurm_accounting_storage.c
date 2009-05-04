@@ -6763,21 +6763,29 @@ extern void pack_acct_archive_cond(void *in, uint16_t rpc_version, Buf buffer)
 	if(!object) {
 		packnull(buffer);
 		pack16((uint16_t)NO_VAL, buffer);
+		pack16((uint16_t)NO_VAL, buffer);
 		packnull(buffer);
 		pack16((uint16_t)NO_VAL, buffer);
+		pack16((uint16_t)NO_VAL, buffer);
 		pack_acct_job_cond(NULL, rpc_version, buffer);
+		pack16((uint16_t)NO_VAL, buffer);
+		pack16((uint16_t)NO_VAL, buffer);
 		pack16((uint16_t)NO_VAL, buffer);
 		pack16((uint16_t)NO_VAL, buffer);
 		return;
 	}
 
 	packstr(object->archive_dir, buffer);
+	pack16(object->archive_events, buffer);
 	pack16(object->archive_jobs, buffer);
 	packstr(object->archive_script, buffer);
 	pack16(object->archive_steps, buffer);
+	pack16(object->archive_suspend, buffer);
 	pack_acct_job_cond(object->job_cond, rpc_version, buffer);
-	pack16(object->job_purge, buffer);
-	pack16(object->step_purge, buffer);
+	pack16(object->purge_event, buffer);
+	pack16(object->purge_job, buffer);
+	pack16(object->purge_step, buffer);
+	pack16(object->purge_suspend, buffer);
 }
 
 extern int unpack_acct_archive_cond(void **object, uint16_t rpc_version,
@@ -6790,15 +6798,19 @@ extern int unpack_acct_archive_cond(void **object, uint16_t rpc_version,
 	*object = object_ptr;
 
 	safe_unpackstr_xmalloc(&object_ptr->archive_dir, &uint32_tmp, buffer);
+	safe_unpack16(&object_ptr->archive_events, buffer);
 	safe_unpack16(&object_ptr->archive_jobs, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->archive_script,
 			       &uint32_tmp, buffer);
 	safe_unpack16(&object_ptr->archive_steps, buffer);
+	safe_unpack16(&object_ptr->archive_suspend, buffer);
 	if(unpack_acct_job_cond((void *)&object_ptr->job_cond,
 				rpc_version, buffer) == SLURM_ERROR)
 		goto unpack_error;
-	safe_unpack16(&object_ptr->job_purge, buffer);
-	safe_unpack16(&object_ptr->step_purge, buffer);
+	safe_unpack16(&object_ptr->purge_event, buffer);
+	safe_unpack16(&object_ptr->purge_job, buffer);
+	safe_unpack16(&object_ptr->purge_step, buffer);
+	safe_unpack16(&object_ptr->purge_suspend, buffer);
 
 	return SLURM_SUCCESS;
 
