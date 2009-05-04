@@ -1241,17 +1241,18 @@ static int _build_node_list(struct job_record *job_ptr,
 			    struct node_set **node_set_pptr,
 			    int *node_set_size)
 {
-	int node_set_inx, rc;
+	int i, node_set_inx, power_cnt, rc;
 	struct node_set *node_set_ptr;
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
 	int check_node_config, config_filter = 0;
 	struct job_details *detail_ptr = job_ptr->details;
-	bitstr_t *usable_node_mask = NULL;
+	bitstr_t *power_up_bitmap = NULL, *usable_node_mask = NULL;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
 	time_t when = time(NULL);
+	uint32_t max_weight = 0;
 
 	if (job_ptr->resv_name) {
 		/* Limit node selection to those in selected reservation */
@@ -1359,9 +1360,10 @@ static int _build_node_list(struct job_record *job_ptr,
 		node_set_ptr[node_set_inx].cpus_per_node =
 			config_ptr->cpus;
 		node_set_ptr[node_set_inx].real_memory =
-			config_ptr->real_memory;		
+			config_ptr->real_memory;
 		node_set_ptr[node_set_inx].weight =
 			config_ptr->weight;
+		max_weight = MAX(max_weight, config_ptr->weight);
 		node_set_ptr[node_set_inx].features = 
 			xstrdup(config_ptr->feature);
 		node_set_ptr[node_set_inx].feature_array = 
@@ -1388,6 +1390,51 @@ static int _build_node_list(struct job_record *job_ptr,
 		xfree(node_set_ptr);
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
+
+	/* If any nodes are powered down, put them into a new node_set
+	 * record with a higher scheduling weight (avoids using powered
+	 * down nodes where possible). */
+	for (i = (node_set_inx-1); i >= 0; i--) {
+		power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
+				        power_node_bitmap);
+		if (power_cnt == 0)
+			continue;	/* no nodes powered down */
+		if (power_cnt == node_set_ptr[i].nodes) {
+			node_set_ptr[i].weight += max_weight;
+			continue;	/* all nodes powered down */
+		}
+
+		/* Some nodes powered down, others up, split record */
+		node_set_ptr[node_set_inx].cpus_per_node =
+			node_set_ptr[i].cpus_per_node;
+		node_set_ptr[node_set_inx].real_memory =
+			node_set_ptr[i].real_memory;
+		node_set_ptr[node_set_inx].nodes = power_cnt;
+		node_set_ptr[i].nodes -= power_cnt;
+		node_set_ptr[node_set_inx].weight =
+			node_set_ptr[i].weight += max_weight;
+		node_set_ptr[node_set_inx].features =
+			xstrdup(node_set_ptr[i].features);
+		node_set_ptr[node_set_inx].feature_array =
+			node_set_ptr[i].feature_array;
+		node_set_ptr[node_set_inx].feature_bits =
+			bit_copy(node_set_ptr[i].feature_bits);
+		node_set_ptr[node_set_inx].my_bitmap = 
+			bit_copy(node_set_ptr[i].my_bitmap);
+		bit_and(node_set_ptr[node_set_inx].my_bitmap,
+			power_node_bitmap);
+		if (power_up_bitmap == NULL) {
+			power_up_bitmap = bit_copy(power_node_bitmap);
+			bit_not(power_up_bitmap);
+		}
+		bit_and(node_set_ptr[i].my_bitmap, power_up_bitmap);
+
+		node_set_inx++;
+		xrealloc(node_set_ptr,
+			 sizeof(struct node_set) * (node_set_inx + 2));
+		node_set_ptr[node_set_inx + 1].my_bitmap = NULL;
+	}
+	FREE_NULL_BITMAP(power_up_bitmap);
 
 	*node_set_size = node_set_inx;
 	*node_set_pptr = node_set_ptr;
