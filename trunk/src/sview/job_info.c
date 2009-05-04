@@ -2332,7 +2332,7 @@ need_refresh:
 					popup_win->grid_button_list,
 					sview_job_info->job_ptr->node_inx[j],
 					sview_job_info->job_ptr->node_inx[j+1],
-					i);
+					i, true);
 			j += 2;
 		}
 		_layout_job_record(treeview, sview_job_info, update);
@@ -2352,7 +2352,7 @@ need_refresh:
 						step_ptr->node_inx[j],
 						step_ptr->
 						node_inx[j+1],
-						i);
+						i, true);
 					j += 2;
 				}
 				_layout_step_record(treeview, 
@@ -2752,7 +2752,7 @@ display_it:
 				change_grid_color(grid_button_list,
 						  job_ptr->node_inx[j],
 						  job_ptr->node_inx[j+1],
-						  i);
+						  i, true);
 			j += 2;
 		}
 		i++;
@@ -2996,7 +2996,7 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				job_ptr->node_inx[j],
-				job_ptr->node_inx[j+1], i);
+				job_ptr->node_inx[j+1], i, false);
 			j += 2;
 		}
 	}

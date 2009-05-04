@@ -599,7 +599,7 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					block_ptr->bp_inx[j],
-					block_ptr->bp_inx[j+1], i);
+					block_ptr->bp_inx[j+1], i, true);
 				j += 2;
 			}
 			_layout_block_record(treeview, block_ptr, update);
@@ -912,7 +912,7 @@ display_it:
 						  bp_inx[j],
 						  sview_block_info_ptr->
 						  bp_inx[j+1],
-						  i);
+						  i, true);
 			j += 2;
 		}
 		i++;
@@ -1046,11 +1046,8 @@ display_it:
 				 popup_win->display_data, SORTID_CNT);
 	}
 
-	if(!popup_win->grid_button_list) {
-		popup_win->grid_button_list = copy_main_button_list();
-		put_buttons_in_table(popup_win->grid_table,
-				     popup_win->grid_button_list);
-	}
+	setup_popup_grid_list(popup_win);
+
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
 		_display_info_block(block_list, popup_win);
@@ -1127,7 +1124,7 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				block_ptr->bp_inx[j],
-				block_ptr->bp_inx[j+1], i);
+				block_ptr->bp_inx[j+1], i, false);
 			j += 2;
 		}
 	}

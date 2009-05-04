@@ -46,7 +46,7 @@ char *sview_colors[] = {"#0000FF", "#00FF00", "#00FFFF", "#FFFF00",
 			"#715627", "#6A8CA2", "#4C7127", "#25B9B9",
 			"#A020F0", "#8293ED", "#FFA500", "#FFC0CB",
 			"#8B6914", "#18A24E", "#F827FC", "#B8A40C"};
-char *blank_color = "#4a4a4a";
+char *blank_color = "#919191";
 
 int sview_colors_cnt = 20;
 
@@ -393,7 +393,7 @@ extern grid_button_t *create_grid_button_from_another(
 
 /* start == -1 for all */
 extern char *change_grid_color(List button_list, int start, int end,
-			       int color_inx)
+			       int color_inx, bool change_unused)
 {
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
@@ -418,6 +418,9 @@ extern char *change_grid_color(List button_list, int start, int end,
 			    ||  (grid_button->inx > end)) 
 				continue;
 		
+		if(!change_unused && !grid_button->used)
+			continue;
+
 		if(color_inx == MAKE_BLACK) {
 			_put_button_as_inactive(grid_button);
 			grid_button->color = blank_color;
@@ -444,6 +447,28 @@ extern char *change_grid_color(List button_list, int start, int end,
 	}
 	list_iterator_destroy(itr);
 	return sview_colors[color_inx];
+}
+
+extern void set_grid_used(List button_list, int start, int end,
+			  bool used)
+{
+	ListIterator itr = NULL;
+	grid_button_t *grid_button = NULL;
+
+	if(!button_list)
+		return;
+
+	itr = list_iterator_create(button_list);
+	while((grid_button = list_next(itr))) {
+		if(start != -1)
+			if ((grid_button->inx < start)
+			    ||  (grid_button->inx > end)) 
+				continue;
+		grid_button->used = used;
+	}
+	list_iterator_destroy(itr);
+
+	return;
 }
 
 extern void get_button_list_from_main(List *button_list, int start, int end,
@@ -502,6 +527,7 @@ extern List copy_main_button_list(int initial_color)
 					 "button-press-event",
 					 G_CALLBACK(_open_node),
 					 send_grid_button);
+			send_grid_button->used = false;
 			list_append(button_list, send_grid_button);
 		}
 	}
@@ -926,18 +952,21 @@ extern void sview_reset_grid()
 	list_iterator_destroy(itr);
 }
 
+/* clear the grid */
 extern void setup_popup_grid_list(popup_info_t *popup_win)
 {
 	int def_color = MAKE_BLACK;
 
-	if(!popup_win->model || popup_win->spec_info->type == INFO_PAGE) 
+	if(!popup_win->model) 
 		def_color = MAKE_WHITE;
 
 	if(popup_win->grid_button_list) {
 		change_grid_color(popup_win->grid_button_list, -1, -1,
-				  def_color);
+				  def_color, true);
+		set_grid_used(popup_win->grid_button_list, -1, -1, false);
 	} else {	     
-		popup_win->grid_button_list = copy_main_button_list(def_color);
+		popup_win->grid_button_list =
+			copy_main_button_list(def_color);
 		put_buttons_in_table(popup_win->grid_table,
 				     popup_win->grid_button_list);
 		popup_win->full_grid = 1;
@@ -952,11 +981,16 @@ extern void setup_popup_grid_list(popup_info_t *popup_win)
 	if(popup_win->node_inx) {
 		int j=0;
 		while(popup_win->node_inx[j] >= 0) {
+			set_grid_used(popup_win->grid_button_list,
+				      popup_win->node_inx[j],
+				      popup_win->node_inx[j+1], true);
 			change_grid_color(
 				popup_win->grid_button_list,
 				popup_win->node_inx[j],
-				popup_win->node_inx[j+1], MAKE_WHITE);
+				popup_win->node_inx[j+1], MAKE_WHITE, true);
 			j += 2;
 		}
-	}
+	} else
+		set_grid_used(popup_win->grid_button_list, -1, -1, true);	
+
 }

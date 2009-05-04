@@ -830,7 +830,7 @@ display_it:
 	/* set up the grid */
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info_ptr = list_next(itr))) {
-		change_grid_color(grid_button_list, i, i, i);
+		change_grid_color(grid_button_list, i, i, i, true);
 		i++;
 	}
 	list_iterator_destroy(itr);
@@ -948,14 +948,7 @@ display_it:
 		goto end_it;
 	}
 
-	if(popup_win->grid_button_list) {
-		list_destroy(popup_win->grid_button_list);
-	}	       
-#ifdef HAVE_3D
-	popup_win->grid_button_list = copy_main_button_list();
-#else
-	popup_win->grid_button_list = list_create(destroy_grid_button);
-#endif	
+	setup_popup_grid_list(popup_win);
 	
 	/* just linking to another list, don't free the inside, just
 	   the list */
@@ -1025,13 +1018,8 @@ display_it:
 			continue;
 		
 		list_push(send_info_list, sview_node_info_ptr);
-#ifdef HAVE_3D
 		change_grid_color(popup_win->grid_button_list,
-				  i, i, 0);
-#else
-		get_button_list_from_main(&popup_win->grid_button_list,
-					  i, i, 0);		
-#endif
+				  i, i, 0, true);
 	}
 	list_iterator_destroy(itr);
 
@@ -1039,10 +1027,6 @@ display_it:
 		hostlist_iterator_destroy(host_itr);
 		hostlist_destroy(hostlist);
 	}
-
-
-	put_buttons_in_table(popup_win->grid_table,
-			     popup_win->grid_button_list);
 
 	_update_info_node(send_info_list, 
 			  GTK_TREE_VIEW(spec_info->display_widget));

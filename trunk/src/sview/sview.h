@@ -228,6 +228,7 @@ typedef struct {
 	int state;
 	int table_x;
 	int table_y;
+	bool used;
 } grid_button_t;
 
 typedef struct {
@@ -277,11 +278,12 @@ extern void destroy_grid_button(void *arg);
 extern grid_button_t *create_grid_button_from_another(
 	grid_button_t *grid_button, char *name, int color_inx);
 /* do not free the char * from this function it is static */
-extern char *change_grid_color(List button_list, int start_inx, int end_inx,
-			       int color_inx);
+extern char *change_grid_color(List button_list, int start, int end,
+			       int color_inx, bool change_unused);
+extern void set_grid_used(List button_list, int start, int end, bool used);
 extern void get_button_list_from_main(List *button_list, int start, int end,
 				      int color_inx);
-extern List copy_main_button_list();
+extern List copy_main_button_list(int initial_color);
 #ifdef HAVE_BG
 extern void add_extra_bluegene_buttons(List *button_list, int inx, 
 				       int *color_inx);
