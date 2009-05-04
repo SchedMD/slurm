@@ -1665,17 +1665,11 @@ need_refresh:
 		if(!strcmp(part_ptr->name, name)) {
 			j=0;
 			while(part_ptr->node_inx[j] >= 0) {
-				if(!first_time)
-					change_grid_color(
-						popup_win->grid_button_list,
-						part_ptr->node_inx[j],
-						part_ptr->node_inx[j+1], i);
-				else
-					get_button_list_from_main(
-						&popup_win->grid_button_list,
-						part_ptr->node_inx[j],
-						part_ptr->node_inx[j+1],
-						i);
+				change_grid_color(
+					popup_win->grid_button_list,
+					part_ptr->node_inx[j],
+					part_ptr->node_inx[j+1], i,
+					true);
 				j += 2;
 			}
 			_layout_part_record(treeview, sview_part_info, update);
@@ -1706,9 +1700,6 @@ need_refresh:
 			
 			goto need_refresh;
 		}
-		put_buttons_in_table(popup_win->grid_table,
-				     popup_win->grid_button_list);
-
 	}
 	gtk_widget_show(spec_info->display_widget);
 		
@@ -2077,7 +2068,7 @@ display_it:
 				change_grid_color(grid_button_list,
 						  part_ptr->node_inx[j],
 						  part_ptr->node_inx[j+1],
-						  i);
+						  i, true);
 			j += 2;
 		}
 		i++;
@@ -2233,15 +2224,7 @@ display_it:
 				 SORTID_CNT);
 	}
 	
-	if(popup_win->grid_button_list) {
-		list_destroy(popup_win->grid_button_list);
-	}	       
-	
-#ifdef HAVE_3D
-	popup_win->grid_button_list = copy_main_button_list();
-#else
-	popup_win->grid_button_list = list_create(destroy_grid_button);
-#endif	
+	setup_popup_grid_list(popup_win);
 
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
@@ -2254,9 +2237,10 @@ display_it:
 	send_info_list = list_create(NULL);	
 	
 	itr = list_iterator_create(info_list);
+	i = -1;
 	while ((sview_part_info_ptr = list_next(itr))) {
 		i++;
-		part_ptr = sview_part_info_ptr->part_ptr;	
+		part_ptr = sview_part_info_ptr->part_ptr;
 		switch(spec_info->type) {
 		case RESV_PAGE:
 		case NODE_PAGE:
@@ -2287,23 +2271,14 @@ display_it:
 		list_push(send_info_list, sview_part_info_ptr);
 		j=0;
 		while(part_ptr->node_inx[j] >= 0) {
-#ifdef HAVE_3D
 			change_grid_color(
 				popup_win->grid_button_list,
 				part_ptr->node_inx[j],
-				part_ptr->node_inx[j+1], i);
-#else
-			get_button_list_from_main(
-				&popup_win->grid_button_list,
-				part_ptr->node_inx[j],
-				part_ptr->node_inx[j+1], i);
-#endif
+				part_ptr->node_inx[j+1], i, false);
 			j += 2;
 		}
 	}
 	list_iterator_destroy(itr);
-	put_buttons_in_table(popup_win->grid_table,
-			     popup_win->grid_button_list);
 	 
 	_update_info_part(send_info_list, 
 			  GTK_TREE_VIEW(spec_info->display_widget));
