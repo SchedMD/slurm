@@ -71,35 +71,33 @@ Multiple partitions may be specified using a comma separator.
 By default, no nodes are excluded.</li>
 </ul></p>
 
-<p>While <i>SuspendProgram</i> and <i>ResumeProgram</i> execute as 
-<i>SlurmUser</i>. The program can take advantage of this to execute 
-programs directly on the nodes as user <i>root</i> through the 
-SLURM infrastructure.
-Example scripts are shown below:
+<p>Note that <i>SuspendProgram</i> and <i>ResumeProgram</i> execute as 
+<i>SlurmUser</i> on the node where the <i>slurmctld</i> daemon runs
+(primary and backup server nodes). 
+Use of <i>sudo</i> may be required for <i>SlurmUser</i>to power down 
+and restart nodes.
+If you need to convert SLURM's hostlist expression into individual node
+names, the <i>scontrol show hostnames</i> command may prove useful.
+The commands used to boot or shut down nodes will depend upon your
+cluster management tools.</p>
+
 <pre>
 #!/bin/bash
-# Example SuspendProgram for cluster where every node has two CPUs
-srun --uid=0 --no-allocate --nodelist=$1 echo powersave >/sys/devices/system/cpu0/cpufreq
-srun --uid=0 --no-allocate --nodelist=$1 echo powersave >/sys/devices/system/cpu1/cpufreq
+# Example SuspendProgram
+hosts=`scontrol show hostnames $1`
+for host in "$hosts"
+do
+   sudo node_shutdown $host
+done
 
 #!/bin/bash
-# Example ResumeProgram for cluster where every node has two CPUs
-srun --uid=0 --no-allocate --nodelist=$1 echo performance >/sys/devices/system/cpu0/cpufreq
-srun --uid=0 --no-allocate --nodelist=$1 echo performance >/sys/devices/system/cpu1/cpufreq
+# Example ResumeProgram
+hosts=`scontrol show hostnames $1`
+for host in "$hosts"
+do
+   sudo node_startup $host
+done
 </pre>
-
-<p>The srun --no-allocate option permits SlurmUser and user root only to spawn 
-tasks directly on the compute nodes without actually creating a SLURM job. 
-No other users have this permission (their requests will generate an invalid 
-credential error message and the event will be logged).
-The srun --uid option permits SlurmUser and user root only to execute a job 
-as some other user. 
-Then SlurmUser uses the srun --uid option, the srun command will try to set 
-its user ID to that value in order to fully operate as the specified user.
-This will fail and srun will report an error to that effect. 
-This does not prevent the spawned programs from running as user root.
-No other users have this permission (their requests will generate an invalid 
-user id error message and the event will be logged).</p>
 
 <p>The slurmctld daemon will periodically (every 10 minutes) log how many 
 nodes are in power save mode using messages of this sort:
@@ -114,6 +112,6 @@ nodes are in power save mode using messages of this sort:
 You can also configure SLURM without SuspendProgram or ResumeProgram values
 to assess the potential impact of power saving mode before enabling it.</p>
 
-<p style="text-align:center;">Last modified 13 November 2008</p>
+<p style="text-align:center;">Last modified 4 May 2009</p>
 
 <!--#include virtual="footer.txt"-->
