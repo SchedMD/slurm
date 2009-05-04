@@ -877,7 +877,7 @@ Maximum number of jobs this user can run.
 \fIMaxNodesPerJob=\fP
 Maximum number of nodes per job this user can run.
 .TP
-\fIMaxProcSecondsPerJob= 
+\fIMaxProcSecondsPerJob=\fP
 Maximum cpu seconds this user can run per job.
 .TP
 \fIMaxWallDurationPerJob=\fP
@@ -887,6 +887,64 @@ Maximum time (not related to job size) this user can run.
 Comma separated list of Quality of Service names (Defined in sacctmgr).
 .RE
 
+.SH "ARCHIVE FUNCTIONALITY"
+Sacctmgr has the capability to archive to a flatfile and or load that
+data if needed later.  The archiving is usually done by the slurmdbd
+and it is highly recommended you only do it through sacctmgr if you
+completely understand what you are doing.  For slurmdbd options see
+"man slurmdbd" for more information. 
+Loading data into the database can be done from these files to either
+view old data or regenerate rolled up data. 
+
+These are the options for both dump and load of archive information.
+
+archive dump
+
+.TP
+\fIDirectory=\fP
+Directory to store the archive data.
+.TP
+\fIEvents\fP
+Archive Events.  If not specified and PurgeEventMonths is set
+all event data removed will be lost permanently.
+.TP
+\fIJobs\fP
+Archive Jobs.  If not specified and PurgeJobMonths is set
+all job data removed will be lost permanently.
+.TP
+\fIPurgeEventMonths=\fP
+Purge cluster event records older than time stated in months.
+.TP
+\fIPurgeJobMonths=\fP
+Purge job records older than time stated in months.
+.TP
+\fIPurgeStepMonths=\fP
+Purge step records older than time stated in months.
+.TP
+\fIPurgeSuspendMonths=\fP
+Purge job suspend records older than time stated in months.
+.TP
+\fIScript=\fP
+Run this script instead of the generic form of archive to flat files.
+.TP
+\fISteps\fP
+Archive Steps.  If not specified and PurgeStepMonths is set
+all step data removed will be lost permanently.
+.TP
+\fISuspend\fP
+Archive Suspend Data.  If not specified and PurgeSuspendMonths is set
+all suspend data removed will be lost permanently.
+.RE    
+                                                                       
+archive load
+.TP
+\fIFile=\fP
+File to load into database.
+.TP
+\fIInsert=\fP 
+SQL to insert directly into the database.  This should be used very
+cautiously since this is writing your sql into the database.
+.RE
 
 .SH "EXAMPLES"
 .eo

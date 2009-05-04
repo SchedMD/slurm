@@ -512,6 +512,9 @@ typedef struct {
 
 typedef struct {
 	char *archive_dir;     /* location to place archive file */
+	uint16_t archive_events; /* whether or not to keep an archive
+				    file of events that can be loaded
+				    later */
 	uint16_t archive_jobs; /* whether or not to keep an archive
 				  file of jobs that can be loaded
 				  later */
@@ -520,9 +523,15 @@ typedef struct {
 	uint16_t archive_steps; /* whether or not to keep an archive
 				  file of steps that can be loaded
 				  later */
+	uint16_t archive_suspend; /* whether or not to keep an archive
+				     file of suspend data that can be loaded
+				     later */
 	acct_job_cond_t *job_cond; /* conditions for the jobs to archive */
-	uint16_t job_purge; /* purge jobs older than this in months */
-	uint16_t step_purge; /* purge steps older than this in months */
+	uint16_t purge_event; /* purge events older than this in months */
+	uint16_t purge_job; /* purge jobs older than this in months */
+	uint16_t purge_step; /* purge steps older than this in months */
+	uint16_t purge_suspend; /* purge suspend data older than this
+				 * in months */
 } acct_archive_cond_t;
 
 typedef struct {

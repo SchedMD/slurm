@@ -3982,10 +3982,9 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		xstrcat(cols, "creation_time, mod_time, acct, "
-			"cluster, classification");
+		xstrcat(cols, "creation_time, mod_time, acct, cluster");
 		xstrfmtcat(vals, "%d, %d, 'root', \"%s\"",
-			   now, now, object->name, object->classification);
+			   now, now, object->name);
 		xstrfmtcat(extra, ", mod_time=%d", now);
 		if(object->root_assoc)
 			_setup_association_limits(object->root_assoc, &cols, 
