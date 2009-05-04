@@ -338,9 +338,13 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		
 		list_append(cluster_list, cluster);
 		cluster->name = xstrdup(name);
+		cluster->classification = class;
 		cluster->root_assoc = xmalloc(sizeof(acct_association_rec_t));
 		init_acct_association_rec(cluster->root_assoc);
 		printf("  Name          = %s\n", cluster->name);
+		if(cluster->classification)
+			printf("  Classification= %s\n",
+			       get_classification_str(cluster->classification));
 
 		cluster->root_assoc->shares_raw = start_assoc.shares_raw;
 		
@@ -421,6 +425,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_CLUSTER,
 		PRINT_CHOST,
 		PRINT_CPORT,
+		PRINT_CLASS,
 		PRINT_CPUS,
 		PRINT_FAIRSHARE,
 		PRINT_GRPCM,
@@ -492,6 +497,12 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("ControlPort");
 			field->len = 12;
 			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("Classification", object,
+				       MAX(command_len, 2))) {
+			field->type = PRINT_CPUS;
+			field->name = xstrdup("Class");
+			field->len = 9;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("CPUCount", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_CPUS;
@@ -655,6 +666,13 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			case PRINT_CPORT:
 				field->print_routine(field,
 						     cluster->control_port,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_CLASS:
+				field->print_routine(field,
+						     get_classification_str(
+							     cluster->
+							     classification),
 						     (curr_inx == field_count));
 				break;
 			case PRINT_CPUS:
@@ -1050,6 +1068,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	char *line = NULL;
 	int i, command_len = 0;
 	FILE *fd = NULL;
+	char *class_str = NULL;
 
 	for (i=0; i<argc; i++) {
 		int end = parse_option_end(argv[i]);
@@ -1094,6 +1113,38 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, " We need a cluster to dump.\n");
 		return SLURM_ERROR;
+	} else {
+		List temp_list = NULL;
+		acct_cluster_cond_t cluster_cond;
+		acct_cluster_rec_t *cluster_rec = NULL;
+
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+		cluster_cond.cluster_list = list_create(NULL);
+		list_push(cluster_cond.cluster_list, cluster_name);
+
+		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
+							&cluster_cond);
+		list_destroy(cluster_cond.cluster_list);
+		if(!temp_list) {
+			exit_code=1;
+			fprintf(stderr,
+				" Problem getting clusters from database.  "
+				"Contact your admin.\n");
+			xfree(cluster_name);
+			return SLURM_ERROR;
+		}
+
+		cluster_rec = list_peek(temp_list);
+		if(!cluster_rec) {
+			exit_code=1;
+			fprintf(stderr, " Cluster %s doesn't exist.\n",
+				cluster_name);
+			xfree(cluster_name);
+			list_destroy(temp_list);
+			return SLURM_ERROR;
+		}
+		class_str = get_classification_str(cluster_rec->classification);
+		list_destroy(temp_list);
 	}
 
 	if(!file_name) {
@@ -1120,6 +1171,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, " Your uid (%u) is not in the "
 			"accounting system, can't dump cluster.\n", my_uid);
+		xfree(cluster_name);
 		xfree(user_name);
 		if(user_list)
 			list_destroy(user_list);
@@ -1132,6 +1184,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 			exit_code=1;
 			fprintf(stderr, " Your user does not have sufficient "
 				"privileges to dump clusters.\n");
+			xfree(cluster_name);
 			if(user_list)
 				list_destroy(user_list);
 			xfree(user_name);
@@ -1193,10 +1246,14 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		   "MaxWallDurationPerJob=1\n") < 0) {
 		exit_code=1;
 		fprintf(stderr, "Can't write to file");
+		xfree(cluster_name);
 		return SLURM_ERROR;
 	}
 
 	line = xstrdup_printf("Cluster - %s", cluster_name);
+
+	if(class_str) 
+		xstrfmtcat(line, ":Classification=%s", class_str);
 
 	acct_hierarchical_rec = list_peek(acct_hierarchical_rec_list);
 	assoc = acct_hierarchical_rec->assoc;

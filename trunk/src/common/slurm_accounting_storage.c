@@ -7241,6 +7241,9 @@ extern char *get_classification_str(uint16_t class)
 	acct_classification_type_t type = class & ACCT_CLASS_BASE;
 
 	switch(type) {
+	case ACCT_CLASS_NONE:
+		return NULL;
+		break;
 	case ACCT_CLASS_CAPACITY:
 		if(classified)
 			return "*Capacity";
@@ -7281,9 +7284,11 @@ extern uint16_t str_2_classification(char *class)
 	else if(strcasestr(class, "capap"))
 		type = ACCT_CLASS_CAPAPACITY;
 	
-	if(strcasestr(class, "class")) 
+	if(strcasestr(class, "*")) 
+		type |= ACCT_CLASSIFIED_FLAG; 
+	else if(strcasestr(class, "class")) 
 		type |= ACCT_CLASSIFIED_FLAG;
-
+	
 	return type;
 }
 
