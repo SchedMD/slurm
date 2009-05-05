@@ -159,6 +159,11 @@ foreach my $line (<STDIN>) {
 		$partition = $1;
 	}
 
+	#Make sure we don't have anything after the comp code 
+	if($comp_code =~ /(\d*)\D/) {
+		$comp_code = $1;
+	}
+
 	#figure out the cluster
 	if($cluster eq "ALL") {
 		if ($node_features =~ /\[(\w*)\]/) {
