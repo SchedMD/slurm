@@ -159,9 +159,9 @@ static void _print_version(void)
 static void _usage(void)
 {
 #ifdef HAVE_BG
-	printf("Usage: smap [-hVcp] [-D bcjrs] [-i seconds]\n");
+	printf("Usage: smap [-chVp] [-D bcjrs] [-i seconds]\n");
 #else
-	printf("Usage: smap [-hVcp] [-D jrs] [-i seconds]\n");
+	printf("Usage: smap [-chVp] [-D jrs] [-i seconds]\n");
 #endif
 }
 
@@ -169,6 +169,8 @@ static void _help(void)
 {
 	printf("\
 Usage: smap [OPTIONS]\n\
+  -c, --commandline          output written with straight to the\n\
+                             commandline.\n\
   -D, --display              set which display mode to use\n\
                              b=bluegene blocks\n\
                              c=set bluegene configuration\n\
@@ -177,14 +179,12 @@ Usage: smap [OPTIONS]\n\
                              s=slurm partitions\n\
   -h, --noheader             no headers on output\n\
   -i, --iterate=seconds      specify an interation period\n\
-  -V, --version              output version information and exit\n\
-  -c, --commandline          output written with straight to the\n\
-                             commandline.\n\
   -p, --parse                used with -c to not format output, but use\n\
                              single tab delimitation.\n\
   -R, --resolve              resolve an XYZ coord from a Rack/Midplane id \n\
                              or vice versa.\n\
                              (i.e. -R R101 for R/M input -R 101 for XYZ).\n\
+  -V, --version              output version information and exit\n\
 \nHelp options:\n\
   --help                     show this help message\n\
   --usage                    display brief usage message\n");
