@@ -1,7 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 1.4.0-pre14
+* Changes in SLURM 2.0.0
+==============================
+
+* Changes in SLURM 2.0.0-rc1
 ==============================
  -- Fix bug in preservation of advanced reservations when slurmctld restarts.
  -- Updated perlapi to match correctly with slurm.h structures
