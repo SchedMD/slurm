@@ -1,0 +1,117 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Power Saving Guide</h1>
+<p>SLURM provides an integrated power saving mechanism for idle nodes.
+Nodes that remain idle for an configurable period of time can be placed 
+in a power saving mode. 
+The nodes will be restored to normal operation once work is assigned to them.
+Beginning with version 2.0.0, nodes can be fully powered down.
+Earlier releases of SLURM do not support the powering down of nodes, 
+only support of reducing their performance and thus their power consumption.
+For example, power saving can be accomplished using a <i>cpufreq</i> governor 
+that can change CPU frequency and voltage (note that the <i>cpufreq</i> driver
+must be enabled in the Linux kernel configuration).
+Of particular note, SLURM can power nodes up or down 
+at a configurable rate to prevent rapid changes in power demands. 
+For example, starting a 1000 node job on an idle cluster could result 
+in an instantaneous surge in power demand of multiple megawatts without 
+SLURM's support to increase power demands in a gradual fashion.</p>
+
+
+<h2>Configuration</h2>
+<p>A great deal of flexibility is offered in terms of when and 
+how idle nodes are put into or removed from power save mode.
+The following configuration parameters are available:
+<ul>
+
+<li><b>SuspendTime</b>:
+Nodes becomes eligible for power saving mode after being idle 
+for this number of seconds. 
+A negative number disables power saving mode.
+The default value is -1 (disabled).</li>
+
+<li><b>SuspendRate</b>:
+Maximum number of nodes to be placed into power saving mode 
+per minute. 
+A value of zero results in no limits being imposed.
+The default value is 60.
+Use this to prevent rapid drops in power requirements.</li>
+
+<li><b>ResumeRate</b>:
+Maximum number of nodes to be removed from power saving mode 
+per minute. 
+A value of zero results in no limits being imposed.
+The default value is 300.
+Use this to prevent rapid increases in power requirements.</li>
+
+<li><b>SuspendProgram</b>:
+Program to be executed to place nodes into power saving mode.
+The program executes as <i>SlurmUser</i> (as configured in
+<i>slurm.conf</i>). 
+The argument to the program will be the names of nodes to 
+be placed into power savings mode (using SLURM's hostlist 
+expression format).</li>
+
+<li><b>ResumeProgram</b>:
+Program to be executed to remove nodes from power saving mode.
+The program executes as <i>SlurmUser</i> (as configured in
+<i>slurm.conf</i>). 
+The argument to the program will be the names of nodes to 
+be removed from power savings mode (using SLURM's hostlist 
+expression format).</li>
+
+<li><b>SuspendExcNodes</b>:
+List of nodes to never place in power saving mode. 
+Use SLURM's hostlist expression format.
+By default, no nodes are excluded.</li>
+
+<li><b>SuspendExcParts</b>:
+List of partitions with nodes to never place in power saving mode. 
+Multiple partitions may be specified using a comma separator.
+By default, no nodes are excluded.</li>
+</ul></p>
+
+<p>Note that <i>SuspendProgram</i> and <i>ResumeProgram</i> execute as 
+<i>SlurmUser</i> on the node where the <i>slurmctld</i> daemon runs
+(primary and backup server nodes). 
+Use of <i>sudo</i> may be required for <i>SlurmUser</i>to power down 
+and restart nodes.
+If you need to convert SLURM's hostlist expression into individual node
+names, the <i>scontrol show hostnames</i> command may prove useful.
+The commands used to boot or shut down nodes will depend upon your
+cluster management tools.</p>
+
+<pre>
+#!/bin/bash
+# Example SuspendProgram
+hosts=`scontrol show hostnames $1`
+for host in "$hosts"
+do
+   sudo node_shutdown $host
+done
+
+#!/bin/bash
+# Example ResumeProgram
+hosts=`scontrol show hostnames $1`
+for host in "$hosts"
+do
+   sudo node_startup $host
+done
+</pre>
+
+<p>The slurmctld daemon will periodically (every 10 minutes) log how many 
+nodes are in power save mode using messages of this sort:
+<pre>
+[May 02 15:31:25] Power save mode 0 nodes
+...
+[May 02 15:41:26] Power save mode 10 nodes
+...
+[May 02 15:51:28] Power save mode 22 nodes
+</pre>
+<p>Using these logs you can easily see the effect of SLURM's power saving support.
+You can also configure SLURM without SuspendProgram or ResumeProgram values
+to assess the potential impact of power saving mode before enabling it.</p>
+
+<p style="text-align:center;">Last modified 4 May 2009</p>
+
+<!--#include virtual="footer.txt"-->
