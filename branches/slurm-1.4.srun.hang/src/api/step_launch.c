@@ -264,6 +264,10 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 			rc = SLURM_ERROR;
 			goto fail1;
 		}
+		/* The client_io_t gets a pointer back to the slurm_launch_state
+		   to notify it of I/O errors. */
+		ctx->launch_state->io.normal->sls = ctx->launch_state;
+
 		if (client_io_handler_start(ctx->launch_state->io.normal) 
 		    != SLURM_SUCCESS) {
 			rc = SLURM_ERROR;
@@ -427,16 +431,31 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		info("Force Terminated job step %u.%u",
 		     ctx->job_id, ctx->step_resp->job_step_id);
 
+	/* task_exit_signal != 0 when srun receives a message that a task
+	   exited with a SIGTERM or SIGKILL.  Without this test, a hang in srun
+	   might occur when a node gets a hard power failure, and TCP does not
+	   indicate that the I/O connection closed.  The I/O thread could 
+	   block waiting for an EOF message, even though the remote process
+	   has died.  In this case, use client_io_handler_abort to force the 
+	   I/O thread to stop listening for stdout or stderr and shutdown.*/
+	if (task_exit_signal && !sls->user_managed_io) {
+		client_io_handler_abort(sls->io.normal);
+	}
 	/* Then shutdown the message handler thread */
 	eio_signal_shutdown(sls->msg_handle);
+
 	pthread_mutex_unlock(&sls->lock);
 	pthread_join(sls->msg_thread, NULL);
 	pthread_mutex_lock(&sls->lock);
+
 	eio_handle_destroy(sls->msg_handle);
 
 	/* Then wait for the IO thread to finish */
 	if (!sls->user_managed_io) {
+		pthread_mutex_unlock(&sls->lock);
 		client_io_handler_finish(sls->io.normal);
+		pthread_mutex_lock(&sls->lock);
+
 		client_io_handler_destroy(sls->io.normal);
 	}
 
@@ -572,6 +591,8 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 		sls->tasks_requested = layout->task_cnt;
 	sls->tasks_started = bit_alloc(layout->task_cnt);
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
+	sls->node_questionable = bit_alloc(layout->node_cnt);
+	sls->node_io_error = bit_alloc(layout->node_cnt);
 	sls->layout = layout;
 	sls->resp_port = NULL;
 	sls->abort = false;
@@ -595,6 +616,8 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 	pthread_cond_destroy(&sls->cond);
 	bit_free(sls->tasks_started);
 	bit_free(sls->tasks_exited);
+	bit_free(sls->node_questionable);
+	bit_free(sls->node_io_error);
 
 	/* Now clean up anything created by slurm_step_launch() */
 	if (sls->resp_port != NULL) {
@@ -979,7 +1002,9 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 }
 
 /*
- * FIXME: Verify that tasks on these nodes(s) are still alive.
+ * Receive a message when a slurmd cold starts, that the step on that node
+ * may have died.  Verify that tasks on these nodes(s) are still alive, 
+ * and abort the job step if they are not.
  * This message could be the result of the slurmd daemon cold-starting
  * or a race condition when tasks are starting or terminating.
  */
@@ -987,6 +1012,71 @@ static void
 _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 {
 	srun_step_missing_msg_t *step_missing = missing_msg->data;
+	hostset_t fail_nodes, all_nodes;
+	hostlist_iterator_t fail_itr;
+	char *node;
+	int num_node_ids;
+	int i;
+	int node_id;
+	client_io_t *cio = sls->io.normal;
+
+info("_step_missing_handler  called for %s", step_missing->nodelist);
+
+
+	/* Ignore this message in the unusual "user_managed_io" case.  No way 
+	   to confirm a bad connection, since a test message goes straight to 
+	   the task.  Aborting without checking may be too dangerous.  This 
+	   choice may cause srun to not exit even though the job step has 
+	   ended. */
+	if (sls->user_managed_io)
+		return;
+
+	fail_nodes = hostset_create(step_missing->nodelist);
+	fail_itr = hostset_iterator_create(fail_nodes);
+	num_node_ids = hostset_count(fail_nodes);
+
+	pthread_mutex_lock(&sls->lock);
+	all_nodes = hostset_create(sls->layout->node_list);
+
+	for (i = 0; i < num_node_ids; i++) {
+		node = hostlist_next(fail_itr);
+		node_id = hostset_find(all_nodes, node);
+		free(node);
+		bit_set(sls->node_questionable, node_id);
+
+		/* If this is true, a node has already encountered an I/O error
+		   with the stepd, and the job should abort */
+		if (bit_test(sls->node_io_error, node_id)) {
+			sls->abort = true;
+			pthread_cond_signal(&sls->cond);
+		} else {
+			/* If a connection has been opened try to write a test 
+			   message.  If the connection was already closed nicely,
+			   client_io_handler_send_test_message will just return
+			   success, because the step has already finished on that
+			   node.  If the write fails, the I/O thread will note a 
+			   problem and request an abort. */
+			pthread_mutex_lock(&cio->ioservers_lock);
+
+			if (cio->ioserver[node_id] != NULL) {
+				if (client_io_handler_send_test_message(cio, node_id) != SLURM_SUCCESS) {
+					/* TODO  Find a way to retry.  For now, 
+					    this effectively ignores the message 
+					    about a missing step. */
+					error("Could not attempt to make "
+					      "remote connection.");
+				}
+			}
+			pthread_mutex_unlock(&cio->ioservers_lock);
+		}
+	}
+
+	pthread_mutex_unlock(&sls->lock);
+
+	hostlist_iterator_destroy(fail_itr);
+	hostset_destroy(fail_nodes);
+	hostset_destroy(all_nodes);
+
 
 	debug("Step %u.%u missing from node(s) %s", 
 	      step_missing->job_id, step_missing->step_id,
@@ -1315,5 +1405,47 @@ fini:	if (checkpoint) {
 		slurm_checkpoint_complete(exec_msg->job_id, exec_msg->step_id,
 			time(NULL), (uint32_t) exit_code, buf);
 	}
+}
+
+
+/*
+ * Notify the step_launch_state that an I/O connection went bad.
+ * If the node is suspected to be down, abort the job.
+ */
+int 
+step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
+{
+	pthread_mutex_lock(&sls->lock);
+
+	bit_set(sls->node_io_error, node_id);
+
+	/* If this is true, a node has already encountered an I/O error
+	   with the stepd, and the job should abort */
+	if (bit_test(sls->node_questionable, node_id)) {
+		sls->abort = true;
+		pthread_cond_signal(&sls->cond);
+	}
+
+	pthread_mutex_unlock(&sls->lock);
+
+	return SLURM_SUCCESS;
+}
+
+
+/*
+ * Just in case the node was marked questionable very early in the 
+ * job step setup, clear this flag if/when the node makes its initial 
+ * connection.
+ */
+int 
+step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id)
+{
+	pthread_mutex_lock(&sls->lock);
+
+	bit_clear(sls->node_questionable, node_id);
+
+	pthread_mutex_unlock(&sls->lock);
+
+	return SLURM_SUCCESS;
 }
 

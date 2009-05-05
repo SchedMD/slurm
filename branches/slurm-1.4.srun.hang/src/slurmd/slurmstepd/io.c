@@ -339,7 +339,16 @@ _client_read(eio_obj_t *obj, List objs)
 	/*
 	 * Read the body
 	 */
-	if (client->header.length == 0) { /* zero length is an eof message */
+	if (client->header.type == SLURM_IO_CONNECTION_TEST) {
+		if (client->header.length != 0) {
+			debug5("  error in _client_read: bad connection test");
+			client->in_msg = NULL;
+			return SLURM_ERROR;
+		}
+		list_enqueue(client->job->free_incoming, client->in_msg);
+		client->in_msg = NULL;
+		return SLURM_SUCCESS;
+	} else if (client->header.length == 0) { /* zero length is an eof message */
 		debug5("  got stdin eof message!");
 	} else {
 		buf = client->in_msg->data + 
@@ -1714,6 +1723,7 @@ free_io_buf(struct io_buf *buf)
 	}
 }
 
+/* This just determines if there's space to hold more of the stdin stream */
 static bool
 _incoming_buf_free(slurmd_job_t *job)
 {

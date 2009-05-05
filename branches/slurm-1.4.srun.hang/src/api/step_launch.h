@@ -52,11 +52,17 @@ typedef struct {
 } user_managed_io_t;
 
 struct step_launch_state {
+	/* This lock protects tasks_started, tasks_exited, node_questionable,
+	   node_io_error, abort, and abort_action_taken.  The main thread 
+	   blocks on cond, waking when a tast starts or exits, or the abort 
+	   flag is set. */
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
 	int tasks_requested;
 	bitstr_t *tasks_started; /* or attempted to start, but failed */
 	bitstr_t *tasks_exited;  /* or never started correctly */
+	bitstr_t *node_questionable;  /* set after SRUN_STEP_MISSING msg */
+	bitstr_t *node_io_error;      /* set after write or read error */
 	bool abort;
 	bool abort_action_taken;
 
@@ -84,6 +90,8 @@ struct step_launch_state {
 	/* user registered callbacks */
 	slurm_step_launch_callbacks_t callback;
 };
+typedef struct step_launch_state step_launch_state_t;
+
 
 /*
  * Create a launch state structure for a specified step context, "ctx".
@@ -100,4 +108,19 @@ void step_launch_state_destroy(struct step_launch_state *sls);
  * Needed to locate the mpirun program for OpenMPI checkpoint
  */
 void record_ppid(void);
+
+/*
+ * Notify the step_launch_state that an I/O connection went bad.
+ * If the node is suspected to be down, abort the job.
+ */
+int step_launch_notify_io_failure(step_launch_state_t *sls, int node_id);
+
+/*
+ * Just in case the node was marked questionable very early in the 
+ * job step setup, clear this flag when the node makes its initial 
+ * connection.
+ */
+int step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id);
+
+
 #endif /* _STEP_LAUNCH_H */
