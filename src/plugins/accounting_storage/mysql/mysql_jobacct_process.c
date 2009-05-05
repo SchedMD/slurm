@@ -1059,6 +1059,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			continue;
 		
 		job = create_jobacct_job_rec();
+		list_append(job_list, job);
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		job->alloc_nodes = atoi(row[JOB_REQ_ALLOC_NODES]);
@@ -1203,8 +1204,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job->qos = atoi(row[JOB_REQ_QOS]);
 		job->show_full = 1;
 					
-		list_append(job_list, job);
-
 		if(job_cond && job_cond->step_list
 		   && list_count(job_cond->step_list)) {
 			set = 0;

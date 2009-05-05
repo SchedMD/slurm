@@ -1246,7 +1246,7 @@ extern int validate_current_blocks(char *dir)
 		return SLURM_SUCCESS;
 
 	last_config_update = time(NULL);
-	curr_block_list = list_create(NULL);
+	curr_block_list = list_create(destroy_bg_record);
 	found_block_list = list_create(NULL);
 //#if 0	
 	/* Check to see if the configs we have are correct */

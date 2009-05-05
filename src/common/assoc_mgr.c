@@ -1738,6 +1738,11 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 			list_iterator_reset(itr);
 		}
 		while((object = list_next(itr))) {
+			/* The root never changes so just continue
+			   here. */
+			if (object == assoc_mgr_root_assoc)
+				continue;
+
 			/* reset the limits because since a parent
 			   changed we could have different usage
 			*/
