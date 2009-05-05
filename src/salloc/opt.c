@@ -526,7 +526,7 @@ void set_options(const int argc, char **argv)
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
 		{"dependency",    required_argument, 0, 'P'},
-		{"quiet",         no_argument,       0, 'q'},
+		{"quiet",         no_argument,       0, 'Q'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
 		{"time",          required_argument, 0, 't'},
@@ -710,7 +710,7 @@ void set_options(const int argc, char **argv)
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
-		case 'q':
+		case 'Q':
 			opt.quiet++;
 			break;
 		case 'R':
@@ -1082,7 +1082,7 @@ static bool _opt_verify(void)
 	bool verified = true;
 
 	if (opt.quiet && opt.verbose) {
-		error ("don't specify both --verbose (-v) and --quiet (-q)");
+		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}
 
@@ -1529,7 +1529,7 @@ static void _help(void)
 "  -W, --wait=sec              seconds to wait for allocation if not\n"
 "                              immediately available\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -q, --quiet                 quiet mode (suppress informational messages)\n"
+"  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"

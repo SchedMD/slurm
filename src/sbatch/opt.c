@@ -548,7 +548,7 @@ static struct option long_options[] = {
 	{"overcommit",    no_argument,       0, 'O'},
 	{"partition",     required_argument, 0, 'p'},
 	{"dependency",    required_argument, 0, 'P'},
-	{"quiet",         no_argument,       0, 'q'},
+	{"quiet",         no_argument,       0, 'Q'},
 	{"no-rotate",     no_argument,       0, 'R'},
 	{"share",         no_argument,       0, 's'},
 	{"time",          required_argument, 0, 't'},
@@ -655,7 +655,7 @@ char *process_options_first_pass(int argc, char **argv)
 			_help();
 			exit(0);
 			break;
-		case 'q':
+		case 'Q':
 			opt.quiet++;
 			break;
 		case 'u':
@@ -1108,7 +1108,7 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
-		case 'q':
+		case 'Q':
 			opt.quiet++;
 			break;
 		case 'R':
@@ -1813,7 +1813,7 @@ static bool _opt_verify(void)
 	bool verified = true;
 
 	if (opt.quiet && opt.verbose) {
-		error ("don't specify both --verbose (-v) and --quiet (-q)");
+		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}
 
@@ -2299,7 +2299,6 @@ static void _help(void)
 "  -p, --partition=partition   partition requested\n"
 "  -H, --hold                  submit job in held state\n"
 "  -t, --time=minutes          time limit\n"
-"  -D, --chdir=path            change remote current working directory\n"
 "  -I, --immediate             exit if resources are not immediately available\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -s, --share                 share nodes with other jobs\n"
@@ -2308,7 +2307,7 @@ static void _help(void)
 "                              (type = block|cyclic|arbitrary)\n"
 "      --jobid=id              run under already allocated job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -q, --quiet                 quiet mode (suppress informational messages)\n"
+"  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
