@@ -210,7 +210,8 @@ int main(int argc, char *argv[])
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
-	pthread_t assoc_cache_thread = (pthread_t) 0;
+	pthread_t assoc_cache_thread;
+
 	/*
 	 * Establish initial configuration
 	 */
@@ -520,9 +521,10 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
 		pthread_join(slurmctld_config.thread_id_power,NULL);
-		if(assoc_cache_thread) {
-			/* end the thread here just say we aren't
-			 * running cache so it ends */
+		if(running_cache) {
+			/* break out and end the association cache
+			 * thread since we are shuting down, no reason
+			 * to wait for current info from the database */
 			slurm_mutex_lock(&assoc_cache_mutex);
 			running_cache = (uint16_t)NO_VAL;
 			pthread_cond_signal(&assoc_cache_cond);
