@@ -392,7 +392,7 @@ sacct [<OPTION>]                                                            \n\
 	           Use this comma seperated list of accounts to select jobs \n\
                    to display.  By default, all accounts are selected.      \n\
      -b, --brief:                                                           \n\
-	           Equivalent to '--fields=jobstep,state,error'. This option\n\
+	           Equivalent to '--format=jobstep,state,error'. This option\n\
 	           has no effect if --dump is specified.                    \n\
      -c, --completion: Use job completion instead of accounting data.       \n\
      -C, --clusters:                                                        \n\
@@ -605,7 +605,6 @@ void parse_command_line(int argc, char **argv)
 		{"helpformat", 0, 0, 'e'},
 		{"help-fields", 0, 0, 'e'},
 		{"endtime", 1, 0, 'E'},
-		{"format", 1, 0, 'F'},
 		{"file", 1, 0, 'f'},
 		{"gid", 1, 0, 'g'},
 		{"group", 1, 0, 'g'},
