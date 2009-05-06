@@ -501,9 +501,9 @@ extern int new_ba_request(ba_request_t* ba_request)
 #ifdef HAVE_BG
 	float sz=1;
 	int geo[BA_SYSTEM_DIMENSIONS] = {0,0,0};
-	int i2, i3, picked, total_sz=1 , size2, size3;
+	int i2, i3, picked, total_sz=1 , size2;
 	ListIterator itr;
-	int checked[8];
+	int checked[DIM_SIZE[X]];
 	int *geo_ptr;
 	int messed_with = 0;
 	
@@ -584,7 +584,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 				    ba_request->rotate);
 		}
 	
-		if(ba_request->size>total_sz || ba_request->size<1) {
+		if(ba_request->size > total_sz || ba_request->size < 1) {
 			return 0;			
 		}
 		sz = ba_request->size % (DIM_SIZE[Y] * DIM_SIZE[Z]);
@@ -594,54 +594,54 @@ extern int new_ba_request(ba_request_t* ba_request)
 		      geo[Y] = DIM_SIZE[Y];
 		      geo[Z] = DIM_SIZE[Z];
 		      sz=ba_request->size;
-		      _append_geo(geo,
-				  ba_request->elongate_geos,
-				  ba_request->rotate);
+		      if((geo[X]*geo[Y]*geo[Z]) == ba_request->size)
+			      _append_geo(geo,
+					  ba_request->elongate_geos,
+					  ba_request->rotate);
+		      else
+			      error("%d I was just trying to add a "
+				    "geo of %d%d%d "
+				    "while I am trying to request %d midplanes",
+				    __LINE__, geo[X], geo[Y], geo[Z],
+				    ba_request->size);
 		}	
 //	startagain:		
 		picked=0;
-		for(i=0;i<8;i++)
+		for(i=0; i<DIM_SIZE[X]; i++)
 			checked[i]=0;
-		
-		size3=ba_request->size;
 		
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
 			total_sz *= DIM_SIZE[i];
 			geo[i] = 1;
 		}
-	
+	       
 		sz = 1;
-		size3=ba_request->size;
 		picked=0;
 	tryagain:	
-		if(size3!=ba_request->size)
-			size2=size3;
-		else
-			size2=ba_request->size;
+		size2 = ba_request->size;
 		//messedup:
-
 		for (i=picked; i<BA_SYSTEM_DIMENSIONS; i++) { 
-			if(size2<=1) 
+			if(size2 <= 1) 
 				break;
-			sz = size2%DIM_SIZE[i];
+			sz = size2 % DIM_SIZE[i];
 			if(!sz) {
 				geo[i] = DIM_SIZE[i];	
 				size2 /= DIM_SIZE[i];
 			} else if (size2 > DIM_SIZE[i]){
-				for(i2=(DIM_SIZE[i]-1);i2>1;i2--) {
+				for(i2=(DIM_SIZE[i]-1); i2 > 1; i2--) {
 					/* go through each number to see if 
 					   the size is divisable by a smaller 
 					   number that is 
 					   good in the other dims. */
 					if (!(size2%i2) && !checked[i2]) {
 						size2 /= i2;
-									
+						
 						if(i==0)
 							checked[i2]=1;
 							
-						if(i2<DIM_SIZE[i]) 
+						if(i2<DIM_SIZE[i]) {
 							geo[i] = i2;
-						else {
+						} else {
 							goto tryagain;
 						}
 						if((i2-1)!=1 && 
@@ -671,7 +671,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 				break;
 			}					
 		}
-		
+
 		if((geo[X]*geo[Y]) <= DIM_SIZE[Y]) {
 			ba_request->geometry[X] = 1;
 			ba_request->geometry[Y] = geo[X] * geo[Y];
@@ -747,9 +747,15 @@ extern int new_ba_request(ba_request_t* ba_request)
 			}
 		}
 		
-		_append_geo(geo, 
-			    ba_request->elongate_geos, 
-			    ba_request->rotate);
+		if((geo[X]*geo[Y]*geo[Z]) == ba_request->size)
+			_append_geo(geo, 
+				    ba_request->elongate_geos, 
+				    ba_request->rotate);
+		else
+			error("%d I was just trying to add a geo of %d%d%d "
+			      "while I am trying to request %d midplanes",
+			       __LINE__, geo[X], geo[Y], geo[Z],
+			      ba_request->size);
 	
 		/* see if We can find a cube or square root of the 
 		   size to make an easy cube */
@@ -772,9 +778,17 @@ extern int new_ba_request(ba_request_t* ba_request)
 				else
 					goto endit;
 				
-			_append_geo(geo, 
-				    ba_request->elongate_geos, 
-				    ba_request->rotate);
+			if((geo[X]*geo[Y]*geo[Z]) == ba_request->size)
+				_append_geo(geo, 
+					    ba_request->elongate_geos, 
+					    ba_request->rotate);
+			else
+				error("%d I was just trying to add "
+				      "a geo of %d%d%d "
+				      "while I am trying to request "
+				      "%d midplanes",
+				      __LINE__, geo[X], geo[Y], geo[Z],
+				      ba_request->size);			
 		} 
 	}
 	
@@ -4068,6 +4082,60 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			_switch_config(source, target, dim, 4, 3);	
 			break;
 		case 7:
+			/* 7th Node */
+			target = &ba_system_ptr->grid[2]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 4->3 of 2nd */
+			_switch_config(source, target, dim, 4, 3);	
+			break;
+		default:
+			fatal("got %d for a count on a %d X-dim system",
+			      count, DIM_SIZE[X]);
+			break;
+		}
+	} else if(DIM_SIZE[X] == 9) {
+		switch(count) {
+		case 0:
+		case 1:
+		case 5:
+			/* 0 and 4th Node */
+			/* nothing */
+			break;
+		case 2:
+		case 6:
+			/* 1st Node */
+			target = &ba_system_ptr->grid[count-1]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 4->3 of previous */
+			_switch_config(source, target, dim, 4, 3);
+			break;	
+		case 3:
+			/* 2nd Node */
+			target = &ba_system_ptr->grid[7]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 4->3 of last */
+			_switch_config(source, target, dim, 4, 3);
+			break;
+		case 4:
+			/* 3rd Node */
+			target = &ba_system_ptr->grid[6]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 4->3 of 6th */
+			_switch_config(source, target, dim, 4, 3);
+			break;
+		case 7:
+			/* 6th Node */
+			target = &ba_system_ptr->grid[3]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 4->3 of 3rd */
+			_switch_config(source, target, dim, 4, 3);	
+			break;
+		case 8:
 			/* 7th Node */
 			target = &ba_system_ptr->grid[2]
 				[source->coord[Y]]
