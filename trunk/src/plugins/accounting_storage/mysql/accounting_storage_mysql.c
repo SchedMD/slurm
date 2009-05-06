@@ -264,7 +264,9 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			user_rec.name = user;
 			if(assoc_mgr_fill_in_user(mysql_conn, &user_rec,
 						  1, NULL) != SLURM_SUCCESS) {
-				error("No user by name of %s", user);
+				error("No user by name of %s assoc %u",
+				      user, associd);
+				xfree(user);
 				goto no_wckeyid;
 			}
 			
@@ -10456,7 +10458,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			       * hasn't been set yet */
 	
 	/* if there is a start_time get the wckeyid */
-	if(job_ptr->start_time) 
+	if(job_ptr->start_time && job_ptr->assoc_id) 
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
 				       job_ptr->user_id, cluster_name,
 				       job_ptr->assoc_id);
