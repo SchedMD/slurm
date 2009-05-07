@@ -475,9 +475,9 @@ again:
 	 */
 	s->out_msg->ref_count--;
 	if (s->out_msg->ref_count == 0) {
-		pthread_mutex_lock(&s->cio->write_lock);
+		pthread_mutex_lock(&s->cio->ioservers_lock);
 		list_enqueue(s->cio->free_incoming, s->out_msg);
-		pthread_mutex_unlock(&s->cio->write_lock);
+		pthread_mutex_unlock(&s->cio->ioservers_lock);
 	} else
 		debug3("  Could not free msg!!");
 	s->out_msg = NULL;
@@ -633,8 +633,12 @@ static bool _file_readable(eio_obj_t *obj)
 		info->eof = true;
 		return false;
 	}
-	if (_incoming_buf_free(info->cio))
+	pthread_mutex_lock(&info->cio->ioservers_lock);
+	if (_incoming_buf_free(info->cio)) {
+		pthread_mutex_unlock(&info->cio->ioservers_lock);
 		return true;
+	}
+	pthread_mutex_unlock(&info->cio->ioservers_lock);
 
 	debug3("  false");
 	return false;
@@ -650,14 +654,15 @@ static int _file_read(eio_obj_t *obj, List objs)
 	int len;
 
 	debug2("Entering _file_read");
+	pthread_mutex_lock(&info->cio->ioservers_lock);
 	if (_incoming_buf_free(info->cio)) {
-		pthread_mutex_lock(&info->cio->write_lock);
 		msg = list_dequeue(info->cio->free_incoming);
-		pthread_mutex_unlock(&info->cio->write_lock);
 	} else {
 		debug3("  List free_incoming is empty, no file read");
+		pthread_mutex_unlock(&info->cio->ioservers_lock);
 		return SLURM_SUCCESS;
 	}
+	pthread_mutex_unlock(&info->cio->ioservers_lock);
 
 	ptr = msg->data + io_hdr_packed_size();
 
@@ -668,9 +673,9 @@ again:
 			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 				debug("_file_read returned %s",
 				      errno==EAGAIN?"EAGAIN":"EWOULDBLOCK");
-				pthread_mutex_lock(&info->cio->write_lock);
+				pthread_mutex_lock(&info->cio->ioservers_lock);
 				list_enqueue(info->cio->free_incoming, msg);
-				pthread_mutex_unlock(&info->cio->write_lock);
+				pthread_mutex_unlock(&info->cio->ioservers_lock);
 				return SLURM_SUCCESS;
 			}
 			/* Any other errors, we pretend we got eof */
@@ -981,26 +986,22 @@ _init_stdio_eio_objs(slurm_step_io_fds_t fds, client_io_t *cio)
 	}
 }
 
+/* Callers of this function should already have locked cio->ioservers_lock */
 static bool
 _incoming_buf_free(client_io_t *cio)
 {
 	struct io_buf *buf;
 
-	pthread_mutex_lock(&cio->write_lock);
-
 	if (list_count(cio->free_incoming) > 0) {
-		pthread_mutex_unlock(&cio->write_lock);
 		return true;
 	} else if (cio->incoming_count < STDIO_MAX_FREE_BUF) {
 		buf = _alloc_io_buf();
 		if (buf != NULL) {
 			list_enqueue(cio->free_incoming, buf);
 			cio->incoming_count++;
-			pthread_mutex_unlock(&cio->write_lock);
 			return true;
 		}
 	}
-	pthread_mutex_unlock(&cio->write_lock);
 	return false;
 }
 
@@ -1081,7 +1082,6 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 	cio->ioservers_ready_bits = bit_alloc(num_nodes);
 	cio->ioservers_ready = 0;
 	pthread_mutex_init(&cio->ioservers_lock, NULL);
-	pthread_mutex_init(&cio->write_lock, NULL);
 
 	_init_stdio_eio_objs(fds, cio);
 
@@ -1227,21 +1227,33 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id)
 	Buf packbuf;
 	struct server_io_info *server;
 
+	pthread_mutex_lock(&cio->ioservers_lock);
+
 	server = (struct server_io_info *)cio->ioserver[node_id]->arg;
+
+	/* In this case, the I/O connection has not yet been established.
+	   A problem might go undetected here, if a task appears to get 
+	   launched correctly, but fails before it can make its I/O 
+	   connection.  TODO:  Set a timer, see if the task has checked in
+	   within some timeout, if abort the job if not. */
+	if (cio->ioserver[node_id] == NULL) {
+		pthread_mutex_unlock(&cio->ioservers_lock);
+		return SLURM_SUCCESS;
+	}
 
 	/* In this case, the I/O connection has closed and the task exited, 
 	   so there's no need to send this test message. */
 	if (server->out_eof || 
-	    (server->remote_stdout_objs <= 0 && server->remote_stderr_objs <= 0))
+	    (server->remote_stdout_objs <= 0 && server->remote_stderr_objs <= 0)) {
+		pthread_mutex_unlock(&cio->ioservers_lock);
 		return SLURM_SUCCESS;
-
+	}
 	header.type = SLURM_IO_CONNECTION_TEST;
 	header.gtaskid = 0;  /* Unused */
 	header.ltaskid = 0;  /* Unused */
 	header.length = 0;
 
 	if (_incoming_buf_free(cio)) {
-		pthread_mutex_lock(&cio->write_lock);
 		msg = list_dequeue(cio->free_incoming);
 
 		msg->length = io_hdr_packed_size();
@@ -1255,15 +1267,17 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id)
 		free_buf(packbuf);
 
 		list_enqueue( server->msg_queue, msg );
-		pthread_mutex_unlock(&cio->write_lock);
 
 		if (eio_signal_wakeup(cio->eio) != SLURM_SUCCESS) {
+			pthread_mutex_unlock(&cio->ioservers_lock);
 			return SLURM_ERROR;
 		}
 	} else {
+		pthread_mutex_unlock(&cio->ioservers_lock);
 		return SLURM_ERROR;
 	}
 
+	pthread_mutex_unlock(&cio->ioservers_lock);
 	return SLURM_SUCCESS;
 }
 

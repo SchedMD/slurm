@@ -55,7 +55,14 @@ struct client_io {
 	uint16_t *listenport;	/* Array of stdio listen port numbers */
 
 	eio_handle_t *eio;      /* Event IO handle for stdio traffic */
-	pthread_mutex_t ioservers_lock;
+	pthread_mutex_t ioservers_lock; /* This lock protects 
+				   ioservers_ready_bits, ioservers_ready, 
+				   pointers in ioserver, all the msg_queues
+				   in each ioserver's server_io_info, and 
+				   the free_incoming list.  The queues
+				   are used both for normal writes
+				   and writes that verify a connection to
+				   a remote host. */
 	bitstr_t *ioservers_ready_bits; /* length "num_nodes" */
 	int ioservers_ready;    /* Number of servers that established contact */
 	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
@@ -79,12 +86,6 @@ struct client_io {
 			         * buffers in use.
 			         */
 
-	pthread_mutex_t write_lock; /* This lock protects all the msg_queues
-				       in the ioserver's server_io_info, and 
-				       the free_incoming list.  The queues
-				       are used both for normal writes
-				       and writes that verify a connection to
-				       a remote host. */
 	struct step_launch_state *sls;   /* Used to notify the main thread of an
 				       I/O problem.  */
 };

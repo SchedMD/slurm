@@ -1020,9 +1020,6 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	int node_id;
 	client_io_t *cio = sls->io.normal;
 
-info("_step_missing_handler  called for %s", step_missing->nodelist);
-
-
 	/* Ignore this message in the unusual "user_managed_io" case.  No way 
 	   to confirm a bad connection, since a test message goes straight to 
 	   the task.  Aborting without checking may be too dangerous.  This 
@@ -1050,33 +1047,26 @@ info("_step_missing_handler  called for %s", step_missing->nodelist);
 			sls->abort = true;
 			pthread_cond_signal(&sls->cond);
 		} else {
-			/* If a connection has been opened try to write a test 
-			   message.  If the connection was already closed nicely,
-			   client_io_handler_send_test_message will just return
-			   success, because the step has already finished on that
-			   node.  If the write fails, the I/O thread will note a 
-			   problem and request an abort. */
-			pthread_mutex_lock(&cio->ioservers_lock);
-
-			if (cio->ioserver[node_id] != NULL) {
-				if (client_io_handler_send_test_message(cio, node_id) != SLURM_SUCCESS) {
-					/* TODO  Find a way to retry.  For now, 
-					    this effectively ignores the message 
-					    about a missing step. */
-					error("Could not attempt to make "
-					      "remote connection.");
-				}
+			/* If a connection has been opened try to write a test
+			   message.  If the connection was already closed 
+			   nicely, client_io_handler_send_test_message will 
+			   just return success, because the step has already 
+			   finished on that node.  If the write fails, the I/O 
+			   thread will note a problem and request an abort. */
+			if (client_io_handler_send_test_message(cio, node_id)) {
+				/* TODO  Find a way to retry.  For now, 
+				    this effectively ignores the message 
+				    about a missing step. */
+				error("Could not attempt to make "
+				      "remote connection.");
 			}
-			pthread_mutex_unlock(&cio->ioservers_lock);
 		}
 	}
-
 	pthread_mutex_unlock(&sls->lock);
 
 	hostlist_iterator_destroy(fail_itr);
 	hostset_destroy(fail_nodes);
 	hostset_destroy(all_nodes);
-
 
 	debug("Step %u.%u missing from node(s) %s", 
 	      step_missing->job_id, step_missing->step_id,
