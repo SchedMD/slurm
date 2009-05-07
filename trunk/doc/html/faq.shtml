@@ -110,6 +110,8 @@ running even though the job is supposed to be completed?</li>
 <li><a href="#slurmd_oom">How can I prevent the <i>slurmd</i> and
 <i>slurmstepd</i> daemons from being killed when a node's memory 
 is exhausted?</li>
+<li><a href="#ubuntu">I see my host of my calling node as 127.0.1.1
+    instead of the correct ip address.  Why is that?</a></li>
 </ol>
 
 
@@ -1186,6 +1188,18 @@ You can the value set in the <i>/proc/self/oom_adj</i> for
 daemon with the <i>SLURMD_OOM_ADJ</i> and/or <i>SLURMSTEPD_OOM_ADJ</i>
 environment variables set to the desired values.
 A value of -17 typically will disable killing.</p>
+
+<p><a name="ubuntu"><b>38. I see my host of my calling node as 127.0.1.1
+    instead of the correct ip address.  Why is that?</b></a></br>
+Some systems by default will put your host in the /etc/hosts file as
+    something like 
+<pre>
+127.0.1.1	snowflake.llnl.gov	snowflake
+</pre>
+This will cause srun and other things to grab 127.0.1.1 as it's
+address instead of the correct address and make it so the
+communication doesn't work.  Solution is to either remove this line or
+set a different nodeaddr that is known by your other nodes.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 

@@ -2042,11 +2042,11 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	}
 	//info("ret_cnt = %d",header.ret_cnt);
 	if(header.ret_cnt > 0) {
-		ret_list = list_create(destroy_data_info);
-		while((ret_data_info = list_pop(header.ret_list)))
-			list_push(ret_list, ret_data_info);
+		if(header.ret_list)
+			ret_list = header.ret_list;
+		else
+			ret_list = list_create(destroy_data_info);
 		header.ret_cnt = 0;
-		list_destroy(header.ret_list);
 		header.ret_list = NULL;
 	}
 	
@@ -3085,18 +3085,19 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 			  int timeout, bool quiet)
 {
 	List ret_list = NULL;
-	List tmp_ret_list = NULL;
-	slurm_fd fd = -1;
-	char *name = NULL;
-	char buf[8192];
+//	List tmp_ret_list = NULL;
+//	slurm_fd fd = -1;
+//	char *name = NULL;
+//	char buf[8192];
 	hostlist_t hl = NULL;
-	ret_data_info_t *ret_data_info = NULL;
-	ListIterator itr;
+//	ret_data_info_t *ret_data_info = NULL;
+//	ListIterator itr;
 
 	if(!nodelist || !strlen(nodelist)) {
 		error("slurm_send_recv_msgs: no nodelist given");
 		return NULL;
 	}
+	
 #ifdef HAVE_FRONT_END
 	/* only send to the front end node */
 	name = nodelist_nth_host(nodelist, 0);
@@ -3112,85 +3113,99 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 /* 	info("total sending to %s",nodelist); */
 	hl = hostlist_create(nodelist);
 #endif
-	while((name = hostlist_shift(hl))) {
-		
-		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) {
-			if (quiet) {
-				debug("slurm_send_recv_msgs: can't find "
-				      "address for host %s, check slurm.conf", 
-				      name);
-			} else {
-				error("slurm_send_recv_msgs: can't find "
-				      "address for host %s, check slurm.conf", 
-				      name);
-			}
-			mark_as_failed_forward(&tmp_ret_list, name, 
-					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
-			free(name);
-			continue;
-		}
-		
-		if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
-			if (quiet)
-				debug("slurm_send_recv_msgs to %s: %m", name);
-			else
-				error("slurm_send_recv_msgs to %s: %m", name);
-			mark_as_failed_forward(&tmp_ret_list, name, 
-					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
-			free(name);
-			continue;
-		}
 
-		hostlist_ranged_string(hl, sizeof(buf), buf);
-		forward_init(&msg->forward, NULL);
-		msg->forward.nodelist = xstrdup(buf);
-		msg->forward.timeout = timeout;
-		msg->forward.cnt = hostlist_count(hl);
-		if (msg->forward.nodelist[0]) {
-			debug3("sending to %s along with to %s", 
-			       name, msg->forward.nodelist);
-		} else
-			debug3("sending to %s", name);
-		
-		if(!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) {
-			xfree(msg->forward.nodelist);
-			if (quiet) {
-				debug("slurm_send_recv_msgs"
-				      "(_send_and_recv_msgs) to %s: %m", 
-				      name);
-			} else {
-				error("slurm_send_recv_msgs"
-				      "(_send_and_recv_msgs) to %s: %m", 
-				      name);
-			}
-			mark_as_failed_forward(&tmp_ret_list, name, errno);
-			free(name);
-			continue;
-		} else {
-			itr = list_iterator_create(ret_list);
-			while((ret_data_info = list_next(itr))) 
-				if(!ret_data_info->node_name) {
-					ret_data_info->node_name =
-						xstrdup(name);
-				}
-			list_iterator_destroy(itr);
-		}
-		xfree(msg->forward.nodelist);
-		free(name);
-		break;		
+	if(!hl) {
+		error("slurm_send_recv_msgs: problem creating hostlist");
+		return NULL;
 	}
+
+	ret_list = start_msg_tree(hl, msg, timeout);
 	hostlist_destroy(hl);
 
-	if(tmp_ret_list) {
-		if(!ret_list)
-			ret_list = tmp_ret_list;
-		else {
-			while((ret_data_info = list_pop(tmp_ret_list))) 
-				list_push(ret_list, ret_data_info);
-			list_destroy(tmp_ret_list);
-		}
-	} 
 	return ret_list;
+
+	/* The below code will start from the first node in the list
+	 * to start the tree.  The start_msg_tree function starts the
+	 * tree from the calling node. */
+
+/* 	while((name = hostlist_shift(hl))) { */
+		
+/* 		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) { */
+/* 			if (quiet) { */
+/* 				debug("slurm_send_recv_msgs: can't find " */
+/* 				      "address for host %s, check slurm.conf",  */
+/* 				      name); */
+/* 			} else { */
+/* 				error("slurm_send_recv_msgs: can't find " */
+/* 				      "address for host %s, check slurm.conf",  */
+/* 				      name); */
+/* 			} */
+/* 			mark_as_failed_forward(&tmp_ret_list, name,  */
+/* 					SLURM_COMMUNICATIONS_CONNECTION_ERROR); */
+/* 			free(name); */
+/* 			continue; */
+/* 		} */
+		
+/* 		if ((fd = slurm_open_msg_conn(&msg->address)) < 0) { */
+/* 			if (quiet) */
+/* 				debug("slurm_send_recv_msgs to %s: %m", name); */
+/* 			else */
+/* 				error("slurm_send_recv_msgs to %s: %m", name); */
+/* 			mark_as_failed_forward(&tmp_ret_list, name,  */
+/* 					SLURM_COMMUNICATIONS_CONNECTION_ERROR); */
+/* 			free(name); */
+/* 			continue; */
+/* 		} */
+
+/* 		hostlist_ranged_string(hl, sizeof(buf), buf); */
+/* 		forward_init(&msg->forward, NULL); */
+/* 		msg->forward.nodelist = xstrdup(buf); */
+/* 		msg->forward.timeout = timeout; */
+/* 		msg->forward.cnt = hostlist_count(hl); */
+/* 		if (msg->forward.nodelist[0]) { */
+/* 			debug3("sending to %s along with %s",  */
+/* 			       name, msg->forward.nodelist); */
+/* 		} else */
+/* 			debug3("sending to %s", name); */
+		
+/* 		if(!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) { */
+/* 			xfree(msg->forward.nodelist); */
+/* 			if (quiet) { */
+/* 				debug("slurm_send_recv_msgs" */
+/* 				      "(_send_and_recv_msgs) to %s: %m",  */
+/* 				      name); */
+/* 			} else { */
+/* 				error("slurm_send_recv_msgs" */
+/* 				      "(_send_and_recv_msgs) to %s: %m",  */
+/* 				      name); */
+/* 			} */
+/* 			mark_as_failed_forward(&tmp_ret_list, name, errno); */
+/* 			free(name); */
+/* 			continue; */
+/* 		} else { */
+/* 			itr = list_iterator_create(ret_list); */
+/* 			while((ret_data_info = list_next(itr)))  */
+/* 				if(!ret_data_info->node_name) { */
+/* 					ret_data_info->node_name = */
+/* 						xstrdup(name); */
+/* 				} */
+/* 			list_iterator_destroy(itr); */
+/* 		} */
+/* 		xfree(msg->forward.nodelist); */
+/* 		free(name); */
+/* 		break;		 */
+/* 	} */
+/* 	hostlist_destroy(hl); */
+
+/* 	if(tmp_ret_list) { */
+/* 		if(!ret_list) */
+/* 			ret_list = tmp_ret_list; */
+/* 		else { */
+/* 			list_transfer(ret_list, tmp_ret_list); */
+/* 			list_destroy(tmp_ret_list); */
+/* 		} */
+/* 	}  */
+/* 	return ret_list; */
 }
 
 /*
@@ -3205,7 +3220,6 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 {
 	List ret_list = NULL;
-	List tmp_ret_list = NULL;
 	slurm_fd fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	ListIterator itr;
@@ -3213,15 +3227,15 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
 		mark_as_failed_forward(&ret_list, name, 
 				       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+		errno = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		return ret_list;
 	}
 
-	/*just to make sure */
-	forward_init(&msg->forward, NULL);
 	msg->ret_list = NULL;
 	msg->forward_struct = NULL;
 	if(!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) {
-		mark_as_failed_forward(&tmp_ret_list, name, errno);
+		mark_as_failed_forward(&ret_list, name, errno);
+		errno = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		return ret_list;
 	} else {
 		itr = list_iterator_create(ret_list);
