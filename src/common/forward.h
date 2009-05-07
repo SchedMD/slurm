@@ -88,6 +88,21 @@ if (forward_msg(forward_struct, &header) == SLURM_ERROR) {
 extern int forward_msg(forward_struct_t *forward_struct, 
 		       header_t *header);
 
+
+/*
+ * start_msg_tree  - logic to begin the forward tree and
+ *                   accumulate the return codes from processes getting the
+ *                   the forwarded message
+ *
+ * IN: hl          - hostlist_t   - list of every node to send message to
+ * IN: msg         - slurm_msg_t  - message to send.
+ * IN: timeout     - int          - how long to wait in milliseconds.
+ * RET List 	   - List containing the responses of the childern
+ *		     (if any) we forwarded the message to. List
+ *		     containing type (ret_data_info_t).
+ */
+extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout);
+
 /*
  * mark_as_failed_forward- mark a node as failed and add it to "ret_list"
  *
@@ -129,6 +144,5 @@ if(!ret_list || list_count(ret_list) == 0) {
 extern void destroy_data_info(void *object);
 extern void destroy_forward(forward_t *forward);
 extern void destroy_forward_struct(forward_struct_t *forward_struct);
-extern void destroy_ret_types(void *object);
 	
 #endif

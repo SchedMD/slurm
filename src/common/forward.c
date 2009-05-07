@@ -62,6 +62,24 @@
 
 #define MAX_RETRIES 3
 
+typedef struct {
+	pthread_cond_t *notify;
+	slurm_msg_t *orig_msg;
+	List ret_list;
+	int timeout;
+	hostlist_t tree_hl;
+	pthread_mutex_t *tree_mutex;
+} fwd_tree_t;
+
+void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
+{
+	if(fwd_tree) {
+		if(fwd_tree->tree_hl)
+			hostlist_destroy(fwd_tree->tree_hl);
+		xfree(fwd_tree);
+	}
+}
+
 void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
@@ -283,6 +301,85 @@ cleanup:
 	return (NULL);
 }
 
+void *_fwd_tree_thread(void *arg)
+{
+	fwd_tree_t *fwd_tree = (fwd_tree_t *)arg;
+	List ret_list = NULL;
+	char *name = NULL;
+	char buf[8196];
+	slurm_msg_t send_msg;	
+	
+	slurm_msg_t_init(&send_msg);
+	send_msg.msg_type = fwd_tree->orig_msg->msg_type;
+	send_msg.data = fwd_tree->orig_msg->data;
+
+	/* repeat until we are sure the message was sent */ 
+	while((name = hostlist_shift(fwd_tree->tree_hl))) {
+		if(slurm_conf_get_addr(name, &send_msg.address)
+		   == SLURM_ERROR) {
+			error("fwd_tree_thread: can't find address for host "
+			      "%s, check slurm.conf", name);
+			slurm_mutex_lock(fwd_tree->tree_mutex);
+			mark_as_failed_forward(&fwd_tree->ret_list, name,
+					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+ 			pthread_cond_signal(fwd_tree->notify);
+			slurm_mutex_unlock(fwd_tree->tree_mutex);
+			free(name);
+		
+			continue;
+		}
+		
+		hostlist_ranged_string(fwd_tree->tree_hl, sizeof(buf), buf);
+		send_msg.forward.nodelist = xstrdup(buf);
+		send_msg.forward.timeout = fwd_tree->timeout;
+		send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl);
+		if (send_msg.forward.nodelist[0]) {
+			debug3("Tree sending to %s along with %s", 
+			       name, send_msg.forward.nodelist);
+		} else
+			debug3("Tree sending to %s", name);
+
+		ret_list = slurm_send_addr_recv_msgs(&send_msg, name,
+						     fwd_tree->timeout);
+
+		xfree(send_msg.forward.nodelist);
+
+		if(ret_list) {
+			slurm_mutex_lock(fwd_tree->tree_mutex);
+			list_transfer(fwd_tree->ret_list, ret_list);
+			pthread_cond_signal(fwd_tree->notify);
+			slurm_mutex_unlock(fwd_tree->tree_mutex);
+			list_destroy(ret_list);
+		} else {
+			/* This should never happen (when this was
+			   written slurm_send_addr_recv_msgs always
+			   returned a list */
+			error("fwd_tree_thread: no return list given from "
+			      "slurm_send_addr_recv_msgs", name);
+			slurm_mutex_lock(fwd_tree->tree_mutex);
+			mark_as_failed_forward(&fwd_tree->ret_list, name,
+					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+ 			pthread_cond_signal(fwd_tree->notify);
+			slurm_mutex_unlock(fwd_tree->tree_mutex);
+			free(name);
+			
+			continue;
+		}
+
+		free(name);
+		
+		/* check for error and try again */
+		if(errno == SLURM_COMMUNICATIONS_CONNECTION_ERROR) 
+ 			continue;						
+		
+		break;
+	}
+
+	_destroy_tree_fwd(fwd_tree);
+		
+	return NULL;
+}
+
 /*
  * forward_init    - initilize forward structure
  * IN: forward     - forward_t *   - struct to store forward info
@@ -320,7 +417,7 @@ extern void forward_init(forward_t *forward, forward_t *from)
 extern int forward_msg(forward_struct_t *forward_struct, 
 		       header_t *header)
 {
-	int i = 0, j = 0;
+	int j = 0;
 	int retries = 0;
 	forward_msg_t *forward_msg = NULL;
 	int thr_count = 0;
@@ -335,8 +432,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		return SLURM_ERROR;
 	}
 	hl = hostlist_create(header->forward.nodelist);	
-	
-	i = 0;
+	hostlist_uniq(hl);
 	
 	while((name = hostlist_shift(hl))) {
 		pthread_attr_t attr_agent;
@@ -375,7 +471,6 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		forward_msg->header.ret_cnt = 0;
 		
 		forward_hl = hostlist_create(name);
-		i++;
 		free(name);
 		for(j = 0; j < span[thr_count]; j++) {
 			name = hostlist_shift(hl);
@@ -383,9 +478,8 @@ extern int forward_msg(forward_struct_t *forward_struct,
 				break;
 			hostlist_push(forward_hl, name);
 			free(name);
-			i++;
 		}
-		hostlist_uniq(forward_hl);
+
 		hostlist_ranged_string(forward_hl, sizeof(buf), buf);
 		hostlist_destroy(forward_hl);
 		forward_init(&forward_msg->header.forward, NULL);
@@ -406,6 +500,104 @@ extern int forward_msg(forward_struct_t *forward_struct,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * start_msg_tree  - logic to begin the forward tree and
+ *                   accumulate the return codes from processes getting the
+ *                   the forwarded message
+ *
+ * IN: hl          - hostlist_t   - list of every node to send message to
+ * IN: msg         - slurm_msg_t  - message to send.
+ * IN: timeout     - int          - how long to wait in milliseconds.
+ * RET List 	   - List containing the responses of the childern
+ *		     (if any) we forwarded the message to. List
+ *		     containing type (ret_data_info_t).
+ */
+extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
+{
+	int *span = NULL;
+	fwd_tree_t *fwd_tree = NULL;
+	pthread_mutex_t tree_mutex;
+	pthread_cond_t notify;
+	int j = 0, count = 0;
+	List ret_list = NULL;
+	char *name = NULL;
+	int thr_count = 0;
+	int host_count = 0;
+
+	xassert(hl);
+	xassert(msg);
+
+	hostlist_uniq(hl);		
+	host_count = hostlist_count(hl);
+
+	span = set_span(host_count, 0);
+
+	slurm_mutex_init(&tree_mutex);
+	pthread_cond_init(&notify, NULL);
+
+	ret_list = list_create(destroy_data_info);
+	
+	while((name = hostlist_shift(hl))) {
+		pthread_attr_t attr_agent;
+		pthread_t thread_agent;
+		int retries = 0;
+
+		slurm_attr_init(&attr_agent);
+		if (pthread_attr_setdetachstate
+		    (&attr_agent, PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+
+		fwd_tree = xmalloc(sizeof(fwd_tree_t));
+		fwd_tree->orig_msg = msg;
+		fwd_tree->ret_list = ret_list;
+		fwd_tree->timeout = timeout;
+		fwd_tree->notify = &notify;
+		fwd_tree->tree_mutex = &tree_mutex;
+
+		if(fwd_tree->timeout <= 0) {
+			/* convert secs to msec */
+			fwd_tree->timeout  = slurm_get_msg_timeout() * 1000; 
+		}
+
+		fwd_tree->tree_hl = hostlist_create(name);
+		free(name);
+		for(j = 0; j < span[thr_count]; j++) {
+			name = hostlist_shift(hl);
+			if(!name)
+				break;
+			hostlist_push(fwd_tree->tree_hl, name);
+			free(name);
+		}
+
+		while(pthread_create(&thread_agent, &attr_agent,
+				     _fwd_tree_thread, (void *)fwd_tree)) {
+			error("pthread_create error %m");
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			sleep(1);	/* sleep and try again */
+		}
+		slurm_attr_destroy(&attr_agent);
+		thr_count++; 
+	}
+	xfree(span);
+	
+	slurm_mutex_lock(&tree_mutex);
+
+	count = list_count(ret_list);
+	debug2("Tree head got back %d looking for %d", count, host_count);
+	while((count < host_count)) {
+		pthread_cond_wait(&notify, &tree_mutex);
+		count = list_count(ret_list);
+		debug2("Tree head got back %d", count);
+	}
+	debug2("Tree head got them all");
+	slurm_mutex_unlock(&tree_mutex);
+
+	slurm_mutex_destroy(&tree_mutex);
+	pthread_cond_destroy(&notify);
+
+	return ret_list;
+}
 
 /*
  * mark_as_failed_forward- mark a node as failed and add it to "ret_list"
@@ -441,16 +633,16 @@ extern void forward_wait(slurm_msg_t * msg)
 		debug2("looking for %d", msg->forward_struct->fwd_cnt);
 		slurm_mutex_lock(&msg->forward_struct->forward_mutex);
 		count = 0;
-		if (msg->ret_list != NULL) {
-			count += list_count(msg->ret_list);
-		}
+		if (msg->ret_list != NULL) 
+			count = list_count(msg->ret_list);
+		
 		debug2("Got back %d", count);
 		while((count < msg->forward_struct->fwd_cnt)) {
 			pthread_cond_wait(&msg->forward_struct->notify, 
 					  &msg->forward_struct->forward_mutex);
-			count = 0;
+			
 			if (msg->ret_list != NULL) {
-				count += list_count(msg->ret_list);
+				count = list_count(msg->ret_list);
 			}
 			debug2("Got back %d", count);
 				
@@ -493,4 +685,3 @@ void destroy_forward_struct(forward_struct_t *forward_struct)
 		xfree(forward_struct);
 	}
 }
-
