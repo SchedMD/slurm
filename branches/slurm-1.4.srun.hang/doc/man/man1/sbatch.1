@@ -1,12 +1,12 @@
 .TH "sbatch" "1" "SLURM 2.0" "April 2009" "SLURM Commands"
+
 .SH "NAME"
-.LP 
 sbatch \- Submit a batch script to SLURM.
+
 .SH "SYNOPSIS"
-.LP 
 sbatch [\fIoptions\fP] \fIscript\fP [\fIargs\fP...]
+
 .SH "DESCRIPTION"
-.LP 
 sbatch submits a batch script to SLURM.  The batch script may be given to
 sbatch through a file name on the command line, or if no file name is specified,
 sbatch will read in a script from standard input. The batch script may contain
@@ -21,10 +21,10 @@ When the job allocation is finally granted for the batch script, SLURM
 runs a single copy of the batch script on the first node in the set of
 allocated nodes.
 .SH "OPTIONS"
-.LP 
+.LP
 
 .TP
-\fB\-\-acctg\-freq\fR=\fIseconds\fR
+\fB\-\-acctg\-freq\fR=<\fIseconds\fR>
 Define the job accounting sampling interval.
 This can be used to override the \fIJobAcctGatherFrequency\fR parameter in SLURM's
 configuration file, \fIslurm.conf\fR.
@@ -32,7 +32,7 @@ A value of zero disables real the periodic job sampling and provides accounting
 information only on job termination (reducing SLURM interference with the job).
 
 .TP
-\fB\-B\fR \fB\-\-extra\-node\-info\fR=\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]
+\fB\-B\fR \fB\-\-extra\-node\-info\fR=<\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]>
 Request a specific allocation of resources with details as to the
 number and type of computational resources within a cluster:
 number of sockets (or physical processors) per node,
@@ -45,9 +45,9 @@ resources of that type are to be utilized.
 As with nodes, the individual levels can also be specified in separate
 options if desired:
 .nf
-    \fB\-\-sockets\-per\-node\fR=\fIsockets\fR
-    \fB\-\-cores\-per\-socket\fR=\fIcores\fR
-    \fB\-\-threads\-per\-core\fR=\fIthreads\fR
+    \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
+    \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
+    \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 .fi
 When the task/affinity plugin is enabled,
 specifying an allocation in this manner also instructs SLURM to use
@@ -60,30 +60,37 @@ If select/cons_res is configured, it must have a parameter of CR_Core,
 CR_Core_Memory, CR_Socket, or CR_Socket_Memory. 
 
 .TP
-\fB\-\-begin\fR[=]<\fItime\fR>
+\fB\-\-begin\fR=<\fItime\fR>
 Submit the batch script to the SLURM controller immediately, like normal, but
 tell the controller to defer the allocation of the job until the specified time.
 
-Time may be of the form \fIHH:MM:SS\fR to run a job at 
+Time may be of the form \fIHH:MM:SS\fR to run a job at
 a specific time of day (seconds are optional).
-(If that time is already past, the next day is assumed.) 
-You may also specify \fImidnight\fR, \fInoon\fR, or 
-\fIteatime\fR (4pm) and you can have a time\-of\-day suffixed 
-with \fIAM\fR or \fIPM\fR for running in the morning or the evening.  
+(If that time is already past, the next day is assumed.)
+You may also specify \fImidnight\fR, \fInoon\fR, or
+\fIteatime\fR (4pm) and you can have a time\-of\-day suffixed
+with \fIAM\fR or \fIPM\fR for running in the morning or the evening.
 You can also say what day the job will be run, by specifying
 a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR
-\fIYYYY-MM-DD\fR. Combine date and time using the following 
+\fIYYYY-MM-DD\fR. Combine date and time using the following
 format \fIYYYY\-MM\-DD[THH[:MM[:SS]]]\fR. You can also
 give times like \fInow + count time\-units\fR, where the time\-units
-can be \fIminutes\fR, \fIhours\fR, \fIdays\fR, or \fIweeks\fR 
-and you can tell SLURM to run the job today with the keyword
-\fItoday\fR and to run the job tomorrow with the keyword
-\fItomorrow\fR.
+can be \fIseconds\fR (default), \fIminutes\fR, \fIhours\fR,
+\fIdays\fR, or \fIweeks\fR and you can tell SLURM to run
+the job today with the keyword \fItoday\fR and to run the
+job tomorrow with the keyword \fItomorrow\fR.
 The value may be changed after job submission using the
 \fBscontrol\fR command.
+For example:
+.nf
+   \-\-begin=16:00
+   \-\-begin=now+1hour
+   \-\-begin=now+60           (seconds by default)
+   \-\-begin=2010-01-20T12:34:67
+.fi
 
 .TP
-\fB\-\-checkpoint\fR=\fItime\fR
+\fB\-\-checkpoint\fR=<\fItime\fR>
 Specifies the interval between creating checkpoints of the job step. 
 By default, the job step will no checkpoints created.
 Acceptable time formats include "minutes", "minutes:seconds", 
@@ -91,7 +98,7 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds".
 
 .TP
-\fB\-\-checkpoint\-dir\fR=\fIdirectory\fR
+\fB\-\-checkpoint\-dir\fR=<\fIdirectory\fR>
 Specifies the directory into which the job or job step's checkpoint should 
 be written (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
 The default value is the current working directory.
@@ -103,7 +110,7 @@ and "<job_id>.<step_id>.ckpt" for job steps.
 An arbitrary comment.
 
 .TP
-\fB\-C\fR, \fB\-\-constraint\fR[=]<\fIlist\fR>
+\fB\-C\fR, \fB\-\-constraint\fR=<\fIlist\fR>
 Specify a list of constraints. 
 The constraints are features that have been assigned to the nodes by 
 the slurm administrator. 
@@ -118,7 +125,7 @@ There is no mechanism to specify that you want one node with feature
 node has both features.
 If only one of a set of possible options should be used for all allocated 
 nodes, then use the OR operator and enclose the options within square brackets. 
-For example: "\fB\-\-constraint="[rack1|rack2|rack3|rack4]"\fR might 
+For example: "\fB\-\-constraint=[rack1|rack2|rack3|rack4]"\fR might 
 be used to specify that all nodes must be allocated on a single rack of 
 the cluster, but any of those four racks can be used.
 A request can also specify the number of nodes needed with some feature
@@ -140,61 +147,108 @@ plugins, both of which can modify the node ordering.
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to CPUs. Used only when the task/affinity plugin is enabled.
 The configuration parameter \fBTaskPluginParam\fR may override these options.
+For example, if \fBTaskPluginParam\fR is configured to bind to cores,
+your job will not be able to bind tasks to sockets.
+NOTE: To have SLURM always report on the selected CPU binding for all
+commands executed in a shell, you can enable verbose mode by setting
+the SLURM_CPU_BIND environment variable value to "verbose".
 
-The \fBSLURM_CPU_BIND\fR environment variables are set when \fB\-\-cpu_bind\fR \
-is in use.
+The following informational environment variables are set when \fB\-\-cpu_bind\fR
+is in use:
+.nf
+        SLURM_CPU_BIND_VERBOSE
+        SLURM_CPU_BIND_TYPE
+        SLURM_CPU_BIND_LIST
+.fi
+
+See the \fBENVIRONMENT VARIABLE\fR section for a more detailed description
+of the individual SLURM_CPU_BIND* variables.
 
 When using \fB\-\-cpus\-per\-task\fR to run multithreaded tasks, be aware that
 CPU binding is inherited from the parent of the process.  This means that
 the multithreaded task should either specify or clear the CPU binding
 itself to avoid having all threads of the multithreaded task use the same
-mask/CPU as the parent.  Alternatively, fat masks (masks which specify more 
+mask/CPU as the parent.  Alternatively, fat masks (masks which specify more
 than one allowed CPU) could be used for the tasks in order to provide
 multiple CPUs for the multithreaded tasks.
+
+By default, a job step has access to every CPU allocated to the job.
+To ensure that distinct CPUs are allocated to each job step, us the
+\fB\-\-exclusive\fR option.
+
+If the job step allocation includes an allocation with a number of
+sockets, cores, or threads equal to the number of tasks to be started
+then the tasks will by default be bound to the appropriate resources.
+Disable this mode of operation by explicitly setting "-\-cpu\-bind=none".
+
+Note that a job step can be allocated different numbers of CPUs on each node
+or be allocated CPUs not starting at location zero. Therefore one of the
+options which automatically generate the task binding is recommended.
+Explicitly specified masks or bindings are only honored when the job step
+has been allocated every available CPU on the node.
+
+Binding a task to a NUMA locality domain means to bind the task to the set of
+CPUs that belong to the NUMA locality domain or "NUMA node".
+If NUMA locality domain options are used on systems with no NUMA support, then
+each socket is considered a locality domain.
 
 Supported options include:
 .PD 1
 .RS
 .TP
 .B q[uiet]
-quietly bind before task runs (default)
+Quietly bind before task runs (default)
 .TP
 .B v[erbose]
-verbosely report binding before task runs
+Verbosely report binding before task runs
 .TP
 .B no[ne]
-don't bind tasks to CPUs (default)
+Do not bind tasks to CPUs (default)
 .TP
 .B rank
-bind by task rank
+Automatically bind by task rank.
+Task zero is bound to socket (or core or thread) zero, etc.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B map_cpu:<list>
-bind by mapping CPU IDs to tasks as specified
+Bind by mapping CPU IDs to tasks as specified
 where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
 CPU IDs are interpreted as decimal values unless they are preceded
-with '0x' in which case they interpreted as hexadecimal values.
+with '0x' in which case they are interpreted as hexadecimal values.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_cpu:<list>
-bind by setting CPU masks on tasks as specified
+Bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'.
 .TP
 .B sockets
-auto\-generated masks bind to sockets
+Automatically generate masks binding tasks to sockets.
+If the number of tasks differs from the number of allocated sockets
+this can result in sub\-optimal binding.
 .TP
 .B cores
-auto\-generated masks bind to cores
+Automatically generate masks binding tasks to cores.
+If the number of tasks differs from the number of allocated cores
+this can result in sub\-optimal binding.
 .TP
 .B threads
-auto\-generated masks bind to threads
+Automatically generate masks binding tasks to threads.
+If the number of tasks differs from the number of allocated threads
+this can result in sub\-optimal binding.
+.TP
+.B ldoms
+Automatically generate masks binding tasks to NUMA locality domains.
+If the number of tasks differs from the number of allocated locality domains
+this can result in sub\-optimal binding.
 .TP
 .B help
-show this help message
+Show this help message
 .RE
 
-.TP 
-\fB\-c\fR, \fB\-\-cpus\-per\-task\fR[=]<\fIncpus\fR>
+.TP
+\fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
 Advise the SLURM controller that ensuing job steps will require \fIncpus\fR 
 number of processors per task.  Without this option, the controller will
 just try to allocate one processor per task.
@@ -207,13 +261,13 @@ the \-\-cpus\-per\-task=3 options, the controller knows that each task requires
 3 processors on the same node, and the controller will grant an allocation
 of 4 nodes, one for each of the 4 tasks.
 
-.TP 
-\fB\-D\fR, \fB\-\-workdir\fR[=]<\fIdirectory\fR>
+.TP
+\fB\-D\fR, \fB\-\-workdir\fR=<\fIdirectory\fR>
 Set the working directory of the batch script to \fIdirectory\fR before
 it it executed.
 
 .TP
-\fB\-e\fR, \fB\-\-error\fR[=]<\fIfilename pattern\fR>
+\fB\-e\fR, \fB\-\-error\fR=<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard error directly to the 
 file name specified in the "\fIfilename pattern\fR".
 See the \fB\-\-input\fR option for filename specification options.
@@ -225,13 +279,13 @@ the oposite of \-\-share, whichever option is seen last on the command line
 will win.  (The default shared/exclusive behaviour depends on system
 configuration.)
 
-.TP 
-\fB\-F\fR, \fB\-\-nodefile\fR[=]<\fInode file\fR>
+.TP
+\fB\-F\fR, \fB\-\-nodefile\fR=<\fInode file\fR>
 Much like \-\-nodelist, but the list is contained in a file of name
 \fInode file\fR.  The node names of the list may also span multiple lines
 in the file.    Duplicate node names in the file will be ignored.
 The order of the node names in the list is not important; the node names
-will be sorted my SLURM.
+will be sorted by SLURM.
 
 .TP
 \fB\-\-get\-user\-env\fR[=\fItimeout\fR][\fImode\fR]
@@ -256,17 +310,17 @@ effective uid of "root".
 This option was originally created for use by Moab.
 
 .TP
-\fB\-\-gid\fR[=]<\fIgroup\fR>
+\fB\-\-gid\fR=<\fIgroup\fR>
 If \fBsbatch\fR is run as root, and the \fB\-\-gid\fR option is used, 
 submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR 
 may be the group name or the numerical group ID.
 
-.TP 
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Display help information and exit.
 
 .TP
-\fB\-\-hint\fR=\fItype\fR
+\fB\-\-hint\fR=<\fItype\fR>
 Bind tasks according to application hints
 .RS
 .TP
@@ -281,19 +335,20 @@ use only one core in each physical CPU
 .B [no]multithread
 [don't] use extra threads with in-core multi-threading
 which can benefit communication intensive applications
+.TP
 .B help
 show this help message
 .RE
 
-.TP 
-\fB\-I\fR,\fB\-\-immediate\fR
+.TP
+\fB\-I\fR, \fB\-\-immediate\fR
 The batch script will only be submitted to the controller if the resources
 necessary to grant its job allocation are immediately available.  If the
 job allocation will have to wait in a queue of pending jobs, the batch script
 will not be submitted.
 
 .TP
-\fB\-i\fR, \fB\-\-input\fR[=]<\fIfilename pattern\fR>
+\fB\-i\fR, \fB\-\-input\fR=<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard input
 directly to the file name specified in the "\fIfilename pattern\fR".
 
@@ -308,18 +363,18 @@ a percent sign "%" followed by a letter (e.g. %j).
 Supported replacement symbols are:
 .PD 0
 .RS 10
-.TP 
+.TP
 \fB%j\fR
 Job allocation number.
 .PD 0
-.TP 
+.TP
 \fB%N\fR
 Node name.  Only one file is created, so %N will be replaced by the name of the
 first node in the job, which is the one that runs the script.
 .RE
 
 .TP
-\fB\-J\fR, \fB\-\-job\-name\fR[=]<\fIjobname\fR>
+\fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
 Specify a name for the job allocation. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
 is the name of the batch script, or just "sbatch" if the script is
@@ -332,7 +387,7 @@ NOTE: Only valid for user root.
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
-Do not automatically terminate a job of one of the nodes it has been 
+Do not automatically terminate a job of one of the nodes it has been
 allocated fails.  The user will assume the responsibilities for fault\-tolerance
 should a node fail.  When there is a node failure, any active job steps (usually
 MPI jobs) on that node will almost certainly suffer a fatal error, but with
@@ -343,7 +398,7 @@ By default SLURM terminates the entire job allocation if any node fails in its
 range of allocated nodes.
 
 .TP
-\fB\-L\fR, \fB\-\-licenses\fR=
+\fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
 Specification of licenses (or other resources available on all 
 nodes of the cluster) which must be allocated to this job.
 License names can be followed by an asterisk and count 
@@ -353,7 +408,7 @@ Multiple license names should be comma separated (e.g.
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
-(\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR)
+<\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR>
 Specify an alternate distribution method for remote processes.
 .RS
 .TP
@@ -380,12 +435,12 @@ The options include a number representing the size of the task block.
 This is followed by an optional specification of the task distribution 
 scheme within a block of tasks and between the blocks of tasks.
 For more details (including examples and diagrams), please see
-.na
-.nh
-https://computing.llnl.gov/linux/slurm/mc_support.html and
+.br
+https://computing.llnl.gov/linux/slurm/mc_support.html
+.br
+and
+.br
 https://computing.llnl.gov/linux/slurm/dist_plane.html.
-.hy
-.ad
 .TP
 .B arbitrary
 The arbitrary method of distribution will allocate processes in\-order as 
@@ -397,19 +452,19 @@ contain at minimum the number of hosts requested.  If requesting tasks
 .RE
 
 .TP
-\fB\-\-mail\-type\fR=\fItype\fR
+\fB\-\-mail\-type\fR=<\fItype\fR>
 Notify user by email when certain event types occur. 
 Valid \fItype\fR values are BEGIN, END, FAIL, ALL (any state change). 
 The user to be notified is indicated with \fB\-\-mail\-user\fR. 
 
 .TP
-\fB\-\-mail\-user\fR=\fIuser\fR
+\fB\-\-mail\-user\fR=<\fIuser\fR>
 User to receive email notification of state changes as defined by 
 \fB\-\-mail\-type\fR.
-The default value is the username of the submitting user.
+The default value is the submitting user.
 
 .TP
-\fB\-\-mem\fR[=]<\fIMB\fR>
+\fB\-\-mem\fR=<\fIMB\fR>
 Specify the real memory required per node in MegaBytes.
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both of parameters can be
@@ -417,6 +472,17 @@ seen using the \fBscontrol show config\fR command.
 This parameter would generally be used of whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
 Also see \fB\-\-mem\-per\-cpu\fR.
+\fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
+
+.TP
+\fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
+Mimimum memory required per allocated CPU in MegaBytes.
+Default value is \fBDefMemPerCPU\fR and the maximum value is
+\fBMaxMemPerCPU\fR. If configured, both of parameters can be 
+seen using the \fBscontrol show config\fR command.
+This parameter would generally be used of individual processors
+are allocated to jobs (\fBSelectType=select/cons_res\fR).
+Also see \fB\-\-mem\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
 
 .TP
@@ -433,8 +499,21 @@ If you want greater control, try running a simple test code with the
 options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine 
 the specific configuration.
 
-The \fBSLURM_MEM_BIND\fR environment variables is set when  \fB\-\-mem_bind\fR 
-is in use.
+NOTE: To have SLURM always report on the selected memory binding for
+all commands executed in a shell, you can enable verbose mode by
+setting the SLURM_MEM_BIND environment variable value to "verbose".
+
+The following informational environment variables are set when \fB\-\-mem_bind\
+is in use:
+
+.nf
+        SLURM_MEM_BIND_VERBOSE
+        SLURM_MEM_BIND_TYPE
+        SLURM_MEM_BIND_LIST
+.fi
+
+See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
+of the individual SLURM_MEM_BIND* variables.
 
 Supported options include:
 .RS
@@ -473,45 +552,29 @@ show this help message
 .RE
 
 .TP
-\fB\-\-mem\-per\-cpu\fR[=]<\fIMB\fR>
-Mimimum memory required per allocated CPU in MegaBytes.
-Default value is \fBDefMemPerCPU\fR and the maximum value is
-\fBMaxMemPerCPU\fR. If configured, both of parameters can be 
-seen using the \fBscontrol show config\fR command.
-This parameter would generally be used of individual processors
-are allocated to jobs (\fBSelectType=select/cons_res\fR).
-Also see \fB\-\-mem\fR.
-\fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
-
-.TP
-\fB\-\-mincores\fR[=]<\fIn\fR>
+\fB\-\-mincores\fR=<\fIn\fR>
 Specify a minimum number of cores per socket.
 
 .TP
-\fB\-\-mincpus\fR[=]<\fIn\fR>
-Specify minimum number of cpus per node.
+\fB\-\-mincpus\fR=<\fIn\fR>
+Specify a minimum number of logical cpus/processors per node.
 
 .TP
-\fB\-\-minsockets\fR[=]<\fIn\fR>
+\fB\-\-minsockets\fR=<\fIn\fR>
 Specify a minimum number of sockets (physical processors) per node.
 
 .TP
-\fB\-\-minthreads\fR[=]<\fIn\fR>
+\fB\-\-minthreads\fR=<\fIn\fR>
 Specify a minimum number of threads per core.
 
-.TP 
-\fB\-N\fR, \fB\-\-nodes\fR[=]<\fInumber|[min]\-[max]\fR>
-Specify the number of nodes to be used by this job step.  This option accepts
-either a single number, or a range of possible node counts.  If a single number
-is used, such as "\-N 4", then the allocation is asking for four and ONLY four
-nodes.  If a range is specified, such as "\-N 2\-6", SLURM controller may
-grant the batch job anywhere from 2 to 6 nodes.  When using a range, either of
-the min or max options may be omitted.  For instance, "\-N 10\-" means
-"no fewer than 10 nodes", and "\-N \-20" means "no more than 20 nodes".  The
-default value of this option is one node, but other command line options
-may implicitly set the default node count to a higher value.
-The job will be allocated as many nodes as possible within the range specified 
-and without delaying the initiation of the job.
+.TP
+\fB\-N\fR, \fB\-\-nodes\fR=<\fIminnodes\fR[\-\fImaxnodes\fR]>
+Request that a minimum of \fIminnodes\fR nodes be allocated to this job.
+The scheduler may decide to launch the job on more than \fIminnodes\fR nodes.
+A limit on the maximum node count may be specified with \fImaxnodes\fR
+(e.g. "\-\-nodes=2\-4").  The minimum and maximum node count may be the
+same to specify a specific number of nodes (e.g. "\-\-nodes=2\-2" will ask
+for two and ONLY two nodes).
 The partition's node limits supersede those of the job. 
 If a job's node limits are outside of the range permitted for its 
 associated partition, the job will be left in a PENDING state. 
@@ -519,9 +582,17 @@ This permits possible execution at a later time, when the partition
 limit is changed.
 If a job node limit exceeds the number of nodes configured in the 
 partition, the job will be rejected.
+Note that the environment 
+variable \fBSLURM_NNODES\fR will be set to the count of nodes actually 
+allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section 
+for more information.  If \fB\-N\fR is not specified, the default
+behavior is to allocate enough nodes to satisfy the requirements of
+the \fB\-n\fR and \fB\-c\fR options.
+The job will be allocated as many nodes as possible within the range specified
+and without delaying the initiation of the job.
 
 .TP
-\fB\-n\fR, \fB\-\-ntasks\fR[=]<\fInumber\fR>
+\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
 sbatch does not launch tasks, it requests an allocation of resources and 
 submits a batch script. This option advises the SLURM controller that job 
 steps run within this allocation will launch a maximum of \fInumber\fR
@@ -531,22 +602,23 @@ of the \fISelectTypeParameters\fR parameter in slurm.conf), but note
 that the \fB\-\-cpus\-per\-task\fR option will change this default.
 
 .TP
-\fB\-\-network\fR=\fItype\fR
+\fB\-\-network\fR=<\fItype\fR>
 Specify the communication protocol to be used. 
 This option is supported on AIX systems.
-This option sets the \fBSLURM_NETWORK\fR environment variable for use by POE.
-The interpretation of \fItype\fR is system dependent. 
+Since POE is used to launch tasks, this option is not normally used or 
+is specified using the \fBSLURM_NETWORK\fR environment variable.
+The interpretation of \fItype\fR is system dependent.
 For systems with an IBM Federation switch, the following 
-comma\-separated and case insensitive types are recongnized:
+comma\-separated and case insensitive types are recognized:
 \fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR, 
 \fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR). 
-For more information, on IBM systems see \fIPOE\fR documentation on 
+For more information, on IBM systems see \fIpoe\fR documentation on
 the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
 Note that only four jobs steps may be active at once on a node with the 
 \fBBULK_XFER\fR option due to limitations in the Federation switch driver.
 
-.TP 
-\fB\-\-nice\fR[=]<\fIadjustment\fR>
+.TP
+\fB\-\-nice\fR[=\fIadjustment\fR]
 Run the job with an adjusted scheduling priority within SLURM.
 With no adjustment value the scheduling priority is decreased
 by 100. The adjustment range is from \-10000 (highest priority)
@@ -566,29 +638,31 @@ The \fIJobRequeue\fR configuration parameter controls the default
 behavior on the cluster.
 
 .TP
-\fB\-\-ntasks\-per\-core\fR=\fIntasks\fR
+\fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
 Request that no more than \fIntasks\fR be invoked on each core.
 Similar to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.  Masks will automatically be generated
 to bind the tasks to specific core unless \fB\-\-cpu_bind=none\fR
 is specified.
-NOTE: This option is not supported unless \fISelectType=CR_Core\fR
-or \fISelectType=CR_Core_Memory\fR is configured.
+NOTE: This option is not supported unless
+\fISelectTypeParameters=CR_Core\fR or
+\fISelectTypeParameters=CR_Core_Memory\fR is configured.
 
 .TP
-\fB\-\-ntasks\-per\-socket\fR=\fIntasks\fR
+\fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
 Request that no more than \fIntasks\fR be invoked on each socket.
 Similar to \fB\-\-ntasks\-per\-node\fR except at the socket level
 instead of the node level.  Masks will automatically be generated
 to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
 is specified.
-NOTE: This option is not supported unless \fISelectType=CR_Socket\fR 
-or \fISelectType=CR_Socket_Memory\fR is configured.
+NOTE: This option is not supported unless
+\fISelectTypeParameters=CR_Socket\fR or
+\fISelectTypeParameters=CR_Socket_Memory\fR is configured.
 
 .TP
-\fB\-\-ntasks\-per\-node\fR=\fIntasks\fR
+\fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
 Request that no more than \fIntasks\fR be invoked on each node.
-This is similiar to using \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
+This is similar to using \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
 but does not require knowledge of the actual number of cpus on
 each node.  In some cases, it is more convenient to be able to
 request that no more than a specific number of ntasks be invoked
@@ -596,18 +670,18 @@ on each node.  Examples of this include submitting
 a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
 assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
-setup/cleanup/monitoring job to each node of a pre\-existing  
+setup/cleanup/monitoring job to each node of a pre\-existing
 allocation as one step in a larger job script.
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
-Overcommit resources. Normally, \fBsbatch\fR will allocate one cpu per
-task to be executed. By specifying \fB\-\-overcommit\fR you are explicitly
-allowing more than one process per cpu. However no more than
+Overcommit resources.  Normally, \fBsbatch\fR will allocate one task
+per processor.  By specifying \fB\-\-overcommit\fR you are explicitly
+allowing more than one task per processor.  However no more than
 \fBMAX_TASKS_PER_NODE\fR tasks are permitted to execute per node.
 
 .TP
-\fB\-o\fR, \fB\-\-output\fR[=]<\fIfilename pattern\fR>
+\fB\-o\fR, \fB\-\-output\fR=<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard output directly to the 
 file name specified in the "\fIfilename pattern\fR".
 See the \fB\-\-input\fR option for filename specification options.
@@ -618,10 +692,42 @@ Open the output and error files using append or truncate mode as specified.
 The default value is specified by the system configuration parameter
 \fIJobFileAppend\fR.
 
-.TP 
-\fB\-p\fR, \fB\-\-partition\fR[=]<\fIpartition name\fR>
-Request a specific partition for the resource allocation.  If not specified, the
-default behaviour is to allow the slurm controller to select the default
+.TP
+\fB\-P\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
+Defer the start of this job until the specified dependencies have been
+satisfied completed.
+<\fIdependency_list\fR> is of the form 
+<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
+Many jobs can share the same dependency and these jobs may even belong to
+different  users. The  value may be changed after job submission using the
+scontrol command.
+.PD
+.RS
+.TP
+\fBafter:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have begun
+execution.
+.TP
+\fBafterany:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated.
+.TP
+\fBafternotok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated
+in some failed state (non-zero exit code, node failure, timed out, etc).
+.TP
+\fBafterok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have successfully
+executed (ran to completion with non-zero exit code).
+.TP
+\fBsingleton\fR
+This job can begin execution after any previously launched jobs sharing the same
+job name and user have terminated.
+.RE
+
+.TP
+\fB\-p\fR, \fB\-\-partition\fR=<\fIpartition name\fR>
+Request a specific partition for the resource allocation.  If not specified,
+the default behaviour is to allow the slurm controller to select the default
 partition as designated by the system administrator.
 
 .TP
@@ -668,40 +774,8 @@ The maximum resident set size
 The maximum stack size
 .RE
 
-.TP 
-\fB\-P\fR, \fB\-\-dependency\fR[=]<\fIdependency_list\fR>
-Defer the start of this job until the specified dependencies have been
-satisfied completed.
-<\fIdependency_list\fR> is of the form 
-<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
-Many jobs can share the same dependency and these jobs may even belong to
-different  users. The  value may be changed after job submission using the
-scontrol command.
-.PD
-.RS
 .TP
-\fBafter:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have begun
-execution.
-.TP
-\fBafterany:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have terminated.
-.TP
-\fBafternotok:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have terminated
-in some failed state (non-zero exit code, node failure, timed out, etc).
-.TP
-\fBafterok:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have successfully
-executed (ran to completion with non-zero exit code).
-.TP
-\fBsingleton\fR
-This job can begin execution after any previously launched jobs sharing the same
-job name and user have terminated.
-.RE
-
-.TP
-\fB\-q\fR, \fB\-\-quiet\fR
+\fB\-Q\fR, \fB\-\-quiet\fR
 Suppress informational messages from sbatch. Errors will still be displayed.
 
 .TP
@@ -713,7 +787,7 @@ The \fIJobRequeue\fR configuration parameter controls the default
 behavior on the cluster.
 
 .TP
-\fB\-\-reservation\fR=\fIname\fR
+\fB\-\-reservation\fR=<\fIname\fR>
 Allocate resources for the job from the named reservation.
 
 .TP
@@ -725,40 +799,40 @@ option was not set and allow higher system utilization, but application
 performance will likely suffer due to competition for resources within a node.
 
 .TP
-\fB\-t\fR, \fB\-\-time\fR=\fItime\fR
-Set a  limit on the total run time of the job allocation.
-If the requested time limit exceeds the partition's time limit, the 
-job will be left in a PENDING state (possibly indefinitely).  The default
-time limit is the partition's time limit.  When the time limit is reached,
-the each task in each job step is sent SIGTERM followed by SIGKILL. The
-interval between signals is specified by the SLURM configuration parameter
-\fBKillWait\fR.  A time limit of zero represents unlimited time.
-Acceptable time formats include "minutes", "minutes:seconds", 
-"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
-"days\-hours:minutes:seconds".
+\fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
+Set a limit on the total run time of the job allocation.  If the
+requested time limit exceeds the partition's time limit, the job will
+be left in a PENDING state (possibly indefinitely).  The default time
+limit is the partition's time limit.  When the time limit is reached,
+each task in each job step is sent SIGTERM followed by SIGKILL.  The
+interval between signals is specified by the SLURM configuration
+parameter \fBKillWait\fR.  A time limit of zero requests that no time
+limit be imposed.  Acceptable time formats include "minutes",
+"minutes:seconds", "hours:minutes:seconds", "days\-hours",
+"days\-hours:minutes" and "days\-hours:minutes:seconds".
 
 .TP
-\fB\-\-tasks\-per\-node\fR[=]<\fIn\fR>
+\fB\-\-tasks\-per\-node\fR=<\fIn\fR>
 Specify the number of tasks to be launched per node.
 Equivalent to \fB\-\-ntasks\-per\-node\fR.
 
 .TP
-\fB\-\-tmp\fR[=]<\fIMB\fR>
+\fB\-\-tmp\fR=<\fIMB\fR>
 Specify a minimum amount of temporary disk space.
 
 .TP
-\fB\-U\fR, \fB\-\-account\fR[=]<\fIaccount\fR>
+\fB\-U\fR, \fB\-\-account\fR=<\fIaccount\fR>
 Change resource use by this job to specified account.
-The \fIaccount\fR is an arbitrary string. The account name may 
-be changed after job submission using the \fBscontrol\fR 
+The \fIaccount\fR is an arbitrary string. The account name may
+be changed after job submission using the \fBscontrol\fR
 command.
 
 .TP
 \fB\-u\fR, \fB\-\-usage\fR
-Display brief usage message and exit.
+Display brief help message and exit.
 
 .TP
-\fB\-\-uid\fR[=]<\fIuser\fR>
+\fB\-\-uid\fR=<\fIuser\fR>
 Attempt to submit and/or run a job as \fIuser\fR instead of the
 invoking user id. The invoking user's credentials will be used
 to check access permissions for the target partition. User root
@@ -767,55 +841,56 @@ partition for example. If run as root, \fBsbatch\fR will drop
 its permissions to the uid specified after node allocation is
 successful. \fIuser\fR may be the user name or numerical user ID.
 
-.TP 
+.TP
 \fB\-V\fR, \fB\-\-version\fR
 Display version information and exit.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Increase the verbosity of sbatch's informational messages.  Multiple \-v's
-will further increase sbatch's verbosity.
+Increase the verbosity of sbatch's informational messages.  Multiple
+\fB\-v\fR's will further increase sbatch's verbosity.  By default only
+errors will be displayed.
 
-.TP 
-\fB\-w\fR, \fB\-\-nodelist\fR[=]<\fInode name list\fR>
+.TP
+\fB\-w\fR, \fB\-\-nodelist\fR=<\fInode name list\fR>
 Request a specific list of node names.  The list may be specified as a
 comma\-separated list of node names, or a range of node names
 (e.g. mynode[1\-5,7,...]).  Duplicate node names in the list will be ignored.
 The order of the node names in the list is not important; the node names
-will be sorted my SLURM.
+will be sorted by SLURM.
 
 .TP
-\fB\-\-wckey\fR=\fIwckey\fR
+\fB\-\-wckey\fR=<\fIwckey\fR>
 Specify wckey to be used with job.  If TrackWCKey=no (default) in the
-slurm.conf this value does not get looked at. 
+slurm.conf this value is ignored.
 
 .TP
-\fB\-\-wrap\fR[=]<\fIcommand string\fR>
+\fB\-\-wrap\fR=<\fIcommand string\fR>
 Sbatch will wrap the specified command string in a simple "sh" shell script,
 and submit that script to the slurm controller.  When \-\-wrap is used,
 a script name and arguments may not be specified on the command line; instead
 the sbatch-generated wrapper script is used.
 
 .TP
-\fB\-x\fR, \fB\-\-exclude\fR[=]<\fInode name list\fR>
+\fB\-x\fR, \fB\-\-exclude\fR=<\fInode name list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
 
 .PP
-The following options support Blue Gene systems, but may be 
+The following options support Blue Gene systems, but may be
 applicable to other systems as well.
 
 .TP
-\fB\-\-blrts\-image\fR[=]<\fIpath\fR>
+\fB\-\-blrts\-image\fR=<\fIpath\fR>
 Path to blrts image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
-\fB\-\-cnload\-image\fR=\fIpath\fR
+\fB\-\-cnload\-image\fR=<\fIpath\fR>
 Path to compute node image for bluegene block.  BGP only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
-\fB\-\-conn\-type\fR[=]<\fItype\fR>
+\fB\-\-conn\-type\fR=<\fItype\fR>
 Require the partition connection type to be of a certain type.  
 On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.  
 If NAV, or if not set, then SLURM will try to fit a TORUS else MESH.
@@ -826,25 +901,25 @@ midplane and below).  You can use HTC_S for SMP, HTC_D for Dual, HTC_V
 for virtual node mode, and HTC_L for Linux mode.
 
 .TP
-\fB\-g\fR, \fB\-\-geometry\fR[=]<\fIXxYxZ\fR>
+\fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR>
 Specify the geometry requirements for the job. The three numbers 
 represent the required geometry giving dimensions in the X, Y and 
 Z directions. For example "\-\-geometry=2x3x4", specifies a block 
-of nodes having 2 x 3 x 4 = 24 nodes (actually base partions on 
+of nodes having 2 x 3 x 4 = 24 nodes (actually base partitions on 
 Blue Gene).
 
 .TP
-\fB\-\-ioload\-image\fR=\fIpath\fR
+\fB\-\-ioload\-image\fR=<\fIpath\fR>
 Path to io image for bluegene block.  BGP only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
-\fB\-\-linux\-image\fR[=]<\fIpath\fR>
+\fB\-\-linux\-image\fR=<\fIpath\fR>
 Path to linux image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
-\fB\-\-mloader\-image\fR[=]<\fIpath\fR>
+\fB\-\-mloader\-image\fR=<\fIpath\fR>
 Path to mloader image for bluegene block.
 Default from \fIblugene.conf\fR if not set.
 
@@ -855,7 +930,7 @@ appropriate partition.
 By default the specified geometry can rotate in three dimensions.
 
 .TP
-\fB\-\-ramdisk\-image\fR[=]<\fIpath\fR>
+\fB\-\-ramdisk\-image\fR=<\fIpath\fR>
 Path to ramdisk image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
 
@@ -869,70 +944,70 @@ Upon startup, sbatch will read and handle the options set in the following
 environment variables.  Note that environment variables will override any
 options set in a batch script, and command line options will override any
 environment variables.
- 
+
 .TP 22
 \fBSBATCH_ACCOUNT\fR
-Same as \fB\-\-account\fR.
+Same as \fB\-U, \-\-account\fR
 .TP
-\fBSALLOC_ACCTG_FREQ\fR
-Same as \fB\-\-acctg\-freq\fR.
+\fBSBATCH_ACCTG_FREQ\fR
+Same as \fB\-\-acctg\-freq\fR
 .TP
 \fBSLURM_CHECKPOINT\fR
-Same as \fB\-\-checkpoint\fR=\fItime\fR
+Same as \fB\-\-checkpoint\fR
 .TP
 \fBSLURM_CHECKPOINT_DIR\fR
-Same as \fB\-\-checkpoint\-dir\fR=\fIpath\fR
+Same as \fB\-\-checkpoint\-dir\fR
 .TP
 \fBSBATCH_CONN_TYPE\fR
-Same as \fB\-\-conn\-type\fR.
+Same as \fB\-\-conn\-type\fR
 .TP
 \fBSBATCH_CPU_BIND\fR
-Same as \fB\-\-cpu_bind\fR.
+Same as \fB\-\-cpu_bind\fR
 .TP
 \fBSBATCH_DEBUG\fR
-Same as \fB\-v\fR or \fB\-\-verbose\fR.
+Same as \fB\-v, \-\-verbose\fR
 .TP
 \fBSBATCH_DISTRIBUTION\fR
-Same as \fB\-m\fR or \fB\-\-distribution\fR.
+Same as \fB\-m, \-\-distribution\fR
 .TP
 \fBSBATCH_EXCLUSIVE\fR
-Same as \fB\-\-exclusive\fR.
+Same as \fB\-\-exclusive\fR
 .TP
 \fBSBATCH_GEOMETRY\fR
-Same as \fB\-g\fR or \fB\-\-geometry\fR.
+Same as \fB\-g, \-\-geometry\fR
 .TP
 \fBSBATCH_IMMEDIATE\fR
-Same as \fB\-I\fR or \fB\-\-immediate\fR.
+Same as \fB\-I, \-\-immediate\fR
 .TP
 \fBSBATCH_JOBID\fR
-Same as \fB\-\-jobid\fR.
+Same as \fB\-\-jobid\fR
 .TP
 \fBSBATCH_JOB_NAME\fR
-Same as \fB\-J\fR or \fB\-\-job\-name\fR.
+Same as \fB\-J, \-\-job\-name\fR
 .TP
 \fBSBATCH_MEM_BIND\fR
-Same as \fB\-\-mem_bind\fR.
+Same as \fB\-\-mem_bind\fR
 .TP
 \fBSBATCH_NETWORK\fR
-Same as \fB\-\-network\fR.
+Same as \fB\-\-network\fR
 .TP
 \fBSBATCH_NO_REQUEUE\fR
-Same as \fB\-\-no\-requeue\fR.
+Same as \fB\-\-no\-requeue\fR
 .TP
 \fBSBATCH_NO_ROTATE\fR
-Same as \fB\-R\fR or \fB\-\-no\-rotate\fR.
+Same as \fB\-R, \-\-no\-rotate\fR
 .TP
-\fBSLURM_OPEN_MODE\fR
-Same as \fB\-\-open\-mode\fR.
+\fBSBATCH_OPEN_MODE\fR
+Same as \fB\-\-open\-mode\fR
 .TP
-\fBSLURM_OVERCOMMIT\fR
+\fBSBATCH_OVERCOMMIT\fR
 Same as \fB\-O, \-\-overcommit\fR
 .TP
 \fBSBATCH_PARTITION\fR
-Same as \fB\-p\fR or \fB\-\-partition\fR.
+Same as \fB\-p, \-\-partition\fR
 .TP
 \fBSBATCH_TIMELIMIT\fR
-Same as \fB\-t\fR or \fB\-\-time\fR.
+Same as \fB\-t, \-\-time\fR
 
 .SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP

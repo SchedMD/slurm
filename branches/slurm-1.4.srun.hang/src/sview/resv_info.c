@@ -652,6 +652,28 @@ static void _update_info_resv(List info_list,
 	return;
 }
 
+static int _sview_resv_sort_aval_dec(sview_resv_info_t* rec_a,
+				     sview_resv_info_t* rec_b)
+{
+	int size_a = rec_a->resv_ptr->node_cnt;
+	int size_b = rec_b->resv_ptr->node_cnt;
+
+	if (size_a > size_b)
+		return -1;
+	else if (size_a < size_b)
+		return 1;
+
+	if(rec_a->resv_ptr->node_list && rec_b->resv_ptr->node_list) {
+		size_a = strcmp(rec_a->resv_ptr->node_list, 
+				rec_b->resv_ptr->node_list);
+		if (size_a > 0)
+			return -1;
+		else if (size_a < 0)
+			return 1;
+	}
+	return 0;
+}
+
 static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
 				   int changed)
 {
@@ -679,6 +701,9 @@ static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
 		sview_resv_info_ptr->resv_ptr = resv_ptr;
 		list_append(info_list, sview_resv_info_ptr);
 	}
+
+	list_sort(info_list,
+		  (ListCmpF)_sview_resv_sort_aval_dec);
 
 update_color:
 	return info_list;
@@ -722,7 +747,7 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i);
+					resv_ptr->node_inx[j+1], i, true);
 				j += 2;
 			}
 			_layout_resv_record(treeview, sview_resv_info, update);
@@ -972,7 +997,7 @@ display_it:
 				change_grid_color(grid_button_list,
 						  resv_ptr->node_inx[j],
 						  resv_ptr->node_inx[j+1],
-						  i);
+						  i, true);
 			j += 2;
 		}
 		i++;
@@ -1137,24 +1162,14 @@ display_it:
 		list_push(send_resv_list, sview_resv_info_ptr);
 		j=0;
 		while(resv_ptr->node_inx[j] >= 0) {
-			if(popup_win->full_grid) 
 				change_grid_color(
 					popup_win->grid_button_list,
 					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i);
-			else
-				get_button_list_from_main(
-					&popup_win->grid_button_list,
-					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i);
+					resv_ptr->node_inx[j+1], i, false);
 			j += 2;
 		}
 	}
 	list_iterator_destroy(itr);
-	 
-	if(!popup_win->full_grid) 
-		put_buttons_in_table(popup_win->grid_table,
-				     popup_win->grid_button_list);
 
 	_update_info_resv(send_resv_list, 
 			  GTK_TREE_VIEW(spec_info->display_widget));

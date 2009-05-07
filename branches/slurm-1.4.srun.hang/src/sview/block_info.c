@@ -452,6 +452,27 @@ static void _update_info_block(List block_list,
 	remove_old(model, SORTID_UPDATED);
 }
 
+static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
+				      sview_block_info_t* rec_b)
+{
+	int size_a = rec_a->node_cnt;
+	int size_b = rec_b->node_cnt;
+
+	if (size_a > size_b)
+		return -1;
+	else if (size_a < size_b)
+		return 1;
+
+	if(rec_a->nodes && rec_b->nodes) {
+		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+		if (size_a > 0)
+			return -1;
+		else if (size_a < 0)
+			return 1;
+	}
+	return 0;
+}
+
 static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			       node_select_info_msg_t *node_select_ptr,
 			       int changed)
@@ -532,6 +553,10 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		list_append(block_list, block_ptr);
 	}
 	
+	list_sort(block_list,
+		  (ListCmpF)_sview_block_sort_aval_dec);
+
+
 	return block_list;
 }
 
@@ -574,7 +599,7 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					block_ptr->bp_inx[j],
-					block_ptr->bp_inx[j+1], i);
+					block_ptr->bp_inx[j+1], i, true);
 				j += 2;
 			}
 			_layout_block_record(treeview, block_ptr, update);
@@ -887,7 +912,7 @@ display_it:
 						  bp_inx[j],
 						  sview_block_info_ptr->
 						  bp_inx[j+1],
-						  i);
+						  i, true);
 			j += 2;
 		}
 		i++;
@@ -1021,11 +1046,8 @@ display_it:
 				 popup_win->display_data, SORTID_CNT);
 	}
 
-	if(!popup_win->grid_button_list) {
-		popup_win->grid_button_list = copy_main_button_list();
-		put_buttons_in_table(popup_win->grid_table,
-				     popup_win->grid_button_list);
-	}
+	setup_popup_grid_list(popup_win);
+
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
 		_display_info_block(block_list, popup_win);
@@ -1102,7 +1124,7 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				block_ptr->bp_inx[j],
-				block_ptr->bp_inx[j+1], i);
+				block_ptr->bp_inx[j+1], i, false);
 			j += 2;
 		}
 	}

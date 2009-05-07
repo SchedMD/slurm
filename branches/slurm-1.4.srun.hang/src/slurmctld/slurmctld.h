@@ -251,6 +251,7 @@ extern bool ping_nodes_now;		/* if set, ping nodes immediately */
  *  avail_node_bitmap       Set if node's state is not DOWN, DRAINING/DRAINED, 
  *                          FAILING or NO_RESPOND (i.e. available to run a job)
  *  idle_node_bitmap        Set if node has no jobs allocated to it
+ *  power_node_bitmap       Set for nodes which are powered down
  *  share_node_bitmap       Set if any job allocated resources on that node
  *                          is configured to not share the node with other 
  *                          jobs (--exclusive option specified by job or
@@ -260,6 +261,7 @@ extern bool ping_nodes_now;		/* if set, ping nodes immediately */
 extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes, 
 					 * state not DOWN, DRAIN or FAILING */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
+extern bitstr_t *power_node_bitmap;	/* Powered down nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 
@@ -349,6 +351,7 @@ typedef struct slurmctld_resv {
 	struct part_record *part_ptr;	/* pointer to partition used	*/
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	time_t start_time;	/* start time of reservation		*/
+	time_t start_time_first;/* when the reservation first started	*/
 	time_t start_time_prev;	/* If start time was changed this is
 				 * the pervious start time.  Needed
 				 * for accounting */

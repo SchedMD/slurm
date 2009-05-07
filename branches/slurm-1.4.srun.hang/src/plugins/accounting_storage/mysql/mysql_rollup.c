@@ -1012,24 +1012,6 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 		start_tm.tm_isdst = -1;
 		curr_end = mktime(&start_tm);
 	}
-
-	/* if we didn't ask for archive data return here and don't do
-	   anything extra just rollup */
-
-	if(!archive_data)
-		return SLURM_SUCCESS;
-
-	/* remove all data from suspend table that was older than
-	 * start. 
-	 */
-	query = xstrdup_printf("delete from %s where end < %d && end != 0",
-			       suspend_table, start);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		error("Couldn't remove old suspend data");
-		return SLURM_ERROR;
-	}
 			       
 /* 	info("stop start %s", ctime(&curr_start)); */
 /* 	info("stop end %s", ctime(&curr_end)); */
@@ -1138,28 +1120,20 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	if(!archive_data)
 		return SLURM_SUCCESS;
 
-	/* remove all data from event table that was older than
-	 * start. 
-	 */
-	query = xstrdup_printf("delete from %s where period_end < %d "
-			       "&& period_end != 0",
-			       event_table, start);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		error("Couldn't remove old event data");
-		return SLURM_ERROR;
-	}
 	if(!slurmdbd_conf) 
 		return SLURM_SUCCESS;
 
 	memset(&arch_cond, 0, sizeof(arch_cond));
 	arch_cond.archive_dir = slurmdbd_conf->archive_dir;
+	arch_cond.archive_events = slurmdbd_conf->archive_events;
 	arch_cond.archive_jobs = slurmdbd_conf->archive_jobs;
 	arch_cond.archive_script = slurmdbd_conf->archive_script;
 	arch_cond.archive_steps = slurmdbd_conf->archive_steps;
-	arch_cond.job_purge = slurmdbd_conf->job_purge;
-	arch_cond.step_purge = slurmdbd_conf->step_purge;
+	arch_cond.archive_suspend = slurmdbd_conf->archive_suspend;
+	arch_cond.purge_event = slurmdbd_conf->purge_event;
+	arch_cond.purge_job = slurmdbd_conf->purge_job;
+	arch_cond.purge_step = slurmdbd_conf->purge_step;
+	arch_cond.purge_suspend = slurmdbd_conf->purge_suspend;
 
 	return mysql_jobacct_process_archive(mysql_conn, &arch_cond);
 }

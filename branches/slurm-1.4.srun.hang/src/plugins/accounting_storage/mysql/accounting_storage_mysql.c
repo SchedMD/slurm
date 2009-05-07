@@ -264,7 +264,9 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			user_rec.name = user;
 			if(assoc_mgr_fill_in_user(mysql_conn, &user_rec,
 						  1, NULL) != SLURM_SUCCESS) {
-				error("No user by name of %s", user);
+				error("No user by name of %s assoc %u",
+				      user, associd);
+				xfree(user);
 				goto no_wckeyid;
 			}
 			
@@ -489,8 +491,7 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*vals, ", 1");
 		xstrcat(*extra, ", fairshare=1");
 		assoc->shares_raw = 1;
-	} else 
-		assoc->shares_raw = 1;
+	} 
 
 	if((int)assoc->grp_cpu_mins >= 0) {
 		xstrcat(*cols, ", grp_cpu_mins");
@@ -2810,9 +2811,6 @@ static mysql_db_info_t *_mysql_acct_create_db_info()
 	}
 	db_info->host = slurm_get_accounting_storage_host();	
 	db_info->backup = slurm_get_accounting_storage_backup_host();
-	if(db_info->backup) 
-		fatal("Backup not implemented yet in "
-		      "accounting_storage_mysql plugin yet.");
 	
 	db_info->user = slurm_get_accounting_storage_user();	
 	db_info->pass = slurm_get_accounting_storage_pass();	
@@ -2890,6 +2888,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "control_host", "tinytext not null default ''" },
 		{ "control_port", "mediumint not null default 0" },
 		{ "rpc_version", "mediumint not null default 0" },
+		{ "classification", "smallint unsigned default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -3994,12 +3993,13 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 						  &vals, &extra,
 						  QOS_LEVEL_SET, 1);
 		xstrfmtcat(query, 
-			   "insert into %s (creation_time, mod_time, name) "
-			   "values (%d, %d, \"%s\") "
+			   "insert into %s (creation_time, mod_time, "
+			   "name, classification) "
+			   "values (%d, %d, \"%s\", %u) "
 			   "on duplicate key update deleted=0, mod_time=%d, "
 			   "control_host='', control_port=0;",
 			   cluster_table, 
-			   now, now, object->name,
+			   now, now, object->name, object->classification,
 			   now);
 		debug3("%d(%d) query\n%s",
 		       mysql_conn->conn, __LINE__, query);
@@ -5132,6 +5132,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	bool clust_reg = false;
 
 	/* If you need to alter the default values of the cluster use
 	 * modify_associations since this is used only for registering
@@ -5162,20 +5163,33 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		xstrcat(extra, ")");
 	}
 
+	if(cluster_cond->classification) {
+		xstrfmtcat(extra, " && (classification & %u)",
+			   cluster_cond->classification);
+	}
+
 	set = 0;
 	if(cluster->control_host) {
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
 		set++;
+		clust_reg = true;
 	}
 
 	if(cluster->control_port) {
 		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
 		set++;
+		clust_reg = true;
 	}
 
 	if(cluster->rpc_version) {
 		xstrfmtcat(vals, ", rpc_version=%u", cluster->rpc_version);
 		set++;
+		clust_reg = true;
+	}
+
+	if(cluster->classification) {
+		xstrfmtcat(vals, ", classification=%u", 
+			   cluster->classification);
 	}
 
 	if(!vals) {
@@ -5183,7 +5197,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
-	} else if(set != 3) {
+	} else if(clust_reg && (set != 3)) {
 		xfree(vals);
 		xfree(extra);
 		errno = EFAULT;
@@ -5217,7 +5231,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		object = xstrdup(row[0]);
 
 		/* check to see if this is the first time to register */
-		if(row[1][0] == '0')
+		if(clust_reg && (row[1][0] == '0'))
 			set = 0;
 
 		list_append(ret_list, object);
@@ -6154,12 +6168,17 @@ extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 		xstrcat(cols, resv_req_inx[i]);
 	}
 	
+	/* check for both the last start and the start because most
+	   likely the start time hasn't changed, but something else
+	   may have since the last time we did an update to the
+	   reservation. */
 	query = xstrdup_printf("select %s from %s where id=%u "
-			       "and start=%d and cluster='%s' "
+			       "and (start=%d || start=%d) and cluster='%s' "
 			       "and deleted=0 order by start desc "
 			       "limit 1 FOR UPDATE;",
 			       cols, resv_table, resv->id, 
-			       resv->time_start_prev, resv->cluster);
+			       resv->time_start, resv->time_start_prev,
+			       resv->cluster);
 try_again:
 	debug4("%d(%d) query\n%s",
 	       mysql_conn->conn, __LINE__, query);
@@ -6203,14 +6222,6 @@ try_again:
 	
 	/* check differences here */
 		
-	if(!resv->assocs 
-	   && row[RESV_ASSOCS] && row[RESV_ASSOCS][0])
-		// if this changes we just update the
-		// record, no need to create a new one since
-		// this doesn't really effect the
-		// reservation accounting wise
-		resv->assocs = xstrdup(row[RESV_ASSOCS]);
-
 	if(!resv->name 
 	   && row[RESV_NAME] && row[RESV_NAME][0])
 		// if this changes we just update the
@@ -6219,17 +6230,20 @@ try_again:
 		// reservation accounting wise
 		resv->name = xstrdup(row[RESV_NAME]);
 
+	if(resv->assocs)
+		set = 1;
+	else if(row[RESV_ASSOCS] && row[RESV_ASSOCS][0])
+		resv->assocs = xstrdup(row[RESV_ASSOCS]);
+
 	if(resv->cpus != (uint32_t)NO_VAL) 
 		set = 1;
 	else 
 		resv->cpus = atoi(row[RESV_CPU]);
-
 		
-	if(resv->flags == (uint16_t)NO_VAL) 
+	if(resv->flags != (uint16_t)NO_VAL) 
 		set = 1;
 	else
 		resv->flags = atoi(row[RESV_FLAGS]);
-
 		
 	if(resv->nodes) 
 		set = 1;
@@ -6248,8 +6262,7 @@ try_again:
 	 * just incase we have a different one from being out
 	 * of sync
 	 */
-
-	if((start < now) || !set) {
+	if((start > now) || !set) {
 		/* we haven't started the reservation yet, or
 		   we are changing the associations or end
 		   time which we can just update it */
@@ -7948,12 +7961,14 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	/* if this changes you will need to edit the corresponding enum */
 	char *cluster_req_inx[] = {
 		"name",
+		"classification",
 		"control_host",
 		"control_port",
 		"rpc_version",
 	};
 	enum {
 		CLUSTER_REQ_NAME,
+		CLUSTER_REQ_CLASS,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
 		CLUSTER_REQ_VERSION,
@@ -8043,6 +8058,7 @@ empty:
 				cluster_cond->usage_end);
 		}
 
+		cluster->classification = atoi(row[CLUSTER_REQ_CLASS]);
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
@@ -10442,7 +10458,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			       * hasn't been set yet */
 	
 	/* if there is a start_time get the wckeyid */
-	if(job_ptr->start_time) 
+	if(job_ptr->start_time && job_ptr->assoc_id) 
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
 				       job_ptr->user_id, cluster_name,
 				       job_ptr->assoc_id);

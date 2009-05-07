@@ -749,6 +749,12 @@ static void *_decay_thread(void *no_data)
 
 				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {
+					/* we don't want to make the
+					   root assoc responsible for
+					   keeping track of time 
+					*/ 
+					if (assoc == assoc_mgr_root_assoc)
+						break;
 					assoc->grp_used_wall += run_decay;
 					assoc->usage_raw +=
 						(long double)real_decay;
@@ -762,12 +768,6 @@ static void *_decay_thread(void *no_data)
 					       assoc->grp_used_wall);
 				
 					assoc = assoc->parent_assoc_ptr;
-					/* we don't want to make the
-					   root assoc responsible for
-					   keeping track of time 
-					*/ 
-					if (assoc == assoc_mgr_root_assoc)
-						break;
 				}
 				slurm_mutex_unlock(&assoc_mgr_association_lock);
 			}

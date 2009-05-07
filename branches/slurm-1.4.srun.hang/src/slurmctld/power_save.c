@@ -119,6 +119,7 @@ static void _do_power_work(void)
 			wake_cnt++;
 			suspend_cnt++;
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			bit_clear(power_node_bitmap, i);
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			node_ptr->last_response = now;
 			bit_set(wake_node_bitmap, i);
@@ -137,6 +138,7 @@ static void _do_power_work(void)
 			sleep_cnt++;
 			resume_cnt++;
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
+			bit_clear(power_node_bitmap, i);
 			bit_set(sleep_node_bitmap, i);
 		}
 	}

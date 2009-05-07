@@ -159,6 +159,19 @@ foreach my $line (<STDIN>) {
 		$partition = $1;
 	}
 
+	# Only pick out a number at the beginning if it is something else 
+	# we should skip it and make comp_code 0.  If we want something 
+	# else just change it to whatever you would think would be best.  
+	# Dispite the Moab documentation the comp code could contain 
+	# characters like ,SID= afterwards,  without knowing what that means
+	# we just skip it.  We haven't seen a case where comp_code isn't an
+	# int at the first so the 0 "should" never happen.
+	if($comp_code =~ /^(\d+)/) {
+		$comp_code = $1;
+	} else {
+		$comp_code = 0;
+	}
+
 	#figure out the cluster
 	if($cluster eq "ALL") {
 		if ($node_features =~ /\[(\w*)\]/) {

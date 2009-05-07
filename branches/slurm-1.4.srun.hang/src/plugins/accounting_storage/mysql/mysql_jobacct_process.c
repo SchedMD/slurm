@@ -86,6 +86,130 @@ static int _write_to_file(int fd, char *data)
 	return rc;
 }
 
+static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
+			       time_t curr_end, char *arch_dir,
+			       char *arch_type, char *insert,
+			       bool with_deleted)
+{
+	int period_start = 0, fd = 0;
+	int rc = SLURM_SUCCESS;
+	MYSQL_ROW row;
+	struct tm time_tm;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	char *values = NULL;
+	char start_char[32];
+	char end_char[32];
+	int i=0;
+
+	xassert(result);
+
+	//START_TIMER;
+	slurm_mutex_lock(&local_file_lock);
+	while((row = mysql_fetch_row(result))) {
+		if(period_start) {
+			xstrcat(values, ",\n(");
+		} else {
+			period_start = atoi(row[start_col]);
+			localtime_r((time_t *)&period_start, &time_tm);
+			time_tm.tm_sec = 0;
+			time_tm.tm_min = 0;
+			time_tm.tm_hour = 0;
+			time_tm.tm_mday = 1;
+			time_tm.tm_isdst = -1;
+			period_start = mktime(&time_tm);
+			localtime_r((time_t *)&period_start, &time_tm);
+			snprintf(start_char, sizeof(start_char),
+				 "%4.4u-%2.2u-%2.2u"
+				 "T%2.2u:%2.2u:%2.2u",
+				 (time_tm.tm_year + 1900),
+				 (time_tm.tm_mon+1), 
+				 time_tm.tm_mday,
+				 time_tm.tm_hour,
+				 time_tm.tm_min, 
+				 time_tm.tm_sec);
+
+			localtime_r((time_t *)&curr_end, &time_tm);
+			snprintf(end_char, sizeof(end_char),
+				 "%4.4u-%2.2u-%2.2u"
+				 "T%2.2u:%2.2u:%2.2u",
+				 (time_tm.tm_year + 1900),
+				 (time_tm.tm_mon+1), 
+				 time_tm.tm_mday,
+				 time_tm.tm_hour,
+				 time_tm.tm_min, 
+				 time_tm.tm_sec);
+
+			/* write the buffer to file */
+			reg_file = xstrdup_printf(
+				"%s/%s_archive_%s_%s.sql",
+				arch_dir, arch_type,
+				start_char, end_char);
+			debug("Storing event archive at %s", reg_file);
+			old_file = xstrdup_printf("%s.old", reg_file);
+			new_file = xstrdup_printf("%s.new", reg_file);
+					
+			fd = creat(new_file, 0600);
+			if (fd == 0) {
+				error("Can't save archive, "
+				      "create file %s error %m",
+				      new_file);
+				rc = errno;
+				xfree(insert);
+				break;
+			} 
+			values = xstrdup_printf("%s\nvalues\n(", insert);
+		}
+	
+		xstrfmtcat(values, "'%s'", row[0]);
+		for(i=1; i<col_count; i++) {
+			xstrfmtcat(values, ", '%s'", row[i]);
+		}
+
+		if(with_deleted)
+			xstrcat(values, ", '1')");
+		else
+			xstrcat(values, ")");
+				
+		if(!fd 
+		   || ((rc = _write_to_file(fd, values)) != SLURM_SUCCESS)) {
+			xfree(values);
+			break;
+		}
+		xfree(values);
+	}
+
+	if(with_deleted)
+	      	rc = _write_to_file(fd,
+			    " on duplicate key update "
+			    "deleted=1;");
+	else
+	      	rc = _write_to_file(fd,
+			    " on duplicate key update "
+			    "period_end=VALUES(period_end);");
+//			END_TIMER2("write file");
+//			info("write file took %s", TIME_STR);
+
+	fsync(fd);
+	close(fd);
+			
+	if (rc)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		int ign;	/* avoid warning */
+		(void) unlink(old_file);
+		ign =  link(reg_file, old_file);
+		(void) unlink(reg_file);
+		ign =  link(new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+	slurm_mutex_unlock(&local_file_lock);
+
+	return rc;
+}
+
 static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
 {
 	char * args[] = {arch_cond->archive_script, NULL};
@@ -124,14 +248,48 @@ static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
 
 	env = env_array_create();
 
-	if(arch_cond->step_purge) {
+	if(arch_cond->purge_event) {
+		/* use localtime to avoid any daylight savings issues */
+		if(!localtime_r(&last_submit, &time_tm)) {
+			error("Couldn't get localtime from "
+			      "first event start %d",
+			      last_submit);
+			return SLURM_ERROR;
+		}
+		time_tm.tm_mon -= arch_cond->purge_step;
+		time_tm.tm_isdst = -1;
+		curr_end = mktime(&time_tm);
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_EVENTS", "%u",
+				     arch_cond->archive_events);
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_EVENT", "%d",
+				     curr_end);
+	}
+
+	if(arch_cond->purge_job) {
+		/* use localtime to avoid any daylight savings issues */
+		if(!localtime_r(&last_submit, &time_tm)) {
+			error("Couldn't get localtime from first start %d",
+			      last_submit);
+			return SLURM_ERROR;
+		}
+		time_tm.tm_mon -= arch_cond->purge_job;
+		time_tm.tm_isdst = -1;
+		curr_end = mktime(&time_tm);
+		
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_JOBS", "%u",
+				     arch_cond->archive_jobs);
+		env_array_append_fmt (&env, "SLURM_ARCHIVE_LAST_JOB", "%d",
+				      curr_end);
+	}
+
+	if(arch_cond->purge_step) {
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
 			error("Couldn't get localtime from first step start %d",
 			      last_submit);
 			return SLURM_ERROR;
 		}
-		time_tm.tm_mon -= arch_cond->step_purge;
+		time_tm.tm_mon -= arch_cond->purge_step;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_STEPS", "%u",
@@ -140,21 +298,21 @@ static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
 				     curr_end);
 	}
 
-	if(arch_cond->job_purge) {
+	if(arch_cond->purge_suspend) {
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
-			error("Couldn't get localtime from first start %d",
+			error("Couldn't get localtime from first "
+			      "suspend start %d",
 			      last_submit);
 			return SLURM_ERROR;
 		}
-		time_tm.tm_mon -= arch_cond->job_purge;
+		time_tm.tm_mon -= arch_cond->purge_step;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
-		
-		env_array_append_fmt(&env, "SLURM_ARCHIVE_JOBS", "%u",
-				     arch_cond->archive_jobs);
-		env_array_append_fmt (&env, "SLURM_ARCHIVE_LAST_JOB", "%d",
-				      curr_end);
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_SUSPEND", "%u",
+				     arch_cond->archive_steps);
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_SUSPEND", "%d",
+				     curr_end);
 	}
 
 #ifdef _PATH_STDPATH
@@ -901,6 +1059,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			continue;
 		
 		job = create_jobacct_job_rec();
+		list_append(job_list, job);
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		job->alloc_nodes = atoi(row[JOB_REQ_ALLOC_NODES]);
@@ -1045,8 +1204,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job->qos = atoi(row[JOB_REQ_QOS]);
 		job->show_full = 1;
 					
-		list_append(job_list, job);
-
 		if(job_cond && job_cond->step_list
 		   && list_count(job_cond->step_list)) {
 			set = 0;
@@ -1237,17 +1394,28 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 					 acct_archive_cond_t *arch_cond)
 {
-	int rc = SLURM_SUCCESS, fd = 0;
+	int rc = SLURM_SUCCESS;
 	char *query = NULL;
 	time_t last_submit = time(NULL);
 	time_t curr_end;
 	char *tmp = NULL;
 	int i=0;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 	struct tm time_tm;
-	char start_char[32];
-	char end_char[32];
+
 //	DEF_TIMERS;
+
+	/* if this changes you will need to edit the corresponding 
+	 * enum below */
+	char *event_req_inx[] = {
+		"node_name",
+		"cluster",
+		"cpu_count",
+		"state",
+		"period_start",
+		"period_end",
+		"reason",
+		"cluster_nodes",
+	};
 
 	/* if this changes you will need to edit the corresponding 
 	 * enum below */
@@ -1276,7 +1444,9 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		"priority",
 		"req_cpus",
 		"alloc_cpus",
+		"alloc_nodes",
 		"nodelist",
+		"node_inx",
 		"kill_requid",
 		"qos"
 	};
@@ -1291,11 +1461,14 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		"suspended",
 		"name",
 		"nodelist",
+		"node_inx",
 		"state",
 		"kill_requid",
 		"comp_code",
+		"nodes",
 		"cpus",
 		"tasks",
+		"task_dist",
 		"user_sec",
 		"user_usec",
 		"sys_sec",
@@ -1316,6 +1489,28 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		"min_cpu_task",
 		"min_cpu_node",
 		"ave_cpu"
+	};
+
+
+	/* if this changes you will need to edit the corresponding 
+	 * enum below */
+	char *suspend_req_inx[] = {
+		"id",
+		"associd",
+		"start",
+		"end",
+	};
+
+	enum {
+		EVENT_REQ_NODE,
+		EVENT_REQ_CLUSTER,
+		EVENT_REQ_CPUS,
+		EVENT_REQ_STATE,
+		EVENT_REQ_START,
+		EVENT_REQ_END,
+		EVENT_REQ_REASON,
+		EVENT_REQ_NODES,
+		EVENT_REQ_COUNT
 	};
 
 	enum {
@@ -1343,11 +1538,14 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		JOB_REQ_PRIORITY,
 		JOB_REQ_REQ_CPUS,
 		JOB_REQ_ALLOC_CPUS,
+		JOB_REQ_ALLOC_NODES,
 		JOB_REQ_NODELIST,
+		JOB_REQ_NODE_INX,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_QOS,
 		JOB_REQ_COUNT		
 	};
+
 	enum {
 		STEP_REQ_ID,
 		STEP_REQ_STEPID,
@@ -1356,11 +1554,14 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		STEP_REQ_SUSPENDED,
 		STEP_REQ_NAME,
 		STEP_REQ_NODELIST,
+		STEP_REQ_NODE_INX,
 		STEP_REQ_STATE,
 		STEP_REQ_KILL_REQUID,
 		STEP_REQ_COMP_CODE,
+		STEP_REQ_NODES,
 		STEP_REQ_CPUS,
 		STEP_REQ_TASKS,
+		STEP_REQ_TASKDIST,
 		STEP_REQ_USER_SEC,
 		STEP_REQ_USER_USEC,
 		STEP_REQ_SYS_SEC,
@@ -1382,6 +1583,14 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		STEP_REQ_MIN_CPU_NODE,
 		STEP_REQ_AVE_CPU,
 		STEP_REQ_COUNT
+	};
+
+	enum {
+		SUSPEND_REQ_ID,
+		SUSPEND_REQ_ASSOCID,
+		SUSPEND_REQ_START,
+		SUSPEND_REQ_END,
+		SUSPEND_REQ_COUNT
 	};
 
 	if(!arch_cond) {
@@ -1410,9 +1619,176 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if(arch_cond->step_purge) {
+	if(arch_cond->purge_event) {
 		/* remove all data from step table that was older than
-		 * start * arch_cond->step_purge. 
+		 * period_start * arch_cond->purge_event. 
+		 */
+		/* use localtime to avoid any daylight savings issues */
+		if(!localtime_r(&last_submit, &time_tm)) {
+			error("Couldn't get localtime from first submit %d",
+			      last_submit);
+			return SLURM_ERROR;
+		}
+		time_tm.tm_mday = 1;
+		time_tm.tm_mon -= arch_cond->purge_event;
+		time_tm.tm_isdst = -1;
+		curr_end = mktime(&time_tm);
+
+		debug4("from %d - %d months purging events from before %d", 
+		       last_submit, arch_cond->purge_event, curr_end);
+		
+		if(arch_cond->archive_events) {
+			char *insert = NULL;
+			MYSQL_RES *result = NULL;
+			
+			xfree(tmp);
+			xstrfmtcat(tmp, "%s", event_req_inx[0]);
+			for(i=1; i<EVENT_REQ_COUNT; i++) {
+				xstrfmtcat(tmp, ", %s", event_req_inx[i]);
+			}
+
+			/* get all the events started before this time
+			   listed */
+			query = xstrdup_printf("select %s from %s where "
+					       "period_start <= %d "
+					       "&& period_end != 0 "
+					       "order by period_start asc",
+					       tmp, event_table, curr_end);
+
+			insert = xstrdup_printf("insert into %s (%s) ",
+						event_table, tmp);
+			xfree(tmp);
+			
+//			START_TIMER;
+			debug3("%d(%d) query\n%s", mysql_conn->conn,
+			       __LINE__, query);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn->db_conn, query, 0))) {
+				xfree(insert);
+				xfree(query);
+				return SLURM_ERROR;
+			}
+			xfree(query);
+//			END_TIMER2("step query");
+//			info("event query took %s", TIME_STR);
+
+			if(!mysql_num_rows(result)) {
+				xfree(insert);
+				mysql_free_result(result);
+				goto exit_events;
+			}
+
+			rc = _write_archive_file(
+				result, EVENT_REQ_START, EVENT_REQ_COUNT,
+				curr_end, arch_cond->archive_dir, 
+				"event", insert, false);
+			
+			xfree(insert);
+			mysql_free_result(result);
+
+			if(rc != SLURM_SUCCESS)
+				return rc;
+		}
+		query = xstrdup_printf("delete from %s where "
+				       "period_start <= %d && period_end != 0",
+				       event_table, curr_end);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't remove old event data");
+			return SLURM_ERROR;
+		}
+	}
+
+exit_events:
+
+	if(arch_cond->purge_suspend) {
+		/* remove all data from step table that was older than
+		 * period_start * arch_cond->purge_suspend. 
+		 */
+		/* use localtime to avoid any daylight savings issues */
+		if(!localtime_r(&last_submit, &time_tm)) {
+			error("Couldn't get localtime from first submit %d",
+			      last_submit);
+			return SLURM_ERROR;
+		}
+		time_tm.tm_mday = 1;
+		time_tm.tm_mon -= arch_cond->purge_suspend;
+		time_tm.tm_isdst = -1;
+		curr_end = mktime(&time_tm);
+
+		debug4("from %d - %d months purging suspend from before %d", 
+		       last_submit, arch_cond->purge_suspend, curr_end);
+		
+		if(arch_cond->archive_suspend) {
+			char *insert = NULL;
+			MYSQL_RES *result = NULL;
+			
+			xfree(tmp);
+			xstrfmtcat(tmp, "%s", suspend_req_inx[0]);
+			for(i=1; i<SUSPEND_REQ_COUNT; i++) {
+				xstrfmtcat(tmp, ", %s", suspend_req_inx[i]);
+			}
+
+			/* get all the suspend started before this time
+			   listed */
+			query = xstrdup_printf("select %s from %s where "
+					       "start <= %d && end != 0 "
+					       "order by start asc",
+					       tmp, suspend_table, curr_end);
+
+			insert = xstrdup_printf("insert into %s (%s) ",
+						suspend_table, tmp);
+			xfree(tmp);
+			
+//			START_TIMER;
+			debug3("%d(%d) query\n%s", mysql_conn->conn,
+			       __LINE__, query);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn->db_conn, query, 0))) {
+				xfree(insert);
+				xfree(query);
+				return SLURM_ERROR;
+			}
+			xfree(query);
+//			END_TIMER2("step query");
+//			info("suspend query took %s", TIME_STR);
+
+			if(!mysql_num_rows(result)) {
+				xfree(insert);
+				mysql_free_result(result);
+				goto exit_suspend;
+			}
+
+			rc = _write_archive_file(
+				result, SUSPEND_REQ_START, SUSPEND_REQ_COUNT,
+				curr_end, arch_cond->archive_dir, 
+				"suspend", insert, false);
+			
+			xfree(insert);
+			mysql_free_result(result);
+
+			if(rc != SLURM_SUCCESS)
+				return rc;
+		}
+		query = xstrdup_printf("delete from %s where start <= %d "
+				       "&& end != 0",
+				       suspend_table, curr_end);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't remove old suspend data");
+			return SLURM_ERROR;
+		}
+	}
+
+exit_suspend:
+
+	if(arch_cond->purge_step) {
+		/* remove all data from step table that was older than
+		 * start * arch_cond->purge_step. 
 		 */
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
@@ -1420,19 +1796,16 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 			      last_submit);
 			return SLURM_ERROR;
 		}
-		time_tm.tm_mon -= arch_cond->step_purge;
+		time_tm.tm_mon -= arch_cond->purge_step;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 
 		debug4("from %d - %d months purging steps from before %d", 
-		       last_submit, arch_cond->step_purge, curr_end);
+		       last_submit, arch_cond->purge_step, curr_end);
 		
 		if(arch_cond->archive_steps) {
 			char *insert = NULL;
-			char *values = NULL;
-			int period_start = 0;
 			MYSQL_RES *result = NULL;
-			MYSQL_ROW row;
 
 			xfree(tmp);
 			xstrfmtcat(tmp, "%s", step_req_inx[0]);
@@ -1471,115 +1844,18 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 				mysql_free_result(result);
 				goto exit_steps;
 			}
-
-//			START_TIMER;
-			slurm_mutex_lock(&local_file_lock);
-			while((row = mysql_fetch_row(result))) {
-				if(period_start) {
-					xstrcat(values, ",\n(");
-				} else {
-					period_start = 
-						atoi(row[STEP_REQ_START]);
-					localtime_r((time_t *)&period_start,
-						    &time_tm);
-					time_tm.tm_sec = 0;
-					time_tm.tm_min = 0;
-					time_tm.tm_hour = 0;
-					time_tm.tm_mday = 1;
-					time_tm.tm_isdst = -1;
-					period_start = mktime(&time_tm);
-					localtime_r((time_t *)&period_start,
-						    &time_tm);
-					snprintf(start_char, sizeof(start_char),
-						 "%4.4u-%2.2u-%2.2u"
-						 "T%2.2u:%2.2u:%2.2u",
-						 (time_tm.tm_year + 1900),
-						 (time_tm.tm_mon+1), 
-						 time_tm.tm_mday,
-						 time_tm.tm_hour,
-						 time_tm.tm_min, 
-						 time_tm.tm_sec);
-
-					localtime_r((time_t *)&curr_end,
-						    &time_tm);
-					snprintf(end_char, sizeof(end_char),
-						 "%4.4u-%2.2u-%2.2u"
-						 "T%2.2u:%2.2u:%2.2u",
-						 (time_tm.tm_year + 1900),
-						 (time_tm.tm_mon+1), 
-						 time_tm.tm_mday,
-						 time_tm.tm_hour,
-						 time_tm.tm_min, 
-						 time_tm.tm_sec);
-
-					/* write the buffer to file */
-					reg_file = xstrdup_printf(
-						"%s/step_archive_%s_%s.sql",
-						arch_cond->archive_dir,
-						start_char, end_char);
-					debug("Storing step archive at %s",
-					      reg_file);
-					old_file = xstrdup_printf(
-						"%s.old", reg_file);
-					new_file = xstrdup_printf(
-						"%s.new", reg_file);
-					
-					fd = creat(new_file, 0600);
-					if (fd == 0) {
-						error("Can't save archive, "
-						      "create file %s error %m",
-						      new_file);
-						rc = errno;
-						xfree(insert);
-						break;
-					} 
-					values = xstrdup_printf("%s\nvalues\n(",
-								insert);
-					xfree(insert);
-				}
-	
-				xstrfmtcat(values, "'%s'", row[0]);
-				for(i=1; i<STEP_REQ_COUNT; i++) {
-					xstrfmtcat(values, ", '%s'", row[i]);
-				}
-				xstrcat(values, ", '1')");
-				
-				if(!fd || ((rc = _write_to_file(fd, values))
-					   != SLURM_SUCCESS)) {
-					xfree(values);
-					break;
-				}
-				xfree(values);
-			}
-			mysql_free_result(result);
-			rc = _write_to_file(
-				fd, " on duplicate key update deleted=1;");
-//			END_TIMER2("write file");
-//			info("write file took %s", TIME_STR);
-
-			fsync(fd);
-			close(fd);
 			
-			if (rc)
-				(void) unlink(new_file);
-			else {			/* file shuffle */
-				int ign;	/* avoid warning */
-				(void) unlink(old_file);
-				ign =  link(reg_file, old_file);
-				(void) unlink(reg_file);
-				ign =   link(new_file, reg_file);
-				(void) unlink(new_file);
-			}
-			xfree(old_file);
-			xfree(reg_file);
-			xfree(new_file);
-			slurm_mutex_unlock(&local_file_lock);
+			rc = _write_archive_file(
+				result, STEP_REQ_START, STEP_REQ_COUNT,
+				curr_end, arch_cond->archive_dir, 
+				"step", insert, true);
+			
+			xfree(insert);
+			mysql_free_result(result);
 
-			period_start = 0;
+			if(rc != SLURM_SUCCESS)
+				return rc;
 		}
-
-		if(rc != SLURM_SUCCESS) 
-			return rc;
 
 		query = xstrdup_printf("delete from %s where start <= %d "
 				       "&& end != 0",
@@ -1594,9 +1870,9 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	}
 exit_steps:
 	
-	if(arch_cond->job_purge) {
+	if(arch_cond->purge_job) {
 		/* remove all data from step table that was older than
-		 * last_submit * arch_cond->job_purge. 
+		 * last_submit * arch_cond->purge_job. 
 		 */
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
@@ -1605,20 +1881,17 @@ exit_steps:
 			return SLURM_ERROR;
 		}
 		time_tm.tm_mday = 1;
-		time_tm.tm_mon -= arch_cond->job_purge;
+		time_tm.tm_mon -= arch_cond->purge_job;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
 
 		debug4("from %d - %d months purging jobs from before %d", 
-		       last_submit, arch_cond->job_purge, curr_end);
+		       last_submit, arch_cond->purge_job, curr_end);
 
 		if(arch_cond->archive_jobs) {
 			char *insert = NULL;
-			char *values = NULL;
-			int period_start = 0;
 			MYSQL_RES *result = NULL;
-			MYSQL_ROW row;
-			
+						
 			xfree(tmp);
 			xstrfmtcat(tmp, "%s", job_req_inx[0]);
 			for(i=1; i<JOB_REQ_COUNT; i++) {
@@ -1656,114 +1929,18 @@ exit_steps:
 				goto exit_jobs;
 			}
 			
-//			START_TIMER;
-			slurm_mutex_lock(&local_file_lock);
-			while((row = mysql_fetch_row(result))) {
-				if(period_start) {
-					xstrcat(values, ",\n(");
-				} else {
-					period_start = 
-						atoi(row[JOB_REQ_SUBMIT]);
-					localtime_r((time_t *)&period_start,
-						    &time_tm);
-					time_tm.tm_sec = 0;
-					time_tm.tm_min = 0;
-					time_tm.tm_hour = 0;
-					time_tm.tm_mday = 1;
-					time_tm.tm_isdst = -1;
-					period_start = mktime(&time_tm);
-					localtime_r((time_t *)&period_start,
-						    &time_tm);
-					snprintf(start_char, sizeof(start_char),
-						 "%4.4u-%2.2u-%2.2u"
-						 "T%2.2u:%2.2u:%2.2u",
-						 (time_tm.tm_year + 1900),
-						 (time_tm.tm_mon+1), 
-						 time_tm.tm_mday,
-						 time_tm.tm_hour,
-						 time_tm.tm_min, 
-						 time_tm.tm_sec);
-
-					localtime_r((time_t *)&curr_end,
-						    &time_tm);
-
-					snprintf(end_char, sizeof(end_char),
-						 "%4.4u-%2.2u-%2.2u"
-						 "T%2.2u:%2.2u:%2.2u",
-						 (time_tm.tm_year + 1900),
-						 (time_tm.tm_mon+1), 
-						 time_tm.tm_mday,
-						 time_tm.tm_hour,
-						 time_tm.tm_min, 
-						 time_tm.tm_sec);
-
-					/* write the buffer to file */
-					reg_file = xstrdup_printf(
-						"%s/job_archive_%s_%s.sql",
-						arch_cond->archive_dir,
-						start_char, end_char);
-					debug("Storing job archive at %s",
-					      reg_file);
-					old_file = xstrdup_printf(
-						"%s.old", reg_file);
-					new_file = xstrdup_printf(
-						"%s.new", reg_file);
-					
-					fd = creat(new_file, 0600);
-					if (fd == 0) {
-						error("Can't save archive, "
-						      "create file %s error %m",
-						      new_file);
-						rc = errno;
-						xfree(insert);
-						break;
-					} 
-					values = xstrdup_printf("%s\nvalues\n(",
-								insert);
-					xfree(insert);
-				}
-				
-				xstrfmtcat(values, "'%s'", row[0]);
-				for(i=1; i<JOB_REQ_COUNT; i++) {
-					xstrfmtcat(values, ", '%s'", row[i]);
-				}
-				xstrcat(values, ", '1')");
-				
-				if(!fd || ((rc = _write_to_file(fd, values))
-					   != SLURM_SUCCESS)) {
-					xfree(values);
-					break;
-				}
-				xfree(values);
-			}
+			rc = _write_archive_file(
+				result, JOB_REQ_SUBMIT, JOB_REQ_COUNT,
+				curr_end, arch_cond->archive_dir, 
+				"job", insert, true);
+			
+			xfree(insert);
 			mysql_free_result(result);
 
-			rc = _write_to_file(
-				fd, " on duplicate key update deleted=1;");
-//			END_TIMER2("write file");
-//			info("write file took %s", TIME_STR);
-			
-			
-			fsync(fd);
-			close(fd);
-
-			if (rc)
-				(void) unlink(new_file);
-			else {			/* file shuffle */
-				int ign;	/* avoid warning */
-				(void) unlink(old_file);
-				ign =  link(reg_file, old_file);
-				(void) unlink(reg_file);
-				ign =  link(new_file, reg_file);
-				(void) unlink(new_file);
-			}
-			xfree(old_file);
-			xfree(reg_file);
-			xfree(new_file);
-			slurm_mutex_unlock(&local_file_lock);
-
-			period_start = 0;
+			if(rc != SLURM_SUCCESS)
+				return rc;
 		}
+
 		query = xstrdup_printf("delete from %s where submit <= %d "
 				       "&& end != 0",
 				       job_table, curr_end);

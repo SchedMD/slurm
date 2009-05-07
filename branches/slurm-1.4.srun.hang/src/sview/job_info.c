@@ -2145,6 +2145,26 @@ static void _job_info_list_del(void *object)
 	}
 }
 
+static int _sview_job_sort_aval_dec(sview_job_info_t* rec_a,
+				    sview_job_info_t* rec_b)
+{
+	int size_a = rec_a->node_cnt;
+	int size_b = rec_b->node_cnt;
+
+	if (size_a > size_b)
+		return -1;
+	else if (size_a < size_b)
+		return 1;
+
+	if(rec_a->nodes && rec_b->nodes) {
+		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+		if (size_a > 0)
+			return -1;
+		else if (size_a < 0)
+			return 1;
+	}
+	return 0;
+}
 
 static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 				  job_step_info_response_msg_t *step_info_ptr,
@@ -2251,6 +2271,14 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		}
 		list_append(info_list, sview_job_info_ptr);
 	}
+
+
+	list_sort(info_list,
+		  (ListCmpF)_sview_job_sort_aval_dec);
+
+	list_sort(odd_info_list,
+		  (ListCmpF)_sview_job_sort_aval_dec);
+
 update_color:
 	if(want_odd_states)
 		return odd_info_list;
@@ -2304,7 +2332,7 @@ need_refresh:
 					popup_win->grid_button_list,
 					sview_job_info->job_ptr->node_inx[j],
 					sview_job_info->job_ptr->node_inx[j+1],
-					i);
+					i, true);
 			j += 2;
 		}
 		_layout_job_record(treeview, sview_job_info, update);
@@ -2324,7 +2352,7 @@ need_refresh:
 						step_ptr->node_inx[j],
 						step_ptr->
 						node_inx[j+1],
-						i);
+						i, true);
 					j += 2;
 				}
 				_layout_step_record(treeview, 
@@ -2724,7 +2752,7 @@ display_it:
 				change_grid_color(grid_button_list,
 						  job_ptr->node_inx[j],
 						  job_ptr->node_inx[j+1],
-						  i);
+						  i, true);
 			j += 2;
 		}
 		i++;
@@ -2968,7 +2996,7 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				job_ptr->node_inx[j],
-				job_ptr->node_inx[j+1], i);
+				job_ptr->node_inx[j+1], i, false);
 			j += 2;
 		}
 	}

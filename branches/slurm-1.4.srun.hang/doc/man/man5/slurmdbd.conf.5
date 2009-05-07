@@ -28,6 +28,10 @@ read in anytime with sacctmgr load filename.  This directory is where the
 file will be placed archive has ran.  Default is /tmp.
 
 .TP
+\fBArchiveEvents\fR
+Boolean, yes to archive event data, no other wise.  Default is no.
+
+.TP
 \fBArchiveJobs\fR
 Boolean, yes to archive job data, no other wise.  Default is no.
 
@@ -38,22 +42,39 @@ records out of the database into an archive. The script is executed
 with a no arguments, The following environment variables are set.
 .RS
 .TP
-\fBSLURM_ARCHIVE_STEPS\fR 
-1 for archive steps 0 otherwise.
+\fBSLURM_ARCHIVE_EVENTS\fR 
+1 for archive events 0 otherwise.
 .TP
-\fBSLURM_ARCHIVE_LAST_STEP\fR
-Time of last step start to archive.
+\fBSLURM_ARCHIVE_LAST_EVENT\fR
+Time of last event start to archive.
 .TP
 \fBSLURM_ARCHIVE_JOBS\fR
 1 for achive jobs 0 otherwise.
 .TP
 \fBSLURM_ARCHIVE_LAST_JOB\fR
 Time of last job submit to archive.
+.TP
+\fBSLURM_ARCHIVE_STEPS\fR 
+1 for archive steps 0 otherwise.
+.TP
+\fBSLURM_ARCHIVE_LAST_STEP\fR
+Time of last step start to archive.
+.TP
+\fBSLURM_ARCHIVE_SUSPEND\fR 
+1 for archive suspend data 0 otherwise.
+.TP
+\fBSLURM_ARCHIVE_LAST_SUSPEND\fR
+Time of last suspend start to archive.
+.TP
 .RE
 
 .TP
 \fBArchiveSteps\fR
 Boolean, yes to archive step data, no other wise.  Default is no.
+
+.TP
+\fBArchiveSuspend\fR
+Boolean, yes to archive suspend data, no other wise.  Default is no.
 
 .TP
 \fBAuthInfo\fR
@@ -122,13 +143,6 @@ When adding a new cluster this will be used as the qos for the cluster
 unless something is explicitly set by the admin with the create.
  
 .TP
-\fBJobPurge\fR
-Individual job records over this age are purged from the database.
-Aggregated information will be preserved indefinitely.
-The time is a numeric value and is a number of months.
-If zero (default), then job records are never purged.
-
-.TP
 \fBLogFile\fR
 Fully qualified pathname of a file into which the Slurm Database Daemon's 
 logs are written.
@@ -188,6 +202,35 @@ but can only see themselves when listing users.
 .RE
 
 .TP
+\fBPurgeEventMonths\fR
+Events happening on the cluster over this age are purged from the database.
+This includeds node down times and such.
+The time is a numeric value and is a number of months.
+If zero (default), then job step records are never purged.
+
+.TP
+\fBPurgeJobMonths\fR
+Individual job records over this age are purged from the database.
+Aggregated information will be preserved indefinitely.
+The time is a numeric value and is a number of months.
+If zero (default), then job records are never purged.
+
+.TP
+\fBPurgeStepMonths\fR
+Individual job step records over this age are purged from the database.
+Aggregated information will be preserved indefinitely.
+The time is a numeric value and is a number of months.
+If zero (default), then job step records are never purged.
+
+.TP
+\fBPurgeSuspendMonths\fR
+Records of individual suspend times for jobs over this age are purged from the 
+database.
+Aggregated information will be preserved indefinitely.
+The time is a numeric value and is a number of months.
+If zero (default), then job step records are never purged.
+
+.TP
 \fBSlurmUser\fR
 The name of the user that the \fBslurmctld\fR daemon executes as. 
 This user must exist on the machine executing the Slurm Database Daemon
@@ -196,17 +239,16 @@ For security purposes, a user other than "root" is recommended.
 The default value is "root". 
 
 .TP
-\fBStepPurge\fR
-Individual job step records over this age are purged from the database.
-Aggregated information will be preserved indefinitely.
-The time is a numeric value and is a number of months.
-If zero (default), then job step records are never purged.
-
-.TP
 \fBStorageHost\fR
 Define the name of the host the database is running where we are going
 to store the data.
 Ideally this should be the host on which slurmdbd executes.
+
+.TP
+\fBStorageBackupHost\fR
+Define the name of the backup host the database is running where we are going
+to store the data.
+Default is none.
 
 .TP
 \fBStorageLoc\fR
@@ -262,9 +304,13 @@ Characterization Key. Must be set to track wckey usage.
 .br
 #
 .br
+ArchiveEvents=yes
+.br
 ArchiveJobs=yes
 .br
 ArchiveSteps=no
+.br
+ArchiveSuspend=no
 .br
 #ArchiveScript=/usr/sbin/slurm.dbd.archive
 .br
@@ -276,9 +322,13 @@ DbdHost=db_host
 .br
 DebugLevel=4
 .br
-JobPurge=12
+PurgeEventMonths=1
 .br
-StepPurge=1
+PurgeJobMonths=12
+.br
+PurgeStepMonths=1
+.br
+PurgeSuspendMonths=1
 .br
 LogFile=/var/log/slurmdbd.log
 .br

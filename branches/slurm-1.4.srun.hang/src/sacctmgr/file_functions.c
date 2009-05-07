@@ -43,6 +43,7 @@
 
 typedef struct {
 	acct_admin_level_t admin;
+	uint16_t classification;
 	List coord_list; /* char *list */
 	char *def_acct;
 	char *def_wckey;
@@ -72,6 +73,7 @@ typedef struct {
 
 enum {
 	PRINT_ACCOUNT,
+	PRINT_CLASSIFICATION,
 	PRINT_ADMIN,
 	PRINT_CLUSTER,
 	PRINT_COORDS,
@@ -323,6 +325,10 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				file_opts->coord_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(file_opts->coord_list, option);
+		} else if (!strncasecmp (sub, "Classification",
+					 MAX(command_len, 2))) {
+			file_opts->classification =
+				str_2_classification(option);
 		} else if (!strncasecmp (sub, "DefaultAccount",
 					 MAX(command_len, 8))) {
 			file_opts->def_acct = xstrdup(option);
@@ -557,9 +563,15 @@ static List _set_up_print_fields(List format_list)
 			field->len = 9;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Cluster", object,
-				       MAX(command_len, 2))) {
+				       MAX(command_len, 3))) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
+			field->len = 10;
+			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("Classification", object,
+				       MAX(command_len, 3))) {
+			field->type = PRINT_CLASSIFICATION;
+			field->name = xstrdup("Classif");
 			field->len = 10;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Coordinators", object,
@@ -858,6 +870,376 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	printf("--------------------------------------------------------------\n\n");
 
 	return rc;
+}
+
+static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
+		      acct_association_rec_t *assoc,
+		      sacctmgr_mod_type_t mod_type,
+		      char *parent)
+{
+	int changed = 0;
+	acct_association_rec_t mod_assoc;
+	acct_association_cond_t assoc_cond;
+	char *type = NULL;
+	char *name = NULL;
+	char *my_info = NULL;
+
+	switch(mod_type) {
+	case MOD_CLUSTER:
+		type = "Cluster";
+		name = assoc->cluster;
+		break;
+	case MOD_ACCT:
+		type = "Account";
+		name = assoc->acct;
+		break;
+	case MOD_USER:
+		type = "User";
+		name = assoc->user;
+		break;
+	default:
+		return 0;
+		break;
+	}
+	init_acct_association_rec(&mod_assoc);
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+
+	if((file_opts->fairshare != NO_VAL)
+	   && (assoc->shares_raw != file_opts->fairshare)) {
+		mod_assoc.shares_raw = file_opts->fairshare;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed fairshare",
+			   type, name,
+			   assoc->shares_raw,
+			   file_opts->fairshare);
+	}
+
+	if((file_opts->grp_cpu_mins != NO_VAL)
+	   && (assoc->grp_cpu_mins != file_opts->grp_cpu_mins)) {
+		mod_assoc.grp_cpu_mins = file_opts->grp_cpu_mins;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8llu -> %llu\n",
+			   " Changed GrpCPUMins",
+			   type, name,
+			   assoc->grp_cpu_mins,
+			   file_opts->grp_cpu_mins);
+	}
+
+	if((file_opts->grp_cpus != NO_VAL)
+	   && (assoc->grp_cpus != file_opts->grp_cpus)) {
+		mod_assoc.grp_cpus = file_opts->grp_cpus;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpCpus",
+			   type, name,
+			   assoc->grp_cpus, 
+			   file_opts->grp_cpus);
+	}
+
+	if((file_opts->grp_jobs != NO_VAL)
+	   && (assoc->grp_jobs != file_opts->grp_jobs)) {
+		mod_assoc.grp_jobs = file_opts->grp_jobs;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpJobs",
+			   type, name,
+			   assoc->grp_jobs,
+			   file_opts->grp_jobs);
+	}
+
+	if((file_opts->grp_nodes != NO_VAL)
+	   && (assoc->grp_nodes != file_opts->grp_nodes)) {
+		mod_assoc.grp_nodes = file_opts->grp_nodes;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpNodes",
+			   type, name,
+			   assoc->grp_nodes, 
+			   file_opts->grp_nodes);
+	}
+
+	if((file_opts->grp_submit_jobs != NO_VAL)
+	   && (assoc->grp_submit_jobs != file_opts->grp_submit_jobs)) {
+		mod_assoc.grp_submit_jobs = file_opts->grp_submit_jobs;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpSubmitJobs",
+			   type, name,
+			   assoc->grp_submit_jobs,
+			   file_opts->grp_submit_jobs);
+	}
+
+	if((file_opts->grp_wall != NO_VAL)
+	   && (assoc->grp_wall != file_opts->grp_wall)) {
+		mod_assoc.grp_wall = file_opts->grp_wall;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpWallDuration",
+			   type, name,
+			   assoc->grp_wall,
+			   file_opts->grp_wall);
+	}
+	
+	if((file_opts->max_cpu_mins_pj != NO_VAL)
+	   && (assoc->max_cpu_mins_pj != file_opts->max_cpu_mins_pj)) {
+		mod_assoc.max_cpu_mins_pj =
+			file_opts->max_cpu_mins_pj;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8llu -> %llu\n",
+			   " Changed MaxCPUMinsPerJob",
+			   type, name,
+			   assoc->max_cpu_mins_pj,
+			   file_opts->max_cpu_mins_pj);
+	}
+
+	if((file_opts->max_cpus_pj != NO_VAL)
+	   && (assoc->max_cpus_pj != file_opts->max_cpus_pj)) {
+		mod_assoc.max_cpus_pj = file_opts->max_cpus_pj;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxCpusPerJob",
+			   type, name,
+			   assoc->max_cpus_pj, 
+			   file_opts->max_cpus_pj);
+	}
+
+	if((file_opts->max_jobs != NO_VAL)
+	   && (assoc->max_jobs != file_opts->max_jobs)) {
+		mod_assoc.max_jobs = file_opts->max_jobs;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxJobs",
+			   type, name,
+			   assoc->max_jobs,
+			   file_opts->max_jobs);
+	}
+
+	if((file_opts->max_nodes_pj != NO_VAL)
+	   && (assoc->max_nodes_pj != file_opts->max_nodes_pj)) {
+		mod_assoc.max_nodes_pj = file_opts->max_nodes_pj;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxNodesPerJob",
+			   type, name,
+			   assoc->max_nodes_pj, 
+			   file_opts->max_nodes_pj);
+	}
+	   
+	if((file_opts->max_submit_jobs != NO_VAL)
+	   && (assoc->max_submit_jobs != file_opts->max_submit_jobs)) {
+		mod_assoc.max_submit_jobs = file_opts->max_submit_jobs;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxSubmitJobs",
+			   type, name,
+			   assoc->max_submit_jobs,
+			   file_opts->max_submit_jobs);
+	}
+
+	if((file_opts->max_wall_pj != NO_VAL)
+	   && (assoc->max_wall_pj != file_opts->max_wall_pj)) {
+		mod_assoc.max_wall_pj =	file_opts->max_wall_pj;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxWallDurationPerJob",
+			   type, name,
+			   assoc->max_wall_pj,
+			   file_opts->max_wall_pj);
+	}
+	if(assoc->parent_acct && parent && strcmp(assoc->parent_acct, parent)) {
+		mod_assoc.parent_acct = parent;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed Parent",
+			   type, name,
+			   assoc->parent_acct,
+			   parent);
+	}
+
+	if(assoc->qos_list && list_count(assoc->qos_list)
+	   && file_opts->qos_list && list_count(file_opts->qos_list)) {
+		ListIterator now_qos_itr =
+			list_iterator_create(assoc->qos_list),
+			new_qos_itr = list_iterator_create(file_opts->qos_list);
+		char *now_qos = NULL, *new_qos = NULL;
+
+		if(!mod_assoc.qos_list)
+			mod_assoc.qos_list = list_create(slurm_destroy_char);
+		while((new_qos = list_next(new_qos_itr))) {
+			while((now_qos = list_next(now_qos_itr))) {
+				if(!strcmp(new_qos, now_qos))
+					break;
+			}
+			list_iterator_reset(now_qos_itr);
+			if(!now_qos) 
+				list_append(mod_assoc.qos_list,
+					    xstrdup(new_qos));
+		}
+		list_iterator_destroy(new_qos_itr);
+		list_iterator_destroy(now_qos_itr);
+		if(mod_assoc.qos_list && list_count(mod_assoc.qos_list))
+			new_qos = get_qos_complete_str(qos_list,
+						       mod_assoc.qos_list);
+		if(new_qos) {
+			xstrfmtcat(my_info, 
+				   "%-30.30s for %-7.7s %-10.10s %8s\n",
+				   " Added QOS",
+				   type, name,
+				   new_qos);
+			xfree(new_qos);
+			changed = 1;
+		} else {
+			list_destroy(mod_assoc.qos_list);
+			mod_assoc.qos_list = NULL;
+		}
+	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
+		char *new_qos = get_qos_complete_str(qos_list,
+						     file_opts->qos_list);
+		
+		if(new_qos) {
+			xstrfmtcat(my_info, 
+				   "%-30.30s for %-7.7s %-10.10s %8s\n",
+				   " Added QOS",
+				   type, name,
+				   new_qos);
+			xfree(new_qos);
+			mod_assoc.qos_list = file_opts->qos_list;
+			file_opts->qos_list = NULL;
+			changed = 1;
+		}
+	}
+
+	if(changed) {
+		List ret_list = NULL;
+					
+		assoc_cond.cluster_list = list_create(NULL); 
+		list_push(assoc_cond.cluster_list, assoc->cluster);
+
+		assoc_cond.acct_list = list_create(NULL); 
+		list_push(assoc_cond.acct_list, assoc->acct);
+		
+		if(mod_type == MOD_USER) {
+			assoc_cond.user_list = list_create(NULL); 
+			list_push(assoc_cond.user_list, assoc->user);
+			if(assoc->partition) {
+				assoc_cond.partition_list = list_create(NULL); 
+				list_push(assoc_cond.partition_list,
+					  assoc->partition);
+			}
+		}
+			
+		notice_thread_init();
+		ret_list = acct_storage_g_modify_associations(
+			db_conn, my_uid,
+			&assoc_cond, 
+			&mod_assoc);
+		notice_thread_fini();
+					
+		if(mod_assoc.qos_list)
+			list_destroy(mod_assoc.qos_list);
+
+		list_destroy(assoc_cond.cluster_list);
+		list_destroy(assoc_cond.acct_list);
+		if(assoc_cond.user_list)
+			list_destroy(assoc_cond.user_list);
+		if(assoc_cond.partition_list)
+			list_destroy(assoc_cond.partition_list);
+
+/* 		if(ret_list && list_count(ret_list)) { */
+/* 			char *object = NULL; */
+/* 			ListIterator itr = list_iterator_create(ret_list); */
+/* 			printf(" Modified account defaults for " */
+/* 			       "associations...\n"); */
+/* 			while((object = list_next(itr)))  */
+/* 				printf("  %s\n", object); */
+/* 			list_iterator_destroy(itr); */
+/* 		} */
+ 
+		if(ret_list) {
+			printf("%s", my_info);
+			list_destroy(ret_list);
+		} else
+			changed = 0;
+		xfree(my_info);
+	}
+
+	return changed;
+}
+
+static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
+			acct_cluster_rec_t *cluster, char *parent)
+{
+	int changed = 0;
+	char *my_info = NULL;
+	acct_cluster_rec_t mod_cluster;
+	acct_cluster_cond_t cluster_cond;
+	
+	memset(&mod_cluster, 0, sizeof(acct_cluster_rec_t));
+	memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+
+	if(file_opts->classification 
+	   && (file_opts->classification != cluster->classification)) {
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed Classification", "Cluster",
+			   cluster->name,
+			   get_classification_str(cluster->classification),
+			   get_classification_str(file_opts->classification));
+		mod_cluster.classification = file_opts->classification;
+		changed = 1;
+	}
+
+	if(changed) {
+		List ret_list = NULL;
+					
+		cluster_cond.cluster_list = list_create(NULL);
+		list_append(cluster_cond.cluster_list, cluster->name);
+
+		notice_thread_init();
+		ret_list = acct_storage_g_modify_clusters(db_conn, my_uid,
+							  &cluster_cond, 
+							  &mod_cluster);
+		notice_thread_fini();
+	
+		list_destroy(cluster_cond.cluster_list);
+
+/* 		if(ret_list && list_count(ret_list)) { */
+/* 			char *object = NULL; */
+/* 			ListIterator itr = list_iterator_create(ret_list); */
+/* 			printf(" Modified account defaults for " */
+/* 			       "associations...\n"); */
+/* 			while((object = list_next(itr)))  */
+/* 				printf("  %s\n", object); */
+/* 			list_iterator_destroy(itr); */
+/* 		} */
+ 
+		if(ret_list) {
+			printf("%s", my_info);
+			list_destroy(ret_list);
+		} else
+			changed = 0;
+		xfree(my_info);
+	}
+
+	changed += _mod_assoc(file_opts, cluster->root_assoc,
+			      MOD_CLUSTER, parent);
+
+	return changed;
 }
 
 static int _mod_acct(sacctmgr_file_opts_t *file_opts,
@@ -1192,315 +1574,6 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	list_destroy(assoc_cond.user_list);
 
 	return set;
-}
-
-static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
-		      acct_association_rec_t *assoc,
-		      sacctmgr_mod_type_t mod_type,
-		      char *parent)
-{
-	int changed = 0;
-	acct_association_rec_t mod_assoc;
-	acct_association_cond_t assoc_cond;
-	char *type = NULL;
-	char *name = NULL;
-	char *my_info = NULL;
-
-	switch(mod_type) {
-	case MOD_CLUSTER:
-		type = "Cluster";
-		name = assoc->cluster;
-		break;
-	case MOD_ACCT:
-		type = "Account";
-		name = assoc->acct;
-		break;
-	case MOD_USER:
-		type = "User";
-		name = assoc->user;
-		break;
-	default:
-		return 0;
-		break;
-	}
-	init_acct_association_rec(&mod_assoc);
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
-
-	if((file_opts->fairshare != NO_VAL)
-	   && (assoc->shares_raw != file_opts->fairshare)) {
-		mod_assoc.shares_raw = file_opts->fairshare;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed fairshare",
-			   type, name,
-			   assoc->shares_raw,
-			   file_opts->fairshare);
-	}
-
-	if((file_opts->grp_cpu_mins != NO_VAL)
-	   && (assoc->grp_cpu_mins != file_opts->grp_cpu_mins)) {
-		mod_assoc.grp_cpu_mins = file_opts->grp_cpu_mins;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8llu -> %llu\n",
-			   " Changed GrpCPUMins",
-			   type, name,
-			   assoc->grp_cpu_mins,
-			   file_opts->grp_cpu_mins);
-	}
-
-	if((file_opts->grp_cpus != NO_VAL)
-	   && (assoc->grp_cpus != file_opts->grp_cpus)) {
-		mod_assoc.grp_cpus = file_opts->grp_cpus;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed GrpCpus",
-			   type, name,
-			   assoc->grp_cpus, 
-			   file_opts->grp_cpus);
-	}
-
-	if((file_opts->grp_jobs != NO_VAL)
-	   && (assoc->grp_jobs != file_opts->grp_jobs)) {
-		mod_assoc.grp_jobs = file_opts->grp_jobs;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed GrpJobs",
-			   type, name,
-			   assoc->grp_jobs,
-			   file_opts->grp_jobs);
-	}
-
-	if((file_opts->grp_nodes != NO_VAL)
-	   && (assoc->grp_nodes != file_opts->grp_nodes)) {
-		mod_assoc.grp_nodes = file_opts->grp_nodes;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed GrpNodes",
-			   type, name,
-			   assoc->grp_nodes, 
-			   file_opts->grp_nodes);
-	}
-
-	if((file_opts->grp_submit_jobs != NO_VAL)
-	   && (assoc->grp_submit_jobs != file_opts->grp_submit_jobs)) {
-		mod_assoc.grp_submit_jobs = file_opts->grp_submit_jobs;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed GrpSubmitJobs",
-			   type, name,
-			   assoc->grp_submit_jobs,
-			   file_opts->grp_submit_jobs);
-	}
-
-	if((file_opts->grp_wall != NO_VAL)
-	   && (assoc->grp_wall != file_opts->grp_wall)) {
-		mod_assoc.grp_wall = file_opts->grp_wall;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed GrpWallDuration",
-			   type, name,
-			   assoc->grp_wall,
-			   file_opts->grp_wall);
-	}
-	
-	if((file_opts->max_cpu_mins_pj != NO_VAL)
-	   && (assoc->max_cpu_mins_pj != file_opts->max_cpu_mins_pj)) {
-		mod_assoc.max_cpu_mins_pj =
-			file_opts->max_cpu_mins_pj;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8llu -> %llu\n",
-			   " Changed MaxCPUMinsPerJob",
-			   type, name,
-			   assoc->max_cpu_mins_pj,
-			   file_opts->max_cpu_mins_pj);
-	}
-
-	if((file_opts->max_cpus_pj != NO_VAL)
-	   && (assoc->max_cpus_pj != file_opts->max_cpus_pj)) {
-		mod_assoc.max_cpus_pj = file_opts->max_cpus_pj;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxCpusPerJob",
-			   type, name,
-			   assoc->max_cpus_pj, 
-			   file_opts->max_cpus_pj);
-	}
-
-	if((file_opts->max_jobs != NO_VAL)
-	   && (assoc->max_jobs != file_opts->max_jobs)) {
-		mod_assoc.max_jobs = file_opts->max_jobs;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxJobs",
-			   type, name,
-			   assoc->max_jobs,
-			   file_opts->max_jobs);
-	}
-
-	if((file_opts->max_nodes_pj != NO_VAL)
-	   && (assoc->max_nodes_pj != file_opts->max_nodes_pj)) {
-		mod_assoc.max_nodes_pj = file_opts->max_nodes_pj;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxNodesPerJob",
-			   type, name,
-			   assoc->max_nodes_pj, 
-			   file_opts->max_nodes_pj);
-	}
-	   
-	if((file_opts->max_submit_jobs != NO_VAL)
-	   && (assoc->max_submit_jobs != file_opts->max_submit_jobs)) {
-		mod_assoc.max_submit_jobs = file_opts->max_submit_jobs;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxSubmitJobs",
-			   type, name,
-			   assoc->max_submit_jobs,
-			   file_opts->max_submit_jobs);
-	}
-
-	if((file_opts->max_wall_pj != NO_VAL)
-	   && (assoc->max_wall_pj != file_opts->max_wall_pj)) {
-		mod_assoc.max_wall_pj =	file_opts->max_wall_pj;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxWallDurationPerJob",
-			   type, name,
-			   assoc->max_wall_pj,
-			   file_opts->max_wall_pj);
-	}
-	if(assoc->parent_acct && parent && strcmp(assoc->parent_acct, parent)) {
-		mod_assoc.parent_acct = parent;
-		changed = 1;
-		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
-			   " Changed Parent",
-			   type, name,
-			   assoc->parent_acct,
-			   parent);
-	}
-
-	if(assoc->qos_list && list_count(assoc->qos_list)
-	   && file_opts->qos_list && list_count(file_opts->qos_list)) {
-		ListIterator now_qos_itr =
-			list_iterator_create(assoc->qos_list),
-			new_qos_itr = list_iterator_create(file_opts->qos_list);
-		char *now_qos = NULL, *new_qos = NULL;
-
-		if(!mod_assoc.qos_list)
-			mod_assoc.qos_list = list_create(slurm_destroy_char);
-		while((new_qos = list_next(new_qos_itr))) {
-			while((now_qos = list_next(now_qos_itr))) {
-				if(!strcmp(new_qos, now_qos))
-					break;
-			}
-			list_iterator_reset(now_qos_itr);
-			if(!now_qos) 
-				list_append(mod_assoc.qos_list,
-					    xstrdup(new_qos));
-		}
-		list_iterator_destroy(new_qos_itr);
-		list_iterator_destroy(now_qos_itr);
-		if(mod_assoc.qos_list && list_count(mod_assoc.qos_list))
-			new_qos = get_qos_complete_str(qos_list,
-						       mod_assoc.qos_list);
-		if(new_qos) {
-			xstrfmtcat(my_info, 
-				   "%-30.30s for %-7.7s %-10.10s %8s\n",
-				   " Added QOS",
-				   type, name,
-				   new_qos);
-			xfree(new_qos);
-			changed = 1;
-		} else {
-			list_destroy(mod_assoc.qos_list);
-			mod_assoc.qos_list = NULL;
-		}
-	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
-		char *new_qos = get_qos_complete_str(qos_list,
-						     file_opts->qos_list);
-		
-		if(new_qos) {
-			xstrfmtcat(my_info, 
-				   "%-30.30s for %-7.7s %-10.10s %8s\n",
-				   " Added QOS",
-				   type, name,
-				   new_qos);
-			xfree(new_qos);
-			mod_assoc.qos_list = file_opts->qos_list;
-			file_opts->qos_list = NULL;
-			changed = 1;
-		}
-	}
-
-	if(changed) {
-		List ret_list = NULL;
-					
-		assoc_cond.cluster_list = list_create(NULL); 
-		list_push(assoc_cond.cluster_list, assoc->cluster);
-
-		assoc_cond.acct_list = list_create(NULL); 
-		list_push(assoc_cond.acct_list, assoc->acct);
-		
-		if(mod_type == MOD_USER) {
-			assoc_cond.user_list = list_create(NULL); 
-			list_push(assoc_cond.user_list, assoc->user);
-			if(assoc->partition) {
-				assoc_cond.partition_list = list_create(NULL); 
-				list_push(assoc_cond.partition_list,
-					  assoc->partition);
-			}
-		}
-			
-		notice_thread_init();
-		ret_list = acct_storage_g_modify_associations(
-			db_conn, my_uid,
-			&assoc_cond, 
-			&mod_assoc);
-		notice_thread_fini();
-					
-		if(mod_assoc.qos_list)
-			list_destroy(mod_assoc.qos_list);
-
-		list_destroy(assoc_cond.cluster_list);
-		list_destroy(assoc_cond.acct_list);
-		if(assoc_cond.user_list)
-			list_destroy(assoc_cond.user_list);
-		if(assoc_cond.partition_list)
-			list_destroy(assoc_cond.partition_list);
-
-/* 		if(ret_list && list_count(ret_list)) { */
-/* 			char *object = NULL; */
-/* 			ListIterator itr = list_iterator_create(ret_list); */
-/* 			printf(" Modified account defaults for " */
-/* 			       "associations...\n"); */
-/* 			while((object = list_next(itr)))  */
-/* 				printf("  %s\n", object); */
-/* 			list_iterator_destroy(itr); */
-/* 		} */
- 
-		if(ret_list) {
-			printf("%s", my_info);
-			list_destroy(ret_list);
-		} else
-			changed = 0;
-		xfree(my_info);
-	}
-
-	return changed;
 }
 
 static acct_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
@@ -2170,7 +2243,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				db_conn, my_uid, NULL);
 
 			if(cluster_name) 
-				info("For cluster %s", cluster_name);
+				printf("For cluster %s\n", cluster_name);
 			
 			if(!(cluster = sacctmgr_find_cluster_from_list(
 				     curr_cluster_list, cluster_name))) {
@@ -2181,6 +2254,15 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				cluster = xmalloc(sizeof(acct_cluster_rec_t));
 				list_append(cluster_list, cluster);
 				cluster->name = xstrdup(cluster_name);
+				if(file_opts->classification) {
+					cluster->classification =
+						file_opts->classification;
+					printf("Classification: %s\n", 
+					       get_classification_str(
+						       cluster->
+						       classification));
+				}
+
 				cluster->root_assoc = _set_assoc_up(
 					file_opts, MOD_CLUSTER,
 					cluster_name, "root");
@@ -2206,8 +2288,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				}
 				set = 1;
 			} else {
-				set = _mod_assoc(file_opts, cluster->root_assoc,
-						 MOD_CLUSTER, parent);
+				set = _mod_cluster(file_opts,
+						   cluster, parent);
 			}
 				     
 			_destroy_sacctmgr_file_opts(file_opts);

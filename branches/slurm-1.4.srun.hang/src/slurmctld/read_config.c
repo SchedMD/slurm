@@ -183,14 +183,17 @@ static int _build_bitmaps(void)
 	/* initialize the idle and up bitmaps */
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(power_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
 	idle_node_bitmap  = (bitstr_t *) bit_alloc(node_record_count);
 	avail_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+	power_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	up_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
 	if ((idle_node_bitmap     == NULL) ||
 	    (avail_node_bitmap    == NULL) ||
+	    (power_node_bitmap    == NULL) ||
 	    (share_node_bitmap    == NULL) ||
 	    (up_node_bitmap       == NULL)) 
 		fatal ("bit_alloc malloc failure");
@@ -235,17 +238,15 @@ static int _build_bitmaps(void)
 	 * their configuration, resync DRAINED vs. DRAINING state */
 	for (i = 0; i < node_record_count; i++) {
 		uint16_t base_state, drain_flag, no_resp_flag, job_cnt;
+		struct node_record *node_ptr = node_record_table_ptr + i;
 
-		if (node_record_table_ptr[i].name[0] == '\0')
+		if (node_ptr->name[0] == '\0')
 			continue;	/* defunct */
-		base_state = node_record_table_ptr[i].node_state & 
-				NODE_STATE_BASE;
-		drain_flag = node_record_table_ptr[i].node_state &
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		drain_flag = node_ptr->node_state &
 				(NODE_STATE_DRAIN | NODE_STATE_FAIL);
-		no_resp_flag = node_record_table_ptr[i].node_state & 
-				NODE_STATE_NO_RESPOND;
-		job_cnt = node_record_table_ptr[i].run_job_cnt +
-		          node_record_table_ptr[i].comp_job_cnt;
+		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+		job_cnt = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 
 		if (((base_state == NODE_STATE_IDLE) && (job_cnt == 0))
 		||  (base_state == NODE_STATE_DOWN))
@@ -256,9 +257,10 @@ static int _build_bitmaps(void)
 				bit_set(avail_node_bitmap, i);
 			bit_set(up_node_bitmap, i);
 		}
-		if (node_record_table_ptr[i].config_ptr)
-			bit_set(node_record_table_ptr[i].config_ptr->
-				node_bitmap, i);
+		if (node_ptr->node_state & NODE_STATE_POWER_SAVE)
+			bit_set(power_node_bitmap, i);
+		if (node_ptr->config_ptr)
+			bit_set(node_ptr->config_ptr->node_bitmap, i);
 	}
 	return error_code;
 }

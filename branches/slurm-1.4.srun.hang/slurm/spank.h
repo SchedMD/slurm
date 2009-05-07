@@ -166,7 +166,8 @@ enum spank_err {
     ESPANK_NOSPACE     = 6, /* Buffer too small.                             */
     ESPANK_NOT_REMOTE  = 7, /* Function only may be called in remote context */
     ESPANK_NOEXIST     = 8, /* Id/pid doesn't exist on this node             */
-    ESPANK_NOT_EXECD   = 9  /* Lookup by pid requested, but no tasks running */
+    ESPANK_NOT_EXECD   = 9, /* Lookup by pid requested, but no tasks running */
+    ESPANK_NOT_AVAIL   = 10,/* SPANK item not available from this callback   */
 };
 
 typedef enum spank_err spank_err_t;
@@ -227,6 +228,11 @@ extern struct spank_option spank_options [];
 /*  SPANK interface prototypes
  */
 BEGIN_C_DECLS
+
+/*
+ *  Return the string representation of a spank_err_t error code.
+ */
+const char *spank_strerror (spank_err_t err);
 
 /*
  *  Determine whether a given spank plugin symbol is supported

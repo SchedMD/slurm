@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  common.c - common functions used by tabs in sview
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -158,6 +159,67 @@ static int _sort_iter_compare_func_nodes(GtkTreeModel *model,
 
 		if (int1 != int2)
 			ret = (int1 > int2) ? 1 : -1;		
+	}
+cleanup:
+	g_free(name1);
+	g_free(name2);
+	
+	return ret;
+}
+
+/* Make a BlueGene node name into a numeric representation of 
+ * its location. 
+ * Value is low_coordinate * 1,000,000 + 
+ *          high_coordinate * 1,000 + I/O node (999 if none)
+ * (e.g. bg123[4] -> 123,123,004, bg[234x235] -> 234,235,999)
+ */
+static int _bp_coordinate(const char *name)
+{
+	int i, io_val = 999, low_val = -1, high_val;
+
+	for (i=0; name[i]; i++) {
+		if (name[i] == '[') {
+			i++;
+			if (low_val < 0) {
+				char *end_ptr;
+				low_val = strtol(name+i, &end_ptr, 10);
+				if ((end_ptr[0] != '\0') &&
+				    (isdigit(end_ptr[1])))
+					high_val = atoi(end_ptr + 1);
+				else
+					high_val = low_val;
+			} else
+				io_val = atoi(name+i);
+			break;
+		} else if ((low_val < 0) && (isdigit(name[i])))
+			low_val = high_val = atoi(name+i);
+	}
+
+	if (low_val < 0)
+		return low_val;
+	return ((low_val * 1000000) + (high_val * 1000) + io_val);
+}
+
+static int _sort_iter_compare_func_bp_list(GtkTreeModel *model,
+					   GtkTreeIter  *a,
+					   GtkTreeIter  *b,
+					   gpointer      userdata)
+{
+	int sortcol = GPOINTER_TO_INT(userdata);
+	int ret = 0;
+	gchar *name1 = NULL, *name2 = NULL;
+	
+	gtk_tree_model_get(model, a, sortcol, &name1, -1);
+	gtk_tree_model_get(model, b, sortcol, &name2, -1);
+	
+	if ((name1 == NULL) || (name2 == NULL)) {
+		if ((name1 == NULL) && (name2 == NULL))
+			goto cleanup; /* both equal => ret = 0 */
+		
+		ret = (name1 == NULL) ? -1 : 1;
+	} else {
+		/* Sort in numeric order based upon coordinates */
+		ret = _bp_coordinate(name1) - _bp_coordinate(name2);
 	}
 cleanup:
 	g_free(name1);
@@ -621,11 +683,22 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 			
 			break;
 		case G_TYPE_STRING:
-			if(!strcasecmp(display_data[i].name, "Nodes")) {
+			if(!strcasecmp(display_data[i].name, "Nodes")
+			   || !strcasecmp(display_data[i].name, "Real Memory")
+			   || !strcasecmp(display_data[i].name, "Tmp Disk")) {
 				gtk_tree_sortable_set_sort_func(
 					GTK_TREE_SORTABLE(treestore), 
 					display_data[i].id, 
 					_sort_iter_compare_func_nodes,
+					GINT_TO_POINTER(display_data[i].id), 
+					NULL); 
+				break;
+			} else if(!strcasecmp(display_data[i].name,
+					      "BP List")) {
+				gtk_tree_sortable_set_sort_func(
+					GTK_TREE_SORTABLE(treestore), 
+					display_data[i].id, 
+					_sort_iter_compare_func_bp_list,
 					GINT_TO_POINTER(display_data[i].id), 
 					NULL); 
 				break;

@@ -142,6 +142,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 		resv_copy_ptr->account_list[i] = 
 				xstrdup(resv_orig_ptr->account_list[i]);
 	}
+	resv_copy_ptr->assoc_list = xstrdup(resv_orig_ptr->assoc_list);
 	resv_copy_ptr->cpu_cnt = resv_orig_ptr->cpu_cnt;
 	resv_copy_ptr->end_time = resv_orig_ptr->end_time;
 	resv_copy_ptr->features = xstrdup(resv_orig_ptr->features);
@@ -157,6 +158,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->part_ptr = resv_orig_ptr->part_ptr;
 	resv_copy_ptr->resv_id = resv_orig_ptr->resv_id;
 	resv_copy_ptr->start_time = resv_orig_ptr->start_time;
+	resv_copy_ptr->start_time_first = resv_orig_ptr->start_time_first;
 	resv_copy_ptr->start_time_prev = resv_orig_ptr->start_time_prev;
 	resv_copy_ptr->users = xstrdup(resv_orig_ptr->users);
 	resv_copy_ptr->user_cnt = resv_orig_ptr->user_cnt;
@@ -366,10 +368,11 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 
 	if(resv_ptr->user_cnt) {
 		for(i=0; i < resv_ptr->user_cnt; i++) {
-			assoc.uid = (uint32_t)resv_ptr->user_list[i];
-			
 			if(resv_ptr->account_cnt) {
 				for(j=0; j < resv_ptr->account_cnt; j++) {
+					memset(&assoc, 0, 
+					       sizeof(acct_association_rec_t));
+					assoc.uid = resv_ptr->user_list[i];
 					assoc.acct = resv_ptr->account_list[j];
 					if((rc = _append_assoc_list(
 						    assoc_list, &assoc))
@@ -378,6 +381,9 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					}
 				}	
 			} else {
+				memset(&assoc, 0, 
+				       sizeof(acct_association_rec_t));
+				assoc.uid = resv_ptr->user_list[i];
 				if((rc = assoc_mgr_get_user_assocs(
 					    acct_db_conn, &assoc,
 					    accounting_enforce, assoc_list))
@@ -388,8 +394,10 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 			}
 		}
 	} else if(resv_ptr->account_cnt) {
-		assoc.uid = (uint32_t)NO_VAL;
 		for(i=0; i < resv_ptr->account_cnt; i++) {
+			memset(&assoc, 0, 
+			       sizeof(acct_association_rec_t));
+			assoc.uid = (uint32_t)NO_VAL;
 			assoc.acct = resv_ptr->account_list[j];
 			if((rc = _append_assoc_list(assoc_list, &assoc))
 			   != SLURM_SUCCESS) {
@@ -458,6 +466,7 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 
 	resv.cluster = slurmctld_cluster_name;
 	resv.id = resv_ptr->resv_id;
+	resv.name = resv_ptr->name;
 	resv.time_start = resv_ptr->start_time;
 	/* This is just a time stamp here to delete if the reservation
 	 * hasn't started yet so we don't get trash records in the
@@ -481,8 +490,6 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.cluster = slurmctld_cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
-	resv.time_start = resv_ptr->start_time;
-	resv.time_start_prev = resv_ptr->start_time_prev;
 	
 	if(!old_resv_ptr) {
 		resv.assocs = resv_ptr->assoc_list;
@@ -490,11 +497,13 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		resv.flags = resv_ptr->flags;
 		resv.nodes = resv_ptr->node_list;
 	} else {
+		time_t now = time(NULL);
+		
 		if(old_resv_ptr->assoc_list && resv_ptr->assoc_list) {
 			if(strcmp(old_resv_ptr->assoc_list,
-				  resv_ptr->assoc_list))
+				  resv_ptr->assoc_list)) 
 				resv.assocs = resv_ptr->assoc_list;
-		} else if(resv_ptr->assoc_list)
+		} else if(resv_ptr->assoc_list) 
 			resv.assocs = resv_ptr->assoc_list;
 
 		if(old_resv_ptr->cpu_cnt != resv_ptr->cpu_cnt) 
@@ -513,7 +522,24 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 				resv.nodes = resv_ptr->node_list;
 		} else if(resv_ptr->node_list) 
 			resv.nodes = resv_ptr->node_list;
+		
+		/* Here if the reservation has started already we need
+		   to mark a new start time for it if certain
+		   variables are needed in accounting.  Right now if
+		   the assocs, nodes, flags or cpu count changes we need a
+		   new start time of now. */
+		if((resv_ptr->start_time < now)
+		   && (resv.assocs
+		       || resv.nodes 
+		       || (resv.flags != (uint16_t)NO_VAL)
+		       || (resv.cpus != (uint32_t)NO_VAL))) {
+			resv_ptr->start_time_prev = resv_ptr->start_time;
+			resv_ptr->start_time = now;
+		}
 	}
+	/* now set the (maybe new) start_times */
+	resv.time_start = resv_ptr->start_time;
+	resv.time_start_prev = resv_ptr->start_time_prev;
 
 	if(resv.nodes && resv_ptr->node_bitmap) 
 		resv.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
@@ -929,7 +955,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	pack32(resv_ptr->node_cnt,	buffer);
 	packstr(resv_ptr->node_list,	buffer);
 	packstr(resv_ptr->partition,	buffer);
-	pack_time(resv_ptr->start_time,	buffer);
+	pack_time(resv_ptr->start_time_first,	buffer);
 	pack16(resv_ptr->flags,		buffer);
 	packstr(resv_ptr->users,	buffer);
 
@@ -938,13 +964,9 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->cpu_cnt,	buffer);
 		pack32(resv_ptr->resv_id,	buffer);
 		pack_time(resv_ptr->start_time_prev,	buffer);
+		pack_time(resv_ptr->start_time,	buffer);
 	} else {
-		time_t now = time(NULL);
-		/* only send the bitmap if it is valid now. */
-		if(resv_ptr->start_time > now || resv_ptr->end_time < now)
-			pack_bit_fmt(NULL, buffer);
-		else
-			pack_bit_fmt(resv_ptr->node_bitmap, buffer);
+		pack_bit_fmt(resv_ptr->node_bitmap, buffer);
 	}
 }
 
@@ -1051,9 +1073,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
 		}
-	} else
+	} else 
 		resv_desc_ptr->start_time = now;
-	
+
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->end_time < (now - 60)) {
 			info("Reservation requestion has invalid end time");
@@ -1172,6 +1194,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
 	resv_ptr->start_time	= resv_desc_ptr->start_time;
+	resv_ptr->start_time_first = resv_ptr->start_time;
 	resv_ptr->start_time_prev = resv_ptr->start_time;
 	resv_ptr->flags		= resv_desc_ptr->flags;
 	resv_ptr->users		= resv_desc_ptr->users;
@@ -1322,7 +1345,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->end_time = resv_desc_ptr->end_time;
 	}
 	if (resv_desc_ptr->duration != NO_VAL) {
-		resv_ptr->end_time = resv_ptr->start_time + 
+		resv_ptr->end_time = resv_ptr->start_time_first + 
 				     (resv_desc_ptr->duration * 60);
 	}
 	if (resv_ptr->start_time >= resv_ptr->end_time) {
@@ -1887,7 +1910,7 @@ extern int load_all_resv_state(int recover)
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->partition,
 				       &uint32_tmp, 	buffer);
-		safe_unpack_time(&resv_ptr->start_time,	buffer);
+		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpack16(&resv_ptr->flags,		buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->users,&uint32_tmp, buffer);
 
@@ -1897,6 +1920,7 @@ extern int load_all_resv_state(int recover)
 		safe_unpack32(&resv_ptr->cpu_cnt,	buffer);
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
+		safe_unpack_time(&resv_ptr->start_time, buffer);
 
 		list_append(resv_list, resv_ptr);
 		info("Recovered state of reservation %s", resv_ptr->name);
@@ -2391,10 +2415,11 @@ extern void fini_job_resv_check(void)
 		    (resv_ptr->flags & RESERVE_FLAG_DAILY)) {
 			verbose("Advance reservation %s one day",
 			resv_ptr->name);
-			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time += 24 * 60 * 60;
+			resv_ptr->start_time_prev = resv_ptr->start_time;
+			resv_ptr->start_time_first = resv_ptr->start_time;
 			resv_ptr->end_time   += 24 * 60 * 60;
-			_post_resv_update(resv_ptr, NULL);
+			_post_resv_create(resv_ptr);
 			last_resv_update = now;
 			schedule_resv_save();
 			continue;
@@ -2403,10 +2428,11 @@ extern void fini_job_resv_check(void)
 		    (resv_ptr->flags & RESERVE_FLAG_WEEKLY)) {
 			verbose("Advance reservation %s one week",
 				resv_ptr->name);
-			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time += 7 * 24 * 60 * 60;
+			resv_ptr->start_time_prev = resv_ptr->start_time;
+			resv_ptr->start_time_first = resv_ptr->start_time;
 			resv_ptr->end_time   += 7 * 24 * 60 * 60;
-			_post_resv_update(resv_ptr, NULL);
+			_post_resv_create(resv_ptr);
 			last_resv_update = now;
 			schedule_resv_save();
 			continue;

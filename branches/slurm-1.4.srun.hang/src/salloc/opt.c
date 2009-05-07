@@ -526,7 +526,7 @@ void set_options(const int argc, char **argv)
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
 		{"dependency",    required_argument, 0, 'P'},
-		{"quiet",         no_argument,       0, 'q'},
+		{"quiet",         no_argument,       0, 'Q'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
 		{"time",          required_argument, 0, 't'},
@@ -710,7 +710,7 @@ void set_options(const int argc, char **argv)
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
-		case 'q':
+		case 'Q':
 			opt.quiet++;
 			break;
 		case 'R':
@@ -1082,7 +1082,7 @@ static bool _opt_verify(void)
 	bool verified = true;
 
 	if (opt.quiet && opt.verbose) {
-		error ("don't specify both --verbose (-v) and --quiet (-q)");
+		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}
 
@@ -1509,55 +1509,55 @@ static void _help(void)
 "Usage: salloc [OPTIONS...] [executable [args...]]\n"
 "\n"
 "Parallel run options:\n"
-"  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
-"  -n, --tasks=N               number of processors required\n"
+"      --begin=time            defer job until HH:MM DD/MM/YY\n"
+"      --bell                  ring the terminal bell when the job is allocated\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
-"      --ntasks-per-node=n     number of tasks to invoke on each node\n"
-"  -p, --partition=partition   partition requested\n"
-"  -H, --hold                  submit job in held state\n"
-"  -t, --time=minutes          time limit\n"
+"      --comment=name          arbitrary comment\n"
 "  -D, --chdir=path            change working directory\n"
+"      --get-user-env          used by Moab.  See srun man page.\n"
+"      --gid=group_id          group ID to run job as (user root only)\n"
+"  -H, --hold                  submit job in held state\n"
 "  -I, --immediate             exit if resources are not immediately available\n"
+"      --jobid=id              specify jobid to use\n"
+"  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-command[=signal] signal to send terminating job\n"
-"  -O, --overcommit            overcommit resources\n"
-"  -s, --share                 share nodes with other jobs\n"
+"  -L, --licenses=names        required license, comma separated\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|arbitrary)\n"
-"  -J, --job-name=jobname      name of job\n"
-"      --jobid=id              specify jobid to use\n"
-"  -W, --wait=sec              seconds to wait for allocation if not\n"
-"                              immediately available\n"
-"  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -q, --quiet                 quiet mode (suppress informational messages)\n"
-"  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
-"      --nice[=value]          decrease secheduling priority by value\n"
-"  -U, --account=name          charge job to specified account\n"
-"      --begin=time            defer job until HH:MM DD/MM/YY\n"
-"      --comment=name          arbitrary comment\n"
-"  -L, --licenses=names        required license, comma separated\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state\n"
 "                              changes\n"
-"      --bell                  ring the terminal bell when the job is allocated\n"
+"  -n, --tasks=N               number of processors required\n"
+"      --nice[=value]          decrease secheduling priority by value\n"
 "      --no-bell               do NOT ring the terminal bell\n"
-"      --gid=group_id          group ID to run job as (user root only)\n"
+"      --ntasks-per-node=n     number of tasks to invoke on each node\n"
+"  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
+"  -O, --overcommit            overcommit resources\n"
+"  -Q, --quiet                 quiet mode (suppress informational messages)\n"
+"  -p, --partition=partition   partition requested\n"
+"  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
+"  -s, --share                 share nodes with other jobs\n"
+"  -t, --time=minutes          time limit\n"
+"  -U, --account=name          charge job to specified account\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
-"      --get-user-env          used by Moab.  See srun man page.\n"
+"  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
+"  -W, --wait=sec              seconds to wait for allocation if not\n"
+"                              immediately available\n"
 "\n"
 "Constraint options:\n"
+"      --contiguous            demand a contiguous range of nodes\n"
+"  -C, --constraint=list       specify a list of constraints\n"
+"  -F, --nodefile=filename     request a specific list of hosts\n"
+"      --mem=MB                minimum amount of real memory\n"
 "      --mincpus=n             minimum number of cpus per node\n"
 "      --minsockets=n          minimum number of sockets per node\n"
 "      --mincores=n            minimum number of cores per cpu\n"
 "      --minthreads=n          minimum number of threads per core\n"
-"      --mem=MB                minimum amount of real memory\n"
+"      --reservation=name      allocate resources from named reservation\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
-"      --contiguous            demand a contiguous range of nodes\n"
-"  -C, --constraint=list       specify a list of constraints\n"
-"  -F, --nodefile=filename     request a specific list of hosts\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
-"      --reservation=name      allocate resources from named reservation\n"
 "\n"
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
@@ -1567,23 +1567,23 @@ static void _help(void)
 "                              --mem >= --mem-per-cpu if --mem is specified.\n" 
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
-"  -B --extra-node-info=S[:C[:T]]            Expands to:\n"
-"      --sockets-per-node=S    number of sockets per node to allocate\n"
-"      --cores-per-socket=C    number of cores per socket to allocate\n"
-"      --threads-per-core=T    number of threads per core to allocate\n"
+"  -B  --extra-node-info=S[:C[:T]]            Expands to:\n"
+"       --sockets-per-node=S   number of sockets per node to allocate\n"
+"       --cores-per-socket=C   number of cores per socket to allocate\n"
+"       --threads-per-core=T   number of threads per core to allocate\n"
 "                              each field can be 'min[-max]' or wildcard '*'\n"
 "                              total cpus requested = (N x S x C x T)\n"
 "\n"
-"      --ntasks-per-socket=n   number of tasks to invoke on each socket\n"
-"      --ntasks-per-core=n     number of tasks to invoke on each core\n");
+"      --ntasks-per-core=n     number of tasks to invoke on each core\n"
+"      --ntasks-per-socket=n   number of tasks to invoke on each socket\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
-"      --hint=                 Bind tasks according to application hints\n"
-"                              (see \"--hint=help\" for options)\n"
 "      --cpu_bind=             Bind tasks to CPUs\n"
 "                              (see \"--cpu_bind=help\" for options)\n"
+"      --hint=                 Bind tasks according to application hints\n"
+"                              (see \"--hint=help\" for options)\n"
 "      --mem_bind=             Bind memory to locality domains (ldom)\n"
 "                              (see \"--mem_bind=help\" for options)\n");
 	}

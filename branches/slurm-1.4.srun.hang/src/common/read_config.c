@@ -244,6 +244,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
+	{"SrunIOTimeout", S_P_UINT16},
 	{"SrunProlog", S_P_STRING},
 	{"StateSaveLocation", S_P_STRING},
 	{"SuspendExcNodes", S_P_STRING},
@@ -1034,6 +1035,9 @@ extern char *slurm_conf_get_hostname(const char *node_name)
 
 /*
  * slurm_conf_get_nodename - Return the NodeName for given NodeHostname
+ *
+ * NOTE: Call xfree() to release returned value's memory.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern char *slurm_conf_get_nodename(const char *node_hostname)
 {
@@ -1050,6 +1054,39 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 			char *alias = xstrdup(p->alias);
 			slurm_conf_unlock();
 			return alias;
+		}
+		p = p->next_hostname;
+	}
+	slurm_conf_unlock();
+
+	return NULL;
+}
+
+/*
+ * slurm_conf_get_nodeaddr - Return the NodeAddr for given NodeHostname
+ *
+ * NOTE: Call xfree() to release returned value's memory.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_nodeaddr(const char *node_hostname)
+{
+	int idx;
+	names_ll_t *p;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+	idx = _get_hash_idx(node_hostname);
+
+	p = host_to_node_hashtbl[idx];
+	while (p) {
+		if (strcmp(p->hostname, node_hostname) == 0) {
+			char *nodeaddr;
+			if (p->address != NULL)
+				nodeaddr = xstrdup(p->address);
+			else
+				nodeaddr = NULL;
+			slurm_conf_unlock();
+			return nodeaddr;
 		}
 		p = p->next_hostname;
 	}
@@ -1417,6 +1454,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->srun_prolog);
+	ctl_conf_ptr->srun_io_timeout		= 0;
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
@@ -2223,7 +2261,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else {
 		uid_t my_uid = uid_from_string(conf->slurm_user_name);
 		if (my_uid == (uid_t) -1) {
-			error ("Invalid user for SlurmUser %s, ignored",
+			fatal ("Invalid user for SlurmUser %s, ignored",
 			       conf->slurm_user_name);
 			xfree(conf->slurm_user_name);
 		} else {
@@ -2237,7 +2275,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else {
 		uid_t my_uid = uid_from_string(conf->slurmd_user_name);
 		if (my_uid == (uid_t) -1) {
-			error ("Invalid user for SlurmdUser %s, ignored",
+			fatal ("Invalid user for SlurmdUser %s, ignored",
 			       conf->slurmd_user_name);
 			xfree(conf->slurmd_user_name);
 		} else {
@@ -2283,6 +2321,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
 	s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
+	s_p_get_uint16(&conf->srun_io_timeout, "SrunIOTimeout", hashtbl);
 	s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);
 
 	if (!s_p_get_string(&conf->state_save_location,

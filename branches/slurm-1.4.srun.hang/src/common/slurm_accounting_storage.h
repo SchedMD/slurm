@@ -72,6 +72,17 @@ typedef enum {
 	ACCT_MODIFY_WCKEY,
 } acct_update_type_t;
 
+typedef enum {
+	ACCT_CLASS_NONE, /* no class given */
+	ACCT_CLASS_CAPABILITY, /* capability cluster */
+	ACCT_CLASS_CAPACITY, /* capacity cluster */
+	ACCT_CLASS_CAPAPACITY, /* a cluster that is both capability
+				* and capacity */
+} acct_classification_type_t;
+
+#define ACCT_CLASSIFIED_FLAG 0x0100
+#define ACCT_CLASS_BASE      0x00ff
+
 /* Association conditions used for queries of the database */
 typedef struct {
 	List acct_list;		/* list of char * */
@@ -228,6 +239,7 @@ typedef struct acct_association_rec {
 } acct_association_rec_t;
 
 typedef struct {
+	uint16_t classification; /* how this machine is classified */
 	List cluster_list; /* list of char * */
 	time_t usage_end; 
 	time_t usage_start; 
@@ -237,13 +249,13 @@ typedef struct {
 
 typedef struct {
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
+	uint16_t classification; /* how this machine is classified */
 	char *control_host;
 	uint32_t control_port;
 	uint32_t cpu_count;
 	char *name;
 	char *nodes;
 	acct_association_rec_t *root_assoc; /* root association for cluster */
-
 	uint16_t rpc_version; /* version of rpc this cluter is running */
 } acct_cluster_rec_t;
 
@@ -500,6 +512,9 @@ typedef struct {
 
 typedef struct {
 	char *archive_dir;     /* location to place archive file */
+	uint16_t archive_events; /* whether or not to keep an archive
+				    file of events that can be loaded
+				    later */
 	uint16_t archive_jobs; /* whether or not to keep an archive
 				  file of jobs that can be loaded
 				  later */
@@ -508,9 +523,15 @@ typedef struct {
 	uint16_t archive_steps; /* whether or not to keep an archive
 				  file of steps that can be loaded
 				  later */
+	uint16_t archive_suspend; /* whether or not to keep an archive
+				     file of suspend data that can be loaded
+				     later */
 	acct_job_cond_t *job_cond; /* conditions for the jobs to archive */
-	uint16_t job_purge; /* purge jobs older than this in months */
-	uint16_t step_purge; /* purge steps older than this in months */
+	uint16_t purge_event; /* purge events older than this in months */
+	uint16_t purge_job; /* purge jobs older than this in months */
+	uint16_t purge_step; /* purge steps older than this in months */
+	uint16_t purge_suspend; /* purge suspend data older than this
+				 * in months */
 } acct_archive_cond_t;
 
 typedef struct {
@@ -657,6 +678,9 @@ extern List get_acct_hierarchical_rec_list(List assoc_list);
 extern char *get_tree_acct_name(char *name, char *parent, List tree_list);
 
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
+
+extern char *get_classification_str(uint16_t class);
+extern uint16_t str_2_classification(char *class);
 
 extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list);
 

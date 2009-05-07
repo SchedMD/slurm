@@ -81,6 +81,17 @@ typedef void *plugin_handle_t;
 
 #define PLUGIN_INVALID_HANDLE ((void*)0)
 
+typedef enum {
+	EPLUGIN_SUCCESS = 0,     /* Success                             */
+	EPLUGIN_NOTFOUND,        /* Plugin file does not exist          */
+	EPLUGIN_ACCESS_ERROR,    /* Access denied                       */
+	EPLUGIN_DLOPEN_FAILED,   /* Dlopen not successful               */
+	EPLUGIN_INIT_FAILED,     /* Plugin's init() callback failed     */
+	EPLUGIN_MISSING_SYMBOL   /* plugin_name/type/version missing    */
+} plugin_err_t;
+
+const char *plugin_strerror(plugin_err_t err);
+
 /*
  * "Peek" into a plugin to discover its type and version.  This does
  * not run the plugin's init() or fini() functions (as defined in this
@@ -108,15 +119,17 @@ int plugin_peek( const char *fq_path,
 /*
  * Simplest way to get a plugin -- load it from a file.
  *
+ * pph     - Pointer to a plugin handle
  * fq_path - the fully-qualified pathname (i.e., from root) to
  * the plugin to load.
  *
- * Returns a handle if successful, or NULL if not.
+ * Returns EPLUGIN_SUCCESS on success, and an plugin_err_t error
+ * code on failure.
  *
  * The plugin's initialization code will be executed prior
  * to this function's return.
  */
-plugin_handle_t plugin_load_from_file( const char *fq_path );
+plugin_err_t plugin_load_from_file(plugin_handle_t *pph, const char *fq_path);
 
 /*
  * load plugin and link hooks.

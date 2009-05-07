@@ -486,6 +486,11 @@ char *slurm_get_sched_type(void);
  */
 char *slurm_get_select_type(void);
 
+/* slurm_get_srun_io_timeout
+ * get default srun I/O task timeout value from slurmctld_conf object
+ */
+uint16_t slurm_get_srun_io_timeout(void);
+
 /* slurm_get_switch_type
  * get switch type from slurmctld_conf object
  * RET char *   - switch type, MUST be xfreed by caller
@@ -531,10 +536,21 @@ uint16_t slurm_get_task_plugin_param(void);
 
 /* In the socket implementation it creates a socket, binds to it, and 
  *	listens for connections.
+ *
  * IN port		- port to bind the msg server to
  * RET slurm_fd		- file descriptor of the connection created
  */
 slurm_fd inline slurm_init_msg_engine_port(uint16_t port);
+
+/* In the socket implementation it creates a socket, binds to it, and 
+ *	listens for connections.
+ *
+ * IN  addr_name        - address to bind the msg server to (NULL means any)
+ * IN port		- port to bind the msg server to
+ * RET slurm_fd		- file descriptor of the connection created
+ */
+slurm_fd inline slurm_init_msg_engine_addrname_port(char *addr_name,
+						    uint16_t port);
 
 /* In the socket implementation it creates a socket, binds to it, and 
  *	listens for connections.

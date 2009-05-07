@@ -411,7 +411,8 @@ _process_command (int argc, char *argv[])
 	} else if ((strncasecmp (argv[0], "show", MAX(command_len, 3)) == 0) ||
 		   (strncasecmp (argv[0], "list", MAX(command_len, 3)) == 0)) {
 		_show_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "modify", MAX(command_len, 1)) == 0) {
+	} else if (!strncasecmp (argv[0], "modify", MAX(command_len, 1))
+		   || !strncasecmp (argv[0], "update", MAX(command_len, 1))) {
 		_modify_it((argc - 1), &argv[1]);
 	} else if ((strncasecmp (argv[0], "delete",
 				 MAX(command_len, 3)) == 0) ||
@@ -856,8 +857,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        list wckey         - Clusters=, End=, Format=, IDs=, Names=,        \n\
                             Start=, User=, and WCKeys=                     \n\
                                                                            \n\
-       archive dump       - Directory=, Jobs, PurgeJobsBefore=,            \n\
-                            PurgeStepsBefore=, Script=, and Steps          \n\
+       archive dump       - Directory=, Events, Jobs, PurgeEventMonths=,   \n\
+                            PurgeJobMonths=, PurgeStepMonths=,             \n\
+                            PurgeSuspendMonths=, Script=, Steps and Suspend\n\
                                                                            \n\
        archive load       - File=, or Insert=                              \n\
                                                                            \n\

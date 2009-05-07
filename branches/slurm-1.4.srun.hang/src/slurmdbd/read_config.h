@@ -65,6 +65,8 @@
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
 	time_t		last_update;	/* time slurmdbd.conf read	*/
+	uint16_t	archive_events;	/* flag if we are to
+					 * archive events */
 	uint16_t	archive_jobs;	/* flag if we are to
 					 * archive jobs	*/
 	char *		archive_dir;    /* location to localy
@@ -73,8 +75,12 @@ typedef struct slurm_dbd_conf {
 	char *		archive_script;	/* script to archive old data	*/
 	uint16_t	archive_steps;	/* flag if we are to
 					 * archive steps	        */
+	uint16_t	archive_suspend;/* flag if we are to
+					 * archive suspend data         */
 	char *		auth_info;	/* authentication info		*/
 	char *		auth_type;	/* authentication mechanism	*/
+	uint16_t        control_timeout;/* how long to wait before
+					 * backup takes control         */   
 	char *		dbd_addr;	/* network address of Slurm DBD	*/
 	char *		dbd_backup;	/* hostname of Slurm DBD backup */
 	char *		dbd_host;	/* hostname of Slurm DBD	*/
@@ -82,17 +88,19 @@ typedef struct slurm_dbd_conf {
 	uint16_t	debug_level;	/* Debug level, default=3	*/
 	char *   	default_qos;	/* default qos setting when
 					 * adding clusters              */
-	uint16_t	job_purge;	/* purge time for job info	*/ 
 	char *		log_file;	/* Log file			*/
 	uint16_t        msg_timeout;    /* message timeout		*/   
 	char *		pid_file;	/* where to store current PID	*/
 	char *		plugindir;	/* dir to look for plugins	*/
 	uint16_t        private_data;   /* restrict information         */
+	uint16_t        purge_event;    /* purge events older than
+					 * this in months */
+	uint16_t	purge_job;	/* purge time for job info	*/ 
+	uint16_t	purge_step;	/* purge time for step info	*/
+	uint16_t        purge_suspend;  /* purge suspend data older than this
+					 * in months */
 	uint32_t	slurm_user_id;	/* uid of slurm_user_name	*/
 	char *		slurm_user_name;/* user that slurmcdtld runs as	*/
-	uint16_t        control_timeout;/* how long to wait before
-					 * backup takes control         */   
-	uint16_t	step_purge;	/* purge time for step info	*/
 	char *		storage_backup_host;/* backup host where DB is
 					     * running */
 	char *		storage_host;	/* host where DB is running	*/

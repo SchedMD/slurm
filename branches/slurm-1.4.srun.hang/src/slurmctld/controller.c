@@ -210,7 +210,8 @@ int main(int argc, char *argv[])
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
-	pthread_t assoc_cache_thread = (pthread_t) 0;
+	pthread_t assoc_cache_thread;
+
 	/*
 	 * Establish initial configuration
 	 */
@@ -520,9 +521,10 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
 		pthread_join(slurmctld_config.thread_id_power,NULL);
-		if(assoc_cache_thread) {
-			/* end the thread here just say we aren't
-			 * running cache so it ends */
+		if(running_cache) {
+			/* break out and end the association cache
+			 * thread since we are shuting down, no reason
+			 * to wait for current info from the database */
 			slurm_mutex_lock(&assoc_cache_mutex);
 			running_cache = (uint16_t)NO_VAL;
 			pthread_cond_signal(&assoc_cache_cond);
@@ -792,6 +794,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	slurmctld_lock_t config_read_lock = { 
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	int sigarray[] = {SIGUSR1, 0};
+	char* node_addr = NULL;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -803,12 +806,26 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	    (&thread_attr_rpc_req, PTHREAD_CREATE_DETACHED))
 		fatal("pthread_attr_setdetachstate %m");
 
+	/* set node_addr to bind to (NULL means any) */
+	if (slurmctld_conf.backup_controller && slurmctld_conf.backup_addr &&
+	    (strcmp(node_name, slurmctld_conf.backup_controller) == 0) &&
+	    (strcmp(slurmctld_conf.backup_controller,
+		    slurmctld_conf.backup_addr) != 0)) {
+		node_addr = slurmctld_conf.backup_addr ;
+	}
+	else if ((strcmp(node_name,slurmctld_conf.control_machine) == 0) &&
+		 (strcmp(slurmctld_conf.control_machine,
+			 slurmctld_conf.control_addr) != 0)) {
+		node_addr = slurmctld_conf.control_addr ;
+	}
+
 	/* initialize port for RPCs */
 	lock_slurmctld(config_read_lock);
-	if ((sockfd = slurm_init_msg_engine_port(slurmctld_conf.
-						 slurmctld_port))
+	if ((sockfd = slurm_init_msg_engine_addrname_port(node_addr,
+							  slurmctld_conf.
+							  slurmctld_port))
 	    == SLURM_SOCKET_ERROR)
-		fatal("slurm_init_msg_engine_port error %m");
+		fatal("slurm_init_msg_engine_addrname_port error %m");
 	unlock_slurmctld(config_read_lock);
 	slurm_get_stream_addr(sockfd, &srv_addr);
 	slurm_get_ip_str(&srv_addr, &port, ip, sizeof(ip));

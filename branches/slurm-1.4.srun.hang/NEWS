@@ -1,10 +1,31 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 1.4.0-pre14
+* Changes in SLURM 2.0.0
+==============================
+
+* Changes in SLURM 2.0.0-rc1
 ==============================
  -- Fix bug in preservation of advanced reservations when slurmctld restarts.
- -- updated perlapi to match correctly with slurm.h structures
+ -- Updated perlapi to match correctly with slurm.h structures
+ -- Do not install the srun command on BlueGene systems (mpirun must be used to
+    launch tasks).
+ -- Corrections to scheduling logic for topology/tree in configurations where 
+    nodes are configured in multiple leaf switches.
+ -- Patch from Matthieu Hautreux for backup mysql deamon support.
+ -- Changed DbdBackup to DbdBackupHost for slurmdbd.conf file
+ -- Add support for spank_strerror() function and improve error handling in
+    general for SPANK plugins.
+ -- Added configuration parameter SrunIOTimeout to optionally ping srun's tasks
+    for better fault tolerance (e.g. killed and restarteed SLURM daemons on 
+    compute node).
+ -- Add slurmctld and slurmd binding to appropriate communications address
+    based upon NodeAddr, ControllerAddr and BackupAddr configuration 
+    parameters. Based upon patch from Matthieu Hautreux, CEA.
+    NOTE: Fails when SlurmDBD is configured with some configurations.
+    NOTE: You must define BIND_SPECIFIC_ADDR to enable this option.
+ -- Avoid using powered down nodes when scheduling work if possible. 
+    Fix possible invalid memory reference in power save logic.
 
 * Changes in SLURM 1.4.0-pre13
 ==============================
@@ -257,10 +278,15 @@ documents those changes that are of interest to users and admins.
     are created in SLURM tables for future use without a reboot of the SLURM
     daemons, but are not reported by any SLURM commands or APIs.
 
+* Changes in SLURM 1.3.17
+=========================
+
 * Changes in SLURM 1.3.16
 =========================
  -- Fix memory leak in forward logic of tree message passing.
  -- Fix job exit code recorded for srun job allocation.
+ -- Bluegene - Bug fix for too many parameters being passed to a debug statement -- Bluegene - Bug fix for systems running more than 8 in the X dim running
+    Dynamic mode.
 
 * Changes in SLURM 1.3.15
 =========================

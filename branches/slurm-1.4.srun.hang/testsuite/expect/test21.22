@@ -100,6 +100,10 @@ set mj		MaxJobs
 set ms		MaxSubmitJobs
 set mn		MaxNodes
 set mw		MaxWall
+set class       Classification
+set class1     	*Capacity
+set class2     	Capability
+set class3     	Capapacity
 set fs1		1000
 set fs2		2375
 set fs3		3240
@@ -210,81 +214,6 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 }
 
 #
-# Identify the user and his current default account
-#
-set acct_name ""
-set user_name ""
-spawn $bin_id -u -n
-expect {
-	 -re "($alpha_numeric_under)" {
-		set user_name $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-set s_pid [spawn $sacctmgr show user $user_name]
-expect {
-	-re "$user_name *($alpha_numeric_under)" {
-		set acct_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "FAILURE: sacctmgr add not responding\n"
-		slow_kill $s_pid
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Use sacctmgr to add an account
-#
-set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $test_acct]
-expect {
-	-re "Adding Account" {
-		incr aamatches
-		exp_continue
-	}
-	-re "Nothing new added" {
-		send_user "\nWARNING: vestigial account $test_acct found\n"
-		incr aamatches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$aamatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding account.\n"
-	exit 1
-}
-
-#
-# Add self to this new account
-#
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
-expect {
-	 timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-#
 # Delete left-over input script files
 #
 exec $bin_rm -f $file_in
@@ -294,7 +223,7 @@ exec $bin_rm -f $file_in3
 #
 # Build input script file - to create original associations
 #
-exec echo "$clu - $cl1:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mm=$mm6:$mc=$mc6:$mj=$mj6:$mn=$mn6:$ms=$ms6:$mw=$mw6:$qs=$qs1"     >>$file_in
+exec echo "$clu - $cl1:$class=$class1:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mm=$mm6:$mc=$mc6:$mj=$mj6:$mn=$mn6:$ms=$ms6:$mw=$mw6:$qs=$qs1"     >>$file_in
 exec echo "$par - $roo"     >>$file_in
 exec echo "$acc - $nm1:$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"     >>$file_in
 exec echo "$acc - $nm2:$dsc=$ds2:$org=$or2:$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mm=$mm4:$mc=$mc4:$mj=$mj4:$mn=$mn4:$ms=$ms4:$mw=$mw4:$qs=$qs1"     >>$file_in
@@ -308,7 +237,7 @@ exec echo "$usr - $us2:$coo=$nm3:$dac=$nm2:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$
 #
 # Second input file - to modify and add associations to the original 
 #
-exec echo "$clu - $cl1"     >>$file_in2
+exec echo "$clu - $cl1:$class=$class2"     >>$file_in2
 exec echo "$par - $roo"     >>$file_in2
 exec echo "$acc - $nm1"     >>$file_in2
 exec echo "$acc - $nm3:$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"     >>$file_in2
@@ -325,7 +254,7 @@ exec echo "$usr - $us3:$dac=$nm2:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$m
 #
 # Third input file - to replace all previous
 #
-exec echo "$clu - $cl1:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mm=$mm6:$mc=$mc6:$mj=$mj6:$mn=$mn6:$ms=$ms6:$mw=$mw6:$qs=$qs1"    >>$file_in3
+exec echo "$clu - $cl1:$class=$class3:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mm=$mm6:$mc=$mc6:$mj=$mj6:$mn=$mn6:$ms=$ms6:$mw=$mw6:$qs=$qs1"    >>$file_in3
 exec echo "$par - $roo"    >>$file_in3
 exec echo "$acc - $nm1:$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"    >>$file_in3
 exec echo "$acc - $nm3:$dsc=$ds3:$org=$or3:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"    >>$file_in3
@@ -339,20 +268,6 @@ exec echo "$usr - $us3:$dac=$nm1:$fs=$fs2:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$m
 exec echo "$par - $nm3"    >>$file_in3
 exec echo "$usr - $us2:$coo=$nm3:$dac=$nm1:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
 exec echo "$usr - $us3:$dac=$nm1:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
-
-#
-# Check accounting config and bail if not found.
-#
-if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
-}
-
-if { [string compare [check_accounting_admin_level] "Administrator"] } {
-	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
-	exit 0
-}
-
 
 #
 # Use sacctmgr to remove the test cluster
@@ -602,7 +517,11 @@ expect {
 	        send_user "FAILURE: there was a problem with the request\n"
 	    	incr exit_code 1
 	}
-	-re "(sacctmgr: For cluster $cl1)" {
+	-re "For cluster $cl1" {
+		incr matches
+		exp_continue
+	}
+	"Classification: $class1" {
 		incr matches
 		exp_continue
 	}
@@ -616,7 +535,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
+if {$matches != 2} {
 	send_user "\nFAILURE:  File load 1 incorrect with only $matches.\n"
 	incr exit_code 1
 }
@@ -722,7 +641,12 @@ expect {
 	        send_user "FAILURE: there was a problem with the request\n"
 	    	incr exit_code 1
 	}
-	-re "(sacctmgr: For cluster $cl1)" {
+	-re "For cluster $cl1" {
+		incr matches
+		exp_continue
+	}
+	
+	"$class1 -> $class2" {
 		incr matches
 		exp_continue
 	}
@@ -736,8 +660,8 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	send_user "\nFAILURE:  File load 1 incorrect with only $matches.\n"
+if {$matches != 2} {
+	send_user "\nFAILURE:  File load 2 incorrect with only $matches.\n"
 	incr exit_code 1
 }
 
@@ -858,7 +782,11 @@ expect {
 	        send_user "FAILURE: there was a problem with the request\n"
 	    	incr exit_code 1
 	}
-	-re "(sacctmgr: For cluster $cl1)" {
+	-re "For cluster $cl1" {
+		incr matches
+		exp_continue
+	}
+	"Classification: $class3" {
 		incr matches
 		exp_continue
 	}
@@ -872,8 +800,8 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	send_user "\nFAILURE:  File load 1 incorrect with only $matches.\n"
+if {$matches != 2} {
+	send_user "\nFAILURE:  File load 3 incorrect with only $matches.\n"
 	incr exit_code 1
 }
 
@@ -992,30 +920,6 @@ incr exit_code [_remove_cluster "$cl1"]
 exec $bin_rm -f $file_in
 exec $bin_rm -f $file_in2
 exec $bin_rm -f $file_in3
-
-#
-# Use sacctmgr to delete the test account
-#
-set damatches 0
-set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
-expect {
-	-re "Deleting account" {
-		incr damatches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr delete not responding\n"
-		slow_kill $sadel_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting account\n"
-	set exit_code 1
-}
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

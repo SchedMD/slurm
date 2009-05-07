@@ -441,6 +441,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	if (task_exit_signal && !sls->user_managed_io) {
 		client_io_handler_abort(sls->io.normal);
 	}
+
 	/* Then shutdown the message handler thread */
 	eio_signal_shutdown(sls->msg_handle);
 
