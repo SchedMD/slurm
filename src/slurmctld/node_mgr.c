@@ -2698,10 +2698,11 @@ extern void  build_config_feature_array(struct config_record *config_ptr)
 		config_ptr->feature_array = xmalloc(i * sizeof(char *));
 		tmp_str = xstrdup(config_ptr->feature);
 		i = 0;
-		token = strtok_r(tmp_str, ",", &last);
+		token = strtok_r(tmp_str, ", ", &last);
 		while (token) {
-			config_ptr->feature_array[i++] = xstrdup(token);
-			token = strtok_r(NULL, ",", &last);
+			if (token[0] != '\0')
+				config_ptr->feature_array[i++] = xstrdup(token);
+			token = strtok_r(NULL, ", ", &last);
 		}
 		xfree(tmp_str);
 	}
