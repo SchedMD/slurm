@@ -2680,10 +2680,11 @@ extern int send_nodes_to_accounting(time_t event_time)
 }
 
 /* Given a config_record, clear any existing feature_array and
- * if feature is set, then rebuild feature_array */
+ * if feature is set, then rebuild feature_array
+ * Filter out any white-space from the feature string */
 extern void  build_config_feature_array(struct config_record *config_ptr)
 {
-	int i;
+	int i, j;
 	char *tmp_str, *token, *last = NULL;
 
 	/* clear any old feature_array */
@@ -2696,13 +2697,18 @@ extern void  build_config_feature_array(struct config_record *config_ptr)
 	if (config_ptr->feature) {
 		i = strlen(config_ptr->feature) + 1;	/* oversized */
 		config_ptr->feature_array = xmalloc(i * sizeof(char *));
-		tmp_str = xstrdup(config_ptr->feature);
+		tmp_str = xmalloc(i);
+		for (i=0, j=0; config_ptr->feature[i]; i++) {
+			if (!isspace(config_ptr->feature[i]))
+				tmp_str[j++] = config_ptr->feature[i];
+		}
+		if (i != j)
+			strcpy(config_ptr->feature, tmp_str);
 		i = 0;
-		token = strtok_r(tmp_str, ", ", &last);
+		token = strtok_r(tmp_str, ",", &last);
 		while (token) {
-			if (token[0] != '\0')
-				config_ptr->feature_array[i++] = xstrdup(token);
-			token = strtok_r(NULL, ", ", &last);
+			config_ptr->feature_array[i++] = xstrdup(token);
+			token = strtok_r(NULL, ",", &last);
 		}
 		xfree(tmp_str);
 	}
