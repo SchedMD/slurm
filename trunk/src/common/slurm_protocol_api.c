@@ -3087,7 +3087,6 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 	List ret_list = NULL;
 //	List tmp_ret_list = NULL;
 //	slurm_fd fd = -1;
-//	char *name = NULL;
 //	char buf[8192];
 	hostlist_t hl = NULL;
 //	ret_data_info_t *ret_data_info = NULL;
@@ -3099,6 +3098,8 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 	}
 	
 #ifdef HAVE_FRONT_END
+{
+        char *name = NULL;
 	/* only send to the front end node */
 	name = nodelist_nth_host(nodelist, 0);
 	if (!name) {
@@ -3109,6 +3110,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 	}
 	hl = hostlist_create(name);
 	free(name);
+}
 #else
 /* 	info("total sending to %s",nodelist); */
 	hl = hostlist_create(nodelist);
