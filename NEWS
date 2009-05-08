@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- Change fanout logic to start on calling node instead of first node in 
     message nodelist.
+ -- Fixed issue with duration not being honored when updating reservations.
 
 * Changes in SLURM 2.0.0-rc1
 ==============================

@@ -78,7 +78,7 @@
 /* Change RESV_STATE_VERSION value when changing the state save format
  * Add logic to permit reading of the previous version's state in order
  * to avoid losing reservations between releases major SLURM updates. */
-#define RESV_STATE_VERSION      "VER001"
+#define RESV_STATE_VERSION      "VER002"
 
 time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
@@ -965,6 +965,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->resv_id,	buffer);
 		pack_time(resv_ptr->start_time_prev,	buffer);
 		pack_time(resv_ptr->start_time,	buffer);
+		pack32(resv_ptr->duration,	buffer);
 	} else {
 		pack_bit_fmt(resv_ptr->node_bitmap, buffer);
 	}
@@ -1180,6 +1181,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_ptr->accounts = NULL;		/* Nothing left to free */
 	resv_ptr->account_cnt	= account_cnt;
 	resv_ptr->account_list	= account_list;
+	resv_ptr->duration      = resv_desc_ptr->duration;
 	resv_ptr->end_time	= resv_desc_ptr->end_time;
 	resv_ptr->features	= resv_desc_ptr->features;
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
@@ -1335,6 +1337,11 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		resv_ptr->start_time_prev = resv_ptr->start_time;
 		resv_ptr->start_time = resv_desc_ptr->start_time;
+		resv_ptr->start_time_first = resv_desc_ptr->start_time;
+		if(resv_ptr->duration) {
+			resv_ptr->end_time = resv_ptr->start_time_first + 
+				(resv_ptr->duration * 60);
+		}
 	}
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->end_time < (now - 60)) {
@@ -1343,11 +1350,14 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 		resv_ptr->end_time = resv_desc_ptr->end_time;
+		resv_ptr->duration = 0;
 	}
 	if (resv_desc_ptr->duration != NO_VAL) {
+		resv_ptr->duration = resv_desc_ptr->duration;
 		resv_ptr->end_time = resv_ptr->start_time_first + 
 				     (resv_desc_ptr->duration * 60);
 	}
+
 	if (resv_ptr->start_time >= resv_ptr->end_time) {
 		error_code = ESLURM_INVALID_TIME_VALUE;
 		goto update_failure;
@@ -1921,6 +1931,7 @@ extern int load_all_resv_state(int recover)
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
+		safe_unpack32(&resv_ptr->duration,	buffer);
 
 		list_append(resv_list, resv_ptr);
 		info("Recovered state of reservation %s", resv_ptr->name);
