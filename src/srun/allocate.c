@@ -566,6 +566,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		job->ctx_params.task_dist = (job->ctx_params.task_count <= 
 			job->ctx_params.node_count) 
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
+		opt.distribution = job->ctx_params.task_dist;
 		break;
 
 	}
