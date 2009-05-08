@@ -104,7 +104,7 @@ extern void get_reservation(void)
 
 		if (active && (resv.node_inx[0] != -1)) {
 #ifdef HAVE_SUN_CONST
-			set_grid_name(job.node_list, count);
+			set_grid_name(resv.node_list, count);
 #else
 			int j = 0;
 			resv.node_cnt = 0;
