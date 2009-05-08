@@ -9,6 +9,12 @@ online documents at Cluster Resources Inc.:
 <a href="http://www.clusterresources.com/products/maui/docs/mauiadmin.shtml">
 http://www.clusterresources.com/products/maui/docs/mauiadmin.shtml</a>.
 
+<p>Maui uses SLURM commands and a wiki interface to communicate. See the 
+<a href="http://www.clusterresources.com/products/mwm/docs/wiki/wikiinterface.shtml">
+Wiki Interface Specification</a> and
+<a href="http://www.clusterresources.com/products/mwm/docs/wiki/socket.shtml">
+Wiki Socket Protocol Description</a> for more information.</p>
+
 <h2>Configuration</h2>
 <p>First, download the Maui scheduler kit from their web site
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
@@ -174,6 +180,6 @@ HidePartitionJobs=debug
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 February 2009</p>
+<p style="text-align:center;">Last modified 8 May 2009</p>
 
 <!--#include virtual="footer.txt"-->
