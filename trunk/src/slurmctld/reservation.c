@@ -1900,6 +1900,7 @@ extern int load_all_resv_state(int recover)
 		error("************************************************************");
 		xfree(ver_str);
 		free_buf(buffer);
+		schedule_resv_save();	/* Schedule save with new format */
 		return EFAULT;
 	}
 	xfree(ver_str);
