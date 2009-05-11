@@ -98,7 +98,7 @@ expect {
 		set is_bluegene 1
 		exp_continue
 	}
-	-re "SLURM_CONFIG_FILE *= (.*)/slurm.conf" {
+	-re "SLURM_CONF *= (.*)/slurm.conf" {
 		set conf_dir $expect_out(1,string)
 		exp_continue
 	}
