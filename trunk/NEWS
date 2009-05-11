@@ -9,6 +9,10 @@ documents those changes that are of interest to users and admins.
  -- Filter white-space out from node features.
  -- Fixed issue with duration not being honored when updating start time in 
     reservations.
+ -- Fix bug in sched/wiki and sched/wiki2 plugins for reporting job resource
+    allocation properly when node names are configured out of sort order 
+    with more than one numeric suffix (e.g. "tux10-1" is configured after 
+    "tux5-1").
 
 * Changes in SLURM 2.0.0-rc1
 ==============================
