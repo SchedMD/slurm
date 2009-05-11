@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     allocation properly when node names are configured out of sort order 
     with more than one numeric suffix (e.g. "tux10-1" is configured after 
     "tux5-1").
+ -- Avoid re-use of job_id (if specified at submit time) when the existing
+    job is in completing state (possible race condition with Moab).
 
 * Changes in SLURM 2.0.0-rc1
 ==============================

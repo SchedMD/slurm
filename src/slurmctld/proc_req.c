@@ -2061,8 +2061,17 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		lock_slurmctld(job_write_lock);
 		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
 			job_ptr = find_job_record(job_desc_msg->job_id);
-			if (job_ptr && IS_JOB_FINISHED(job_ptr))
-				job_ptr = NULL;
+			if (job_ptr && IS_JOB_FINISHED(job_ptr)) {
+				if (job_ptr->job_state & JOB_COMPLETING) {
+					info("Attempt to re-use active "
+					     "job id %u", job_ptr->job_id);
+					slurm_send_rc_msg(msg, 
+							  ESLURM_DUPLICATE_JOB_ID);
+					unlock_slurmctld(job_write_lock);
+					return;
+				}
+				job_ptr = NULL;	/* OK to re-use job id */
+			}
 		} else
 			job_ptr = NULL;
 
