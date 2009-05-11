@@ -2191,20 +2191,36 @@ extern int *find_bp_loc(char* bp_id)
 			check[4] = '\0';
 		}
 	}
+	
+	if((check[1] < '0' || check[1] > '9')
+	   || (check[2] < '0' || check[2] > '9')
+	   || (check[3] < '0' || check[3] > '9')) {
+		error("%s is not valid Rack midplane (i.e. R000)", bp_id);
+		goto cleanup;
+	}
+			
 #else
 	if(check[3] != '-') {
 		xfree(check);
 		check = xstrdup_printf("R%c%c-M%c",
 				       bp_id[1], bp_id[2], bp_id[3]);
 	}
-#endif
 
+	if((check[1] < '0' || check[1] > '9')
+	   || (check[2] < '0' || check[2] > '9')
+	   || (check[5] < '0' || check[5] > '9')) {
+		error("%s is not valid Rack midplane (i.e. R00-M0)", bp_id);
+		goto cleanup;
+	}
+#endif
+	
 	itr = list_iterator_create(bp_map_list);
 	while ((bp_map = list_next(itr)))  
 		if (!strcasecmp(bp_map->bp_id, check)) 
 			break;	/* we found it */
 	list_iterator_destroy(itr);
 
+cleanup:
 	xfree(check);
 
 	if(bp_map != NULL)
@@ -2231,11 +2247,22 @@ extern char *find_bp_rack_mid(char* xyz)
 	len -= 3;
 	if(len<0)
 		return NULL;
+
+	if((xyz[len] < '0' || xyz[len] > '9')
+	   || (xyz[len-2] < '0' || xyz[len-1] > '9')
+	   || (xyz[len-2] < '0' || xyz[len-2] > '9')) {
+		error("%s is not valid Location (i.e. 000)", xyz);
+		return NULL;
+	}
+
+
 	number = xstrntol(&xyz[X]+len, NULL,
 			  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 	coord[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 	coord[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE)) / HOSTLIST_BASE;
 	coord[Z] = (number % HOSTLIST_BASE);
+
+
 	if(!bp_map_list) {
 		if(set_bp_map() == -1)
 			return NULL;
