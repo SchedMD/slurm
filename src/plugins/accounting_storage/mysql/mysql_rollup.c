@@ -972,7 +972,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   "group by cluster on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
-			   "pdown_cpu_secs=@DSUM, idle_cpu_secs=@ISUM, "
+			   "pdown_cpu_secs=@PDSUM, idle_cpu_secs=@ISUM, "
 			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
 			   cluster_day_table, now, now, curr_start,
 			   cluster_hour_table,
@@ -1073,7 +1073,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   "group by cluster on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
-			   "pdown_cpu_secs=@DSUM, idle_cpu_secs=@ISUM, "
+			   "pdown_cpu_secs=@PDSUM, idle_cpu_secs=@ISUM, "
 			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
 			   cluster_month_table, now, now, curr_start,
 			   cluster_day_table,
