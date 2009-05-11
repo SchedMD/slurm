@@ -725,9 +725,57 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		/* Now put the lists into the usage tables */
 		list_iterator_reset(c_itr);
 		while((c_usage = list_next(c_itr))) {
-			c_usage->i_cpu = c_usage->total_time - c_usage->a_cpu -
-				c_usage->d_cpu - c_usage->pd_cpu -
-				c_usage->r_cpu;
+			uint64_t total_used = 0;
+				
+			/* sanity check to make sure we don't have more
+			   allocated cpus than possible. */
+			if(c_usage->total_time < c_usage->a_cpu) {
+				char *start_char = xstrdup(ctime(&curr_start));
+				char *end_char = xstrdup(ctime(&curr_end));
+				error("We have more allocated time that is "
+				      "possible (%llu > %llu) for "
+				      "cluster %s(%d) from %s - %s",
+				      c_usage->a_cpu, c_usage->total_time,
+				      c_usage->name, c_usage->cpu_count,
+				      start_char, end_char);
+				xfree(start_char);
+				xfree(end_char);
+				c_usage->a_cpu = c_usage->total_time;
+			}
+
+			total_used = c_usage->a_cpu +
+				c_usage->d_cpu + c_usage->pd_cpu;
+
+			/* Make sure the total time we care about
+			   doesn't go over the limit */
+			if(c_usage->total_time < (total_used)) {
+				char *start_char = xstrdup(ctime(&curr_start));
+				char *end_char = xstrdup(ctime(&curr_end));
+				error("We have more time that is "
+				      "possible (%llu+%llu+%llu)(%llu) "
+				      "> %llu) for "
+				      "cluster %s(%d) from %s - %s",
+				      c_usage->a_cpu, c_usage->d_cpu,
+				      c_usage->pd_cpu, total_used, 
+				      c_usage->total_time,
+				      c_usage->name, c_usage->cpu_count,
+				      start_char, end_char);
+				xfree(start_char);
+				xfree(end_char);
+
+				/* set the planned down to 0 and the
+				   down to what ever is left from the
+				   allocated. */
+				c_usage->pd_cpu = 0;
+				c_usage->d_cpu = 
+					c_usage->total_time - c_usage->a_cpu;
+
+				total_used = c_usage->a_cpu +
+					c_usage->d_cpu + c_usage->pd_cpu;
+			}
+
+			c_usage->i_cpu = c_usage->total_time -
+				total_used - c_usage->r_cpu;
 			/* sanity check just to make sure we have a
 			 * legitimate time after we calulated
 			 * idle/reserved time put extra in the over
