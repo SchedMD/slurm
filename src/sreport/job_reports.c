@@ -596,7 +596,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 			field->type = PRINT_JOB_COUNT;
 		else
 			field->type = PRINT_JOB_SIZE;
-		field->name = xstrdup_printf("> %u cpus", last_size);
+		field->name = xstrdup_printf(">= %u cpus", last_size);
 		if(time_format == SREPORT_TIME_SECS_PER
 		   || time_format == SREPORT_TIME_MINS_PER
 		   || time_format == SREPORT_TIME_HOURS_PER)
