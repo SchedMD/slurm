@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     "tux5-1").
  -- Avoid re-use of job_id (if specified at submit time) when the existing
     job is in completing state (possible race condition with Moab).
+ -- Add support for "scontrol takeover" command for backup controller to 
+    assume control immediately. Patch from Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.0.0-rc1
 ==============================

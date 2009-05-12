@@ -387,6 +387,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_strerror.3 \
 	man3/slurm_submit_batch_job.3 \
 	man3/slurm_suspend.3 \
+	man3/slurm_takeover.3 \
 	man3/slurm_terminate_job.3 \
 	man3/slurm_terminate_job_step.3 \
 	man3/slurm_update_job.3 \

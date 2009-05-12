@@ -530,6 +530,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case REQUEST_PING:
 	case REQUEST_CONTROL:
+	case REQUEST_TAKEOVER:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
@@ -906,6 +907,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case REQUEST_PING:
 	case REQUEST_CONTROL:
+	case REQUEST_TAKEOVER:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:

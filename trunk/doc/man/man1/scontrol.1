@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "April 2009" "scontrol 2.0" "Slurm components"
+.TH SCONTROL "1" "May 2009" "scontrol 2.0" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -262,6 +262,18 @@ Use the \fIresume\fP command to resume its execution.
 User processes must stop on receipt of SIGSTOP signal and resume 
 upon receipt of SIGCONT for this operation to be effective.
 Not all architectures and configurations support job suspension.
+
+.TP
+\fBtakeover\fP
+Instruct SLURM's backup controller (slurmctld) to take over system control.
+SLURM's backup controller requests control from the primary and waits for 
+its termination. After that, it switches from backup mode to controller
+mode. If primary controller can not be contacted, it directly switches to 
+controller mode. This can be used to speed up the SLURM controller 
+fail\-over mechanism when the primary node is down.
+This can be used to minimize disruption if the computer executing the
+primary SLURM controller is scheduled down.
+(Note: SLURM's primary controller will take the control back at startup.)
 
 .TP
 \fBupdate\fP \fISPECIFICATION\fP 
@@ -755,6 +767,7 @@ details.
 \fBslurm_load_partitions\fR(3), 
 \fBslurm_reconfigure\fR(3),  \fBslurm_requeue\fR(3), \fBslurm_resume\fR(3),
 \fBslurm_shutdown\fR(3), \fBslurm_suspend\fR(3),
+\fBslurm_takeover\fR(3),
 \fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), 
 \fBslurm_update_partition\fR(3),
 \fBslurm.conf\fR(5)

@@ -165,6 +165,7 @@ static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 static char    *slurm_conf_filename;
+static int      primary = 1 ;
 /*
  * Static list of signals to block in this process
  * *Must be zero-terminated*
@@ -408,6 +409,7 @@ int main(int argc, char *argv[])
 		    (strcmp(node_name,
 			    slurmctld_conf.backup_controller) == 0)) {
 			slurm_sched_fini();	/* make sure shutdown */
+			primary = 0;
 			run_backup();
 		} else if (slurmctld_conf.control_machine &&
 			 (strcmp(node_name, slurmctld_conf.control_machine) 
@@ -427,6 +429,8 @@ int main(int argc, char *argv[])
 			
 			if (recover == 0) 
 				_accounting_mark_all_nodes_down("cold-start");
+
+			primary = 1;
 			
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
@@ -541,6 +545,12 @@ int main(int argc, char *argv[])
 
 		if (slurmctld_config.resume_backup == false)
 			break;
+
+		/* primary controller doesn't resume backup mode */
+		if ((slurmctld_config.resume_backup == true) &&
+		    (primary == 1))
+			break;
+
 		recover = 2;
 	}
 

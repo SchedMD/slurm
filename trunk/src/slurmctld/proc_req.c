@@ -122,6 +122,7 @@ inline static void  _slurm_rpc_resv_update(slurm_msg_t * msg);
 inline static void  _slurm_rpc_resv_delete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_resv_show(slurm_msg_t * msg);
 inline static void  _slurm_rpc_requeue(slurm_msg_t * msg);
+inline static void  _slurm_rpc_takeover(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
@@ -243,6 +244,10 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_CONTROL:
 		_slurm_rpc_shutdown_controller(msg);
+		/* No body to free */
+		break;
+	case REQUEST_TAKEOVER:
+		_slurm_rpc_takeover(msg);
 		/* No body to free */
 		break;
 	case REQUEST_SHUTDOWN:
@@ -1783,6 +1788,28 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		schedule();			/* has its own locks */
 		save_all_state();
 	}
+}
+
+/* _slurm_rpc_takeover - process takeover RPC */
+static void _slurm_rpc_takeover(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	/* We could authenticate here, if desired */
+	if (!validate_super_user(uid)) {
+		error("Security violation, TAKEOVER RPC from uid=%u",
+		      (unsigned int) uid);
+		error_code = ESLURM_USER_ID_MISSING;
+	} else {
+		/* takeover is not possible in controller mode */
+		/* return success */
+		info("Performing RPC: REQUEST_TAKEOVER : "
+		     "already in controller mode - skipping");
+	}
+
+	slurm_send_rc_msg(msg, error_code);
+
 }
 
 /* _slurm_rpc_shutdown_controller - process RPC to shutdown slurmctld */

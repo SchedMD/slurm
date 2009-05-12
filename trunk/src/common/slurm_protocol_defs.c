@@ -1758,6 +1758,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_PING:		
 	case REQUEST_RECONFIGURE:
 	case REQUEST_CONTROL:
+	case REQUEST_TAKEOVER:
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case RESPONSE_FORWARD_FAILED:
 	case REQUEST_DAEMON_STATUS:

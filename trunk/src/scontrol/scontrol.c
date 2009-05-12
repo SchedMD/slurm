@@ -710,6 +710,27 @@ _process_command (int argc, char *argv[])
 	else if (strncasecmp (tag, "show", MAX(taglen, 3)) == 0) {
 		_show_it (argc, argv);
 	}
+	else if (strncasecmp (tag, "takeover", MAX(taglen, 8)) == 0) {
+		char *secondary = NULL;
+		slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+
+		slurm_ctl_conf_ptr = slurm_conf_lock();
+		secondary = xstrdup(slurm_ctl_conf_ptr->backup_controller);
+		slurm_conf_unlock();
+
+		if ( secondary && secondary[0] != '\0' ) {
+			error_code = slurm_takeover();
+			if (error_code) {
+				exit_code = 1;
+				if (quiet_flag != 1)
+					slurm_perror("slurm_takeover error");
+			}
+		} else {
+			fprintf(stderr, "slurm_takeover error: no backup "
+				"controller defined\n");
+		}
+		xfree(secondary);
+	}
 	else if (strncasecmp (tag, "shutdown", MAX(taglen, 8)) == 0) {
 		/* require full command name */
 		uint16_t options = 0;
@@ -1274,6 +1295,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
                               is all records.                              \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
+     takeover                 ask slurm backup controller to take over     \n\
+                              (the primary controller will be stopped)     \n\
      suspend <job_id>         susend specified job                         \n\
      resume <job_id>          resume previously suspended job              \n\
      update <SPECIFICATIONS>  update job, node, partition, reservation, or \n\

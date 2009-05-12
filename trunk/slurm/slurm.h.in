@@ -2233,6 +2233,14 @@ extern int slurm_reconfigure PARAMS(( void ));
 extern int slurm_shutdown PARAMS(( uint16_t options ));
 
 /*
+ * slurm_takeover - issue RPC to have Slurm backup controller (slurmctld)
+ *	take over the primary controller.
+ *
+ * RET 0 or a slurm error code
+ */
+extern int slurm_takeover PARAMS(( void ));
+
+/*
  * slurm_set_debug_level - issue RPC to set slurm controller debug level
  * IN debug_level - requested debug level
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
