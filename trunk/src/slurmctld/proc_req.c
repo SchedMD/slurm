@@ -1936,7 +1936,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 	}
 
 	lock_slurmctld(job_write_lock);
-	rc = step_partial_comp(req, &rem, &step_rc);
+	rc = step_partial_comp(req, uid, &rem, &step_rc);
 
 	if (rc || rem) {	/* some error or not totally done */
 		/* Note: Error printed within step_partial_comp */

@@ -1558,12 +1558,13 @@ extern int step_epilog_complete(struct job_record  *job_ptr,
  * step_partial_comp - Note the completion of a job step on at least
  *	some of its nodes
  * IN req     - step_completion_msg RPC from slurmstepd
+ * IN uid     - UID issuing the request
  * OUT rem    - count of nodes for which responses are still pending
  * OUT max_rc - highest return code for any step thus far
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int step_partial_comp(step_complete_msg_t *req, int *rem,
-			     uint32_t *max_rc);
+extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, 
+			     int *rem, uint32_t *max_rc);
 
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(struct job_record *job_ptr);
