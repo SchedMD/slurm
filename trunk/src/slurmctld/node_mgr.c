@@ -428,7 +428,7 @@ extern int load_all_node_state ( bool state_only )
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	bool power_save_mode = false;
 
-	if (conf->resume_program && conf->resume_program[0])
+	if (conf->suspend_program && conf->resume_program)
 		power_save_mode = true;
 	slurm_conf_unlock();
 
