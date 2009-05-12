@@ -425,6 +425,7 @@ static void _opt_default()
 
 	opt.prolog = slurm_get_srun_prolog();
 	opt.epilog = slurm_get_srun_epilog();
+	opt.begin = (time_t)0;
 
 	opt.task_prolog     = NULL;
 	opt.task_epilog     = NULL;
