@@ -43,7 +43,7 @@ print_header $test_id
 #
 # Proc: sacct
 #
-# Purpose:  Pass sacct options and test
+# Purpose:  Pass sacct options and test the command header only
 #
 # Returns: Number of matches.
 #
@@ -53,56 +53,56 @@ print_header $test_id
 
 proc sacct_job { soption } {
 	global sacct
-set exit_code   0
-set matches     0
-set not_support 0
-	send_user "sacct -$soption\n"
-set timeout 60
-spawn $sacct -$soption
-expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
+	set matches     0
+	set not_support 0
+	set timeout 10
+
+	send_user "sacct $soption\n"
+	spawn $sacct $soption
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re "JobID.*JobName.*Partition" {
+			incr matches
+			exp_continue
+		}
+		-re "Account.*AllocCPUS" {
+			incr matches
+			exp_continue
+		}
+		-re "State.*ExitCode" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nWARNING: sacct timed out (as expected)\n"
+		}
+		eof {
+			wait
+		}
 	}
-	-re "JobID.*JobName.*Partition" {
-		incr matches
-		exp_continue
+
+	if {$not_support != 0} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
 	}
-	-re "Account.*AllocCPUS" {
-		incr matches
-		exp_continue
-	}
-	-re "State.*ExitCode" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+	if {$matches != 3} {
+		send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
 		set exit_code 1
 	}
-	eof {
-		wait
-	}
-}
-
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 3} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
 	return $matches
 }
+
 ################################################################
-set matches [sacct_job -allusers]
+set matches [sacct_job --allusers]
 if {$matches != 3} {
 	send_user "\nFAILURE: sacct --allusers failed ($matches)\n"
 	set exit_code 1
 }
 
-set matches [sacct_job a]
+set matches [sacct_job -a]
 if {$matches != 3} {
 	send_user "\nFAILURE: sacct -a failed ($matches)\n"
 	set exit_code 1
