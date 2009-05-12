@@ -319,6 +319,48 @@ static void _opt_default()
 	opt.ckpt_dir = xstrdup(opt.cwd);
 }
 
+static void _set_distribution(task_dist_states_t distribution,
+			      char **dist, char **lllp_dist)
+{
+	if (((int)distribution >= 0)
+	&&  (distribution != SLURM_DIST_UNKNOWN)) {
+		switch(distribution) {
+		case SLURM_DIST_CYCLIC:
+			*dist      = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK:
+			*dist      = "block";
+			break;
+		case SLURM_DIST_PLANE:
+			*dist      = "plane";
+			*lllp_dist = "plane";
+			break;
+		case SLURM_DIST_ARBITRARY:
+			*dist      = "arbitrary";
+			break;
+		case SLURM_DIST_CYCLIC_CYCLIC:
+			*dist      = "cyclic";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_CYCLIC_BLOCK:
+			*dist      = "cyclic";
+			*lllp_dist = "block";
+			break;
+		case SLURM_DIST_BLOCK_CYCLIC:
+			*dist      = "block";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK_BLOCK:
+			*dist      = "block";
+			*lllp_dist = "block";
+			break;
+		default:
+			error("unknown dist, type %d", distribution);
+			break;
+		}
+	}
+}
+
 /*---[ env var processing ]-----------------------------------------------*/
 
 /*
@@ -455,8 +497,6 @@ _process_env_var(env_vars_t *e, const char *val)
 						    &opt.plane_size);
 		if (opt.distribution == SLURM_DIST_UNKNOWN)
 			error("distribution type `%s' is invalid", optarg);
-		else
-			setenv("SLURM_DISTRIBUTION", optarg, 1);
 		break;
 
 	case OPT_NODES:
@@ -1070,7 +1110,6 @@ static void _set_options(int argc, char **argv)
 				      "is not recognized", optarg);
 				exit(1);
 			} 
-			setenv("SLURM_DISTRIBUTION", optarg, 1);
 			break;
 		case 'n':
 			opt.nprocs_set = true;
@@ -1811,6 +1850,7 @@ static void _parse_pbs_resource_list(char *rl)
 static bool _opt_verify(void)
 {
 	bool verified = true;
+	char *dist = NULL, *lllp_dist = NULL;
 
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
@@ -1882,6 +1922,23 @@ static bool _opt_verify(void)
 			}
 		}
 	}
+
+	_set_distribution(opt.distribution, &dist, &lllp_dist);
+	if(dist) 
+		if (setenvf(NULL, "SLURM_DISTRIBUTION", "%s", dist)) {
+			error("Can't set SLURM_DISTRIBUTION env variable");
+		}
+		
+	if(opt.distribution == SLURM_DIST_PLANE)
+		if (setenvf(NULL, "SLURM_DIST_PLANESIZE", "%d", 
+			    opt.plane_size)) {
+			error("Can't set SLURM_DIST_PLANESIZE env variable");
+		}
+
+	if(lllp_dist)
+		if (setenvf(NULL, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
+			error("Can't set SLURM_DIST_LLLP env variable");
+		}
 
 	/* bound max_threads/cores from ntasks_cores/sockets */ 
 	if ((opt.max_threads_per_core <= 0) &&

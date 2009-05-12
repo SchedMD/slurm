@@ -147,6 +147,48 @@ static bool _discard_env(char *name, char *value)
 	return false;
 }
 
+static void _set_distribution(task_dist_states_t distribution,
+			      char **dist, char **lllp_dist)
+{
+	if (((int)distribution >= 0)
+	    &&  (distribution != SLURM_DIST_UNKNOWN)) {
+		switch(distribution) {
+		case SLURM_DIST_CYCLIC:
+			*dist      = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK:
+			*dist      = "block";
+			break;
+		case SLURM_DIST_PLANE:
+			*dist      = "plane";
+			*lllp_dist = "plane";
+			break;
+		case SLURM_DIST_ARBITRARY:
+			*dist      = "arbitrary";
+			break;
+		case SLURM_DIST_CYCLIC_CYCLIC:
+			*dist      = "cyclic";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_CYCLIC_BLOCK:
+			*dist      = "cyclic";
+			*lllp_dist = "block";
+			break;
+		case SLURM_DIST_BLOCK_CYCLIC:
+			*dist      = "block";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK_BLOCK:
+			*dist      = "block";
+			*lllp_dist = "block";
+			break;
+		default:
+			error("unknown dist, type %d", distribution);
+			break;
+		}
+	}
+}
+
 /*
  * Return the number of elements in the environment `env'
  */
@@ -266,8 +308,7 @@ char *getenvp(char **env, const char *name)
 int setup_env(env_t *env)
 {
 	int rc = SLURM_SUCCESS;
-	char *dist = NULL;
-	char *lllp_dist = NULL;
+	char *dist = NULL, *lllp_dist = NULL;
 	char addrbuf[INET_ADDRSTRLEN];
 
 	if (env == NULL)
@@ -320,64 +361,27 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	} 
 
-	if (((int)env->distribution >= 0)
-	&&  (env->distribution != SLURM_DIST_UNKNOWN)) {
-		switch(env->distribution) {
-		case SLURM_DIST_CYCLIC:
-			dist      = "cyclic";
-			lllp_dist = "";
-			break;
-		case SLURM_DIST_BLOCK:
-			dist      = "block";
-			lllp_dist = "";
-			break;
-		case SLURM_DIST_PLANE:
-			dist      = "plane";
-			lllp_dist = "plane";
-			break;
-		case SLURM_DIST_ARBITRARY:
-			dist      = "arbitrary";
-			lllp_dist = "";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC:
-			dist      = "cyclic";
-			lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK:
-			dist      = "cyclic";
-			lllp_dist = "block";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC:
-			dist      = "block";
-			lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK:
-			dist      = "block";
-			lllp_dist = "block";
-			break;
-		default:
-			error("unknown dist, type %d", env->distribution);
-			dist      = "unknown";
-			lllp_dist = "unknown";
-			break;
-		}
-
+	_set_distribution(env->distribution, &dist, &lllp_dist);
+	if(dist) 
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
 			rc = SLURM_FAILURE;
 		}
 
-		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%d", 
+	if(env->distribution == SLURM_DIST_PLANE) 
+		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%u", 
 			    env->plane_size)) {
-			error("Can't set SLURM_DIST_PLANESIZE env variable");
+			error("Can't set SLURM_DIST_PLANESIZE "
+			      "env variable");
 			rc = SLURM_FAILURE;
 		}
-
+	
+	if(lllp_dist)
 		if (setenvf(&env->env, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
 			error("Can't set SLURM_DIST_LLLP env variable");
 			rc = SLURM_FAILURE;
 		}
-	}
+	
 	
 	if (env->cpu_bind_type) {
 		char *str_verbose, *str_bind_type, *str_bind_list;
@@ -836,6 +840,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	char *resv_id = NULL;
 #endif
 	char *tmp = NULL;
+	char *dist = NULL, *lllp_dist = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	uint32_t num_tasks = desc->num_tasks;
 
@@ -844,6 +849,19 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 				alloc->node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s",
 				alloc->node_list);
+
+	_set_distribution(desc->task_dist, &dist, &lllp_dist);
+	if(dist) 
+		env_array_overwrite_fmt(dest, "SLURM_DISTRIBUTION", "%s",
+					dist);
+	
+	if(desc->task_dist == SLURM_DIST_PLANE) 
+		env_array_overwrite_fmt(dest, "SLURM_DIST_PLANESIZE",
+					"%u", desc->plane_size);
+	
+	if(lllp_dist)
+		env_array_overwrite_fmt(dest, "SLURM_DIST_LLLP", "%s", 
+					lllp_dist);
 
 	tmp = uint32_compressed_to_str(alloc->num_cpu_groups,
 					alloc->cpus_per_node,
@@ -954,7 +972,7 @@ extern void
 env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 			const char *node_name)
 {
-	char *tmp;
+	char *tmp = NULL;
 	uint32_t num_nodes = 0;
 	uint32_t num_cpus = 0;
 	int i;
@@ -972,6 +990,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
+
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
 					batch->cpus_per_node,
 					batch->cpu_count_reps);
