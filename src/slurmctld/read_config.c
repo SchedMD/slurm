@@ -1132,6 +1132,7 @@ static int _sync_nodes_to_comp_job(void)
 			update_cnt++;
 			info("Killing job_id %u", job_ptr->job_id);
 			deallocate_nodes(job_ptr, false, false);
+			job_completion_logger(job_ptr);
 		}
 	}
 	list_iterator_destroy(job_iterator);

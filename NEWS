@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
     assume control immediately. Patch from Matthieu Hautreux, CEA.
  -- If srun is unable to communicate with the slurmd tasks are now marked as 
     failed with the controller.
+ -- Fixed issues with requeued jobs not being accounted for correctly in 
+    the accounting.
  -- Clear node's POWER_SAVE flag if configuration changes to one lacking a
     ResumeProgram.
 

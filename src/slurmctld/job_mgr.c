@@ -1397,7 +1397,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 					job_ptr->end_time = now;
 				
 				/* We want this job to look like it
-				 * was terminateded in the accounting logs.
+				 * was terminated in the accounting logs.
 				 * Set a new submit time so the restarted
 				 * job looks like a new job. */
 				job_ptr->job_state  = JOB_NODE_FAIL;
@@ -1408,6 +1408,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
 				job_ptr->details->submit_time = now;
+				job_ptr->start_time = job_ptr->end_time = 0;
+				
 				/* restart from periodic checkpoint */
 				if (job_ptr->ckpt_interval &&
 				    job_ptr->ckpt_time &&
@@ -2121,15 +2123,38 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	}
 
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {
+		/* We want this job to look like it
+		 * was terminated in the accounting logs.
+		 * Set a new submit time so the restarted
+		 * job looks like a new job. */
+		job_ptr->end_time = now;
+		job_ptr->job_state  = JOB_NODE_FAIL;
+		job_completion_logger(job_ptr);
+		job_ptr->db_index = 0;
+		/* Since this could happen on a launch we need to make
+		   sure the submit isn't the same as the last submit so
+		   put now + 1 so we get different records in the
+		   database */
+		job_ptr->details->submit_time = now+1;
+		job_ptr->start_time = job_ptr->end_time = 0;
+		
 		job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->restart_cnt++;
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
+		/* Since the job completion logger
+		   removes the submit we need to add it
+		   again.
+		*/
+		acct_policy_add_job_submit(job_ptr);
+
 		info("Non-responding node, requeue JobId=%u", job_ptr->job_id);
 	} else if ((job_ptr->job_state == JOB_PENDING) && job_ptr->details && 
 		   job_ptr->batch_flag) {
 		/* Possible failure mode with DOWN node and job requeue.
 		 * The DOWN node might actually respond to the cancel and
-		 * take us here. */
+		 * take us here.  Don't run job_completion_logger
+		 * here since this is here to catch duplicate cancels
+		 * from slow responding slurmds */
 		return SLURM_SUCCESS;
 	} else {
 		if (job_return_code == NO_VAL) {
@@ -5791,6 +5816,9 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 				 * named socket purged, so delay for at 
 				 * least ten seconds. */
 				job_ptr->details->begin_time = time(NULL) + 10;
+				jobacct_storage_g_job_start(
+					acct_db_conn, slurmctld_cluster_name,
+					job_ptr);
 			}
 		}
 		return true;
@@ -6358,6 +6386,8 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	job_ptr->job_state = JOB_PENDING;
 	if (job_ptr->node_cnt)
 		job_ptr->job_state |= JOB_COMPLETING;
+	
+	job_ptr->start_time = job_ptr->end_time = 0;
 	job_ptr->details->submit_time = now;
 	job_ptr->restart_cnt++;
 	/* Since the job completion logger removes the submit we need
