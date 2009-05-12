@@ -56,6 +56,7 @@
 #include "src/common/parse_spec.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_strcasestr.h"
 
 
 #define BUFFER_SIZE 1024
@@ -140,7 +141,7 @@ _load_float (float *destination, char *keyword, char *in_line)
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
-	str_ptr1 = (char *) strcasestr (in_line, keyword);
+	str_ptr1 = (char *) slurm_strcasestr (in_line, keyword);
 	if (str_ptr1 != NULL) {
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
@@ -178,7 +179,7 @@ _load_integer (int *destination, char *keyword, char *in_line)
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
-	str_ptr1 = (char *) strcasestr (in_line, keyword);
+	str_ptr1 = (char *) slurm_strcasestr (in_line, keyword);
 	if (str_ptr1 != NULL) {
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
@@ -235,7 +236,7 @@ _load_long (long *destination, char *keyword, char *in_line)
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
-	str_ptr1 = (char *) strcasestr (in_line, keyword);
+	str_ptr1 = (char *) slurm_strcasestr (in_line, keyword);
 	if (str_ptr1 != NULL) {
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
@@ -293,7 +294,7 @@ load_string  (char **destination, char *keyword, char *in_line)
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
 
-	str_ptr1 = (char *) strcasestr (in_line, keyword);
+	str_ptr1 = (char *) slurm_strcasestr (in_line, keyword);
 	if (str_ptr1 != NULL) {
 		int quoted = 0;
 		str_len1 = strlen (keyword);
