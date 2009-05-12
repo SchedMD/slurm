@@ -134,6 +134,23 @@ slurm_shutdown (uint16_t options)
 	return _send_message_controller(PRIMARY_CONTROLLER,   &req_msg);
 }
 
+/*
+ * slurm_takeover - issue RPC to have Slurm backup controller take over the 
+ *                  primary controller. REQUEST_CONTROL is sent by the backup 
+ *                  to the primary controller to take control
+ * RET 0 or a slurm error code
+ */
+int
+slurm_takeover ( void )
+{
+	slurm_msg_t req_msg;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type     = REQUEST_TAKEOVER;
+		
+	return _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
+}
+
 int
 _send_message_controller (enum controller_id dest, slurm_msg_t *req) 
 {
