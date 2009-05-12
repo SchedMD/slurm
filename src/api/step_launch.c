@@ -1133,6 +1133,40 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 /**********************************************************************
  * Task launch functions
  **********************************************************************/
+
+/* Since the slurmd usually controls the finishing of tasks to the
+ * controller this needs to happen here if there was a problem with a
+ * task launch to the slurmd since there will not be cleanup of this
+ * anywhere else.
+ */
+static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
+{
+	slurm_msg_t req;
+	step_complete_msg_t msg;
+	int rc = -1;
+	int nodeid = NO_VAL;
+
+#ifndef HAVE_FRONT_END
+	nodeid = nodelist_find(ctx->step_resp->step_layout->node_list, node);
+#else
+	nodeid = 0;
+#endif
+	msg.job_id = ctx->job_id;
+	msg.job_step_id = ctx->step_resp->job_step_id;
+
+	msg.range_first = msg.range_last = nodeid;
+	msg.step_rc = ret_code;
+
+	slurm_msg_t_init(&req);
+	req.msg_type = REQUEST_STEP_COMPLETE;
+	req.data = &msg;
+	
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+	       return SLURM_ERROR;
+	
+	return SLURM_SUCCESS;
+}
+
 static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
 			 uint32_t timeout)
@@ -1174,13 +1208,17 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		      rc, ret_data->err, ret_data->type);
 		if (rc != SLURM_SUCCESS) {
 			if (ret_data->err)
-				errno = ret_data->err;
+				tot_rc = ret_data->err;
 			else
-				errno = rc;
-			error("Task launch failed on node %s: %m",
+				tot_rc = rc;
+	
+			_fail_step_tasks(ctx, ret_data->node_name, tot_rc);
+
+			errno = tot_rc;
+			tot_rc = SLURM_ERROR;
+			error("Task launch for %u.%u failed on node %s: %m",
+			      ctx->job_id, ctx->step_resp->job_step_id,
 			      ret_data->node_name);
-			rc = SLURM_ERROR;
-			tot_rc = rc;
 		} else {
 #if 0 /* only for debugging, might want to make this a callback */
 			errno = ret_data->err;

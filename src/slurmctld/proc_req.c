@@ -1928,12 +1928,6 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		req->job_id, req->job_step_id,
 		req->range_first, req->range_last, 
 		req->step_rc, (unsigned int) uid);
-	if (!validate_super_user(uid)) {
-		/* Don't trust RPC, it is not from slurmstepd */
-		error("Invalid user %d attempted REQUEST_STEP_COMPLETE",
-		      uid);
-		return;
-	}
 
 	lock_slurmctld(job_write_lock);
 	rc = step_partial_comp(req, uid, &rem, &step_rc);
