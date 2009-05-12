@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- Added SLURM_DISTIRBUTION to env for salloc.
  -- Add support for "scontrol takeover" command for backup controller to 
     assume control immediately. Patch from Matthieu Hautreux, CEA.
+ -- If srun is unable to communicate with the slurmd tasks are now marked as 
+    failed with the controller.
 
 * Changes in SLURM 2.0.0-rc1
 ==============================

@@ -2089,9 +2089,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
-	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
-		error("Security violation, JOB_COMPLETE RPC from uid %d",
-		      uid);
+	if ((job_ptr->user_id != uid) && !validate_super_user(uid)) {
+		error("Security violation, JOB_COMPLETE RPC for job %u "
+		      "from uid %u",
+		      job_ptr->job_id, (unsigned int) uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 	if (job_ptr->job_state & JOB_COMPLETING)

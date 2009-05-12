@@ -1883,6 +1883,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		info("step_partial_comp: JobID=%u pending", req->job_id);
 		return ESLURM_JOB_PENDING;
 	}
+
 	if ((!validate_super_user(uid)) && (uid != job_ptr->user_id)) {
 		/* Normally from slurmstepd, from srun on some failures */
 		error("Security violation: "
