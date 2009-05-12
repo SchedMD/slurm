@@ -52,7 +52,7 @@ print_header $test_id
 ################################################################
 
 proc sstat_job { soption } {
-	global sstat
+	global number sstat
 	set debug	0
 	set exit_code   0
 	set matches     0
@@ -173,7 +173,7 @@ proc sstat_job { soption } {
 
 	spawn $sstat -$soption 
 	expect {
-		-re "slurm 1.4." {
+		-re "slurm ($number).($number)." {
 			if {$debug} {send_user "\nmatch11\n"}
 			incr matches
 			exp_continue
