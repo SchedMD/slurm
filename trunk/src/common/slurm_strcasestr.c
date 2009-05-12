@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "slurm_strcasestr.h"
+#include <string.h>
 #include <ctype.h>
 
 /* case insensitve version of strstr() */
