@@ -7,7 +7,7 @@
  *  executed. Many parameters are available to control this mode of operation.
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -110,12 +110,14 @@ static void _do_power_work(void)
 
 		if (susp_state)
 			susp_total++;
-		if (susp_state
-		&&  ((suspend_rate == 0) || (suspend_cnt <= suspend_rate))
-		&&  ((base_state == NODE_STATE_ALLOCATED)
-		||   (node_ptr->last_idle > (now - idle_time)))) {
-			if (wake_node_bitmap == NULL)
-				wake_node_bitmap = bit_alloc(node_record_count);
+		if (susp_state &&
+		    ((suspend_rate == 0) || (suspend_cnt <= suspend_rate)) &&
+		    ((base_state == NODE_STATE_ALLOCATED) ||
+		     (node_ptr->last_idle > (now - idle_time)))) {
+			if (wake_node_bitmap == NULL) {
+				wake_node_bitmap = 
+					bit_alloc(node_record_count);
+			}
 			wake_cnt++;
 			suspend_cnt++;
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
@@ -124,12 +126,12 @@ static void _do_power_work(void)
 			node_ptr->last_response = now;
 			bit_set(wake_node_bitmap, i);
 		}
-		if ((susp_state == 0)
-		&&  ((resume_rate == 0) || (resume_cnt <= resume_rate))
-		&&  (base_state == NODE_STATE_IDLE)
-		&&  (comp_state == 0)
-		&&  (node_ptr->last_idle < (now - idle_time))
-		&&  ((exc_node_bitmap == NULL) || 
+		if ((susp_state == 0)					&&
+		    ((resume_rate == 0) || (resume_cnt <= resume_rate))	&&
+		    (base_state == NODE_STATE_IDLE)			&&
+		    (comp_state == 0)					&&
+		    (node_ptr->last_idle < (now - idle_time))		&&
+		    ((exc_node_bitmap == NULL) || 
 		     (bit_test(exc_node_bitmap, i) == 0))) {
 			if (sleep_node_bitmap == NULL) {
 				sleep_node_bitmap = 
@@ -200,8 +202,10 @@ static void _re_wake(void)
 		    (base_state != NODE_STATE_FUTURE) &&
 		    ((node_ptr->node_state & NODE_STATE_DRAIN) == 0) &&
 		    ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0)) {
-			if (wake_node_bitmap == NULL)
-				wake_node_bitmap = bit_alloc(node_record_count);
+			if (wake_node_bitmap == NULL) {
+				wake_node_bitmap = 
+					bit_alloc(node_record_count);
+			}
 			bit_set(wake_node_bitmap, last_inx);
 		}
 		last_inx++;
@@ -270,9 +274,9 @@ static pid_t _run_prog(char *prog, char *arg)
 			close(i);
 		execl(program, arg0, arg1, NULL);
 		exit(1);
-	} else if (child < 0)
+	} else if (child < 0) {
 		error("fork: %m");
-	else {
+	} else {
 		/* save the pid */
 		for (i=0; i<PID_CNT; i++) {
 			if (child_pid[i])
@@ -416,7 +420,8 @@ static bool _valid_prog(char *file_name)
 	struct stat buf;
 
 	if (file_name[0] != '/') {
-		debug("power_save program %s not absolute pathname", file_name);
+		debug("power_save program %s not absolute pathname", 
+		     file_name);
 		return false;
 	}
 
@@ -462,16 +467,16 @@ extern void *init_power_save(void *arg)
 			continue;
 		}
 
-		if ((last_config != slurmctld_conf.last_update)
-		&&  (_init_power_config()))
+		if ((last_config != slurmctld_conf.last_update) &&
+		    (_init_power_config()))
 			goto fini;
 
 		/* Only run every 60 seconds or after
 		 * a node state change, whichever 
 		 * happens first */
 		now = time(NULL);
-		if ((last_node_update < last_power_scan)
-		&&  (now < (last_power_scan + 60)))
+		if ((last_node_update < last_power_scan) &&
+		    (now < (last_power_scan + 60)))
 			continue;
 
 		lock_slurmctld(node_write_lock);
