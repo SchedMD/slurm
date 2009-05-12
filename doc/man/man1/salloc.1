@@ -377,7 +377,9 @@ Multiple license names should be comma separated (e.g.
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
 <\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR>
-Specify an alternate distribution method for remote processes.
+Specify an alternate distribution method for remote processes.  In
+salloc this only sets environment variables that will be used by
+subsequent srun requests.
 .RS
 .TP
 .B block
