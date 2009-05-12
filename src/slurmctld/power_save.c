@@ -216,7 +216,7 @@ static void _re_wake(void)
 #if _DEBUG
 			info("power_save: rewaking nodes %s", nodes);
 #else
-			debug("power_save: rewaking nodes %s", nodes);
+			verbose("power_save: rewaking nodes %s", nodes);
 #endif
 			_run_prog(resume_prog, nodes);	
 		} else
@@ -231,7 +231,7 @@ static void _do_resume(char *host)
 #if _DEBUG
 	info("power_save: waking nodes %s", host);
 #else
-	debug("power_save: waking nodes %s", host);
+	verbose("power_save: waking nodes %s", host);
 #endif
 	_run_prog(resume_prog, host);	
 }
@@ -241,7 +241,7 @@ static void _do_suspend(char *host)
 #if _DEBUG
 	info("power_save: suspending nodes %s", host);
 #else
-	debug("power_save: suspending nodes %s", host);
+	verbose("power_save: suspending nodes %s", host);
 #endif
 	_run_prog(suspend_prog, host);	
 }
