@@ -1861,12 +1861,13 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
  * step_partial_comp - Note the completion of a job step on at least
  *	some of its nodes
  * IN req     - step_completion_msg RPC from slurmstepd
+ * IN uid     - UID issuing the request
  * OUT rem    - count of nodes for which responses are still pending
  * OUT max_rc - highest return code for any step thus far
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int step_partial_comp(step_complete_msg_t *req, int *rem, 
-			     uint32_t *max_rc)
+extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, 
+			     int *rem, uint32_t *max_rc)
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
@@ -1882,6 +1883,14 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		info("step_partial_comp: JobID=%u pending", req->job_id);
 		return ESLURM_JOB_PENDING;
 	}
+	if ((!validate_super_user(uid)) && (uid != job_ptr->user_id)) {
+		/* Normally from slurmstepd, from srun on some failures */
+		error("Security violation: "
+		      "REQUEST_STEP_COMPLETE RPC for job %u from uid=%u",
+		      job_ptr->job_id, (unsigned int) uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
 	if (step_ptr == NULL) {
 		info("step_partial_comp: StepID=%u.%u invalid", 
