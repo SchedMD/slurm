@@ -255,6 +255,10 @@ int srun(int ac, char **av)
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
 
+		if (opt.begin != 0)
+			error("--begin is ignored because nodes"
+				" are already allocated.");
+
 		if (!job || create_job_step(job, false) < 0)
 			exit(1);
 	} else {
@@ -778,7 +782,7 @@ static int _run_srun_script (srun_job_t *job, char *script)
 		if (waitpid(cpid, &status, 0) < 0) {
 			if (errno == EINTR)
 				continue;
-			error("waidpid: %m");
+			error("waitpid: %m");
 			return 0;
 		} else
 			return status;
