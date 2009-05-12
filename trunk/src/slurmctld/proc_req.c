@@ -1190,8 +1190,8 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	/* init */
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_COMPLETE_JOB_ALLOCATION from "
-		"uid=%u, JobId=%u rc=%d",
-		uid, comp_msg->job_id, comp_msg->job_rc);
+	       "uid=%u, JobId=%u rc=%d",
+	       uid, comp_msg->job_id, comp_msg->job_rc);
 
 	lock_slurmctld(job_write_lock);
 
@@ -1235,8 +1235,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	/* init */
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT from "
-		"uid=%u JobId=%u",
-		uid, comp_msg->job_id);
+	       "uid=%u JobId=%u",
+	       uid, comp_msg->job_id);
 
 	if (!validate_super_user(uid)) {
 		/* Only the slurmstepd can complete a batch script */
