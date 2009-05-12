@@ -10,8 +10,8 @@ Note that resource reservations are not compatable with SLURM's
 gang scheduler plugin since the termination time of running jobs
 is not possible to accurately predict.</p>
 
-<p>Reservations can be created, updated, or destroyed only by user root 
-using the <i>scontrol</i> command. 
+<p>Reservations can be created, updated, or destroyed only by user root
+or the configured <i>SlurmUser</i> using the <i>scontrol</i> command. 
 The <i>scontrol</i>, <i>smap</i> and <i>sview</i> commands can be used
 to view reservations. 
 The man pages for the various commands contain details.</p>
@@ -153,7 +153,7 @@ made more flexible to accept multiple features with AND or OR operators.</li>
 </ol>
 
 
-<p style="text-align: center;">Last modified 26 February 2009</p>
+<p style="text-align: center;">Last modified 12 May 2009</p>
 
 <!--#include virtual="footer.txt"-->
 
