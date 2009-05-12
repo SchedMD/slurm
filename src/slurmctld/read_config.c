@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -840,10 +840,10 @@ int read_slurm_conf(int recover)
 
 	_build_bitmaps_pre_select();
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
-	     != SLURM_SUCCESS) 
-	    || (select_g_block_init(part_list) != SLURM_SUCCESS) 
-	    || (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) 
-	    || (select_g_job_init(job_list) != SLURM_SUCCESS)) {
+	     != SLURM_SUCCESS)						||
+	    (select_g_block_init(part_list) != SLURM_SUCCESS)		||
+	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS)	||
+	    (select_g_job_init(job_list) != SLURM_SUCCESS)) {
 		fatal("failed to initialize node selection plugin state, "
 		      "Clean start required.");
 	}
@@ -909,10 +909,17 @@ int read_slurm_conf(int recover)
 /* Restore node state and size information from saved records.
  * If a node was re-configured to be down or drained, we set those states */
 static int _restore_node_state(struct node_record *old_node_table_ptr, 
-				int old_node_record_count)
+			       int old_node_record_count)
 {
 	struct node_record *node_ptr;
 	int i, rc = SLURM_SUCCESS;
+	hostset_t hs = NULL;
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
+	bool power_save_mode = false;
+
+	if (conf->suspend_program && conf->resume_program)
+		power_save_mode = true;
+	slurm_conf_unlock();
 
 	for (i = 0; i < old_node_record_count; i++) {
 		uint16_t drain_flag = false, down_flag = false;
@@ -920,7 +927,8 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 		if (node_ptr == NULL)
 			continue;
 
-		if ((node_ptr->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN)
+		if ((node_ptr->node_state & NODE_STATE_BASE) == 
+		    NODE_STATE_DOWN)
 			down_flag = true;
 		if (node_ptr->node_state & NODE_STATE_DRAIN)
 			drain_flag = true;
@@ -931,7 +939,15 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 		}
 		if (drain_flag)
 			node_ptr->node_state |= NODE_STATE_DRAIN; 
-			
+		if ((node_ptr->node_state & NODE_STATE_POWER_SAVE) &&
+		    (!power_save_mode)) {
+			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			if (hs)
+				hostset_insert(hs, node_ptr->name);
+			else
+				hs = hostset_create(node_ptr->name);
+		}
+
 		node_ptr->last_response = old_node_table_ptr[i].last_response;
 		if (old_node_table_ptr[i].port != node_ptr->config_ptr->cpus) {
 			rc = ESLURM_NEED_RESTART;
@@ -965,6 +981,13 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 			node_ptr->os = old_node_table_ptr[i].os;
 			old_node_table_ptr[i].os = NULL;
 		}
+	}
+
+	if (hs) {
+		char node_names[128];
+		hostset_ranged_string(hs, sizeof(node_names), node_names);
+		info("Cleared POWER_SAVE flag from nodes %s", node_names);
+		hostset_destroy(hs);
 	}
 	return rc;
 }

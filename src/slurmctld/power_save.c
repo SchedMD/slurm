@@ -345,36 +345,38 @@ static int _init_power_config(void)
 	slurm_conf_unlock();
 
 	if (idle_time < 0) {	/* not an error */
-		debug("power_save module disabled, idle_time < 0");
+		debug("power_save module disabled, SuspendTime < 0");
 		return -1;
 	}
 	if (suspend_rate < 1) {
-		error("power_save module disabled, suspend_rate < 1");
+		error("power_save module disabled, SuspendRate < 1");
 		return -1;
 	}
 	if (resume_rate < 1) {
-		error("power_save module disabled, resume_rate < 1");
+		error("power_save module disabled, ResumeRate < 1");
 		return -1;
 	}
-	if (suspend_prog == NULL)
-		info("WARNING: power_save module has NULL suspend program");
-	else if (!_valid_prog(suspend_prog)) {
-		error("power_save module disabled, invalid suspend program %s",
+	if (suspend_prog == NULL) {
+		error("power_save module disabled, NULL SuspendProgram");
+		return -1;
+	} else if (!_valid_prog(suspend_prog)) {
+		error("power_save module disabled, invalid SuspendProgram %s",
 			suspend_prog);
 		return -1;
 	}
-	if (resume_prog == NULL)
-		info("WARNING: power_save module has NULL resume program");
-	else if (!_valid_prog(resume_prog)) {
-		error("power_save module disabled, invalid resume program %s",
+	if (resume_prog == NULL) {
+		error("power_save module disabled, NULL ResumeProgram");
+		return -1;
+	} else if (!_valid_prog(resume_prog)) {
+		error("power_save module disabled, invalid ResumeProgram %s",
 			resume_prog);
 		return -1;
 	}
 
-	if (exc_nodes
-	&&  (node_name2bitmap(exc_nodes, false, &exc_node_bitmap))) {
+	if (exc_nodes &&
+	    (node_name2bitmap(exc_nodes, false, &exc_node_bitmap))) {
 		error("power_save module disabled, "
-			"invalid excluded nodes %s", exc_nodes);
+			"invalid SuspendExcNodes %s", exc_nodes);
 		return -1;
 	}
 
@@ -389,7 +391,7 @@ static int _init_power_config(void)
 			part_ptr = find_part_record(one_part);
 			if (!part_ptr) {
 				error("power_save module disabled, "
-					"invalid excluded partition %s",
+					"invalid SuspendExcPart %s",
 					one_part);
 				rc = -1;
 				break;
@@ -468,8 +470,11 @@ extern void *init_power_save(void *arg)
 		}
 
 		if ((last_config != slurmctld_conf.last_update) &&
-		    (_init_power_config()))
+		    (_init_power_config())) {
+			info("power_save mode has been disabled due to "
+			     "configuration changes");
 			goto fini;
+		}
 
 		/* Only run every 60 seconds or after
 		 * a node state change, whichever 
