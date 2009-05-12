@@ -1677,9 +1677,8 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 	if (error_code || (job_ptr == NULL) || (job_ptr->select_job == NULL)) {
 		if (do_unlock)
 			unlock_slurmctld(job_read_lock);
-		debug2("_slurm_rpc_job_alloc_info_lite: JobId=%u, uid=%u: %s",
-			job_info_msg->job_id, uid, 
-			slurm_strerror(error_code));
+		info("_slurm_rpc_job_alloc_info_lite: JobId=%u, uid=%u: %s",
+		     job_info_msg->job_id, uid, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		info("_slurm_rpc_job_alloc_info_lite JobId=%u NodeList=%s %s",
