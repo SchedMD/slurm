@@ -424,6 +424,13 @@ extern int load_all_node_state ( bool state_only )
 	time_t time_stamp, now = time(NULL);
 	Buf buffer;
 	char *ver_str = NULL;
+	hostset_t hs = NULL;
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
+	bool power_save_mode = false;
+
+	if (conf->resume_program && conf->resume_program[0])
+		power_save_mode = true;
+	slurm_conf_unlock();
 
 	/* read the file */
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -529,8 +536,14 @@ extern int load_all_node_state ( bool state_only )
 				if (node_state & NODE_STATE_FAIL)
 					node_ptr->node_state |=
 						NODE_STATE_FAIL;
-				if (node_state & NODE_STATE_POWER_SAVE)
-					node_ptr->node_state = node_state;
+				if (node_state & NODE_STATE_POWER_SAVE) {
+					if (power_save_mode)
+						node_ptr->node_state=node_state;
+					else if (hs)
+						hostset_insert(hs, node_name);
+					else
+						hs = hostset_create(node_name);
+				}
 			}
 			if (node_ptr->reason == NULL)
 				node_ptr->reason = reason;
@@ -540,6 +553,14 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->features = features;
 		} else {
 			node_cnt++;
+			if ((node_state & NODE_STATE_POWER_SAVE) && 
+			    (!power_save_mode)) {
+				node_state &= (~NODE_STATE_POWER_SAVE);
+				if (hs)
+					hostset_insert(hs, node_name);
+				else
+					hs = hostset_create(node_name);
+			}
 			node_ptr->node_state    = node_state;
 			xfree(node_ptr->reason);
 			node_ptr->reason        = reason;
@@ -559,15 +580,20 @@ extern int load_all_node_state ( bool state_only )
 		xfree (node_name);
 	}
 
-	info ("Recovered state of %d nodes", node_cnt);
+fini:	info("Recovered state of %d nodes", node_cnt);
+	if (hs) {
+		char node_names[128];
+		hostset_ranged_string(hs, sizeof(node_names), node_names);
+		info("Cleared POWER_SAVE flag from nodes %s", node_names);
+		hostset_destroy(hs);
+	}
 	free_buf (buffer);
 	return error_code;
 
 unpack_error:
-	error ("Incomplete node data checkpoint file");
-	info("Recovered state of %d nodes", node_cnt);
-	free_buf (buffer);
-	return EFAULT;
+	error("Incomplete node data checkpoint file");
+	error_code = EFAULT;
+	goto fini;
 }
 
 /* 
