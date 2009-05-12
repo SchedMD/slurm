@@ -58,6 +58,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/slurm_strcasestr.h"
 
 /*
  * Local data
@@ -7277,16 +7278,16 @@ extern uint16_t str_2_classification(char *class)
 	if(!class)
 		return type;
 
-	if(strcasestr(class, "capac"))
+	if(slurm_strcasestr(class, "capac"))
 		type = ACCT_CLASS_CAPACITY;
-	else if(strcasestr(class, "capab"))
+	else if(slurm_strcasestr(class, "capab"))
 		type = ACCT_CLASS_CAPABILITY;
-	else if(strcasestr(class, "capap"))
+	else if(slurm_strcasestr(class, "capap"))
 		type = ACCT_CLASS_CAPAPACITY;
 	
-	if(strcasestr(class, "*")) 
+	if(slurm_strcasestr(class, "*")) 
 		type |= ACCT_CLASSIFIED_FLAG; 
-	else if(strcasestr(class, "class")) 
+	else if(slurm_strcasestr(class, "class")) 
 		type |= ACCT_CLASSIFIED_FLAG;
 	
 	return type;
