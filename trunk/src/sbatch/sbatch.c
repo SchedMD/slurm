@@ -127,7 +127,10 @@ int main(int argc, char *argv[])
 		
 		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY)
 			msg = "Slurm job queue full, sleeping and retrying.";
-		else if (errno == EAGAIN) {
+		else if (errno == ESLURM_NODES_BUSY) {
+			msg = "Job step creation temporarily disabled, "
+			      "retrying";
+		} else if (errno == EAGAIN) {
 			msg = "Slurm temporarily unable to accept job, "
 			      "sleeping and retrying.";
 		} else

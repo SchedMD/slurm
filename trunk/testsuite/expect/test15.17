@@ -33,7 +33,6 @@
 ############################################################################
 source ./globals
 
-slow_kill 45984
 set test_id      "15.17"
 set file_in      "test$test_id.input"
 set exit_code    0
