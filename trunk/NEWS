@@ -29,6 +29,9 @@ documents those changes that are of interest to users and admins.
  -- If sbatch is used to launch a job step within an existing allocation (as
     used by LSF) and the required node is powered down, print the message
     "Job step creation temporarily disabled, retrying", sleep, and retry.
+ -- Configuration parameter ResumeDelay added to control how much time must 
+    after a node has been suspended before resume it (e.g. powering it back 
+    up).
 
 * Changes in SLURM 2.0.0-rc1
 ==============================

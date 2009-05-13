@@ -217,6 +217,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"PropagateResourceLimits", S_P_STRING},
+	{"ResumeDelay", S_P_UINT16},
 	{"ResumeProgram", S_P_STRING},
 	{"ResumeRate", S_P_UINT16},
 	{"ResvOverRun", S_P_UINT16},
@@ -1426,6 +1427,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
+	ctl_conf_ptr->resume_delay		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->resume_program);
 	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->resv_over_run		= 0;
@@ -2193,6 +2195,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_uint16(&conf->resv_over_run, "ResvOverRun", hashtbl);
 
+	if (!s_p_get_uint16(&conf->resume_delay, "ResumeDelay", hashtbl))
+		conf->resume_delay = DEFAULT_RESUME_DELAY;
 	s_p_get_string(&conf->resume_program, "ResumeProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->resume_rate, "ResumeRate", hashtbl))
 		conf->resume_rate = DEFAULT_RESUME_RATE;
