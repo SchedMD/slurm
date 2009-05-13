@@ -66,12 +66,12 @@
 pid_t  child_pid[PID_CNT];	/* pid of process		*/
 time_t child_time[PID_CNT];	/* start time of process	*/
 
-int idle_time, suspend_rate, resume_rate;
+int idle_time, suspend_rate, resume_delay, resume_rate;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
-time_t last_config = (time_t) 0;
+time_t last_config = (time_t) 0, last_suspend = (time_t) 0;
 
-bitstr_t *exc_node_bitmap = NULL;
+bitstr_t *exc_node_bitmap = NULL, *suspend_node_bitmap = NULL;
 int suspend_cnt, resume_cnt;
 
 static void  _clear_power_config(void);
@@ -93,6 +93,7 @@ static void _do_power_work(void)
 	uint16_t base_state, comp_state, susp_state;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
+	bool run_suspend = false;
 
 	/* Set limit on counts of nodes to have state changed */
 	delta_t = now - last_work_scan;
@@ -104,6 +105,17 @@ static void _do_power_work(void)
 		suspend_cnt *= rate;
 		resume_cnt  *= rate;
 	}
+
+	if (now > (last_suspend + resume_delay)) {
+		/* ready to start another round of node suspends */
+		run_suspend = true;
+		if (last_suspend) {
+			bit_nclear(suspend_node_bitmap, 0, 
+				   (node_record_count - 1));
+			last_suspend = (time_t) 0;
+		}
+	}
+
 	last_work_scan = now;
 
 	/* Build bitmaps identifying each node which should change state */
@@ -117,6 +129,7 @@ static void _do_power_work(void)
 			susp_total++;
 		if (susp_state &&
 		    ((suspend_rate == 0) || (suspend_cnt <= suspend_rate)) &&
+		    (bit_test(suspend_node_bitmap, i) == 0)		   &&
 		    ((base_state == NODE_STATE_ALLOCATED) ||
 		     (node_ptr->last_idle > (now - idle_time)))) {
 			if (wake_node_bitmap == NULL) {
@@ -131,7 +144,8 @@ static void _do_power_work(void)
 			node_ptr->last_response = now;
 			bit_set(wake_node_bitmap, i);
 		}
-		if ((susp_state == 0)					&&
+		if (run_suspend 					&& 
+		    (susp_state == 0)					&&
 		    ((resume_rate == 0) || (resume_cnt <= resume_rate))	&&
 		    (base_state == NODE_STATE_IDLE)			&&
 		    (comp_state == 0)					&&
@@ -146,7 +160,9 @@ static void _do_power_work(void)
 			resume_cnt++;
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
 			bit_clear(power_node_bitmap, i);
-			bit_set(sleep_node_bitmap, i);
+			bit_set(sleep_node_bitmap,   i);
+			bit_set(suspend_node_bitmap, i);
+			last_suspend = now;
 		}
 	}
 	if ((now - last_log) > 600) {
@@ -203,11 +219,12 @@ static void _re_wake(void)
 	for (i=0; i<lim; i++) {
 		node_ptr = &node_record_table_ptr[last_inx];
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if ((base_state != NODE_STATE_DOWN)			&&
-		    (base_state != NODE_STATE_FUTURE)			&&
-		    (node_ptr->node_state & NODE_STATE_NO_RESPOND)	&&
-		    ((node_ptr->node_state & NODE_STATE_DRAIN) == 0)	&&
-		    ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0)) {
+		if ((base_state != NODE_STATE_DOWN)			  &&
+		    (base_state != NODE_STATE_FUTURE)			  &&
+		    (node_ptr->node_state & NODE_STATE_NO_RESPOND)	  &&
+		    ((node_ptr->node_state & NODE_STATE_DRAIN) == 0)	  &&
+		    ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) &&
+		    (bit_test(suspend_node_bitmap, i) == 0)) {
 			if (wake_node_bitmap == NULL) {
 				wake_node_bitmap = 
 					bit_alloc(node_record_count);
@@ -352,6 +369,7 @@ static int _init_power_config(void)
 	last_config   = slurmctld_conf.last_update;
 	idle_time     = conf->suspend_time - 1;
 	suspend_rate  = conf->suspend_rate;
+	resume_delay  = conf->resume_delay;
 	resume_rate   = conf->resume_rate;
 	_clear_power_config();
 	if (conf->suspend_program)
@@ -481,6 +499,10 @@ extern void *init_power_save(void *arg)
 	if (_init_power_config())
 		goto fini;
 
+	suspend_node_bitmap = bit_alloc(node_record_count);
+	if (suspend_node_bitmap == NULL)
+		fatal("power_save: malloc error");
+
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 
@@ -510,5 +532,6 @@ extern void *init_power_save(void *arg)
 	}
 
 fini:	_clear_power_config();
+	FREE_NULL_BITMAP(suspend_node_bitmap);
 	return NULL;
 }
