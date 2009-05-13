@@ -10406,17 +10406,17 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	slurm_mutex_lock(&rollup_lock);
 	if(check_time < global_last_rollup) {
 		if(job_ptr->start_time)
-			info("Need to reroll usage from %s since job %u "
+			info("Need to reroll usage from %sJob %u "
 			     "from %s started then and we are just "
 			     "now hearing about it.",
 			     ctime(&check_time), job_ptr->job_id, cluster_name);
 		else if(job_ptr->details->begin_time) 
-			info("Need to reroll usage from %s since job %u "
+			info("Need to reroll usage from %sJob %u "
 			     "from %s became eligible then and we are just "
 			     "now hearing about it.",
 			     ctime(&check_time), job_ptr->job_id, cluster_name);
 		else
-			info("Need to reroll usage from %s since job %u "
+			info("Need to reroll usage from %sJob %u "
 			     "from %s was submitted then and we are just "
 			     "now hearing about it.",
 			     ctime(&check_time), job_ptr->job_id, cluster_name);
