@@ -269,6 +269,7 @@ function displayfile()
    "# POWER SAVE SUPPORT FOR IDLE NODES (optional) <br>" +
    "#SuspendProgram= <br>" +
    "#ResumeProgram= <br>" +
+   "#ResumeDelay= <br>" +
    "#ResumeRate= <br>" +
    "#SuspendExcNodes= <br>" +
    "#SuspendExcParts= <br>" +
@@ -839,6 +840,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 9 April 2009</P>
+Last modified 13 May 2009</P>
 </BODY>
 

@@ -338,6 +338,8 @@ void slurm_print_ctl_conf ( FILE* out,
                 slurm_ctl_conf_ptr->propagate_rlimits_except);
 	fprintf(out, "ResumeProgram           = %s\n", 
 		slurm_ctl_conf_ptr->resume_program);
+	fprintf(out, "ResumeDelay             = %u sec\n", 
+		slurm_ctl_conf_ptr->resume_delay);
 	fprintf(out, "ResumeRate              = %u nodes/min\n", 
 		slurm_ctl_conf_ptr->resume_rate);
 	if (slurm_ctl_conf_ptr->resv_over_run == (uint16_t) INFINITE)

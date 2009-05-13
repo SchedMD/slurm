@@ -989,6 +989,13 @@ resource limits to propagate with the srun commands "\-\-propagate" option.
 See \fBPropagateResourceLimits\fR above for a list of valid limit names.
 
 .TP
+\fBResumeDelay\fR
+Minimum time (in second) between when a node is suspended before attempting
+to resume it (e.g. power it back up).
+A value of zero will avoid any delay.
+The default value is 10 seconds.
+
+.TP
 \fBResumeProgram\fR
 SLURM supports a mechanism to reduce power consumption on nodes that 
 remain idle for an extended period of time. 

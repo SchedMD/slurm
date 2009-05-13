@@ -108,6 +108,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   topology.conf, and https://computing.llnl.gov/linux/slurm/topology.html
 * SrunIOTimeout has been added to optionally ping srun's tasks for better 
   fault tolerance (e.g. killed and restarteed SLURM daemons on compute node).
+* ResumeDelay added to control how much time after a node has been suspended
+  before resume it (e.g. powering it back up).
 * BLUEGENE - Added option DenyPassthrough in the bluegene.conf.  Can be set
   to any combination of X,Y,Z to not allow passthroughs when running in 
   dynamic layout mode. (see "man bluegene.conf" for details)

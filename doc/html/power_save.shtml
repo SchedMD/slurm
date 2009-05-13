@@ -37,6 +37,11 @@ A value of zero results in no limits being imposed.
 The default value is 60.
 Use this to prevent rapid drops in power requirements.</li>
 
+<li><b>ResumeDelay</b>:
+Minimum delay between when a node is suspended before attempting
+to resume it (e.g. power it back up).
+The default value is 10 seconds.
+
 <li><b>ResumeRate</b>:
 Maximum number of nodes to be removed from power saving mode 
 per minute. 
@@ -58,7 +63,14 @@ The program executes as <i>SlurmUser</i> (as configured in
 <i>slurm.conf</i>). 
 The argument to the program will be the names of nodes to 
 be removed from power savings mode (using SLURM's hostlist 
-expression format).</li>
+expression format).
+This program may use the <i>scontrol show node</i> command
+to insure that a node has booted and the <i>slurmd</i> 
+daemon started. 
+If the <i>slurmd</i> daemon fails to respond within the
+configured <b>SlurmdTimeout</b> value, the node will be 
+placed in a DOWN state and the job requesting the node
+will be requeued.</li>
 
 <li><b>SuspendExcNodes</b>:
 List of nodes to never place in power saving mode. 
@@ -112,6 +124,6 @@ nodes are in power save mode using messages of this sort:
 You can also configure SLURM without SuspendProgram or ResumeProgram values
 to assess the potential impact of power saving mode before enabling it.</p>
 
-<p style="text-align:center;">Last modified 4 May 2009</p>
+<p style="text-align:center;">Last modified 13 May 2009</p>
 
 <!--#include virtual="footer.txt"-->
