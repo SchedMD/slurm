@@ -1,12 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.0.0
-==============================
+* Changes in SLURM 2.0.0-rc2
+============================
  -- Change fanout logic to start on calling node instead of first node in 
     message nodelist.
  -- Fix bug so that smap builds properly on Sun Constellation system.
- -- Filter white-space out from node features.
+ -- Filter white-space out from node feature specification.
  -- Fixed issue with duration not being honored when updating start time in 
     reservations.
  -- Fix bug in sched/wiki and sched/wiki2 plugins for reporting job resource
@@ -24,8 +24,7 @@ documents those changes that are of interest to users and admins.
     the accounting.
  -- Clear node's POWER_SAVE flag if configuration changes to one lacking a
     ResumeProgram.
- -- Extend a job's time limit as appropriate due to delays powering up idle
-    nodes.
+ -- Extend a job's time limit as appropriate due to delays powering up nodes.
  -- If sbatch is used to launch a job step within an existing allocation (as
     used by LSF) and the required node is powered down, print the message
     "Job step creation temporarily disabled, retrying", sleep, and retry.
@@ -34,7 +33,7 @@ documents those changes that are of interest to users and admins.
     up).
 
 * Changes in SLURM 2.0.0-rc1
-==============================
+============================
  -- Fix bug in preservation of advanced reservations when slurmctld restarts.
  -- Updated perlapi to match correctly with slurm.h structures
  -- Do not install the srun command on BlueGene systems (mpirun must be used to
