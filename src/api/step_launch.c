@@ -1146,11 +1146,9 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	int rc = -1;
 	int nodeid = NO_VAL;
 
-#ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(ctx->step_resp->step_layout->node_list, node);
-#else
-	nodeid = 0;
-#endif
+
+	memset(&msg, 0, sizeof(step_complete_msg_t));
 	msg.job_id = ctx->job_id;
 	msg.job_step_id = ctx->step_resp->job_step_id;
 
