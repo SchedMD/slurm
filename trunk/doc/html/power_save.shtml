@@ -41,7 +41,7 @@ Use this to prevent rapid drops in power requirements.</li>
 Minimum delay between when a node is suspended before attempting
 to resume it (e.g. power it back up).
 Its value should be no larger than <b>SlurmdTimeout</b>.
-The default value is 10 seconds.
+The default value is 30 seconds.
 
 <li><b>ResumeRate</b>:
 Maximum number of nodes to be removed from power saving mode 
