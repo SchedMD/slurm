@@ -8,7 +8,7 @@
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
- # Please also read the supplied file: DISCLAIMER.
+# Please also read the supplied file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
@@ -460,8 +460,7 @@ test17.17  Confirm that node sharing flags are respected  (--nodelist and
            --share options)
 test17.18  Test of job dependencies and deferred begin time (--depedency 
            and --begin options).
-test17.19  Test the launch of a batch job within an existing job allocation.
-           This logic is used by LSF
+test17.19  REMOVED
 test17.20  Test of mail options (--mail-type and --mail-user options)
 test17.21  Tests #SLURM entry functionality in a batch script
 test17.22  Test of running non-existant job, confirm timely termination.
