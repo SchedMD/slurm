@@ -1601,21 +1601,50 @@ static bool _opt_verify(void)
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
-		error("%s: invalid number of processes (-n %d)",
-		      opt.progname, opt.nprocs);
+		error("invalid number of processes (-n %d)", opt.nprocs);
 		verified = false;
 	}
 
 	if (opt.cpus_per_task < 0) {
-		error("%s: invalid number of cpus per task (-c %d)\n",
-		      opt.progname, opt.cpus_per_task);
+		error("invalid number of cpus per task (-c %d)\n",
+		      opt.cpus_per_task);
 		verified = false;
 	}
 
 	if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) || 
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-		error("%s: invalid number of nodes (-N %d-%d)\n",
-		      opt.progname, opt.min_nodes, opt.max_nodes);
+		error("invalid number of nodes (-N %d-%d)\n",
+		      opt.min_nodes, opt.max_nodes);
+		verified = false;
+	}
+
+#ifdef HAVE_BGL
+	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
+		error("invalid BlrtsImage given '%s'", opt.blrtsimage);
+		verified = false;
+	}
+#endif
+
+	if (opt.linuximage && strchr(opt.linuximage, ' ')) {
+#ifdef HAVE_BGL
+		error("invalid LinuxImage given '%s'", opt.linuximage);
+#else
+		error("invalid CnloadImage given '%s'", opt.linuximage);
+#endif
+		verified = false;
+	}
+
+	if (opt.mloaderimage && strchr(opt.mloaderimage, ' ')) {
+		error("invalid MloaderImage given '%s'", opt.mloaderimage);
+		verified = false;
+	}
+
+	if (opt.ramdiskimage && strchr(opt.ramdiskimage, ' ')) {
+#ifdef HAVE_BGL
+		error("invalid RamDiskImage given '%s'", opt.ramdiskimage);
+#else
+		error("invalid IoloadImage given '%s'", opt.ramdiskimage);
+#endif
 		verified = false;
 	}
 
