@@ -650,7 +650,8 @@ static int _check_for_booted_overlapping_blocks(
 						found_record =
 							bg_record->original;
 						remove_from_bg_list(
-							bg_lists->main, found_record);
+							bg_lists->main,
+							found_record);
 					} else {
 						debug("looking for original");
 						found_record =
@@ -661,7 +662,8 @@ static int _check_for_booted_overlapping_blocks(
 
 					if(!found_record) {
 						debug("This record %s wasn't "
-						      "found in the bg_lists->main, "
+						      "found in the "
+						      "bg_lists->main, "
 						      "no big deal, it "
 						      "probably wasn't added",
 						      bg_record->bg_block_id);
@@ -1172,7 +1174,8 @@ static int _find_best_block_match(List block_list,
 					destroy_bg_record(bg_record);
 				}
 					
-				if(job_block_test_list != bg_lists->job_running) {
+				if(job_block_test_list 
+				   != bg_lists->job_running) {
 					list_append(block_list,
 						    (*found_bg_record));
 					while((bg_record = 

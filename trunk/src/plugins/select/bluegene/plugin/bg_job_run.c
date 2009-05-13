@@ -262,7 +262,8 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 {
 	bg_record_t * bg_record = NULL;
 	
-	bg_record = find_bg_record_in_list(bg_lists->main, bg_update_ptr->bg_block_id);
+	bg_record = find_bg_record_in_list(bg_lists->main,
+					   bg_update_ptr->bg_block_id);
 	if(!bg_record) {
 		error("No block %s", bg_update_ptr->bg_block_id);
 		return;
@@ -325,7 +326,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 
 	slurm_mutex_lock(&job_start_mutex);
 		
-	bg_record = find_bg_record_in_list(bg_lists->main, bg_update_ptr->bg_block_id);
+	bg_record = find_bg_record_in_list(bg_lists->main, 
+					   bg_update_ptr->bg_block_id);
 
 	if(!bg_record) {
 		error("block %s not found in bg_lists->main",
@@ -710,7 +712,8 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 	}
 	
 			
-	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs)) != STATUS_OK) {
+	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs)) 
+	    != STATUS_OK) {
 		error("bridge_get_data(RM_JobListSize): %s", bg_err_str(rc));
 		jobs = 0;
 	}
@@ -778,7 +781,8 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 #endif
 	
 	/* remove the block's users */
-	bg_record = find_bg_record_in_list(bg_lists->main, bg_update_ptr->bg_block_id);
+	bg_record = find_bg_record_in_list(bg_lists->main,
+					   bg_update_ptr->bg_block_id);
 	if(bg_record) {
 		debug("got the record %s user is %s",
 		      bg_record->bg_block_id,
