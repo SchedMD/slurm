@@ -60,7 +60,7 @@
 
 #define _DEBUG			0
 #define PID_CNT			10
-#define PROG_WARNING_TIME	30	/* log program run time if over this */
+#define PROG_WARNING_TIME	60	/* log program run time if over this */
 
 /* Records for tracking processes forked to suspend/resume nodes */
 pid_t  child_pid[PID_CNT];	/* pid of process		*/
