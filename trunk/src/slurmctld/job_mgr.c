@@ -1408,7 +1408,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
 				job_ptr->details->submit_time = now;
-				job_ptr->start_time = job_ptr->end_time = 0;
 				
 				/* restart from periodic checkpoint */
 				if (job_ptr->ckpt_interval &&
@@ -2136,7 +2135,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		   put now + 1 so we get different records in the
 		   database */
 		job_ptr->details->submit_time = now+1;
-		job_ptr->start_time = job_ptr->end_time = 0;
 		
 		job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->restart_cnt++;
@@ -5816,6 +5814,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 				 * named socket purged, so delay for at 
 				 * least ten seconds. */
 				job_ptr->details->begin_time = time(NULL) + 10;
+				job_ptr->start_time = job_ptr->end_time = 0;
 				jobacct_storage_g_job_start(
 					acct_db_conn, slurmctld_cluster_name,
 					job_ptr);
@@ -6387,7 +6386,6 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	if (job_ptr->node_cnt)
 		job_ptr->job_state |= JOB_COMPLETING;
 	
-	job_ptr->start_time = job_ptr->end_time = 0;
 	job_ptr->details->submit_time = now;
 	job_ptr->restart_cnt++;
 	/* Since the job completion logger removes the submit we need
