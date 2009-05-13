@@ -992,7 +992,7 @@ See \fBPropagateResourceLimits\fR above for a list of valid limit names.
 \fBResumeDelay\fR
 Minimum time (in second) between when a node is suspended before attempting
 to resume it (e.g. power it back up).
-A value of zero will avoid any delay.
+Its value should be no larger than \fBSlurmdTimeout\fR.
 The default value is 10 seconds.
 
 .TP
