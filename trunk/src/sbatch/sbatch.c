@@ -142,6 +142,8 @@ int main(int argc, char *argv[])
 
 		if (retries)
 			debug(msg);
+		else if (errno == ESLURM_NODES_BUSY)
+			info(msg);	/* Not an error, powering up nodes */
 		else
 			error(msg);
 		sleep (++retries);

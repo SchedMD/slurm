@@ -24,6 +24,11 @@ documents those changes that are of interest to users and admins.
     the accounting.
  -- Clear node's POWER_SAVE flag if configuration changes to one lacking a
     ResumeProgram.
+ -- Extend a job's time limit as appropriate due to delays powering up idle
+    nodes.
+ -- If sbatch is used to launch a job step within an existing allocation (as
+    used by LSF) and the required node is powered down, print the message
+    "Job step creation temporarily disabled, retrying", sleep, and retry.
 
 * Changes in SLURM 2.0.0-rc1
 ==============================
