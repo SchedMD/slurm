@@ -137,7 +137,8 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		bg_record->target_name = xstrdup(bg_record->user_name);
 	}
 
-	if(remove_from_bg_list(bg_lists->job_running, bg_record) == SLURM_SUCCESS) 
+	if(remove_from_bg_list(bg_lists->job_running, bg_record)
+	   == SLURM_SUCCESS) 
 		num_unused_cpus += bg_record->cpu_cnt;			       
 	remove_from_bg_list(bg_lists->booted, bg_record);
 

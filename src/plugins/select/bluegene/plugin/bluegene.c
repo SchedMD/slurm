@@ -1126,7 +1126,8 @@ extern int read_bg_conf(void)
 				tmp_bitmap = bit_alloc(bg_conf->numpsets);
 				bit_nset(tmp_bitmap, i, i+small_size);
 				i += small_size+1;
-				list_append(bg_lists->valid_small32, tmp_bitmap);
+				list_append(bg_lists->valid_small32,
+					    tmp_bitmap);
 			}
 		}
 		/* If we only have 1 nodecard just jump to the end
@@ -1178,7 +1179,8 @@ no_calc:
 	if (!s_p_get_uint16(&bg_conf->bridge_api_verb, "BridgeAPIVerbose", tbl))
 		info("Warning: BridgeAPIVerbose not configured "
 		     "in bluegene.conf");
-	if (!s_p_get_string(&bg_conf->bridge_api_file, "BridgeAPILogFile", tbl)) 
+	if (!s_p_get_string(&bg_conf->bridge_api_file,
+			    "BridgeAPILogFile", tbl)) 
 		info("BridgeAPILogFile not configured in bluegene.conf");
 	else
 		_reopen_bridge_log();
@@ -1224,7 +1226,8 @@ no_calc:
 		}
 		
 		for (i = 0; i < count; i++) {
-			add_bg_record(bg_lists->main, NULL, blockreq_array[i], 0, 0);
+			add_bg_record(bg_lists->main, NULL,
+				      blockreq_array[i], 0, 0);
 		}
 	}
 	s_p_hashtbl_destroy(tbl);
