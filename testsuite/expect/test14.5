@@ -116,7 +116,7 @@ set time3     0
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "($number) *($number):0?($number)" {
+		-re "($number) *0?($number):0?($number)" {
 			incr record
 			set date      $expect_out(1,string)
 			set hour      $expect_out(2,string)
