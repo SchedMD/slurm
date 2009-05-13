@@ -225,7 +225,18 @@ void batch_bind(batch_job_launch_msg_t *req)
 		if (conf->task_plugin_param & CPU_BIND_VERBOSE)
 			req->cpu_bind_type |= CPU_BIND_VERBOSE;
 		req->cpu_bind = (char *)bit_fmt_hexmask(hw_map);
-		info("task/affinity: job %u CPU final mask for node: %s",
+		info("task/affinity: job %u CPU input mask for node: %s",
+		     req->job_id, req->cpu_bind);
+		/* translate abstract masks to actual hardware layout */
+		_lllp_map_abstract_masks(1, &hw_map);
+#ifdef HAVE_NUMA
+		if (req->cpu_bind_type & CPU_BIND_TO_LDOMS) {
+			_match_masks_to_ldom(1, &hw_map);
+		}
+#endif
+		xfree(req->cpu_bind);
+		req->cpu_bind = (char *)bit_fmt_hexmask(hw_map);
+		info("task/affinity: job %u CPU final HW mask for node: %s",
 		     req->job_id, req->cpu_bind);
 	} else {
 		error("task/affinity: job %u allocated no CPUs", 

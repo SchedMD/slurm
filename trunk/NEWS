@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
  -- Configuration parameter ResumeDelay added to control how much time must 
     after a node has been suspended before resume it (e.g. powering it back 
     up).
+ -- Fix CPU binding for batch program. Patch from Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.0.0-rc1
 ============================
