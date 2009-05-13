@@ -46,21 +46,26 @@
 #  include "config.h"
 #endif
 
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
+
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-#include <unistd.h>
+#define _DEBUG			0
+#define PID_CNT			10
+#define PROG_WARNING_TIME	30	/* log program run time if over this */
 
-#define _DEBUG 0
-#define PID_CNT 10
+/* Records for tracking processes forked to suspend/resume nodes */
+pid_t  child_pid[PID_CNT];	/* pid of process		*/
+time_t child_time[PID_CNT];	/* start time of process	*/
 
-pid_t child_pid[PID_CNT];
 int idle_time, suspend_rate, resume_rate;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
@@ -177,9 +182,9 @@ static void _do_power_work(void)
 	}
 }
 
-/* Just in case some resume calls failed, re-issue the requests
- * periodically for active nodes. We do not increment resume_cnt
- * since there should be no change in power requirements. */
+/* Just in case some resume calls failed, re-issue the requests periodically
+ * for nodes which should be active. We do not increment resume_cnt since
+ * there should be no change in power requirements. */
 static void _re_wake(void)
 {
 	static time_t last_wakeup = 0;
@@ -198,9 +203,10 @@ static void _re_wake(void)
 	for (i=0; i<lim; i++) {
 		node_ptr = &node_record_table_ptr[last_inx];
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if ((base_state != NODE_STATE_DOWN) &&
-		    (base_state != NODE_STATE_FUTURE) &&
-		    ((node_ptr->node_state & NODE_STATE_DRAIN) == 0) &&
+		if ((base_state != NODE_STATE_DOWN)			&&
+		    (base_state != NODE_STATE_FUTURE)			&&
+		    (node_ptr->node_state & NODE_STATE_NO_RESPOND)	&&
+		    ((node_ptr->node_state & NODE_STATE_DRAIN) == 0)	&&
 		    ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0)) {
 			if (wake_node_bitmap == NULL) {
 				wake_node_bitmap = 
@@ -220,7 +226,7 @@ static void _re_wake(void)
 #if _DEBUG
 			info("power_save: rewaking nodes %s", nodes);
 #else
-			verbose("power_save: rewaking nodes %s", nodes);
+			debug("power_save: rewaking nodes %s", nodes);
 #endif
 			_run_prog(resume_prog, nodes);	
 		} else
@@ -250,6 +256,10 @@ static void _do_suspend(char *host)
 	_run_prog(suspend_prog, host);	
 }
 
+/* run a suspend or resume program
+ * prog IN	- program to run
+ * arg IN	- program arguments, the hostlist expression
+ */
 static pid_t _run_prog(char *prog, char *arg)
 {
 	int i;
@@ -281,7 +291,8 @@ static pid_t _run_prog(char *prog, char *arg)
 		for (i=0; i<PID_CNT; i++) {
 			if (child_pid[i])
 				continue;
-			child_pid[i] = child;
+			child_pid[i]  = child;
+			child_time[i] = time(NULL);
 			break;
 		}
 		if (i == PID_CNT)
@@ -294,7 +305,7 @@ static pid_t _run_prog(char *prog, char *arg)
  * return the count of empty slots in the child_pid array */
 static int  _reap_procs(void)
 {
-	int empties = 0, i, rc, status;
+	int empties = 0, delay, i, rc, status;
 
 	for (i=0; i<PID_CNT; i++) {
 		if (child_pid[i] == 0) {
@@ -304,10 +315,19 @@ static int  _reap_procs(void)
 		rc = waitpid(child_pid[i], &status, WNOHANG);
 		if (rc == 0)
 			continue;
-		child_pid[i] = 0;
+
+		delay = difftime(time(NULL), child_time[i]);
+		if (delay > PROG_WARNING_TIME) {
+			debug("power_save: program %d ran for %d sec", 
+			      (int) child_pid[i], delay);
+		}
+
 		rc = WEXITSTATUS(status);
 		if (rc != 0)
 			error("power_save: program exit status of %d", rc);
+
+		child_pid[i]  = 0;
+		child_time[i] = (time_t) 0;
 	}
 	return empties;
 }
@@ -361,7 +381,7 @@ static int _init_power_config(void)
 		return -1;
 	} else if (!_valid_prog(suspend_prog)) {
 		error("power_save module disabled, invalid SuspendProgram %s",
-			suspend_prog);
+		      suspend_prog);
 		return -1;
 	}
 	if (resume_prog == NULL) {
@@ -369,14 +389,14 @@ static int _init_power_config(void)
 		return -1;
 	} else if (!_valid_prog(resume_prog)) {
 		error("power_save module disabled, invalid ResumeProgram %s",
-			resume_prog);
+		      resume_prog);
 		return -1;
 	}
 
 	if (exc_nodes &&
 	    (node_name2bitmap(exc_nodes, false, &exc_node_bitmap))) {
 		error("power_save module disabled, "
-			"invalid SuspendExcNodes %s", exc_nodes);
+		      "invalid SuspendExcNodes %s", exc_nodes);
 		return -1;
 	}
 
@@ -465,7 +485,7 @@ extern void *init_power_save(void *arg)
 		sleep(1);
 
 		if (_reap_procs() < 2) {
-			error("power_save programs not completing quickly");
+			debug("power_save programs getting backlogged");
 			continue;
 		}
 
@@ -476,9 +496,8 @@ extern void *init_power_save(void *arg)
 			goto fini;
 		}
 
-		/* Only run every 60 seconds or after
-		 * a node state change, whichever 
-		 * happens first */
+		/* Only run every 60 seconds or after a node state change,
+		 *  whichever happens first */
 		now = time(NULL);
 		if ((last_node_update < last_power_scan) &&
 		    (now < (last_power_scan + 60)))
