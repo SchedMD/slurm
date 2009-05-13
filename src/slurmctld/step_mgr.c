@@ -489,6 +489,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				 * for it to start responding again. */
 				FREE_NULL_BITMAP(nodes_avail);
 				*return_code = ESLURM_NODES_BUSY;
+				/* Update job's end-time to allow for node
+				 * boot time. */
+				job_ptr->end_time = time(NULL) + 
+						    (job_ptr->time_limit * 60);
 				return NULL;
 			}
 		}
