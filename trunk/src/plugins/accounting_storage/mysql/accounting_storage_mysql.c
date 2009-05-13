@@ -10392,11 +10392,35 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	
 	debug2("mysql_jobacct_job_start() called");
-	if(!check_time)
-		check_time = job_ptr->details->submit_time;
- 
+
+	/* See what we are hearing about here if no start time. If
+	 * this job latest time is before the last roll up we will
+	 * need to reset it to look at this job. */
+	if(!check_time) {
+		check_time = job_ptr->details->begin_time;
+ 		
+		if(!check_time)
+			check_time = job_ptr->details->submit_time;
+	}
+
 	slurm_mutex_lock(&rollup_lock);
 	if(check_time < global_last_rollup) {
+		if(job_ptr->start_time)
+			info("Need to reroll usage from %s since job %u "
+			     "from %s started then and we are just "
+			     "now hearing about it.",
+			     ctime(&check_time), job_ptr->job_id, cluster_name);
+		else if(job_ptr->details->begin_time) 
+			info("Need to reroll usage from %s since job %u "
+			     "from %s became eligible then and we are just "
+			     "now hearing about it.",
+			     ctime(&check_time), job_ptr->job_id, cluster_name);
+		else
+			info("Need to reroll usage from %s since job %u "
+			     "from %s was submitted then and we are just "
+			     "now hearing about it.",
+			     ctime(&check_time), job_ptr->job_id, cluster_name);
+			
 		global_last_rollup = check_time;
 		slurm_mutex_unlock(&rollup_lock);
 		
