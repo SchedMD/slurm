@@ -523,7 +523,7 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
-		pthread_join(slurmctld_config.thread_id_power,NULL);
+
 		if (running_cache) {
 			/* break out and end the association cache
 			 * thread since we are shuting down, no reason
@@ -542,6 +542,11 @@ int main(int argc, char *argv[])
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
 
+		/* join the power save thread after saving all state
+		 * since it could wait a while waiting for spawned
+		 * processes to exit */
+		pthread_join(slurmctld_config.thread_id_power, NULL);
+
 		if (slurmctld_config.resume_backup == false)
 			break;
 
@@ -556,9 +561,10 @@ int main(int argc, char *argv[])
 	/* Since pidfile is created as user root (its owner is
 	 *   changed to SlurmUser) SlurmUser may not be able to 
 	 *   remove it, so this is not necessarily an error. */
-	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
+	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0) {
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
+	}
 	
 	
 #ifdef MEMORY_LEAK_DEBUG
