@@ -357,11 +357,10 @@ int main(int argc, char *argv[])
 	/* This thread is looking for when we get correct data from
 	   the database so we can update the assoc_ptr's in the jobs
 	*/
-	if(running_cache) {
+	if (running_cache) {
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(
-			    &assoc_cache_thread, 
-			    &thread_attr, _assoc_cache_mgr, NULL))
+		if (pthread_create(&assoc_cache_thread, &thread_attr, 
+				  _assoc_cache_mgr, NULL))
 			fatal("pthread_create error %m");
 		slurm_attr_destroy(&thread_attr);
 	}
@@ -412,8 +411,8 @@ int main(int argc, char *argv[])
 			primary = 0;
 			run_backup();
 		} else if (slurmctld_conf.control_machine &&
-			 (strcmp(node_name, slurmctld_conf.control_machine) 
-			  == 0)) {
+			   (strcmp(node_name, slurmctld_conf.control_machine)
+			    == 0)) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			/* Now recover the remaining state information */
 			if (switch_restore(slurmctld_conf.state_save_location,
@@ -439,7 +438,7 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 
-		if(!acct_db_conn) {
+		if (!acct_db_conn) {
 			acct_db_conn = 
 				acct_storage_g_get_connection(true, 0, false);
 			/* We only send in a variable the first time
@@ -488,8 +487,8 @@ int main(int argc, char *argv[])
 		 */
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&slurmctld_config.thread_id_sig,
-				 &thread_attr, _slurmctld_signal_hand,
-				 NULL))
+				   &thread_attr, _slurmctld_signal_hand,
+				   NULL))
 			fatal("pthread_create %m");
 		slurm_attr_destroy(&thread_attr);
 
@@ -498,8 +497,8 @@ int main(int argc, char *argv[])
 		 */
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&slurmctld_config.thread_id_save,
-				&thread_attr, slurmctld_state_save,
-				NULL))
+				   &thread_attr, slurmctld_state_save,
+				   NULL))
 			fatal("pthread_create %m");
 		slurm_attr_destroy(&thread_attr);
 
@@ -508,8 +507,8 @@ int main(int argc, char *argv[])
 		 */
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&slurmctld_config.thread_id_power,
-				&thread_attr, init_power_save,
-				NULL))
+				   &thread_attr, init_power_save,
+				   NULL))
 			fatal("pthread_create %m");
 		slurm_attr_destroy(&thread_attr);
 
@@ -525,7 +524,7 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
 		pthread_join(slurmctld_config.thread_id_power,NULL);
-		if(running_cache) {
+		if (running_cache) {
 			/* break out and end the association cache
 			 * thread since we are shuting down, no reason
 			 * to wait for current info from the database */
@@ -621,7 +620,7 @@ int main(int argc, char *argv[])
 	xfree(slurmctld_cluster_name);
 	if (cnt) {
 		info("Slurmctld shutdown completing with %d active agent "
-			"threads\n\n", cnt);
+		     "thread", cnt);
 	}
 	log_fini();
 	
