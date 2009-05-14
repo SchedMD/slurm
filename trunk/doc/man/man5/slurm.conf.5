@@ -1011,7 +1011,7 @@ the node down.
 \fBResumeProgram\fR is the program that will be executed when a node 
 in power save mode is assigned work to perform.
 For reasons of reliability, \fBResumeProgram\fR may execute more than once
-for a node when the \fBslurmctld\fR daemon is restarted or reconfigured.
+for a node when the \fBslurmctld\fR daemon crashes and is restarted.
 If \fBResumeProgram\fR is unable to restore a node to service, it should
 requeue any node associated with the node and set the node state to DRAIN.
 The program executes as \fBSlurmUser\fR.

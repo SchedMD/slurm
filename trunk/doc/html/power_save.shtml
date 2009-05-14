@@ -76,8 +76,8 @@ configured <b>SlurmdTimeout</b> value, the node will be
 placed in a DOWN state and the job requesting the node
 will be requeued.
 For reasons of reliability, <b>ResumeProgram</b> may execute 
-more than once for a node when the <b>slurmctld</b> daemon is 
-restarted or reconfigured.</li>
+more than once for a node when the <b>slurmctld</b> daemon 
+crashes and is restarted.</li>
 
 <li><b>SuspendExcNodes</b>:
 List of nodes to never place in power saving mode. 
@@ -103,8 +103,8 @@ cluster management tools.</p>
 <p>Note that <i>SuspendProgram</i> and <i>ResumeProgram</i> are not 
 subject to any time limits.
 They should perform the required action, ideally verify the action
-(e.g. node boot and <i>slurmd</i> daemon started and thus the node is
-no longer non-responsive to <i>slurmctld</i>), and terminate. 
+(e.g. node boot and start the <i>slurmd</i> daemon, thus the node is
+no longer non-responsive to <i>slurmctld</i>) and terminate. 
 Long running programs will be logged by <i>slurmctld</i>, but not
 aborted.</p>
 
@@ -152,10 +152,35 @@ nodes are in power save mode using messages of this sort:
 [May 02 15:51:28] Power save mode 22 nodes
 </pre>
 
-<p>Using these logs you can easily see the effect of SLURM's power saving support.
-You can also configure SLURM without <b>SuspendProgram</b> or <b>ResumeProgram</b> 
-values to assess the potential impact of power saving mode before enabling it.</p>
+<p>Using these logs you can easily see the effect of SLURM's power saving 
+support.
+You can also configure SLURM with programs that perform no aciton as <b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential 
+impact of power saving mode before enabling it.</p>
 
-<p style="text-align:center;">Last modified 13 May 2009</p>
+<h2>Fault tolerance</h2>
+
+<p>If the <i>slurmctld</i> daemon is terminated gracefully, it will
+wait up to <b>ResumeDelay</b> for any spawned <b>SuspendProgram</b> or 
+<b>ResumeProgram</b> to terminate before the daemon terminates. 
+If the spawned program does not terminate within that time period, 
+the event will be logged and <i>slurmctld</i> will exit in order to 
+permit another <i>slurmctld</i> daemon to be initiated.
+Syncrhonization problems could also occur when the <i>slurmctld</i> 
+daemon crashes (a rare event) and is restarted. </p>
+
+<p>In either event, the newly initiated <i>slurmctld</i> daemon (or 
+the backup server) will recover saved node state information that 
+may not accurately describe the actual node state.
+In the case of a failed <b>SuspendProgram</b>, the negative impact is 
+limited to increased power consumption, so no special action is 
+currently taken to execute <b>SuspendProgram</b> multiple times in 
+order to insure the node is in a reduced power mode.
+The case of a failed <b>ResumeProgram</b> is more serious in that the 
+node could be placed into a DOWN state and/or jobs could fail.
+In order to minimize this risk, when the <i>slurmctld</i> daemon is 
+started and node which should be allocated to a job fails to respond, 
+the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
+
+<p style="text-align:center;">Last modified 14 May 2009</p>
 
 <!--#include virtual="footer.txt"-->

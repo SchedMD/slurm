@@ -74,6 +74,7 @@ int idle_time, suspend_rate, resume_delay, resume_rate;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
 time_t last_config = (time_t) 0, last_suspend = (time_t) 0;
+uint16_t slurmd_timeout;
 
 bitstr_t *exc_node_bitmap = NULL, *suspend_node_bitmap = NULL;
 int suspend_cnt, resume_cnt;
@@ -146,8 +147,8 @@ static void _do_power_work(void)
 			suspend_cnt++;
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
 			bit_clear(power_node_bitmap, i);
-			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
-			node_ptr->last_response = now;
+			node_ptr->node_state   |= NODE_STATE_NO_RESPOND;
+			node_ptr->last_response = now + resume_delay;
 			bit_set(wake_node_bitmap, i);
 		}
 		if (run_suspend 					&& 
@@ -176,9 +177,6 @@ static void _do_power_work(void)
 		last_log = now;
 	}
 
-	if ((wake_cnt == 0) && (sleep_cnt == 0))
-		_re_wake();	/* No work to be done now */
-
 	if (sleep_node_bitmap) {
 		char *nodes;
 		nodes = bitmap2node_name(sleep_node_bitmap);
@@ -204,53 +202,42 @@ static void _do_power_work(void)
 	}
 }
 
-/* Just in case some resume calls failed, re-issue the requests periodically
- * for nodes which should be active. We do not increment resume_cnt since
- * there should be no change in power requirements. */
+/* If slurmctld crashes, the node state that it recovers could differ
+ * from the actual hardware state (e.g. ResumeProgram failed to complete).
+ * To address that, when a node that should be powered up for a running 
+ * job is not responding, they try running ResumeProgram again. */
 static void _re_wake(void)
 {
-	static time_t last_wakeup = 0;
-	static int last_inx = 0;
 	uint16_t base_state;
-	time_t now = time(NULL);
 	struct node_record *node_ptr;
 	bitstr_t *wake_node_bitmap = NULL;
-	int i, lim = MIN(node_record_count, 20);
+	int i;
 
-	/* Run at most once every 30 minutes */
-	if ((now - last_wakeup) < 1800)
-		return;
-	last_wakeup = now;
-
-	for (i=0; i<lim; i++) {
-		node_ptr = &node_record_table_ptr[last_inx];
+	node_ptr = node_record_table_ptr;
+	for (i=0; i<node_record_count; i++, node_ptr++) {
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if ((base_state != NODE_STATE_DOWN)			  &&
-		    (base_state != NODE_STATE_FUTURE)			  &&
+#if 0
+if (i==0) info("state:%u, alloc:%u, no:%u pow:%u, bit:%d",
+node_ptr->node_state, NODE_STATE_ALLOCATED, NODE_STATE_NO_RESPOND,
+NODE_STATE_POWER_SAVE, bit_test(suspend_node_bitmap, i));
+#endif
+		if ((base_state == NODE_STATE_ALLOCATED)		  &&
 		    (node_ptr->node_state & NODE_STATE_NO_RESPOND)	  &&
-		    ((node_ptr->node_state & NODE_STATE_DRAIN) == 0)	  &&
 		    ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) &&
 		    (bit_test(suspend_node_bitmap, i) == 0)) {
 			if (wake_node_bitmap == NULL) {
 				wake_node_bitmap = 
 					bit_alloc(node_record_count);
 			}
-			bit_set(wake_node_bitmap, last_inx);
+			bit_set(wake_node_bitmap, i);
 		}
-		last_inx++;
-		if (last_inx >= node_record_count)
-			last_inx = 0;
 	}
 
 	if (wake_node_bitmap) {
 		char *nodes;
 		nodes = bitmap2node_name(wake_node_bitmap);
 		if (nodes) {
-#if _DEBUG
 			info("power_save: rewaking nodes %s", nodes);
-#else
-			debug("power_save: rewaking nodes %s", nodes);
-#endif
 			_run_prog(resume_prog, nodes);	
 		} else
 			error("power_save: bitmap2nodename");
@@ -395,7 +382,7 @@ static void _shutdown_power(void)
 		proc_cnt = PID_CNT - _reap_procs();
 		if (proc_cnt == 0)	/* all procs completed */
 			break;
-		if (i >= MAX_SHUTDOWN_DELAY) {
+		if (i >= resume_delay) {
 			error("power_save: orphaning %d processes which are "
 			      "not terminating so slurmctld can exit", 
 			      proc_cnt);
@@ -429,11 +416,12 @@ static int _init_power_config(void)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
-	last_config   = slurmctld_conf.last_update;
-	idle_time     = conf->suspend_time - 1;
-	suspend_rate  = conf->suspend_rate;
-	resume_delay  = conf->resume_delay;
-	resume_rate   = conf->resume_rate;
+	last_config    = slurmctld_conf.last_update;
+	idle_time      = conf->suspend_time - 1;
+	suspend_rate   = conf->suspend_rate;
+	resume_delay   = conf->resume_delay;
+	resume_rate    = conf->resume_rate;
+	slurmd_timeout = conf->slurmd_timeout;
 	_clear_power_config();
 	if (conf->suspend_program)
 		suspend_prog = xstrdup(conf->suspend_program);
@@ -554,10 +542,13 @@ static bool _valid_prog(char *file_name)
  */
 extern void *init_power_save(void *arg)
 {
-        /* Locks: Write node, read jobs and partitions */
+        /* Locks: Read nodes */
+        slurmctld_lock_t node_read_lock = {
+                NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+        /* Locks: Write nodes */
         slurmctld_lock_t node_write_lock = {
-                NO_LOCK, READ_LOCK, WRITE_LOCK, READ_LOCK };
-	time_t now, last_power_scan = 0;
+                NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	time_t now, boot_time = 0, last_power_scan = 0;
 
 	if (_init_power_config())
 		goto fini;
@@ -581,17 +572,29 @@ extern void *init_power_save(void *arg)
 			goto fini;
 		}
 
+		now = time(NULL);
+		if (boot_time == 0)
+			boot_time = now;
+
 		/* Only run every 60 seconds or after a node state change,
 		 *  whichever happens first */
-		now = time(NULL);
-		if ((last_node_update < last_power_scan) &&
-		    (now < (last_power_scan + 60)))
-			continue;
+		if ((last_node_update >= last_power_scan) ||
+		    (now >= (last_power_scan + 60))) {
+			lock_slurmctld(node_write_lock);
+			_do_power_work();
+			unlock_slurmctld(node_write_lock);
+			last_power_scan = now;
+		}
 
-		lock_slurmctld(node_write_lock);
-		_do_power_work();
-		unlock_slurmctld(node_write_lock);
-		last_power_scan = now;
+		if (slurmd_timeout &&
+		    (now > (boot_time + (slurmd_timeout / 2)))) {
+			lock_slurmctld(node_read_lock);
+			_re_wake();
+			unlock_slurmctld(node_read_lock);
+			/* prevent additional executions */
+			boot_time += (365 * 24 * 60 * 60);
+			slurmd_timeout = 0;
+		}
 	}
 
 fini:	_clear_power_config();
