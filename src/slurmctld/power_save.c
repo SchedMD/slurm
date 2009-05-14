@@ -216,11 +216,6 @@ static void _re_wake(void)
 	node_ptr = node_record_table_ptr;
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
-#if 0
-if (i==0) info("state:%u, alloc:%u, no:%u pow:%u, bit:%d",
-node_ptr->node_state, NODE_STATE_ALLOCATED, NODE_STATE_NO_RESPOND,
-NODE_STATE_POWER_SAVE, bit_test(suspend_node_bitmap, i));
-#endif
 		if ((base_state == NODE_STATE_ALLOCATED)		  &&
 		    (node_ptr->node_state & NODE_STATE_NO_RESPOND)	  &&
 		    ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) &&
