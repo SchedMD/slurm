@@ -630,6 +630,8 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	static bool acct_sent = false;
 
 	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
+
+	memset(&msg, 0, sizeof(step_complete_msg_t));
 	msg.job_id = job->jobid;
 	msg.job_step_id = job->stepid;
 	msg.range_first = first;
