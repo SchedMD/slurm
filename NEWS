@@ -18,7 +18,7 @@ documents those changes that are of interest to users and admins.
     "tux5-1").
  -- Avoid re-use of job_id (if specified at submit time) when the existing
     job is in completing state (possible race condition with Moab).
- -- Added SLURM_DISTIRBUTION to env for salloc.
+ -- Added SLURM_DISTRIBUTION to env for salloc.
  -- Add support for "scontrol takeover" command for backup controller to 
     assume control immediately. Patch from Matthieu Hautreux, CEA.
  -- If srun is unable to communicate with the slurmd tasks are now marked as 
