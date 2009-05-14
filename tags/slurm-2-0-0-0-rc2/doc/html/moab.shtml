@@ -1,0 +1,281 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Moab Cluster Suite Integration Guide</h1>
+<h2>Overview</h2>
+<p>Moab Cluster Suite configuration is quite complicated and is 
+beyond the scope of any documents we could supply with SLURM.  
+The best resource for Moab configuration information is the 
+online documents at Cluster Resources Inc.: 
+<a href="http://www.clusterresources.com/products/mwm/docs/slurmintegration.shtml">
+http://www.clusterresources.com/products/mwm/docs/slurmintegration.shtml</a>.
+
+<p>Moab uses SLURM commands and a wiki interface to communicate. See the 
+<a href="http://www.clusterresources.com/products/mwm/docs/wiki/wikiinterface.shtml">
+Wiki Interface Specification</a> and
+<a href="http://www.clusterresources.com/products/mwm/docs/wiki/socket.shtml">
+Wiki Socket Protocol Description</a> for more information.</p>
+
+<h2>Configuration</h2>
+<p>First, download the Moab scheduler kit from their web site
+<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+http://www.clusterresources.com/pages/products/moab-cluster-suite.php</a>.<br> 
+<b>Note:</b> Use Moab version 5.0.0 or higher and SLURM version 1.1.28 
+or higher.</p>
+
+<h3>SLURM configuration</h3>
+
+<h4>slurm.conf</h4>
+<p>Set the <i>slurm.conf</i> scheduler parameters as follows:</p>
+<pre>
+SchedulerType=sched/wiki2
+SchedulerPort=7321
+</pre>
+<p>Running multiple jobs per mode can be accomplished in two different 
+ways. 
+The <i>SelectType=select/cons_res</i> parameter can be used to let
+SLURM allocate the individual processors, memory, and other 
+consumable resources (in SLURM version 1.2.1 or higher).
+Alternately, <i>SelectType=select/linear</i> or 
+<i>SelectType=select/bluegene</i> can be used with the 
+<i>Shared=yes</i> or <i>Shared=force</i> parameter in 
+partition configuration specifications.</p>
+
+<p>The default value of <i>SchedulerPort</i> is 7321.</p>
+
+<p>SLURM version 2.0 and higher have internal scheduling capabilities
+that are not compatable with Moab.
+<ol>
+<li>Do not configure SLURM to use the "priority/multifactor" plugin 
+as it would set job priorities which conflict with those set by Moab.</li>
+<li>Do not use SLURM's <a href="reservations.html">reservation</a> 
+mechanism, but use that offered by Moab.</li>
+<li>Do not use SLURM's <a href="resource_limits.html">resource limits</a>
+as those may conflict with those managed by Moab.</li>
+</ol></p>
+
+<h4>SLURM commands</h4>
+<p> Note that the <i>srun --immediate</i> option is not compatible 
+with Moab. 
+All jobs must wait for Moab to schedule them rather than being 
+scheduled immediately by SLURM.</p>
+
+<a name="wiki.conf"><h4>wiki.conf</h4></a>
+<p>SLURM's wiki configuration is stored in a file 
+specific to the wiki-plugin named <i>wiki.conf</i>. 
+This file should be protected from reading by users. 
+It only needs to be readable by <i>SlurmUser</i> (as configured 
+in <i>slurm.conf</i>) and only needs to exist on computers 
+where the <i>slurmctld</i> daemon executes.
+More information about wiki.conf is available in 
+a man page distributed with SLURM.</p>
+
+<p>The currently supported wiki.conf keywords include:</p>
+
+<p><b>AuthKey</b> is a DES based encryption key used to sign 
+communications between SLURM and Maui or Moab. 
+This use of this key is essential to insure that a user 
+not build his own program to cancel other user's jobs in 
+SLURM.
+This should be no more than 32-bit unsigned integer and match 
+the the encryption key in Maui (<i>--with-key</i> on the 
+configure line) or Moab (<i>KEY</i> parameter in the 
+<i>moab-private.cfg</i> file). 
+Note that SLURM's wiki plugin does not include a mechanism 
+to submit new jobs, so even without this key nobody could 
+run jobs as another user.</p>
+
+<p><b>EPort</b> is an event notification port in Moab. 
+When a job is submitted to or terminates in SLURM, 
+Moab is sent a message on this port to begin an attempt
+to schedule the computer.
+This numeric value should match <i>EPORT</i> configured 
+in the <i>moab.cnf</i> file.</p>
+
+<p><b>EHost</b> is the event notification host for Moab.
+This identifies the computer on which the Moab daemons 
+executes which should be notified of events.
+By default EHost will be identical in value to the 
+ControlAddr configured in slurm.conf.</p>
+
+<p><b>EHostBackup</b> is the event notification backup host for Moab.
+Names the computer on which the backup Moab server executes.
+It is used in establishing a communications path for event notification.
+By default EHostBackup will be identical in value to the
+BackupAddr configured in slurm.conf.</p>
+
+<p><b>ExcludePartitions</b> is used to identify partitions
+whose jobs are to be scheduled directly by SLURM rather 
+than Moab. 
+This only effects jobs which are submitted using Slurm 
+commands (i.e. srun, salloc or sbatch, NOT msub from Moab).
+These jobs will be scheduled on a First-Come-First-Served 
+basis. 
+This may provide faster response times than Moab scheduling. 
+Moab will account for and report the jobs, but their initiation
+will be outside of Moab's control.
+Note that Moab controls for resource reservation, fair share 
+scheduling, etc. will not apply to the initiation of these jobs.
+If more than one partition is to be scheduled directly by
+Slurm, use a comma separator between their names.</p>
+
+<p><b>HidePartitionJobs</b> identifies partitions whose jobs are not 
+to be reported to Moab.
+These jobs will not be accounted for or otherwise visible to Moab.
+Any partitions listed here must also be listed in <b>ExcludePartitions</b>.
+If more than one partition is to have its jobs hidden, use a comma 
+separator between their names.</p>
+
+<p><b>HostFormat</b> controls the format of job task lists built 
+by Slurm and reported to Moab.
+The default value is "0", for which each host name is listed 
+individually, once per processor (e.g. "tux0:tux0:tux1:tux1:...").
+A value of "1" uses Slurm hostlist expressions with processor 
+counts (e.g. "tux[0-16]*2").
+This is currently experimental.
+
+<p><b>JobAggregationTime</b> is used to avoid notifying Moab 
+of large numbers of events occurring about the same time.
+If an event occurs within this number of seconds since Moab was
+last notified of an event, another notification is not sent.
+This should be an integer number of seconds.
+The default value is 10 seconds.
+The value should match <i>JOBAGGREGATIONTIME</i> configured 
+in the <i>moab.cnf</i> file.</p>
+
+<p><b>JobPriority</b> controls the scheduling of newly arriving 
+jobs in SLURM. 
+SLURM can either place all newly arriving jobs in a HELD state 
+(priority = 0) and let Moab decide when and where to run the jobs 
+or SLURM can control when and where to run jobs. 
+In the later case, Moab can modify the priorities of pending jobs 
+to re-order the job queue or just monitor system state.
+Possible values are "hold" and "run" with "hold" being the default.</p> 
+
+<p>Here is a sample <i>wiki.conf</i> file
+<pre>
+# wiki.conf
+# SLURM's wiki plugin configuration file
+#
+# Matches KEY in moab-private.cfg
+AuthKey=123456789
+#
+# SLURM to directly schedule "debug" partition 
+# and hide the jobs from Moab
+ExcludePartitions=debug
+HidePartitionJobs=debug
+#
+# Have Moab control job scheduling
+JobPriority=hold
+#
+# Moab event notification port, matches EPORT in moab.cfg
+EPort=15017
+# Moab event notification host, where the Moab daemon runs
+#EHost=tux0
+#
+# Moab event notification throttle, 
+# matches JOBAGGREGATIONTIME in moab.cfg (seconds)
+JobAggregationTime=15
+</pre>
+</p>
+
+<h3>Moab Configuration</h3>
+
+<p>Moab has support for SLURM's WIKI interface by default.
+Specify this interface in the <i>moab.cfg</i> file as follows:</p>
+<pre>
+SCHEDCFG[base]       MODE=NORMAL
+RMCFG[slurm]         TYPE=WIKI:SLURM AUTHTYPE=CHECKSUM
+</pre>
+<p>In <i>moab-private.cfg</i> specify the private key as follows:</p>
+<pre>
+CLIENTCFG[RM:slurm] KEY=123456789
+</pre>
+<p>Insure that this file is protected from viewing by users. </p>
+
+<h3>Job Submission</h3>
+
+<p>Jobs can either be submitted to Moab or directly to SLURM.
+Moab's <i>msub</i> command has a <i>--slurm</i> option that can 
+be placed at the <b>end</b> of the command line and those options 
+will be passed to SLURM. This can be used to invoke SLURM 
+options which are not directly supported by Moab (e.g.
+system images to boot, task distribution specification across 
+sockets, cores, and hyperthreads, etc.).
+For example:
+<pre>
+msub my.script -l walltime=600,nodes=2 \
+     --slurm --linux-image=/bgl/linux_image2
+</pre>
+
+<h3>User Environment</h3>
+
+<p>When a user submits a job to Moab, that job could potentially 
+execute on a variety of computers, so it is typically necessary 
+that the user's environment on the execution host be loaded. 
+Moab relies upon SLURM to perform this action, using the 
+<i>--get-user-env</i> option for the salloc, sbatch and srun commands.
+The SLURM command then executes as user root a command of this sort
+as user root:</p>
+<pre>
+/bin/su - &lt;user&gt; -c \
+        "/bin/echo BEGIN; /bin/env; /bin/echo FINI"
+</pre>
+<p> For typical batch jobs, the job transfer from Moab to 
+SLURM is performed using <i>sbatch</i> and occurs instantaneously.
+The environment is loadeded by a SLURM daemon (slurmd) when the 
+batch job begins execution.
+For interactive jobs (<i>msub -I ...</i>), the job transfer 
+from Moab to SLURM can not be completed until the environment
+variables are loaded, during which time the Moab daemon is 
+completely non-responsive. 
+To insure that Moab remains operational, SLURM will abort the above
+command within a configurable period of time and look for a cache 
+file with the user's environment and use that if found. 
+Otherwise an error is reported to Moab.
+The time permitted for loading the current environment 
+before searching for a cache file is configurable using
+the <i>GetEnvTimeout</i> parameter in SLURM's configuration
+file, slurm.conf. A value of zero results in immediately 
+using the cache file. The default value is 2 seconds.</p>
+
+<p>We have provided a simple program that can be used to build 
+cache files for users. The program can be found in the SLURM
+distribution at <i>contribs/env_cache_builder.c</i>. 
+This program can support a longer timeout than Moab, but 
+will report errors for users for whom the environment file 
+can not be automatically build (typically due to the user's
+"dot" files spawning another shell so the desired command 
+never execution).
+For such user, you can manually build a cache file.
+You may want to execute this program periodically to capture 
+information for new users or changes in existing users'
+environment.
+A sample execution is shown below. 
+Run this on the same host as the Moab daemon and execute it as user root.</p>
+
+<pre>
+bash-3.00# make -f /dev/null env_cache_builder
+cc     env_cache_builder.c   -o env_cache_builder
+bash-3.00# ./env_cache_builder
+Building user environment cache files for Moab/Slurm.
+This will take a while.
+
+Processed 100 users...
+***ERROR: Failed to get current user environment variables for alice
+***ERROR: Failed to get current user environment variables for brian
+Processed 200 users...
+Processed 300 users...
+***ERROR: Failed to get current user environment variables for christine
+***ERROR: Failed to get current user environment variables for david
+
+Some user environments could not be loaded.
+Manually run 'env' for those 4 users.
+Write the output to a file with the same name as the user in the
+  /usr/local/tmp/slurm/atlas/env_cache directory
+</pre>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 8 May 2009</p>
+
+<!--#include virtual="footer.txt"-->
