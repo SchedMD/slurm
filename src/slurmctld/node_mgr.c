@@ -1149,8 +1149,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				 * its jobs */
 				_make_node_down(node_ptr, now);
 				kill_running_job_by_node_name (this_node_name);
-			}
-			else if (state_val == NODE_STATE_IDLE) {
+			} else if (state_val == NODE_STATE_IDLE) {
 				/* assume they want to clear DRAIN and
 				 * FAIL flags too */
 				base_state &= NODE_STATE_BASE;
@@ -1179,15 +1178,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_set (up_node_bitmap, node_inx);
 				node_ptr->last_idle = now;
 				reset_job_priority();
-			}
-			else if (state_val == NODE_STATE_ALLOCATED) {
+			} else if (state_val == NODE_STATE_ALLOCATED) {
 				if (!(node_ptr->node_state & (NODE_STATE_DRAIN
 						| NODE_STATE_FAIL)))
 					bit_set(avail_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
-			}
-			else if (state_val == NODE_STATE_DRAIN) {
+			} else if (state_val == NODE_STATE_DRAIN) {
 				bit_clear (avail_node_bitmap, node_inx);
 				state_val = node_ptr->node_state |
 					NODE_STATE_DRAIN;
@@ -1199,8 +1196,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						slurmctld_cluster_name,
 						node_ptr, now, NULL);
 				}
-			}
-			else if (state_val == NODE_STATE_FAIL) {
+			} else if (state_val == NODE_STATE_FAIL) {
 				bit_clear (avail_node_bitmap, node_inx);
 				state_val = node_ptr->node_state |
 					NODE_STATE_FAIL;
@@ -1211,8 +1207,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr, now, NULL);
-			}
-			else if (state_val == NODE_STATE_POWER_SAVE) {
+			} else if (state_val == NODE_STATE_POWER_SAVE) {
 				if (node_ptr->node_state &
 				    NODE_STATE_POWER_SAVE) {
 					verbose("node %s already powered down",
@@ -1223,8 +1218,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					     this_node_name);
 				}
 				continue;
-			}
-			else if (state_val == NODE_STATE_POWER_UP) {
+			} else if (state_val == NODE_STATE_POWER_UP) {
 				if (!(node_ptr->node_state &
 				    NODE_STATE_POWER_SAVE)) {
 					verbose("node %s already powered up",
@@ -1235,13 +1229,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 					     this_node_name);
 				}
 				continue;
-			}
-			else if (state_val == NODE_STATE_NO_RESPOND) {
+			} else if (state_val == NODE_STATE_NO_RESPOND) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 				state_val = base_state;
 				bit_clear(avail_node_bitmap, node_inx);
-			}
-			else {
+			} else {
 				info ("Invalid node state specified %u", 
 					state_val);
 				err_code = 1;
@@ -2219,8 +2211,15 @@ void node_not_resp (char *name, time_t msg_time)
 
 	for (i=0; i<node_record_count; i++) {
 		node_ptr = node_record_table_ptr + i;
-		node_ptr->not_responding = true;
+		if ((node_ptr->node_state & NODE_STATE_BASE)
+		    != NODE_STATE_DOWN) {
+			node_ptr->not_responding = true;
+			bit_clear (avail_node_bitmap, i);
+			node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+			last_node_update = time(NULL);
+		}
 	}
+			
 #else
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {

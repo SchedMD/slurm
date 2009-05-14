@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
     after a node has been suspended before resume it (e.g. powering it back 
     up).
  -- Fix CPU binding for batch program. Patch from Matthieu Hautreux, CEA.
+ -- Fix for front end systems non-responding nodes now show up correctly in
+    sinfo.
 
 * Changes in SLURM 2.0.0-rc1
 ============================
