@@ -10405,6 +10405,37 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 	slurm_mutex_lock(&rollup_lock);
 	if(check_time < global_last_rollup) {
+		MYSQL_RES *result = NULL;
+		MYSQL_ROW row;
+
+		/* check to see if we are hearing about this time for the
+		 * first time.
+		 */
+		query = xstrdup_printf("select id from %s where jobid=%u and "
+				       "submit=%d and eligible=%d "
+				       "and start=%d;",
+				       job_table, job_ptr->job_id,
+				       job_ptr->details->submit_time, 
+				       job_ptr->details->begin_time, 
+				       job_ptr->start_time);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		if(!(result =
+		     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			slurm_mutex_unlock(&rollup_lock);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+		if((row = mysql_fetch_row(result))) {
+			mysql_free_result(result);
+			debug4("revieved an update for a "
+			       "job (%u) already known about",
+			       job_ptr->job_id);
+			slurm_mutex_unlock(&rollup_lock);
+			goto no_rollup_change;
+		}
+		mysql_free_result(result);
+
 		if(job_ptr->start_time)
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s started then and we are just "
@@ -10436,7 +10467,9 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		xfree(query);
 	} else
 		slurm_mutex_unlock(&rollup_lock);
-	
+
+no_rollup_change:
+
 	if(!cluster_name && job_ptr->assoc_id) {
 		no_cluster = 1;
 		cluster_name = _get_cluster_from_associd(mysql_conn,
