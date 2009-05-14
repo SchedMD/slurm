@@ -823,11 +823,14 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_scan_ptr->part_ptr  != job_ptr->part_ptr) ||
-		    (job_scan_ptr->job_state != JOB_RUNNING) ||
-		    (job_scan_ptr->node_cnt  != req_nodes) ||
-		    (job_scan_ptr->total_procs < job_ptr->num_procs) ||
+		if ((job_scan_ptr->job_state  != JOB_RUNNING)		||
+		    (job_scan_ptr->node_cnt   != req_nodes)		||
+		    (job_scan_ptr->total_procs < job_ptr->num_procs)	||
 		    (!bit_super_set(job_scan_ptr->node_bitmap, bitmap)))
+			continue;
+		if (job_scan_ptr->details && job_ptr->details &&
+		    (job_scan_ptr->details->contiguous != 
+		     job_ptr->details->contiguous))
 			continue;
 
 		if (job_ptr->details->req_node_bitmap &&
