@@ -11,7 +11,7 @@
   Minor:	0
   Micro:        0
   Version:	2.0.0
-  Release:	0.rc1
+  Release:	0.rc2
 ##
 #  When changing API_CURRENT update src/common/slurm_protocol_common.h
 #  with a new SLURM_PROTOCOL_VERSION signifing the old one and the version 

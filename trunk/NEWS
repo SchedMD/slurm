@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.0.0
+============================
+
 * Changes in SLURM 2.0.0-rc2
 ============================
  -- Change fanout logic to start on calling node instead of first node in 
