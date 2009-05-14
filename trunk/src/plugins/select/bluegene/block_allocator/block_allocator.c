@@ -2195,7 +2195,7 @@ extern int *find_bp_loc(char* bp_id)
 	if((check[1] < '0' || check[1] > '9')
 	   || (check[2] < '0' || check[2] > '9')
 	   || (check[3] < '0' || check[3] > '9')) {
-		error("%s is not valid Rack midplane (i.e. R000)", bp_id);
+		error("%s is not a valid Rack-Midplane (i.e. R000)", bp_id);
 		goto cleanup;
 	}
 			
@@ -2209,7 +2209,7 @@ extern int *find_bp_loc(char* bp_id)
 	if((check[1] < '0' || check[1] > '9')
 	   || (check[2] < '0' || check[2] > '9')
 	   || (check[5] < '0' || check[5] > '9')) {
-		error("%s is not valid Rack midplane (i.e. R00-M0)", bp_id);
+		error("%s is not a valid Rack-Midplane (i.e. R00-M0)", bp_id);
 		goto cleanup;
 	}
 #endif
@@ -2249,9 +2249,9 @@ extern char *find_bp_rack_mid(char* xyz)
 		return NULL;
 
 	if((xyz[len] < '0' || xyz[len] > '9')
-	   || (xyz[len-2] < '0' || xyz[len-1] > '9')
-	   || (xyz[len-2] < '0' || xyz[len-2] > '9')) {
-		error("%s is not valid Location (i.e. 000)", xyz);
+	   || (xyz[len+1] < '0' || xyz[len+1] > '9')
+	   || (xyz[len+2] < '0' || xyz[len+2] > '9')) {
+		error("%s is not a valid Location (i.e. 000)", xyz);
 		return NULL;
 	}
 
