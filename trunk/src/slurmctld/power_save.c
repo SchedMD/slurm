@@ -46,6 +46,7 @@
 #  include "config.h"
 #endif
 
+#include <signal.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -60,6 +61,9 @@
 
 #define _DEBUG			0
 #define PID_CNT			10
+#define MAX_SHUTDOWN_DELAY	120	/* seconds to wait for child procs
+					 * to exit after daemon shutdown 
+					 * request, then orphan or kill proc */
 #define PROG_WARNING_TIME	60	/* log program run time if over this */
 
 /* Records for tracking processes forked to suspend/resume nodes */
@@ -79,9 +83,11 @@ static void  _do_power_work(void);
 static void  _do_resume(char *host);
 static void  _do_suspend(char *host);
 static int   _init_power_config(void);
+static int   _kill_procs(void);
 static int   _reap_procs(void);
 static void  _re_wake(void);
 static pid_t _run_prog(char *prog, char *arg);
+static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
 
 /* Perform any power change work to nodes */
@@ -299,6 +305,7 @@ static pid_t _run_prog(char *prog, char *arg)
 	if (child == 0) {
 		for (i=0; i<128; i++)
 			close(i);
+		setpgrp();
 		execl(program, arg0, arg1, NULL);
 		exit(1);
 	} else if (child < 0) {
@@ -347,6 +354,62 @@ static int  _reap_procs(void)
 		child_time[i] = (time_t) 0;
 	}
 	return empties;
+}
+
+/* kill (or orphan) child processes previously forked to modify node state.
+ * return the count of killed/orphaned processes */
+static int  _kill_procs(void)
+{
+	int killed = 0, i, rc, status;
+
+	for (i=0; i<PID_CNT; i++) {
+		if (child_pid[i] == 0)
+			continue;
+
+		rc = waitpid(child_pid[i], &status, WNOHANG);
+		if (rc == 0) {
+#ifdef  POWER_SAVE_KILL_PROCS
+			error("power_save: killing process %d",
+			      child_pid[i]);
+			kill((0-child_pid[i]), SIGKILL);
+#else
+			error("power_save: orphaning process %d",
+			      child_pid[i]);
+#endif
+			killed++;
+		} else {
+			/* process already completed */
+		}
+		child_pid[i]  = 0;
+		child_time[i] = (time_t) 0;
+	}
+	return killed;
+}
+
+static void _shutdown_power(void)
+{
+	int i, proc_cnt;
+
+	/* Try to avoid orphan processes */
+	for (i=0; ; i++) {
+		proc_cnt = PID_CNT - _reap_procs();
+		if (proc_cnt == 0)	/* all procs completed */
+			break;
+		if (i >= MAX_SHUTDOWN_DELAY) {
+			error("power_save: orphaning %d processes which are "
+			      "not terminating so slurmctld can exit", 
+			      proc_cnt);
+			_kill_procs();
+			break;
+		} else if (i == 2) {
+			info("power_save: waiting for %d processes to "
+			     "complete", proc_cnt);
+		} else if (i % 5 == 0) {
+			debug("power_save: waiting for %d processes to "
+			      "complete", proc_cnt);
+		}
+		sleep(1);
+	}
 }
 
 /* Free all allocated memory */
@@ -533,5 +596,6 @@ extern void *init_power_save(void *arg)
 
 fini:	_clear_power_config();
 	FREE_NULL_BITMAP(suspend_node_bitmap);
+	_shutdown_power();
 	return NULL;
 }
