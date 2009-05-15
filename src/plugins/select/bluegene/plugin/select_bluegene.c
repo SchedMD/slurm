@@ -999,6 +999,12 @@ extern List select_p_get_config(void)
 	key_pair->value = xstrdup_printf("%u", bg_conf->bp_node_cnt);
 	list_append(my_list, key_pair);
 
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("NodeCPUCnt");
+	key_pair->value = xstrdup_printf("%u", bg_conf->proc_ratio);
+	list_append(my_list, key_pair);
+
+
 #ifdef HAVE_BGL
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("BlrtsImage");

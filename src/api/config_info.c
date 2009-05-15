@@ -127,8 +127,14 @@ void slurm_print_ctl_conf ( FILE* out,
 {
 	char time_str[32], tmp_str[128], *xbuf;
 	char *select_title = "";
-#ifdef HAVE_BG
-	select_title = "Bluegene configuration";
+#ifdef HAVE_BGL
+	select_title = "Bluegene/L configuration";
+#endif
+#ifdef HAVE_BGP
+	select_title = "Bluegene/P configuration";
+#endif
+#ifdef HAVE_BGQ
+	select_title = "Bluegene/Q configuration";
 #endif
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
