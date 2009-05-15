@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.0.0
 ============================
+ -- Fix for bluegene systems to be able to create 32 node blocks with only 
+    16 psets defined in dynamic layout mode.
 
 * Changes in SLURM 2.0.0-rc2
 ============================

@@ -1089,7 +1089,7 @@ extern int read_bg_conf(void)
 		/* figure out the smallest block we can have on the
 		   system */
 #ifdef HAVE_BGL
-		if(bg_conf->io_ratio >= 2)
+		if(bg_conf->io_ratio >= 1)
 			bg_conf->smallest_block=32;
 		else
 			bg_conf->smallest_block=128;
