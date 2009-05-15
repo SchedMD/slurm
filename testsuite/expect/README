@@ -307,7 +307,6 @@ test8.4    Test of Blue Gene MPI job execution
 test8.5    Test creation of all blocks 1 midplane and smaller.
 test8.6    Stress test Dynamic mode block creation.
 test8.7    Test of Blue Gene scheduling with sched/wik2 plugin.
-test8.8    Test result of marking smaller blocks in an error state.
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
