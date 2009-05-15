@@ -172,7 +172,6 @@ set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"
 set alpha_numeric        "\[a-zA-Z0-9\]+"
 set alpha_numeric_under  "\[a-zA-Z0-9_\-\]+"
-set alpha_numeric_box    "\[a-zA-Z0-9_\-\]+"
 set alpha_under          "\[A-Z_\]+"
 set end_of_line          "\[\r\n\]"
 set number               "\[0-9\]+"
@@ -1553,7 +1552,7 @@ proc get_bluegene_type { } {
 #
 # Purpose: Determine how many cpus are on a cnode
 #
-# Returns count of cpus on a midplane or 0 if not set
+# Returns count of cpus on a cnode or 0 if not set
 #
 ################################################################
 
@@ -1582,3 +1581,72 @@ proc get_bluegene_procs_per_cnode { } {
 	return $cpu_cnt
 }
 
+################################################################
+#
+# Proc: get_bluegene_cnodes_per_np
+#
+# Purpose: Determine how many cnodes are in a midplane
+#
+# Returns count of nodes on a midplane or 0 if not set
+#
+################################################################
+
+proc get_bluegene_cnodes_per_mp { } {
+	global scontrol number
+
+	log_user 0
+	set node_cnt 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "BasePartitionNodeCnt *= ($number)" {
+			set node_cnt $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $node_cnt
+}
+
+################################################################
+#
+# Proc: get_node_cnt
+#
+# Purpose: Determine how many nodes are on the system
+#
+# Returns count of nodes on system or 0 if unknown
+#
+################################################################
+
+proc get_node_cnt { } {
+	global scontrol
+
+	log_user 0
+	set node_cnt 0
+	set scon_pid [spawn -noecho $scontrol show nodes]
+	expect {
+		-re "NodeName=" {
+			incr node_cnt
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $node_cnt
+}
