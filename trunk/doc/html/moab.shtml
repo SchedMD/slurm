@@ -7,13 +7,17 @@ beyond the scope of any documents we could supply with SLURM.
 The best resource for Moab configuration information is the 
 online documents at Cluster Resources Inc.: 
 <a href="http://www.clusterresources.com/products/mwm/docs/slurmintegration.shtml">
-http://www.clusterresources.com/products/mwm/docs/slurmintegration.shtml</a>.
+http://www.clusterresources.com/products/mwm/docs/slurmintegration.shtml</a>.</p>
 
 <p>Moab uses SLURM commands and a wiki interface to communicate. See the 
 <a href="http://www.clusterresources.com/products/mwm/docs/wiki/wikiinterface.shtml">
 Wiki Interface Specification</a> and
 <a href="http://www.clusterresources.com/products/mwm/docs/wiki/socket.shtml">
 Wiki Socket Protocol Description</a> for more information.</p>
+
+<p>Somewhat more current information about SLURM's implementation of the 
+wiki interface was developed by Michal Novotny (Masaryk University, Czech Republic)
+and can be found <a href="http://www.fi.muni.cz/~xnovot19/wiki2.html">here</a>.</p>
 
 <h2>Configuration</h2>
 <p>First, download the Moab scheduler kit from their web site
@@ -276,6 +280,6 @@ Write the output to a file with the same name as the user in the
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2009</p>
+<p style="text-align:center;">Last modified 14 May 2009</p>
 
 <!--#include virtual="footer.txt"-->
