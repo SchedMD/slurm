@@ -5017,9 +5017,9 @@ if test "${with_proctrack+set}" = set; then
 fi
 
       if test -f "$PROCTRACKDIR/lib/proctrackext.exp"; then
-         CPPFLAGS="-I$PROCTRACKDIR/include $CPPFLAGS"
          PROCTRACKDIR="$PROCTRACKDIR/lib"
 
+         CPPFLAGS="-I$PROCTRACKDIR/include $CPPFLAGS"
 
 for ac_header in proctrack.h
 do
