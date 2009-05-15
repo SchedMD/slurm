@@ -281,7 +281,7 @@ function displayfile()
    "NodeName=" + document.config.node_name.value +
    get_field2(" NodeAddr",document.config.node_addr) +
    get_field2(" Procs",document.config.procs) +
-   get_field2(" Memory",document.config.memory) +
+   get_field2(" RealMemory",document.config.memory) +
    get_field2(" Sockets",document.config.sockets) +
    get_field2(" CoresPerSocket",document.config.cores_per_socket) +
    get_field2(" ThreadsPerCore",document.config.threads_per_core) +
@@ -417,7 +417,7 @@ the logical number of processors per socket.
 <B>ThreadsPerCore</B>:
 Number of logical threads in a single physical core.
 <P>
-<input type="text" name="memory" value=""> <B>Memory</B>: Amount 
+<input type="text" name="memory" value=""> <B>RealMemory</B>: Amount 
 of real memory. This parameter is required when specifying Memory as a 
 consumable resource with the select/cons_res plug-in. See below 
 under Resource Selection. 
