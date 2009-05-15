@@ -430,14 +430,41 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 	}
 
 	if(weight_js) {
+		/* FIXME: This will not work correctly when
+		 * the job is requesting smaller than 1 node.
+		 * We need a way to figure out how to look at
+		 * cpus requested here for those situations.  This can
+		 * probably be done with the num_procs, but
+		 * that isn't always used.  This is usually
+		 * set on bluegene systems, which is where
+		 * this problem arose.  The code below was
+		 * tested on a bluegene system, seemed to
+		 * work, but isn't probably that generic.
+		 * Also the variable total_cpus doesn't exist
+		 * yet so that would need to be defined.
+		 */
+		
 		if(favor_small) {
 			factors->priority_js = (double)(node_record_count
 					   - job_ptr->details->min_nodes)
 				/ (double)node_record_count;
-		} else
+/* 			if(job_ptr->num_procs && job_ptr->num_procs != NO_VAL) { */
+/* 				factors->priority_js +=  */
+/* 					(double)(total_cpus - job_ptr->num_procs) */
+/* 					/ (double)total_cpus; */
+/* 				factors->priority_js /= 2;			 */
+/* 			} */
+		} else {
 			factors->priority_js =
 				(double)job_ptr->details->min_nodes
 				/ (double)node_record_count;
+/* 			if(job_ptr->num_procs && job_ptr->num_procs != NO_VAL) { */
+/* 				factors->priority_js +=  */
+/* 					(double)job_ptr->num_procs */
+/* 					/ (double)total_cpus; */
+/* 				factors->priority_js /= 2;			 */
+/* 			} */
+		}
 		if (factors->priority_js < .0)
 			factors->priority_js = 0.0;
 		else if (factors->priority_js > 1.0)
