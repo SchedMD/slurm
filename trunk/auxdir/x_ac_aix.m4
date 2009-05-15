@@ -48,9 +48,9 @@ AC_DEFUN([X_AC_AIX],
          [ PROCTRACKDIR="$withval" ]
       )
       if test -f "$PROCTRACKDIR/lib/proctrackext.exp"; then
-         CPPFLAGS="-I$PROCTRACKDIR/include $CPPFLAGS"
          PROCTRACKDIR="$PROCTRACKDIR/lib"
          AC_SUBST(PROCTRACKDIR)
+         CPPFLAGS="-I$PROCTRACKDIR/include $CPPFLAGS"
          AC_CHECK_HEADERS(proctrack.h)
          ac_have_aix_proctrack="yes"
       elif test -f "$prefix/lib/proctrackext.exp"; then
