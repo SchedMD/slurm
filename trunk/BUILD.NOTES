@@ -91,8 +91,9 @@ To build and run on AIX:
 1. export OBJECT_MODE=32
 2. Build with:
    ./configure --enable-debug --prefix=/opt/freeware \
-	--sysconfdir=/opt/freeware/etc/slurm
-	--with-ssl=/opt/freeware --with-munge=/opt/freeware
+	--sysconfdir=/opt/freeware/etc/slurm \
+	--with-ssl=/opt/freeware --with-munge=/opt/freeware \
+	--with-proctrack=/opt/freeware
    make
    make uninstall  # remove old shared libraries, aix caches them
    make install
@@ -110,7 +111,7 @@ To build and run on AIX:
 	%_with_aix		1
 	%with_ssl               "--with-ssl=/opt/freeware"
 	%with_munge             "--with-munge=/opt/freeware"
-	%with_proctrack         "--with-proctrack=/admin/llnl/include"
+	%with_proctrack         "--with-proctrack=/opt/freeware"
    Log in to the machine "uP".  uP is currently the lowest-common-denominator
      AIX machine.
    CC=/usr/bin/gcc build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
