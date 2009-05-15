@@ -47,6 +47,7 @@ proc run_and_test { size } {
 	global number sbatch scontrol 
 	global file_out file_err file_in procs_per_cnode
 
+	set job_id 0
 	set exit_code 0
 
 	set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 -N$size-$size $file_in]
