@@ -47,13 +47,15 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <libgen.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <libgen.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -297,6 +299,7 @@ int dump_all_job_state(void)
 	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
+	struct stat stat_buf;
 	/* Locks: Read config and job */
 	slurmctld_lock_t job_read_lock =
 		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
@@ -327,8 +330,6 @@ int dump_all_job_state(void)
 		xassert (job_ptr->magic == JOB_MAGIC);
 		_dump_job_state(job_ptr, buffer);
 	}
-	/* Maintain config lock until we get the state_save_location *\
-	   \* unlock_slurmctld(job_read_lock);         - see below      */
 	list_iterator_destroy(job_iterator);
 
 	/* write the buffer to file */
@@ -339,6 +340,21 @@ int dump_all_job_state(void)
 	new_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(new_file, "/job_state.new");
 	unlock_slurmctld(job_read_lock);
+
+	if (stat(reg_file, &stat_buf) == 0) {
+		static time_t last_mtime = (time_t) 0;
+		int delta_t = difftime(stat_buf.st_mtime, last_mtime);
+		if (delta_t < -10) {
+			error("The modification time of %s moved backwards "
+			      "by %d seconds",
+			      reg_file, (0-delta_t));
+			error("There could be a problem with your clock or "
+			      "file system mounting");
+			/* It could be safest to exit here. We likely mounted
+			 * a different file system with the state save files */
+		}
+		last_mtime = time(NULL);
+	}
 
 	lock_state_files();
 	log_fd = creat(new_file, 0600);
