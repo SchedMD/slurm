@@ -93,7 +93,6 @@ static int _compute_block_map(uint16_t numproc,
 			      uint16_t **block_map, uint16_t **block_map_inv);
 static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
 static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
-static int _chk_cpuinfo_float(char *buffer, char *keyword, float *val);
 
 /* #define DEBUG_DETAIL	1 */	/* enable detailed debugging within SLURM */
 
@@ -457,7 +456,7 @@ static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val)
 		return false;
 	}
 }
-
+#ifdef USE_CPU_SPEED
 /* _chk_cpuinfo_float
  *	check a line of cpuinfo data (buffer) for a keyword.  If it
  *	exists, return the float value for that keyword in *valptr.
@@ -477,7 +476,6 @@ static int _chk_cpuinfo_float(char *buffer, char *keyword, float *val)
 	}
 }
 
-#ifdef USE_CPU_SPEED
 /*
  * get_speed - Return the speed of procs on this system (MHz clock)
  * Input: procs - buffer for the CPU speed
@@ -493,7 +491,7 @@ get_speed(float *speed)
 	*speed = 1.0;
 	cpu_info_file = fopen(_cpuinfo_path, "r");
 	if (cpu_info_file == NULL) {
-		error ("get_speed: error %d opening %s\n", errno, _cpuinfo_path);
+		error("get_speed: error %d opening %s\n", errno, _cpuinfo_path);
 		return errno;
 	} 
 
