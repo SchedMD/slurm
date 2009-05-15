@@ -304,7 +304,7 @@ test8.1    Test of Blue Gene specific sbatch command line options
 test8.2    Test of Blue Gene specific sbatch environment variables
 test8.3    Test of Blue Gene specific job geometry support
 test8.4    Test of Blue Gene MPI job execution
-test8.5    Confirm we can make a 32, 128, and 512 cnode block.
+test8.5    Test creation of all blocks 1 midplane and smaller.
 test8.6    Stress test Dynamic mode block creation.
 test8.7    Test of Blue Gene scheduling with sched/wik2 plugin.
 

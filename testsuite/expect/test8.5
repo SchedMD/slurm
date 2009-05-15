@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of BLUEGENE SLURM functionality
-#          Test sacct functionality and accuracy.
+#          Test creation of all blocks 1 midplane and smaller.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -43,12 +43,160 @@ set matches     0
 # job paramters
 set sleep_time 1
 
+proc run_and_test { size } {
+	global number sbatch scontrol 
+	global file_out file_err file_in procs_per_cnode
+
+	set exit_code 0
+
+	set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 -N$size-$size $file_in]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			slow_kill $sbatch_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$job_id || $exit_code} {
+		send_user "\nFAILURE: batch submit failure\n"
+		return 1
+	}
+
+	#
+	# Wait for job to run
+	#
+	if {[wait_for_job $job_id "DONE"] != 0} {
+		send_user "\nFAILURE: waiting for job to run\n"
+		return 1
+	}
+
+	set matches 0
+	set requested_cpus [expr $size * $procs_per_cnode]
+
+	set scon_pid [spawn $scontrol show job $job_id]
+	expect {
+		-re "AllocCPUs=$requested_cpus" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: Bluegene $size cnode block not created correctly\n"
+		set exit_code 1
+	}
+	
+	
+	return $exit_code
+}
+
+proc run_bgl_test { } {
+	global psets
+
+	# make a 512 cnode block
+	if {[run_and_test 512]} {
+		return 1
+	}
+
+	if {[run_and_test 128]} {
+		return 1
+	}
+
+	if {$psets >= 16} {
+		if {[run_and_test 32]} {
+			return 1
+		}
+	}
+
+	return 0;
+}
+
+
+proc run_bgp_test { } {
+	global psets
+
+	# make a 512 cnode block
+	if {[run_and_test 512]} {
+		return 1
+	}
+
+	if {[run_and_test 256]} {
+		return 1
+	}
+	if {[run_and_test 128]} {
+		return 1
+	}
+
+	if {$psets >= 8} {
+		if {[run_and_test 64]} {
+			return 1
+		}
+		if {$psets >= 16} {
+			if {[run_and_test 32]} {
+				return 1
+			}
+			if {$psets >= 32} {
+				if {[run_and_test 16]} {
+					return 1
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+
+
+
 print_header $test_id
 
 if {[test_bluegene] == 0} {
 	send_user "\nWARNING: This test is only compatable with bluegene systems\n"
 	exit $exit_code
 }
+
+if {[string compare [get_bluegene_layout] Dynamic]} {
+	send_user "\nWARNING: This test is only compatable with dynamic bluegene systems\n"
+	exit $exit_code
+}
+
+set psets [get_bluegene_psets]
+
+if {$psets == 0} {
+	send_user "\nFAILURE: No psets are set on this system\n"
+	exit 1
+}
+
+set procs_per_cnode [get_bluegene_procs_per_cnode]
+
+if {$procs_per_cnode == 0} {
+	send_user "\nFAILURE: Couldn't determine procs per cnode\n"
+	exit 1
+}
+
+set type [get_bluegene_type]
+
+if {$type == 0} {
+	send_user "\nFAILURE: No bluegene type found \n"
+	exit 1
+}
+
+
 #
 # Delete left-over input script files
 # Build input script file
@@ -61,206 +209,15 @@ exec $bin_chmod 700 $file_in
 #
 set timeout [expr $max_job_delay + $sleep_time]
 
-# make a 512 cnode block
-
-set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 -N512-512 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
-		slow_kill $sbatch_pid
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
+if {![string compare $type "P"]} {
+	set exit_code [run_bgp_test]
+} elseif {![string compare $type "L"]} {
+	set exit_code [run_bgl_test]
+} else {
+	send_user "\nFAILURE: unknown bluegene system type '$type'\n";
 	exit 1
 }
 
-#
-# Wait for job to run
-#
-if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to run\n"
-	set exit_code 1
-}
-
-set matches 0
-set cpus_per_node 1
-
-spawn $scontrol show job $job_id
-expect {
-	-re "BP_List=$alpha_numeric " {
-		incr matches
-		exp_continue
-	}
-	-re "AllocCPUs=($number)" {
-		set cpu_count $expect_out(1,string)
-		set cpus_per_node [expr $cpu_count / 512]
-		if {($cpu_count != 512) && ($cpu_count != 1024)} {
-			send_user "\nFAILURE: Bad node count allocated\n"
-			set exit_code 1
-		}
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: Blue Gene 512 cnode block not created correctly\n"
-	set exit_code 1
-}
-if {$exit_code != 0} {
-	exit $exit_code
-}
-
-# make a 128 cnode block
-
-
-set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 -N128-128 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
-		slow_kill $sbatch_pid
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
-}
-
-#
-# Wait for job to run
-#
-if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to run\n"
-	set exit_code 1
-}
-
-set matches 0
-
-spawn $scontrol show job $job_id
-expect {
-	-re "BP_List=$alpha_numeric\[$number-$number\] " {
-		incr matches
-		exp_continue
-	}
-	-re "AllocCPUs=($number)" {
-		set cpu_count $expect_out(1,string)
-		set node_count [expr $cpu_count / $cpus_per_node]
-		if {$node_count != 128} {
-			send_user "\n=======================================\n"
-			send_user "\nFAILURE: Bad node count allocated\n"
-			send_user "This can indicate a low configured value of Numpsets\n"
-			send_user "  in bluegene.conf (few available I/O nodes).\n"
-			send_user "This could indicate Static Bluegene partitioning\n"
-			send_user "  with no small blocks (1/4 of a base partition).\n"
-			send_user "This could also indicate MinNodes for the partition\n"
-			send_user "  being too high for this test.\n"
-			send_user "=======================================\n"
-			set exit_code 1
-		}
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: Blue Gene 128 cnode block not created correctly\n"
-	set exit_code 1
-}
-
-# make a 32 cnode block
-
-set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 -N32-32 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
-		slow_kill $sbatch_pid
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
-}
-
-#
-# Wait for job to run
-#
-if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to run\n"
-	set exit_code 1
-}
-
-set matches 0
-spawn $scontrol show job $job_id
-expect {
-#	Could be one or multiple node cards (e.g. "bgl000[0]" or "bgl000[0-1]")
-	-re "BP_List=$alpha_numeric\[$number" {
-		incr matches
-		exp_continue
-	}
-	-re "AllocCPUs=($number)" {
-		set cpu_count $expect_out(1,string)
-		set node_count [expr $cpu_count / $cpus_per_node]
-		if {$node_count != 32} {
-			send_user "\n=======================================\n"
-			send_user "FAILURE: Bad node count allocated\n"
-			send_user "This can indicate a low configured value of Numpsets\n"
-			send_user "  in bluegene.conf (few available I/O nodes).\n"
-			send_user "This could indicate Static Bluegene partitioning\n"
-			send_user "  with no small blocks (1/16 of a base partition).\n"
-			send_user "This could also indicate MinNodes for the partition\n"
-			send_user "  being too high for this test.\n"
-			send_user "=======================================\n"
-			set exit_code 1
-		}
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: Blue Gene 32 cnode block not created correctly\n"
-	set exit_code 1
-}
 
 if {$exit_code == 0} {
 	exec rm -f $file_in $file_out $file_err

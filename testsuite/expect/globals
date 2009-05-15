@@ -172,6 +172,7 @@ set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"
 set alpha_numeric        "\[a-zA-Z0-9\]+"
 set alpha_numeric_under  "\[a-zA-Z0-9_\-\]+"
+set alpha_numeric_box    "\[a-zA-Z0-9_\-\]+"
 set alpha_under          "\[A-Z_\]+"
 set end_of_line          "\[\r\n\]"
 set number               "\[0-9\]+"
@@ -1418,7 +1419,7 @@ proc get_cluster_name { } {
 	#
 	log_user 0
 	set cluster_name ""
-	set scon_pid [spawn $scontrol show config]
+	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
 		-re "ClusterName *= ($alpha_numeric_under)" {
 			set cluster_name $expect_out(1,string)
@@ -1437,3 +1438,147 @@ proc get_cluster_name { } {
 	log_user 1
 	return $cluster_name
 }
+
+################################################################
+#
+# Proc: get_bluegene_layout
+#
+# Purpose: Determine what layout mode the blugene system is running
+#
+# Returns name of layout mode if found, 0 otherwise
+#
+################################################################
+
+proc get_bluegene_layout { } {
+	global scontrol alpha_numeric_under
+
+	log_user 0
+	set layout 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "LayoutMode *= ($alpha_numeric_under)" {
+			set layout $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $layout
+}
+
+################################################################
+#
+# Proc: get_bluegene_psets
+#
+# Purpose: Determine how many psets a midplane has in a bluegene system
+#
+# Returns num of psets, 0 if not set
+#
+################################################################
+
+proc get_bluegene_psets { } {
+	global scontrol number
+
+	log_user 0
+	set psets 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "Numpsets *= ($number)" {
+			set psets $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $psets
+}
+
+################################################################
+#
+# Proc: get_bluegene_type
+#
+# Purpose: Determine what kind of bluegene system we are running
+#
+# Returns 'L' for bluegene/L,
+# 	  'P' for bluegene/P,
+#	  'Q' for bluegene/Q,
+# 	  0 if not set
+#
+################################################################
+
+proc get_bluegene_type { } {
+	global scontrol alpha
+
+	log_user 0
+	set type 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "Bluegene/($alpha) configuration" {
+			set type $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $type
+}
+
+################################################################
+#
+# Proc: get_bluegene_procs_per_cnode
+#
+# Purpose: Determine how many cpus are on a cnode
+#
+# Returns count of cpus on a midplane or 0 if not set
+#
+################################################################
+
+proc get_bluegene_procs_per_cnode { } {
+	global scontrol number
+
+	log_user 0
+	set cpu_cnt 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "NodeCPUCnt *= ($number)" {
+			set cpu_cnt $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $cpu_cnt
+}
+
