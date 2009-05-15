@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of BLUEGENE SLURM functionality
-#          Test sacct functionality and accuracy.
+#          Stress test Dynamic mode block creation.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -38,31 +38,13 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 set matches     0
-set 32node_block_cnt 16
-set 128node_block_cnt 8
-set 512node_block_cnt 8
-set 1knode_block_cnt  8
-set 4knode_block_cnt  8
-set 8knode_block_cnt  8
-set 16knode_block_cnt 8
-set 32knode_block_cnt 8
 
 # job paramters
 set sleep_time  5
 
-print_header $test_id
-
-if {[test_bluegene] == 0} {
-	send_user "\nWARNING: This test is only compatable with bluegene systems\n"
-	exit $exit_code
-}
-
-make_bash_script $file_in "$bin_sleep $sleep_time"
-set timeout [expr $max_job_delay + $sleep_time]
-
 # make a bunch of blocks of the specified size (node_cnt)
-proc run_batch_jobs { node_cnt job_cnt file_in } {
-	global sbatch srun number kill_srun
+proc run_batch_jobs { node_cnt job_cnt } {
+	global sbatch number file_in
 	set start_cnt 0	
 	for {set inx 0} {$inx < $job_cnt} {incr inx} {
 		set sbatch_pid [spawn $sbatch --output=/dev/null -t5 -N$node_cnt-$node_cnt $file_in]
@@ -97,16 +79,13 @@ proc run_batch_jobs { node_cnt job_cnt file_in } {
 			}
 		}
 	}
-	if { $start_cnt != $job_cnt } {
-		return 0
-	} else {
-		return 1
-	}	
+	
+	return $start_cnt
 }
 
 # Wait up to 900 seconds for all jobs to terminate
 # Return 0 if all jobs done, remainin job count otherwise
-proc wait_for_all_jobs { job_name } {
+proc wait_for_all_jobs { } {
 	global scancel squeue bin_sleep file_in
 
 	set last_matches 0
@@ -116,7 +95,7 @@ proc wait_for_all_jobs { job_name } {
 		log_user 0
 		spawn $squeue -o %j
 		expect {
-			-re "$job_name" {
+			-re "$file_in" {
 				incr matches
 				exp_continue
 			}
@@ -152,77 +131,188 @@ proc wait_for_all_jobs { job_name } {
 	return $matches
 }
 
-#
-# Run the jobs here. We can be reasonably sure of running 
-# 512 cnode jobs (one midplane). Other sizes may not be supported
-# due to architecture (I/O node count) and/or slurm configuration
-#
-if {[run_batch_jobs 32 $32node_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 32 cnodes can't be created\n"
-	set exit_code 1	
+proc run_bgl_test { } {
+	global psets num_nodes
+
+	set 32node_block_cnt 16
+	set 128node_block_cnt 8
+	set 512node_block_cnt 16
+	set 1knode_block_cnt  8
+	set 4knode_block_cnt  8
+	set 8knode_block_cnt  4
+	set 16knode_block_cnt 4
+	set 32knode_block_cnt 4
+	set started 0
+	if {$psets >= 16} {
+		incr started [run_batch_jobs 32 $32node_block_cnt]
+	}
+	
+	incr started [run_batch_jobs 128 $128node_block_cnt]	
+	incr started [run_batch_jobs 512 $512node_block_cnt]	
+	
+	if {$num_nodes >= 1024} {
+		incr started [run_batch_jobs 1k $1knode_block_cnt]
+		if {$num_nodes >= 4096} {
+			incr started [run_batch_jobs 4k $4knode_block_cnt]
+			if {$num_nodes >= 8192} {
+				incr started [run_batch_jobs 8k $8knode_block_cnt]
+				if {$num_nodes >= 16384} {
+					incr started [run_batch_jobs 16k $16knode_block_cnt]
+					if {$num_nodes >= 32768} {
+						incr started [run_batch_jobs 32k $1knode_block_cnt]
+					}
+				}
+			}
+		}
+		incr started [run_batch_jobs 1k $1knode_block_cnt]
+	}
+
+	incr started [run_batch_jobs 512 $512node_block_cnt]	
+
+	incr started [run_batch_jobs 128 $128node_block_cnt]
+
+	if {$psets >= 16} {
+		incr started [run_batch_jobs 32 $32node_block_cnt]
+	}
+
+	incr started [run_batch_jobs 512 $512node_block_cnt]	
+
+	return $started;
 }
 
-if {[run_batch_jobs 128 $128node_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 128 cnodes can't be created\n"
-	set exit_code 1	
+
+proc run_bgp_test { } {
+	global psets num_nodes
+
+	set 16node_block_cnt 32
+	set 32node_block_cnt 16
+	set 64node_block_cnt 8
+	set 128node_block_cnt 8
+	set 256node_block_cnt 8
+	set 512node_block_cnt 16
+	set 1knode_block_cnt  8
+	set 4knode_block_cnt  8
+	set 8knode_block_cnt  4
+	set 16knode_block_cnt 4
+	set 32knode_block_cnt 4
+	set started 0
+
+	if {$psets >= 32} {
+		incr started [run_batch_jobs 16 $16node_block_cnt]
+	}
+
+	if {$psets >= 16} {
+		incr started [run_batch_jobs 32 $32node_block_cnt]
+	}
+	if {$psets >= 8} {
+		incr started [run_batch_jobs 64 $64node_block_cnt]
+	}
+	
+	incr started [run_batch_jobs 128 $128node_block_cnt]	
+	incr started [run_batch_jobs 256 $256node_block_cnt]	
+	incr started [run_batch_jobs 512 $512node_block_cnt]	
+	
+	if {$num_nodes >= 1024} {
+		incr started [run_batch_jobs 1k $1knode_block_cnt]
+		if {$num_nodes >= 4096} {
+			incr started [run_batch_jobs 4k $4knode_block_cnt]
+			if {$num_nodes >= 8192} {
+				incr started [run_batch_jobs 8k $8knode_block_cnt]
+				if {$num_nodes >= 16384} {
+					incr started [run_batch_jobs 16k $16knode_block_cnt]
+					if {$num_nodes >= 32768} {
+						incr started [run_batch_jobs 32k $1knode_block_cnt]
+					}
+				}
+			}
+		}
+		incr started [run_batch_jobs 1k $1knode_block_cnt]
+	}
+
+	incr started [run_batch_jobs 512 $512node_block_cnt]	
+	incr started [run_batch_jobs 256 $256node_block_cnt]	
+	incr started [run_batch_jobs 128 $128node_block_cnt]
+	if {$psets >= 8} {
+		incr started [run_batch_jobs 64 $64node_block_cnt]
+	}
+
+	if {$psets >= 16} {
+		incr started [run_batch_jobs 32 $32node_block_cnt]
+	}
+
+	if {$psets >= 32} {
+		incr started [run_batch_jobs 16 $16node_block_cnt]
+	}
+
+	incr started [run_batch_jobs 512 $512node_block_cnt]	
+
+	return $started;
 }
 
-if {[run_batch_jobs 512 $512node_block_cnt $file_in ] != 1} {
-	send_user "\nFAILURE: 512 cnodes can't be created\n"
-	set exit_code 1	
+
+# TEST STARTS HERE
+
+print_header $test_id
+
+if {[test_bluegene] == 0} {
+	send_user "\nWARNING: This test is only compatable with bluegene systems\n"
+	exit $exit_code
 }
 
-if {[run_batch_jobs 1k $1knode_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 1k cnodes can't be created\n"
-	set exit_code 1	
+if {[string compare [get_bluegene_layout] Dynamic]} {
+	send_user "\nWARNING: This test is only compatable with dynamic bluegene systems\n"
+	exit $exit_code
 }
 
-if {[run_batch_jobs 4k $4knode_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 4k cnodes can't be created\n"
-	set exit_code 1	
+set psets [get_bluegene_psets]
+
+if {$psets == 0} {
+	send_user "\nFAILURE: No psets are set on this system\n"
+	exit 1
 }
 
-if {[run_batch_jobs 8k $8knode_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 8k cnodes can't be created\n"
-	set exit_code 1	
+set num_nodes [expr [get_node_cnt] * [get_bluegene_cnodes_per_mp]] 
+if {$num_nodes == 0} {
+	send_user "\nFAILURE: No nodes are found on this system\n"
+	exit 1
 }
 
-if {[run_batch_jobs 16k $16knode_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 16k cnodes can't be created\n"
-	set exit_code 1	
+set procs_per_cnode [get_bluegene_procs_per_cnode]
+
+if {$procs_per_cnode == 0} {
+	send_user "\nFAILURE: Couldn't determine procs per cnode\n"
+	exit 1
 }
 
-if {[run_batch_jobs 32k $32knode_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 32k cnodes can't be created\n"
-	set exit_code 1	
+set type [get_bluegene_type]
+
+if {$type == 0} {
+	send_user "\nFAILURE: No bluegene type found \n"
+	exit 1
 }
 
-if {[run_batch_jobs 1k $1knode_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 1k cnodes can't be created\n"
-	set exit_code 1	
+
+make_bash_script $file_in "$bin_sleep $sleep_time"
+set timeout [expr $max_job_delay + $sleep_time]
+
+
+if {![string compare $type "P"]} {
+	set started [run_bgp_test]
+} elseif {![string compare $type "L"]} {
+	set started [run_bgl_test]
+} else {
+	send_user "\nFAILURE: unknown bluegene system type '$type'\n";
+	exit 1
 }
 
-if {[run_batch_jobs 512 $512node_block_cnt $file_in ] != 1} {
-	send_user "\nFAILURE: 512 cnodes can't be created\n"
-	set exit_code 1	
+if {!$started} {
+	send_user "\nFAILURE: No jobs were started\n";
+	exit 1
 }
 
-if {[run_batch_jobs 128 $128node_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 128 cnodes can't be created\n"
-	set exit_code 1	
-}
+send_user "Started $started jobs\n"
 
-if {[run_batch_jobs 32 $32node_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 32 cnodes can't be created\n"
-	set exit_code 1	
-}
-
-if {[run_batch_jobs 512 $512node_block_cnt $file_in ] == 0} {
-	send_user "\nFAILURE: 512 cnodes can't be created\n"
-	set exit_code 1	
-}
-
-if {[wait_for_all_jobs $file_in] != 0} {
+if {[wait_for_all_jobs] != 0} {
 	send_user "\nFAILURE: some submitted jobs failed to terminate\n"
 	set exit_code 1
 }
