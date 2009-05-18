@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     16 psets defined in dynamic layout mode.
  -- Improve srun_cr handling of child srun forking. Patch from Hongjia Cao, 
     NUDT.
+ -- Configuration parameter ResumeDelay replaced by SuspendTimeout and 
+    ResumeTimeout.
 
 * Changes in SLURM 2.0.0-rc2
 ============================

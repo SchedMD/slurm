@@ -989,20 +989,6 @@ resource limits to propagate with the srun commands "\-\-propagate" option.
 See \fBPropagateResourceLimits\fR above for a list of valid limit names.
 
 .TP
-\fBResumeDelay\fR
-Minimum time (in second) between when a node is suspended before attempting
-to resume it (e.g. power it back up).
-This value should exceed the time required for \fBSuspendProgram\fR to fully
-suspend a node.
-Its value should be no larger than \fBSlurmdTimeout\fR.
-The default value is 30 seconds.
-Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR, 
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, 
-and \fBSuspendExcParts\fR.
-More information is available at the SLURM web site
-(https://computing.llnl.gov/linux/slurm/power_save.html).
-
-.TP
 \fBResumeProgram\fR
 SLURM supports a mechanism to reduce power consumption on nodes that 
 remain idle for an extended period of time. 
@@ -1019,9 +1005,9 @@ The argument to the program will be the names of nodes to
 be removed from power savings mode (using SLURM's hostlist
 expression format).
 By default no program is run.
-Related configuration options include \fBResumeDelay\fR, \fBResumeRate\fR, 
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, 
-and \fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeRate\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 More information is available at the SLURM web site
 (https://computing.llnl.gov/linux/slurm/power_save.html).
 
@@ -1034,9 +1020,22 @@ power surges if a large number of nodes in power save mode are
 assigned work at the same time (e.g. a large job starts).
 A value of zero results in no limits being imposed.
 The default value is 300 nodes per minute.
-Related configuration options include \fBResumeDelay\fR, \fBResumeProgram\fR, 
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, 
-and \fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
+
+.TP
+\fBResumeTimeout\fR
+Maximum time permitted (in second) between when a node is resume request 
+is issued and when the node is actually available for use. 
+Nodes which fail to respond in this time frame may be marked DOWN and
+the jobs scheduled on the node requeued.
+The default value is 60 seconds.
+Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
+More information is available at the SLURM web site
+(https://computing.llnl.gov/linux/slurm/power_save.html).
 
 .TP
 \fBResvOverRun\fR
@@ -1405,9 +1404,9 @@ Specifies the nodes which are to not be placed in power save mode, even
 if the node remains idle for an extended period of time.
 Use SLURM's hostlist expression to identify nodes.
 By default no nodes are excluded.
-Related configuration options include \fBResumeDelay\fR, \fBResumeProgram\fR, 
-\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR 
-and \fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, 
+\fBResumeTimeout\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendExcParts\fR
@@ -1415,9 +1414,9 @@ Specifies the partitions whose nodes are to not be placed in power save
 mode, even if the node remains idle for an extended period of time.
 Multiple partitions can be identified and separated by commas.
 By default no nodes are excluded.
-Related configuration options include \fBResumeDelay\fR, \fBResumeProgram\fR, 
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
 \fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR 
-and \fBSuspendExcNodes\fR.
+\fBResumeTimeout\fR, and \fBSuspendExcNodes\fR.
 
 .TP
 \fBSuspendProgram\fR
@@ -1431,9 +1430,9 @@ The argument to the program will be the names of nodes to
 be placed into power savings mode (using SLURM's hostlist
 expression format).
 By default, no program is run.
-Related configuration options include \fBResumeDelay\fR, \fBResumeProgram\fR, 
-\fBResumeRate\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendExcNodes\fR, 
-and \fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBResumeRate\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendRate\fR
@@ -1442,20 +1441,31 @@ The value is number of nodes per minute and it can be used to prevent
 a large drop in power power consumption (e.g. after a large job completes).
 A value of zero results in no limits being imposed.
 The default value is 60 nodes per minute.
-Related configuration options include \fBResumeDelay\fR, \fBResumeProgram\fR, 
-\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendTime\fR, \fBSuspendExcNodes\fR, 
-and \fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendTime\fR
 Nodes which remain idle for this number of seconds will be placed into 
 power save mode by \fBSuspendProgram\fR. 
-The configured value should exceed the time to suspend and resume a node.
-Also note the \fBResumeDelay\fR configuration parameter.
 A value of \-1 disables power save mode and is the default.
-Related configuration options include \fBResumeDelay\fR, \fBResumeProgram\fR, 
-\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendExcNodes\fR, 
-and \fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTimeout\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
+
+.TP
+\fBSuspendTimeout\fR
+Maximum time permitted (in second) between when a node suspend request 
+is issued and when the node shutdown.
+At that time the node must ready for a resume request to be issued 
+as needed for new work. 
+The default value is 30 seconds.
+Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR, 
+\fBResumeTimeout\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendProgram\fR, 
+\fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
+More information is available at the SLURM web site
+(https://computing.llnl.gov/linux/slurm/power_save.html).
 
 .TP
 \fBSwitchType\fR

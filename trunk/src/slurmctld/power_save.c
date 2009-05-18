@@ -64,13 +64,12 @@
 #define MAX_SHUTDOWN_DELAY	120	/* seconds to wait for child procs
 					 * to exit after daemon shutdown 
 					 * request, then orphan or kill proc */
-#define PROG_WARNING_TIME	60	/* log program run time if over this */
 
 /* Records for tracking processes forked to suspend/resume nodes */
 pid_t  child_pid[PID_CNT];	/* pid of process		*/
 time_t child_time[PID_CNT];	/* start time of process	*/
 
-int idle_time, suspend_rate, resume_delay, resume_rate;
+int idle_time, suspend_rate, resume_timeout, resume_rate, suspend_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
 time_t last_config = (time_t) 0, last_suspend = (time_t) 0;
@@ -113,7 +112,7 @@ static void _do_power_work(void)
 		resume_cnt  *= rate;
 	}
 
-	if (now > (last_suspend + resume_delay)) {
+	if (now > (last_suspend + suspend_timeout)) {
 		/* ready to start another round of node suspends */
 		run_suspend = true;
 		if (last_suspend) {
@@ -148,7 +147,7 @@ static void _do_power_work(void)
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
 			bit_clear(power_node_bitmap, i);
 			node_ptr->node_state   |= NODE_STATE_NO_RESPOND;
-			node_ptr->last_response = now + resume_delay;
+			node_ptr->last_response = now + resume_timeout;
 			bit_set(wake_node_bitmap, i);
 		}
 		if (run_suspend 					&& 
@@ -172,7 +171,7 @@ static void _do_power_work(void)
 			last_suspend = now;
 		}
 	}
-	if ((now - last_log) > 600) {
+	if (((now - last_log) > 600) && (susp_total > 0)) {
 		info("Power save mode: %d nodes", susp_total);
 		last_log = now;
 	}
@@ -311,8 +310,9 @@ static pid_t _run_prog(char *prog, char *arg)
  * return the count of empty slots in the child_pid array */
 static int  _reap_procs(void)
 {
-	int empties = 0, delay, i, rc, status;
+	int empties = 0, delay, i, max_timeout, rc, status;
 
+	max_timeout = MAX(suspend_timeout, resume_timeout);
 	for (i=0; i<PID_CNT; i++) {
 		if (child_pid[i] == 0) {
 			empties++;
@@ -323,9 +323,9 @@ static int  _reap_procs(void)
 			continue;
 
 		delay = difftime(time(NULL), child_time[i]);
-		if (delay > PROG_WARNING_TIME) {
-			debug("power_save: program %d ran for %d sec", 
-			      (int) child_pid[i], delay);
+		if (delay > max_timeout) {
+			info("power_save: program %d ran for %d sec", 
+			     (int) child_pid[i], delay);
 		}
 
 		rc = WEXITSTATUS(status);
@@ -370,14 +370,15 @@ static int  _kill_procs(void)
 
 static void _shutdown_power(void)
 {
-	int i, proc_cnt;
+	int i, proc_cnt, max_timeout;
 
+	max_timeout = MAX(suspend_timeout, resume_timeout);
 	/* Try to avoid orphan processes */
 	for (i=0; ; i++) {
 		proc_cnt = PID_CNT - _reap_procs();
 		if (proc_cnt == 0)	/* all procs completed */
 			break;
-		if (i >= resume_delay) {
+		if (i >= max_timeout) {
 			error("power_save: orphaning %d processes which are "
 			      "not terminating so slurmctld can exit", 
 			      proc_cnt);
@@ -411,12 +412,13 @@ static int _init_power_config(void)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
-	last_config    = slurmctld_conf.last_update;
-	idle_time      = conf->suspend_time - 1;
-	suspend_rate   = conf->suspend_rate;
-	resume_delay   = conf->resume_delay;
-	resume_rate    = conf->resume_rate;
-	slurmd_timeout = conf->slurmd_timeout;
+	last_config     = slurmctld_conf.last_update;
+	idle_time       = conf->suspend_time - 1;
+	suspend_rate    = conf->suspend_rate;
+	resume_timeout  = conf->resume_timeout;
+	resume_rate     = conf->resume_rate;
+	slurmd_timeout  = conf->slurmd_timeout;
+	suspend_timeout = conf->suspend_timeout;
 	_clear_power_config();
 	if (conf->suspend_program)
 		suspend_prog = xstrdup(conf->suspend_program);

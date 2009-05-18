@@ -1162,10 +1162,10 @@ typedef struct slurm_ctl_conf {
 				          * be propagated */
         char *propagate_rlimits;/* Propagate (all/specific) resource limits */
         char *propagate_rlimits_except;/* Propagate all rlimits except these */
-	uint16_t resume_delay;	/* minimum time from suspend before attempting
-				 * to resume a node */
 	char *resume_program;	/* program to make nodes full power */
 	uint16_t resume_rate;	/* nodes to make full power, per minute */
+	uint16_t resume_timeout;/* time required in order to perform a node
+				 * resume operation */
 	uint16_t resv_over_run;	/* how long a running job can exceed 
 				 * reservation time */
 	uint16_t ret2service;	/* 1 return DOWN node to service at 
@@ -1211,6 +1211,8 @@ typedef struct slurm_ctl_conf {
 	char *suspend_program;	/* program to make nodes power saving */
 	uint16_t suspend_rate;	/* nodes to make power saving, per minute */
 	uint16_t suspend_time;	/* node idle for this long before power save mode */
+	uint16_t suspend_timeout;/* time required in order to perform a node
+				 * suspend operation */
 	char *switch_type;	/* switch or interconnect type */
 	char *task_epilog;	/* pathname of task launch epilog */
 	char *task_plugin;	/* task launch plugin */
@@ -1227,6 +1229,9 @@ typedef struct slurm_ctl_conf {
                                       * they are considered "unkillable". */
 	uint16_t use_pam;	/* enable/disable PAM support */
 	uint16_t wait_time;	/* default job --wait time */
+	uint16_t z_16;		/* reserved for future use */
+	uint32_t z_32;		/* reserved for future use */
+	char *z_char;		/* reserved for future use */
 } slurm_ctl_conf_t;
 
 typedef struct slurmd_status_msg {
