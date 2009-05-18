@@ -539,7 +539,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->suspend_program     = xstrdup(conf->suspend_program);
 	conf_ptr->suspend_rate        = conf->suspend_rate;
 	conf_ptr->suspend_time        = conf->suspend_time;
-	conf_ptr->resume_timeout      = conf->resume_timeout;
+	conf_ptr->suspend_timeout     = conf->suspend_timeout;
 	conf_ptr->switch_type         = xstrdup(conf->switch_type);
 
 	conf_ptr->task_epilog         = xstrdup(conf->task_epilog);
