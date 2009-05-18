@@ -1225,7 +1225,6 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 				continue;
 			list_push(delete_list, found_record);
 			list_remove(itr);
-			num_block_to_free++;
 		}
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&block_state_mutex);

@@ -737,12 +737,12 @@ extern int free_block_list(List delete_list)
 		/* push job onto queue in a FIFO */
 		debug3("adding %s to be freed", found_record->bg_block_id);
 		if(!block_ptr_exist_in_list(*block_list, found_record)) {
+			num_block_to_free++;
 			if (list_push(*block_list, found_record) == NULL)
 				fatal("malloc failure in _block_op/list_push");
 		} else {
 			error("we had block %s already on the freeing list",
 			      found_record->bg_block_id);
-			num_block_to_free--;
 			continue;
 		}
 		/* already running MAX_AGENTS we don't really need more 
@@ -1651,7 +1651,9 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 		retries++;
 		sleep(1);
 	}
-	
+
+	num_block_to_free = num_block_freed = 0;
+
 	info("I am done deleting");
 
 	return SLURM_SUCCESS;
