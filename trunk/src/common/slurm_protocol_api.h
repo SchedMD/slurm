@@ -103,6 +103,11 @@ inline slurm_protocol_config_t *slurm_get_api_config(void);
  */
 uint16_t slurm_get_batch_start_timeout(void);
 
+/* slurm_get_resume_timeout
+ * RET ResumeTimeout value from slurm.conf
+ */
+uint16_t slurm_get_resume_timeout(void);
+
 /* slurm_get_complete_wait
  * RET CompleteWait value from slurm.conf
  */
