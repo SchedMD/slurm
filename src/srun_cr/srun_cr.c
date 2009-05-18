@@ -81,6 +81,8 @@ static int step_launched = 0;
 static pthread_mutex_t step_launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t step_launch_cond = PTHREAD_COND_INITIALIZER;
 
+static cr_client_id_t cr_id = -1;
+
 static void remove_listen_socket(void);
 static int  _wait_for_srun_connect(void);
 static void _read_info_from_srun(int srun_fd);
@@ -156,10 +158,17 @@ on_child_exit(int signum)
 {
 	int status;
 
+	/* 
+  	 * if srun_cr is checkpoint/restart-ed after srun exited, 
+  	 * srun_pid will be the pid of the new srun.
+	 */
+	cr_enter_cs(cr_id);
 	if (waitpid(srun_pid, &status, WNOHANG) == srun_pid) {
 		verbose("srun(%d) exited, status: %d", srun_pid, status);
 		mimic_exit(status);
 	}
+	kill(srun_pid, SIGKILL);
+	cr_leave_cs(cr_id);
 }
 
 static int
@@ -380,17 +389,19 @@ cr_callback(void *unused)
 		/* continue, nothing to do */
 	} else {
 		/* restarted */
-		if (step_launched) {
-			step_image_dir = get_step_image_dir(0);
-			if (step_image_dir == NULL) {
-				fatal("failed to get step image directory");
+		if (srun_pid) { /* srun forked */
+			if (step_launched) {
+				step_image_dir = get_step_image_dir(0);
+				if (step_image_dir == NULL) {
+					fatal("failed to get step image directory");
+				}
+				update_env("SLURM_RESTART_DIR", step_image_dir);
+				xfree(step_image_dir);
 			}
-			update_env("SLURM_RESTART_DIR", step_image_dir);
-			xfree(step_image_dir);
-		}
 
-		if (fork_exec_srun()) {
-			fatal("failed fork/exec srun");
+			if (fork_exec_srun()) {
+				fatal("failed fork/exec srun");
+			}
 		}
 
 		/* XXX: step_launched => listen_fd valid */
@@ -408,7 +419,6 @@ int
 main(int argc, char **argv)
 {
 	int debug_level, sig, srun_fd;
-	cr_client_id_t cr_id;
 	struct sigaction sa;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	struct sockaddr_un ca;
@@ -432,7 +442,7 @@ main(int argc, char **argv)
 	
 	/* forward signals. copied from cr_restart */
 	sa.sa_sigaction = signal_child;
-	sa.sa_flags = SA_RESTART | SA_NOMASK | SA_SIGINFO;
+	sa.sa_flags = SA_RESTART | SA_NODEFER | SA_SIGINFO;
 	sigemptyset(&sa.sa_mask);
 	for (sig = 0;  sig < _NSIG; sig ++) {
 		if (sig == SIGSTOP ||
@@ -441,11 +451,15 @@ main(int argc, char **argv)
 			continue;
 		sigaction(sig, &sa, NULL);
 	}
-	signal(SIGCHLD, on_child_exit);
+	sa.sa_sigaction = on_child_exit;
+	sa.sa_flags = SA_RESTART | SA_SIGINFO | SA_NOCLDSTOP;
+	sigaction(SIGCHLD, &sa, NULL);
 
+	cr_enter_cs(cr_id); /* BEGIN CS: avoid race condition of whether srun is forked */
 	if ( fork_exec_srun() ) {
 		fatal("failed fork/exec/wait srun");
 	}
+	cr_leave_cs(cr_id); /* END CS */
 
 	while (1) {
 		pthread_mutex_lock(&step_launch_mutex);
