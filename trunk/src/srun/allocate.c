@@ -62,6 +62,19 @@
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
 
+#ifdef HAVE_BG
+#include "src/api/job_info.h"
+#include "src/api/node_select_info.h"
+#include "src/common/node_select.h"
+#include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#endif
+
+#ifdef HAVE_CRAY_XT
+#include "src/common/node_select.h"
+#endif
+
+
 #define MAX_ALLOC_WAIT 60	/* seconds */
 #define MIN_ALLOC_WAIT  5	/* seconds */
 #define MAX_RETRIES    10
@@ -84,6 +97,18 @@ static void _set_pending_job_id(uint32_t job_id);
 static void _exit_on_signal(int signo);
 static void _signal_while_allocating(int signo);
 static void  _intr_handler(int signo);
+
+#ifdef HAVE_BG
+#define POLL_SLEEP 3			/* retry interval in seconds  */
+static int _wait_bluegene_block_ready(
+			resource_allocation_response_msg_t *alloc);
+static int _blocks_dealloc();
+#endif
+
+#ifdef HAVE_CRAY_XT
+static int  _claim_reservation(resource_allocation_response_msg_t *alloc);
+#endif
+
 
 static sig_atomic_t destroy_job = 0;
 
@@ -190,6 +215,120 @@ _intr_handler(int signo)
 	destroy_job = 1;
 }
 
+#ifdef HAVE_BG
+/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
+static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
+{
+	int is_ready = 0, i, rc;
+	char *block_id = NULL;
+	int cur_delay = 0;
+	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
+		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
+
+	pending_job_id = alloc->job_id;
+	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
+			     &block_id);
+
+	for (i=0; (cur_delay < max_delay); i++) {
+		if(i == 1)
+			debug("Waiting for block %s to become ready for job",
+			     block_id);
+		if (i) {
+			sleep(POLL_SLEEP);
+			rc = _blocks_dealloc();
+			if ((rc == 0) || (rc == -1)) 
+				cur_delay += POLL_SLEEP;
+			debug2("still waiting");
+		}
+
+		rc = slurm_job_node_ready(alloc->job_id);
+
+		if (rc == READY_JOB_FATAL)
+			break;				/* fatal error */
+		if (rc == READY_JOB_ERROR)		/* error */
+			continue;			/* retry */
+		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+			break;
+		if (rc & READY_NODE_STATE) {		/* job and node ready */
+			is_ready = 1;
+			break;
+		}
+	}
+	if (is_ready)
+     		debug("Block %s is ready for job", block_id);
+	else if(!destroy_job)
+		error("Block %s still not ready", block_id);
+	else /* this should never happen, but if destroy_job
+		send back not ready */
+		is_ready = 0;
+
+	xfree(block_id);
+	pending_job_id = 0;
+
+	return is_ready;
+}
+
+/*
+ * Test if any BG blocks are in deallocating state since they are
+ * probably related to this job we will want to sleep longer
+ * RET	1:  deallocate in progress
+ *	0:  no deallocate in progress
+ *     -1: error occurred
+ */
+static int _blocks_dealloc()
+{
+	static node_select_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
+	int rc = 0, error_code = 0, i;
+	
+	if (bg_info_ptr) {
+		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
+						   &new_bg_ptr);
+		if (error_code == SLURM_SUCCESS)
+			select_g_free_node_info(&bg_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_bg_ptr = bg_info_ptr;
+		}
+	} else {
+		error_code = slurm_load_node_select((time_t) NULL, &new_bg_ptr);
+	}
+
+	if (error_code) {
+		error("slurm_load_partitions: %s\n",
+		      slurm_strerror(slurm_get_errno()));
+		return -1;
+	}
+	for (i=0; i<new_bg_ptr->record_count; i++) {
+		if(new_bg_ptr->bg_info_array[i].state 
+		   == RM_PARTITION_DEALLOCATING) {
+			rc = 1;
+			break;
+		}
+	}
+	bg_info_ptr = new_bg_ptr;
+	return rc;
+}
+#endif	/* HAVE_BG */
+
+#ifdef HAVE_CRAY_XT
+/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
+static int _claim_reservation(resource_allocation_response_msg_t *alloc)
+{
+	int rc = 0;
+	char *resv_id = NULL;
+
+	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_RESV_ID,
+			     &resv_id);
+	if (resv_id == NULL)
+		return rc;
+	if (basil_resv_conf(resv_id, alloc->job_id) == SLURM_SUCCESS)
+		rc = 1;
+	xfree(resv_id);
+	return rc;
+}
+#endif
+
+
 int
 allocate_test(void)
 {
@@ -250,6 +389,30 @@ allocate_nodes(void)
 		}
 	}
 	
+	if(resp && !destroy_job) {
+		/*
+		 * Allocation granted!
+		 */
+#ifdef HAVE_BG
+		if (!_wait_bluegene_block_ready(resp)) {
+			if(!destroy_job)
+				error("Something is wrong with the "
+				      "boot of the block.");
+			goto relinquish;
+		}
+#endif
+#ifdef HAVE_CRAY_XT
+		if (!_claim_reservation(resp)) {
+			if(!destroy_job)
+				error("Something is wrong with the ALPS "
+				      "resource reservation.");
+			goto relinquish;
+		}
+#endif
+	} else if (destroy_job) {
+		goto relinquish;
+	}
+
 	xsignal(SIGHUP, _exit_on_signal);
 	xsignal(SIGINT, ignore_signal);
 	xsignal(SIGQUIT, ignore_signal);
@@ -261,6 +424,14 @@ allocate_nodes(void)
 	job_desc_msg_destroy(j);
 
 	return resp;
+
+relinquish:
+
+	slurm_free_resource_allocation_response_msg(resp);
+	if(!destroy_job)
+		slurm_complete_job(resp->job_id, 1);
+	exit(1);
+	return NULL;
 }
 
 void
@@ -646,4 +817,5 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 
 	return 0;
 }
+
 

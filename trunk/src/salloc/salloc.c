@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 	xsignal(SIGTERM, _signal_while_allocating);
 	xsignal(SIGUSR1, _signal_while_allocating);
 	xsignal(SIGUSR2, _signal_while_allocating);
-
+	
 	before = time(NULL);
 	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait,
 					_pending_callback)) == NULL) {
@@ -222,25 +222,28 @@ int main(int argc, char *argv[])
 		}
 		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(1);
-	}
-
-	/*
-	 * Allocation granted!
-	 */
-	info("Granted job allocation %d", alloc->job_id);
+	} else if(!allocation_interrupted) {
+		/*
+		 * Allocation granted!
+		 */
+		info("Granted job allocation %d", alloc->job_id);
 #ifdef HAVE_BG
-	if (!_wait_bluegene_block_ready(alloc)) {
-		if(!allocation_interrupted)
-			error("Something is wrong with the boot of the block.");
-		goto relinquish;
-	}
+		if (!_wait_bluegene_block_ready(alloc)) {
+			if(!allocation_interrupted)
+				error("Something is wrong with the "
+				      "boot of the block.");
+			goto relinquish;
+		}
 #endif
 #ifdef HAVE_CRAY_XT
-	if (!_claim_reservation(alloc)) {
-		error("Something is wrong with the ALPS resource reservation.");
-		goto relinquish;
-	}
+		if (!_claim_reservation(alloc)) {
+			if(!allocation_interrupted)
+				error("Something is wrong with the ALPS "
+				      "resource reservation.");
+			goto relinquish;
+		}
 #endif
+	}
 
 	after = time(NULL);
 
