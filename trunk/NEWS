@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ============================
  -- Fix for bluegene systems to be able to create 32 node blocks with only 
     16 psets defined in dynamic layout mode.
+ -- Improve srun_cr handling of child srun forking. Patch from Hongjia Cao, 
+    NUDT.
 
 * Changes in SLURM 2.0.0-rc2
 ============================
