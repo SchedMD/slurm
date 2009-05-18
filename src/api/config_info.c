@@ -429,8 +429,12 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->suspend_program);
 	fprintf(out, "SuspendRate             = %u\n", 
 		slurm_ctl_conf_ptr->suspend_rate);
-	fprintf(out, "SuspendTime             = %d sec\n", 
-		((int)slurm_ctl_conf_ptr->suspend_time - 1));
+	if (slurm_ctl_conf_ptr->suspend_time == 0) {
+		fprintf(out, "SuspendTime             = NONE\n");
+	} else {
+		fprintf(out, "SuspendTime             = %d sec\n", 
+			((int)slurm_ctl_conf_ptr->suspend_time - 1));
+	}
 	fprintf(out, "SuspendTimeout          = %u sec\n", 
 		slurm_ctl_conf_ptr->suspend_timeout);
 	fprintf(out, "SwitchType              = %s\n",
