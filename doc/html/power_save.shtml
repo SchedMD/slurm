@@ -38,14 +38,6 @@ A value of zero results in no limits being imposed.
 The default value is 60.
 Use this to prevent rapid drops in power requirements.</li>
 
-<li><b>ResumeDelay</b>:
-Minimum delay between when a node is suspended before attempting
-to resume it (e.g. power it back up).
-This value should exceed the time required for <b>SuspendProgram</b> 
-to fully suspend a node.
-Its value should be no larger than <b>SlurmdTimeout</b>.
-The default value is 30 seconds.
-
 <li><b>ResumeRate</b>:
 Maximum number of nodes to be removed from power saving mode 
 per minute. 
@@ -78,6 +70,20 @@ will be requeued.
 For reasons of reliability, <b>ResumeProgram</b> may execute 
 more than once for a node when the <b>slurmctld</b> daemon 
 crashes and is restarted.</li>
+
+<li><b>SuspendTimeout</b>:
+Maximum time permitted (in second) between when a node suspend request 
+is issued and when the node shutdown is complete. 
+At that time the node must ready for a resume request to be issued 
+as needed for new workload.  
+The default value is 30 seconds.</li>
+
+<li><b>ResumeTimeout</b>:
+Maximum time permitted (in second) between when a node resume request 
+is issued and when the node is actually available for use. 
+Nodes which fail to respond in this time frame may be marked DOWN and
+the jobs scheduled on the node requeued.
+The default value is 60 seconds.</li>
 
 <li><b>SuspendExcNodes</b>:
 List of nodes to never place in power saving mode. 
@@ -160,7 +166,8 @@ impact of power saving mode before enabling it.</p>
 <h2>Fault tolerance</h2>
 
 <p>If the <i>slurmctld</i> daemon is terminated gracefully, it will
-wait up to <b>ResumeDelay</b> for any spawned <b>SuspendProgram</b> or 
+wait up to <b>SuspendTimeout</b> or <b>ResumeTimeout</b> (whichever
+is larger) for any spawned <b>SuspendProgram</b> or 
 <b>ResumeProgram</b> to terminate before the daemon terminates. 
 If the spawned program does not terminate within that time period, 
 the event will be logged and <i>slurmctld</i> will exit in order to 
@@ -181,6 +188,6 @@ In order to minimize this risk, when the <i>slurmctld</i> daemon is
 started and node which should be allocated to a job fails to respond, 
 the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
 
-<p style="text-align:center;">Last modified 14 May 2009</p>
+<p style="text-align:center;">Last modified 18 May 2009</p>
 
 <!--#include virtual="footer.txt"-->

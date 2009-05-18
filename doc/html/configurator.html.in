@@ -269,7 +269,8 @@ function displayfile()
    "# POWER SAVE SUPPORT FOR IDLE NODES (optional) <br>" +
    "#SuspendProgram= <br>" +
    "#ResumeProgram= <br>" +
-   "#ResumeDelay= <br>" +
+   "#SuspendTimeout= <br>" +
+   "#ResumeTimeout= <br>" +
    "#ResumeRate= <br>" +
    "#SuspendExcNodes= <br>" +
    "#SuspendExcParts= <br>" +

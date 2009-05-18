@@ -344,10 +344,10 @@ void slurm_print_ctl_conf ( FILE* out,
                 slurm_ctl_conf_ptr->propagate_rlimits_except);
 	fprintf(out, "ResumeProgram           = %s\n", 
 		slurm_ctl_conf_ptr->resume_program);
-	fprintf(out, "ResumeDelay             = %u sec\n", 
-		slurm_ctl_conf_ptr->resume_delay);
 	fprintf(out, "ResumeRate              = %u nodes/min\n", 
 		slurm_ctl_conf_ptr->resume_rate);
+	fprintf(out, "ResumeTimeout           = %u sec\n", 
+		slurm_ctl_conf_ptr->resume_timeout);
 	if (slurm_ctl_conf_ptr->resv_over_run == (uint16_t) INFINITE)
 		fprintf(out, "ResvOverRun             = UNLIMITED\n");
 	else {
@@ -431,6 +431,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->suspend_rate);
 	fprintf(out, "SuspendTime             = %d\n", 
 		((int)slurm_ctl_conf_ptr->suspend_time - 1));
+	fprintf(out, "SuspendTimeout          = %u sec\n", 
+		slurm_ctl_conf_ptr->suspend_timeout);
 	fprintf(out, "SwitchType              = %s\n",
 		slurm_ctl_conf_ptr->switch_type);
 	fprintf(out, "TaskEpilog              = %s\n",

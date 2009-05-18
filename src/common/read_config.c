@@ -217,9 +217,9 @@ s_p_options_t slurm_conf_options[] = {
 	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"PropagateResourceLimits", S_P_STRING},
-	{"ResumeDelay", S_P_UINT16},
 	{"ResumeProgram", S_P_STRING},
 	{"ResumeRate", S_P_UINT16},
+	{"ResumeTimeout", S_P_UINT16},
 	{"ResvOverRun", S_P_UINT16},
 	{"ReturnToService", S_P_UINT16},
 	{"SallocDefaultCommand", S_P_STRING},
@@ -253,6 +253,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SuspendProgram", S_P_STRING},
 	{"SuspendRate", S_P_UINT16},
 	{"SuspendTime", S_P_LONG},
+	{"SuspendTimeout", S_P_UINT16},
 	{"SwitchType", S_P_STRING},
 	{"TaskEpilog", S_P_STRING},
 	{"TaskProlog", S_P_STRING},
@@ -1427,7 +1428,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
-	ctl_conf_ptr->resume_delay		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->resume_timeout		= 0;
 	xfree (ctl_conf_ptr->resume_program);
 	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->resv_over_run		= 0;
@@ -1464,6 +1465,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->suspend_program);
 	ctl_conf_ptr->suspend_rate		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->suspend_time		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->suspend_timeout		= 0;
 	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->task_epilog);
 	xfree (ctl_conf_ptr->task_plugin);
@@ -2195,11 +2197,11 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_uint16(&conf->resv_over_run, "ResvOverRun", hashtbl);
 
-	if (!s_p_get_uint16(&conf->resume_delay, "ResumeDelay", hashtbl))
-		conf->resume_delay = DEFAULT_RESUME_DELAY;
 	s_p_get_string(&conf->resume_program, "ResumeProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->resume_rate, "ResumeRate", hashtbl))
 		conf->resume_rate = DEFAULT_RESUME_RATE;
+	if (!s_p_get_uint16(&conf->resume_timeout, "ResumeTimeout", hashtbl))
+		conf->resume_timeout = DEFAULT_RESUME_TIMEOUT;
 
 	s_p_get_string(&conf->salloc_default_command, "SallocDefaultCommand",
 			hashtbl);
@@ -2341,6 +2343,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->suspend_time = long_suspend_time + 1;
 	else
 		conf->suspend_time = 0;
+	if (!s_p_get_uint16(&conf->suspend_timeout, "SuspendTimeout", hashtbl))
+		conf->suspend_timeout = DEFAULT_SUSPEND_TIMEOUT;
 
 	/* see above for switch_type, order dependent */
 

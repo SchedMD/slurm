@@ -495,9 +495,9 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
         conf_ptr->propagate_rlimits_except = xstrdup(conf->
 						     propagate_rlimits_except);
 
-	conf_ptr->resume_delay        = conf->resume_delay;
 	conf_ptr->resume_program      = xstrdup(conf->resume_program);
 	conf_ptr->resume_rate         = conf->resume_rate;
+	conf_ptr->resume_timeout      = conf->resume_timeout;
 	conf_ptr->resv_over_run       = conf->resv_over_run;
 	conf_ptr->ret2service         = conf->ret2service;
 
@@ -539,6 +539,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->suspend_program     = xstrdup(conf->suspend_program);
 	conf_ptr->suspend_rate        = conf->suspend_rate;
 	conf_ptr->suspend_time        = conf->suspend_time;
+	conf_ptr->resume_timeout      = conf->resume_timeout;
 	conf_ptr->switch_type         = xstrdup(conf->switch_type);
 
 	conf_ptr->task_epilog         = xstrdup(conf->task_epilog);
