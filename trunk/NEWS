@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     NUDT.
  -- Configuration parameter ResumeDelay replaced by SuspendTimeout and 
     ResumeTimeout.
+ -- Fix some batch job launch bugs when powering up suspended nodes.
 
 * Changes in SLURM 2.0.0-rc2
 ============================

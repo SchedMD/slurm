@@ -5439,7 +5439,8 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	uint16_t batch_start_timeout = slurm_get_batch_start_timeout();
+	uint16_t batch_start_timeout = slurm_get_batch_start_timeout() +
+				       slurm_get_resume_timeout();
 	time_t recent = now - batch_start_timeout;
 
 	job_iterator = list_iterator_create(job_list);

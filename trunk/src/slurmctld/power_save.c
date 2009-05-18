@@ -129,7 +129,7 @@ static void _do_power_work(void)
 		node_ptr = &node_record_table_ptr[i];
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		susp_state = node_ptr->node_state & NODE_STATE_POWER_SAVE;
-		comp_state = node_ptr->node_state & JOB_COMPLETING;
+		comp_state = node_ptr->node_state & NODE_STATE_COMPLETING;
 
 		if (susp_state)
 			susp_total++;
