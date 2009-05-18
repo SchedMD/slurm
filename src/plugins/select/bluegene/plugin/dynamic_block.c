@@ -774,7 +774,6 @@ again:
 		remove_from_bg_list(bg_lists->main, found_record);
 		temp_list = list_create(NULL);
 		list_push(temp_list, found_record);
-		num_block_to_free++;
 		free_block_list(temp_list);
 		list_destroy(temp_list);
 		rc = SLURM_SUCCESS;

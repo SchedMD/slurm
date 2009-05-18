@@ -676,7 +676,6 @@ static int _check_for_booted_overlapping_blocks(
 					      bg_record->bg_block_id);
 					
 					list_push(temp_list, found_record);
-					num_block_to_free++;
 					free_block_list(temp_list);
 					list_destroy(temp_list);
 					

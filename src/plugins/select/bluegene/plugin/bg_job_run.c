@@ -402,16 +402,13 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		       found_record->bg_block_id, 
 		       bg_record->bg_block_id);
 		list_push(delete_list, found_record);
-		if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+		if(bg_conf->layout_mode == LAYOUT_DYNAMIC) 
 			list_remove(itr);
-		}
-		num_block_to_free++;
 	}		
 	list_iterator_destroy(itr);
 
 	if(requeue_job) {
-		num_block_to_free = 0;
-		num_block_freed = 0;
+		num_block_to_free = num_block_freed = 0;
 		list_destroy(delete_list);
 
 		_reset_block(bg_record);
@@ -448,8 +445,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	}
 	/* Zero out the values here because we are done with them and
 	   they will be ready for the next job */
-	num_block_to_free = 0;
-	num_block_freed = 0;
+	num_block_to_free = num_block_freed = 0;
 	
 	slurm_mutex_lock(&block_state_mutex);
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
@@ -639,7 +635,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	} else if (bg_record->state == RM_PARTITION_CONFIGURING) {
 		bg_record->boot_state = 1;		
 	}
-	
+
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %u finished during the start of the boot "
