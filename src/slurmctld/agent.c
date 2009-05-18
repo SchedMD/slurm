@@ -1532,7 +1532,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		queued_req_ptr->last_attempt  = now;
 	} else if (difftime(now, queued_req_ptr->first_attempt) >= 
 				 slurm_get_resume_timeout()) {
-		error("agent waited too long for node %s to come up, "
+		error("agent waited too long for node %s to respond, "
 		      "sending batch request anyway...", 
 		      node_ptr->name);
 		queued_req_ptr->last_attempt = (time_t) 0;
