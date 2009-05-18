@@ -165,7 +165,7 @@ typedef struct mail_info {
 } mail_info_t;
 
 static void _sig_handler(int dummy);
-static bool _batch_launch_defer(queued_request_t *queued_req_ptr);
+static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
 static inline int _comm_err(char *node_name);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
@@ -1129,7 +1129,7 @@ static void _list_delete_retry(void *retry_entry)
  */
 extern int agent_retry (int min_wait, bool mail_too)
 {
-	int list_size = 0;
+	int list_size = 0, rc;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
@@ -1171,7 +1171,16 @@ extern int agent_retry (int min_wait, bool mail_too)
 		retry_iter = list_iterator_create(retry_list);
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
-			if (_batch_launch_defer(queued_req_ptr))
+			rc = _batch_launch_defer(queued_req_ptr);
+			if (rc == -1) {		/* abort request */
+				_purge_agent_args(queued_req_ptr->
+						  agent_arg_ptr);
+				xfree(queued_req_ptr);
+				list_remove(retry_iter);
+				list_size--;
+				continue;
+			}
+			if (rc > 0)
 				continue;
  			if (queued_req_ptr->last_attempt == 0) {
 				list_remove(retry_iter);
@@ -1191,7 +1200,16 @@ extern int agent_retry (int min_wait, bool mail_too)
 		/* next try to find an older record to retry */
 		while ((queued_req_ptr = (queued_request_t *) 
 				list_next(retry_iter))) {
-			if (_batch_launch_defer(queued_req_ptr))
+			rc = _batch_launch_defer(queued_req_ptr);
+			if (rc == -1) { 	/* abort request */
+				_purge_agent_args(queued_req_ptr->
+						  agent_arg_ptr);
+				xfree(queued_req_ptr);
+				list_remove(retry_iter);
+				list_size--;
+				continue;
+			}
+			if (rc > 0)
 				continue;
 			age = difftime(now, queued_req_ptr->last_attempt);
 			if (age > min_wait) {
@@ -1457,52 +1475,70 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 
 /* return true if the requests is to launch a batch job and the message
  * destination is not yet powered up, otherwise return false */
-static bool _batch_launch_defer(queued_request_t *queued_req_ptr)
+/* Test if a batch launch request should be defered
+ * RET -1: abort the request, pending job cancelled
+ *      0: execute the request now
+ *      1: defer the request
+ */
+static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 {
 	char hostname[512];
 	agent_arg_t *agent_arg_ptr;
 	batch_job_launch_msg_t *launch_msg_ptr;
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
+	struct job_record  *job_ptr;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 	if (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH)
-		return false;
+		return 0;
 
-	if (difftime(now, queued_req_ptr->last_attempt) < 5) {
-		/* Reduce overhead by only testing once every 5 secs */
-		return false;
+	if (difftime(now, queued_req_ptr->last_attempt) < 10) {
+		/* Reduce overhead by only testing once every 10 secs */
+		return 1;
 	}
 
 	launch_msg_ptr = (batch_job_launch_msg_t *)agent_arg_ptr->msg_args;
+	job_ptr = find_job_record(launch_msg_ptr->job_id);
+	if ((job_ptr == NULL) || (job_ptr->job_state != JOB_RUNNING)) {
+		info("agent(batch_launch): removed pending request for "
+		     "cancelled job %u",
+		     launch_msg_ptr->job_id);
+		return -1;	/* job cancelled while waiting */
+	}
+
 	hostlist_deranged_string(agent_arg_ptr->hostlist, 
 				 sizeof(hostname), hostname);
 	node_ptr = find_node_record(hostname);
 	if (node_ptr == NULL) {
-		error("agent(batch_launch) could not locate node %s",
-		      agent_arg_ptr->hostlist);
-		queued_req_ptr->last_attempt = (time_t) 0;
-		return false;	/* no benefit to defer */
+		error("agent(batch_launch) removed pending request for job "
+		      "%s, missing node %s",
+		      launch_msg_ptr->job_id, agent_arg_ptr->hostlist);
+		return -1;	/* invalid request?? */
 	}
 
 	if (((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) &&
 	    ((node_ptr->node_state & NODE_STATE_NO_RESPOND) == 0)) {
+		/* ready to launch, adjust time limit for boot time */
+		int resume_timeout = slurm_get_resume_timeout();
+		if ((job_ptr->start_time + resume_timeout) >= now)
+			job_ptr->end_time = now + (job_ptr->time_limit * 60);
 		queued_req_ptr->last_attempt = (time_t) 0;
-		return false;
+		return 0;
 	}
 
 	if (queued_req_ptr->last_attempt == 0) {
 		queued_req_ptr->first_attempt = now;
 		queued_req_ptr->last_attempt  = now;
 	} else if (difftime(now, queued_req_ptr->first_attempt) >= 
-				slurm_get_batch_start_timeout()) {
+				 slurm_get_resume_timeout()) {
 		error("agent waited too long for node %s to come up, "
 		      "sending batch request anyway...", 
 		      node_ptr->name);
 		queued_req_ptr->last_attempt = (time_t) 0;
-		return false;
+		return 0;
 	}
 
 	queued_req_ptr->last_attempt  = now;
-	return true;
+	return 1;
 }
