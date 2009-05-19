@@ -29,6 +29,11 @@
 #define VOLATILE
 #endif
 #endif
+
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include "src/srun/srun_job.h"
 /*****************************************************************************
 *                                DEBUGGING SUPPORT                           *
