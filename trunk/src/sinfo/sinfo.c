@@ -50,6 +50,7 @@
 
 #ifdef HAVE_BG			     
 # include "src/plugins/select/bluegene/wrap_rm_api.h"
+# include "src/plugins/select/bluegene/plugin/bluegene.h"
 #endif
 
 /********************
@@ -342,7 +343,7 @@ static int _build_sinfo_data(List sinfo_list,
 	int i=0;
 	bg_info_record_t *bg_info_record = NULL;
 	int node_scaling = partition_msg->partition_array[0].node_scaling;
-	char *slurm_user = xstrdup(slurmctld_conf.slurm_user_name);
+	int block_error = 0;
 
 	for (i=0; i<node_msg->record_count; i++) {
 		node_ptr = &(node_msg->node_array[i]);
@@ -357,18 +358,29 @@ static int _build_sinfo_data(List sinfo_list,
 		node_ptr->threads = node_scaling;
 		node_ptr->cores = 0;
 		node_ptr->used_cpus = 0;
+		if((node_ptr->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN) 
+			continue;
+
+		if(node_ptr->node_state & NODE_STATE_DRAIN) {
+			if(node_ptr->node_state & NODE_STATE_FAIL) {
+				node_ptr->node_state &= ~NODE_STATE_DRAIN;
+				node_ptr->node_state &= ~NODE_STATE_FAIL;
+			} else {
+				node_ptr->cores += node_scaling;
+			}
+		}
+		node_ptr->node_state |= NODE_STATE_IDLE;
 	}
 
 	for (i=0; i<node_select_msg->record_count; i++) {
 		bg_info_record = &(node_select_msg->bg_info_array[i]);
 		
 		/* this block is idle we won't mark it */
-		if (bg_info_record->state != RM_PARTITION_ERROR
-		    && !strcmp(slurm_user, bg_info_record->owner_name))
+		if (bg_info_record->job_running == NO_JOB_RUNNING)
 			continue;
+
 		_update_nodes_for_bg(node_scaling, node_msg, bg_info_record);
 	}
-	xfree(slurm_user);
 
 #endif
 	/* by default every partition is shown, even if no nodes */
@@ -403,6 +415,14 @@ static int _build_sinfo_data(List sinfo_list,
 			if (params.filtering && _filter_out(node_ptr))
 				continue;
 #ifdef HAVE_BG
+			if((node_ptr->node_state & NODE_STATE_DRAIN) 
+			   && (node_ptr->node_state & NODE_STATE_FAIL)) {
+				node_ptr->node_state &= ~NODE_STATE_DRAIN;
+				node_ptr->node_state &= ~NODE_STATE_FAIL;
+				block_error = 1;
+			} else
+				block_error = 0;
+			node_ptr->threads = node_scaling;
 			for(i=0; i<3; i++) {
 				int norm = 0;
 				switch(i) {
@@ -458,6 +478,9 @@ static int _build_sinfo_data(List sinfo_list,
 						NODE_STATE_FLAGS;
 					node_ptr->node_state |= 
 						NODE_STATE_DRAIN;
+					if(block_error)
+						node_ptr->node_state
+							|= NODE_STATE_FAIL;
 					node_ptr->threads = node_ptr->cores;
 					break;
 				default:
@@ -786,36 +809,47 @@ static void _update_nodes_for_bg(int node_scaling,
 				 bg_info_record_t *bg_info_record)
 {
 	node_info_t *node_ptr = NULL;
-	hostlist_t hl;
-	char *node_name = NULL;
+	int j = 0;
 
 	/* we are using less than one node */
 	if(bg_info_record->conn_type == SELECT_SMALL) 
 		node_scaling = bg_info_record->node_cnt;
-       		   
-	hl = hostlist_create(bg_info_record->nodes);
-	while (1) {
-		if (node_name)
-			free(node_name);
-		node_name = hostlist_shift(hl);
-		if (!node_name)
-			break;
-		node_ptr = _find_node(node_name, node_msg);
-		if (!node_ptr)
-			continue;
-		/* cores is overloaded to be the cnodes in an error
-		 * state and used_cpus is overloaded to be the nodes in
-		 * use.  No block should be sent in here if it isn't
-		 * in use (that doesn't mean in a free state, it means
-		 * the user isn't slurm or the block is in an error state.  
-		 */
-		if(bg_info_record->state == RM_PARTITION_ERROR) 
-			node_ptr->cores += node_scaling;
-		else
-			node_ptr->used_cpus += node_scaling;
-	}
-	hostlist_destroy(hl);
 	
+	j = 0;
+	while(bg_info_record->bp_inx[j] >= 0) {
+		int i2 = 0;
+		for(i2 = bg_info_record->bp_inx[j];
+		    i2 <= bg_info_record->bp_inx[j+1];
+		    i2++) {
+			node_ptr = &(node_msg->node_array[i2]);
+			/* cores is overloaded to be the
+			 * cnodes in an error state and
+			 * used_cpus is overloaded to be the nodes in
+			 * use.  No block should be sent in
+			 * here if it isn't in use (that
+			 * doesn't mean in a free state, it means
+			 * the user isn't slurm or the block 
+			 * is in an error state.  
+			 */
+			if((node_ptr->node_state & NODE_STATE_BASE) 
+			   == NODE_STATE_DOWN) 
+				continue;
+			
+			if(bg_info_record->state
+			   == RM_PARTITION_ERROR) {
+				node_ptr->cores += node_scaling;
+				node_ptr->node_state 
+					|= NODE_STATE_DRAIN;
+				node_ptr->node_state
+					|= NODE_STATE_FAIL;
+			} else if(bg_info_record->job_running
+				  > NO_JOB_RUNNING)  
+				node_ptr->used_cpus += node_scaling;
+			else 
+				error("Hey we didn't get anything here");
+		}
+		j += 2;
+	}
 }
 #endif
 
