@@ -122,33 +122,37 @@ typedef struct connection {
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
 static pthread_t msg_pthread = (pthread_t) 0;
+static time_t sent_reg_time = (time_t) 0;
 
-static void      _term_handler(int);
-static void      _hup_handler(int);
-static void      _process_cmdline(int ac, char **av);
-static void      _create_msg_socket();
-static void      _msg_engine();
-static int       _slurmd_init();
-static int       _slurmd_fini();
-static void      _init_conf();
-static void      _destroy_conf();
-static void      _print_conf();
-static void      _read_config();
-static void 	 _kill_old_slurmd();
-static void      _reconfigure();
-static int       _restore_cred_state(slurm_cred_ctx_t ctx);
-static void      _increment_thd_count();
-static void      _decrement_thd_count();
-static void      _wait_for_all_threads();
-static int       _set_slurmd_spooldir(void);
-static void      _usage();
-static void      _handle_connection(slurm_fd fd, slurm_addr *client);
-static void     *_service_connection(void *);
-static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
-static void      _update_logging(void);
-static void      _atfork_prepare(void);
 static void      _atfork_final(void);
+static void      _atfork_prepare(void);
+static void      _create_msg_socket(void);
+static void      _decrement_thd_count(void);
+static void      _destroy_conf(void);
+static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
+static void      _handle_connection(slurm_fd fd, slurm_addr *client);
+static void      _hup_handler(int);
+static void      _increment_thd_count(void);
+static void      _init_conf(void);
 static void      _install_fork_handlers(void);
+static void 	 _kill_old_slurmd(void);
+static void      _msg_engine(void);
+static void      _print_conf(void);
+static void      _process_cmdline(int ac, char **av);
+static void      _read_config(void);
+static void      _reconfigure(void);
+static void     *_registration_engine(void *arg);
+static int       _restore_cred_state(slurm_cred_ctx_t ctx);
+static void     *_service_connection(void *);
+static int       _set_slurmd_spooldir(void);
+static int       _slurmd_init(void);
+static int       _slurmd_fini(void);
+static void      _spawn_registration_engine(void);
+static void      _term_handler(int);
+static void      _update_logging(void);
+static void      _usage(void);
+static void      _wait_for_all_threads(void);
+
 
 int 
 main (int argc, char *argv[])
@@ -284,26 +288,11 @@ main (int argc, char *argv[])
 
 	info("%s started on %T", xbasename(argv[0]));
 
-	for (i=0; ; i++) {
-        	if (send_registration_msg(SLURM_SUCCESS, true) == 
-		    SLURM_SUCCESS)
-			break;
-		if (i == 0) {
-			debug("Unable to register with slurm controller, "
-			      "retrying");
-		} else if (i > 3) {
-			/* MessageTimeout from send_registration_msg has
-			 * a default value of 10 seconds per message */
-			error("Unable to register with slurm controller, "
-			      "continuing");
-			break;
-		}
-	}
-
 	_install_fork_handlers();
 	list_install_fork_handlers();
 	slurm_conf_install_fork_handlers();
-	
+
+	_spawn_registration_engine();
 	_msg_engine();
 
 	/*
@@ -328,9 +317,59 @@ main (int argc, char *argv[])
        	return 0;
 }
 
+static void
+_spawn_registration_engine(void)
+{
+	int            rc;
+	pthread_attr_t attr;
+	pthread_t      id;
+	int            retries = 0;
+
+	slurm_attr_init(&attr);
+	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (rc != 0) {
+		errno = rc;
+		fatal("Unable to set detachstate on attr: %m");
+		slurm_attr_destroy(&attr);
+		return;
+	}
+
+	while (pthread_create(&id, &attr, &_registration_engine, NULL)) {
+		error("msg_engine: pthread_create: %m");
+		if (++retries > 3)
+			fatal("msg_engine: pthread_create: %m");
+		usleep(10);	/* sleep and again */
+	}
+	
+	return;
+}
+
+/* Spawn a thread to make sure we send at least one registration message to 
+ * slurmctld. If slurmctld restarts, it will request another registration 
+ * message. */
+static void *
+_registration_engine(void *arg)
+{
+	_increment_thd_count();
+
+	while (!_shutdown) {
+		if ((sent_reg_time == (time_t) 0) &&
+        	    (send_registration_msg(SLURM_SUCCESS, true) != 
+		     SLURM_SUCCESS)) {
+			verbose("Unable to register with slurm controller, "
+				"retrying");
+		} else if (_shutdown || sent_reg_time) {
+			break;
+		}
+		sleep(1);
+	}
+
+	_decrement_thd_count();
+	return NULL;
+}
 
 static void
-_msg_engine()
+_msg_engine(void)
 {
 	slurm_fd sock;
 
@@ -364,7 +403,7 @@ static void
 _decrement_thd_count(void)
 {
 	slurm_mutex_lock(&active_mutex);
-	if(active_threads>0)
+	if (active_threads>0)
 		active_threads--;
 	pthread_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
@@ -389,7 +428,7 @@ _increment_thd_count(void)
 }
 
 static void
-_wait_for_all_threads()
+_wait_for_all_threads(void)
 {
 	slurm_mutex_lock(&active_mutex);
 	while (active_threads > 0) {
@@ -496,8 +535,10 @@ send_registration_msg(uint32_t status, bool startup)
 	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
 		error("Unable to register: %m");
 		ret_val = SLURM_FAILURE;
-	} else
-		slurm_free_return_code_msg(resp.data);	
+	} else {
+		sent_reg_time = time(NULL);
+		slurm_free_return_code_msg(resp.data);
+	}
 	slurm_free_node_registration_status_msg (msg);
 
 	/* XXX look at response msg
@@ -626,7 +667,7 @@ _massage_pathname(char **path)
  * values into the slurmd configuration in preference of the defaults.
  */
 static void
-_read_config()
+_read_config(void)
 {
         char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
@@ -724,6 +765,7 @@ _read_config()
 		fatal("Unable to establish controller machine");
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
+	conf->slurmd_timeout = cf->slurmd_timeout;
 	conf->use_pam = cf->use_pam;
 	conf->task_plugin_param = cf->task_plugin_param;
 
@@ -760,7 +802,7 @@ _reconfigure(void)
 }
 
 static void
-_print_conf()
+_print_conf(void)
 {
 	slurm_ctl_conf_t *cf;
 	char *str, time_str[32];
@@ -833,7 +875,7 @@ _print_conf()
 /* Initialize slurmd configuration table.
  * Everything is already NULL/zero filled when called */
 static void
-_init_conf()
+_init_conf(void)
 {
 	char  host[MAXHOSTNAMELEN];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
@@ -855,7 +897,7 @@ _init_conf()
 }
 
 static void
-_destroy_conf()
+_destroy_conf(void)
 {
 	if(conf) {
 		xfree(conf->block_map);
@@ -924,7 +966,7 @@ _process_cmdline(int ac, char **av)
 			exit(0);
 			break;
 		default:
-			_usage(c);
+			_usage();
 			exit(1);
 			break;
 		}
@@ -933,7 +975,7 @@ _process_cmdline(int ac, char **av)
 
 
 static void
-_create_msg_socket()
+_create_msg_socket(void)
 {
 	char* node_addr;
 
@@ -962,7 +1004,7 @@ _create_msg_socket()
 
 
 static int
-_slurmd_init()
+_slurmd_init(void)
 {
 	struct rlimit rlim;
 	slurm_ctl_conf_t *cf;
@@ -1119,7 +1161,7 @@ cleanup:
  * All allocated memory should be freed
 \**************************************************************************/
 static int
-_slurmd_fini()
+_slurmd_fini(void)
 {
 	save_cred_state(conf->vctx);
 	int slurm_proctrack_init();

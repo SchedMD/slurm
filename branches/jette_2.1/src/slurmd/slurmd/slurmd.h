@@ -122,6 +122,7 @@ typedef struct slurmd_config {
 
 	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
 
+	uint16_t	slurmd_timeout;	/* SlurmdTimeout                   */
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        job_acct_gather_freq;
