@@ -9,7 +9,7 @@ documents those changes that are of interest to users and admins.
     NUDT.
  -- Configuration parameter ResumeDelay replaced by SuspendTimeout and 
     ResumeTimeout.
- -- BLUEGENE - sview now displays correct cnode numbers for drained nodes 
+ -- BLUEGENE - sview/sinfo now displays correct cnode numbers for drained nodes 
     or blocks in error state.
  -- Fix some batch job launch bugs when powering up suspended nodes.
 
