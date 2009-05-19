@@ -140,14 +140,14 @@ static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer);
 static int  _load_job_state(Buf buffer);
 static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
-				      time_t now);
+				      time_t now, time_t node_boot_time);
 static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer);
 static void _pack_default_job_details(struct job_details *detail_ptr,
 				      Buf buffer);
 static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer);
 static int  _purge_job_record(uint32_t job_id);
-static void _purge_lost_batch_jobs(int node_inx, time_t now);
+static void _purge_missing_jobs(int node_inx, time_t now);
 static void _read_data_array_from_file(char *file_name, char ***data,
 				       uint32_t * size);
 static void _read_data_from_file(char *file_name, char **data);
@@ -5336,6 +5336,13 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			reg_msg->node_name);
 		return;
 	}
+
+	if (node_ptr->up_time > reg_msg->up_time) {
+		verbose("Node %s rebooted %u secs ago", 
+			reg_msg->node_name, reg_msg->up_time);
+	}
+	node_ptr->up_time = reg_msg->up_time;
+
 	node_inx = node_ptr - node_record_table_ptr;
 
 	/* Check that jobs running are really supposed to be there */
@@ -5415,7 +5422,7 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 
 	jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 	if (jobs_on_node)
-		_purge_lost_batch_jobs(node_inx, now);
+		_purge_missing_jobs(node_inx, now);
 
 	if (jobs_on_node != reg_msg->job_count) {
 		/* slurmd will not know of a job unless the job has
@@ -5431,40 +5438,64 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 }
 
 /* Purge any batch job that should have its script running on node 
- * node_inx, but is not. Allow "batch_start_timeout" secs for startup. 
+ * node_inx, but is not. Allow BatchStartTimeout + ResumeTimeout seconds 
+ * for startup. 
+ *
+ * Purge all job steps that were started before the node was last booted.
  *
  * Also notify srun if any job steps should be active on this node
  * but are not found. */
-static void _purge_lost_batch_jobs(int node_inx, time_t now)
+static void _purge_missing_jobs(int node_inx, time_t now)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	uint16_t batch_start_timeout = slurm_get_batch_start_timeout();
-	time_t recent = now - batch_start_timeout;
+	struct node_record *node_ptr = node_record_table_ptr + node_inx;
+	uint16_t batch_start_timeout	= slurm_get_batch_start_timeout();
+	uint16_t msg_timeout		= slurm_get_msg_timeout();
+	uint16_t resume_timeout		= slurm_get_resume_timeout();
+	uint16_t suspend_time		= slurm_get_suspend_time();
+	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
+
+	if (node_ptr->up_time) {
+		node_boot_time = now - node_ptr->up_time;
+		node_boot_time -= msg_timeout;
+		node_boot_time -= 5;	/* allow for other delays */
+	}
+	batch_startup_time  = now - batch_start_timeout;
+	batch_startup_time -= msg_timeout;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool job_active = ((job_ptr->job_state == JOB_RUNNING) ||
 				   (job_ptr->job_state == JOB_SUSPENDED));
-		if (!job_active)
+
+		if ((!job_active) ||
+		    (!bit_test(job_ptr->node_bitmap, node_inx)))
 			continue;
-		if (job_ptr->batch_flag == 0) {
-			_notify_srun_missing_step(job_ptr, node_inx, now);
-			continue;
+		if ((job_ptr->batch_flag != 0)			&&
+		    (suspend_time != 0) /* power mgmt on */	&&
+		    (job_ptr->start_time < node_boot_time)) {
+			startup_time = batch_startup_time - resume_timeout;
+		} else
+			startup_time = batch_startup_time;
+
+		if ((job_ptr->batch_flag != 0)			&&
+		    (job_ptr->time_last_active < startup_time)	&&
+		    (job_ptr->start_time       < startup_time)	&&
+		    (node_inx == bit_ffs(job_ptr->node_bitmap))) {
+			info("Batch JobId=%u missing from node 0, killing it", 
+			     job_ptr->job_id);
+			job_complete(job_ptr->job_id, 0, false, NO_VAL);
+		} else {
+			_notify_srun_missing_step(job_ptr, node_inx, 
+						  now, node_boot_time);
 		}
-		if (((job_ptr->time_last_active+batch_start_timeout) > now) ||
-		    (job_ptr->start_time >= recent)     ||
-		    (node_inx != bit_ffs(job_ptr->node_bitmap)))
-			continue;
-		info("Batch JobId=%u missing from master node, killing it", 
-			job_ptr->job_id);
-		job_complete(job_ptr->job_id, 0, false, NO_VAL);
 	}
 	list_iterator_destroy(job_iterator);
 }
 
 static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx, 
-				      time_t now)
+				      time_t now, time_t node_boot_time)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -5473,6 +5504,8 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 	xassert(job_ptr);
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (!bit_test(step_ptr->step_node_bitmap, node_inx))
+			continue;
 		if (step_ptr->time_last_active >= now) {
 			/* Back up timer in case more than one node 
 			 * registration happens at this same time.
@@ -5480,7 +5513,18 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 			 * to count toward a different node's 
 			 * registration message. */
 			step_ptr->time_last_active = now - 1;
+		} else if ((step_ptr->start_time < node_boot_time) &&
+			   (step_ptr->no_kill == 0)) {
+			/* There is a risk that the job step's tasks completed
+			 * on this node before its reboot, but that should be 
+			 * very rare */
+			info("Node %s rebooted, killing missing step %u.%u", 
+			     node_name, job_ptr->job_id, step_ptr->step_id);
+			srun_step_complete(step_ptr);
+			signal_step_tasks(step_ptr, SIGKILL);
 		} else if (step_ptr->host && step_ptr->port) {
+			/* srun may be able to verify step exists on
+			 * this node using I/O sockets */
 			srun_step_missing(step_ptr, node_name);
 		}
 	}		
