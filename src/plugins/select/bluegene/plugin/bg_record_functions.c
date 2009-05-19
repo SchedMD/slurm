@@ -1365,7 +1365,6 @@ extern int put_block_in_error_state(bg_record_t *bg_record, int state)
 	slurm_mutex_unlock(&block_state_mutex);
 
 	trigger_block_error();
-	last_bg_update = time(NULL);
 
 	return SLURM_SUCCESS;
 }
@@ -1382,7 +1381,8 @@ extern int resume_block(bg_record_t *bg_record)
 	     "being in an error state.",
 	      bg_record->bg_block_id);
 
-	if(remove_from_bg_list(bg_lists->job_running, bg_record) == SLURM_SUCCESS) 
+	if(remove_from_bg_list(bg_lists->job_running, bg_record)
+	   == SLURM_SUCCESS) 
 		num_unused_cpus += bg_record->cpu_cnt;
 	remove_from_bg_list(bg_lists->booted, bg_record);
 

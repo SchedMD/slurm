@@ -198,20 +198,6 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
-#ifdef HAVE_BG
-static void _update_nodes_for_bg(int node_scaling,
-				 node_info_msg_t *node_msg,
-				 bg_info_record_t *bg_info_record);
-/* ERROR_STATE must be last since that will affect the state of the rest of the
-   midplane.
-*/
-enum {
-	SVIEW_BG_IDLE_STATE,
-	SVIEW_BG_ALLOC_STATE,
-	SVIEW_BG_ERROR_STATE
-};
-#endif
-
 static display_data_t *local_display_data = NULL;
 
 static char *got_edit_signal = NULL;
@@ -225,44 +211,6 @@ static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    int line);
 static node_info_t *_find_node(char *node_name, node_info_msg_t *node_msg);
 
-#ifdef HAVE_BG
-
-static void _update_nodes_for_bg(int node_scaling,
-				 node_info_msg_t *node_msg,
-				 bg_info_record_t *bg_info_record)
-{
-	node_info_t *node_ptr = NULL;
-	hostlist_t hl;
-	char *node_name = NULL;
-
-	/* we are using less than one node */
-	if(bg_info_record->conn_type == SELECT_SMALL) 
-		node_scaling = bg_info_record->node_cnt;
-       		   
-	hl = hostlist_create(bg_info_record->nodes);
-	while (1) {
-		node_name = hostlist_shift(hl);
-		if (!node_name)
-			break;
-		node_ptr = _find_node(node_name, node_msg);
-		free(node_name);
-		if (!node_ptr)
-			continue;
-		/* cores is overloaded to be the cnodes in an error
-		 * state and used_cpus is overloaded to be the nodes in
-		 * use.  No block should be sent in here if it isn't
-		 * in use (that doesn't mean in a free state, it means
-		 * the user isn't slurm or the block is in an error state.  
-		 */
-		if(bg_info_record->state == RM_PARTITION_ERROR) 
-			node_ptr->cores += node_scaling;
-		else
-			node_ptr->used_cpus += node_scaling;
-	}
-	hostlist_destroy(hl);
-	
-}
-#endif
 
 static int 
 _build_min_max_16_string(char *buffer, int buf_size, 
@@ -1460,9 +1408,8 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	hostlist_t hl;
 #ifdef HAVE_BG
 	int j;
-	bg_info_record_t *bg_info_record = NULL;
 	int node_scaling = part_info_ptr->partition_array[0].node_scaling;
-	char *slurm_user = NULL;
+	int block_error = 0;
 #endif
 	if(!changed && info_list) {
 		return info_list;
@@ -1477,39 +1424,6 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		return NULL;
 	}
 
-#ifdef HAVE_BG
-	slurm_user = xstrdup(slurmctld_conf.slurm_user_name);
-
-	for (i=0; i<node_info_ptr->record_count; i++) {
-		node_ptr = &(node_info_ptr->node_array[i]);
-		/* in each node_ptr we overload the threads var
-		 * with the number of cnodes in the used_cpus var
-		 * will be used to tell how many cnodes are
-		 * allocated and the cores will represent the cnodes
-		 * in an error state. So we can get an idle count by
-		 * subtracting those 2 numbers from the total possible
-		 * cnodes (which are the idle cnodes).
-		 */
-		node_ptr->threads = node_scaling;
-		node_ptr->cores = 0;
-		node_ptr->used_cpus = 0;
-	}
-
-	for (i=0; i<node_select_ptr->record_count; i++) {
-		bg_info_record = &(node_select_ptr->bg_info_array[i]);
-		
-		/* this block is idle we won't mark it */
-		if (bg_info_record->state != RM_PARTITION_ERROR
-		    && !strcmp(slurm_user, bg_info_record->owner_name))
-			continue;
-		_update_nodes_for_bg(node_scaling, node_info_ptr,
-				     bg_info_record);
-	}
-	xfree(slurm_user);
-
-#endif
-
-
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
 		if (!part_ptr->nodes || (part_ptr->nodes[0] == '\0'))
@@ -1521,6 +1435,14 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 			node_ptr = _find_node(node_name, node_info_ptr);
 			free(node_name);
 #ifdef HAVE_BG
+			if((node_ptr->node_state & NODE_STATE_DRAIN) 
+			   && (node_ptr->node_state & NODE_STATE_FAIL)) {
+				node_ptr->node_state &= ~NODE_STATE_DRAIN;
+				node_ptr->node_state &= ~NODE_STATE_FAIL;
+				block_error = 1;
+			} else
+				block_error = 0;
+			node_ptr->threads = node_scaling;
 			for(j=0; j<3; j++) {
 				int norm = 0;
 				switch(j) {
@@ -1573,8 +1495,11 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 						continue;
 					node_ptr->node_state &=
 						NODE_STATE_FLAGS;
-					node_ptr->node_state |= 
+					node_ptr->node_state |=
 						NODE_STATE_DRAIN;
+					if(block_error)
+						node_ptr->node_state
+							|= NODE_STATE_FAIL;
 					node_ptr->threads = node_ptr->cores;
 					break;
 				default:
@@ -1728,6 +1653,8 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	static bool changed = 0;
 		
 	if(!force && ((now - last) < global_sleep_time)) {
+		if(*part_ptr != part_info_ptr)
+			error_code = SLURM_SUCCESS;
 		*part_ptr = part_info_ptr;
 		if(changed) 
 			return SLURM_SUCCESS;
@@ -1752,6 +1679,10 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	}
 	
 	part_info_ptr = new_part_ptr;
+
+	if(*part_ptr != part_info_ptr) 
+		error_code = SLURM_SUCCESS;
+
 	*part_ptr = new_part_ptr;
 	return error_code;
 }

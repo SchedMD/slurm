@@ -49,31 +49,32 @@
 #include <time.h>
 
 typedef struct {
-	char *nodes;
-	char *ionodes;
-	char *owner_name;
 	char *bg_block_id;
-	int state;
-	int conn_type;
-	int node_use;
-	int node_cnt;
+	char *blrtsimage;       /* BlrtsImage for this block */
 	int *bp_inx;            /* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
+	int conn_type;
+	char *ionodes;
 	int *ionode_inx;        /* list index pairs for ionodes in the
 				 * node listed for *ionodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
-	char *blrtsimage;       /* BlrtsImage for this block */
+	int job_running;
 	char *linuximage;       /* LinuxImage for this block */
 	char *mloaderimage;     /* mloaderImage for this block */
+	char *nodes;
+	int node_cnt;
+	int node_use;
+	char *owner_name;
 	char *ramdiskimage;     /* RamDiskImage for this block */
+	int state;
 } bg_info_record_t;
 
 typedef struct {
+	bg_info_record_t *bg_info_array;
 	time_t    last_update;
 	uint32_t  record_count;
-	bg_info_record_t *bg_info_array;
 } node_select_info_msg_t;
 
 /*

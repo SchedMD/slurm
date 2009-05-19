@@ -469,6 +469,8 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	static bool changed = 0;
 
 	if(!force && ((now - last) < global_sleep_time)) {
+		if(*info_ptr != node_info_ptr)
+			error_code = SLURM_SUCCESS;
 		*info_ptr = node_info_ptr;
 		if(changed) 
 			return SLURM_SUCCESS;
@@ -495,6 +497,10 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		changed = 1;
 	}
 	node_info_ptr = new_node_ptr;
+
+	if(*info_ptr != node_info_ptr) 
+		error_code = SLURM_SUCCESS;
+	
 	*info_ptr = new_node_ptr;
 	return error_code;
 }
