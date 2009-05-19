@@ -121,7 +121,7 @@ main(int argc, char * argv[])
 	float speed;
 	uint16_t testnumproc = 0;
 	uint32_t up_time = 0;
-	uint16_t days, hours, mins, secs;
+	int days, hours, mins, secs;
 
 	if (argc > 1) {
 	    	_cpuinfo_path = argv[1];

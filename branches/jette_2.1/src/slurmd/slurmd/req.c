@@ -154,7 +154,7 @@ static gids_t *_gids_cache_lookup(char *user, gid_t gid);
 static List waiters;
 
 static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
-static time_t booted = 0;
+static time_t startup = 0;		/* daemon startup time */
 static time_t last_slurmctld_msg = 0;
 
 static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -175,8 +175,8 @@ slurmd_req(slurm_msg_t *msg)
 	int rc;
 
 	if (msg == NULL) {
-		if (booted == 0)
-			booted = time(NULL);
+		if (startup == 0)
+			startup = time(NULL);
 		if (waiters) {
 			list_destroy(waiters);
 			waiters = NULL;
@@ -1731,7 +1731,7 @@ _rpc_daemon_status(slurm_msg_t *msg)
 	resp->actual_threads     = conf->actual_threads;
 	resp->actual_real_mem    = conf->real_memory_size;
 	resp->actual_tmp_disk    = conf->tmp_disk_space;
-	resp->booted             = booted;
+	resp->booted             = startup;
 	resp->hostname           = xstrdup(conf->node_name);
 	resp->step_list          = _get_step_list();
 	resp->last_slurmctld_msg = last_slurmctld_msg;

@@ -72,6 +72,7 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/parse_spec.h"
+#include "src/common/parse_time.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/fd.h"
@@ -193,11 +194,11 @@ main (int argc, char *argv[])
 		char *curr_user = NULL;
 
 		/* since when you do a getpwuid you get a pointer to a
-		   structure you have to do a xstrdup on the first
-		   call or your information will just get over
-		   written.  This is a memory leak, but a fatal is
-		   called right after so it isn't that big of a deal.
-		*/
+		 * structure you have to do a xstrdup on the first
+		 * call or your information will just get over
+		 * written.  This is a memory leak, but a fatal is
+		 * called right after so it isn't that big of a deal.
+		 */
 		if ((pw=getpwuid(slurmd_uid)))
 			slurmd_user = xstrdup(pw->pw_name);	
 		if ((pw=getpwuid(curr_uid)))
@@ -283,8 +284,21 @@ main (int argc, char *argv[])
 
 	info("%s started on %T", xbasename(argv[0]));
 
-        if (send_registration_msg(SLURM_SUCCESS, true) < 0) 
-		error("Unable to register with slurm controller");
+	for (i=0; ; i++) {
+        	if (send_registration_msg(SLURM_SUCCESS, true) == 
+		    SLURM_SUCCESS)
+			break;
+		if (i == 0) {
+			debug("Unable to register with slurm controller, "
+			      "retrying");
+		} else if (i > 3) {
+			/* MessageTimeout from send_registration_msg has
+			 * a default value of 10 seconds per message */
+			error("Unable to register with slurm controller, "
+			      "continuing");
+			break;
+		}
+	}
 
 	_install_fork_handlers();
 	list_install_fork_handlers();
@@ -460,10 +474,10 @@ cleanup:
 	return NULL;
 }
 
-int
+extern int
 send_registration_msg(uint32_t status, bool startup)
 {
-	int retval = SLURM_SUCCESS;
+	int ret_val = SLURM_SUCCESS;
 	slurm_msg_t req;
 	slurm_msg_t resp;
 	slurm_node_registration_status_msg_t *msg = 
@@ -481,7 +495,7 @@ send_registration_msg(uint32_t status, bool startup)
 
 	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
 		error("Unable to register: %m");
-		retval = SLURM_FAILURE;
+		ret_val = SLURM_FAILURE;
 	} else
 		slurm_free_return_code_msg(resp.data);	
 	slurm_free_node_registration_status_msg (msg);
@@ -489,7 +503,7 @@ send_registration_msg(uint32_t status, bool startup)
 	/* XXX look at response msg
 	 */
 
-	return SLURM_SUCCESS;
+	return ret_val;
 }
 
 static void
@@ -511,17 +525,20 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->real_memory = conf->real_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
 
+	get_up_time(&conf->up_time);
+	msg->up_time     = conf->up_time;
+
 	if (first_msg) {
 		first_msg = false;
 		info("Procs=%u Sockets=%u Cores=%u Threads=%u "
-		     "Memory=%u TmpDisk=%u",
+		     "Memory=%u TmpDisk=%u Uptime=%u",
 		     msg->cpus, msg->sockets, msg->cores, msg->threads,
-		     msg->real_memory, msg->tmp_disk);
+		     msg->real_memory, msg->tmp_disk, msg->up_time);
 	} else {
 		debug3("Procs=%u Sockets=%u Cores=%u Threads=%u "
-		       "Memory=%u TmpDisk=%u",
+		       "Memory=%u TmpDisk=%u Uptime=%u",
 		       msg->cpus, msg->sockets, msg->cores, msg->threads,
-		       msg->real_memory, msg->tmp_disk);
+		       msg->real_memory, msg->tmp_disk, msg->up_time);
 	}
 	uname(&buf);
 	if ((arch = getenv("SLURM_ARCH")))
@@ -679,6 +696,7 @@ _read_config()
 	conf->threads = conf->actual_threads;
 
 	get_memory(&conf->real_memory_size);
+	get_up_time(&conf->up_time);
 
 	cf = slurm_conf_lock();
 	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
@@ -745,7 +763,7 @@ static void
 _print_conf()
 {
 	slurm_ctl_conf_t *cf;
-	char *str;
+	char *str, time_str[32];
 	int i;
 
 	cf = slurm_conf_lock();
@@ -768,6 +786,10 @@ _print_conf()
 	       conf->threads,
 	       conf->conf_threads,
 	       conf->actual_threads);
+
+	secs2time_str((time_t)conf->up_time, time_str, sizeof(time_str));
+	debug3("UpTime      = %u = %s", conf->up_time, time_str);
+
 	str = xmalloc(conf->block_map_size*5);
 	str[0] = '\0';
 	for (i = 0; i < conf->block_map_size; i++) {
