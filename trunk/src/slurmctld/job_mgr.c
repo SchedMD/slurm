@@ -5447,7 +5447,8 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool job_active = ((job_ptr->job_state == JOB_RUNNING) ||
 				   (job_ptr->job_state == JOB_SUSPENDED));
-		if (!job_active)
+		if ((!job_active) ||
+		    (!bit_test(job_ptr->node_bitmap, node_inx)))
 			continue;
 		if (job_ptr->batch_flag == 0) {
 			_notify_srun_missing_step(job_ptr, node_inx, now);
