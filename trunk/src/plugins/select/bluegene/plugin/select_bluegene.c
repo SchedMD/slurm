@@ -586,6 +586,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 				
 	info("%s", reason);
 	last_bg_update = time(NULL);
+
 	return rc;
 }
 

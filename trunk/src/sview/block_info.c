@@ -486,7 +486,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 	if(!changed && block_list) {
 		return block_list;
 	}
-	
+
 	if(block_list) {
 		list_destroy(block_list);
 	}
@@ -660,6 +660,8 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 	static bool changed = 0;
 		
 	if(!force && ((now - last) < global_sleep_time)) {
+		if(*node_select_ptr != bg_info_ptr)
+			error_code = SLURM_SUCCESS;
 		*node_select_ptr = bg_info_ptr;
 		if(changed) 
 			return SLURM_SUCCESS;
@@ -684,6 +686,10 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 	}
 
 	bg_info_ptr = new_bg_ptr;
+
+	if(*node_select_ptr != bg_info_ptr) 
+		error_code = SLURM_SUCCESS;
+	
 	*node_select_ptr = new_bg_ptr;
 #endif
 	return error_code;
@@ -872,10 +878,11 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 
 	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
 							force_refresh))
-	   == SLURM_NO_CHANGE_IN_DATA) { 
+	   == SLURM_NO_CHANGE_IN_DATA) {
 		if((!display_widget || view == ERROR_VIEW) 
-		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
+		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA)) {
 			goto display_it;
+		}
 		changed = 0;
 	} else if (block_error_code != SLURM_SUCCESS) {
 		if(view == ERROR_VIEW)

@@ -651,15 +651,15 @@ extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)
 #ifdef HAVE_BG		/* node selection specific logic */
 static void _free_node_info(bg_info_record_t *bg_info_record)
 {
-	xfree(bg_info_record->nodes);
-	xfree(bg_info_record->ionodes);
-	xfree(bg_info_record->owner_name);
 	xfree(bg_info_record->bg_block_id);
-	xfree(bg_info_record->bp_inx);
-	xfree(bg_info_record->ionode_inx);
 	xfree(bg_info_record->blrtsimage);
+	xfree(bg_info_record->bp_inx);
+	xfree(bg_info_record->ionodes);
+	xfree(bg_info_record->ionode_inx);
 	xfree(bg_info_record->linuximage);
 	xfree(bg_info_record->mloaderimage);
+	xfree(bg_info_record->nodes);
+	xfree(bg_info_record->owner_name);
 	xfree(bg_info_record->ramdiskimage);
 }
 
@@ -690,6 +690,8 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 #endif
 	safe_unpack32(&uint32_tmp, buffer);
 	bg_info_record->node_cnt = (int) uint32_tmp;
+	safe_unpack32(&uint32_tmp, buffer);
+	bg_info_record->job_running = (int) uint32_tmp;
 	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
 	if (bp_inx_str == NULL) {
 		bg_info_record->bp_inx = bitfmt2int("");

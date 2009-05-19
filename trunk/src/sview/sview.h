@@ -120,6 +120,18 @@ enum { EDIT_NONE,
        EDIT_TEXTBOX	
 };
 
+#ifdef HAVE_BG
+/* ERROR_STATE must be last since that will affect the state of the rest of the
+   midplane.
+*/
+enum {
+	SVIEW_BG_IDLE_STATE,
+	SVIEW_BG_ALLOC_STATE,
+	SVIEW_BG_ERROR_STATE
+};
+#endif
+
+
 typedef enum { SEARCH_JOB_ID = 1,
 	       SEARCH_JOB_USER,
 	       SEARCH_JOB_STATE,

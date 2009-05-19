@@ -38,6 +38,10 @@
 \*****************************************************************************/
 #include "sview.h"
 
+#ifdef HAVE_BG
+#include "src/plugins/select/bluegene/plugin/bluegene.h"
+#endif
+
 List grid_button_list = NULL;
 List blinking_button_list = NULL;
 
@@ -431,6 +435,7 @@ extern char *change_grid_color(List button_list, int start, int end,
 		}
 
 		node_base_state = grid_button->state & NODE_STATE_BASE;
+	
 		if (node_base_state == NODE_STATE_DOWN) {
 			_put_button_as_down(grid_button, NODE_STATE_DOWN);
 		} else if (grid_button->state & NODE_STATE_DRAIN) {
@@ -874,7 +879,7 @@ end_it:
 
 extern void sview_init_grid()
 {
-	node_info_msg_t *node_info_ptr = NULL;
+	static node_info_msg_t *node_info_ptr = NULL;
 	int error_code = SLURM_SUCCESS;
 	node_info_t *node_ptr = NULL;
 	int i = 0;
@@ -883,14 +888,156 @@ extern void sview_init_grid()
 	grid_button_t *grid_button = NULL;
 	GdkColor color;
 
+#ifdef HAVE_BG
+	int bg_error_code = SLURM_SUCCESS;
+	int part_error_code = SLURM_SUCCESS;
+	bg_info_record_t *bg_info_record = NULL;
+	static partition_info_msg_t *part_info_ptr = NULL;
+	static node_select_info_msg_t *node_select_ptr = NULL;
+	int j = 0;
+	static int node_scaling = 0;
+	int alter = 0;
+#endif
+
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
+#ifdef HAVE_BG
+		goto get_bg;
+#else
 		/* need to clear out old data */
 		sview_reset_grid();
 		return;
+#endif
 	} else if (error_code != SLURM_SUCCESS) {
 		return;
 	}
+
+#ifdef HAVE_BG
+get_bg:
+	if((part_error_code = get_new_info_part(&part_info_ptr, force_refresh))
+	   == SLURM_NO_CHANGE_IN_DATA) { 
+		// just goto the new info node 
+	} else if(part_error_code != SLURM_SUCCESS) {
+		return;
+	}
+
+	if((bg_error_code = get_new_info_node_select(&node_select_ptr, 
+						     force_refresh))
+	   == SLURM_NO_CHANGE_IN_DATA) {
+		if(error_code == SLURM_NO_CHANGE_IN_DATA
+		   && part_error_code == SLURM_NO_CHANGE_IN_DATA) {
+			/* need to clear out old data */
+			sview_reset_grid();
+			return;		
+		}
+	} else if(bg_error_code != SLURM_SUCCESS) {
+		return;
+	}
+
+	node_scaling = part_info_ptr->partition_array[0].node_scaling;
+
+	/* Here we need to reset the nodes off of what the blocks say */
+	for (i=0; i<node_info_ptr->record_count; i++) {
+		node_ptr = &(node_info_ptr->node_array[i]);
+		/* in each node_ptr we overload the threads var
+		 * with the number of cnodes in the used_cpus var
+		 * will be used to tell how many cnodes are
+		 * allocated and the cores will represent the cnodes
+		 * in an error state. So we can get an idle count by
+		 * subtracting those 2 numbers from the total possible
+		 * cnodes (which are the idle cnodes).
+		 */
+		node_ptr->threads = node_scaling;
+		node_ptr->cores = 0;
+		node_ptr->used_cpus = 0;
+		if((node_ptr->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN) 
+			continue;
+
+		if(node_ptr->node_state & NODE_STATE_DRAIN) {
+			if(node_ptr->node_state & NODE_STATE_FAIL) {
+				node_ptr->node_state &= ~NODE_STATE_DRAIN;
+				node_ptr->node_state &= ~NODE_STATE_FAIL;
+			} else {
+				node_ptr->cores += node_scaling;
+			}
+		}
+		node_ptr->node_state |= NODE_STATE_IDLE;
+	}
+
+	for (i=0; i<node_select_ptr->record_count; i++) {
+		bg_info_record = &(node_select_ptr->bg_info_array[i]);
+
+		/* this block is idle we won't mark it */
+		if (bg_info_record->job_running == NO_JOB_RUNNING)
+			continue;
+
+		if(bg_info_record->conn_type == SELECT_SMALL) 
+			alter = bg_info_record->node_cnt;
+		else
+			alter = node_scaling;
+
+/* 		g_print("Got here for %s with %d and %d\n", */
+/* 			bg_info_record->bg_block_id, */
+/* 			bg_info_record->state, */
+/* 			bg_info_record->job_running); */
+		/*adjust the drained or error blocks and jobs running
+		  on other blocks as explained below. */
+		j = 0;
+		while(bg_info_record->bp_inx[j] >= 0) {
+			int i2 = 0;
+			for(i2 = bg_info_record->bp_inx[j];
+			    i2 <= bg_info_record->bp_inx[j+1];
+			    i2++) {
+				node_ptr = &(node_info_ptr->node_array[i2]);
+				/* cores is overloaded to be the
+				 * cnodes in an error state and
+				 * used_cpus is overloaded to be the nodes in
+				 * use.  No block should be sent in
+				 * here if it isn't in use (that
+				 * doesn't mean in a free state, it means
+				 * the user isn't slurm or the block 
+				 * is in an error state.  
+				 */
+				if((node_ptr->node_state & NODE_STATE_BASE) 
+				   == NODE_STATE_DOWN) 
+					continue;
+				
+				if(bg_info_record->state
+				   == RM_PARTITION_ERROR) {
+					node_ptr->cores += alter;
+					node_ptr->node_state 
+						|= NODE_STATE_DRAIN;
+					node_ptr->node_state
+						|= NODE_STATE_FAIL;
+				} else if(bg_info_record->job_running
+					  > NO_JOB_RUNNING)  
+					node_ptr->used_cpus += alter;
+				else 
+					g_print("Hey we didn't get anything "
+						"here\n");
+			}
+			j += 2;
+		}
+	}
+	
+	/* now set up the extra nodes with the correct
+	   information */
+	/* for (i=0; i<node_info_ptr->record_count; i++) { */
+/* 		node_ptr = &(node_info_ptr->node_array[i]); */
+		
+/* 		if((node_ptr->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN)  */
+/* 			continue; */
+		
+/* 		/\* get the error node count *\/ */
+/* 		if(!node_ptr->cores) { */
+/* 			node_ptr->node_state &= ~NODE_STATE_DRAIN; */
+/* 			continue; */
+/* 		} */
+/* 		/\* just to get this on all the charts we will drain it */
+/* 		   here.  This must be removed in the part info *\/ */
+/* 		node_ptr->node_state |= NODE_STATE_DRAIN; */
+/* 	} */
+#endif
 
 	if(!grid_button_list) {
 		g_print("you need to run get_system_stats() first\n");
