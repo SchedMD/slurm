@@ -1255,6 +1255,11 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			return NULL;
 		}
 		xfree(query);
+		
+		/* Querying the steps in the fashion was faster than
+		   doing only 1 query and then matching the steps up
+		   later with the job.  
+		*/
 		while ((step_row = mysql_fetch_row(step_result))) {
 			/* check the bitmap to see if this is one of the steps
 			   we are looking for */
@@ -1304,7 +1309,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					step->end = job_cond->usage_end;
 			}
 
-			step->elapsed = step->end - step->start;
 			/* figure this out by start stop */
 			step->suspended = atoi(step_row[STEP_REQ_SUSPENDED]);
 			if(!step->end) {
