@@ -49,7 +49,7 @@
  */
 
 #ifdef HAVE_BG_FILES
-/* On bluegene systems the below structure is defined here so as to
+/* On bluegene systems the below structure is defined here.  So as to
  * not confict with allocate.c including this file we will just use the
  * definition there instead of defining it here. 
  */
