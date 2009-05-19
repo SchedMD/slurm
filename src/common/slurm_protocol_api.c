@@ -245,6 +245,23 @@ uint16_t slurm_get_resume_timeout(void)
         return resume_timeout;
 }
 
+/* slurm_get_suspend_time
+ * RET SuspendTime value from slurm.conf
+ */
+uint16_t slurm_get_suspend_time(void)
+{
+	uint16_t suspend_time = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		suspend_time = conf->suspend_time;
+		slurm_conf_unlock();
+	}
+	return suspend_time;
+}
+
 /* slurm_get_def_mem_per_task
  * RET DefMemPerTask value from slurm.conf
  */

@@ -1679,24 +1679,26 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	xassert(msg != NULL);
 
 	pack_time(msg->timestamp, buffer);
-	pack32((uint32_t)msg->status, buffer);
+	pack32(msg->status, buffer);
 	packstr(msg->node_name, buffer);
 	packstr(msg->arch, buffer);
 	packstr(msg->os, buffer);
-	pack16((uint32_t)msg->cpus, buffer);
-	pack16((uint32_t)msg->sockets, buffer);
-	pack16((uint32_t)msg->cores, buffer);
-	pack16((uint32_t)msg->threads, buffer);
-	pack32((uint32_t)msg->real_memory, buffer);
-	pack32((uint32_t)msg->tmp_disk, buffer);
-	pack32((uint32_t)msg->job_count, buffer);
+	pack16(msg->cpus, buffer);
+	pack16(msg->sockets, buffer);
+	pack16(msg->cores, buffer);
+	pack16(msg->threads, buffer);
+	pack32(msg->real_memory, buffer);
+	pack32(msg->tmp_disk, buffer);
+	pack32(msg->up_time, buffer);
+
+	pack32(msg->job_count, buffer);
 	for (i = 0; i < msg->job_count; i++) {
-		pack32((uint32_t)msg->job_id[i], buffer);
+		pack32(msg->job_id[i], buffer);
 	}
 	for (i = 0; i < msg->job_count; i++) {
 		pack32(msg->step_id[i], buffer);
 	}
-	pack16((uint16_t)msg->startup, buffer);
+	pack16(msg->startup, buffer);
 	if (msg->startup)
 		switch_g_pack_node_info(msg->switch_nodeinfo, buffer);
 }
@@ -1727,6 +1729,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	safe_unpack16(&node_reg_ptr->threads, buffer);
 	safe_unpack32(&node_reg_ptr->real_memory, buffer);
 	safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
+	safe_unpack32(&node_reg_ptr->up_time, buffer);
+
 	safe_unpack32(&node_reg_ptr->job_count, buffer);
 	node_reg_ptr->job_id =
 		xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);

@@ -213,6 +213,7 @@ struct node_record {
 	uint16_t threads;		/* number of threads per core */
 	uint32_t real_memory;		/* MB real memory on the node */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
+	uint32_t up_time;		/* seconds since node boot */
 	struct config_record *config_ptr;  /* configuration spec ptr */
 	uint16_t part_cnt;		/* number of associated partitions */
 	struct part_record **part_pptr;	/* array of pointers to partitions 

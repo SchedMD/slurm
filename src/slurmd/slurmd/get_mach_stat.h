@@ -60,6 +60,7 @@ extern int get_cpuinfo(uint16_t numproc,
 extern int get_mach_name(char *node_name);
 extern int get_memory(uint32_t *real_memory);
 extern int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);
+extern int get_up_time(uint32_t *up_time);
 
 #ifdef USE_OS_NAME
 extern int get_os_name(char *os_name);

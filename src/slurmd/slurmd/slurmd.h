@@ -90,6 +90,7 @@ typedef struct slurmd_config {
 	uint16_t     actual_threads;    /* actual thread per core count    */
 	uint32_t     real_memory_size;  /* amount of real memory	   */
 	uint32_t     tmp_disk_space;    /* size of temporary disk	   */
+	uint32_t     up_time;		/* seconds since last boot time    */
 	uint16_t     block_map_size;	/* size of block map               */
 	uint16_t     *block_map;	/* abstract->machine block map     */
 	uint16_t     *block_map_inv;	/* machine->abstract (inverse) map */
@@ -121,6 +122,7 @@ typedef struct slurmd_config {
 
 	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
 
+	uint16_t	slurmd_timeout;	/* SlurmdTimeout                   */
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        job_acct_gather_freq;
