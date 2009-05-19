@@ -76,7 +76,7 @@
 #define DBD_MAGIC		0xDEAD3219
 #define MAX_AGENT_QUEUE		10000
 #define MAX_DBD_MSG_LEN		16384
-#define SLURMDBD_TIMEOUT	300	/* Seconds SlurmDBD for response */
+#define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
 
 uint16_t running_cache = 0;
 pthread_mutex_t assoc_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
