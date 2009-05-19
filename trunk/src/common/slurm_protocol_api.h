@@ -108,6 +108,11 @@ uint16_t slurm_get_batch_start_timeout(void);
  */
 uint16_t slurm_get_resume_timeout(void);
 
+/* slurm_get_suspend_time
+ * RET SuspendTime value from slurm.conf
+ */
+uint16_t slurm_get_suspend_time(void);
+
 /* slurm_get_complete_wait
  * RET CompleteWait value from slurm.conf
  */
