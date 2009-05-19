@@ -547,6 +547,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	/* Finally, return the actual menu bar created by the item factory. */
 	return gtk_ui_manager_get_widget (ui_manager, "/main");
 }
+
 void *_popup_thr_main(void *arg)
 {
 	popup_thr(arg);		
