@@ -806,7 +806,8 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 	static bool changed = 0;
 		
 	if(!force && ((now - last) < global_sleep_time)) {
-		error_code = SLURM_NO_CHANGE_IN_DATA;
+		if(*info_ptr != resv_info_ptr) 
+			error_code = SLURM_SUCCESS;
 		*info_ptr = resv_info_ptr;
 		if(changed) 
 			return SLURM_SUCCESS;
@@ -829,7 +830,12 @@ extern int get_new_info_resv(reserve_info_msg_t **info_ptr,
 						     &new_resv_ptr);
 		changed = 1;
 	}
+
 	resv_info_ptr = new_resv_ptr;
+
+	if(*info_ptr != resv_info_ptr) 
+		error_code = SLURM_SUCCESS;
+
 	*info_ptr = new_resv_ptr;
 	return error_code;
 }

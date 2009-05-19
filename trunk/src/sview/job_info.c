@@ -2464,10 +2464,14 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
+	static bool changed = 0;
 		
 	if(!force && ((now - last) < global_sleep_time)) {
-		error_code = SLURM_NO_CHANGE_IN_DATA;
+		if(*info_ptr != old_step_ptr) 
+			error_code = SLURM_SUCCESS;
 		*info_ptr = old_step_ptr;
+		if(changed) 
+			return SLURM_SUCCESS;
 		return error_code;
 	}
 	last = now;
@@ -2476,16 +2480,24 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 		error_code = slurm_get_job_steps(old_step_ptr->last_update, 
 						 0, 0, &new_step_ptr, 
 						 show_flags);
-		if (error_code ==  SLURM_SUCCESS)
+		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_step_info_response_msg(old_step_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+			changed = 1;
+		} else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_step_ptr = old_step_ptr;
+			changed = 0;
 		}
-	} else
+	} else {
 		error_code = slurm_get_job_steps((time_t) NULL, 0, 0, 
 						 &new_step_ptr, show_flags);
+		changed = 1;
+	}
 	old_step_ptr = new_step_ptr;
+
+	if(*info_ptr != old_step_ptr) 
+		error_code = SLURM_SUCCESS;
+
 	*info_ptr = new_step_ptr;
 	return error_code;
 }
