@@ -4939,6 +4939,7 @@ extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
+			pack16(0, buffer);
 			return;
 		}
 
@@ -5089,6 +5090,7 @@ extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 		count = NO_VAL;
 
 		pack16(object->without_steps, buffer);
+		pack16(object->without_usage_truncation, buffer);
 	} else if(rpc_version >= 4) {
 		if(!object) {
 			pack32(NO_VAL, buffer);
@@ -5499,6 +5501,7 @@ extern int unpack_acct_job_cond(void **object, uint16_t rpc_version, Buf buffer)
 		}
 
 		safe_unpack16(&object_ptr->without_steps, buffer);
+		safe_unpack16(&object_ptr->without_usage_truncation, buffer);
 	} else if(rpc_version >= 4) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {

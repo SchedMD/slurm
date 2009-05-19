@@ -793,6 +793,43 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t2.lft"
 	};
 
+	enum {
+		JOB_REQ_ID,
+		JOB_REQ_JOBID,
+		JOB_REQ_ASSOCID,
+		JOB_REQ_WCKEY,
+		JOB_REQ_WCKEYID,
+		JOB_REQ_UID,
+		JOB_REQ_GID,
+		JOB_REQ_RESVID,
+		JOB_REQ_PARTITION,
+		JOB_REQ_BLOCKID,
+		JOB_REQ_CLUSTER1,
+		JOB_REQ_ACCOUNT1,
+		JOB_REQ_ELIGIBLE,
+		JOB_REQ_SUBMIT,
+		JOB_REQ_START,
+		JOB_REQ_END,
+		JOB_REQ_SUSPENDED,
+		JOB_REQ_NAME,
+		JOB_REQ_TRACKSTEPS,
+		JOB_REQ_STATE,
+		JOB_REQ_COMP_CODE,
+		JOB_REQ_PRIORITY,
+		JOB_REQ_REQ_CPUS,
+		JOB_REQ_ALLOC_CPUS,
+		JOB_REQ_ALLOC_NODES,
+		JOB_REQ_NODELIST,
+		JOB_REQ_NODE_INX,
+		JOB_REQ_KILL_REQUID,
+		JOB_REQ_QOS,
+		JOB_REQ_USER_NAME,
+		JOB_REQ_CLUSTER,
+		JOB_REQ_ACCOUNT,
+		JOB_REQ_LFT,
+		JOB_REQ_COUNT		
+	};
+
 	/* if this changes you will need to edit the corresponding 
 	 * enum below also t1 is step_table */
 	char *step_req_inx[] = {
@@ -832,42 +869,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.ave_cpu"
 	};
 
-	enum {
-		JOB_REQ_ID,
-		JOB_REQ_JOBID,
-		JOB_REQ_ASSOCID,
-		JOB_REQ_WCKEY,
-		JOB_REQ_WCKEYID,
-		JOB_REQ_UID,
-		JOB_REQ_GID,
-		JOB_REQ_RESVID,
-		JOB_REQ_PARTITION,
-		JOB_REQ_BLOCKID,
-		JOB_REQ_CLUSTER1,
-		JOB_REQ_ACCOUNT1,
-		JOB_REQ_ELIGIBLE,
-		JOB_REQ_SUBMIT,
-		JOB_REQ_START,
-		JOB_REQ_END,
-		JOB_REQ_SUSPENDED,
-		JOB_REQ_NAME,
-		JOB_REQ_TRACKSTEPS,
-		JOB_REQ_STATE,
-		JOB_REQ_COMP_CODE,
-		JOB_REQ_PRIORITY,
-		JOB_REQ_REQ_CPUS,
-		JOB_REQ_ALLOC_CPUS,
-		JOB_REQ_ALLOC_NODES,
-		JOB_REQ_NODELIST,
-		JOB_REQ_NODE_INX,
-		JOB_REQ_KILL_REQUID,
-		JOB_REQ_QOS,
-		JOB_REQ_USER_NAME,
-		JOB_REQ_CLUSTER,
-		JOB_REQ_ACCOUNT,
-		JOB_REQ_LFT,
-		JOB_REQ_COUNT		
-	};
 	enum {
 		STEP_REQ_STEPID,
 		STEP_REQ_START,
@@ -1098,20 +1099,25 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job->submit = submit;
 		job->start = atoi(row[JOB_REQ_START]);
 		job->end = atoi(row[JOB_REQ_END]);
-		/* since the job->end could be set later end it here */
-		if(job->end)
-			job_ended = 1;
 
-		if(job_cond && job_cond->usage_start) {
+		/* since the job->end could be set later end it here */
+		if(job->end) {
+			job_ended = 1;
+			if(!job->start || (job->start > job->end))
+				job->start = job->end;
+		}
+
+		if(job_cond && !job_cond->without_usage_truncation
+		   && job_cond->usage_start) {
 			if(job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
-
-			if(!job->start && job->end)
-				job->start = job->end;
 
 			if(!job->end || job->end > job_cond->usage_end) 
 				job->end = job_cond->usage_end;
 
+			if(!job->start)
+				job->start = job->end;
+			
 			job->elapsed = job->end - job->start;
 
 			if(row[JOB_REQ_SUSPENDED]) {

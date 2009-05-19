@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - sview/sinfo now displays correct cnode numbers for drained nodes 
     or blocks in error state.
  -- Fix some batch job launch bugs when powering up suspended nodes.
+ -- added option '-T' for sacct to truncate time of of start and end and set
+    default of --starttime to Midnight of current day.
 
 * Changes in SLURM 2.0.0-rc2
 ============================
