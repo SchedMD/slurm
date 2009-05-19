@@ -42,11 +42,20 @@
  * DO NOT change the name of this structure or its fields. The debugger knows
  * them, and will be confused if you change them.
  */
+
+#ifdef HAVE_BG_FILES
+/* On bluegene systems the below structure is defined here so as to
+ * not confict with allocate.c including this file we will just use the
+ * definition there instead of defining it here. 
+ */
+# include "src/plugins/select/bluegene/wrap_rm_api.h"
+#else
 typedef struct {
   char * host_name;           /* Something we can pass to inet_addr */
   char * executable_name;     /* The name of the image */
   int    pid;		      /* The pid of the process */
 } MPIR_PROCDESC;
+#endif
 
 /* Array of procdescs for debugging purposes */
 extern MPIR_PROCDESC *MPIR_proctable;
