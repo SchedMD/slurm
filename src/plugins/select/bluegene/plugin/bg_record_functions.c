@@ -180,7 +180,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		memset(&best_start, 0, sizeof(best_start));
 		bg_record->bp_count = 0;
 		if((bg_record->conn_type >= SELECT_SMALL) && (!startup))
-			error("We shouldn't be here there could be some "
+			error("process_nodes: "
+			      "We shouldn't be here there could be some "
 			      "badness if we use this logic %s",
 			      bg_record->nodes);
 		while (bg_record->nodes[j] != '\0') {
@@ -215,7 +216,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 					best_start[X] = start[X];
 					best_start[Y] = start[Y];
 					best_start[Z] = start[Z];
-					debug3("start is now %dx%dx%d",
+					debug3("process_nodes: "
+					       "start is now %dx%dx%d",
 					       best_start[X],
 					       best_start[Y],
 					       best_start[Z]);
@@ -248,7 +250,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 					best_start[X] = start[X];
 					best_start[Y] = start[Y];
 					best_start[Z] = start[Z];
-					debug3("start is now %dx%dx%d",
+					debug3("process_nodes: "
+					       "start is now %dx%dx%d",
 					       best_start[X],
 					       best_start[Y],
 					       best_start[Z]);
@@ -270,7 +273,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		bg_record->start[X] = best_start[X];
 		bg_record->start[Y] = best_start[Y];
 		bg_record->start[Z] = best_start[Z];
-		debug2("start is %dx%dx%d",
+		debug2("process_nodes: "
+		       "start is %dx%dx%d",
 		       bg_record->start[X],
 		       bg_record->start[Y],
 		       bg_record->start[Z]);
@@ -289,7 +293,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	while ((ba_node = list_next(itr)) != NULL) {
 		if(!ba_node->used)
 			continue;
-		debug4("%c%c%c is included in this block",
+		debug4("process_nodes: "
+		       "%c%c%c is included in this block",
 		       alpha_num[ba_node->coord[X]],
 		       alpha_num[ba_node->coord[Y]],
 		       alpha_num[ba_node->coord[Z]]);
@@ -308,7 +313,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		}
 	}
 	list_iterator_destroy(itr);
-	debug3("geo = %c%c%c bp count is %d\n",
+	debug3("process_nodes: "
+	       "geo = %c%c%c bp count is %d\n",
 	       alpha_num[bg_record->geo[X]],
 	       alpha_num[bg_record->geo[Y]],
 	       alpha_num[bg_record->geo[Z]],
@@ -326,7 +332,6 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	} else if(bg_record->node_cnt == bg_conf->bp_node_cnt)
 		bg_record->full_block = 1;
 	
-	
 /* #ifndef HAVE_BG_FILES */
 /* 	max_dim[X] = MAX(max_dim[X], end[X]); */
 /* 	max_dim[Y] = MAX(max_dim[Y], end[Y]); */
@@ -336,7 +341,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	if (node_name2bitmap(bg_record->nodes, 
 			     false, 
 			     &bg_record->bitmap)) {
-		fatal("1 Unable to convert nodes %s to bitmap", 
+		fatal("process_nodes: "
+		      "1 Unable to convert nodes %s to bitmap", 
 		      bg_record->nodes);
 	}
 	return;
@@ -678,7 +684,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	
 	pw_uid = uid_from_string(bg_record->user_name);
 	if(pw_uid == (uid_t) -1) {
-		error("No such user: %s", bg_record->user_name);
+		error("add_bg_record: No such user: %s", bg_record->user_name);
 	} else {
 		bg_record->user_uid = pw_uid;
 	}
@@ -687,17 +693,18 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	if(used_nodes) {
 		if(copy_node_path(used_nodes, &bg_record->bg_block_list)
 		   == SLURM_ERROR)
-			error("couldn't copy the path for the allocation");
+			error("add_bg_record: "
+			      "couldn't copy the path for the allocation");
 		bg_record->bp_count = list_count(used_nodes);
 	}
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
 #ifdef HAVE_BGL
-	debug2("asking for %s %d %d %s", 
+	debug2("add_bg_record: asking for %s %d %d %s", 
 	       blockreq->block, blockreq->small32, blockreq->small128,
 	       convert_conn_type(blockreq->conn_type));
 #else
-	debug2("asking for %s %d %d %d %d %d %s", 
+	debug2("add_bg_record: asking for %s %d %d %d %d %d %s", 
 	       blockreq->block, blockreq->small256, 
 	       blockreq->small128, blockreq->small64,
 	       blockreq->small32, blockreq->small16, 
@@ -724,7 +731,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		snprintf(bg_record->nodes, len, "%s%s", 
 			bg_conf->slurm_node_prefix, blockreq->block+i);
 	} else 
-		fatal("BPs=%s is in a weird format", blockreq->block); 
+		fatal("add_bg_record: BPs=%s is in a weird format",
+		      blockreq->block); 
 	
 	process_nodes(bg_record, false);
 	
@@ -766,13 +774,14 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		/* this isn't a correct list so we need to set it later for
 		   now we just used it to be the bp number */
 		if(!used_nodes) {
-			debug4("we didn't get a request list so we are "
+			debug4("add_bg_record: "
+			       "we didn't get a request list so we are "
 			       "destroying this bp list");
 			list_destroy(bg_record->bg_block_list);
 			bg_record->bg_block_list = NULL;
 		}
 	} else {
-		debug("adding a small block");
+		debug("add_bg_record: adding a small block");
 		if(no_check)
 			goto no_check;
 		/* if the ionode cnt for small32 is 0 then don't
@@ -780,7 +789,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		*/
 		if(bg_conf->nodecard_ionode_cnt < 2) {
 			if(!bg_conf->nodecard_ionode_cnt && blockreq->small32) 
-				fatal("There is an error in your "
+				fatal("add_bg_record: "
+				      "There is an error in your "
 				      "bluegene.conf file.\n"
 				      "Can't create a 32 node block with "
 				      "Numpsets=%u. (Try setting it "
@@ -788,14 +798,16 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 				      bg_conf->numpsets);
 #ifndef HAVE_BGL
 			if(blockreq->small16) 
-				fatal("There is an error in your "
+				fatal("add_bg_record: "
+				      "There is an error in your "
 				      "bluegene.conf file.\n"
 				      "Can't create a 16 node block with "
 				      "Numpsets=%u. (Try setting it to "
 				      "at least 32)",
 				      bg_conf->numpsets);
 			if((bg_conf->io_ratio < 0.5) && blockreq->small64) 
-				fatal("There is an error in your "
+				fatal("add_bg_record: "
+				      "There is an error in your "
 				      "bluegene.conf file.\n"
 				      "Can't create a 64 node block with "
 				      "Numpsets=%u. (Try setting it "
@@ -806,7 +818,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 
 #ifdef HAVE_BGL
 		if(blockreq->small32==0 && blockreq->small128==0) {
-			info("No specs given for this small block, "
+			info("add_bg_record: "
+			     "No specs given for this small block, "
 			     "I am spliting this block into 4 128CnBlocks");
 			blockreq->small128=4;
 		}		
@@ -814,7 +827,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		i = (blockreq->small32*bg_conf->nodecard_node_cnt) + 
 			(blockreq->small128*bg_conf->quarter_node_cnt);
 		if(i != bg_conf->bp_node_cnt)
-			fatal("There is an error in your bluegene.conf file.\n"
+			fatal("add_bg_record: "
+			      "There is an error in your bluegene.conf file.\n"
 			      "I am unable to request %d nodes consisting of "
 			      "%u 32CnBlocks and\n%u 128CnBlocks in one "
 			      "base partition with %u nodes.", 
@@ -825,7 +839,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		if(!blockreq->small16 && !blockreq->small32 
 		   && !blockreq->small64 && !blockreq->small128 
 		   && !blockreq->small256) {
-			info("No specs given for this small block, "
+			info("add_bg_record: "
+			     "No specs given for this small block, "
 			     "I am spliting this block into 2 256CnBlocks");
 			blockreq->small256=2;
 		}		
@@ -836,7 +851,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 			+ (blockreq->small128*128)
 			+ (blockreq->small256*256);
 		if(i != bg_conf->bp_node_cnt)
-			fatal("There is an error in your bluegene.conf file.\n"
+			fatal("add_bg_record: "
+			      "There is an error in your bluegene.conf file.\n"
 			      "I am unable to request %d nodes consisting of "
 			      "%u 16CNBlocks, %u 32CNBlocks,\n"
 			      "%u 64CNBlocks, %u 128CNBlocks, "
