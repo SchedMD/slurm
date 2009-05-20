@@ -5513,19 +5513,19 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 			 * to count toward a different node's 
 			 * registration message. */
 			step_ptr->time_last_active = now - 1;
+		} else if (step_ptr->host && step_ptr->port) {
+			/* srun may be able to verify step exists on
+			 * this node using I/O sockets and kill the
+			 * job as needed */
+			srun_step_missing(step_ptr, node_name);
 		} else if ((step_ptr->start_time < node_boot_time) &&
 			   (step_ptr->no_kill == 0)) {
 			/* There is a risk that the job step's tasks completed
 			 * on this node before its reboot, but that should be 
-			 * very rare */
+			 * very rare and there is no srun to work with (POE) */
 			info("Node %s rebooted, killing missing step %u.%u", 
 			     node_name, job_ptr->job_id, step_ptr->step_id);
-			srun_step_complete(step_ptr);
 			signal_step_tasks(step_ptr, SIGKILL);
-		} else if (step_ptr->host && step_ptr->port) {
-			/* srun may be able to verify step exists on
-			 * this node using I/O sockets */
-			srun_step_missing(step_ptr, node_name);
 		}
 	}		
 	list_iterator_destroy (step_iterator);
