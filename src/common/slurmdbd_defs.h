@@ -85,12 +85,7 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	05 /* We only incremented the number
-				    * here to differenciate between
-				    * 1.4 to 1.3.  Nothing has changed
-				    * in the rpcs yet though.  If they
-				    * do, remove this comment.
-				    */
+#define SLURMDBD_VERSION	05 
 #define SLURMDBD_VERSION_MIN	02
 
 /* SLURM DBD message types */
