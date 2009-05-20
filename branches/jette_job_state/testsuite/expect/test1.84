@@ -1,0 +1,160 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of cpus-per-task option on a single node (--cpus-per-task  
+#          option).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# NOTE:    This assumes node names are of the form <alpha><number>, where 
+#          the value of <number> indicates the nodes relative location. 
+#          Change tha node name parsing logic as needed for other formats.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "1.84"
+set exit_code   0
+set file_in     "test$test_id.input"
+
+print_header $test_id
+
+if { [test_front_end] } {
+	send_user "\nWARNING: This test is incompatable with FRONT_END systems\n"
+	exit 0
+}
+if {[test_multiple_slurmd] != 0} {
+	send_user "\nWARNING: This test is incompatable with multiple slurmd systems\n"
+	exit 0
+}
+
+make_bash_script $file_in "
+   env | grep SLURM_CPUS_ON_NODE
+   $bin_printenv SLURMD_NODENAME"
+
+#
+# Submit a 1 node job to determine the node's CPU count
+#
+set cpu_cnt        0
+set cpus_per_node  0
+set fat_nodes      0
+set host           ""
+set timeout        $max_job_delay
+set task_cnt       0
+
+set srun_pid [spawn $srun -N1 --cpus-per-task=1 --exclusive -l -t1 $file_in]
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "SLURM_CPUS_ON_NODE=($number)" {
+		set cpu_cnt $expect_out(1,string)
+		incr task_cnt
+		exp_continue
+	}
+	-re "($number): ($alpha_numeric_under)" {
+		set task $expect_out(1,string)
+		set host $expect_out(2,string)
+		exp_continue
+	}
+	-re "Task count specification invalid" {
+		send_user "\nWARNING: nodes have too many CPUs for test\n"
+		set fat_nodes 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+exec $bin_rm -f $file_in
+# On Blue Gene/L each node has 1024 CPUs, more than slurmd can launch
+if {$fat_nodes == 1} {
+	exit 0
+}
+
+#
+# Check CPU count
+#
+if {[string compare $host ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname\n"
+	exit 1	
+}
+if {$cpu_cnt != $task_cnt} {
+	send_user "FAILURE: should have run $cpu_cnt tasks (one per CPU) "
+	send_user "instead of $task_cnt tasks\n"
+	set exit_code 1
+}
+if {$cpu_cnt < 2} {
+	send_user "\nWARNING: The node only has one CPU\n"
+	exit $exit_code
+}
+
+#
+# Submit a 1 node job to determine the node's CPU count
+#
+set task_cnt  0
+set srun_pid [spawn $srun -N1 -t1 --nodelist=$host --cpus-per-task=2 --exclusive -l $bin_printenv SLURMD_NODENAME]
+expect {
+	-re "Invalid node name specified" {
+		send_user "\nWARNING: Appears you are using "
+		send_user "multiple slurmd testing.\n"
+		send_user "This test won't work in that fashion.\n"
+		exit 0	
+	}
+	-re "$number: ($alpha_numeric_under)" {
+		incr task_cnt
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Check CPU count
+#
+if {$task_cnt != [expr $cpu_cnt / 2]} {
+	send_user "\nFAILURE: Improper task count for given cpus-per-task\n"
+	set exit_code   1	
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
