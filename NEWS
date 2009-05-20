@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.0.1
 ========================
  -- Fix, truncate time of start and end for job steps in sacct.
+ -- initialize all messages to slurmdbd
 
 * Changes in SLURM 2.0.0
 ========================
