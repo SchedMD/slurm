@@ -281,6 +281,10 @@ typedef struct {
 	List userid_list;		/* list of char * */
 	List wckey_list;		/* list of char * */
 	uint16_t without_steps; /* don't give me step info */
+	uint16_t without_usage_truncation; /* give me the information
+					    * without truncating the
+					    * time to the usage_start
+					    * and usage_end */
 } acct_job_cond_t;
 
 typedef struct {

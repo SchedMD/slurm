@@ -8,8 +8,12 @@ documents those changes that are of interest to users and admins.
  -- Slurmd sends node registration information repeatedly until successful
     transmit.
 
+* Changes in SLURM 2.0.1
+========================
+ -- Fix, truncate time of start and end for job steps in sacct.
+
 * Changes in SLURM 2.0.0
-============================
+========================
  -- Fix for bluegene systems to be able to create 32 node blocks with only 
     16 psets defined in dynamic layout mode.
  -- Improve srun_cr handling of child srun forking. Patch from Hongjia Cao, 
@@ -19,6 +23,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - sview/sinfo now displays correct cnode numbers for drained nodes 
     or blocks in error state.
  -- Fix some batch job launch bugs when powering up suspended nodes.
+ -- Added option '-T' for sacct to truncate time of start and end and set
+    default of --starttime to Midnight of current day.
 
 * Changes in SLURM 2.0.0-rc2
 ============================
@@ -335,7 +341,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix memory leak in forward logic of tree message passing.
  -- Fix job exit code recorded for srun job allocation.
- -- Bluegene - Bug fix for too many parameters being passed to a debug statement -- Bluegene - Bug fix for systems running more than 8 in the X dim running
+ -- Bluegene - Bug fix for too many parameters being passed to a debug statement
+ -- Bluegene - Bug fix for systems running more than 8 in the X dim running
     Dynamic mode.
 
 * Changes in SLURM 1.3.15
