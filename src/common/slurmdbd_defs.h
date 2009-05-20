@@ -61,17 +61,8 @@
 /*
  * SLURMDBD_VERSION is the version of the slurmdbd protocol currently 
  *	being used (i.e. this code). Increment this value whenever an
- *	RPC is added. Do not modify an existing RPC, but create a new
- *	msg_type for the new format (add new entries to the end of
- *	slurmdbd_msg_type_t so numbering of existing msg_type values
- *	do not change). Comment the version number when a defunct 
- *	msg_type stops being used. For example, rather than changing
- *	the format of the RPC for DBD_ADD_USERS, add a DBD_ADD_USERS_V2, 
- *	stop using DBD_ADD_USERS and add comment of this sort "Last used
- *	in SLURMDBD_VERSION 05". The slurmdbd must continue to support 
- *	old RPCs for some time (until all Slurm clusters in that grid 
- *	get upgraded to use the new set of RPCs). At that time, slurmdbd 
- *	can have support for the old RPCs removed.
+ *	RPC is modified. When modifing an existing RPC copy the old
+ *	version and the create a new pack/unpack for the new rpc_version.
  *	
  * SLURMDBD_VERSION_MIN is the minimum protocol version which slurmdbd
  *	will accept. Messages being sent to the slurmdbd from commands
@@ -85,9 +76,9 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	05 /* We only incremented the number
+#define SLURMDBD_VERSION	06 /* We only incremented the number
 				    * here to differenciate between
-				    * 1.4 to 1.3.  Nothing has changed
+				    * 2.1 to 2.0.  Nothing has changed
 				    * in the rpcs yet though.  If they
 				    * do, remove this comment.
 				    */
