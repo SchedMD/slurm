@@ -293,7 +293,9 @@ libbluegene_block_allocator_la_SOURCES = \
 libbluegene_block_allocator_la_LDFLAGS = \
 	$(LIB_LDFLAGS) -lm    
 
-@BLUEGENE_LOADED_TRUE@wire_testSOURCES = wire_test.c block_allocator.h 
+@BLUEGENE_LOADED_TRUE@wire_testSOURCES = wire_test.c block_allocator.h \
+@BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl
+
 @BLUEGENE_LOADED_TRUE@wire_test_LDADD = libbluegene_block_allocator.la
 @BLUEGENE_LOADED_TRUE@wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 all: all-am
