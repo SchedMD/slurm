@@ -67,7 +67,6 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 #ifdef HAVE_BG_FILES
 	init_wires();
 #endif
- 		
 	/* Locks are already in place to protect part_list here */
 	itr = list_iterator_create(part_list);
 	while ((part_ptr = list_next(itr))) {
@@ -93,7 +92,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					bg_found_block_list);
 				while ((found_record = (bg_record_t*) 
 					list_next(itr_found)) != NULL) {
-/* 					info("%s[%s[ ?= %s[%s]\n", */
+/* 					info("%s[%s] ?= %s[%s]\n", */
 /* 					     bg_record->nodes, */
 /* 					     bg_record->ionodes, */
 /* 					     found_record->nodes, */
@@ -106,7 +105,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 							  found_record->
 							  ionode_bitmap))
 						) {
-						/* don't reboot this one */
+						/* don't remake this one */
 						break;	
 					}
 				}
@@ -131,7 +130,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				if(set_all_bps_except(bg_record->nodes)
 				   != SLURM_SUCCESS)
 					fatal("something happened in "
-					      "the load of %s"
+					      "the load of %s.  "
 					      "Did you use smap to "
 					      "make the "
 					      "bluegene.conf file?",

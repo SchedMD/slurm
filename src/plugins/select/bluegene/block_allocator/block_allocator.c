@@ -201,7 +201,8 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 /* 			     List nodes, int dim,  */
 /* 			     int count, int highest_phys_x);  */
 /* */
-static int _finish_torus(ba_switch_t *curr_switch, int source_port, 
+static int _finish_torus(List results, 
+			 ba_switch_t *curr_switch, int source_port, 
 			 int dim, int count, int *start);
 /* */
 static int *_set_best_path();
@@ -690,7 +691,10 @@ extern int new_ba_request(ba_request_t* ba_request)
 				    ba_request->rotate);		
 	
 		}
-		if((geo[X]/2) <= DIM_SIZE[Y]) {
+
+		/* Make sure geo[X] is even and then see if we can get
+		   it into the Y or Z dim. */
+		if(!(geo[X]%2) && ((geo[X]/2) <= DIM_SIZE[Y])) {
 			if(geo[Y] == 1) {
 				ba_request->geometry[Y] = geo[X]/2;
 				messed_with = 1;
@@ -2935,7 +2939,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 		
 	}
 	list_iterator_destroy(itr);
-	
+
 	if(geo_ptr == NULL) { 
 		geo = xmalloc(sizeof(int)*BA_SYSTEM_DIMENSIONS);
 		geo[X] = geometry[X];
@@ -4124,50 +4128,47 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 	} else if(DIM_SIZE[X] == 9) {
 		switch(count) {
 		case 0:
-		case 1:
-		case 5:
+		case 4:
 			/* 0 and 4th Node */
 			/* nothing */
-			break;
-		case 2:
+		case 5:
 		case 6:
+		case 7:
+			/*already handled below */
+			break;
+		case 1:
 			/* 1st Node */
-			target = &ba_system_ptr->grid[count-1]
-				[source->coord[Y]]
-				[source->coord[Z]];
-			/* 4->3 of previous */
-			_switch_config(source, target, dim, 4, 3);
-			break;	
-		case 3:
-			/* 2nd Node */
 			target = &ba_system_ptr->grid[7]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 4->3 of last */
+			/* 4->3 of 7th and back */
 			_switch_config(source, target, dim, 4, 3);
-			break;
-		case 4:
-			/* 3rd Node */
+			_switch_config(target, source, dim, 4, 3);
+			break;	
+		case 2:
+			/* 2nd Node */
 			target = &ba_system_ptr->grid[6]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 4->3 of 6th */
+			/* 4->3 of 6th and back */
 			_switch_config(source, target, dim, 4, 3);
+			_switch_config(target, source, dim, 4, 3);
 			break;
-		case 7:
-			/* 6th Node */
-			target = &ba_system_ptr->grid[3]
+		case 3:
+			/* 3rd Node */
+			target = &ba_system_ptr->grid[5]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 4->3 of 3rd */
-			_switch_config(source, target, dim, 4, 3);	
+			/* 4->3 of 5th and back */
+			_switch_config(source, target, dim, 4, 3);
+			_switch_config(target, source, dim, 4, 3);
 			break;
 		case 8:
-			/* 7th Node */
-			target = &ba_system_ptr->grid[2]
+			/* 8th Node */
+			target = &ba_system_ptr->grid[0]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 4->3 of 2nd */
+			/* 4->3 of 0th */
 			_switch_config(source, target, dim, 4, 3);	
 			break;
 		default:
@@ -4198,7 +4199,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		case 5:
 			/* get the node count - 1 then subtract it
 			 * from 12 to get the new target and then go
-			 * from 3->4 and back again
+			 * from 4->3 and back again
 			 */
 			temp_num = 12 - (count - 1);
 			if(temp_num < 5) 
@@ -4208,10 +4209,10 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			target = &ba_system_ptr->grid[temp_num]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 */
-			_switch_config(source, target, dim, 3, 4);
-			/* and back 3->4 */
-			_switch_config(target, source, dim, 3, 4);
+			/* 4->3 */
+			_switch_config(source, target, dim, 4, 3);
+			/* and back 4->3 */
+			_switch_config(target, source, dim, 4, 3);
 			break;
 		case 7:
 			/* 7th Node */
@@ -4482,7 +4483,8 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				else
 					path = list_create(_delete_path_list);
 				
-				_finish_torus(curr_switch, 0, X, 0, start);
+				_finish_torus(results, 
+					      curr_switch, 0, X, 0, start);
 
 				if(best_count < BEST_COUNT_INIT) {
 					debug3("Algo(%d) Found a best path "
@@ -4768,7 +4770,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 	   .used) {
 		
 #ifdef HAVE_BG
-		debug2("this one not found %c%c%c",
+		debug3("this one not found %c%c%c",
 		       alpha_num[node_tar[X]],
 		       alpha_num[node_tar[Y]],
 		       alpha_num[node_tar[Z]]);
@@ -4892,7 +4894,8 @@ return_0:
  * to apply this path to the main system (ba_system_ptr)
  */
 
-static int _finish_torus(ba_switch_t *curr_switch, int source_port,
+static int _finish_torus(List results, 
+			 ba_switch_t *curr_switch, int source_port,
 			 int dim, int count, int *start)
 {
 	ba_switch_t *next_switch = NULL;
@@ -4989,6 +4992,8 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				}
 			}
 			list_iterator_destroy(itr);
+
+			/* check to see if this points to itself */
 			if((curr_switch->
 			    ext_wire[ports_to_try[i]].node_tar[X] ==
 			    curr_switch->ext_wire[0].node_tar[X] &&
@@ -5000,12 +5005,49 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 			    curr_switch->ext_wire[0].node_tar[Z])) {
 				continue;
 			}
+
+
 			if(!used) {
+				ba_node_t *next_node = NULL;
 				port_tar = curr_switch->
 					ext_wire[ports_to_try[i]].port_tar;
 				node_tar = curr_switch->
 					ext_wire[ports_to_try[i]].node_tar;
-				
+
+				/* Check to see if I am going to a place I have
+				   already been before, because even
+				   though we may be able to do this
+				   electrically this doesn't mean the
+				   under lying infrastructure will
+				   allow it. */
+				itr = list_iterator_create(results);
+				while((next_node = list_next(itr))) {
+					debug4("finishing_torus: "
+					       "looking at %c%c%c and %c%c%c",
+					       alpha_num[next_node->coord[X]],
+					       alpha_num[next_node->coord[Y]],
+					       alpha_num[next_node->coord[Z]],
+					       alpha_num[node_tar[X]],
+					       alpha_num[node_tar[Y]],
+					       alpha_num[node_tar[Z]]);
+					if((node_tar[X] == next_node->coord[X]) 
+					   && (node_tar[Y] 
+					       == next_node->coord[Y])
+					   && (node_tar[Z] 
+					       == next_node->coord[Z])) {
+						break;
+					}				
+				}
+				list_iterator_destroy(itr);
+				if(next_node) {
+					debug3("Can't finish torus with "
+					       "%c%c%c we already were there.",
+					       alpha_num[next_node->coord[X]],
+					       alpha_num[next_node->coord[Y]],
+					       alpha_num[next_node->coord[Z]]);
+					continue;
+				}
+
 				next_switch = &ba_system_ptr->grid[node_tar[X]]
 #ifdef HAVE_3D
 					[node_tar[Y]]
@@ -5017,7 +5059,7 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				count++;
 				path_add->out = ports_to_try[i];
 				list_push(path, path_add);
-				_finish_torus(next_switch, port_tar, 
+				_finish_torus(results, next_switch, port_tar, 
 					      dim, count, start);
 				while((temp_switch = list_pop(path))
 				      != path_add){
@@ -5115,189 +5157,3 @@ static void _destroy_geo(void *object)
 	int *geo_ptr = (int *)object;
 	xfree(geo_ptr);
 }
-
-//#define BUILD_EXE
-#ifdef BUILD_EXE
-/** */
-int main(int argc, char** argv)
-{
-	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
-	log_options_t log_opts = LOG_OPTS_INITIALIZER;
-	int debug_level = 6;
-	node_info_msg_t *new_node_ptr = NULL;
-
-	List results;
-//	List results2;
-//	int i,j;
-	log_opts.stderr_level  = debug_level;
-	log_opts.logfile_level = debug_level;
-	log_opts.syslog_level  = debug_level;
-	
-	log_alter(log_opts, LOG_DAEMON, 
-		  "/dev/null");
-	
-	DIM_SIZE[X]=0;
-	DIM_SIZE[Y]=0;
-	DIM_SIZE[Z]=0;
-	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) { 
-		
-		sleep(10);	/* keep trying to reconnect */
-	}
-	
-	ba_init(new_node_ptr);
-	init_wires(NULL);
-						
-	results = list_create(NULL);
-	request->geometry[0] = 1;
-	request->geometry[1] = 1;
-	request->geometry[2] = 1;
-	request->start[0] = 6;
-	request->start[1] = 3;
-	request->start[2] = 2;
-	request->start_req = 1;
-//	request->size = 1;
-	request->rotate = 0;
-	request->elongate = 0;
-	request->conn_type = SELECT_TORUS;
-	new_ba_request(request);
-	print_ba_request(request);
-	if(!allocate_block(request, results)) {
-       		debug("couldn't allocate %c%c%c",
-		       request->geometry[0],
-		       request->geometry[1],
-		       request->geometry[2]);
-	}
-	list_destroy(results);
-
-	results = list_create(NULL);
-	request->geometry[0] = 2;
-	request->geometry[1] = 4;
-	request->geometry[2] = 1;
-	request->start[0] = 3;
-	request->start[1] = 0;
-	request->start[2] = 2;
-	request->start_req = 1;
-//	request->size = 16;
-	request->rotate = 0;
-	request->elongate = 0;
-	request->conn_type = SELECT_TORUS;
-	new_ba_request(request);
-	print_ba_request(request);
-	if(!allocate_block(request, results)) {
-       		debug("couldn't allocate %c%c%c",
-		       alpha_num[request->geometry[0]],
-		       alpha_num[request->geometry[1]],
-		       alpha_num[request->geometry[2]]);
-	}
-	list_destroy(results);
-
-	results = list_create(NULL);
-	request->geometry[0] = 2;
-	request->geometry[1] = 1;
-	request->geometry[2] = 4;
-	request->start[0] = 5;
-	request->start[1] = 2;
-	request->start[2] = 0;
-	request->start_req = 1;
-	request->rotate = 0;
-	request->elongate = 0;
-	request->conn_type = SELECT_TORUS;
-	new_ba_request(request);
-	print_ba_request(request);
-	if(!allocate_block(request, results)) {
-       		debug("couldn't allocate %c%c%c",
-		       alpha_num[request->geometry[0]],
-		       alpha_num[request->geometry[1]],
-		       alpha_num[request->geometry[2]]);
-	}
-	list_destroy(results);
-	
-/* 	results = list_create(NULL); */
-/* 	request->geometry[0] = 4; */
-/* 	request->geometry[1] = 4; */
-/* 	request->geometry[2] = 4; */
-/* 	//request->size = 2; */
-/* 	request->conn_type = SELECT_TORUS; */
-/* 	new_ba_request(request); */
-/* 	print_ba_request(request); */
-/* 	if(!allocate_block(request, results)) { */
-/*        		printf("couldn't allocate %c%c%c\n", */
-/* 		       request->geometry[0], */
-/* 		       request->geometry[1], */
-/* 		       request->geometry[2]); */
-/* 	} */
-
-/* 	results = list_create(NULL); */
-/* 	request->geometry[0] = 1; */
-/* 	request->geometry[1] = 4; */
-/* 	request->geometry[2] = 4; */
-/* 	//request->size = 2; */
-/* 	request->conn_type = SELECT_TORUS; */
-/* 	new_ba_request(request); */
-/* 	print_ba_request(request); */
-/* 	if(!allocate_block(request, results)) { */
-/*        		printf("couldn't allocate %c%c%c\n", */
-/* 		       request->geometry[0], */
-/* 		       request->geometry[1], */
-/* 		       request->geometry[2]); */
-/* 	} */
-	
-	int dim,j;
-	int x,y,z;
-	int startx=0;
-	int starty=0;
-	int startz=0;
-	int endx=DIM_SIZE[X];
-	int endy=1;//DIM_SIZE[Y];
-	int endz=1;//DIM_SIZE[Z];
-
-	for(x=startx;x<endx;x++) {
-		for(y=starty;y<endy;y++) {
-			for(z=startz;z<endz;z++) {
-				ba_node_t *curr_node = 
-					&(ba_system_ptr->grid[x][y][z]);
-				info("Node %c%c%c Used = %d Letter = %c",
-				     alpha_num[x],alpha_num[y],alpha_num[z],
-				     curr_node->used,
-				     curr_node->letter);
-				for(dim=0;dim<1;dim++) {
-					info("Dim %d",dim);
-					ba_switch_t *wire =
-						&curr_node->axis_switch[dim];
-					for(j=0;j<NUM_PORTS_PER_NODE;j++)
-						info("\t%d -> %d -> %c%c%c %d "
-						     "Used = %d",
-						     j, wire->int_wire[j].
-						     port_tar,
-						     alpha_num[wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-							       node_tar[X]],
-						     alpha_num[wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-						     node_tar[Y]],
-						     alpha_num[wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-						     node_tar[Z]],
-						     wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-						     port_tar,
-						     wire->int_wire[j].used);
-				}
-			}
-		}
-	}
-	/* list_destroy(results); */
-
-/* 	ba_fini(); */
-
-/* 	delete_ba_request(request); */
-	
-	return 0;
-}
-
-
-#endif
