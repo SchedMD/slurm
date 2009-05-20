@@ -1,0 +1,32 @@
+</div> <!-- closes "content" -->
+
+<div id="footer">
+<div id="left">&nbsp;&nbsp;<span class="ucrlnum">LLNL-WEB-411573 |</span> <a href="https://www.llnl.gov/disclaimer.html" target="_blank" class="privacy">Privacy &amp; Legal Notice</a></div>
+<div id="right"><span class="ucrlnum">18 July 2008&nbsp;&nbsp;</span></div>
+</div>
+
+<div id="footer2">
+<div id="left2"><img src="sponsors.gif" width="129" height="30" border="0" usemap="#Map2"></div>
+<div id="center2"><a href="https://www.llnl.gov/" target="_blank" class="footer">Lawrence Livermore National Laboratory</a><br />
+<span class="smalltextblue">7000 East Avenue &#8226; Livermore, CA 94550</span></div>
+<div id="right2"><span class="smalltextblue">Operated by
+Lawrence Livermore National Security, LLC, for the</span> 
+<a href="http://www.energy.gov/" target="_blank" class="footer">
+Department of Energy's</a><br />
+<a href="http://www.nnsa.doe.gov/" target="_blank" class="footer">
+National Nuclear Security Administration</a></div>
+<div style="clear:both;"></div>
+</div>
+
+</div> <!-- closes "container" -->
+
+<map name="Map">
+<area shape="rect" coords="571,1,799,15" href="https://www.llnl.gov/">
+</map>
+<map name="Map2">
+<area shape="rect" coords="1,1,92,30" href="http://www.nnsa.doe.gov/" target="_blank" alt="NNSA logo links to the NNSA Web site">
+<area shape="rect" coords="98,1,132,30" href="http://www.energy.gov/" target="_blank" alt="Department of Energy logo links to the DOE Web site">
+</map>
+
+</body>
+</html>
