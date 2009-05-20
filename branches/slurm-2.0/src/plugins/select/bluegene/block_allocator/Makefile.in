@@ -87,7 +87,8 @@ PROGRAMS = $(noinst_PROGRAMS)
 wire_test_SOURCES = wire_test.c
 wire_test_OBJECTS = wire_test.$(OBJEXT)
 @BLUEGENE_LOADED_TRUE@wire_test_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	libbluegene_block_allocator.la
+@BLUEGENE_LOADED_TRUE@	libbluegene_block_allocator.la \
+@BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o
 wire_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(wire_test_LDFLAGS) $(LDFLAGS) -o $@
@@ -293,10 +294,10 @@ libbluegene_block_allocator_la_SOURCES = \
 libbluegene_block_allocator_la_LDFLAGS = \
 	$(LIB_LDFLAGS) -lm    
 
-@BLUEGENE_LOADED_TRUE@wire_testSOURCES = wire_test.c block_allocator.h \
+@BLUEGENE_LOADED_TRUE@wire_testSOURCES = wire_test.c block_allocator.h
+@BLUEGENE_LOADED_TRUE@wire_test_LDADD = libbluegene_block_allocator.la \
 @BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl
 
-@BLUEGENE_LOADED_TRUE@wire_test_LDADD = libbluegene_block_allocator.la
 @BLUEGENE_LOADED_TRUE@wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 all: all-am
 

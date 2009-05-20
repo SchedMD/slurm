@@ -19,10 +19,10 @@ if BLUEGENE_LOADED
 #to build the debug executable
 noinst_PROGRAMS = wire_test
 
-wire_testSOURCES = wire_test.c block_allocator.h \
-	$(top_builddir)/src/api/libslurm.o -ldl
+wire_testSOURCES = wire_test.c block_allocator.h
 
-wire_test_LDADD = libbluegene_block_allocator.la
+wire_test_LDADD = libbluegene_block_allocator.la \
+	$(top_builddir)/src/api/libslurm.o -ldl
 
 wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 
