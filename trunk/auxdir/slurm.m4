@@ -161,13 +161,9 @@ if test "$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO" != "$VERSION"; then
 fi
 
 # Check to see if we're on an unstable branch (no prereleases yet)
-if echo "$RELEASE" | grep -e "pre0" -e "UNSTABLE"; then 
-   if test "$RELEASE" = "UNSTABLE"; then
-      DATE=`date +"%Y%m%d%H%M"`
-   else
-      DATE=`echo $RELEASE | cut -d. -f3`
-   fi
-   SLURM_RELEASE="unstable cvs build $DATE" 
+if echo "$RELEASE" | grep -e "UNSTABLE"; then 
+   DATE=`date +"%Y%m%d%H%M"`
+   SLURM_RELEASE="unstable svn build $DATE" 
    SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR ($SLURM_RELEASE)"
 else
    SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"

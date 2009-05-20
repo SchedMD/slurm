@@ -85,7 +85,9 @@ void init_header(header_t *header, slurm_msg_t *msg,
 			((accounting_update_msg_t *)msg->data)->rpc_version;
 		if(rpc_version < 5)
 			header->version = SLURM_1_3_PROTOCOL_VERSION;
-		else if(rpc_version >= 5)
+		else if(rpc_version < 6)
+			header->version = SLURM_2_0_PROTOCOL_VERSION;
+		else if(rpc_version >= 6)
 			header->version = SLURM_PROTOCOL_VERSION;
 	} else 
 		header->version = SLURM_PROTOCOL_VERSION;

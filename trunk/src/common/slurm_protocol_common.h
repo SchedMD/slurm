@@ -68,6 +68,7 @@
  * In slurm_protocol_util.h init_header(), and check_header_version()
  * need to be updated also when changes are added */
 #define SLURM_PROTOCOL_VERSION ((SLURM_API_MAJOR << 8) | SLURM_API_AGE)
+#define SLURM_2_0_PROTOCOL_VERSION ((20 << 8) | 0)
 #define SLURM_1_3_PROTOCOL_VERSION ((13 << 8) | 0)
 
 /* used to set flags to empty */
