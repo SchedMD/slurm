@@ -1198,7 +1198,8 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		for(j=0; j<BA_SYSTEM_DIMENSIONS; j++) 
 			geo[j] = bg_record->geo[j];
 				
-		if(bg_conf->layout_mode == LAYOUT_OVERLAP) {
+		if((bg_conf->layout_mode == LAYOUT_OVERLAP)
+		   || bg_record->full_block) {
 			reset_ba_system(false);
 			removable_set_bps(non_usable_nodes);
 		}

@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix, truncate time of start and end for job steps in sacct.
  -- initialize all messages to slurmdbd
+ -- BLUEGENE - Fix, for when trying to finish a torus on a block already 
+    visited.  Even though this may be possible electrically this isn't valid
+    in the under lying infrastructure.
 
 * Changes in SLURM 2.0.0
 ========================

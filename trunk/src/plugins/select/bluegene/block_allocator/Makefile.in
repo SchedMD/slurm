@@ -16,6 +16,7 @@
 
 # Makefile.am for bluegene_block_allocator
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -35,6 +36,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@BLUEGENE_LOADED_TRUE@noinst_PROGRAMS = wire_test$(EXEEXT)
 subdir = src/plugins/select/bluegene/block_allocator
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -81,6 +83,15 @@ libbluegene_block_allocator_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) \
 	$(libbluegene_block_allocator_la_LDFLAGS) $(LDFLAGS) -o $@
+PROGRAMS = $(noinst_PROGRAMS)
+wire_test_SOURCES = wire_test.c
+wire_test_OBJECTS = wire_test.$(OBJEXT)
+@BLUEGENE_LOADED_TRUE@wire_test_DEPENDENCIES =  \
+@BLUEGENE_LOADED_TRUE@	libbluegene_block_allocator.la \
+@BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o
+wire_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(wire_test_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -93,8 +104,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libbluegene_block_allocator_la_SOURCES)
-DIST_SOURCES = $(libbluegene_block_allocator_la_SOURCES)
+SOURCES = $(libbluegene_block_allocator_la_SOURCES) wire_test.c
+DIST_SOURCES = $(libbluegene_block_allocator_la_SOURCES) wire_test.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -275,19 +286,6 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
-#to build the executable
-# noinst_PROGRAMS = block_allocator
-
-# block_allocator_SOURCES = block_allocator.c bridge_linker.c \
-# 	block_allocator.h bridge_linker.h
-
-# block_allocator_LDADD = \
-# 	$(top_builddir)/src/api/libslurm.la
-
-# block_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
-
-# CPPFLAGS = -DBUILD_EXE
-
 # making a .la
 noinst_LTLIBRARIES = libbluegene_block_allocator.la 
 libbluegene_block_allocator_la_SOURCES = \
@@ -296,6 +294,11 @@ libbluegene_block_allocator_la_SOURCES = \
 libbluegene_block_allocator_la_LDFLAGS = \
 	$(LIB_LDFLAGS) -lm    
 
+@BLUEGENE_LOADED_TRUE@wire_testSOURCES = wire_test.c block_allocator.h
+@BLUEGENE_LOADED_TRUE@wire_test_LDADD = libbluegene_block_allocator.la \
+@BLUEGENE_LOADED_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl
+
+@BLUEGENE_LOADED_TRUE@wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -341,6 +344,16 @@ clean-noinstLTLIBRARIES:
 libbluegene_block_allocator.la: $(libbluegene_block_allocator_la_OBJECTS) $(libbluegene_block_allocator_la_DEPENDENCIES) 
 	$(libbluegene_block_allocator_la_LINK)  $(libbluegene_block_allocator_la_OBJECTS) $(libbluegene_block_allocator_la_LIBADD) $(LIBS)
 
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  echo " rm -f $$p $$f"; \
+	  rm -f $$p $$f ; \
+	done
+wire_test$(EXEEXT): $(wire_test_OBJECTS) $(wire_test_DEPENDENCIES) 
+	@rm -f wire_test$(EXEEXT)
+	$(wire_test_LINK) $(wire_test_OBJECTS) $(wire_test_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -349,6 +362,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_allocator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_linker.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wire_test.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -452,7 +466,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -482,7 +496,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	mostlyclean-am
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -541,17 +555,18 @@ uninstall-am:
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLTLIBRARIES ctags distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am
+	clean-libtool clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
+	ctags distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
