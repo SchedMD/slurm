@@ -691,7 +691,10 @@ extern int new_ba_request(ba_request_t* ba_request)
 				    ba_request->rotate);		
 	
 		}
-		if((geo[X]/2) <= DIM_SIZE[Y]) {
+
+		/* Make sure geo[X] is even and then see if we can get
+		   it into the Y or Z dim. */
+		if(!(geo[X]%2) && ((geo[X]/2) <= DIM_SIZE[Y])) {
 			if(geo[Y] == 1) {
 				ba_request->geometry[Y] = geo[X]/2;
 				messed_with = 1;
@@ -2936,7 +2939,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 		
 	}
 	list_iterator_destroy(itr);
-	
+
 	if(geo_ptr == NULL) { 
 		geo = xmalloc(sizeof(int)*BA_SYSTEM_DIMENSIONS);
 		geo[X] = geometry[X];
