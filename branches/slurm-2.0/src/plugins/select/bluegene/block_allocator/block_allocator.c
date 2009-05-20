@@ -4770,7 +4770,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 	   .used) {
 		
 #ifdef HAVE_BG
-		debug2("this one not found %c%c%c",
+		debug3("this one not found %c%c%c",
 		       alpha_num[node_tar[X]],
 		       alpha_num[node_tar[Y]],
 		       alpha_num[node_tar[Z]]);
