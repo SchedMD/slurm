@@ -619,7 +619,8 @@ no_cond:
 				step->state = job->state;
 			}
 
-			if(job_cond && job_cond->usage_start) {
+			if(job_cond && !job_cond->without_usage_truncation
+			   && job_cond->usage_start) {
 				if(step->start 
 				   && (step->start < job_cond->usage_start))
 					step->start = job_cond->usage_start;

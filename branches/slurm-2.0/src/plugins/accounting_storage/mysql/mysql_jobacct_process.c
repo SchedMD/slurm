@@ -1302,7 +1302,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				step->state = job->state;
 			}
 
-			if(job_cond && job_cond->usage_start) {
+			if(job_cond && !job_cond->without_usage_truncation
+			   && job_cond->usage_start) {
 				if(step->start 
 				   && (step->start < job_cond->usage_start))
 					step->start = job_cond->usage_start;
