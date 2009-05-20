@@ -57,6 +57,7 @@ int check_header_version(header_t * header)
 {
 	if(slurmdbd_conf) {
 		if (header->version != SLURM_PROTOCOL_VERSION
+		    && header->version != SLURM_2_0_PROTOCOL_VERSION
 		    && header->version != SLURM_1_3_PROTOCOL_VERSION)
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 	} else if (header->version != SLURM_PROTOCOL_VERSION)
