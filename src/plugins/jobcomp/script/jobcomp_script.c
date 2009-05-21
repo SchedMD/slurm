@@ -204,10 +204,10 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 
 	/*
 	 *  Job will typically be COMPLETING when this code is called.
-	 *  We remove the COMPLETING flag to hopefully get the evenual
+	 *  We remove the flags to hopefully get the eventual
 	 *  completion state: e.g.: JOB_FAILED, TIMEOUT, ....
 	 */
-	state = job->job_state & (~JOB_COMPLETING);
+	state = job->job_state & JOB_STATE_BASE;
 	j->jobstate = xstrdup (job_state_string (state));
 
 	j->partition = xstrdup (job->partition);

@@ -1890,11 +1890,11 @@ extern int validate_nodes_via_front_end(
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported",
 			      reg_msg->job_id[i], reg_msg->step_id[i]);
-			abort_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			abort_job_on_node(reg_msg->job_id[i], 
+					  job_ptr, node_ptr);
 		}
 
-		else if ((job_ptr->job_state == JOB_RUNNING) ||
-		         (job_ptr->job_state == JOB_SUSPENDED)) {
+		else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
 			debug3("Registered job %u.%u",
 			       reg_msg->job_id[i], reg_msg->step_id[i]);
 			if (job_ptr->batch_flag) {
@@ -1903,14 +1903,14 @@ extern int validate_nodes_via_front_end(
 			}
 		}
 
-		else if (job_ptr->job_state & JOB_COMPLETING) {
+		else if (IS_JOB_COMPLETING(job_ptr)) {
 			/* Re-send kill request as needed, 
 			 * not necessarily an error */
 			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 
-		else if (job_ptr->job_state == JOB_PENDING) {
+		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
 			error("Registered PENDING job %u.%u",
@@ -1929,7 +1929,7 @@ extern int validate_nodes_via_front_end(
 	/* purge orphan batch jobs */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_state != JOB_RUNNING) ||
+		if (!IS_JOB_RUNNING(job_ptr) ||
 		    (job_ptr->batch_flag == 0))
 			continue;
 #ifdef HAVE_BG
@@ -2593,7 +2593,7 @@ void make_node_idle(struct node_record *node_ptr,
 			      job_ptr->job_id);
 		}
 
-		if (job_ptr->job_state == JOB_RUNNING) {
+		if (IS_JOB_RUNNING(job_ptr)) {
 			/* Remove node from running job */
 			if (node_ptr->run_job_cnt)
 				(node_ptr->run_job_cnt)--;

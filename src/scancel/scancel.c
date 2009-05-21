@@ -169,15 +169,17 @@ _filter_job_records (void)
 {
 	int i, j;
 	job_info_t *job_ptr = NULL;
+	uint16_t job_base_state;
 
 	job_ptr = job_buffer_ptr->job_array ;
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
 		if (job_ptr[i].job_id == 0) 
 			continue;
 
-		if ((job_ptr[i].job_state != JOB_PENDING)
-		&&  (job_ptr[i].job_state != JOB_RUNNING)
-		&&  (job_ptr[i].job_state != JOB_SUSPENDED)) {
+		job_base_state = job_ptr[i].job_state & JOB_STATE_BASE;
+		if ((job_base_state != JOB_PENDING) &&
+		    (job_base_state != JOB_RUNNING) &&
+		    (job_base_state != JOB_SUSPENDED)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}

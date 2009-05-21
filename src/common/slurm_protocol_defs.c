@@ -848,12 +848,16 @@ private_data_string(uint16_t private_data, char *str, int str_len)
 		strcat(str, "none");
 }
 
-char *job_state_string(enum job_states inx)
+char *job_state_string(uint16_t inx)
 {
+	/* Process JOB_STATE_FLAGS */
 	if (inx & JOB_COMPLETING)
 		return "COMPLETING";
+	if (inx & JOB_CONFIGURING)
+		return "CONFIGURING";
 
-	switch (inx) {
+	/* Process JOB_STATE_BASE */
+	switch (inx & JOB_STATE_BASE) {
 		case JOB_PENDING:
 			return "PENDING";
 		case JOB_RUNNING:
@@ -875,12 +879,16 @@ char *job_state_string(enum job_states inx)
 	}
 }
 
-char *job_state_string_compact(enum job_states inx)
+char *job_state_string_compact(uint16_t inx)
 {
+	/* Process JOB_STATE_FLAGS */
 	if (inx & JOB_COMPLETING)
 		return "CG";
+	if (inx & JOB_CONFIGURING)
+		return "CF";
 
-	switch (inx) {
+	/* Process JOB_STATE_BASE */
+	switch (inx & JOB_STATE_BASE) {
 		case JOB_PENDING:
 			return "PD";
 		case JOB_RUNNING:

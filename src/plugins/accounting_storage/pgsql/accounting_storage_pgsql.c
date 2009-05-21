@@ -1285,7 +1285,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 			   (int)job_ptr->details->submit_time,
 			   (int)job_ptr->start_time,
 			   jname, track_steps,
-			   job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->job_state & JOB_STATE_BASE,
 			   priority, job_ptr->num_procs,
 			   job_ptr->total_procs);
 	try_again:
@@ -1322,7 +1322,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
 			   "alloc_cpus=%u, associd=%d where id=%d",
 			   (int)job_ptr->start_time,
-			   jname, job_ptr->job_state & (~JOB_COMPLETING),
+			   jname, job_ptr->job_state & JOB_STATE_BASE,
 			   job_ptr->total_procs, job_ptr->assoc_id,
 			   job_ptr->db_index);
 		rc = pgsql_db_query(acct_pgsql_db, query);
@@ -1394,7 +1394,7 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 			       "kill_requid=%d where id=%d",
 			       job_table, (int)job_ptr->start_time,
 			       (int)job_ptr->end_time, 
-			       job_ptr->job_state & (~JOB_COMPLETING),
+			       job_ptr->job_state & JOB_STATE_BASE,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
 	rc = pgsql_db_query(acct_pgsql_db, query);
@@ -1674,7 +1674,7 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
 		 "update %s set suspended=%u-suspended, state=%d "
 		 "where id=%u",
 		 job_table, (int)job_ptr->suspend_time, 
-		 job_ptr->job_state & (~JOB_COMPLETING),
+		 job_ptr->job_state & JOB_STATE_BASE,
 		 job_ptr->db_index);
 	rc = pgsql_db_query(acct_pgsql_db, query);
 	if(rc != SLURM_ERROR) {

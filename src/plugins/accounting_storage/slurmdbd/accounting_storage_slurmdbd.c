@@ -1585,7 +1585,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 		req.eligible_time = job_ptr->details->begin_time;
 	req.gid           = job_ptr->group_id;
 	req.job_id        = job_ptr->job_id;
-	req.job_state     = job_ptr->job_state & (~JOB_COMPLETING);
+	req.job_state     = job_ptr->job_state & JOB_STATE_BASE;
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
 	if(job_ptr->node_bitmap) 
@@ -1665,7 +1665,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	req.end_time    = job_ptr->end_time;
 	req.exit_code   = job_ptr->exit_code;
 	req.job_id      = job_ptr->job_id;
-	req.job_state   = job_ptr->job_state & (~JOB_COMPLETING);
+	req.job_state   = job_ptr->job_state & JOB_STATE_BASE;
 	req.nodes       = job_ptr->nodes;
 	req.start_time  = job_ptr->start_time;
 	if (job_ptr->details)
@@ -1850,7 +1850,7 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 	req.assoc_id     = job_ptr->assoc_id;
 	req.job_id       = job_ptr->job_id;
 	req.db_index     = job_ptr->db_index;
-	req.job_state    = job_ptr->job_state & (~JOB_COMPLETING);
+	req.job_state    = job_ptr->job_state & JOB_STATE_BASE;
 	if (job_ptr->details)
 		req.submit_time   = job_ptr->details->submit_time;
 	req.suspend_time = job_ptr->suspend_time;

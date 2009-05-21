@@ -176,7 +176,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			error("wiki: Failed to find job %u", jobid[i]);
 			break;
 		}
-		if (job_ptr->job_state != JOB_PENDING) {
+		if (!IS_JOB_PENDING(job_ptr)) {
 			*err_code = -700;
 			*err_msg = "WillRun not applicable to non-pending job";
 			error("wiki: WillRun on non-pending job %u", jobid[i]);
@@ -192,7 +192,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		}
 
 		if ((job_ptr->details == NULL) ||
-		    (job_ptr->job_state != JOB_PENDING)) {
+		    (!IS_JOB_PENDING(job_ptr))) {
 			*err_code = -700;
 			*err_msg = "Job not pending, can't test  will_run";
 			error("wiki: Attempt to test will_run of non-pending "

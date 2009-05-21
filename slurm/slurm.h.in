@@ -188,8 +188,8 @@ BEGIN_C_DECLS
 #define SLURM_BATCH_SCRIPT (0xfffffffe)
 
 /* last entry must be JOB_END, keep in sync with job_state_string and 
- *	job_state_string_compact, if a job is in the process of de-
- *	allocating nodes, its final state is ORed with JOB_COMPLETING */
+ *	job_state_string_compact. values may be ORed with JOB_STATE_FLAGS 
+ *	below.  */
 enum job_states {
 	JOB_PENDING,		/* queued waiting for initiation */
 	JOB_RUNNING,		/* allocated resources and executing */
@@ -201,7 +201,10 @@ enum job_states {
 	JOB_NODE_FAIL,		/* terminated on node failure */
 	JOB_END			/* not a real state, last entry in table */
 };
-#define JOB_COMPLETING (0x8000)
+#define	JOB_STATE_BASE    0x00ff   /* Used for job_states above */
+#define	JOB_STATE_FLAGS   0xff00   /* Used for state flags below */
+#define	JOB_COMPLETING    0x8000   /* Waiting for epilog completion */
+#define	JOB_CONFIGURING   0x4000   /* Allocated nodes booting */
 
 #define MAIL_JOB_BEGIN 0x0001	/* notify when job begins */
 #define MAIL_JOB_END   0x0002	/* notify when job ends */

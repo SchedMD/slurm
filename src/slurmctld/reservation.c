@@ -2165,8 +2165,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_state != JOB_RUNNING) &&
-		    (job_ptr->job_state != JOB_SUSPENDED))
+		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
 		if (job_ptr->end_time < resv_desc_ptr->start_time)
 			continue;
@@ -2385,10 +2384,9 @@ extern int job_resv_check(struct job_record *job_ptr)
 	if (!job_ptr->resv_name)
 		return SLURM_SUCCESS;
 
-	if ((job_ptr->job_state == JOB_RUNNING) ||
-	    (job_ptr->job_state == JOB_SUSPENDED))
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 		run_flag = true;
-	else if (job_ptr->job_state == JOB_PENDING)
+	else if (IS_JOB_PENDING(job_ptr))
 		run_flag = false;
 	else
 		return SLURM_SUCCESS;

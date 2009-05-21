@@ -1500,7 +1500,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 
 	launch_msg_ptr = (batch_job_launch_msg_t *)agent_arg_ptr->msg_args;
 	job_ptr = find_job_record(launch_msg_ptr->job_id);
-	if ((job_ptr == NULL) || (job_ptr->job_state != JOB_RUNNING)) {
+	if ((job_ptr == NULL) || (!IS_JOB_RUNNING(job_ptr))) {
 		info("agent(batch_launch): removed pending request for "
 		     "cancelled job %u",
 		     launch_msg_ptr->job_id);

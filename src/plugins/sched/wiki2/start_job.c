@@ -206,8 +206,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 		goto fini;
 	}
 
-	if ((job_ptr->details == NULL)
-	||  (job_ptr->job_state != JOB_PENDING)) {
+	if ((job_ptr->details == NULL) || (!IS_JOB_PENDING(job_ptr))) {
 		*err_code = -700;
 		*err_msg = "Job not pending, can't start";
 		error("wiki: Attempt to start job %u in state %s",
@@ -319,12 +318,12 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	if (job_ptr->job_id != jobid)
 		job_ptr = find_job_record(jobid);
 
-	if (job_ptr && (job_ptr->job_id == jobid) 
-	&&  (job_ptr->job_state != JOB_RUNNING)) {
+	if (job_ptr && (job_ptr->job_id == jobid) && 
+	    (!IS_JOB_RUNNING(job_ptr))) {
 		uint16_t wait_reason = 0;
 		char *wait_string;
 
-		if (job_ptr->job_state == JOB_FAILED)
+		if (IS_JOB_FAILED(job_ptr))
 			wait_string = "Invalid request, job aborted";
 		else {
 			wait_reason = job_ptr->state_reason;

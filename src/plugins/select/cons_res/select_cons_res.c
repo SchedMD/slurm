@@ -1337,7 +1337,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	cr_job_list = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (tmp_job_ptr->job_state != JOB_RUNNING)
+		if (!IS_JOB_RUNNING(tmp_job_ptr))
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
 			error("Job %u has zero end_time", tmp_job_ptr->job_id);
@@ -1484,8 +1484,7 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	if ((job_ptr->job_state != JOB_RUNNING)
-	&&  (job_ptr->job_state != JOB_SUSPENDED))
+	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 		return SLURM_SUCCESS;
 	
 	return _add_job_to_res(job_ptr, 0);
@@ -1675,10 +1674,10 @@ extern int select_p_reconfigure(void)
 	/* reload job data */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->job_state == JOB_RUNNING) {
+		if (IS_JOB_RUNNING(job_ptr)) {
 			/* add the job */
 			_add_job_to_res(job_ptr, 0);
-		} else if (job_ptr->job_state == JOB_SUSPENDED) {
+		} else if (IS_JOB_SUSPENDED(job_ptr)) {
 			/* add the job in a suspended state */
 			_add_job_to_res(job_ptr, 2);
 		}

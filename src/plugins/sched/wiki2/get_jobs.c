@@ -248,7 +248,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	if (update_time > last_job_update)
 		return buf;
 
-	if (job_ptr->job_state == JOB_PENDING) {
+	if (IS_JOB_PENDING(job_ptr)) {
 		char *req_features = _get_job_features(job_ptr);
 		if (req_features) {
 			snprintf(tmp, sizeof(tmp),
@@ -302,7 +302,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 			break;
 		}
 	}
-	if ((rej_sent == 0) && (job_ptr->job_state == JOB_FAILED)) {
+	if ((rej_sent == 0) && IS_JOB_FAILED(job_ptr)) {
 		snprintf(tmp, sizeof(tmp),
 			"REJMESSAGE=\"%s\";",
 			job_reason_string(job_ptr->state_reason));
@@ -485,7 +485,7 @@ static uint32_t	_get_job_max_nodes(struct job_record *job_ptr)
 {
 	uint32_t max_nodes = 0;
 
-	if (job_ptr->job_state > JOB_PENDING) {
+	if (IS_JOB_STARTED(job_ptr)) {
 		/* return actual count of currently allocated nodes.
 		 * NOTE: gets decremented to zero while job is completing */
 		return job_ptr->node_cnt;
@@ -510,7 +510,7 @@ static uint32_t	_get_job_max_nodes(struct job_record *job_ptr)
 
 static uint32_t	_get_job_min_nodes(struct job_record *job_ptr)
 {
-	if (job_ptr->job_state > JOB_PENDING) {
+	if (IS_JOB_STARTED(job_ptr)) {
 		/* return actual count of currently allocated nodes.
 		 * NOTE: gets decremented to zero while job is completing */
 		return job_ptr->node_cnt;
@@ -532,7 +532,7 @@ static uint32_t _get_job_tasks(struct job_record *job_ptr)
 {
 	uint32_t task_cnt;
 
-	if (job_ptr->job_state > JOB_PENDING) {
+	if (IS_JOB_STARTED(job_ptr)) {
 		task_cnt = job_ptr->total_procs;
 	} else {
 		if (job_ptr->num_procs)
@@ -571,12 +571,10 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr)
  * the state name */
 static char *	_get_job_state(struct job_record *job_ptr)
 {
-	uint16_t state = job_ptr->job_state;
-	uint16_t base_state = state & (~JOB_COMPLETING);
 	char *state_str;
 	static char return_msg[128];
 
-	if (state & JOB_COMPLETING) {
+	if (IS_JOB_COMPLETING(job_ptr)) {
 		/* Give configured KillWait+10 for job
 		 * to clear out, then then consider job 
 		 * done. Moab will allocate jobs to 
@@ -587,14 +585,14 @@ static char *	_get_job_state(struct job_record *job_ptr)
 			return "Running";
 	}
 
-	if (base_state == JOB_RUNNING)
+	if (IS_JOB_RUNNING(job_ptr))
 		return "Running";
-	if (base_state == JOB_SUSPENDED)
+	if (IS_JOB_SUSPENDED(job_ptr))
 		return "Suspended";
-	if (base_state == JOB_PENDING)
+	if (IS_JOB_PENDING(job_ptr))
 		return "Idle";
 
-	if ((base_state == JOB_COMPLETE) || (base_state == JOB_FAILED))
+	if (IS_JOB_COMPLETE(job_ptr) || IS_JOB_FAILED(job_ptr))
 		state_str = "Completed";
 	else /* JOB_CANCELLED, JOB_TIMEOUT, JOB_NODE_FAIL */
 		state_str = "Removed";
@@ -642,7 +640,7 @@ static char * _get_job_features(struct job_record *job_ptr)
 /* returns how long job has been suspended, in seconds */
 static uint32_t	_get_job_suspend_time(struct job_record *job_ptr)
 {
-	if (job_ptr->job_state == JOB_SUSPENDED) {
+	if (IS_JOB_SUSPENDED(job_ptr)) {
 		time_t now = time(NULL);
 		return (uint32_t) difftime(now, 
 				job_ptr->suspend_time);

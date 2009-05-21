@@ -108,8 +108,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	}
 
 	if (feature_ptr) {
-		if ((job_ptr->job_state == JOB_PENDING) &&
-		    (job_ptr->details)) {
+		if (IS_JOB_PENDING(job_ptr) && (job_ptr->details)) {
 			info("wiki: change job %u features to %s", 
 				jobid, feature_ptr);
 			job_ptr->details->features = xstrdup(feature_ptr);
@@ -124,8 +123,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	if (start_ptr) {
 		char *end_ptr;
 		uint32_t begin_time = strtol(start_ptr, &end_ptr, 10);
-		if ((job_ptr->job_state == JOB_PENDING) &&
-		    (job_ptr->details)) {
+		if (IS_JOB_PENDING(job_ptr) && (job_ptr->details)) {
 			info("wiki: change job %u begin time to %u", 
 				jobid, begin_time);
 			job_ptr->details->begin_time = begin_time;
@@ -139,7 +137,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	}
 
 	if (name_ptr) {
-		if (job_ptr->job_state == JOB_PENDING) {
+		if (IS_JOB_PENDING(job_ptr)) {
 			info("wiki: change job %u name %s", jobid, name_ptr);
 			xfree(job_ptr->name);
 			job_ptr->name = xstrdup(name_ptr);

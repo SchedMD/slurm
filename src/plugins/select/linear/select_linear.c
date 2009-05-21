@@ -823,7 +823,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_scan_ptr->job_state  != JOB_RUNNING)		||
+		if ((!IS_JOB_RUNNING(job_scan_ptr))			||
 		    (job_scan_ptr->node_cnt   != req_nodes)		||
 		    (job_scan_ptr->total_procs < job_ptr->num_procs)	||
 		    (!bit_super_set(job_scan_ptr->node_bitmap, bitmap)))
@@ -1486,7 +1486,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
-	if (job_ptr->job_state != JOB_RUNNING)
+	if (!IS_JOB_RUNNING(job_ptr))
 		return 0;
 
 	return 1;
@@ -1874,8 +1874,7 @@ static void _init_node_cr(void)
 	/* record running and suspended jobs in node_cr_records */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_state != JOB_RUNNING) &&
-		    (job_ptr->job_state != JOB_SUSPENDED))
+		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
 		if ((select_ptr = job_ptr->select_job) == NULL) {
 			error("job %u lacks a select_job_res struct",
@@ -1939,7 +1938,7 @@ static void _init_node_cr(void)
 					continue;
 				}
 				part_cr_ptr->tot_job_cnt++;
-				if (job_ptr->job_state == JOB_RUNNING)
+				if (IS_JOB_RUNNING(job_ptr))
 					part_cr_ptr->run_job_cnt++;
 				break;
 			}
@@ -2001,7 +2000,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		fatal("list_create: memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (tmp_job_ptr->job_state != JOB_RUNNING)
+		if (!IS_JOB_RUNNING(tmp_job_ptr))
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
 			error("Job %u has zero end_time", tmp_job_ptr->job_id);

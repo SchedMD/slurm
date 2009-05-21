@@ -3,7 +3,8 @@
  *
  *  $Id: accounting_storage_filetxt.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
- *  Copyright (C) 2004-2008 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
@@ -602,7 +603,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	snprintf(buf, BUFFER_SIZE, "%d %d %d %u %u",
 		 JOB_TERMINATED,
 		 (int) (job_ptr->end_time - job_ptr->start_time),
-		 job_ptr->job_state & (~JOB_COMPLETING),
+		 job_ptr->job_state & JOB_STATE_BASE,
 		 job_ptr->requid, job_ptr->exit_code);
 	
 	return  _print_record(job_ptr, job_ptr->end_time, buf);
@@ -891,7 +892,7 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 	snprintf(buf, BUFFER_SIZE, "%d %d %d",
 		 JOB_SUSPEND,
 		 elapsed,
-		 job_ptr->job_state & (~JOB_COMPLETING));/* job status */
+		 job_ptr->job_state & JOB_STATE_BASE);/* job status */
 		
 	return _print_record(job_ptr, now, buf);
 }
