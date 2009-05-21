@@ -5810,7 +5810,8 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	 * a new job arrives and the job_id is reused, we 
 	 * could try to note the termination of a job that 
 	 * hasn't really started. Very rare obviously. */
-	if (IS_JOB_PENDING(job_ptr) || (job_ptr->node_bitmap == NULL)) {
+	if ((IS_JOB_PENDING(job_ptr) && (!IS_JOB_COMPLETING(job_ptr))) || 
+	    (job_ptr->node_bitmap == NULL)) {
 		uint16_t base_state = NODE_STATE_UNKNOWN;
 		node_ptr = find_node_record(node_name);
 		if (node_ptr)
