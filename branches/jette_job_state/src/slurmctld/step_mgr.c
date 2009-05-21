@@ -294,7 +294,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
-	if (job_ptr->job_state != JOB_RUNNING) {
+	if (!IS_JOB_RUNNING(job_ptr)) {
 		verbose("job_step_signal: step %u.%u can not be sent signal "
 			"%u from state=%s", job_id, step_id, signal,
 			job_state_string(job_ptr->job_state));
@@ -1169,8 +1169,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
-	if ((job_ptr->details == NULL) || 
-	    (job_ptr->job_state == JOB_SUSPENDED))
+	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
 		return ESLURM_DISABLED;
 
 	if (IS_JOB_PENDING(job_ptr)) {
@@ -1510,7 +1509,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	pack32(task_cnt, buffer);
 
 	pack_time(step_ptr->start_time, buffer);
-	if (step_ptr->job_ptr->job_state == JOB_SUSPENDED) {
+	if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
 		run_time = step_ptr->pre_sus_time;
 	} else {
 		begin_time = MAX(step_ptr->start_time,
@@ -1702,15 +1701,15 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 		rc = ESLURM_ACCESS_DENIED ;
 		goto reply;
 	}
-	if (job_ptr->job_state == JOB_PENDING) {
+	if (IS_JOB_PENDING(job_ptr)) {
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
-	} else if (job_ptr->job_state == JOB_SUSPENDED) {
+	} else if (IS_JOB_SUSPENDED(job_ptr)) {
 		/* job can't get cycles for checkpoint 
 		 * if it is already suspended */
 		rc = ESLURM_DISABLED;
 		goto reply;
-	} else if (job_ptr->job_state != JOB_RUNNING) {
+	} else if (!IS_JOB_RUNNING(job_ptr)) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}
@@ -1778,11 +1777,11 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}
-	if (job_ptr->job_state == JOB_PENDING) {
+	if (IS_JOB_PENDING(job_ptr)) {
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
-	} else if ((job_ptr->job_state != JOB_RUNNING)
-	&&         (job_ptr->job_state != JOB_SUSPENDED)) {
+	} else if (!IS_JOB_RUNNING(job_ptr) &&
+		   !IS_JOB_SUSPENDED(job_ptr)) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}
@@ -1833,11 +1832,11 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}
-	if (job_ptr->job_state == JOB_PENDING) {
+	if (IS_JOB_PENDING(job_ptr)) {
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
-	} else if ((job_ptr->job_state != JOB_RUNNING)
-	&&         (job_ptr->job_state != JOB_SUSPENDED)) {
+	} else if (!IS_JOB_RUNNING(job_ptr) &&
+	           !IS_JOB_SUSPENDED(job_ptr)) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}
@@ -1883,7 +1882,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		info("step_partial_comp: JobID=%u invalid", req->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if (job_ptr->job_state == JOB_PENDING) {
+	if (IS_JOB_PENDING(job_ptr)) {
 		info("step_partial_comp: JobID=%u pending", req->job_id);
 		return ESLURM_JOB_PENDING;
 	}
@@ -2371,7 +2370,7 @@ extern void step_checkpoint(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->job_state != JOB_RUNNING)
+		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 		if (job_ptr->batch_flag &&
 		    (job_ptr->ckpt_interval != 0)) { /* periodic job ckpt */

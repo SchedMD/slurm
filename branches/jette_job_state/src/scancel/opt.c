@@ -120,7 +120,7 @@ static void _print_version (void);
 static void _xlate_job_step_ids(char **rest);
 
 /* translate job state name to number */
-static enum job_states _xlate_state_name(const char *state_name);
+static uint16_t _xlate_state_name(const char *state_name);
 
 /* translate name name to number */
 static uint16_t _xlate_signal_name(const char *signal_name);
@@ -150,7 +150,7 @@ int initialize_and_process_args(int argc, char *argv[])
 
 }
 
-static enum job_states 
+static uint16_t 
 _xlate_state_name(const char *state_name)
 {
 	enum job_states i;
@@ -167,7 +167,13 @@ _xlate_state_name(const char *state_name)
 	    (strcasecmp(state_name, 
 			job_state_string_compact(JOB_COMPLETING)) == 0)) {
 		return JOB_COMPLETING;
-	}	
+	}
+	if ((strcasecmp(state_name, 
+			job_state_string(JOB_CONFIGURING)) == 0) ||
+	    (strcasecmp(state_name, 
+			job_state_string_compact(JOB_CONFIGURING)) == 0)) {
+		return JOB_CONFIGURING;
+	}
 
 	fprintf (stderr, "Invalid job state specified: %s\n", state_name);
 	state_names = xstrdup(job_state_string(0));
@@ -177,6 +183,8 @@ _xlate_state_name(const char *state_name)
 	}
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_COMPLETING));
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_CONFIGURING));
 	fprintf (stderr, "Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	exit (1);

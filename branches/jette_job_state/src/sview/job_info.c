@@ -1016,9 +1016,9 @@ static int _get_node_cnt(job_info_t * job)
 {
 	int node_cnt = 0;
 	bool completing = job->job_state & JOB_COMPLETING;
-	uint16_t base_job_state = job->job_state & (~JOB_COMPLETING);
+	uint16_t base_job_state = job->job_state & JOB_BASE_STATE;
 
-	if (base_job_state == JOB_PENDING || completing) {
+	if ((base_job_state == JOB_PENDING) || completing) {
 		node_cnt = _nodes_in_list(job->req_nodes);
 		node_cnt = MAX(node_cnt, job->num_nodes);
 	} else
@@ -1070,11 +1070,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 		sprintf(tmp_char,"00:00:00");
 		nodes = "waiting...";
 	} else {
-		if (job_ptr->job_state == JOB_SUSPENDED)
+		uint16_t base_state = job_ptr->job_state & JOB_STATE_BASE;
+		if (base_state == JOB_SUSPENDED)
 			now_time = job_ptr->pre_sus_time;
 		else {
-			if ((job_ptr->job_state != JOB_RUNNING)
-			    && (job_ptr->end_time != 0))
+			if ((base_state != JOB_RUNNING) &&
+			    (job_ptr->end_time != 0))
 				now_time = job_ptr->end_time;
 			if (job_ptr->suspend_time)
 				now_time = (difftime(now_time,
@@ -1487,11 +1488,12 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		sprintf(tmp_char,"00:00:00");
 		nodes = "waiting...";
 	} else {
-		if (job_ptr->job_state == JOB_SUSPENDED)
+		uint16_t base_state = job_ptr->job_state & JOB_STATE_BASE;
+		if (base_state == JOB_SUSPENDED)
 			now_time = job_ptr->pre_sus_time;
 		else {
-			if ((job_ptr->job_state != JOB_RUNNING)
-			    && (job_ptr->end_time != 0)) 
+			if ((base_state != JOB_RUNNING) &&
+			    (job_ptr->end_time != 0)) 
 				now_time = job_ptr->end_time;
 			if (job_ptr->suspend_time)
 				now_time = (difftime(now_time,
@@ -2176,6 +2178,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	job_step_info_t *step_ptr = NULL;
+	uint16_t base_state;
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 	char tmp_char[50];
@@ -2262,11 +2265,11 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 			}			
 		}
 		list_append(odd_info_list, sview_job_info_ptr);
-		if((job_ptr->job_state != JOB_PENDING)
-		   && (job_ptr->job_state != JOB_RUNNING)
-		   && (job_ptr->job_state != JOB_SUSPENDED)
-		   && (!(job_ptr->job_state 
-			 & JOB_COMPLETING))) {
+		base_state = job_ptr->job_state & JOB_STATE_BASE;
+		if((base_state != JOB_PENDING) &&
+		   (base_state != JOB_RUNNING) &&
+		   (base_state != JOB_SUSPENDED) && 
+		   (!(job_ptr->job_state & JOB_COMPLETING))) {
 			continue;
 		}
 		list_append(info_list, sview_job_info_ptr);

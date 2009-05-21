@@ -3,7 +3,8 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -352,7 +353,12 @@ _parse_state( char* str, enum job_states* states )
 	    (strcasecmp(job_state_string_compact(JOB_COMPLETING),str) == 0)) {
 		*states = JOB_COMPLETING;
 		return SLURM_SUCCESS;
-	}	
+	}
+	if ((strcasecmp(job_state_string(JOB_CONFIGURING), str) == 0) ||
+	    (strcasecmp(job_state_string_compact(JOB_CONFIGURING),str) == 0)) {
+		*states = JOB_CONFIGURING;
+		return SLURM_SUCCESS;
+	}
 
 	error ("Invalid job state specified: %s", str);
 	state_names = xstrdup(job_state_string(0));
@@ -362,6 +368,8 @@ _parse_state( char* str, enum job_states* states )
 	}
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_COMPLETING));
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_CONFIGURING));
 	error ("Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	return SLURM_ERROR;
@@ -902,7 +910,7 @@ _build_state_list( char* str )
 	state = strtok_r( my_state_list, ",", &tmp_char );
 	while (state) 
 	{
-		state_id = xmalloc( sizeof( enum job_states ) );
+		state_id = xmalloc( sizeof( uint16_t ) );
 		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
 		{
 			exit( 1 );
@@ -916,23 +924,26 @@ _build_state_list( char* str )
 
 /*
  * _build_all_states_list - build a list containing all possible job states
- * RET List of enum job_states values
+ * RET List of uint16_t values
  */
 static List 
 _build_all_states_list( void )
 {
 	List my_list;
 	int i;
-	enum job_states * state_id;
+	uint16_t * state_id;
 
 	my_list = list_create( NULL );
 	for (i = 0; i<JOB_END; i++) {
-		state_id = xmalloc( sizeof( enum job_states ) );
-		*state_id = ( enum job_states ) i;
+		state_id = xmalloc( sizeof(uint16_t) );
+		*state_id = (uint16_t) i;
 		list_append( my_list, state_id );
 	}
-	state_id = xmalloc( sizeof( enum job_states ) );
-	*state_id = ( enum job_states ) JOB_COMPLETING;
+	state_id = xmalloc( sizeof(uint16_t) );
+	*state_id = (uint16_t) JOB_COMPLETING;
+	list_append( my_list, state_id );
+	state_id = xmalloc( sizeof(uint16_t) );
+	*state_id = (uint16_t) JOB_CONFIGURING;
 	list_append( my_list, state_id );
 	return my_list;
 

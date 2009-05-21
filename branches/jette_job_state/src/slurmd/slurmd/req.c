@@ -2765,7 +2765,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	int             nsteps = 0;
 	int		delay;
 	char           *resv_id = NULL;
-	uint16_t	base_job_state = req->job_state & (~JOB_COMPLETING);
+	uint16_t	base_job_state = req->job_state & JOB_STATE_BASE;
 	slurm_ctl_conf_t *cf;
 
 	debug("_rpc_terminate_job, uid = %d", uid);

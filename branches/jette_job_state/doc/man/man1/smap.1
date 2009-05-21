@@ -1,4 +1,4 @@
-.TH SMAP "1" "April 2009" "smap 2.0" "Slurm components"
+.TH SMAP "1" "May 2009" "smap 2.1" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -135,7 +135,7 @@ default partition.
 \fBST\fR
 State of a job in compact form. Possible states include:
 PD (pending), R (running), S (suspended), 
-CG (completing), CD  (completed), 
+CD  (completed), CF (configuring), CG (completing), 
 F (failed), TO (timeout), and NF (node failure). See 
 \fBJOB STATE CODES\fR section below for more information.
 .TP
@@ -428,6 +428,10 @@ Job has terminated all processes on all nodes.
 .TP
 \fBCG  COMPLETING\fR
 Job is in the process of completing. Some processes on some nodes may still be active.
+.TP
+\fBCF  CONFIGURING\fR
+Job has been allocated resources, but are waiting for them to become ready for use
+(e.g. booting).
 .TP
 \fBF   FAILED\fR
 Job terminated with non\-zero exit code or other failure condition.

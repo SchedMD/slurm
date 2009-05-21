@@ -85,12 +85,26 @@
 		if (_X) bit_free (_X);	\
 		_X	= NULL; 	\
 	} while (0)
+
+/* Defined job states */
+#define IS_JOB_PENDING(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_PENDING)
+#define IS_JOB_RUNNING(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_RUNNING)
+#define IS_JOB_SUSPENDED(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_SUSPENDED)
+#define IS_JOB_FAILED(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_FAILED)
+#define IS_JOB_COMPLETE(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_COMPLETE)
+
+/* Derived job states */
 #define IS_JOB_FINISHED(_X)		\
-	((_X->job_state & (~JOB_COMPLETING)) >  JOB_SUSPENDED)
+	((_X->job_state & JOB_STATE_BASE) >  JOB_SUSPENDED)
+#define IS_JOB_COMPLETING(_X)		\
+	(_X->job_state & JOB_COMPLETING)
 #define IS_JOB_COMPLETED(_X)		\
 	(IS_JOB_FINISHED(_X) && ((_X->job_state & JOB_COMPLETING) == 0))
-#define IS_JOB_PENDING(_X)		\
-	((_X->job_state & (~JOB_COMPLETING)) == JOB_PENDING)
 
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures

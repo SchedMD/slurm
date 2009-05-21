@@ -2084,7 +2084,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
 			job_ptr = find_job_record(job_desc_msg->job_id);
 			if (job_ptr && IS_JOB_FINISHED(job_ptr)) {
-				if (job_ptr->job_state & JOB_COMPLETING) {
+				if (IS_JOB_COMPLETING(job_ptr)) {
 					info("Attempt to re-use active "
 					     "job id %u", job_ptr->job_id);
 					slurm_send_rc_msg(msg, 

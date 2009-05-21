@@ -152,7 +152,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 
 	xassert(job_ptr);
 	xassert(node_name);
-	if (!job_ptr || job_ptr->job_state != JOB_RUNNING)
+	if (!job_ptr || !IS_JOB_RUNNING(job_ptr))
 		return;
 
 	if (!node_name || (node_ptr = find_node_record(node_name)) == NULL)
@@ -208,7 +208,7 @@ extern void srun_ping (void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		
-		if (job_ptr->job_state != JOB_RUNNING)
+		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 		
 		if ((job_ptr->time_last_active <= old) && job_ptr->other_port
@@ -239,7 +239,7 @@ extern void srun_timeout (struct job_record *job_ptr)
 	struct step_record *step_ptr;
 	
 	xassert(job_ptr);
-	if (job_ptr->job_state != JOB_RUNNING)
+	if (!IS_JOB_RUNNING(job_ptr))
 		return;
 	
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
@@ -283,8 +283,7 @@ extern void srun_user_message(struct job_record *job_ptr, char *msg)
 	srun_user_msg_t *msg_arg;
 
 	xassert(job_ptr);
-	if ((job_ptr->job_state != JOB_PENDING)
-	&&  (job_ptr->job_state != JOB_RUNNING))
+	if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr))
 		return;
 
 	if (job_ptr->other_port

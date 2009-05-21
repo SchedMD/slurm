@@ -2,7 +2,7 @@
  *  print.c - squeue print job functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -481,16 +481,17 @@ int _print_job_time_used(job_info_t * job, int width, bool right,
 long job_time_used(job_info_t * job_ptr)
 {
 	time_t end_time;
+	uint16_t base_state = job_ptr->job_state & JOB_STATE_BASE;
 
-	if ((job_ptr->start_time == 0)
-	||   (job_ptr->job_state == JOB_PENDING))
+	if ((job_ptr->start_time == 0) ||
+	    (base_state == JOB_PENDING))
 		return 0L;
 
-	if (job_ptr->job_state == JOB_SUSPENDED)
+	if (base_state == JOB_SUSPENDED)
 		return (long) job_ptr->pre_sus_time;
 
-	if ((job_ptr->job_state == JOB_RUNNING)
-	||  (job_ptr->end_time == 0))
+	if ((base_state == JOB_RUNNING) ||
+	    (job_ptr->end_time == 0))
 		end_time = time(NULL);
 	else
 		end_time = job_ptr->end_time;
@@ -578,6 +579,10 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 {
 	char *ionodes = NULL;
 	char tmp_char[16];
+	uint16_t base_state;
+
+	if (job)
+		base_state = job->job_state & JOB_STATE_BASE;
 	
 	if (job == NULL) {	/* Print the Header instead */
 #ifdef HAVE_BG
@@ -585,9 +590,9 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 #else
 		_print_str("NODELIST(REASON)", width, right, false);
 #endif
-	} else if ((job->job_state == JOB_PENDING)
-	||         (job->job_state == JOB_TIMEOUT)
-	||         (job->job_state == JOB_FAILED)) {
+	} else if ((base_state == JOB_PENDING) ||
+	           (base_state == JOB_TIMEOUT) ||
+	           (base_state == JOB_FAILED)) {
 		char id[FORMAT_STRING_SIZE], *reason;
 		if (job->state_desc)
 			reason = job->state_desc;
@@ -1275,7 +1280,7 @@ static int _filter_job(job_info_t * job)
 	int filter;
 	ListIterator iterator;
 	uint32_t *job_id, *user;
-	enum job_states *state_id;
+	uint16_t *state_id;
 	char *part, *account;
 
 	if (params.job_list) {
@@ -1327,6 +1332,8 @@ static int _filter_job(job_info_t * job)
 		while ((state_id = list_next(iterator))) {
 			if ((*state_id == job->job_state) ||
 			    ((*state_id == JOB_COMPLETING) && 
+			     (*state_id & job->job_state)) ||
+			    ((*state_id == JOB_CONFIGURING) &&
 			     (*state_id & job->job_state))) {
 				filter = 0;
 				break;
@@ -1336,10 +1343,11 @@ static int _filter_job(job_info_t * job)
 		if (filter == 1)
 			return 3;
 	} else {
-		if ((job->job_state != JOB_PENDING)
-		&&  (job->job_state != JOB_RUNNING)
-		&&  (job->job_state != JOB_SUSPENDED)
-		&&  ((job->job_state & JOB_COMPLETING) == 0))
+		uint16_t base_state = job->job_state & JOB_STATE_BASE;
+		if ((base_state != JOB_PENDING)   &&
+		    (base_state != JOB_RUNNING)   &&
+		    (base_state != JOB_SUSPENDED) &&
+		    ((job->job_state & JOB_COMPLETING) == 0))
 			return 4;
 	}
 
