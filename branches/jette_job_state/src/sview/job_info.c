@@ -1016,7 +1016,7 @@ static int _get_node_cnt(job_info_t * job)
 {
 	int node_cnt = 0;
 	bool completing = job->job_state & JOB_COMPLETING;
-	uint16_t base_job_state = job->job_state & JOB_BASE_STATE;
+	uint16_t base_job_state = job->job_state & JOB_STATE_BASE;
 
 	if ((base_job_state == JOB_PENDING) || completing) {
 		node_cnt = _nodes_in_list(job->req_nodes);
