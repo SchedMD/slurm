@@ -1006,10 +1006,9 @@ _scan_slurm_job_list()
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		debug3("sched/gang: _scan_slurm_job_list: checking job %u",
 			job_ptr->job_id);		
-		if (job_ptr->job_state == JOB_PENDING)
+		if (IS_JOB_PENDING(job_ptr))
 			continue;
-		if (job_ptr->job_state == JOB_SUSPENDED ||
-		    job_ptr->job_state == JOB_RUNNING) {
+		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
 			/* are we tracking this job already? */
 			p_ptr = _find_gs_part(job_ptr->partition);
 			if (!p_ptr) /* no partition */
@@ -1022,7 +1021,7 @@ _scan_slurm_job_list()
 			/* We're not tracking this job. Resume it if it's
 			 * suspended, and then add it to the job list. */
 			
-			if (job_ptr->job_state == JOB_SUSPENDED)
+			if (IS_JOB_SUSPENDED(job_ptr))
 			/* The likely scenario here is that the slurmctld has
 			 * failed over, and this is a job that the sched/gang
 			 * plugin had previously suspended.
@@ -1302,12 +1301,12 @@ gs_reconfig()
 				continue;
 			}
 			/* resume any job that is suspended */
-			if (job_ptr->job_state == JOB_SUSPENDED)
+			if (IS_JOB_SUSPENDED(job_ptr))
 				_signal_job(job_ptr->job_id, GS_RESUME);
 
 			/* transfer the job as long as it is still active */
-			if (job_ptr->job_state == JOB_SUSPENDED ||
-			    job_ptr->job_state == JOB_RUNNING) {				
+			if (IS_JOB_SUSPENDED(job_ptr) ||
+			    IS_JOB_RUNNING(job_ptr)) {
 				_add_job_to_part(newp_ptr, job_ptr);
 			}
 		}

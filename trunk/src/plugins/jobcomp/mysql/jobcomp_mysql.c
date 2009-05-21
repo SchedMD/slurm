@@ -310,9 +310,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 				(unsigned long) job_ptr->time_limit);
 
 	/* Job will typically be COMPLETING when this is called. 
-	 * We remove this flag to get the eventual completion state:
+	 * We remove the flags to get the eventual completion state:
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
-	job_state = job_ptr->job_state & (~JOB_COMPLETING);
+	job_state = job_ptr->job_state & JOB_STATE_BASE;
 
 	connect_type = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
 						SELECT_PRINT_CONNECTION);

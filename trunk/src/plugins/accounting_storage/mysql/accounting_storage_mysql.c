@@ -10584,10 +10584,10 @@ no_rollup_change:
 			   (int)job_ptr->details->submit_time,
 			   (int)job_ptr->start_time,
 			   jname, track_steps,
-			   job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->job_state & JOB_STATE_BASE,
 			   job_ptr->priority, job_ptr->num_procs,
 			   job_ptr->total_procs, node_cnt,
-			   job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->job_state & JOB_STATE_BASE,
 			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id,
 			   job_ptr->time_limit);
 
@@ -10641,7 +10641,7 @@ no_rollup_change:
 			   "associd=%u, wckeyid=%u, resvid=%u, timelimit=%u "
 			   "where id=%d",
 			   (int)job_ptr->start_time,
-			   jname, job_ptr->job_state & (~JOB_COMPLETING),
+			   jname, job_ptr->job_state & JOB_STATE_BASE,
 			   job_ptr->total_procs, node_cnt, 
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit, 
@@ -10730,7 +10730,7 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 			       "kill_requid=%d where id=%d",
 			       job_table, (int)start_time,
 			       (int)job_ptr->end_time, 
-			       job_ptr->job_state & (~JOB_COMPLETING),
+			       job_ptr->job_state & JOB_STATE_BASE,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
@@ -11045,7 +11045,7 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 		   "update %s set suspended=%d-suspended, state=%d "
 		   "where id=%d;",
 		   job_table, (int)job_ptr->suspend_time, 
-		   job_ptr->job_state & (~JOB_COMPLETING),
+		   job_ptr->job_state & JOB_STATE_BASE,
 		   job_ptr->db_index);
 	if(suspended)
 		xstrfmtcat(query,

@@ -56,7 +56,7 @@ extern void get_job(void)
 	static int count = 0;
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	job_info_t job;
-	uint16_t show_flags = 0;
+	uint16_t base_state, show_flags = 0;
 
 	show_flags |= SHOW_ALL;
 	if (job_info_ptr) {
@@ -102,11 +102,11 @@ extern void get_job(void)
 	count = 0;
 	for (i = 0; i < recs; i++) {
 		job = new_job_ptr->job_array[i];
-		
-		if ((job.job_state != JOB_PENDING)
-		    &&  (job.job_state != JOB_RUNNING)
-		    &&  (job.job_state != JOB_SUSPENDED)
-		    &&  ((job.job_state & JOB_COMPLETING) == 0))
+		base_state = job.job_state & JOB_STATE_BASE;
+		if ((base_state != JOB_PENDING) &&
+		    (base_state != JOB_RUNNING) &&
+		    (base_state != JOB_SUSPENDED) &&
+		    (!(job.job_state & JOB_COMPLETING)))
 			continue;	/* job has completed */
 
 		if (job.node_inx[0] != -1) {
@@ -150,7 +150,7 @@ extern void get_job(void)
 	for (i = 0; i < recs; i++) {
 		job = new_job_ptr->job_array[i];
 		
-		if (job.job_state != JOB_PENDING)
+		if ((job.job_state & JOB_STATE_BASE) != JOB_PENDING)
 			continue;	/* job has completed */
 
 		if(!params.commandline) {

@@ -220,7 +220,7 @@ static int _build_bitmaps(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bitstr_t *tmp_bits;
-		if ((job_ptr->job_state   != JOB_RUNNING) ||
+		if (!IS_JOB_RUNNING(job_ptr) ||
 		    (job_ptr->node_bitmap == NULL)        ||
 		    (job_ptr->details     == NULL)        ||
 		    (job_ptr->details->shared != 0))
@@ -1128,8 +1128,7 @@ static int _sync_nodes_to_jobs(void)
 		if (job_ptr->node_bitmap == NULL)
 			continue;
 
-		if ((job_ptr->job_state == JOB_RUNNING) ||
-		    (job_ptr->job_state &  JOB_COMPLETING))
+		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
 			update_cnt += _sync_nodes_to_active_job(job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
@@ -1150,8 +1149,7 @@ static int _sync_nodes_to_comp_job(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->node_bitmap) &&
-		    (job_ptr->job_state & JOB_COMPLETING)) {
+		if ((job_ptr->node_bitmap) && IS_JOB_COMPLETING(job_ptr)) {
 			update_cnt++;
 			info("Killing job_id %u", job_ptr->job_id);
 			deallocate_nodes(job_ptr, false, false);
@@ -1184,13 +1182,12 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		node_ptr->run_job_cnt++; /* NOTE:
 				* This counter moved to comp_job_cnt 
 				* by _sync_nodes_to_comp_job() */
-		if (((job_ptr->job_state == JOB_RUNNING) ||
-		     (job_ptr->job_state &  JOB_COMPLETING)) &&
+		if ((IS_JOB_RUNNING(job_ptr) || IS_JOB_COMPLETING(job_ptr)) &&
 		    (job_ptr->details) && (job_ptr->details->shared == 0))
 			node_ptr->no_share_job_cnt++;
 
 		if ((base_state == NODE_STATE_DOWN)     &&
-		    (job_ptr->job_state == JOB_RUNNING) &&
+		    IS_JOB_RUNNING(job_ptr)             &&
 		    (job_ptr->kill_on_node_fail == 0)   &&
 		    (job_ptr->node_cnt > 1)) {
 			/* This should only happen if a job was running 
@@ -1279,10 +1276,9 @@ static int _restore_job_dependencies(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
-			if((job_ptr->job_state == JOB_RUNNING) ||
-			   (job_ptr->job_state == JOB_SUSPENDED))
+			if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 				acct_policy_job_begin(job_ptr);
-			if(!IS_JOB_FINISHED(job_ptr))
+			if (!IS_JOB_FINISHED(job_ptr))
 				acct_policy_add_job_submit(job_ptr);
 		}
 
@@ -1291,7 +1287,7 @@ static int _restore_job_dependencies(void)
 			list_destroy(job_ptr->license_list);
 		if (valid)
 			job_ptr->license_list = license_list;
-		if (job_ptr->job_state == JOB_RUNNING) 
+		if (IS_JOB_RUNNING(job_ptr)) 
 			license_job_get(job_ptr);
 
 		if ((job_ptr->details == NULL) ||
@@ -1326,10 +1322,9 @@ static void _acct_restore_active_jobs(void)
 					     time(NULL));
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->job_state == JOB_SUSPENDED)
+		if (IS_JOB_SUSPENDED(job_ptr))
 			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-		if ((job_ptr->job_state == JOB_SUSPENDED) ||
-		    (job_ptr->job_state == JOB_RUNNING)) {
+		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
 			jobacct_storage_g_job_start(
 				acct_db_conn, slurmctld_cluster_name, job_ptr);
 			step_iterator = list_iterator_create(

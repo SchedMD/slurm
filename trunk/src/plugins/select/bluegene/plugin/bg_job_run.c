@@ -1167,7 +1167,7 @@ extern int sync_jobs(List job_list)
 		while ((job_ptr = (struct job_record *) 
 			list_next(job_iterator))) {
 			bool good_block = true;
-			if (job_ptr->job_state != JOB_RUNNING)
+			if (!IS_JOB_RUNNING(job_ptr))
 				continue;
 			
 			bg_update_ptr = xmalloc(sizeof(bg_update_t));

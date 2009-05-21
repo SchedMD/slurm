@@ -50,7 +50,7 @@ typedef struct scancel_options {
 	char *job_name;		/* --name=n, -nn		*/
 	char *partition;	/* --partition=n, -pn		*/
 	uint16_t signal;	/* --signal=n, -sn		*/
-	enum job_states state;	/* --state=n, -tn		*/
+	uint16_t state;		/* --state=n, -tn		*/
 	uid_t user_id;		/* --user=n, -un		*/
 	char *user_name;	/* --user=n, -un		*/
 	int verbose;		/* --verbose, -v		*/

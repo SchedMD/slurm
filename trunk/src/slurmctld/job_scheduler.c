@@ -151,8 +151,8 @@ extern int build_job_queue(struct job_queue **job_queue)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
-		if ((job_ptr->job_state != JOB_PENDING)    ||
-		    (job_ptr->job_state &  JOB_COMPLETING) ||
+		if ((!IS_JOB_PENDING(job_ptr))   ||
+		    IS_JOB_COMPLETING(job_ptr)   ||
 		    (job_ptr->priority == 0))	/* held */
 			continue;
 		if (!job_independent(job_ptr))	/* can not run now */
@@ -194,7 +194,7 @@ extern bool job_is_completing(void)
 	recent = time(NULL) - complete_wait;
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_state & JOB_COMPLETING) &&
+		if (IS_JOB_COMPLETING(job_ptr) &&
 		    (job_ptr->end_time >= recent)) {
 			completing = true;
 			break;
@@ -221,7 +221,7 @@ extern void set_job_elig_time(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		part_ptr = job_ptr->part_ptr;
-		if (job_ptr->job_state != JOB_PENDING)
+		if (!IS_JOB_PENDING(job_ptr))
 			continue;
 		if (part_ptr == NULL)
 			continue;
@@ -727,9 +727,9 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				qjob_ptr = job_queue[i].job_ptr;
 				/* already running/suspended job or previously
 				 * submitted pending job */
-				if ((qjob_ptr->job_state == JOB_RUNNING) ||
-				    (qjob_ptr->job_state == JOB_SUSPENDED) ||
-				    ((qjob_ptr->job_state == JOB_PENDING) &&
+				if (IS_JOB_RUNNING(qjob_ptr) ||
+				    IS_JOB_SUSPENDED(qjob_ptr) ||
+				    (IS_JOB_PENDING(qjob_ptr) &&
 				     (qjob_ptr->job_id < job_ptr->job_id))) {
 					now = 0;
 					break;
@@ -758,8 +758,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
 				break;
-			if ((dep_ptr->job_ptr->job_state & (~JOB_COMPLETING))
-			    != JOB_COMPLETE)
+			if (!IS_JOB_COMPLETE(dep_ptr->job_ptr))
 				list_delete_item(depend_iter);
 			else {
 				failure = true;
@@ -768,8 +767,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
 				break;
-			if ((dep_ptr->job_ptr->job_state & (~JOB_COMPLETING))
-			    == JOB_COMPLETE)
+			if (IS_JOB_COMPLETE(dep_ptr->job_ptr))
 				list_delete_item(depend_iter);
 			else {
 				failure = true;
@@ -947,8 +945,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	if (part_ptr == NULL)
 		return ESLURM_INVALID_PARTITION_NAME;
 
-	if ((job_ptr->details == NULL) ||
-	    (job_ptr->job_state != JOB_PENDING))
+	if ((job_ptr->details == NULL) || (!IS_JOB_PENDING(job_ptr)))
 		return ESLURM_DISABLED;
 
 	if ((job_desc_msg->req_nodes == NULL) || 
@@ -1279,8 +1276,7 @@ static void *_run_prolog(void *arg)
 		if (job_ptr->details)
 			job_ptr->details->prolog_running = 0;
 		if (job_ptr->batch_flag &&
-		    ((job_ptr->job_state == JOB_RUNNING) ||
-		     (job_ptr->job_state == JOB_SUSPENDED)))
+		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)))
 			launch_job(job_ptr);
 	}
 	unlock_slurmctld(config_read_lock);

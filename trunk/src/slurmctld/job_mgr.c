@@ -623,7 +623,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->alloc_resp_port, buffer);
 	pack16(dump_job_ptr->other_port, buffer);
 
-	if (dump_job_ptr->job_state & JOB_COMPLETING) {
+	if (IS_JOB_COMPLETING(dump_job_ptr)) {
 		if (dump_job_ptr->nodes_completing == NULL) {
 			dump_job_ptr->nodes_completing =
 				bitmap2node_name(
@@ -767,7 +767,7 @@ static int _load_job_state(Buf buffer)
 		goto unpack_error;
 	}
 
-	if (((job_state & (~JOB_COMPLETING)) >= JOB_END) || 
+	if (((job_state & JOB_STATE_BASE) >= JOB_END) || 
 	    (batch_flag > 2)) {
 		error("Invalid data for job %u: job_state=%u batch_flag=%u",
 		      job_id, job_state, batch_flag);
@@ -954,7 +954,7 @@ static int _load_job_state(Buf buffer)
 			      job_ptr->job_id);
 			jobacct_storage_g_job_start(
 				acct_db_conn, slurmctld_cluster_name, job_ptr);
-			if(job_ptr->job_state == JOB_SUSPENDED) 
+			if (IS_JOB_SUSPENDED(job_ptr)) 
 				jobacct_storage_g_job_suspend(acct_db_conn,
 							      job_ptr);
 		}
@@ -1274,7 +1274,7 @@ extern int kill_job_by_part_name(char *part_name)
 			continue;
 		job_ptr->part_ptr = NULL;
 
-		if (job_ptr->job_state == JOB_SUSPENDED) {
+		if (IS_JOB_SUSPENDED(job_ptr)) {
 			enum job_states suspend_job_state = job_ptr->job_state;
 			/* we can't have it as suspended when we call the
 			 * accounting stuff.
@@ -1284,9 +1284,8 @@ extern int kill_job_by_part_name(char *part_name)
 			job_ptr->job_state = suspend_job_state;
 			suspended = true;
 		}
-		if ((job_ptr->job_state == JOB_RUNNING) 
-		    || (job_ptr->job_state == JOB_PENDING)
-		    || suspended) {
+		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr) ||
+		    suspended) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
 			     job_ptr->job_id, part_name);
@@ -1302,7 +1301,7 @@ extern int kill_job_by_part_name(char *part_name)
 				job_ptr->end_time = now;
 			deallocate_nodes(job_ptr, false, suspended);
 			job_completion_logger(job_ptr);
-		} else if (job_ptr->job_state == JOB_PENDING) {
+		} else if (IS_JOB_PENDING(job_ptr)) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
 				job_ptr->job_id, part_name);
@@ -1347,7 +1346,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (!bit_test(job_ptr->node_bitmap, bit_position)))
 			continue;	/* job not on this node */
-		if (job_ptr->job_state == JOB_SUSPENDED) {
+		if (IS_JOB_SUSPENDED(job_ptr)) {
 			enum job_states suspend_job_state = job_ptr->job_state;
 			/* we can't have it as suspended when we call the
 			 * accounting stuff.
@@ -1358,7 +1357,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 			suspended = true;
 		}
 
-		if (job_ptr->job_state & JOB_COMPLETING) {
+		if (IS_JOB_COMPLETING(job_ptr)) {
 			job_count++;
 			bit_clear(job_ptr->node_bitmap, bit_position);
 			if (job_ptr->node_cnt)
@@ -1377,7 +1376,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				error("Node %s comp_job_cnt underflow, "
 				      "JobId=%u", 
 				      node_ptr->name, job_ptr->job_id);
-		} else if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
+		} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
 			job_count++;
 			if ((job_ptr->details) &&
 			    (job_ptr->kill_on_node_fail == 0) &&
@@ -1896,7 +1895,7 @@ extern int job_fail(uint32_t job_id)
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
-	if (job_ptr->job_state == JOB_SUSPENDED) {
+	if (IS_JOB_SUSPENDED(job_ptr)) {
 		enum job_states suspend_job_state = job_ptr->job_state;
 		/* we can't have it as suspended when we call the
 		 * accounting stuff.
@@ -1907,7 +1906,7 @@ extern int job_fail(uint32_t job_id)
 		suspended = true;
 	}
 
-	if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
+	if (IS_JOB_RUNNING(job_ptr) || suspended) {
 		/* No need to signal steps, deallocate kills them */
 		job_ptr->time_last_active       = now;
 		if (suspended) {
@@ -1986,15 +1985,14 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	/* save user ID of the one who requested the job be cancelled */
 	if(signal == SIGKILL)
 		job_ptr->requid = uid;
-	if ((job_ptr->job_state == (JOB_PENDING | JOB_COMPLETING)) &&
+	if (IS_JOB_PENDING(job_ptr) && IS_JOB_COMPLETING(job_ptr) &&
 	    (signal == SIGKILL)) {
 		job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
 		verbose("job_signal of requeuing job %u successful", job_id);
 		return SLURM_SUCCESS;
 	}
 
-	if ((job_ptr->job_state == JOB_PENDING) &&
-	    (signal == SIGKILL)) {
+	if (IS_JOB_PENDING(job_ptr) && (signal == SIGKILL)) {
 		last_job_update		= now;
 		job_ptr->job_state	= JOB_CANCELLED;
 		job_ptr->start_time	= now;
@@ -2006,8 +2004,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return SLURM_SUCCESS;
 	}
 
-	if ((job_ptr->job_state == JOB_SUSPENDED)
-	    &&  (signal == SIGKILL)) {
+	if (IS_JOB_SUSPENDED(job_ptr) &&  (signal == SIGKILL)) {
 		last_job_update         = now;
 		job_ptr->end_time       = job_ptr->suspend_time;
 		job_ptr->tot_sus_time  += difftime(now, job_ptr->suspend_time);
@@ -2020,7 +2017,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		return SLURM_SUCCESS;
 	}
 	
-	if (job_ptr->job_state == JOB_RUNNING) {
+	if (IS_JOB_RUNNING(job_ptr)) {
 		if (signal == SIGKILL) {
 			/* No need to signal steps, deallocate kills them */
 			job_ptr->time_last_active	= now;
@@ -2112,12 +2109,12 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		      job_ptr->job_id, (unsigned int) uid);
 		return ESLURM_USER_ID_MISSING;
 	}
-	if (job_ptr->job_state & JOB_COMPLETING)
+	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;	/* avoid replay */
 
-	if (job_ptr->job_state == JOB_RUNNING)
+	if (IS_JOB_RUNNING(job_ptr))
 		job_comp_flag = JOB_COMPLETING;
-	if (job_ptr->job_state == JOB_SUSPENDED) {
+	if (IS_JOB_SUSPENDED(job_ptr)) {
 		enum job_states suspend_job_state = job_ptr->job_state;
 		/* we can't have it as suspended when we call the
 		 * accounting stuff.
@@ -2162,7 +2159,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		acct_policy_add_job_submit(job_ptr);
 
 		info("Non-responding node, requeue JobId=%u", job_ptr->job_id);
-	} else if ((job_ptr->job_state == JOB_PENDING) && job_ptr->details && 
+	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->details && 
 		   job_ptr->batch_flag) {
 		/* Possible failure mode with DOWN node and job requeue.
 		 * The DOWN node might actually respond to the cancel and
@@ -3430,7 +3427,7 @@ void job_time_limit(void)
 		xassert (job_ptr->magic == JOB_MAGIC);
 
 		resv_status = job_resv_check(job_ptr);
-		if (job_ptr->job_state != JOB_RUNNING)
+		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 
 /* 		qos = (acct_qos_rec_t *)job_ptr->qos_ptr; */
@@ -3803,7 +3800,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	time_t kill_age, min_age, now = time(NULL);;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 
-	if (job_ptr->job_state & JOB_COMPLETING) {
+	if (IS_JOB_COMPLETING(job_ptr)) {
 		kill_age = now - (slurmctld_conf.kill_wait +
 				  2 * slurm_get_msg_timeout());
 		if (job_ptr->time_last_active < kill_age) {
@@ -4223,15 +4220,15 @@ void reset_job_bitmaps(void)
 		}
 
 		if (job_fail) {
-			if (job_ptr->job_state == JOB_PENDING) {
+			if (IS_JOB_PENDING(job_ptr)) {
 				job_ptr->start_time = 
 					job_ptr->end_time = time(NULL);
 				job_ptr->job_state = JOB_NODE_FAIL;
-			} else if (job_ptr->job_state == JOB_RUNNING) {
+			} else if (IS_JOB_RUNNING(job_ptr)) {
 				job_ptr->end_time = time(NULL);
 				job_ptr->job_state = JOB_NODE_FAIL | 
 					JOB_COMPLETING;
-			} else if (job_ptr->job_state == JOB_SUSPENDED) {
+			} else if (IS_JOB_SUSPENDED(job_ptr)) {
 				job_ptr->end_time = job_ptr->suspend_time;
 				job_ptr->job_state = JOB_NODE_FAIL |
 					JOB_COMPLETING;
@@ -4451,7 +4448,7 @@ static bool _top_priority(struct job_record *job_ptr)
 			list_next(job_iterator))) {
 			if (job_ptr2 == job_ptr)
 				continue;
-			if (job_ptr2->job_state != JOB_PENDING)
+			if (!IS_JOB_PENDING(job_ptr2))
 				continue;
 			if (!job_independent(job_ptr2))
 				continue;
@@ -4561,8 +4558,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (old_time == INFINITE)	/* one year in mins */
 				old_time = (365 * 24 * 60);
 			job_ptr->time_limit = job_specs->time_limit;
-			if ((job_ptr->job_state == JOB_RUNNING) ||
-			    (job_ptr->job_state == JOB_SUSPENDED)) {
+			if (IS_JOB_RUNNING(job_ptr) || 
+			    IS_JOB_SUSPENDED(job_ptr)) {
 				if (job_ptr->time_limit == INFINITE) {
 					/* Set end time in one year */
 					job_ptr->end_time = now +
@@ -4576,7 +4573,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				}
 				if (job_ptr->end_time < now)
 					job_ptr->end_time = now;
-				if ((job_ptr->job_state == JOB_RUNNING) &&
+				if (IS_JOB_RUNNING(job_ptr) &&
 				    (list_is_empty(job_ptr->step_list) == 0)) {
 					_xmit_new_end_time(job_ptr);
 				}
@@ -5149,7 +5146,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_specs->licenses = NULL; /* nothing to free */
 			info("update_job: setting licenses to %s for job %u",
 			     job_ptr->licenses, job_ptr->job_id);
-		} else if ((job_ptr->job_state == JOB_RUNNING) && super_user) {
+		} else if (IS_JOB_RUNNING(job_ptr) && super_user) {
 			/* NOTE: This can result in oversubscription of 
 			 * licenses */
 			license_job_return(job_ptr);
@@ -5364,8 +5361,7 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 					  job_ptr, node_ptr);
 		}
 
-		else if ((job_ptr->job_state == JOB_RUNNING) ||
-			 (job_ptr->job_state == JOB_SUSPENDED)) {
+		else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
 			if (bit_test(job_ptr->node_bitmap, node_inx)) {
 				debug3("Registered job %u.%u on node %s ",
 				       reg_msg->job_id[i], reg_msg->step_id[i], 
@@ -5394,14 +5390,14 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			}
 		}
 
-		else if (job_ptr->job_state & JOB_COMPLETING) {
+		else if (IS_JOB_COMPLETING(job_ptr)) {
 			/* Re-send kill request as needed, 
 			 * not necessarily an error */
 			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 
-		else if (job_ptr->job_state == JOB_PENDING) {
+		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
 			error("Registered PENDING job %u.%u on node %s ",
@@ -5466,8 +5462,8 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		bool job_active = ((job_ptr->job_state == JOB_RUNNING) ||
-				   (job_ptr->job_state == JOB_SUSPENDED));
+		bool job_active = IS_JOB_RUNNING(job_ptr) ||
+				  IS_JOB_SUSPENDED(job_ptr);
 
 		if ((!job_active) ||
 		    (!bit_test(job_ptr->node_bitmap, node_inx)))
@@ -5708,8 +5704,7 @@ static void _validate_job_files(List batch_dirs)
 		/* Want to keep this job's files */
 		del_cnt = list_delete_all(batch_dirs, _find_batch_dir, 
 					  &(job_ptr->job_id));
-		if ((del_cnt == 0) && 
-		    (job_ptr->job_state == JOB_PENDING)) {
+		if ((del_cnt == 0) && IS_JOB_PENDING(job_ptr)) {
 			error("Script for job %u lost, state set to FAILED",
 			      job_ptr->job_id);
 			job_ptr->job_state = JOB_FAILED;
@@ -5815,8 +5810,8 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	 * a new job arrives and the job_id is reused, we 
 	 * could try to note the termination of a job that 
 	 * hasn't really started. Very rare obviously. */
-	if ((job_ptr->job_state == JOB_PENDING)
-	||  (job_ptr->node_bitmap == NULL)) {
+	if ((IS_JOB_PENDING(job_ptr) && (!IS_JOB_COMPLETING(job_ptr))) || 
+	    (job_ptr->node_bitmap == NULL)) {
 		uint16_t base_state = NODE_STATE_UNKNOWN;
 		node_ptr = find_node_record(node_name);
 		if (node_ptr)
@@ -5862,9 +5857,8 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	step_epilog_complete(job_ptr, node_name);
 	/* nodes_completing is out of date, rebuild when next saved */
 	xfree(job_ptr->nodes_completing);
-	if (!(job_ptr->job_state & JOB_COMPLETING)) {	/* COMPLETED */
-		if ((job_ptr->job_state == JOB_PENDING)
-		&&  (job_ptr->batch_flag)) {
+	if (!IS_JOB_COMPLETING(job_ptr)) {	/* COMPLETED */
+		if (IS_JOB_PENDING(job_ptr) && (job_ptr->batch_flag)) {
 			info("requeue batch job %u", job_ptr->job_id);
 			if (job_ptr->details) {
 				/* the time stamp on the new batch launch 
@@ -5908,7 +5902,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	srun_job_complete(job_ptr);
 	
 	/* mail out notifications of completion */
-	base_state = job_ptr->job_state & (~JOB_COMPLETING);
+	base_state = job_ptr->job_state & JOB_STATE_BASE;
 	if ((base_state == JOB_COMPLETE) || (base_state == JOB_CANCELLED)) {
 		if (job_ptr->mail_type & MAIL_JOB_END)
 			mail_job_info(job_ptr, MAIL_JOB_END);
@@ -6047,7 +6041,7 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 
 	if (rc)
 		rc = READY_NODE_STATE;
-	if (job_ptr->job_state == JOB_RUNNING)
+	if (IS_JOB_RUNNING(job_ptr))
 		rc |= READY_JOB_STATE;
 
 	*ready = rc;
@@ -6286,7 +6280,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}
-	if (job_ptr->job_state == JOB_PENDING) {
+	if (IS_JOB_PENDING(job_ptr)) {
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
 	}
@@ -6297,7 +6291,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 
 	/* perform the operation */
 	if (sus_ptr->op == SUSPEND_JOB) {
-		if (job_ptr->job_state != JOB_RUNNING) {
+		if (!IS_JOB_RUNNING(job_ptr)) {
 			rc = ESLURM_DISABLED;
 			goto reply;
 		}
@@ -6317,7 +6311,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		}
 		suspend_job_step(job_ptr);
 	} else if (sus_ptr->op == RESUME_JOB) {
-		if (job_ptr->job_state != JOB_SUSPENDED) {
+		if (!IS_JOB_SUSPENDED(job_ptr)) {
 			rc = ESLURM_DISABLED;
 			goto reply;
 		}
@@ -6390,7 +6384,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		rc = ESLURM_DISABLED;
 		goto reply;
 	}
-	if (job_ptr->job_state & JOB_COMPLETING) {
+	if (IS_JOB_COMPLETING(job_ptr)) {
 		rc = ESLURM_TRANSITION_STATE_NO_UPDATE;
 		goto reply;
 	}
@@ -6401,7 +6395,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	last_job_update = now;
 
 	/* nothing else to do if pending */
-	if (job_ptr->job_state == JOB_PENDING)
+	if (IS_JOB_PENDING(job_ptr))
 		goto reply;
 
 	if (job_ptr->batch_flag == 0) {
@@ -6409,15 +6403,14 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		goto reply;
 	}
 
-	if ((job_ptr->job_state != JOB_SUSPENDED)
-	&&  (job_ptr->job_state != JOB_RUNNING)) {
+	if (!IS_JOB_SUSPENDED(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
 		error("job_requeue job %u state is bad %s", job_id,
 			job_state_string(job_ptr->job_state));
 		rc = EINVAL;
 		goto reply;
 	}
 
-	if (job_ptr->job_state == JOB_SUSPENDED) {
+	if (IS_JOB_SUSPENDED(job_ptr)) {
 		enum job_states suspend_job_state = job_ptr->job_state;
 		/* we can't have it as suspended when we call the
 		 * accounting stuff.
@@ -6498,7 +6491,7 @@ extern void update_job_nodes_completing(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (((job_ptr->job_state & JOB_COMPLETING) == 0) ||
+		if ((!IS_JOB_COMPLETING(job_ptr)) ||
 		    (job_ptr->node_bitmap == NULL))
 			continue;
 		xfree(job_ptr->nodes_completing);
@@ -6905,7 +6898,7 @@ extern int send_jobs_to_accounting()
 		jobacct_storage_g_job_start(
 			acct_db_conn, slurmctld_cluster_name, job_ptr);
 
-		if(job_ptr->job_state == JOB_SUSPENDED) 
+		if (IS_JOB_SUSPENDED(job_ptr)) 
 			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 	}
 	list_iterator_destroy(itr);
@@ -6936,15 +6929,15 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 		rc = ESLURM_ACCESS_DENIED ;
 		goto reply;
 	}
-	if (job_ptr->job_state == JOB_PENDING) {
+	if (IS_JOB_PENDING(job_ptr)) {
 		rc = ESLURM_JOB_PENDING;
 		goto reply;
-	} else if (job_ptr->job_state == JOB_SUSPENDED) {
+	} else if (IS_JOB_SUSPENDED(job_ptr)) {
 		/* job can't get cycles for checkpoint 
 		 * if it is already suspended */
 		rc = ESLURM_DISABLED;
 		goto reply;
-	} else if (job_ptr->job_state != JOB_RUNNING) {
+	} else if (!IS_JOB_RUNNING(job_ptr)) {
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}
