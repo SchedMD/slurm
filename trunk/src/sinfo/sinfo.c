@@ -70,7 +70,6 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 			  uint16_t part_inx, node_info_t *node_ptr);
 static bool _filter_out(node_info_t *node_ptr);
 static void _sinfo_list_delete(void *data);
-static node_info_t *_find_node(char *node_name, node_info_msg_t *node_msg); 
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, 
                              node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr, 
@@ -86,6 +85,12 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 static void _update_nodes_for_bg(int node_scaling,
 				 node_info_msg_t *node_msg,
 				 bg_info_record_t *bg_info_record);
+#endif
+static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
+			    partition_info_t *part_ptr,
+			    node_info_t *node_ptr);
+
+#ifdef HAVE_BG
 /* ERROR_STATE must be last since that will affect the state of the rest of the
    midplane.
 */
@@ -332,19 +337,15 @@ static int _build_sinfo_data(List sinfo_list,
 			     node_info_msg_t *node_msg,
 			     node_select_info_msg_t *node_select_msg)
 {
-	node_info_t *node_ptr;
-	partition_info_t* part_ptr;
-	ListIterator itr;
-	int j;
-	hostlist_t hl;
-	sinfo_data_t *sinfo_ptr;
-	char *node_name = NULL;
-#ifdef HAVE_BG
-	int i=0;
-	bg_info_record_t *bg_info_record = NULL;
-	int node_scaling = partition_msg->partition_array[0].node_scaling;
-	int block_error = 0;
+	node_info_t *node_ptr = NULL;
+	partition_info_t *part_ptr = NULL;
+	int i, j, j2;
+	int node_scaling = 1;
 
+#ifdef HAVE_BG
+	bg_info_record_t *bg_info_record = NULL;
+
+	node_scaling = partition_msg->partition_array[0].node_scaling;
 	for (i=0; i<node_msg->record_count; i++) {
 		node_ptr = &(node_msg->node_array[i]);
 		/* in each node_ptr we overload the threads var
@@ -357,7 +358,7 @@ static int _build_sinfo_data(List sinfo_list,
 		 */
 		node_ptr->threads = node_scaling;
 		node_ptr->cores = 0;
-		node_ptr->used_cpus = 0;
+		node_ptr->sockets = 0;
 		if((node_ptr->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN) 
 			continue;
 
@@ -401,121 +402,25 @@ static int _build_sinfo_data(List sinfo_list,
 		if (params.filtering && params.partition
 		&&  _strcmp(part_ptr->name, params.partition))
 			continue;
-
-		hl = hostlist_create(part_ptr->nodes);
-		while (1) {
-			if (node_name)
-				free(node_name);
-			node_name = hostlist_shift(hl);
-			if (!node_name)
-				break;
-			node_ptr = _find_node(node_name, node_msg);
-			if (!node_ptr)
-				continue;
-			if (params.filtering && _filter_out(node_ptr))
-				continue;
-#ifdef HAVE_BG
-			if((node_ptr->node_state & NODE_STATE_DRAIN) 
-			   && (node_ptr->node_state & NODE_STATE_FAIL)) {
-				node_ptr->node_state &= ~NODE_STATE_DRAIN;
-				node_ptr->node_state &= ~NODE_STATE_FAIL;
-				block_error = 1;
-			} else
-				block_error = 0;
-			node_ptr->threads = node_scaling;
-			for(i=0; i<3; i++) {
-				int norm = 0;
-				switch(i) {
-				case SINFO_BG_IDLE_STATE:
-					/* check to see if the node is
-					 * down if so just report the
-					 * whole thing is down and break
-					 * out.
-					 */
-					if((node_ptr->node_state 
-					    & NODE_STATE_BASE)
-					   == NODE_STATE_DOWN) {
-						norm = 1;
-						break;
-					}
-
-					/* get the idle node count if
-					 * we don't have any error or
-					 * allocated nodes then we set
-					 * the norm flag and add it
-					 * as it's current state 
-					 */
-					node_ptr->threads -=
-						(node_ptr->cores
-						 + node_ptr->used_cpus);
-					
-					if(node_ptr->threads == node_scaling)
-						norm = 1;
-					else {
-						node_ptr->node_state &=
-							NODE_STATE_FLAGS;
-						node_ptr->node_state |=
-							NODE_STATE_IDLE;
-					}
-					break;
-				case SINFO_BG_ALLOC_STATE:
-					/* get the allocated node count */
-					if(!node_ptr->used_cpus) 
-						continue;
-					node_ptr->node_state &=
-						NODE_STATE_FLAGS;
-					node_ptr->node_state |=
-						NODE_STATE_ALLOCATED;
-					
-					node_ptr->threads =
-						node_ptr->used_cpus;
-					break;
-				case SINFO_BG_ERROR_STATE:
-					/* get the error node count */
-					if(!node_ptr->cores) 
-						continue;
-					node_ptr->node_state &=
-						NODE_STATE_FLAGS;
-					node_ptr->node_state |= 
-						NODE_STATE_DRAIN;
-					if(block_error)
-						node_ptr->node_state
-							|= NODE_STATE_FAIL;
-					node_ptr->threads = node_ptr->cores;
-					break;
-				default:
-					error("unknown state");
-					break;
-				}
-#endif
-			itr = list_iterator_create(sinfo_list);
-			while ((sinfo_ptr = list_next(itr))) {
-				if (!_match_part_data(sinfo_ptr, part_ptr))
+		
+		j2 = 0;
+		while(part_ptr->node_inx[j2] >= 0) {
+			int i2 = 0;
+			for(i2 = part_ptr->node_inx[j2];
+			    i2 <= part_ptr->node_inx[j2+1];
+			    i2++) {
+				node_ptr = &(node_msg->node_array[i2]);
+				
+				if (params.filtering && _filter_out(node_ptr))
 					continue;
-				if (sinfo_ptr->nodes_total
-				&& (!_match_node_data(sinfo_ptr, node_ptr)))
-					continue;
-				_update_sinfo(sinfo_ptr, node_ptr);
-				break;
+
+				_insert_node_ptr(sinfo_list, (uint16_t)j,
+						 part_ptr,
+						 node_ptr);
 			}
-			/* if no match, create new sinfo_data entry */
-			if (sinfo_ptr == NULL) {
-				_create_sinfo(sinfo_list, part_ptr, 
-					      (uint16_t) j, node_ptr);
-			}
-			list_iterator_destroy(itr);
-#ifdef HAVE_BG
-			/* if we used the current state of
-			 * the node then we just continue.
-			 */
-			if(norm) 
-				break;
-			}
-#endif
+			j2 += 2;
 		}
-		hostlist_destroy(hl);
 	}
-
 	_sort_hostlist(sinfo_list);
 	return SLURM_SUCCESS;
 }
@@ -824,7 +729,7 @@ static void _update_nodes_for_bg(int node_scaling,
 			node_ptr = &(node_msg->node_array[i2]);
 			/* cores is overloaded to be the
 			 * cnodes in an error state and
-			 * used_cpus is overloaded to be the nodes in
+			 * sockets is overloaded to be the nodes in
 			 * use.  No block should be sent in
 			 * here if it isn't in use (that
 			 * doesn't mean in a free state, it means
@@ -844,7 +749,7 @@ static void _update_nodes_for_bg(int node_scaling,
 					|= NODE_STATE_FAIL;
 			} else if(bg_info_record->job_running
 				  > NO_JOB_RUNNING)  
-				node_ptr->used_cpus += node_scaling;
+				node_ptr->sockets += node_scaling;
 			else 
 				error("Hey we didn't get anything here");
 		}
@@ -852,6 +757,118 @@ static void _update_nodes_for_bg(int node_scaling,
 	}
 }
 #endif
+
+static int _insert_node_ptr(List sinfo_list, uint16_t part_num, 
+			    partition_info_t *part_ptr,
+			    node_info_t *node_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	sinfo_data_t *sinfo_ptr = NULL;
+	ListIterator itr = NULL;
+	int i;
+#ifdef HAVE_BG
+	int block_error = 0;
+	int node_scaling = part_ptr->node_scaling;
+
+	if((node_ptr->node_state & NODE_STATE_DRAIN) 
+	   && (node_ptr->node_state & NODE_STATE_FAIL)) {
+		node_ptr->node_state &= ~NODE_STATE_DRAIN;
+		node_ptr->node_state &= ~NODE_STATE_FAIL;
+		block_error = 1;
+	} else
+		block_error = 0;
+	node_ptr->threads = node_scaling;
+	for(i=0; i<3; i++) {
+		int norm = 0;
+		switch(i) {
+		case SINFO_BG_IDLE_STATE:
+			/* check to see if the node is
+			 * down if so just report the
+			 * whole thing is down and break
+			 * out.
+			 */
+			if((node_ptr->node_state 
+			    & NODE_STATE_BASE)
+			   == NODE_STATE_DOWN) {
+				norm = 1;
+				break;
+			}
+						
+			/* get the idle node count if
+			 * we don't have any error or
+			 * allocated nodes then we set
+			 * the norm flag and add it
+			 * as it's current state 
+			 */
+			node_ptr->threads -=
+				(node_ptr->cores
+				 + node_ptr->sockets);
+						
+			if(node_ptr->threads == node_scaling)
+				norm = 1;
+			else {
+				node_ptr->node_state &=
+					NODE_STATE_FLAGS;
+				node_ptr->node_state |=
+					NODE_STATE_IDLE;
+			}
+			break;
+		case SINFO_BG_ALLOC_STATE:
+			/* get the allocated node count */
+			if(!node_ptr->sockets) 
+				continue;
+			node_ptr->node_state &=
+				NODE_STATE_FLAGS;
+			node_ptr->node_state |=
+				NODE_STATE_ALLOCATED;
+						
+			node_ptr->threads =
+				node_ptr->sockets;
+			break;
+		case SINFO_BG_ERROR_STATE:
+			/* get the error node count */
+			if(!node_ptr->cores) 
+				continue;
+			node_ptr->node_state &=
+				NODE_STATE_FLAGS;
+			node_ptr->node_state |= 
+				NODE_STATE_DRAIN;
+			if(block_error)
+				node_ptr->node_state
+					|= NODE_STATE_FAIL;
+			node_ptr->threads = node_ptr->cores;
+			break;
+		default:
+			error("unknown state");
+			break;
+		}
+#endif
+		itr = list_iterator_create(sinfo_list);
+		while ((sinfo_ptr = list_next(itr))) {
+			if (!_match_part_data(sinfo_ptr, part_ptr))
+				continue;
+			if (sinfo_ptr->nodes_total
+			    && (!_match_node_data(sinfo_ptr, node_ptr)))
+				continue;
+			_update_sinfo(sinfo_ptr, node_ptr);
+			break;
+		}
+		/* if no match, create new sinfo_data entry */
+		if (sinfo_ptr == NULL) {
+			_create_sinfo(sinfo_list, part_ptr, 
+				      part_num, node_ptr);
+		}
+		list_iterator_destroy(itr);
+#ifdef HAVE_BG
+		/* if we used the current state of
+		 * the node then we just continue.
+		 */
+		if(norm) 
+			break;
+	}
+#endif
+	return rc;
+}
 
 /* 
  * _create_sinfo - create an sinfo record for the given node and partition
@@ -937,27 +954,6 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 	}
 
 	list_append(sinfo_list, sinfo_ptr);
-}
-
-/* 
- * _find_node - find a node by name
- * node_name IN     - name of node to locate
- * node_msg IN      - node information message from API
- */
-static node_info_t *_find_node(char *node_name, node_info_msg_t *node_msg)
-{
-	int i;
-	if (node_name == NULL)
-		return NULL;
-
-	for (i=0; i<node_msg->record_count; i++) {
-		if (_strcmp(node_name, node_msg->node_array[i].name))
-			continue;
-		return &(node_msg->node_array[i]);
-	}
-
-	/* not found */
-	return NULL;
 }
 
 static void _sinfo_list_delete(void *data)
