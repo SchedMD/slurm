@@ -6165,13 +6165,12 @@ static int _suspend_job_nodes(struct job_record *job_ptr)
 			if (node_ptr->no_share_job_cnt == 0)
 				bit_set(share_node_bitmap, i);
 		}
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-		if ((node_ptr->run_job_cnt  == 0)
-		&&  (node_ptr->comp_job_cnt == 0)) {
+		if ((node_ptr->run_job_cnt  == 0) &&
+		    (node_ptr->comp_job_cnt == 0)) {
 			bit_set(idle_node_bitmap, i);
 		}
-		if (base_state == NODE_STATE_DOWN) {
+		if (IS_NODE_DOWN(node_ptr)) {
 			debug3("_suspend_job_nodes: Node %s left DOWN",
 				node_ptr->name);
 		} else if (node_ptr->run_job_cnt) {
@@ -6191,7 +6190,7 @@ static int _resume_job_nodes(struct job_record *job_ptr)
 {
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
-	uint16_t base_state, node_flags;
+	uint16_t node_flags;
 	static bool sched_gang_test = false;
 	static bool sched_gang = false;
 
@@ -6209,8 +6208,7 @@ static int _resume_job_nodes(struct job_record *job_ptr)
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if (base_state == NODE_STATE_DOWN)
+		if (IS_NODE_DOWN(node_ptr))
 			return SLURM_ERROR;
 	}
 

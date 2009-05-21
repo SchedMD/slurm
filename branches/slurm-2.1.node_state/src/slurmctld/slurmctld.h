@@ -87,6 +87,8 @@
 	} while (0)
 
 /* Defined job states */
+#define IS_JOB_COMPLETING(_X)		\
+	(_X->job_state & JOB_COMPLETING)
 #define IS_JOB_PENDING(_X)		\
 	((_X->job_state & JOB_STATE_BASE) == JOB_PENDING)
 #define IS_JOB_RUNNING(_X)		\
@@ -103,10 +105,34 @@
 	((_X->job_state & JOB_STATE_BASE) >  JOB_PENDING)
 #define IS_JOB_FINISHED(_X)		\
 	((_X->job_state & JOB_STATE_BASE) >  JOB_SUSPENDED)
-#define IS_JOB_COMPLETING(_X)		\
-	(_X->job_state & JOB_COMPLETING)
 #define IS_JOB_COMPLETED(_X)		\
 	(IS_JOB_FINISHED(_X) && ((_X->job_state & JOB_COMPLETING) == 0))
+
+/* Defined node states */
+#define IS_NODE_ALLOCATED(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_ALLOCATED)
+#define IS_NODE_COMPLETING(_X)		\
+	(_X->node_state & NODE_STATE_COMPLETING)
+#define IS_NODE_DOWN(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN)
+#define IS_NODE_DRAIN(_X)		\
+	(_X->node_state & NODE_STATE_DRAIN)
+#define IS_NODE_FAIL(_X)		\
+	(_X->node_state & NODE_STATE_FAIL)
+#define IS_NODE_FUTURE(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_FUTURE)
+#define IS_NODE_IDLE(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_IDLE)
+#define IS_NODE_MAINT(_X)		\
+	(_X->node_state & NODE_STATE_MAINT)
+#define IS_NODE_NO_RESPOND(_X)		\
+	(_X->node_state & NODE_STATE_NO_RESPOND)
+#define IS_NODE_POWER_SAVE(_X)		\
+	(_X->node_state & NODE_STATE_POWER_SAVE)
+#define IS_NODE_POWER_UP(_X)		\
+	(_X->node_state & NODE_STATE_POWER_UP)
+#define IS_NODE_UNKNOWN(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_UNKNOWN)
 
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures

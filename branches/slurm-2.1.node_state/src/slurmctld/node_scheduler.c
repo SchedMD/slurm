@@ -150,7 +150,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
 	int down_node_cnt = 0;
-	uint16_t base_state;
+	struct node_record *node_ptr;
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -184,12 +184,11 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	kill_job->select_jobinfo = select_g_copy_jobinfo(
 			job_ptr->select_jobinfo);
 
-	for (i = 0; i < node_record_count; i++) {
-		struct node_record *node_ptr = &node_record_table_ptr[i];
+	for (i=0, node_ptr=node_record_table_ptr; 
+	     i < node_record_count; i++, node_ptr++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if (base_state == NODE_STATE_DOWN) {
+		if (IS_NODE_DOWN(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
 			bit_clear(job_ptr->node_bitmap, i);
@@ -1715,8 +1714,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (bit_test(job_ptr->node_bitmap, i) == 0))
 			continue;
-		if ((node_ptr->node_state & NODE_STATE_BASE) 
-				== NODE_STATE_DOWN) {
+		if (IS_NODE_DOWN(node_ptr)) { 
 			/* Consider job already completed */
 			bit_clear(job_ptr->node_bitmap, i);
 			if (node_ptr->comp_job_cnt)
@@ -1729,7 +1727,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			}
 			continue;
 		}
-		if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
+		if (IS_NODE_NO_RESPOND(node_ptr))
 			continue;
 		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */

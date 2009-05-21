@@ -856,15 +856,13 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 		 * nodes have been idle for at least the offset time */
 		time_t min_idle = now - (trig_in->trig_time - 0x8000);
 		int i;
-		uint16_t base_state;
 		struct node_record *node_ptr = node_record_table_ptr;
 		bitstr_t *trigger_idle_node_bitmap;
 
 		trigger_idle_node_bitmap = bit_alloc(node_record_count);
 		for (i = 0; i < node_record_count; i++, node_ptr++) {
-			base_state = node_ptr->node_state & NODE_STATE_BASE;
-			if ((base_state != NODE_STATE_IDLE)
-			||  (node_ptr->last_idle > min_idle))
+			if (!IS_NODE_IDLE(node_ptr) ||
+			    (node_ptr->last_idle > min_idle))
 				continue;
 			bit_set(trigger_idle_node_bitmap, i);
 		}

@@ -1517,8 +1517,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		return -1;	/* invalid request?? */
 	}
 
-	if (((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) &&
-	    ((node_ptr->node_state & NODE_STATE_NO_RESPOND) == 0)) {
+	if (!IS_NODE_POWER_SAVE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr)) {
 		/* ready to launch, adjust time limit for boot time */
 		int resume_timeout = slurm_get_resume_timeout();
 		if ((job_ptr->start_time + resume_timeout) >= now)
