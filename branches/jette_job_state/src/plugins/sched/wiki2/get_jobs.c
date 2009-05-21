@@ -484,9 +484,8 @@ static uint32_t _get_job_min_disk(struct job_record *job_ptr)
 static uint32_t	_get_job_max_nodes(struct job_record *job_ptr)
 {
 	uint32_t max_nodes = 0;
-	uint16_t base_state = job_ptr->job_state & JOB_STATE_BASE;
 
-	if (base_state > JOB_PENDING) {
+	if (IS_JOB_STARTED(job_ptr)) {
 		/* return actual count of currently allocated nodes.
 		 * NOTE: gets decremented to zero while job is completing */
 		return job_ptr->node_cnt;
@@ -511,9 +510,7 @@ static uint32_t	_get_job_max_nodes(struct job_record *job_ptr)
 
 static uint32_t	_get_job_min_nodes(struct job_record *job_ptr)
 {
-	uint16_t base_state = job_ptr->job_state & JOB_STATE_BASE;
-
-	if (base_state > JOB_PENDING) {
+	if (IS_JOB_STARTED(job_ptr)) {
 		/* return actual count of currently allocated nodes.
 		 * NOTE: gets decremented to zero while job is completing */
 		return job_ptr->node_cnt;
@@ -533,10 +530,9 @@ static uint32_t _get_job_submit_time(struct job_record *job_ptr)
 
 static uint32_t _get_job_tasks(struct job_record *job_ptr)
 {
-	uint16_t base_state = job_ptr->job_state & JOB_STATE_BASE;
 	uint32_t task_cnt;
 
-	if (base_state > JOB_PENDING) {
+	if (IS_JOB_STARTED(job_ptr)) {
 		task_cnt = job_ptr->total_procs;
 	} else {
 		if (job_ptr->num_procs)

@@ -99,6 +99,8 @@
 	((_X->job_state & JOB_STATE_BASE) == JOB_COMPLETE)
 
 /* Derived job states */
+#define IS_JOB_STARTED(_X)		\
+	((_X->job_state & JOB_STATE_BASE) >  JOB_PENDING)
 #define IS_JOB_FINISHED(_X)		\
 	((_X->job_state & JOB_STATE_BASE) >  JOB_SUSPENDED)
 #define IS_JOB_COMPLETING(_X)		\

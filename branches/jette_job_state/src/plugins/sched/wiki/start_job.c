@@ -264,7 +264,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	if (job_ptr->job_id != jobid)
 		job_ptr = find_job_record(jobid);
 
-	if (job_ptr && (job_ptr->job_id == jobid) && IS_JOB_RUNNING(job_ptr)) {
+	if (job_ptr && (job_ptr->job_id == jobid) && !IS_JOB_RUNNING(job_ptr)) {
 		uint16_t wait_reason = 0;
 		char *wait_string;
 

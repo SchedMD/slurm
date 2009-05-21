@@ -579,7 +579,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 {
 	char *ionodes = NULL;
 	char tmp_char[16];
-	uint16_t base_state;
+	uint16_t base_state = 0;
 
 	if (job)
 		base_state = job->job_state & JOB_STATE_BASE;
@@ -1347,7 +1347,7 @@ static int _filter_job(job_info_t * job)
 		if ((base_state != JOB_PENDING)   &&
 		    (base_state != JOB_RUNNING)   &&
 		    (base_state != JOB_SUSPENDED) &&
-		    ((job->job_state & JOB_COMPLETING) == 0))
+		    (!(job->job_state & JOB_COMPLETING)))
 			return 4;
 	}
 

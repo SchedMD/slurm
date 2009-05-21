@@ -106,7 +106,7 @@ extern void get_job(void)
 		if ((base_state != JOB_PENDING) &&
 		    (base_state != JOB_RUNNING) &&
 		    (base_state != JOB_SUSPENDED) &&
-		    ((job.job_state & JOB_COMPLETING) == 0))
+		    (!(job.job_state & JOB_COMPLETING)))
 			continue;	/* job has completed */
 
 		if (job.node_inx[0] != -1) {
