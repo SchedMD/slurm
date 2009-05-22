@@ -175,6 +175,7 @@ static int _build_bitmaps(void)
 	ListIterator config_iterator;
 	struct config_record *config_ptr;
 	struct job_record    *job_ptr;
+	struct node_record   *node_ptr;
 	ListIterator job_iterator;
 
 	last_node_update = time(NULL);
@@ -236,28 +237,26 @@ static int _build_bitmaps(void)
 
 	/* scan all nodes and identify which are up, idle and 
 	 * their configuration, resync DRAINED vs. DRAINING state */
-	for (i = 0; i < node_record_count; i++) {
-		uint16_t base_state, drain_flag, no_resp_flag, job_cnt;
-		struct node_record *node_ptr = node_record_table_ptr + i;
+	for (i=0, node_ptr=node_record_table_ptr;
+	     i<node_record_count; i++, node_ptr++) {
+		uint16_t drain_flag, job_cnt;
 
 		if (node_ptr->name[0] == '\0')
 			continue;	/* defunct */
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		drain_flag = node_ptr->node_state &
-				(NODE_STATE_DRAIN | NODE_STATE_FAIL);
-		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+		drain_flag = IS_NODE_DRAIN(node_ptr) | 
+			     IS_NODE_FAIL(node_ptr);
 		job_cnt = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 
-		if (((base_state == NODE_STATE_IDLE) && (job_cnt == 0))
-		||  (base_state == NODE_STATE_DOWN))
+		if ((IS_NODE_IDLE(node_ptr) && (job_cnt == 0)) ||
+		    IS_NODE_DOWN(node_ptr))
 			bit_set(idle_node_bitmap, i);
-		if ((base_state == NODE_STATE_IDLE)
-		||  (base_state == NODE_STATE_ALLOCATED)) {
-			if ((drain_flag == 0) && (no_resp_flag == 0))
+		if (IS_NODE_IDLE(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
+			if ((drain_flag == 0) && 
+			    (!IS_NODE_NO_RESPOND(node_ptr)))
 				bit_set(avail_node_bitmap, i);
 			bit_set(up_node_bitmap, i);
 		}
-		if (node_ptr->node_state & NODE_STATE_POWER_SAVE)
+		if (IS_NODE_POWER_SAVE(node_ptr))
 			bit_set(power_node_bitmap, i);
 		if (node_ptr->config_ptr)
 			bit_set(node_ptr->config_ptr->node_bitmap, i);
