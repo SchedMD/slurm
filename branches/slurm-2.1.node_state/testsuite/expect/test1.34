@@ -35,6 +35,7 @@ source ./globals
 
 set test_id        "1.34"
 set exit_code      0
+set file_in        "test$test_id.bash"
 set test_prog      "test$test_id.prog"
 
 print_header $test_id
@@ -82,7 +83,9 @@ if {$matches != 1} {
 # Post-processing
 #
 if {$exit_code == 0} {
-	exec $bin_rm -f $test_prog
+	make_bash_script $file_in "$bin_rm *${test_prog}*core"
+	exec $file_in
+	exec $bin_rm -f $file_in $test_prog
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
