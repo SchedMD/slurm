@@ -20,7 +20,12 @@ SLURM's support to increase power demands in a gradual fashion.</p>
 
 <h2>Configuration</h2>
 <p>A great deal of flexibility is offered in terms of when and 
-how idle nodes are put into or removed from power save mode.
+how idle nodes are put into or removed from power save mode. 
+Note that the SLURM control daemon, <i>slurmctld</i>, must be 
+restarted to initially enable power saving mode. 
+Changes in the configuration parameters (e.g. <i>SuspendTime</i>)
+will take effect after modifying the <i>slurm.conf</i> configuration
+file and executing "<i>scontrol reconfig</i>".
 The following configuration parameters are available:
 <ul>
 
@@ -188,6 +193,6 @@ In order to minimize this risk, when the <i>slurmctld</i> daemon is
 started and node which should be allocated to a job fails to respond, 
 the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
 
-<p style="text-align:center;">Last modified 18 May 2009</p>
+<p style="text-align:center;">Last modified 26 May 2009</p>
 
 <!--#include virtual="footer.txt"-->
