@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     in the under lying infrastructure.
  -- Fix, in mysql plugins change mediumints to int to support full 32bit 
     numbers.
+ -- Add sinfo node state filtering support for NO_RESPOND, POWER_SAVE, FAIL, 
+    and MAINT states.
 
 * Changes in SLURM 2.0.0
 ========================
@@ -19,7 +21,7 @@ documents those changes that are of interest to users and admins.
     NUDT.
  -- Configuration parameter ResumeDelay replaced by SuspendTimeout and 
     ResumeTimeout.
- -- BLUEGENE - sview/sinfo now displays correct cnode numbers for drained nodes 
+ -- BLUEGENE - sview/sinfo now displays correct cnode numbers for drained nodes
     or blocks in error state.
  -- Fix some batch job launch bugs when powering up suspended nodes.
  -- Added option '-T' for sacct to truncate time of start and end and set
