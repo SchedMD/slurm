@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix, for when trying to finish a torus on a block already 
     visited.  Even though this may be possible electrically this isn't valid
     in the under lying infrastructure.
+ -- Fix, in mysql plugins change mediumints to int to support full 32bit numbers.
 
 * Changes in SLURM 2.0.0
 ========================
