@@ -1076,11 +1076,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	info("cons_res: select_p_node_init");
 	if (node_ptr == NULL) {
-		error("select_g_node_init: node_ptr == NULL");
+		error("select_p_node_init: node_ptr == NULL");
 		return SLURM_ERROR;
 	}
 	if (node_cnt < 0) {
-		error("select_g_node_init: node_cnt < 0");
+		error("select_p_node_init: node_cnt < 0");
 		return SLURM_ERROR;
 	}
 
@@ -1447,7 +1447,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 	return NULL;
 }
 
-extern int select_p_select_nodeinfo_free(select_nodeinfo_t nodeinfo)
+extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
 	return SLURM_SUCCESS;
 }
@@ -1468,21 +1468,16 @@ extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 	return _add_job_to_res(job_ptr, 0);
 }
 
-extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
-					enum select_nodedata_info dinfo,
-					void *data)
-{
-       return SLURM_SUCCESS;
-}
-
-extern int select_p_select_nodeinfo_get(struct node_record *node_ptr,
-					enum select_nodedata_info dinfo,
+extern int select_p_select_nodeinfo_get(select_nodeinfo_t *node_select,
+					enum select_nodedata_type dinfo,
 					void *data)
 {
 	uint32_t n, i, c, start, end;
 	struct part_res_record *p_ptr;
 	uint16_t tmp, *tmp_16;
-
+	/* FIX ME: This needs to be replaced the nodeinfo_select stuff
+	   sent in instead of what is sent in now. */ 
+	struct node_record *node_ptr = NULL;
 	xassert(node_ptr);
 
 	switch (dinfo) {
@@ -1520,46 +1515,46 @@ extern int select_p_select_nodeinfo_get(struct node_record *node_ptr,
 		}
 		break;
 	default:
-		error("select_g_get_select_nodeinfo info %d invalid", dinfo);
+		error("select_p_get_select_nodeinfo info %d invalid", dinfo);
 		return SLURM_ERROR;
 		break;
 	}
 	return SLURM_SUCCESS;
 }
 
-extern int select_g_select_jobinfo_alloc (select_jobinfo_t *jobinfo)
+extern int select_p_select_jobinfo_alloc (select_jobinfo_t *jobinfo)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int select_g_select_jobinfo_free(select_jobinfo_t *jobinfo)
+extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int select_g_select_jobinfo_set(select_jobinfo_t *jobinfo,
+extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 		enum select_jobdata_type data_type, void *data)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int select_g_select_jobinfo_get(select_jobinfo_t *jobinfo,
+extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 		enum select_jobdata_type data_type, void *data)
 {
 	return SLURM_ERROR;
 }
 
-extern select_jobinfo_t select_g_select_jobinfo_copy(select_jobinfo_t *jobinfo)
+extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 {
 	return NULL;
 }
 
-extern int select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
+extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int select_g_select_jobinfo_unpack(select_jobinfo_t *jobinfo, Buf buffer)
+extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo, Buf buffer)
 {
 	return SLURM_SUCCESS;
 }
@@ -1574,7 +1569,7 @@ extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 		return NULL;
 }
 
-extern char *select_g_select_jobinfo_xstrdup(
+extern char *select_p_select_jobinfo_xstrdup(
 	select_jobinfo_t *jobinfo, int mode)
 {
 	return NULL;
@@ -1708,7 +1703,8 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 	bitstr_t **bitmap = (bitstr_t **) data;
 	uint32_t *tmp_32 = (uint32_t *) data;
 	bitstr_t *tmp_bitmap = NULL;
-	
+	List *tmp_list = (List *) data;
+
 	switch (info) {
 	case SELECT_BITMAP:
 		rc = _synchronize_bitmaps(job_ptr, &tmp_bitmap);
@@ -1728,7 +1724,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 		*tmp_list = NULL;
 		break;		
 	default:
-		error("select_g_get_info_from_plugin info %d invalid",
+		error("select_p_get_info_from_plugin info %d invalid",
 		      info);
 		rc = SLURM_ERROR;
 		break;

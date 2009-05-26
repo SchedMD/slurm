@@ -672,7 +672,7 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
 						    &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS) {
-			select_g_free_node_info(&bg_info_ptr);
+			node_select_info_msg_free(&bg_info_ptr);
 			changed = 1;
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;

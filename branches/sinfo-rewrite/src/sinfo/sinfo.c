@@ -304,7 +304,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 		error_code = slurm_load_node_select(old_bg_ptr->last_update, 
 						    &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&old_bg_ptr);
+			node_select_info_msg_free(&old_bg_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_bg_ptr = old_bg_ptr;

@@ -751,9 +751,9 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		}
 		
 		if(!job_msg->select_jobinfo)
-			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
-		select_g_set_jobinfo(job_msg->select_jobinfo,
-				     SELECT_DATA_GEOMETRY,
+			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+		select_g_select_jobinfo_set(job_msg->select_jobinfo,
+				     SELECT_JOBDATA_GEOMETRY,
 				     (void *) &geo);
 		
 		break;
@@ -786,9 +786,9 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		}
 		
 		if(!job_msg->select_jobinfo)
-			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
-		select_g_set_jobinfo(job_msg->select_jobinfo,
-				     SELECT_DATA_START,
+			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+		select_g_select_jobinfo_set(job_msg->select_jobinfo,
+				     SELECT_JOBDATA_START,
 				     (void *) &geo);
 		
 		break;
@@ -802,9 +802,9 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			
 		}
 		if(!job_msg->select_jobinfo)
-			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
-		select_g_set_jobinfo(job_msg->select_jobinfo,
-				     SELECT_DATA_ROTATE,
+			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+		select_g_select_jobinfo_set(job_msg->select_jobinfo,
+				     SELECT_JOBDATA_ROTATE,
 				     (void *) &rotate);
 		break;
 	case SORTID_CONNECTION:
@@ -817,42 +817,42 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			conn_type = SELECT_NAV;
 		}
 		if(!job_msg->select_jobinfo)
-			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
-		select_g_set_jobinfo(job_msg->select_jobinfo,
-				     SELECT_DATA_CONN_TYPE,
+			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+		select_g_select_jobinfo_set(job_msg->select_jobinfo,
+				     SELECT_JOBDATA_CONN_TYPE,
 				     (void *) &conn_type);
 		
 		break;
 	case SORTID_BLRTSIMAGE:
 		type = "BlrtsImage";
 		if(!job_msg->select_jobinfo)
-			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
-		select_g_set_jobinfo(job_msg->select_jobinfo,
-				     SELECT_DATA_BLRTS_IMAGE,
+			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+		select_g_select_jobinfo_set(job_msg->select_jobinfo,
+				     SELECT_JOBDATA_BLRTS_IMAGE,
 				     (void *) new_text);
 		break;
 	case SORTID_LINUXIMAGE:		
 		type = "LinuxImage";
 		if(!job_msg->select_jobinfo)
-			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
-		select_g_set_jobinfo(job_msg->select_jobinfo,
-				     SELECT_DATA_LINUX_IMAGE,
+			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+		select_g_select_jobinfo_set(job_msg->select_jobinfo,
+				     SELECT_JOBDATA_LINUX_IMAGE,
 				     (void *) new_text);
 		break;
 	case SORTID_MLOADERIMAGE:		
 		type = "MloaderImage";
 		if(!job_msg->select_jobinfo)
-			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
-		select_g_set_jobinfo(job_msg->select_jobinfo,
-				     SELECT_DATA_MLOADER_IMAGE,
+			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+		select_g_select_jobinfo_set(job_msg->select_jobinfo,
+				     SELECT_JOBDATA_MLOADER_IMAGE,
 				     (void *) new_text);
 		break;
 	 case SORTID_RAMDISKIMAGE:		
 		type = "RamdiskImage";
 		if(!job_msg->select_jobinfo)
-			select_g_alloc_jobinfo(&job_msg->select_jobinfo);
-		select_g_set_jobinfo(job_msg->select_jobinfo,
-				     SELECT_DATA_RAMDISK_IMAGE,
+			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+		select_g_select_jobinfo_set(job_msg->select_jobinfo,
+				     SELECT_JOBDATA_RAMDISK_IMAGE,
 				     (void *) new_text);
 		break;
 #endif
@@ -1148,7 +1148,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_BLOCK), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1158,7 +1158,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_ALPS_RESV_ID), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1262,7 +1262,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_BLOCK), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1271,7 +1271,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_CONNECTION), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1279,7 +1279,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_ROTATE), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1287,7 +1287,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_GEOMETRY), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1295,7 +1295,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_START), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1303,7 +1303,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_MAX_PROCS), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1312,7 +1312,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_BLRTSIMAGE), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1320,7 +1320,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_LINUXIMAGE), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1329,7 +1329,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_MLOADERIMAGE), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1338,7 +1338,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_RAMDISKIMAGE), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1349,7 +1349,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_ALPS_RESV_ID), 
-				   select_g_sprint_jobinfo(
+				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
@@ -1540,7 +1540,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 #ifdef HAVE_BG
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_BLOCK, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
@@ -1548,35 +1548,35 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_CONNECTION, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
 				   SELECT_PRINT_CONNECTION), -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_ROTATE, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
 				   SELECT_PRINT_ROTATE), -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_GEOMETRY, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
 				   SELECT_PRINT_GEOMETRY), -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_START, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
 				   SELECT_PRINT_START), -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_MAX_PROCS, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
@@ -1584,14 +1584,14 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_BLRTSIMAGE, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
 				   SELECT_PRINT_BLRTS_IMAGE), -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_LINUXIMAGE, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
@@ -1599,7 +1599,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_MLOADERIMAGE, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
@@ -1607,7 +1607,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_RAMDISKIMAGE, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
@@ -1617,7 +1617,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 #ifdef HAVE_CRAY_XT
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_ALPS_RESV_ID, 
-			   select_g_sprint_jobinfo(
+			   select_g_select_jobinfo_sprint(
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
@@ -1854,7 +1854,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 /* #ifdef HAVE_BG */
 /* 	add_display_treestore_line(update, treestore, &iter,  */
 /* 			   find_col_name(display_data_job, SORTID_BLOCK),  */
-/* 			   select_g_sprint_jobinfo( */
+/* 			   select_g_select_jobinfo_sprint( */
 /* 				   step_ptr->select_jobinfo,  */
 /* 				   tmp_char,  */
 /* 				   sizeof(tmp_char),  */
@@ -1935,7 +1935,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 /* #ifdef HAVE_BG */
 /* 	gtk_tree_store_set(treestore, iter,  */
 /* 			   SORTID_BLOCK,  */
-/* 			   select_g_sprint_jobinfo( */
+/* 			   select_g_select_jobinfo_sprint( */
 /* 				   step_ptr->select_jobinfo,  */
 /* 				   tmp_char,  */
 /* 				   sizeof(tmp_char),  */
@@ -2211,11 +2211,11 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		sview_job_info_ptr->node_cnt = 0;
 		sview_job_info_ptr->nodes = NULL;
 #ifdef HAVE_BG
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_IONODES, 
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_IONODES, 
 				     &ionodes);
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_NODE_CNT, 
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_NODE_CNT, 
 				     &sview_job_info_ptr->node_cnt);
 		if(ionodes) {
 			snprintf(tmp_char, sizeof(tmp_char), "%s[%s]",
@@ -2986,7 +2986,7 @@ display_it:
 				continue;
 			break;
 		case BLOCK_PAGE:
-			select_g_sprint_jobinfo(
+			select_g_select_jobinfo_sprint(
 				job_ptr->select_jobinfo, 
 				name, 
 				sizeof(name), 
