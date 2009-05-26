@@ -537,9 +537,10 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->node_state |=
 						NODE_STATE_FAIL;
 				if (node_state & NODE_STATE_POWER_SAVE) {
-					if (power_save_mode)
-						node_ptr->node_state=node_state;
-					else if (hs)
+					if (power_save_mode) {
+						node_ptr->node_state =
+							node_state;
+					} else if (hs)
 						hostset_insert(hs, node_name);
 					else
 						hs = hostset_create(node_name);
@@ -846,7 +847,6 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset;
-	uint16_t base_state;
 	Buf buffer;
 	static uint32_t cr_flag = NO_VAL;
 	time_t now = time(NULL);
@@ -859,7 +859,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	 * allocated or not).
 	 */
 	if (cr_flag == NO_VAL) {
-		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
+		cr_flag = 0; /* call is no-op for select/linear and bluegene */
 		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
 						  NULL, &cr_flag)) {
 			cr_flag = NO_VAL;	/* error */
@@ -886,8 +886,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 		    (_node_is_hidden(node_ptr)))
 			continue;
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if (base_state == NODE_STATE_FUTURE)
+		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
@@ -954,8 +953,8 @@ static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 			allocated_cpus = 0;
 		}
 		pack16(allocated_cpus, buffer);
-	} else if ((dump_node_ptr->node_state & NODE_STATE_COMPLETING) ||
-		   (dump_node_ptr->node_state == NODE_STATE_ALLOCATED)) {
+	} else if (IS_NODE_COMPLETING(dump_node_ptr) ||
+		   IS_NODE_ALLOCATED(dump_node_ptr)) {
 		if (slurmctld_conf.fast_schedule)
 			pack16(dump_node_ptr->config_ptr->cpus, buffer);
 		else
@@ -1011,7 +1010,6 @@ void set_slurmd_addr (void)
 {
 	int i;
 	struct node_record *node_ptr = node_record_table_ptr;
-	uint16_t base_state;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -1019,8 +1017,7 @@ void set_slurmd_addr (void)
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
 			continue;
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if (base_state == NODE_STATE_FUTURE)
+		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurmctld_conf.slurmd_port;
@@ -1208,8 +1205,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						slurmctld_cluster_name,
 						node_ptr, now, NULL);
 			} else if (state_val == NODE_STATE_POWER_SAVE) {
-				if (node_ptr->node_state &
-				    NODE_STATE_POWER_SAVE) {
+				if (IS_NODE_POWER_SAVE(node_ptr)) {
 					verbose("node %s already powered down",
 						this_node_name);
 				} else {
@@ -1219,8 +1215,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}
 				continue;
 			} else if (state_val == NODE_STATE_POWER_UP) {
-				if (!(node_ptr->node_state &
-				    NODE_STATE_POWER_SAVE)) {
+				if (!IS_NODE_POWER_SAVE(node_ptr)) {
 					verbose("node %s already powered up",
 						this_node_name);
 				} else {
@@ -1547,7 +1542,7 @@ extern int drain_nodes ( char *nodes, char *reason )
 			break;
 		}
 
-		if (node_ptr->node_state & NODE_STATE_DRAIN) {
+		if (IS_NODE_DRAIN(node_ptr)) {
 			/* state already changed, nothing to do */
 			free (this_node_name);
 			continue;
@@ -1584,8 +1579,8 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 	if (old == new)
 		return true;
 
-	base_state = (old) & NODE_STATE_BASE;
-	node_flags = (old) & NODE_STATE_FLAGS;
+	base_state = old & NODE_STATE_BASE;
+	node_flags = old & NODE_STATE_FLAGS;
 	switch (new) {
 		case NODE_STATE_DOWN:
 		case NODE_STATE_DRAIN:
@@ -1599,16 +1594,16 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 		case NODE_RESUME:
 			if (base_state == NODE_STATE_UNKNOWN)
 				return false;
-			if ((base_state == NODE_STATE_DOWN)
-			||  (base_state == NODE_STATE_FUTURE)
-			||  (node_flags & NODE_STATE_DRAIN)
-			||  (node_flags & NODE_STATE_FAIL))
+			if ((base_state == NODE_STATE_DOWN)   ||
+			    (base_state == NODE_STATE_FUTURE) ||
+			    (node_flags & NODE_STATE_DRAIN)   ||
+			    (node_flags & NODE_STATE_FAIL))
 				return true;
 			break;
 
 		case NODE_STATE_IDLE:
-			if ((base_state == NODE_STATE_DOWN)
-			||  (base_state == NODE_STATE_IDLE))
+			if ((base_state == NODE_STATE_DOWN) ||
+			    (base_state == NODE_STATE_IDLE))
 				return true;
 			break;
 
@@ -1824,7 +1819,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					node_flags;
 				node_ptr->last_idle = now;
 			}
-			info ("node %s returned to service", reg_msg->node_name);
+			info("node %s returned to service", 
+			     reg_msg->node_name);
 			xfree(node_ptr->reason);
 			reset_job_priority();
 			trigger_node_up(node_ptr);
