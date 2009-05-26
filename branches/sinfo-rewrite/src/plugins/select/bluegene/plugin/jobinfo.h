@@ -94,7 +94,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
  *	data for data_tyep == SELECT_JOBDATA_BLOCK_ID 
  */
 extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
-		enum select_jobdata_type data_type, void *data);
+			      enum select_jobdata_type data_type, void *data);
 
 /* copy a select job credential
  * IN jobinfo - the select job credential to be copied

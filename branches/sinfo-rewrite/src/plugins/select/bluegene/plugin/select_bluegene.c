@@ -640,50 +640,52 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return select_nodeinfo_get(nodeinfo, dinfo, data);
 }
 
-select_jobinfo_t *select_p_alloc_jobinfo()
+select_jobinfo_t *select_p_select_jobinfo_alloc()
 {
 	return alloc_select_jobinfo();
 }
 
-extern int select_p_set_jobinfo (select_jobinfo_t *jobinfo,
-				 enum select_jobdata_type data_type, void *data)
+extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
+				       enum select_jobdata_type data_type,
+				       void *data)
 {
 	return set_select_jobinfo(jobinfo, data_type, data);
 }
 
-extern int select_p_get_jobinfo (select_jobinfo_t *jobinfo,
+extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
 				 enum select_jobdata_type data_type, void *data)
 {
 	return get_select_jobinfo(jobinfo, data_type, data);
 }
 
-extern select_jobinfo_t *select_p_copy_jobinfo(select_jobinfo_t *jobinfo)
+extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 {
 	return copy_select_jobinfo(jobinfo);
 }
 
-extern int select_p_free_jobinfo  (select_jobinfo_t *jobinfo)
+extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
 {
 	return free_select_jobinfo(jobinfo);
 }
 
-extern int  select_p_pack_jobinfo  (select_jobinfo_t *jobinfo, Buf buffer)
+extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
 {
 	return pack_select_jobinfo(jobinfo, buffer);
 }
 
-extern int select_p_unpack_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer)
+extern int  select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
+					   Buf buffer)
 {
-	return unpack_select_jobinfo(jobinfo_pptr, buffer);
+	return unpack_select_jobinfo(jobinfo, buffer);
 }
 
-extern char *select_p_sprint_jobinfo(select_jobinfo_t *jobinfo,
+extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 				     char *buf, size_t size, int mode)
 {
 	return sprint_select_jobinfo(jobinfo, buf, size, mode);
 }
 
-extern char *select_p_xstrdup_jobinfo(select_jobinfo_t *jobinfo, int mode)
+extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo, int mode)
 {
 	return xstrdup_select_jobinfo(jobinfo, mode);
 }
@@ -1008,22 +1010,22 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			(*nodes) *= bg_conf->bp_node_cnt;
 		break;
 	case SELECT_SET_NODE_CNT:
-		select_p_get_jobinfo(job_desc->select_jobinfo,
-				     SELECT_JOBDATA_ALTERED, &tmp);
+		get_select_jobinfo(job_desc->select_jobinfo,
+				   SELECT_JOBDATA_ALTERED, &tmp);
 		if(tmp == 1) {
 			return SLURM_SUCCESS;
 		}
 		tmp = 1;
-		select_p_set_jobinfo(job_desc->select_jobinfo,
+		set_select_jobinfo(job_desc->select_jobinfo,
 				     SELECT_JOBDATA_ALTERED, &tmp);
 		tmp = NO_VAL;
-		select_p_set_jobinfo(job_desc->select_jobinfo,
+		set_select_jobinfo(job_desc->select_jobinfo,
 				     SELECT_JOBDATA_MAX_PROCS, 
 				     &tmp);
 	
 		if(job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
-		select_p_get_jobinfo(job_desc->select_jobinfo,
+		get_select_jobinfo(job_desc->select_jobinfo,
 				     SELECT_JOBDATA_GEOMETRY, &req_geometry);
 
 		if(req_geometry[0] != 0 
@@ -1058,7 +1060,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		
 		/* this means it is greater or equal to one bp */
 		if(tmp > 0) {
-			select_p_set_jobinfo(job_desc->select_jobinfo,
+			set_select_jobinfo(job_desc->select_jobinfo,
 					     SELECT_JOBDATA_NODE_CNT,
 					     &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
@@ -1077,7 +1079,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				job_desc->min_nodes = 
 					bg_conf->bp_node_cnt;
 			
-			select_p_set_jobinfo(job_desc->select_jobinfo,
+			set_select_jobinfo(job_desc->select_jobinfo,
 					     SELECT_JOBDATA_NODE_CNT,
 					     &job_desc->min_nodes);
 
@@ -1095,7 +1097,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				i *= 2;
 			}
 			
-			select_p_set_jobinfo(job_desc->select_jobinfo,
+			set_select_jobinfo(job_desc->select_jobinfo,
 					     SELECT_JOBDATA_NODE_CNT,
 					     &job_desc->min_nodes);
 
@@ -1135,9 +1137,9 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			tmp = bg_conf->bp_node_cnt/job_desc->max_nodes;
 			tmp = bg_conf->procs_per_bp/tmp;
 			
-			select_p_set_jobinfo(job_desc->select_jobinfo,
-					     SELECT_JOBDATA_MAX_PROCS, 
-					     &tmp);
+			set_select_jobinfo(job_desc->select_jobinfo,
+						    SELECT_JOBDATA_MAX_PROCS, 
+						    &tmp);
 			job_desc->max_nodes = 1;
 #else
 			i = bg_conf->smallest_block;
@@ -1150,9 +1152,9 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			}
 			
 			tmp = job_desc->max_nodes * bg_conf->proc_ratio;
-			select_p_set_jobinfo(job_desc->select_jobinfo,
-					     SELECT_JOBDATA_MAX_PROCS,
-					     &tmp);
+			set_select_jobinfo(job_desc->select_jobinfo,
+					   SELECT_JOBDATA_MAX_PROCS,
+					   &tmp);
 
 			job_desc->max_nodes = 1;
 #endif
