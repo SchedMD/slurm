@@ -38,6 +38,10 @@
 #ifndef _PDEBUG_H
 #define _PDEBUG_H
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <unistd.h>
 #ifdef HAVE_SYS_PTRACE_H
 #  include <sys/ptrace.h>
