@@ -442,6 +442,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		  int cpus_per_task,
 		  bool batch_step, int *return_code)
 {
+	struct node_record *node_ptr;
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt=0, cpus_picked_cnt = 0, i;
@@ -481,10 +482,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		     i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
-			if ((node_record_table_ptr[i].node_state &
-			     NODE_STATE_POWER_SAVE) ||
-			    (node_record_table_ptr[i].node_state &
-			     NODE_STATE_NO_RESPOND)) {
+			node_ptr = node_record_table_ptr + i;
+			if (IS_NODE_POWER_SAVE(node_ptr) ||
+			    IS_NODE_NO_RESPOND(node_ptr)) { 
 				/* Node is/was powered down. Need to wait 
 				 * for it to start responding again. */
 				FREE_NULL_BITMAP(nodes_avail);

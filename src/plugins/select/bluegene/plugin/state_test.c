@@ -4,7 +4,8 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> and Morris Jette <jette1@llnl.gov>
  *  
@@ -454,16 +455,12 @@ static void _test_down_switches(my_bluegene_t *my_bg)
 /* Determine if specific slurm node is already in DOWN or DRAIN state */
 extern int node_already_down(char *node_name)
 {
-	uint16_t base_state;
 	struct node_record *node_ptr = find_node_record(node_name);
 	
 	if (node_ptr) {
-		base_state = node_ptr->node_state & 
-			(~NODE_STATE_NO_RESPOND);
-
-		if(base_state & NODE_STATE_DRAIN)
+		if(IS_NODE_DRAIN(node_ptr))
 			return 2;
-		else if (base_state == NODE_STATE_DOWN)
+		else if (IS_NODE_DOWN(node_ptr))
 			return 1;
 		else
 			return 0;

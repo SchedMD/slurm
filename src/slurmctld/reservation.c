@@ -2541,10 +2541,8 @@ static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now)
 		/* mark that this node is now down and in maint mode
 		   or was removed from maint mode 
 		*/
-		if(((node_ptr->node_state & NODE_STATE_BASE) 
-		    == NODE_STATE_DOWN) ||
-		   (node_ptr->node_state & NODE_STATE_DRAIN) ||
-		   (node_ptr->node_state & NODE_STATE_FAIL)) {
+		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
+		    IS_NODE_FAIL(node_ptr)) { 
 			clusteracct_storage_g_node_down(
 				acct_db_conn, 
 				slurmctld_cluster_name,

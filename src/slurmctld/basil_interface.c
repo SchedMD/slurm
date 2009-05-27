@@ -68,15 +68,13 @@ static int last_res_id = 0;
 /* Make sure that each SLURM node has a BASIL node ID */
 static void _validate_basil_node_id(void)
 {
-	uint16_t base_state;
 	int i;
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	for (i=0; i<node_record_cnt; i++, node_ptr++)
 		if (node_ptr->basil_node_id != NO_VAL)
 			continue;
-		base_state = node_ptr->state & NODE_STATE_BASE;
-		if (base_state == NODE_STATE_DOWN)
+		if (IS_NODE_DOWN(node_ptr))
 			continue;
 
 		error("Node %s has no basil node_id", node_ptr->name);
@@ -101,7 +99,6 @@ extern int basil_query(void)
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
-	uint16_t base_state;
 	int i;
 	char *reason, *res_id;
 	static bool first_run = true;
@@ -156,8 +153,7 @@ extern int basil_query(void)
 
 		/* Update slurmctld's node state if necessary */
 		reason = NULL;
-		base_state = node_ptr->state & NODE_STATE_BASE;
-		if (base_state != NODE_STATE_DOWN) {
+		if (!IS_NODE_DOWN(node_ptr)) {
 			if (strcmp(basil_state, "UP"))
 				reason = "basil state not UP";
 			else if (strcmp(basil_role, "BATCH"))

@@ -96,7 +96,7 @@ static void _do_power_work(void)
 	static time_t last_log = 0, last_work_scan = 0;
 	int i, wake_cnt = 0, sleep_cnt = 0, susp_total = 0;
 	time_t now = time(NULL), delta_t;
-	uint16_t base_state, comp_state, susp_state;
+	uint16_t susp_state;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
 	bool run_suspend = false;
@@ -125,18 +125,16 @@ static void _do_power_work(void)
 	last_work_scan = now;
 
 	/* Build bitmaps identifying each node which should change state */
-	for (i=0; i<node_record_count; i++) {
-		node_ptr = &node_record_table_ptr[i];
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		susp_state = node_ptr->node_state & NODE_STATE_POWER_SAVE;
-		comp_state = node_ptr->node_state & NODE_STATE_COMPLETING;
+	for (i=0, node_ptr=node_record_table_ptr; 
+	     i<node_record_count; i++, node_ptr++) {
+		susp_state = IS_NODE_POWER_SAVE(node_ptr);
 
 		if (susp_state)
 			susp_total++;
 		if (susp_state &&
 		    ((suspend_rate == 0) || (suspend_cnt <= suspend_rate)) &&
 		    (bit_test(suspend_node_bitmap, i) == 0)		   &&
-		    ((base_state == NODE_STATE_ALLOCATED) ||
+		    (IS_NODE_ALLOCATED(node_ptr) ||
 		     (node_ptr->last_idle > (now - idle_time)))) {
 			if (wake_node_bitmap == NULL) {
 				wake_node_bitmap = 
@@ -153,8 +151,8 @@ static void _do_power_work(void)
 		if (run_suspend 					&& 
 		    (susp_state == 0)					&&
 		    ((resume_rate == 0) || (resume_cnt <= resume_rate))	&&
-		    (base_state == NODE_STATE_IDLE)			&&
-		    (comp_state == 0)					&&
+		    IS_NODE_IDLE(node_ptr)				&&
+		    (!IS_NODE_COMPLETING(node_ptr))			&&
 		    (node_ptr->last_idle < (now - idle_time))		&&
 		    ((exc_node_bitmap == NULL) || 
 		     (bit_test(exc_node_bitmap, i) == 0))) {
@@ -207,17 +205,15 @@ static void _do_power_work(void)
  * job is not responding, they try running ResumeProgram again. */
 static void _re_wake(void)
 {
-	uint16_t base_state;
 	struct node_record *node_ptr;
 	bitstr_t *wake_node_bitmap = NULL;
 	int i;
 
 	node_ptr = node_record_table_ptr;
 	for (i=0; i<node_record_count; i++, node_ptr++) {
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if ((base_state == NODE_STATE_ALLOCATED)		  &&
-		    (node_ptr->node_state & NODE_STATE_NO_RESPOND)	  &&
-		    ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) &&
+		if (IS_NODE_ALLOCATED(node_ptr)   &&
+		    IS_NODE_NO_RESPOND(node_ptr)  &&
+		    !IS_NODE_POWER_SAVE(node_ptr) &&
 		    (bit_test(suspend_node_bitmap, i) == 0)) {
 			if (wake_node_bitmap == NULL) {
 				wake_node_bitmap = 

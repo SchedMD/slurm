@@ -401,7 +401,7 @@ int
 g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
 {
         int ret;
-        void **argv;
+        void **argv = (void **) NULL;
 
         if ( slurm_auth_init(NULL) < 0 )
                 return SLURM_ERROR;

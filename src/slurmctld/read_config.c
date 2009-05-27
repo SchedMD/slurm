@@ -175,6 +175,7 @@ static int _build_bitmaps(void)
 	ListIterator config_iterator;
 	struct config_record *config_ptr;
 	struct job_record    *job_ptr;
+	struct node_record   *node_ptr;
 	ListIterator job_iterator;
 
 	last_node_update = time(NULL);
@@ -236,28 +237,26 @@ static int _build_bitmaps(void)
 
 	/* scan all nodes and identify which are up, idle and 
 	 * their configuration, resync DRAINED vs. DRAINING state */
-	for (i = 0; i < node_record_count; i++) {
-		uint16_t base_state, drain_flag, no_resp_flag, job_cnt;
-		struct node_record *node_ptr = node_record_table_ptr + i;
+	for (i=0, node_ptr=node_record_table_ptr;
+	     i<node_record_count; i++, node_ptr++) {
+		uint16_t drain_flag, job_cnt;
 
 		if (node_ptr->name[0] == '\0')
 			continue;	/* defunct */
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		drain_flag = node_ptr->node_state &
-				(NODE_STATE_DRAIN | NODE_STATE_FAIL);
-		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+		drain_flag = IS_NODE_DRAIN(node_ptr) | 
+			     IS_NODE_FAIL(node_ptr);
 		job_cnt = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 
-		if (((base_state == NODE_STATE_IDLE) && (job_cnt == 0))
-		||  (base_state == NODE_STATE_DOWN))
+		if ((IS_NODE_IDLE(node_ptr) && (job_cnt == 0)) ||
+		    IS_NODE_DOWN(node_ptr))
 			bit_set(idle_node_bitmap, i);
-		if ((base_state == NODE_STATE_IDLE)
-		||  (base_state == NODE_STATE_ALLOCATED)) {
-			if ((drain_flag == 0) && (no_resp_flag == 0))
+		if (IS_NODE_IDLE(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
+			if ((drain_flag == 0) && 
+			    (!IS_NODE_NO_RESPOND(node_ptr)))
 				bit_set(avail_node_bitmap, i);
 			bit_set(up_node_bitmap, i);
 		}
-		if (node_ptr->node_state & NODE_STATE_POWER_SAVE)
+		if (IS_NODE_POWER_SAVE(node_ptr))
 			bit_set(power_node_bitmap, i);
 		if (node_ptr->config_ptr)
 			bit_set(node_ptr->config_ptr->node_bitmap, i);
@@ -927,10 +926,9 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 		if (node_ptr == NULL)
 			continue;
 
-		if ((node_ptr->node_state & NODE_STATE_BASE) == 
-		    NODE_STATE_DOWN)
+		if (IS_NODE_DOWN(node_ptr))
 			down_flag = true;
-		if (node_ptr->node_state & NODE_STATE_DRAIN)
+		if (IS_NODE_DRAIN(node_ptr))
 			drain_flag = true;
 		node_ptr->node_state = old_node_table_ptr[i].node_state;
 		if (down_flag) {
@@ -939,8 +937,7 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 		}
 		if (drain_flag)
 			node_ptr->node_state |= NODE_STATE_DRAIN; 
-		if ((node_ptr->node_state & NODE_STATE_POWER_SAVE) &&
-		    (!power_save_mode)) {
+		if (IS_NODE_POWER_SAVE(node_ptr) && (!power_save_mode)) {
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
 			if (hs)
 				hostset_insert(hs, node_ptr->name);
@@ -1168,7 +1165,7 @@ static int _sync_nodes_to_comp_job(void)
 static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 {
 	int i, cnt = 0;
-	uint16_t base_state, node_flags;
+	uint16_t node_flags;
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
@@ -1176,7 +1173,6 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
  
 		node_ptr->run_job_cnt++; /* NOTE:
@@ -1186,7 +1182,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		    (job_ptr->details) && (job_ptr->details->shared == 0))
 			node_ptr->no_share_job_cnt++;
 
-		if ((base_state == NODE_STATE_DOWN)     &&
+		if (IS_NODE_DOWN(node_ptr)              &&
 		    IS_JOB_RUNNING(job_ptr)             &&
 		    (job_ptr->kill_on_node_fail == 0)   &&
 		    (job_ptr->node_cnt > 1)) {
@@ -1197,7 +1193,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			srun_node_fail(job_ptr->job_id, node_ptr->name);
 			kill_step_on_node(job_ptr, node_ptr);
 			excise_node_from_job(job_ptr, node_ptr);
-		} else if (base_state == NODE_STATE_DOWN) {
+		} else if (IS_NODE_DOWN(node_ptr)) {
 			time_t now = time(NULL);
 			info("Killing job %u on DOWN node %s",
 			     job_ptr->job_id, node_ptr->name);
@@ -1208,8 +1204,8 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			xfree(job_ptr->state_desc);
 			job_completion_logger(job_ptr);
 			cnt++;
-		} else if ((base_state == NODE_STATE_UNKNOWN) || 
-			   (base_state == NODE_STATE_IDLE)) {
+		} else if (IS_NODE_UNKNOWN(node_ptr) || 
+			   IS_NODE_IDLE(node_ptr)) {
 			cnt++;
 			node_ptr->node_state =
 				NODE_STATE_ALLOCATED | node_flags;
@@ -1241,9 +1237,8 @@ static void _validate_node_proc_count(void)
 			if (slurmctld_conf.fast_schedule)
 				node_size = node_ptr->config_ptr->cpus;
 			else if (node_ptr->cpus < node_ptr->config_ptr->cpus)
-				continue;	/* node too small, will be DOWN */
-			else if ((node_ptr->node_state & NODE_STATE_BASE) 
-					== NODE_STATE_DOWN)
+				continue;    /* node too small, will be DOWN */
+			else if (IS_NODE_DOWN(node_ptr))
 				continue;
 			else
 				node_size = node_ptr->cpus;

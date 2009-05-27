@@ -339,10 +339,10 @@ static int _build_sinfo_data(List sinfo_list,
 {
 	node_info_t *node_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
-	int i, j, j2;
-	int node_scaling = 1;
+	int j, j2;
 
 #ifdef HAVE_BG
+	int i, node_scaling = 1;
 	bg_info_record_t *bg_info_record = NULL;
 
 	node_scaling = partition_msg->partition_array[0].node_scaling;
@@ -765,9 +765,8 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 	int rc = SLURM_SUCCESS;
 	sinfo_data_t *sinfo_ptr = NULL;
 	ListIterator itr = NULL;
-	int i;
 #ifdef HAVE_BG
-	int block_error = 0;
+	int block_error = 0, i;
 	int node_scaling = part_ptr->node_scaling;
 
 	if((node_ptr->node_state & NODE_STATE_DRAIN) 
