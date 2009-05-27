@@ -39,7 +39,7 @@ AC_DEFUN([X_AC_READLINE],
 	#include <readline/history.h>]], [[
 	char *line = readline("in:");]])],[AC_DEFINE([HAVE_READLINE], [1], 
                  [Define if you are compiling with readline.])],[READLINE_LIBS=""])
-    LIBS="$savedLIBS"
+    LIBS="$saved_LIBS"
   fi
   AC_SUBST(READLINE_LIBS)
 ])
