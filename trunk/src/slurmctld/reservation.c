@@ -2248,14 +2248,18 @@ extern int job_test_resv_now(struct job_record *job_ptr)
  * IN job_ptr      - job to test
  * IN/OUT when     - when we want the job to start (IN)
  *                   when the reservation is available (OUT)
+ * IN move_time    - if true, then permit the start time to advance from
+ *                   "when" as needed IF job has no reservervation
  * OUT node_bitmap - nodes which the job can use, caller must free unless error
  * RET	SLURM_SUCCESS if runable now
  *	ESLURM_RESERVATION_ACCESS access to reservation denied
  *	ESLURM_RESERVATION_INVALID reservation invalid
  *	ESLURM_INVALID_TIME_VALUE reservation invalid at time "when"
+ *	ESLURM_NODES_BUSY job has no reservation, but required nodes are
+ *			  reserved
  */
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
-			 bitstr_t **node_bitmap)
+			 bool move_time, bitstr_t **node_bitmap)
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time;
@@ -2322,7 +2326,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    bit_overlap(job_ptr->details->req_node_bitmap,
 					resv_ptr->node_bitmap)) {
 				*when = resv_ptr->end_time;
-				rc = ESLURM_INVALID_TIME_VALUE;
+				rc = ESLURM_NODES_BUSY;
 				break;
 			}
 			bit_not(resv_ptr->node_bitmap);
@@ -2334,7 +2338,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		if (rc == SLURM_SUCCESS)
 			break;
 
-		if (i<10) {	/* Retry for later start time */
+		if (move_time && (i<10)) {  /* Retry for later start time */
 			bit_nset(*node_bitmap, 0, (node_record_count - 1));
 			rc = SLURM_SUCCESS;
 			continue;
