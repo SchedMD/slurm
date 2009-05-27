@@ -160,7 +160,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 	select_will_run_t *select_will_run = NULL;
 	List select_list;
 	ListIterator iter;
-	time_t now = time(NULL), when;
+	time_t now = time(NULL), start_res;
 
 	select_list = list_create(_select_list_del);
 	if (select_list == NULL)
@@ -214,12 +214,10 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 
 		/* Enforce reservation: access control, time and nodes */
 		if (start_time[i])
-			when = start_time[i];
+			start_res = start_time[i];
 		else
-			when = now;
-		rc = job_test_resv(job_ptr, &when, &resv_bitmap);
-		if (when > now)
-			start_time[i] = when;
+			start_res = now;
+		rc = job_test_resv(job_ptr, &start_res, true, &resv_bitmap);
 		if (rc != SLURM_SUCCESS) {
 			*err_code = -730;
 			*err_msg = "Job denied access to reservation";
@@ -227,6 +225,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			      jobid[i]);
 			break;
 		}
+		start_time[i] = MAX(start_time[i], start_res);
 		bit_and(avail_bitmap, resv_bitmap);
 		FREE_NULL_BITMAP(resv_bitmap);
 
