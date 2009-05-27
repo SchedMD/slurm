@@ -27102,7 +27102,7 @@ fi
 
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
-    LIBS="$savedLIBS"
+    LIBS="$saved_LIBS"
   fi
 
 

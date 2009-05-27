@@ -40,13 +40,20 @@ M. Jette and M. Grondona,
 <i>Proceedings of ClusterWorld Conference and Expo</i>,
 San Jose, California, June 2003.</p>
 
-<b>SLURM: Simple Linux Utility for Resource Management</b>,
+<p><b>SLURM: Simple Linux Utility for Resource Management</b>,
 A. Yoo, M. Jette, and M. Grondona,
 <i>Job Scheduling Strategies for Parallel Processing</i>,
 volume 2862 of <i>Lecture Notes in Computer Science</i>, 
 pages 44-60,
 Springer-Verlag, 2003.</p>
 
-<p style="text-align:center;">Last modified 19 March 2009</p>
+<h2>Interview</h2>
+
+<p><a href="http://www.rce-cast.com/index.php/Podcast/rce-10-slurm.html">
+RCE 10: SLURM (podcast)</a>:
+Brock Palen and Jeff Squyres speak with Morris Jette and 
+Danny Auble of LLNL about SLURM.</p>
+
+<p style="text-align:center;">Last modified 27 May 2009</p>
 
 <!--#include virtual="footer.txt"-->
