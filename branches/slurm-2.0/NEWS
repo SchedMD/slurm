@@ -339,6 +339,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.17
 =========================
+ -- Fix bug in configure script that can clear user specified LIBS.
 
 * Changes in SLURM 1.3.16
 =========================
