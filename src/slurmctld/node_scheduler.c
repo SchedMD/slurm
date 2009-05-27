@@ -341,7 +341,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	uint32_t saved_min_nodes, saved_job_min_nodes;
 	bitstr_t *saved_req_node_bitmap = NULL;
 	uint32_t saved_num_procs, saved_req_nodes;
-	int tmp_node_set_size;
+	int rc, tmp_node_set_size;
 	struct node_set *tmp_node_set_ptr;
 	int error_code = SLURM_SUCCESS, i;
 	bitstr_t *feature_bitmap, *accumulate_bitmap = NULL;
@@ -349,13 +349,14 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	/* Mark nodes reserved for other jobs as off limit for this job */
 	if (job_ptr->resv_name == NULL) {
-		time_t when = time(NULL);
-		job_test_resv(job_ptr, &when, &resv_bitmap);
-		if (job_ptr->details->req_node_bitmap &&
-		    (!bit_super_set(job_ptr->details->req_node_bitmap,
-				    resv_bitmap))) {
+		time_t start_res = time(NULL);
+		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap);
+		if ((rc != SLURM_SUCCESS) ||
+		    (job_ptr->details->req_node_bitmap &&
+		     (!bit_super_set(job_ptr->details->req_node_bitmap,
+				     resv_bitmap)))) {
 			FREE_NULL_BITMAP(resv_bitmap);
-			return ESLURM_RESERVATION_NOT_USABLE;
+			return ESLURM_NODES_BUSY;	/* reserved */
 		}
 		if (resv_bitmap &&
 		    (!bit_equal(resv_bitmap, avail_node_bitmap))) {
@@ -1251,12 +1252,12 @@ static int _build_node_list(struct job_record *job_ptr,
 	bitstr_t *power_up_bitmap = NULL, *usable_node_mask = NULL;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
-	time_t when = time(NULL);
 	uint32_t max_weight = 0;
 
 	if (job_ptr->resv_name) {
 		/* Limit node selection to those in selected reservation */
-		rc = job_test_resv(job_ptr, &when, &usable_node_mask);
+		time_t start_res = time(NULL);
+		rc = job_test_resv(job_ptr, &start_res, false, &usable_node_mask);
 		if (rc != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);

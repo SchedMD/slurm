@@ -937,7 +937,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc = SLURM_SUCCESS;
-	time_t now = time(NULL), when;
+	time_t now = time(NULL), start_res;
 
 	job_ptr = find_job_record(job_desc_msg->job_id);
 	if (job_ptr == NULL)
@@ -986,10 +986,10 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 
 	/* Enforce reservation: access control, time and nodes */
 	if (job_ptr->details->begin_time)
-		when = job_ptr->details->begin_time;
+		start_res = job_ptr->details->begin_time;
 	else
-		when = now;
-	i = job_test_resv(job_ptr, &when, &resv_bitmap);
+		start_res = now;
+	i = job_test_resv(job_ptr, &start_res, false, &resv_bitmap);
 	if (i != SLURM_SUCCESS)
 		return i;
 	bit_and(avail_bitmap, resv_bitmap);
@@ -1029,7 +1029,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 #else
 		resp_data->proc_cnt = job_ptr->total_procs;
 #endif
-		resp_data->start_time = MAX(job_ptr->start_time, when);
+		resp_data->start_time = MAX(job_ptr->start_time, start_res);
 		job_ptr->start_time   = 0;  /* restore pending job start time */
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
 		FREE_NULL_BITMAP(avail_bitmap);
