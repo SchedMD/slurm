@@ -780,7 +780,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 {
 	uint16_t default_part_flag;
 	char node_inx_ptr[BUF_SIZE];
-	uint32_t altered, node_scaling;
+	uint32_t altered;
 
 	if (default_part_loc == part_ptr)
 		default_part_flag = 1;
@@ -796,9 +796,6 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
 	pack32(altered, buffer);
-	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, 
-				&node_scaling);
-	pack16(node_scaling, buffer);
 	pack32(part_ptr->total_cpus, buffer);
 	pack16(default_part_flag,    buffer);
 	pack16(part_ptr->disable_root_jobs, buffer);

@@ -283,7 +283,7 @@ enum node_use_type {
 
 enum select_jobdata_type {
 	SELECT_JOBDATA_START,	/* data-> uint16_t start[SYSTEM_DIMENSIONS] */
-	SELECT_JOBDATA_GEOMETRY,	/* data-> uint16_t geometry[SYSTEM_DIMENSIONS] */
+	SELECT_JOBDATA_GEOMETRY,/* data-> uint16_t geometry[SYSTEM_DIMENSIONS] */
 	SELECT_JOBDATA_ROTATE,	/* data-> uint16_t rotate */
 	SELECT_JOBDATA_CONN_TYPE,	/* data-> uint16_t connection_type */
 	SELECT_JOBDATA_BLOCK_ID,	/* data-> char *bg_block_id */
@@ -301,10 +301,13 @@ enum select_jobdata_type {
 };
 
 enum select_nodedata_type {
-	SELECT_NODEDATA_ALLOC_CNT,  /* data-> uint16_t */
-	SELECT_NODEDATA_ALLOC_CHAR, /* data-> char * */
-	SELECT_NODEDATA_ERROR_CNT,  /* data-> uint16_t */
-	SELECT_NODEDATA_ERROR_CHAR, /* data-> char * */
+	SELECT_NODEDATA_BITMAP_SIZE, /* data-> uint16_t */
+	SELECT_NODEDATA_SUBGRP_SIZE, /* data-> uint16_t */
+	SELECT_NODEDATA_SUBCNT,      /* data-> uint16_t */
+	SELECT_NODEDATA_BITMAP,      /* data-> bitstr_t * needs to be
+				      * freed with FREE_NULL_BITMAP */
+	SELECT_NODEDATA_STR,         /* data-> char *  needs to be
+				      * freed with xfree */
 };
 
 enum select_print_mode {
@@ -425,6 +428,7 @@ enum node_states {
 	NODE_STATE_DOWN,	/* node in non-usable state */
 	NODE_STATE_IDLE,	/* node idle and available for use */
 	NODE_STATE_ALLOCATED,	/* node has been allocated to a job */
+	NODE_STATE_ERROR,	/* node is in an error state */
 	NODE_STATE_FUTURE,	/* node slot reserved for future use */
 	NODE_STATE_END		/* last entry in table */
 };
@@ -936,6 +940,12 @@ typedef struct node_info {
 
 typedef struct node_info_msg {
 	time_t last_update;		/* time of latest info */
+	uint32_t node_scaling;          /* the amount of nodes per
+					   each record used for
+					   systems like bluegene
+					   where SLURM handles a
+					   bluegene midplane as a
+					   single SLURM node. */
 	uint32_t record_count;		/* number of records */
 	node_info_t *node_array;	/* the node records */
 } node_info_msg_t;
@@ -973,7 +983,6 @@ typedef struct partition_info {
 	int *node_inx;		/* list index pairs into node_table:
 				 * start_range_1, end_range_1, 
 				 * start_range_2, .., -1  */
-	uint16_t node_scaling;	/* select plugin node scaling factor */
 	char *nodes;		/* list names of nodes in partition */
 	uint16_t priority;	/* scheduling priority for jobs */
 	uint16_t root_only;	/* 1 if allocate must come for user root */

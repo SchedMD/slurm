@@ -1014,6 +1014,13 @@ char *node_state_string(enum node_states inx)
 			return "IDLE~";
 		return "IDLE";
 	}
+	if (base == NODE_STATE_ERROR) {
+		if (no_resp_flag)
+			return "ERROR*";
+		if (power_flag)
+			return "ERROR~";
+		return "ERROR";
+	}
 	if (base == NODE_STATE_FUTURE) {
 		if (no_resp_flag)
 			return "FUTURE*";
@@ -1090,6 +1097,13 @@ char *node_state_string_compact(enum node_states inx)
 		if (power_flag)
 			return "IDLE~";
 		return "IDLE";
+	}
+	if (inx == NODE_STATE_ERROR) {
+		if (no_resp_flag)
+			return "ERR*";
+		if (power_flag)
+			return "ERR~";
+		return "ERR";
 	}
 	if (inx == NODE_STATE_FUTURE) {
 		if (no_resp_flag)
@@ -1375,6 +1389,7 @@ static void _slurm_free_node_info_members(node_info_t * node)
 		xfree(node->features);
 		xfree(node->os);
 		xfree(node->reason);
+		select_g_select_nodeinfo_free(node->select_nodeinfo);
 	}
 }
 

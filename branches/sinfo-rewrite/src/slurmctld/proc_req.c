@@ -982,11 +982,17 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		unlock_slurmctld(node_read_lock);
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
-	} else if ((node_req_msg->last_update - 1) >= last_node_update) {
+		return;
+	} 
+
+	select_g_select_nodeinfo_set_all(node_req_msg->last_update - 1);
+
+	if ((node_req_msg->last_update - 1) >= last_node_update) {
 		unlock_slurmctld(node_read_lock);
 		debug2("_slurm_rpc_dump_nodes, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
+
 		pack_all_node(&dump, &dump_size, node_req_msg->show_flags, 
 			      uid);
 		unlock_slurmctld(node_read_lock);

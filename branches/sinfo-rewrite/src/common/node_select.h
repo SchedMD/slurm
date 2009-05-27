@@ -320,16 +320,17 @@ extern int select_g_select_nodeinfo_pack(
 extern int select_g_select_nodeinfo_unpack(
 	select_nodeinfo_t **nodeinfo, Buf buffer);
 
-extern select_nodeinfo_t *select_g_select_nodeinfo_alloc(void);
+extern select_nodeinfo_t *select_g_select_nodeinfo_alloc(uint32_t size);
 
 extern int select_g_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
-extern int select_g_select_nodeinfo_set_all(void);
+extern int select_g_select_nodeinfo_set_all(time_t last_query_time);
 
 extern int select_g_select_nodeinfo_set(struct job_record *job_ptr);
 
 extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
 					enum select_nodedata_type dinfo,
+					enum node_states state, 
 					void *data);
 
 

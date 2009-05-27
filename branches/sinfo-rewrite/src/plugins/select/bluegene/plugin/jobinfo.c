@@ -37,6 +37,8 @@
 \*****************************************************************************/
 
 #include "jobinfo.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 static char *_job_conn_type_string(uint16_t inx)
 {
@@ -84,7 +86,7 @@ static char *_yes_no_string(uint16_t inx)
  * RET         - jobinfo or NULL on error
  * NOTE: storage must be freed using select_g_free_jobinfo
  */
-extern select_jobinfo_t *alloc_select_jobinfo(NULL)
+extern select_jobinfo_t *alloc_select_jobinfo()
 {
 	int i;
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
@@ -433,7 +435,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer)
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	*jobinfo_pptr = jobinfo;
 
-	jobinfo->magic = JOBINFO_MAGIC
+	jobinfo->magic = JOBINFO_MAGIC;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 		safe_unpack16(&(jobinfo->start[i]), buffer);
 		safe_unpack16(&(jobinfo->geometry[i]), buffer);
@@ -456,7 +458,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	select_jobinfo_free(jobinfo);
+	free_select_jobinfo(jobinfo);
 	*jobinfo_pptr = NULL;
 	return SLURM_ERROR;
 }

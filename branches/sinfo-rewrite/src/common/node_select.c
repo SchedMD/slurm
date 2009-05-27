@@ -95,13 +95,14 @@ typedef struct slurm_select_ops {
 						Buf buffer);
         int	        (*nodeinfo_unpack)     (select_nodeinfo_t **nodeinfo, 
 						Buf buffer);
-	select_nodeinfo_t *(*nodeinfo_alloc)   (void);
+	select_nodeinfo_t *(*nodeinfo_alloc)   (uint32_t size);
 	int	        (*nodeinfo_free)       (select_nodeinfo_t *nodeinfo);
-	int             (*nodeinfo_set_all)    (void);
+	int             (*nodeinfo_set_all)    (time_t last_query_time);
 	int             (*nodeinfo_set)        (struct job_record *job_ptr);
 	int             (*nodeinfo_get)        (select_nodeinfo_t *nodeinfo,
 						enum
 						select_nodedata_type dinfo, 
+						enum node_states state,
 						void *data);
 	select_jobinfo_t *(*jobinfo_alloc)     ();
 	int             (*jobinfo_free)        (select_jobinfo_t *jobinfo);
@@ -678,12 +679,12 @@ extern int select_g_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	return (*(g_select_context->ops.nodeinfo_unpack))(nodeinfo, buffer);
 }
 
-extern select_nodeinfo_t *select_g_select_nodeinfo_alloc()
+extern select_nodeinfo_t *select_g_select_nodeinfo_alloc(uint32_t size)
 {
 	if (slurm_select_init() < 0)
 		return NULL;
 	
-	return (*(g_select_context->ops.nodeinfo_alloc))();
+	return (*(g_select_context->ops.nodeinfo_alloc))(size);
 }
 
 extern int select_g_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
@@ -694,12 +695,12 @@ extern int select_g_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 	return (*(g_select_context->ops.nodeinfo_free))(nodeinfo);
 }
 
-extern int select_g_select_nodeinfo_set_all()
+extern int select_g_select_nodeinfo_set_all(time_t last_query_time)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 	
-	return (*(g_select_context->ops.nodeinfo_set_all))();
+	return (*(g_select_context->ops.nodeinfo_set_all))(last_query_time);
 }
 
 extern int select_g_select_nodeinfo_set(struct job_record *job_ptr)
@@ -712,12 +713,14 @@ extern int select_g_select_nodeinfo_set(struct job_record *job_ptr)
 
 extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
 					enum select_nodedata_type dinfo, 
+					enum node_states state,
 					void *data)
 {
        if (slurm_select_init() < 0)
                return SLURM_ERROR;
 
-       return (*(g_select_context->ops.nodeinfo_get))(nodeinfo, dinfo, data);
+       return (*(g_select_context->ops.nodeinfo_get))
+	       (nodeinfo, dinfo, state, data);
 }
 
 extern select_jobinfo_t *select_g_select_jobinfo_alloc()

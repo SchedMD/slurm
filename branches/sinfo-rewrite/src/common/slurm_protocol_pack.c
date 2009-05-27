@@ -1940,6 +1940,7 @@ _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer)
 
 	/* load buffer's header (data structure version and time) */
 	safe_unpack32(&((*msg)->record_count), buffer);
+	safe_unpack32(&((*msg)->node_scaling), buffer);
 	safe_unpack_time(&((*msg)->last_update), buffer);
 
 	node = (*msg)->node_array =
@@ -1976,6 +1977,9 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 	safe_unpack32(&node->real_memory, buffer);
 	safe_unpack32(&node->tmp_disk, buffer);
 	safe_unpack32(&node->weight, buffer);
+
+	select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer);
+
 	safe_unpack16(&node->used_cpus, buffer);
 
 	safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
@@ -1991,6 +1995,7 @@ unpack_error:
 	xfree(node->features);
 	xfree(node->os);
 	xfree(node->reason);
+	select_g_select_nodeinfo_free(node->select_nodeinfo);
 	return SLURM_ERROR;
 }
 
@@ -2479,7 +2484,6 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 	safe_unpack32(&part->max_nodes,    buffer);
 	safe_unpack32(&part->min_nodes,    buffer);
 	safe_unpack32(&part->total_nodes,  buffer);
-	safe_unpack16(&part->node_scaling, buffer);
 	
 	safe_unpack32(&part->total_cpus,   buffer);
 	safe_unpack16(&part->default_part, buffer);

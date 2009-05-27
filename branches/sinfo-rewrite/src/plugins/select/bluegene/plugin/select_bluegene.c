@@ -56,6 +56,7 @@ struct node_record *node_record_table_ptr;
 int bg_recover;
 List part_list;	
 int node_record_count;
+time_t last_node_update;
 #endif
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -613,9 +614,9 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	return select_nodeinfo_unpack(nodeinfo, buffer);
 }
 
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
 {
-	return select_nodeinfo_alloc();
+	return select_nodeinfo_alloc(size);
 }
 
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
@@ -623,9 +624,9 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 	return select_nodeinfo_free(nodeinfo);
 }
 
-extern int select_p_select_nodeinfo_set_all(void)
+extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 {
-	return select_nodeinfo_set_all();
+	return select_nodeinfo_set_all(last_query_time);
 }
 
 extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
@@ -635,9 +636,10 @@ extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 
 extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
 					enum select_nodedata_type dinfo,
+					enum node_states state,
 					void *data)
 {
-	return select_nodeinfo_get(nodeinfo, dinfo, data);
+	return select_nodeinfo_get(nodeinfo, dinfo, state, data);
 }
 
 select_jobinfo_t *select_p_select_jobinfo_alloc()
@@ -922,10 +924,14 @@ extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  void *data)
 {
 	uint16_t *tmp16 = (uint16_t *) data;
+	uint32_t *tmp32 = (uint32_t *) data;
 	List *tmp_list = (List *) data;
 	int rc = SLURM_SUCCESS;
 
 	switch(dinfo) {
+	case SELECT_CR_PLUGIN:
+		*tmp32 = 0;
+		break;
 	case SELECT_STATIC_PART:
 		if (bg_conf->layout_mode == LAYOUT_STATIC)
 			*tmp16 = 1;
@@ -938,7 +944,7 @@ extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 		break;
 	default:
 		error("select_p_get_info_from_plugin info %d invalid",
-		      info);
+		      dinfo);
 		rc = SLURM_ERROR;
 		break;
 	}

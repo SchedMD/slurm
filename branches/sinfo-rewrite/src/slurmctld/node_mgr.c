@@ -226,6 +226,7 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 	node_ptr->threads = config_ptr->threads;
 	node_ptr->real_memory = config_ptr->real_memory;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
+	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc(NO_VAL);
 	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
 	last_bitmap_update = time (NULL);
 	return node_ptr;
@@ -847,14 +848,12 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		uint16_t show_flags, uid_t uid)
 {
 	int inx;
-	uint32_t nodes_packed, tmp_offset;
+	uint32_t nodes_packed, tmp_offset, node_scaling;
 	uint16_t base_state;
 	Buf buffer;
 	static uint32_t cr_flag = NO_VAL;
 	time_t now = time(NULL);
 	struct node_record *node_ptr = node_record_table_ptr;
-
-	select_g_select_nodeinfo_set_all();
 
 	/*
 	 * If Consumable Resources enabled, get allocated_cpus.
@@ -878,6 +877,10 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	/* write header: version and time */
 	nodes_packed = 0 ;
 	pack32  (nodes_packed, buffer);
+	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, 
+				&node_scaling);
+	pack32  (node_scaling, buffer);
+
 	pack_time  (now, buffer);
 
 	/* write node records */
@@ -950,6 +953,16 @@ static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 #ifdef HAVE_BG
 	/* remove the ifdef after the other plugins are finished */
 	select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo, buffer);
+	/* this needs to be removed after the pack works */
+	if ((dump_node_ptr->node_state & NODE_STATE_COMPLETING) ||
+	    (dump_node_ptr->node_state == NODE_STATE_ALLOCATED)) {
+		if (slurmctld_conf.fast_schedule)
+			pack16(dump_node_ptr->config_ptr->cpus, buffer);
+		else
+			pack16(dump_node_ptr->cpus, buffer);
+	} else {
+		pack16((uint16_t) 0, buffer);
+	}
 #else
 	/* FIX ME!!!!!!!!!!!!!!!!!!!!!!!! THIS will not work!!!!!!! */
 	if (cr_flag == 1) {
