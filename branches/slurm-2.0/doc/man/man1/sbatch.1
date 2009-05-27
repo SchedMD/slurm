@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.0" "April 2009" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.0" "May 2009" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -295,7 +295,8 @@ The environment variables are retrieved by running something of this sort
 "su \- <username> \-c /usr/bin/env" and parsing the output.
 Be aware that any environment variables already set in sbatch's environment
 will take precedence over any environment variables in the user's
-login environment.
+login environment. Clear any environment variables before calling sbatch
+that you do not want propagated to the spawned program.
 The optional \fItimeout\fR value is in seconds. Default value is 8 seconds.
 The optional \fImode\fR value control the "su" options.
 With a \fImode\fR value of "S", "su" is executed without the "\-" option.
