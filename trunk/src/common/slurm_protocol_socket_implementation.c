@@ -883,10 +883,10 @@ void _slurm_get_addr (slurm_addr *addr, uint16_t *port, char *host,
 	struct hostent *he;
 	char   h_buf[4096];
 	int    h_err  = 0;
-	char * s_addr = (char *) &addr->sin_addr.s_addr;
+	char * tmp_s_addr = (char *) &addr->sin_addr.s_addr;
 	int    len    = sizeof(addr->sin_addr.s_addr);
 
-	he = get_host_by_addr( s_addr, len, AF_SLURM, 
+	he = get_host_by_addr( tmp_s_addr, len, AF_SLURM, 
 			       (void *) &h_buf, sizeof(h_buf), &h_err );
 
 	if (he != NULL) {

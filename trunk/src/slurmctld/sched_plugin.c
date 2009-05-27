@@ -312,7 +312,7 @@ slurm_sched_freealloc( struct job_record *job_ptr )
 /*  TAG(                   slurm_sched_initital_priority                )  */
 /* *********************************************************************** */
 uint32_t
-slurm_sched_initial_priority( u_int32_t last_prio, 
+slurm_sched_initial_priority( uint32_t last_prio, 
 			      struct job_record *job_ptr )
 {
 	if ( slurm_sched_init() < 0 )

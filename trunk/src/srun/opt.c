@@ -57,6 +57,10 @@
 #  include "src/common/getopt.h"
 #endif
 
+#ifdef HAVE_LIMITS_H
+#  include <limits.h>
+#endif
+
 #include <fcntl.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>

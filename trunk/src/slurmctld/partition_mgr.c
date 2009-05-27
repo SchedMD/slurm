@@ -1230,7 +1230,12 @@ uid_t *_get_group_members(char *group_name)
 		pwd_result = &pw;
 #else
 	setpwent();
+#if defined (__sun)
+	while ((pwd_result = getpwent_r(&pw, pw_buffer, PW_BUF_SIZE)) != NULL) {
+#else
+
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
+#endif
 #endif
  		if (pwd_result->pw_gid != my_gid)
 			continue;

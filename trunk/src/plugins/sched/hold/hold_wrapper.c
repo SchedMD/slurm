@@ -112,8 +112,8 @@ slurm_sched_plugin_freealloc( struct job_record *job_ptr )
 /**************************************************************************/
 /* TAG(                   slurm_sched_plugin_initial_priority           ) */ 
 /**************************************************************************/
-u_int32_t
-slurm_sched_plugin_initial_priority( u_int32_t last_prio,
+uint32_t
+slurm_sched_plugin_initial_priority( uint32_t last_prio,
 				     struct job_record *job_ptr )
 {
 	struct stat buf;

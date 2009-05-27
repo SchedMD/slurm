@@ -81,7 +81,7 @@ static time_t last_timeout = 0;
 
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void _ring_terminal_bell(void);
-static int  _fork_command(char **command);
+static pid_t  _fork_command(char **command);
 static void _pending_callback(uint32_t job_id);
 static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);

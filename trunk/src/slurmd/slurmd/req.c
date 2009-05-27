@@ -3347,7 +3347,12 @@ init_gids_cache(int cache)
 		pwd = &pw;
 #else
 	setpwent();
+#if defined (__sun)
+	while ((pwd = getpwent_r(&pw, buf, BUF_SIZE)) != NULL) {
+#else
+
 	while (!getpwent_r(&pw, buf, BUF_SIZE, &pwd)) {
+#endif
 #endif
 		if (_gids_cache_lookup(pwd->pw_name, pwd->pw_gid))
 			continue;

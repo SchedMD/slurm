@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Change job_state in job structure to dedicate 8-bits to state flags. 
     Added macros to get state information (IS_JOB_RUNNING(job_ptr), etc.)
  -- Added macros to get node state information (IS_NODE_DOWN(node_ptr), etc).
+ -- Added support for Solaris. Patch from David Hoppner.
 
 * Changes in SLURM 2.0.1
 ========================

@@ -57,6 +57,10 @@ AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
 
 dnl Checks for libraries
 dnl
+AC_CHECK_LIB(socket,socket,LIBS="$LIBS -lsocket",)
+AC_CHECK_LIB(nsl,gethostbyname,LIBS="$LIBS -lnsl",)
+AC_CHECK_LIB(resolv,hstrerror,LIBS="$LIBS -lresolv",)
+AC_CHECK_LIB(kstat,kstat_open,LIBS="$LIBS -lkstat",)
 
 dnl Checks for header files.
 dnl
@@ -68,6 +72,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
                  pty.h utmp.h \
 		 sys/syslog.h \
+		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
 		)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -132,6 +137,7 @@ AC_CHECK_FUNCS( \
    inet_pton \
    setproctitle \
    sysctlbyname \
+   cfmakeraw \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
