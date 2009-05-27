@@ -521,11 +521,10 @@ extern int load_all_node_state ( bool state_only )
 			xfree(features);
 			xfree(reason);
 		} else if (state_only) {
-			uint16_t orig_base, orig_flags;
-			orig_base  = node_ptr->node_state & NODE_STATE_BASE;
+			uint16_t orig_flags;
 			orig_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			node_cnt++;
-			if (orig_base == NODE_STATE_UNKNOWN) {
+			if (IS_NODE_UNKNOWN(node_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
 					node_ptr->node_state = NODE_STATE_DOWN
 						| orig_flags;
@@ -537,9 +536,10 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->node_state |=
 						NODE_STATE_FAIL;
 				if (node_state & NODE_STATE_POWER_SAVE) {
-					if (power_save_mode)
-						node_ptr->node_state=node_state;
-					else if (hs)
+					if (power_save_mode) {
+						node_ptr->node_state =
+							node_state;
+					} else if (hs)
 						hostset_insert(hs, node_name);
 					else
 						hs = hostset_create(node_name);
@@ -846,7 +846,6 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset;
-	uint16_t base_state;
 	Buf buffer;
 	static uint32_t cr_flag = NO_VAL;
 	time_t now = time(NULL);
@@ -859,7 +858,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	 * allocated or not).
 	 */
 	if (cr_flag == NO_VAL) {
-		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
+		cr_flag = 0; /* call is no-op for select/linear and bluegene */
 		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
 						  NULL, &cr_flag)) {
 			cr_flag = NO_VAL;	/* error */
@@ -886,8 +885,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 		    (_node_is_hidden(node_ptr)))
 			continue;
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if (base_state == NODE_STATE_FUTURE)
+		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
@@ -954,8 +952,8 @@ static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 			allocated_cpus = 0;
 		}
 		pack16(allocated_cpus, buffer);
-	} else if ((dump_node_ptr->node_state & NODE_STATE_COMPLETING) ||
-		   (dump_node_ptr->node_state == NODE_STATE_ALLOCATED)) {
+	} else if (IS_NODE_COMPLETING(dump_node_ptr) ||
+		   IS_NODE_ALLOCATED(dump_node_ptr)) {
 		if (slurmctld_conf.fast_schedule)
 			pack16(dump_node_ptr->config_ptr->cpus, buffer);
 		else
@@ -1011,7 +1009,6 @@ void set_slurmd_addr (void)
 {
 	int i;
 	struct node_record *node_ptr = node_record_table_ptr;
-	uint16_t base_state;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -1019,8 +1016,7 @@ void set_slurmd_addr (void)
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
 			continue;
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if (base_state == NODE_STATE_FUTURE)
+		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurmctld_conf.slurmd_port;
@@ -1049,7 +1045,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	struct node_record *node_ptr = NULL;
 	char  *this_node_name = NULL;
 	hostlist_t host_list;
-	uint16_t base_state = 0, node_flags = 0, state_val;
+	uint16_t base_state = 0, state_val;
 	time_t now = time(NULL);
 
 	if (update_node_msg -> node_names == NULL ) {
@@ -1098,14 +1094,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 				state_val = (uint16_t) NO_VAL;
 				error_code = ESLURM_INVALID_NODE_STATE;
 			}
+			base_state &= NODE_STATE_BASE;
 		}
 		if (state_val != (uint16_t) NO_VAL) {
 			if (state_val == NODE_RESUME) {
-				base_state &= NODE_STATE_BASE;
-				if ((base_state == NODE_STATE_IDLE) &&
-				    ((node_ptr->node_state & NODE_STATE_DRAIN) 
-				     || (node_ptr->node_state &
-					 NODE_STATE_FAIL))) {
+				if (IS_NODE_IDLE(node_ptr) &&
+				    (IS_NODE_DRAIN(node_ptr) ||
+				     IS_NODE_FAIL(node_ptr))) {
 					clusteracct_storage_g_node_up(
 						acct_db_conn, 
 						slurmctld_cluster_name,
@@ -1114,17 +1109,16 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
-				base_state &= NODE_STATE_BASE;
-				if (base_state == NODE_STATE_DOWN) {
+				if (IS_NODE_DOWN(node_ptr)) {
 					state_val = NODE_STATE_IDLE;
 					node_ptr->node_state |= 
 							NODE_STATE_NO_RESPOND;
 					node_ptr->last_response = now;
 					ping_nodes_now = true;
-				} else if (base_state == NODE_STATE_FUTURE) {
+				} else if (IS_NODE_FUTURE(node_ptr)) {
 					if (node_ptr->port == 0) {
-						node_ptr->port = slurmctld_conf.
-								 slurmd_port;
+						node_ptr->port =slurmctld_conf.
+								slurmd_port;
 					}
 					slurm_set_addr(	&node_ptr->slurm_addr,
 							node_ptr->port,
@@ -1152,25 +1146,22 @@ int update_node ( update_node_msg_t * update_node_msg )
 			} else if (state_val == NODE_STATE_IDLE) {
 				/* assume they want to clear DRAIN and
 				 * FAIL flags too */
-				base_state &= NODE_STATE_BASE;
-				if (base_state == NODE_STATE_DOWN) {
+				if (IS_NODE_DOWN(node_ptr)) {
 					trigger_node_up(node_ptr);
 					clusteracct_storage_g_node_up(
 						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr,
 						now);
-				} else if ((base_state == NODE_STATE_IDLE) &&
-					   ((node_ptr->node_state &
-					     NODE_STATE_DRAIN) ||
-					    (node_ptr->node_state &
-					     NODE_STATE_FAIL))) {
+				} else if (IS_NODE_IDLE(node_ptr)   &&
+					   (IS_NODE_DRAIN(node_ptr) ||
+					    IS_NODE_FAIL(node_ptr))) {
 					clusteracct_storage_g_node_up(
 						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr,
 						now);
-				}
+				}	/* else already fully available */
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				bit_set (avail_node_bitmap, node_inx);
@@ -1179,12 +1170,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->last_idle = now;
 				reset_job_priority();
 			} else if (state_val == NODE_STATE_ALLOCATED) {
-				if (!(node_ptr->node_state & (NODE_STATE_DRAIN
-						| NODE_STATE_FAIL)))
+				if (!IS_NODE_DRAIN(node_ptr) &&
+				    !IS_NODE_FAIL(node_ptr))
 					bit_set(avail_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
-			} else if (state_val == NODE_STATE_DRAIN) {
+			} else if ((state_val == NODE_STATE_DRAIN) ||
+				   (state_val == NODE_STATE_FAIL)) {
 				bit_clear (avail_node_bitmap, node_inx);
 				state_val = node_ptr->node_state |
 					NODE_STATE_DRAIN;
@@ -1196,20 +1188,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 						slurmctld_cluster_name,
 						node_ptr, now, NULL);
 				}
-			} else if (state_val == NODE_STATE_FAIL) {
-				bit_clear (avail_node_bitmap, node_inx);
-				state_val = node_ptr->node_state |
-					NODE_STATE_FAIL;
-				trigger_node_failing(node_ptr);
-				if ((node_ptr->run_job_cnt  == 0) &&
-				    (node_ptr->comp_job_cnt == 0))
-					clusteracct_storage_g_node_down(
-						acct_db_conn, 
-						slurmctld_cluster_name,
-						node_ptr, now, NULL);
 			} else if (state_val == NODE_STATE_POWER_SAVE) {
-				if (node_ptr->node_state &
-				    NODE_STATE_POWER_SAVE) {
+				if (IS_NODE_POWER_SAVE(node_ptr)) {
 					verbose("node %s already powered down",
 						this_node_name);
 				} else {
@@ -1219,8 +1199,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}
 				continue;
 			} else if (state_val == NODE_STATE_POWER_UP) {
-				if (!(node_ptr->node_state &
-				    NODE_STATE_POWER_SAVE)) {
+				if (!IS_NODE_POWER_SAVE(node_ptr)) {
 					verbose("node %s already powered up",
 						this_node_name);
 				} else {
@@ -1241,10 +1220,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 			}
 
 			if (err_code == 0) {
-				node_flags = node_ptr->node_state & 
-						NODE_STATE_FLAGS;
-				node_ptr->node_state = state_val | node_flags;
-
+				node_ptr->node_state = state_val | 
+						(node_ptr->node_state & 
+						 NODE_STATE_FLAGS);
 				select_g_update_node_state(node_inx, 
 							   state_val);
 
@@ -1254,10 +1232,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 			}
 		}
 
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if ((base_state != NODE_STATE_DOWN)
-		&&  ((node_ptr->node_state & (NODE_STATE_DRAIN |
-				NODE_STATE_FAIL)) == 0))
+		if (!IS_NODE_DOWN(node_ptr) &&
+		    !IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr))
 			xfree(node_ptr->reason);
 
 		free (this_node_name);
@@ -1547,7 +1523,7 @@ extern int drain_nodes ( char *nodes, char *reason )
 			break;
 		}
 
-		if (node_ptr->node_state & NODE_STATE_DRAIN) {
+		if (IS_NODE_DRAIN(node_ptr)) {
 			/* state already changed, nothing to do */
 			free (this_node_name);
 			continue;
@@ -1584,8 +1560,8 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 	if (old == new)
 		return true;
 
-	base_state = (old) & NODE_STATE_BASE;
-	node_flags = (old) & NODE_STATE_FLAGS;
+	base_state = old & NODE_STATE_BASE;
+	node_flags = old & NODE_STATE_FLAGS;
 	switch (new) {
 		case NODE_STATE_DOWN:
 		case NODE_STATE_DRAIN:
@@ -1599,16 +1575,16 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 		case NODE_RESUME:
 			if (base_state == NODE_STATE_UNKNOWN)
 				return false;
-			if ((base_state == NODE_STATE_DOWN)
-			||  (base_state == NODE_STATE_FUTURE)
-			||  (node_flags & NODE_STATE_DRAIN)
-			||  (node_flags & NODE_STATE_FAIL))
+			if ((base_state == NODE_STATE_DOWN)   ||
+			    (base_state == NODE_STATE_FUTURE) ||
+			    (node_flags & NODE_STATE_DRAIN)   ||
+			    (node_flags & NODE_STATE_FAIL))
 				return true;
 			break;
 
 		case NODE_STATE_IDLE:
-			if ((base_state == NODE_STATE_DOWN)
-			||  (base_state == NODE_STATE_IDLE))
+			if ((base_state == NODE_STATE_DOWN) ||
+			    (base_state == NODE_STATE_IDLE))
 				return true;
 			break;
 
@@ -1637,7 +1613,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	char *reason_down = NULL;
-	uint16_t base_state, node_flags;
+	uint16_t node_flags;
 	time_t now = time(NULL);
 	static uint32_t cr_flag = NO_VAL, gang_flag = NO_VAL;
 
@@ -1765,22 +1741,21 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	node_ptr->os = reg_msg->os;
 	reg_msg->os = NULL;	/* Nothing left to free */
 
-	if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
+	if (IS_NODE_NO_RESPOND(node_ptr)) {
 		last_node_update = time (NULL);
 		reset_job_priority();
-		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
+		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 	}
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (error_code) {
-		if (base_state != NODE_STATE_DOWN) {
+		if (!IS_NODE_DOWN(node_ptr)) {
 			error ("Setting node %s state to DOWN", 
 				reg_msg->node_name);
 		}
 		last_node_update = time (NULL);
 		set_node_down(reg_msg->node_name, reason_down);
 	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
-		if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0) {
+		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 #ifdef HAVE_BG
 			info("Prolog failure on node %s", reg_msg->node_name);
 #else
@@ -1791,7 +1766,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 #endif
 		}
 	} else {
-		if (base_state == NODE_STATE_UNKNOWN) {
+		if (IS_NODE_UNKNOWN(node_ptr)) {
 			last_node_update = time (NULL);
 			reset_job_priority();
 			debug("validate_node_specs: node %s has registered", 
@@ -1804,12 +1779,12 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					node_flags;
 				node_ptr->last_idle = now;
 			}
-			if ((node_flags & NODE_STATE_DRAIN) == 0)
+			if (!IS_NODE_DRAIN(node_ptr))
 				xfree(node_ptr->reason);
 			clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
-		} else if ((base_state == NODE_STATE_DOWN) &&
+		} else if (IS_NODE_DOWN(node_ptr) &&
 			   ((slurmctld_conf.ret2service == 2) ||
 		            ((slurmctld_conf.ret2service == 1) &&
 			     (node_ptr->reason != NULL) && 
@@ -1824,19 +1799,20 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					node_flags;
 				node_ptr->last_idle = now;
 			}
-			info ("node %s returned to service", reg_msg->node_name);
+			info("node %s returned to service", 
+			     reg_msg->node_name);
 			xfree(node_ptr->reason);
 			reset_job_priority();
 			trigger_node_up(node_ptr);
 			clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
-		} else if ((base_state == NODE_STATE_ALLOCATED) &&
+		} else if (IS_NODE_ALLOCATED(node_ptr) &&
 			   (reg_msg->job_count == 0)) {	/* job vanished */
 			last_node_update = now;
 			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 			node_ptr->last_idle = now;
-		} else if ((node_flags & NODE_STATE_COMPLETING) &&
+		} else if (IS_NODE_COMPLETING(node_ptr) &&
 			   (reg_msg->job_count == 0)) {	/* job already done */
 			last_node_update = now;
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
@@ -1873,7 +1849,7 @@ extern int validate_nodes_via_front_end(
 	hostlist_t return_hostlist = NULL, reg_hostlist = NULL;
 	hostlist_t prolog_hostlist = NULL;
 	char host_str[64];
-	uint16_t base_state, node_flags;
+	uint16_t node_flags;
 
 	/* First validate the job info */
 	node_ptr = &node_record_table_ptr[0];	/* All msg send to node zero,
@@ -1894,7 +1870,8 @@ extern int validate_nodes_via_front_end(
 					  job_ptr, node_ptr);
 		}
 
-		else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
+		else if (IS_JOB_RUNNING(job_ptr) || 
+			 IS_JOB_SUSPENDED(job_ptr)) {
 			debug3("Registered job %u.%u",
 			       reg_msg->job_id[i], reg_msg->step_id[i]);
 			if (job_ptr->batch_flag) {
@@ -1906,7 +1883,8 @@ extern int validate_nodes_via_front_end(
 		else if (IS_JOB_COMPLETING(job_ptr)) {
 			/* Re-send kill request as needed, 
 			 * not necessarily an error */
-			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, 
+					 node_ptr);
 		}
 
 
@@ -1915,14 +1893,16 @@ extern int validate_nodes_via_front_end(
 			 * slurmd that went DOWN is now responding */
 			error("Registered PENDING job %u.%u",
 				reg_msg->job_id[i], reg_msg->step_id[i]);
-			abort_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			abort_job_on_node(reg_msg->job_id[i], job_ptr, 
+					  node_ptr);
 		}
 
 		else {		/* else job is supposed to be done */
 			error("Registered job %u.%u in state %s",
 				reg_msg->job_id[i], reg_msg->step_id[i], 
 				job_state_string(job_ptr->job_state));
-			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, 
+					 node_ptr);
 		}
 	}
 
@@ -1958,15 +1938,14 @@ extern int validate_nodes_via_front_end(
 		jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 		node_ptr->last_response = time (NULL);
 
-		if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
+		if (IS_NODE_NO_RESPOND(node_ptr)) {
 			updated_job = true;
-			node_ptr->node_state &= (uint16_t) 
-					(~NODE_STATE_NO_RESPOND);
+			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		}
 
 		if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
-			if (!(node_ptr->node_state & (NODE_STATE_DRAIN | 
-						      NODE_STATE_FAIL))) {
+			if (!IS_NODE_DRAIN(node_ptr) &&
+			    !IS_NODE_FAIL(node_ptr)) {
 #ifdef HAVE_BG
 				if (!failure_logged) {
 					error("Prolog failure");
@@ -1985,9 +1964,8 @@ extern int validate_nodes_via_front_end(
 #endif
 			}
 		} else {
-			base_state = node_ptr->node_state & NODE_STATE_BASE;
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-			if (base_state == NODE_STATE_UNKNOWN) {
+			if (IS_NODE_UNKNOWN(node_ptr)) {
 				updated_job = true;
 				if (reg_hostlist)
 					(void) hostlist_push_host(
@@ -2006,14 +1984,15 @@ extern int validate_nodes_via_front_end(
 					node_ptr->last_idle = now;
 				}
 				xfree(node_ptr->reason);
-				if ((node_flags & 
-				     (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0)
+				if (!IS_NODE_DRAIN(node_ptr) &&
+				    !IS_NODE_FAIL(node_ptr)) {
 					clusteracct_storage_g_node_up(
 						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr,
 						now);
-			} else if ((base_state == NODE_STATE_DOWN) &&
+				}
+			} else if (IS_NODE_DOWN(node_ptr) &&
 			           (slurmctld_conf.ret2service == 1)) {
 				updated_job = true;
 				if (jobs_on_node) {
@@ -2039,14 +2018,14 @@ extern int validate_nodes_via_front_end(
 					acct_db_conn, 
 					slurmctld_cluster_name,
 					node_ptr, now);
-			} else if ((base_state == NODE_STATE_ALLOCATED) &&
+			} else if (IS_NODE_ALLOCATED(node_ptr) &&
 				   (jobs_on_node == 0)) {
 				/* job vanished */
 				updated_job = true;
 				node_ptr->node_state = NODE_STATE_IDLE |
 					node_flags;
 				node_ptr->last_idle = now;
-			} else if ((node_flags & NODE_STATE_COMPLETING) &&
+			} else if (IS_NODE_COMPLETING(node_ptr) &&
 			           (jobs_on_node == 0)) {  
 				/* job already done */
 				updated_job = true;
@@ -2092,20 +2071,18 @@ extern int validate_nodes_via_front_end(
 /* Sync idle, share, and avail_node_bitmaps for a given node */
 static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 {
-	uint16_t base_state;
 	int node_inx = node_ptr - node_record_table_ptr;
 
 	if (job_count == 0) {
 		bit_set (idle_node_bitmap, node_inx);
 		bit_set (share_node_bitmap, node_inx);
 	}
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
-	if ((base_state == NODE_STATE_DOWN)
-	||  (node_ptr->node_state & (NODE_STATE_DRAIN | NODE_STATE_FAIL)))
+	if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
+	    IS_NODE_FAIL(node_ptr))
 		bit_clear (avail_node_bitmap, node_inx);
 	else
 		bit_set   (avail_node_bitmap, node_inx);
-	if (base_state == NODE_STATE_DOWN)
+	if (IS_NODE_DOWN(node_ptr))
 		bit_clear (up_node_bitmap, node_inx);
 	else
 		bit_set   (up_node_bitmap, node_inx);
@@ -2141,7 +2118,7 @@ void node_did_resp (char *name)
 static void _node_did_resp(struct node_record *node_ptr)
 {
 	int node_inx;
-	uint16_t resp_state, base_state, node_flags;
+	uint16_t resp_state, node_flags;
 	time_t now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
@@ -2151,20 +2128,20 @@ static void _node_did_resp(struct node_record *node_ptr)
 		info("Node %s now responding", node_ptr->name);
 		last_node_update = now;
 		reset_job_priority();
-		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
+		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 	}
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-	if (base_state == NODE_STATE_UNKNOWN) {
+	if (IS_NODE_UNKNOWN(node_ptr)) {
 		last_node_update = now;
 		node_ptr->last_idle = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
-		if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0)
+		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
+		}
 	}
-	if ((base_state == NODE_STATE_DOWN) &&
+	if (IS_NODE_DOWN(node_ptr) &&
 	    (slurmctld_conf.ret2service == 1) &&
 	    (node_ptr->reason != NULL) && 
 	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
@@ -2175,23 +2152,22 @@ static void _node_did_resp(struct node_record *node_ptr)
 			node_ptr->name);
 		xfree(node_ptr->reason);
 		trigger_node_up(node_ptr);
-		if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0)
+		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
+		}
 	}
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
-	if ((base_state == NODE_STATE_IDLE) 
-	&&  ((node_flags & NODE_STATE_COMPLETING) == 0)) {
+	if (IS_NODE_IDLE(node_ptr) && !IS_NODE_COMPLETING(node_ptr)) { 
 		bit_set (idle_node_bitmap, node_inx);
 		bit_set (share_node_bitmap, node_inx);
 	}
-	if ((base_state == NODE_STATE_DOWN)
-	||  (node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)))
+	if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
+	    IS_NODE_FAIL(node_ptr)) {
 		bit_clear (avail_node_bitmap, node_inx);
-	else
+	} else
 		bit_set   (avail_node_bitmap, node_inx);
-	if (base_state == NODE_STATE_DOWN)
+	if (IS_NODE_DOWN(node_ptr))
 		bit_clear (up_node_bitmap, node_inx);
 	else
 		bit_set   (up_node_bitmap, node_inx);
@@ -2211,8 +2187,7 @@ void node_not_resp (char *name, time_t msg_time)
 
 	for (i=0; i<node_record_count; i++) {
 		node_ptr = node_record_table_ptr + i;
-		if ((node_ptr->node_state & NODE_STATE_BASE)
-		    != NODE_STATE_DOWN) {
+		if (!IS_NODE_DOWN(node_ptr)) {
 			node_ptr->not_responding = true;
 			bit_clear (avail_node_bitmap, i);
 			node_ptr->node_state |= NODE_STATE_NO_RESPOND;
@@ -2226,7 +2201,7 @@ void node_not_resp (char *name, time_t msg_time)
 		error ("node_not_resp unable to find node %s", name);
 		return;
 	}
-	if ((node_ptr->node_state & NODE_STATE_BASE) != NODE_STATE_DOWN) {
+	if (!IS_NODE_DOWN(node_ptr)) {
 		/* Logged by node_no_resp_msg() on periodic basis */
 		node_ptr->not_responding = true;
 	}
@@ -2269,7 +2244,7 @@ static void _node_not_resp (struct node_record *node_ptr, time_t msg_time)
 	int i;
 
 	i = node_ptr - node_record_table_ptr;
-	if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
+	if (IS_NODE_NO_RESPOND(node_ptr))
 		return;		/* Already known to be not responding */
 
 	if (node_ptr->last_response >= msg_time) {
@@ -2329,7 +2304,6 @@ void set_node_down (char *name, char *reason)
 bool is_node_down (char *name)
 {
 	struct node_record *node_ptr;
-	uint16_t base_state;
 
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
@@ -2337,8 +2311,7 @@ bool is_node_down (char *name)
 		return false;
 	}
 
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
-	if (base_state == NODE_STATE_DOWN)
+	if (IS_NODE_DOWN(node_ptr))
 		return true;
 	return false;
 }
@@ -2358,7 +2331,7 @@ bool is_node_resp (char *name)
 		return false;
 	}
 
-	if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
+	if (IS_NODE_NO_RESPOND(node_ptr))
 		return false;
 	return true;
 }
@@ -2416,7 +2389,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	int i;
 	shutdown_msg_t *shutdown_req;
 	agent_arg_t *kill_agent_args;
-	uint16_t base_state;
+	struct node_record *node_ptr;
 
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
@@ -2428,12 +2401,11 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		kill_agent_args->msg_args = shutdown_req;
 	}
 
-	for (i = 0; i < node_record_count; i++) {
-		base_state = node_record_table_ptr[i].node_state;
-		if (base_state == NODE_STATE_FUTURE)
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (IS_NODE_FUTURE(node_ptr))
 			continue;
-		hostlist_push(kill_agent_args->hostlist, 
-			      node_record_table_ptr[i].name);
+		hostlist_push(kill_agent_args->hostlist, node_ptr->name);
 		kill_agent_args->node_count++;
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		break;
@@ -2483,7 +2455,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 			   struct job_record *job_ptr, bool suspended)
 {
 	int inx = node_ptr - node_record_table_ptr;
-	uint16_t node_flags, base_state;
+	uint16_t node_flags;
 	time_t now = time(NULL);
 
 	xassert(node_ptr);
@@ -2506,19 +2478,17 @@ extern void make_node_comp(struct node_record *node_ptr,
 		}
 	}
 
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
-	if (base_state != NODE_STATE_DOWN)  {
+	if (!IS_NODE_DOWN(node_ptr))  {
 		/* Don't verify  RPC if DOWN */
 		(node_ptr->comp_job_cnt)++;
 		node_ptr->node_state |= NODE_STATE_COMPLETING;
 	} 
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
-	if ((node_ptr->run_job_cnt  == 0)
-	&&  (node_ptr->comp_job_cnt == 0)) {
+	if ((node_ptr->run_job_cnt  == 0) &&
+	    (node_ptr->comp_job_cnt == 0)) {
 		bit_set(idle_node_bitmap, inx);
-		if ((node_ptr->node_state & NODE_STATE_DRAIN) ||
-		    (node_ptr->node_state & NODE_STATE_FAIL)) {
+		if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
 			trigger_node_drained(node_ptr);
 			clusteracct_storage_g_node_down(acct_db_conn, 
 							slurmctld_cluster_name,
@@ -2526,7 +2496,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 		}
 	}
 
-	if (base_state == NODE_STATE_DOWN) {
+	if (IS_NODE_DOWN(node_ptr)) {
 		debug3("make_node_comp: Node %s being left DOWN", 
 		       node_ptr->name);
 	} else if (node_ptr->run_job_cnt)
@@ -2568,7 +2538,7 @@ void make_node_idle(struct node_record *node_ptr,
 		    struct job_record *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
-	uint16_t node_flags, base_state;
+	uint16_t node_flags;
 	time_t now = time(NULL);
 	
 	xassert(node_ptr);
@@ -2615,12 +2585,11 @@ void make_node_idle(struct node_record *node_ptr,
 	last_node_update = now;
 	if (node_ptr->comp_job_cnt == 0)
 		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-	if (base_state == NODE_STATE_DOWN) {
+	if (IS_NODE_DOWN(node_ptr)) {
 		debug3("make_node_idle: Node %s being left DOWN",
 			node_ptr->name);
-	} else if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) &&
+	} else if ((IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) &&
 	           (node_ptr->run_job_cnt == 0) &&
 	           (node_ptr->comp_job_cnt == 0)) {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
@@ -2637,8 +2606,8 @@ void make_node_idle(struct node_record *node_ptr,
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	} else {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
-		if (((node_flags & NODE_STATE_NO_RESPOND) == 0)
-		&&  ((node_flags & NODE_STATE_COMPLETING) == 0))
+		if (!IS_NODE_NO_RESPOND(node_ptr) &&
+		    !IS_NODE_COMPLETING(node_ptr))
 			bit_set(idle_node_bitmap, inx);
 		node_ptr->last_idle = now;
 	}
@@ -2686,18 +2655,16 @@ extern int send_nodes_to_accounting(time_t event_time)
 	/* send nodes not in not 'up' state */
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (node_ptr->name == '\0'
-		    || (!(node_ptr->node_state & NODE_STATE_DRAIN)
-			&& !(node_ptr->node_state & NODE_STATE_FAIL) 
-			&& (node_ptr->node_state & NODE_STATE_BASE) 
-			!= NODE_STATE_DOWN))
+		if (node_ptr->name == '\0' ||
+		   (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr) &&
+		    !IS_NODE_DOWN(node_ptr)))
 			continue;
 
-		if((rc = clusteracct_storage_g_node_down(acct_db_conn,
-							 slurmctld_cluster_name,
-							 node_ptr, event_time,
-							 NULL))
-		   == SLURM_ERROR) 
+		rc = clusteracct_storage_g_node_down(acct_db_conn,
+						     slurmctld_cluster_name,
+						     node_ptr, event_time,
+						     NULL);
+		if (rc == SLURM_ERROR) 
 			break;
 	}
 	unlock_slurmctld(node_read_lock);
