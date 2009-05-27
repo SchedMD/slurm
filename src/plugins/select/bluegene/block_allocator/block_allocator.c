@@ -4832,6 +4832,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 		}
 		list_iterator_destroy(itr);
 			
+		/* check to see if wire 0 is used with this port */
 		if(curr_switch->
 		   ext_wire[port_to_try].node_tar[X]
 		   == curr_switch->ext_wire[0].node_tar[X]  
@@ -4994,7 +4995,7 @@ static int _finish_torus(List results,
 			}
 			list_iterator_destroy(itr);
 
-			/* check to see if this points to itself */
+			/* check to see if wire 0 is used with this port */
 			if((curr_switch->
 			    ext_wire[ports_to_try[i]].node_tar[X] ==
 			    curr_switch->ext_wire[0].node_tar[X] &&
@@ -5041,7 +5042,8 @@ static int _finish_torus(List results,
 				}
 				list_iterator_destroy(itr);
 				if(next_node) {
-					debug3("Can't finish torus with "
+					debug3("finishing_torus: "
+					       "Can't finish torus with "
 					       "%c%c%c we already were there.",
 					       alpha_num[next_node->coord[X]],
 					       alpha_num[next_node->coord[Y]],

@@ -129,6 +129,9 @@ COMMAND CHANGES (see man pages for details)
 * Time format of all SLURM command set to ISO 8601 (yyyy-mm-ddThh:mm:ss)
   unless the configure option "--disable-iso8601" is used at build time.
 * sacct -S to status a job will no longer work.  Use sstat from now on.
+* sacct --nodes option can be used to filter jobs by allocated node.
+* sacct default starttime is midnight of the previous day rather than the
+  start of the database.
 * sacct and sstat have been rewritten to have a more sacctmgr like feel
 * Added the sprio command to view the factors that comprise a job's scheduling
   priority - works only with the priority/multifactor plugin.
