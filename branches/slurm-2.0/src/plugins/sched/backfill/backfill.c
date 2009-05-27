@@ -232,7 +232,7 @@ static void _attempt_backfill(void)
 	uint32_t min_nodes, max_nodes, req_nodes;
 	uint16_t orig_shared;
 	bitstr_t *avail_bitmap = NULL, *tmp_bitmap;
-	time_t now = time(NULL), when;
+	time_t now = time(NULL), start_res;
 	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 2];
 
 	if (slurm_get_root_filter())
@@ -308,19 +308,24 @@ static void _attempt_backfill(void)
 				time_limit = MIN(job_ptr->time_limit,
 						 part_ptr->max_time);
 		}
-		end_time = (time_limit * 60) + now;
 
 		/* Determine impact of any resource reservations */
 		FREE_NULL_BITMAP(avail_bitmap);
-		when = now;
-		j = job_test_resv(job_ptr, &when, &avail_bitmap);
+		start_res = now;
+		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap);
 		if (j != SLURM_SUCCESS)
 			continue;
+		if (start_res > now)
+			end_time = (time_limit * 60) + start_res;
+		else
+			end_time = (time_limit * 60) + now;
 
 		/* Identify usable nodes for this job */
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
 		for (j=0; ; ) {
+			if (node_space[j].end_time < start_res)
+				continue;
 			if (node_space[j].begin_time <= end_time) {
 				bit_and(avail_bitmap, 
 					node_space[j].avail_bitmap);
@@ -364,6 +369,7 @@ static void _attempt_backfill(void)
 		if (j != SLURM_SUCCESS)
 			continue;	/* not runable */
 
+		job_ptr->start_time = MAX(job_ptr->start_time, start_res);
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, avail_bitmap);
 			if(rc == ESLURM_ACCOUNTING_POLICY) 

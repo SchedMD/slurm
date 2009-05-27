@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     numbers.
  -- Add sinfo node state filtering support for NO_RESPOND, POWER_SAVE, FAIL, 
     and MAINT states.
+ -- Fix reservation logic when job requests specific nodes that are already
+    in some reservation the job can not use.
 
 * Changes in SLURM 2.0.0
 ========================
