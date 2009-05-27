@@ -120,10 +120,6 @@ extern int init_bg(void)
 		list_destroy(bg_conf->ramdisk_list);
 	bg_conf->ramdisk_list = list_create(destroy_image);	
 
-	bg_conf->smallest_block = 512;
-	bg_conf->bp_node_cnt = 512;
-	bg_conf->procs_per_bp = 512;
-
 	ba_init(NULL);
 
 	info("BlueGene plugin loaded successfully");
@@ -1034,7 +1030,17 @@ extern int read_bg_conf(void)
 
 		bg_conf->quarter_node_cnt = bg_conf->bp_node_cnt/4;
 	}
-
+	/* bg_conf->procs_per_bp should had already been set from the
+	 * node_init */
+	if(bg_conf->procs_per_bp < bg_conf->bp_node_cnt) {
+		fatal("For some reason we have only %u procs per bp, but "
+		      "have %u cnodes per bp.  You need at least the same "
+		      "number of procs as you have cnodes per bp.  "
+		      "Check the NodeName Procs= "
+		      "definition in the slurm.conf.", 
+		      bg_conf->procs_per_bp, bg_conf->bp_node_cnt); 
+	}
+	
 	bg_conf->proc_ratio = bg_conf->procs_per_bp/bg_conf->bp_node_cnt;
 	if(!bg_conf->proc_ratio)
 		fatal("We appear to have less than 1 proc on a cnode.  "
@@ -1043,7 +1049,8 @@ extern int read_bg_conf(void)
 		      "for each node in the slurm.conf",
 		      bg_conf->bp_node_cnt, bg_conf->procs_per_bp);
 	num_unused_cpus = 
-		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] * bg_conf->procs_per_bp;
+		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
+		* bg_conf->procs_per_bp;
 
 	if (!s_p_get_uint16(
 		    &bg_conf->nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {
