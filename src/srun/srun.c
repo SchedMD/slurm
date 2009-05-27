@@ -154,6 +154,26 @@ static void  _task_start(launch_tasks_response_msg_t *msg);
 static void  _task_finish(task_exit_msg_t *msg);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
 
+/*
+ * from libvirt-0.6.2 GPL2
+ *
+ * console.c: A dumb serial console client
+ *
+ * Copyright (C) 2007, 2008 Red Hat, Inc.
+ *
+ */
+#ifndef HAVE_CFMAKERAW
+void cfmakeraw(struct termios *attr)
+{
+	attr->c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP
+				| INLCR | IGNCR | ICRNL | IXON);
+	attr->c_oflag &= ~OPOST;
+	attr->c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+	attr->c_cflag &= ~(CSIZE | PARENB);
+	attr->c_cflag |= CS8;
+}
+#endif
+
 int srun(int ac, char **av)
 {
 	resource_allocation_response_msg_t *resp;

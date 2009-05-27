@@ -88,7 +88,11 @@ pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 #ifdef PT_DETACH
 		if (_PTRACE(PT_DETACH, pid, NULL, 0)) {
 #else
+#if defined (__sun)
+		if (_PTRACE(7, pid, NULL, 0)) {
+#else
 		if (_PTRACE(PTRACE_DETACH, pid, NULL, 0)) {
+#endif
 #endif
 			error("ptrace(%lu): %m", (unsigned long) pid);
 			return SLURM_ERROR;
@@ -110,7 +114,11 @@ pdebug_stop_current(slurmd_job_t *job)
 #ifdef PT_TRACE_ME
 	     && (_PTRACE(PT_TRACE_ME, 0, NULL, 0) < 0) )
 #else
+#if defined (__sun)
+	     && (_PTRACE(0, 0, NULL, 0) < 0))
+#else
 	     && (_PTRACE(PTRACE_TRACEME, 0, NULL, 0) < 0) )
+#endif
 #endif
 		error("ptrace: %m");
 }

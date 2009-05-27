@@ -44,6 +44,10 @@
 #include <pthread.h>
 #endif
 
+#ifdef HAVE_SYS_TERMIOS_H
+#  include <sys/termios.h>
+#endif
+
 #include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>

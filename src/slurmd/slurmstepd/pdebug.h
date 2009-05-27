@@ -39,7 +39,9 @@
 #define _PDEBUG_H
 
 #include <unistd.h>
-#include <sys/ptrace.h>
+#ifdef HAVE_SYS_PTRACE_H
+#  include <sys/ptrace.h>
+#endif
 #include <sys/wait.h>
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 

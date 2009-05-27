@@ -72,10 +72,13 @@
 #  include <inttypes.h>
 #endif
 
+#if HAVE_PATHS_H
+#  include <paths.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <paths.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -413,7 +416,7 @@ static void _jobcomp_child (char * script, struct jobcomp_info *job)
 		exit (1);
 
 	if (chdir (tmpdir) != 0) {
-		error ("jobcomp/script: chdir (%s): %m", _PATH_TMP);
+		error ("jobcomp/script: chdir (%s): %m", tmpdir);
 		exit(1);
 	}
 
