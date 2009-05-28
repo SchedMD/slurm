@@ -322,9 +322,9 @@ install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/blueg
 LIST=./aix.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
-  echo %{_libdir}/slurm/proctrack_aix.so               >>LIST
+  echo %{_libdir}/slurm/proctrack_aix.so               >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so  &&
-  echo %{_libdir}/slurm/switch_federation.so           >>LIST
+  echo %{_libdir}/slurm/switch_federation.so           >> $LIST
 
 LIST=./slurmdbd.files
 touch $LIST
@@ -346,7 +346,7 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
    echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
-   echo %{_libdir}/slurm/task_affinity.so             >> $LIST
+   echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 
 #############################################################################
 
