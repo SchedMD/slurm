@@ -102,8 +102,8 @@ and commands are denoted below.
 		  numeric suffix between zero and 15).  Finally, the 
 		  &quot;ptrack&quot; kernel patch is required for process 
 		  tracking.
-<li> <b>sview</b> The sview command will be built only if <i>libglade-2.0</i>
-                  and <i>gtk+-2.0</i> are installed</li>
+<li> <b>sview</b> The sview command will be built only if and <i>gtk+-2.0</i> 
+                  is installed</li>
 </ul>
 Please see the <a href=download.html>Download</a> page for references to
 required software to build these plugins.</p>
@@ -641,6 +641,6 @@ Contents of major releases are also described in the RELEASE_NOTES file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 January 2009</p>
+<p style="text-align:center;">Last modified 28 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
