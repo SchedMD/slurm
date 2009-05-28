@@ -214,9 +214,9 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	
 	/* only set this once when the last_bg_update is newer than
 	   the last time we set things up. */
-	if(last_set_all && last_bg_update >= last_set_all) {
+	if(last_set_all && (last_bg_update < last_set_all)) {
 		debug2("Node select info for set all hasn't "
-		       "changed since %d 2", 
+		       "changed since %d", 
 		       last_set_all);
 		return SLURM_NO_CHANGE_IN_DATA;	
 	}

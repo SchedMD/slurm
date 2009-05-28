@@ -49,6 +49,7 @@ typedef struct {
 	int *bp_inx;            /* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
+	int job_running;
 	bool printed;
 	char *color;
 #ifdef HAVE_BGL
@@ -66,6 +67,7 @@ enum {
 	SORTID_BLRTSIMAGE,
 #endif
 	SORTID_CONN,
+	SORTID_JOB,
 	SORTID_LINUXIMAGE,
 	SORTID_MLOADERIMAGE,
 	SORTID_NODES, 
@@ -90,12 +92,14 @@ static display_data_t display_data_block[] = {
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_block,
 	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_JOB, "JobID", TRUE, EDIT_NONE, refresh_block,
+	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_USER, "User", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type", 
-	 TRUE, EDIT_NONE, refresh_block,
+	 FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -252,7 +256,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 				 sview_block_info_t *block_ptr, 
 				 int update)
 {
-	char tmp_cnt[8];
+	char tmp_cnt[18];
 	GtkTreeIter iter;
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
@@ -273,6 +277,16 @@ static void _layout_block_record(GtkTreeView *treeview,
 				   find_col_name(display_data_block,
 						 SORTID_USER),
 				   block_ptr->bg_user_name);
+	if(block_ptr->job_running > NO_JOB_RUNNING)
+		snprintf(tmp_cnt, sizeof(tmp_cnt), 
+			 "%d", block_ptr->job_running);
+	else
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "none");
+		
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_block,
+						 SORTID_JOB),
+				  tmp_cnt);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
 						 SORTID_CONN),
@@ -318,7 +332,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 static void _update_block_record(sview_block_info_t *block_ptr, 
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	char tmp_cnt[8];
+	char tmp_cnt[18];
 	
 	gtk_tree_store_set(treestore, iter, SORTID_BLOCK, 
 			   block_ptr->bg_block_name, -1);
@@ -328,6 +342,14 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   bg_block_state_string(block_ptr->state), -1);
 	gtk_tree_store_set(treestore, iter, SORTID_USER, 
 			   block_ptr->bg_user_name, -1);
+	if(block_ptr->job_running > NO_JOB_RUNNING)
+		snprintf(tmp_cnt, sizeof(tmp_cnt), 
+			 "%d", block_ptr->job_running);
+	else
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "none");
+		
+	gtk_tree_store_set(treestore, iter, SORTID_JOB, tmp_cnt, -1);
+
 	gtk_tree_store_set(treestore, iter, SORTID_CONN, 
 			   _convert_conn_type(block_ptr->bg_conn_type), -1);
 #ifdef HAVE_BGL
@@ -547,7 +569,9 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 				break;
 			}
 		}
-		if(block_ptr->bg_conn_type == SELECT_SMALL)
+		block_ptr->job_running =
+			node_select_ptr->bg_info_array[i].job_running;
+		if(block_ptr->bg_conn_type >= SELECT_SMALL)
 			block_ptr->size = 0;
 
 		list_append(block_list, block_ptr);
@@ -587,19 +611,30 @@ need_refresh:
 		treeview = GTK_TREE_VIEW(spec_info->display_widget);
 		update = 1;
 	}
-	/* this is here for if later we have more stats on a bluegene
-	   block */
+
 	itr = list_iterator_create(block_list);
 	while ((block_ptr = (sview_block_info_t*) list_next(itr))) {
 		i++;
 		if(!strcmp(block_ptr->bg_block_name, name)
 		   || !strcmp(block_ptr->nodes, name)) {
+			/* we want to over ride any subgrp in error
+			   state */
+			enum node_states state = NODE_STATE_UNKNOWN;
+		
+			if(block_ptr->state == RM_PARTITION_ERROR)
+				state = NODE_STATE_ERROR;
+			else if(block_ptr->job_running > NO_JOB_RUNNING)
+				state = NODE_STATE_ALLOCATED;
+			else
+				state = NODE_STATE_IDLE;
+					
 			j = 0;
 			while(block_ptr->bp_inx[j] >= 0) {
 				change_grid_color(
 					popup_win->grid_button_list,
 					block_ptr->bp_inx[j],
-					block_ptr->bp_inx[j+1], i, true);
+					block_ptr->bp_inx[j+1], i, true,
+					state);
 				j += 2;
 			}
 			_layout_block_record(treeview, block_ptr, update);
@@ -919,7 +954,7 @@ display_it:
 						  bp_inx[j],
 						  sview_block_info_ptr->
 						  bp_inx[j+1],
-						  i, true);
+						  i, true, 0);
 			j += 2;
 		}
 		i++;
@@ -1029,7 +1064,6 @@ extern void specific_info_block(popup_info_t *popup_win)
 	}
 	
 display_it:
-	
 	block_list = _create_block_list(part_info_ptr, node_select_ptr,
 					changed);
 	if(!block_list)
@@ -1054,7 +1088,6 @@ display_it:
 	}
 
 	setup_popup_grid_list(popup_win);
-
 	spec_info->view = INFO_VIEW;
 	if(spec_info->type == INFO_PAGE) {
 		_display_info_block(block_list, popup_win);
@@ -1067,6 +1100,10 @@ display_it:
 	itr = list_iterator_create(block_list);
 	i = -1;
 	while ((block_ptr = list_next(itr))) {
+		/* we want to over ride any subgrp in error
+		   state */
+		enum node_states state = NODE_STATE_UNKNOWN;
+
 		i++;
 		switch(spec_info->type) {
 		case PART_PAGE:
@@ -1126,12 +1163,20 @@ display_it:
 			continue;
 		}
 		list_push(send_block_list, block_ptr);
+		
+		if(block_ptr->state == RM_PARTITION_ERROR)
+			state = NODE_STATE_ERROR;
+		else if(block_ptr->job_running > NO_JOB_RUNNING)
+			state = NODE_STATE_ALLOCATED;
+		else
+			state = NODE_STATE_IDLE;
+					
 		j=0;
 		while(block_ptr->bp_inx[j] >= 0) {
 			change_grid_color(
 				popup_win->grid_button_list,
 				block_ptr->bp_inx[j],
-				block_ptr->bp_inx[j+1], i, false);
+				block_ptr->bp_inx[j+1], i, false, state);
 			j += 2;
 		}
 	}

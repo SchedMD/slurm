@@ -747,7 +747,7 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i, true);
+					resv_ptr->node_inx[j+1], i, true, 0);
 				j += 2;
 			}
 			_layout_resv_record(treeview, sview_resv_info, update);
@@ -1003,7 +1003,7 @@ display_it:
 				change_grid_color(grid_button_list,
 						  resv_ptr->node_inx[j],
 						  resv_ptr->node_inx[j+1],
-						  i, true);
+						  i, true, 0);
 			j += 2;
 		}
 		i++;
@@ -1171,7 +1171,7 @@ display_it:
 				change_grid_color(
 					popup_win->grid_button_list,
 					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i, false);
+					resv_ptr->node_inx[j+1], i, false, 0);
 			j += 2;
 		}
 	}
