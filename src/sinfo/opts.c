@@ -368,10 +368,9 @@ _node_state_list (void)
 		xstrcat (all_states, node_state_string(i));
 	}
 
-	xstrcat(all_states, ",DRAIN");
+	xstrcat(all_states, ",DRAIN,DRAINED,DRAINING,NO_RESPOND");
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_COMPLETING));
-	xstrcat(all_states, ",NO_RESPOND");
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_POWER_SAVE));
 	xstrcat(all_states, ",");
@@ -416,6 +415,11 @@ _node_state_id (char *str)
 
 	if (strncasecmp("DRAIN", str, len) == 0)
 		return NODE_STATE_DRAIN;
+	if (strncasecmp("DRAINED", str, len) == 0)
+		return NODE_STATE_DRAIN | NODE_STATE_IDLE;
+	if ((strncasecmp("DRAINING", str, len) == 0) ||
+	    (strncasecmp("DRNG", str, len) == 0))
+		return NODE_STATE_DRAIN | NODE_STATE_ALLOCATED;
 	if (_node_state_equal (NODE_STATE_COMPLETING, str))
 		return NODE_STATE_COMPLETING;
 	if (strncasecmp("NO_RESPOND", str, len) == 0)

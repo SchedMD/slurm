@@ -458,7 +458,33 @@ static bool _filter_out(node_info_t *node_ptr)
 
 		iterator = list_iterator_create(params.state_list);
 		while ((node_state = list_next(iterator))) {
-			if (*node_state & NODE_STATE_FLAGS) {
+			if (*node_state == 
+			    (NODE_STATE_DRAIN | NODE_STATE_ALLOCATED)) {
+				/* We search for anything that gets mapped to
+				 * DRAINING in node_state_string */
+				if (!(node_ptr->node_state & NODE_STATE_DRAIN))
+					continue;
+				if (((node_ptr->node_state & NODE_STATE_BASE) ==
+				     NODE_STATE_ALLOCATED) ||
+				    (node_ptr->node_state & 
+				     NODE_STATE_COMPLETING)) {
+					match = true;
+					break;
+				}
+			} else if (*node_state == 
+				   (NODE_STATE_DRAIN | NODE_STATE_IDLE)) {
+				/* We search for anything that gets mapped to
+				 * DRAINED in node_state_string */
+				if (!(node_ptr->node_state & NODE_STATE_DRAIN))
+					continue;
+				if (((node_ptr->node_state & NODE_STATE_BASE) !=
+				     NODE_STATE_ALLOCATED) &&
+				    (!(node_ptr->node_state & 
+				       NODE_STATE_COMPLETING))) {
+					match = true;
+					break;
+				}
+			} else if (*node_state & NODE_STATE_FLAGS) {
 				if (*node_state & node_ptr->node_state) {
 					match = true;
 					break;
