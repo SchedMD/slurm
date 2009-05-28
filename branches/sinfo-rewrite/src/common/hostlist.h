@@ -53,7 +53,7 @@
 #define MAX_PREFIX_CNT 1024
 
 #ifdef HAVE_BG
-#define HOSTLIST_BASE 10
+#define HOSTLIST_BASE 36
 #else
 #define HOSTLIST_BASE 10
 #endif
