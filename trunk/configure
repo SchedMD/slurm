@@ -25969,20 +25969,10 @@ fi
     fi
 
     if test x$HAVEPKGCONFIG = xno; then
-            { echo "$as_me:$LINENO: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&5
-echo "$as_me: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&2;}
+            { echo "$as_me:$LINENO: WARNING: *** pkg-config not found. Cannot probe for gtk+-2.0." >&5
+echo "$as_me: WARNING: *** pkg-config not found. Cannot probe for gtk+-2.0." >&2;}
             ac_have_gtk="no"
     fi
-
-### Check for libglade package (We don't need this right now so don't add it)
-#    if test "$ac_have_gtk" == "yes"; then
-#        $HAVEPKGCONFIG --exists libglade-2.0
-#        if ! test $? -eq 0 ; then
-#            AC_MSG_WARN([*** libbglade-2.0 is not available.])
-#            ac_have_gtk="no"
-#        fi
-#    fi
-
 
 ### Check for min gtk package
     if test "$ac_have_gtk" == "yes" ; then
@@ -26005,13 +25995,8 @@ echo "$as_me: WARNING: *** gtk+-$gtk_config_version available, we need >= gtk+-$
 
 ### Run a test program
     if test "$ac_have_gtk" == "yes" ; then
- #       GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0 gthread-2.0`
         GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags gtk+-2.0 gthread-2.0`
-#        GTK2_LIBS=`$HAVEPKGCONFIG --libs libglade-2.0 gtk+-2.0 gthread-2.0`
-       GTK2_LIBS=`$HAVEPKGCONFIG --libs gtk+-2.0 gthread-2.0`
-#        if test ! -z "GLADE_STATIC"  ; then
-#            GTK2_LIBS=`echo $GTK2_LIBS | sed "s/-lglade-2.0/$GLADE_STATIC -lglade-2.0 $BDYNAMIC/g"`
-#        fi
+        GTK2_LIBS=`$HAVEPKGCONFIG --libs gtk+-2.0 gthread-2.0`
         save_CFLAGS="$CFLAGS"
         save_LIBS="$LIBS"
         CFLAGS="$GTK2_CFLAGS $save_CFLAGS"
