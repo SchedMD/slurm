@@ -304,7 +304,7 @@ extern void get_bg_part()
 			_marknodes(block_ptr, last_count);
 		}
 		
-		if(block_ptr->bg_conn_type == SELECT_SMALL)
+		if(block_ptr->bg_conn_type >= SELECT_SMALL)
 			block_ptr->size = 0;
 
 		list_append(block_list, block_ptr);
