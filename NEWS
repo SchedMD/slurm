@@ -20,7 +20,7 @@ documents those changes that are of interest to users and admins.
     time limit was INFINITE, resulting in it being prematurely terminated.
  -- Permit regular user to change the time limit of his pending jobs up to
     the partition's limit.
-
+ -- Fix -q option for salloc and sbatch should really be -Q which wasn't doing anything before.
 * Changes in SLURM 2.0.0
 ========================
  -- Fix for bluegene systems to be able to create 32 node blocks with only 
