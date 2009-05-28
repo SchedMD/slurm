@@ -5,7 +5,7 @@
 #
 # build options      .rpmmacros options      change to default action
 # ===============    ====================    ========================
-# --with aix         %_with_aix         1    build aix-federation RPM
+# --with aix         %_with_aix         1    build aix RPM
 # --with authd       %_with_authd       1    build auth-authd RPM
 # --with auth_none   %_with_auth_none   1    build auth-none RPM
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
@@ -244,12 +244,12 @@ Requires: slurm-perlapi
 Wrappers to write directly to the slurmdb.
 
 %if %{slurm_with aix}
-%package aix-federation
+%package aix
 Summary: SLURM interfaces to IBM AIX and Federation switch.
 Group: System Environment/Base
 Requires: slurm
 BuildRequires: proctrack >= 3
-%description aix-federation
+%description aix
 SLURM plugins for IBM AIX and Federation switch.
 %endif
 
@@ -318,6 +318,13 @@ install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/fed
 rm ${RPM_BUILD_ROOT}%{_bindir}/srun
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
 %endif
+
+LIST=./aix.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
+  echo %{_libdir}/slurm/proctrack_aix.so               >>LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so  &&
+  echo %{_libdir}/slurm/switch_federation.so           >>LIST
 
 LIST=./slurmdbd.files
 touch $LIST
@@ -510,10 +517,8 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %if %{slurm_with aix}
-%files aix-federation
+%files -f aix.files aix
 %defattr(-,root,root)
-%{_libdir}/slurm/switch_federation.so 
-%{_libdir}/slurm/proctrack_aix.so
 %{_libdir}/slurm/checkpoint_aix.so
 %config %{_sysconfdir}/federation.conf.example
 %endif

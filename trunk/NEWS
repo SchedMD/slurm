@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     Added macros to get state information (IS_JOB_RUNNING(job_ptr), etc.)
  -- Added macros to get node state information (IS_NODE_DOWN(node_ptr), etc).
  -- Added support for Solaris. Patch from David Hoppner.
+ -- Rename "slurm-aix-federation-<version>.rpm" to just 
+    "slurm-aix-<version>.rpm" (federation switch plugin may not be present).
 
 * Changes in SLURM 2.0.1
 ========================
