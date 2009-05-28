@@ -1264,8 +1264,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 		sview_part_sub->max_mem    = node_ptr->real_memory;
 		sview_part_sub->min_weight = node_ptr->weight;
 		sview_part_sub->max_weight = node_ptr->weight;
-	} else if (hostlist_find(sview_part_sub->hl, 
-				 node_ptr->name) != -1) {
+	} else if (hostlist_find(sview_part_sub->hl, node_ptr->name) != -1) {
 		/* we already have this node in this record,
 		 * just return, don't duplicate */
 		return;
@@ -1327,29 +1326,10 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 		return NULL;
 	}
 	sview_part_sub_ptr->part_ptr = part_ptr;
-	sview_part_sub_ptr->node_state = node_ptr->node_state;
-	sview_part_sub_ptr->node_cnt = node_scaling;
-	
-	sview_part_sub_ptr->min_cpus = node_ptr->cpus;
-	sview_part_sub_ptr->max_cpus = node_ptr->cpus;
-
-	sview_part_sub_ptr->min_disk = node_ptr->tmp_disk;
-	sview_part_sub_ptr->max_disk = node_ptr->tmp_disk;
-
-	sview_part_sub_ptr->min_mem = node_ptr->real_memory;
-	sview_part_sub_ptr->max_mem = node_ptr->real_memory;
-
-	sview_part_sub_ptr->min_weight = node_ptr->weight;
-	sview_part_sub_ptr->max_weight = node_ptr->weight;
-
-	sview_part_sub_ptr->features = xstrdup(node_ptr->features);
-	sview_part_sub_ptr->reason   = xstrdup(node_ptr->reason);
-
 	sview_part_sub_ptr->hl = hostlist_create(node_ptr->name);
-	
 	sview_part_sub_ptr->node_ptr_list = list_create(NULL);
 
-	list_push(sview_part_sub_ptr->node_ptr_list, node_ptr);
+	_update_sview_part_sub(sview_part_sub_ptr, node_ptr, node_scaling);
 
 	return sview_part_sub_ptr;
 }
@@ -1403,12 +1383,12 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	node_info_t *node_ptr = NULL;
 	static List info_list = NULL;
 	char *node_name = NULL;
-	int i, found = 0;
+	int i, i2, j2, found = 0;
 	ListIterator itr = NULL;
 	hostlist_t hl;
+	int node_scaling = node_info_ptr->node_scaling;
 #ifdef HAVE_BG
 	int j;
-	int node_scaling = part_info_ptr->partition_array[0].node_scaling;
 	int block_error = 0;
 #endif
 	if(!changed && info_list) {
@@ -1430,122 +1410,127 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 			continue;	/* empty partition */
 		
 		sview_part_info = _create_sview_part_info(part_ptr);
-		hl = hostlist_create(part_ptr->nodes);
-		while((node_name = hostlist_shift(hl))) {
-			node_ptr = _find_node(node_name, node_info_ptr);
-			free(node_name);
+		list_append(info_list, sview_part_info);
+		j2 = 0;
+		while(part_ptr->node_inx[j2] >= 0) {
+			int i2 = 0;
+			uint16_t subgrp_size = 0;
+			for(i2 = part_ptr->node_inx[j2];
+			    i2 <= part_ptr->node_inx[j2+1];
+			    i2++) {
+				node_ptr = &(node_info_ptr->node_array[i2]);
 #ifdef HAVE_BG
-			if((node_ptr->node_state & NODE_STATE_DRAIN) 
-			   && (node_ptr->node_state & NODE_STATE_FAIL)) {
-				node_ptr->node_state &= ~NODE_STATE_DRAIN;
-				node_ptr->node_state &= ~NODE_STATE_FAIL;
-				block_error = 1;
-			} else
-				block_error = 0;
-			node_ptr->threads = node_scaling;
-			for(j=0; j<3; j++) {
-				int norm = 0;
-				switch(j) {
-				case SVIEW_BG_IDLE_STATE:
-					/* check to see if the node is
-					 * down if so just report the
-					 * whole thing is down and break
-					 * out.
-					 */
-					if((node_ptr->node_state 
-					    & NODE_STATE_BASE)
-					   == NODE_STATE_DOWN) {
-						norm = 1;
+				if((node_ptr->node_state & NODE_STATE_DRAIN) 
+				   && (node_ptr->node_state & NODE_STATE_FAIL)) {
+					node_ptr->node_state &= ~NODE_STATE_DRAIN;
+					node_ptr->node_state &= ~NODE_STATE_FAIL;
+					block_error = 1;
+				} else
+					block_error = 0;
+				node_ptr->threads = node_scaling;
+				for(j=0; j<3; j++) {
+					int norm = 0;
+					switch(j) {
+					case SVIEW_BG_IDLE_STATE:
+						/* check to see if the node is
+						 * down if so just report the
+						 * whole thing is down and break
+						 * out.
+						 */
+						if((node_ptr->node_state 
+						    & NODE_STATE_BASE)
+						   == NODE_STATE_DOWN) {
+							norm = 1;
+							break;
+						}
+						
+						/* get the idle node count if
+						 * we don't have any error or
+						 * allocated nodes then we set
+						 * the norm flag and add it
+						 * as it's current state 
+						 */
+						node_ptr->threads -=
+							(node_ptr->cores
+							 + node_ptr->used_cpus);
+						if(node_ptr->threads == node_scaling)
+							norm = 1;
+						else {
+							node_ptr->node_state &=
+								NODE_STATE_FLAGS;
+							node_ptr->node_state |=
+								NODE_STATE_IDLE;
+						}
 						break;
-					}
-
-					/* get the idle node count if
-					 * we don't have any error or
-					 * allocated nodes then we set
-					 * the norm flag and add it
-					 * as it's current state 
-					 */
-					node_ptr->threads -=
-						(node_ptr->cores
-						 + node_ptr->used_cpus);
-					if(node_ptr->threads == node_scaling)
-						norm = 1;
-					else {
+					case SVIEW_BG_ALLOC_STATE:
+						/* get the allocated node count */
+						if(!node_ptr->used_cpus) 
+							continue;
 						node_ptr->node_state &=
 							NODE_STATE_FLAGS;
 						node_ptr->node_state |=
-							NODE_STATE_IDLE;
-					}
-					break;
-				case SVIEW_BG_ALLOC_STATE:
-					/* get the allocated node count */
-					if(!node_ptr->used_cpus) 
-						continue;
-					node_ptr->node_state &=
-						NODE_STATE_FLAGS;
-					node_ptr->node_state |=
-						NODE_STATE_ALLOCATED;
+							NODE_STATE_ALLOCATED;
 					
-					node_ptr->threads =
-						node_ptr->used_cpus;
-					break;
-				case SVIEW_BG_ERROR_STATE:
-					/* get the error node count */
-					if(!node_ptr->cores) 
-						continue;
-					node_ptr->node_state &=
-						NODE_STATE_FLAGS;
-					node_ptr->node_state |=
-						NODE_STATE_DRAIN;
-					if(block_error)
-						node_ptr->node_state
-							|= NODE_STATE_FAIL;
-					node_ptr->threads = node_ptr->cores;
-					break;
-				default:
-					error("unknown state");
-					break;
-				}
+						node_ptr->threads =
+							node_ptr->used_cpus;
+						break;
+					case SVIEW_BG_ERROR_STATE:
+						/* get the error node count */
+						if(!node_ptr->cores) 
+							continue;
+						node_ptr->node_state &=
+							NODE_STATE_FLAGS;
+						node_ptr->node_state |=
+							NODE_STATE_DRAIN;
+						if(block_error)
+							node_ptr->node_state
+								|= NODE_STATE_FAIL;
+						node_ptr->threads = node_ptr->cores;
+						break;
+					default:
+						error("unknown state");
+						break;
+					}
 #endif
-			itr = list_iterator_create(sview_part_info->sub_list);
-			while((sview_part_sub = list_next(itr))) {
-				if(sview_part_sub->node_state
-				   == node_ptr->node_state) {
-					_update_sview_part_sub(
-						sview_part_sub, 
-						node_ptr,
-						part_ptr->node_scaling);
-					found = 1;
-					break;
-				}
-			}
-			list_iterator_destroy(itr);
-
-			if(!found) {
-				sview_part_sub = 
-					_create_sview_part_sub(
-						part_ptr,
-						node_ptr,
-						part_ptr->node_scaling);
-				if(sview_part_sub)
-					list_push(sview_part_info->sub_list, 
-						  sview_part_sub);
-			}
-
-			found = 0;
+					itr = list_iterator_create(sview_part_info->sub_list);
+					while((sview_part_sub = list_next(itr))) {
+						if(sview_part_sub->node_state
+						   == node_ptr->node_state) {
+							_update_sview_part_sub(
+								sview_part_sub, 
+								node_ptr,
+								node_scaling);
+							found = 1;
+							break;
+						}
+					}
+					list_iterator_destroy(itr);
+				
+					if(!found) {
+						sview_part_sub = 
+							_create_sview_part_sub(
+								part_ptr,
+								node_ptr,
+								node_scaling);
+						if(sview_part_sub)
+							list_push(sview_part_info->sub_list, 
+								  sview_part_sub);
+					}
+				
+					found = 0;
 #ifdef HAVE_BG
-			/* if we used the current state of
-			 * the node then we just continue.
-			 */
-			if(norm) 
-				break;
-			}
+					/* if we used the current state of
+					 * the node then we just continue.
+					 */
+					if(norm) 
+						break;
+				}
 #endif
+			}
+			
+			j2 += 2;
 		}
-		hostlist_destroy(hl);
-		list_append(info_list, sview_part_info);
 	}
-
 	list_sort(info_list,
 		  (ListCmpF)_sview_part_sort_aval_dec);
 

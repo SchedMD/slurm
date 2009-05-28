@@ -934,7 +934,6 @@ get_bg:
 		return;
 	}
 
-	node_scaling = part_info_ptr->partition_array[0].node_scaling;
 
 	/* Here we need to reset the nodes off of what the blocks say */
 	for (i=0; i<node_info_ptr->record_count; i++) {
@@ -963,6 +962,8 @@ get_bg:
 		}
 		node_ptr->node_state |= NODE_STATE_IDLE;
 	}
+
+	node_scaling = node_info_ptr->node_scaling;
 
 	for (i=0; i<node_select_ptr->record_count; i++) {
 		bg_info_record = &(node_select_ptr->bg_info_array[i]);
