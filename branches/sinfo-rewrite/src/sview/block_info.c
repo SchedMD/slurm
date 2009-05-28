@@ -281,7 +281,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 		snprintf(tmp_cnt, sizeof(tmp_cnt), 
 			 "%d", block_ptr->job_running);
 	else
-		snprintf(tmp_cnt, sizeof(tmp_cnt), "none");
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "-");
 		
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
@@ -346,7 +346,7 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 		snprintf(tmp_cnt, sizeof(tmp_cnt), 
 			 "%d", block_ptr->job_running);
 	else
-		snprintf(tmp_cnt, sizeof(tmp_cnt), "none");
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "-");
 		
 	gtk_tree_store_set(treestore, iter, SORTID_JOB, tmp_cnt, -1);
 
@@ -571,7 +571,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		}
 		block_ptr->job_running =
 			node_select_ptr->bg_info_array[i].job_running;
-		if(block_ptr->bg_conn_type >= SELECT_SMALL)
+		if(block_ptr->bg_conn_type == SELECT_SMALL)
 			block_ptr->size = 0;
 
 		list_append(block_list, block_ptr);

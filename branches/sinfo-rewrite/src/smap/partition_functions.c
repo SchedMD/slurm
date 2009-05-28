@@ -43,26 +43,27 @@
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/api/node_select_info.h"
+#include "src/plugins/select/bluegene/plugin/bluegene.h"
 
 #define _DEBUG 0
 
 typedef struct {
-	char *bg_user_name;
 	char *bg_block_name;
-	char *slurm_part_name;
-	char *nodes;
-	char *ionodes;
 	enum connection_type bg_conn_type;
 #ifdef HAVE_BGL
 	enum node_use_type bg_node_use;
 #endif
-	rm_partition_state_t state;
+	char *bg_user_name;
+	char *ionodes;
+	int job_running;
 	int letter_num;
 	List nodelist;
-	int size;
+	char *nodes;
 	int node_cnt;	
 	bool printed;
-
+	int size;
+	char *slurm_part_name;
+	rm_partition_state_t state;
 } db2_block_info_t;
 
 #ifdef HAVE_BG
@@ -303,7 +304,8 @@ extern void get_bg_part()
 			last_count++;
 			_marknodes(block_ptr, last_count);
 		}
-		
+		block_ptr->job_running =
+			new_bg_ptr->bg_info_array[i].job_running;
 		if(block_ptr->bg_conn_type == SELECT_SMALL)
 			block_ptr->size = 0;
 
@@ -471,11 +473,15 @@ static void _print_header_part(void)
 			mvwprintw(text_win, 
 				  main_ycord,
 				  main_xcord, "STATE");
+			main_xcord += 7;
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "JOBID");
 			main_xcord += 8;
 			mvwprintw(text_win, 
 				  main_ycord,
 				  main_xcord, "USER");
-			main_xcord += 12;
+			main_xcord += 9;
 			mvwprintw(text_win, 
 				  main_ycord,
 				  main_xcord, "CONN");
@@ -508,6 +514,7 @@ static void _print_header_part(void)
 		} else {
 			printf("        BG_BLOCK ");
 			printf("STATE ");
+			printf("   JOBID ");
 			printf("    USER ");
 			printf(" CONN ");
 #ifdef HAVE_BGL
@@ -534,6 +541,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 	int width = 0;
 	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[8];
+	char tmp_char[8];
 
 #ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, 
@@ -601,13 +609,27 @@ static int _print_text_part(partition_info_t *part_ptr,
 					  main_xcord, 
 					  bg_block_state_string(
 						  db2_info_ptr->state));
+				main_xcord += 7;
+				
+				if(db2_info_ptr->job_running > NO_JOB_RUNNING)
+					snprintf(tmp_char, sizeof(tmp_char), 
+						 "%d",
+						 db2_info_ptr->job_running);
+				else
+					snprintf(tmp_char, sizeof(tmp_char),
+						 "-");
+
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, 
+					  "%.8s", tmp_char);
 				main_xcord += 8;
 				
 				mvwprintw(text_win, 
 					  main_ycord,
-					  main_xcord, "%.11s", 
+					  main_xcord, "%.8s", 
 					  db2_info_ptr->bg_user_name);
-				main_xcord += 12;
+				main_xcord += 9;
 			
 				mvwprintw(text_win, 
 					  main_ycord,
@@ -628,7 +650,11 @@ static int _print_text_part(partition_info_t *part_ptr,
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
-				main_xcord += 12;
+				main_xcord += 18;
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "?");
+				main_xcord += 7;
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
@@ -636,11 +662,11 @@ static int _print_text_part(partition_info_t *part_ptr,
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
-				main_xcord += 12;
+				main_xcord += 9;
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
-				main_xcord += 6;
+				main_xcord += 7;
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
@@ -731,6 +757,15 @@ static int _print_text_part(partition_info_t *part_ptr,
 				       bg_block_state_string(
 					       db2_info_ptr->state));
 				
+				if(db2_info_ptr->job_running > NO_JOB_RUNNING)
+					snprintf(tmp_char, sizeof(tmp_char), 
+						 "%d",
+						 db2_info_ptr->job_running);
+				else
+					snprintf(tmp_char, sizeof(tmp_char),
+						 "-");
+				
+				printf("%8.8s ", tmp_char);
 				printf("%8.8s ", db2_info_ptr->bg_user_name);
 				
 				printf("%5.5s ", _convert_conn_type(
