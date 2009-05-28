@@ -17,7 +17,7 @@ documents those changes that are of interest to users and admins.
     in some reservation the job can not use.
  -- Fix recomputation of a job's end time when allocated nodes which are
     being powered up. The end time would be set in the past if the job's
-    time limit was INFINITE, resulting in it being prematureley terminated.
+    time limit was INFINITE, resulting in it being prematurely terminated.
  -- Permit regular user to change the time limit of his pending jobs up to
     the partition's limit.
 
