@@ -93,7 +93,9 @@ BuildRequires: python
 %endif
 
 %if %{?chaos}0
+BuildRequires: gtk2-devel >= 2.7.1
 BuildRequires: ncurses-devel
+BuildRequires: pkgconfig
 %endif
 
 %if %{slurm_with pam}
