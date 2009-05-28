@@ -257,8 +257,9 @@ default sort value is "N" (increasing node name).
 List nodes only having the given state(s).  Multiple states
 may be comma separated and the comparison is case insensitive.
 Possible values include (case insensitive): ALLOC, ALLOCATED,
-COMP, COMPLETING, DOWN, DRAIN, (DRAINED or DRAINING), FAIL, 
-FAILING, IDLE, MAINT, NO_RESPOND, POWER_SAVE, UNK, and UNKNOWN.  
+COMP, COMPLETING, DOWN, DRAIN (for node in DRAINING or DRAINED
+states), DRAINED, DRAINING, FAIL, FAILING, IDLE, MAINT, NO_RESPOND, 
+POWER_SAVE, UNK, and UNKNOWN.  
 By default nodes in the specified state are reported whether 
 they are responding or not.  
 The \fB\-\-dead\fR and \fB\-\-responding\fR options may be 

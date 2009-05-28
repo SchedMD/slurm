@@ -11,7 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Fix, in mysql plugins change mediumints to int to support full 32bit 
     numbers.
  -- Add sinfo node state filtering support for NO_RESPOND, POWER_SAVE, FAIL, 
-    and MAINT states.
+    MAINT, DRAINED and DRAINING states. The state filter of DRAIN still maps
+    to any node in either DRAINED or DRAINING state.
  -- Fix reservation logic when job requests specific nodes that are already
     in some reservation the job can not use.
 
