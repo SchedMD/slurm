@@ -60,6 +60,12 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+#if defined (HAVE_DECL_STRSIGNAL) && !HAVE_DECL_STRSIGNAL
+#  ifndef strsignal
+     extern char *strsignal(int);
+#  endif
+#endif /* defined HAVE_DECL_STRSIGNAL && !HAVE_DECL_STRSIGNAL */
+
 #define _DEBUG			0
 #define PID_CNT			10
 #define MAX_SHUTDOWN_DELAY	120	/* seconds to wait for child procs
