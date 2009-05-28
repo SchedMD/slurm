@@ -48,6 +48,7 @@
 
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -328,9 +329,16 @@ static int  _reap_procs(void)
 			     (int) child_pid[i], delay);
 		}
 
-		rc = WEXITSTATUS(status);
-		if (rc != 0)
-			error("power_save: program exit status of %d", rc);
+		if (WIFEXITED(status)) {
+			rc = WEXITSTATUS(status);
+			if (rc != 0) {
+				error("power_save: program exit status of %d", 
+				      rc);
+			}
+		} else if (WIFSIGNALED(status)) {
+			error("power_save: program signalled: %s",
+			      strsignal(WTERMSIG(status)));
+		}
 
 		child_pid[i]  = 0;
 		child_time[i] = (time_t) 0;
