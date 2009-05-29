@@ -799,7 +799,7 @@ static void set_options(const int argc, char **argv)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
-		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
+		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
 
