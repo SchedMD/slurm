@@ -502,12 +502,11 @@ extern int new_ba_request(ba_request_t* ba_request)
 #ifdef HAVE_BG
 	float sz=1;
 	int geo[BA_SYSTEM_DIMENSIONS] = {0,0,0};
-	int i2, i3, picked, total_sz=1 , size2;
-	ListIterator itr;
+	int i2, i3, picked, total_sz=1, size2=0;
 	int checked[DIM_SIZE[X]];
 	int *geo_ptr;
 	int messed_with = 0;
-	
+
 	ba_request->save_name= NULL;
 	ba_request->rotate_count= 0;
 	ba_request->elongate_count = 0;
@@ -624,11 +623,12 @@ extern int new_ba_request(ba_request_t* ba_request)
 		for (i=picked; i<BA_SYSTEM_DIMENSIONS; i++) { 
 			if(size2 <= 1) 
 				break;
+	
 			sz = size2 % DIM_SIZE[i];
 			if(!sz) {
 				geo[i] = DIM_SIZE[i];	
 				size2 /= DIM_SIZE[i];
-			} else if (size2 > DIM_SIZE[i]){
+			} else if (size2 > DIM_SIZE[i]) {
 				for(i2=(DIM_SIZE[i]-1); i2 > 1; i2--) {
 					/* go through each number to see if 
 					   the size is divisable by a smaller 
@@ -636,7 +636,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 					   good in the other dims. */
 					if (!(size2%i2) && !checked[i2]) {
 						size2 /= i2;
-						
+					
 						if(i==0)
 							checked[i2]=1;
 							
@@ -659,14 +659,15 @@ extern int new_ba_request(ba_request_t* ba_request)
 				   run.  
 				*/
 				if(i2==1) {
-					error("Can't make a block of "
-					      "%d into a cube.",
-					      ba_request->size);
-					return 0;
+					if(!list_count(
+						   ba_request->elongate_geos))
+						error("Can't make a block of "
+						      "%d into a cube.",
+						      ba_request->size);
+					goto endit;
 /* 					ba_request->size +=1; */
 /* 					goto startagain; */
 				}
-						
 			} else {
 				geo[i] = sz;	
 				break;
@@ -797,11 +798,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 	}
 	
 endit:
-	itr = list_iterator_create(ba_request->elongate_geos);
-	geo_ptr = list_next(itr);
-	list_iterator_destroy(itr);
-	
-	if(geo_ptr == NULL)
+	if(!(geo_ptr = list_peek(ba_request->elongate_geos)))
 		return 0;
 
 	ba_request->elongate_count++;
