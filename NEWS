@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     the partition's limit.
  -- Fix -q option for salloc and sbatch should really be -Q which wasn't 
     doing anything before.
+ -- BLUEGENE - fix for finding odd shaped blocks in dynamic mode.
 
 * Changes in SLURM 2.0.0
 ========================
