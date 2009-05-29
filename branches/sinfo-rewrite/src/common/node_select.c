@@ -723,6 +723,297 @@ extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	       (nodeinfo, dinfo, state, data);
 }
 
+/* OK since the Cray XT could be done with either linear or cons_res
+ * select plugin just wrap these functions.  I don't like it either,
+ * but that is where we stand right now.
+ */
+#ifdef HAVE_CRAY_XT
+
+/* allocate storage for a select job credential
+ * RET jobinfo - storage for a select job credential
+ * NOTE: storage must be freed using select_g_select_jobinfo_free
+ */
+extern select_jobinfo_t *select_g_select_jobinfo_alloc ()
+{
+	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
+
+	jobinfo->magic = JOBINFO_MAGIC;
+
+	return jobinfo;
+}
+
+/* free storage previously allocated for a select job credential
+ * IN jobinfo  - the select job credential to be freed
+ */
+extern int select_g_select_jobinfo_free  (select_jobinfo_t *jobinfo)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(jobinfo != NULL);
+	if (jobinfo == NULL)	/* never set, treat as not an error */
+		;
+	else if (jobinfo->magic != JOBINFO_MAGIC) {
+		error("select_g_select_jobinfo_free: jobinfo magic bad");
+		rc = EINVAL;
+	} else {
+		jobinfo->magic = 0;
+		xfree(jobinfo->reservation_id);
+		xfree(jobinfo);
+	}
+	return rc;
+}
+
+/* fill in a previously allocated select job credential
+ * IN/OUT jobinfo  - updated select job credential
+ * IN data_type - type of data to enter into job credential
+ * IN data - the data to enter into job credential
+ */
+extern int select_g_select_jobinfo_set (select_jobinfo_t *jobinfo,
+					enum select_jobdata_type data_type,
+					void *data)
+{
+	int rc = SLURM_SUCCESS;
+	char *tmp_char = (char *) data;
+
+	if (jobinfo == NULL) {
+		error("select_g_select_jobinfo_set: jobinfo not set");
+		return SLURM_ERROR;
+	}
+	if (jobinfo->magic != JOBINFO_MAGIC) {
+		error("select_g_select_jobinfo_set: jobinfo magic bad");
+		return SLURM_ERROR;
+	}
+
+	switch (data_type) {
+	case SELECT_JOBDATA_RESV_ID:
+		/* we xfree() any preset value to avoid a memory leak */
+		xfree(jobinfo->reservation_id);
+		if (tmp_char)
+			jobinfo->reservation_id = xstrdup(tmp_char);
+		break;
+	default:
+		debug("select_g_select_jobinfo_set data_type %d invalid", 
+		      data_type);
+	}
+
+	return rc;
+}
+
+/* get data from a select job credential
+ * IN jobinfo  - updated select job credential
+ * IN data_type - type of data to enter into job credential
+ * OUT data - the data to get from job credential, caller must xfree 
+ *	data for data_tyep == SELECT_DATA_BLOCK_ID 
+ */
+extern int select_g_select_jobinfo_get (select_jobinfo_t *jobinfo,
+					enum select_jobdata_type data_type, 
+					void *data)
+{
+	int rc = SLURM_SUCCESS;
+	char **tmp_char = (char **) data;
+
+	if (jobinfo == NULL) {
+		error("select_g_select_jobinfo_get: jobinfo not set");
+		return SLURM_ERROR;
+	}
+	if (jobinfo->magic != JOBINFO_MAGIC) {
+		error("select_g_select_jobinfo_get: jobinfo magic bad");
+		return SLURM_ERROR;
+	}
+
+	switch (data_type) {
+	case SELECT_DATA_RESV_ID:
+		if ((jobinfo->reservation_id == NULL) ||
+		    (jobinfo->reservation_id[0] == '\0'))
+			*tmp_char = NULL;
+		else
+			*tmp_char = xstrdup(jobinfo->reservation_id);
+		break;
+	default:
+		/* There is some use of BlueGene specific params that 
+		 * are not supported on the Cray, but requested on
+		 * all systems */
+		debug2("select_g_select_jobinfo_get data_type %d invalid", 
+		       data_type);
+		return SLURM_ERROR;
+	}
+
+	return rc;
+}
+
+/* copy a select job credential
+ * IN jobinfo - the select job credential to be copied
+ * RET        - the copy or NULL on failure
+ * NOTE: returned value must be freed using select_g_select_jobinfo_free
+ */
+extern select_jobinfo_t *select_g_select_jobinfo_copy(select_jobinfo_t *jobinfo)
+{
+	struct select_jobinfo *rc = NULL;
+		
+	if (jobinfo == NULL)
+		;
+	else if (jobinfo->magic != JOBINFO_MAGIC)
+		error("select_g_select_jobinfo_copy: jobinfo magic bad");
+	else {
+		rc = xmalloc(sizeof(struct select_jobinfo));
+		rc->magic = JOBINFO_MAGIC;
+		rc->reservation_id = xstrdup(jobinfo->reservation_id);
+	}
+
+	return rc;
+}
+
+/* pack a select job credential into a buffer in machine independent form
+ * IN jobinfo  - the select job credential to be saved
+ * OUT buffer  - buffer with select credential appended
+ * RET         - slurm error code
+ */
+extern int  select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
+{
+	if (jobinfo) {
+		/* NOTE: If new elements are added here, make sure to 
+		 * add equivalant pack of zeros below for NULL pointer */
+		packstr(jobinfo->reservation_id, buffer);
+	} else {
+		packnull(buffer); //reservation_id
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* unpack a select job credential from a buffer
+ * OUT jobinfo - the select job credential read
+ * IN  buffer  - buffer with select credential read from current pointer loc
+ * RET         - slurm error code
+ * NOTE: returned value must be freed using select_g_select_jobinfo_free
+ */
+extern int select_g_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
+					  Buf buffer)
+{
+	uint32_t uint32_tmp;
+
+	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
+	*jobinfo_pptr = jobinfo;
+
+	jobinfo->magic = JOBINFO_MAGIC;
+	safe_unpackstr_xmalloc(&(jobinfo->reservation_id), &uint32_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	select_g_select_jobinfo_free(jobinfo);
+	*jobinfo_pptr = NULL;
+
+	return SLURM_ERROR;
+}
+
+/* write select job credential to a string
+ * IN jobinfo - a select job credential
+ * OUT buf    - location to write job credential contents
+ * IN size    - byte size of buf
+ * IN mode    - print mode, see enum select_print_mode
+ * RET        - the string, same as buf
+ */
+extern char *select_g_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
+					    char *buf, size_t size, int mode)
+{
+		
+	if (buf == NULL) {
+		error("select_g_select_jobinfo_sprint: buf is null");
+		return NULL;
+	}
+
+	if ((mode != SELECT_PRINT_DATA) &&
+	    jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
+		error("select_g_select_jobinfo_sprint: jobinfo magic bad");
+		return NULL;
+	}
+
+	if (jobinfo == NULL) {
+		if (mode != SELECT_PRINT_HEAD) {
+			error("select_g_select_jobinfo_sprint: jobinfo bad");
+			return NULL;
+		}
+	}
+
+	switch (mode) {
+	case SELECT_PRINT_HEAD:
+		snprintf(buf, size,
+			 "RESV_ID");
+		break;
+	case SELECT_PRINT_DATA:
+		snprintf(buf, size, 
+			 "%7s",
+			 jobinfo->reservation_id);
+		break;
+	case SELECT_PRINT_MIXED:
+		snprintf(buf, size, 
+			 "Resv_ID=%s",
+			 jobinfo->reservation_id);
+		break;
+	case SELECT_PRINT_RESV_ID:
+		snprintf(buf, size, "%s", jobinfo->reservation_id);
+		break;	
+	default:
+		/* likely a BlueGene specific mode */
+		error("select_g_select_jobinfo_sprint: bad mode %d", mode);
+		if (size > 0)
+			buf[0] = '\0';
+	}
+	
+	return buf;
+}
+
+/* write select job info to a string
+ * IN jobinfo - a select job credential
+ * IN mode    - print mode, see enum select_print_mode
+ * RET        - char * containing string of request
+ */
+extern char *select_g_select_jobinfo_xstrdup(
+	select_jobinfo_t *jobinfo, int mode)
+{
+	char *buf = NULL;
+		
+	if ((mode != SELECT_PRINT_DATA) &&
+	    jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
+		error("select_g_select_jobinfo_xstrdup: jobinfo magic bad");
+		return NULL;
+	}
+
+	if (jobinfo == NULL) {
+		if (mode != SELECT_PRINT_HEAD) {
+			error("select_g_select_jobinfo_xstrdup: jobinfo bad");
+			return NULL;
+		}
+	}
+
+	switch (mode) {
+	case SELECT_PRINT_HEAD:
+		xstrcat(buf, 
+			"RESV_ID");
+		break;
+	case SELECT_PRINT_DATA:
+		xstrfmtcat(buf, 
+			   "%7s",
+			   jobinfo->reservation_id);
+		break;
+	case SELECT_PRINT_MIXED:
+		xstrfmtcat(buf, 
+			   "Resv_ID=%s",
+			   jobinfo->reservation_id);
+		break;
+	case SELECT_PRINT_RESV_ID:
+		xstrfmtcat(buf, "%s", jobinfo->reservation_id);
+		break;
+	default:
+		error("select_g_select_jobinfo_xstrdup: bad mode %d", mode);
+	}
+	
+	return buf;
+}
+
+#else /* HAVE_CRAY_XT */
+
 extern select_jobinfo_t *select_g_select_jobinfo_alloc()
 {
 	if (slurm_select_init() < 0)
@@ -743,7 +1034,8 @@ extern int select_g_select_jobinfo_free(select_jobinfo_t *jobinfo)
 }
 
 extern int select_g_select_jobinfo_set(select_jobinfo_t *jobinfo,
-		enum select_jobdata_type data_type, void *data)
+				       enum select_jobdata_type data_type,
+				       void *data)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
@@ -757,7 +1049,8 @@ extern int select_g_select_jobinfo_set(select_jobinfo_t *jobinfo,
  * IN/OUT data - the data to enter into job credential
  */
 extern int select_g_select_jobinfo_get(select_jobinfo_t *jobinfo,
-		enum select_jobdata_type data_type, void *data)
+				       enum select_jobdata_type data_type, 
+				       void *data)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
@@ -814,7 +1107,7 @@ extern int select_g_select_jobinfo_unpack(
  * RET        - the string, same as buf
  */
 extern char *select_g_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
-		char *buf, size_t size, int mode)
+					    char *buf, size_t size, int mode)
 {
 	if (slurm_select_init() < 0)
 		return NULL;
@@ -830,8 +1123,13 @@ extern char *select_g_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 extern char *select_g_select_jobinfo_xstrdup(
 	select_jobinfo_t *jobinfo, int mode)
 {
-	return NULL;
+	if (slurm_select_init() < 0)
+		return NULL;
+	
+	return (*(g_select_context->ops.jobinfo_xstrdup))(jobinfo, mode);
 }
+
+#endif	/* HAVE_CRAY_XT */
 
 /* 
  * Update specific block (usually something has gone wrong)  
@@ -918,280 +1216,3 @@ extern int select_g_reconfigure (void)
 }
 
 
-#ifdef HAVE_CRAY_XT
-
-/* allocate storage for a select job credential
- * OUT jobinfo - storage for a select job credential
- * RET         - slurm error code
- * NOTE: storage must be freed using select_g_free_jobinfo
- */
-extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
-{
-	xassert(jobinfo != NULL);
-	
-	*jobinfo = xmalloc(sizeof(struct select_jobinfo));
-	(*jobinfo)->magic = JOBINFO_MAGIC;
-
-	return SLURM_SUCCESS;
-}
-
-/* fill in a previously allocated select job credential
- * IN/OUT jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN data - the data to enter into job credential
- */
-extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
-		enum select_data_type data_type, void *data)
-{
-	int rc = SLURM_SUCCESS;
-	char *tmp_char = (char *) data;
-
-	if (jobinfo == NULL) {
-		error("select_g_set_jobinfo: jobinfo not set");
-		return SLURM_ERROR;
-	}
-	if (jobinfo->magic != JOBINFO_MAGIC) {
-		error("select_g_set_jobinfo: jobinfo magic bad");
-		return SLURM_ERROR;
-	}
-
-	switch (data_type) {
-	case SELECT_DATA_RESV_ID:
-		/* we xfree() any preset value to avoid a memory leak */
-		xfree(jobinfo->reservation_id);
-		if (tmp_char)
-			jobinfo->reservation_id = xstrdup(tmp_char);
-		break;
-	default:
-		debug("select_g_set_jobinfo data_type %d invalid", 
-		      data_type);
-	}
-
-	return rc;
-}
-
-/* get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * OUT data - the data to get from job credential, caller must xfree 
- *	data for data_tyep == SELECT_DATA_BLOCK_ID 
- */
-extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
-		enum select_data_type data_type, void *data)
-{
-	int rc = SLURM_SUCCESS;
-	char **tmp_char = (char **) data;
-
-	if (jobinfo == NULL) {
-		error("select_g_get_jobinfo: jobinfo not set");
-		return SLURM_ERROR;
-	}
-	if (jobinfo->magic != JOBINFO_MAGIC) {
-		error("select_g_get_jobinfo: jobinfo magic bad");
-		return SLURM_ERROR;
-	}
-
-	switch (data_type) {
-	case SELECT_DATA_RESV_ID:
-		if ((jobinfo->reservation_id == NULL) ||
-		    (jobinfo->reservation_id[0] == '\0'))
-			*tmp_char = NULL;
-		else
-			*tmp_char = xstrdup(jobinfo->reservation_id);
-		break;
-	default:
-		/* There is some use of BlueGene specific params that 
-		 * are not supported on the Cray, but requested on
-		 * all systems */
-		debug2("select_g_get_jobinfo data_type %d invalid", 
-		       data_type);
-		return SLURM_ERROR;
-	}
-
-	return rc;
-}
-
-/* copy a select job credential
- * IN jobinfo - the select job credential to be copied
- * RET        - the copy or NULL on failure
- * NOTE: returned value must be freed using select_g_free_jobinfo
- */
-extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
-{
-	struct select_jobinfo *rc = NULL;
-		
-	if (jobinfo == NULL)
-		;
-	else if (jobinfo->magic != JOBINFO_MAGIC)
-		error("select_g_copy_jobinfo: jobinfo magic bad");
-	else {
-		rc = xmalloc(sizeof(struct select_jobinfo));
-		rc->magic = JOBINFO_MAGIC;
-		rc->reservation_id = xstrdup(jobinfo->reservation_id);
-	}
-
-	return rc;
-}
-
-/* free storage previously allocated for a select job credential
- * IN jobinfo  - the select job credential to be freed
- */
-extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo)
-{
-	int rc = SLURM_SUCCESS;
-
-	xassert(jobinfo != NULL);
-	if (*jobinfo == NULL)	/* never set, treat as not an error */
-		;
-	else if ((*jobinfo)->magic != JOBINFO_MAGIC) {
-		error("select_g_free_jobinfo: jobinfo magic bad");
-		rc = EINVAL;
-	} else {
-		(*jobinfo)->magic = 0;
-		xfree((*jobinfo)->reservation_id);
-		xfree(*jobinfo);
-	}
-	return rc;
-}
-
-/* pack a select job credential into a buffer in machine independent form
- * IN jobinfo  - the select job credential to be saved
- * OUT buffer  - buffer with select credential appended
- * RET         - slurm error code
- */
-extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
-{
-	if (jobinfo) {
-		/* NOTE: If new elements are added here, make sure to 
-		 * add equivalant pack of zeros below for NULL pointer */
-		packstr(jobinfo->reservation_id, buffer);
-	} else {
-		packnull(buffer); //reservation_id
-	}
-
-	return SLURM_SUCCESS;
-}
-
-/* unpack a select job credential from a buffer
- * OUT jobinfo - the select job credential read
- * IN  buffer  - buffer with select credential read from current pointer loc
- * RET         - slurm error code
- * NOTE: returned value must be freed using select_g_free_jobinfo
- */
-extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
-{
-	uint32_t uint32_tmp;
-
-	safe_unpackstr_xmalloc(&(jobinfo->reservation_id), &uint32_tmp, buffer);
-
-	return SLURM_SUCCESS;
-
-      unpack_error:
-	return SLURM_ERROR;
-}
-
-/* write select job credential to a string
- * IN jobinfo - a select job credential
- * OUT buf    - location to write job credential contents
- * IN size    - byte size of buf
- * IN mode    - print mode, see enum select_print_mode
- * RET        - the string, same as buf
- */
-extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
-				     char *buf, size_t size, int mode)
-{
-		
-	if (buf == NULL) {
-		error("select_g_sprint_jobinfo: buf is null");
-		return NULL;
-	}
-
-	if ((mode != SELECT_PRINT_DATA) &&
-	    jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
-		error("select_g_sprint_jobinfo: jobinfo magic bad");
-		return NULL;
-	}
-
-	if (jobinfo == NULL) {
-		if (mode != SELECT_PRINT_HEAD) {
-			error("select_g_sprint_jobinfo: jobinfo bad");
-			return NULL;
-		}
-	}
-
-	switch (mode) {
-	case SELECT_PRINT_HEAD:
-		snprintf(buf, size,
-			 "RESV_ID");
-		break;
-	case SELECT_PRINT_DATA:
-		snprintf(buf, size, 
-			 "%7s",
-			 jobinfo->reservation_id);
-		break;
-	case SELECT_PRINT_MIXED:
-		snprintf(buf, size, 
-			 "Resv_ID=%s",
-			 jobinfo->reservation_id);
-		break;
-	case SELECT_PRINT_RESV_ID:
-		snprintf(buf, size, "%s", jobinfo->reservation_id);
-		break;	
-	default:
-		/* likely a BlueGene specific mode */
-		error("select_g_sprint_jobinfo: bad mode %d", mode);
-		if (size > 0)
-			buf[0] = '\0';
-	}
-	
-	return buf;
-}
-
-/* write select job info to a string
- * IN jobinfo - a select job credential
- * IN mode    - print mode, see enum select_print_mode
- * RET        - char * containing string of request
- */
-extern char *select_g_xstrdup_jobinfo(select_jobinfo_t jobinfo, int mode)
-{
-	char *buf = NULL;
-		
-	if ((mode != SELECT_PRINT_DATA) &&
-	    jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
-		error("select_g_xstrdup_jobinfo: jobinfo magic bad");
-		return NULL;
-	}
-
-	if (jobinfo == NULL) {
-		if (mode != SELECT_PRINT_HEAD) {
-			error("select_g_xstrdup_jobinfo: jobinfo bad");
-			return NULL;
-		}
-	}
-
-	switch (mode) {
-	case SELECT_PRINT_HEAD:
-		xstrcat(buf, 
-			"RESV_ID");
-		break;
-	case SELECT_PRINT_DATA:
-		xstrfmtcat(buf, 
-			   "%7s",
-			   jobinfo->reservation_id);
-		break;
-	case SELECT_PRINT_MIXED:
-		xstrfmtcat(buf, 
-			   "Resv_ID=%s",
-			   jobinfo->reservation_id);
-		break;
-	case SELECT_PRINT_RESV_ID:
-		xstrfmtcat(buf, "%s", jobinfo->reservation_id);
-		break;
-	default:
-		error("select_g_xstrdup_jobinfo: bad mode %d", mode);
-	}
-	
-	return buf;
-}
-
-#endif	/* HAVE_CRAY_XT */
