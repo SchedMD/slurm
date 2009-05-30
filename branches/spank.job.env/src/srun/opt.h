@@ -215,6 +215,9 @@ typedef struct srun_options {
 	char **argv;		/* left over on command line	*/
 	char *wckey;            /* --wckey workload characterization key */
 	char *reservation;      /* --reservation		*/
+	char **spank_job_env;	/* SPANK controlled environment for job
+				 * Prolog and Epilog		*/
+	int spank_job_env_size;	/* size of spank_job_env	*/
 } opt_t;
 
 extern opt_t opt;
@@ -223,14 +226,14 @@ extern opt_t opt;
  * (if new constraints are added above, might want to add them to this
  *  macro or move this to a function if it gets a little complicated)
  */
-#define constraints_given() opt.job_min_cpus     != NO_VAL ||\
-			    opt.job_min_memory   != NO_VAL ||\
-			    opt.job_max_memory   != NO_VAL ||\
-			    opt.job_min_tmp_disk != NO_VAL ||\
-			    opt.job_min_sockets  != NO_VAL ||\
-			    opt.job_min_cores    != NO_VAL ||\
-			    opt.job_min_threads  != NO_VAL ||\
-			    opt.contiguous   
+#define constraints_given() ((opt.job_min_cpus     != NO_VAL) || \
+			     (opt.job_min_memory   != NO_VAL) || \
+			     (opt.job_max_memory   != NO_VAL) || \
+			     (opt.job_min_tmp_disk != NO_VAL) || \
+			     (opt.job_min_sockets  != NO_VAL) || \
+			     (opt.job_min_cores    != NO_VAL) || \
+			     (opt.job_min_threads  != NO_VAL) || \
+			     (opt.contiguous))
 
 /* process options:
  * 1. set defaults
@@ -239,5 +242,12 @@ extern opt_t opt;
  * 4. perform some verification that options are reasonable
  */
 int initialize_and_process_args(int argc, char *argv[]);
+
+/* external functions available for SPANK plugins to modify the environment
+ * exported to the SLURM Prolog and Epilog programs */
+extern char *spank_get_job_env(const char *name);
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite);
+extern int   spank_unset_job_env(const char *name);
 
 #endif	/* _HAVE_OPT_H */

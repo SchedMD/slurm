@@ -1620,6 +1620,19 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		       job_specs->environment[1],
 		       job_specs->environment[2]);
 
+	if (job_specs->spank_job_env_size == 1)
+		debug3("   spank_job_env=\"%s\"", 
+		       job_specs->spank_job_env[0]);
+	else if (job_specs->spank_job_env_size == 2)
+		debug3("   spank_job_env=%s,%s",
+		       job_specs->spank_job_env[0],
+		       job_specs->spank_job_env[1]);
+	else if (job_specs->spank_job_env_size > 2)
+		debug3("   spank_job_env=%s,%s,%s,...",
+		       job_specs->spank_job_env[0],
+		       job_specs->spank_job_env[1],
+		       job_specs->spank_job_env[2]);
+
 	debug3("   in=%s out=%s err=%s",
 	       job_specs->in, job_specs->out, job_specs->err);
 

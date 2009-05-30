@@ -137,6 +137,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->script		= NULL;
 	job_desc_msg->select_jobinfo	= NULL;
 	job_desc_msg->shared		= (uint16_t) NO_VAL;
+	job_desc_msg->spank_job_env	= ((char **) NULL);
+	job_desc_msg->spank_job_env_size = 0;
 	job_desc_msg->task_dist		= (uint16_t) NO_VAL;
 	job_desc_msg->time_limit	= NO_VAL;
 	job_desc_msg->user_id		= NO_VAL;

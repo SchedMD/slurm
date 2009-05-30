@@ -327,6 +327,9 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->resp_host);
 		xfree(msg->script);
 		select_g_free_jobinfo(&msg->select_jobinfo);
+		for (i = 0; i < msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
 		xfree(msg->wckey);
 		xfree(msg->work_dir);
 		xfree(msg);
