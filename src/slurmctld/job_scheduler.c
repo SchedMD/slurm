@@ -64,6 +64,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
@@ -78,7 +79,6 @@ static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
 static int	_valid_feature_list(uint32_t job_id, List feature_list);
 static int	_valid_node_feature(char *feature);
-static char **	_xduparray(uint16_t size, char ** array);
 
 
 /*
@@ -554,11 +554,14 @@ extern void launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->ckpt_dir = xstrdup(job_ptr->details->ckpt_dir);
 	launch_msg_ptr->restart_dir = xstrdup(job_ptr->details->restart_dir);
 	launch_msg_ptr->argc = job_ptr->details->argc;
-	launch_msg_ptr->argv = _xduparray(job_ptr->details->argc,
-					job_ptr->details->argv);
+	launch_msg_ptr->argv = xduparray(job_ptr->details->argc,
+					 job_ptr->details->argv);
+	launch_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
+	launch_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
+						  job_ptr->spank_job_env);
 	launch_msg_ptr->script = get_job_script(job_ptr);
-	launch_msg_ptr->environment =
-	    get_job_env(job_ptr, &launch_msg_ptr->envc);
+	launch_msg_ptr->environment = get_job_env(job_ptr, 
+						  &launch_msg_ptr->envc);
 	launch_msg_ptr->job_mem = job_ptr->details->job_min_memory;
 
 	launch_msg_ptr->num_cpu_groups = job_ptr->select_job->cpu_array_cnt;
@@ -585,21 +588,6 @@ extern void launch_job(struct job_record *job_ptr)
 
 	/* Launch the RPC via agent */
 	agent_queue_request(agent_arg_ptr);
-}
-
-static char **
-_xduparray(uint16_t size, char ** array)
-{
-	int i;
-	char ** result;
-
-	if (size == 0)
-		return (char **)NULL;
-
-	result = (char **) xmalloc(sizeof(char *) * size);
-	for (i=0; i<size; i++)
-		result[i] = xstrdup(array[i]);
-	return result;
 }
 
 /*
@@ -1082,6 +1070,14 @@ static char **_build_env(struct job_record *job_ptr)
 
 	my_env = xmalloc(sizeof(char *));
 	my_env[0] = NULL;
+
+	/* Set SPANK env vars first so that we can overrite as needed
+	 * below. Prevent user hacking from setting SLURM_JOB_ID etc. */
+	if (job_ptr->spank_job_env_size) {
+		env_array_merge(&my_env, 
+				(const char **) job_ptr->spank_job_env);
+	}
+
 #ifdef HAVE_CRAY_XT
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_RESV_ID, &name);

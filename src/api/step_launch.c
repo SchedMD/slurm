@@ -194,6 +194,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.gid = params->gid;
 	launch.argc = params->argc;
 	launch.argv = params->argv;
+	launch.spank_job_env = params->spank_job_env;
+	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	if (params->env == NULL) {

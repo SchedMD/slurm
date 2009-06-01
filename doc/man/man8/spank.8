@@ -1,4 +1,4 @@
-.TH "SPANK" "8" "February 2009" "SPANK" "SLURM plug\-in architecture for Node and job (K)control"
+.TH "SPANK" "8" "June 2009" "SPANK" "SLURM plug\-in architecture for Node and job (K)control"
 
 .SH "NAME"
 \fBSPANK\fR \- SLURM Plug\-in Architecture for Node and job (K)control 
@@ -168,6 +168,25 @@ the job's environment. The prototypes are:
 These are only necessary in remote context since modifications of
 the standard process environment using \fBsetenv\fR(3), \fBgetenv\fR(3),
 and \fBunsetenv\fR(3) may be used in local context.
+.LP
+Functions are also available from within the \fBSPANK\fR plugins to 
+establish environment variables to be exported to the SLURM 
+\fBPrologSlurmctld\fR, \fBProlog\fR, \fBEpilog\fR and \fBEpilogSlurmctld\fR 
+programs. While designed for \fBSPANK\fR plugin use, hackers could
+insert arbitrary environment variables, so their use by the various
+prolog and epilog programs should avoid possible security compromises.
+SLURM does block the setting of LD_PRELOAD and PATH as a precausionary measure.
+These environment variables are not otherwise visible 
+to the job or \fBSPANK\fR functions. 
+These environment variable functons may only called from the local contact. 
+The syntax of these functions is identical to the getenv, 
+setenv, and unsetenv functions respectively:
+.nf
+  char *\fBspank_get_job_env\fR(const char *name);
+  int   \fBspank_set_job_env\fR(const char *name, const char *value, 
+			        int overwrite);
+  int   \fBspank_unset_job_env\fR(const char *name);
+.fi
 .LP
 See \fBspank.h\fR for more information, and \fBEXAMPLES\fR below for an example
 for \fBspank_getenv\fR usage.

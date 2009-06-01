@@ -406,6 +406,8 @@ int srun(int ac, char **av)
 	launch_params.ckpt_dir		= opt.ckpt_dir;
 	launch_params.restart_dir       = opt.restart_dir;
 	launch_params.preserve_env      = opt.preserve_env;
+	launch_params.spank_job_env     = opt.spank_job_env;
+	launch_params.spank_job_env_size = opt.spank_job_env_size;
 	/* job structure should now be filled in */
 	_setup_signals();
 

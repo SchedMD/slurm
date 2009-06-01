@@ -561,6 +561,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 if job needs exclusive access to the node,
 				 * or NO_VAL to accept the system default.
 				 * SHARED_FORCE to eliminate user control. */
+	char **spank_job_env;	/* environment variables for job prolog/epilog
+				 * scripts as set by SPANK plugins */
+	uint32_t spank_job_env_size; /* element count in spank_env */
 	uint16_t task_dist;	/* see enum task_dist_state */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */
@@ -858,6 +861,9 @@ typedef struct {
 	bool pty;
 	char *ckpt_dir;
 	char *restart_dir;
+	char **spank_job_env;	/* environment variables for job prolog/epilog
+				 * scripts as set by SPANK plugins */
+	uint32_t spank_job_env_size;	/* element count in spank_env */
 } slurm_step_launch_params_t;
 
 typedef struct {

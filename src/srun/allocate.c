@@ -671,6 +671,11 @@ job_desc_msg_create_from_opts ()
 	j->alloc_resp_port = slurmctld_comm_addr.port;
 	j->other_port = slurmctld_comm_addr.port;
 
+	if (opt.spank_job_env_size) {
+		j->spank_job_env      = opt.spank_job_env;
+		j->spank_job_env_size = opt.spank_job_env_size;
+	}
+
 	return (j);
 }
 

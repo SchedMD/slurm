@@ -17,6 +17,10 @@ documents those changes that are of interest to users and admins.
     Instead, use the squeue -o "%o" and "%S" formats respectively.
  -- Eliminated the redundant squeue -o "%X" and "%Y" and "%Z" formats.
     Instead, use the squeue -o "%z" format.
+ -- Added mechanism for SPANK plugins to set environment variables for
+    Prolog, Epilog, PrologSLurmctld and EpilogSlurmctld programs using
+    the functions spank_get_job_env, spank_set_job_env, and 
+    spank_unset_job_env. See "man spank" for more information.
 
 * Changes in SLURM 2.0.1
 ========================

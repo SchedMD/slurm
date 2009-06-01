@@ -70,5 +70,9 @@ extern int slurm_drain_nodes(char *node_list, char *reason);
  */
 extern int slurm_fail_job(uint32_t job_id);
 
+/* Copy an array of type char **, xmalloc() the array and xstrdup() the 
+ * strings in the array */
+extern char **xduparray(uint16_t size, char ** array);
+
 #endif /* !_HAVE_PROC_REQ_H */
 

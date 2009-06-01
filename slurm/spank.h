@@ -329,6 +329,16 @@ spank_err_t spank_setenv (spank_t spank, const char *var, const char *val,
  */
 spank_err_t spank_unsetenv (spank_t spank, const char *var);
 
+/* External functions available from SPANK plugins to modify the environment
+ * which is exported to the SLURM Prolog and Epilog programs. These environment
+ * variables are not otherwise visible to the job or SPANK functions. The
+ * syntax of these functions is identical to the getenv, setenv, and unsetenv
+ * functions. */
+extern char *spank_get_job_env(const char *name);
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite);
+extern int   spank_unset_job_env(const char *name);
+
 /*
  *  SLURM logging functions which are exported to plugins.
  */

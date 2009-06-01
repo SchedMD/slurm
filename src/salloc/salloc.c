@@ -46,7 +46,12 @@
 #include "src/common/env.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/xmalloc.h"
+#include "src/common/xmalloc.h"/* external functions available for SPANK plugins to modify the environment
+ * exported to the SLURM Prolog and Epilog programs */
+extern char *spank_get_job_env(const char *name);
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite);
+extern int   spank_unset_job_env(const char *name);
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/plugstack.h"
@@ -485,6 +490,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->time_limit = opt.time_limit;
 	desc->shared = opt.shared;
 	desc->job_id = opt.jobid;
+
+	if (opt.spank_job_env_size) {
+		desc->spank_job_env      = opt.spank_job_env;
+		desc->spank_job_env_size = opt.spank_job_env_size;
+	}
 
 	return 0;
 }

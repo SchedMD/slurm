@@ -573,6 +573,8 @@ typedef struct launch_tasks_request_msg {
 	char *complete_nodelist;
 	char *ckpt_dir;		/* checkpoint path */
 	char *restart_dir;	/* restart from checkpoint if set */
+	char **spank_job_env;
+	uint32_t spank_job_env_size;
 } launch_tasks_request_msg_t;
 
 typedef struct task_user_managed_io_msg {
@@ -603,6 +605,8 @@ typedef struct kill_job_msg {
 	time_t   time;		/* slurmctld's time of request */
 	char *nodes;
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
+	char **spank_job_env;
+	uint32_t spank_job_env_size;
 } kill_job_msg_t;
 
 typedef struct signal_job_msg {
@@ -668,6 +672,8 @@ typedef struct batch_job_launch_msg {
 	uint16_t acctg_freq;	/* accounting polling interval	*/
 	uint32_t job_mem;	/* memory limit for job		*/
 	uint16_t restart_cnt;	/* batch job restart count	*/
+	char **spank_job_env;	/* SPANK job environment variables */
+	uint32_t spank_job_env_size;	/* size of spank_job_env */
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {
@@ -958,6 +964,11 @@ extern char *job_state_string_compact(uint16_t inx);
 extern char *node_state_string(enum node_states inx);
 extern char *node_state_string_compact(enum node_states inx);
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);
+
+/* Validate SPANK specified job environment does not contain any invalid
+ * names. Log failures using info() */
+extern bool valid_spank_job_env(char **spank_job_env, 
+			        uint32_t spank_job_env_size, uid_t uid);
 
 /* user needs to xfree after */
 extern char *reservation_flags_string(uint16_t flags);

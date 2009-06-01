@@ -2261,6 +2261,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer)
 	pack_time(msg->time, buffer);
 	packstr(msg->nodes, buffer);
 	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
+	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
 }
 
 static int
@@ -2279,9 +2280,11 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
 	safe_unpack_time(&(tmp_ptr->time), buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->nodes), &uint32_tmp, buffer);
-	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo)
-	    ||  select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
+	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo) ||
+	    select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
 		goto unpack_error;
+	safe_unpackstr_array(&(tmp_ptr->spank_job_env), 
+			     &tmp_ptr->spank_job_env_size, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -3290,6 +3293,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->exc_nodes, buffer);
 	packstr_array(job_desc_ptr->environment, job_desc_ptr->env_size,
 		      buffer);
+	packstr_array(job_desc_ptr->spank_job_env, 
+		      job_desc_ptr->spank_job_env_size, buffer);
 	packstr(job_desc_ptr->script, buffer);
 	packstr_array(job_desc_ptr->argv, job_desc_ptr->argc, buffer);
 
@@ -3432,6 +3437,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->exc_nodes, &uint32_tmp, buffer);
 	safe_unpackstr_array(&job_desc_ptr->environment,
 			     &job_desc_ptr->env_size, buffer);
+	safe_unpackstr_array(&job_desc_ptr->spank_job_env,
+			     &job_desc_ptr->spank_job_env_size, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->script, &uint32_tmp, buffer);
 	safe_unpackstr_array(&job_desc_ptr->argv, &job_desc_ptr->argc, buffer);
 
@@ -3798,6 +3805,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 		pack16(msg->resp_port[i], buffer);
 	slurm_pack_slurm_addr(&msg->orig_addr, buffer);
 	packstr_array(msg->env, msg->envc, buffer);
+	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
 	packstr(msg->cwd, buffer);
 	pack16(msg->cpu_bind_type, buffer);
 	packstr(msg->cpu_bind, buffer);
@@ -3880,6 +3888,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	}
 	slurm_unpack_slurm_addr_no_alloc(&msg->orig_addr, buffer);
 	safe_unpackstr_array(&msg->env, &msg->envc, buffer);
+	safe_unpackstr_array(&msg->spank_job_env, &msg->spank_job_env_size, 
+			     buffer);
 	safe_unpackstr_xmalloc(&msg->cwd, &uint32_tmp, buffer);
 	safe_unpack16(&msg->cpu_bind_type, buffer);
 	safe_unpackstr_xmalloc(&msg->cpu_bind, &uint32_tmp, buffer);
@@ -4503,6 +4513,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 
 	pack32(msg->argc, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
+	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
 
 	pack32(msg->envc, buffer);
 	packstr_array(msg->environment, msg->envc, buffer);
@@ -4564,6 +4575,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpack32(&launch_msg_ptr->argc, buffer);
 	safe_unpackstr_array(&launch_msg_ptr->argv,
 			     &launch_msg_ptr->argc, buffer);
+	safe_unpackstr_array(&launch_msg_ptr->spank_job_env,
+			     &launch_msg_ptr->spank_job_env_size, buffer);
 
 	safe_unpack32(&launch_msg_ptr->envc, buffer);
 	safe_unpackstr_array(&launch_msg_ptr->environment,

@@ -141,6 +141,9 @@ typedef struct salloc_options {
 	char *cwd;		/* current working directory	*/
 	char *reservation;	/* --reservation		*/
 	char *wckey;            /* --wckey workload characterization key */
+	char **spank_job_env;	/* SPANK controlled environment for job
+				 * Prolog and Epilog		*/
+	int spank_job_env_size;	/* size of spank_job_env	*/
 } opt_t;
 
 extern opt_t opt;
@@ -156,5 +159,11 @@ int initialize_and_process_args(int argc, char *argv[]);
 /* set options based upon commandline args */
 void set_options(const int argc, char **argv);
 
+/* external functions available for SPANK plugins to modify the environment
+ * exported to the SLURM Prolog and Epilog programs */
+extern char *spank_get_job_env(const char *name);
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite);
+extern int   spank_unset_job_env(const char *name);
 
 #endif	/* _HAVE_OPT_H */
