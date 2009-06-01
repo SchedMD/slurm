@@ -2932,8 +2932,10 @@ inline static void  _slurm_rpc_checkpoint_task_comp(slurm_msg_t * msg)
 	}
 }
 
-static char **
-_xduparray(uint16_t size, char ** array)
+/* Copy an array of type char **, xmalloc() the array and xstrdup() the 
+ * strings in the array */
+extern char **
+xduparray(uint16_t size, char ** array)
 {
 	int i;
 	char ** result;
@@ -2948,7 +2950,7 @@ _xduparray(uint16_t size, char ** array)
 	return result;
 }
 
-/* Like _xduparray(), but performs two xmalloc().  The output format of this 
+/* Like xduparray(), but performs one xmalloc().  The output format of this 
  * must be identical to _read_data_array_from_file() */
 static char **
 _xduparray2(uint16_t size, char ** array) 
@@ -3083,8 +3085,11 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->open_mode = job_desc_msg->open_mode;
 	launch_msg_ptr->work_dir = xstrdup(job_desc_msg->work_dir);
 	launch_msg_ptr->argc = job_desc_msg->argc;
-	launch_msg_ptr->argv = _xduparray(job_desc_msg->argc,
-					job_desc_msg->argv);
+	launch_msg_ptr->argv = xduparray(job_desc_msg->argc,
+					 job_desc_msg->argv);
+	launch_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
+	launch_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
+						  job_ptr->spank_job_env);
 	launch_msg_ptr->script = xstrdup(job_desc_msg->script);
 	launch_msg_ptr->environment = _xduparray2(job_desc_msg->env_size,
 						 job_desc_msg->environment);

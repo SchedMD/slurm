@@ -327,6 +327,9 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->resp_host);
 		xfree(msg->script);
 		select_g_free_jobinfo(&msg->select_jobinfo);
+		for (i = 0; i < msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
 		xfree(msg->wckey);
 		xfree(msg->work_dir);
 		xfree(msg);
@@ -353,6 +356,9 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		for (i = 0; i < msg->argc; i++)
 			xfree(msg->argv[i]);
 		xfree(msg->argv);
+		for (i = 0; i < msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
 
 		if (msg->environment) {
 			for (i = 0; i < msg->envc; i++)
@@ -517,8 +523,12 @@ void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 {
 	if (msg) {
+		int i;
 		xfree(msg->nodes);
 		select_g_free_jobinfo(&msg->select_jobinfo);
+		for (i=0; i<msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
 		xfree(msg);
 	}
 }
@@ -565,6 +575,10 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 		}
 		xfree(msg->argv);
 	}
+	for (i = 0; i < msg->spank_job_env_size; i++) {
+		xfree(msg->spank_job_env[i]);
+	}
+	xfree(msg->spank_job_env);
 	if(msg->nnodes && msg->global_task_ids)
 		for(i=0; i<msg->nnodes; i++) {
 			xfree(msg->global_task_ids[i]);
@@ -1844,3 +1858,20 @@ static void _make_lower(char *change)
 	}
 }
 
+/* Validate SPANK specified job environment does not contain any invalid
+ * names. Log failures using info() */
+extern bool valid_spank_job_env(char **spank_job_env, 
+			        uint32_t spank_job_env_size, uid_t uid)
+{
+	int i;
+
+	for (i=0; i<spank_job_env_size; i++) {
+		if ((strncmp(spank_job_env[i], "LD_PRELOAD=", 11) == 0) ||
+		    (strncmp(spank_job_env[i], "PATH=",        5) == 0)) {
+			info("Invalid spank_job_env from uid %d: %s",
+			     (int) uid, spank_job_env[i]);
+			return false;
+		}
+	}
+	return true;
+}

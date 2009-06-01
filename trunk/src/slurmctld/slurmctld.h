@@ -479,7 +479,8 @@ struct job_details {
 	uint16_t *req_node_layout;	/* task layout for required nodes */
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
-	char *restart_dir;	        /* restart execution from ckpt images in this dir */
+	char *restart_dir;	        /* restart execution from ckpt images 
+					 * in this dir */
 	uint16_t shared;		/* 1 if job can share nodes,
 					 * 0 if job cannot share nodes,
 					 * any other value accepts the default
@@ -505,7 +506,8 @@ struct job_record {
 					 * 2 indicates retry mode (one retry) */
 	check_jobinfo_t check_job;      /* checkpoint context, opaque */
 	uint16_t ckpt_interval;	        /* checkpoint interval in minutes */
-	time_t ckpt_time;	        /* last time job was periodically checkpointed */
+	time_t ckpt_time;	        /* last time job was periodically 
+					 * checkpointed */
 	char *comment;			/* arbitrary comment */
 	uint16_t cr_enabled;            /* specify if if Consumable Resources
                                          * is enabled. Needed since CR deals
@@ -576,6 +578,10 @@ struct job_record {
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t select_jobinfo;/* opaque data, BlueGene */
 	select_job_res_t select_job;	/* details of allocated cores */
+	char **spank_job_env;		/* environment variables for job prolog
+					 * and epilog scripts as set by SPANK 
+					 * plugins */
+	uint32_t spank_job_env_size;	/* element count in spank_env */
 	time_t start_time;		/* time execution begins, 
 					 * actual or expected */
 	char *state_desc;		/* optional details for state_reason */

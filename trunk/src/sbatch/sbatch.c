@@ -308,6 +308,12 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->ckpt_dir = opt.ckpt_dir;
 	desc->ckpt_interval = (uint16_t)opt.ckpt_interval;
+
+	if (opt.spank_job_env_size) {
+		desc->spank_job_env      = opt.spank_job_env;
+		desc->spank_job_env_size = opt.spank_job_env_size;
+	}
+
 	return 0;
 }
 
