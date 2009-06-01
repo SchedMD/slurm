@@ -2765,7 +2765,7 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 	if (job_desc->spank_job_env_size > 0) {
 		int i;
 		for (i=0; i<job_desc->spank_job_env_size; i++) {
-			if (strcmp(job_desc->spank_job_env[i], "LD_PRELOAD"))
+			if (strncmp(job_desc->spank_job_env[i], "LD_PRELOAD=", 11))
 				continue;
 			info("_validate_job_create_req: uid %d attempting to "
 			     "set spank_job_env of LD_PRELOAD", 
