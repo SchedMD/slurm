@@ -648,6 +648,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack16(dump_job_ptr->ckpt_interval, buffer);
 	checkpoint_pack_jobinfo(dump_job_ptr->check_job, buffer);
+	packstr_array(dump_job_ptr->spank_job_env, 
+		      dump_job_ptr->spank_job_env_size, buffer);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
@@ -674,7 +676,7 @@ static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	uint32_t exit_code, num_procs, assoc_id, db_index, name_len;
-	uint32_t next_step_id, total_procs, resv_id;
+	uint32_t next_step_id, total_procs, resv_id, spank_job_env_size = 0;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t now = time(NULL);
 	uint16_t job_state, details, batch_flag, step_flag;
@@ -686,9 +688,10 @@ static int _load_job_state(Buf buffer)
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL;
+	char **spank_job_env = (char **) NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
-	int error_code;
+	int error_code, i;
 	select_jobinfo_t select_jobinfo = NULL;
 	select_job_res_t select_job = NULL;
 	check_jobinfo_t check_job = NULL;
@@ -749,8 +752,8 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
 	safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
 
-	if (select_g_alloc_jobinfo(&select_jobinfo)
-	    ||  select_g_unpack_jobinfo(select_jobinfo, buffer))
+	if (select_g_alloc_jobinfo(&select_jobinfo) ||
+	    select_g_unpack_jobinfo(select_jobinfo, buffer))
 		goto unpack_error;
 	if (unpack_select_job_res(&select_job, buffer))
 		goto unpack_error;
@@ -760,6 +763,7 @@ static int _load_job_state(Buf buffer)
 	    checkpoint_unpack_jobinfo(check_job, buffer))
 		goto unpack_error;
 
+	safe_unpackstr_array(&spank_job_env, &spank_job_env_size, buffer);
 
 	/* validity test as possible */
 	if (job_id == 0) {
@@ -901,6 +905,8 @@ static int _load_job_state(Buf buffer)
 	job_ptr->resv_flags   = resv_flags;
 	job_ptr->select_jobinfo = select_jobinfo;
 	job_ptr->select_job   = select_job;
+	job_ptr->spank_job_env = spank_job_env;
+	job_ptr->spank_job_env_size = spank_job_env_size;
 	job_ptr->ckpt_interval = ckpt_interval;
 	job_ptr->check_job    = check_job;
 	job_ptr->start_time   = start_time;
@@ -991,6 +997,9 @@ unpack_error:
 	xfree(nodes_completing);
 	xfree(partition);
 	xfree(resv_name);
+	for (i=0; i<spank_job_env_size; i++)
+		xfree(spank_job_env[i]);
+	xfree(spank_job_env);
 	xfree(state_desc);
 	xfree(wckey);
 	select_g_free_jobinfo(&select_jobinfo);
@@ -3263,12 +3272,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->mail_user = xstrdup(job_desc->mail_user);
 
 	job_ptr->ckpt_interval = job_desc->ckpt_interval;
+	job_ptr->spank_job_env = job_desc->spank_job_env;
+	job_ptr->spank_job_env_size = job_desc->spank_job_env_size;
+	job_desc->spank_job_env = (char **) NULL; /* nothing left to free */
+	job_desc->spank_job_env_size = 0;         /* nothing left to free */
 
 	detail_ptr = job_ptr->details;
 	detail_ptr->argc = job_desc->argc;
 	detail_ptr->argv = job_desc->argv;
-	job_desc->argv   = (char **) NULL; /* nothing left */
-	job_desc->argc   = 0;		   /* nothing left */
+	job_desc->argv   = (char **) NULL; /* nothing left to free */
+	job_desc->argc   = 0;		   /* nothing left to free */
 	detail_ptr->acctg_freq = job_desc->acctg_freq;
 	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
@@ -3278,7 +3291,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->req_nodes = 
 			_copy_nodelist_no_dup(job_desc->req_nodes);
 		detail_ptr->req_node_bitmap = *req_bitmap;
-		detail_ptr->req_node_layout = NULL; /* Layout specified at start time */
+		detail_ptr->req_node_layout = NULL; /* Layout specified at 
+						     * start time */
 		*req_bitmap = NULL;	/* Reused nothing left to free */
 	}
 	if (job_desc->exc_nodes) {
@@ -3743,6 +3757,7 @@ static void _list_delete_job(void *job_entry)
 {
 	struct job_record *job_ptr = (struct job_record *) job_entry;
 	struct job_record **job_pptr;
+	int i;
 
 	xassert(job_entry);
 	xassert (job_ptr->magic == JOB_MAGIC);
@@ -3776,6 +3791,9 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->resv_name);
 	free_select_job_res(&job_ptr->select_job);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
+	for (i=0; i<job_ptr->spank_job_env_size; i++)
+		xfree(job_ptr->spank_job_env[i]);
+	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
 	if (job_ptr->step_list) {
 		delete_step_records(job_ptr, 0);
