@@ -99,9 +99,6 @@ Account associated with the job.
 Number of tasks created by a job step.
 This reports the value of the \fBsrun \-\-ntasks\fR option.
 .TP
-\fB%b\fR 
-Time at which the job began execution
-.TP
 \fB%c\fR 
 Minimum number of CPUs (processors) per node requested by the job.
 This reports the value of the \fBsrun \-\-mincpus\fR option with a 
@@ -113,14 +110,6 @@ it if already running.
 .TP
 \fB%d\fR 
 Minimum size of temporary disk space (in MB) requested by the job.
-.TP
-\fB%D\fR 
-Number of nodes allocated to the job or the minimum number of nodes 
-required by a pending job. The actual number of nodes allocated to a pending 
-job may exceed this number if the job specified a node range count (e.g. 
-minimum and maximum node counts) or the the job specifies a processor 
-count instead of a node count and the cluster contains nodes with varying 
-processor counts.
 .TP
 \fB%e\fR 
 Time at which the job ended or is expected to end (based upon its time limit)
@@ -185,7 +174,12 @@ nodes that have not yet been returned to service. This may result
 in the node count being greater than the number of listed nodes.
 .TP
 \fB%o\fR
-Minimum number of nodes requested by the job.
+Number of nodes allocated to the job or the minimum number of nodes
+required by a pending job. The actual number of nodes allocated to a
+pending job may exceed this number if the job specified a node range
+count (e.g.  minimum and maximum node counts) or the the job specifies
+a processor count instead of a node count and the cluster contains
+nodes with varying processor counts.
 .TP
 \fB%O\fR
 Are contiguous nodes requested by the job.
@@ -252,18 +246,9 @@ Reservation for the job.
 \fB%x\fR 
 List of node names explicitly excluded by the job.
 .TP
-\fB%X\fR 
-Number of requested sockets per node for the job.
-.TP
-\fB%Y\fR 
-Number of requested cores per socket for the job.
-.TP
-\fB%Z\fR 
-Number of requested threads per core for the job.
-.TP
-\fB%z\fR 
-Extended processor information: number of requested sockets, cores, 
-threads (S:C:T) per node for the job.
+\fB%z\fR
+Number of requested sockets, cores, and threads (S:C:T) per node for
+the job.
 .RE
 
 .TP

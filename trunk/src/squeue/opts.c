@@ -469,11 +469,6 @@ extern int parse_format( char* format )
 							field_size,
 							right_justify,
 							suffix  );
-			else if (field[0] == 'b')
-				job_format_add_time_start( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix  );
 			else if (field[0] == 'c')
 				job_format_add_min_procs( params.format_list, 
 				                          field_size, 
@@ -487,11 +482,6 @@ extern int parse_format( char* format )
 			else if (field[0] == 'd')
 				job_format_add_min_tmp_disk( 
 				                          params.format_list,
-				                          field_size, 
-				                          right_justify, 
-				                          suffix  );
-			else if (field[0] == 'D')
-				job_format_add_num_nodes( params.format_list,
 				                          field_size, 
 				                          right_justify, 
 				                          suffix  );
@@ -659,21 +649,6 @@ extern int parse_format( char* format )
 				                          field_size, 
 				                          right_justify, 
 				                          suffix );
-			else if (field[0] == 'X')
-				job_format_add_num_sockets( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
-			else if (field[0] == 'Y')
-				job_format_add_num_cores( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
-			else if (field[0] == 'Z')
-				job_format_add_num_threads( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
 			else if (field[0] == 'z')
 				job_format_add_num_sct( params.format_list, 
 				                           field_size, 
