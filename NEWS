@@ -13,10 +13,9 @@ documents those changes that are of interest to users and admins.
  -- Added support for Solaris. Patch from David Hoppner.
  -- Rename "slurm-aix-federation-<version>.rpm" to just 
     "slurm-aix-<version>.rpm" (federation switch plugin may not be present).
- -- Eliminated the redundant squeue -o "%D" and "%b" formats.
-    Instead, use the squeue -o "%o" and "%S" formats respectively.
- -- Eliminated the redundant squeue -o "%X" and "%Y" and "%Z" formats.
-    Instead, use the squeue -o "%z" format.
+ -- Eliminated the redundant squeue output format and sort options of 
+    "%D" and "%b". Use "%o" and "%S" formats respectively. Also eliminated 
+    "%X" and "%Y" and "%Z" formats. Use "%z" instead.
  -- Added mechanism for SPANK plugins to set environment variables for
     Prolog, Epilog, PrologSLurmctld and EpilogSlurmctld programs using
     the functions spank_get_job_env, spank_set_job_env, and 
