@@ -356,6 +356,9 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		for (i = 0; i < msg->argc; i++)
 			xfree(msg->argv[i]);
 		xfree(msg->argv);
+		for (i = 0; i < msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
 
 		if (msg->environment) {
 			for (i = 0; i < msg->envc; i++)

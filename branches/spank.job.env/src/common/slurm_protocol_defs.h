@@ -670,6 +670,8 @@ typedef struct batch_job_launch_msg {
 	uint16_t acctg_freq;	/* accounting polling interval	*/
 	uint32_t job_mem;	/* memory limit for job		*/
 	uint16_t restart_cnt;	/* batch job restart count	*/
+	char **spank_job_env;	/* SPANK job environment variables */
+	uint32_t spank_job_env_size;	/* size of spank_job_env */
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {

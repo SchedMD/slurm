@@ -134,7 +134,8 @@ static int  _rpc_health_check(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
-static int  _run_prolog(uint32_t jobid, uid_t uid, char *resv_id);
+static int  _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
+			char **spank_job_env, uint32_t spank_job_env_size);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *resv_id, 
 			char **spank_job_env, uint32_t spank_job_env_size);
 
@@ -824,7 +825,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
 		int rc;
-		rc =  _run_prolog(req->job_id, req->uid, NULL);
+		rc =  _run_prolog(req->job_id, req->uid, NULL, 
+				  (char **)NULL, 0);
 		if (rc) {
 			int term_sig, exit_status;
 			if (WIFSIGNALED(rc)) {
@@ -1076,7 +1078,8 @@ _rpc_batch_job(slurm_msg_t *msg)
 		select_g_get_jobinfo(req->select_jobinfo, 
 				     SELECT_DATA_RESV_ID, &resv_id);
 #endif
-		rc = _run_prolog(req->job_id, req->uid, resv_id);
+		rc = _run_prolog(req->job_id, req->uid, resv_id, 
+				 req->spank_job_env, req->spank_job_env_size);
 		xfree(resv_id);
 		if (rc) {
 			int term_sig, exit_status;
@@ -3117,12 +3120,12 @@ static char **
 _build_env(uint32_t jobid, uid_t uid, char *resv_id, 
 	   char **spank_job_env, uint32_t spank_job_env_size)
 {
-	int i;
 	char *name;
 	char **env = xmalloc(sizeof(char *));
 
 	env[0]  = NULL;
 	if (!valid_spank_job_env(spank_job_env, spank_job_env_size, uid)) {
+		/* If SPANK job environment is bad, log it and do not use */
 		spank_job_env_size = 0;
 		spank_job_env = (char **) NULL;
 	}
@@ -3163,11 +3166,13 @@ _destroy_env(char **env)
 }
 
 static int 
-_run_prolog(uint32_t jobid, uid_t uid, char *resv_id)
+_run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
+	    char **spank_job_env, uint32_t spank_job_env_size)
 {
 	int error_code;
 	char *my_prolog;
-	char **my_env = _build_env(jobid, uid, resv_id, (char **) NULL, 0);
+	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env, 
+				   spank_job_env_size);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);

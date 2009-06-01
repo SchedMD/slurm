@@ -4510,6 +4510,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 
 	pack32(msg->argc, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
+	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
 
 	pack32(msg->envc, buffer);
 	packstr_array(msg->environment, msg->envc, buffer);
@@ -4571,6 +4572,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpack32(&launch_msg_ptr->argc, buffer);
 	safe_unpackstr_array(&launch_msg_ptr->argv,
 			     &launch_msg_ptr->argc, buffer);
+	safe_unpackstr_array(&launch_msg_ptr->spank_job_env,
+			     &launch_msg_ptr->spank_job_env_size, buffer);
 
 	safe_unpack32(&launch_msg_ptr->envc, buffer);
 	safe_unpackstr_array(&launch_msg_ptr->environment,
