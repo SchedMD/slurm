@@ -603,6 +603,8 @@ typedef struct kill_job_msg {
 	time_t   time;		/* slurmctld's time of request */
 	char *nodes;
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
+	char **spank_job_env;
+	uint32_t spank_job_env_size;
 } kill_job_msg_t;
 
 typedef struct signal_job_msg {

@@ -102,7 +102,8 @@ typedef struct {
 
 static int  _abort_job(uint32_t job_id);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
-static char ** _build_env(uint32_t jobid, uid_t uid, char *resv_id);
+static char **_build_env(uint32_t jobid, uid_t uid, char *resv_id, 
+			 char **spank_job_env, uint32_t spank_job_env_size);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static bool _slurm_authorized_user(uid_t uid);
@@ -134,7 +135,8 @@ static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *resv_id);
-static int  _run_epilog(uint32_t jobid, uid_t uid, char *resv_id);
+static int  _run_epilog(uint32_t jobid, uid_t uid, char *resv_id, 
+			char **spank_job_env, uint32_t spank_job_env_size);
 
 static bool _pause_for_job_completion(uint32_t jobid, char *nodes, 
 		int maxtime);
@@ -2752,7 +2754,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_RESV_ID,
 			     &resv_id);
 #endif
-	_run_epilog(req->job_id, req->job_uid, resv_id);
+	_run_epilog(req->job_id, req->job_uid, resv_id, 
+		    req->spank_job_env, req->spank_job_env_size);
 	xfree(resv_id);
 }
 
@@ -2899,7 +2902,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_RESV_ID,
 			     &resv_id);
 #endif
-	rc = _run_epilog(req->job_id, req->job_uid, resv_id);
+	rc = _run_epilog(req->job_id, req->job_uid, resv_id,
+			 req->spank_job_env, req->spank_job_env_size);
 	xfree(resv_id);
 	
 	if (rc) {
@@ -3110,12 +3114,27 @@ _rpc_update_time(slurm_msg_t *msg)
 
 /* NOTE: call _destroy_env() to free returned value */
 static char **
-_build_env(uint32_t jobid, uid_t uid, char *resv_id)
+_build_env(uint32_t jobid, uid_t uid, char *resv_id, 
+	   char **spank_job_env, uint32_t spank_job_env_size)
 {
+	int i;
 	char *name;
 	char **env = xmalloc(sizeof(char *));
 
 	env[0]  = NULL;
+
+	for (i=0; i<spank_job_env_size; i++) {
+		if (strncmp(spank_job_env[i], "LD_PRELOAD=", 11))
+			continue;
+		error("job %u from uid %u trying to set LD_PRELOAD",
+		      jobid, (uint32_t) uid);
+		spank_job_env_size = 0;
+		spank_job_env = (char **) NULL;
+		break;
+	}
+	if (spank_job_env_size)
+		env_array_merge(&env, (const char **) spank_job_env);
+
 	setenvf(&env, "SLURM_JOB_ID", "%u", jobid);
 	setenvf(&env, "SLURM_JOB_UID",   "%u", uid);
 	name = uid_to_string(uid);
@@ -3154,7 +3173,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id)
 {
 	int error_code;
 	char *my_prolog;
-	char **my_env = _build_env(jobid, uid, resv_id);
+	char **my_env = _build_env(jobid, uid, resv_id, (char **) NULL, 0);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
@@ -3168,11 +3187,13 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id)
 }
 
 static int 
-_run_epilog(uint32_t jobid, uid_t uid, char *resv_id)
+_run_epilog(uint32_t jobid, uid_t uid, char *resv_id, 
+	    char **spank_job_env, uint32_t spank_job_env_size)
 {
 	int error_code;
 	char *my_epilog;
-	char **my_env = _build_env(jobid, uid, resv_id);
+	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env, 
+				   spank_job_env_size);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_epilog = xstrdup(conf->epilog);

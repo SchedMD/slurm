@@ -2261,6 +2261,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer)
 	pack_time(msg->time, buffer);
 	packstr(msg->nodes, buffer);
 	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
+	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
 }
 
 static int
@@ -2279,9 +2280,11 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
 	safe_unpack_time(&(tmp_ptr->time), buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->nodes), &uint32_tmp, buffer);
-	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo)
-	    ||  select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
+	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo) ||
+	    select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
 		goto unpack_error;
+	safe_unpackstr_array(&(tmp_ptr->spank_job_env), 
+			     &tmp_ptr->spank_job_env_size, buffer);
 
 	return SLURM_SUCCESS;
 
