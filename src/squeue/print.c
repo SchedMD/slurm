@@ -745,54 +745,6 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_num_sockets(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[10];
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("SOCKETS", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->min_sockets, tmp_char, 
-				 sizeof(tmp_char), UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_num_cores(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[10];
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("CORES", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->min_cores, tmp_char, 
-				 sizeof(tmp_char), UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_num_threads(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[10];
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("THREADS", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->min_threads, tmp_char, 
-				 sizeof(tmp_char), UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
 static int _nodes_in_list(char *node_list)
 {
 	hostset_t host_set = hostset_create(node_list);
