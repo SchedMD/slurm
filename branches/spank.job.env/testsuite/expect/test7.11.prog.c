@@ -82,7 +82,8 @@ int slurm_spank_init(spank_t sp, int ac, char **av)
 	if ((context != S_CTX_LOCAL) && (context != S_CTX_REMOTE) &&
 	    (context != S_CTX_ALLOCATOR))
 		slurm_error("spank_context error");
-	if (SPANK_JOB_ENV_TESTS && (context == S_CTX_LOCAL)) {
+	if (SPANK_JOB_ENV_TESTS && 
+	    ((context == S_CTX_LOCAL) || (context == S_CTX_ALLOCATOR))) {
 		/* Testing logic for spank_job_env options */
 		char *test_value;
 		spank_set_job_env("NAME", "VALUE", 1);

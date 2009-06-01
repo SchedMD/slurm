@@ -1843,6 +1843,8 @@ static bool _opt_verify(void)
 	return verified;
 }
 
+/* Functions used by SPANK plugins to read and write job environment
+ * variables for use within job's Prolog and/or Epilog */
 extern char *spank_get_job_env(const char *name)
 {
 	int i, len;
