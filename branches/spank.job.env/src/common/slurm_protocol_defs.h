@@ -961,6 +961,11 @@ extern char *node_state_string(enum node_states inx);
 extern char *node_state_string_compact(enum node_states inx);
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);
 
+/* Validate SPANK specified job environment does not contain any invalid
+ * names. Log failures using info() */
+extern bool valid_spank_job_env(char **spank_job_env, 
+			        uint32_t spank_job_env_size, uid_t uid);
+
 /* user needs to xfree after */
 extern char *reservation_flags_string(uint16_t flags);
 

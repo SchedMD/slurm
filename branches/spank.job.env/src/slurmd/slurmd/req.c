@@ -3122,15 +3122,9 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 	char **env = xmalloc(sizeof(char *));
 
 	env[0]  = NULL;
-
-	for (i=0; i<spank_job_env_size; i++) {
-		if (strncmp(spank_job_env[i], "LD_PRELOAD=", 11))
-			continue;
-		error("job %u from uid %u trying to set LD_PRELOAD",
-		      jobid, (uint32_t) uid);
+	if (!valid_spank_job_env(spank_job_env, spank_job_env_size, uid)) {
 		spank_job_env_size = 0;
 		spank_job_env = (char **) NULL;
-		break;
 	}
 	if (spank_job_env_size)
 		env_array_merge(&env, (const char **) spank_job_env);
