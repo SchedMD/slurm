@@ -861,6 +861,9 @@ typedef struct {
 	bool pty;
 	char *ckpt_dir;
 	char *restart_dir;
+	char **spank_job_env;	/* environment variables for job prolog/epilog
+				 * scripts as set by SPANK plugins */
+	uint32_t spank_job_env_size;	/* element count in spank_env */
 } slurm_step_launch_params_t;
 
 typedef struct {

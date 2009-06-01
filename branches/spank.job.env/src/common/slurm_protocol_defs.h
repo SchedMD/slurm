@@ -573,6 +573,8 @@ typedef struct launch_tasks_request_msg {
 	char *complete_nodelist;
 	char *ckpt_dir;		/* checkpoint path */
 	char *restart_dir;	/* restart from checkpoint if set */
+	char **spank_job_env;
+	uint32_t spank_job_env_size;
 } launch_tasks_request_msg_t;
 
 typedef struct task_user_managed_io_msg {

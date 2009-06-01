@@ -575,6 +575,10 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 		}
 		xfree(msg->argv);
 	}
+	for (i = 0; i < msg->spank_job_env_size; i++) {
+		xfree(msg->spank_job_env[i]);
+	}
+	xfree(msg->spank_job_env);
 	if(msg->nnodes && msg->global_task_ids)
 		for(i=0; i<msg->nnodes; i++) {
 			xfree(msg->global_task_ids[i]);

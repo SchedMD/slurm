@@ -826,7 +826,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (first_job_run) {
 		int rc;
 		rc =  _run_prolog(req->job_id, req->uid, NULL, 
-				  (char **)NULL, 0);
+				  req->spank_job_env, req->spank_job_env_size);
 		if (rc) {
 			int term_sig, exit_status;
 			if (WIFSIGNALED(rc)) {
