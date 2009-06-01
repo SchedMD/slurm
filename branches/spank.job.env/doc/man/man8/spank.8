@@ -170,8 +170,13 @@ the standard process environment using \fBsetenv\fR(3), \fBgetenv\fR(3),
 and \fBunsetenv\fR(3) may be used in local context.
 .LP
 Functions are also available from within the \fBSPANK\fR plugins to 
-establish environment variables to be exported to the SLURM \fBProlog\fR and
-\fBEpilog\fR programs. These environment variables are not otherwise visible 
+establish environment variables to be exported to the SLURM 
+fBPrologSlurmctld\fR, \fBProlog\fR, \fBEpilog\fR and fBEpilogSlurmctld\fR 
+programs. While designed for \fBSPANK\fR plugin use, hackers could
+insert arbitrary environment variables, so their use by the various
+prolog and epilog programs should avoid possible security compromises.
+SLURM does block the setting of LD_PROLOAD as a precausionary measure.
+These environment variables are not otherwise visible 
 to the job or \fBSPANK\fR functions. These environment variables may only 
 be set or unset from the local contact, but read from either the local or 
 remote context. The syntax of these functions is identical to the getenv, 

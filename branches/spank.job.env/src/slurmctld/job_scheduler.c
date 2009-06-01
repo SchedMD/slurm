@@ -1082,6 +1082,14 @@ static char **_build_env(struct job_record *job_ptr)
 
 	my_env = xmalloc(sizeof(char *));
 	my_env[0] = NULL;
+
+	/* Set SPANK env vars first so that we can overrite as needed
+	 * below. Prevent user hacking from setting SLURM_JOB_ID etc. */
+	if (job_ptr->spank_job_env_size) {
+		env_array_merge(&my_env, 
+				(const char **) job_ptr->spank_job_env);
+	}
+
 #ifdef HAVE_CRAY_XT
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_RESV_ID, &name);
