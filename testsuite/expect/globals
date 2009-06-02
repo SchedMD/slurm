@@ -204,7 +204,7 @@ proc cancel_job { job_id } {
 	}
 
 	send_user "cancelling $job_id\n"
-	exec $scancel -q $job_id
+	exec $scancel -Q $job_id
 	exec $bin_sleep 1
 	return [wait_for_job $job_id "DONE"]
 }
