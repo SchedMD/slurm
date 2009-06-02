@@ -73,6 +73,27 @@
 #define SELECT_DEBUG	0
 #define NO_SHARE_LIMIT	0xfffe
 
+#define NODEINFO_MAGIC 0x82ad
+
+/* This means we aren't linking with the slurmctld.  Since the symbols
+ * are defined there just define them here so we can link to the
+ * plugin.
+ */
+#ifndef slurmctld_conf
+struct node_record *node_record_table_ptr;
+List part_list;	
+List job_list;	
+int node_record_count;
+time_t last_node_update;
+struct switch_record *switch_record_table; 
+int switch_record_cnt;
+#endif
+
+struct select_nodeinfo {
+	uint16_t magic;		/* magic number */
+	uint16_t alloc_cpus;
+};
+
 static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int suspended);
@@ -102,6 +123,9 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
 			  int max_share, uint32_t req_nodes);
+
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);
+extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -273,96 +297,6 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
 }
 
 /*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init ( void )
-{
-	int rc = SLURM_SUCCESS;
-#ifdef HAVE_XCPU
-	rc = _init_status_pthread();
-#endif
-#ifdef HAVE_BG
-	error("%s is incompatable with BlueGene", plugin_name);
-	fatal("Use SelectType=select/bluegene");
-#endif
-	cr_type = (select_type_plugin_info_t)
-			slurmctld_conf.select_type_param;
-	return rc;
-}
-
-extern int fini ( void )
-{
-	int rc = SLURM_SUCCESS;
-#ifdef HAVE_XCPU
-	rc = _fini_status_pthread();
-#endif
-	slurm_mutex_lock(&cr_mutex);
-	_free_node_cr(node_cr_ptr);
-	node_cr_ptr = NULL;
-	if (step_cr_list)
-		list_destroy(step_cr_list);
-	step_cr_list = NULL;
-	slurm_mutex_unlock(&cr_mutex);
-	return rc;
-}
-
-/*
- * The remainder of this file implements the standard SLURM 
- * node selection API.
- */
-
-extern int select_p_state_save(char *dir_name)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_state_restore(char *dir_name)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_job_init(List job_list)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
-{
-	if (node_ptr == NULL) {
-		error("select_p_node_init: node_ptr == NULL");
-		return SLURM_ERROR;
-	}
-
-	if (node_cnt < 0) {
-		error("select_p_node_init: node_cnt < 0");
-		return SLURM_ERROR;
-	}
-
-	/* NOTE: We free the consumable resources info here, but
-	 * can't rebuild it since the partition and node structures
-	 * have not yet had node bitmaps reset. */
-	slurm_mutex_lock(&cr_mutex);
-	_free_node_cr(node_cr_ptr);
-	node_cr_ptr = NULL;
-	if (step_cr_list)
-		list_destroy(step_cr_list);
-	step_cr_list = NULL;
-	slurm_mutex_unlock(&cr_mutex);
-
-	select_node_ptr = node_ptr;
-	select_node_cnt = node_cnt;
-	select_fast_schedule = slurm_get_fast_schedule();
-
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_block_init(List part_list)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
  * _get_avail_cpus - Get the number of "available" cpus on a node
  *	given this number given the number of cpus_per_task and
  *	maximum sockets, cores, threads.  Note that the value of
@@ -517,141 +451,6 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 		error("_build_select_struct: nprocs mismatch %u != %u",
 		      select_ptr->nprocs, total_cpus);
 	}
-}
-
-/*
- * select_p_job_test - Given a specification of scheduling requirements, 
- *	identify the nodes which "best" satisfy the request.
- * 	"best" is defined as either single set of consecutive nodes satisfying 
- *	the request and leaving the minimum number of unused nodes OR 
- *	the fewest number of consecutive node sets
- * IN/OUT job_ptr - pointer to job being considered for initiation,
- *                  set's start_time when job expected to start
- * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
- *	satisfy the request are cleared, other left set
- * IN min_nodes - minimum count of nodes
- * IN req_nodes - requested (or desired) count of nodes
- * IN max_nodes - maximum count of nodes
- * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
- *           SELECT_MODE_TEST_ONLY: test if job can ever run
- *           SELECT_MODE_WILL_RUN: determine when and where job can run
- * RET zero on success, EINVAL otherwise
- * globals (passed via select_p_node_init): 
- *	node_record_count - count of nodes configured
- *	node_record_table_ptr - pointer to global node table
- * NOTE: the job information that is considered for scheduling includes:
- *	req_node_bitmap: bitmap of specific nodes required by the job
- *	contiguous: allocated nodes must be sequentially located
- *	num_procs: minimum number of processors required by the job
- * NOTE: bitmap must be a superset of the job's required at the time that 
- *	select_p_job_test is called
- */
-extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			uint32_t min_nodes, uint32_t max_nodes, 
-			uint32_t req_nodes, int mode)
-{
-	bitstr_t *orig_map;
-	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
-	int min_share = 0, max_share = 0;
-	uint32_t save_mem = 0;
-
-	xassert(bitmap);
-	if (job_ptr->details == NULL)
-		return EINVAL;
-
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL) {
-		_init_node_cr();
-		if (node_cr_ptr == NULL) {
-			slurm_mutex_unlock(&cr_mutex);
-			error("select_p_job_test: node_cr_ptr not initialized");
-			return SLURM_ERROR;
-		}
-	}
-
-	if (bit_set_count(bitmap) < min_nodes) {
-		slurm_mutex_unlock(&cr_mutex);
-		return EINVAL;
-	}
-
-	if (mode != SELECT_MODE_TEST_ONLY) {
-		if (job_ptr->details->shared) {
-			max_share = job_ptr->part_ptr->max_share & 
-					~SHARED_FORCE;
-		} else	/* ((shared == 0) || (shared == (uint16_t) NO_VAL)) */
-			max_share = 1;
-	}
-
-	if (mode == SELECT_MODE_WILL_RUN) {
-		rc = _will_run_test(job_ptr, bitmap, min_nodes, max_nodes,
-				    max_share, req_nodes);
-		slurm_mutex_unlock(&cr_mutex);
-		return rc;
-	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		min_share = NO_SHARE_LIMIT;
-		max_share = min_share + 1;
-		save_mem = job_ptr->details->job_min_memory;
-		job_ptr->details->job_min_memory = 0;
-	}
-
-	debug3("select/linear: job_test: job %u max_share %d avail nodes %u",
-		job_ptr->job_id, max_share, bit_set_count(bitmap));
-	orig_map = bit_copy(bitmap);
-	for (max_run_job=min_share; max_run_job<max_share; max_run_job++) {
-		bool last_iteration = (max_run_job == (max_share -1));
-		for (sus_jobs=0; ((sus_jobs<5) && (rc != SLURM_SUCCESS)); 
-		     sus_jobs++) {
-			if (last_iteration)
-				sus_jobs = NO_SHARE_LIMIT;
-			j = _job_count_bitmap(node_cr_ptr, job_ptr, 
-					      orig_map, bitmap, 
-					      max_run_job, 
-					      max_run_job + sus_jobs);
-			debug3("select/linear: job_test: found %d nodes for %u",
-				j, job_ptr->job_id);
-			if ((j == prev_cnt) || (j < min_nodes))
-				continue;
-			prev_cnt = j;
-			if ((mode == SELECT_MODE_RUN_NOW) && (max_run_job > 0)) {
-				/* We need to share. Try to find 
-				 * suitable job to share nodes with */
-				rc = _find_job_mate(job_ptr, bitmap, min_nodes, 
-						    max_nodes, req_nodes);
-				if (rc == SLURM_SUCCESS)
-					break;
-			}
-			rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
-				       req_nodes);
-			if (rc == SLURM_SUCCESS)
-				break;
-			continue;
-		}
-	}
-	bit_free(orig_map);
-	slurm_mutex_unlock(&cr_mutex);
-	if ((rc == SLURM_SUCCESS) && (mode == SELECT_MODE_RUN_NOW))
-		_build_select_struct(job_ptr, bitmap);
-	if (save_mem)
-		job_ptr->details->job_min_memory = save_mem;
-	return rc;
-}
-
-/*
- * select_p_job_list_test - Given a list of select_will_run_t's in
- *	accending priority order we will see if we can start and
- *	finish all the jobs without increasing the start times of the
- *	jobs specified and fill in the est_start of requests with no
- *	est_start.  If you are looking to see if one job will ever run
- *	then use select_p_job_test instead.
- * IN/OUT req_list - list of select_will_run_t's in asscending
- *	             priority order on success of placement fill in
- *	             est_start of request with time.
- * RET zero on success, EINVAL otherwise
- */
-extern int select_p_job_list_test(List req_list)
-{
-	/* not currently supported */
-	return EINVAL;
 }
 
 /*
@@ -1401,167 +1200,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	return rc;
 }
-extern int select_p_job_begin(struct job_record *job_ptr)
-{
-	int rc = SLURM_SUCCESS;
-#ifdef HAVE_XCPU
-	int i;
-	char clone_path[128];
 
-	xassert(job_ptr);
-	xassert(job_ptr->node_bitmap);
-
-	for (i=0; i<select_node_cnt; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		snprintf(clone_path, sizeof(clone_path), 
-			"%s/%s/xcpu/clone", XCPU_DIR, 
-			select_node_ptr[i].name);
-		if (chown(clone_path, (uid_t)job_ptr->user_id, 
-				(gid_t)job_ptr->group_id)) {
-			error("chown %s: %m", clone_path);
-			rc = SLURM_ERROR;
-		} else {
-			debug("chown %s to %u", clone_path, 
-				job_ptr->user_id);
-		}
-	}
-#endif
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
-	_add_job_to_nodes(node_cr_ptr, job_ptr, "select_p_job_begin", 1);
-	slurm_mutex_unlock(&cr_mutex);
-	return rc;
-}
-
-extern int select_p_job_fini(struct job_record *job_ptr)
-{
-	int rc = SLURM_SUCCESS;
-#ifdef HAVE_XCPU
-	int i;
-	char clone_path[128];
-
-	for (i=0; i<select_node_cnt; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		snprintf(clone_path, sizeof(clone_path), 
-			"%s/%s/xcpu/clone", XCPU_DIR, 
-			select_node_ptr[i].name);
-		if (chown(clone_path, (uid_t)0, (gid_t)0)) {
-			error("chown %s: %m", clone_path);
-			rc = SLURM_ERROR;
-		} else {
-			debug("chown %s to 0", clone_path);
-		}
-	}
-#endif
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
-	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_fini", 1);
-	slurm_mutex_unlock(&cr_mutex);
-	return rc;
-}
-
-extern int select_p_job_suspend(struct job_record *job_ptr)
-{
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
-	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_suspend", 0);
-	slurm_mutex_unlock(&cr_mutex);
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_job_resume(struct job_record *job_ptr)
-{
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
-	_add_job_to_nodes(node_cr_ptr, job_ptr, "select_p_job_resume", 0);
-	slurm_mutex_unlock(&cr_mutex);
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_job_ready(struct job_record *job_ptr)
-{
-	if (!IS_JOB_RUNNING(job_ptr))
-		return 0;
-
-	return 1;
-}
-
-extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
-{
-	/* This function is always invalid on normal Linux clusters */
-	return SLURM_ERROR;
-}
-
-extern int select_p_get_select_nodeinfo (select_nodeinfo_t *select_nodeinfo, 
-                                         enum select_nodedata_type info,
-                                         void *data)
-{
-       return SLURM_SUCCESS;
-}
-
-extern int select_p_update_nodeinfo (struct job_record *job_ptr)
-{
-	xassert(job_ptr);
-
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
-	slurm_mutex_unlock(&cr_mutex);
-
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_get_info_from_plugin (enum select_jobdata_type info,
-					  struct job_record *job_ptr,
-					  void *data)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_update_node_state (int index, uint16_t state)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_reconfigure(void)
-{
-	slurm_mutex_lock(&cr_mutex);
-	_free_node_cr(node_cr_ptr);
-	node_cr_ptr = NULL;
-	if (step_cr_list)
-		list_destroy(step_cr_list);
-	step_cr_list = NULL;
-	_init_node_cr();
-	slurm_mutex_unlock(&cr_mutex);
-
-	return SLURM_SUCCESS;
-}
-
-extern List select_p_get_config(void)
-{
-	return NULL;
-}
 
 /*
  * deallocate resources that were assigned to this job 
@@ -1885,7 +1524,8 @@ static void _init_node_cr(void)
 		job_memory_cpu  = 0;
 		job_memory_node = 0;
 		if (job_ptr->details && 
-		    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY)) {
+		    job_ptr->details->job_min_memory 
+		    && (cr_type == CR_MEMORY)) {
 			if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
 				job_memory_cpu = job_ptr->details->
 						 job_min_memory &
@@ -2051,4 +1691,553 @@ static int  _cr_job_list_sort(void *x, void *y)
 	struct job_record **job1_pptr = (struct job_record **) x;
 	struct job_record **job2_pptr = (struct job_record **) y;
 	return (int) difftime(job1_pptr[0]->end_time, job2_pptr[0]->end_time);
+}
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init ( void )
+{
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_XCPU
+	rc = _init_status_pthread();
+#endif
+#ifdef HAVE_BG
+	error("%s is incompatable with BlueGene", plugin_name);
+	fatal("Use SelectType=select/bluegene");
+#endif
+	cr_type = (select_type_plugin_info_t)
+			slurmctld_conf.select_type_param;
+	return rc;
+}
+
+extern int fini ( void )
+{
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_XCPU
+	rc = _fini_status_pthread();
+#endif
+	slurm_mutex_lock(&cr_mutex);
+	_free_node_cr(node_cr_ptr);
+	node_cr_ptr = NULL;
+	if (step_cr_list)
+		list_destroy(step_cr_list);
+	step_cr_list = NULL;
+	slurm_mutex_unlock(&cr_mutex);
+	return rc;
+}
+
+/*
+ * The remainder of this file implements the standard SLURM 
+ * node selection API.
+ */
+
+extern int select_p_state_save(char *dir_name)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_state_restore(char *dir_name)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_job_init(List job_list)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
+{
+	if (node_ptr == NULL) {
+		error("select_p_node_init: node_ptr == NULL");
+		return SLURM_ERROR;
+	}
+
+	if (node_cnt < 0) {
+		error("select_p_node_init: node_cnt < 0");
+		return SLURM_ERROR;
+	}
+
+	/* NOTE: We free the consumable resources info here, but
+	 * can't rebuild it since the partition and node structures
+	 * have not yet had node bitmaps reset. */
+	slurm_mutex_lock(&cr_mutex);
+	_free_node_cr(node_cr_ptr);
+	node_cr_ptr = NULL;
+	if (step_cr_list)
+		list_destroy(step_cr_list);
+	step_cr_list = NULL;
+	slurm_mutex_unlock(&cr_mutex);
+
+	select_node_ptr = node_ptr;
+	select_node_cnt = node_cnt;
+	select_fast_schedule = slurm_get_fast_schedule();
+
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_block_init(List part_list)
+{
+	return SLURM_SUCCESS;
+}
+
+/*
+ * select_p_job_test - Given a specification of scheduling requirements, 
+ *	identify the nodes which "best" satisfy the request.
+ * 	"best" is defined as either single set of consecutive nodes satisfying 
+ *	the request and leaving the minimum number of unused nodes OR 
+ *	the fewest number of consecutive node sets
+ * IN/OUT job_ptr - pointer to job being considered for initiation,
+ *                  set's start_time when job expected to start
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
+ *	satisfy the request are cleared, other left set
+ * IN min_nodes - minimum count of nodes
+ * IN req_nodes - requested (or desired) count of nodes
+ * IN max_nodes - maximum count of nodes
+ * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
+ *           SELECT_MODE_TEST_ONLY: test if job can ever run
+ *           SELECT_MODE_WILL_RUN: determine when and where job can run
+ * RET zero on success, EINVAL otherwise
+ * globals (passed via select_p_node_init): 
+ *	node_record_count - count of nodes configured
+ *	node_record_table_ptr - pointer to global node table
+ * NOTE: the job information that is considered for scheduling includes:
+ *	req_node_bitmap: bitmap of specific nodes required by the job
+ *	contiguous: allocated nodes must be sequentially located
+ *	num_procs: minimum number of processors required by the job
+ * NOTE: bitmap must be a superset of the job's required at the time that 
+ *	select_p_job_test is called
+ */
+extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+			     uint32_t min_nodes, uint32_t max_nodes, 
+			     uint32_t req_nodes, int mode)
+{
+	bitstr_t *orig_map;
+	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
+	int min_share = 0, max_share = 0;
+	uint32_t save_mem = 0;
+
+	xassert(bitmap);
+	if (job_ptr->details == NULL)
+		return EINVAL;
+
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL) {
+		_init_node_cr();
+		if (node_cr_ptr == NULL) {
+			slurm_mutex_unlock(&cr_mutex);
+			error("select_p_job_test: node_cr_ptr not initialized");
+			return SLURM_ERROR;
+		}
+	}
+
+	if (bit_set_count(bitmap) < min_nodes) {
+		slurm_mutex_unlock(&cr_mutex);
+		return EINVAL;
+	}
+
+	if (mode != SELECT_MODE_TEST_ONLY) {
+		if (job_ptr->details->shared) {
+			max_share = job_ptr->part_ptr->max_share & 
+					~SHARED_FORCE;
+		} else	/* ((shared == 0) || (shared == (uint16_t) NO_VAL)) */
+			max_share = 1;
+	}
+
+	if (mode == SELECT_MODE_WILL_RUN) {
+		rc = _will_run_test(job_ptr, bitmap, min_nodes, max_nodes,
+				    max_share, req_nodes);
+		slurm_mutex_unlock(&cr_mutex);
+		return rc;
+	} else if (mode == SELECT_MODE_TEST_ONLY) {
+		min_share = NO_SHARE_LIMIT;
+		max_share = min_share + 1;
+		save_mem = job_ptr->details->job_min_memory;
+		job_ptr->details->job_min_memory = 0;
+	}
+
+	debug3("select/linear: job_test: job %u max_share %d avail nodes %u",
+		job_ptr->job_id, max_share, bit_set_count(bitmap));
+	orig_map = bit_copy(bitmap);
+	for (max_run_job=min_share; max_run_job<max_share; max_run_job++) {
+		bool last_iteration = (max_run_job == (max_share -1));
+		for (sus_jobs=0; ((sus_jobs<5) && (rc != SLURM_SUCCESS)); 
+		     sus_jobs++) {
+			if (last_iteration)
+				sus_jobs = NO_SHARE_LIMIT;
+			j = _job_count_bitmap(node_cr_ptr, job_ptr, 
+					      orig_map, bitmap, 
+					      max_run_job, 
+					      max_run_job + sus_jobs);
+			debug3("select/linear: job_test: found %d nodes for %u",
+				j, job_ptr->job_id);
+			if ((j == prev_cnt) || (j < min_nodes))
+				continue;
+			prev_cnt = j;
+			if ((mode == SELECT_MODE_RUN_NOW)
+			    && (max_run_job > 0)) {
+				/* We need to share. Try to find 
+				 * suitable job to share nodes with */
+				rc = _find_job_mate(job_ptr, bitmap, min_nodes, 
+						    max_nodes, req_nodes);
+				if (rc == SLURM_SUCCESS)
+					break;
+			}
+			rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
+				       req_nodes);
+			if (rc == SLURM_SUCCESS)
+				break;
+			continue;
+		}
+	}
+	bit_free(orig_map);
+	slurm_mutex_unlock(&cr_mutex);
+	if ((rc == SLURM_SUCCESS) && (mode == SELECT_MODE_RUN_NOW))
+		_build_select_struct(job_ptr, bitmap);
+	if (save_mem)
+		job_ptr->details->job_min_memory = save_mem;
+	return rc;
+}
+
+/*
+ * select_p_job_list_test - Given a list of select_will_run_t's in
+ *	accending priority order we will see if we can start and
+ *	finish all the jobs without increasing the start times of the
+ *	jobs specified and fill in the est_start of requests with no
+ *	est_start.  If you are looking to see if one job will ever run
+ *	then use select_p_job_test instead.
+ * IN/OUT req_list - list of select_will_run_t's in asscending
+ *	             priority order on success of placement fill in
+ *	             est_start of request with time.
+ * RET zero on success, EINVAL otherwise
+ */
+extern int select_p_job_list_test(List req_list)
+{
+	/* not currently supported */
+	return EINVAL;
+}
+
+extern int select_p_job_begin(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_XCPU
+	int i;
+	char clone_path[128];
+
+	xassert(job_ptr);
+	xassert(job_ptr->node_bitmap);
+
+	for (i=0; i<select_node_cnt; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		snprintf(clone_path, sizeof(clone_path), 
+			"%s/%s/xcpu/clone", XCPU_DIR, 
+			select_node_ptr[i].name);
+		if (chown(clone_path, (uid_t)job_ptr->user_id, 
+				(gid_t)job_ptr->group_id)) {
+			error("chown %s: %m", clone_path);
+			rc = SLURM_ERROR;
+		} else {
+			debug("chown %s to %u", clone_path, 
+				job_ptr->user_id);
+		}
+	}
+#endif
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL)
+		_init_node_cr();
+	_add_job_to_nodes(node_cr_ptr, job_ptr, "select_p_job_begin", 1);
+	slurm_mutex_unlock(&cr_mutex);
+	return rc;
+}
+
+extern int select_p_job_ready(struct job_record *job_ptr)
+{
+	if (!IS_JOB_RUNNING(job_ptr))
+		return 0;
+
+	return 1;
+}
+
+extern int select_p_job_fini(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_XCPU
+	int i;
+	char clone_path[128];
+
+	for (i=0; i<select_node_cnt; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		snprintf(clone_path, sizeof(clone_path), 
+			"%s/%s/xcpu/clone", XCPU_DIR, 
+			select_node_ptr[i].name);
+		if (chown(clone_path, (uid_t)0, (gid_t)0)) {
+			error("chown %s: %m", clone_path);
+			rc = SLURM_ERROR;
+		} else {
+			debug("chown %s to 0", clone_path);
+		}
+	}
+#endif
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL)
+		_init_node_cr();
+	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_fini", 1);
+	slurm_mutex_unlock(&cr_mutex);
+	return rc;
+}
+
+extern int select_p_job_suspend(struct job_record *job_ptr)
+{
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL)
+		_init_node_cr();
+	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_suspend", 0);
+	slurm_mutex_unlock(&cr_mutex);
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_job_resume(struct job_record *job_ptr)
+{
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL)
+		_init_node_cr();
+	_add_job_to_nodes(node_cr_ptr, job_ptr, "select_p_job_resume", 0);
+	slurm_mutex_unlock(&cr_mutex);
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
+{
+	/* This function is always invalid on normal Linux clusters */
+	return SLURM_ERROR;
+}
+
+extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, 
+					 Buf buffer)
+{
+	pack16(nodeinfo->alloc_cpus, buffer);
+
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, 
+					   Buf buffer)
+{
+	select_nodeinfo_t *nodeinfo_ptr = NULL;
+
+	nodeinfo_ptr = select_p_select_nodeinfo_alloc(NO_VAL);
+	*nodeinfo = nodeinfo_ptr;
+
+	safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("select_nodeinfo_unpack: error unpacking here");
+	select_p_select_nodeinfo_free(nodeinfo_ptr);
+	*nodeinfo = NULL;
+
+	return SLURM_ERROR;
+
+}
+
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
+{
+	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
+
+	nodeinfo->magic = NODEINFO_MAGIC;
+
+	return nodeinfo;
+}
+
+extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
+{
+	if(nodeinfo) {
+		if (nodeinfo->magic != NODEINFO_MAGIC) {
+			error("select_p_select_nodeinfo_free: "
+			      "nodeinfo magic bad");
+			return EINVAL;
+		} 
+		nodeinfo->magic = 0;
+		xfree(nodeinfo);
+	}
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
+{
+	struct node_record *node_ptr = NULL;
+	int i=0;
+	static time_t last_set_all = 0;
+
+	/* only set this once when the last_node_update is newer than
+	   the last time we set things up. */
+	if(last_set_all && (last_node_update < last_set_all)) {
+		debug2("Node select info for set all hasn't "
+		       "changed since %d", 
+		       last_set_all);
+		return SLURM_NO_CHANGE_IN_DATA;	
+	}
+	last_set_all = last_node_update;
+
+	for (i=0; i<node_record_count; i++) {
+		node_ptr = &(node_record_table_ptr[i]);
+
+		if ((node_ptr->node_state & NODE_STATE_COMPLETING) ||
+		    (node_ptr->node_state == NODE_STATE_ALLOCATED)) {
+			if (slurmctld_conf.fast_schedule)
+				node_ptr->select_nodeinfo->alloc_cpus = 
+					node_ptr->config_ptr->cpus;
+			else
+				node_ptr->select_nodeinfo->alloc_cpus = 
+					node_ptr->cpus;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
+{
+	xassert(job_ptr);
+	
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL)
+		_init_node_cr();
+	slurm_mutex_unlock(&cr_mutex);
+	
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
+					enum select_nodedata_type dinfo,
+					enum node_states state,
+					void *data)
+{
+	int rc = SLURM_SUCCESS;
+	uint16_t *uint16 = (uint16_t *) data;
+
+	if (nodeinfo == NULL) {
+		error("get_nodeinfo: nodeinfo not set");
+		return SLURM_ERROR;
+	}
+	
+	if (nodeinfo->magic != NODEINFO_MAGIC) {
+		error("get_nodeinfo: jobinfo magic bad");
+		return SLURM_ERROR;
+	}
+
+	switch (dinfo) {
+	case SELECT_NODEDATA_SUBGRP_SIZE:
+		*uint16 = 0;
+		break;
+	case SELECT_NODEDATA_SUBCNT:
+		*uint16 = nodeinfo->alloc_cpus;
+		break;
+	default:
+		error("Unsupported option %d for get_nodeinfo.", dinfo);
+		rc = SLURM_ERROR;
+		break;
+	}	
+	return rc;
+}
+
+extern select_jobinfo_t *select_p_select_jobinfo_alloc()
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
+				       enum select_jobdata_type data_type,
+				       void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
+				 enum select_jobdata_type data_type, void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
+{
+	return NULL;
+}
+
+extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int  select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
+					   Buf buffer)
+{
+	return SLURM_SUCCESS;
+}
+
+extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
+				     char *buf, size_t size, int mode)
+{
+	if (buf && size) {
+		buf[0] = '\0';
+		return buf;
+	} else
+		return NULL;
+}
+
+extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo, 
+					     int mode)
+{
+	return NULL;
+}
+
+extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_get_info_from_plugin (enum select_jobdata_type info,
+					  struct job_record *job_ptr,
+					  void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_update_node_state (int index, uint16_t state)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_reconfigure(void)
+{
+	slurm_mutex_lock(&cr_mutex);
+	_free_node_cr(node_cr_ptr);
+	node_cr_ptr = NULL;
+	if (step_cr_list)
+		list_destroy(step_cr_list);
+	step_cr_list = NULL;
+	_init_node_cr();
+	slurm_mutex_unlock(&cr_mutex);
+
+	return SLURM_SUCCESS;
 }

@@ -687,7 +687,8 @@ extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 	return sprint_select_jobinfo(jobinfo, buf, size, mode);
 }
 
-extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo, int mode)
+extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
+					     int mode)
 {
 	return xstrdup_select_jobinfo(jobinfo, mode);
 }

@@ -1980,8 +1980,6 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 
 	select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer);
 
-	safe_unpack16(&node->used_cpus, buffer);
-
 	safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);

@@ -950,20 +950,8 @@ static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 	}
 	pack32  (dump_node_ptr->config_ptr->weight, buffer);
 
-#ifdef HAVE_BG
-	/* remove the ifdef after the other plugins are finished */
 	select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo, buffer);
-	/* this needs to be removed after the pack works */
-	if ((dump_node_ptr->node_state & NODE_STATE_COMPLETING) ||
-	    (dump_node_ptr->node_state == NODE_STATE_ALLOCATED)) {
-		if (slurmctld_conf.fast_schedule)
-			pack16(dump_node_ptr->config_ptr->cpus, buffer);
-		else
-			pack16(dump_node_ptr->cpus, buffer);
-	} else {
-		pack16((uint16_t) 0, buffer);
-	}
-#else
+
 	/* FIX ME!!!!!!!!!!!!!!!!!!!!!!!! THIS will not work!!!!!!! */
 	if (cr_flag == 1) {
 		uint16_t allocated_cpus;
@@ -971,23 +959,15 @@ static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 		xassert(0);
 		error_code = select_g_select_nodeinfo_get(
 			dump_node_ptr->select_nodeinfo,
-			SELECT_ALLOC_CPUS, &allocated_cpus);
+			SELECT_ALLOC_CPUS, 0, &allocated_cpus);
 		if (error_code != SLURM_SUCCESS) {
 			error ("_pack_node: error from "
 				"select_g_get_select_nodeinfo: %m");
 			allocated_cpus = 0;
 		}
 		pack16(allocated_cpus, buffer);
-	} else if ((dump_node_ptr->node_state & NODE_STATE_COMPLETING) ||
-		   (dump_node_ptr->node_state == NODE_STATE_ALLOCATED)) {
-		if (slurmctld_conf.fast_schedule)
-			pack16(dump_node_ptr->config_ptr->cpus, buffer);
-		else
-			pack16(dump_node_ptr->cpus, buffer);
-	} else {
-		pack16((uint16_t) 0, buffer);
 	}
-#endif
+
 	packstr (dump_node_ptr->arch, buffer);
 	packstr (dump_node_ptr->config_ptr->feature, buffer);
 	packstr (dump_node_ptr->os, buffer);
