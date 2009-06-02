@@ -141,7 +141,7 @@ static void _do_power_work(void)
 		if (susp_state)
 			susp_total++;
 		if (susp_state &&
-		    ((suspend_rate == 0) || (suspend_cnt <= suspend_rate)) &&
+		    ((suspend_rate == 0) || (suspend_cnt < suspend_rate))  &&
 		    (bit_test(suspend_node_bitmap, i) == 0)		   &&
 		    ((base_state == NODE_STATE_ALLOCATED) ||
 		     (node_ptr->last_idle > (now - idle_time)))) {
@@ -159,7 +159,7 @@ static void _do_power_work(void)
 		}
 		if (run_suspend 					&& 
 		    (susp_state == 0)					&&
-		    ((resume_rate == 0) || (resume_cnt <= resume_rate))	&&
+		    ((resume_rate == 0) || (resume_cnt < resume_rate))	&&
 		    (base_state == NODE_STATE_IDLE)			&&
 		    (comp_state == 0)					&&
 		    (node_ptr->last_idle < (now - idle_time))		&&
