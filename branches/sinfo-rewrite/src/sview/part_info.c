@@ -1207,7 +1207,9 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 				   node_info_t *node_ptr, 
 				   int node_scaling)
 {
-	list_append(sview_part_sub->node_ptr_list, node_ptr);
+	xassert(sview_part_sub);
+	xassert(sview_part_sub->node_ptr_list);
+	xassert(sview_part_sub->hl);
 
 	if (sview_part_sub->node_cnt == 0) {	/* first node added */
 		sview_part_sub->node_state = node_ptr->node_state;
@@ -1248,6 +1250,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 	}
 
 	sview_part_sub->node_cnt += node_scaling;
+	list_append(sview_part_sub->node_ptr_list, node_ptr);
 	hostlist_push(sview_part_sub->hl, node_ptr->name);
 }
 
@@ -1274,7 +1277,7 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 		return NULL;
 	}
 	sview_part_sub_ptr->part_ptr = part_ptr;
-	sview_part_sub_ptr->hl = hostlist_create(node_ptr->name);
+	sview_part_sub_ptr->hl = hostlist_create("");
 	sview_part_sub_ptr->node_ptr_list = list_create(NULL);
 
 	_update_sview_part_sub(sview_part_sub_ptr, node_ptr, node_scaling);
