@@ -55,6 +55,13 @@
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 
+/* If we unpack a buffer that contains bad data, we want to avoid
+ * memory allocation error due to array or buffer sizes that are
+ * unreasonably large. Increase this limits as needed. */
+#define MAX_PACK_ARRAY_LEN	(128 * 1024)
+#define MAX_PACK_MEM_LEN	(16 * 1024 * 1024)
+#define MAX_PACK_STR_LEN	(16 * 1024 * 1024)
+
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
  * for details. 
@@ -494,7 +501,9 @@ int unpackmem_ptr(char **valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > 0) {
+	if (*size_valp > MAX_PACK_MEM_LEN)
+		return SLURM_ERROR;
+	else if (*size_valp > 0) {
 		if (remaining_buf(buffer) < *size_valp)
 			return SLURM_ERROR;
 		*valp = &buffer->head[buffer->processed];
@@ -524,7 +533,9 @@ int unpackmem(char *valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > 0) {
+	if (*size_valp > MAX_PACK_MEM_LEN)
+		return SLURM_ERROR;
+	else if (*size_valp > 0) {
 		if (remaining_buf(buffer) < *size_valp)
 			return SLURM_ERROR;
 		memcpy(valp, &buffer->head[buffer->processed], *size_valp);
@@ -554,7 +565,9 @@ int unpackmem_xmalloc(char **valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > 0) {
+	if (*size_valp > MAX_PACK_STR_LEN)
+		return SLURM_ERROR;
+	else if (*size_valp > 0) {
 		if (remaining_buf(buffer) < *size_valp)
 			return SLURM_ERROR;
 		*valp = xmalloc(*size_valp);
@@ -585,8 +598,9 @@ int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
-
-	if (*size_valp > 0) {
+	if (*size_valp > MAX_PACK_STR_LEN)
+		return SLURM_ERROR;
+	else if (*size_valp > 0) {
 		if (remaining_buf(buffer) < *size_valp)
 			return SLURM_ERROR;
 		*valp = malloc(*size_valp);
@@ -647,7 +661,9 @@ int unpackstr_array(char ***valp, uint32_t * size_valp, Buf buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > 0) {
+	if (*size_valp > MAX_PACK_ARRAY_LEN)
+		return SLURM_ERROR;
+	else if (*size_valp > 0) {
 		*valp = xmalloc(sizeof(char *) * (*size_valp + 1));
 		for (i = 0; i < *size_valp; i++) {
 			if (unpackmem_xmalloc(&(*valp)[i], &uint32_tmp, buffer))
