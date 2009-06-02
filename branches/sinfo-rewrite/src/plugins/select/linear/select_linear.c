@@ -2042,7 +2042,6 @@ unpack_error:
 	*nodeinfo = NULL;
 
 	return SLURM_ERROR;
-
 }
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
