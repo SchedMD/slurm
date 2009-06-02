@@ -586,7 +586,7 @@ void set_options(const int argc, char **argv)
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
 		{NULL,            0,                 0, 0}
 	};
-	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:P:qR:st:uU:vVw:W:x:";
+	char *opt_string = "+B:c:C:d:D:F:g:hHIJ:kK::L:m:n:N:Op:P:QRst:uU:vVw:W:x:";
 
 	struct option *optz = spank_option_table_create(long_options);
 

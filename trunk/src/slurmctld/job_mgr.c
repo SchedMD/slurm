@@ -4618,9 +4618,17 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     "job_id %u", job_specs->time_limit, 
 			     job_specs->job_id);
 			update_accounting = true;
+		} else if (IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr &&
+			   (job_ptr->part_ptr->max_time >= 
+			    job_specs->time_limit)) {
+			job_ptr->time_limit = job_specs->time_limit;
+			info("update_job: setting time_limit to %u for "
+			     "job_id %u", job_specs->time_limit, 
+			     job_specs->job_id);
+			update_accounting = true;
 		} else {
-			error("Attempt to increase time limit for job %u",
-			      job_specs->job_id);
+			info("Attempt to increase time limit for job %u",
+			     job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}

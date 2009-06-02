@@ -653,7 +653,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:bB:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:P:qR:st:uU:vVw:x:";
+	"+bB:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:P:QRst:uU:vVw:x:";
 
 
 /*
@@ -1147,7 +1147,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'd':
 		case 'P':
-			/* use -P instead */
+			/* use -P instead of -d (deprecated) */
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
