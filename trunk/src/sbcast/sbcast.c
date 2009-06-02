@@ -2,7 +2,7 @@
  *  sbcast.c - Broadcast a file to allocated nodes
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -127,7 +127,7 @@ static void _get_job_info(void)
 
 	if (slurm_allocation_lookup(jobid, &alloc_resp) != SLURM_SUCCESS) {
 		error("SLURM jobid %u lookup error: %s",
-			jobid, slurm_strerror(slurm_get_errno()));
+		      jobid, slurm_strerror(slurm_get_errno()));
 		exit(1);
 	}
 
@@ -150,7 +150,7 @@ static ssize_t _get_block(char *buffer, size_t buf_size)
 		fd = open(params.src_fname, O_RDONLY);
 		if (!fd) {
 			error("Can't open `%s`: %s", 
-				params.src_fname, strerror(errno));
+			      params.src_fname, strerror(errno));
 			exit(1);
 		}
 	}
@@ -161,7 +161,7 @@ static ssize_t _get_block(char *buffer, size_t buf_size)
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
 			error("Can't read `%s`: %s",
-				params.src_fname, strerror(errno));
+			      params.src_fname, strerror(errno));
 			exit(1);
 		} else if (rc == 0) {
 			debug("end of file reached");
@@ -210,7 +210,7 @@ static void _bcast_file(void)
 	while (1) {
 		bcast_msg.block_len = _get_block(buffer, buf_size);
 		debug("block %d, size %u", bcast_msg.block_no,
-			bcast_msg.block_len);
+		      bcast_msg.block_len);
 		size_read += bcast_msg.block_len;
 		if (size_read >= f_stat.st_size)
 			bcast_msg.last_block = 1;
