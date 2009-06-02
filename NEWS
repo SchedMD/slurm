@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
     Prolog, Epilog, PrologSLurmctld and EpilogSlurmctld programs using
     the functions spank_get_job_env, spank_set_job_env, and 
     spank_unset_job_env. See "man spank" for more information.
+ -- Completed the work to begun in 2.0.0 to standardize on using '-Q' as the
+    --quiet flag for all the commands.
 
 * Changes in SLURM 2.0.1
 ========================
