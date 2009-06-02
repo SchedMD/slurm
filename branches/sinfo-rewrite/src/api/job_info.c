@@ -867,19 +867,6 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 }
 
 /*
- * slurm_get_select_jobinfo - get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN/OUT data - the data to enter into job credential
- * RET 0 or -1 on error
- */
-extern int slurm_get_select_jobinfo (select_jobinfo_t *jobinfo,
-		enum select_jobdata_type data_type, void *data)
-{
-	return select_g_select_jobinfo_get(jobinfo, data_type, data);
-}
-
-/*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
  * IN job_id - slurm job id
  * RET: READY_* values as defined in api/job_info.h

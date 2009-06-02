@@ -65,7 +65,6 @@ typedef struct {
  * GLOBAL SELECT STATE MANGEMENT FUNCIONS *
 \*****************************************/
 
-
 /*
  * node_select_info_msg_free - free buffer returned by 
  *	slurm_load_node_select

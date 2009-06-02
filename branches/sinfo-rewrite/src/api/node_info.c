@@ -83,7 +83,9 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
 		time_str, node_info_msg_ptr->record_count);
 
 	for (i = 0; i < node_info_msg_ptr-> record_count; i++) {
-		slurm_print_node_table ( out, & node_ptr[i], one_liner ) ;
+		slurm_print_node_table ( out, & node_ptr[i], 
+					 node_info_msg_ptr->node_scaling,
+					 one_liner ) ;
 	}
 }
 
@@ -93,12 +95,15 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
  *	based upon message as loaded using slurm_load_node
  * IN out - file to write to
  * IN node_ptr - an individual node information record pointer
+ * IN node_scaling - number of nodes each node represents
  * IN one_liner - print as a single line if true
  */
 void
-slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
+slurm_print_node_table ( FILE * out, node_info_t * node_ptr, 
+			 int node_scaling, int one_liner )
 {
-	char *print_this = slurm_sprint_node_table(node_ptr, one_liner);
+	char *print_this = slurm_sprint_node_table(node_ptr, node_scaling, 
+						   one_liner);
 	fprintf ( out, "%s", print_this);
 	xfree(print_this);
 }
@@ -107,17 +112,25 @@ slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
  * slurm_sprint_node_table - output information about a specific Slurm nodes
  *	based upon message as loaded using slurm_load_node
  * IN node_ptr - an individual node information record pointer
+ * IN node_scaling - number of nodes each node represents
  * IN one_liner - print as a single line if true
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
 char *
-slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
+slurm_sprint_node_table (node_info_t * node_ptr, 
+			 int node_scaling, int one_liner )
 {
 	uint16_t my_state = node_ptr->node_state;
 	char *comp_str = "", *drain_str = "", *power_str = "";
 	char tmp_line[512];
 	char *out = NULL;
+	uint16_t err_cpus = 0, alloc_cpus = 0;
+	int cpus_per_node = 1;
+	int total_used = node_ptr->cpus;
+
+	if(node_scaling) 
+		cpus_per_node = node_ptr->cpus / node_scaling;
 
 	if (my_state & NODE_STATE_COMPLETING) {
 		my_state &= (~NODE_STATE_COMPLETING);
@@ -131,15 +144,38 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 		my_state &= (~NODE_STATE_POWER_SAVE);
 		power_str = "+POWER";
 	}
+	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo, 
+				  SELECT_NODEDATA_SUBCNT,
+				  NODE_STATE_ALLOCATED,
+				  &alloc_cpus);
+#ifdef HAVE_BG
+	if(!alloc_cpus && ((node_ptr->node_state & NODE_STATE_ALLOCATED)
+			   ||  (node_ptr->node_state & NODE_STATE_COMPLETING)))
+		alloc_cpus = node_ptr->cpus;
+	else
+		alloc_cpus *= cpus_per_node;
+#endif
+	total_used -= alloc_cpus;
+
+	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo, 
+				  SELECT_NODEDATA_SUBCNT,
+				  NODE_STATE_ERROR,
+				  &err_cpus);
+#ifdef HAVE_BG
+	err_cpus *= cpus_per_node;
+#endif
+	total_used -= err_cpus;
+
+	if((alloc_cpus && err_cpus) 
+	   || (total_used  && (total_used != node_ptr->cpus))) 
+		my_state = NODE_STATE_MIXED;
 
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"NodeName=%s State=%s%s%s%s Procs=%u AllocProcs=%u "
-		"RealMemory=%u TmpDisk=%u",
-		node_ptr->name, node_state_string(my_state),
-		comp_str, drain_str, power_str,
-		node_ptr->cpus, node_ptr->used_cpus,
-		node_ptr->real_memory, node_ptr->tmp_disk);
+		 "NodeName=%s State=%s%s%s%s Procs=%u",
+		 node_ptr->name, node_state_string(my_state),
+		 comp_str, drain_str, power_str,
+		 node_ptr->cpus);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -147,6 +183,17 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 2 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "AllocProcs=%u ErrProcs=%u RealMemory=%u TmpDisk=%u",
+		 alloc_cpus, err_cpus,
+		 node_ptr->real_memory, node_ptr->tmp_disk);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 3 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"Sockets=%u CoresPerSocket=%u ThreadsPerCore=%u",
 		node_ptr->sockets, node_ptr->cores, node_ptr->threads);
@@ -156,14 +203,14 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 3 ******/
+	/****** Line 4 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"Weight=%u Features=%s Reason=%s" ,
 		node_ptr->weight, node_ptr->features,
 		node_ptr->reason);
 	xstrcat(out, tmp_line);
 
-	/****** Line 4 (optional) ******/
+	/****** Line 5 (optional) ******/
 	if (node_ptr->arch || node_ptr->os) {
 		if (one_liner)
 			xstrcat(out, " ");

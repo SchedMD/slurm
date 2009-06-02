@@ -429,6 +429,7 @@ enum node_states {
 	NODE_STATE_IDLE,	/* node idle and available for use */
 	NODE_STATE_ALLOCATED,	/* node has been allocated to a job */
 	NODE_STATE_ERROR,	/* node is in an error state */
+	NODE_STATE_MIXED,	/* node is in has a mixed state */
 	NODE_STATE_FUTURE,	/* node slot reserved for future use */
 	NODE_STATE_END		/* last entry in table */
 };
@@ -930,12 +931,10 @@ typedef struct node_info {
 	uint16_t sockets;       /* number of sockets per node */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
-	uint16_t used_cpus;	/* count of used cpus on this node */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
 	select_nodeinfo_t *select_nodeinfo;  /* opaque data structure,
 					     * use slurm_get_select_nodeinfo()
 					     * to access conents */
-
 } node_info_t;
 
 typedef struct node_info_msg {
@@ -1853,17 +1852,6 @@ extern int slurm_pid2jobid PARAMS(( pid_t job_pid, uint32_t * job_id_ptr )) ;
 extern int slurm_update_job PARAMS(( job_desc_msg_t * job_msg )) ;
 
 /*
- * slurm_get_select_jobinfo - get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN/OUT data - the data to enter into job credential
- * RET 0 or -1 on error
- */
-extern int slurm_get_select_jobinfo PARAMS(
-	(select_jobinfo_t *jobinfo, enum select_jobdata_type data_type,
-	 void *data));
-
-/*
  * slurm_notify_job - send message to the job's stdout, 
  *	usable only by user root
  * IN job_id - slurm job_id or 0 for all jobs
@@ -1989,38 +1977,31 @@ extern void slurm_print_node_info_msg PARAMS((
  *	based upon message as loaded using slurm_load_node
  * IN out - file to write to
  * IN node_ptr - an individual node information record pointer
+ * IN node_scaling - number of nodes each node represents
  * IN one_liner - print as a single line if true
  */
 extern void slurm_print_node_table PARAMS(( 
-	FILE * out, node_info_t * node_ptr, int one_liner ));
+	FILE * out, node_info_t * node_ptr,
+	int node_scaling, int one_liner ));
 
 /*
  * slurm_sprint_node_table - output information about a specific Slurm nodes
  *	based upon message as loaded using slurm_load_node
  * IN node_ptr - an individual node information record pointer
  * IN one_liner - print as a single line if true
+ * IN node_scaling - number of nodes each node represents
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
 extern char *slurm_sprint_node_table PARAMS(( node_info_t * node_ptr, 
-					     int one_liner ));
+					      int node_scaling,
+					      int one_liner ));
 
 /*
  * slurm_init_update_node_msg - initialize node update message
  * OUT update_node_msg - user defined node descriptor
  */
 void slurm_init_update_node_msg (update_node_msg_t * update_node_msg);
-
-/*
- * slurm_get_select_nodeinfo - get data from a select node credential
- * IN nodeinfo  - updated select node credential
- * IN data_type - type of data to enter into node credential
- * IN/OUT data - the data to enter into node credential
- * RET 0 or -1 on error
- */
-extern int slurm_get_select_nodeinfo PARAMS(
-	(select_nodeinfo_t *nodeinfo, enum select_nodedata_type data_type,
-	 void *data));
 
 /*
  * slurm_update_node - issue RPC to a node's configuration per request, 
@@ -2075,6 +2056,34 @@ extern void slurm_print_topo_info_msg PARAMS((
  */
 extern void slurm_print_topo_record PARAMS((FILE * out, topo_info_t *topo_ptr, 
 				    int one_liner ));
+
+/*****************************************************************************\
+ *	SLURM SELECT READ/PRINT/UPDATE FUNCTIONS
+\*****************************************************************************/
+
+/*
+ * slurm_get_select_jobinfo - get data from a select job credential
+ * IN jobinfo  - updated select job credential
+ * IN data_type - type of data to enter into job credential
+ * IN/OUT data - the data to enter into job credential
+ * RET 0 or -1 on error
+ */
+extern int slurm_get_select_jobinfo PARAMS(
+	(select_jobinfo_t *jobinfo, enum select_jobdata_type data_type,
+	 void *data));
+
+/*
+ * slurm_get_select_nodeinfo - get data from a select node credential
+ * IN nodeinfo  - updated select node credential
+ * IN data_type - type of data to enter into node credential
+ * IN state     - state of node query
+ * IN/OUT data  - the data to enter into node credential
+ * RET 0 or -1 on error
+ */
+extern int slurm_get_select_nodeinfo PARAMS(
+	(select_nodeinfo_t *nodeinfo, enum select_nodedata_type data_type,
+	 enum node_states state, void *data));
+
 /*****************************************************************************\
  *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/

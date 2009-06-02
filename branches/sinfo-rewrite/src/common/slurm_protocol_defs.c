@@ -1021,6 +1021,13 @@ char *node_state_string(enum node_states inx)
 			return "ERROR~";
 		return "ERROR";
 	}
+	if (base == NODE_STATE_MIXED) {
+		if (no_resp_flag)
+			return "MIXED*";
+		if (power_flag)
+			return "MIXED~";
+		return "MIXED";
+	}
 	if (base == NODE_STATE_FUTURE) {
 		if (no_resp_flag)
 			return "FUTURE*";
@@ -1104,6 +1111,13 @@ char *node_state_string_compact(enum node_states inx)
 		if (power_flag)
 			return "ERR~";
 		return "ERR";
+	}
+	if (inx == NODE_STATE_MIXED) {
+		if (no_resp_flag)
+			return "MIX*";
+		if (power_flag)
+			return "MIX~";
+		return "MIX";
 	}
 	if (inx == NODE_STATE_FUTURE) {
 		if (no_resp_flag)

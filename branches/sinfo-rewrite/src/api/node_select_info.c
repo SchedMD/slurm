@@ -58,7 +58,9 @@
 #include <slurm/slurm.h>
 
 #include "src/api/node_select_info.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
 /*
  * slurm_load_node_select - issue RPC to get slurm all node select plugin 
@@ -106,4 +108,31 @@ extern int slurm_load_node_select (time_t update_time,
 	}
 
         return SLURM_SUCCESS;
+}
+
+extern int slurm_free_node_select(
+	node_select_info_msg_t **node_select_info_msg_pptr)
+{
+	return node_select_info_msg_free(node_select_info_msg_pptr);
+}
+
+/* Unpack node select info from a buffer */
+extern int slurm_unpack_node_select(
+	node_select_info_msg_t **node_select_info_msg_pptr, Buf buffer)
+{
+	return node_select_info_msg_unpack(node_select_info_msg_pptr, buffer);
+}
+
+extern int slurm_get_select_jobinfo(select_jobinfo_t *jobinfo,
+				    enum select_jobdata_type data_type,
+				    void *data)
+{
+	return select_g_select_jobinfo_get(jobinfo, data_type, data);
+}
+
+extern int slurm_get_select_nodeinfo(select_nodeinfo_t *nodeinfo, 
+				     enum select_nodedata_type data_type,
+				     enum node_states state, void *data)
+{
+	return select_g_select_nodeinfo_get(nodeinfo, data_type, state, data);
 }

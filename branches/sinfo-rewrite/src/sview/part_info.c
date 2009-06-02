@@ -1446,6 +1446,19 @@ static int _sview_part_sort_aval_dec(sview_part_info_t* rec_a,
 	return 0;
 }
 
+static int _sview_sub_part_sort(sview_part_sub_t* rec_a,
+				sview_part_sub_t* rec_b)
+{
+	int size_a = rec_a->node_state & NODE_STATE_BASE;
+	int size_b = rec_b->node_state & NODE_STATE_BASE;
+	
+	if (size_a < size_b)
+		return -1;
+	else if (size_a > size_b)
+		return 1;
+	return 0;
+}
+
 static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				   node_info_msg_t *node_info_ptr,
 				   node_select_info_msg_t *node_select_ptr,
@@ -1504,6 +1517,8 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 			}			
 			j2 += 2;
 		}
+		list_sort(sview_part_info->sub_list, 
+			  (ListCmpF)_sview_sub_part_sort);
 	}
 	list_sort(info_list, (ListCmpF)_sview_part_sort_aval_dec);
 
