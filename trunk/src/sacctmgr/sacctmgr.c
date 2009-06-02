@@ -84,7 +84,7 @@ main (int argc, char *argv[])
 		{"oneliner", 0, 0, 'o'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2", 0, 0, 'P'},
-		{"quiet",    0, 0, 'q'},
+		{"quiet",    0, 0, 'Q'},
 		{"readonly", 0, 0, 'r'},
 		{"associations", 0, 0, 's'},
 		{"verbose",  0, 0, 'v'},
@@ -102,7 +102,7 @@ main (int argc, char *argv[])
 	verbosity         = 0;
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "hionpPqrsvV",
+	while((opt_char = getopt_long(argc, argv, "hionpPQrsvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -131,7 +131,7 @@ main (int argc, char *argv[])
 			print_fields_parsable_print =
 			PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
-		case (int)'q':
+		case (int)'Q':
 			quiet_flag = 1;
 			break;
 		case (int)'r':
@@ -735,7 +735,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
-     -q or --quiet: equivalent to \"quiet\" command                        \n\
+     -Q or --quiet: equivalent to \"quiet\" command                        \n\
      -r or --readonly: equivalent to \"readonly\" command                  \n\
      -s or --associations: equivalent to \"associations\" command          \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
