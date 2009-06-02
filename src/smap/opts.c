@@ -53,13 +53,14 @@ extern void parse_command_line(int argc, char *argv[])
 	int option_index;
 	int tmp = 0;
 	static struct option long_options[] = {
+		{"commandline", no_argument, 0, 'c'},
 		{"display", required_argument, 0, 'D'},
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
-		{"version", no_argument, 0, 'V'},
-		{"commandline", no_argument, 0, 'c'},
 		{"parse", no_argument, 0, 'p'},
+		{"quiet", no_argument, 0, 'Q'},
 		{"resolve", required_argument, 0, 'R'},
+		{"version", no_argument, 0, 'V'},
 		{"help", no_argument, 0, OPT_LONG_HELP},
 		{"usage", no_argument, 0, OPT_LONG_USAGE},
 		{"hide", no_argument, 0, OPT_LONG_HIDE},
@@ -67,13 +68,16 @@ extern void parse_command_line(int argc, char *argv[])
 	};
 
 	while ((opt_char =
-		getopt_long(argc, argv, "D:hi:VcpR:",
+		getopt_long(argc, argv, "cD:hi:pQR:V",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int) '?':
 			fprintf(stderr,
 				"Try \"smap --help\" for more information\n");
 			exit(1);
+			break;
+		case (int) 'c':
+			params.commandline = TRUE;
 			break;
 		case (int) 'D':
 			if (!strcmp(optarg, "j"))
@@ -99,19 +103,19 @@ extern void parse_command_line(int argc, char *argv[])
 				exit(1);
 			}
 			break;
-		case (int) 'V':
-			_print_version();
-			exit(0);
-		case (int) 'c':
-			params.commandline = TRUE;
-			break;
 		case (int) 'p':
 			params.parse = TRUE;
+			break;
+		case (int) 'Q':
+			quiet_flag = 1;
 			break;
 		case (int) 'R':
 			params.commandline = TRUE;
 			params.partition = strdup(optarg);
 			break;
+		case (int) 'V':
+			_print_version();
+			exit(0);
 		case (int) OPT_LONG_HELP:
 			_help();
 			exit(0);
@@ -159,9 +163,9 @@ static void _print_version(void)
 static void _usage(void)
 {
 #ifdef HAVE_BG
-	printf("Usage: smap [-chVp] [-D bcjrs] [-i seconds]\n");
+	printf("Usage: smap [-chpQV] [-D bcjrs] [-i seconds]\n");
 #else
-	printf("Usage: smap [-chVp] [-D jrs] [-i seconds]\n");
+	printf("Usage: smap [-chpQV] [-D jrs] [-i seconds]\n");
 #endif
 }
 
