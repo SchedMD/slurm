@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
  -- Fix "-Q" (quiet) option for salloc and sbatch which was previously 
     ignored.
  -- BLUEGENE - fix for finding odd shaped blocks in dynamic mode.
+ -- Fix logic supporting SuspendRate and ResumeRate configuration parameters.
+    Was changing state of one too many nodes per minute.
 
 * Changes in SLURM 2.0.0
 ========================
