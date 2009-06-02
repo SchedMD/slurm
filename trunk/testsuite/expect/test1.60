@@ -78,7 +78,7 @@ if {$job_id == 0} {
 }
 
 set node_count 0
-spawn $squeue -tall -j $job_id -o "%i %D"
+spawn $squeue -tall -j $job_id -o "%i %o"
 expect {
 	-re "$job_id ($number)" {
 		set node_count $expect_out(1,string)
