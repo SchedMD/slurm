@@ -290,7 +290,7 @@ void set_options(const int argc, char **argv)
 	static struct option long_options[] = {
 		{"help", 	no_argument,       0, 'h'},
 		{"label",       no_argument,       0, 'l'},
-		{"quiet",       no_argument,       0, 'q'},
+		{"quiet",       no_argument,       0, 'Q'},
 		{"usage",       no_argument,       0, 'u'},
 		{"verbose",     no_argument,       0, 'v'},
 		{"version",     no_argument,       0, 'V'},
@@ -301,7 +301,7 @@ void set_options(const int argc, char **argv)
 		{"error-filter", required_argument,0, LONG_OPT_ERR_FILTER},
 		{NULL}
 	};
-	char *opt_string = "+hlquvV";
+	char *opt_string = "+hlQuvV";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -320,7 +320,7 @@ void set_options(const int argc, char **argv)
 		case 'l':
 			opt.labelio = true;
 			break;
-		case 'q':
+		case 'Q':
 			opt.quiet++;
 			break;
 		case 'u':
@@ -493,7 +493,7 @@ static void _help(void)
 "      --error-filter=taskid  only print stderr from the specified task\n"
 "  -l, --label        prepend task number to lines of stdout & stderr\n"
 "      --layout       print task layout info and exit (does not attach to tasks)\n"
-"  -q, --quiet        quiet mode (suppress informational messages)\n"
+"  -Q, --quiet        quiet mode (suppress informational messages)\n"
 "  -v, --verbose      verbose mode (multiple -v's increase verbosity)\n"
 "  -V, --version      print the SLURM version and exit\n\n"
 "Help options:\n"

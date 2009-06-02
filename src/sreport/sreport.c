@@ -87,7 +87,7 @@ main (int argc, char *argv[])
 		{"noheader", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2",0, 0, 'P'},
-		{"quiet",    0, 0, 'q'},
+		{"quiet",    0, 0, 'Q'},
 		{"sort",     0, 0, 's'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
@@ -116,7 +116,7 @@ main (int argc, char *argv[])
 	}
 	xfree(temp);
 
-	while((opt_char = getopt_long(argc, argv, "ahnpPqs:t:vV",
+	while((opt_char = getopt_long(argc, argv, "ahnpPQs:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -142,7 +142,7 @@ main (int argc, char *argv[])
 			print_fields_parsable_print =
 			PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
-		case (int)'q':
+		case (int)'Q':
 			quiet_flag = 1;
 			break;
 		case (int)'s':
@@ -631,7 +631,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      -n or --noheader: equivalent to \"noheader\" command                \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
-     -q or --quiet: equivalent to \"quiet\" command                        \n\
+     -Q or --quiet: equivalent to \"quiet\" command                        \n\
      -t <time_format>: Second, Minute, Hour, Percent, SecPer, MinPer, HourPer\n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\

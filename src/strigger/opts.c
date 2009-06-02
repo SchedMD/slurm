@@ -103,7 +103,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"node",      optional_argument, 0, 'n'},
 		{"offset",    required_argument, 0, 'o'},
 		{"program",   required_argument, 0, 'p'},
-		{"quiet",     no_argument,       0, 'q'},
+		{"quiet",     no_argument,       0, 'Q'},
 		{"reconfig",  no_argument,       0, 'r'},
 		{"time",      no_argument,       0, 't'},
 		{"up",        no_argument,       0, 'u'},
@@ -121,7 +121,7 @@ extern void parse_command_line(int argc, char *argv[])
 	_init_options();
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "dDFfi:Ij:no:p:qrtuvV",
+	while((opt_char = getopt_long(argc, argv, "dDFfi:Ij:no:p:QrtuvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -172,7 +172,7 @@ extern void parse_command_line(int argc, char *argv[])
 			xfree(params.program);
 			params.program = xstrdup(optarg);
 			break;
-		case (int)'q':
+		case (int)'Q':
 			params.quiet = true;
 		case (int)'r':
 			params.reconfig = true;
@@ -366,6 +366,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
   -n, --node[=host]   trigger related to specific node, all nodes by default\n\
   -o, --offset=#      trigger's offset time from event, negative to preceed\n\
   -p, --program=path  pathname of program to execute when triggered\n\
+  -Q, --quiet         quiet mode (suppress informational messages)\n\
   -r, --reconfig      trigger event on configuration changes\n\
   -t, --time          trigger event on job's time limit\n\
   -u, --up            trigger event when node returned to service from DOWN \n\

@@ -81,7 +81,7 @@ main (int argc, char *argv[])
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"oneliner", 0, 0, 'o'},
-		{"quiet",    0, 0, 'q'},
+		{"quiet",    0, 0, 'Q'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
@@ -100,7 +100,7 @@ main (int argc, char *argv[])
 	if (getenv ("SCONTROL_ALL"))
 		all_flag= 1;
 
-	while((opt_char = getopt_long(argc, argv, "ahoqvV",
+	while((opt_char = getopt_long(argc, argv, "ahoQvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -121,7 +121,7 @@ main (int argc, char *argv[])
 		case (int)'o':
 			one_liner = 1;
 			break;
-		case (int)'q':
+		case (int)'Q':
 			quiet_flag = 1;
 			break;
 		case (int)'v':
@@ -1254,7 +1254,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
-     -q or --quiet: equivalent to \"quiet\" command                        \n\
+     -Q or --quiet: equivalent to \"quiet\" command                        \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
