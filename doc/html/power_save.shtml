@@ -43,6 +43,8 @@ Maximum number of nodes to be placed into power saving mode
 per minute. 
 A value of zero results in no limits being imposed.
 The default value is 60.
+Rate calculations are performed using integers, so rounding errors
+may be significant for very small values (1 or 2 nodes per minute).
 Use this to prevent rapid drops in power requirements.</li>
 
 <li><b>ResumeRate</b>:
@@ -50,6 +52,8 @@ Maximum number of nodes to be removed from power saving mode
 per minute. 
 A value of zero results in no limits being imposed.
 The default value is 300.
+Rate calculations are performed using integers, so rounding errors
+may be significant for very small values (1 or 2 nodes per minute).
 Use this to prevent rapid increases in power requirements.</li>
 
 <li><b>SuspendProgram</b>:
@@ -219,6 +223,6 @@ In order to minimize this risk, when the <i>slurmctld</i> daemon is
 started and node which should be allocated to a job fails to respond, 
 the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
 
-<p style="text-align:center;">Last modified 27 May 2009</p>
+<p style="text-align:center;">Last modified 2 June 2009</p>
 
 <!--#include virtual="footer.txt"-->
