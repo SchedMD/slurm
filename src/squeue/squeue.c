@@ -56,7 +56,6 @@
  * Global Variables *
  ********************/
 struct squeue_parameters params;
-int quiet_flag = 0;
 int max_line_size;
 
 /************
@@ -178,9 +177,10 @@ _print_job ( void )
 	if (job_id)
 		old_job_ptr->last_update = (time_t) 0;
 	
-	if (quiet_flag == -1)
+	if (params.verbose) {
 		printf ("last_update_time=%ld\n", 
 		        (long) new_job_ptr->last_update);
+	}
 
 	if (params.format == NULL) {
 		if (params.long_list)
@@ -231,10 +231,11 @@ _print_job_steps( void )
 	}
 	old_step_ptr = new_step_ptr;
 
-	if (quiet_flag == -1)
+	if (params.verbose) {
 		printf ("last_update_time=%ld\n", 
 		        (long) new_step_ptr->last_update);
-	
+	}
+
 	if (params.format == NULL)
 		params.format = "%10i %.8j %.9P %.8u %.9M %N";
 	if (params.format_list == NULL)
