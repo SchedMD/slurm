@@ -68,7 +68,7 @@ if {$matches != 2} {
 # Report all slurm partitions with quiet option
 #
 set matches       0
-spawn $scontrol -q show partition
+spawn $scontrol -Q show partition
 expect {
 	-re "last_update_time" {
 		send_user "\nFAILURE: quiet format failure\n:
