@@ -265,7 +265,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 				       MAX(command_len, 1))) {
 			field->type = PRINT_TS;
 			field->name = xstrdup("Time");
-			field->len = 15;
+			field->len = 19;
 			field->print_routine = print_fields_date;
 		} else if(!strncasecmp("Users", object, MAX(command_len, 4))) {
 			field->type = PRINT_USER;

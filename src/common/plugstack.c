@@ -989,6 +989,9 @@ int spank_process_option(int optval, const char *arg)
 	struct spank_plugin_opt *opt;
 	int rc = 0;
 
+	if (option_cache == NULL || (list_count(option_cache) == 0))
+		return (-1);
+
 	opt =
 	    list_find_first(option_cache, (ListFindF) _opt_by_val,
 			    &optval);

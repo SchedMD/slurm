@@ -83,11 +83,17 @@ reservation. Note that the reservation creation request can also
 identify the partition from which to select the nodes or _one_
 feature that every selected node must contain.</p>
 
-<p>Reservations must not overlap. They must either include 
+<p>Reservations must not overlap, with the exception of 
+maintenance mode as described below. They must either include 
 different nodes or operate at different times. If specific nodes
 are not specified when a reservation is created, SLURM will 
 automatically select nodes to avoid overlap and insure that
-the selected nodes are available when the reservation begins.</p>
+the selected nodes are available when the reservation begins.
+For ease of system maintenance, you can create a reservation
+with the "maint" flag that overlaps existing reservations.
+This permits an administrator to easily create a maintenance 
+reservation for an entire cluster without needing to remove 
+or reschedule pre-existing reservations.</p>
 
 <h2>Reservation Use</h2>
 
@@ -153,7 +159,7 @@ made more flexible to accept multiple features with AND or OR operators.</li>
 </ol>
 
 
-<p style="text-align: center;">Last modified 12 May 2009</p>
+<p style="text-align: center;">Last modified 2 June 2009</p>
 
 <!--#include virtual="footer.txt"-->
 

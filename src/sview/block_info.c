@@ -547,7 +547,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 				break;
 			}
 		}
-		if(block_ptr->bg_conn_type == SELECT_SMALL)
+		if(block_ptr->bg_conn_type >= SELECT_SMALL)
 			block_ptr->size = 0;
 
 		list_append(block_list, block_ptr);
