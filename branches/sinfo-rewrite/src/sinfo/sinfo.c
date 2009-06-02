@@ -70,8 +70,7 @@ static int cpus_per_node = 1;
 static int  _bg_report(node_select_info_msg_t *node_select_ptr);
 static int  _build_sinfo_data(List sinfo_list, 
 			      partition_info_msg_t *partition_msg,
-			      node_info_msg_t *node_msg,
-			      node_select_info_msg_t *node_select_msg);
+			      node_info_msg_t *node_msg);
 static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr, 
 				   uint16_t part_inx, node_info_t *node_ptr,
 				   uint32_t node_scaling);
@@ -124,8 +123,7 @@ int main(int argc, char *argv[])
 			(void) _bg_report(node_select_msg);
 		else {
 			sinfo_list = list_create(_sinfo_list_delete);
-			_build_sinfo_data(sinfo_list, partition_msg,
-					  node_msg, node_select_msg);
+			_build_sinfo_data(sinfo_list, partition_msg, node_msg);
 	 		sort_sinfo_list(sinfo_list);
 			print_sinfo_list(sinfo_list);
 		}
@@ -324,13 +322,11 @@ _query_server(partition_info_msg_t ** part_pptr,
  * sinfo_list IN/OUT - list of unique sinfo_data records to report
  * partition_msg IN - partition info message
  * node_msg IN - node info message
- * node_select_msg IN - node select info message (used for bluegene systems)
  * RET zero or error code 
  */
 static int _build_sinfo_data(List sinfo_list, 
 			     partition_info_msg_t *partition_msg, 
-			     node_info_msg_t *node_msg,
-			     node_select_info_msg_t *node_select_msg)
+			     node_info_msg_t *node_msg)
 {
 	node_info_t *node_ptr = NULL;
 	partition_info_t *part_ptr = NULL;

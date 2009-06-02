@@ -1296,9 +1296,8 @@ extern int init(void)
 	error("%s is incompatable with BlueGene", plugin_name);
 	fatal("Use SelectType=select/bluegene");
 #endif
-	cr_type = (select_type_plugin_info_t)
-			slurmctld_conf.select_type_param;
-	info("%s loaded with argument %d ", plugin_name, cr_type);
+	cr_type = (select_type_plugin_info_t)slurmctld_conf.select_type_param;
+	verbose("%s loaded with argument %d ", plugin_name, cr_type);
 
 	return SLURM_SUCCESS;
 }
