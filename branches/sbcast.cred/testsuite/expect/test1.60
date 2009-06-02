@@ -1,0 +1,204 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test srun stdout/err labelling combined with file template
+#          options with %t and %N.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Dave Bremer <dbremer@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "1.60"
+set exit_code        0
+set file_out_n       "test$test_id.n.%n.output"
+set file_out_t       "test$test_id.t.%t.output"
+set job_id           0
+set node_count       0
+set task_count       0
+set task_id          0
+set node_id          0
+set file_cnt         0
+set file_out_t_glob  ""
+set file_out_n_glob  ""
+
+print_header $test_id
+
+#
+# Spawn a program that generates "task_id" (%t) in stdout file names
+# and confirm they are created
+#
+for {set task_id 0} {$task_id < $node_count} {incr task_id} {
+	set file_out_t_glob  "test$test_id.t.$task_id.output"
+	exec $bin_rm -f $file_out_t_glob
+}
+set timeout $max_job_delay
+set srun_pid [spawn $srun -l --output=$file_out_t -N 1-10 -v -t1 $bin_echo hello]
+expect {
+	-re "jobid ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: job initiation failed\n"
+	exit 1
+}
+
+set node_count 0
+spawn $squeue -tall -j $job_id -o "%i %o"
+expect {
+	-re "$job_id ($number)" {
+		set node_count $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$node_count == 0} {
+	send_user "\nFAILURE: did not get node_count\n"
+	cancel_job $job_id
+	exit 1
+}
+
+set file_cnt 0
+for {set task_id 0} {$task_id < $node_count} {incr task_id} {
+	set file_out_t_glob  "test$test_id.t.$task_id.output"
+	if {[wait_for_file $file_out_t_glob] != 0} {
+		set exit_code 1
+	} else {
+		set test_task_id -1
+		spawn $bin_cat $file_out_t_glob
+		expect {
+			-re "($number): *hello" {
+				set test_task_id $expect_out(1,string)
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+		if {$task_id != $test_task_id} {
+			send_user "\nFAILURE: file $file_out_t_glob was not labelled.  $task_id != $test_task_id\n"
+			set exit_code 1
+		} else {
+			exec $bin_rm -f $file_out_t_glob
+		}
+		incr file_cnt
+	}
+}
+if {$file_cnt != $node_count} {
+	send_user "\nFAILURE: file format of %t in stdout failed\n"
+	set exit_code 1
+}
+if {$exit_code != 0} {
+	exit $exit_code
+}
+
+#
+# Spawn a program that generates "node_id" (%n) in stdout file names
+# and confirm they are created
+#
+for {set node_id 0} {$node_id < $node_count} {incr node_id} {
+	set file_out_n_glob  "test$test_id.n.$node_id.output"
+	exec $bin_rm -f $file_out_n_glob
+}
+
+set task_count [expr $node_count * 2]
+set timeout $max_job_delay
+set srun_pid [spawn $srun -l --output=$file_out_n -N $node_count -n $task_count -O -v -t1 $bin_echo hello]
+expect {
+	-re "jobid ($number).*" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: job initiation failed\n"
+	exit 1
+}
+
+
+for {set node_id 0} {$node_id < $node_count} {incr node_id} {
+	set file_out_n_glob  "test$test_id.n.$node_id.output"
+	if {[wait_for_file $file_out_n_glob] != 0} {
+		set exit_code 1
+	} else {
+		set t0found false
+		set t1found false
+
+		spawn $bin_cat $file_out_n_glob
+		expect {
+			-re "($number): *hello" {
+				set test_task_id $expect_out(1,string)
+				if {$test_task_id == $node_id * 2} {
+					set t0found true
+				}
+				if {$test_task_id == $node_id * 2 + 1} {
+					set t1found true
+				}
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+		if {!$t0found || !$t1found} {
+			send_user "\nFAILURE: file $file_out_n_glob was not labelled correctly\n"
+			set exit_code 1
+		} else {
+			exec $bin_rm -f $file_out_n_glob
+		}
+		incr file_cnt
+	}
+}
+
+
+#
+# Post-processing
+#
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
