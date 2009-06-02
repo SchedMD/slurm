@@ -654,6 +654,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 	total_cpus = node_ptr->cpus;
 	total_nodes = node_scaling;
+
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
@@ -662,9 +663,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &error_cpus);
-
 #ifdef HAVE_BG
-	if(params.match_flags.cpus_flag) {
+	if(params.match_flags.cpus_flag && (used_cpus || error_cpus)) {
 		/* we only get one shot at this (because the node name
 		   is the same), so we need to make
 		   sure we get all the subgrps accounted for here */
@@ -711,15 +711,21 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 
 	sinfo_ptr->cpus_alloc += used_cpus;
-	total_cpus -= used_cpus + error_cpus;
 	sinfo_ptr->cpus_total += total_cpus;
+	total_cpus -= used_cpus + error_cpus;
+
 	if(error_cpus) {
 		sinfo_ptr->cpus_idle += total_cpus;
 		sinfo_ptr->cpus_other += error_cpus;
-	} else if (base_state == NODE_STATE_IDLE) 
-		sinfo_ptr->cpus_idle += total_cpus;
-	else 
+	} else if ((node_ptr->node_state & NODE_STATE_DRAIN) ||
+		   (base_state == NODE_STATE_DOWN)) {
 		sinfo_ptr->cpus_other += total_cpus;
+	} else 
+		sinfo_ptr->cpus_idle += total_cpus;
+	
+/* 	info("count is now %d %d %d %d",  */
+/* 	     sinfo_ptr->cpus_alloc, sinfo_ptr->cpus_idle, */
+/* 	     sinfo_ptr->cpus_other, sinfo_ptr->cpus_total); */
 }
 
 static int _insert_node_ptr(List sinfo_list, uint16_t part_num, 
