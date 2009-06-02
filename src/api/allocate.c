@@ -411,7 +411,7 @@ slurm_allocation_lookup(uint32_t jobid,
 
 /*
  * slurm_allocation_lookup_lite - retrieve info for an existing resource 
- *                                allocation with out the addrs and such
+ *                                allocation without the addrs and such
  * IN jobid - job allocation identifier
  * OUT info - job allocation information
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
