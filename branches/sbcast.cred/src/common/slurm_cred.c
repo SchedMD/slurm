@@ -146,6 +146,7 @@ struct slurm_job_credential {
 	uint32_t  jobid;	/* Job ID associated with this cred	*/
 	uint32_t  stepid;	/* Job step ID for this credential	*/
 	uid_t     uid;		/* user for which this cred is valid	*/
+	uid_t     create_uid;	/* uid of credential creator		*/
 	uint32_t  job_mem;	/* MB of memory reserved per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (no limit) */
@@ -612,11 +613,12 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 
 	xassert(cred->magic == CRED_MAGIC);
 
-	cred->jobid  = arg->jobid;
-	cred->stepid = arg->stepid;
-	cred->uid    = arg->uid;
-	cred->job_mem = arg->job_mem;
-	cred->nodes  = xstrdup(arg->hostlist);
+	cred->jobid      = arg->jobid;
+	cred->stepid     = arg->stepid;
+	cred->uid        = arg->uid;
+	cred->create_uid = getuid();
+	cred->job_mem    = arg->job_mem;
+	cred->nodes      = xstrdup(arg->hostlist);
 #ifndef HAVE_BG
 {
 	int i, sock_recs = 0;
@@ -676,11 +678,12 @@ slurm_cred_copy(slurm_cred_t cred)
 
 	xassert(rcred->magic == CRED_MAGIC);
 
-	rcred->jobid  = cred->jobid;
-	rcred->stepid = cred->stepid;
-	rcred->uid    = cred->uid;
-	rcred->job_mem = cred->job_mem;
-	rcred->nodes  = xstrdup(cred->nodes);
+	rcred->jobid      = cred->jobid;
+	rcred->stepid     = cred->stepid;
+	rcred->uid        = cred->uid;
+	rcred->create_uid = cred->create_uid;
+	rcred->job_mem    = cred->job_mem;
+	rcred->nodes      = xstrdup(cred->nodes);
 #ifndef HAVE_BG
 	rcred->core_bitmap = bit_copy(cred->core_bitmap);
 	rcred->core_array_size = cred->core_array_size;
@@ -723,11 +726,12 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 
 	slurm_mutex_lock(&cred->mutex);
 
-	cred->jobid    = arg->jobid;
-	cred->stepid   = arg->stepid;
-	cred->uid      = arg->uid;
-	cred->job_mem  = arg->job_mem;
-	cred->nodes    = xstrdup(arg->hostlist);
+	cred->jobid      = arg->jobid;
+	cred->stepid     = arg->stepid;
+	cred->uid        = arg->uid;
+	cred->create_uid = getuid();
+	cred->job_mem    = arg->job_mem;
+	cred->nodes      = xstrdup(arg->hostlist);
 #ifndef HAVE_BG
 {
 	int i, sock_recs = 0;
@@ -800,18 +804,19 @@ slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg)
 	 * set arguments to cred contents
 	 */
 	slurm_mutex_lock(&cred->mutex);
-	arg->jobid    = cred->jobid;
-	arg->stepid   = cred->stepid;
-	arg->uid      = cred->uid;
-	arg->job_mem  = cred->job_mem;
-	arg->hostlist = xstrdup(cred->nodes);
+	arg->jobid      = cred->jobid;
+	arg->stepid     = cred->stepid;
+	arg->uid        = cred->uid;
+	arg->create_uid = cred->create_uid;
+	arg->job_mem    = cred->job_mem;
+	arg->hostlist   = xstrdup(cred->nodes);
 #ifdef HAVE_BG
-	arg->core_bitmap = NULL;
-	arg->cores_per_socket = NULL;
-	arg->sockets_per_node = NULL;
+	arg->core_bitmap         = NULL;
+	arg->cores_per_socket    = NULL;
+	arg->sockets_per_node    = NULL;
 	arg->sock_core_rep_count = NULL;
-	arg->job_nhosts = 0;
-	arg->job_hostlist = NULL;
+	arg->job_nhosts          = 0;
+	arg->job_hostlist        = NULL;
 #else
 	arg->core_bitmap = bit_copy(cred->core_bitmap);
 	arg->cores_per_socket = xmalloc(sizeof(uint16_t) * 
@@ -881,11 +886,12 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 	/*
 	 * set arguments to cred contents
 	 */
-	arg->jobid    = cred->jobid;
-	arg->stepid   = cred->stepid;
-	arg->uid      = cred->uid;
-	arg->job_mem  = cred->job_mem;
-	arg->hostlist = xstrdup(cred->nodes);
+	arg->jobid      = cred->jobid;
+	arg->stepid     = cred->stepid;
+	arg->uid        = cred->uid;
+	arg->create_uid = cred->create_uid;
+	arg->job_mem    = cred->job_mem;
+	arg->hostlist   = xstrdup(cred->nodes);
 
 #ifdef HAVE_BG
 	arg->core_bitmap = NULL;
@@ -1141,6 +1147,8 @@ slurm_cred_unpack(Buf buffer)
 	safe_unpack32(          &cred->stepid,        buffer);
 	safe_unpack32(          &cred_uid,            buffer);
 	cred->uid = cred_uid;
+	safe_unpack32(          &cred_uid,            buffer);
+	cred->create_uid = cred_uid;
 	safe_unpack32(          &cred->job_mem,       buffer);
 	safe_unpackstr_xmalloc( &cred->nodes, &len,   buffer);
 	safe_unpack_time(       &cred->ctime,         buffer);
@@ -1231,6 +1239,7 @@ slurm_cred_print(slurm_cred_t cred)
 	info("Cred: Jobid         %u",  cred->jobid         );
 	info("Cred: Stepid        %u",  cred->jobid         );
 	info("Cred: UID           %u",  (uint32_t) cred->uid);
+	info("Cred: Create_UID    %u",  (uint32_t) cred->create_uid);
 	info("Cred: job_mem       %u",  cred->job_mem       );
 	info("Cred: Nodes         %s",  cred->nodes         );
 	info("Cred: ctime         %s",  ctime(&cred->ctime) );
@@ -1371,7 +1380,8 @@ _slurm_cred_alloc(void)
 	/* Contents initialized to zero */
 
 	slurm_mutex_init(&cred->mutex);
-	cred->uid = (uid_t) -1;
+	cred->uid        = (uid_t) -1;
+	cred->create_uid = (uid_t) -1;
 
 	xassert(cred->magic = CRED_MAGIC);
 
@@ -1445,10 +1455,13 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 static void
 _pack_cred(slurm_cred_t cred, Buf buffer)
 {
-	uint32_t cred_uid = (uint32_t) cred->uid;
+	uint32_t cred_uid;
 
 	pack32(cred->jobid,    buffer);
 	pack32(cred->stepid,   buffer);
+	cred_uid = (uint32_t) cred->uid;
+	pack32(cred_uid,       buffer);
+	cred_uid = (uint32_t) cred->create_uid;
 	pack32(cred_uid,       buffer);
 	pack32(cred->job_mem,  buffer);
 	packstr(cred->nodes,   buffer);

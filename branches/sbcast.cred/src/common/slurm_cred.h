@@ -139,6 +139,7 @@ typedef struct {
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (no limit) */
 	uid_t    uid;
+	uid_t    create_uid;	/* creator of cred, used only for output */
 	char    *hostlist;
 
 	bitstr_t *core_bitmap;
