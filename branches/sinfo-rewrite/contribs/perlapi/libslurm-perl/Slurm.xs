@@ -469,7 +469,10 @@ slurm_update_job(slurm_t self, HV* job_info = NULL)
 		RETVAL
 
 #int
-#slurm_get_select_jobinfo(slurm_t self, select_jobinfo_t jobinfo, int data_type, void* data)
+#slurm_get_select_jobinfo(slurm_t self, select_jobinfo_t *jobinfo, int data_type, void* data)
+
+#int
+#slurm_get_select_nodeinfo(slurm_t self, select_nodeinfo_t *nodeinfo, int data_type, int state, void* data)
 
 
 ######################################################################
