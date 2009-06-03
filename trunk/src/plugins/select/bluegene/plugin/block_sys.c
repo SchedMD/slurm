@@ -1155,7 +1155,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		bg_record->state = bg_info_record->state;
 		bg_record->job_running = NO_JOB_RUNNING;
 
-		bg_record->bp_count = bit_size(node_bitmap);
+		bg_record->bp_count = bit_set_count(node_bitmap);
 		bg_record->node_cnt = bg_info_record->node_cnt;
 		if(bg_conf->bp_node_cnt > bg_record->node_cnt) {
 			ionodes = bg_conf->bp_node_cnt 
