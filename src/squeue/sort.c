@@ -108,6 +108,8 @@ void sort_job_list(List job_list)
 			list_sort(job_list, _sort_job_by_num_procs);
 		else if (params.sort[i] == 'd')
 			list_sort(job_list, _sort_job_by_min_tmp_disk);
+		else if (params.sort[i] == 'D')
+			list_sort(job_list, _sort_job_by_num_nodes);
 		else if (params.sort[i] == 'e')
 			list_sort(job_list, _sort_job_by_time_end);
 		else if (params.sort[i] == 'f')
@@ -138,8 +140,6 @@ void sort_job_list(List job_list)
 			;	/* sort_job_by_nodes_requested */
 		else if (params.sort[i] == 'N')
 			list_sort(job_list, _sort_job_by_node_list);
-		else if (params.sort[i] == 'o')
-			list_sort(job_list, _sort_job_by_num_nodes);
 		else if (params.sort[i] == 'O')
 			;	/* sort_job_by_contiguous */
 		else if (params.sort[i] == 'p')

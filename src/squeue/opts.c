@@ -485,6 +485,11 @@ extern int parse_format( char* format )
 				                          field_size, 
 				                          right_justify, 
 				                          suffix  );
+			else if (field[0] == 'D')
+				job_format_add_num_nodes( params.format_list,
+				                          field_size, 
+				                          right_justify, 
+				                          suffix  );
 			else if (field[0] == 'e')
 				job_format_add_time_end( params.format_list, 
 				                         field_size, 
@@ -563,11 +568,6 @@ extern int parse_format( char* format )
 				job_format_add_nodes( params.format_list, 
 				                      field_size, 
 				                      right_justify, suffix );
-			else if (field[0] == 'o')
-				job_format_add_num_nodes( params.format_list, 
-				                          field_size, 
-				                          right_justify, 
-				                          suffix );
 			else if (field[0] == 'O')
 				job_format_add_contiguous( params.format_list, 
 				                           field_size, 
