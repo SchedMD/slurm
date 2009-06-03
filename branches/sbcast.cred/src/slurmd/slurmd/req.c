@@ -656,6 +656,15 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			debug("_check_job_credential slurm_cred_verify failed:"
 			      " %m, but continuing anyway.");
 		}
+	} else {
+		uid_t cred_uid = g_slurm_auth_get_uid(cred, NULL);
+		if (!_slurm_authorized_user(cred_uid)) {
+			error("Security violation: job cred build by uid %u",
+			      (uint32_t) cred_uid);
+			slurm_cred_free_args(&arg);
+			return SLURM_ERROR;
+		}
+info("cred_uid:%u", (uint32_t)cred_uid);
 	}
 
 	/* If uid is the SlurmUser or root and the credential is bad,
