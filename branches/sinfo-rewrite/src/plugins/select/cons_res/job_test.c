@@ -1833,7 +1833,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bit_copybits(free_cores, avail_cores);
 	
 	for (jp_ptr = cr_part_ptr; jp_ptr; jp_ptr = jp_ptr->next) {
-		if (strcmp(jp_ptr->name, job_ptr->part_ptr->name) == 0)
+		if (jp_ptr->part_ptr == job_ptr->part_ptr)
 			break;
 	}
 	if (!jp_ptr)
@@ -1842,7 +1842,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* remove hi-pri existing allocations from avail_cores */
 	for(p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
-		if (p_ptr->priority <= jp_ptr->priority)
+		if (p_ptr->part_ptr->priority <= jp_ptr->part_ptr->priority)
 			continue;
 		if (!p_ptr->row)
 			continue;
@@ -1876,7 +1876,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	
 	/* remove same-priority existing allocations from free_cores */
 	for(p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
-		if (p_ptr->priority != jp_ptr->priority)
+		if (p_ptr->part_ptr->priority != jp_ptr->part_ptr->priority)
 			continue;
 		if (!p_ptr->row)
 			continue;

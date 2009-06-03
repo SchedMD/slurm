@@ -89,11 +89,10 @@ struct part_row_data {
 
 /* partition CPU allocation data */
 struct part_res_record {
-	char *name;			/* name of the partition */
-	uint16_t priority;		/* Partition priority */
-	uint16_t num_rows;		/* Number of row_bitmaps */
-	struct part_row_data *row;	/* array of rows containing jobs */
 	struct part_res_record *next;	/* Ptr to next part_res_record */
+	uint16_t num_rows;		/* Number of row_bitmaps */
+	struct part_record *part_ptr;   /* controller part record pointer */
+	struct part_row_data *row;	/* array of rows containing jobs */
 };
 
 /* per-node resource data */

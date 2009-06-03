@@ -218,8 +218,8 @@ static void _dump_nodes()
 static void _dump_part(struct part_res_record *p_ptr)
 {
 	uint16_t i;
-	info("part:%s rows:%u pri:%u ", p_ptr->name, p_ptr->num_rows,
-		p_ptr->priority);
+	info("part:%s rows:%u pri:%u ", p_ptr->part_ptr->name, p_ptr->num_rows,
+		p_ptr->part_ptr->priority);
 	if (!p_ptr->row)
 		return;
 
@@ -381,8 +381,7 @@ static struct part_res_record *_dup_part_data(struct part_res_record *orig_ptr)
 	new_ptr = new_part_ptr;
 
 	while (orig_ptr) {
-		new_ptr->name = xstrdup(orig_ptr->name);
-		new_ptr->priority = orig_ptr->priority;
+		new_ptr->part_ptr = orig_ptr->part_ptr;
 		new_ptr->num_rows = orig_ptr->num_rows;
 		new_ptr->row = _dup_row_data(orig_ptr->row, orig_ptr->num_rows);
 		if (orig_ptr->next) {
@@ -449,8 +448,8 @@ static void _destroy_part_data(struct part_res_record *this_ptr)
 	while (this_ptr) {
 		struct part_res_record *tmp = this_ptr;
 		this_ptr = this_ptr->next;
-		xfree(tmp->name);
-		tmp->name = NULL;
+		tmp->part_ptr = NULL;
+
 		if (tmp->row) {
 			_destroy_row_data(tmp->row, tmp->num_rows);
 			tmp->row = NULL;
@@ -484,7 +483,7 @@ static void _create_part_data()
 		fatal ("memory allocation failure");
 
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
-		this_ptr->name = xstrdup(p_ptr->name);
+		this_ptr->part_ptr = p_ptr;
 		this_ptr->num_rows = p_ptr->max_share;
 		if (this_ptr->num_rows & SHARED_FORCE)
 			this_ptr->num_rows &= (~SHARED_FORCE);
@@ -493,7 +492,6 @@ static void _create_part_data()
 			this_ptr->num_rows = 1;
 		/* we'll leave the 'row' array blank for now */
 		this_ptr->row = NULL;
-		this_ptr->priority = p_ptr->priority;
 		num_parts--;
 		if (num_parts) {
 			this_ptr->next =xmalloc(sizeof(struct part_res_record));
@@ -873,14 +871,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	
 	/* add cores */
 	if (action != 1) {
-		/* FIX ME: Couldn't we just put the part_ptr from the
-		 * controller in the p_ptr so we don't have to keep
-		 * track of things that may change here?  That way we
-		 * could just do a quick pointer check instead of a
-		 * strcmp here. 
-		 */
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
-			if (strcmp(p_ptr->name, job_ptr->part_ptr->name) == 0)
+			if (p_ptr->part_ptr == job_ptr->part_ptr)
 				break;
 		}
 		if (!p_ptr) {
@@ -898,7 +890,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			if (!_can_job_fit_in_row(job, &(p_ptr->row[i])))
 				continue;
 			debug3("cons_res: adding job %u to part %s row %u",
-			job_ptr->job_id, p_ptr->name, i);
+			job_ptr->job_id, p_ptr->part_ptr->name, i);
 			_add_job_to_row(job, &(p_ptr->row[i]));
 			break;
 		}
@@ -977,7 +969,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		struct part_res_record *p_ptr;
 		
 		for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
-			if (strcmp(p_ptr->name, job_ptr->part_ptr->name) == 0)
+			if (p_ptr->part_ptr == job_ptr->part_ptr)
 				break;
 		}
 		if (!p_ptr) {
@@ -999,7 +991,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 					continue;
 				debug3("cons_res: removing job %u from "
 				       "part %s row %u",
-				       job_ptr->job_id, p_ptr->name, i);
+				       job_ptr->job_id,
+				       p_ptr->part_ptr->name, i);
 				for (; j < p_ptr->row[i].num_jobs-1; j++) {
 					p_ptr->row[i].job_list[j] =
 						p_ptr->row[i].job_list[j+1];
@@ -1194,7 +1187,8 @@ static uint16_t _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 		 */
 		struct part_res_record *s_ptr;
 		for (s_ptr = select_part_record; s_ptr; s_ptr = s_ptr->next) {
-			if (s_ptr->priority < p_ptr->priority)
+			if (s_ptr->part_ptr->priority 
+			    < p_ptr->part_ptr->priority)
 				continue;
 			if (!s_ptr->row || !s_ptr->row[0].row_bitmap)
 				continue;
@@ -1254,7 +1248,7 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 		fatal("cons_res: error: don't know what job I'm sync'ing");
 		
 	for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
-		if (job_ptr && strcmp(p_ptr->name,job_ptr->part_ptr->name) == 0)
+		if (p_ptr->part_ptr == job_ptr->part_ptr)
 			break;
 	}
 
@@ -1273,7 +1267,7 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 	idlecpus = bit_set_count(bitmap);
 	if (p_ptr)
 		debug3("cons_res: found %d partially idle nodes in part %s",
-			idlecpus, p_ptr->name);
+			idlecpus, p_ptr->part_ptr->name);
 	else
 		debug3("cons_res: found %d partially idle nodes",
 			idlecpus);

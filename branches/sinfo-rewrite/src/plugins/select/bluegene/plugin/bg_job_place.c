@@ -1478,15 +1478,18 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				       bg_record->bg_block_id,
 				       bg_record->nodes);
 				
-				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_BLOCK_ID,
-						     bg_record->bg_block_id);
-				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_NODE_CNT, 
-						     &bg_record->node_cnt);
-				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_GEOMETRY, 
-						     &bg_record->geo);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_BLOCK_ID,
+					bg_record->bg_block_id);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_NODE_CNT, 
+					&bg_record->node_cnt);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_GEOMETRY, 
+					&bg_record->geo);
 
 				/* tmp16 = bg_record->conn_type; */
 /* 				select_g_select_jobinfo_set(job_ptr->select_jobinfo, */
@@ -1571,13 +1574,15 @@ extern int test_job_list(List req_list)
 				else
 					conn_type = SELECT_SMALL;
 			}
-			select_g_select_jobinfo_set(will_run->job_ptr->select_jobinfo,
-					     SELECT_JOBDATA_CONN_TYPE,
-					     &conn_type);
+			select_g_select_jobinfo_set(
+				will_run->job_ptr->select_jobinfo,
+				SELECT_JOBDATA_CONN_TYPE,
+				&conn_type);
 		}
-		select_g_select_jobinfo_sprint(will_run->job_ptr->select_jobinfo,
-					buf, sizeof(buf), 
-					SELECT_PRINT_MIXED);
+		select_g_select_jobinfo_sprint(
+			will_run->job_ptr->select_jobinfo,
+			buf, sizeof(buf), 
+			SELECT_PRINT_MIXED);
 		debug("bluegene:submit_job_list: %s nodes=%u-%u-%u", 
 		      buf, will_run->min_nodes,
 		      will_run->req_nodes, will_run->max_nodes);
@@ -1754,8 +1759,7 @@ extern int test_job_list(List req_list)
 	list_iterator_destroy(itr);
 
 	if(bg_conf->layout_mode == LAYOUT_DYNAMIC) 		
-		slurm_mutex_unlock(&create_dynamic_mutex);
-	
+		slurm_mutex_unlock(&create_dynamic_mutex);	
 
 	list_destroy(block_list);
 	list_destroy(job_block_test_list);
