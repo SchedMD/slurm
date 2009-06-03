@@ -160,6 +160,8 @@ typedef enum {
 	RESPONSE_JOB_READY,
 	REQUEST_JOB_END_TIME,
 	REQUEST_JOB_NOTIFY,
+	REQUEST_JOB_SBCAST_CRED,
+	RESPONSE_JOB_SBCAST_CRED,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -856,6 +858,7 @@ void inline slurm_free_job_step_info_request_msg(
 void inline slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 void inline slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
 void inline slurm_free_resv_info_request_msg(resv_info_request_msg_t *msg);
+void inline slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg);
 void inline slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
 void inline slurm_destroy_association_shares_object(void *object);
 void inline slurm_free_shares_request_msg(shares_request_msg_t *msg);

@@ -4,8 +4,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>, 
- *	Joey Ekstrom <ekstrom1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -999,6 +998,13 @@ typedef struct job_alloc_info_response_msg {
 			* use select_g_get_jobinfo() to access conents */
 } job_alloc_info_response_msg_t;
 
+typedef struct job_sbcast_cred_msg {
+	uint32_t job_id;	/* assigned job id */
+	char *node_list;	/* assigned list of nodes */
+	uint32_t node_cnt;	/* count of nodes */
+	slurm_addr *node_addr;	/* network addresses */
+} job_sbcast_cred_msg_t;
+
 typedef struct partition_info_msg {
 	time_t last_update;	/* time of latest info */
 	uint32_t record_count;	/* number of records */
@@ -1384,6 +1390,7 @@ extern void slurm_free_job_alloc_info_response_msg PARAMS((
  */
 extern int slurm_allocation_lookup PARAMS((
 	uint32_t job_id, job_alloc_info_response_msg_t **info));
+
 /*
  * slurm_allocation_lookup_lite - retrieve minor info for an existing 
  *				  resource allocation
@@ -1458,10 +1465,18 @@ extern void slurm_free_submit_response_response_msg PARAMS((
  * IN job_desc_msg - description of resource allocation request
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_job_will_run PARAMS((
-	job_desc_msg_t * job_desc_msg));
+extern int slurm_job_will_run PARAMS((job_desc_msg_t * job_desc_msg));
 
-
+/*
+ * slurm_sbcast_lookup - retrieve info for an existing resource allocation
+ *	including a credential needed for sbcast
+ * IN jobid - job allocation identifier
+ * OUT info - job allocation information including a credential for sbcast
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
+ */
+extern int slurm_sbcast_lookup PARAMS((uint32_t jobid,
+				       job_sbcast_cred_msg_t **info));
 /*****************************************************************************\
  *	JOB/STEP SIGNALING FUNCTIONS
 \*****************************************************************************/

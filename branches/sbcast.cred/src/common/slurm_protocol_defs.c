@@ -1139,6 +1139,21 @@ void slurm_free_resource_allocation_response_msg (
 }
 
 /*
+ * slurm_free_sbcast_cred_msg - free slurm resource allocation response 
+ *	message including an sbcast credential
+ * IN msg - pointer to response message from slurm_sbcast_lookup()
+ * NOTE: buffer is loaded by slurm_allocate_resources
+ */
+void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->node_addr);
+		xfree(msg->node_list);
+		xfree(msg);
+	}
+}
+
+/*
  * slurm_free_job_alloc_info_response_msg - free slurm job allocation
  *	                                    info response message
  * IN msg - pointer to job allocation info response message

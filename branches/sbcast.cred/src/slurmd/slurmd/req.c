@@ -1980,15 +1980,15 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	info("last_block=%u force=%u modes=%o",
 	      req->last_block, req->force, req->modes);
 	info("uid=%u gid=%u atime=%lu mtime=%lu block_len[0]=%u",
-	     req->uid, req->gid, req->atime, req->mtime, req->block_len[0]);
+	     req->uid, req->gid, req->atime, req->mtime, req->block_len);
 #if 0
 	/* when the file being transferred is binary, the following line
 	 * can break the terminal output for slurmd */
 	info("req->block[0]=%s, @ %lu", \
-	     req->block[0], (unsigned long) &req->block[0]);
+	     req->block[0], (unsigned long) &req->block);
 #endif
 #endif
-	if ((rc = _valid_sbcast_cred(req, req_uid)) != SLURM_SUCCESS);
+	if ((rc = _valid_sbcast_cred(req, req_uid)) != SLURM_SUCCESS)
 		return rc;
 
 	info("sbcast req_uid=%u fname=%s block_no=%u", 

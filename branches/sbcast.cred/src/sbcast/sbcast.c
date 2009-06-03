@@ -61,10 +61,10 @@
 #include "src/sbcast/sbcast.h"
 
 /* global variables */
-int fd;						/* source file descriptor */
-struct sbcast_parameters params;		/* program parameters */
-struct stat f_stat;				/* source file stats */
-job_alloc_info_response_msg_t *alloc_resp;	/* job specification */
+int fd;					/* source file descriptor */
+struct sbcast_parameters params;	/* program parameters */
+struct stat f_stat;			/* source file stats */
+job_sbcast_cred_msg_t *sbcast_cred;	/* job alloc info and sbcast cred */
 
 static void _bcast_file(void);
 static void _get_job_info(void);
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 
 	/* transmit the file */
 	_bcast_file();
-/*	slurm_free_resource_allocation_response_msg(alloc_resp); */
+/*	slurm_free_sbcast_cred_msg(sbcast_cred); */
 
 	exit(0);
 }
@@ -125,15 +125,15 @@ static void _get_job_info(void)
 	jobid = (uint32_t) atol(jobid_str);
 	verbose("jobid      = %u", jobid);
 
-	if (slurm_allocation_lookup(jobid, &alloc_resp) != SLURM_SUCCESS) {
+	if (slurm_sbcast_lookup(jobid, &sbcast_cred) != SLURM_SUCCESS) {
 		error("SLURM jobid %u lookup error: %s",
 		      jobid, slurm_strerror(slurm_get_errno()));
 		exit(1);
 	}
 
-	verbose("node_list  = %s", alloc_resp->node_list);
-	verbose("node_cnt   = %u", alloc_resp->node_cnt);
-	/* also see alloc_resp->node_addr (array) */
+	verbose("node_list  = %s", sbcast_cred->node_list);
+	verbose("node_cnt   = %u", sbcast_cred->node_cnt);
+	/* also see sbcast_cred->node_addr (array) */
 
 	/* do not bother to release the return message,
 	 * we need to preserve and use most of the information later */
@@ -215,7 +215,7 @@ static void _bcast_file(void)
 		if (size_read >= f_stat.st_size)
 			bcast_msg.last_block = 1;
 			
-		send_rpc(&bcast_msg, alloc_resp);
+		send_rpc(&bcast_msg, sbcast_cred);
 		if (bcast_msg.last_block)
 			break;	/* end of file */
 		bcast_msg.block_no++;
