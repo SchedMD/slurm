@@ -3173,6 +3173,8 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	char *my_prolog;
 	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env, 
 				   spank_job_env_size);
+	time_t start_time = time(NULL), diff_time;
+	static uint16_t msg_timeout = 0;
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
@@ -3181,6 +3183,14 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	error_code = run_script("prolog", my_prolog, jobid, -1, my_env);
 	xfree(my_prolog);
 	_destroy_env(my_env);
+
+	diff_time = difftime(time(NULL), start_time);
+	if (msg_timeout == 0)
+		msg_timeout = slurm_get_msg_timeout();
+	if (diff_time >= msg_timeout) {
+		error("prolog for job %u ran for %d seconds", 
+		      jobid, diff_time);
+	}
 
 	return error_code;
 }

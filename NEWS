@@ -26,7 +26,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.0.1
 ========================
  -- Fix, truncate time of start and end for job steps in sacct.
- -- initialize all messages to slurmdbd
+ -- Initialize all messages to slurmdbd. Previously uninitialized string could
+    cause slurmctld to fail with invalid memory reference.
  -- BLUEGENE - Fix, for when trying to finish a torus on a block already 
     visited.  Even though this may be possible electrically this isn't valid
     in the under lying infrastructure.
@@ -45,6 +46,11 @@ documents those changes that are of interest to users and admins.
  -- Fix "-Q" (quiet) option for salloc and sbatch which was previously 
     ignored.
  -- BLUEGENE - fix for finding odd shaped blocks in dynamic mode.
+ -- Fix logic supporting SuspendRate and ResumeRate configuration parameters.
+    Previous logic was changing state of one too many nodes per minute.
+ -- Save new reservation state file on shutdown (even if no changes).
+ -- Fix, when partitions are deleted the sched and select plugins are notified.
+ -- Fix linking problem that prevented checkpoint/aix from working.
 
 * Changes in SLURM 2.0.0
 ========================

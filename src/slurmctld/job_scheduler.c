@@ -393,7 +393,8 @@ extern int schedule(void)
 				bit_not(job_ptr->part_ptr->node_bitmap);
 			}
 		} else if (error_code == ESLURM_RESERVATION_NOT_USABLE) {
-			if (job_ptr->resv_ptr && job_ptr->resv_ptr->node_bitmap) {
+			if (job_ptr->resv_ptr 
+			    && job_ptr->resv_ptr->node_bitmap) {
 				bit_not(job_ptr->resv_ptr->node_bitmap);
 				bit_and(avail_node_bitmap, 
 					job_ptr->resv_ptr->node_bitmap);

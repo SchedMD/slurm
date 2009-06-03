@@ -1358,8 +1358,9 @@ void save_all_state(void)
 {
 	/* Each of these functions lock their own databases */
 	schedule_job_save();
-	schedule_part_save();
 	schedule_node_save();
+	schedule_part_save();
+	schedule_resv_save();
 	schedule_trigger_save();
 	select_g_state_save(slurmctld_conf.state_save_location);
 	dump_assoc_mgr_state(slurmctld_conf.state_save_location);
