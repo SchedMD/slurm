@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fix for finding odd shaped blocks in dynamic mode.
  -- Fix logic supporting SuspendRate and ResumeRate configuration parameters.
     Previous logic was changing state of one too many nodes per minute.
+ -- Save new reservation state file on shutdown (even if no changes).
 
 * Changes in SLURM 2.0.0
 ========================
