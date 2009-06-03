@@ -1,0 +1,47 @@
+RELEASE NOTES FOR SLURM VERSION 2.1
+1 June 2009 (after SLURM 2.1.0-pre1)
+
+
+IMPORTANT NOTE:
+SLURM state files in version 2.1 are different from those of version 2.0.
+After installing SLURM version 2.1, plan to restart without preserving 
+jobs or other state information. While SLURM version 2.0 is still running, 
+cancel all pending and running jobs (e.g.
+"scancel --state=pending; scancel --state=running"). Then stop and restart 
+daemons with the "-c" option or use "/etc/init.d/slurm startclean".
+
+If using the slurmdbd (SLURM DataBase Daemon) you must update this first.  
+The 2.1 slurmdbd will work with SLURM daemons at version 2.0.0 and above.  
+You will not need to update all clusters at the same time, but it is very 
+important to update slurmdbd first and having it running before updating 
+any other clusters making use of it.  No real harm will come from updating 
+your systems before the slurmdbd, but they will not talk to each other 
+until you do.
+
+There are substantial changes in the slurm.conf configuration file. It 
+is recommended that you rebuild your configuration file using the tool
+doc/html/configurator.html that comes with the distribution.
+
+
+HIGHLIGHTS
+* Support has been added for Solaris.
+
+
+CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
+
+
+COMMAND CHANGES (see man pages for details)
+* Several redundant squeue output and sorting options have been removed: 
+  "%o" (use %D"), "%b" (use "%S"), "%X", %Y, and "%Z" (use "%z").
+* Standardized on the use of the '-Q' flag for all commands that offer the
+  --quiet option.
+
+
+OTHER CHANGES
+* A mechanism has beeded added for SPANK plugins to set environment variables 
+  for Prolog, Epilog, PrologSLurmctld and EpilogSlurmctld programs using the
+  functions spank_get_job_env, spank_set_job_env, and spank_unset_job_env. See 
+  "man spank" for more information.
+* The RPM previously named "slurm-aix-federation-<version>.rpm" has been 
+  renamed to just "slurm-aix-<version>.rpm" (the federation switch plugin may 
+  not be present).

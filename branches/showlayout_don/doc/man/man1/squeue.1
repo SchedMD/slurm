@@ -1,0 +1,508 @@
+.TH SQUEUE "1" "May 2009" "squeue 2.9" "Slurm components"
+
+.SH "NAME"
+squeue \- view information about jobs located in the SLURM scheduling queue.
+
+.SH "SYNOPSIS"
+\fBsqueue\fR [\fIOPTIONS\fR...] 
+
+.SH "DESCRIPTION"
+\fBsqueue\fR is used to view job and job step information for jobs managed by 
+SLURM. 
+
+.SH "OPTIONS"
+
+.TP
+\fB\-a\fR, \fB\-\-all\fR
+Display information about jobs and job steps in all partions. 
+This causes information to be displayed about partitions that are configured as 
+hidden and partitions that are unavailable to user's group.
+
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
+
+.TP
+\fB\-\-help\fR
+Print a help message describing all options \fBsqueue\fR.
+
+.TP
+\fB\-\-hide\fR
+Do not display information about jobs and job steps in all partions. By default, 
+information about partitions that are configured as hidden or are not available 
+to the user's group will not be displayed (i.e. this is the default behavior).
+
+.TP
+\fB\-i <seconds>\fR, \fB\-\-iterate=<seconds>\fR
+Repeatedly gather and report the requested information at the interval
+specified (in seconds).
+By default, prints a time stamp with the header.
+
+.TP
+\fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
+Requests a comma separated list of job ids to display.  Defaults to all jobs.
+
+.TP
+\fB\-l\fR, \fB\-\-long\fR
+Report more of the available information for the selected jobs or job steps, 
+subject to any constraints specified.
+
+.TP
+\fB\-n <hostlist>\fR, \fB\-\-nodes=<hostlist>\fR
+Report only on jobs allocated to the specified node or list of nodes.
+This may either be the \fBNodeName\fR or \fBNodeHostname\fR
+as defined in \fBslurm.conf(5)\fR in the event that they differ.
+A node_name of \fBlocalhost\fR is mapped to the current host name.
+
+.TP
+\fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
+Specify the information to be displayed, its size and position 
+(right or left justified).  
+The default formats with various options are
+
+.RS
+.TP 15
+\fIdefault\fR
+"%.7i %.9P %.8j %.8u %.2t %.10M %.6D %R"
+.TP
+\fI\-l, \-\-long\fR
+"%.7i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R"
+.TP
+\fI\-s, \-\-steps\fR
+"%10i %.8j %.9P %.8u %.9M %N"
+.RE
+
+.IP
+The format of each field is "%[.][size]type".
+.RS
+.TP 8
+\fIsize\fR 
+is the minimum field size.
+If no size is specified, whatever is needed to print the information will be used.
+.TP
+\fI .\fR
+indicates the output should be left justified.
+By default, output is right justified.
+.RE
+
+.IP
+Note that many of these \fItype\fR specifications are valid 
+only for jobs while others are valid only for job steps.
+Valid \fItype\fR specifications include: 
+
+.RS
+.TP 4
+\fB%a\fR
+Account associated with the job.
+.TP
+\fB%A\fR
+Number of tasks created by a job step.
+This reports the value of the \fBsrun \-\-ntasks\fR option.
+.TP
+\fB%c\fR 
+Minimum number of CPUs (processors) per node requested by the job.
+This reports the value of the \fBsrun \-\-mincpus\fR option with a 
+default value of zero.
+.TP
+\fB%C\fR 
+Number of CPUs (processors) requested by the job or allocated to 
+it if already running.
+.TP
+\fB%d\fR 
+Minimum size of temporary disk space (in MB) requested by the job.
+.TP
+\fB%D\fR 
+Number of nodes allocated to the job or the minimum number of nodes 
+required by a pending job. The actual number of nodes allocated to a pending 
+job may exceed this number if the job specified a node range count (e.g. 
+minimum and maximum node counts) or the the job specifies a processor 
+count instead of a node count and the cluster contains nodes with varying 
+processor counts.
+.TP
+\fB%e\fR 
+Time at which the job ended or is expected to end (based upon its time limit)
+.TP
+\fB%E\fR
+Job dependency. This job will not begin execution until the dependent job 
+completes.  A value of zero implies this job has no dependencies.
+.TP
+\fB%f\fR 
+Features required by the job.
+.TP
+\fB%g\fR 
+Group name of the job.
+.TP
+\fB%G\fR
+Group ID of the job.
+.TP
+\fB%h\fR
+Can the nodes allocated to the job be shared with other jobs.
+.TP
+\fB%H\fR 
+Minimum number of sockets per node requested by the job.
+This reports the value of the \fBsrun \-\-minsockets\fR option.
+.TP
+\fB%i\fR
+Job or job step id.
+.TP
+\fB%I\fR 
+Minimum number of cores per socket requested by the job.
+This reports the value of the \fBsrun \-\-mincores\fR option.
+.TP
+\fB%j\fR
+Job or job step name.
+.TP
+\fB%J\fR 
+Minimum number of threads per core requested by the job.
+This reports the value of the \fBsrun \-\-minthreads\fR option.
+.TP
+\fB%l\fR
+Time limit of the job in days\-hours:minutes:seconds. 
+The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
+.TP
+\fB%m\fR
+Minimum size of memory (in MB) requested by the job
+.TP
+\fB%M\fR
+Time used by the job or job step in days\-hours:minutes:seconds. 
+The days and hours are printed only as needed.
+For job steps this field shows the elapsed time since execution began 
+and thus will be inaccurate for job steps which have been suspended.
+Clock skew between nodes in the cluster will cause the time to be inaccurate.
+If the time is obviously wrong (e.g. negative), it displays as "INVALID".
+.TP
+\fB%n\fR
+List of node names (or base partitions on BlueGene systems) explicitly 
+requested by the job
+.TP
+\fB%N\fR
+List of nodes allocated to the job or job step. In the case of a 
+\fICOMPLETING\fR job, the list of nodes will comprise only those
+nodes that have not yet been returned to service. This may result 
+in the node count being greater than the number of listed nodes.
+.TP
+\fB%O\fR
+Are contiguous nodes requested by the job.
+.TP
+\fB%p\fR
+Priority of the job (converted to a floating point number between 0.0 and 1.0).
+Also see \fB%Q\fR.
+.TP
+\fB%P\fR 
+Partition of the job or job step.
+.TP
+\fB%q\fR 
+Comment associated with the job.
+.TP
+\fB%Q\fR
+Priority of the job (generally a very large unsigned integer).
+Also see \fB%p\fR.
+.TP
+\fB%r\fR
+The reason a job is in its current state.
+See the \fBJOB REASON CODES\fR section below for more information.
+.TP
+\fB%R\fR
+For pending jobs: the reason a job is waiting for execution 
+is printed within parenthesis.
+For terminated jobs with failure: an explanation as to why the 
+job failed is printed within parenthesis.
+For all other job states: the list of allocate nodes. 
+See the \fBJOB REASON CODES\fR section below for more information.
+.TP
+\fB%s\fR 
+Node selection plugin specific data for a job. Possible data includes:
+Geometry requirement of resource allocation (X,Y,Z dimensions), 
+Connection type (TORUS, MESH, or NAV == torus else mesh), 
+Permit rotation of geometry (yes or no), 
+Node use (VIRTUAL or COPROCESSOR),
+etc.
+.TP
+\fB%S\fR 
+Start time of the job or job step.
+.TP
+\fB%t\fR 
+Job state, compact form:
+PD (pending), R (running), CA (cancelled), CF(configuring), 
+CG (completing), CD (completed), 
+F (failed), TO (timeout), and NF (node failure).
+See the \fBJOB STATE CODES\fR section below for more information.
+.TP
+\fB%T\fR 
+Job state, extended form: 
+PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING, 
+FAILED, TIMEOUT, and NODE_FAIL.
+See the \fBJOB STATE CODES\fR section below for more information.
+.TP
+\fB%u\fR 
+User name for a job or job step.
+.TP
+\fB%U\fR 
+User ID for a job or job step.
+.TP
+\fB%v\fR 
+Reservation for the job.
+.TP
+\fB%x\fR 
+List of node names explicitly excluded by the job.
+.TP
+\fB%z\fR
+Number of requested sockets, cores, and threads (S:C:T) per node for
+the job.
+.RE
+
+.TP
+\fB\-U <account_list>\fR, \fB\-\-account=<account_list>\fR
+Specify the accounts of the jobs to view. Accepts a comma separated 
+list of account names. This have no effect when listing job steps.
+
+.TP
+\fB\-p <part_list>\fR, \fB\-\-partition=<part_list>\fR
+Specify the partitions of the jobs or steps to view. Accepts a comma separated 
+list of partition names.
+
+.TP
+\fB\-s\fR, \fB\-\-steps\fR
+Specify the job steps to view.  This flag indicates that a comma separated list 
+of job steps to view follows without an equal sign (see examples).
+The job step format is "job_id.step_id". Defaults to all job steps.
+
+.TP
+\fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
+Specification of the order in which records should be reported.
+This uses the same field specifciation as the <output_format>.
+Multiple sorts may be performed by listing multiple sort fields 
+separated by commas.
+The field specifications may be preceeded by "+" or "\-" for 
+ascending (default) and descending order respectively. 
+For example, a sort value of "P,U" will sort the
+records by partition name then by user id. 
+The default value of sort for jobs is "P,t,\-p" (increasing partition 
+name then within a given partition by increasing node state and then 
+decreasing priority).
+The default value of sort for job steps is "P,i" (increasing partition 
+name then within a given partition by increasing step id).
+
+.TP
+\fB\-t <state_list>\fR, \fB\-\-states=<state_list>\fR
+Specify the states of jobs to view.  Accepts a comma separated list of
+state names or "all". If "all" is specified then jobs of all states will be 
+reported. If no state is specified then pending, running, and completing
+jobs are reported. Valid states (in both extended and compact form) include:
+PENDING (PD), RUNNING (R), SUSPENDED (S), 
+COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
+FAILED (F), TIMEOUT (TO), and NODE_FAIL (NF). Note the \fB<state_list>\fR
+supplied is case insensitve ("pd" and "PD" work the same).
+See the \fBJOB STATE CODES\fR section below for more information.
+
+.TP
+\fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
+Request jobs or job steps from a comma separated list of users.  The
+list can consist of user names or user id numbers.
+
+.TP
+\fB\-\-usage\fR
+Print a brief help message listing the \fBsqueue\fR options.
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Report details of squeues actions.
+
+.TP
+\fB\-V\fR , \fB\-\-version\fR
+Print version information and exit.
+
+.SH "JOB REASON CODES"
+These codes identify the reason that a job is waiting for execution. 
+A job may be waiting for more than one reason, in which case only 
+one of those reasons is displayed.
+.TP 20
+\fBDependency\fR
+This job is waiting for a dependent job to complete.
+.TP
+\fBNone\fR
+No reason is set for this job.
+.TP
+\fBPartitionDown\fR
+The partition required by this job is in a DOWN state.
+.TP
+\fBPartitionNodeLimit\fR
+The number of nodes required by this job is outside of it's 
+partitions current limits.
+Can also indicate that required nodes are DOWN or DRAINED.
+.TP
+\fBPartitionTimeLimit\fR
+The job's time limit exceeds it's partition's current time limit.
+.TP
+\fBPriority\fR
+One or more higher priority jobs exist for this partition.
+.TP
+\fBResources\fR
+The job is waiting for resources to become availble.
+.TP
+\fBNodeDown\fR
+A node required by the job is down.
+.TP
+\fBBadConstraints\fR
+The job's constraints can not be satisfied.
+.TP
+\fBSystemFailure\fR
+Failure of the SLURM system, a file system, the network, etc.
+.TP
+\fBJobLaunchFailure\fR
+The job could not be launched. 
+This may be due to a file system problem, invalid program name, etc.
+.TP
+\fBNonZeroExitCode\fR
+The job terminated with a non\-zero exit code.
+.TP
+\fBTimeLimit\fR
+The job exhausted its time limit.
+.TP
+\fBInactiveLimit\fR
+The job reached the system InactiveLimit.
+
+.SH "JOB STATE CODES"
+Jobs typically pass through several states in the course of their 
+execution. 
+The typical states are PENDING, RUNNING, SUSPENDED, COMPLETING, and COMPLETED.
+An explanation of each state follows.
+.TP 20
+\fBCA  CANCELLED\fR
+Job was explicitly cancelled by the user or system administrator.
+The job may or may not have been initiated.
+.TP
+\fBCD  COMPLETED\fR
+Job has terminated all processes on all nodes.
+.TP
+\fBCF  CONFIGURING\fR
+Job has been allocated resources, but are waiting for them to become ready for use
+(e.g. booting).
+.TP
+\fBCG  COMPLETING\fR
+Job is in the process of completing. Some processes on some nodes may still be active.
+.TP
+\fBF   FAILED\fR
+Job terminated with non\-zero exit code or other failure condition.
+.TP
+\fBNF  NODE_FAIL\fR
+Job terminated due to failure of one or more allocated nodes.
+.TP
+\fBPD  PENDING\fR
+Job is awaiting resource allocation.
+.TP
+\fBR   RUNNING\fR
+Job currently has an allocation.
+.TP
+\fBS   SUSPENDED\fR
+Job has an allocation, but execution has been suspended.
+.TP
+\fBTO  TIMEOUT\fR
+Job terminated upon reaching its time limit.
+
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBsqueue\fR options may be set via environment variables. These 
+environment variables, along with their corresponding options, are listed 
+below. (Note: Commandline options will always override these settings.)
+.TP 20
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
+.TP
+\fBSQUEUE_ALL\fR
+\fB\-a, \-\-all\fR
+.TP
+\fBSQUEUE_FORMAT\fR
+\fB\-o <output_format>, \-\-format=<output_format>\fR
+.TP
+\fBSQUEUE_PARTITION\fR
+\fB\-p <part_list>, \-\-partition=<part_list>\fR
+.TP
+\fBSQUEUE_SORT\fR
+\fB\-S <sort_list>, \-\-sort=<sort_list>\fR
+.TP
+\fBSQUEUE_STATES\fR
+\fB\-t <state_list>, \-\-states=<state_list>\fR
+.TP
+\fBSQUEUE_USERS\fR
+\fB\-u <user_list>, \-\-users=<user_list>\fR
+
+.SH "EXAMPLES"
+.eo
+Print the jobs scheduled in the debug partition and in the 
+COMPLETED state in the format with six right justified digits for 
+the job id followed by the priority with an arbitrary fields size:
+.br
+# squeue -p debug -t COMPLETED -o "%.6i %p"
+.br
+ JOBID PRIORITY
+.br
+ 65543 99993 
+.br
+ 65544 99992 
+.br
+ 65545 99991 
+.ec
+
+.eo
+Print the job steps in the debug partition sorted by user:
+.br
+# squeue -s -p debug -S u
+.br
+  STEPID        NAME PARTITION     USER TIME_USED NODELIST(REASON)
+.br
+ 65552.1       test1     debug    alice      0:23 dev[1-4]
+.br
+ 65562.2     big_run     debug      bob      0:18 dev22
+.br
+ 65550.1      param1     debug  candice   1:43:21 dev[6-12]
+.ec
+
+.eo
+Print information only about jobs 12345,12345, and 12348:
+.br
+# squeue --jobs 12345,12346,12348
+.br
+ JOBID PARTITION NAME USER ST TIME_USED NODES NODELIST(REASON)
+.br
+ 12345     debug job1 dave  R      0:21     4 dev[9-12]
+.br
+ 12346     debug job2 dave PD      0:00     8 (Resources)
+.br
+ 12348     debug job3 ed   PD      0:00     4 (Priority)
+.ec
+
+.eo
+Print information only about job step 65552.1:
+.br
+# squeue --steps 65552.1
+.br
+  STEPID     NAME PARTITION    USER    TIME_USED NODELIST(REASON)
+.br
+ 65552.1    test2     debug   alice        12:49 dev[1-4]
+.ec
+
+.SH "COPYING"
+Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBscancel\fR(1), \fBscontrol\fR(1), \fBsinfo\fR(1), 
+\fBsmap\fR(1), \fBsrun\fR(1),
+\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3),
+\fBslurm_load_node\fR(3), 
+\fBslurm_load_partitions\fR(3)
