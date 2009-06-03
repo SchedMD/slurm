@@ -101,6 +101,7 @@
 #  endif
 #endif
 
+#include "src/common/slurm_xlator.h"
 #include "select_cons_res.h"
 #include "dist_tasks.h"
 #include "job_test.h"
@@ -111,11 +112,10 @@
 
 #define NODEINFO_MAGIC 0x82aa
 
-/* This means we aren't linking with the slurmctld.  Since the symbols
- * are defined there just define them here so we can link to the
- * plugin.
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld. 
  */
-#ifndef slurmctld_conf
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
 List part_list;	
@@ -126,7 +126,6 @@ struct switch_record *switch_record_table;
 int switch_record_cnt;
 bitstr_t *avail_node_bitmap;
 bitstr_t *idle_node_bitmap;
-#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they

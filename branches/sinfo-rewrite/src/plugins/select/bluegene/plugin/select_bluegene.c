@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/slurm_xlator.h"
 #include "bluegene.h"
 #include "nodeinfo.h"
 #include "jobinfo.h"
@@ -46,22 +47,19 @@
 #include <fcntl.h>
 
 #define HUGE_BUF_SIZE (1024*16)
-
-/* This means we aren't linking with the slurmctld.  Since the symbols
- * are defined there just define them here so we can link to the
- * plugin.
+#define NOT_FROM_CONTROLLER -2
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld. 
  */
-#ifndef slurmctld_conf
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr = NULL;
-int bg_recover = -2;
+int bg_recover = NOT_FROM_CONTROLLER;
 List part_list = NULL;	
 int node_record_count;
 time_t last_node_update;
-#ifndef alpha_num
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-#endif
-#endif
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -286,7 +284,9 @@ extern int init ( void )
 
 	verbose("%s loading...", plugin_name);
 
-	if(bg_recover != -2)
+	/* if this is coming from something other than the controller
+	   we don't want to read the config or anything like that. */
+	if(bg_recover != NOT_FROM_CONTROLLER) 
 		if (init_bg() || _init_status_pthread())
 			return SLURM_ERROR;
 
@@ -296,9 +296,6 @@ extern int init ( void )
 extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
-
-	if(bg_recover != -2)
-		return rc;
 
 	agent_fini = true;
 	pthread_mutex_lock( &thread_flag_mutex );
@@ -432,7 +429,7 @@ extern int select_p_job_init(List job_list)
 /* All initialization is performed by init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	if(node_cnt>0)
+	if(node_cnt>0 && bg_conf)
 		if(node_ptr->cpus >= bg_conf->bp_node_cnt) 
 			bg_conf->procs_per_bp = node_ptr->cpus;
 		

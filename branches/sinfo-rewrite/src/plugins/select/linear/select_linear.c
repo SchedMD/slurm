@@ -56,6 +56,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/slurm_xlator.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
@@ -75,11 +76,10 @@
 
 #define NODEINFO_MAGIC 0x82ad
 
-/* This means we aren't linking with the slurmctld.  Since the symbols
- * are defined there just define them here so we can link to the
- * plugin.
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld. 
  */
-#ifndef slurmctld_conf
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
 List part_list;	
@@ -88,7 +88,6 @@ int node_record_count;
 time_t last_node_update;
 struct switch_record *switch_record_table; 
 int switch_record_cnt;
-#endif
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
