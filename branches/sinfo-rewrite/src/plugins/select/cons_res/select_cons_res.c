@@ -116,6 +116,7 @@
  * plugin.
  */
 #ifndef slurmctld_conf
+slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
 List part_list;	
 List job_list;	
@@ -1297,6 +1298,7 @@ extern int init(void)
 	fatal("Use SelectType=select/bluegene");
 #endif
 	cr_type = (select_type_plugin_info_t)slurmctld_conf.select_type_param;
+
 	verbose("%s loaded with argument %d ", plugin_name, cr_type);
 
 	return SLURM_SUCCESS;
@@ -1315,6 +1317,7 @@ extern int fini(void)
 	cr_num_core_count = NULL;
 
 	verbose("%s shutting down ...", plugin_name);
+
 	return SLURM_SUCCESS;
 }
 

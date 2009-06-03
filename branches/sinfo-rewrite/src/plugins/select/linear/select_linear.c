@@ -80,6 +80,7 @@
  * plugin.
  */
 #ifndef slurmctld_conf
+slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
 List part_list;	
 List job_list;	

@@ -52,11 +52,15 @@
  * plugin.
  */
 #ifndef slurmctld_conf
-struct node_record *node_record_table_ptr;
-int bg_recover;
-List part_list;	
+slurm_ctl_conf_t slurmctld_conf;
+struct node_record *node_record_table_ptr = NULL;
+int bg_recover = -2;
+List part_list = NULL;	
 int node_record_count;
 time_t last_node_update;
+#ifndef alpha_num
+char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+#endif
 #endif
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -100,41 +104,6 @@ static int _init_status_pthread(void);
 static char *_block_state_str(int state);
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
-
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init ( void )
-{
-
-#if (SYSTEM_DIMENSIONS != 3)
-	fatal("SYSTEM_DIMENSIONS value (%d) invalid for BlueGene",
-		SYSTEM_DIMENSIONS);
-#endif
-
-#ifdef HAVE_BG_FILES
-#ifdef HAVE_BGL
-	if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE")
-	    || !getenv("VWSPATH"))
-		fatal("db2profile has not been run to setup DB2 environment");
-	
-	if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
-	    || (SELECT_VIRTUAL_NODE_MODE != RM_PARTITION_VIRTUAL_NODE_MODE))
-		fatal("enum node_use_type out of sync with rm_api.h");
-#endif
-	if ((SELECT_MESH  != RM_MESH)
-	    || (SELECT_TORUS != RM_TORUS)
-	    || (SELECT_NAV   != RM_NAV))
-		fatal("enum conn_type out of sync with rm_api.h");
-#endif
-
-	verbose("%s loading...", plugin_name);
-	if (init_bg() || _init_status_pthread())
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
 
 static int _init_status_pthread(void)
 {
@@ -287,9 +256,49 @@ static List _get_config(void)
 	return my_list;
 }
 
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init ( void )
+{
+
+#if (SYSTEM_DIMENSIONS != 3)
+	fatal("SYSTEM_DIMENSIONS value (%d) invalid for BlueGene",
+		SYSTEM_DIMENSIONS);
+#endif
+
+#ifdef HAVE_BG_FILES
+#ifdef HAVE_BGL
+	if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE")
+	    || !getenv("VWSPATH"))
+		fatal("db2profile has not been run to setup DB2 environment");
+	
+	if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
+	    || (SELECT_VIRTUAL_NODE_MODE != RM_PARTITION_VIRTUAL_NODE_MODE))
+		fatal("enum node_use_type out of sync with rm_api.h");
+#endif
+	if ((SELECT_MESH  != RM_MESH)
+	    || (SELECT_TORUS != RM_TORUS)
+	    || (SELECT_NAV   != RM_NAV))
+		fatal("enum conn_type out of sync with rm_api.h");
+#endif
+
+	verbose("%s loading...", plugin_name);
+
+	if(bg_recover != -2)
+		if (init_bg() || _init_status_pthread())
+			return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
+
+	if(bg_recover != -2)
+		return rc;
 
 	agent_fini = true;
 	pthread_mutex_lock( &thread_flag_mutex );

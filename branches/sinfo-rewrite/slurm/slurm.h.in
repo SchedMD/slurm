@@ -162,7 +162,6 @@ BEGIN_C_DECLS
    typedef struct allocation_msg_thread *allocation_msg_thread_t;
 #endif
 
-
 /*****************************************************************************\
  *      DEFINITIONS FOR VERSION MANAGEMENT
 \*****************************************************************************/

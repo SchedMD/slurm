@@ -106,7 +106,7 @@ extern int slurm_load_node_select (time_t update_time,
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
-
+	
         return SLURM_SUCCESS;
 }
 
