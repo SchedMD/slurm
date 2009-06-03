@@ -32,7 +32,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 
 COMMAND CHANGES (see man pages for details)
 * Several redundant squeue output and sorting options have been removed: 
-  "%D" (use %o"), "%b" (use "%S"), "%X", %Y, and "%Z" (use "%z").
+  "%o" (use %D"), "%b" (use "%S"), "%X", %Y, and "%Z" (use "%z").
 * Standardized on the use of the '-Q' flag for all commands that offer the
   --quiet option.
 

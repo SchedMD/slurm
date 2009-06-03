@@ -111,6 +111,14 @@ it if already running.
 \fB%d\fR 
 Minimum size of temporary disk space (in MB) requested by the job.
 .TP
+\fB%D\fR 
+Number of nodes allocated to the job or the minimum number of nodes 
+required by a pending job. The actual number of nodes allocated to a pending 
+job may exceed this number if the job specified a node range count (e.g. 
+minimum and maximum node counts) or the the job specifies a processor 
+count instead of a node count and the cluster contains nodes with varying 
+processor counts.
+.TP
 \fB%e\fR 
 Time at which the job ended or is expected to end (based upon its time limit)
 .TP
@@ -172,14 +180,6 @@ List of nodes allocated to the job or job step. In the case of a
 \fICOMPLETING\fR job, the list of nodes will comprise only those
 nodes that have not yet been returned to service. This may result 
 in the node count being greater than the number of listed nodes.
-.TP
-\fB%o\fR
-Number of nodes allocated to the job or the minimum number of nodes
-required by a pending job. The actual number of nodes allocated to a
-pending job may exceed this number if the job specified a node range
-count (e.g.  minimum and maximum node counts) or the the job specifies
-a processor count instead of a node count and the cluster contains
-nodes with varying processor counts.
 .TP
 \fB%O\fR
 Are contiguous nodes requested by the job.
