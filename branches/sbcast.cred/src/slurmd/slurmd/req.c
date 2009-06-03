@@ -663,7 +663,6 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			slurm_cred_free_args(&arg);
 			return SLURM_ERROR;
 		}
-info("create_uid:%u", (uint32_t)arg.create_uid);
 	}
 
 	/* If uid is the SlurmUser or root and the credential is bad,
