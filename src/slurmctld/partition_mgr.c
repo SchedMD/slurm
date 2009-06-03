@@ -880,7 +880,8 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		info("update_part: DefaultTime would exceed MaxTime for "
 		     "partition %s", part_desc->name);
 	} else if (part_desc->default_time != NO_VAL) {
-		info("update_part: setting default_time to %u for partition %s", 
+		info("update_part: setting default_time to %u "
+		     "for partition %s", 
 		     part_desc->default_time, part_desc->name);
 		part_ptr->default_time = part_desc->default_time;
 	}
@@ -963,7 +964,8 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			info("update_part: setting default partition to %s", 
 			     part_desc->name);
 		} else if (strcmp(default_part_name, part_desc->name) != 0) {
-			info("update_part: changing default partition from %s to %s", 
+			info("update_part: changing default "
+			     "partition from %s to %s", 
 			     default_part_name, part_desc->name);
 		}
 		xfree(default_part_name);
@@ -1027,7 +1029,8 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			xfree(part_ptr->nodes);
 			part_ptr->nodes = backup_node_list;
 		} else {
-			info("update_part: setting nodes to %s for partition %s", 
+			info("update_part: setting nodes to %s "
+			     "for partition %s", 
 			     part_ptr->nodes, part_desc->name);
 			xfree(backup_node_list);
 		}
@@ -1322,6 +1325,10 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr)
 	(void) kill_job_by_part_name(part_desc_ptr->name);
 	list_delete_all(part_list, list_find_part, part_desc_ptr->name);
 	last_part_update = time(NULL);
+
+	slurm_sched_partition_change();	/* notify sched plugin */
+	select_g_reconfigure();		/* notify select plugin too */
+	reset_job_priority();		/* free jobs */
 
 	return SLURM_SUCCESS;
 }
