@@ -95,7 +95,7 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION      "VER007"
+#define JOB_STATE_VERSION      "VER008" /*already changed for slurm2.1 */
 
 #define JOB_CKPT_VERSION      "JOB_CKPT_001"
 
