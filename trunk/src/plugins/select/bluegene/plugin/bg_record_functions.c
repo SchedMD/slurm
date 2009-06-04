@@ -146,10 +146,14 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 /* see if the exact record already exists in a list */
 extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record)
 {
-	ListIterator itr = list_iterator_create(my_list);
+	ListIterator itr = NULL;
 	bg_record_t *found_record = NULL;
 	int rc = 0;
 
+	if(!my_list || !bg_record)
+		return rc;
+
+	itr = list_iterator_create(my_list);
 	while ((found_record = list_next(itr))) {
 		if(bg_record == found_record) {
 			rc = 1;
@@ -1354,6 +1358,14 @@ extern int put_block_in_error_state(bg_record_t *bg_record, int state)
 			sleep(1);
 	}
 	
+	slurm_mutex_lock(&block_state_mutex);
+	if(!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
+		slurm_mutex_unlock(&block_state_mutex);
+		error("while trying to put block in "
+		      "error state it disappeared");
+		return SLURM_ERROR;
+	}
+	
 	info("Setting Block %s to ERROR state.", bg_record->bg_block_id);
 	/* we add the block to these lists so we don't try to schedule
 	   on them. */
@@ -1364,7 +1376,6 @@ extern int put_block_in_error_state(bg_record_t *bg_record, int state)
 	if(!block_ptr_exist_in_list(bg_lists->booted, bg_record)) 
 		list_push(bg_lists->booted, bg_record);
 	
-	slurm_mutex_lock(&block_state_mutex);
 	bg_record->job_running = state;
 	bg_record->state = RM_PARTITION_ERROR;
 

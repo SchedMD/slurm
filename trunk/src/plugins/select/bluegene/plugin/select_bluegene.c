@@ -710,6 +710,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	if(!bg_record)
 		return SLURM_ERROR;
 
+	slurm_mutex_lock(&block_state_mutex);
 	now = time(NULL);
 	slurm_make_time_str(&now, time_str, sizeof(time_str));
 	snprintf(tmp, sizeof(tmp), "[SLURM@%s]", time_str);
@@ -738,7 +739,6 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		ListIterator itr;
 		List delete_list = list_create(NULL);
 		
-		slurm_mutex_lock(&block_state_mutex);
 		itr = list_iterator_create(bg_lists->main);
 		while ((found_record = list_next(itr))) {
 			if (bg_record == found_record)
@@ -778,14 +778,16 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		list_iterator_destroy(itr);
 		free_block_list(delete_list);
 		list_destroy(delete_list);
-		slurm_mutex_unlock(&block_state_mutex);
 	}
 
 	if(!part_desc_ptr->state_up) {
+		slurm_mutex_unlock(&block_state_mutex);
 		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
 	} else if(part_desc_ptr->state_up){
 		resume_block(bg_record);
+		slurm_mutex_unlock(&block_state_mutex);
 	} else {
+		slurm_mutex_unlock(&block_state_mutex);
 		error("state is ? %d", part_desc_ptr->state_up);
 		return rc;
 	}
