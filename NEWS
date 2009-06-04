@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.0.2
 ========================
  -- Fix, don't remove job details when a job is cancelled while pending.
+ -- Do correct type for mktime so garbage isn't returned on 64bit systems 
+    for accounting archival.
 
 * Changes in SLURM 2.0.1
 ========================

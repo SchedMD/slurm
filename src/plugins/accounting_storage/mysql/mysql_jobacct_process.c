@@ -91,7 +91,8 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 			       char *arch_type, char *insert,
 			       bool with_deleted)
 {
-	int period_start = 0, fd = 0;
+	time_t period_start = 0;
+	int fd = 0;
 	int rc = SLURM_SUCCESS;
 	MYSQL_ROW row;
 	struct tm time_tm;
@@ -115,9 +116,6 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 			time_tm.tm_min = 0;
 			time_tm.tm_hour = 0;
 			time_tm.tm_mday = 1;
-			time_tm.tm_isdst = -1;
-			period_start = mktime(&time_tm);
-			localtime_r((time_t *)&period_start, &time_tm);
 			snprintf(start_char, sizeof(start_char),
 				 "%4.4u-%2.2u-%2.2u"
 				 "T%2.2u:%2.2u:%2.2u",
