@@ -2039,3 +2039,9 @@ unpack_error:
 	return NULL;
 }
 
+void  print_sbcast_cred(sbcast_cred_t sbcast_cred)
+{
+	info("Sbcast_cred: Jobid   %u", sbcast_cred->jobid         );
+	info("Sbcast_cred: Nodes   %s", sbcast_cred->nodes         );
+	info("Sbcast_cred: ctime   %s", ctime(&sbcast_cred->ctime) );
+}

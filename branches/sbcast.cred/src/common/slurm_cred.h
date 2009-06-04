@@ -310,6 +310,7 @@ int           extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				  uint32_t *job_id, char **nodes);
 void          pack_sbcast_cred(sbcast_cred_t sbcast_cred, Buf buffer);
 sbcast_cred_t unpack_sbcast_cred(Buf buffer);
+void          print_sbcast_cred(sbcast_cred_t sbcast_cred);
 
 
 #ifdef DISABLE_LOCALTIME

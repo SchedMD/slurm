@@ -1924,6 +1924,7 @@ _pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t * msg, Buf buffer)
 	pack32(msg->node_cnt, buffer);
 	if (msg->node_cnt > 0)
 		_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
+	pack_sbcast_cred(msg->sbcast_cred, buffer);
 }
 
 static int
@@ -1950,6 +1951,10 @@ _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t ** msg, Buf buffer)
 			goto unpack_error;
 	} else
 		tmp_ptr->node_addr = NULL;
+
+	tmp_ptr->sbcast_cred = unpack_sbcast_cred(buffer);
+	if (tmp_ptr->sbcast_cred == NULL)
+		goto unpack_error;
 
 	return SLURM_SUCCESS;
 

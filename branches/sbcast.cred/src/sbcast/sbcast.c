@@ -54,6 +54,7 @@
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xmalloc.h"
@@ -131,9 +132,12 @@ static void _get_job_info(void)
 		exit(1);
 	}
 
-	verbose("node_list  = %s", sbcast_cred->node_list);
 	verbose("node_cnt   = %u", sbcast_cred->node_cnt);
+	verbose("node_list  = %s", sbcast_cred->node_list);
 	/* also see sbcast_cred->node_addr (array) */
+
+	if (params.verbose)
+		print_sbcast_cred(sbcast_cred->sbcast_cred);
 
 	/* do not bother to release the return message,
 	 * we need to preserve and use most of the information later */

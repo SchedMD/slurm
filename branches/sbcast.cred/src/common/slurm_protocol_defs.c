@@ -1149,6 +1149,7 @@ void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
 	if (msg) {
 		xfree(msg->node_addr);
 		xfree(msg->node_list);
+		delete_sbcast_cred(msg->sbcast_cred);
 		xfree(msg);
 	}
 }
