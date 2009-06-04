@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM authentication plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
-authentication plugins. This is version 0 of the API.</p>
+authentication plugins. This is version 100 of the API.</p>
 <p>SLURM authentication plugins are SLURM plugins that implement the SLURM authentication 
 API described herein. They must conform to the SLURM Plugin API with the following 
 specifications:</p>
@@ -18,7 +18,6 @@ authentication service. This may be used for testing purposes, but is not suitab
 production use due to lack of effective security.</li>
 <li><b>authd</b>&#151;Brett Chun's Linux authd.</li>
 <li><b>munge</b>&#151;LLNL's Munge protocol (recommended plugin for production use).</li>
-<li><b>krb5</b>&#151;Kerberos 5 (expected to be available in 2009).</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and <span class="commandline">plugin_version</span> 
 symbols required by the SLURM Plugin API require no specialization for authentication. 
@@ -66,13 +65,18 @@ or equal to the symbol SLURM_AUTH_FIRST_LOCAL_ERROR.</p>
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should 
 be stubbed.</p>
-<p class="commandline">void *slurm_auth_alloc (void);</p>
+
+<p class="commandline">void *slurm_auth_create (void **argv, char *auth_info);</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocates from the free store 
 an anonymous credential object and returns a pointer to it. The pointer should 
 be valid until passed to <span class="commandline">slurm_auth_destroy()</span> for 
 disposal. SLURM will not pass
 credentials to the API which have not been allocated by this function.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: None.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">argv</span> &nbsp;&nbsp;(input) plugin specific
+information, timeouts for authd<br>
+<span class="commandline">auth_info</span> &nbsp;&nbsp;(input) plugin specific
+identification of the server.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A pointer to a newly allocated credential 
 if successful. On failure, the plugin should return NULL and set its errno to 
 an appropriate value to indicate the reason for failure.</p>
@@ -87,40 +91,50 @@ be NULL.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
-<p class="commandline">int slurm_auth_verify (void *cr );</p>
+
+<p class="commandline">int slurm_auth_verify (void *cr, char *auth_info );</p>
 <p style="margin-left:.2in"><b>Description</b>: Verifies that a credential is 
 in order and correctly identifies the associated user. It also verifies that the 
 credential has not expired. If verification is successful, the return values of 
-<span class="commandline">slurm_auth_get_uid()</span> and <span class="commandline">slurm_auth_get_gid()</span> 
+<span class="commandline">slurm_auth_get_uid()</span> and 
+<span class="commandline">slurm_auth_get_gid()</span> 
 in subsequent calls must correspond to the actual verified system UID and GID 
 of the user associated with the credential. Verification must fail if the credential 
 has not previously been activated, even if a credential implementation cannot 
 exist in an unactivated state. A credential's valid term is defined at activation 
 and verification must fail if the credential has expired, even if it would otherwise 
 be valid.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: <span class="commandline">cr</span> 
-&nbsp;&nbsp;(input) pointer to the credential which is to be verified. Cannot 
-be NULL.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">cr</span> &nbsp;&nbsp;(input) pointer to the credential 
+which is to be verified. Cannot be NULL.<br>
+<span class="commandline">auth_info</span> &nbsp;&nbsp;(input) plugin specific
+identification of the server.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the credential is 
 verified to be in order and has not expired. If the credential cannot be verified, 
 or if the credential has expired, the function should return SLURM_ERROR and set 
 its errno to an appropriate value to indicate the reason for failure.</p>
-<p class="commandline">uid_t slurm_auth_get_uid (void *cr);<br>
-gid_t slurm_auth_get_gid (void *cr);</p>
+
+<p class="commandline">uid_t slurm_auth_get_uid (void *cr, char *auth_info);<br>
+gid_t slurm_auth_get_gid (void *cr, char *auth_info);</p>
 <p style="margin-left:.2in"><b>Description</b>: Extracts the numerical UID (GID) 
 of the user corresponding to the given credential. SLURM considers this value 
-trustworthy only if the credential has been successfully verified using <span class="commandline">slurm_auth_verify()</span>. 
+trustworthy only if the credential has been successfully verified using 
+<span class="commandline">slurm_auth_verify()</span>. 
 An unverified credential does not immediately give rise to an error condition 
 in these functions, since this would require a plugin to distinguish between a 
 verified and an unverified credential, which may be computationally expensive. 
 A plugin may consider the lack of verification as an error.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: <span class="commandline">cr</span> 
-&nbsp;&nbsp; (input) pointer to the credential containing the desired identification. 
-Cannot be NULL.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+ <span class="commandline">cr</span> &nbsp;&nbsp; (input) pointer to the credential 
+containing the desired identification.  Cannot be NULL.<br>
+<span class="commandline">auth_info</span> &nbsp;&nbsp;(input) plugin specific
+identification of the server.</p>
 <p style="margin-left:.2in"><b>Returns</b>: If successful, the Linux UID (GID) 
 associated with the credential. In case of error, SLURM_AUTH_NOBODY should be 
 returned and errno set appropriately to indicate the cause of the failure.</p>
+
 <p class="footer"><a href="#top">top</a></p>
+
 <p class="commandline">int slurm_auth_pack (void *cr, Buf buf);</p>
 <p style="margin-left:.2in"><b>Description</b>: Marshals a credential into a buffer 
 for transmission according to the SLURM packing protocol. All authentication plugins 
@@ -198,6 +212,6 @@ plugin that transmitted it. It is at the discretion of the plugin author whether
 to maintain data format compatibility across different versions of the plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 June 2004</p>
+<p style="text-align:center;">Last modified 3 June 2009</p>
 
 <!--#include virtual="footer.txt"-->

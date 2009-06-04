@@ -46,6 +46,10 @@ if {[test_front_end] != 0} {
 	send_user "\nWARNING: This test is incompatable with front-end systems\n"
 	exit 0
 }
+if {[slurmd_user_root] == 0} {
+	send_user "\nWARNING: This test is incompatable with SlurmdUser != root\n"
+	exit 0
+}
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -113,6 +117,10 @@ if {[wait_for_file $file_err] == 0} {
 		-re "jobid" {
 			incr matches
 			exp_continue
+		}
+		-re "error:" {
+			send_user "\nFAILURE: unexpected error\n"
+			set exit_code 1
 		}
 		eof {
 			wait

@@ -542,7 +542,7 @@ struct srun_info *
 srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 {
 	char             *data = NULL;
-	int               len  = 0;
+	uint32_t          len  = 0;
 	struct srun_info *srun = xmalloc(sizeof(struct srun_info));
 	srun_key_t       *key  = xmalloc(sizeof(srun_key_t));
 

@@ -62,7 +62,7 @@ static bool auth_dummy = false;	/* for security testing */
 typedef struct slurm_auth_ops {
         void *       (*create)    ( void *argv[], char *auth_info );
         int          (*destroy)   ( void *cred );
-        int          (*verify)    ( void *cred, void *argv[], char *auth_info );
+        int          (*verify)    ( void *cred, char *auth_info );
         uid_t        (*get_uid)   ( void *cred, char *auth_info );
         gid_t        (*get_gid)   ( void *cred, char *auth_info );
         int          (*pack)      ( void *cred, Buf buf );
@@ -413,7 +413,7 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
                 return SLURM_ERROR;
         }
         
-        ret = (*(g_context->ops.verify))( cred, argv, auth_info );
+        ret = (*(g_context->ops.verify))( cred, auth_info );
         xfree( argv );
         return ret;
 }

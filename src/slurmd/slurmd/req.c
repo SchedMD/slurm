@@ -142,10 +142,12 @@ static int  _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 static bool _pause_for_job_completion(uint32_t jobid, char *nodes, 
 		int maxtime);
 static void _sync_messages_kill(kill_job_msg_t *req);
-static int _waiter_init (uint32_t jobid);
-static int _waiter_complete (uint32_t jobid);
+static int  _waiter_init (uint32_t jobid);
+static int  _waiter_complete (uint32_t jobid);
 
 static bool _steps_completed_now(uint32_t jobid);
+static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, 
+			       uint16_t block_no);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
 static long _get_job_uid(uint32_t jobid);
 
@@ -1918,10 +1920,47 @@ _init_groups(uid_t my_uid, gid_t my_gid)
 	if (rc) {
  		error("sbcast: Error in initgroups(%s, %ld): %m",
 		      user_name, (long)my_gid);
-		return -1;
+//		return -1;
 	}
 	return 0;
 
+}
+
+/* Validate sbcast credential.
+ * NOTE: We can only perform the full credential validation once with 
+ * Munge without generating a credential replay error
+ * RET SLURM_SUCCESS or an error code */
+static int
+_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id;
+	char *nodes = NULL;
+	hostset_t hset = NULL;
+
+	rc = extract_sbcast_cred(conf->vctx, req->cred, block_no, 
+				 &job_id, &nodes);
+	if (rc != 0) {
+		error("Security violation: Invalid sbcast_cred from uid %u",
+		      (uint32_t) req_uid);
+		return ESLURMD_INVALID_JOB_CREDENTIAL;
+	}
+
+	if (!(hset = hostset_create(nodes))) {
+		error("Unable to parse sbcast_cred hostlist %s", nodes);
+		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
+	} else if (!hostset_within(hset, conf->node_name)) {
+		error("Security violation: sbcast_cred from %u has "
+		      "bad hostset %s", req_uid, nodes);
+		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
+	}
+	if (hset)
+		hostset_destroy(hset);
+	xfree(nodes);
+
+	/* print_sbcast_cred(req->cred); */
+
+	return rc;
 }
 
 static int
@@ -1935,16 +1974,23 @@ _rpc_file_bcast(slurm_msg_t *msg)
 
 #if 0
 	info("last_block=%u force=%u modes=%o",
-		req->last_block, req->force, req->modes);
+	      req->last_block, req->force, req->modes);
 	info("uid=%u gid=%u atime=%lu mtime=%lu block_len[0]=%u",
-		req->uid, req->gid, req->atime, req->mtime, req->block_len[0]);
+	     req->uid, req->gid, req->atime, req->mtime, req->block_len);
+#if 0
 	/* when the file being transferred is binary, the following line
 	 * can break the terminal output for slurmd */
-	/* info("req->block[0]=%s, @ %lu", req->block[0], (unsigned long) &req->block[0]); */
+	info("req->block[0]=%s, @ %lu", \
+	     req->block[0], (unsigned long) &req->block);
+#endif
 #endif
 
+	if ((rc = _valid_sbcast_cred(req, req_uid, req->block_no)) != 
+	    SLURM_SUCCESS)
+		return rc;
+
 	info("sbcast req_uid=%u fname=%s block_no=%u", 
-		req_uid, req->fname, req->block_no);
+	      req_uid, req->fname, req->block_no);
 	child = fork();
 	if (child == -1) {
 		error("sbcast: fork failure");
@@ -1962,7 +2008,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	}
 	if (setgid(req_gid) < 0) {
 		error("sbcast: uid:%u setgid(%u): %s", req_uid, req_gid, 
-			strerror(errno));
+		      strerror(errno));
 		exit(errno);
 	}
 	if (setuid(req_uid) < 0) {
@@ -1989,12 +2035,13 @@ _rpc_file_bcast(slurm_msg_t *msg)
 
 	offset = 0;
 	while (req->block_len - offset) {
-		inx = write(fd, &req->block[offset], (req->block_len - offset));
+		inx = write(fd, &req->block[offset], 
+			    (req->block_len - offset));
 		if (inx == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
 			error("sbcast: uid:%u can't write `%s`: %s",
-				req_uid, req->fname, strerror(errno));
+			      req_uid, req->fname, strerror(errno));
 			close(fd);
 			exit(errno);
 		}
@@ -2002,7 +2049,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	}
 	if (req->last_block && fchmod(fd, (req->modes & 0777))) {
 		error("sbcast: uid:%u can't chmod `%s`: %s",
-			req_uid, req->fname, strerror(errno));
+		      req_uid, req->fname, strerror(errno));
 	}
 	if (req->last_block && fchown(fd, req->uid, req->gid)) {
 		error("sbcast: uid:%u can't chown `%s`: %s",
@@ -2016,7 +2063,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		time_buf.modtime = req->mtime;
 		if (utime(req->fname, &time_buf)) {
 			error("sbcast: uid:%u can't utime `%s`: %s",
-				req_uid, req->fname, strerror(errno));
+			      req_uid, req->fname, strerror(errno));
 		}
 	}
 	exit(SLURM_SUCCESS);
@@ -2034,7 +2081,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	char         host[MAXHOSTNAMELEN];
 	slurm_addr   ioaddr;
 	void        *job_cred_sig;
-	int          len;
+	uint32_t     len;
 	int               fd;
 	uid_t             req_uid;
 	slurmstepd_info_t *step = NULL;
@@ -2801,7 +2848,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		}
 		return;
 	}
-
 
 	/*
 	 * "revoke" all future credentials for this jobid

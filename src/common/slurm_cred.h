@@ -1,7 +1,8 @@
 /*****************************************************************************\
- *  src/common/slurm_cred.h  - SLURM job credential operations
+ *  src/common/slurm_cred.h - SLURM job and sbcast credential functions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -63,6 +64,16 @@
 #ifndef __slurm_cred_t_defined
 #  define __slurm_cred_t_defined
    typedef struct slurm_job_credential * slurm_cred_t;
+#endif
+
+/*
+ * The incomplete slurm_cred_t type is also defined in slurm_protocol_defs.h
+ * so check to ensure that this header has not been included after 
+ * slurm_protocol_defs.h:
+ */
+#ifndef __sbcast_cred_t_defined
+#  define  __sbcast_cred_t_defined
+   typedef struct sbcast_cred *sbcast_cred_t;		/* opaque data type */
 #endif
 
 /* 
@@ -278,12 +289,29 @@ slurm_cred_t slurm_cred_unpack(Buf buffer);
  * Get a pointer to the slurm credential signature
  * (used by slurm IO connections to verify connecting agent)
  */
-int slurm_cred_get_signature(slurm_cred_t cred, char **datap, int *len);
+int slurm_cred_get_signature(slurm_cred_t cred, char **datap, 
+			     uint32_t *len);
 
 /*
  * Print a slurm job credential using the info() call
  */
 void slurm_cred_print(slurm_cred_t cred);
+
+/*
+ * Functions to create, delete, pack, and unpack an sbcast credential
+ * Caller of extract_sbcast_cred() must xfree returned node string
+ */
+sbcast_cred_t create_sbcast_cred(slurm_cred_ctx_t ctx, 
+				 uint32_t job_id, char *nodes);
+sbcast_cred_t copy_sbcast_cred(sbcast_cred_t sbcast_cred);
+void          delete_sbcast_cred(sbcast_cred_t sbcast_cred);
+int           extract_sbcast_cred(slurm_cred_ctx_t ctx, 
+				  sbcast_cred_t sbcast_cred, uint16_t block_no,
+				  uint32_t *job_id, char **nodes);
+void          pack_sbcast_cred(sbcast_cred_t sbcast_cred, Buf buffer);
+sbcast_cred_t unpack_sbcast_cred(Buf buffer);
+void          print_sbcast_cred(sbcast_cred_t sbcast_cred);
+
 
 #ifdef DISABLE_LOCALTIME
 extern char * timestr (const time_t *tp, char *buf, size_t n);

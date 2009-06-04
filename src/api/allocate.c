@@ -2,7 +2,8 @@
  *  allocate.c - allocate nodes for a job or step with supplied contraints
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -441,6 +442,47 @@ slurm_allocation_lookup_lite(uint32_t jobid,
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
 		*info = (resource_allocation_response_msg_t *) resp_msg.data;
+		return SLURM_PROTOCOL_SUCCESS;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
+ * slurm_sbcast_lookup - retrieve info for an existing resource allocation
+ *	including a credential needed for sbcast
+ * IN jobid - job allocation identifier
+ * OUT info - job allocation information including a credential for sbcast
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
+ */
+int slurm_sbcast_lookup(uint32_t jobid, job_sbcast_cred_msg_t **info)
+{
+	job_alloc_info_msg_t req;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+
+	req.job_id = jobid;
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+	req_msg.msg_type = REQUEST_JOB_SBCAST_CRED;
+	req_msg.data     = &req; 
+	
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	switch(resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if (_handle_rc_msg(&resp_msg) < 0)
+			return SLURM_ERROR;
+		*info = NULL;
+		break;
+	case RESPONSE_JOB_SBCAST_CRED:
+		*info = (job_sbcast_cred_msg_t *)resp_msg.data;
 		return SLURM_PROTOCOL_SUCCESS;
 		break;
 	default:

@@ -96,7 +96,7 @@
  */
 const char plugin_name[]       	= "Null authentication plugin";
 const char plugin_type[]       	= "auth/none";
-const uint32_t plugin_version	= 90;
+const uint32_t plugin_version	= 100;
 
 
 /*
@@ -206,7 +206,7 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
 int
-slurm_auth_verify( slurm_auth_credential_t *cred, void *argv[], char *auth_info )
+slurm_auth_verify( slurm_auth_credential_t *cred, char *auth_info )
 {
 	return SLURM_SUCCESS;
 }
