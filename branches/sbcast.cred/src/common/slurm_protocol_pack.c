@@ -5115,6 +5115,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer )
 	packstr ( msg->fname, buffer );
 	pack32 ( msg->block_len, buffer );
 	packmem ( msg->block, msg->block_len, buffer );
+	pack_sbcast_cred( msg->cred, buffer );
 }
 
 static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer )
@@ -5143,6 +5144,11 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer )
 	safe_unpackmem_xmalloc ( & msg->block, &uint32_tmp , buffer ) ;
 	if ( uint32_tmp != msg->block_len )
 		goto unpack_error;
+
+	msg->cred = unpack_sbcast_cred( buffer );
+	if (msg->cred == NULL)
+		goto unpack_error;
+
 	return SLURM_SUCCESS;
 
 unpack_error:

@@ -1519,8 +1519,9 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->fname);
 		xfree(msg->block);
+		xfree(msg->fname);
+		delete_sbcast_cred(msg->cred);
 		xfree(msg);
 	}
 }

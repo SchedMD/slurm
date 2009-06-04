@@ -202,6 +202,7 @@ static void _bcast_file(void)
 	buffer			= xmalloc(buf_size);
 	bcast_msg.block		= buffer;
 	bcast_msg.block_len	= 0;
+	bcast_msg.cred          = sbcast_cred->sbcast_cred;
 
 	if (params.preserve) {
 		bcast_msg.atime     = f_stat.st_atime;

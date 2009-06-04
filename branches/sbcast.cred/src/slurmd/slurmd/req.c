@@ -146,7 +146,8 @@ static int  _waiter_init (uint32_t jobid);
 static int  _waiter_complete (uint32_t jobid);
 
 static bool _steps_completed_now(uint32_t jobid);
-static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid);
+static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, 
+			       uint16_t block_no);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
 static long _get_job_uid(uint32_t jobid);
 
@@ -1919,51 +1920,46 @@ _init_groups(uid_t my_uid, gid_t my_gid)
 	if (rc) {
  		error("sbcast: Error in initgroups(%s, %ld): %m",
 		      user_name, (long)my_gid);
-		return -1;
+//		return -1;
 	}
 	return 0;
 
 }
 
-/* Validate sbcast credential,
+/* Validate sbcast credential.
+ * NOTE: We can only perform the full credential validation once with 
+ * Munge without generating a credential replay error
  * RET SLURM_SUCCESS or an error code */
 static int
-_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid)
+_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no)
 {
 	int rc = SLURM_SUCCESS;
-#if 0
-	sbcast_cred_arg_t arg;
-	time_t now = time(NULL);
+	uint32_t job_id;
+	char *nodes = NULL;
+	hostset_t hset = NULL;
 
-	if (sbcast_cred_verify(req->cred, &args) != SLURM_SUCCESS) {
+	rc = extract_sbcast_cred(conf->vctx, req->cred, block_no, 
+				 &job_id, &nodes);
+	if (rc != 0) {
 		error("Security violation: Invalid sbcast_cred from uid %u",
 		      (uint32_t) req_uid);
 		return ESLURMD_INVALID_JOB_CREDENTIAL;
 	}
-	if (req_uid != args.uid) {
-		error("Security violation: sbcast_cred from uid %u for uid %u",
-		      (uint32_t) req_uid, (uint32_t) arg.uid);
+
+	if (!(hset = hostset_create(nodes))) {
+		error("Unable to parse sbcast_cred hostlist %s", nodes);
 		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
-	} else if (now > args.expire_time) {
-		error("Security violation: sbcast_cred from uid %u expired",
-		      (uint32_t) req_uid);
-		rc = ESLURMD_CREDENTIAL_EXPIRED;
-	} else {
-		hostset_t hset = NULL;
-		if (!(hset = hostset_create(args.hostlist))) {
-			error("Unable to parse sbcast_cred hostlist %s",
-			      args.hostlist);
-			rc = ESLURMD_INVALID_JOB_CREDENTIAL;
-		} else if (!hostset_within(hset, conf->node_name)) {
-			error("Security violation: sbcast_cred from %u has "
-			      "bad hostset %s", req_uid, args.hostlist);
-			rc = ESLURMD_INVALID_JOB_CREDENTIAL;
-		}
-		if (hset)
-			hostset_destroy(hset);
+	} else if (!hostset_within(hset, conf->node_name)) {
+		error("Security violation: sbcast_cred from %u has "
+		      "bad hostset %s", req_uid, nodes);
+		rc = ESLURMD_INVALID_JOB_CREDENTIAL;
 	}
-	sbcast_cred_free_args(&args);
-#endif
+	if (hset)
+		hostset_destroy(hset);
+	xfree(nodes);
+
+	/* print_sbcast_cred(req->cred); */
+
 	return rc;
 }
 
@@ -1988,7 +1984,9 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	     req->block[0], (unsigned long) &req->block);
 #endif
 #endif
-	if ((rc = _valid_sbcast_cred(req, req_uid)) != SLURM_SUCCESS)
+
+	if ((rc = _valid_sbcast_cred(req, req_uid, req->block_no)) != 
+	    SLURM_SUCCESS)
 		return rc;
 
 	info("sbcast req_uid=%u fname=%s block_no=%u", 

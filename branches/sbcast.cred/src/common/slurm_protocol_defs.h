@@ -57,12 +57,13 @@
 #include <sys/wait.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/job_options.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_common.h"
-#include "src/common/switch.h"
-#include "src/common/job_options.h"
 #include "src/common/slurm_step_layout.h"
+#include "src/common/switch.h"
 #include "src/common/xassert.h"
 //#include "src/common/slurm_jobacct_common.h"
 
@@ -748,6 +749,7 @@ typedef struct file_bcast_msg {
 	uint32_t gid;		/* group for destination file */
 	time_t atime;		/* last access time for destination file */
 	time_t mtime;		/* last modification time for dest file */
+	sbcast_cred_t cred;	/* credential for the RPC */
 	uint32_t block_len;	/* length of this data block */
 	char *block;		/* data for this block */
 } file_bcast_msg_t; 
