@@ -148,12 +148,16 @@ BEGIN_C_DECLS
 #endif
 
 /* Define allocation_msg_thread_t below to avoid including extraneous 
-   slurm headers */
+ * slurm headers */
 #ifndef __allocation_msg_thread_t_defined
 #  define  __allocation_msg_thread_t_defined
    typedef struct allocation_msg_thread *allocation_msg_thread_t;
 #endif
 
+#ifndef __sbcast_cred_t_defined
+#  define  __sbcast_cred_t_defined
+   typedef struct sbcast_cred *sbcast_cred_t;		/* opaque data type */
+#endif
 
 /*****************************************************************************\
  *      DEFINITIONS FOR VERSION MANAGEMENT
@@ -998,13 +1002,6 @@ typedef struct job_alloc_info_response_msg {
 			* use select_g_get_jobinfo() to access conents */
 } job_alloc_info_response_msg_t;
 
-typedef struct job_sbcast_cred_msg {
-	uint32_t job_id;	/* assigned job id */
-	char *node_list;	/* assigned list of nodes */
-	uint32_t node_cnt;	/* count of nodes */
-	slurm_addr *node_addr;	/* network addresses */
-} job_sbcast_cred_msg_t;
-
 typedef struct partition_info_msg {
 	time_t last_update;	/* time of latest info */
 	uint32_t record_count;	/* number of records */
@@ -1282,6 +1279,14 @@ typedef struct slurm_update_node_msg {
 
 typedef struct partition_info update_part_msg_t;
 
+typedef struct job_sbcast_cred_msg {
+	uint32_t      job_id;		/* assigned job id */
+	slurm_addr   *node_addr;	/* network addresses */
+	uint32_t      node_cnt;		/* count of nodes */
+	char         *node_list;	/* assigned list of nodes */
+	sbcast_cred_t sbcast_cred;	/* opaque data structure */
+} job_sbcast_cred_msg_t;
+
 /* Opaque data type for slurm_step_ctx_* functions */
 typedef struct slurm_step_ctx_struct *slurm_step_ctx;
 typedef struct slurm_step_ctx_struct slurm_step_ctx_t;
@@ -1477,6 +1482,9 @@ extern int slurm_job_will_run PARAMS((job_desc_msg_t * job_desc_msg));
  */
 extern int slurm_sbcast_lookup PARAMS((uint32_t jobid,
 				       job_sbcast_cred_msg_t **info));
+
+extern void slurm_free_sbcast_cred_msg PARAMS((job_sbcast_cred_msg_t * msg));
+
 /*****************************************************************************\
  *	JOB/STEP SIGNALING FUNCTIONS
 \*****************************************************************************/

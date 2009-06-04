@@ -2083,7 +2083,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	char         host[MAXHOSTNAMELEN];
 	slurm_addr   ioaddr;
 	void        *job_cred_sig;
-	int          len;
+	uint32_t     len;
 	int               fd;
 	uid_t             req_uid;
 	slurmstepd_info_t *step = NULL;

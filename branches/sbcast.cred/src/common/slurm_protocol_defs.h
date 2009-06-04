@@ -236,11 +236,11 @@ typedef enum {
  * core api configuration struct 
 \*****************************************************************************/
 typedef struct forward {
-	char      *nodelist; /*ranged string of who to forward the
-			       message to */
-	uint16_t   cnt;           /* number of nodes to forward to */
-	uint32_t   timeout;       /* original timeout increments */
-	uint16_t   init;          /* tell me it has been set (FORWARD_INIT) */
+	uint16_t   cnt;		/* number of nodes to forward to */
+	uint16_t   init;	/* tell me it has been set (FORWARD_INIT) */
+	char      *nodelist;	/* ranged string of who to forward the
+				 * message to */
+	uint32_t   timeout;	/* original timeout increments */
 } forward_t;
 
 /*core api protocol message structures */
@@ -858,7 +858,6 @@ void inline slurm_free_job_step_info_request_msg(
 void inline slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 void inline slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
 void inline slurm_free_resv_info_request_msg(resv_info_request_msg_t *msg);
-void inline slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg);
 void inline slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
 void inline slurm_destroy_association_shares_object(void *object);
 void inline slurm_free_shares_request_msg(shares_request_msg_t *msg);
