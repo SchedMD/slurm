@@ -27,6 +27,9 @@ documents those changes that are of interest to users and admins.
     instead of having to do strcmp's to find the correct one.
  -- Pushed most all the plugin specific info in src/common/node_select.c 
     into the respected plugin.
+ -- BLUEGENE - closed some corner cases where a block could had been removed 
+    while a job was waiting for it to become ready because an underlying 
+    part of the block was put into an error state.
 
 * Changes in SLURM 2.0.1
 ========================

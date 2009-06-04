@@ -502,18 +502,17 @@ extern int bg_free_block(bg_record_t *bg_record)
 	}
 	
 	while (1) {
-		if(!bg_record) {
-			error("bg_free_block: there was no bg_record");
-			return SLURM_ERROR;
-		}
-		
-		slurm_mutex_lock(&block_state_mutex);			
+		/* Here we don't need to check if the block is still
+		 * in exsistance since this function can't be called on
+		 * the same block twice.  It may
+		 * had already been removed at this point also.
+		 */
+		slurm_mutex_lock(&block_state_mutex);
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
 			debug2("bridge_destroy %s", bg_record->bg_block_id);
-#ifdef HAVE_BG_FILES
-			
+#ifdef HAVE_BG_FILES			
 			rc = bridge_destroy_block(bg_record->bg_block_id);
 			if (rc != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
