@@ -326,7 +326,6 @@ if {$matches != 3} {
 }
 
 if { $exit_code } {
-	send_user "here\n"
 	#incr exit_code [archive_load $sql_rem]
 	remove_user "" "" $users
 	remove_acct "" $accounts
