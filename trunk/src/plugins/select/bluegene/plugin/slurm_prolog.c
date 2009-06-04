@@ -195,7 +195,7 @@ static int _partitions_dealloc()
 		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&bg_info_ptr);
+			node_select_info_msg_free(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_bg_ptr = bg_info_ptr;

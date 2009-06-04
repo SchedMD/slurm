@@ -512,7 +512,9 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->sched_time_slice    = conf->sched_time_slice;
 	conf_ptr->schedtype           = xstrdup(conf->schedtype);
 	conf_ptr->select_type         = xstrdup(conf->select_type);
-	conf_ptr->select_conf_key_pairs = (void *)select_g_get_config();
+	select_g_get_info_from_plugin(SELECT_CONFIG_INFO, NULL,
+				      &conf_ptr->select_conf_key_pairs);
+
 	conf_ptr->select_type_param   = conf->select_type_param;
 	conf_ptr->slurm_user_id       = conf->slurm_user_id;
 	conf_ptr->slurm_user_name     = xstrdup(conf->slurm_user_name);
@@ -722,7 +724,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		alloc_msg.node_cnt       = job_ptr->node_cnt;
 		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
 		alloc_msg.select_jobinfo = 
-			select_g_copy_jobinfo(job_ptr->select_jobinfo);
+			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_write_lock);
 
 		slurm_msg_t_init(&response_msg);
@@ -734,7 +736,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		xfree(alloc_msg.cpu_count_reps);
 		xfree(alloc_msg.cpus_per_node);
 		xfree(alloc_msg.node_list);
-		select_g_free_jobinfo(&alloc_msg.select_jobinfo);
+		select_g_select_jobinfo_free(alloc_msg.select_jobinfo);
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	} else {	/* allocate error */
@@ -980,11 +982,17 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		unlock_slurmctld(node_read_lock);
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
-	} else if ((node_req_msg->last_update - 1) >= last_node_update) {
+		return;
+	} 
+
+	select_g_select_nodeinfo_set_all(node_req_msg->last_update - 1);
+
+	if ((node_req_msg->last_update - 1) >= last_node_update) {
 		unlock_slurmctld(node_read_lock);
 		debug2("_slurm_rpc_dump_nodes, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
+
 		pack_all_node(&dump, &dump_size, node_req_msg->show_flags, 
 			      uid);
 		unlock_slurmctld(node_read_lock);
@@ -1632,7 +1640,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
 		job_info_resp_msg.select_jobinfo = 
-			select_g_copy_jobinfo(job_ptr->select_jobinfo);
+			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_read_lock);
 
 		slurm_msg_t_init(&response_msg);
@@ -1640,7 +1648,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		response_msg.data        = &job_info_resp_msg;
 		
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		select_g_free_jobinfo(&job_info_resp_msg.select_jobinfo);
+		select_g_select_jobinfo_free(job_info_resp_msg.select_jobinfo);
 		xfree(job_info_resp_msg.cpu_count_reps);
 		xfree(job_info_resp_msg.cpus_per_node);
 		xfree(job_info_resp_msg.node_addr);
@@ -1706,7 +1714,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(job_ptr->nodes);
 		job_info_resp_msg.select_jobinfo = 
-			select_g_copy_jobinfo(job_ptr->select_jobinfo);
+			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_read_lock);
 
 		slurm_msg_t_init(&response_msg);
@@ -1714,7 +1722,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		response_msg.data        = &job_info_resp_msg;
 		
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		select_g_free_jobinfo(&job_info_resp_msg.select_jobinfo);
+		select_g_select_jobinfo_free(job_info_resp_msg.select_jobinfo);
 		xfree(job_info_resp_msg.cpu_count_reps);
 		xfree(job_info_resp_msg.cpus_per_node);
 		xfree(job_info_resp_msg.node_list);
@@ -2685,9 +2693,9 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 	} 
 	unlock_slurmctld(config_read_lock);
 	if (error_code == SLURM_SUCCESS) {
-		error_code = select_g_pack_node_info(
-					sel_req_msg->last_update,
-					&buffer);
+		error_code = select_g_pack_select_info(
+			sel_req_msg->last_update,
+			&buffer);
 	}
 	END_TIMER2("_slurm_rpc_node_select_info");
 
@@ -3120,7 +3128,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	memcpy(launch_msg_ptr->cpu_count_reps, 
 	       job_ptr->select_job->cpu_array_reps,
 	       (sizeof(uint32_t) * job_ptr->select_job->cpu_array_cnt));
-	launch_msg_ptr->select_jobinfo = select_g_copy_jobinfo(
+	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
 			job_ptr->select_jobinfo);
 
 	/* FIXME: for some reason these CPU arrays total all the CPUs

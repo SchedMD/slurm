@@ -37,13 +37,28 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/slurm_xlator.h"
 #include "bluegene.h"
+#include "nodeinfo.h"
+#include "jobinfo.h"
 
 //#include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include <fcntl.h>
 
 #define HUGE_BUF_SIZE (1024*16)
+#define NOT_FROM_CONTROLLER -2
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld. 
+ */
+slurm_ctl_conf_t slurmctld_conf;
+struct node_record *node_record_table_ptr = NULL;
+int bg_recover = NOT_FROM_CONTROLLER;
+List part_list = NULL;	
+int node_record_count;
+time_t last_node_update;
+char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -73,7 +88,7 @@
  * as 100 or 1000.  Various SLURM versions will likely require a certain
  * minimum versions for their plugins as the node selection API matures.
  */
-const char plugin_name[]       	= "Blue Gene node selection plugin";
+const char plugin_name[]       	= "BlueGene node selection plugin";
 const char plugin_type[]       	= "select/bluegene";
 const uint32_t plugin_version	= 100;
 
@@ -87,41 +102,6 @@ static int _init_status_pthread(void);
 static char *_block_state_str(int state);
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
-
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init ( void )
-{
-
-#if (SYSTEM_DIMENSIONS != 3)
-	fatal("SYSTEM_DIMENSIONS value (%d) invalid for Blue Gene",
-		SYSTEM_DIMENSIONS);
-#endif
-
-#ifdef HAVE_BG_FILES
-#ifdef HAVE_BGL
-	if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE")
-	    || !getenv("VWSPATH"))
-		fatal("db2profile has not been run to setup DB2 environment");
-	
-	if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
-	    || (SELECT_VIRTUAL_NODE_MODE != RM_PARTITION_VIRTUAL_NODE_MODE))
-		fatal("enum node_use_type out of sync with rm_api.h");
-#endif
-	if ((SELECT_MESH  != RM_MESH)
-	    || (SELECT_TORUS != RM_TORUS)
-	    || (SELECT_NAV   != RM_NAV))
-		fatal("enum conn_type out of sync with rm_api.h");
-#endif
-
-	verbose("%s loading...", plugin_name);
-	if (init_bg() || _init_status_pthread())
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
 
 static int _init_status_pthread(void)
 {
@@ -166,6 +146,153 @@ static char *_block_state_str(int state)
 	return tmp;
 }
 
+static List _get_config(void)
+{
+	config_key_pair_t *key_pair;
+	List my_list = list_create(destroy_config_key_pair);
+
+	if (!my_list)
+		fatal("malloc failure on list_create");
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BasePartitionNodeCnt");
+	key_pair->value = xstrdup_printf("%u", bg_conf->bp_node_cnt);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("NodeCPUCnt");
+	key_pair->value = xstrdup_printf("%u", bg_conf->proc_ratio);
+	list_append(my_list, key_pair);
+
+
+#ifdef HAVE_BGL
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BlrtsImage");
+	key_pair->value = xstrdup(bg_conf->default_blrtsimage);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("LinuxImage");
+	key_pair->value = xstrdup(bg_conf->default_linuximage);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("RamDiskImage");
+	key_pair->value = xstrdup(bg_conf->default_ramdiskimage);
+	list_append(my_list, key_pair);
+#else
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CnloadImage");
+	key_pair->value = xstrdup(bg_conf->default_linuximage);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("IoloadImage");
+	key_pair->value = xstrdup(bg_conf->default_ramdiskimage);
+	list_append(my_list, key_pair);
+#endif
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BridgeAPILogFile");
+	key_pair->value = xstrdup(bg_conf->bridge_api_file);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("BridgeAPIVerbose");
+	key_pair->value = xstrdup_printf("%u", bg_conf->bridge_api_verb);
+	list_append(my_list, key_pair);
+
+	if(bg_conf->deny_pass) {
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("DenyPassThrough");
+		if(bg_conf->deny_pass & PASS_DENY_X)
+			xstrcat(key_pair->value, "X,");
+		if(bg_conf->deny_pass & PASS_DENY_Y)
+			xstrcat(key_pair->value, "Y,");
+		if(bg_conf->deny_pass & PASS_DENY_Z)
+			xstrcat(key_pair->value, "Z,");
+		if(key_pair->value)
+			key_pair->value[strlen(key_pair->value)-1] = '\0';
+		list_append(my_list, key_pair);
+	}
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("LayoutMode");
+	switch(bg_conf->layout_mode) {
+	case LAYOUT_STATIC:
+		key_pair->value = xstrdup("Static");
+		break;
+	case LAYOUT_OVERLAP:
+		key_pair->value = xstrdup("Overlap");
+		break;
+	case LAYOUT_DYNAMIC:
+		key_pair->value = xstrdup("Dynamic");
+		break;
+	default:
+		key_pair->value = xstrdup("Unknown");
+		break;
+	}
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MloaderImage");
+	key_pair->value = xstrdup(bg_conf->default_mloaderimage);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("NodeCardNodeCnt");
+	key_pair->value = xstrdup_printf("%u", bg_conf->nodecard_node_cnt);
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("Numpsets");
+	key_pair->value = xstrdup_printf("%u", bg_conf->numpsets);
+	list_append(my_list, key_pair);
+
+	list_sort(my_list, (ListCmpF) sort_key_pairs);
+
+	return my_list;
+}
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init ( void )
+{
+
+#if (SYSTEM_DIMENSIONS != 3)
+	fatal("SYSTEM_DIMENSIONS value (%d) invalid for BlueGene",
+		SYSTEM_DIMENSIONS);
+#endif
+
+#ifdef HAVE_BG_FILES
+#ifdef HAVE_BGL
+	if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE")
+	    || !getenv("VWSPATH"))
+		fatal("db2profile has not been run to setup DB2 environment");
+	
+	if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
+	    || (SELECT_VIRTUAL_NODE_MODE != RM_PARTITION_VIRTUAL_NODE_MODE))
+		fatal("enum node_use_type out of sync with rm_api.h");
+#endif
+	if ((SELECT_MESH  != RM_MESH)
+	    || (SELECT_TORUS != RM_TORUS)
+	    || (SELECT_NAV   != RM_NAV))
+		fatal("enum conn_type out of sync with rm_api.h");
+#endif
+
+	verbose("%s loading...", plugin_name);
+
+	/* if this is coming from something other than the controller
+	   we don't want to read the config or anything like that. */
+	if(bg_recover != NOT_FROM_CONTROLLER) 
+		if (init_bg() || _init_status_pthread())
+			return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
@@ -191,37 +318,6 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM 
  * node selection API.
  */
-
-/*
- * Called by slurmctld when a new configuration file is loaded
- * or scontrol is used to change block configuration
- */
- extern int select_p_block_init(List part_list)
-{
-	/* select_p_node_init needs to be called before this to set
-	   this up correctly
-	*/
-	if(read_bg_conf() == SLURM_ERROR) {
-		fatal("Error, could not read the file");
-		return SLURM_ERROR;
-	}
-	
-	if(part_list) {
-		struct part_record *part_ptr = NULL;
-		ListIterator itr = list_iterator_create(part_list);
-		while((part_ptr = list_next(itr))) {
-			part_ptr->max_nodes = part_ptr->max_nodes_orig;
-			part_ptr->min_nodes = part_ptr->min_nodes_orig;
-			select_p_alter_node_cnt(SELECT_SET_BP_CNT, 
-						&part_ptr->max_nodes);
-			select_p_alter_node_cnt(SELECT_SET_BP_CNT,
-						&part_ptr->min_nodes);
-		}
-		list_iterator_destroy(itr);
-	}
-
-	return SLURM_SUCCESS; 
-}
 
 /* We rely upon DB2 to save and restore BlueGene state */
 extern int select_p_state_save(char *dir_name)
@@ -333,12 +429,44 @@ extern int select_p_job_init(List job_list)
 /* All initialization is performed by init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	if(node_cnt>0)
+	if(node_cnt>0 && bg_conf)
 		if(node_ptr->cpus >= bg_conf->bp_node_cnt) 
 			bg_conf->procs_per_bp = node_ptr->cpus;
 		
 	return SLURM_SUCCESS;
 }
+
+/*
+ * Called by slurmctld when a new configuration file is loaded
+ * or scontrol is used to change block configuration
+ */
+ extern int select_p_block_init(List part_list)
+{
+	/* select_p_node_init needs to be called before this to set
+	   this up correctly
+	*/
+	if(read_bg_conf() == SLURM_ERROR) {
+		fatal("Error, could not read the file");
+		return SLURM_ERROR;
+	}
+	
+	if(part_list) {
+		struct part_record *part_ptr = NULL;
+		ListIterator itr = list_iterator_create(part_list);
+		while((part_ptr = list_next(itr))) {
+			part_ptr->max_nodes = part_ptr->max_nodes_orig;
+			part_ptr->min_nodes = part_ptr->min_nodes_orig;
+			select_p_alter_node_cnt(SELECT_SET_BP_CNT, 
+						&part_ptr->max_nodes);
+			select_p_alter_node_cnt(SELECT_SET_BP_CNT,
+						&part_ptr->min_nodes);
+		}
+		list_iterator_destroy(itr);
+	}
+
+	return SLURM_SUCCESS; 
+}
+
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements, 
@@ -398,6 +526,11 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 	return start_job(job_ptr);
 }
 
+extern int select_p_job_ready(struct job_record *job_ptr)
+{
+	return block_ready(job_ptr);
+}
+
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	return term_job(job_ptr);
@@ -413,12 +546,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int select_p_job_ready(struct job_record *job_ptr)
-{
-	return block_ready(job_ptr);
-}
-
-extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
+extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
 {
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
@@ -446,7 +574,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 			list_iterator_destroy(itr);
 			slurm_mutex_unlock(&block_state_mutex);
 		} else {
-			error("select_p_pack_node_info: no bg_lists->main");
+			error("select_p_pack_select_info: no bg_lists->main");
 			return SLURM_ERROR;
 		}
 		/*
@@ -480,17 +608,95 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 	return SLURM_SUCCESS;
 }
 
-
-extern int select_p_get_select_nodeinfo (struct node_record *node_ptr, 
-                                         enum select_data_info info,
-                                         void *data)
+extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, 
+					 Buf buffer)
 {
-       return SLURM_SUCCESS;
+	return select_nodeinfo_pack(nodeinfo, buffer);
 }
 
-extern int select_p_update_nodeinfo (struct job_record *job_ptr)
+extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, 
+					   Buf buffer)
 {
-       return SLURM_SUCCESS;
+	return select_nodeinfo_unpack(nodeinfo, buffer);
+}
+
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
+{
+	return select_nodeinfo_alloc(size);
+}
+
+extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
+{
+	return select_nodeinfo_free(nodeinfo);
+}
+
+extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
+{
+	return select_nodeinfo_set_all(last_query_time);
+}
+
+extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
+{
+	return select_nodeinfo_set(job_ptr);
+}
+
+extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
+					enum select_nodedata_type dinfo,
+					enum node_states state,
+					void *data)
+{
+	return select_nodeinfo_get(nodeinfo, dinfo, state, data);
+}
+
+select_jobinfo_t *select_p_select_jobinfo_alloc()
+{
+	return alloc_select_jobinfo();
+}
+
+extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
+				       enum select_jobdata_type data_type,
+				       void *data)
+{
+	return set_select_jobinfo(jobinfo, data_type, data);
+}
+
+extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
+				 enum select_jobdata_type data_type, void *data)
+{
+	return get_select_jobinfo(jobinfo, data_type, data);
+}
+
+extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
+{
+	return copy_select_jobinfo(jobinfo);
+}
+
+extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
+{
+	return free_select_jobinfo(jobinfo);
+}
+
+extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
+{
+	return pack_select_jobinfo(jobinfo, buffer);
+}
+
+extern int  select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
+					   Buf buffer)
+{
+	return unpack_select_jobinfo(jobinfo, buffer);
+}
+
+extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
+				     char *buf, size_t size, int mode)
+{
+	return sprint_select_jobinfo(jobinfo, buf, size, mode);
+}
+
+extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
+					     int mode)
+{
+	return xstrdup_select_jobinfo(jobinfo, mode);
 }
 
 extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
@@ -720,19 +926,37 @@ end_it:
 	return rc;
 }
 
-extern int select_p_get_info_from_plugin (enum select_data_info info, 
+extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo, 
 					  struct job_record *job_ptr,
 					  void *data)
 {
-	if (info == SELECT_STATIC_PART) {
-		uint16_t *tmp16 = (uint16_t *) data;
+	uint16_t *tmp16 = (uint16_t *) data;
+	uint32_t *tmp32 = (uint32_t *) data;
+	List *tmp_list = (List *) data;
+	int rc = SLURM_SUCCESS;
+
+	switch(dinfo) {
+	case SELECT_CR_PLUGIN:
+		*tmp32 = 0;
+		break;
+	case SELECT_STATIC_PART:
 		if (bg_conf->layout_mode == LAYOUT_STATIC)
 			*tmp16 = 1;
 		else
 			*tmp16 = 0;
+		break;
+	
+	case SELECT_CONFIG_INFO:
+		*tmp_list = _get_config();
+		break;
+	default:
+		error("select_p_get_info_from_plugin info %d invalid",
+		      dinfo);
+		rc = SLURM_ERROR;
+		break;
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int select_p_update_node_state (int index, uint16_t state)
@@ -764,7 +988,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 
 	if(!bg_conf->bp_node_cnt) {
-		fatal("select_g_alter_node_cnt: This can't be called "
+		fatal("select_p_alter_node_cnt: This can't be called "
 		      "before init");
 	}
 
@@ -799,23 +1023,23 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			(*nodes) *= bg_conf->bp_node_cnt;
 		break;
 	case SELECT_SET_NODE_CNT:
-		select_g_get_jobinfo(job_desc->select_jobinfo,
-				     SELECT_DATA_ALTERED, &tmp);
+		get_select_jobinfo(job_desc->select_jobinfo,
+				   SELECT_JOBDATA_ALTERED, &tmp);
 		if(tmp == 1) {
 			return SLURM_SUCCESS;
 		}
 		tmp = 1;
-		select_g_set_jobinfo(job_desc->select_jobinfo,
-				     SELECT_DATA_ALTERED, &tmp);
+		set_select_jobinfo(job_desc->select_jobinfo,
+				     SELECT_JOBDATA_ALTERED, &tmp);
 		tmp = NO_VAL;
-		select_g_set_jobinfo(job_desc->select_jobinfo,
-				     SELECT_DATA_MAX_PROCS, 
+		set_select_jobinfo(job_desc->select_jobinfo,
+				     SELECT_JOBDATA_MAX_PROCS, 
 				     &tmp);
 	
 		if(job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
-		select_g_get_jobinfo(job_desc->select_jobinfo,
-				     SELECT_DATA_GEOMETRY, &req_geometry);
+		get_select_jobinfo(job_desc->select_jobinfo,
+				     SELECT_JOBDATA_GEOMETRY, &req_geometry);
 
 		if(req_geometry[0] != 0 
 		   && req_geometry[0] != (uint16_t)NO_VAL) {
@@ -849,8 +1073,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		
 		/* this means it is greater or equal to one bp */
 		if(tmp > 0) {
-			select_g_set_jobinfo(job_desc->select_jobinfo,
-					     SELECT_DATA_NODE_CNT,
+			set_select_jobinfo(job_desc->select_jobinfo,
+					     SELECT_JOBDATA_NODE_CNT,
 					     &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
 			job_desc->num_procs = bg_conf->procs_per_bp * tmp;
@@ -868,8 +1092,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				job_desc->min_nodes = 
 					bg_conf->bp_node_cnt;
 			
-			select_g_set_jobinfo(job_desc->select_jobinfo,
-					     SELECT_DATA_NODE_CNT,
+			set_select_jobinfo(job_desc->select_jobinfo,
+					     SELECT_JOBDATA_NODE_CNT,
 					     &job_desc->min_nodes);
 
 			tmp = bg_conf->bp_node_cnt/job_desc->min_nodes;
@@ -886,8 +1110,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				i *= 2;
 			}
 			
-			select_g_set_jobinfo(job_desc->select_jobinfo,
-					     SELECT_DATA_NODE_CNT,
+			set_select_jobinfo(job_desc->select_jobinfo,
+					     SELECT_JOBDATA_NODE_CNT,
 					     &job_desc->min_nodes);
 
 			job_desc->num_procs = job_desc->min_nodes 
@@ -926,9 +1150,9 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			tmp = bg_conf->bp_node_cnt/job_desc->max_nodes;
 			tmp = bg_conf->procs_per_bp/tmp;
 			
-			select_g_set_jobinfo(job_desc->select_jobinfo,
-					     SELECT_DATA_MAX_PROCS, 
-					     &tmp);
+			set_select_jobinfo(job_desc->select_jobinfo,
+						    SELECT_JOBDATA_MAX_PROCS, 
+						    &tmp);
 			job_desc->max_nodes = 1;
 #else
 			i = bg_conf->smallest_block;
@@ -941,9 +1165,9 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			}
 			
 			tmp = job_desc->max_nodes * bg_conf->proc_ratio;
-			select_g_set_jobinfo(job_desc->select_jobinfo,
-					     SELECT_DATA_MAX_PROCS,
-					     &tmp);
+			set_select_jobinfo(job_desc->select_jobinfo,
+					   SELECT_JOBDATA_MAX_PROCS,
+					   &tmp);
 
 			job_desc->max_nodes = 1;
 #endif
@@ -980,110 +1204,3 @@ extern int select_p_reconfigure(void)
 	return SLURM_SUCCESS;
 }
 
-extern List select_p_get_config(void)
-{
-	config_key_pair_t *key_pair;
-	List my_list = list_create(destroy_config_key_pair);
-
-	if (!my_list)
-		fatal("malloc failure on list_create");
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("BasePartitionNodeCnt");
-	key_pair->value = xstrdup_printf("%u", bg_conf->bp_node_cnt);
-	list_append(my_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("NodeCPUCnt");
-	key_pair->value = xstrdup_printf("%u", bg_conf->proc_ratio);
-	list_append(my_list, key_pair);
-
-
-#ifdef HAVE_BGL
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("BlrtsImage");
-	key_pair->value = xstrdup(bg_conf->default_blrtsimage);
-	list_append(my_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("LinuxImage");
-	key_pair->value = xstrdup(bg_conf->default_linuximage);
-	list_append(my_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("RamDiskImage");
-	key_pair->value = xstrdup(bg_conf->default_ramdiskimage);
-	list_append(my_list, key_pair);
-#else
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("CnloadImage");
-	key_pair->value = xstrdup(bg_conf->default_linuximage);
-	list_append(my_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("IoloadImage");
-	key_pair->value = xstrdup(bg_conf->default_ramdiskimage);
-	list_append(my_list, key_pair);
-#endif
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("BridgeAPILogFile");
-	key_pair->value = xstrdup(bg_conf->bridge_api_file);
-	list_append(my_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("BridgeAPIVerbose");
-	key_pair->value = xstrdup_printf("%u", bg_conf->bridge_api_verb);
-	list_append(my_list, key_pair);
-
-	if(bg_conf->deny_pass) {
-		key_pair = xmalloc(sizeof(config_key_pair_t));
-		key_pair->name = xstrdup("DenyPassThrough");
-		if(bg_conf->deny_pass & PASS_DENY_X)
-			xstrcat(key_pair->value, "X,");
-		if(bg_conf->deny_pass & PASS_DENY_Y)
-			xstrcat(key_pair->value, "Y,");
-		if(bg_conf->deny_pass & PASS_DENY_Z)
-			xstrcat(key_pair->value, "Z,");
-		if(key_pair->value)
-			key_pair->value[strlen(key_pair->value)-1] = '\0';
-		list_append(my_list, key_pair);
-	}
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("LayoutMode");
-	switch(bg_conf->layout_mode) {
-	case LAYOUT_STATIC:
-		key_pair->value = xstrdup("Static");
-		break;
-	case LAYOUT_OVERLAP:
-		key_pair->value = xstrdup("Overlap");
-		break;
-	case LAYOUT_DYNAMIC:
-		key_pair->value = xstrdup("Dynamic");
-		break;
-	default:
-		key_pair->value = xstrdup("Unknown");
-		break;
-	}
-	list_append(my_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("MloaderImage");
-	key_pair->value = xstrdup(bg_conf->default_mloaderimage);
-	list_append(my_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("NodeCardNodeCnt");
-	key_pair->value = xstrdup_printf("%u", bg_conf->nodecard_node_cnt);
-	list_append(my_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("Numpsets");
-	key_pair->value = xstrdup_printf("%u", bg_conf->numpsets);
-	list_append(my_list, key_pair);
-
-	list_sort(my_list, (ListCmpF) sort_key_pairs);
-
-	return my_list;
-}

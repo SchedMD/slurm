@@ -268,12 +268,12 @@ static int _print_text_job(job_info_t * job_ptr)
 	time_t now_time = time(NULL);
 	
 #ifdef HAVE_BG
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
-			     &ionodes);
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_NODE_CNT, 
-			     &node_cnt);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				    SELECT_JOBDATA_IONODES, 
+				    &ionodes);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				    SELECT_JOBDATA_NODE_CNT, 
+				    &node_cnt);
 	if(!strcasecmp(job_ptr->nodes,"waiting...")) 
 		xfree(ionodes);
 #else
@@ -299,7 +299,7 @@ static int _print_text_job(job_info_t * job_ptr)
 #ifdef HAVE_BG
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.16s", 
-			  select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
+			  select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, 
 						  time_buf, 
 						  sizeof(time_buf), 
 						  SELECT_PRINT_BG_ID));
@@ -308,7 +308,7 @@ static int _print_text_job(job_info_t * job_ptr)
 #ifdef HAVE_CRAY_XT
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.16s", 
-			  select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
+			  select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, 
 						  time_buf, 
 						  sizeof(time_buf), 
 						  SELECT_PRINT_RESV_ID));
@@ -383,14 +383,14 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("%9.9s ", job_ptr->partition);
 #ifdef HAVE_BG
 		printf("%16.16s ", 
-		       select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
+		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, 
 					       time_buf, 
 					       sizeof(time_buf), 
 					       SELECT_PRINT_BG_ID));
 #endif
 #ifdef HAVE_CRAY_XT
 		printf("%16.16s ", 
-		       select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
+		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, 
 					       time_buf, 
 					       sizeof(time_buf), 
 					       SELECT_PRINT_RESV_ID));

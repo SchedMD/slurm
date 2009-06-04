@@ -106,7 +106,7 @@ typedef struct srun_job {
 	fname_t *efname;
 
 	/* Output streams and stdin fileno */
-	select_jobinfo_t select_jobinfo;
+	select_jobinfo_t *select_jobinfo;
 
 	/* Pseudo terminial support */
 	pthread_t pty_id;	/* pthread to communicate window size changes */

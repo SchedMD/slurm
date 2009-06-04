@@ -936,7 +936,7 @@ bit_fmt(char *str, int len, bitstr_t *b)
 	}
 	if (count > 0)
 		str[strlen(str) - 1] = '\0'; 	/* zap trailing comma */
-	if (count > 1) { 			/* add braces */
+	if (count > 1) { /* add braces if we have more than one here */
 		assert(strlen(str) + 3 < len);
 		memmove(str + 1, str, strlen(str));
 		str[0] = '[';

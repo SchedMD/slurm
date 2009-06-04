@@ -1237,8 +1237,8 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	if(slurmdbd_conf) {
 		block_id = xstrdup(job_ptr->comment);
 	} else {
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_BLOCK_ID, 
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_BLOCK_ID, 
 				     &block_id);
 	}
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
@@ -1442,8 +1442,8 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	} else {
 #ifdef HAVE_BG
 		cpus = step_ptr->job_ptr->num_procs;
-		select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-				     SELECT_DATA_IONODES, 
+		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_IONODES, 
 				     &ionodes);
 		if(ionodes) {
 			snprintf(node_list, BUFFER_SIZE, 

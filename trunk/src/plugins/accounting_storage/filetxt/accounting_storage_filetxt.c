@@ -144,8 +144,8 @@ static int _print_record(struct job_record *job_ptr,
 	debug2("_print_record, job=%u, \"%s\"",
 	       job_ptr->job_id, data);
 #ifdef HAVE_BG
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_BLOCK_ID, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_BLOCK_ID, 
 			     &block_id);
 		
 #endif
@@ -631,8 +631,8 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 
 #ifdef HAVE_BG
 	cpus = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_IONODES, 
 			     &ionodes);
 	if(ionodes) {
 		snprintf(node_list, BUFFER_SIZE, 
@@ -761,8 +761,8 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 
 #ifdef HAVE_BG
 	cpus = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_IONODES, 
 			     &ionodes);
 	if(ionodes) {
 		snprintf(node_list, BUFFER_SIZE, 

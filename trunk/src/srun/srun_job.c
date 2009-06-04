@@ -80,7 +80,7 @@ typedef struct allocation_info {
 	uint32_t                num_cpu_groups;
 	uint16_t               *cpus_per_node;
 	uint32_t               *cpu_count_reps;
-	select_jobinfo_t select_jobinfo;
+	select_jobinfo_t       *select_jobinfo;
 } allocation_info_t;
 
 /*
@@ -352,7 +352,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->num_cpu_groups = resp->num_cpu_groups;
 	i->cpus_per_node  = resp->cpus_per_node;
 	i->cpu_count_reps = resp->cpu_count_reps;
-	i->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
+	i->select_jobinfo = select_g_select_jobinfo_copy(resp->select_jobinfo);
 
 	job = _job_create_structure(i);
 

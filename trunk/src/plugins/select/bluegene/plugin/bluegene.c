@@ -122,7 +122,7 @@ extern int init_bg(void)
 
 	ba_init(NULL);
 
-	info("BlueGene plugin loaded successfully");
+	verbose("BlueGene plugin loaded successfully");
 
 	return SLURM_SUCCESS;
 }

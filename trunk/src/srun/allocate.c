@@ -226,8 +226,9 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
 	pending_job_id = alloc->job_id;
-	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
-			     &block_id);
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &block_id);
 
 	for (i=0; (cur_delay < max_delay); i++) {
 		if(i == 1)
@@ -282,9 +283,9 @@ static int _blocks_dealloc()
 	
 	if (bg_info_ptr) {
 		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
-						   &new_bg_ptr);
+						    &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&bg_info_ptr);
+			node_select_info_msg_free(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_bg_ptr = bg_info_ptr;

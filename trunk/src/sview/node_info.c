@@ -31,12 +31,16 @@
 
 #define _DEBUG 0
 
+int cpus_per_node = 1;
+int g_node_scaling = 1;
+
 /* These need to be in alpha order (except POS and CNT) */
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_CPUS, 
 	SORTID_CORES,
 	SORTID_DISK, 
+	SORTID_ERR_CPUS, 
 	SORTID_FEATURES, 
 	SORTID_MEMORY, 
 	SORTID_NAME, 
@@ -62,7 +66,9 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_CPUS, "CPU Count", TRUE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_USED_CPUS, "Used CPU Count", TRUE,
+	{G_TYPE_STRING, SORTID_USED_CPUS, "Used CPU Count", TRUE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", TRUE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_CORES, "Cores", TRUE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
@@ -121,6 +127,8 @@ static void _layout_node_record(GtkTreeView *treeview,
 	char tmp_cnt[50];
 	char *upper = NULL, *lower = NULL;		     
 	GtkTreeIter iter;
+	uint16_t err_cpus = 0, alloc_cpus = 0;
+	int total_used = node_ptr->cpus;
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 	if(!treestore)
@@ -131,14 +139,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_NAME),
 				   node_ptr->name);
 				   
-	upper = node_state_string(node_ptr->node_state);
-	lower = str_tolower(upper);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_node,
-						 SORTID_STATE),
-				   lower);
-	xfree(lower);
-	
 	convert_num_unit((float)node_ptr->cpus, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -146,12 +146,52 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_CPUS),
 				   tmp_cnt);
 
-	convert_num_unit((float)node_ptr->used_cpus, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_NONE);
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
+				     SELECT_NODEDATA_SUBCNT,
+				     NODE_STATE_ALLOCATED,
+				     &alloc_cpus);
+#ifdef HAVE_BG
+	if(!alloc_cpus && ((node_ptr->node_state & NODE_STATE_ALLOCATED)
+			   ||  (node_ptr->node_state & NODE_STATE_COMPLETING)))
+		alloc_cpus = node_ptr->cpus;
+	else
+		alloc_cpus *= cpus_per_node;
+#endif
+	total_used -= alloc_cpus;
+	convert_num_unit((float)alloc_cpus, tmp_cnt, 
+			 sizeof(tmp_cnt), UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_USED_CPUS),
 				   tmp_cnt);
+
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
+				     SELECT_NODEDATA_SUBCNT,
+				     NODE_STATE_ERROR,
+				     &err_cpus);
+
+#ifdef HAVE_BG
+	err_cpus *= cpus_per_node;
+#endif
+	total_used -= err_cpus;
+	convert_num_unit((float)err_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_node,
+						 SORTID_ERR_CPUS),
+				   tmp_cnt);
+	if((alloc_cpus && err_cpus) 
+	   || (total_used  && (total_used != node_ptr->cpus))) 
+		node_ptr->node_state = NODE_STATE_MIXED;
+	
+	upper = node_state_string(node_ptr->node_state);
+	lower = str_tolower(upper);
+	
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_STATE),
+				   lower);
+	xfree(lower);
+	
 
 	convert_num_unit((float)node_ptr->cores, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
@@ -206,21 +246,57 @@ static void _layout_node_record(GtkTreeView *treeview,
 static void _update_node_record(node_info_t *node_ptr,
 				GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	char tmp_cnt[7];
+	char tmp_cnt[17];
 	char *upper = NULL, *lower = NULL;		     
+	uint16_t err_cpus = 0, alloc_cpus = 0;
+	int total_used = node_ptr->cpus;
 	
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, node_ptr->name, -1);
-
-	upper = node_state_string(node_ptr->node_state);
-	lower = str_tolower(upper);
-	gtk_tree_store_set(treestore, iter, SORTID_STATE, lower, -1);
-	xfree(lower);
 
 	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM, 
 			   node_ptr->node_state, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_CPUS, node_ptr->cpus, -1);
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
+				     SELECT_NODEDATA_SUBCNT,
+				     NODE_STATE_ALLOCATED,
+				     &alloc_cpus);
+#ifdef HAVE_BG
+	if(!alloc_cpus && (((node_ptr->node_state & NODE_STATE_BASE) 
+			    == NODE_STATE_ALLOCATED)
+			   ||  (node_ptr->node_state & NODE_STATE_COMPLETING)))
+		alloc_cpus = node_ptr->cpus;
+	else
+		alloc_cpus *= cpus_per_node;
+#endif
+	total_used -= alloc_cpus;
+	convert_num_unit((float)alloc_cpus, tmp_cnt, 
+			 sizeof(tmp_cnt), UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_USED_CPUS,
-			   node_ptr->used_cpus, -1);
+			   tmp_cnt, -1);
+
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
+				     SELECT_NODEDATA_SUBCNT,
+				     NODE_STATE_ERROR,
+				     &err_cpus);
+
+#ifdef HAVE_BG
+	err_cpus *= cpus_per_node;
+#endif
+	total_used -= err_cpus;
+	convert_num_unit((float)err_cpus, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
+	gtk_tree_store_set(treestore, iter, SORTID_ERR_CPUS,
+			   tmp_cnt, -1);
+
+	if((alloc_cpus && err_cpus) 
+	   || (total_used  && (total_used != node_ptr->cpus))) 
+		node_ptr->node_state = NODE_STATE_MIXED;
+	 
+	upper = node_state_string(node_ptr->node_state);
+	lower = str_tolower(upper);
+
+	gtk_tree_store_set(treestore, iter, SORTID_STATE, lower, -1);
+	xfree(lower);
+
 	gtk_tree_store_set(treestore, iter, SORTID_CORES, node_ptr->cpus, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_SOCKETS,
 			   node_ptr->sockets, -1);
@@ -501,6 +577,9 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	if(*info_ptr != node_info_ptr) 
 		error_code = SLURM_SUCCESS;
 	
+	g_node_scaling = new_node_ptr->node_scaling;
+	cpus_per_node = new_node_ptr->node_array[0].cpus / g_node_scaling;
+
 	*info_ptr = new_node_ptr;
 	return error_code;
 }
@@ -836,7 +915,7 @@ display_it:
 	/* set up the grid */
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info_ptr = list_next(itr))) {
-		change_grid_color(grid_button_list, i, i, i, true);
+		change_grid_color(grid_button_list, i, i, i, true, 0);
 		i++;
 	}
 	list_iterator_destroy(itr);
@@ -974,6 +1053,7 @@ display_it:
 	
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info_ptr = list_next(itr))) {
+		uint16_t tmp_16 = 0;
 		int found = 0;
 		char *host = NULL;
 		i++;
@@ -998,8 +1078,29 @@ display_it:
 			else if(no_resp_flag1 && no_resp_flag2)
 				break;
 			
-			if(node_ptr->node_state != search_info->int_data)
+			if(node_ptr->node_state != search_info->int_data) {
+				if((search_info->int_data & NODE_STATE_BASE) 
+				   == NODE_STATE_ALLOCATED) {
+					select_g_select_nodeinfo_get(
+						node_ptr->select_nodeinfo, 
+						SELECT_NODEDATA_SUBCNT,
+						NODE_STATE_ALLOCATED,
+						&tmp_16);
+					if(tmp_16)
+						break;
+				}
+				if((search_info->int_data & NODE_STATE_BASE) 
+				   == NODE_STATE_ERROR) {
+					select_g_select_nodeinfo_get(
+						node_ptr->select_nodeinfo, 
+						SELECT_NODEDATA_SUBCNT,
+						NODE_STATE_ERROR,
+						&tmp_16);
+					if(tmp_16)
+						break;
+				}
 				continue;
+			}
 			break;
 			
 		case SEARCH_NODE_NAME:
@@ -1025,7 +1126,7 @@ display_it:
 		
 		list_push(send_info_list, sview_node_info_ptr);
 		change_grid_color(popup_win->grid_button_list,
-				  i, i, 0, true);
+				  i, i, 0, true, 0);
 	}
 	list_iterator_destroy(itr);
 

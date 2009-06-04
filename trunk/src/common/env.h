@@ -51,7 +51,7 @@ typedef struct env_options {
 	bool overcommit;	/* --overcommit,   -O		*/
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	bool labelio;		/* --label-output, -l		*/
-	select_jobinfo_t select_jobinfo;
+	select_jobinfo_t *select_jobinfo;
 	int nhosts;
 	char *nodelist;		/* nodelist in string form */
 	char **env;             /* job environment */

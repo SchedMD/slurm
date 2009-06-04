@@ -1570,11 +1570,11 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	req.account       = job_ptr->account;
 	req.assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_BLOCK_ID, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_BLOCK_ID, 
 			     &block_id);
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_NODE_CNT, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_NODE_CNT, 
 			     &req.alloc_nodes);
 #else
 	req.alloc_nodes      = job_ptr->node_cnt;
@@ -1696,8 +1696,8 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	char *ionodes = NULL;
 
 	cpus = tasks = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_IONODES, 
 			     &ionodes);
 	if (ionodes) {
 		snprintf(node_list, BUFFER_SIZE, 
@@ -1707,8 +1707,8 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	}
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_NODE_CNT, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_NODE_CNT, 
 			     &nodes);
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
@@ -1778,8 +1778,8 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	char *ionodes = NULL;
 
 	cpus = tasks = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_IONODES, 
 			     &ionodes);
 	if (ionodes) {
 		snprintf(node_list, BUFFER_SIZE, 

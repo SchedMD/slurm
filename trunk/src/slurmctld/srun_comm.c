@@ -105,7 +105,7 @@ extern void srun_allocate (uint32_t job_id)
 		       select_ptr->cpu_array_reps,
 		       (sizeof(uint32_t) * select_ptr->cpu_array_cnt));
 		msg_arg->node_cnt	= job_ptr->node_cnt;
-		msg_arg->select_jobinfo = select_g_copy_jobinfo(
+		msg_arg->select_jobinfo = select_g_select_jobinfo_copy(
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
 		_srun_agent_launch(addr, job_ptr->alloc_node, 
