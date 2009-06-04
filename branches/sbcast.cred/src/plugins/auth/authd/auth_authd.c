@@ -65,7 +65,7 @@
 
 const char plugin_name[]	= "Brent Chun's authd authentication plugin";
 const char plugin_type[]	= "auth/authd";
-const uint32_t plugin_version = 90;
+const uint32_t plugin_version = 100;
 
 /*
  * Where to find the timeout in the argument vector.  This is set
@@ -179,12 +179,12 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
 }
 
 int
-slurm_auth_verify( slurm_auth_credential_t *cred, void *argv[], char *auth_info )
+slurm_auth_verify( slurm_auth_credential_t *cred, char *auth_info )
 {
 	int rc;
 	time_t now;
 
-	if ( ( cred == NULL ) || ( argv == NULL ) ) {
+	if ( cred == NULL ) {
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
