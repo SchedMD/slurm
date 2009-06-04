@@ -409,8 +409,8 @@ extern int schedule(void)
 			/* job initiated */
 			last_job_update = now;
 #ifdef HAVE_BG
-			select_g_get_jobinfo(job_ptr->select_jobinfo, 
-					     SELECT_DATA_IONODES, 
+			select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+					     SELECT_JOBDATA_IONODES, 
 					     &ionodes);
 			if(ionodes) {
 				sprintf(tmp_char,"%s[%s]",
@@ -577,7 +577,7 @@ extern void launch_job(struct job_record *job_ptr)
 	       job_ptr->select_job->cpu_array_reps,
 	       (sizeof(uint32_t) * job_ptr->select_job->cpu_array_cnt));
 
-	launch_msg_ptr->select_jobinfo = select_g_copy_jobinfo(
+	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
 			job_ptr->select_jobinfo);
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
@@ -1008,8 +1008,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		resp_data = xmalloc(sizeof(will_run_response_msg_t));
 		resp_data->job_id     = job_ptr->job_id;
 #ifdef HAVE_BG
-		select_g_get_jobinfo(job_ptr->select_jobinfo,
-                        	     SELECT_DATA_NODE_CNT, 
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+                        	     SELECT_JOBDATA_NODE_CNT, 
 				     &resp_data->proc_cnt);
 
 #else
@@ -1080,14 +1080,14 @@ static char **_build_env(struct job_record *job_ptr)
 	}
 
 #ifdef HAVE_CRAY_XT
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_RESV_ID, &name);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_RESV_ID, &name);
 	setenvf(&env, "BASIL_RESERVATION_ID", "%s", name);
 	xfree(name);
 #endif
 #ifdef HAVE_BG
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_BLOCK_ID, &name);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_BLOCK_ID, &name);
 	setenvf(&my_env, "MPIRUN_PARTITION", "%s", name);
 #endif
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);

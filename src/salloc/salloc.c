@@ -667,9 +667,10 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
 	pending_job_id = alloc->job_id;
-	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
-			     &block_id);
-
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &block_id);
+	
 	for (i=0; (cur_delay < max_delay); i++) {
 		if(i == 1)
 			info("Waiting for block %s to become ready for job",
@@ -725,7 +726,7 @@ static int _blocks_dealloc()
 		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&bg_info_ptr);
+			node_select_info_msg_free(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_bg_ptr = bg_info_ptr;
@@ -758,8 +759,9 @@ static int _claim_reservation(resource_allocation_response_msg_t *alloc)
 	int rc = 0;
 	char *resv_id = NULL;
 
-	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_RESV_ID,
-			     &resv_id);
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID,
+				    &resv_id);
 	if (resv_id == NULL)
 		return rc;
 	if (basil_resv_conf(resv_id, alloc->job_id) == SLURM_SUCCESS)

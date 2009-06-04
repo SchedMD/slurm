@@ -104,7 +104,6 @@ slurm_allocate_resources (job_desc_msg_t *req,
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-	
 	/* 
 	 * set Node and session id for this request
 	 */

@@ -40,11 +40,11 @@
 #ifndef _NODE_SELECT_H 
 #define _NODE_SELECT_H
 
-#include "src/api/node_select_info.h"
-#include "src/common/list.h"
-#include "src/slurmctld/slurmctld.h"
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
+#include "src/common/list.h"
+#include "src/slurmctld/slurmctld.h"
+#include "src/api/node_select_info.h"
 
 typedef struct {
 	bitstr_t *avail_nodes;      /* usable nodes are set on input, nodes
@@ -64,6 +64,19 @@ typedef struct {
 /*****************************************\
  * GLOBAL SELECT STATE MANGEMENT FUNCIONS *
 \*****************************************/
+
+/*
+ * node_select_info_msg_free - free buffer returned by 
+ *	slurm_load_node_select
+ * IN node_select_info_msg_pptr - data is freed and pointer is set to NULL
+ * RET 0 or a slurm error code
+ */
+extern int node_select_info_msg_free (
+	node_select_info_msg_t **node_select_info_msg_pptr);
+
+/* Unpack node select info from a buffer */
+extern int node_select_info_msg_unpack(
+	node_select_info_msg_t **node_select_info_msg_pptr, Buf buffer);
 
 /*
  * Initialize context for node selection plugin
@@ -88,6 +101,12 @@ extern int select_g_state_save(char *dir_name);
  */
 extern int select_g_state_restore(char *dir_name);
 
+/* 
+ * Note the initialization of job records, issued upon restart of 
+ * slurmctld and used to synchronize any job state.
+ */
+extern int select_g_job_init(List job_list);
+
 /*
  * Note re/initialization of node record data structure
  * IN node_ptr - current node data
@@ -95,21 +114,11 @@ extern int select_g_state_restore(char *dir_name);
  */
 extern int select_g_node_init(struct node_record *node_ptr, int node_cnt);
 
-/* 
- * Get select data from a specific node record
- * IN node_pts  - current node record
- * IN cr_info   - type of data to get from the node record
- * IN/OUT data  - the data to get from node record
+/*
+ * Note re/initialization of partition record data structure
+ * IN part_list - list of partition records
  */
-extern int select_g_get_select_nodeinfo (struct node_record *node_ptr, 
-                                         enum select_data_info cr_info, 
-					 void *data);
-
-/* 
- * Update select data for a specific node record for a specific job 
- * IN job_ptr - current job record
- */
-extern int select_g_update_nodeinfo (struct job_record *job_ptr);
+extern int select_g_block_init(List part_list);
 
 /* 
  * Update specific block (usually something has gone wrong)  
@@ -126,12 +135,12 @@ extern int select_g_update_sub_node (update_part_msg_t *part_desc_ptr);
 /* 
  * Get select data from a plugin
  * IN node_pts  - current node record
- * IN cr_info   - type of data to get from the node record 
- *                (see enum select_data_info)
+ * IN dinfo   - type of data to get from the node record 
+ *                (see enum select_plugindata_info)
  * IN job_ptr   - pointer to the job that's related to this query (may be NULL)
  * IN/OUT data  - the data to get from node record
  */
-extern int select_g_get_info_from_plugin (enum select_data_info cr_info, 
+extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo, 
 					  struct job_record *job_ptr,
 					  void *data);
 
@@ -150,20 +159,6 @@ extern int select_g_update_node_state (int index, uint16_t state);
  */
 extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
 
-/*
- * Note re/initialization of partition record data structure
- * IN part_list - list of partition records
- */
-extern int select_g_block_init(List part_list);
-
-/* 
- * Note the initialization of job records, issued upon restart of 
- * slurmctld and used to synchronize any job state.
- */
-extern int select_g_job_init(List job_list);
-
-
-extern int select_g_block_init(List part_list);
 
 /******************************************************\
  * JOB-SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
@@ -241,56 +236,59 @@ extern int select_g_job_suspend(struct job_record *job_ptr);
 extern int select_g_job_resume(struct job_record *job_ptr);
 
 /* allocate storage for a select job credential
- * OUT jobinfo - storage for a select job credential
- * RET         - slurm error code
+ * RET jobinfo - storage for a select job credential
  * NOTE: storage must be freed using select_g_free_jobinfo
  */
-extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo);
+extern select_jobinfo_t *select_g_select_jobinfo_alloc();
+
+/* free storage previously allocated for a select job credential
+ * IN jobinfo  - the select job credential to be freed
+ * RET         - slurm error code
+ */
+extern int select_g_select_jobinfo_free(select_jobinfo_t *jobinfo);
 
 /* fill in a previously allocated select job credential
  * IN/OUT jobinfo  - updated select job credential
  * IN data_type - type of data to enter into job credential
  * IN data - the data to enter into job credential
  */
-extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
-				 enum select_data_type data_type, void *data);
+extern int select_g_select_jobinfo_set(select_jobinfo_t *jobinfo,
+				       enum select_jobdata_type data_type, 
+				       void *data);
 
 /* get data from a select job credential
  * IN jobinfo  - updated select job credential
  * IN data_type - type of data to enter into job credential
  * OUT data - the data to get from job credential, caller must xfree
- *	data for data_tyep == SELECT_DATA_PART_ID
+ *	data for data_tyep == SELECT_JOBDATA_PART_ID
  */
-extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
-				 enum select_data_type data_type, void *data);
+extern int select_g_select_jobinfo_get(select_jobinfo_t *jobinfo,
+				       enum select_jobdata_type data_type,
+				       void *data);
 
 /* copy a select job credential
  * IN jobinfo - the select job credential to be copied
  * RET        - the copy or NULL on failure
- * NOTE: returned value must be freed using select_g_free_jobinfo
+ * NOTE: returned value must be freed using select_g_select_jobinfo_free
  */
-extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo);
-
-/* free storage previously allocated for a select job credential
- * IN jobinfo  - the select job credential to be freed
- * RET         - slurm error code
- */
-extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo);
+extern select_jobinfo_t *select_g_select_jobinfo_copy(
+	select_jobinfo_t *jobinfo);
 
 /* pack a select job credential into a buffer in machine independent form
  * IN jobinfo  - the select job credential to be saved
  * OUT buffer  - buffer with select credential appended
  * RET         - slurm error code
  */
-extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer);
+extern int select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer);
 
 /* unpack a select job credential from a buffer
  * OUT jobinfo - the select job credential read
  * IN  buffer  - buffer with select credential read from current pointer loc
  * RET         - slurm error code
- * NOTE: returned value must be freed using select_g_free_jobinfo
+ * NOTE: returned value must be freed using select_g_select_jobinfo_free
  */
-extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer);
+extern int select_g_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
+					  Buf buffer);
 
 /* write select job info to a string
  * IN jobinfo - a select job credential
@@ -299,8 +297,8 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer);
  * IN mode    - print mode, see enum select_print_mode
  * RET        - the string, same as buf
  */
-extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
-				     char *buf, size_t size, int mode);
+extern char *select_g_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
+					    char *buf, size_t size, int mode);
 
 /* write select job info to a string
  * IN jobinfo - a select job credential
@@ -308,17 +306,32 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
  * IN mode    - print mode, see enum select_print_mode
  * RET        - the string, same as buf
  */
-extern char *select_g_xstrdup_jobinfo(select_jobinfo_t jobinfo, int mode);
+extern char *select_g_select_jobinfo_xstrdup(
+	select_jobinfo_t *jobinfo, int mode);
 
-/* Prepare to start a job step, allocate memory as needed
- * RET - slurm error code
- */
-extern int select_g_step_begin(struct step_record *step_ptr);
+/*******************************************************\
+ * NODE-SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
+\*******************************************************/
 
-/* Prepare to terminate a job step, release memory as needed
- * RET - slurm error code
- */
-extern int select_g_step_fini(struct step_record *step_ptr);
+extern int select_g_select_nodeinfo_pack(
+	select_nodeinfo_t *nodeinfo, Buf buffer);
+
+extern int select_g_select_nodeinfo_unpack(
+	select_nodeinfo_t **nodeinfo, Buf buffer);
+
+extern select_nodeinfo_t *select_g_select_nodeinfo_alloc(uint32_t size);
+
+extern int select_g_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
+
+extern int select_g_select_nodeinfo_set_all(time_t last_query_time);
+
+extern int select_g_select_nodeinfo_set(struct job_record *job_ptr);
+
+extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
+					enum select_nodedata_type dinfo,
+					enum node_states state, 
+					void *data);
+
 
 /******************************************************\
  * NODE-SELECT PLUGIN SPECIFIC INFORMATION FUNCTIONS  *
@@ -330,20 +343,9 @@ extern int select_g_step_fini(struct step_record *step_ptr);
  * OUT buffer - location to hold the data, consumer must free
  * RET - slurm error code
  */
-extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer);
- 
-/* Unpack node select info from a buffer */
-extern int select_g_unpack_node_info(node_select_info_msg_t **
-				     node_select_info_msg_pptr, Buf buffer);
-
-/* Free a node select information buffer */
-extern int select_g_free_node_info(node_select_info_msg_t **
-				   node_select_info_msg_pptr);
+extern int select_g_pack_select_info(time_t last_query_time, Buf *buffer);
 
 /* Note reconfiguration or change in partition configuration */
 extern int select_g_reconfigure(void);
-
-/*  Get configuration specific for this plugin */
-extern List select_g_get_config(void);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

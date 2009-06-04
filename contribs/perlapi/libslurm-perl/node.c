@@ -36,7 +36,9 @@ node_info_to_hv(node_info_t* node_info, HV* hv)
 	STORE_FIELD(hv, node_info, sockets, uint16_t);
 	STORE_FIELD(hv, node_info, threads, uint16_t);
 	STORE_FIELD(hv, node_info, tmp_disk, uint32_t);
-	STORE_FIELD(hv, node_info, used_cpus, uint16_t);
+
+	/* TODO: select_nodeinfo */
+
 	STORE_FIELD(hv, node_info, weight, uint32_t);
 	return 0;
 }
@@ -51,6 +53,7 @@ node_info_msg_to_hv(node_info_msg_t* node_info_msg, HV* hv)
 	AV* avp;
 
 	STORE_FIELD(hv, node_info_msg, last_update, time_t);
+	STORE_FIELD(hv, node_info_msg, node_scaling, uint16_t);
 	/* record_count implied in node_array */
 	avp = newAV();
 	for(i = 0; i < node_info_msg->record_count; i ++) {

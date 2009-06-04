@@ -1071,12 +1071,12 @@ _rpc_batch_job(slurm_msg_t *msg)
 	 	 * Run job prolog on this node
 	 	 */
 #ifdef HAVE_BG
-		select_g_get_jobinfo(req->select_jobinfo, 
-				     SELECT_DATA_BLOCK_ID, &resv_id);
+		select_g_select_jobinfo_get(req->select_jobinfo, 
+				     SELECT_JOBDATA_BLOCK_ID, &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
-		select_g_get_jobinfo(req->select_jobinfo, 
-				     SELECT_DATA_RESV_ID, &resv_id);
+		select_g_select_jobinfo_get(req->select_jobinfo, 
+				     SELECT_JOBDATA_RESV_ID, &resv_id);
 #endif
 		rc = _run_prolog(req->job_id, req->uid, resv_id, 
 				 req->spank_job_env, req->spank_job_env_size);
@@ -2750,11 +2750,11 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	save_cred_state(conf->vctx);
 #ifdef HAVE_BG
-	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_BLOCK_ID,
+	select_g_select_jobinfo_get(req->select_jobinfo, SELECT_JOBDATA_BLOCK_ID,
 			     &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
-	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_RESV_ID,
+	select_g_select_jobinfo_get(req->select_jobinfo, SELECT_JOBDATA_RESV_ID,
 			     &resv_id);
 #endif
 	_run_epilog(req->job_id, req->job_uid, resv_id, 
@@ -2898,11 +2898,11 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	save_cred_state(conf->vctx);
 
 #ifdef HAVE_BG
-	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_BLOCK_ID,
+	select_g_select_jobinfo_get(req->select_jobinfo, SELECT_JOBDATA_BLOCK_ID,
 			     &resv_id);
 #endif
 #ifdef HAVE_CRAY_XT
-	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_RESV_ID,
+	select_g_select_jobinfo_get(req->select_jobinfo, SELECT_JOBDATA_RESV_ID,
 			     &resv_id);
 #endif
 	rc = _run_epilog(req->job_id, req->job_uid, resv_id,

@@ -543,13 +543,14 @@ int setup_env(env_t *env)
 	if(env->select_jobinfo) {
 #ifdef HAVE_BG
 		char *bgl_part_id = NULL;
-		select_g_get_jobinfo(env->select_jobinfo, 
-				     SELECT_DATA_BLOCK_ID, &bgl_part_id);
+		select_g_select_jobinfo_get(env->select_jobinfo, 
+				     SELECT_JOBDATA_BLOCK_ID, &bgl_part_id);
 		if (bgl_part_id) {
 #ifndef HAVE_BGL
 			uint16_t conn_type = (uint16_t)NO_VAL;
-			select_g_get_jobinfo(env->select_jobinfo, 
-					     SELECT_DATA_CONN_TYPE, &conn_type);
+			select_g_select_jobinfo_get(env->select_jobinfo, 
+						    SELECT_JOBDATA_CONN_TYPE,
+						    &conn_type);
 			if(conn_type > SELECT_SMALL) {
 				if(setenvf(&env->env, 
 					   "SUBMIT_POOL", "%s", bgl_part_id))
@@ -576,8 +577,8 @@ int setup_env(env_t *env)
 
 #ifdef HAVE_CRAY_XT
 		char *resv_id = NULL;
-		select_g_get_jobinfo(env->select_jobinfo, 
-				     SELECT_DATA_RESV_ID, &resv_id);
+		select_g_select_jobinfo_get(env->select_jobinfo, 
+				     SELECT_JOBDATA_RESV_ID, &resv_id);
 		if (resv_id) {
 			if(setenvf(&env->env, 
 				   "BASIL_RESVERATION_ID", "%s", resv_id))
@@ -876,13 +877,14 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 
 #ifdef HAVE_BG
 	/* BlueGene only */
-	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
-			     &tmp);
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &tmp);
 	if (tmp) {
 #ifndef HAVE_BGL
 		uint16_t conn_type = (uint16_t)NO_VAL;
-		select_g_get_jobinfo(alloc->select_jobinfo, 
-				     SELECT_DATA_CONN_TYPE, &conn_type);
+		select_g_select_jobinfo_get(alloc->select_jobinfo, 
+				     SELECT_JOBDATA_CONN_TYPE, &conn_type);
 		if(conn_type > SELECT_SMALL) {
 			env_array_overwrite_fmt(dest, "SUBMIT_POOL", "%s",
 						tmp);
@@ -898,8 +900,9 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 #endif
 
 #ifdef HAVE_CRAY_XT
-	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_RESV_ID,
-			     &resv_id);
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID,
+				    &resv_id);
 	if (resv_id) {
 		env_array_overwrite_fmt(dest, "BASIL_RESERVATION_ID", "%s",
 					resv_id);

@@ -659,6 +659,7 @@ extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
 	bit_nset(bg_record->ionode_bitmap, io_start, io_start+io_nodes);
 	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
 	bg_record->ionodes = xstrdup(bitstring);
+	info("ionodes = %s", bg_record->ionodes);
 	return SLURM_SUCCESS;
 }
 

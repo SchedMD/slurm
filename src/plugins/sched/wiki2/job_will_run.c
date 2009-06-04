@@ -343,9 +343,9 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			else
 				xstrcat(reply_msg, "STARTINFO=");
 #ifdef HAVE_BG
-			select_g_get_jobinfo(select_will_run->job_ptr->
+			select_g_select_jobinfo_get(select_will_run->job_ptr->
 					     select_jobinfo,
-                             		     SELECT_DATA_NODE_CNT, 
+                             		     SELECT_JOBDATA_NODE_CNT, 
 					     &proc_cnt);
 
 #else

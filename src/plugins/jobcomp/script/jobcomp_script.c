@@ -228,11 +228,11 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	else
 		j->work_dir = xstrdup("unknown");
 #ifdef HAVE_BG
-	j->connect_type = select_g_xstrdup_jobinfo(job->select_jobinfo,
+	j->connect_type = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
 						   SELECT_PRINT_CONNECTION);
-	j->geometry = select_g_xstrdup_jobinfo(job->select_jobinfo,
+	j->geometry = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
 					       SELECT_PRINT_GEOMETRY);
-	j->blockid = select_g_xstrdup_jobinfo(job->select_jobinfo,
+	j->blockid = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
 					      SELECT_PRINT_BG_ID);
 #endif
 	return (j);

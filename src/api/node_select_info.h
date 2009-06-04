@@ -47,6 +47,7 @@
 
 #include <stdint.h>
 #include <time.h>
+#include "src/common/pack.h"
 
 typedef struct {
 	char *bg_block_id;
@@ -86,17 +87,21 @@ typedef struct {
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_select_info_msg
  */
-extern int slurm_load_node_select (time_t update_time,
-                node_select_info_msg_t **node_select_info_msg_pptr);
-
+extern int slurm_load_node_select(
+	time_t update_time,
+	node_select_info_msg_t **node_select_info_msg_pptr);
 /*
- * slurm_free_node_select_info_msg - free buffer returned by 
+ * node_select_info_msg_free - free buffer returned by 
  *	slurm_load_node_select
  * IN node_select_info_msg_pptr - data is freed and pointer is set to NULL
  * RET 0 or a slurm error code
  */
-extern int slurm_free_node_select_info_msg (node_select_info_msg_t **
-		node_select_info_msg_pptr);
+extern int slurm_free_node_select(
+	node_select_info_msg_t **node_select_info_msg_pptr);
+
+/* Unpack node select info from a buffer */
+extern int slurm_unpack_node_select(
+	node_select_info_msg_t **node_select_info_msg_pptr, Buf buffer);
 
 #endif
 

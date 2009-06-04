@@ -278,7 +278,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	else
 		work_dir = "unknown";
 
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
 
 	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,

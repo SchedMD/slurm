@@ -280,6 +280,10 @@ struct node_record {
 	uint32_t basil_node_id;		/* Cray/BASIL node ID,
 					 * no need to save/restore */
 #endif	/* APBASIL_LOC */
+	select_nodeinfo_t *select_nodeinfo; /* opaque data structure,
+					     * use select_g_get_nodeinfo()
+					     * to access conents */
+
 };
 
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
@@ -576,7 +580,7 @@ struct job_record {
 	uint16_t resv_flags;		/* see RESERVE_FLAG_* in slurm.h */
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
-	select_jobinfo_t select_jobinfo;/* opaque data, BlueGene */
+	select_jobinfo_t *select_jobinfo;/* opaque data, BlueGene */
 	select_job_res_t select_job;	/* details of allocated cores */
 	char **spank_job_env;		/* environment variables for job prolog
 					 * and epilog scripts as set by SPANK 
@@ -666,14 +670,16 @@ extern List job_list;			/* list of job_record entries */
  * support processors as consumable resources.  This structure will be
  * useful when updating other types of consumable resources as well
 */
-enum select_data_info {
+enum select_plugindata_info {
 	SELECT_CR_PLUGIN,    /* data-> uint32 1 if CR plugin */
 	SELECT_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
 	SELECT_ALLOC_CPUS,   /* data-> uint16 alloc cpus (CR support) */
 	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
 	SELECT_AVAIL_MEMORY, /* data-> uint32 avail mem  (CR support) */
-	SELECT_STATIC_PART   /* data-> uint16, 1 if static partitioning 
+	SELECT_STATIC_PART,   /* data-> uint16, 1 if static partitioning 
 			      * BlueGene support */
+	SELECT_CONFIG_INFO  /* data-> List get .conf info from select
+			     * plugin */
 } ;
 
 /*****************************************************************************\

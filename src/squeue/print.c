@@ -602,9 +602,9 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		_print_str(id, width, right, true);
 	} else {
 #ifdef HAVE_BG
-		select_g_get_jobinfo(job->select_jobinfo, 
-				     SELECT_DATA_IONODES, 
-				     &ionodes);
+		select_g_select_jobinfo_get(job->select_jobinfo, 
+					    SELECT_JOBDATA_IONODES, 
+					    &ionodes);
 #endif
 		
 		_print_nodes(job->nodes, width, right, false);
@@ -678,9 +678,9 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 		_print_str("NODES", width, right_justify, true);
 	else {
 #ifdef HAVE_BG
-		select_g_get_jobinfo(job->select_jobinfo, 
-				     SELECT_DATA_NODE_CNT, 
-				     &node_cnt);
+		select_g_select_jobinfo_get(job->select_jobinfo, 
+					    SELECT_JOBDATA_NODE_CNT, 
+					    &node_cnt);
 #endif
 		if ((node_cnt == 0) || (node_cnt == NO_VAL))
 			node_cnt = _get_node_cnt(job);
@@ -1015,10 +1015,10 @@ int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 	char select_buf[100];
 
 	if (job == NULL)	/* Print the Header instead */
-		select_g_sprint_jobinfo(NULL,
+		select_g_select_jobinfo_sprint(NULL,
 			select_buf, sizeof(select_buf), SELECT_PRINT_HEAD);
 	else
-		select_g_sprint_jobinfo(job->select_jobinfo,
+		select_g_select_jobinfo_sprint(job->select_jobinfo,
 			select_buf, sizeof(select_buf), SELECT_PRINT_DATA);
 	_print_str(select_buf, width, right_justify, true);
 

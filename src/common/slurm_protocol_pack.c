@@ -47,6 +47,7 @@
 #include <string.h>
 
 #include "src/api/slurm_pmi.h"
+#include "src/api/node_select_info.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
@@ -1775,7 +1776,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
 
 	pack32(msg->node_cnt, buffer);
 	
-	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
+	select_g_select_jobinfo_pack(msg->select_jobinfo, buffer);
 }
 
 static int
@@ -1812,8 +1813,7 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 
 	safe_unpack32(&tmp_ptr->node_cnt, buffer);
 	
-	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo)
-	    ||  select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
+	if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo, buffer))
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -1844,7 +1844,7 @@ _pack_job_alloc_info_response_msg(job_alloc_info_response_msg_t * msg,
 	if (msg->node_cnt > 0)
 		_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
 
-	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
+	select_g_select_jobinfo_pack(msg->select_jobinfo, buffer);
 }
 
 static int
@@ -1886,8 +1886,7 @@ _unpack_job_alloc_info_response_msg(job_alloc_info_response_msg_t ** msg,
 	} else
 		tmp_ptr->node_addr = NULL;
 
-	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo)
-	    ||  select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
+	if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo, buffer))
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -1941,6 +1940,7 @@ _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer)
 
 	/* load buffer's header (data structure version and time) */
 	safe_unpack32(&((*msg)->record_count), buffer);
+	safe_unpack32(&((*msg)->node_scaling), buffer);
 	safe_unpack_time(&((*msg)->last_update), buffer);
 
 	node = (*msg)->node_array =
@@ -1977,7 +1977,8 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 	safe_unpack32(&node->real_memory, buffer);
 	safe_unpack32(&node->tmp_disk, buffer);
 	safe_unpack32(&node->weight, buffer);
-	safe_unpack16(&node->used_cpus, buffer);
+
+	select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer);
 
 	safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
@@ -1992,6 +1993,7 @@ unpack_error:
 	xfree(node->features);
 	xfree(node->os);
 	xfree(node->reason);
+	select_g_select_nodeinfo_free(node->select_nodeinfo);
 	return SLURM_ERROR;
 }
 
@@ -2000,7 +2002,7 @@ static int _unpack_node_select_info_msg(node_select_info_msg_t ** msg,
 {
 	xassert(msg != NULL);
 
-	return select_g_unpack_node_info(msg, buffer);
+	return node_select_info_msg_unpack(msg, buffer);
 }
 
 static void
@@ -2260,7 +2262,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer)
 	pack32(msg->job_uid, buffer);
 	pack_time(msg->time, buffer);
 	packstr(msg->nodes, buffer);
-	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
+	select_g_select_jobinfo_pack(msg->select_jobinfo, buffer);
 	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
 }
 
@@ -2280,8 +2282,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
 	safe_unpack_time(&(tmp_ptr->time), buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->nodes), &uint32_tmp, buffer);
-	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo) ||
-	    select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
+	if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo, buffer))
 		goto unpack_error;
 	safe_unpackstr_array(&(tmp_ptr->spank_job_env), 
 			     &tmp_ptr->spank_job_env_size, buffer);
@@ -2484,7 +2485,6 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 	safe_unpack32(&part->max_nodes,    buffer);
 	safe_unpack32(&part->min_nodes,    buffer);
 	safe_unpack32(&part->total_nodes,  buffer);
-	safe_unpack16(&part->node_scaling, buffer);
 	
 	safe_unpack32(&part->total_cpus,   buffer);
 	safe_unpack16(&part->default_part, buffer);
@@ -2755,8 +2755,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	}
 	safe_unpack32(&job->num_procs, buffer);
 
-	if (select_g_alloc_jobinfo(&job->select_jobinfo) 
-	    ||  select_g_unpack_jobinfo(job->select_jobinfo, buffer))
+	if (select_g_select_jobinfo_unpack(&job->select_jobinfo, buffer))
 		goto unpack_error;
 
 	/*** unpack default job details ***/
@@ -3343,47 +3342,56 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->wckey, buffer);
 
 	if(job_desc_ptr->select_jobinfo)
-		select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
-	else if (select_g_alloc_jobinfo(&job_desc_ptr->select_jobinfo) 
-		 == SLURM_SUCCESS) {
+		select_g_select_jobinfo_pack(job_desc_ptr->select_jobinfo, buffer);
+	else {
+		job_desc_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 #if SYSTEM_DIMENSIONS
 		if(job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
-			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_GEOMETRY, 
-					     job_desc_ptr->geometry);
+			select_g_select_jobinfo_set(
+				job_desc_ptr->select_jobinfo, 
+				SELECT_JOBDATA_GEOMETRY, 
+				job_desc_ptr->geometry);
 #endif
 		
 		if (job_desc_ptr->conn_type != (uint16_t) NO_VAL)
-			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_CONN_TYPE, 
-					     &(job_desc_ptr->conn_type));
+			select_g_select_jobinfo_set(
+				job_desc_ptr->select_jobinfo, 
+				SELECT_JOBDATA_CONN_TYPE, 
+				&(job_desc_ptr->conn_type));
 		if (job_desc_ptr->reboot != (uint16_t) NO_VAL)
-			select_g_set_jobinfo(job_desc_ptr->select_jobinfo,
-					     SELECT_DATA_REBOOT,
-					     &(job_desc_ptr->reboot));
+			select_g_select_jobinfo_set(
+				job_desc_ptr->select_jobinfo,
+				SELECT_JOBDATA_REBOOT,
+				&(job_desc_ptr->reboot));
 		if (job_desc_ptr->rotate != (uint16_t) NO_VAL)
-			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_ROTATE, 
-					     &(job_desc_ptr->rotate));
+			select_g_select_jobinfo_set(
+				job_desc_ptr->select_jobinfo, 
+				SELECT_JOBDATA_ROTATE, 
+				&(job_desc_ptr->rotate));
 		if (job_desc_ptr->blrtsimage) {
-			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_BLRTS_IMAGE, 
-					     job_desc_ptr->blrtsimage);
+			select_g_select_jobinfo_set(
+				job_desc_ptr->select_jobinfo, 
+				SELECT_JOBDATA_BLRTS_IMAGE, 
+				job_desc_ptr->blrtsimage);
 		}
 		if (job_desc_ptr->linuximage)
-			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_LINUX_IMAGE, 
-					     job_desc_ptr->linuximage);
+			select_g_select_jobinfo_set(
+				job_desc_ptr->select_jobinfo, 
+				SELECT_JOBDATA_LINUX_IMAGE, 
+				job_desc_ptr->linuximage);
 		if (job_desc_ptr->mloaderimage)
-			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_MLOADER_IMAGE, 
-					     job_desc_ptr->mloaderimage);
+			select_g_select_jobinfo_set(
+				job_desc_ptr->select_jobinfo, 
+				SELECT_JOBDATA_MLOADER_IMAGE, 
+				job_desc_ptr->mloaderimage);
 		if (job_desc_ptr->ramdiskimage)
-			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_RAMDISK_IMAGE, 
-					     job_desc_ptr->ramdiskimage);
-		select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
-		select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);
+			select_g_select_jobinfo_set(
+				job_desc_ptr->select_jobinfo, 
+				SELECT_JOBDATA_RAMDISK_IMAGE, 
+				job_desc_ptr->ramdiskimage);
+		select_g_select_jobinfo_pack(job_desc_ptr->select_jobinfo, 
+					     buffer);
+		select_g_select_jobinfo_free(job_desc_ptr->select_jobinfo);
 	}
 }
 
@@ -3486,8 +3494,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->reservation, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->wckey, &uint32_tmp, buffer);
 
-	if (select_g_alloc_jobinfo (&job_desc_ptr->select_jobinfo)
-	    ||  select_g_unpack_jobinfo(job_desc_ptr->select_jobinfo, buffer))
+	if (select_g_select_jobinfo_unpack(&job_desc_ptr->select_jobinfo, buffer))
 		goto unpack_error;
 
 	/* These are set so we don't confuse them later for what is
@@ -4522,7 +4529,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 
 	slurm_cred_pack(msg->cred, buffer);
 
-	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
+	select_g_select_jobinfo_pack(msg->select_jobinfo, buffer);
 }
 
 static int
@@ -4587,8 +4594,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	if (!(launch_msg_ptr->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 
-	if (select_g_alloc_jobinfo (&launch_msg_ptr->select_jobinfo)
-	    ||  select_g_unpack_jobinfo(launch_msg_ptr->select_jobinfo, buffer))
+	if (select_g_select_jobinfo_unpack(&launch_msg_ptr->select_jobinfo,
+					   buffer))
 		goto unpack_error;
 
 	return SLURM_SUCCESS;

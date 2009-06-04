@@ -101,7 +101,9 @@ scontrol_print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 			i = j;
 		print_cnt++;
 		slurm_print_node_table (stdout, 
-					& node_buffer_ptr->node_array[i], one_liner);
+					& node_buffer_ptr->node_array[i],
+					node_buffer_ptr->node_scaling,
+					one_liner);
 
 		if (node_name) {
 			last_inx = i;

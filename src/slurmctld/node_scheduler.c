@@ -182,7 +182,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	kill_job->job_uid   = job_ptr->user_id;
 	kill_job->nodes     = xstrdup(job_ptr->nodes);
 	kill_job->time      = time(NULL);
-	kill_job->select_jobinfo = select_g_copy_jobinfo(
+	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
 			job_ptr->select_jobinfo);
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 					    job_ptr->spank_job_env);
@@ -217,7 +217,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		error("Job %u allocated no nodes to be killed on",
 		      job_ptr->job_id);
 		xfree(kill_job->nodes);
-		select_g_free_jobinfo(&kill_job->select_jobinfo);
+		select_g_select_jobinfo_free(kill_job->select_jobinfo);
 		xfree(kill_job);
 		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
@@ -1115,7 +1115,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	allocate_nodes(job_ptr);
 	build_node_details(job_ptr);
 	job_ptr->job_state = JOB_RUNNING;
-	if (select_g_update_nodeinfo(job_ptr) != SLURM_SUCCESS) {
+	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_update_nodeinfo(%u): %m", job_ptr->job_id);
 		/* not critical ... by now */
 	}
@@ -1711,7 +1711,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 	kill_job->job_uid   = job_ptr->user_id;
 	kill_job->job_state = job_ptr->job_state;
 	kill_job->time      = time(NULL);
-	kill_job->select_jobinfo = select_g_copy_jobinfo(
+	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
 			job_ptr->select_jobinfo);
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 					    job_ptr->spank_job_env);

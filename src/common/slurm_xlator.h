@@ -254,6 +254,9 @@
 #define env_array_overwrite	slurm_env_array_overwrite
 #define env_array_overwrite_fmt slurm_env_array_overwrite_fmt
 
+/* read_config.[ch] functions */
+#define destroy_config_key_pair slurm_destroy_config_key_pair
+#define sort_key_pairs          slurm_sort_key_pairs
 
 /* slurm_auth.[ch] functions
  * None exported today. 

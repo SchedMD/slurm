@@ -69,7 +69,11 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
+#include "src/plugins/select/bluegene/plugin/bluegene.h"
+//#include "src/plugins/select/bluegene/wrap_rm_api.h"
+
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 
@@ -119,18 +123,6 @@ enum { EDIT_NONE,
        EDIT_MODEL,
        EDIT_TEXTBOX	
 };
-
-#ifdef HAVE_BG
-/* ERROR_STATE must be last since that will affect the state of the rest of the
-   midplane.
-*/
-enum {
-	SVIEW_BG_IDLE_STATE,
-	SVIEW_BG_ALLOC_STATE,
-	SVIEW_BG_ERROR_STATE
-};
-#endif
-
 
 typedef enum { SEARCH_JOB_ID = 1,
 	       SEARCH_JOB_USER,
@@ -265,6 +257,8 @@ extern GtkWidget *main_statusbar;
 extern GtkWidget *main_window;
 extern GtkTable *main_grid_table;
 extern GStaticMutex sview_mutex;	
+extern int cpus_per_node;
+extern int g_node_scaling;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
@@ -291,7 +285,8 @@ extern grid_button_t *create_grid_button_from_another(
 	grid_button_t *grid_button, char *name, int color_inx);
 /* do not free the char * from this function it is static */
 extern char *change_grid_color(List button_list, int start, int end,
-			       int color_inx, bool change_unused);
+			       int color_inx, bool change_unused,
+			       enum node_states state_override);
 extern void set_grid_used(List button_list, int start, int end, bool used);
 extern void get_button_list_from_main(List *button_list, int start, int end,
 				      int color_inx);

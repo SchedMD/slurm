@@ -103,8 +103,7 @@ static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
 static void	_node_did_resp(struct node_record *node_ptr);
 static bool	_node_is_hidden(struct node_record *node_ptr);
-static void 	_pack_node (struct node_record *dump_node_ptr,
-			    uint32_t cr_flag, Buf buffer);
+static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				struct config_record *config_ptr);
@@ -226,6 +225,7 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 	node_ptr->threads = config_ptr->threads;
 	node_ptr->real_memory = config_ptr->real_memory;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
+	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc(NO_VAL);
 	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
 	last_bitmap_update = time (NULL);
 	return node_ptr;
@@ -697,6 +697,8 @@ int init_node_conf (void)
 		xfree(node_record_table_ptr[i].os);
 		xfree(node_record_table_ptr[i].part_pptr);
 		xfree(node_record_table_ptr[i].reason);
+		select_g_select_nodeinfo_free(
+			node_record_table_ptr[i].select_nodeinfo);
 	}
 
 	node_record_count = 0;
@@ -845,25 +847,10 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		uint16_t show_flags, uid_t uid)
 {
 	int inx;
-	uint32_t nodes_packed, tmp_offset;
+	uint32_t nodes_packed, tmp_offset, node_scaling;
 	Buf buffer;
-	static uint32_t cr_flag = NO_VAL;
 	time_t now = time(NULL);
 	struct node_record *node_ptr = node_record_table_ptr;
-
-	/*
-	 * If Consumable Resources enabled, get allocated_cpus.
-	 * Otherwise, report either all cpus or zero cpus are in 
-	 * use dependeing upon node state (entire node is either 
-	 * allocated or not).
-	 */
-	if (cr_flag == NO_VAL) {
-		cr_flag = 0; /* call is no-op for select/linear and bluegene */
-		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
-						  NULL, &cr_flag)) {
-			cr_flag = NO_VAL;	/* error */
-		}
-	}
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -873,6 +860,10 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	/* write header: version and time */
 	nodes_packed = 0 ;
 	pack32  (nodes_packed, buffer);
+	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, 
+				&node_scaling);
+	pack32  (node_scaling, buffer);
+
 	pack_time  (now, buffer);
 
 	/* write node records */
@@ -891,7 +882,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		    (node_ptr->name[0] == '\0'))
 			continue;
 
-		_pack_node(node_ptr, cr_flag, buffer);
+		_pack_node(node_ptr, buffer);
 		nodes_packed ++ ;
 	}
 	part_filter_clear();
@@ -910,15 +901,12 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
  * _pack_node - dump all configuration information about a specific node in 
  *	machine independent form (for network transmission)
  * IN dump_node_ptr - pointer to node for which information is requested
- * IN cr_flag - set if running with select/cons_res, which keeps track of the
- *		CPUs actually allocated on each node (other plugins do not)
  * IN/OUT buffer - buffer where data is placed, pointers automatically updated
  * NOTE: if you make any changes here be sure to make the corresponding 
  *	changes to load_node_config in api/node_info.c
  * NOTE: READ lock_slurmctld config before entry
  */
-static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
-		Buf buffer) 
+static void _pack_node (struct node_record *dump_node_ptr, Buf buffer) 
 {
 	packstr (dump_node_ptr->name, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
@@ -941,26 +929,7 @@ static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 	}
 	pack32  (dump_node_ptr->config_ptr->weight, buffer);
 
-	if (cr_flag == 1) {
-		uint16_t allocated_cpus;
-		int error_code;
-		error_code = select_g_get_select_nodeinfo(dump_node_ptr,
-				SELECT_ALLOC_CPUS, &allocated_cpus);
-		if (error_code != SLURM_SUCCESS) {
-			error ("_pack_node: error from "
-				"select_g_get_select_nodeinfo: %m");
-			allocated_cpus = 0;
-		}
-		pack16(allocated_cpus, buffer);
-	} else if (IS_NODE_COMPLETING(dump_node_ptr) ||
-		   IS_NODE_ALLOCATED(dump_node_ptr)) {
-		if (slurmctld_conf.fast_schedule)
-			pack16(dump_node_ptr->config_ptr->cpus, buffer);
-		else
-			pack16(dump_node_ptr->cpus, buffer);
-	} else {
-		pack16((uint16_t) 0, buffer);
-	}
+	select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo, buffer);
 
 	packstr (dump_node_ptr->arch, buffer);
 	packstr (dump_node_ptr->config_ptr->feature, buffer);
@@ -2631,6 +2600,8 @@ void node_fini(void)
 		xfree(node_record_table_ptr[i].os);
 		xfree(node_record_table_ptr[i].part_pptr);
 		xfree(node_record_table_ptr[i].reason);
+		select_g_select_nodeinfo_free(
+			node_record_table_ptr[i].select_nodeinfo);
 	}
 
 	FREE_NULL_BITMAP(idle_node_bitmap);

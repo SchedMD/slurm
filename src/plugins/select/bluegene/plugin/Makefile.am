@@ -24,6 +24,8 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 				block_sys.c \
 				dynamic_block.c dynamic_block.h \
 				defined_block.c defined_block.h \
+				jobinfo.c jobinfo.h\
+				nodeinfo.c nodeinfo.h\
 				../wrap_rm_api.h
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)

@@ -73,6 +73,13 @@
 #include "src/common/util-net.h"
 #include "src/common/uid.h"
 
+/*
+** Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+** for details. 
+ */
+strong_alias(destroy_config_key_pair, slurm_destroy_config_key_pair);
+strong_alias(sort_key_pairs, slurm_sort_key_pairs);
+
 /* Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf"
  * found in slurmctld.h */
 slurm_ctl_conf_t slurmctld_conf;

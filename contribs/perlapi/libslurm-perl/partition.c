@@ -45,7 +45,7 @@ part_info_to_hv(partition_info_t* part_info, HV* hv)
 		}
 		hv_store_sv(hv, "node_inx", newRV_noinc((SV*)avp));
 	}
-	STORE_FIELD(hv, part_info, node_scaling, uint16_t);
+
 	if (part_info->nodes)
 		STORE_FIELD(hv, part_info, nodes, charp);
 	STORE_FIELD(hv, part_info, priority, uint16_t);
@@ -101,7 +101,6 @@ hv_to_update_part_msg(HV* hv, update_part_msg_t* part_msg)
 	FETCH_FIELD(hv, part_msg, min_nodes, uint32_t, FALSE);
 	FETCH_FIELD(hv, part_msg, name, charp, TRUE);
 	/*not used node_inx */
-	FETCH_FIELD(hv, part_msg, node_scaling, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, nodes, charp, FALSE);
 	FETCH_FIELD(hv, part_msg, priority, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, root_only, uint16_t, FALSE);

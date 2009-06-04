@@ -1030,57 +1030,57 @@ extern int start_job(struct job_record *job_ptr)
 	bg_update_ptr->op = START_OP;
 	bg_update_ptr->job_ptr = job_ptr;
 
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_BLOCK_ID, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_BLOCK_ID, 
 			     &(bg_update_ptr->bg_block_id));
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_BLRTS_IMAGE, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_BLRTS_IMAGE, 
 			     &(bg_update_ptr->blrtsimage));
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_REBOOT, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_REBOOT, 
 			     &(bg_update_ptr->reboot));
 #ifdef HAVE_BGL
 	if(!bg_update_ptr->blrtsimage) {
 		bg_update_ptr->blrtsimage =
 			xstrdup(bg_conf->default_blrtsimage);
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_BLRTS_IMAGE, 
+		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				     SELECT_JOBDATA_BLRTS_IMAGE, 
 				     bg_update_ptr->blrtsimage);
 	}
 #else
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_CONN_TYPE, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_CONN_TYPE, 
 			     &(bg_update_ptr->conn_type));
 #endif
 
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_LINUX_IMAGE, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_LINUX_IMAGE, 
 			     &(bg_update_ptr->linuximage));
 	if(!bg_update_ptr->linuximage) {
 		bg_update_ptr->linuximage =
 			xstrdup(bg_conf->default_linuximage);
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_LINUX_IMAGE, 
+		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				     SELECT_JOBDATA_LINUX_IMAGE, 
 				     bg_update_ptr->linuximage);
 	}
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_MLOADER_IMAGE, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_MLOADER_IMAGE, 
 			     &(bg_update_ptr->mloaderimage));
 	if(!bg_update_ptr->mloaderimage) {
 		bg_update_ptr->mloaderimage = 
 			xstrdup(bg_conf->default_mloaderimage);
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_MLOADER_IMAGE, 
+		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				     SELECT_JOBDATA_MLOADER_IMAGE, 
 				     bg_update_ptr->mloaderimage);
 	}
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_RAMDISK_IMAGE, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_RAMDISK_IMAGE, 
 			     &(bg_update_ptr->ramdiskimage));
 	if(!bg_update_ptr->ramdiskimage) {
 		bg_update_ptr->ramdiskimage =
 			xstrdup(bg_conf->default_ramdiskimage);
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_RAMDISK_IMAGE, 
+		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				     SELECT_JOBDATA_RAMDISK_IMAGE, 
 				     bg_update_ptr->ramdiskimage);
 	}
 	bg_record = 
@@ -1130,8 +1130,8 @@ int term_job(struct job_record *job_ptr)
 	bg_update_ptr = xmalloc(sizeof(bg_update_t));
 	bg_update_ptr->op = TERM_OP;
 	bg_update_ptr->job_ptr = job_ptr;
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_BLOCK_ID, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_BLOCK_ID, 
 			     &(bg_update_ptr->bg_block_id));
 	info("Queue termination of job %u in BG block %s",
 	     job_ptr->job_id, bg_update_ptr->bg_block_id);
@@ -1171,22 +1171,22 @@ extern int sync_jobs(List job_list)
 				continue;
 			
 			bg_update_ptr = xmalloc(sizeof(bg_update_t));
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLOCK_ID, 
+			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					     SELECT_JOBDATA_BLOCK_ID, 
 					     &(bg_update_ptr->bg_block_id));
 #ifdef HAVE_BGL
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLRTS_IMAGE, 
+			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					     SELECT_JOBDATA_BLRTS_IMAGE, 
 					     &(bg_update_ptr->blrtsimage));
 #endif
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_LINUX_IMAGE, 
+			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					     SELECT_JOBDATA_LINUX_IMAGE, 
 					     &(bg_update_ptr->linuximage));
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_MLOADER_IMAGE, 
+			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					     SELECT_JOBDATA_MLOADER_IMAGE, 
 					     &(bg_update_ptr->mloaderimage));
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_RAMDISK_IMAGE, 
+			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					     SELECT_JOBDATA_RAMDISK_IMAGE, 
 					     &(bg_update_ptr->ramdiskimage));
 	
 			if (bg_update_ptr->bg_block_id == NULL) {

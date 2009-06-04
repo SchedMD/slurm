@@ -22,6 +22,11 @@ documents those changes that are of interest to users and admins.
     spank_unset_job_env. See "man spank" for more information.
  -- Completed the work to begun in 2.0.0 to standardize on using '-Q' as the
     --quiet flag for all the commands.
+ -- BLUEGENE - sinfo and sview now display correct cpu counts for partitions
+ -- Cleaned up the cons_res plugin.  It now uses a ptr to a part_record
+    instead of having to do strcmp's to find the correct one.
+ -- Pushed most all the plugin specific info in src/common/node_select.c 
+    into the respected plugin.
 
 * Changes in SLURM 2.0.1
 ========================

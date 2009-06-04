@@ -98,14 +98,15 @@ am__select_bluegene_la_SOURCES_DIST = select_bluegene.c bg_boot_time.h \
 	bg_record_functions.h bluegene.c bluegene.h state_test.c \
 	state_test.h bg_switch_connections.c block_sys.c \
 	dynamic_block.c dynamic_block.h defined_block.c \
-	defined_block.h ../wrap_rm_api.h
+	defined_block.h jobinfo.c jobinfo.h nodeinfo.c nodeinfo.h \
+	../wrap_rm_api.h
 @BLUEGENE_LOADED_TRUE@am_select_bluegene_la_OBJECTS =  \
 @BLUEGENE_LOADED_TRUE@	select_bluegene.lo bg_job_place.lo \
 @BLUEGENE_LOADED_TRUE@	bg_job_run.lo bg_block_info.lo \
 @BLUEGENE_LOADED_TRUE@	bg_record_functions.lo bluegene.lo \
 @BLUEGENE_LOADED_TRUE@	state_test.lo bg_switch_connections.lo \
 @BLUEGENE_LOADED_TRUE@	block_sys.lo dynamic_block.lo \
-@BLUEGENE_LOADED_TRUE@	defined_block.lo
+@BLUEGENE_LOADED_TRUE@	defined_block.lo jobinfo.lo nodeinfo.lo
 am__EXTRA_select_bluegene_la_SOURCES_DIST = select_bluegene.c \
 	bg_boot_time.h bg_job_place.c bg_job_place.h bg_job_run.c \
 	bg_job_run.h bg_block_info.c bg_block_info.h \
@@ -361,6 +362,8 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 @BLUEGENE_LOADED_TRUE@				block_sys.c \
 @BLUEGENE_LOADED_TRUE@				dynamic_block.c dynamic_block.h \
 @BLUEGENE_LOADED_TRUE@				defined_block.c defined_block.h \
+@BLUEGENE_LOADED_TRUE@				jobinfo.c jobinfo.h\
+@BLUEGENE_LOADED_TRUE@				nodeinfo.c nodeinfo.h\
 @BLUEGENE_LOADED_TRUE@				../wrap_rm_api.h
 
 @BLUEGENE_LOADED_TRUE@select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
@@ -513,7 +516,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_linker.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/defined_block.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dynamic_block.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsched_if64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodeinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_bluegene.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sfree.Po@am__quote@

@@ -1,7 +1,7 @@
 .TH "Slurm API" "3" "January 2006" "Morris Jette" "Slurm node informational calls"
 .SH "NAME"
 slurm_free_node_info, slurm_load_node, 
-slurm_print_node_info_msg, slurm_print_node_table
+slurm_print_node_info_msg, slurm_print_node_table, slurm_sprint_node_table
 \- Slurm node information reporting functions
 .SH "SYNTAX"
 .LP 
@@ -41,6 +41,18 @@ void \fBslurm_print_node_table\fR (
 .br
 	node_info_t *\fInode_ptr\fP,
 .br
+	int \fInode_scaling\fP
+.br
+	int \fIone_liner\fP
+.br 
+);
+.LP 
+char *\fBslurm_sprint_node_table\fR (
+.br
+	node_info_t *\fInode_ptr\fP,
+.br
+	int \fInode_scaling\fP
+.br
 	int \fIone_liner\fP
 .br 
 );
@@ -63,6 +75,9 @@ Specifies the pointer to the structure created by \fBslurm_load_node\fR.
 \fInode_ptr\fP
 Specifies a pointer to a single node records from the \fInode_info_msg_ptr\fP 
 data structure.
+.TP 
+\fInode_scaling\fP
+number of nodes each node represents default is 1.
 .TP 
 \fIone_liner\fP
 Print one record per line if non\-zero.
