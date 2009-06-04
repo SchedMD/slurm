@@ -1012,7 +1012,7 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 	client_io_t *cio;
 	int len;
 	int i;
-	int siglen;
+	uint32_t siglen;
 	char *sig;
 
 	cio = (client_io_t *)xmalloc(sizeof(client_io_t));

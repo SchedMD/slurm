@@ -393,6 +393,11 @@ static int  _unpack_resv_name_msg(reservation_name_msg_t ** msg, Buf buffer);
 static void _pack_topo_info_msg(topo_info_response_msg_t *msg, Buf buffer);
 static int  _unpack_topo_info_msg(topo_info_response_msg_t **msg,
 				 Buf buffer);
+
+static void _pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t *msg, Buf buffer);
+static int  _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t **msg, 
+					Buf buffer);
+
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * IN header - the header structure to pack
@@ -523,6 +528,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
+	case REQUEST_JOB_SBCAST_CRED:
 		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
 					 buffer);
 		break;
@@ -828,6 +834,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_topo_info_msg(
 			(topo_info_response_msg_t *)msg->data, buffer);
 		break;
+	case RESPONSE_JOB_SBCAST_CRED:
+		_pack_job_sbcast_cred_msg(
+			(job_sbcast_cred_msg_t *)msg->data, buffer);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -900,6 +910,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
+	case REQUEST_JOB_SBCAST_CRED:
 		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
 						(msg->data), buffer);
 		break;
@@ -1235,6 +1246,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case RESPONSE_TOPO_INFO:
 		rc = _unpack_topo_info_msg(
 			(topo_info_response_msg_t **)&msg->data, buffer);
+		break;
+	case RESPONSE_JOB_SBCAST_CRED:
+		rc = _unpack_job_sbcast_cred_msg(
+			(job_sbcast_cred_msg_t **)&msg->data, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -1893,6 +1908,57 @@ _unpack_job_alloc_info_response_msg(job_alloc_info_response_msg_t ** msg,
 
 unpack_error:
 	slurm_free_job_alloc_info_response_msg(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t * msg, Buf buffer)
+{
+	xassert(msg != NULL);
+
+	pack32(msg->job_id, buffer);
+	packstr(msg->node_list, buffer);
+
+	pack32(msg->node_cnt, buffer);
+	if (msg->node_cnt > 0)
+		_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
+	pack_sbcast_cred(msg->sbcast_cred, buffer);
+}
+
+static int
+_unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t ** msg, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	job_sbcast_cred_msg_t *tmp_ptr;
+
+	/* alloc memory for structure */
+	xassert(msg != NULL);
+	tmp_ptr = xmalloc(sizeof(job_sbcast_cred_msg_t));
+	*msg = tmp_ptr;
+
+	/* load the data values */
+	safe_unpack32(&tmp_ptr->job_id, buffer);
+	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp, buffer);
+
+	safe_unpack32(&tmp_ptr->node_cnt, buffer);
+	if (tmp_ptr->node_cnt > 0) {
+		if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
+					     &uint32_tmp, buffer))
+			goto unpack_error;
+		if (uint32_tmp != tmp_ptr->node_cnt)
+			goto unpack_error;
+	} else
+		tmp_ptr->node_addr = NULL;
+
+	tmp_ptr->sbcast_cred = unpack_sbcast_cred(buffer);
+	if (tmp_ptr->sbcast_cred == NULL)
+		goto unpack_error;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_sbcast_cred_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -5056,6 +5122,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer )
 	packstr ( msg->fname, buffer );
 	pack32 ( msg->block_len, buffer );
 	packmem ( msg->block, msg->block_len, buffer );
+	pack_sbcast_cred( msg->cred, buffer );
 }
 
 static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer )
@@ -5084,6 +5151,11 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer )
 	safe_unpackmem_xmalloc ( & msg->block, &uint32_tmp , buffer ) ;
 	if ( uint32_tmp != msg->block_len )
 		goto unpack_error;
+
+	msg->cred = unpack_sbcast_cred( buffer );
+	if (msg->cred == NULL)
+		goto unpack_error;
+
 	return SLURM_SUCCESS;
 
 unpack_error:

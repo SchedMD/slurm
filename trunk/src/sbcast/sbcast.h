@@ -2,7 +2,7 @@
  *  sbcast.h - definitions used for sbcast data functions
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -64,6 +64,6 @@ extern struct sbcast_parameters params;
 
 extern void parse_command_line(int argc, char *argv[]);
 extern void send_rpc(file_bcast_msg_t *bcast_msg,
-		     job_alloc_info_response_msg_t *alloc_resp);
+		     job_sbcast_cred_msg_t *sbcast_cred);
 
 #endif

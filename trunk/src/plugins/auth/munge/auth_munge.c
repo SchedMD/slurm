@@ -76,7 +76,7 @@
 
 const char plugin_name[]       	= "auth plugin for Munge (http://home.gna.org/munge/)";
 const char plugin_type[]       	= "auth/munge";
-const uint32_t plugin_version	= 10;
+const uint32_t plugin_version	= 100;
 
 static int plugin_errno = SLURM_SUCCESS;
 
@@ -246,7 +246,7 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
 int
-slurm_auth_verify( slurm_auth_credential_t *c, void *argv, char *socket )
+slurm_auth_verify( slurm_auth_credential_t *c, char *socket )
 {
 	if (!c) {
 		plugin_errno = SLURM_AUTH_BADARG;

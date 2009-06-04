@@ -4,8 +4,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>, 
- *	Joey Ekstrom <ekstrom1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -156,10 +155,15 @@ BEGIN_C_DECLS
 #endif
 
 /* Define allocation_msg_thread_t below to avoid including extraneous 
-   slurm headers */
+ * slurm headers */
 #ifndef __allocation_msg_thread_t_defined
 #  define  __allocation_msg_thread_t_defined
    typedef struct allocation_msg_thread *allocation_msg_thread_t;
+#endif
+
+#ifndef __sbcast_cred_t_defined
+#  define  __sbcast_cred_t_defined
+   typedef struct sbcast_cred *sbcast_cred_t;		/* opaque data type */
 #endif
 
 /*****************************************************************************\
@@ -1301,6 +1305,14 @@ typedef struct slurm_update_node_msg {
 
 typedef struct partition_info update_part_msg_t;
 
+typedef struct job_sbcast_cred_msg {
+	uint32_t      job_id;		/* assigned job id */
+	slurm_addr   *node_addr;	/* network addresses */
+	uint32_t      node_cnt;		/* count of nodes */
+	char         *node_list;	/* assigned list of nodes */
+	sbcast_cred_t sbcast_cred;	/* opaque data structure */
+} job_sbcast_cred_msg_t;
+
 /* Opaque data type for slurm_step_ctx_* functions */
 typedef struct slurm_step_ctx_struct *slurm_step_ctx;
 typedef struct slurm_step_ctx_struct slurm_step_ctx_t;
@@ -1409,6 +1421,7 @@ extern void slurm_free_job_alloc_info_response_msg PARAMS((
  */
 extern int slurm_allocation_lookup PARAMS((
 	uint32_t job_id, job_alloc_info_response_msg_t **info));
+
 /*
  * slurm_allocation_lookup_lite - retrieve minor info for an existing 
  *				  resource allocation
@@ -1483,9 +1496,20 @@ extern void slurm_free_submit_response_response_msg PARAMS((
  * IN job_desc_msg - description of resource allocation request
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_job_will_run PARAMS((
-	job_desc_msg_t * job_desc_msg));
+extern int slurm_job_will_run PARAMS((job_desc_msg_t * job_desc_msg));
 
+/*
+ * slurm_sbcast_lookup - retrieve info for an existing resource allocation
+ *	including a credential needed for sbcast
+ * IN jobid - job allocation identifier
+ * OUT info - job allocation information including a credential for sbcast
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
+ */
+extern int slurm_sbcast_lookup PARAMS((uint32_t jobid,
+				       job_sbcast_cred_msg_t **info));
+
+extern void slurm_free_sbcast_cred_msg PARAMS((job_sbcast_cred_msg_t * msg));
 
 /*****************************************************************************\
  *	JOB/STEP SIGNALING FUNCTIONS

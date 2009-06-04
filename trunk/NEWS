@@ -30,6 +30,9 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - closed some corner cases where a block could had been removed 
     while a job was waiting for it to become ready because an underlying 
     part of the block was put into an error state.
+ -- Modify sbcast logic to prevent a user from moving files to nodes they
+    have not been allocated (this would be possible in previous versions
+    only by hacking the sbcast code).
 
 * Changes in SLURM 2.0.2
 ========================
