@@ -1018,8 +1018,10 @@ operation by \fBResumeProgram\fR.
 The value is number of nodes per minute and it can be used to prevent 
 power surges if a large number of nodes in power save mode are 
 assigned work at the same time (e.g. a large job starts).
-A value of zero results in no limits being imposed.
+A value of zero results in no limits being imposed. 
 The default value is 300 nodes per minute.
+Rate calculations are performed using integers, so rounding errors
+may be significant for very small values (1 or 2 nodes per minute).
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
 \fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, \fBSuspendProgram\fR, 
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
@@ -1441,6 +1443,8 @@ The value is number of nodes per minute and it can be used to prevent
 a large drop in power power consumption (e.g. after a large job completes).
 A value of zero results in no limits being imposed.
 The default value is 60 nodes per minute.
+Rate calculations are performed using integers, so rounding errors
+may be significant for very small values (1 or 2 nodes per minute).
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
 \fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, 
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
