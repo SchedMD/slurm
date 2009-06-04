@@ -283,7 +283,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 		wckey_rec.user = user;
 		wckey_rec.cluster = cluster;
 		if(assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
-					   1, NULL) != SLURM_SUCCESS) {
+					   ACCOUNTING_ENFORCE_WCKEYS,
+					   NULL) != SLURM_SUCCESS) {
 			List wckey_list = NULL;
 			acct_wckey_rec_t *wckey_ptr = NULL;
 						
@@ -294,7 +295,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			wckey_ptr->user = xstrdup(user);
 			wckey_ptr->cluster = xstrdup(cluster);
 			list_append(wckey_list, wckey_ptr);
-			/* info("adding wckey '%s' '%s' '%s'",  */
+/* 			info("adding wckey '%s' '%s' '%s'", */
 /* 				     wckey_ptr->name, wckey_ptr->user, */
 /* 				     wckey_ptr->cluster); */
 			/* we have already checked to make
@@ -308,7 +309,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 				acct_storage_p_commit(mysql_conn, 1);
 			/* If that worked lets get it */
 			assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
-						1, NULL);
+						ACCOUNTING_ENFORCE_WCKEYS,
+						NULL);
 				
 			list_destroy(wckey_list);
 		}

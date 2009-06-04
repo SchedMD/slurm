@@ -55,6 +55,7 @@ documents those changes that are of interest to users and admins.
     Previous logic was changing state of one too many nodes per minute.
  -- Save new reservation state file on shutdown (even if no changes).
  -- Fix, when partitions are deleted the sched and select plugins are notified.
+ -- Fix for slurmdbd to create wckeyid's when they don't exist
  -- Fix linking problem that prevented checkpoint/aix from working.
 
 * Changes in SLURM 2.0.0
