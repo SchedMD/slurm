@@ -31,6 +31,12 @@ documents those changes that are of interest to users and admins.
     while a job was waiting for it to become ready because an underlying 
     part of the block was put into an error state.
 
+* Changes in SLURM 2.0.2
+========================
+ -- Fix, don't remove job details when a job is cancelled while pending.
+ -- Do correct type for mktime so garbage isn't returned on 64bit systems 
+    for accounting archival.
+
 * Changes in SLURM 2.0.1
 ========================
  -- Fix, truncate time of start and end for job steps in sacct.
