@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.0.2
+========================
+ -- Fix, don't remove job details when a job is cancelled while pending.
+
 * Changes in SLURM 2.0.1
 ========================
  -- Fix, truncate time of start and end for job steps in sacct.
