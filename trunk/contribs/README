@@ -21,6 +21,9 @@ of the SLURM contribs distribution follows:
   python/            [Python modules]
      Directory for Python modules.
 
+  sjstat             [ Perl program]
+     Lists attributes of jobs under SLURM control
+
   skilling.c         [ C program ]
      This program can be used to order the hostnames in a 2+ dimensional
      architecture for use in the slurm.conf file. It is used to generate

@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
  -- Modify sbcast logic to prevent a user from moving files to nodes they
     have not been allocated (this would be possible in previous versions
     only by hacking the sbcast code).
+ -- Add contribs/sjstat script (Perl tool to report job state information).
+    Put into new RPM: sjstat.
 
 * Changes in SLURM 2.0.2
 ========================
