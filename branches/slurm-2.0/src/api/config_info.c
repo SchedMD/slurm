@@ -427,7 +427,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->suspend_exc_parts);
 	fprintf(out, "SuspendProgram          = %s\n", 
 		slurm_ctl_conf_ptr->suspend_program);
-	fprintf(out, "SuspendRate             = %u\n", 
+	fprintf(out, "SuspendRate             = %u nodes/min\n", 
 		slurm_ctl_conf_ptr->suspend_rate);
 	if (slurm_ctl_conf_ptr->suspend_time == 0) {
 		fprintf(out, "SuspendTime             = NONE\n");
