@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
  -- Do correct type for mktime so garbage isn't returned on 64bit systems 
     for accounting archival.
  -- Better checking in sacctmgr to avoid infinite loops.
+ -- fix minor memory leak in fake_slurm_step_layout_create()
  -- Fix node weight (scheduling priority) calculation for powered down
     nodes. Patch from Hongjia Cao, NUDT.
  -- Fix node suspend/resume rate calculations. Patch from Hongjia Cao, NUDT.

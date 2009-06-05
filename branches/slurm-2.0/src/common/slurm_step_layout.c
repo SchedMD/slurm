@@ -167,14 +167,12 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 	int cpu_cnt = 0, cpu_inx = 0, i, j;
 /* 	char *name = NULL; */
 	hostlist_t hl = NULL;
-	slurm_step_layout_t *step_layout = 
-		xmalloc(sizeof(slurm_step_layout_t));
+	slurm_step_layout_t *step_layout = NULL;
 
 	if((node_cnt <= 0) || (task_cnt <= 0 && !cpus_per_node) || !tlist) {
 		error("there is a problem with your fake_step_layout request\n"
 		      "node_cnt = %u, task_cnt = %u, tlist = %s",
 		      node_cnt, task_cnt, tlist);
-		xfree(step_layout);
 		return NULL;
 	}
 
