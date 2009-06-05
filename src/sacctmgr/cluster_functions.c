@@ -274,10 +274,14 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 	init_acct_association_rec(&start_assoc);
 
-	for (i=0; i<argc; i++) 
-		limit_set = _set_rec(&i, argc, argv,
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		limit_set += _set_rec(&i, argc, argv,
 				     name_list, &start_assoc, &class);
-
+	}
 	if(exit_code) {
 		list_destroy(name_list);
 		return SLURM_ERROR;
@@ -449,8 +453,16 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
-	_set_cond(&i, argc, argv, cluster_cond->cluster_list, format_list,
-		  &cluster_cond->classification);
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;
+		_set_cond(&i, argc, argv, cluster_cond->cluster_list, 
+			  format_list,
+			  &cluster_cond->classification);
+	}
+
 	if(exit_code) {
 		destroy_acct_cluster_cond(cluster_cond);
 		list_destroy(format_list);
@@ -995,11 +1007,25 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		xmalloc(sizeof(acct_cluster_cond_t));
 	int i=0;
 	List ret_list = NULL;
-	
+	int cond_set = 0;
+
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	
-	if(!_set_cond(&i, argc, argv, cluster_cond->cluster_list,
-		      NULL, &cluster_cond->classification)) {
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;
+		cond_set += _set_cond(&i, argc, argv,
+				      cluster_cond->cluster_list, 
+				      NULL,
+				      &cluster_cond->classification);
+	}
+
+	if(exit_code) {
+		destroy_acct_cluster_cond(cluster_cond);
+		return SLURM_ERROR;
+	} else if(!cond_set) {
 		exit_code=1;
 		fprintf(stderr, 
 			" No conditions given to remove, not executing.\n");
