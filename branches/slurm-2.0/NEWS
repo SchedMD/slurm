@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
  -- Do correct type for mktime so garbage isn't returned on 64bit systems 
     for accounting archival.
  -- Better checking in sacctmgr to avoid infinite loops.
+ -- Fix node weight (scheduling priority) calculation for powered down
+    nodes. Patch from Hongjia Cao, NUDT.
+ -- Fix node suspend/resume rate calculations. Patch from Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.0.1
 ========================
