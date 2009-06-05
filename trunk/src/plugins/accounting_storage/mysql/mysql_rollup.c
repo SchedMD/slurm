@@ -835,6 +835,10 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			}
 		}
 
+		/* Spacing out the inserts here instead of doing them
+		   all at once in the end proves to be faster.  Just FYI
+		   so we don't go testing again and again.
+		*/
 		if(query) {
 			xstrfmtcat(query, 
 				   " on duplicate key update "
