@@ -434,12 +434,10 @@ static bool _filter_out(node_info_t *node_ptr)
 			    (NODE_STATE_DRAIN | NODE_STATE_ALLOCATED)) {
 				/* We search for anything that gets mapped to
 				 * DRAINING in node_state_string */
-				if (!(node_ptr->node_state & NODE_STATE_DRAIN))
+				if (!IS_NODE_DRAIN(node_ptr))
 					continue;
-				if (((node_ptr->node_state & NODE_STATE_BASE) ==
-				     NODE_STATE_ALLOCATED) ||
-				    (node_ptr->node_state & 
-				     NODE_STATE_COMPLETING)) {
+				if (IS_NODE_ALLOCATED(node_ptr)
+				    || IS_NODE_COMPLETING(node_ptr)) {
 					match = true;
 					break;
 				}
@@ -447,12 +445,10 @@ static bool _filter_out(node_info_t *node_ptr)
 				   (NODE_STATE_DRAIN | NODE_STATE_IDLE)) {
 				/* We search for anything that gets mapped to
 				 * DRAINED in node_state_string */
-				if (!(node_ptr->node_state & NODE_STATE_DRAIN))
+				if (!IS_NODE_DRAIN(node_ptr))
 					continue;
-				if (((node_ptr->node_state & NODE_STATE_BASE) !=
-				     NODE_STATE_ALLOCATED) &&
-				    (!(node_ptr->node_state & 
-				       NODE_STATE_COMPLETING))) {
+				if (!IS_NODE_ALLOCATED(node_ptr)
+				    && !IS_NODE_COMPLETING(node_ptr)) {
 					match = true;
 					break;
 				}
@@ -469,8 +465,8 @@ static bool _filter_out(node_info_t *node_ptr)
 					break;
 				}
 			} else {
-				base_state = node_ptr->node_state &
-					NODE_STATE_BASE;
+				base_state = 
+					node_ptr->node_state & NODE_STATE_BASE;
 				if (base_state == *node_state) { 
 					match = true;
 					break;
@@ -722,7 +718,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 #else
 	if ((base_state == NODE_STATE_ALLOCATED)
-	    ||  (node_ptr->node_state & NODE_STATE_COMPLETING))
+	    ||  IS_NODE_COMPLETING(node_ptr))
 		sinfo_ptr->nodes_alloc += total_nodes;
 	else if (base_state == NODE_STATE_IDLE)
 		sinfo_ptr->nodes_idle += total_nodes;
@@ -739,7 +735,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	if(error_cpus) {
 		sinfo_ptr->cpus_idle += total_cpus;
 		sinfo_ptr->cpus_other += error_cpus;
-	} else if ((node_ptr->node_state & NODE_STATE_DRAIN) ||
+	} else if (IS_NODE_DRAIN(node_ptr) ||
 		   (base_state == NODE_STATE_DOWN)) {
 		sinfo_ptr->cpus_other += total_cpus;
 	} else 
