@@ -1302,6 +1302,7 @@ _io_thr(void *arg)
 {
 	slurmd_job_t *job = (slurmd_job_t *) arg;
 	sigset_t set;
+	int rc;
 
 	/* A SIGHUP signal signals a reattach to the mgr thread.  We need
 	 * to block SIGHUP from being delivered to this thread so the mgr
@@ -1313,8 +1314,8 @@ _io_thr(void *arg)
 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	debug("IO handler started pid=%lu", (unsigned long) getpid());
-	eio_handle_mainloop(job->eio);
-	debug("IO handler exited");
+	rc = eio_handle_mainloop(job->eio);
+	debug("IO handler exited, rc=%d", rc);
 	return (void *)1;
 }
 

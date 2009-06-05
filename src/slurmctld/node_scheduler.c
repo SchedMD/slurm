@@ -1396,15 +1396,15 @@ static int _build_node_list(struct job_record *job_ptr,
 	}
 
 	/* If any nodes are powered down, put them into a new node_set
-	 * record with a higher scheduling weight (avoids using powered
-	 * down nodes where possible). */
+	 * record with a higher scheduling weight . This means we avoid
+	 * scheduling jobs on powered down nodes where possible. */
 	for (i = (node_set_inx-1); i >= 0; i--) {
 		power_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
 				        power_node_bitmap);
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].nodes) {
-			node_set_ptr[i].weight += max_weight;
+			node_set_ptr[i].weight += max_weight;	/* avoid all */
 			continue;	/* all nodes powered down */
 		}
 
@@ -1416,7 +1416,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		node_set_ptr[node_set_inx].nodes = power_cnt;
 		node_set_ptr[i].nodes -= power_cnt;
 		node_set_ptr[node_set_inx].weight =
-			node_set_ptr[i].weight += max_weight;
+			node_set_ptr[i].weight + max_weight;
 		node_set_ptr[node_set_inx].features =
 			xstrdup(node_set_ptr[i].features);
 		node_set_ptr[node_set_inx].feature_array =
