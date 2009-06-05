@@ -361,8 +361,14 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 
 	init_acct_qos_rec(start_qos);
 
-	for (i=0; i<argc; i++) 
-		limit_set = _set_rec(&i, argc, argv, name_list, start_qos);
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+
+		limit_set += _set_rec(&i, argc, argv, name_list, start_qos);
+	}
 
 	if(exit_code) {
 		list_destroy(name_list);
@@ -515,7 +521,13 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		PRINT_UF,
 	};
 
-	_set_cond(&i, argc, argv, qos_cond, format_list);
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		_set_cond(&i, argc, argv, qos_cond, format_list);
+	}
 
 	if(exit_code) {
 		destroy_acct_qos_cond(qos_cond);
@@ -807,13 +819,13 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i++;
-			cond_set = _set_cond(&i, argc, argv, qos_cond, NULL);
+			cond_set += _set_cond(&i, argc, argv, qos_cond, NULL);
 			      
 		} else if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i++;
-			rec_set = _set_rec(&i, argc, argv, NULL, qos);
+			rec_set += _set_rec(&i, argc, argv, NULL, qos);
 		} else {
-			cond_set = _set_cond(&i, argc, argv, qos_cond, NULL);
+			cond_set += _set_cond(&i, argc, argv, qos_cond, NULL);
 		}
 	}
 
@@ -886,7 +898,15 @@ extern int sacctmgr_delete_qos(int argc, char *argv[])
 	List ret_list = NULL;
 	int set = 0;
 	
-	if(!(set = _set_cond(&i, argc, argv, qos_cond, NULL))) {
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		set += _set_cond(&i, argc, argv, qos_cond, NULL);
+	}
+
+	if(!set) {
 		exit_code=1;
 		fprintf(stderr, 
 			" No conditions given to remove, not executing.\n");
