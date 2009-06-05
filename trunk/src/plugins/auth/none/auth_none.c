@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  auth_none.c - NO-OP slurm authentication plugin, validates all users.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -88,16 +89,14 @@
  * only load authentication plugins if the plugin_type string has a prefix
  * of "auth/".
  *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the authentication API matures.
+ * plugin_version   - specifies the version number of the plugin.  
+ * min_plug_version - specifies the minumum version number of incomming 
+ *                    messages that this plugin can accept
  */
 const char plugin_name[]       	= "Null authentication plugin";
 const char plugin_type[]       	= "auth/none";
-const uint32_t plugin_version	= 90;
-
+const uint32_t plugin_version   = 100;
+const uint32_t min_plug_version = 90;
 
 /*
  * An opaque type representing authentication credentials.  This type can be
@@ -296,8 +295,8 @@ slurm_auth_unpack( Buf buf )
 		return NULL;
 	}
 	safe_unpack32( &version, buf );
-	if ( version != plugin_version ) {
-		plugin_errno = SLURM_AUTH_MISMATCH;
+	if ( version < min_plug_version ) {
+		plugin_errno = SLURM_AUTH_VERSION;
 		return NULL;
 	}
 

@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  slurm_auth.c - implementation-independent authentication API definitions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -257,22 +258,23 @@ slurm_auth_generic_errstr( int slurm_errno )
                 int err;
                 const char *msg;
         } generic_table[] = {
-                { SLURM_SUCCESS, "no error" },
-                { SLURM_ERROR, "unknown error" },
-                { SLURM_AUTH_NOPLUGIN, "no authentication plugin installed" },
-                { SLURM_AUTH_BADARG, "bad argument to plugin function" },
-                { SLURM_AUTH_MEMORY, "memory management error" },
-                { SLURM_AUTH_NOUSER, "no such user" },
-                { SLURM_AUTH_INVALID, "authentication credential invalid" },
-                { SLURM_AUTH_MISMATCH, 
-		  "authentication type or verstion mismatch" },
-                { 0, NULL }
+		{ SLURM_SUCCESS, "no error" },
+		{ SLURM_ERROR, "unknown error" },
+		{ SLURM_AUTH_NOPLUGIN, "no authentication plugin installed" },
+		{ SLURM_AUTH_BADARG, "bad argument to plugin function" },
+		{ SLURM_AUTH_MEMORY, "memory management error" },
+		{ SLURM_AUTH_NOUSER, "no such user" },
+		{ SLURM_AUTH_INVALID, "authentication credential invalid" },
+		{ SLURM_AUTH_MISMATCH, "authentication type mismatch" },
+		{ SLURM_AUTH_VERSION, "authentication version too old" },
+		{ 0, NULL }
         };
 
         int i;
 
         for ( i = 0; ; ++i ) {
-                if ( generic_table[ i ].msg == NULL ) return NULL;
+                if ( generic_table[ i ].msg == NULL )
+			return NULL;
                 if ( generic_table[ i ].err == slurm_errno )
                         return generic_table[ i ].msg;
         }
