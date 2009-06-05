@@ -1533,7 +1533,7 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 
 	if ((rc = slurmdbd_unpack_init_msg(slurmdbd_conn->rpc_version, 
-				     &init_msg, in_buffer, 
+					   &init_msg, in_buffer, 
 					   slurmdbd_conf->auth_info))
 	    != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_INIT message";

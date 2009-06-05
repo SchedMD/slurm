@@ -65,7 +65,7 @@
 
 const char plugin_name[]	= "Brent Chun's authd authentication plugin";
 const char plugin_type[]	= "auth/authd";
-const uint32_t plugin_version = 100;
+const uint32_t plugin_version = 90;
 
 /*
  * Where to find the timeout in the argument vector.  This is set
