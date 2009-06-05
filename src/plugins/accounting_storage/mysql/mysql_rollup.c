@@ -732,7 +732,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(c_usage->total_time < c_usage->a_cpu) {
 				char *start_char = xstrdup(ctime(&curr_start));
 				char *end_char = xstrdup(ctime(&curr_end));
-				error("We have more allocated time that is "
+				error("We have more allocated time than is "
 				      "possible (%llu > %llu) for "
 				      "cluster %s(%d) from %s - %s",
 				      c_usage->a_cpu, c_usage->total_time,
@@ -751,7 +751,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(c_usage->total_time < (total_used)) {
 				char *start_char = xstrdup(ctime(&curr_start));
 				char *end_char = xstrdup(ctime(&curr_end));
-				error("We have more time that is "
+				error("We have more time than is "
 				      "possible (%llu+%llu+%llu)(%llu) "
 				      "> %llu) for "
 				      "cluster %s(%d) from %s - %s",
