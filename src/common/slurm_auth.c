@@ -264,7 +264,8 @@ slurm_auth_generic_errstr( int slurm_errno )
                 { SLURM_AUTH_MEMORY, "memory management error" },
                 { SLURM_AUTH_NOUSER, "no such user" },
                 { SLURM_AUTH_INVALID, "authentication credential invalid" },
-                { SLURM_AUTH_MISMATCH, "authentication type mismatch" },
+                { SLURM_AUTH_MISMATCH, 
+		  "authentication type or verstion mismatch" },
                 { 0, NULL }
         };
 

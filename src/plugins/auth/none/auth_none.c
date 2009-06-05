@@ -96,7 +96,7 @@
  */
 const char plugin_name[]       	= "Null authentication plugin";
 const char plugin_type[]       	= "auth/none";
-const uint32_t plugin_version	= 100;
+const uint32_t plugin_version	= 90;
 
 
 /*

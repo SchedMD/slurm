@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM authentication plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
-authentication plugins. This is version 100 of the API.</p>
+authentication plugins. This is version 90 of the API.</p>
 <p>SLURM authentication plugins are SLURM plugins that implement the SLURM authentication 
 API described herein. They must conform to the SLURM Plugin API with the following 
 specifications:</p>
