@@ -336,7 +336,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	acct_archive_cond_t *arch_cond = xmalloc(sizeof(acct_archive_cond_t));
-	int i=0, set=0;
+	int i=0;
 	struct stat st;
 
 	arch_cond->archive_events = (uint16_t)NO_VAL;
@@ -348,7 +348,14 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 	arch_cond->purge_step = (uint16_t)NO_VAL;
 	arch_cond->purge_suspend = (uint16_t)NO_VAL;
 
-	set = _set_cond(&i, argc, argv, arch_cond);
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		_set_cond(&i, argc, argv, arch_cond);
+	}
+
 	if(exit_code) {
 		destroy_acct_archive_cond(arch_cond);
 		return SLURM_ERROR;
