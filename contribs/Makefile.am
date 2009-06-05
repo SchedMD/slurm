@@ -6,5 +6,6 @@ EXTRA_DIST = \
 	mpich1.slurm.patch	\
 	ptrace.patch		\
 	skilling.c		\
+	sjstat			\
 	time_login.c		\
 	README

@@ -266,6 +266,13 @@ SLURM process tracking plugin for SGI job containers.
 (See http://oss.sgi.com/projects/pagg).
 %endif
 
+%package sjstat
+Summary: Perl tool to print SLURM job state information.
+Group: Development/System
+Requires: slurm
+%description sjstat
+Perl tool to print SLURM job state information.
+
 #############################################################################
 
 %prep
@@ -301,6 +308,7 @@ fi
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurmdbd.conf.example
 install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
+install -D -m755 contribs/sjstat ${RPM_BUILD_ROOT}%{_bindir}/sjstat
 
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
@@ -531,6 +539,11 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_libdir}/slurm/proctrack_sgi_job.so
 %endif
+#############################################################################
+
+%files sjtat
+%defattr(-,root,root)
+%{_bindir}/sjstat
 #############################################################################
 
 %pre
