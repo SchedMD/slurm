@@ -149,7 +149,8 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 static int  _purge_job_record(uint32_t job_id);
 static void _purge_missing_jobs(int node_inx, time_t now);
 static void _read_data_array_from_file(char *file_name, char ***data,
-				       uint32_t * size);
+				       uint32_t * size,
+ 				       struct job_record *job_ptr);
 static void _read_data_from_file(char *file_name, char **data);
 static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
@@ -244,6 +245,9 @@ void delete_job_details(struct job_record *job_entry)
 	if (job_entry->details->depend_list)
 		list_destroy(job_entry->details->depend_list);
 	xfree(job_entry->details->dependency);
+	for (i=0; i<job_entry->details->env_cnt; i++)
+		xfree(job_entry->details->env_sup[i]);
+	xfree(job_entry->details->env_sup);
 	xfree(job_entry->details->err);
 	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
 	xfree(job_entry->details->exc_nodes);
@@ -1057,6 +1061,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 
 	pack_multi_core_data(detail_ptr->mc_ptr, buffer);
 	packstr_array(detail_ptr->argv, detail_ptr->argc, buffer);
+	packstr_array(detail_ptr->env_sup, detail_ptr->env_cnt, buffer);
 }
 
 /* _load_job_details - Unpack a job details information from buffer */
@@ -1066,11 +1071,11 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *cpu_bind, *dependency = NULL, *mem_bind;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char *ckpt_dir = NULL, *restart_dir = NULL;
-	char **argv = (char **) NULL;
+	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t job_min_procs;
 	uint32_t job_min_memory, job_min_tmp_disk;
-	uint32_t num_tasks, name_len, argc = 0;
+	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0;
 	uint16_t shared, contiguous, nice, ntasks_per_node;
 	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
@@ -1124,6 +1129,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	if (unpack_multi_core_data(&mc_ptr, buffer))
 		goto unpack_error;
 	safe_unpackstr_array(&argv, &argc, buffer);
+	safe_unpackstr_array(&env_sup, &env_cnt, buffer);
 
 	/* validity test as possible */
 	if (contiguous > 1) {
@@ -1149,6 +1155,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	xfree(job_ptr->details->cpu_bind);
 	xfree(job_ptr->details->dependency);
 	xfree(job_ptr->details->err);
+	for (i=0; i<job_ptr->details->env_cnt; i++)
+		xfree(job_ptr->details->env_sup[i]);
+	xfree(job_ptr->details->env_sup);
 	xfree(job_ptr->details->exc_nodes);
 	xfree(job_ptr->details->features);
 	xfree(job_ptr->details->in);
@@ -1169,6 +1178,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->cpu_bind_type = cpu_bind_type;
 	job_ptr->details->cpus_per_task = cpus_per_task;
 	job_ptr->details->dependency = dependency;
+	job_ptr->details->env_cnt = env_cnt;
+	job_ptr->details->env_sup = env_sup;
 	job_ptr->details->err = err;
 	job_ptr->details->exc_nodes = exc_nodes;
 	job_ptr->details->features = features;
@@ -1208,6 +1219,9 @@ unpack_error:
 	xfree(argv);
 	xfree(cpu_bind);
 	xfree(dependency);
+/*	for (i=0; i<env_cnt; i++) 
+	xfree(env_sup[i]);  Don't trust this on unpack error */
+	xfree(env_sup);
 	xfree(err);
 	xfree(exc_nodes);
 	xfree(features);
@@ -2911,7 +2925,7 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 	sprintf(job_dir, "/job.%d/environment", job_ptr->job_id);
 	xstrcat(file_name, job_dir);
 
-	_read_data_array_from_file(file_name, &environment, env_size);
+	_read_data_array_from_file(file_name, &environment, env_size, job_ptr);
 
 	xfree(file_name);
 	return environment;
@@ -2943,12 +2957,14 @@ char *get_job_script(struct job_record *job_ptr)
  * OUT data - pointer to array of pointers to strings (e.g. env),
  *	must be xfreed when no longer needed
  * OUT size - number of elements in data
+ * IN job_ptr - job 
  * NOTE: The output format of this must be identical with _xduparray2()
  */
 static void
-_read_data_array_from_file(char *file_name, char ***data, uint32_t * size)
+_read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
+			   struct job_record *job_ptr)
 {
-	int fd, pos, buf_size, amount, i;
+	int fd, pos, buf_size, amount, i, j;
 	char *buffer, **array_ptr;
 	uint32_t rec_cnt;
 
@@ -2991,23 +3007,69 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size)
 			close(fd);
 			return;
 		}
+		pos += amount;
 		if (amount < BUF_SIZE)	/* end of file */
 			break;
-		pos += amount;
 		buf_size += amount;
 		xrealloc(buffer, buf_size);
 	}
 	close(fd);
 
+	/* Allocate extra space for supplemental environment variables
+	 * as set by Moab */
+	if (job_ptr->details->env_cnt) {
+		for (j = 0; j < job_ptr->details->env_cnt; j++)
+			pos += (strlen(job_ptr->details->env_sup[j]) + 1);
+		xrealloc(buffer, pos);
+	}
+
 	/* We have all the data, now let's compute the pointers */
-	pos = 0;
-	array_ptr = xmalloc(rec_cnt * sizeof(char *));
-	for (i = 0; i < rec_cnt; i++) {
+	array_ptr = xmalloc(sizeof(char *) *
+			    (rec_cnt + job_ptr->details->env_cnt));
+	for (i = 0, pos = 0; i < rec_cnt; i++) {
 		array_ptr[i] = &buffer[pos];
 		pos += strlen(&buffer[pos]) + 1;
 		if ((pos > buf_size) && ((i + 1) < rec_cnt)) {
 			error("Bad environment file %s", file_name);
+			rec_cnt = i;
 			break;
+		}
+	}
+
+	/* Add supplemental environment variables for Moab */
+	if (job_ptr->details->env_cnt) {
+		char *tmp_chr;
+		int env_len, name_len;
+		for (j = 0; j < job_ptr->details->env_cnt; j++) {
+			tmp_chr = strchr(job_ptr->details->env_sup[j], '=');
+			if (tmp_chr == NULL) {
+				error("Invalid supplemental environment "
+				      "variable: %s", 
+				      job_ptr->details->env_sup[j]);
+				continue;
+			}
+			env_len  = strlen(job_ptr->details->env_sup[j]) + 1;
+			name_len = tmp_chr - job_ptr->details->env_sup[j] + 1;
+			/* search for duplicate */
+			for (i = 0; i < rec_cnt; i++) {
+				if (strncmp(array_ptr[i], 
+					    job_ptr->details->env_sup[j],
+					    name_len)) {
+					continue;
+				}
+				/* over-write duplicate */
+				memcpy(&buffer[pos], 
+				       job_ptr->details->env_sup[j], env_len);
+				array_ptr[i] = &buffer[pos];
+				pos += env_len;
+				break;
+			}
+			if (i >= rec_cnt) {	/* add env to array end */
+				memcpy(&buffer[pos], 
+				       job_ptr->details->env_sup[j], env_len);
+				array_ptr[rec_cnt++] = &buffer[pos];
+				pos += env_len;
+			}
 		}
 	}
 
@@ -5290,7 +5352,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			      geometry[0], geometry[1], 
 			      geometry[2], job_ptr->job_id);
 			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_GEOMETRY,
+						     SELECT_JOBDATA_GEOMETRY, '
 						     geometry);
 			 detail_ptr->min_nodes = tot;
 		 } else {
@@ -5957,6 +6019,7 @@ void job_fini (void)
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr)
 {
+	int base_state;
 
 	xassert(job_ptr);
 
@@ -5966,7 +6029,8 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	srun_job_complete(job_ptr);
 	
 	/* mail out notifications of completion */
-	if (IS_JOB_COMPLETE(job_ptr) || IS_JOB_CANCELLED(job_ptr)) {
+	base_state = job_ptr->job_state & JOB_STATE_BASE;
+	if ((base_state == JOB_COMPLETE) || (base_state == JOB_CANCELLED)) {
 		if (job_ptr->mail_type & MAIL_JOB_END)
 			mail_job_info(job_ptr, MAIL_JOB_END);
 	} else {	/* JOB_FAILED, JOB_NODE_FAIL, or JOB_TIMEOUT */

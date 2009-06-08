@@ -9,7 +9,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2006 The Regents of the University of California.
+# Copyright (C) 2006-2007 The Regents of the University of California.
+# Copyright (C) 2008-2009 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -149,6 +150,7 @@ if { [test_bluegene] } {
 exec $bin_rm -f $file_out
 make_bash_script $file_in "
   echo BEGIN
+  env
   $bin_sleep 20
   echo FINI
   exit 0"
@@ -248,6 +250,14 @@ if {[wait_for_file $file_out] == 0} {
 			incr matches
 			exp_continue
 		}
+		-re "TEST_ENV1=test_val1" {
+			incr matches
+			exp_continue
+		}
+		-re "TEST_ENV2=test_val2" {
+			incr matches
+			exp_continue
+		}
 		-re "FINI" {
 			incr matches
 			exp_continue
@@ -256,8 +266,8 @@ if {[wait_for_file $file_out] == 0} {
 			wait
 		}
 	}
-	if {$matches != 2} {
-		send_user "\nFAILURE: Job output not correct\n"
+	if {$matches != 4} {
+		send_user "\nFAILURE: Job output not correct ($matches of 4)\n"
 		set exit_code 1
 	}
 } else {

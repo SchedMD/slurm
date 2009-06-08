@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -61,7 +61,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			char *depend_ptr, char *new_hostlist,
 			uint32_t new_node_cnt, char *part_name_ptr, 
 			uint32_t new_time_limit, char *name_ptr,
-			char *start_ptr, char *feature_ptr)
+			char *start_ptr, char *feature_ptr, char *env_ptr)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -72,8 +72,8 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		error("wiki: MODIFYJOB has invalid jobid %u", jobid);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if (IS_JOB_FINISHED(job_ptr)) {
-		error("wiki: MODIFYJOB jobid %u is finished", jobid);
+	if (IS_JOB_FINISHED(job_ptr) || (job_ptr->details == NULL)) {
+		info("wiki: MODIFYJOB jobid %u is finished", jobid);
 		return ESLURM_DISABLED;
 	}
 
@@ -86,6 +86,53 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			error("wiki: changing job %u dependency to %s", 
 				jobid, depend_ptr);
 			return EINVAL;
+		}
+	}
+
+
+	if (env_ptr) {
+		bool have_equal = false;
+		char old_sep[1];
+		int begin = 0, i;
+
+		if (job_ptr->batch_flag == 0) {
+			error("wiki: attempt to set environment variables "
+			      "for non-batch job %u", jobid);
+			return ESLURM_DISABLED;
+		}
+		for (i=0; ; i++) {
+			if (env_ptr[i] == '=') {
+				if (have_equal) {
+					error("wiki: setting job %u invalid "
+					      "environment variables: %s", 
+					      jobid, env_ptr);
+					return EINVAL;
+				}
+				have_equal = true;
+			}
+			if (isspace(env_ptr[i]) || (env_ptr[i] == ',')) {
+				if (!have_equal) {
+					error("wiki: setting job %u invalid "
+					      "environment variables: %s", 
+					      jobid, env_ptr);
+					return EINVAL;
+				}
+				old_sep[0] = env_ptr[i];
+				env_ptr[i] = '\0';
+				xrealloc(job_ptr->details->env_sup, 
+					 sizeof(char *) *
+					 (job_ptr->details->env_cnt+1));
+				job_ptr->details->env_sup
+						[job_ptr->details->env_cnt++] =
+						xstrdup(&env_ptr[begin]);
+				info("wiki: for job %u add env: %s", 
+				     jobid, &env_ptr[begin]);
+				env_ptr[i] = old_sep[0];
+				if (isspace(old_sep[0]))
+					break;
+				begin = i + 1;
+				have_equal = false;
+			}
 		}
 	}
 
@@ -241,9 +288,10 @@ host_fini:	if (rc) {
 		}
 	}
 
-	if(update_accounting) {
+	if (update_accounting) {
 		if (job_ptr->details && job_ptr->details->begin_time) {
-			/* Update job record in accounting to reflect changes */
+			/* Update job record in accounting to reflect 
+			 * the changes */
 			jobacct_storage_g_job_start(
 				acct_db_conn, slurmctld_cluster_name, job_ptr);
 		}
@@ -256,12 +304,13 @@ host_fini:	if (rc) {
  *	CMD=MODIFYJOB ARG=<jobid> PARTITION=<name> NODES=<number>
  *		DEPEND=afterany:<jobid> TIMELIMT=<seconds> BANK=<name>
  *		JOBNAME=<name> MINSTARTTIME=<uts> RFEATURES=<features>
+ *		VARIABLELIST=<env_vars>
  * RET 0 on success, -1 on failure */
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *bank_ptr, *depend_ptr, *nodes_ptr, *start_ptr;
 	char *host_ptr, *name_ptr, *part_ptr, *time_ptr, *tmp_char;
-	char *feature_ptr;
+	char *feature_ptr, *env_ptr;
 	int i, slurm_rc;
 	uint32_t jobid, new_node_cnt = 0, new_time_limit = 0;
 	static char reply_msg[128];
@@ -296,6 +345,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	part_ptr    = strstr(cmd_ptr, "PARTITION=");
 	feature_ptr = strstr(cmd_ptr, "RFEATURES=");
 	time_ptr    = strstr(cmd_ptr, "TIMELIMIT=");
+	env_ptr     = strstr(cmd_ptr, "VARIABLELIST=");
 	if (bank_ptr) {
 		bank_ptr[4] = ':';
 		bank_ptr += 5;
@@ -362,10 +412,16 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		time_ptr += 10;
 		new_time_limit = strtoul(time_ptr, NULL, 10);
 	}
+	if (env_ptr) {
+		env_ptr[12] = ':';
+		env_ptr += 13;
+		null_term(env_ptr);
+	}
 
 	/* Look for any un-parsed "=" */
 	tmp_char = strchr(cmd_ptr, '=');
-	if (tmp_char) {
+	if (( env_ptr  && (tmp_char < env_ptr)) ||
+	    (!env_ptr  &&  tmp_char)) {
 		tmp_char[0] = '\0';
 		while (tmp_char[-1] && (!isspace(tmp_char[-1])))
 			tmp_char--;
@@ -375,7 +431,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	lock_slurmctld(job_write_lock);
 	slurm_rc = _job_modify(jobid, bank_ptr, depend_ptr, host_ptr,
 			new_node_cnt, part_ptr, new_time_limit, name_ptr,
-			start_ptr, feature_ptr);
+			start_ptr, feature_ptr, env_ptr);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;

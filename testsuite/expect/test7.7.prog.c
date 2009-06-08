@@ -2,7 +2,7 @@
  *  test7.7.prog.c - Test of sched/wiki2 plugin
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -369,7 +369,9 @@ static void _modify_job(long my_job_id)
 		/* "PARTITION=pdebug " */
 		/* "NODES=2 " */ 
 		/* "DEPEND=afterany:3 " */
-		/* "INVALID=123 " */
+		/* "INVALID=123 " */ 
+		/* "VARIABLELIST=TEST_ENV1=test_val1 " */
+		"VARIABLELIST=TEST_ENV1=test_val1,TEST_ENV2=test_val2 "
 		"TIMELIMIT=10 BANK=test_bank",
 		(uint32_t) now, my_job_id);
 	if (_xmit(out_msg))
