@@ -2818,7 +2818,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	int             nsteps = 0;
 	int		delay;
 	char           *resv_id = NULL;
-	uint16_t	base_job_state = req->job_state & JOB_STATE_BASE;
 	slurm_ctl_conf_t *cf;
 
 	debug("_rpc_terminate_job, uid = %d", uid);
@@ -2859,10 +2858,9 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		debug("credential for job %u revoked", req->job_id);
 	}
 
-	if ((base_job_state == JOB_NODE_FAIL) || 
-	    (base_job_state == JOB_PENDING))		/* requeued */
+	if (IS_JOB_NODE_FAILED(req) || IS_JOB_PENDING(req)) /* requeued */
 		_kill_all_active_steps(req->job_id, SIG_NODE_FAIL, true);
-	else if (base_job_state == JOB_FAILED)
+	else if (IS_JOB_FAILED(req))
 		_kill_all_active_steps(req->job_id, SIG_FAILURE, true);
 
 	/*

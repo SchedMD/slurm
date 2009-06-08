@@ -212,7 +212,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
-	if ((job_ptr->job_state & JOB_STATE_BASE) == JOB_PENDING)
+	if (IS_JOB_PENDING(job_ptr))
 		tmp3_ptr = "EligibleTime";
 	else
 		tmp3_ptr = "StartTime";
