@@ -368,9 +368,9 @@ typedef struct slurmctld_resv {
 \*****************************************************************************/
 extern time_t last_job_update;	/* time of last update to part records */
 
-#define DETAILS_MAGIC 0xdea84e7
-#define JOB_MAGIC 0xf0b7392c
-#define STEP_MAGIC 0xce593bc1
+#define DETAILS_MAGIC	0xdea84e7
+#define JOB_MAGIC	0xf0b7392c
+#define STEP_MAGIC	0xce593bc1
 #define KILL_ON_STEP_DONE	1
 
 #define FEATURE_OP_OR  0
@@ -392,7 +392,8 @@ struct job_details {
 	time_t begin_time;		/* start at this time (srun --begin), 
 					 * resets to time first eligible
 					 * (all dependencies satisfied) */
-	char *ckpt_dir;		        /* directory to store checkpoint images */
+	char *ckpt_dir;		        /* directory to store checkpoint 
+					 * images */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
 	char *cpu_bind;			/* binding map for map/mask_cpu */
 	uint16_t cpu_bind_type;		/* see cpu_bind_type_t */
@@ -400,10 +401,14 @@ struct job_details {
 					 * each task */
 	List depend_list;		/* list of job_ptr:state pairs */
 	char *dependency;		/* wait for other jobs */
+	uint16_t env_cnt;		/* size of env_sup (see below) */
+	char **env_sup;			/* supplemental environment variables
+					 * as set by Moab */
 	char *err;			/* pathname of job's stderr file */
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *exc_nodes;		/* excluded nodes */
-	List feature_list;		/* required features with node counts */
+	List feature_list;		/* required features with 
+					 * node counts */
 	char *features;			/* required features */
 	char *in;			/* pathname of job's stdin file */
 	/* job constraints: */
