@@ -3067,24 +3067,24 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 {
 	multi_core_data_t * mc_ptr;
 
-	if (((job_desc->job_min_sockets  == (uint16_t) NO_VAL)
-	     ||   (job_desc->job_min_sockets  == (uint16_t) 1))
-	    &&  ((job_desc->job_min_cores    == (uint16_t) NO_VAL)
-		 ||   (job_desc->job_min_cores    == (uint16_t) 1))
-	    &&  ((job_desc->job_min_threads  == (uint16_t) NO_VAL)
-		 ||   (job_desc->job_min_threads  == (uint16_t) NO_VAL))
-	    &&  ((job_desc->min_sockets      == (uint16_t) NO_VAL)
-		 ||   (job_desc->min_sockets      == (uint16_t) 1))
-	    &&  (job_desc->max_sockets       == (uint16_t) NO_VAL)
-	    &&  ((job_desc->min_cores        == (uint16_t) NO_VAL)
-		 ||   (job_desc->min_cores        == (uint16_t) 1))
-	    &&  (job_desc->max_cores         == (uint16_t) NO_VAL)
-	    &&  ((job_desc->min_threads      == (uint16_t) NO_VAL)
-		 ||   (job_desc->min_threads      == (uint16_t) 1))
-	    &&  (job_desc->max_threads       == (uint16_t) NO_VAL)
-	    &&  (job_desc->ntasks_per_socket == (uint16_t) NO_VAL)
-	    &&  (job_desc->ntasks_per_core   == (uint16_t) NO_VAL)
-	    &&  (job_desc->plane_size        == (uint16_t) NO_VAL))
+	if (((job_desc->job_min_sockets  == (uint16_t) NO_VAL)	||
+	     (job_desc->job_min_sockets  == (uint16_t) 1))	&&
+	    ((job_desc->job_min_cores    == (uint16_t) NO_VAL)	||
+	     (job_desc->job_min_cores    == (uint16_t) 1))	&&
+	    ((job_desc->job_min_threads  == (uint16_t) NO_VAL)	||
+	     (job_desc->job_min_threads  == (uint16_t) 1))	&&
+	    ((job_desc->min_sockets      == (uint16_t) NO_VAL)	||
+	     (job_desc->min_sockets      == (uint16_t) 1))	&&
+	    (job_desc->max_sockets       == (uint16_t) NO_VAL)	&&
+	    ((job_desc->min_cores        == (uint16_t) NO_VAL)	||
+	     (job_desc->min_cores        == (uint16_t) 1))	&&
+	    (job_desc->max_cores         == (uint16_t) NO_VAL)	&&
+	    ((job_desc->min_threads      == (uint16_t) NO_VAL)	||
+	     (job_desc->min_threads      == (uint16_t) 1))	&&
+	    (job_desc->max_threads       == (uint16_t) NO_VAL)	&&
+	    (job_desc->ntasks_per_socket == (uint16_t) NO_VAL)	&&
+	    (job_desc->ntasks_per_core   == (uint16_t) NO_VAL)	&&
+	    (job_desc->plane_size        == (uint16_t) NO_VAL))
 		return NULL;
 
 	mc_ptr = xmalloc(sizeof(multi_core_data_t));
@@ -3187,15 +3187,17 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 				   & ACCOUNTING_ENFORCE_WCKEYS) {
 					info("_job_create: invalid wckey '%s' "
 					     "for user %u.",
-					     wckey_rec.name, job_desc->user_id);
+					     wckey_rec.name, 
+					     job_desc->user_id);
 					return ESLURM_INVALID_WCKEY;
 				}
 			}
 			job_desc->wckey = xstrdup(job_desc->wckey);
 		} else if (accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			/* This should never happen */
-			info("_job_create: no wckey was given for job submit.");
-				return ESLURM_INVALID_WCKEY;
+			info("_job_create: no wckey was given for "
+			     "job submit.");
+			return ESLURM_INVALID_WCKEY;
 		}
 	}
 
@@ -3251,7 +3253,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		
 		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce,
-					  (acct_qos_rec_t **)&job_ptr->qos_ptr))
+					  (acct_qos_rec_t **)
+					  &job_ptr->qos_ptr))
 		   != SLURM_SUCCESS) {
 			verbose("Invalid qos (%s) for job_id %u", 
 				qos_rec.name, job_ptr->job_id);
@@ -3584,9 +3587,9 @@ void job_time_limit(void)
 				break;
 			}
 
-			if ((assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)
-			    && (assoc->max_cpu_mins_pj != (uint64_t)INFINITE)
-			    && (job_cpu_usage_mins >= assoc->max_cpu_mins_pj)) {
+			if ((assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)   &&
+			    (assoc->max_cpu_mins_pj != (uint64_t)INFINITE) &&
+			    (job_cpu_usage_mins >= assoc->max_cpu_mins_pj)) {
 				info("Job %u timed out, "
 				     "assoc %u is at or exceeds "
 				     "max cpu minutes limit %llu "
@@ -4467,7 +4470,7 @@ static bool _top_priority(struct job_record *job_ptr)
 	if(static_part == (uint16_t)NO_VAL) {
 		/* Since this never changes we can just set it once
 		   and not look at it again. */
-		rc = select_g_get_info_from_plugin(SELECT_STATIC_PART, job_ptr, 
+		rc = select_g_get_info_from_plugin(SELECT_STATIC_PART, job_ptr,
 						   &static_part);
 	}
 	if ((rc == SLURM_SUCCESS) && (static_part == 1))
@@ -5210,8 +5213,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		} else {
 			/* licenses are valid, but job state or user not
 			 * allowed to make changes */
-			info("update_job: could not change licenses for job %u",
-			     job_ptr->job_id);
+			info("update_job: could not change licenses for "
+			     "job %u", job_ptr->job_id);
 			error_code = ESLURM_DISABLED;
 			list_destroy(license_list);
 		}
@@ -5264,7 +5267,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			      geometry[0], geometry[1], 
 			      geometry[2], tot, job_ptr->job_id);
 			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					      SELECT_JOBDATA_GEOMETRY, geometry);
+						     SELECT_JOBDATA_GEOMETRY, 
+						     geometry);
 			 detail_ptr->min_nodes = tot;
 		 } else {
 			 error("Attempt to change geometry for job %u",
@@ -5286,7 +5290,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			      geometry[0], geometry[1], 
 			      geometry[2], job_ptr->job_id);
 			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					      SELECT_JOBDATA_GEOMETRY, geometry);
+						     SELECT_JOBDATA_GEOMETRY, '
+						     geometry);
 			 detail_ptr->min_nodes = tot;
 		 } else {
 			 error("Attempt to change geometry for job %u",
@@ -5304,7 +5309,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 info("update_job: setting BlrtsImage to %s for "
 			      "jobid %u", image, job_ptr->job_id);
 			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					      SELECT_JOBDATA_BLRTS_IMAGE, image);
+						SELECT_JOBDATA_BLRTS_IMAGE, 
+						image);
 		 }
 	 }
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
@@ -5316,11 +5322,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 info("update_job: setting LinuxImage to %s for "
 			      "jobid %u", image, job_ptr->job_id);
 			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					      SELECT_JOBDATA_LINUX_IMAGE, image);
+						SELECT_JOBDATA_LINUX_IMAGE,
+						image);
 		 }
 	 }
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-			      SELECT_JOBDATA_MLOADER_IMAGE, &image);
+				     SELECT_JOBDATA_MLOADER_IMAGE, &image);
 	 if (image) {
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
@@ -5365,7 +5372,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
  *	state properly 
  * IN reg_msg - node registration message
  */
-extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
+extern void 
+validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 {
 	int i, node_inx, jobs_on_node;
 	struct node_record *node_ptr;
@@ -5407,10 +5415,12 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 					  job_ptr, node_ptr);
 		}
 
-		else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
+		else if (IS_JOB_RUNNING(job_ptr) || 
+			 IS_JOB_SUSPENDED(job_ptr)) {
 			if (bit_test(job_ptr->node_bitmap, node_inx)) {
 				debug3("Registered job %u.%u on node %s ",
-				       reg_msg->job_id[i], reg_msg->step_id[i], 
+				       reg_msg->job_id[i], 
+				       reg_msg->step_id[i], 
 				       reg_msg->node_name);
 				if ((job_ptr->batch_flag) &&
 				    (node_inx == bit_ffs(
@@ -5429,8 +5439,9 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 				 * restart on another nodes. A node from the
 				 * original allocation just responded here. */
 				error("Registered job %u.%u on wrong node %s ",
-					reg_msg->job_id[i], reg_msg->step_id[i],
-					reg_msg->node_name);
+				      reg_msg->job_id[i], 
+				      reg_msg->step_id[i],
+				      reg_msg->node_name);
 				abort_job_on_node(reg_msg->job_id[i], job_ptr, 
 						node_ptr);
 			}
@@ -5439,7 +5450,8 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		else if (IS_JOB_COMPLETING(job_ptr)) {
 			/* Re-send kill request as needed, 
 			 * not necessarily an error */
-			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, 
+					 node_ptr);
 		}
 
 
@@ -5458,7 +5470,8 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			      reg_msg->job_id[i], reg_msg->step_id[i], 
 			      job_state_string(job_ptr->job_state),
 			      reg_msg->node_name);
-			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, 
+					 node_ptr);
 		}
 	}
 
@@ -6794,9 +6807,9 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		info("%s: invalid account %s for job_id %u",
 		     module, new_account, job_ptr->job_id);
 		return ESLURM_INVALID_ACCOUNT;
-	} else if(association_based_accounting 
-		  && !job_ptr->assoc_ptr 
-		  && !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+	} else if(association_based_accounting &&
+		  !job_ptr->assoc_ptr          &&
+		  !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		/* if not enforcing associations we want to look for
 		   the default account and use it to avoid getting
 		   trash in the accounting records.
@@ -7020,7 +7033,8 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 		rc = checkpoint_op(ckpt_ptr->job_id, ckpt_ptr->step_id, NULL,
 				   ckpt_ptr->op, ckpt_ptr->data,
 				   ckpt_ptr->image_dir, &resp_data.event_time, 
-				   &resp_data.error_code, &resp_data.error_msg);
+				   &resp_data.error_code, 
+				   &resp_data.error_msg);
 		info("checkpoint_op %u of %u.%u complete, rc=%d",
 		     ckpt_ptr->op, ckpt_ptr->job_id, ckpt_ptr->step_id, rc);
 		last_job_update = time(NULL);
@@ -7222,7 +7236,8 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->cpu_bind          = xstrdup(details->cpu_bind);
 	job_desc->cpu_bind_type     = details->cpu_bind_type;
 	job_desc->dependency        = xstrdup(details->dependency);
-	job_desc->environment       = get_job_env(job_ptr, &job_desc->env_size);
+	job_desc->environment       = get_job_env(job_ptr, 
+						  &job_desc->env_size);
 	job_desc->err               = xstrdup(details->err);
 	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
 	job_desc->features          = xstrdup(details->features);
