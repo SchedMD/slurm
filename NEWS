@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Fix node suspend/resume rate calculations. Patch from Hongjia Cao, NUDT.
  -- Change calculations using ResumeRate and SuspendRate to provide higher
     resolution.
+ -- Log the IP address for incomming messages having an invalid protocol 
+    version number.
 
 * Changes in SLURM 2.0.1
 ========================
