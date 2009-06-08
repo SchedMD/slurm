@@ -5290,7 +5290,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			      geometry[0], geometry[1], 
 			      geometry[2], job_ptr->job_id);
 			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_GEOMETRY, '
+						     SELECT_JOBDATA_GEOMETRY,
 						     geometry);
 			 detail_ptr->min_nodes = tot;
 		 } else {
