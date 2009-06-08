@@ -46,6 +46,12 @@ documents those changes that are of interest to users and admins.
  -- Fix node weight (scheduling priority) calculation for powered down
     nodes. Patch from Hongjia Cao, NUDT.
  -- Fix node suspend/resume rate calculations. Patch from Hongjia Cao, NUDT.
+ -- Change calculations using ResumeRate and SuspendRate to provide higher
+    resolution.
+ -- Log the IP address for incomming messages having an invalid protocol 
+    version number.
+ -- Fix for sacct to show jobs that start the same second as the sacct
+    command is issued.
 
 * Changes in SLURM 2.0.1
 ========================

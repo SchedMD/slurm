@@ -83,7 +83,8 @@ time_t last_config = (time_t) 0, last_suspend = (time_t) 0;
 uint16_t slurmd_timeout;
 
 bitstr_t *exc_node_bitmap = NULL, *suspend_node_bitmap = NULL;
-int suspend_cnt, resume_cnt;
+int   suspend_cnt,   resume_cnt;
+float suspend_cnt_f, resume_cnt_f;
 
 static void  _clear_power_config(void);
 static void  _do_power_work(void);
@@ -111,13 +112,15 @@ static void _do_power_work(void)
 	/* Set limit on counts of nodes to have state changed */
 	delta_t = now - last_work_scan;
 	if (delta_t >= 60) {
-		suspend_cnt = 0;
-		resume_cnt  = 0;
+		suspend_cnt_f = 0.0;
+		resume_cnt_f  = 0.0;
 	} else {
 		float rate = (60 - delta_t) / 60.0;
-		suspend_cnt *= rate;
-		resume_cnt  *= rate;
+		suspend_cnt_f *= rate;
+		resume_cnt_f  *= rate;
 	}
+	suspend_cnt = (suspend_cnt_f + 0.5);
+	resume_cnt  = (resume_cnt_f  + 0.5);
 
 	if (now > (last_suspend + suspend_timeout)) {
 		/* ready to start another round of node suspends */
@@ -151,6 +154,7 @@ static void _do_power_work(void)
 			}
 			wake_cnt++;
 			resume_cnt++;
+			resume_cnt_f++;
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
 			bit_clear(power_node_bitmap, i);
 			node_ptr->node_state   |= NODE_STATE_NO_RESPOND;
@@ -173,6 +177,7 @@ static void _do_power_work(void)
 			}
 			sleep_cnt++;
 			suspend_cnt++;
+			suspend_cnt_f++;
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
 			bit_set(power_node_bitmap, i);
 			bit_set(sleep_node_bitmap,   i);
