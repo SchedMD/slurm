@@ -55,8 +55,8 @@ extern void get_job(void)
 	static int printed_jobs = 0;
 	static int count = 0;
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
-	job_info_t job;
-	uint16_t base_state, show_flags = 0;
+	job_info_t *job_ptr = NULL;
+	uint16_t show_flags = 0;
 
 	show_flags |= SHOW_ALL;
 	if (job_info_ptr) {
@@ -101,26 +101,24 @@ extern void get_job(void)
 	printed_jobs = 0;
 	count = 0;
 	for (i = 0; i < recs; i++) {
-		job = new_job_ptr->job_array[i];
-		base_state = job.job_state & JOB_STATE_BASE;
-		if ((base_state != JOB_PENDING) &&
-		    (base_state != JOB_RUNNING) &&
-		    (base_state != JOB_SUSPENDED) &&
-		    (!(job.job_state & JOB_COMPLETING)))
+		job_ptr = &(new_job_ptr->job_array[i]);
+		if(!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)
+		   && !IS_JOB_SUSPENDED(job_ptr)
+		   && !IS_JOB_COMPLETING(job_ptr)) 
 			continue;	/* job has completed */
 
-		if (job.node_inx[0] != -1) {
+		if (job_ptr->node_inx[0] != -1) {
 #ifdef HAVE_SUN_CONST
-			set_grid_name(job.nodes, count);
+			set_grid_name(job_ptr->nodes, count);
 #else
 			int j = 0;
-			job.num_nodes = 0;
-			while (job.node_inx[j] >= 0) {
-				job.num_nodes +=
-				    (job.node_inx[j + 1] + 1) -
-				    job.node_inx[j];
-				set_grid_inx(job.node_inx[j],
-					     job.node_inx[j + 1], count);
+			job_ptr->num_nodes = 0;
+			while (job_ptr->node_inx[j] >= 0) {
+				job_ptr->num_nodes +=
+				    (job_ptr->node_inx[j + 1] + 1) -
+				    job_ptr->node_inx[j];
+				set_grid_inx(job_ptr->node_inx[j],
+					     job_ptr->node_inx[j + 1], count);
 				j += 2;
 			}
 #endif
@@ -129,17 +127,18 @@ extern void get_job(void)
 				if((count>=text_line_cnt)
 				   && (printed_jobs 
 				       < (text_win->_maxy-3))) {
-					job.num_procs = (int)letters[count%62];
+					job_ptr->num_procs = 
+						(int)letters[count%62];
 					wattron(text_win,
 						COLOR_PAIR(colors[count%6]));
-					_print_text_job(&job);
+					_print_text_job(job_ptr);
 					wattroff(text_win,
 						 COLOR_PAIR(colors[count%6]));
 					printed_jobs++;
 				} 
 			} else {
-				job.num_procs = (int)letters[count%62];
-				_print_text_job(&job);
+				job_ptr->num_procs = (int)letters[count%62];
+				_print_text_job(job_ptr);
 			}
 			count++;			
 		}
@@ -148,28 +147,28 @@ extern void get_job(void)
 	}
 		
 	for (i = 0; i < recs; i++) {
-		job = new_job_ptr->job_array[i];
+		job_ptr = &(new_job_ptr->job_array[i]);
 		
-		if ((job.job_state & JOB_STATE_BASE) != JOB_PENDING)
+		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* job has completed */
 
 		if(!params.commandline) {
 			if((count>=text_line_cnt)
 			   && (printed_jobs 
 			       < (text_win->_maxy-3))) {
-				job.nodes = "waiting...";
-				job.num_procs = (int) letters[count%62];
+				job_ptr->nodes = "waiting...";
+				job_ptr->num_procs = (int) letters[count%62];
 				wattron(text_win,
 					COLOR_PAIR(colors[count%6]));
-				_print_text_job(&job);
+				_print_text_job(job_ptr);
 				wattroff(text_win,
 					 COLOR_PAIR(colors[count%6]));
 				printed_jobs++;
 			} 
 		} else {
-			job.nodes = "waiting...";
-			job.num_procs = (int) letters[count%62];
-			_print_text_job(&job);
+			job_ptr->nodes = "waiting...";
+			job_ptr->num_procs = (int) letters[count%62];
+			_print_text_job(job_ptr);
 			printed_jobs++;
 		}
 		count++;			

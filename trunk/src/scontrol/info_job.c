@@ -200,7 +200,6 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 {
 	int i;
 	node_info_t *node_info;
-	uint16_t node_state, base_state;
 	hostlist_t all_nodes, comp_nodes, down_nodes;
 	char node_buf[MAXHOSTRANGELEN];
 
@@ -208,16 +207,14 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	comp_nodes = hostlist_create("");
 	down_nodes = hostlist_create("");
 
-	node_info = node_info_msg->node_array;
 	for (i=0; i<node_info_msg->record_count; i++) {
-		node_state = node_info[i].node_state;
-		base_state = node_info[i].node_state & NODE_STATE_BASE;
-		if ((node_state & NODE_STATE_COMPLETING) && 
+		node_info = &(node_info_msg->node_array[i]);
+		if (IS_NODE_COMPLETING(node_info) && 
 		    (_in_node_bit_list(i, job_ptr->node_inx)))
-			hostlist_push_host(comp_nodes, node_info[i].name);
-		else if ((base_state == NODE_STATE_DOWN) &&
-			 (hostlist_find(all_nodes, node_info[i].name) != -1))
-			hostlist_push_host(down_nodes, node_info[i].name);
+			hostlist_push_host(comp_nodes, node_info->name);
+		else if (IS_NODE_DOWN(node_info) &&
+			 (hostlist_find(all_nodes, node_info->name) != -1))
+			hostlist_push_host(down_nodes, node_info->name);
 	}
 
 	fprintf(stdout, "JobId=%u ", job_ptr->job_id);

@@ -481,17 +481,14 @@ int _print_job_time_used(job_info_t * job, int width, bool right,
 long job_time_used(job_info_t * job_ptr)
 {
 	time_t end_time;
-	uint16_t base_state = job_ptr->job_state & JOB_STATE_BASE;
 
-	if ((job_ptr->start_time == 0) ||
-	    (base_state == JOB_PENDING))
+	if ((job_ptr->start_time == 0) || IS_JOB_PENDING(job_ptr))
 		return 0L;
 
-	if (base_state == JOB_SUSPENDED)
+	if (IS_JOB_SUSPENDED(job_ptr))
 		return (long) job_ptr->pre_sus_time;
 
-	if ((base_state == JOB_RUNNING) ||
-	    (job_ptr->end_time == 0))
+	if (IS_JOB_RUNNING(job_ptr) || (job_ptr->end_time == 0))
 		end_time = time(NULL);
 	else
 		end_time = job_ptr->end_time;

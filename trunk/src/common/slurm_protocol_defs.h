@@ -70,7 +70,69 @@
 #define MAX_SLURM_NAME 64
 #define FORWARD_INIT 0xfffe
 
-/* used to define flags of the launch_tasks_request_msg_t.and
+/* Defined job states */
+#define IS_JOB_PENDING(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_PENDING)
+#define IS_JOB_RUNNING(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_RUNNING)
+#define IS_JOB_SUSPENDED(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_SUSPENDED)
+#define IS_JOB_COMPLETE(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_COMPLETE)
+#define IS_JOB_CANCELLED(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_CANCELLED)
+#define IS_JOB_FAILED(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_FAILED)
+#define IS_JOB_TIMEOUT(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_TIMEOUT)
+#define IS_JOB_NODE_FAILED(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_NODE_FAIL)
+
+/* Derived job states */
+#define IS_JOB_COMPLETING(_X)		\
+	(_X->job_state & JOB_COMPLETING)
+#define IS_JOB_CONFIGURING(_X)		\
+	(_X->job_state & JOB_CONFIGURING)
+#define IS_JOB_STARTED(_X)		\
+	((_X->job_state & JOB_STATE_BASE) >  JOB_PENDING)
+#define IS_JOB_FINISHED(_X)		\
+	((_X->job_state & JOB_STATE_BASE) >  JOB_SUSPENDED)
+#define IS_JOB_COMPLETED(_X)		\
+	(IS_JOB_FINISHED(_X) && ((_X->job_state & JOB_COMPLETING) == 0))
+
+/* Defined node states */
+#define IS_NODE_UNKNOWN(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_UNKNOWN)
+#define IS_NODE_DOWN(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN)
+#define IS_NODE_IDLE(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_IDLE)
+#define IS_NODE_ALLOCATED(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_ALLOCATED)
+#define IS_NODE_ERROR(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_ERROR)
+#define IS_NODE_MIXED(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED)
+#define IS_NODE_FUTURE(_X)		\
+	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_FUTURE)
+
+/* Derived node states */
+#define IS_NODE_DRAIN(_X)		\
+	(_X->node_state & NODE_STATE_DRAIN)
+#define IS_NODE_COMPLETING(_X)	\
+	(_X->node_state & NODE_STATE_COMPLETING)
+#define IS_NODE_NO_RESPOND(_X)		\
+	(_X->node_state & NODE_STATE_NO_RESPOND)
+#define IS_NODE_POWER_SAVE(_X)		\
+	(_X->node_state & NODE_STATE_POWER_SAVE)
+#define IS_NODE_FAIL(_X)		\
+	(_X->node_state & NODE_STATE_FAIL)
+#define IS_NODE_POWER_UP(_X)		\
+	(_X->node_state & NODE_STATE_POWER_UP)
+#define IS_NODE_MAINT(_X)		\
+	(_X->node_state & NODE_STATE_MAINT)
+
+/* used to define flags of the launch_tasks_request_msg_t and
  * spawn task_request_msg_t task_flags
  */
 enum task_flag_vals {

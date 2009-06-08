@@ -414,12 +414,10 @@ static bool _filter_out(node_info_t *node_ptr)
 			return true;
 	}
 
-	if ( (params.dead_nodes) &&
-	     (!(node_ptr->node_state & NODE_STATE_NO_RESPOND)) )
+	if (params.dead_nodes && !IS_NODE_NO_RESPOND(node_ptr))
 		return true;
 
-	if ( (params.responding_nodes) &&
-	     (node_ptr->node_state & NODE_STATE_NO_RESPOND) )
+	if (params.responding_nodes && IS_NODE_NO_RESPOND(node_ptr))
 		return true;
 
 	if (params.state_list) {

@@ -1938,7 +1938,6 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 {
 	node_info_t *node_ptr = NULL;
 	int x, i = 0;
-	uint16_t node_base_state;
 	/* For systems with more than 62 active jobs or BG blocks, 
 	 * we just repeat letters */
 
@@ -1950,13 +1949,9 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 				if(node_info_ptr!=NULL) {
 					node_ptr = 
 						&node_info_ptr->node_array[i];
-					node_base_state = node_ptr->node_state 
-						& NODE_STATE_BASE;
 					ba_system_ptr->grid[x][y][z].color = 7;
-					if ((node_base_state 
-					     == NODE_STATE_DOWN) || 
-					    (node_ptr->node_state &
-					     NODE_STATE_DRAIN)) {
+					if (NODE_IS_DOWN(node_ptr)
+					    || NODE_IS_DRAIN(node_ptr)) {
 						ba_system_ptr->
 							grid[x][y][z].color 
 							= 0;
@@ -1990,11 +1985,8 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 	for (x = 0; x < DIM_SIZE[X]; x++) {
 		if(node_info_ptr!=NULL) {
 			node_ptr = &node_info_ptr->node_array[i];
-			node_base_state = node_ptr->node_state 
-				& NODE_STATE_BASE;
 			ba_system_ptr->grid[x].color = 7;
-			if ((node_base_state == NODE_STATE_DOWN) || 
-			    (node_ptr->node_state & NODE_STATE_DRAIN)) {
+			if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
 				ba_system_ptr->grid[x].color = 0;
 				ba_system_ptr->grid[x].letter = '#';
 				if(_initialized) {
