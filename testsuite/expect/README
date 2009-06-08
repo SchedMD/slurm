@@ -236,6 +236,7 @@ test4.9    Check sinfo formating options (--format option and SINFO_FORMAT
 test4.10   Confirm that sinfo reports a proper version number (--version 
            option).
 test4.11   Test down node reason display (--list-reasons option).
+test4.12   Test cpu total and allocation numbers.
 
 
 test5.#    Testing of squeue options.
