@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     resolution.
  -- Log the IP address for incomming messages having an invalid protocol 
     version number.
+ -- Fix for sacct to show jobs that start the same second as the sacct
+    command is issued.
 
 * Changes in SLURM 2.0.1
 ========================

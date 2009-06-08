@@ -470,7 +470,6 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	char *table_level = "t2";
 	jobacct_selected_step_t *selected_step = NULL;
-	time_t now = time(NULL);
 
 	if(!job_cond)
 		return 0;
@@ -651,17 +650,20 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 	}
 
 	if(job_cond->usage_start) {
-		if(!job_cond->usage_end)
-			job_cond->usage_end = now;
-
 		if(*extra)
 			xstrcat(*extra, " && (");
 		else
 			xstrcat(*extra, " where (");
-		xstrfmtcat(*extra, 
-			   "(t1.eligible < %d "
-			   "&& (t1.end >= %d || t1.end = 0)))",
-			   job_cond->usage_end, job_cond->usage_start);
+
+		if(!job_cond->usage_end)
+			xstrfmtcat(*extra, 
+				   "t1.end >= %d || t1.end = 0)",
+				   job_cond->usage_start);
+		else
+			xstrfmtcat(*extra, 
+				   "(t1.eligible < %d "
+				   "&& (t1.end >= %d || t1.end = 0)))",
+				   job_cond->usage_end, job_cond->usage_start);
 	} else if(job_cond->usage_end) {
 		if(*extra)
 			xstrcat(*extra, " && (");
