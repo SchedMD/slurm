@@ -36,7 +36,6 @@ COMMAND CHANGES (see man pages for details)
 * Standardized on the use of the '-Q' flag for all commands that offer the
   --quiet option.
 
-
 OTHER CHANGES
 * A mechanism has beeded added for SPANK plugins to set environment variables 
   for Prolog, Epilog, PrologSLurmctld and EpilogSlurmctld programs using the
@@ -45,3 +44,5 @@ OTHER CHANGES
 * The RPM previously named "slurm-aix-federation-<version>.rpm" has been 
   renamed to just "slurm-aix-<version>.rpm" (the federation switch plugin may 
   not be present).
+* Added sched/wiki2 (Moab) JOBMODIFY command support for VARIABLELIST option
+  to set supplemental environment variables for pending batch jobs.
