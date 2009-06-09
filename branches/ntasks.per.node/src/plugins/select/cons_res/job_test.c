@@ -2016,7 +2016,10 @@ alloc_job:
 	if (job_res->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
 	job_res->nhosts           = bit_set_count(bitmap);
-	job_res->nprocs           = MAX(job_ptr->num_procs, job_res->nhosts);
+	job_res->nprocs           = job_res->nhosts;
+	if (job_ptr->details->ntasks_per_node)
+		job_res->nprocs  *= job_ptr->details->ntasks_per_node;
+	job_res->nprocs           = MAX(job_res->nprocs, job_ptr->num_procs);
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;
 	job_res->cpus_used        = xmalloc(job_res->nhosts * sizeof(uint16_t));
