@@ -922,6 +922,8 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 		Buf buffer) 
 {
+	uint16_t threads;
+
 	packstr (dump_node_ptr->name, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
 	if (slurmctld_conf.fast_schedule) {	
@@ -932,6 +934,7 @@ static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 		pack16  (dump_node_ptr->config_ptr->threads, buffer);
 		pack32  (dump_node_ptr->config_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->config_ptr->tmp_disk, buffer);
+		threads = dump_node_ptr->config_ptr->threads;
 	} else {	
 		/* Individual node data used for scheduling */
 		pack16  (dump_node_ptr->cpus, buffer);
@@ -940,6 +943,7 @@ static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 		pack16  (dump_node_ptr->threads, buffer);
 		pack32  (dump_node_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->tmp_disk, buffer);
+		threads = dump_node_ptr->threads;
 	}
 	pack32  (dump_node_ptr->config_ptr->weight, buffer);
 
@@ -952,7 +956,8 @@ static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 			error ("_pack_node: error from "
 				"select_g_get_select_nodeinfo: %m");
 			allocated_cpus = 0;
-		}
+		} else
+			allocated_cpus *= threads;
 		pack16(allocated_cpus, buffer);
 	} else if ((dump_node_ptr->node_state & NODE_STATE_COMPLETING) ||
 		   (dump_node_ptr->node_state == NODE_STATE_ALLOCATED)) {
