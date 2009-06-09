@@ -1615,6 +1615,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	int i=0, n=0, c, start, end;
 	uint16_t tmp, tmp_16 = 0;
 	static time_t last_set_all = 0;
+	uint32_t node_threads, node_cpus;
 
 	/* only set this once when the last_node_update is newer than
 	   the last time we set things up. */
@@ -1628,6 +1629,13 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 	for (n=0; n < node_record_count; n++) {
 		node_ptr = &(node_record_table_ptr[n]);
+		if (slurmctld_conf.fast_schedule) {
+			node_cpus    = node_ptr->config_ptr->cpus;
+			node_threads = node_ptr->config_ptr->threads;
+		} else {
+			node_cpus    = node_ptr->cpus;
+			node_threads = node_ptr->threads;
+		}
 
 		start = cr_get_coremap_offset(n);
 		end = cr_get_coremap_offset(n+1);
@@ -1650,6 +1658,12 @@ extern int select_p_select_nodeinfo_set_all(void)
 					tmp_16 = tmp;
 			}
 		}
+
+		/* The minimum allocatable unit may a core, so scale
+		 * threads up to the proper CPU count */
+		if ((end - start) < node_cpus)
+			tmp_16 *= node_threads;
+
 		node_ptr->select_nodeinfo->alloc_cpus = tmp_16;
 	}
 
