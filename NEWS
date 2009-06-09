@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     version number.
  -- Fix for sacct to show jobs that start the same second as the sacct
     command is issued.
+ -- BLUEGENE - Fix for -n option to work on correct cpu counts for each 
+    midplane instead of treating -n as a c-node count.
 
 * Changes in SLURM 2.0.1
 ========================
