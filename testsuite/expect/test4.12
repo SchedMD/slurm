@@ -44,7 +44,7 @@ set tacpuc      0
 print_header $test_id
 
 #
-# Submit two jobs to work with
+# Create a script
 #
 make_bash_script $file_in "
 srun -N1 hostname
@@ -52,7 +52,8 @@ srun -N1 hostname
  "
 
 #
-# Issue scontrol to find processor count
+# Submit a job
+# Issue scontrol to find total and allocated processor counts
 #
 set timeout $max_job_delay
 spawn $sbatch  $file_in
@@ -87,7 +88,7 @@ spawn $sinfo -o %C
 expect {
 	-re "($number).$number.$number.($number)" {
 		set aprocsi $expect_out(1,string) 
-		set pnumsi $expect_out(1,string) 
+		set pnumsi $expect_out(2,string) 
 		send_user "\nsinfo reports $aprocsi allocated procs\n"
 		send_user "\nsinfo reports $pnumsi procs\n"
 		incr simatches
@@ -107,16 +108,16 @@ if {$simatches != 1} {
 }
 
 if {$tcpuc == $pnumsi} {
-	send_user "\nGOOD: Reported procs are a match at $pnumsc\n"
+	send_user "\nGOOD: Total procs are a match at $tcpuc\n"
 	} else {
-	send_user "\nFAILURE: PROCS numbers not the same\n"
+	send_user "\nFAILURE: Total procs NOT the same\n"
 	set exit_code 1
 	}
 
 if {$tacpuc == $aprocsi} {
-	send_user "\nGOOD: Allocated Procs are a match at $aprocsc\n"
+	send_user "\nGOOD: Allocated Procs are a match at $tacpuc\n"
 	} else {
-	send_user "\nFAILURE: Allocated Procs not the same\n"
+	send_user "\nFAILURE: Allocated Procs NOT the same\n"
 	set exit_code 1
 	}
 
