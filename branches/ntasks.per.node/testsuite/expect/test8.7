@@ -1,0 +1,257 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of Blue Gene scheduling with sched/wik2 plugin.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2006-2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "8.7"
+set exit_code   0
+set file_in     "test$test_id.in"
+set test_prog   "test$test_id.prog"
+
+print_header $test_id
+
+#
+# Submit a batch job to slurm
+# Input is node count and script name
+# Output is job_id or zero on failure
+#
+proc submit_job { size script } {
+	global number sbatch
+
+	set job_id 0
+	set sbatch_pid [spawn $sbatch -N $size --output=/dev/null --comment=test -t1 $script]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			catch {exec $bin_kill -KILL $sbatch_pid}
+			if {job_id != 0} {
+				cancel_job $job_id
+				set job_id 0
+			}
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $job_id
+}
+
+#
+# Check if we have sched/wiki2 configured
+#
+log_user 0
+set conf_dir     ""
+set control_addr ""
+set is_bluegene  0
+set sched_port   0
+set sched_wiki   0
+exec $bin_rm -f $file_in $test_prog
+spawn $scontrol show config
+expect {
+	-re "ControlAddr *= ($alpha_numeric_under)" {
+		set control_addr $expect_out(1,string)
+		exp_continue
+	}
+	-re "SchedulerPort *= ($number)" {
+		set sched_port $expect_out(1,string)
+		exp_continue
+	}
+	-re "sched/wiki2" {
+		set sched_wiki 1
+		exp_continue
+	}
+	-re "select/bluegene" {
+		set is_bluegene 1
+		exp_continue
+	}
+	-re "SLURM_CONF *= (.*)/slurm.conf" {
+		set conf_dir $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$sched_wiki == 0} {
+	send_user "\nWARNING: not running sched/wiki2, test is not applicable\n"
+	exit $exit_code
+}
+if {$is_bluegene == 0} {
+	send_user "\nWARNING: not running select/bluegene, test is not applicable\n"
+	exit $exit_code
+}
+if {[string compare $control_addr ""] == 0} {
+	send_user "\nFAILURE: ControlAddr not set\n"
+	exit 1
+}
+if {$sched_port == 0} {
+	send_user "\nFAILURE: SchedulerPort = 0\n"
+	exit 1
+}
+
+#
+# Try to get the AuthKey from wiki.conf
+#
+set auth_key  0
+set e_port    0
+set agg_time  999
+set wiki_file "$conf_dir/wiki.conf"
+if {[file readable $wiki_file] == 0}  {
+	send_user "\nWARNING: Unable to read $wiki_file\n"
+	exit $exit_code
+}
+log_user 0
+spawn $bin_sort $wiki_file
+expect {
+	-re "AuthKey=($number)" {
+		set auth_key $expect_out(1,string)
+		exp_continue
+	}
+	-re "EPort=($number)" {
+		set e_port $expect_out(1,string)
+		exp_continue
+	}
+	-re "JobAggregationTime=($number)" {
+		set agg_time $expect_out(1,string)
+		exp_continue
+	}
+	-re
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$auth_key == 0} {
+	send_user "\nWARNING: AuthKey not found in $wiki_file\n"
+	exit 1
+}
+if {$e_port == 0} {
+	send_user "\nWARNING: EPort not found in $wiki_file\n"
+	exit 1
+}
+if {$agg_time != 0} {
+	send_user "\nWARNING: JobAggregationTime != 0 in $wiki_file\n"
+	exit 1
+}
+#send_user "\nAuthKey=$auth_key\nEPort=$e_port\n"
+
+#
+# Submit four jobs to work with
+#
+make_bash_script $file_in "
+  echo BEGIN
+  $bin_sleep 30
+  echo FINI
+  exit 123"
+set job_id1 [submit_job 1024 $file_in]
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: srun job submit failed\n"
+	exit 1
+}
+
+set job_id2 [submit_job 512 $file_in]
+if {$job_id2 == 0} {
+	send_user "\nFAILURE: srun job submit failed\n"
+	[cancel_job $job_id1]
+	exit 1
+}
+
+set job_id3 [submit_job 256 $file_in]
+if {$job_id3 == 0} {
+	send_user "\nFAILURE: srun job submit failed\n"
+	[cancel_job $job_id1]
+	[cancel_job $job_id2]
+	exit 1
+}
+
+set job_id4 [submit_job 32 $file_in]
+if {$job_id4 == 0} {
+	send_user "\nFAILURE: srun job submit failed\n"
+	[cancel_job $job_id1]
+	[cancel_job $job_id2]
+	[cancel_job $job_id4]
+	exit 1
+}
+
+#
+# Start our Moab emulator ($test_prog) to manage the job
+#
+set timeout 60
+exec $bin_rm -f $test_prog
+exec $bin_make -f /dev/null $test_prog
+set success 0
+set moab_pid [spawn $test_prog $auth_key $control_addr $e_port $sched_port $job_id1 $job_id2 $job_id3 $job_id4]
+set master_id $spawn_id
+expect {
+	-re "FAILURE" {
+		set exit_code 1
+		exp_continue
+	}
+	-re "SUCCESS" {
+		set success 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: Moab emulator not responding\n"
+		catch {exec $bin_kill -KILL $moab_pid}
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$success == 0} {
+	send_user "\nFAILURE: Moab emulator failed\n"
+	set exit_code 1
+}
+
+cancel_job $job_id1
+cancel_job $job_id2
+cancel_job $job_id3
+cancel_job $job_id4
+
+if { $exit_code == 0 } {
+	exec $bin_rm -f $file_in $test_prog
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
+
