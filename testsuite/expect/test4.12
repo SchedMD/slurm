@@ -93,7 +93,13 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 	set found 0
 	set rc 0
 
-	send "$sinfo -o '\%C \%A \%N' -h -n $node\n"
+	send "$sinfo -o \"%C %A %N\" -h -n $node\n"
+	# make sure we get by the sinfo command so we don't 
+	# think the %'s are a prompt
+	expect {
+		"%C %A %N" {
+		}
+	}
 	expect {
 		-re "($number)(k?).($number)(k?).($number)(k?).($number)(k?) ($number)(k?).($number)(k?) $node" {
 			set found 1
@@ -164,7 +170,13 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	}
 	set idle_nodes [expr $total_nodes - $alloc_nodes]
 
-	send "$sinfo -o '\%t \%D \%N' -h -n $node\r"
+	send "$sinfo -o \"%t %D %N\" -h -n $node\n"
+	# make sure we get by the sinfo command so we don't 
+	# think the %'s are a prompt
+	expect {
+		"%t %D %N" {
+		}
+	}
 	expect {
 		-re "alloc ($number)(k?) $node" {
 			set num_alloc $expect_out(1,string)
