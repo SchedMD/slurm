@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
     midplane instead of treating -n as a c-node count.
  -- salloc now sets SLURN_NTASKS_PER_NODE if --ntasks-per-node option is set.
  -- Fix select/linear to properly set a job's count of allocated processors.
+ -- Insure that no node is allocated to a job for which the CPU count is less
+    than --ntasks-per-node * --cpus-per-task.
 
 * Changes in SLURM 2.0.1
 ========================
