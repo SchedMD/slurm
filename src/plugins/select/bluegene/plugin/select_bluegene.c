@@ -1054,6 +1054,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		}
 
 		if(job_desc->num_procs != NO_VAL) {
+			job_desc->num_procs /= bg_conf->proc_ratio;
 			if(job_desc->min_nodes < job_desc->num_procs)
 				job_desc->min_nodes = job_desc->num_procs;
 			if(job_desc->max_nodes < job_desc->num_procs)
