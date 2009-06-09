@@ -7,7 +7,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008-2009  Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -84,7 +85,6 @@ set node2       0
 set no_hostfile 0
 set timeout $max_job_delay
 for {set i 0} {$i<3} {incr i} {
-
 	if { $i==1 } {
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
 			send_user "\nFAILURE: node names not set from \
@@ -92,9 +92,9 @@ for {set i 0} {$i<3} {incr i} {
 			exit 1
 		}
 		set env(SLURM_HOSTFILE) $hostfile
-		set 1node0 $node0
-		set 1node1 $node1
-		set 1node2 $node2
+		set 1node0 $node2
+		set 1node1 $node0
+		set 1node2 $node1
 		set file [open $hostfile "w"]
 		puts $file "$node2\n$node0\n$node1"
 		close $file
@@ -107,9 +107,9 @@ for {set i 0} {$i<3} {incr i} {
 		set env(SLURM_HOSTFILE) $hostfile
 		set 2node0 $node1
 		set 2node1 $node0
-		set 2node2 $node0
+		set 2node2 $node2
 		set file [open $hostfile "w"]
-		puts $file "$node1\n$node0\n$node0"
+		puts $file "$node1\n$node0\n$node2"
 		close $file
 	}
 	#
@@ -118,7 +118,11 @@ for {set i 0} {$i<3} {incr i} {
 	set node0  ""
 	set node1  ""
 	set node2  ""
-	set srun_pid [spawn $srun -N3 -t1 -l $bin_printenv SLURMD_NODENAME]
+	if { $i == 0} {
+		set srun_pid [spawn $srun -N3 -t1 -l $bin_printenv SLURMD_NODENAME]
+	} else {
+		set srun_pid [spawn $srun -N3 -t1 -l --distribution=arbitrary $bin_printenv SLURMD_NODENAME]
+	}
 	expect {
 		-re "SwitchType does not permit arbitrary task distribution" {
 			set no_hostfile 1
@@ -147,25 +151,25 @@ for {set i 0} {$i<3} {incr i} {
 	if { $no_hostfile != 0 } {
 		send_user "\nNo worries, test just can not run here\n"
 	} elseif { $i == 1 } {
-		if { [string compare $node0 $1node2] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+		if { [string compare $node0 $1node0] } {
+			send_user "\nFAILURE: task 0 not distributed by hostfile ($node0 != $1node0)\n"
 			set exit_code 1
-		} elseif { [string compare $node1 $1node0] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+		} elseif { [string compare $node1 $1node1] } {
+			send_user "\nFAILURE: task 1 not distributed by hostfile ($node1 != $1node1)\n"
 			set exit_code 1
-		} elseif { [string compare $node2 $1node1] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+		} elseif { [string compare $node2 $1node2] } {
+			send_user "\nFAILURE: task 2 not distributed by hostfile ($node2 != $1node2)\n"
 			set exit_code 1
 		}
 	} elseif { $i == 2 } {
 		if { [string compare $node0 $2node0] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: task 0 not distributed by hostfile ($node0 != $2node0)\n"
 			set exit_code 1
 		} elseif { [string compare $node1 $2node1] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+			send_user "\nFAILURE: task 1 not distributed by hostfile ($node1 != $2node1)\n"
 			set exit_code 1
-		} elseif { [string compare $node2 $2node1] } {
-			send_user "\nFAILURE: tasks not distributed by hostfile\n"
+		} elseif { [string compare $node2 $2node2] } {
+			send_user "\nFAILURE: task 2 not distributed by hostfile ($node2 != $2node2)\n"
 			set exit_code 1
 		}
 	}
