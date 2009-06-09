@@ -44,7 +44,7 @@ set inode_name  ""
 set smallest    1
 set layout "static"
 set select_type ""
-set node_scaling 1
+set node_scaling 0
 
 proc scontrol_test { node proc_cnt } {
 	global scontrol number prompt
