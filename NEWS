@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
     option is used.
  -- Insure that no node is allocated to a job for which the CPU count is less
     than --ntasks-per-node * --cpus-per-task.
+ -- Correct AllocProcs reported by "scontrol show node" when ThreadsPerCore
+    is greater than 1 and select/cons_res is used.
 
 * Changes in SLURM 2.0.1
 ========================
