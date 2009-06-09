@@ -93,7 +93,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 	set found 0
 	set rc 0
 
-	send "$sinfo -o '%C %A %N' -h -n $node \n"
+	send "$sinfo -o '\%C \%A \%N' -h -n $node\n"
 	expect {
 		-re "($number)(k?).($number)(k?).($number)(k?).($number)(k?) ($number)(k?).($number)(k?) $node" {
 			set found 1
@@ -131,7 +131,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 		-re $prompt {
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			send_user "\nFAILURE: sinfo not responding\n"
 			slow_kill $mypid
 			return 1
 		}
@@ -164,7 +164,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	}
 	set idle_nodes [expr $total_nodes - $alloc_nodes]
 
-	send "$sinfo -o '%t %D %N' -h -n $node \n"
+	send "$sinfo -o '\%t \%D \%N' -h -n $node\r"
 	expect {
 		-re "alloc ($number)(k?) $node" {
 			set num_alloc $expect_out(1,string)
@@ -183,7 +183,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 		-re $prompt {
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			send_user "\nFAILURE: sinfo not responding\n"
 			slow_kill $mypid
 			return 1
 		}
@@ -198,8 +198,6 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	} elseif { $num_idle != $idle_nodes } {
 		send_user "\nFAILURE: sinfo 2 idle nodes wrong, got $num_idle but needed $idle_nodes\n"
 		set rc 1
-	} else {
-		send_user "SUCCESS\n"
 	}
 		
 	return $rc
@@ -242,6 +240,8 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 				send "exit\n"
 				return 1
 			}
+			send "exit\n"
+			exp_continue
 		}
 
 		-re "Unable to contact" {
@@ -261,9 +261,6 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 		}
 	}
 
-	if {$job_id} {
-		send "exit\n"
-	}
 	return $rc
 }
 
