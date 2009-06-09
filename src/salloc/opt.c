@@ -1297,6 +1297,11 @@ static bool _opt_verify(void)
 			setenvf(NULL, "SLURM_MEM_BIND", "%s", tmp);
 		}
 	}
+	if ((opt.ntasks_per_node != NO_VAL) && 
+	    (getenv("SLURM_NTASKS_PER_NODE") == NULL)) {
+		setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d", 
+			opt.ntasks_per_node);
+	}
 
 	return verified;
 }
