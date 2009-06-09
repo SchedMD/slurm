@@ -262,7 +262,7 @@ static void _update_node_record(node_info_t *node_ptr,
 				     &alloc_cpus);
 #ifdef HAVE_BG
 	if(!alloc_cpus 
-	   && (IS_NODE_ALLOCATED(node_ptr) || IS_NODE_COMPLETING(node_ptr))
+	   && (IS_NODE_ALLOCATED(node_ptr) || IS_NODE_COMPLETING(node_ptr)))
 		alloc_cpus = node_ptr->cpus;
 	else
 		alloc_cpus *= cpus_per_node;

@@ -1950,8 +1950,8 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 					node_ptr = 
 						&node_info_ptr->node_array[i];
 					ba_system_ptr->grid[x][y][z].color = 7;
-					if (NODE_IS_DOWN(node_ptr)
-					    || NODE_IS_DRAIN(node_ptr)) {
+					if (IS_NODE_DOWN(node_ptr)
+					    || IS_NODE_DRAIN(node_ptr)) {
 						ba_system_ptr->
 							grid[x][y][z].color 
 							= 0;
