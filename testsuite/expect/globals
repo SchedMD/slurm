@@ -984,6 +984,37 @@ proc test_bluegene { } {
 
 ################################################################
 #
+# Proc: test_select_type
+#
+# Purpose: Determine which select plugin is being used
+#
+# Returns name of select plugin
+#
+################################################################
+
+proc test_select_type { } {
+	global scontrol bin_bash bin_grep alpha_numeric_under
+
+	log_user 0
+	set type ""
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
+	expect {
+		-re "select/($alpha_numeric_under)" {
+			set type $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $type
+}
+
+
+################################################################
+#
 # Proc: test_aix
 #
 # Purpose: Determine if the system is AIX
@@ -1595,7 +1626,7 @@ proc get_bluegene_cnodes_per_mp { } {
 	global scontrol number
 
 	log_user 0
-	set node_cnt 0
+	set node_cnt 1
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
 		-re "BasePartitionNodeCnt *= ($number)" {
