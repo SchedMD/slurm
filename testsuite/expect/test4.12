@@ -39,7 +39,8 @@ set pnumsc      0
 set pnumsi      0
 set aprocsc     0
 set aprocsi     0
-
+set tcpuc       0
+set tacpuc      0
 print_header $test_id
 
 #
@@ -54,36 +55,22 @@ srun -N1 hostname
 # Issue scontrol to find processor count
 #
 set timeout $max_job_delay
-set sctmatches 0
 spawn $sbatch  $file_in
-spawn $scontrol show part
-expect {
-	-re " TotalCPUs=($number)" {
-		set pnumsc $expect_out(1,string) 
-		send_user "\nscontrol reports $pnumsc procs\n"
-		incr sctmatches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$sctmatches != 1} {
-	send_user "\nFAILURE: Unexpected output $sctmatches\n"
-	set exit_code 1
-}
 
-set scamatches 0
 spawn $scontrol show node
 expect {
-	-re "AllocProcs=($number)" {
-		set aprocsc $expect_out(1,string) 
-		send_user "\nscontrol reports $aprocsc allocated procs\n"
-		incr scamatches
+	-re " Procs=($number)" {
+		set pnumsc $expect_out(1,string) 
+		send_user "\nscontrol reports $pnumsc procs\n"
+		set tcpuc [expr $tcpuc + $pnumsc]
+		send_user "\nTotal CPU count is now $tcpuc procs\n"
+		exp_continue
+	}
+	-re " AllocProcs=($number)" {
+		set pnumsi $expect_out(1,string) 
+		send_user "\nscontrol reports $pnumsi procs\n"
+		set tacpuc [expr $tacpuc + $pnumsi]
+		send_user "\nAllocated CPU count is now $tacpuc procs\n"
 		exp_continue
 	}
 	timeout {
@@ -93,14 +80,9 @@ expect {
 	eof {
 		wait
 	}
-}
-if {$scamatches != 1} {
-	send_user "\nFAILURE: Unexpected output $scamatches\n"
-	set exit_code 1
 }
 
 set simatches 0
-
 spawn $sinfo -o %C
 expect {
 	-re "($number).$number.$number.($number)" {
@@ -124,14 +106,14 @@ if {$simatches != 1} {
 	set exit_code 1
 }
 
-if {$pnumsc == $pnumsi} {
+if {$tcpuc == $pnumsi} {
 	send_user "\nGOOD: Reported procs are a match at $pnumsc\n"
 	} else {
 	send_user "\nFAILURE: PROCS numbers not the same\n"
 	set exit_code 1
 	}
 
-if {$aprocsc == $aprocsi} {
+if {$tacpuc == $aprocsi} {
 	send_user "\nGOOD: Allocated Procs are a match at $aprocsc\n"
 	} else {
 	send_user "\nFAILURE: Allocated Procs not the same\n"
