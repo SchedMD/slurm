@@ -39,39 +39,251 @@ set pnumsc      0
 set pnumsi      0
 set aprocsc     0
 set aprocsi     0
-set tcpuc       0
-set tacpuc      0
+set inode_found 0
+set inode_name  ""
+set smallest    1
+set layout "static"
+set select_type ""
+set node_scaling 1
+
+proc scontrol_test { node proc_cnt } {
+	global scontrol number prompt
+	upvar spawn_id spawn_id 
+
+	set found 0
+	set rc 0
+
+	send "$scontrol show node $node\n"
+	expect {
+		-re "AllocProcs=($number)" {
+			set num_alloc $expect_out(1,string)
+			set found 1
+			if {$proc_cnt != $num_alloc} {
+				send_user "\nFAILURE: requested $proc_cnt but got $num_alloc instead\n"
+				set rc 1
+			} else {
+				send_user "SUCCESS\n"
+			}
+			exp_continue
+		}
+		-re $prompt {
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $mypid
+			return 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$found} {
+		send_user "\nFAILURE: didn't get expected output from scontrol\n"
+		set rc 1
+	}
+
+	return $rc
+}
+
+proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
+	global sinfo number prompt
+	upvar spawn_id spawn_id 
+
+	set found 0
+	set rc 0
+
+	send "$sinfo -h -o \"%C %A %N\" -n $node \n"
+	expect {
+		-re "($number)(k?).($number)(k?).($number)(k?).($number)(k?) ($number)(k?).($number)(k?) $node" {
+			set found 1
+			set num_alloc $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set num_alloc [expr $num_alloc * 1024]
+			}
+			set num_idle $expect_out(3,string)
+			if {[string compare $expect_out(4,string) ""]} {
+				set num_idle [expr $num_idle * 1024]
+			}
+			set num_other $expect_out(5,string)
+			if {[string compare $expect_out(6,string) ""]} {
+				set num_other [expr $num_other * 1024]
+			}
+			set num_total $expect_out(7,string)
+			if {[string compare $expect_out(8,string) ""]} {
+				set num_total [expr $num_total * 1024]
+			}
+			
+			if { $num_alloc != $proc_cnt } {
+				send_user "\nFAILURE: sinfo 1 allocated cpus wrong, got $num_alloc but needed $proc_cnt\n"
+				set rc 1
+			} elseif { $num_idle != $idle_cpus } {
+				send_user "\nFAILURE: sinfo 1 idle cpus wrong, got $num_idle but needed $idle_cpus\n"
+				set rc 1
+			} elseif { $num_total != $total_procs } {
+				send_user "\nFAILURE: sinfo 1 total cpus wrong, got $num_idle but needed $idle_cpus\n"
+				set rc 1
+			} else {
+				send_user "SUCCESS\n"
+			}
+			exp_continue
+		}
+		-re $prompt {
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $mypid
+			return 1
+		}
+		eof {
+			wait
+		}		
+	}
+
+	if {!$found} {
+		send_user "\nFAILURE: didn't get expected output from sinfo\n"
+		set rc 1
+	}
+
+	return $rc
+}
+
+proc sinfo_test_2 { node proc_cnt total_procs } {
+	global sinfo number prompt node_scaling
+	upvar spawn_id spawn_id 
+
+	set rc 0
+	set num_alloc 0
+	set num_idle 0
+	set alloc_nodes 1
+	set total_nodes 1
+	
+	if {$node_scaling} {
+		set alloc_nodes [expr $proc_cnt / $node_scaling]
+		set total_nodes [expr $total_procs / $node_scaling]
+	}
+	set idle_nodes [expr $total_nodes - $alloc_nodes]
+
+	send "$sinfo -h -o \"%t %D %N\" -n $node \n"
+	expect {
+		-re "alloc ($number)(k?) $node" {
+			set num_alloc $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set num_alloc [expr $inode_procs * 1024]
+			}
+			exp_continue
+		}
+		-re "idle ($number)(k?) $node" {
+			set num_idle $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set num_idle [expr $num_idle * 1024]
+			}
+			exp_continue
+		}
+		-re $prompt {
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $mypid
+			return 1
+		}
+		eof {
+			wait
+		}
+	}
+			 
+	if { $num_alloc != $alloc_nodes } {
+		send_user "\nFAILURE: sinfo 2 allocated nodes wrong, got $num_alloc but needed $alloc_nodes\n"
+		set rc 1
+	} elseif { $num_idle != $idle_nodes } {
+		send_user "\nFAILURE: sinfo 2 idle nodes wrong, got $num_idle but needed $idle_nodes\n"
+		set rc 1
+	} else {
+		send_user "SUCCESS\n"
+	}
+		
+	return $rc
+}
+
+# allocate a set of nodes (node_cnt) and the quit right after
+proc allocate_and_quit { node proc_cnt total_procs } {
+	global salloc scontrol sinfo number alpha_numeric_under 
+	global prompt select_type procs_per_node
+       
+	set job_id 0
+	set num_alloc 0
+	set block ""
+	set rc 0
+	set timeout 60
+	set idle_cpus [expr $total_procs - $proc_cnt]
+	
+	set mypid [spawn $salloc -w $node -N1 -n $proc_cnt]
+	expect {
+		-re "Granted job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+
+		-re $prompt {
+			# test for scontrol to give me the correct cpu count
+			if { [scontrol_test $node $proc_cnt] } {
+				send "exit\n"
+				return 1
+			}
+			
+
+			# test for sinfo to give me the correct cpu count
+			if { [sinfo_test_1 $node $proc_cnt $total_procs $idle_cpus] } {
+				send "exit\n"
+				return 1
+			}
+			# test for sinfo to give me the correct node count
+			if { [sinfo_test_2 $node $proc_cnt $total_procs] } {
+				send "exit\n"
+				return 1
+			}
+		}
+
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: salloc not responding\n"
+			if {$job_id != 0} {
+				cancel_job $job_id
+			}
+			slow_kill $mypid
+			return 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$job_id} {
+		send "exit\n"
+	}
+	return $rc
+}
+
+# test starts here 
+
 print_header $test_id
 
-#
-# Create a script
-#
-make_bash_script $file_in "
-srun -N1 hostname
-  sleep 20
- "
-
-#
-# Submit a job
-# Issue scontrol to find total and allocated processor counts
-#
-set timeout $max_job_delay
-spawn $sbatch  $file_in
-
+#find me an idle node
+log_user 0
 spawn $scontrol show node
 expect {
-	-re " Procs=($number)" {
-		set pnumsc $expect_out(1,string) 
-		send_user "\nscontrol reports $pnumsc procs\n"
-		set tcpuc [expr $tcpuc + $pnumsc]
-		send_user "\nTotal CPU count is now $tcpuc procs\n"
-		exp_continue
-	}
-	-re " AllocProcs=($number)" {
-		set pnumsi $expect_out(1,string) 
-		send_user "\nscontrol reports $pnumsi procs\n"
-		set tacpuc [expr $tacpuc + $pnumsi]
-		send_user "\nAllocated CPU count is now $tacpuc procs\n"
+	-re "NodeName=($alpha_numeric_under) State=IDLE Procs=($number)(k?)"  {
+		if {!$inode_found} {
+			set inode_name $expect_out(1,string) 
+			set inode_procs $expect_out(2,string)
+			if {[string compare $expect_out(3,string) ""]} {
+				set inode_procs [expr $inode_procs * 1024]
+			}
+			set inode_found 1
+		}
 		exp_continue
 	}
 	timeout {
@@ -82,46 +294,69 @@ expect {
 		wait
 	}
 }
+log_user 1
 
-set simatches 0
-spawn $sinfo -o %C
-expect {
-	-re "($number).$number.$number.($number)" {
-		set aprocsi $expect_out(1,string) 
-		set pnumsi $expect_out(2,string) 
-		send_user "\nsinfo reports $aprocsi allocated procs\n"
-		send_user "\nsinfo reports $pnumsi procs\n"
-		incr simatches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$simatches != 1} {
-	send_user "\nFAILURE: Unexpected output $simatches\n"
-	set exit_code 1
+if {!$inode_found} {
+	send_user "\nFAILURE: couldn't find an idle node on the system\n"
+	exit 1
 }
 
-if {$tcpuc == $pnumsi} {
-	send_user "\nGOOD: Total procs are a match at $tcpuc\n"
-	} else {
-	send_user "\nFAILURE: Total procs NOT the same\n"
-	set exit_code 1
-	}
+send_user "found idle node $inode_name with $inode_procs\n"
 
-if {$tacpuc == $aprocsi} {
-	send_user "\nGOOD: Allocated Procs are a match at $tacpuc\n"
-	} else {
-	send_user "\nFAILURE: Allocated Procs NOT the same\n"
-	set exit_code 1
+# figure out the select plugin we are using
+set select_type [test_select_type]
+if {![string compare $select_type "bluegene"]} {
+	# figure out some things if a bluegene system
+	set layout [get_bluegene_layout]
+	if {$layout == 0} {
+		send_user "\nFAILURE: No layout mode found for this system\n"
+		exit 1
 	}
+	set psets [get_bluegene_psets]
+	
+	if {$psets == 0} {
+		send_user "\nFAILURE: No psets are set on this system\n"
+		exit 1
+	}
+	set type [get_bluegene_type]
+	
+	if {$type == 0} {
+		send_user "\nFAILURE: No bluegene type found \n"
+		exit 1
+	}	
+	
+	if {![string compare $type "P"]} {
+		if {$psets >= 32} {
+			set smallest 16
+		} elseif {$psets >= 16} {
+			set smallest 32
+		} elseif {$psets >= 8} {
+			set smallest 64
+		} else {
+			set smallest 128
+		}
+	} elseif {![string compare $type "L"]} {
+		if {$psets >= 16} {
+			set smallest 32
+		} else {
+			set smallest 128
+		}
+	} else {
+		send_user "\nFAILURE: unknown bluegene system type '$type'\n";
+		exit 1
+	}	
+	set node_scaling [get_bluegene_procs_per_cnode]
+	set smallest [expr $smallest * $node_scaling]
+} elseif {![string compare $select_type "cons_res"]} {
+	set smallest 1
+} else {
+	set smallest $inode_procs
+}
 
+
+set exit_code [allocate_and_quit $inode_name $smallest $inode_procs]
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+} else {
+	exit $exit_code
 }
-exit $exit_code
