@@ -106,6 +106,8 @@ static int  _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes);
 static void _free_node_cr(struct node_cr_record *node_cr_ptr);
+static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index);
+static uint16_t _get_total_cpus(int index);
 static void _init_node_cr(void);
 static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr, 
@@ -365,6 +367,21 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 				cpus, sockets, cores, threads);
 #endif
 	return(avail_cpus);
+}
+
+/*
+ * _get_total_cpus - Get the total number of cpus on a node
+ *	Note that the value of cpus is the lowest-level logical 
+ *	processor (LLLP).
+ * IN index - index of node's configuration information in select_node_ptr
+ */
+static uint16_t _get_total_cpus(int index)
+{
+	struct node_record *node_ptr = &(select_node_ptr[index]);
+	if (select_fast_schedule)
+		return node_ptr->config_ptr->cpus;
+	else
+		return node_ptr->cpus;
 }
 
 /* Build the full select_job_res_t structure for a job based upon the nodes
@@ -670,7 +687,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
-	int avail_cpus, alloc_cpus = 0;
+	int avail_cpus, alloc_cpus = 0, total_cpus = 0;
 
 	if (bit_set_count(bitmap) < min_nodes)
 		return error_code;
@@ -718,10 +735,11 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					/* first required node in set */
 					consec_req[consec_index] = index;
 				}
-				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
 				rem_nodes--;
 				max_nodes--;
+				rem_cpus   -= avail_cpus;
+				alloc_cpus += avail_cpus;
+				total_cpus += _get_total_cpus(index);
 			} else {	 /* node not required (yet) */
 				bit_clear(bitmap, index); 
 				consec_cpus[consec_index] += avail_cpus;
@@ -850,6 +868,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
 				alloc_cpus += avail_cpus;
+				total_cpus += _get_total_cpus(i);
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
@@ -864,6 +883,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
 				alloc_cpus += avail_cpus;
+				total_cpus += _get_total_cpus(i);
 			}
 		} else {
 			for (i = consec_start[best_fit_location];
@@ -879,6 +899,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
 				alloc_cpus += avail_cpus;
+				total_cpus += _get_total_cpus(i);
 			}
 		}
 		if (job_ptr->details->contiguous || 
@@ -896,7 +917,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	if (error_code == SLURM_SUCCESS) {
 		/* job's total_procs is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_procs = alloc_cpus;
+		job_ptr->total_procs = total_cpus;
 	}
 
 	xfree(consec_cpus);
@@ -924,7 +945,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t  *req_nodes_bitmap   = NULL;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
-	int avail_cpus, alloc_cpus = 0;
+	int avail_cpus, alloc_cpus = 0, total_cpus = 0;
 	int i, j, rc = SLURM_SUCCESS;
 	int best_fit_inx, first, last;
 	int best_fit_nodes, best_fit_cpus;
@@ -1012,6 +1033,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			avail_cpus = _get_avail_cpus(job_ptr, i);
 			rem_cpus   -= avail_cpus;
 			alloc_cpus += avail_cpus;
+			total_cpus += _get_total_cpus(i);
 			for (j=0; j<switch_record_cnt; j++) {
 				if (!bit_test(switches_bitmap[j], i))
 					continue;
@@ -1049,6 +1071,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
 				alloc_cpus += avail_cpus;
+				total_cpus += _get_total_cpus(i);
 			}
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0))
@@ -1173,6 +1196,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			max_nodes--;
 			rem_cpus   -= avail_cpus;
 			alloc_cpus += avail_cpus;
+			total_cpus += _get_total_cpus(i);
 			if ((max_nodes <= 0) || 
 			    ((rem_nodes <= 0) && (rem_cpus <= 0)))
 				break;
@@ -1187,7 +1211,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
  fini:	if (rc == SLURM_SUCCESS) {
 		/* Job's total_procs is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_procs = alloc_cpus;
+		job_ptr->total_procs = total_cpus;
 	}
 	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);

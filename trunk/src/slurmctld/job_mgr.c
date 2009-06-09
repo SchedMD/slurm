@@ -3380,16 +3380,21 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
 	else
 		detail_ptr->cpus_per_task = 1;
-	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL)
+	if (job_desc->job_min_procs != (uint16_t) NO_VAL)
+		detail_ptr->job_min_procs = job_desc->job_min_procs;
+	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL) {
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
+		detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
+						(detail_ptr->cpus_per_task *
+						 detail_ptr->ntasks_per_node));
+	} else {
+		detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
+						detail_ptr->cpus_per_task);
+	}
 	if (job_desc->requeue != (uint16_t) NO_VAL)
 		detail_ptr->requeue = MIN(job_desc->requeue, 1);
 	else
 		detail_ptr->requeue = slurmctld_conf.job_requeue;
-	if (job_desc->job_min_procs != (uint16_t) NO_VAL)
-		detail_ptr->job_min_procs = job_desc->job_min_procs;
-	detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
-					detail_ptr->cpus_per_task);
 	if (job_desc->job_min_memory != NO_VAL)
 		detail_ptr->job_min_memory = job_desc->job_min_memory;
 	if (job_desc->job_min_tmp_disk != NO_VAL)
