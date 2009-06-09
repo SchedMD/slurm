@@ -357,7 +357,11 @@ if {![string compare $select_type "bluegene"]} {
 	set node_scaling [get_bluegene_procs_per_cnode]
 	set smallest [expr $smallest * $node_scaling]
 } elseif {![string compare $select_type "cons_res"]} {
-	set smallest 1
+#	SelectTypeParameter can be configured to allocated whole nodes,
+#	sockets, or cores (not threads) and the configuration can very by
+#	partition. so the smallest allocable unit isn't so simple to set here
+#	set smallest 1
+	set smallest $inode_procs
 } else {
 	set smallest $inode_procs
 }
