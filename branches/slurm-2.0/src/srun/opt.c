@@ -490,6 +490,7 @@ env_vars_t env_vars[] = {
 {"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
 {"SLURM_NTHREADS_PER_CORE",OPT_NTHREADS,NULL,               NULL             },
+{"SLURM_NTASKS_PER_NODE", OPT_INT,      &opt.ntasks_per_node, NULL           },
 {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL             },
 {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set  },
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
