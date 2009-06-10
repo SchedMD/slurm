@@ -2093,24 +2093,24 @@ static bool _opt_verify(void)
 	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
 				  &opt.cpu_bind_type))
 		exit(1);
-	if (opt.cpu_bind_type && (getenv("SLURM_CPU_BIND") == NULL)) {
+	if (opt.cpu_bind_type && (getenv("SBATCH_CPU_BIND") == NULL)) {
 		char tmp[64];
 		slurm_sprint_cpu_bind_type(tmp, opt.cpu_bind_type);
 		if (opt.cpu_bind) {
-			setenvf(NULL, "SLURM_CPU_BIND", "%s:%s", 
+			setenvf(NULL, "SBATCH_CPU_BIND", "%s:%s", 
 				tmp, opt.cpu_bind);
 		} else {
-			setenvf(NULL, "SLURM_CPU_BIND", "%s", tmp);
+			setenvf(NULL, "SBATCH_CPU_BIND", "%s", tmp);
 		}
 	}
-	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND") == NULL)) {
+	if (opt.mem_bind_type && (getenv("SBATCH_MEM_BIND") == NULL)) {
 		char tmp[64];
 		slurm_sprint_mem_bind_type(tmp, opt.mem_bind_type);
 		if (opt.mem_bind) {
-			setenvf(NULL, "SLURM_MEM_BIND", "%s:%s", 
+			setenvf(NULL, "SBATCH_MEM_BIND", "%s:%s", 
 				tmp, opt.mem_bind);
 		} else {
-			setenvf(NULL, "SLURM_MEM_BIND", "%s", tmp);
+			setenvf(NULL, "SBATCH_MEM_BIND", "%s", tmp);
 		}
 	}
 

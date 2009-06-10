@@ -582,6 +582,7 @@ fini:
  * IN/OUT core_map  - core_bitmap of available cores
  * IN n             - index of node to be evaluated
  * IN cr_type       - Consumable Resource setting
+ * IN test_only     - ignore allocated memory check
  *
  * NOTE: The returned cpu_count may be less than the number of set bits in 
  *       core_map for the given node. The cr_dist functions will determine
@@ -590,7 +591,8 @@ fini:
 uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 			      const uint32_t node_i,
 			      struct node_use_record *node_usage,
-			      select_type_plugin_info_t cr_type)
+			      select_type_plugin_info_t cr_type,
+			      bool test_only)
 {
 	uint16_t cpus;
 	uint32_t avail_mem, req_mem;
@@ -613,8 +615,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		cpus = _allocate_cores(job_ptr, core_map, node_i, 1);
 	}
 	
-	if (cr_type != CR_CPU_MEMORY && cr_type != CR_CORE_MEMORY &&
-	    cr_type != CR_SOCKET_MEMORY && cr_type != CR_MEMORY)
+	if ((cr_type != CR_CPU_MEMORY)    && (cr_type != CR_CORE_MEMORY) &&
+	    (cr_type != CR_SOCKET_MEMORY) && (cr_type != CR_MEMORY))
 		return cpus;
 
 	/* Memory Check: check job_min_memory to see if:
@@ -622,13 +624,16 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	 *          - there are enough free_cores (MEM_PER_CPU = 1)
 	 */
 	req_mem   = job_ptr->details->job_min_memory & ~MEM_PER_CPU;
-	avail_mem = select_node_record[node_i].real_memory - 
-					node_usage[node_i].alloc_memory;
+	avail_mem = select_node_record[node_i].real_memory;
+	if (!test_only)
+		avail_mem -= node_usage[node_i].alloc_memory;
 	if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
 		/* memory is per-cpu */
 		while (cpus > 0 && (req_mem * cpus) > avail_mem)
 			cpus--;	
-	/* FIXME: do we need to recheck min_cores, etc. here? */	
+		if (cpus < job_ptr->details->ntasks_per_node)
+			cpus = 0;
+		/* FIXME: do we need to recheck min_cores, etc. here? */	
 	} else {
 		/* memory is per node */
 		if (req_mem > avail_mem) {
@@ -842,13 +847,15 @@ static int _get_cpu_cnt(struct job_record *job_ptr, const int node_index,
  * IN: cr_type     - resource type
  * OUT: cpu_cnt    - number of cpus that can be used by this job
  * OUT: freq       - number of nodes to which the corresponding cpu_cnt applies
+ * IN: test_only   - ignore allocated memory check
  * OUT:            returns the length of the 2 arrays
  */
 uint32_t _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 			bitstr_t *core_map, uint32_t cr_node_cnt,
 			struct node_use_record *node_usage,
 			select_type_plugin_info_t cr_type,
-			uint16_t **cpu_cnt_ptr, uint32_t **freq_ptr)
+			uint16_t **cpu_cnt_ptr, uint32_t **freq_ptr,
+			bool test_only)
 {
 	uint16_t *cpu_cnt, cpu_count;
 	uint32_t *freq;
@@ -860,7 +867,8 @@ uint32_t _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 	for (n = 0; n < cr_node_cnt; n++) {
 		if (bit_test(node_map, n)) {
 			cpu_count = _can_job_run_on_node(job_ptr, core_map,
-							n, node_usage, cr_type);
+							n, node_usage, cr_type,
+							test_only);
 			if (cpu_count == cpu_cnt[size]) {
 				freq[size]++;
 				continue;
@@ -1572,6 +1580,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
  * IN: cr_node_cnt  - total number of nodes in the cluster
  * IN/OUT: core_map - bitmap of available cores / bitmap of selected cores
  * IN: cr_type      - resource type
+ * IN: test_only    - ignore allocated memory check
  * OUT:             return SLURM_SUCCESS if an allocation was found
  */
 static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
@@ -1579,7 +1588,8 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 				bitstr_t *node_map, uint32_t cr_node_cnt,
 				bitstr_t *core_map,
 				struct node_use_record *node_usage,
-				select_type_plugin_info_t cr_type)
+				select_type_plugin_info_t cr_type,
+				bool test_only)
 {
 	int rc;
 	uint16_t *cpu_cnt, *cpus = NULL;
@@ -1591,7 +1601,8 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 
 	/* get resource usage for this job from each available node */
 	size = _get_res_usage(job_ptr, node_map, core_map, cr_node_cnt,
-				node_usage, cr_type, &cpu_cnt, &freq);
+			      node_usage, cr_type, &cpu_cnt, &freq,
+			      test_only);
 
 	/* clear all nodes that do not have any
 	 * usable resources for this job */
@@ -1695,13 +1706,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	
 	free_select_job_res(&job_ptr->select_job);
 
-	if (mode == SELECT_MODE_TEST_ONLY) {
-		/* testing doesn't care about the current amount of available
-		 * memory, so we'll "zero out" the job request for now */
+	if (mode == SELECT_MODE_TEST_ONLY)
 		test_only = true;
-		save_mem = job_ptr->details->job_min_memory;
-		job_ptr->details->job_min_memory = 0;
-	} else	/* SELECT_MODE_RUN_NOW || SELECT_MODE_WILL_RUN  */ 
+	else	/* SELECT_MODE_RUN_NOW || SELECT_MODE_WILL_RUN  */ 
 		test_only = false;
 
 	/* check node_state and update the node bitmap as necessary */
@@ -1710,8 +1717,6 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 						bitmap, cr_type, node_usage,
 						job_node_req);
 		if (error_code != SLURM_SUCCESS) {
-			if (save_mem)
-				job_ptr->details->job_min_memory = save_mem;
 			return error_code;
 		}
 	}
@@ -1738,14 +1743,12 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	free_cores = bit_copy(avail_cores);
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
 				   bitmap, cr_node_cnt, free_cores,
-				   node_usage, cr_type);
+				   node_usage, cr_type, test_only);
 	if (cpu_count == NULL) {
 		/* job cannot fit */
 		FREE_NULL_BITMAP(orig_map);
 		FREE_NULL_BITMAP(free_cores);
 		FREE_NULL_BITMAP(avail_cores);
-		if (save_mem)
-			job_ptr->details->job_min_memory = save_mem;
 		debug3("cons_res: cr_job_test: test 0 fail: "
 		       "insufficient resources");
 		return SLURM_ERROR;
@@ -1756,8 +1759,6 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		FREE_NULL_BITMAP(free_cores);
 		FREE_NULL_BITMAP(avail_cores);
 		xfree(cpu_count);
-		if (save_mem)
-			job_ptr->details->job_min_memory = save_mem;
 		debug3("cons_res: cr_job_test: test 0 pass: test_only"); 
 		return SLURM_SUCCESS;
 	}
@@ -1817,8 +1818,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
-				   bitmap, cr_node_cnt, free_cores,
-				   node_usage, cr_type);
+				  bitmap, cr_node_cnt, free_cores,
+				  node_usage, cr_type, test_only);
 	if (cpu_count) {
 		/* job fits! We're done. */
 		debug3("cons_res: cr_job_test: test 1 pass - "
@@ -1857,8 +1858,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* make these changes permanent */
 	bit_copybits(avail_cores, free_cores);
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
-				   bitmap, cr_node_cnt, free_cores,
-				   node_usage, cr_type);
+				  bitmap, cr_node_cnt, free_cores,
+				  node_usage, cr_type, test_only);
 	if (!cpu_count) {
 		/* job needs resources that are currently in use by
 		 * higher-priority jobs, so fail for now */
@@ -1890,7 +1891,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
 				   bitmap, cr_node_cnt, free_cores,
-				   node_usage, cr_type);
+				   node_usage, cr_type, test_only);
 	if (cpu_count) {
 		/* lo-pri jobs are the only thing left in our way.
 		 * for now we'll ignore them, but FIXME: we need
@@ -1922,8 +1923,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		bit_copybits(bitmap, orig_map);
 		bit_copybits(free_cores, avail_cores);
 		cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes,
-					   req_nodes, bitmap, cr_node_cnt,
-					   free_cores, node_usage, cr_type);
+					  req_nodes, bitmap, cr_node_cnt,
+					  free_cores, node_usage, cr_type, 
+					  test_only);
 		debug3("cons_res: cr_job_test: test 4 pass - first row found");
 		goto alloc_job;
 	}
@@ -1941,8 +1943,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		bit_not(tmpcore);
 		bit_and(free_cores, tmpcore);
 		cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes,
-					   req_nodes, bitmap, cr_node_cnt,
-					   free_cores, node_usage, cr_type);
+					  req_nodes, bitmap, cr_node_cnt,
+					  free_cores, node_usage, cr_type,
+					  test_only);
 		if (cpu_count) {
 			debug3("cons_res: cr_job_test: test 4 pass - row %i",i);
 			break;
@@ -1956,8 +1959,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		bit_copybits(free_cores, avail_cores);
 		debug3("cons_res: cr_job_test: test 4 trying empty row %i",i);
 		cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes,
-					   req_nodes, bitmap, cr_node_cnt,
-					   free_cores, node_usage, cr_type);
+					  req_nodes, bitmap, cr_node_cnt,
+					  free_cores, node_usage, cr_type,
+					  test_only);
 	}
 
 	if (!cpu_count) {

@@ -336,9 +336,11 @@ static void _open_slurmdbd_fd(void)
 
 	slurmdbd_host = slurm_get_accounting_storage_host();
 	slurmdbd_port = slurm_get_accounting_storage_port();
-	if (slurmdbd_host == NULL)
+	if (slurmdbd_host == NULL) {
 		slurmdbd_host = xstrdup(DEFAULT_STORAGE_HOST);
-	
+		slurm_set_accounting_storage_host(slurmdbd_host);
+	}
+
 	if (slurmdbd_port == 0) {
 		slurmdbd_port = SLURMDBD_PORT;
 		slurm_set_accounting_storage_port(slurmdbd_port);

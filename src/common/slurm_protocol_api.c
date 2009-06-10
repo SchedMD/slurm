@@ -929,6 +929,26 @@ char *slurm_get_accounting_storage_user(void)
 	return storage_user;	
 }
 
+/* slurm_set_accounting_storage_user
+ * IN: char *user (name of file or database)
+ * RET 0 or error code
+ */
+int slurm_set_accounting_storage_user(char *user)
+{
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		xfree(slurmdbd_conf->storage_user);
+		slurmdbd_conf->storage_user = xstrdup(user);
+	} else {
+		conf = slurm_conf_lock();
+		xfree(conf->accounting_storage_user);
+		conf->accounting_storage_user = xstrdup(user);
+		slurm_conf_unlock();
+	}
+	return 0;	
+}
+
 /* slurm_get_accounting_storage_backup_host
  * returns the storage backup host from slurmctld_conf object
  * RET char *    - storage backup host,  MUST be xfreed by caller
@@ -967,6 +987,26 @@ char *slurm_get_accounting_storage_host(void)
 	return storage_host;	
 }
 
+/* slurm_set_accounting_storage_host
+ * IN: char *host (name of file or database)
+ * RET 0 or error code
+ */
+int slurm_set_accounting_storage_host(char *host)
+{
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		xfree(slurmdbd_conf->storage_host);
+		slurmdbd_conf->storage_host = xstrdup(host);
+	} else {
+		conf = slurm_conf_lock();
+		xfree(conf->accounting_storage_host);
+		conf->accounting_storage_host = xstrdup(host);
+		slurm_conf_unlock();
+	}
+	return 0;	
+}
+
 /* slurm_get_accounting_storage_loc
  * returns the storage location from slurmctld_conf object
  * RET char *    - storage location,  MUST be xfreed by caller
@@ -984,6 +1024,26 @@ char *slurm_get_accounting_storage_loc(void)
 		slurm_conf_unlock();
 	}
 	return storage_loc;	
+}
+
+/* slurm_set_accounting_storage_loc
+ * IN: char *loc (name of file or database)
+ * RET 0 or error code
+ */
+int slurm_set_accounting_storage_loc(char *loc)
+{
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		xfree(slurmdbd_conf->storage_loc);
+		slurmdbd_conf->storage_loc = xstrdup(loc);
+	} else {
+		conf = slurm_conf_lock();
+		xfree(conf->accounting_storage_loc);
+		conf->accounting_storage_loc = xstrdup(loc);
+		slurm_conf_unlock();
+	}
+	return 0;	
 }
 
 /* slurm_get_accounting_storage_enforce
@@ -1025,26 +1085,6 @@ int slurm_get_is_association_based_accounting(void)
 	}
 	return enforce;	
 
-}
-
-/* slurm_set_accounting_storage_loc
- * IN: char *loc (name of file or database)
- * RET 0 or error code
- */
-int slurm_set_accounting_storage_loc(char *loc)
-{
-	slurm_ctl_conf_t *conf;
-
-	if(slurmdbd_conf) {
-		xfree(slurmdbd_conf->storage_loc);
-		slurmdbd_conf->storage_loc = xstrdup(loc);
-	} else {
-		conf = slurm_conf_lock();
-		xfree(conf->accounting_storage_loc);
-		conf->accounting_storage_loc = xstrdup(loc);
-		slurm_conf_unlock();
-	}
-	return 0;	
 }
 
 /* slurm_get_accounting_storage_pass
