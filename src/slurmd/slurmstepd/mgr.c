@@ -919,11 +919,9 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->batch && !job->user_managed_io && io_initialized) {
-		eio_signal_shutdown(job->eio);
+	if (!job->batch && !job->user_managed_io && io_initialized) 
 		_wait_for_io(job);
-	}
-
+	
 	debug2("Before call to spank_fini()");
 	if (spank_fini (job)  < 0) {
 		error ("spank_fini failed\n");
@@ -1471,6 +1469,9 @@ _wait_for_io(slurmd_job_t *job)
 		pthread_join(job->ioid, NULL);
 	} else
 		info("_wait_for_io: ioid==0");
+
+	/* Close any files for stdout/stderr opened by the stepd */
+	io_close_local_fds(job);
 
 	return;
 }

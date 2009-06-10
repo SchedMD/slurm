@@ -131,7 +131,7 @@ static pgsql_db_info_t *_pgsql_jobcomp_create_db_info()
 	/* it turns out it is better if using defaults to let postgres
 	   handle them on it's own terms */
 	if(!db_info->port) {
-		db_info->port = 5432;
+		db_info->port = DEFAULT_PGSQL_PORT;
 		slurm_set_jobcomp_port(db_info->port);
 	}
 	db_info->host = slurm_get_jobcomp_host();

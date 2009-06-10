@@ -1648,7 +1648,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		threads1 = cores1 * reg_msg->threads;
 		cores2 = config_ptr->sockets * config_ptr->cores;
 		threads2 = cores2 * config_ptr->threads;
-		if ((cores1 < cores2) || (threads1 < threads2)) {
+		if (threads1 < threads2) {
 			error("Node %s has low socket*core*thread count %u",
 				reg_msg->node_name, threads1);
 			error_code = EINVAL;
