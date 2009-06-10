@@ -1067,12 +1067,13 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 	return NODE_CR_ONE_ROW;
 }
 
+
 /* _will_run_test - determine when and where a pending job can start, removes 
  *	jobs from node table at termination time and run _test_job() after 
  *	each one. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			uint32_t min_nodes, uint32_t max_nodes, 
-			uint32_t req_nodes, uint16_t job_node_req)
+			  uint32_t min_nodes, uint32_t max_nodes, 
+			  uint32_t req_nodes, uint16_t job_node_req)
 {
 	struct part_res_record *future_part;
 	struct node_use_record *future_usage;
@@ -1131,7 +1132,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Remove the running jobs one at a time from exp_node_cr and try
 	 * scheduling the pending job after each one */
 	job_iterator = list_iterator_create(cr_job_list);
-	while ((tmp_job_pptr = list_next(job_iterator))) {
+	while ((tmp_job_pptr = (struct job_record **) list_next(job_iterator))) {
 		tmp_job_ptr = *tmp_job_pptr;
 		_rm_job_from_res(future_part, future_usage, tmp_job_ptr, 0);
 		bit_or(bitmap, orig_map);
@@ -1141,7 +1142,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				 future_usage);
 		if (rc == SLURM_SUCCESS) {
 			if (tmp_job_ptr->end_time <= now)
-				 job_ptr->start_time = now + 1;
+				job_ptr->start_time = now + 1;
 			else
 				job_ptr->start_time = tmp_job_ptr->end_time;
 			break;
@@ -1150,7 +1151,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	list_iterator_destroy(job_iterator);
 	list_destroy(cr_job_list);
 	_destroy_part_data(future_part);
-	_restore_node_usage(future_usage);
 	_destroy_node_data(future_usage, NULL);
 	bit_free(orig_map);
 	return rc;
@@ -1500,99 +1500,6 @@ extern int select_p_job_list_test(List req_list)
 	/* not currently supported */
 	return EINVAL;
 }
-
-<<<<<<< .working
-=======
-
-/* _will_run_test - determine when and where a pending job can start, removes 
- *	jobs from node table at termination time and run _test_job() after 
- *	each one. */
-static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			uint32_t min_nodes, uint32_t max_nodes, 
-			uint32_t req_nodes, uint16_t job_node_req)
-{
-	struct part_res_record *future_part;
-	struct node_use_record *future_usage;
-	struct job_record *tmp_job_ptr, **tmp_job_pptr;
-	List cr_job_list;
-	ListIterator job_iterator;
-	bitstr_t *orig_map;
-	int rc = SLURM_ERROR;
-	time_t now = time(NULL);
-
-	orig_map = bit_copy(bitmap);
-
-	/* Try to run with currently available nodes */
-	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes, 
-			 SELECT_MODE_WILL_RUN, cr_type, job_node_req,
-			 select_node_cnt, select_part_record, 
-			 select_node_usage);
-	if (rc == SLURM_SUCCESS) {
-		bit_free(orig_map);
-		job_ptr->start_time = time(NULL);
-		return SLURM_SUCCESS;
-	}
-
-	/* Job is still pending. Simulate termination of jobs one at a time 
-	 * to determine when and where the job can start. */
-
-	future_part = _dup_part_data(select_part_record);
-	if (future_part == NULL) {
-		bit_free(orig_map);
-		return SLURM_ERROR;
-	}
-	future_usage = _dup_node_usage(select_node_usage);
-	if (future_usage == NULL) {
-		_destroy_part_data(future_part);
-		bit_free(orig_map);
-		return SLURM_ERROR;
-	}
-
-	/* Build list of running jobs */
-	cr_job_list = list_create(NULL);
-	job_iterator = list_iterator_create(job_list);
-	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (tmp_job_ptr->job_state != JOB_RUNNING)
-			continue;
-		if (tmp_job_ptr->end_time == 0) {
-			error("Job %u has zero end_time", tmp_job_ptr->job_id);
-			continue;
-		}
-		tmp_job_pptr = xmalloc(sizeof(struct job_record *));
-		*tmp_job_pptr = tmp_job_ptr;
-		list_append(cr_job_list, tmp_job_pptr);
-	}
-	list_iterator_destroy(job_iterator);
-	list_sort(cr_job_list, _cr_job_list_sort);
-
-	/* Remove the running jobs one at a time from exp_node_cr and try
-	 * scheduling the pending job after each one */
-	job_iterator = list_iterator_create(cr_job_list);
-	while ((tmp_job_pptr = (struct job_record **) list_next(job_iterator))) {
-		tmp_job_ptr = *tmp_job_pptr;
-		_rm_job_from_res(future_part, future_usage, tmp_job_ptr, 0);
-		bit_or(bitmap, orig_map);
-		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, 
-				 req_nodes, SELECT_MODE_WILL_RUN, cr_type,
-				 job_node_req, select_node_cnt, future_part,
-				 future_usage);
-		if (rc == SLURM_SUCCESS) {
-			if (tmp_job_ptr->end_time <= now)
-				job_ptr->start_time = now + 1;
-			else
-				job_ptr->start_time = tmp_job_ptr->end_time;
-			break;
-		}
-	}
-	list_iterator_destroy(job_iterator);
-	list_destroy(cr_job_list);
-	_destroy_part_data(future_part);
-	_destroy_node_data(future_usage, NULL);
-	bit_free(orig_map);
-	return rc;
-}
-
->>>>>>> .merge-right.r17805
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
