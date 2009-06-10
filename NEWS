@@ -35,6 +35,7 @@ documents those changes that are of interest to users and admins.
     memory affinity that was applied to the batch script.
  -- Ignore the extra processors on a node above configured size if either 
     sched/gang or select/cons_res is configured.
+ -- Fix bug in tracking memory allocated on a node for select/cons_res plugin.
 
 * Changes in SLURM 2.0.1
 ========================
