@@ -75,6 +75,7 @@ typedef struct env_options {
 	uint8_t ws_row;		/* window size, row count */
 	char *ckpt_dir;		/* --ckpt-dir=                 */
 	uint16_t restart_cnt;	/* count of job restarts	*/
+	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 } env_t;
 
 
