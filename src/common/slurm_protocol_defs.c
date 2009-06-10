@@ -848,6 +848,34 @@ private_data_string(uint16_t private_data, char *str, int str_len)
 		strcat(str, "none");
 }
 
+extern void
+accounting_enforce_string(uint16_t enforce, char *str, int str_len)
+{
+	if (str_len > 0)
+		str[0] = '\0';
+	if (str_len < 26) {
+		error("enforce: output buffer too small");
+		return;
+	}
+
+	if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
+		strcat(str, "associations"); //12 len
+	if (enforce & ACCOUNTING_ENFORCE_LIMITS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "limits"); //7 len
+	}
+	if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "wckeys"); //7 len
+	}
+	// total len 26
+
+	if (str[0] == '\0')
+		strcat(str, "none");
+}
+
 char *job_state_string(enum job_states inx)
 {
 	if (inx & JOB_COMPLETING)

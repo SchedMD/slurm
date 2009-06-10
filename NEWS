@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
     than --ntasks-per-node * --cpus-per-task.
  -- Correct AllocProcs reported by "scontrol show node" when ThreadsPerCore
     is greater than 1 and select/cons_res is used.
+ -- Fix scontrol show config for accounting information when values are 
+    not set in the slurm.conf.
 --  Added a set of SBATCH_CPU_BIND* and SBATCH_MEM_BIND* env variables to keep
     jobsteps launched from within a batch script from inheriting the CPU and
     memory affinity that was applied to the batch script.
