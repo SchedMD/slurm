@@ -142,16 +142,16 @@ void slurm_print_ctl_conf ( FILE* out,
 	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, 
 			     time_str, sizeof(time_str));
 	fprintf(out, "Configuration data as of %s\n", time_str);
-	fprintf(out, "AccountingStorageEnforce = %u\n",
-		slurm_ctl_conf_ptr->accounting_storage_enforce);
 	fprintf(out, "AccountingStorageBackupHost = %s\n", 
-		slurm_ctl_conf_ptr->accounting_storage_host);
+		slurm_ctl_conf_ptr->accounting_storage_backup_host);
+	accounting_enforce_string(
+		slurm_ctl_conf_ptr->accounting_storage_enforce,
+		tmp_str, sizeof(tmp_str));
+	fprintf(out, "AccountingStorageEnforce = %s\n", tmp_str);
 	fprintf(out, "AccountingStorageHost   = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_host);
 	fprintf(out, "AccountingStorageLoc    = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_loc);
-	fprintf(out, "AccountingStoragePass   = %s\n", 
-		slurm_ctl_conf_ptr->accounting_storage_pass);
 	fprintf(out, "AccountingStoragePort   = %u\n", 
 		slurm_ctl_conf_ptr->accounting_storage_port);
 	fprintf(out, "AccountingStorageType   = %s\n", 
@@ -239,8 +239,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_comp_host);
 	fprintf(out, "JobCompLoc              = %s\n",
 		 slurm_ctl_conf_ptr->job_comp_loc);
-	fprintf(out, "JobCompPass             = %s\n",
-		 slurm_ctl_conf_ptr->job_comp_pass);
 	fprintf(out, "JobCompPort             = %u\n",
 		slurm_ctl_conf_ptr->job_comp_port);
 	fprintf(out, "JobCompType             = %s\n", 

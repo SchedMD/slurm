@@ -1902,9 +1902,14 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    hashtbl)) {
 		if(default_storage_port)
 			conf->job_comp_port = default_storage_port;
-		else
+		else if(!strcmp(conf->job_comp_type, "job_comp/mysql")) 
+			conf->job_comp_port = 3306;
+		else if(!strcmp(conf->job_comp_type, "job_comp/pgsql")) 
+			conf->job_comp_port = 5432;
+		else 
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
 	}
+
 	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))
 		conf->job_file_append = 0;
 
@@ -2029,7 +2034,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_loc =
 				xstrdup(DEFAULT_STORAGE_LOC);
 	}
-
 	if (!s_p_get_string(&conf->accounting_storage_user,
 			    "AccountingStorageUser", hashtbl)) {
 		if(default_storage_user)
@@ -2050,6 +2054,28 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if(default_storage_port)
 			conf->accounting_storage_port = default_storage_port;
 		else
+			conf->accounting_storage_port = NO_VAL;
+	}
+	/* set correct defaults so scontrol show config works
+	   correctly */
+	if(!strcmp(conf->accounting_storage_type,
+		   "accounting_storage/slurmdbd")) {
+		xfree(conf->accounting_storage_loc);
+		conf->accounting_storage_loc = xstrdup("N/A");
+		xfree(conf->accounting_storage_user);
+		conf->accounting_storage_user = xstrdup("N/A");
+		if(conf->accounting_storage_port == NO_VAL)
+			conf->accounting_storage_port = SLURMDBD_PORT;
+	} else if(!strcmp(conf->accounting_storage_type, 
+			  "accounting_storage/mysql")) {
+		if(conf->accounting_storage_port == NO_VAL)
+			conf->accounting_storage_port = 3306;
+	} else if(!strcmp(conf->accounting_storage_type,
+			  "accounting_storage/pgsql")) {
+		if(conf->accounting_storage_port == NO_VAL)
+			conf->accounting_storage_port = 5432;
+	} else {
+		if(conf->accounting_storage_port == NO_VAL)
 			conf->accounting_storage_port = DEFAULT_STORAGE_PORT;
 	}
 

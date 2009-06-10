@@ -339,6 +339,7 @@ int srun(int ac, char **av)
 	env->slurmd_debug = opt.slurmd_debug;
 	env->labelio = opt.labelio;
 	env->comm_port = slurmctld_comm_addr.port;
+	env->batch_flag = 0;
 	if (job) {
 		uint16_t *tasks = NULL;
 		slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, 
