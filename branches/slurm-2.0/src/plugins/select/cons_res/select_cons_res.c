@@ -388,20 +388,6 @@ static struct node_use_record *_dup_node_usage(struct node_use_record *orig_ptr)
 	return new_use_ptr;
 }
 
-/* Restore a node_state information */
-static void _restore_node_usage(struct node_use_record *orig_ptr)
-{
-	uint32_t i;
-
-	if (orig_ptr == NULL)
-		return;
-
-	for (i = 0; i < select_node_cnt; i++) {
-		select_node_usage[i].node_state   = orig_ptr[i].node_state;
-		select_node_usage[i].alloc_memory = orig_ptr[i].alloc_memory;
-	}
-}
-
 /* delete the given row data */
 static void _destroy_row_data(struct part_row_data *row, uint16_t num_rows) {
 	uint16_t i;
@@ -997,14 +983,14 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			for (n = 0; n < select_node_cnt; n++) {
 				if (bit_test(job->node_bitmap, n) == 0)
 					continue;
-				if (select_node_usage[n].node_state >=
+				if (node_usage[n].node_state >=
 				    job->node_req) {
-					select_node_usage[n].node_state -=
+					node_usage[n].node_state -=
 								job->node_req;
 				} else {
 					error("cons_res:_rm_job_from_res: "
 						"node_state mis-count");
-					select_node_usage[n].node_state =
+					node_usage[n].node_state =
 							NODE_CR_AVAILABLE;
 				}
 			}
@@ -1367,7 +1353,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				 future_usage);
 		if (rc == SLURM_SUCCESS) {
 			if (tmp_job_ptr->end_time <= now)
-				 job_ptr->start_time = now + 1;
+				job_ptr->start_time = now + 1;
 			else
 				job_ptr->start_time = tmp_job_ptr->end_time;
 			break;
@@ -1376,7 +1362,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	list_iterator_destroy(job_iterator);
 	list_destroy(cr_job_list);
 	_destroy_part_data(future_part);
-	_restore_node_usage(future_usage);
 	_destroy_node_data(future_usage, NULL);
 	bit_free(orig_map);
 	return rc;
