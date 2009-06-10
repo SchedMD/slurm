@@ -1705,7 +1705,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		int tot1, tot2;
 		tot1 = reg_msg->sockets * reg_msg->cores * reg_msg->threads;
 		tot2 = config_ptr->sockets * config_ptr->cores *
-			config_ptr->threads;
+		       config_ptr->threads;
 		if (tot1 < tot2) {
 			error("Node %s has low socket*core*thread count %u",
 				reg_msg->node_name, tot1);
@@ -1718,6 +1718,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			      "extra resources ignored", 
 			      reg_msg->node_name, tot1);
 			/* Preserve configured values */
+			reg_msg->cpus    = config_ptr->cpus;
 			reg_msg->sockets = config_ptr->sockets;
 			reg_msg->cores   = config_ptr->cores;
 			reg_msg->threads = config_ptr->threads;
@@ -1728,15 +1729,24 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	node_ptr->threads = reg_msg->threads;
 #endif
 
-	if ((slurmctld_conf.fast_schedule != 2)
-	&&  (reg_msg->cpus < config_ptr->cpus)) {
-		error ("Node %s has low cpu count %u", 
-			reg_msg->node_name, reg_msg->cpus);
-		error_code  = EINVAL;
-		reason_down = "Low CPUs";
+	if (slurmctld_conf.fast_schedule != 2) {
+		if (reg_msg->cpus < config_ptr->cpus) {
+			error ("Node %s has low cpu count %u", 
+				reg_msg->node_name, reg_msg->cpus);
+			error_code  = EINVAL;
+			reason_down = "Low CPUs";
+		} else if ((slurmctld_conf.fast_schedule == 0) &&
+			   ((cr_flag == 1) || (gang_flag == 1)) &&
+			   (reg_msg->cpus > config_ptr->cpus)) {
+			error("Node %s has high CPU count %u, "
+			      "extra resources ignored",
+			      reg_msg->node_name, reg_msg->cpus);
+			reg_msg->cpus    = config_ptr->cpus;
+		}
 	}
-	if ((node_ptr->cpus != reg_msg->cpus)
-	&&  (slurmctld_conf.fast_schedule == 0)) {
+
+	if ((node_ptr->cpus != reg_msg->cpus) &&
+	    (slurmctld_conf.fast_schedule == 0)) {
 		for (i=0; i<node_ptr->part_cnt; i++) {
 			node_ptr->part_pptr[i]->total_cpus += 
 				(reg_msg->cpus - node_ptr->cpus);
@@ -1744,8 +1754,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	}
 	node_ptr->cpus = reg_msg->cpus;
 
-	if ((slurmctld_conf.fast_schedule != 2) 
-	&&  (reg_msg->real_memory < config_ptr->real_memory)) {
+	if ((slurmctld_conf.fast_schedule != 2) &&
+	    (reg_msg->real_memory < config_ptr->real_memory)) {
 		error ("Node %s has low real_memory size %u", 
 		       reg_msg->node_name, reg_msg->real_memory);
 		error_code  = EINVAL;
@@ -1753,8 +1763,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	}
 	node_ptr->real_memory = reg_msg->real_memory;
 
-	if ((slurmctld_conf.fast_schedule != 2)
-	&&  (reg_msg->tmp_disk < config_ptr->tmp_disk)) {
+	if ((slurmctld_conf.fast_schedule != 2) &&
+	    (reg_msg->tmp_disk < config_ptr->tmp_disk)) {
 		error ("Node %s has low tmp_disk size %u",
 		       reg_msg->node_name, reg_msg->tmp_disk);
 		error_code = EINVAL;
