@@ -93,10 +93,7 @@ static char *mysql_db_name = NULL;
 static time_t global_last_rollup = 0;
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 
-#define DEFAULT_ACCT_DB "slurm_acct_db"
 #define DELETE_SEC_BACK 86400
-
-
 
 char *acct_coord_table = "acct_coord_table";
 char *acct_table = "acct_table";
@@ -3400,20 +3397,20 @@ extern int init ( void )
 
 	location = slurm_get_accounting_storage_loc();
 	if(!location)
-		mysql_db_name = xstrdup(DEFAULT_ACCT_DB);
+		mysql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 	else {
 		int i = 0;
 		while(location[i]) {
 			if(location[i] == '.' || location[i] == '/') {
 				debug("%s doesn't look like a database "
 				      "name using %s",
-				      location, DEFAULT_ACCT_DB);
+				      location, DEFAULT_ACCOUNTING_DB);
 				break;
 			}
 			i++;
 		}
 		if(location[i]) {
-			mysql_db_name = xstrdup(DEFAULT_ACCT_DB);
+			mysql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 			xfree(location);
 		} else
 			mysql_db_name = location;

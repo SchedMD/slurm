@@ -77,7 +77,6 @@ const uint32_t plugin_version = 100;
 #ifndef HAVE_PGSQL
 typedef void PGconn;
 #else
-#define DEFAULT_ACCT_DB "slurm_acct_db"
 
 static pgsql_db_info_t *pgsql_db_info = NULL;
 static char *pgsql_db_name = NULL;
@@ -732,20 +731,20 @@ extern int init ( void )
 
 	location = slurm_get_accounting_storage_loc();
 	if(!location)
-		pgsql_db_name = xstrdup(DEFAULT_ACCT_DB);
+		pgsql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 	else {
 		int i = 0;
 		while(location[i]) {
 			if(location[i] == '.' || location[i] == '/') {
 				debug("%s doesn't look like a database "
 				      "name using %s",
-				      location, DEFAULT_ACCT_DB);
+				      location, DEFAULT_ACCOUNTING_DB);
 				break;
 			}
 			i++;
 		}
 		if(location[i]) {
-			pgsql_db_name = xstrdup(DEFAULT_ACCT_DB);
+			pgsql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 			xfree(location);
 		} else
 			pgsql_db_name = location;
