@@ -435,9 +435,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 #if 0
 {
 			char *tmp_str = bitmap2node_name(feature_bitmap);
-			info("job %u needs %u nodes with feature %s, using %s", 
-				job_ptr->job_id, feat_ptr->count, 
-				feat_ptr->name, tmp_str);
+			info("job %u needs %u nodes with feature %s, "
+			     "using %s, error_code=%d", 
+			     job_ptr->job_id, feat_ptr->count, 
+			     feat_ptr->name, tmp_str, error_code);
 			xfree(tmp_str);
 }
 #endif
