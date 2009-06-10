@@ -79,8 +79,6 @@ const char plugin_name[] = "Job completion POSTGRESQL plugin";
 const char plugin_type[] = "jobcomp/pgsql";
 const uint32_t plugin_version = 100;
 
-#define DEFAULT_JOBCOMP_DB "slurm_jobcomp_db"
-
 PGconn *jobcomp_pgsql_db = NULL;
 
 char *jobcomp_table = "jobcomp_table";
@@ -273,19 +271,19 @@ extern int slurm_jobcomp_set_location(char *location)
 		return SLURM_SUCCESS;
 	
 	if(!location)
-		db_name = DEFAULT_JOBCOMP_DB;
+		db_name = DEFAULT_JOB_COMP_DB;
 	else {
 		while(location[i]) {
 			if(location[i] == '.' || location[i] == '/') {
 				debug("%s doesn't look like a database "
 				      "name using %s",
-				      location, DEFAULT_JOBCOMP_DB);
+				      location, DEFAULT_JOB_COMP_DB);
 				break;
 			}
 			i++;
 		}
 		if(location[i]) 
-			db_name = DEFAULT_JOBCOMP_DB;
+			db_name = DEFAULT_JOB_COMP_DB;
 		else
 			db_name = location;
 	}

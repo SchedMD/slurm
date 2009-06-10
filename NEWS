@@ -67,9 +67,11 @@ documents those changes that are of interest to users and admins.
     is greater than 1 and select/cons_res is used.
  -- Fix scontrol show config for accounting information when values are 
     not set in the slurm.conf.
---  Added a set of SBATCH_CPU_BIND* and SBATCH_MEM_BIND* env variables to keep
+ -- Added a set of SBATCH_CPU_BIND* and SBATCH_MEM_BIND* env variables to keep
     jobsteps launched from within a batch script from inheriting the CPU and
     memory affinity that was applied to the batch script.
+ -- Ignore the extra processors on a node above configured size if either 
+    sched/gang or select/cons_res is configured.
 
 * Changes in SLURM 2.0.1
 ========================
