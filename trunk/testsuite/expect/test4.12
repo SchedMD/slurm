@@ -227,7 +227,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 	set timeout 60
 	set idle_cpus [expr $total_procs - $proc_cnt]
 	
-	set mypid [spawn $salloc -w $node -N1 -n $proc_cnt]
+	set mypid [spawn $salloc -w $node -N1 -n $proc_cnt bash]
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
