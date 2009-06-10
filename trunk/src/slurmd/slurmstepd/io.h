@@ -130,6 +130,7 @@ void io_close_task_fds(slurmd_job_t *job);
 
 void io_close_all(slurmd_job_t *job);
 
+void io_close_local_fds(slurmd_job_t *job);
 
 
 /* 

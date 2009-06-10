@@ -314,23 +314,33 @@ extern int read_slurmdbd_conf(void)
 	if (slurmdbd_conf->storage_type == NULL)
 		fatal("StorageType must be specified");
 
+	if (!slurmdbd_conf->storage_host)
+		slurmdbd_conf->storage_host = xstrdup(DEFAULT_STORAGE_HOST);
+
+	if (!slurmdbd_conf->storage_user) 		
+		slurmdbd_conf->storage_user = xstrdup(getlogin());
+	
 	if(!strcmp(slurmdbd_conf->storage_type, 
 			  "accounting_storage/mysql")) {
 		if(!slurmdbd_conf->storage_port)
-			slurmdbd_conf->storage_port = 3306;
+			slurmdbd_conf->storage_port = DEFAULT_MYSQL_PORT;
 		if(!slurmdbd_conf->storage_loc)
 			slurmdbd_conf->storage_loc =
 				xstrdup(DEFAULT_ACCOUNTING_DB);
 	} else if(!strcmp(slurmdbd_conf->storage_type,
 			  "accounting_storage/pgsql")) {
 		if(!slurmdbd_conf->storage_port)
-			slurmdbd_conf->storage_port = 5432;
+			slurmdbd_conf->storage_port = DEFAULT_PGSQL_PORT;
 		if(!slurmdbd_conf->storage_loc)
 			slurmdbd_conf->storage_loc =
 				xstrdup(DEFAULT_ACCOUNTING_DB);
-	} else 
+	} else {
 		if(!slurmdbd_conf->storage_port)
 			slurmdbd_conf->storage_port = DEFAULT_STORAGE_PORT;
+		if(!slurmdbd_conf->storage_loc)
+			slurmdbd_conf->storage_loc =
+				xstrdup(DEFAULT_STORAGE_LOC);
+	}
 
 	if (slurmdbd_conf->archive_dir) {
 		if(stat(slurmdbd_conf->archive_dir, &buf) < 0) 

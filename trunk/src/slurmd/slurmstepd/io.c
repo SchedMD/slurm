@@ -126,6 +126,9 @@ struct client_io_info {
 	int  ltaskid_stdout, ltaskid_stderr;
 	bool labelio;
 	int  label_width;
+
+	/* true if writing to a file, false if writing to a socket */
+	bool is_local_file;
 };
 
 
@@ -475,19 +478,8 @@ static bool
 _local_file_writable(eio_obj_t *obj)
 {
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
-	int rc;
 
 	xassert(client->magic == CLIENT_IO_MAGIC);
-
-	if (obj->shutdown) {
-		if (obj->fd >= 0) {
-			do {
-				rc = close(obj->fd);
-			} while (rc == -1 && errno == EINTR);
-			obj->fd = -1;
-		}
-		return false;
-	}
 
 	if (client->out_eof == true)
 		return false;
@@ -1297,6 +1289,33 @@ io_close_all(slurmd_job_t *job)
 	eio_signal_shutdown(job->eio);
 }
 
+void 
+io_close_local_fds(slurmd_job_t *job)
+{
+	ListIterator clients;
+	eio_obj_t *eio;
+	int rc;
+	struct client_io_info *client;
+
+	if (job == NULL || job->clients == NULL)
+		return;
+
+	clients = list_iterator_create(job->clients);
+	while((eio = list_next(clients))) {
+		client = (struct client_io_info *)eio->arg;
+		if (client->is_local_file) {
+			if (eio->fd >= 0) {
+				do {
+					rc = close(eio->fd);
+				} while (rc == -1 && errno == EINTR);
+				eio->fd = -1;
+			}
+		}
+	}
+}
+
+
+
 static void *
 _io_thr(void *arg)
 {
@@ -1337,11 +1356,6 @@ io_create_local_client(const char *filename, int file_flags,
 
 	fd = open(filename, file_flags, 0666);
 	if (fd == -1) {
-		/* error("Could not open stdout file: %m");
-		task->ofname = fname_create(job, "slurm-%J.out", 0);
-		fd = open(task->ofname, file_flags, 0666);
-		if (fd == -1)
-			return SLURM_ERROR; */
 		return ESLURMD_IO_ERROR;
 	}
 	fd_set_close_on_exec(fd);
@@ -1357,11 +1371,13 @@ io_create_local_client(const char *filename, int file_flags,
 	client->ltaskid_stdout = stdout_tasks;
 	client->ltaskid_stderr = stderr_tasks;
 	client->labelio = labelio;
+	client->is_local_file = true;
 
 	client->label_width = 1;
 	tmp = job->ntasks-1;
 	while ((tmp /= 10) > 0)
 		client->label_width++;
+
 
 	obj = eio_obj_create(fd, &local_file_ops, (void *)client);
 	list_append(job->clients, (void *)obj);
@@ -1430,6 +1446,7 @@ io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job,
 	client->ltaskid_stderr = stderr_tasks;
 	client->labelio = false;
 	client->label_width = 0;
+	client->is_local_file = false;
 
 	obj = eio_obj_create(sock, &client_ops, (void *)client);
 	list_append(job->clients, (void *)obj);
@@ -1489,6 +1506,7 @@ io_client_connect(srun_info_t *srun, slurmd_job_t *job)
 	client->ltaskid_stderr = -1;     /* accept from all tasks */
 	client->labelio = false;
 	client->label_width = 0;
+	client->is_local_file = false;
 
 	/* client object adds itself to job->clients in _client_writable */
 
