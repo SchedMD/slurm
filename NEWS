@@ -50,13 +50,13 @@ documents those changes that are of interest to users and admins.
  -- Fix node suspend/resume rate calculations. Patch from Hongjia Cao, NUDT.
  -- Change calculations using ResumeRate and SuspendRate to provide higher
     resolution.
- -- Log the IP address for incomming messages having an invalid protocol 
+ -- Log the IP address for incoming messages having an invalid protocol 
     version number.
  -- Fix for sacct to show jobs that start the same second as the sacct
     command is issued.
  -- BLUEGENE - Fix for -n option to work on correct cpu counts for each 
     midplane instead of treating -n as a c-node count.
- -- salloc now sets SLURN_NTASKS_PER_NODE if --ntasks-per-node option is set.
+ -- salloc now sets SLURM_NTASKS_PER_NODE if --ntasks-per-node option is set.
  -- Fix select/linear to properly set a job's count of allocated processors
     (all processors on the allocated nodes).
  -- Fix select/cons_res to allocate proper CPU count when --ntasks-per-node
@@ -72,6 +72,8 @@ documents those changes that are of interest to users and admins.
     memory affinity that was applied to the batch script.
  -- Ignore the extra processors on a node above configured size if either 
     sched/gang or select/cons_res is configured.
+ -- Fixed a race condition when writing labelled output with a file per task
+    or per node, which potentially closed a file before all data was written.
 
 * Changes in SLURM 2.0.1
 ========================
