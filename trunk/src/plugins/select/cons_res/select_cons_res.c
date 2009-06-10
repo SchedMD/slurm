@@ -1132,7 +1132,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Remove the running jobs one at a time from exp_node_cr and try
 	 * scheduling the pending job after each one */
 	job_iterator = list_iterator_create(cr_job_list);
-	while ((tmp_job_pptr = (struct job_record **) list_next(job_iterator))) {
+	while ((tmp_job_pptr = list_next(job_iterator))) {
 		tmp_job_ptr = *tmp_job_pptr;
 		_rm_job_from_res(future_part, future_usage, tmp_job_ptr, 0);
 		bit_or(bitmap, orig_map);
