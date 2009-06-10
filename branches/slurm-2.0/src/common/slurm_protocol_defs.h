@@ -957,6 +957,8 @@ extern char *job_state_string_compact(enum job_states inx);
 extern char *node_state_string(enum node_states inx);
 extern char *node_state_string_compact(enum node_states inx);
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);
+extern void  accounting_enforce_string(uint16_t enforce,
+				       char *str, int str_len);
 
 /* user needs to xfree after */
 extern char *reservation_flags_string(uint16_t flags);
