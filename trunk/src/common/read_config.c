@@ -1872,6 +1872,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) {
 		if(default_storage_loc)
 			conf->job_comp_loc = xstrdup(default_storage_loc);
+		else if(!strcmp(conf->job_comp_type, "job_comp/mysql")
+			|| !strcmp(conf->job_comp_type, "job_comp/pgsql")) 
+			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_DB);
 		else
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
 	}
@@ -2030,9 +2033,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if(default_storage_loc)
 			conf->accounting_storage_loc =
 				xstrdup(default_storage_loc);
-		else
-			conf->accounting_storage_loc =
-				xstrdup(DEFAULT_STORAGE_LOC);
 	}
 	if (!s_p_get_string(&conf->accounting_storage_user,
 			    "AccountingStorageUser", hashtbl)) {
@@ -2070,13 +2070,22 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			  "accounting_storage/mysql")) {
 		if(conf->accounting_storage_port == NO_VAL)
 			conf->accounting_storage_port = 3306;
+		if(!conf->accounting_storage_loc)
+			conf->accounting_storage_loc =
+				xstrdup(DEFAULT_ACCOUNTING_DB);
 	} else if(!strcmp(conf->accounting_storage_type,
 			  "accounting_storage/pgsql")) {
 		if(conf->accounting_storage_port == NO_VAL)
 			conf->accounting_storage_port = 5432;
+		if(!conf->accounting_storage_loc)
+			conf->accounting_storage_loc =
+				xstrdup(DEFAULT_ACCOUNTING_DB);
 	} else {
 		if(conf->accounting_storage_port == NO_VAL)
 			conf->accounting_storage_port = DEFAULT_STORAGE_PORT;
+		if(!conf->accounting_storage_loc)
+			conf->accounting_storage_loc =
+				xstrdup(DEFAULT_STORAGE_LOC);
 	}
 
 	s_p_get_uint16(&conf->over_time_limit, "OverTimeLimit", hashtbl);
