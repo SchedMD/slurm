@@ -152,6 +152,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->accounting_storage_host);
 	fprintf(out, "AccountingStorageLoc    = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_loc);
+	fprintf(out, "AccountingStoragePass   = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_pass);
 	fprintf(out, "AccountingStoragePort   = %u\n", 
 		slurm_ctl_conf_ptr->accounting_storage_port);
 	fprintf(out, "AccountingStorageType   = %s\n", 
@@ -239,6 +241,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_comp_host);
 	fprintf(out, "JobCompLoc              = %s\n",
 		 slurm_ctl_conf_ptr->job_comp_loc);
+	fprintf(out, "JobCompPass             = %s\n",
+		 slurm_ctl_conf_ptr->job_comp_pass);
 	fprintf(out, "JobCompPort             = %u\n",
 		slurm_ctl_conf_ptr->job_comp_port);
 	fprintf(out, "JobCompType             = %s\n", 

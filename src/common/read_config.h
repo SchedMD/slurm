@@ -55,6 +55,7 @@ extern char *default_plugstack;
 #define ACCOUNTING_ENFORCE_LIMITS 0x0002
 #define ACCOUNTING_ENFORCE_WCKEYS 0x0004
 
+#define DEFAULT_ACCOUNTING_DB      "slurm_acct_db"
 #define DEFAULT_ACCOUNTING_ENFORCE  0
 #define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"
 #define DEFAULT_AUTH_TYPE          "auth/munge"
@@ -77,6 +78,7 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_CKPT_DIR        "/var/slurm/checkpoint"
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_JOB_COMP_LOC        "/var/log/slurm_jobcomp.log"
+#define DEFAULT_JOB_COMP_DB         "slurm_jobcomp_db"
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
