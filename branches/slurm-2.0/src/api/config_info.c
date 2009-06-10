@@ -145,7 +145,7 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "AccountingStorageEnforce = %u\n",
 		slurm_ctl_conf_ptr->accounting_storage_enforce);
 	fprintf(out, "AccountingStorageBackupHost = %s\n", 
-		slurm_ctl_conf_ptr->accounting_storage_host);
+		slurm_ctl_conf_ptr->accounting_storage_backup_host);
 	fprintf(out, "AccountingStorageHost   = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_host);
 	fprintf(out, "AccountingStorageLoc    = %s\n", 
