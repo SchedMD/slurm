@@ -835,10 +835,12 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			select_node_usage[i].alloc_memory +=
 						job->memory_allocated[n];
 			if (select_node_usage[i].alloc_memory >
-				select_node_record[i].real_memory) {
-				error("error: node %s mem is overallocated(%u)",
-					select_node_record[i].node_ptr->name,
-					select_node_usage[i].alloc_memory);
+			    select_node_record[i].real_memory) {
+				error("error: node %s mem is overallocated "
+				      "(%u) for job %u",
+				      select_node_record[i].node_ptr->name,
+				      select_node_usage[i].alloc_memory,
+				      job_ptr->job_id);
 				
 			}
 			n++;
@@ -926,11 +928,13 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			if (!bit_test(job->node_bitmap, i))
 				continue;
 			if (node_usage[i].alloc_memory <
-						job->memory_allocated[n]) {
-				error("error: %s mem is underalloc'd(%u-%u)",
-					select_node_record[i].node_ptr->name,
-					node_usage[i].alloc_memory,
-					job->memory_allocated[n]);
+			    job->memory_allocated[n]) {
+				error("error: node %s mem is underallocated "
+				      "(%u-%u) for job %u",
+				      select_node_record[i].node_ptr->name,
+				      node_usage[i].alloc_memory,
+				      job->memory_allocated[n], 
+				      job_ptr->job_id);
 				node_usage[i].alloc_memory = 0;
 			} else {
 				node_usage[i].alloc_memory -=
