@@ -113,6 +113,7 @@ if {[string compare $host ""] == 0} {
 if {$cpu_cnt != $task_cnt} {
 	send_user "FAILURE: should have run $cpu_cnt tasks (one per CPU) "
 	send_user "instead of $task_cnt tasks\n"
+	send_user "NOTE: This could be due to memory limit per allocated CPU\n\n"
 	set exit_code 1
 }
 if {$cpu_cnt < 2} {
@@ -151,6 +152,7 @@ expect {
 #
 if {$task_cnt != [expr $cpu_cnt / 2]} {
 	send_user "\nFAILURE: Improper task count for given cpus-per-task\n"
+	send_user "NOTE: This could be due to memory limit per allocated CPU\n\n"
 	set exit_code   1	
 }
 
