@@ -107,23 +107,23 @@ bool nodehash_initialized = false;
 static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
 static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
 
-static int parse_nodename(void **dest, slurm_parser_enum_t type,
-			  const char *key, const char *value,
-			  const char *line, char **leftover);
-static void destroy_nodename(void *ptr);
-static int parse_partitionname(void **dest, slurm_parser_enum_t type,
-			       const char *key, const char *value,
-			       const char *line, char **leftover);
-static void destroy_partitionname(void *ptr);
-static int parse_downnodes(void **dest, slurm_parser_enum_t type,
+static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover);
-static void destroy_downnodes(void *ptr);
-static int defunct_option(void **dest, slurm_parser_enum_t type,
-			  const char *key, const char *value,
-			  const char *line, char **leftover);
-static void validate_and_set_defaults(slurm_ctl_conf_t *conf,
-				      s_p_hashtbl_t *hashtbl);
+static void _destroy_nodename(void *ptr);
+static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
+				const char *key, const char *value,
+				const char *line, char **leftover);
+static void _destroy_partitionname(void *ptr);
+static int _parse_downnodes(void **dest, slurm_parser_enum_t type,
+			    const char *key, const char *value,
+			    const char *line, char **leftover);
+static void _destroy_downnodes(void *ptr);
+static int _defunct_option(void **dest, slurm_parser_enum_t type,
+			   const char *key, const char *value,
+			   const char *line, char **leftover);
+static void _validate_and_set_defaults(slurm_ctl_conf_t *conf,
+				       s_p_hashtbl_t *hashtbl);
 
 s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageEnforce", S_P_STRING},
@@ -162,13 +162,13 @@ s_p_options_t slurm_conf_options[] = {
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
 	{"GetEnvTimeout", S_P_UINT16},
-	{"HashBase", S_P_LONG, defunct_option},
-	{"HeartbeatInterval", S_P_LONG, defunct_option},
+	{"HashBase", S_P_LONG, _defunct_option},
+	{"HeartbeatInterval", S_P_LONG, _defunct_option},
 	{"HealthCheckInterval", S_P_UINT16},
 	{"HealthCheckProgram", S_P_STRING},
 	{"InactiveLimit", S_P_UINT16},
 	{"JobAcctGatherType", S_P_STRING},
-	{"JobAcctFrequency", S_P_UINT16, defunct_option},
+	{"JobAcctFrequency", S_P_UINT16, _defunct_option},
 	{"JobAcctGatherFrequency", S_P_UINT16},
 	{"JobAcctLogFile", S_P_STRING},
 	{"JobAcctType", S_P_STRING},
@@ -183,7 +183,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCredentialPublicCertificate", S_P_STRING},
 	{"JobFileAppend", S_P_UINT16},
 	{"JobRequeue", S_P_UINT16},
-	{"KillTree", S_P_UINT16, defunct_option},
+	{"KillTree", S_P_UINT16, _defunct_option},
 	{"KillOnBadExit", S_P_UINT16},
 	{"KillWait", S_P_UINT16},
 	{"Licenses", S_P_STRING},
@@ -194,7 +194,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxMemPerTask", S_P_UINT32},	/* defunct */
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
-	{"MpichGmDirectSupport", S_P_LONG, defunct_option},
+	{"MpichGmDirectSupport", S_P_LONG, _defunct_option},
 	{"MpiDefault", S_P_STRING},
 	{"MpiParams", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
@@ -223,7 +223,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ResvOverRun", S_P_UINT16},
 	{"ReturnToService", S_P_UINT16},
 	{"SallocDefaultCommand", S_P_STRING},
-	{"SchedulerAuth", S_P_STRING, defunct_option},
+	{"SchedulerAuth", S_P_STRING, _defunct_option},
 	{"SchedulerParameters", S_P_STRING},
 	{"SchedulerPort", S_P_UINT16},
 	{"SchedulerRootFilter", S_P_UINT16},
@@ -268,16 +268,16 @@ s_p_options_t slurm_conf_options[] = {
 	{"UsePAM", S_P_BOOLEAN},
 	{"WaitTime", S_P_UINT16},
 
-	{"NodeName", S_P_ARRAY, parse_nodename, destroy_nodename},
-	{"PartitionName", S_P_ARRAY, parse_partitionname,
-	 destroy_partitionname},
-	{"DownNodes", S_P_ARRAY, parse_downnodes, destroy_downnodes},
+	{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
+	{"PartitionName", S_P_ARRAY, _parse_partitionname,
+	 _destroy_partitionname},
+	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
 
 	{NULL}
 };
 
 
-static int defunct_option(void **dest, slurm_parser_enum_t type,
+static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line, char **leftover)
 {
@@ -318,9 +318,9 @@ static void _set_node_prefix(const char *nodenames)
 #endif /* HAVE_BG */
 
 
-static int parse_nodename(void **dest, slurm_parser_enum_t type,
-			  const char *key, const char *value,
-			  const char *line, char **leftover)
+static int _parse_nodename(void **dest, slurm_parser_enum_t type,
+			   const char *key, const char *value,
+			   const char *line, char **leftover)
 {
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_node_t *n;
@@ -492,7 +492,7 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 	/* should not get here */
 }
 
-static void destroy_nodename(void *ptr)
+static void _destroy_nodename(void *ptr)
 {
 	slurm_conf_node_t *n = (slurm_conf_node_t *)ptr;
 	xfree(n->nodenames);
@@ -519,7 +519,7 @@ int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[])
 }
 
 
-static int parse_partitionname(void **dest, slurm_parser_enum_t type,
+static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			       const char *key, const char *value,
 			       const char *line, char **leftover)
 {
@@ -597,7 +597,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			int max_time = time_str2mins(tmp);
 			if ((max_time < 0) && (max_time != INFINITE)) {
 				error("Bad value \"%s\" for MaxTime", tmp);
-				destroy_partitionname(p);
+				_destroy_partitionname(p);
 				s_p_hashtbl_destroy(tbl);
 				xfree(tmp);
 				return -1;
@@ -613,7 +613,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			int default_time = time_str2mins(tmp);
 			if ((default_time < 0) && (default_time != INFINITE)) {
 				error("Bad value \"%s\" for DefaultTime", tmp);
-				destroy_partitionname(p);
+				_destroy_partitionname(p);
 				s_p_hashtbl_destroy(tbl);
 				xfree(tmp);
 				return -1;
@@ -680,7 +680,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 #endif
 			else {
 				error("Bad value \"%s\" for Shared", tmp);
-				destroy_partitionname(p);
+				_destroy_partitionname(p);
 				s_p_hashtbl_destroy(tbl);
 				xfree(tmp);
 				return -1;
@@ -704,7 +704,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 	/* should not get here */
 }
 
-static void destroy_partitionname(void *ptr)
+static void _destroy_partitionname(void *ptr)
 {
 	slurm_conf_partition_t *p = (slurm_conf_partition_t *)ptr;
 
@@ -730,7 +730,7 @@ int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[])
 	}
 }
 
-static int parse_downnodes(void **dest, slurm_parser_enum_t type,
+static int _parse_downnodes(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover)
 {
@@ -764,7 +764,7 @@ static int parse_downnodes(void **dest, slurm_parser_enum_t type,
 	return 1;
 }
 
-static void destroy_downnodes(void *ptr)
+static void _destroy_downnodes(void *ptr)
 {
 	slurm_conf_downnodes_t *n = (slurm_conf_downnodes_t *)ptr;
 	xfree(n->nodenames);
@@ -1487,8 +1487,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 }
 
 /* caller must lock conf_lock */
-static void
-_init_slurm_conf(const char *file_name)
+static void _init_slurm_conf(const char *file_name)
 {
 	char *name = (char *)file_name;
 	/* conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t)); */
@@ -1506,7 +1505,7 @@ _init_slurm_conf(const char *file_name)
 	if(s_p_parse_file(conf_hashtbl, name) == SLURM_ERROR)
 		fatal("something wrong with opening/reading conf file");
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
-	validate_and_set_defaults(conf_ptr, conf_hashtbl);
+	_validate_and_set_defaults(conf_ptr, conf_hashtbl);
 	conf_ptr->slurm_conf = xstrdup(name);
 }
 
@@ -1674,7 +1673,7 @@ static void _normalize_debug_level(uint16_t *level)
  * NOTE: if control_addr is NULL, it is over-written by control_machine
  */
 static void
-validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
+_validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 {
 	char *temp_str = NULL;
 	long long_suspend_time;
@@ -1712,7 +1711,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->complete_wait = DEFAULT_COMPLETE_WAIT;
 
 	if (!s_p_get_string(&conf->control_machine, "ControlMachine", hashtbl))
-		fatal ("validate_and_set_defaults: "
+		fatal ("_validate_and_set_defaults: "
 		       "ControlMachine not specified.");
 	else if (strcasecmp("localhost", conf->control_machine) == 0) {
 		xfree (conf->control_machine);
@@ -1875,33 +1874,30 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->job_comp_host, "JobCompHost",
 			    hashtbl)) {
 		if(default_storage_host)
-			conf->job_comp_host =
-				xstrdup(default_storage_host);
+			conf->job_comp_host = xstrdup(default_storage_host);
 		else
 			conf->job_comp_host = xstrdup(DEFAULT_STORAGE_HOST);
 	}
 	if (!s_p_get_string(&conf->job_comp_user, "JobCompUser",
 			    hashtbl)) {
 		if(default_storage_user)
-			conf->job_comp_user =
-				xstrdup(default_storage_user);
+			conf->job_comp_user = xstrdup(default_storage_user);
 		else
 			conf->job_comp_user = xstrdup(DEFAULT_STORAGE_USER);
 	}
 	if (!s_p_get_string(&conf->job_comp_pass, "JobCompPass",
 			    hashtbl)) {
 		if(default_storage_pass)
-			conf->job_comp_pass =
-				xstrdup(default_storage_pass);
+			conf->job_comp_pass = xstrdup(default_storage_pass);
 	}
 	if (!s_p_get_uint32(&conf->job_comp_port, "JobCompPort",
 			    hashtbl)) {
 		if(default_storage_port)
 			conf->job_comp_port = default_storage_port;
 		else if(!strcmp(conf->job_comp_type, "job_comp/mysql")) 
-			conf->job_comp_port = 3306;
+			conf->job_comp_port = DEFAULT_MYSQL_PORT;
 		else if(!strcmp(conf->job_comp_type, "job_comp/pgsql")) 
-			conf->job_comp_port = 5432;
+			conf->job_comp_port = DEFAULT_PGSQL_PORT;
 		else 
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
 	}
@@ -2026,6 +2022,15 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if(default_storage_loc)
 			conf->accounting_storage_loc =
 				xstrdup(default_storage_loc);
+		else if(!strcmp(conf->accounting_storage_type, 
+				"accounting_storage/mysql")
+			|| !strcmp(conf->accounting_storage_type, 
+				"accounting_storage/pgsql")) 
+			conf->accounting_storage_loc =
+				xstrdup(DEFAULT_ACCOUNTING_DB);
+		else
+			conf->accounting_storage_loc =
+				xstrdup(DEFAULT_STORAGE_LOC);
 	}
 	if (!s_p_get_string(&conf->accounting_storage_user,
 			    "AccountingStorageUser", hashtbl)) {
@@ -2046,39 +2051,26 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "AccountingStoragePort", hashtbl)) {
 		if(default_storage_port)
 			conf->accounting_storage_port = default_storage_port;
+		else if(!strcmp(conf->accounting_storage_type,
+				"accounting_storage/slurmdbd")) 
+			conf->accounting_storage_port = SLURMDBD_PORT;
+		else if(!strcmp(conf->accounting_storage_type, 
+			  "accounting_storage/mysql")) 
+			conf->accounting_storage_port = DEFAULT_MYSQL_PORT;
+		else if(!strcmp(conf->accounting_storage_type,
+			  "accounting_storage/pgsql")) 
+			conf->accounting_storage_port = DEFAULT_PGSQL_PORT;
 		else
-			conf->accounting_storage_port = NO_VAL;
+			conf->accounting_storage_port = DEFAULT_STORAGE_PORT;
 	}
-	/* set correct defaults so scontrol show config works
-	   correctly */
+	
+	/* remove the user and loc if using slurmdbd */
 	if(!strcmp(conf->accounting_storage_type,
 		   "accounting_storage/slurmdbd")) {
 		xfree(conf->accounting_storage_loc);
 		conf->accounting_storage_loc = xstrdup("N/A");
 		xfree(conf->accounting_storage_user);
 		conf->accounting_storage_user = xstrdup("N/A");
-		if(conf->accounting_storage_port == NO_VAL)
-			conf->accounting_storage_port = SLURMDBD_PORT;
-	} else if(!strcmp(conf->accounting_storage_type, 
-			  "accounting_storage/mysql")) {
-		if(conf->accounting_storage_port == NO_VAL)
-			conf->accounting_storage_port = 3306;
-		if(!conf->accounting_storage_loc)
-			conf->accounting_storage_loc =
-				xstrdup(DEFAULT_ACCOUNTING_DB);
-	} else if(!strcmp(conf->accounting_storage_type,
-			  "accounting_storage/pgsql")) {
-		if(conf->accounting_storage_port == NO_VAL)
-			conf->accounting_storage_port = 5432;
-		if(!conf->accounting_storage_loc)
-			conf->accounting_storage_loc =
-				xstrdup(DEFAULT_ACCOUNTING_DB);
-	} else {
-		if(conf->accounting_storage_port == NO_VAL)
-			conf->accounting_storage_port = DEFAULT_STORAGE_PORT;
-		if(!conf->accounting_storage_loc)
-			conf->accounting_storage_loc =
-				xstrdup(DEFAULT_STORAGE_LOC);
 	}
 
 	s_p_get_uint16(&conf->over_time_limit, "OverTimeLimit", hashtbl);

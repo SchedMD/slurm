@@ -121,6 +121,8 @@ extern char *default_plugstack;
 #define DEFAULT_STORAGE_LOC         "/var/log/slurm_jobacct.log"
 #define DEFAULT_STORAGE_USER        "root"
 #define DEFAULT_STORAGE_PORT        0
+#define DEFAULT_PGSQL_PORT          5432
+#define DEFAULT_MYSQL_PORT          3306
 #define DEFAULT_SUSPEND_RATE        60
 #define DEFAULT_SUSPEND_TIME        0
 #define DEFAULT_SUSPEND_TIMEOUT     30
