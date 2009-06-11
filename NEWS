@@ -37,6 +37,7 @@ documents those changes that are of interest to users and admins.
     Put into new RPM: sjstat.
  -- Add sched/wiki2 (Moab) JOBMODIFY command support for VARIABLELIST option
     to set supplemental environment variables for pending batch jobs.
+ -- BLUEGENE - add support for scontrol show blocks 
 
 * Changes in SLURM 2.0.2
 ========================

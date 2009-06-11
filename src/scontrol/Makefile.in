@@ -75,10 +75,10 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_scontrol_OBJECTS = create_res.$(OBJEXT) info_job.$(OBJEXT) \
-	info_node.$(OBJEXT) info_part.$(OBJEXT) info_res.$(OBJEXT) \
-	scontrol.$(OBJEXT) update_job.$(OBJEXT) update_node.$(OBJEXT) \
-	update_part.$(OBJEXT)
+am_scontrol_OBJECTS = create_res.$(OBJEXT) info_block.$(OBJEXT) \
+	info_job.$(OBJEXT) info_node.$(OBJEXT) info_part.$(OBJEXT) \
+	info_res.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
+	update_node.$(OBJEXT) update_part.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
 am__DEPENDENCIES_2 =
@@ -280,6 +280,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 scontrol_SOURCES = \
 	create_res.c	\
+	info_block.c	\
 	info_job.c	\
 	info_node.c	\
 	info_part.c	\
@@ -368,6 +369,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/create_res.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_job.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_part.Po@am__quote@

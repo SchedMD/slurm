@@ -290,52 +290,6 @@ extern int set_block_user(bg_record_t *bg_record)
 	return rc;
 }
 
-extern char* convert_conn_type(rm_connection_type_t conn_type)
-{
-	switch (conn_type) {
-	case (SELECT_MESH): 
-		return "MESH"; 
-	case (SELECT_TORUS): 
-		return "TORUS"; 
-	case (SELECT_SMALL): 
-		return "SMALL"; 
-	case (SELECT_NAV):
-		return "NAV";
-#ifndef HAVE_BGL
-	case SELECT_HTC_S:
-		return "HTC_S";
-		break;
-	case SELECT_HTC_D:
-		return "HTC_D";
-		break;
-	case SELECT_HTC_V:
-		return "HTC_V";
-		break;
-	case SELECT_HTC_L:
-		return "HTC_L";
-		break;
-#endif
-	default:
-		break;
-	}
-	return "";
-}
-
-#ifdef HAVE_BGL
-extern char* convert_node_use(rm_partition_mode_t pt)
-{
-	switch (pt) {
-	case (SELECT_COPROCESSOR_MODE): 
-		return "COPROCESSOR"; 
-	case (SELECT_VIRTUAL_NODE_MODE): 
-		return "VIRTUAL"; 
-	default:
-		break;
-	}
-	return "";
-}
-#endif
-
 /** 
  * sort the partitions by increasing size
  */
@@ -1518,7 +1472,7 @@ static int _validate_config_nodes(List curr_block_list,
 			info("Existing: BlockID:%s Nodes:%s Conn:%s",
 			     bg_record->bg_block_id, 
 			     tmp_char,
-			     convert_conn_type(bg_record->conn_type));
+			     conn_type_string(bg_record->conn_type));
 			if(((bg_record->state == RM_PARTITION_READY)
 			    || (bg_record->state == RM_PARTITION_CONFIGURING))
 			   && !block_ptr_exist_in_list(bg_lists->booted, 
@@ -1542,7 +1496,7 @@ static int _validate_config_nodes(List curr_block_list,
 				info("Existing: BlockID:%s Nodes:%s Conn:%s",
 				     bg_record->bg_block_id, 
 				     tmp_char,
-				     convert_conn_type(bg_record->conn_type));
+				     conn_type_string(bg_record->conn_type));
 				if(((bg_record->state == RM_PARTITION_READY)
 				    || (bg_record->state 
 					== RM_PARTITION_CONFIGURING))

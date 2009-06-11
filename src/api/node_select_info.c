@@ -61,6 +61,143 @@
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/plugins/select/bluegene/plugin/bluegene.h"
+
+
+/*
+ * slurm_print_node_select_info_msg - output information about all Bluegene 
+ *	blocks based upon message as loaded using slurm_load_node_select
+ * IN out - file to write to
+ * IN info_ptr - node_select information message pointer
+ * IN one_liner - print as a single line if true
+ */
+void slurm_print_node_select_info_msg(
+	FILE *out, node_select_info_msg_t *info_ptr, int one_liner)
+{
+	int i ;
+	bg_info_record_t * bg_info_ptr = info_ptr->bg_info_array;
+	char time_str[32];
+
+	slurm_make_time_str ((time_t *)&info_ptr->last_update, time_str, 
+		sizeof(time_str));
+	fprintf( out, "Bluegene Block data as of %s, record count %d\n",
+		time_str, info_ptr->record_count);
+
+	for (i = 0; i < info_ptr->record_count; i++) 
+		slurm_print_node_select_info(out, & bg_info_ptr[i], one_liner);
+}
+
+/*
+ * slurm_print_node_select_info - output information about a specific Bluegene 
+ *	block based upon message as loaded using slurm_load_node_select
+ * IN out - file to write to
+ * IN bg_info_ptr - an individual block information record pointer
+ * IN one_liner - print as a single line if true
+ */
+void slurm_print_node_select_info(
+	FILE *out, bg_info_record_t *bg_info_ptr, int one_liner)
+{
+	char *print_this = slurm_sprint_node_select_info(
+		bg_info_ptr, one_liner);
+	fprintf(out, "%s", print_this);
+	xfree(print_this);
+}
+
+
+/*
+ * slurm_sprint_node_select_info - output information about a specific Bluegene 
+ *	block based upon message as loaded using slurm_load_node_select
+ * IN bg_info_ptr - an individual partition information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * containing formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+char *slurm_sprint_node_select_info(
+	bg_info_record_t * bg_info_ptr, int one_liner)
+{
+	int j;
+	char tmp1[16];
+	char *out = NULL;
+	char *line_end = "\n   ";
+
+	if (one_liner)
+		line_end = " ";
+
+	/****** Line 1 ******/
+	convert_num_unit((float)bg_info_ptr->node_cnt, tmp1, sizeof(tmp1),
+			 UNIT_NONE);
+
+	out = xstrdup_printf("BlockName=%s TotalCNodes=%s State=%s%s", 
+			     bg_info_ptr->bg_block_id, tmp1,
+			     bg_block_state_string(bg_info_ptr->state),
+			     line_end);
+	
+	/****** Line 2 ******/
+	if (bg_info_ptr->job_running > NO_JOB_RUNNING)
+		xstrfmtcat(out, "JobRunning=%u ", bg_info_ptr->job_running);
+	else 
+		xstrcat(out, "JobRunning=NONE ");	  
+
+	xstrfmtcat(out, "User=%s ConnType=%s",
+		   bg_info_ptr->owner_name, 
+		   conn_type_string(bg_info_ptr->conn_type));
+#ifdef HAVE_BGL
+	xstrfmtcat(out, " NodeUse=%s",
+		   node_use_string(bg_info_ptr->node_use));
+#endif
+	xstrcat(out, line_end);
+	
+	/****** Line 3 ******/
+	xstrfmtcat(out, "BasePartitions=%s BPIndices=", bg_info_ptr->nodes);
+	for (j = 0; 
+	     (bg_info_ptr->bp_inx && (bg_info_ptr->bp_inx[j] != -1)); 
+	     j+=2) {
+		if (j > 0)
+			xstrcat(out, ",");
+		xstrfmtcat(out, "%d-%d", bg_info_ptr->bp_inx[j],
+			   bg_info_ptr->bp_inx[j+1]);
+	}
+	xstrcat(out, line_end);
+
+	/****** Line 4 ******/
+	if(bg_info_ptr->ionodes) {
+		xstrfmtcat(out, "IONodes=%s IONIndices=", bg_info_ptr->ionodes);
+		for (j = 0;
+		     (bg_info_ptr->ionode_inx
+		      && (bg_info_ptr->ionode_inx[j] != -1)); 
+		     j+=2) {
+			if (j > 0)
+				xstrcat(out, ",");
+			xstrfmtcat(out, "%d-%d", bg_info_ptr->ionode_inx[j],
+				   bg_info_ptr->ionode_inx[j+1]);
+		}
+		xstrcat(out, line_end);
+	}
+
+	/****** Line 5 ******/
+	xstrfmtcat(out, "MloaderImage=%s%s",
+		   bg_info_ptr->mloaderimage, line_end);
+
+#ifdef HAVE_BGL
+	/****** Line 6 ******/
+	xstrfmtcat(out, "BlrtsImage=%s%s", bg_info_ptr->blrtsimage, line_end);
+	/****** Line 7 ******/
+	xstrfmtcat(out, "LinuxImage=%s%s", bg_info_ptr->linuximage, line_end);
+	/****** Line 8 ******/
+	xstrfmtcat(out, "RamdiskImage=%s", bg_info_ptr->ramdiskimage);
+#else
+	/****** Line 6 ******/
+	xstrfmtcat(out, "CnloadImage=%s%s", bg_info_ptr->linuximage, line_end);
+	/****** Line 7 ******/
+	xstrfmtcat(out, "IoloadImage=%s", bg_info_ptr->ramdiskimage);
+#endif	
+	if (one_liner)
+		xstrcat(out, "\n");
+	else
+		xstrcat(out, "\n\n");
+	
+	return out;
+}
 
 /*
  * slurm_load_node_select - issue RPC to get slurm all node select plugin 
@@ -71,8 +208,8 @@
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_select_info_msg
  */
-extern int slurm_load_node_select (time_t update_time, 
-		node_select_info_msg_t **node_select_info_msg_pptr)
+extern int slurm_load_node_select (
+	time_t update_time, node_select_info_msg_t **node_select_info_msg_pptr)
 {
         int rc;
         slurm_msg_t req_msg;

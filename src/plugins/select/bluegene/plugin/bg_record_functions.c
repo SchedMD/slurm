@@ -65,8 +65,10 @@ extern void print_bg_record(bg_record_t* bg_record)
 	     bg_record->cpu_cnt);
 	info("\tgeo: %ux%ux%u", bg_record->geo[X], bg_record->geo[Y], 
 	     bg_record->geo[Z]);
-	info("\tconn_type: %s", convert_conn_type(bg_record->conn_type));
-	info("\tnode_use: %s", convert_node_use(bg_record->node_use));
+	info("\tconn_type: %s", conn_type_string(bg_record->conn_type));
+#ifdef HAVE_BGL
+	info("\tnode_use: %s", node_use_string(bg_record->node_use));
+#endif
 	if (bg_record->bitmap) {
 		char bitstring[BITSIZE];
 		bit_fmt(bitstring, BITSIZE, bg_record->bitmap);
@@ -78,7 +80,7 @@ extern void print_bg_record(bg_record_t* bg_record)
 	format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 	info("Record: BlockID:%s Nodes:%s Conn:%s",
 	     bg_record->bg_block_id, tmp_char,
-	     convert_conn_type(bg_record->conn_type));
+	     conn_type_string(bg_record->conn_type));
 }
 #endif
 }
@@ -707,13 +709,13 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 #ifdef HAVE_BGL
 	debug2("add_bg_record: asking for %s %d %d %s", 
 	       blockreq->block, blockreq->small32, blockreq->small128,
-	       convert_conn_type(blockreq->conn_type));
+	       conn_type_string(blockreq->conn_type));
 #else
 	debug2("add_bg_record: asking for %s %d %d %d %d %d %s", 
 	       blockreq->block, blockreq->small256, 
 	       blockreq->small128, blockreq->small64,
 	       blockreq->small32, blockreq->small16, 
-	       convert_conn_type(blockreq->conn_type));
+	       conn_type_string(blockreq->conn_type));
 #endif
 	/* Set the bitmap blank here if it is a full node we don't
 	   want anything set we also don't want the bg_record->ionodes set.
