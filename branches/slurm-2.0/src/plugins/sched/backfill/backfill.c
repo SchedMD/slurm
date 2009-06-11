@@ -120,7 +120,7 @@ static void _attempt_backfill(void);
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 static bool _more_work(void);
-static int _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
+static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
 
 #if __DEBUG
 /* Log resource allocate table */
@@ -335,7 +335,7 @@ static void _attempt_backfill(void)
 				break;
 		}
 		if (job_req_node_filter(job_ptr, avail_bitmap))
-			continue;	/* problem with features */
+			continue;	/* nodes lack features */
 		if (job_ptr->details->exc_node_bitmap) {
 			bit_not(job_ptr->details->exc_node_bitmap);
 			bit_and(avail_bitmap, 
@@ -372,9 +372,9 @@ static void _attempt_backfill(void)
 		job_ptr->start_time = MAX(job_ptr->start_time, start_res);
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, avail_bitmap);
-			if(rc == ESLURM_ACCOUNTING_POLICY) 
+			if (rc == ESLURM_ACCOUNTING_POLICY) 
 				continue;
-			else if(rc != SLURM_SUCCESS)
+			else if (rc != SLURM_SUCCESS)
 				/* Planned to start job, but something
 				 * bad happended */
 				break;
@@ -437,8 +437,8 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap)
 #if __DEBUG
 		info("backfill: Jobs backfilled: %d", backfilled_jobs);
 #endif
-	} else if ((job_ptr->job_id != fail_jobid)
-		   && (rc != ESLURM_ACCOUNTING_POLICY)) {
+	} else if ((job_ptr->job_id != fail_jobid) &&
+		   (rc != ESLURM_ACCOUNTING_POLICY)) {
 		char *node_list = bitmap2node_name(avail_bitmap);
 		/* This happens when a job has sharing disabled and
 		 * a selected node is still completing some job, 
