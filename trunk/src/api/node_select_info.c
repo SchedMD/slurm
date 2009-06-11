@@ -127,7 +127,7 @@ char *slurm_sprint_node_select_info(
 	convert_num_unit((float)bg_info_ptr->node_cnt, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
 
-	out = xstrdup_printf("BlockName=%s TotalCNodes=%s State=%s%s", 
+	out = xstrdup_printf("BlockName=%s TotalNodes=%s State=%s%s", 
 			     bg_info_ptr->bg_block_id, tmp1,
 			     bg_block_state_string(bg_info_ptr->state),
 			     line_end);
