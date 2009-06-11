@@ -624,8 +624,8 @@ proc test_assoc_enforced { } {
 	set assoc_enforced 0
 	spawn $scontrol show config
 	expect {
-		-re "AccountingStorageEnforce *= ($number)" {
-			set assoc_enforced $expect_out(1,string)
+		-re "AccountingStorageEnforce *= associations" {
+			set assoc_enforced 1
 			exp_continue
 		}
 		eof {
