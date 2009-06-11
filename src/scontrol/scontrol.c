@@ -1308,7 +1308,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
        \"reservation\", \"hostlist\", \"hostnames\", \"slurmd\",           \n\
        \"topology\", or \"step\"                                           \n\
-       (also for BlueGene only: \"block\" and \"subbp\").                  \n\
+       (also for BlueGene only: \"block\" or \"subbp\").                  \n\
                                                                            \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
        name, reservation name, job step id, or hostlist or pathname to a   \n\
