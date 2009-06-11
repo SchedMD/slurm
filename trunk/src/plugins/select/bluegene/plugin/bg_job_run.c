@@ -305,6 +305,7 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 	}
 	slurm_mutex_lock(&block_state_mutex);
 
+	last_bg_update = time(NULL);
 	bg_record->job_running = bg_update_ptr->job_ptr->job_id;
 	bg_record->job_ptr = bg_update_ptr->job_ptr;
 
@@ -1125,6 +1126,7 @@ extern int start_job(struct job_record *job_ptr)
 				       bg_update_ptr->bg_block_id);
 	if (bg_record) {
 		slurm_mutex_lock(&block_state_mutex);
+		last_bg_update = time(NULL);
 		job_ptr->num_procs = bg_record->cpu_cnt;
 		job_ptr->total_procs = job_ptr->num_procs;
 		bg_record->job_running = bg_update_ptr->job_ptr->job_id;
