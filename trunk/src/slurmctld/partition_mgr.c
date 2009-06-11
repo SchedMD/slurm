@@ -723,7 +723,7 @@ extern void part_filter_clear(void)
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
 extern void pack_all_part(char **buffer_ptr, int *buffer_size, 
-		uint16_t show_flags, uid_t uid)
+			  uint16_t show_flags, uid_t uid)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;

@@ -483,8 +483,8 @@ static bg_record_t *_find_matching_block(List block_list,
 			debug("bg block %s conn-type not usable asking for %s "
 			      "bg_record is %s", 
 			      bg_record->bg_block_id,
-			      convert_conn_type(request->conn_type),
-			      convert_conn_type(bg_record->conn_type));
+			      conn_type_string(request->conn_type),
+			      conn_type_string(bg_record->conn_type));
 			continue;
 		} 
 #ifndef HAVE_BGL

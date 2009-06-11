@@ -45,6 +45,7 @@
 #ifndef _NODE_SELECT_INFO_H
 #define _NODE_SELECT_INFO_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <time.h>
 #include "src/common/pack.h"
@@ -77,6 +78,37 @@ typedef struct {
 	time_t    last_update;
 	uint32_t  record_count;
 } node_select_info_msg_t;
+
+/*
+ * slurm_print_node_select_info_msg - output information about all Bluegene 
+ *	blocks based upon message as loaded using slurm_load_node_select
+ * IN out - file to write to
+ * IN info_ptr - node_select information message pointer
+ * IN one_liner - print as a single line if true
+ */
+void slurm_print_node_select_info_msg(
+	FILE *out, node_select_info_msg_t *info_ptr, int one_liner);
+
+/*
+ * slurm_print_node_select_info - output information about a specific Bluegene 
+ *	block based upon message as loaded using slurm_load_node_select
+ * IN out - file to write to
+ * IN bg_info_ptr - an individual block information record pointer
+ * IN one_liner - print as a single line if true
+ */
+void slurm_print_node_select_info(
+	FILE *out, bg_info_record_t *bg_info_ptr, int one_liner);
+
+/*
+ * slurm_sprint_node_select_info - output information about a specific Bluegene 
+ *	block based upon message as loaded using slurm_load_node_select
+ * IN bg_info_ptr - an individual partition information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * containing formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+char *slurm_sprint_node_select_info(
+	bg_info_record_t * bg_info_ptr, int one_liner);
 
 /*
  * slurm_load_node_select - issue RPC to get slurm all node select plugin 

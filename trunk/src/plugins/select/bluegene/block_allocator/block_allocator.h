@@ -275,9 +275,6 @@ extern s_p_options_t bg_conf_file_options[]; /* used to parse the
 extern uint16_t ba_deny_pass;
 extern ba_system_t *ba_system_ptr;
 
-/* Translate a state enum to a readable string */
-extern char *bg_block_state_string(rm_partition_state_t state);
-
 /* must xfree return of this */
 extern char *ba_passthroughs_string(uint16_t passthrough);
 

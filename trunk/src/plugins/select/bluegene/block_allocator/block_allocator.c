@@ -214,39 +214,6 @@ static int _set_one_dim(int *start, int *end, int *coord);
 /* */
 static void _destroy_geo(void *object);
 
-
-extern char *bg_block_state_string(rm_partition_state_t state)
-{
-	static char tmp[16];
-
-#ifdef HAVE_BG
-	switch (state) {
-#ifdef HAVE_BGL
-		case RM_PARTITION_BUSY: 
-			return "BUSY";
-#else
-		case RM_PARTITION_REBOOTING: 
-			return "REBOOTING";
-#endif
-		case RM_PARTITION_CONFIGURING:
-			return "CONFIG";
-		case RM_PARTITION_DEALLOCATING:
-			return "DEALLOC";
-		case RM_PARTITION_ERROR:
-			return "ERROR";
-		case RM_PARTITION_FREE:
-			return "FREE";
-		case RM_PARTITION_NAV:
-			return "NAV";
-		case RM_PARTITION_READY:
-			return "READY";
-	}
-#endif
-
-	snprintf(tmp, sizeof(tmp), "%d", state);
-	return tmp;
-}
-
 extern char *ba_passthroughs_string(uint16_t passthrough)
 {
 	char *pass = NULL;

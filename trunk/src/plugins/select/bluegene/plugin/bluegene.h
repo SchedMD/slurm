@@ -143,11 +143,6 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b);
 extern int remove_all_users(char *bg_block_id, char *user_name);
 extern int set_block_user(bg_record_t *bg_record);
 
-/* Return strings representing blue gene data types */
-extern char *convert_conn_type(rm_connection_type_t conn_type);
-#ifdef HAVE_BGL
-extern char *convert_node_use(rm_partition_mode_t pt);
-#endif
 /* sort a list of bg_records by size (node count) */
 extern void sort_bg_record_inc_size(List records);
 

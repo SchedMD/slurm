@@ -961,10 +961,11 @@ _show_it (int argc, char *argv[])
 		val = NULL;
 	}
 
-	if (strncasecmp (tag, "config", MAX(taglen, 1)) == 0) {
+	if (strncasecmp (tag, "blocks", MAX(taglen, 1)) == 0) {
+		scontrol_print_node_select (val);
+	} else if (strncasecmp (tag, "config", MAX(taglen, 1)) == 0) {
 		_print_config (val);
-	}
-	else if (strncasecmp (tag, "daemons", MAX(taglen, 1)) == 0) {
+	} else if (strncasecmp (tag, "daemons", MAX(taglen, 1)) == 0) {
 		if (val) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -973,46 +974,36 @@ _show_it (int argc, char *argv[])
 				        argv[0]);
 		}
 		_print_daemons ();
-	}
-	else if (strncasecmp (tag, "jobs", MAX(taglen, 1)) == 0 ||
+	} else if (strncasecmp (tag, "jobs", MAX(taglen, 1)) == 0 ||
 		 strncasecmp (tag, "jobid", MAX(taglen, 1)) == 0 ) {
 		scontrol_print_job (val);
-	}
-	else if (strncasecmp (tag, "hostnames", MAX(taglen, 5)) == 0) {
+	} else if (strncasecmp (tag, "hostnames", MAX(taglen, 5)) == 0) {
 		if (val)
 			scontrol_print_hosts(val);
 		else
 			scontrol_print_hosts(getenv("SLURM_NODELIST"));
-	}
-	else if (strncasecmp (tag, "hostlist", MAX(taglen, 5)) == 0) {
+	} else if (strncasecmp (tag, "hostlist", MAX(taglen, 5)) == 0) {
 		if (!val) {
 			exit_code = 1;
 			fprintf(stderr, "invalid encode argument\n");
 			_usage();
 		} else if (scontrol_encode_hostlist(val))
 			exit_code = 1;
-	}
-	else if (strncasecmp (tag, "nodes", MAX(taglen, 1)) == 0) {
+	} else if (strncasecmp (tag, "nodes", MAX(taglen, 1)) == 0) {
 		scontrol_print_node_list (val);
-	}
-	else if (strncasecmp (tag, "partitions", MAX(taglen, 1)) == 0 || 
+	} else if (strncasecmp (tag, "partitions", MAX(taglen, 1)) == 0 || 
 		 strncasecmp (tag, "partitionname", MAX(taglen, 1)) == 0) {
 		scontrol_print_part (val);
-	}
-	else if (strncasecmp (tag, "reservations", MAX(taglen, 1)) == 0 || 
+	} else if (strncasecmp (tag, "reservations", MAX(taglen, 1)) == 0 || 
 		 strncasecmp (tag, "reservationname", MAX(taglen, 1)) == 0) {
 		scontrol_print_res (val);
-	}
-	else if (strncasecmp (tag, "slurmd", MAX(taglen, 2)) == 0) {
+	} else if (strncasecmp (tag, "slurmd", MAX(taglen, 2)) == 0) {
 		_print_slurmd (val);
-	}
-	else if (strncasecmp (tag, "steps", MAX(taglen, 2)) == 0) {
+	} else if (strncasecmp (tag, "steps", MAX(taglen, 2)) == 0) {
 		scontrol_print_step (val);
-	}
-	else if (strncasecmp (tag, "topology", MAX(taglen, 1)) == 0) {
+	} else if (strncasecmp (tag, "topology", MAX(taglen, 1)) == 0) {
 		scontrol_print_topo (val);
-	}
-	else {
+	} else {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			fprintf (stderr,

@@ -111,7 +111,7 @@ static display_data_t display_data_block[] = {
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_BLRTSIMAGE, "Blrts Image",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_LINUXIMAGE, "linux Image",
+	{G_TYPE_STRING, SORTID_LINUXIMAGE, "Linux Image",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_RAMDISKIMAGE, "Ramdisk Image",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
@@ -147,10 +147,6 @@ static display_data_t options_data_block[] = {
 
 static display_data_t *local_display_data = NULL;
 
-static char* _convert_conn_type(enum connection_type conn_type);
-#ifdef HAVE_BGL
-static char* _convert_node_use(enum node_use_type node_use);
-#endif
 static int _in_slurm_partition(int *part_inx, int *block_inx);
 static void _append_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore, GtkTreeIter *iter, 
@@ -203,55 +199,6 @@ static int _in_slurm_partition(int *part_inx, int *bp_inx)
 	return 1;
 }
 
-
-static char* _convert_conn_type(enum connection_type conn_type)
-{
-#ifdef HAVE_BG
-	switch (conn_type) {
-	case (SELECT_MESH):
-		return "MESH";
-	case (SELECT_TORUS):
-		return "TORUS";
-	case (SELECT_SMALL):
-		return "SMALL";
-	case (SELECT_NAV):
-		return "NAV";
-#ifndef HAVE_BGL
-	case SELECT_HTC_S:
-		return "HTC_S";
-		break;
-	case SELECT_HTC_D:
-		return "HTC_D";
-		break;
-	case SELECT_HTC_V:
-		return "HTC_V";
-		break;
-	case SELECT_HTC_L:
-		return "HTC_L";
-		break;
-#endif
-	default:
-		return "?";
-	}
-#endif
-	return "?";
-}
-
-#ifdef HAVE_BGL
-static char* _convert_node_use(enum node_use_type node_use)
-{
-	switch (node_use) {
-	case (SELECT_COPROCESSOR_MODE):
-		return "COPROCESSOR";
-	case (SELECT_VIRTUAL_NODE_MODE):
-		return "VIRTUAL";
-	case (SELECT_NAV_MODE):
-		return "NAV";
-	}
-	return "?";
-}
-#endif
-
 static void _layout_block_record(GtkTreeView *treeview,
 				 sview_block_info_t *block_ptr, 
 				 int update)
@@ -290,13 +237,13 @@ static void _layout_block_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
 						 SORTID_CONN),
-				   _convert_conn_type(
+				   conn_type_string(
 					   block_ptr->bg_conn_type));
 #ifdef HAVE_BGL
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
 						 SORTID_USE),
-				   _convert_node_use(block_ptr->bg_node_use));
+				   node_use_string(block_ptr->bg_node_use));
 #endif	
 	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
@@ -351,10 +298,10 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_JOB, tmp_cnt, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_CONN, 
-			   _convert_conn_type(block_ptr->bg_conn_type), -1);
+			   conn_type_string(block_ptr->bg_conn_type), -1);
 #ifdef HAVE_BGL
 	gtk_tree_store_set(treestore, iter, SORTID_USE, 
-			   _convert_node_use(block_ptr->bg_node_use), -1);
+			   node_use_string(block_ptr->bg_node_use), -1);
 #endif	
 	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);

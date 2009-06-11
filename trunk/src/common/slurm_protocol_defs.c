@@ -59,6 +59,9 @@
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
+#ifdef HAVE_BG
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#endif
 
 static void _free_all_job_info (job_info_msg_t *msg);
 
@@ -818,78 +821,6 @@ void inline slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
                 xfree(msg);
         }
 }
-
-extern void
-private_data_string(uint16_t private_data, char *str, int str_len)
-{
-	if (str_len > 0)
-		str[0] = '\0';
-	if (str_len < 42) {
-		error("private_data_string: output buffer too small");
-		return;
-	}
-
-	if (private_data & PRIVATE_DATA_JOBS)
-		strcat(str, "jobs"); //4 len
-	if (private_data & PRIVATE_DATA_NODES) {
-		if (str[0])
-			strcat(str, ",");
-		strcat(str, "nodes"); //6 len
-	}
-	if (private_data & PRIVATE_DATA_PARTITIONS) {
-		if (str[0])
-			strcat(str, ",");
-		strcat(str, "partitions"); //11 len
-	}
-	if (private_data & PRIVATE_DATA_USAGE) {
-		if (str[0])
-			strcat(str, ",");
-		strcat(str, "usage"); //6 len
-	}
-	if (private_data & PRIVATE_DATA_USERS) {
-		if (str[0])
-			strcat(str, ",");
-		strcat(str, "users"); //6 len
-	}
-	if (private_data & PRIVATE_DATA_ACCOUNTS) {
-		if (str[0])
-			strcat(str, ",");
-		strcat(str, "accounts"); //9 len
-	}
-	// total len 42
-
-	if (str[0] == '\0')
-		strcat(str, "none");
-}
-
-extern void
-accounting_enforce_string(uint16_t enforce, char *str, int str_len)
-{
-	if (str_len > 0)
-		str[0] = '\0';
-	if (str_len < 26) {
-		error("enforce: output buffer too small");
-		return;
-	}
-
-	if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
-		strcat(str, "associations"); //12 len
-	if (enforce & ACCOUNTING_ENFORCE_LIMITS) {
-		if (str[0])
-			strcat(str, ",");
-		strcat(str, "limits"); //7 len
-	}
-	if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
-		if (str[0])
-			strcat(str, ",");
-		strcat(str, "wckeys"); //7 len
-	}
-	// total len 26
-
-	if (str[0] == '\0')
-		strcat(str, "none");
-}
-
 char *job_state_string(uint16_t inx)
 {
 	/* Process JOB_STATE_FLAGS */
@@ -1174,6 +1105,152 @@ char *node_state_string_compact(uint16_t inx)
 		return "UNK";
 	}
 	return "?";
+}
+
+
+extern void
+private_data_string(uint16_t private_data, char *str, int str_len)
+{
+	if (str_len > 0)
+		str[0] = '\0';
+	if (str_len < 42) {
+		error("private_data_string: output buffer too small");
+		return;
+	}
+
+	if (private_data & PRIVATE_DATA_JOBS)
+		strcat(str, "jobs"); //4 len
+	if (private_data & PRIVATE_DATA_NODES) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "nodes"); //6 len
+	}
+	if (private_data & PRIVATE_DATA_PARTITIONS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "partitions"); //11 len
+	}
+	if (private_data & PRIVATE_DATA_USAGE) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "usage"); //6 len
+	}
+	if (private_data & PRIVATE_DATA_USERS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "users"); //6 len
+	}
+	if (private_data & PRIVATE_DATA_ACCOUNTS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "accounts"); //9 len
+	}
+	// total len 42
+
+	if (str[0] == '\0')
+		strcat(str, "none");
+}
+
+extern void
+accounting_enforce_string(uint16_t enforce, char *str, int str_len)
+{
+	if (str_len > 0)
+		str[0] = '\0';
+	if (str_len < 26) {
+		error("enforce: output buffer too small");
+		return;
+	}
+
+	if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
+		strcat(str, "associations"); //12 len
+	if (enforce & ACCOUNTING_ENFORCE_LIMITS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "limits"); //7 len
+	}
+	if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "wckeys"); //7 len
+	}
+	// total len 26
+
+	if (str[0] == '\0')
+		strcat(str, "none");
+}
+
+extern char *conn_type_string(enum connection_type conn_type)
+{
+	switch (conn_type) {
+	case (SELECT_MESH):
+		return "MESH";
+	case (SELECT_TORUS):
+		return "TORUS";
+	case (SELECT_SMALL):
+		return "SMALL";
+	case (SELECT_NAV):
+		return "NAV";
+#ifndef HAVE_BGL
+	case SELECT_HTC_S:
+		return "HTC_S";
+	case SELECT_HTC_D:
+		return "HTC_D";
+	case SELECT_HTC_V:
+		return "HTC_V";
+	case SELECT_HTC_L:
+		return "HTC_L";
+#endif
+	default:
+		return "";
+	}
+	return "";
+}
+
+#ifdef HAVE_BGL
+extern char* node_use_string(enum node_use_type node_use)
+{
+	switch (node_use) {
+	case (SELECT_COPROCESSOR_MODE): 
+		return "COPROCESSOR"; 
+	case (SELECT_VIRTUAL_NODE_MODE): 
+		return "VIRTUAL"; 
+	default:
+		break;
+	}
+	return "";
+}
+#endif
+
+extern char *bg_block_state_string(uint16_t state)
+{
+	static char tmp[16];
+
+#ifdef HAVE_BG
+	switch ((rm_partition_state_t)state) {
+#ifdef HAVE_BGL
+		case RM_PARTITION_BUSY: 
+			return "BUSY";
+#else
+		case RM_PARTITION_REBOOTING: 
+			return "REBOOTING";
+#endif
+		case RM_PARTITION_CONFIGURING:
+			return "CONFIG";
+		case RM_PARTITION_DEALLOCATING:
+			return "DEALLOC";
+		case RM_PARTITION_ERROR:
+			return "ERROR";
+		case RM_PARTITION_FREE:
+			return "FREE";
+		case RM_PARTITION_NAV:
+			return "NAV";
+		case RM_PARTITION_READY:
+			return "READY";
+	}
+#endif
+
+	snprintf(tmp, sizeof(tmp), "%d", state);
+	return tmp;
 }
 
 /*
