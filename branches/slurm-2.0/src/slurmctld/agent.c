@@ -1520,9 +1520,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	if (((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) &&
 	    ((node_ptr->node_state & NODE_STATE_NO_RESPOND) == 0)) {
 		/* ready to launch, adjust time limit for boot time */
-		int resume_timeout = slurm_get_resume_timeout();
-		if ((job_ptr->time_limit != INFINITE)
-		    && ((job_ptr->start_time + resume_timeout) >= now))
+		if (job_ptr->time_limit != INFINITE)
 			job_ptr->end_time = now + (job_ptr->time_limit * 60);
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;
@@ -1536,6 +1534,8 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		error("agent waited too long for node %s to respond, "
 		      "sending batch request anyway...", 
 		      node_ptr->name);
+		if (job_ptr->time_limit != INFINITE)
+			job_ptr->end_time = now + (job_ptr->time_limit * 60);
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;
 	}
