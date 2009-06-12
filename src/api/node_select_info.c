@@ -148,7 +148,11 @@ char *slurm_sprint_node_select_info(
 	xstrcat(out, line_end);
 	
 	/****** Line 3 ******/
-	xstrfmtcat(out, "BasePartitions=%s BPIndices=", bg_info_ptr->nodes);
+	if(bg_info_ptr->ionodes) 
+		xstrfmtcat(out, "BasePartitions=%s[%s] BPIndices=",
+			   bg_info_ptr->nodes, bg_info_ptr->ionodes);
+	else
+		xstrfmtcat(out, "BasePartitions=%s BPIndices=", bg_info_ptr->nodes);
 	for (j = 0; 
 	     (bg_info_ptr->bp_inx && (bg_info_ptr->bp_inx[j] != -1)); 
 	     j+=2) {
@@ -160,35 +164,20 @@ char *slurm_sprint_node_select_info(
 	xstrcat(out, line_end);
 
 	/****** Line 4 ******/
-	if(bg_info_ptr->ionodes) {
-		xstrfmtcat(out, "IONodes=%s IONIndices=", bg_info_ptr->ionodes);
-		for (j = 0;
-		     (bg_info_ptr->ionode_inx
-		      && (bg_info_ptr->ionode_inx[j] != -1)); 
-		     j+=2) {
-			if (j > 0)
-				xstrcat(out, ",");
-			xstrfmtcat(out, "%d-%d", bg_info_ptr->ionode_inx[j],
-				   bg_info_ptr->ionode_inx[j+1]);
-		}
-		xstrcat(out, line_end);
-	}
-
-	/****** Line 5 ******/
 	xstrfmtcat(out, "MloaderImage=%s%s",
 		   bg_info_ptr->mloaderimage, line_end);
 
 #ifdef HAVE_BGL
-	/****** Line 6 ******/
+	/****** Line 5 ******/
 	xstrfmtcat(out, "BlrtsImage=%s%s", bg_info_ptr->blrtsimage, line_end);
-	/****** Line 7 ******/
+	/****** Line 6 ******/
 	xstrfmtcat(out, "LinuxImage=%s%s", bg_info_ptr->linuximage, line_end);
-	/****** Line 8 ******/
+	/****** Line 7 ******/
 	xstrfmtcat(out, "RamdiskImage=%s", bg_info_ptr->ramdiskimage);
 #else
-	/****** Line 6 ******/
+	/****** Line 5 ******/
 	xstrfmtcat(out, "CnloadImage=%s%s", bg_info_ptr->linuximage, line_end);
-	/****** Line 7 ******/
+	/****** Line 6 ******/
 	xstrfmtcat(out, "IoloadImage=%s", bg_info_ptr->ramdiskimage);
 #endif	
 	if (one_liner)
