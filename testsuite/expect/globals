@@ -648,11 +648,11 @@ proc test_power_save { } {
 	global scontrol number
 
 	log_user 0
-	set resume_rate 0
+	set suspend_time 0
 	spawn $scontrol show config
 	expect {
-		-re "ResumeTimeout *= ($number)" {
-			set resume_rate $expect_out(1,string)
+		-re "SuspendTime *= ($number)" {
+			set suspend_time $expect_out(1,string)
 			exp_continue
 		}
 		eof {
@@ -661,7 +661,7 @@ proc test_power_save { } {
 	}
 	log_user 1
 
-	if {$resume_rate == 0} {
+	if {$suspend_time == 0} {
 		set power_save 0
 	} else {
 		set power_save 1
