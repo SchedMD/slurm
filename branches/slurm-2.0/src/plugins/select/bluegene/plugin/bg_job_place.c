@@ -478,7 +478,16 @@ static bg_record_t *_find_matching_block(List block_list,
 					continue;			
 				} 
 				goto good_conn_type;
-			} 
+			} else if(bg_record->conn_type >= SELECT_SMALL) {
+				/* since we already checked to see if
+				   the cpus were good this means we are
+				   looking for a block in a range that
+				   includes small and regular blocks.
+				   So we can just continue on.
+				*/
+				goto good_conn_type;				
+			}
+			
 #endif
 			debug("bg block %s conn-type not usable asking for %s "
 			      "bg_record is %s", 
