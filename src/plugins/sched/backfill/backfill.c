@@ -346,14 +346,14 @@ static void _attempt_backfill(void)
 				job_ptr->details->exc_node_bitmap);
 			bit_not(job_ptr->details->exc_node_bitmap);
 		}
-		if (job_req_node_filter(job_ptr, avail_bitmap))
-			continue;	/* nodes lack features */
 		if ((job_ptr->details->req_node_bitmap) &&
 		    (!bit_super_set(job_ptr->details->req_node_bitmap,
 				    avail_bitmap)))
 			continue;	/* required nodes missing */
 		if (bit_set_count(avail_bitmap) < min_nodes)
 			continue;	/* insufficient nodes remain */
+		if (job_req_node_filter(job_ptr, avail_bitmap))
+			continue;	/* nodes lack features */
 
 		/* Try to schedule the job. First on dedicated nodes
 		 * then on shared nodes (if so configured). */
