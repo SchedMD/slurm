@@ -1,0 +1,91 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of task signal abort message
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id        "1.34"
+set exit_code      0
+set file_in        "test$test_id.bash"
+set test_prog      "test$test_id.prog"
+
+print_header $test_id
+
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: This test is incompatable with front-end systems\n"
+	exit 0
+}
+
+#
+# Delete left-over program and rebuild it
+#
+file delete $test_prog
+
+exec $bin_make -f /dev/null $test_prog
+exec $bin_chmod 700 $test_prog
+
+#
+# Spawn program and check for task exit messages from srun
+#
+set matches 0
+set timeout $max_job_delay
+set srun_pid [spawn $srun -n1 -O $test_prog]
+expect {
+	-re "Segmentation fault" {
+		send_user "\nThis error was expected, no worries\n"
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: srun failed to report exit code\n"
+	set exit_code 1
+}
+
+#
+# Post-processing
+#
+if {$exit_code == 0} {
+	make_bash_script $file_in "$bin_rm -f *${test_prog}*core"
+	exec $file_in
+	exec $bin_rm -f $file_in $test_prog
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
