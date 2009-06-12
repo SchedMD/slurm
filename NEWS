@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in tracking memory allocated on a node for select/cons_res plugin.
  -- Fixed a race condition when writing labelled output with a file per task
     or per node, which potentially closed a file before all data was written.
+ -- BLUEGENE - Fix, for if a job comes in spanning both less than and 
+    over 1 midplane in size we check the connection type appropriately.
  -- Make sched/backfill properly schedule jobs with constraints having node 
     counts. NOTE: Backfill of jobs with constraings having exclusive OR 
     operators are not fully supported.  
