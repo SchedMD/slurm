@@ -2253,6 +2253,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	pack32(msg->cpu_count, buffer);
 	pack32(msg->num_tasks, buffer);
 	pack32(msg->mem_per_task, buffer);
+	pack32(msg->time_limit, buffer);
 
 	pack16(msg->relative, buffer);
 	pack16(msg->task_dist, buffer);
@@ -2291,6 +2292,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack32(&(tmp_ptr->cpu_count), buffer);
 	safe_unpack32(&(tmp_ptr->num_tasks), buffer);
 	safe_unpack32(&(tmp_ptr->mem_per_task), buffer);
+	safe_unpack32(&(tmp_ptr->time_limit), buffer);
 
 	safe_unpack16(&(tmp_ptr->relative), buffer);
 	safe_unpack16(&(tmp_ptr->task_dist), buffer);
@@ -2324,6 +2326,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer)
 	xassert(msg != NULL);
 
 	pack32(msg->job_id,  buffer);
+	pack32(msg->step_id,  buffer);
 	pack16(msg->job_state, buffer);
 	pack32(msg->job_uid, buffer);
 	pack_time(msg->time, buffer);
@@ -2344,6 +2347,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 	*msg = tmp_ptr;
 
 	safe_unpack32(&(tmp_ptr->job_id),  buffer);
+	safe_unpack32(&(tmp_ptr->step_id),  buffer);
 	safe_unpack16(&(tmp_ptr->job_state),  buffer);
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
 	safe_unpack_time(&(tmp_ptr->time), buffer);
@@ -2669,6 +2673,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	safe_unpack32(&step->user_id, buffer);
 	safe_unpack32(&step->num_tasks, buffer);
 
+	safe_unpack32(&step->time_limit, buffer);
 	safe_unpack_time(&step->start_time, buffer);
 	safe_unpack_time(&step->run_time, buffer);
 	safe_unpackstr_xmalloc(&step->partition, &uint32_tmp, buffer);

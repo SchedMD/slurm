@@ -721,6 +721,8 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	job->ctx_params.ckpt_dir = opt.ckpt_dir;
 	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
 	job->ctx_params.immediate = (uint16_t)opt.immediate;
+	if (opt.time_limit != NO_VAL)
+		job->ctx_params.time_limit = (uint32_t)opt.time_limit;
 	job->ctx_params.verbose_level = (uint16_t)_verbose;
 	if (opt.resv_port_cnt != NO_VAL)
 		job->ctx_params.resv_port_cnt = (uint16_t) opt.resv_port_cnt;

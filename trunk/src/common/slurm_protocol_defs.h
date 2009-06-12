@@ -562,6 +562,8 @@ typedef struct job_step_specs {
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t resv_port_cnt;	/* reserve ports for MPI if set */
 	uint16_t task_dist;	/* see enum task_dist_state */
+	uint32_t time_limit;	/* maximum run time in minutes, default is
+				 * partition limit */
 	uint32_t user_id;	/* user the job runs as */
 } job_step_create_request_msg_t;
 
@@ -665,6 +667,7 @@ typedef struct return_code_msg {
 #define SIG_FAILURE	999	/* Dummy signal value to signify sys failure */
 typedef struct kill_job_msg {
 	uint32_t job_id;
+	uint32_t step_id;
 	uint16_t job_state;
 	uint32_t job_uid;
 	time_t   time;		/* slurmctld's time of request */

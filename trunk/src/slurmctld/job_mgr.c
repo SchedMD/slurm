@@ -3577,6 +3577,12 @@ void job_time_limit(void)
 			xfree(job_ptr->state_desc);
 			continue;
 		}
+		
+		/* check if any individual job steps have exceeded
+		 * their time limit */
+		if (job_ptr->step_list &&
+		    (list_count(job_ptr->step_list) > 0))
+			check_job_step_time_limit(job_ptr, now);
 
 		/* Too be added later once qos actually works.  The
 		 * idea here is for qos to trump what an association
@@ -5676,6 +5682,7 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->job_id	= job_id;
+	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
 	kill_req->nodes	        = xstrdup(node_ptr->name);
 	if (job_ptr) {  /* NULL if unknown */
@@ -5713,6 +5720,7 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->job_id	= job_id;
+	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
 	kill_req->nodes	        = xstrdup(node_ptr->name);
 	if (job_ptr) {  /* NULL if unknown */

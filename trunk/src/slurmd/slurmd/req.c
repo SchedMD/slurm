@@ -1483,44 +1483,31 @@ _rpc_health_check(slurm_msg_t *msg)
 	return rc;
 }
 
-static void
-_rpc_signal_tasks(slurm_msg_t *msg)
+
+static int
+_signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid, uint32_t signal)
 {
-	int               fd;
-	int               rc = SLURM_SUCCESS;
-	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
+	int               fd, rc = SLURM_SUCCESS;
 	slurmstepd_info_t *step;
 
-#ifdef HAVE_XCPU
-	if (!_slurm_authorized_user(req_uid)) {
-		error("REQUEST_SIGNAL_TASKS not support with XCPU system");
-		rc = ESLURM_NOT_SUPPORTED;
-		goto done;
-	}
-#endif
-
-	fd = stepd_connect(conf->spooldir, conf->node_name,
-			   req->job_id, req->job_step_id);
+	fd = stepd_connect(conf->spooldir, conf->node_name, jobid, stepid);
 	if (fd == -1) {
 		debug("signal for nonexistant %u.%u stepd_connect failed: %m", 
-				req->job_id, req->job_step_id);
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done;
+			jobid, stepid);
+		return ESLURM_INVALID_JOB_ID;
 	}
 	if ((step = stepd_get_info(fd)) == NULL) {
 		debug("signal for nonexistent job %u.%u requested",
-		      req->job_id, req->job_step_id);
-		rc = ESLURM_INVALID_JOB_ID;
-		goto done2;
+			jobid, stepid);
+		close(fd);
+		return ESLURM_INVALID_JOB_ID;
 	} 
 
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
-		      (long) req_uid, req->job_id, req->job_step_id, 
-		      (long) step->uid);       
+		      (long) req_uid, jobid, stepid, (long) step->uid);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
-		goto done3;
+		goto done2;
 	}
 
 #ifdef HAVE_AIX
@@ -1529,23 +1516,45 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	/* SIGMIGRATE and SIGSOUND are used to initiate job checkpoint on AIX.
 	 * These signals are not sent to the entire process group, but just a
 	 * single process, namely the PMD. */
-	if (req->signal == SIGMIGRATE || req->signal == SIGSOUND) {
-		rc = stepd_signal_task_local(fd, req->signal, 0);
-		goto done;
+	if (signal == SIGMIGRATE || signal == SIGSOUND) {
+		rc = stepd_signal_task_local(fd, signal, 0);
+		goto done2;
 	}
 #    endif
 #  endif
 #endif
 
-	rc = stepd_signal(fd, req->signal);
-	if (rc == -1)
-		rc = ESLURMD_JOB_NOTRUNNING;
+	if (signal == SIG_TIME_LIMIT) {
+		/* notify this step that it has exceeded its time limit */
+		rc = stepd_signal_container(fd, SIG_TIME_LIMIT);
+	} else {
+		rc = stepd_signal(fd, signal);
+		if (rc == -1)
+			rc = ESLURMD_JOB_NOTRUNNING;
+	}
 	
-done3:
-	xfree(step);
 done2:
+	xfree(step);
 	close(fd);
-done:
+	return rc;
+}
+
+static void
+_rpc_signal_tasks(slurm_msg_t *msg)
+{
+	int               rc = SLURM_SUCCESS;
+	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
+
+#ifdef HAVE_XCPU
+	if (!_slurm_authorized_user(req_uid)) {
+		error("REQUEST_SIGNAL_TASKS not support with XCPU system");
+		return ESLURM_NOT_SUPPORTED;
+	}
+#endif
+
+	rc = _signal_jobstep(req->job_id, req->job_step_id, req_uid,
+				req->signal);
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -1822,7 +1831,6 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	return SLURM_SUCCESS;
 }
 
-
 /* 
  *  For the specified job_id: reply to slurmctld, 
  *   sleep(configured kill_wait), then send SIGKILL 
@@ -1832,7 +1840,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 {
 	uid_t           uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	kill_job_msg_t *req = msg->data;
-	int             nsteps;
+	int             nsteps, rc;
 
 	if (!_slurm_authorized_user(uid)) {
 		error ("Security violation: rpc_timelimit req from uid %ld", 
@@ -1847,6 +1855,34 @@ _rpc_timelimit(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	slurm_close_accepted_conn(msg->conn_fd);
 	msg->conn_fd = -1;
+
+	if (req->step_id != NO_VAL) {
+		slurm_ctl_conf_t *cf;
+		int delay;
+		/* A jobstep has timed out:
+		 * - send the container a SIG_TIME_LIMIT to note the occasion
+		 * - send a SIGCONT to resume any suspended tasks
+		 * - send a SIGTERM to begin termination
+		 * - sleep KILL_WAIT
+		 * - send a SIGKILL to clean up
+		 */
+		rc = _signal_jobstep(req->job_id, req->step_id, uid,
+					SIG_TIME_LIMIT);
+		if (rc != SLURM_SUCCESS)
+			return;
+		rc = _signal_jobstep(req->job_id, req->step_id, uid, SIGCONT);
+		if (rc != SLURM_SUCCESS)
+			return;
+		rc = _signal_jobstep(req->job_id, req->step_id, uid, SIGTERM);
+		if (rc != SLURM_SUCCESS)
+			return;
+		cf = slurm_conf_lock();
+		delay = MAX(cf->kill_wait, 5);
+		slurm_conf_unlock();
+		sleep(delay);
+		_signal_jobstep(req->job_id, req->step_id, uid, SIGKILL);
+		return;
+	}
 
 	_kill_all_active_steps(req->job_id, SIG_TIME_LIMIT, true);
 	nsteps = xcpu_signal(SIGTERM, req->nodes) +
