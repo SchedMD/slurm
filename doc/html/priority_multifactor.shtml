@@ -119,6 +119,11 @@ Job_priority =
 <a name=fairshare>
 <h2>Fair-share Factor</h2></a>
 
+<b>Note:</b> Computing the fair-share factor requires the installation
+and operation of the <a href="accounting.html">SLURM Accounting
+Database</a> to provide the assigned shares and the consumed,
+computing resources described below.
+
 <P> The fair-share component to a job's priority influences the order in which a user's queued jobs are scheduled to run based on the portion of the computing resources they have been allocated and the resources their jobs have already consumed.  The fair-share factor does not involve a fixed allotment, whereby a user's access to a machine is cut off once that allotment is reached.</P>
 
 <P> Instead, the fair-share factor serves to prioritize queued jobs such that those jobs charging accounts that are under-serviced are scheduled first, while jobs charging accounts that are over-serviced are scheduled when the machine would otherwise go idle.</P>
@@ -531,7 +536,7 @@ PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 08 April 2009</p>
+<p style="text-align:center;">Last modified 12 June 2009</p>
 
 <!--#include virtual="footer.txt"-->
 
