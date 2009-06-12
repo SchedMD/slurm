@@ -131,7 +131,9 @@ Moab Cluster Suite</a></li>
 <li>A <b>Perl</b> interface is included in the SLURM distribution in the 
 <i>contribs/perlapi</i> directory and packaged in the <i>perapi</i> RPM.</li>
 <li><a href="http://www.gingergeeks.co.uk/pyslurm/">PySlurm</a> is a 
-Python/Pyrex module to interface with SLURM.</li>
+Python/Pyrex module to interface with SLURM. There is also a Python module
+in the SLURM distribution to expand and collect hostlist expressions at
+<i>contribs/python/hostlist</i>.</li>
 </ul>
 
 <li><b>Debuggers</b> and debugging tools</li>
