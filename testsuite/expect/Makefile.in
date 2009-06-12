@@ -426,6 +426,7 @@ EXTRA_DIST = \
 	test8.7				\
 	test8.7.crypto.c		\
 	test8.7.prog.c			\
+	test8.8				\
 	test9.1				\
 	test9.2				\
 	test9.3				\
