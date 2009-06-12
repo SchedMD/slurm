@@ -910,19 +910,21 @@ very small memory computers.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
-Set a limit on the total run time of the job or job step step. 
-If the requested time limit for a job exceeds the partition's time limit, 
+Set a limit on the total run time of the job or job step.  If the
+requested time limit for a job exceeds the partition's time limit, 
 the job will be left in a PENDING state (possibly indefinitely).  
-If the requested time limit for a job step exceeds the partition's 
-time limit, the job step will not be initiated.  
-The default time
+If the requested time limit for a job step exceeds the partition's
+time limit, the job step will not be initiated.  The default time
 limit is the partition's time limit.  When the time limit is reached,
-all of the job's tasks are sent SIGTERM followed by SIGKILL.  The
-interval between signals is specified by the SLURM configuration
-parameter \fBKillWait\fR.  A time limit of zero requests that no time
-limit be imposed.  Acceptable time formats include "minutes",
-"minutes:seconds", "hours:minutes:seconds", "days\-hours",
-"days\-hours:minutes" and "days\-hours:minutes:seconds".
+the job's tasks are sent SIGTERM followed by SIGKILL. If the time
+limit is for the job, all job steps are signaled. If the time limit is
+for a single job step within an existing job allocation, only that job
+step will be affected. A job time limit supercedes all job step time
+limits. The interval between SIGTERM and SIGKILL is specified by the
+SLURM configuration parameter \fBKillWait\fR.  A time limit of zero
+requests that no time limit be imposed.  Acceptable time formats
+include "minutes", "minutes:seconds", "hours:minutes:seconds",
+"days\-hours", "days\-hours:minutes" and "days\-hours:minutes:seconds".
 
 .TP
 \fB\-\-task\-epilog\fR=<\fIexecutable\fR>
