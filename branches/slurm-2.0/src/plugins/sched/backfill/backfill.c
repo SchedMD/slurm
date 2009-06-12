@@ -120,7 +120,11 @@ static void _attempt_backfill(void);
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 static bool _more_work(void);
+static int  _num_feature_count(struct job_record *job_ptr);
 static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
+static int  _try_sched(struct job_record *job_ptr, bitstr_t *avail_bitmap,
+		       uint32_t min_nodes, uint32_t max_nodes,
+		       uint32_t req_nodes);
 
 #if __DEBUG
 /* Log resource allocate table */
@@ -159,6 +163,110 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
+}
+
+/* test if job has feature count specification */
+static int _num_feature_count(struct job_record *job_ptr)
+{
+	struct job_details *detail_ptr = job_ptr->details;
+	int rc = 0;
+	ListIterator feat_iter;
+	struct feature_record *feat_ptr;
+
+	if (detail_ptr->feature_list == NULL)	/* no constraints */
+		return rc;
+
+	feat_iter = list_iterator_create(detail_ptr->feature_list);
+	while ((feat_ptr = (struct feature_record *) list_next(feat_iter))) {
+		if (feat_ptr->count)
+			rc++;
+	}
+	list_iterator_destroy(feat_iter);
+
+	return rc;
+}
+
+/* Attempt to schedule a specific job on specific available nodes
+ * IN job_ptr - job to schedule
+ * IN/OUT avail_bitmap - nodes available/selected to use
+ * RET SLURM_SUCCESS on success, otherwise an error code
+ */
+static int  _try_sched(struct job_record *job_ptr, bitstr_t *avail_bitmap,
+		       uint32_t min_nodes, uint32_t max_nodes,
+		       uint32_t req_nodes)
+{
+	bitstr_t *tmp_bitmap;
+	int rc = SLURM_SUCCESS;
+	int feat_cnt = _num_feature_count(job_ptr);
+
+	if (feat_cnt) {
+		/* Ideally schedule the job feature by feature,
+		 * but I don't want to add that complexity here
+		 * right now, so clear the feature counts and try
+		 * to schedule. This will work if there is only 
+		 * one feature count. It should work fairly well
+		 * in cases where there are multiple feature
+		 * counts. */
+		struct job_details *detail_ptr = job_ptr->details;
+		ListIterator feat_iter;
+		struct feature_record *feat_ptr;
+		int i = 0, list_size;
+		uint16_t *feat_cnt_orig = NULL, high_cnt = 0;
+
+		/* Clear the feature counts */
+		list_size = list_count(detail_ptr->feature_list);
+		feat_cnt_orig = xmalloc(sizeof(uint16_t) * list_size);
+		feat_iter = list_iterator_create(detail_ptr->feature_list);
+		while ((feat_ptr = 
+			(struct feature_record *) list_next(feat_iter))) {
+			high_cnt = MAX(high_cnt, feat_ptr->count);
+			feat_cnt_orig[i++] = feat_ptr->count;
+			feat_ptr->count = 0;
+		}
+		list_iterator_destroy(feat_iter);
+
+		if ((job_req_node_filter(job_ptr, avail_bitmap) != 
+		     SLURM_SUCCESS) ||
+		    (bit_set_count(avail_bitmap) < high_cnt)) {
+			rc = ESLURM_NODES_BUSY;
+		} else {
+			rc = select_g_job_test(job_ptr, avail_bitmap, 
+					       high_cnt, max_nodes, req_nodes,
+					       SELECT_MODE_WILL_RUN);
+		}
+
+		/* Restore the feature counts */
+		i = 0;
+		feat_iter = list_iterator_create(detail_ptr->feature_list);
+		while ((feat_ptr = 
+			(struct feature_record *) list_next(feat_iter))) {
+			feat_ptr->count = feat_cnt_orig[i++];
+		}
+		list_iterator_destroy(feat_iter);
+		xfree(feat_cnt_orig);
+	} else {
+		/* Try to schedule the job. First on dedicated nodes
+		 * then on shared nodes (if so configured). */
+		uint16_t orig_shared;
+		orig_shared = job_ptr->details->shared;
+		job_ptr->details->shared = 0;
+		tmp_bitmap = bit_copy(avail_bitmap);
+		rc = select_g_job_test(job_ptr, avail_bitmap, min_nodes,
+				       max_nodes, req_nodes,
+				       SELECT_MODE_WILL_RUN);
+		job_ptr->details->shared = orig_shared;
+		if ((rc != SLURM_SUCCESS) && (orig_shared != 0)) {
+			FREE_NULL_BITMAP(avail_bitmap);
+			avail_bitmap= tmp_bitmap;
+			rc = select_g_job_test(job_ptr, avail_bitmap, 
+					       min_nodes, max_nodes, req_nodes,
+					       SELECT_MODE_WILL_RUN);
+		} else
+			FREE_NULL_BITMAP(tmp_bitmap);
+	}
+
+	return rc;
+
 }
 
 /* Terminate backfill_agent */
@@ -230,8 +338,7 @@ static void _attempt_backfill(void)
 	struct part_record *part_ptr;
 	uint32_t end_time, end_reserve, time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
-	uint16_t orig_shared;
-	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL, *tmp_bitmap;
+	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	time_t now = time(NULL), start_res;
 	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 2];
 
@@ -355,23 +462,8 @@ static void _attempt_backfill(void)
 		if (job_req_node_filter(job_ptr, avail_bitmap))
 			continue;	/* nodes lack features */
 
-		/* Try to schedule the job. First on dedicated nodes
-		 * then on shared nodes (if so configured). */
-		orig_shared = job_ptr->details->shared;
-		job_ptr->details->shared = 0;
-		tmp_bitmap = bit_copy(avail_bitmap);
-		j = select_g_job_test(job_ptr, avail_bitmap, min_nodes,
-				      max_nodes, req_nodes,
-				      SELECT_MODE_WILL_RUN);
-		job_ptr->details->shared = orig_shared;
-		if ((j != SLURM_SUCCESS) && (orig_shared != 0)) {
-			FREE_NULL_BITMAP(avail_bitmap);
-			avail_bitmap= tmp_bitmap;
-			j = select_g_job_test(job_ptr, avail_bitmap, min_nodes,
-					      max_nodes, req_nodes,
-					      SELECT_MODE_WILL_RUN);
-		} else
-			FREE_NULL_BITMAP(tmp_bitmap);
+		j = _try_sched(job_ptr, avail_bitmap, 
+			       min_nodes, max_nodes, req_nodes);
 		if (j != SLURM_SUCCESS)
 			continue;	/* not runable */
 
