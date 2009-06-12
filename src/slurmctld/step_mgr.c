@@ -112,6 +112,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	last_job_update = time(NULL);
 	step_ptr->job_ptr = job_ptr;
 	step_ptr->start_time = time(NULL) ;
+	step_ptr->time_limit = INFINITE ;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
 	step_ptr->ckpt_dir = NULL;
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
@@ -238,8 +239,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   mem_per_task=%u resv_port_cnt=%u immediate=%u no_kill=%u",
 	       step_spec->mem_per_task, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
-	debug3("   overcommit=%d",
-	       step_spec->overcommit);
+	debug3("   overcommit=%d time_limit=%u",
+	       step_spec->overcommit, step_spec->time_limit);
 }
 
 
@@ -1290,8 +1291,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	/* set the step_record values */
 
 	/* Here is where the node list is set for the step */
-	if(step_specs->node_list 
-	   && step_specs->task_dist == SLURM_DIST_ARBITRARY) {
+	if(step_specs->node_list &&
+	   step_specs->task_dist == SLURM_DIST_ARBITRARY) {
 		step_node_list = xstrdup(step_specs->node_list);
 		xfree(step_specs->node_list);
 		step_specs->node_list = bitmap2node_name(nodeset);
@@ -1340,6 +1341,28 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_ptr->network = xstrdup(step_specs->network);
 	else
 		step_ptr->network = xstrdup(job_ptr->network);
+	
+	/* the step time_limit is recorded as submitted (INFINITE
+	 * or partition->max_time by default), but the allocation
+	 * time limits may cut it short */
+	if (step_specs->time_limit == NO_VAL || step_specs->time_limit == 0 ||
+	    step_specs->time_limit == INFINITE) {
+		if (job_ptr->part_ptr->default_time != NO_VAL)
+			step_ptr->time_limit = job_ptr->part_ptr->default_time;
+		else
+			step_ptr->time_limit = job_ptr->part_ptr->max_time;
+	} else {
+		/* enforce partition limits if necessary */
+		if ((step_specs->time_limit > job_ptr->part_ptr->max_time) &&
+		    slurmctld_conf.enforce_part_limits) {
+			info("_step_create: step time greater than partition's "
+			     "(%u > %u)", step_specs->time_limit,
+			     job_ptr->part_ptr->max_time);
+			delete_step_record (job_ptr, step_ptr->step_id);
+			return ESLURM_INVALID_TIME_LIMIT;
+		}
+		step_ptr->time_limit = step_specs->time_limit;
+	}
 	
 	/* a batch script does not need switch info */
 	if (!batch_step) {
@@ -1510,6 +1533,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	pack32(step_ptr->job_ptr->user_id, buffer);
 	pack32(task_cnt, buffer);
 
+	pack32(step_ptr->time_limit, buffer);
 	pack_time(step_ptr->start_time, buffer);
 	if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
 		run_time = step_ptr->pre_sus_time;
@@ -2171,6 +2195,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	} else
 		pack32((uint32_t) 0, buffer);
 
+	pack32(step_ptr->time_limit, buffer);
 	pack_time(step_ptr->start_time, buffer);
 	pack_time(step_ptr->pre_sus_time, buffer);
 	pack_time(step_ptr->tot_sus_time, buffer);
@@ -2202,7 +2227,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt;
 	uint32_t core_size, cpu_count, exit_code, mem_per_task, name_len;
-	uint32_t step_id;
+	uint32_t step_id, time_limit;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL, *bit_fmt = NULL;
@@ -2230,6 +2255,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	if (core_size)
 		safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
 
+	safe_unpack32(&time_limit, buffer);
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&pre_sus_time, buffer);
 	safe_unpack_time(&tot_sus_time, buffer);
@@ -2288,6 +2314,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	host                   = NULL;  /* re-used, nothing left to free */
 	step_ptr->batch_step   = batch_step;
 	step_ptr->start_time   = start_time;
+	step_ptr->time_limit   = time_limit;
 	step_ptr->pre_sus_time = pre_sus_time;
 	step_ptr->tot_sus_time = tot_sus_time;
 	step_ptr->ckpt_time    = ckpt_time;
@@ -2434,4 +2461,86 @@ extern void step_checkpoint(void)
 		list_iterator_destroy (step_iterator);
 	}
 	list_iterator_destroy(job_iterator);
+}
+
+static void _signal_step_timelimit(struct job_record *job_ptr,
+				   struct step_record *step_ptr, time_t now)
+{
+	int i;
+	kill_job_msg_t *kill_step;
+	agent_arg_t *agent_args = NULL;
+	
+	xassert(step_ptr);
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
+	agent_args->retry = 1;
+	agent_args->hostlist = hostlist_create("");
+	kill_step = xmalloc(sizeof(kill_job_msg_t));
+	kill_step->job_id    = job_ptr->job_id;
+	kill_step->step_id   = step_ptr->step_id;
+	kill_step->job_state = job_ptr->job_state;
+	kill_step->job_uid   = job_ptr->user_id;
+	kill_step->nodes     = xstrdup(job_ptr->nodes);
+	kill_step->time      = now;
+	kill_step->select_jobinfo = select_g_select_jobinfo_copy(
+			job_ptr->select_jobinfo);
+	
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+			continue;
+		hostlist_push(agent_args->hostlist,
+			node_record_table_ptr[i].name);
+		agent_args->node_count++;
+#ifdef HAVE_FRONT_END		/* Operate only on front-end */
+		break;
+#endif
+	}
+
+	if (agent_args->node_count == 0) {
+		hostlist_destroy(agent_args->hostlist);
+		xfree(agent_args);
+		if (kill_step->select_jobinfo) {
+			select_g_select_jobinfo_free(
+				kill_step->select_jobinfo);
+		}
+		xfree(kill_step);
+		return;
+	}
+
+	agent_args->msg_args = kill_step;
+	agent_queue_request(agent_args);
+	return;
+}
+
+extern void 
+check_job_step_time_limit (struct job_record *job_ptr, time_t now) 
+{
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+	uint32_t job_run_mins = 0;
+
+	xassert(job_ptr);
+
+	if (job_ptr->job_state != JOB_RUNNING)
+		return;
+
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+
+		if (step_ptr->time_limit == INFINITE ||
+		    step_ptr->time_limit == NO_VAL)
+			continue;
+		job_run_mins = (uint32_t) (((now - step_ptr->start_time) -
+				step_ptr->tot_sus_time) / 60);
+		if (job_run_mins >= step_ptr->time_limit) {
+			/* this step has timed out */
+			info("check_job_step_time_limit: job %u step %u "
+				"has timed out (%u)",
+				job_ptr->job_id, step_ptr->step_id,
+				step_ptr->time_limit);
+			_signal_step_timelimit(job_ptr, step_ptr, now);
+		}
+	}
+
+	list_iterator_destroy (step_iterator);
 }

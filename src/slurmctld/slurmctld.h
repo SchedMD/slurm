@@ -602,7 +602,8 @@ struct 	step_record {
 	int *resv_port_array;		/* reserved port indexes */
 	uint16_t resv_port_cnt;		/* count of ports reserved per node */
 	char *resv_ports;		/* ports reserved for job */
-	time_t start_time;      	/* step allocation time */
+	time_t start_time;      	/* step allocation start time */
+	uint32_t time_limit;      	/* step allocation time limit */
 	uint32_t step_id;		/* step number */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
 					  * in the step */
@@ -1145,6 +1146,14 @@ extern int job_step_signal(uint32_t job_id, uint32_t step_id,
  *	last_job_update - time of last job table update
  */
 extern void job_time_limit (void);
+
+/* 
+ * check_job_step_time_limit - terminate jobsteps which have exceeded
+ * their time limit
+ * IN job_ptr - pointer to job containing steps to check
+ * IN now - current time to use for the limit check
+ */
+extern void check_job_step_time_limit (struct job_record *job_ptr, time_t now);
 
 /*
  * kill_job_by_part_name - Given a partition name, deallocate resource for 

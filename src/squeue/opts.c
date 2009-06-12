@@ -430,7 +430,11 @@ extern int parse_format( char* format )
 							field_size,
 							right_justify,
 							suffix );
-
+			else if (field[0] == 'l')
+				step_format_add_time_limit( params.format_list, 
+				                            field_size, 
+				                            right_justify, 
+				                            suffix );
 			else if (field[0] == 'M')
 				step_format_add_time_used( params.format_list, 
 				                            field_size, 

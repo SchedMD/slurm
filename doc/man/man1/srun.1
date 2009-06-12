@@ -910,9 +910,12 @@ very small memory computers.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
-Set a limit on the total run time of the job step.  If the
-requested time limit exceeds the partition's time limit, the job will
-be left in a PENDING state (possibly indefinitely).  The default time
+Set a limit on the total run time of the job or job step step. 
+If the requested time limit for a job exceeds the partition's time limit, 
+the job will be left in a PENDING state (possibly indefinitely).  
+If the requested time limit for a job step exceeds the partition's 
+time limit, the job step will not be initiated.  
+The default time
 limit is the partition's time limit.  When the time limit is reached,
 all of the job's tasks are sent SIGTERM followed by SIGKILL.  The
 interval between signals is specified by the SLURM configuration

@@ -1156,6 +1156,20 @@ int _print_step_user_name(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_step_time_limit(job_step_info_t * step, int width, bool right, 
+			   char* suffix)
+{
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("LIMIT", width, false, true);
+	else if (step->time_limit == INFINITE)
+		_print_str("UNLIMITED", width, right, true);
+	else
+		_print_secs(step->time_limit * 60, width, right, false);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_step_time_start(job_step_info_t * step, int width, bool right, 
 			   char* suffix)
 {

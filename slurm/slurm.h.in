@@ -836,6 +836,7 @@ typedef struct {
 	uint32_t task_count;	/* number of tasks required */
 	uint16_t task_dist;	/* see enum task_dist_state, default
 				 * is SLURM_DIST_CYCLIC */
+	uint32_t time_limit;	/* step time limit */
 	uid_t uid;		/* user ID */
 	uint16_t verbose_level; /* for extra logging decisions in step
 				 * launch api */
@@ -917,6 +918,7 @@ typedef struct {
 	time_t run_time;	/* net run time (factor out time suspended) */
 	time_t start_time;	/* step start time */
 	uint32_t step_id;	/* step ID */
+	uint32_t time_limit;	/* step time limit */
 	uint32_t user_id;	/* user the job runs as */
 } job_step_info_t;
 
