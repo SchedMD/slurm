@@ -447,7 +447,7 @@ int srun(int ac, char **av)
 			if (create_job_step(job, true) < 0)
 				exit(1);
 		} else {
-			if (create_job_step(job, true) < 0)
+			if (create_job_step(job, false) < 0)
 				exit(1);
 		}
 		task_state_destroy(task_state);
