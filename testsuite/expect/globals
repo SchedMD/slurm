@@ -639,6 +639,38 @@ proc test_assoc_enforced { } {
 
 ################################################################
 #
+# Proc: test_power_save
+#
+# Return 1 if power save mode is enabled, 0 otherwise
+#
+################################################################
+proc test_power_save { } {
+	global scontrol number
+
+	log_user 0
+	set resume_rate 0
+	spawn $scontrol show config
+	expect {
+		-re "ResumeTimeout *= ($number)" {
+			set resume_rate $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$resume_rate == 0} {
+		set power_save 0
+	} else {
+		set power_save 1
+	}
+	return $power_save
+}
+
+################################################################
+#
 # Proc: slurmd_user_root
 #
 # Return 1 if the SlurmdUser is root, 0 otherwise
