@@ -1297,8 +1297,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
-       \"reservation\", \"hostlist\", \"hostnames\", \"slurmd\", \"topology\"\n\
-       (for BlueGene only: \"block\", \"subbp\" or \"step\").              \n\
+       \"reservation\", \"hostlist\", \"hostnames\", \"slurmd\",           \n\
+       \"topology\", or \"step\"                                           \n\
+       (also for BlueGene only: \"block\" or \"subbp\").                  \n\
                                                                            \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
        name, reservation name, job step id, or hostlist or pathname to a   \n\
