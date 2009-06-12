@@ -83,7 +83,7 @@ if {$matches != 1} {
 # Post-processing
 #
 if {$exit_code == 0} {
-	make_bash_script $file_in "$bin_rm *${test_prog}*core"
+	make_bash_script $file_in "$bin_rm -f *${test_prog}*core"
 	exec $file_in
 	exec $bin_rm -f $file_in $test_prog
 	send_user "\nSUCCESS\n"
