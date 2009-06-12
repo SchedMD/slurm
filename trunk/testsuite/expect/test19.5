@@ -221,8 +221,12 @@ if {[wait_for_file $file_out_fini] != 0} {
 		}
 	}
 	if {$job_fini == 0} {
-		send_user "\nFAILURE: file $file_out_fini contents are bad\n"
-		set exit_code 1
+		if {[test_power_save] == 0} {
+			send_user "\nFAILURE: file $file_out_fini contents are bad\n"
+			set exit_code 1
+		} else {
+			send_user "\nWARNING: job timeout bad, possibly due to power save mode\n"
+		}
 	}
 }
 
