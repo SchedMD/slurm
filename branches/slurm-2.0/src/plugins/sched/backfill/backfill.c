@@ -231,7 +231,7 @@ static void _attempt_backfill(void)
 	uint32_t end_time, end_reserve, time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	uint16_t orig_shared;
-	bitstr_t *avail_bitmap = NULL, *tmp_bitmap;
+	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL, *tmp_bitmap;
 	time_t now = time(NULL), start_res;
 	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 2];
 
@@ -334,14 +334,20 @@ static void _attempt_backfill(void)
 			if ((j = node_space[j].next) == 0)
 				break;
 		}
-		if (job_req_node_filter(job_ptr, avail_bitmap))
-			continue;	/* nodes lack features */
+
+		/* Identify nodes which are definitely off limits */
+		FREE_NULL_BITMAP(resv_bitmap);
+		resv_bitmap = bit_copy(avail_bitmap);
+		bit_not(resv_bitmap);
+
 		if (job_ptr->details->exc_node_bitmap) {
 			bit_not(job_ptr->details->exc_node_bitmap);
 			bit_and(avail_bitmap, 
 				job_ptr->details->exc_node_bitmap);
 			bit_not(job_ptr->details->exc_node_bitmap);
 		}
+		if (job_req_node_filter(job_ptr, avail_bitmap))
+			continue;	/* nodes lack features */
 		if ((job_ptr->details->req_node_bitmap) &&
 		    (!bit_super_set(job_ptr->details->req_node_bitmap,
 				    avail_bitmap)))
@@ -371,13 +377,14 @@ static void _attempt_backfill(void)
 
 		job_ptr->start_time = MAX(job_ptr->start_time, start_res);
 		if (job_ptr->start_time <= now) {
-			int rc = _start_job(job_ptr, avail_bitmap);
+			int rc = _start_job(job_ptr, resv_bitmap);
 			if (rc == ESLURM_ACCOUNTING_POLICY) 
 				continue;
 			else if (rc != SLURM_SUCCESS)
-				/* Planned to start job, but something
-				 * bad happended */
-				break;
+				/* Planned to start job, but something bad
+				 * happended. Reserve nodes where this should
+				 * apparently run and try more jobs. */
+				continue;
 		}
 		if (job_ptr->start_time > (now + BACKFILL_WINDOW)) {
 			/* Starts too far in the future to worry about */
@@ -401,6 +408,7 @@ static void _attempt_backfill(void)
 #endif
 	}
 	FREE_NULL_BITMAP(avail_bitmap);
+	FREE_NULL_BITMAP(resv_bitmap);
 
 	for (i=0; ; ) {
 		bit_free(node_space[i].avail_bitmap);
@@ -410,16 +418,18 @@ static void _attempt_backfill(void)
 	xfree(job_queue);
 }
 
-static int _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap)
+/* Try to start the job on any non-reserved nodes */
+static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 {
 	int rc;
 	bitstr_t *orig_exc_nodes = NULL;
 	static uint32_t fail_jobid = 0;
 
-	if (job_ptr->details->exc_node_bitmap)
+	if (job_ptr->details->exc_node_bitmap) {
 		orig_exc_nodes = job_ptr->details->exc_node_bitmap;
-	job_ptr->details->exc_node_bitmap = bit_copy(avail_bitmap);
-	bit_not(job_ptr->details->exc_node_bitmap);
+		bit_or(job_ptr->details->exc_node_bitmap, resv_bitmap);
+	} else
+		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
 
 	rc = select_nodes(job_ptr, false, NULL);
 	bit_free(job_ptr->details->exc_node_bitmap);
@@ -439,11 +449,13 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap)
 #endif
 	} else if ((job_ptr->job_id != fail_jobid) &&
 		   (rc != ESLURM_ACCOUNTING_POLICY)) {
-		char *node_list = bitmap2node_name(avail_bitmap);
+		char *node_list;
+		bit_not(resv_bitmap);
+		node_list = bitmap2node_name(resv_bitmap);
 		/* This happens when a job has sharing disabled and
 		 * a selected node is still completing some job, 
 		 * which should be a temporary situation. */
-		verbose("backfill: Failed to start JobId=%u on %s: %s",
+		verbose("backfill: Failed to start JobId=%u in %s: %s",
 			job_ptr->job_id, node_list, slurm_strerror(rc));
 		xfree(node_list);
 		fail_jobid = job_ptr->job_id;
