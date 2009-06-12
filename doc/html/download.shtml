@@ -126,10 +126,18 @@ Maui Scheduler</a></li>
 Moab Cluster Suite</a></li>
 </ul>
 
+<li><b>Scripting interface</b>
+<ul>
+<li>A <b>Perl</b> interface is included in the SLURM distribution in the 
+<i>contribs/perlapi</i> directory and packaged in the <i>perapi</i> RPM.</li>
+<li><a href="http://www.gingergeeks.co.uk/pyslurm/">PySlurm</a> is a 
+Python/Pyrex module to interface with SLURM.</li>
+</ul>
+
 <li><b>Debuggers</b> and debugging tools</li>
 <ul>
 <li><a href="http://www.totalviewtech.com/"><b>TotalView</b></a>
-A GUI-based source code debugger well suited for parallel applications.<li>
+is a GUI-based source code debugger well suited for parallel applications.<li>
 <li><a href="http://padb.pittman.org.uk/"><b>Padb</b></a>
 is a job inspection tool for examining and debugging parallel programs, primarily it simplifies the process of gathering stack traces but also supports a wide range of other functions. 
 It's an open source, non-interactive, command line, scriptable tool intended for use by programmers and system administrators alike.</li>
@@ -143,6 +151,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 9 June 2009</p>
+<p style="text-align:center;">Last modified 12 June 2009</p>
 
 <!--#include virtual="footer.txt"-->
