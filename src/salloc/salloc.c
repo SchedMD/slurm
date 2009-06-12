@@ -358,9 +358,21 @@ relinquish:
 		} else if (WIFSIGNALED(status)) {
 			verbose("Command \"%s\" was terminated by signal %d",
 				command_argv[0], WTERMSIG(status));
+			/* if we get these signals we return a normal
+			   exit since this was most likely sent from the
+			   user */
+			switch(WTERMSIG(status)) {
+			case SIGHUP:
+			case SIGINT:
+			case SIGQUIT:
+			case SIGKILL:
+				rc = 0;
+				break;
+			default:
+				break;
+			}
 		}
 	}
-
 	return rc;
 }
 

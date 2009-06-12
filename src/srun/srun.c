@@ -469,7 +469,7 @@ int srun(int ac, char **av)
 			if (create_job_step(job, true) < 0)
 				exit(1);
 		} else {
-			if (create_job_step(job, true) < 0)
+			if (create_job_step(job, false) < 0)
 				exit(1);
 		}
 		task_state_destroy(task_state);
@@ -479,8 +479,14 @@ int srun(int ac, char **av)
 cleanup:
 	if(got_alloc) {
 		cleanup_allocation();
-		slurm_complete_job(job->jobid, global_rc);
+
+		/* send the controller we were cancelled */
+		if (job->state >= SRUN_JOB_CANCELLED)
+			slurm_complete_job(job->jobid, NO_VAL);
+		else
+			slurm_complete_job(job->jobid, global_rc);
 	}
+
 	_run_srun_epilog(job);
 	slurm_step_ctx_destroy(job->step_ctx);
 	mpir_cleanup();
@@ -1188,13 +1194,9 @@ static void _handle_intr()
 {
 	static time_t last_intr      = 0;
 	static time_t last_intr_sent = 0;
-	if (opt.quit_on_intr) {
-		job_force_termination(job);
-		slurm_step_launch_abort(job->step_ctx);
-		return;
-	}
 
-	if (((time(NULL) - last_intr) > 1) && !opt.disable_status) {
+	if (!opt.quit_on_intr && 
+	    (((time(NULL) - last_intr) > 1) && !opt.disable_status)) {
 		if (job->state < SRUN_JOB_FORCETERM)
 			info("interrupt (one more within 1 sec to abort)");
 		else

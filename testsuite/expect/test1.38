@@ -142,7 +142,7 @@ expect {
 		set match_run 999
 		exp_continue
 	}
-	-re "forcing job termination" {
+	-re "Job step aborted" {
 		set match_term 1
 		exp_continue
 	}
