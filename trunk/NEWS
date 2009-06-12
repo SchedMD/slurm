@@ -81,6 +81,7 @@ documents those changes that are of interest to users and admins.
  -- Make sched/backfill properly schedule jobs with constraints having node 
     counts. NOTE: Backfill of jobs with constraings having exclusive OR 
     operators are not fully supported.  
+ -- if srun is cancelled by SIGINT that job is marked as cancelled.
 
 * Changes in SLURM 2.0.1
 ========================
