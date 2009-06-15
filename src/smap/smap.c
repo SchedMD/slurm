@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 	
 	ba_init(new_node_ptr);
 			
-	if(params.partition) {
+	if(params.resolve) {
 			
 #ifdef HAVE_BG_FILES
 		if (!have_db2) {
@@ -121,41 +121,42 @@ int main(int argc, char *argv[])
 
 		if(!mapset)
 			mapset = set_bp_map();
-		if(params.partition[0] != 'R') {
-			i = strlen(params.partition);
+		if(params.resolve[0] != 'R') {
+			i = strlen(params.resolve);
 			i -= 3;
 			if(i<0) {
 				printf("No real block was entered\n");
 				goto part_fini;
 			}
-			char *rack_mid = find_bp_rack_mid(params.partition+i);
+			char *rack_mid = find_bp_rack_mid(params.resolve+i);
 			if(rack_mid)
 				printf("X=%c Y=%c Z=%c resolves to %s\n",
-				       params.partition[X+i],
-				       params.partition[Y+i],
-				       params.partition[Z+i], 
+				       params.resolve[X+i],
+				       params.resolve[Y+i],
+				       params.resolve[Z+i], 
 				       rack_mid);
 			else
 				printf("X=%c Y=%c Z=%c has no resolve\n",
-				       params.partition[X+i],
-				       params.partition[Y+i],
-				       params.partition[Z+i]);
+				       params.resolve[X+i],
+				       params.resolve[Y+i],
+				       params.resolve[Z+i]);
 			
 		} else {
-			int *coord = find_bp_loc(params.partition);
+			int *coord = find_bp_loc(params.resolve);
 			if(coord)
 				printf("%s resolves to X=%d Y=%d Z=%d\n",
-				       params.partition,
+				       params.resolve,
 				       coord[X], coord[Y], coord[Z]);
 			else
 				printf("%s has no resolve.\n", 
-				       params.partition);
+				       params.resolve);
 		}
 part_fini:
 #else
 		printf("Must be on BG System to resolve.\n");
 #endif
 		ba_fini();
+		xfree(params.resolve);
 		exit(0);
 	}
 	if(!params.commandline) {
@@ -226,7 +227,10 @@ part_fini:
 			main_xcord = 1;
 			main_ycord = 1;
 		}
-		print_date();
+
+		if(!params.no_header)
+			print_date();
+
 		switch (params.display) {
 		case JOBS:
 			get_job();

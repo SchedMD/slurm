@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
+ -- Added support for smap to query off node name for display.
 
 * Changes in SLURM 2.1.0-pre1
 =============================

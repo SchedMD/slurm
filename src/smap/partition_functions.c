@@ -91,6 +91,7 @@ extern void get_slurm_part()
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
+	bitstr_t *nodes_req = NULL;
 
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
@@ -132,13 +133,23 @@ extern void get_slurm_part()
 		if((recs - text_line_cnt) < (text_win->_maxy-3))
 			text_line_cnt--;
 
+	if(params.hl)
+		nodes_req = get_requested_node_bitmap();
 	for (i = 0; i < recs; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
 		
 		if (!part.nodes || (part.nodes[0] == '\0'))
 			continue;	/* empty partition */
-		
+		if(nodes_req) {
+			int overlap = 0;
+			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
+			inx2bitstr(loc_bitmap, part.node_inx);
+			overlap = bit_overlap(loc_bitmap, nodes_req);
+			FREE_NULL_BITMAP(loc_bitmap);
+			if(!overlap) 
+				continue;
+		}
 #ifdef HAVE_SUN_CONST
 		set_grid_name(part.nodes, count);
 #else		
@@ -187,6 +198,7 @@ extern void get_bg_part()
 	db2_block_info_t *found_block = NULL;
 	ListIterator itr;
 	List nodelist = NULL;
+	bitstr_t *nodes_req = NULL;
 
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
@@ -259,8 +271,20 @@ extern void get_bg_part()
 		if((new_bg_ptr->record_count - text_line_cnt) 
 		   < (text_win->_maxy-3))
 			text_line_cnt--;
-	
+	if(params.hl)
+		nodes_req = get_requested_node_bitmap();
 	for (i=0; i<new_bg_ptr->record_count; i++) {
+		if(nodes_req) {
+			int overlap = 0;
+			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
+			inx2bitstr(loc_bitmap, 
+				   new_bg_ptr->bg_info_array[i].bp_inx);
+			overlap = bit_overlap(loc_bitmap, nodes_req);
+			FREE_NULL_BITMAP(loc_bitmap);
+			if(!overlap) 
+				continue;
+		}
+
 		block_ptr = xmalloc(sizeof(db2_block_info_t));
 			
 		block_ptr->bg_block_name 

@@ -275,4 +275,44 @@ extern void print_grid(int dir)
 	return;
 }
 
+bitstr_t *get_requested_node_bitmap()
+{
+	static bitstr_t *bitmap = NULL;
+	static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
+	int error_code;
+	int i = 0;
+	node_info_t *node_ptr = NULL;
 
+	if(!params.hl)
+		return NULL;
+
+	if (old_node_ptr) {
+		error_code =
+			slurm_load_node(old_node_ptr->last_update,
+					&new_node_ptr, SHOW_ALL);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_node_info_msg(old_node_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) 
+			return bitmap;		
+	} else
+		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
+					     SHOW_ALL);
+
+	if(bitmap)
+		FREE_NULL_BITMAP(bitmap);
+
+	if (error_code) {
+		slurm_perror("slurm_load_node");
+		return NULL;
+	}
+
+	old_node_ptr = new_node_ptr;
+
+	bitmap = bit_alloc(old_node_ptr->record_count);
+	for(i=0; i<old_node_ptr->record_count; i++) {
+		node_ptr = &(old_node_ptr->node_array[i]);
+		if(hostlist_find(params.hl, node_ptr->name) != -1)
+			bit_set(bitmap, i);
+	}
+	return bitmap;
+}

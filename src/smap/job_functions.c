@@ -57,6 +57,7 @@ extern void get_job(void)
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	uint16_t show_flags = 0;
+	bitstr_t *nodes_req = NULL;
 
 	show_flags |= SHOW_ALL;
 	if (job_info_ptr) {
@@ -100,12 +101,24 @@ extern void get_job(void)
 			text_line_cnt--;
 	printed_jobs = 0;
 	count = 0;
+
+	if(params.hl)
+		nodes_req = get_requested_node_bitmap();
 	for (i = 0; i < recs; i++) {
 		job_ptr = &(new_job_ptr->job_array[i]);
 		if(!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)
 		   && !IS_JOB_SUSPENDED(job_ptr)
 		   && !IS_JOB_COMPLETING(job_ptr)) 
 			continue;	/* job has completed */
+		if(nodes_req) {
+			int overlap = 0;
+			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
+			inx2bitstr(loc_bitmap, job_ptr->node_inx);
+			overlap = bit_overlap(loc_bitmap, nodes_req);
+			FREE_NULL_BITMAP(loc_bitmap);
+			if(!overlap) 
+				continue;
+		}
 
 		if (job_ptr->node_inx[0] != -1) {
 #ifdef HAVE_SUN_CONST
