@@ -177,7 +177,7 @@ set end_of_line          "\[\r\n\]"
 set number               "\[0-9\]+"
 set float                "\[0-9\]+\\.?\[0-9\]+"
 set whitespace		 "\[ \t\n\r\f\v\]+"
-set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_under\]?\\\]"
+set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_under\]?\\\]?"
 #
 # Cache SlurmUser to check for SuperUser requests
 #
