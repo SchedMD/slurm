@@ -276,21 +276,26 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 	return $rc
 }
 
+############################################################################
 # test starts here 
+############################################################################
 
 print_header $test_id
 
-#find me an idle node
+# find me an idle node
 log_user 0
 spawn $scontrol show node
 expect {
-	-re "NodeName=($alpha_numeric_under) State=IDLE Procs=($number)(k?)"  {
+	-re "NodeName=($alpha_numeric_under) State=IDLE Procs=($number)(k?).* Sockets=($number) CoresPerSocket=($number) ThreadsPerCore=($number)"  {
 		if {!$inode_found} {
 			set inode_name $expect_out(1,string) 
 			set inode_procs $expect_out(2,string)
 			if {[string compare $expect_out(3,string) ""]} {
 				set inode_procs [expr $inode_procs * 1024]
 			}
+			set inode_sockets $expect_out(4,string)
+			set inode_cores_per_socket $expect_out(5,string)
+			set inode_threads_per_core $expect_out(6,string)
 			set inode_found 1
 		}
 		exp_continue
@@ -356,16 +361,33 @@ if {![string compare $select_type "bluegene"]} {
 	}	
 	set node_scaling [get_bluegene_procs_per_cnode]
 	set smallest [expr $smallest * $node_scaling]
-} elseif {![string compare $select_type "cons_res"]} {
-#	SelectTypeParameter can be configured to allocated whole nodes,
-#	sockets, or cores (not threads) and the configuration can very by
-#	partition. so the smallest allocable unit isn't so simple to set here
-#	set smallest 1
+} elseif {![string compare $select_type "linear"]} {
 	set smallest $inode_procs
 } else {
-	set smallest $inode_procs
+#
+# Ignore for now, but if the partition's "Shared=Exclusive" then allocate
+# whole nodes to the jobs in that partition, set smallest $inode_procs
+#
+	set select_params [test_select_type_params]
+	if {![string compare $select_params "CR_CPU"]} {
+		set smallest $inode_threads_per_core
+	} elseif {![string compare $select_params "CR_CPU_MEMORY"]} {
+		set smallest $inode_threads_per_core
+	} elseif {![string compare $select_params "NONE"]} {
+		set smallest $inode_threads_per_core
+	} elseif {![string compare $select_params "CR_CORE"]} {
+		set smallest $inode_threads_per_core
+	} elseif {![string compare $select_params "CR_CORE_MEMORY"]} {
+		set smallest $inode_threads_per_core
+	} elseif {![string compare $select_params "CR_SOCKET"]} {
+		set smallest [expr $inode_cores_per_socket *$inode_threads_per_core]
+	} elseif {![string compare $select_params "CR_SOCKET_MEMORY"]} {
+		set smallest [expr $inode_cores_per_socket *$inode_threads_per_core]
+	} else {
+		send_user "\nWARNING: failed to parse SelectTypeParameters\n"
+		set smallest $inode_procs
+	}
 }
-
 
 set exit_code [allocate_and_quit $inode_name $smallest $inode_procs]
 if {!$exit_code && $smallest != $inode_procs} {
