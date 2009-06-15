@@ -310,8 +310,13 @@ if {!$def_part_found} {
 # find the nodes in the default partition
 log_user 1
 set def_hostlist ""
+set part_exclusive 0
 spawn $scontrol show part $def_part
 expect {
+	-re " Shared=EXCLUSIVE" {
+		set part_exclusive 1
+		exp_continue
+	}
 	-re " Nodes=($alpha_numeric_nodelist)"  {
 		set def_hostlist $expect_out(1,string) 
 		exp_continue
@@ -429,12 +434,10 @@ if {![string compare $select_type "bluegene"]} {
 } elseif {![string compare $select_type "linear"]} {
 	set smallest $inode_procs
 } else {
-#
-# Ignore for now, but if the partition's "Shared=Exclusive" then allocate
-# whole nodes to the jobs in that partition, set smallest $inode_procs
-#
 	set select_params [test_select_type_params]
-	if {![string compare $select_params "CR_CPU"]} {
+	if {$part_exclusive == 1} {
+		set smallest $inode_procs
+	} elseif {![string compare $select_params "CR_CPU"]} {
 		set smallest $inode_threads_per_core
 	} elseif {![string compare $select_params "CR_CPU_MEMORY"]} {
 		set smallest $inode_threads_per_core
