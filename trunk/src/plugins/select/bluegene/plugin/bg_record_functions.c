@@ -494,6 +494,9 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	return 0;
 }
 
+/* if looking at the main list this should have some nice
+ * block_state_mutex locks around it.
+ */
 extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 {
 	ListIterator itr;
@@ -504,16 +507,14 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 	if(!bg_block_id)
 		return NULL;
 			
-	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(my_list);
-	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+	while((bg_record = list_next(itr))) {
 		if(bg_record->bg_block_id)
-			if (!strcmp(bg_record->bg_block_id, 
-				    bg_block_id))
+			if(!strcmp(bg_record->bg_block_id, bg_block_id))
 				break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&block_state_mutex);
+
 	if(bg_record)
 		return bg_record;
 	else
