@@ -41,44 +41,17 @@ set matches     0
 # job paramters
 set sleep_time  5
 
-proc is_block_in_state { block state } {
-	global scontrol
-
-	set match 0
-	set my_pid [spawn $scontrol show block $block]
-	expect {
-		-nocase -re "State=$state" {
-			set match 1
-			exp_continue
-		}
-		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: smap not responding\n"
-			slow_kill $my_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {!$match} {
-		send_user "\nFAILURE: Block did not go into free state.\n"
-		return 1
-	}
-	return 0
-}
 
 # allocate a set of nodes (node_cnt) and the quit right after
-proc allocate_and_quit { node_cnt } {
+proc allocate_and_quit { node_cnt node } {
 	global salloc number alpha_numeric_under prompt
 	set job_id 0
 	set block ""
-
-	set my_pid [spawn $salloc -N$node_cnt-$node_cnt]
+	set line "-N$node_cnt-$node_cnt"
+	if {[string compare $node ""]} {
+		set line "$line -w $node"
+	}
+	set my_pid [eval spawn $salloc $line]
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
@@ -122,6 +95,101 @@ proc allocate_and_quit { node_cnt } {
 }
 
 
+proc get_block_nodes { block } {
+	global scontrol alpha_numeric_nodelist
+
+	set nodes ""
+	set my_pid [spawn $scontrol show block $block]
+	expect {
+		-nocase -re "BasePartitions=($alpha_numeric_nodelist)" {
+			set nodes $expect_out(1,string)
+			exp_continue
+		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: smap not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {![string compare $nodes ""]} {
+		send_user "\nFAILURE: Couldn't get the nodes from block $block.\n"
+	}
+	return $nodes
+}
+
+proc get_first_node { } {
+	global scontrol alpha_numeric_under
+
+	set node ""
+	log_user 0
+	set my_pid [spawn $scontrol show node]
+	expect {
+		-nocase -re "NodeName=($alpha_numeric_under)" {
+			if {![string compare $node ""]} {
+				set node $expect_out(1,string)
+			}
+			exp_continue
+		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: smap not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	if {![string compare $node ""]} {
+		send_user "\nFAILURE: Couldn't get the nodes from system.\n"
+	}
+	return $node
+}
+
+proc is_block_in_state { block state } {
+	global scontrol
+
+	set match 0
+	set my_pid [spawn $scontrol show block $block]
+	expect {
+		-nocase -re "State=$state" {
+			set match 1
+			exp_continue
+		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: smap not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$match} {
+		send_user "\nFAILURE: Block did not go into $state state.\n"
+		return 1
+	}
+	return 0
+}
+
 # set a block in a error state
 proc change_block_state { block state} {
 	global scontrol
@@ -159,12 +227,14 @@ proc change_block_state { block state} {
 }
 
 # set a block in a error state
-proc change_subbp_state { subbp state } {
+proc change_subbp_state { node ionodes state } {
 	global scontrol smap
  
 	set exit_code 0
-		
-	set my_pid [spawn $scontrol update subbpname=$subbp state=$state]
+	send_user "got $node "
+	send_user "and \[$ionodes\]\n"
+
+	set my_pid [spawn $scontrol update subbpname=$node\[$ionodes\] state=$state]
 	expect {
 		-re "slurm_update error:" {
 			set exit_code 1
@@ -192,10 +262,14 @@ proc change_subbp_state { subbp state } {
 	}
 	
 	set match 0
-	set my_pid [spawn $smap -Db -c]
+	set my_pid [spawn $smap -Db -c -h -n $node -I $ionodes]
 	expect {
-		-re "$block *ERROR" {
-			set match 1
+		-nocase -re "$state" {
+			incr match 
+			exp_continue
+		}
+		-re "$node" {
+			incr match 
 			exp_continue
 		}
 		-re "Unable to contact" {
@@ -215,8 +289,8 @@ proc change_subbp_state { subbp state } {
 		}
 	}
 
-	if {!$match} {
-		send_user "\nFAILURE: Block did not go into error state.\n"
+	if {$match != 2} {
+		send_user "\nFAILURE: Subbp did not go into $state state. $match\n"
 		set exit_code 1
 	}
 	
@@ -273,6 +347,7 @@ if {$type == 0} {
 if {![string compare $type "P"]} {
 	if {$psets >= 32} {
 		set smallest 16
+		set smallest_io [expr $psets / $smallest]
 	} elseif {$psets >= 16} {
 		set smallest 32
 	} elseif {$psets >= 8} {
@@ -293,17 +368,24 @@ if {![string compare $type "P"]} {
 
 # allocate the entire system (this should work on all layout types since a 
 # full block is always makable unless they aren't using the entire system.
-set block [allocate_and_quit $num_nodes]
+set block [allocate_and_quit $num_nodes ""]
+
+#use this node for all future tests
+set first_node [get_first_node]
 
 # first make sure we can set the block in an error state and then free it
-set $exit_code [change_block_state $block "error"]
-set $exit_code [change_block_state $block "free"]
+set exit_code [change_block_state $block "error"]
+set exit_code [change_block_state $block "free"]
 if {$exit_code} {
 	exit $exit_code
 }
 
 if {![string compare $layout "Dynamic"]} {
-	
+	# lets make 1 ionode in an error state
+	set exit_code [change_subbp_state $first_node "0" "error"]
+	#allocate something with that node	
+	set block [allocate_and_quit $smallest $first_node]
+	set exit_code [change_subbp_state $first_node "0" "free"]
 
 } elseif {![string compare $layout "Overlap"]} {
 } else {
