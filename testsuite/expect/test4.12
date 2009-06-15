@@ -308,7 +308,7 @@ if {!$def_part_found} {
 }
 
 # find the nodes in the default partition
-log_user 1
+log_user 0
 set def_hostlist ""
 set part_exclusive 0
 spawn $scontrol show part $def_part
