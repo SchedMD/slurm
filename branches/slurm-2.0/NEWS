@@ -23,7 +23,7 @@ documents those changes that are of interest to users and admins.
  -- Fix select/linear to properly set a job's count of allocated processors
     (all processors on the allocated nodes).
  -- Fix select/cons_res to allocate proper CPU count when --ntasks-per-node
-    option is used.
+    option is used without a task count in the job request.
  -- Insure that no node is allocated to a job for which the CPU count is less
     than --ntasks-per-node * --cpus-per-task.
  -- Correct AllocProcs reported by "scontrol show node" when ThreadsPerCore
@@ -43,7 +43,8 @@ documents those changes that are of interest to users and admins.
  -- Make sched/backfill properly schedule jobs with constraints having node 
     counts. NOTE: Backfill of jobs with constraings having exclusive OR 
     operators are not fully supported.  
- -- if srun is cancelled by SIGINT that job is marked as cancelled.
+ -- If srun is cancelled by SIGINT, set the job state to cancelled, not 
+    failed.
  -- BLUEGENE - Fix, for if you are setting an subbp into an error mode 
     where the subbp stated isn't the first ionode in a nodecard.
 
