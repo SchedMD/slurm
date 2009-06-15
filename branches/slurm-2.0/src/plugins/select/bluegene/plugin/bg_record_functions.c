@@ -1162,9 +1162,16 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		   block) set io_start = 0. */
 		if((io_start = bit_ffs(iobitmap)) == -1) {
 			io_start = 0;
-			blockreq.small32 = 16;
-		} else
+			if(create_size > bg_conf->nodecard_node_cnt) 
+				blockreq.small128 = 4;
+			else
+				blockreq.small32 = 16;
+		} else if(create_size <= bg_conf->nodecard_node_cnt) 
 			blockreq.small32 = 1;
+		else
+			/* this should never happen */
+			blockreq.small128 = 1;
+		
 		FREE_NULL_BITMAP(iobitmap);		
 	} else if(smallest_bg_record) {
 		debug2("smallest dynamic block is %s",
@@ -1214,12 +1221,12 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		if(create_size != bg_conf->nodecard_node_cnt) {
 			blockreq.small128 = blockreq.small32 / 4;
 			blockreq.small32 = 0;
-		}
-		/* set the start to be the same as the start of the
-		   ionode_bitmap.  If no ionodes set (not a small
-		   block) set io_start = 0. */
-		if((io_start = bit_ffs(smallest_bg_record->ionode_bitmap))
-		   == -1)
+			io_start = 0;
+		} else if((io_start =
+			   bit_ffs(smallest_bg_record->ionode_bitmap)) == -1)
+			/* set the start to be the same as the start of the
+			   ionode_bitmap.  If no ionodes set (not a small
+			   block) set io_start = 0. */
 			io_start = 0;
 	} else {
 		switch(create_size) {
