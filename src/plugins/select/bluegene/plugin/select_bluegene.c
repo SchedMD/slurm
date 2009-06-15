@@ -706,11 +706,13 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	time_t now;
 	char reason[128], tmp[64], time_str[32];
 
-	bg_record = find_bg_record_in_list(bg_lists->main, part_desc_ptr->name);
-	if(!bg_record)
-		return SLURM_ERROR;
-
 	slurm_mutex_lock(&block_state_mutex);
+	bg_record = find_bg_record_in_list(bg_lists->main, part_desc_ptr->name);
+	if(!bg_record) {
+		slurm_mutex_unlock(&block_state_mutex);
+		return SLURM_ERROR;
+	}
+
 	now = time(NULL);
 	slurm_make_time_str(&now, time_str, sizeof(time_str));
 	snprintf(tmp, sizeof(tmp), "[SLURM@%s]", time_str);

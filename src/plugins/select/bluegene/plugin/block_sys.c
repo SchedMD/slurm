@@ -1065,6 +1065,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		/* we only care about the states we need here
 		 * everthing else should have been set up already */
 		if(bg_info_record->state == RM_PARTITION_ERROR) {
+			slurm_mutex_lock(&block_state_mutex);
 			if((bg_record = find_bg_record_in_list(
 				    curr_block_list,
 				    bg_info_record->bg_block_id)))
@@ -1075,6 +1076,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 				   around in bg_lists->main.
 				*/
 				bg_record->state = bg_info_record->state;
+			slurm_mutex_unlock(&block_state_mutex);
 		}
 	}
 
