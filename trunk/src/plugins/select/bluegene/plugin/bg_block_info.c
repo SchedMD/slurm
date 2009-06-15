@@ -174,7 +174,7 @@ extern int block_ready(struct job_record *job_ptr)
 	bg_record_t *bg_record = NULL;
 	
 	rc = select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				  SELECT_JOBDATA_BLOCK_ID, &block_id);
+					 SELECT_JOBDATA_BLOCK_ID, &block_id);
 	if (rc == SLURM_SUCCESS) {
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record = find_bg_record_in_list(bg_lists->main, block_id);
