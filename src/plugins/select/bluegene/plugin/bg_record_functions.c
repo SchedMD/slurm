@@ -1044,7 +1044,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	blockreq.conn_type = SELECT_SMALL;
 	blockreq.block = bp_name;
 
-	debug3("here setting %d of %d and %d-%d of %d",
+	debug3("here setting node %d of %d and ionodes %d-%d of %d",
 	       bp_bit, node_record_count, io_start, 
 	       io_start+io_cnt, bg_conf->numpsets);
 
@@ -1082,8 +1082,12 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		/* if the block is smaller than the create size just
 		   continue on.
 		*/
-		if(bg_record->node_cnt < create_size)
+		if(bg_record->node_cnt < create_size) {
+			if(!delete_list)
+				delete_list = list_create(NULL);
+			list_append(delete_list, bg_record);
 			continue;
+		}
 
 		if(!smallest_bg_record || 
 		   (smallest_bg_record->node_cnt > bg_record->node_cnt))
@@ -1134,8 +1138,49 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		goto cleanup;
 	} 
 
+	/* below is only for Dynamic mode */
 	
-	if(smallest_bg_record) {
+	if(delete_list) {
+		int cnt_set = 0;
+		bitstr_t *iobitmap = bit_alloc(bg_conf->numpsets);
+		/* don't lock here since it is handled inside
+		   the put_block_in_error_state
+		*/
+		itr = list_iterator_create(delete_list);
+		while ((bg_record = list_next(itr))) {
+			debug2("combining smaller than nodecard "
+			       "dynamic block %s",
+			       bg_record->bg_block_id);
+			while(bg_record->job_running > NO_JOB_RUNNING)
+				sleep(1);
+
+			bit_or(iobitmap, bg_record->ionode_bitmap);
+			cnt_set++;
+		}
+		list_iterator_destroy(itr);
+		list_destroy(delete_list);
+		if(!cnt_set) {
+			FREE_NULL_BITMAP(iobitmap);
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+		/* set the start to be the same as the start of the
+		   ionode_bitmap.  If no ionodes set (not a small
+		   block) set io_start = 0. */
+		if((io_start = bit_ffs(iobitmap)) == -1) {
+			io_start = 0;
+			if(create_size > bg_conf->nodecard_node_cnt) 
+				blockreq.small128 = 4;
+			else
+				blockreq.small32 = 16;
+		} else if(create_size <= bg_conf->nodecard_node_cnt) 
+			blockreq.small32 = 1;
+		else
+			/* this should never happen */
+			blockreq.small128 = 1;
+		
+		FREE_NULL_BITMAP(iobitmap);		
+	} else if(smallest_bg_record) {
 		debug2("smallest dynamic block is %s",
 		       smallest_bg_record->bg_block_id);
 		if(smallest_bg_record->state == RM_PARTITION_ERROR) {
@@ -1183,12 +1228,12 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		if(create_size != bg_conf->nodecard_node_cnt) {
 			blockreq.small128 = blockreq.small32 / 4;
 			blockreq.small32 = 0;
-		}
-		/* set the start to be the same as the start of the
-		   ionode_bitmap.  If no ionodes set (not a small
-		   block) set io_start = 0. */
-		if((io_start = bit_ffs(smallest_bg_record->ionode_bitmap))
-		   == -1)
+			io_start = 0;
+		} else if((io_start =
+			   bit_ffs(smallest_bg_record->ionode_bitmap)) == -1)
+			/* set the start to be the same as the start of the
+			   ionode_bitmap.  If no ionodes set (not a small
+			   block) set io_start = 0. */
 			io_start = 0;
 	} else {
 		switch(create_size) {

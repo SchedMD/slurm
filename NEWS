@@ -87,6 +87,8 @@ documents those changes that are of interest to users and admins.
     counts. NOTE: Backfill of jobs with constraings having exclusive OR 
     operators are not fully supported.  
  -- if srun is cancelled by SIGINT that job is marked as cancelled.
+ -- BLUEGENE - Fix, for if you are setting an subbp into an error mode 
+    where the subbp stated isn't the first ionode in a nodecard.
 
 * Changes in SLURM 2.0.1
 ========================
