@@ -696,7 +696,10 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 		for(i = 0; i<bg_conf->numpsets; i++) {
 			if(bit_test(ionode_bitmap, i)) {
 				if((int)nc_pos != (int)last_pos) {
-					down_nodecard(node_name, i);
+					/* find first bit in nc */
+					int start_io = 
+						(int)nc_pos * bg_conf->io_ratio;
+					down_nodecard(node_name, start_io);
 					last_pos = nc_pos;
 				}
 			}
