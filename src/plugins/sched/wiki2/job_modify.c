@@ -109,6 +109,41 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 					return EINVAL;
 				}
 				have_equal = true;
+				if (env_ptr[i+1] == '\"') {
+					for (i+=2; ; i++) {
+						if (env_ptr[i] == '\0') {
+							error("wiki: setting job %u "
+							      "invalid environment "
+							      "variables: %s", 
+					 		     jobid, env_ptr);
+							return EINVAL;
+						}
+						if (env_ptr[i] == '\"') {
+							i++;
+							break;
+						}
+						if (env_ptr[i] == '\\') {
+							i++;
+						}
+					}
+				} else if (env_ptr[i+1] == '\'') {
+					for (i+=2; ; i++) {
+						if (env_ptr[i] == '\0') {
+							error("wiki: setting job %u "
+							      "invalid environment "
+							      "variables: %s", 
+					 		     jobid, env_ptr);
+							return EINVAL;
+						}
+						if (env_ptr[i] == '\'') {
+							i++;
+							break;
+						}
+						if (env_ptr[i] == '\\') {
+							i++;
+						}
+					}
+				}
 			}
 			if (isspace(env_ptr[i]) || (env_ptr[i] == ',')) {
 				if (!have_equal) {
