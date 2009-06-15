@@ -58,6 +58,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"display", required_argument, 0, 'D'},
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
+		{"ionodes", required_argument, 0, 'I'},
 		{"nodes", required_argument, 0, 'n'},
 		{"quiet", no_argument, 0, 'Q'},
 		{"resolve", required_argument, 0, 'R'},
@@ -70,7 +71,7 @@ extern void parse_command_line(int argc, char *argv[])
 	};
 	
 	while ((opt_char =
-		getopt_long(argc, argv, "cD:hi:n:QR:vV",
+		getopt_long(argc, argv, "cD:hi:I:n:QR:vV",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
@@ -105,6 +106,20 @@ extern void parse_command_line(int argc, char *argv[])
 				exit(1);
 			}
 			break;
+		case 'I':
+			/*
+			 * confirm valid ionodelist entry (The 128 is
+			 * a large number here to avoid having to do a
+			 * lot more querying to figure out the correct
+			 * pset size.  This number should be large enough.
+			 */
+			params.io_bit = bit_alloc(128);
+			if(bit_unfmt(params.io_bit, optarg) == -1) {
+				error("'%s' invalid entry for --ionodes",
+				      optarg);
+				exit(1);
+			}
+			break;
 		case 'n':
 			/*
 			 * confirm valid nodelist entry
@@ -115,7 +130,6 @@ extern void parse_command_line(int argc, char *argv[])
 				      optarg);
 				exit(1);
 			}
-
 			break;
 		case 'Q':
 			quiet_flag = 1;
@@ -176,7 +190,8 @@ static void _print_version(void)
 static void _usage(void)
 {
 #ifdef HAVE_BG
-	printf("Usage: smap [-chQV] [-D bcjrs] [-i seconds] [-n nodelist]\n");
+	printf("Usage: smap [-chQV] [-D bcjrs] [-i seconds] "
+	       "[-n nodelist] [-i ionodelist]\n");
 #else
 	printf("Usage: smap [-chQV] [-D jrs] [-i seconds] [-n nodelist]\n");
 #endif
@@ -196,9 +211,15 @@ Usage: smap [OPTIONS]\n\
                              s = slurm partitions\n\
   -h, --noheader             no headers on output\n\
   -i, --iterate=seconds      specify an interation period\n\
-  -n, --nodelist=[nodelist]  only show objects with these nodes\n\
-                             This does not have support for ionodes\n\
-                             in bluegene mode.\n\
+  -I, --ionodes=[ionodes]    only show objects with these ionodes\n\
+                             This should be used inconjuction with the -n\n\
+                             option.  Only specify the ionode number range \n\
+                             here.  Specify the node name with the -n option.\n\
+                             This option is only valid on Bluegene systems,\n\
+                             and only valid when quering blocks.\n\
+  -n, --nodes=[nodes]        only show objects with these nodes.\n\
+                             If querying to the ionode level use the -I\n\
+                             option in conjunction with this option.\n\
   -R, --resolve              resolve an XYZ coord from a Rack/Midplane id \n\
                              or vice versa.\n\
                              (i.e. -R R101 for R/M input -R 101 for XYZ).\n\

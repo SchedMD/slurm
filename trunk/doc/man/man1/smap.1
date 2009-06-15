@@ -65,9 +65,16 @@ If user is in configure mode type 'exit' to exit program, 'quit'
 to exit configure mode.
 
 .TP
-\fB\-n\fR, \fB\-\-nodelist\fR
-Only show objects with these nodes.  This does not have support for
-ionodes in bluegene mode.
+\fB\-I\fR, \fB\-\-ionodes\fR
+Only show objects with these ionodes this support is only for
+bluegene systems. This should be used inconjuction with the '\-n'
+option.  Only specify the ionode number range here.  Specify the node
+name with the '\-n' option. 
+
+.TP
+\fB\-n\fR, \fB\-\-nodes\fR
+Only show objects with these nodes.  If querying to the ionode level
+use the option '\-I' in conjunction with this option.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR

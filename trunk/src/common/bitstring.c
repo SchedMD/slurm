@@ -948,7 +948,7 @@ bit_fmt(char *str, int len, bitstr_t *b)
 int
 bit_unfmt(bitstr_t *b, char *str)
 {
-	int *intvec, *p, rc = 0; 
+	int *intvec, rc = 0; 
 
 	_assert_bitstr_valid(b);
 	if (str[0] == '\0')	/* no bits set */
@@ -956,17 +956,7 @@ bit_unfmt(bitstr_t *b, char *str)
 	intvec = bitfmt2int(str);
 	if (intvec == NULL) 
 		return -1;
-
-	bit_nclear(b, 0, _bitstr_bits(b) - 1);
-	for (p = intvec; *p != -1; p += 2) {
-		if ((*p < 0) || (*p >= _bitstr_bits(b))
-		||  (*(p + 1) < 0) || (*(p + 1) >= _bitstr_bits(b))) {
-			rc = -1;
-			break;
-		}
-		bit_nset(b, *p, *(p + 1));		
-	}
-
+	rc = inx2bitstr(b, intvec);
 	xfree(intvec);
 	return rc;
 }
@@ -1020,22 +1010,23 @@ bitfmt2int (char *bit_str_ptr)
 	return bit_int_ptr;
 }
 
-void inx2bitstr(bitstr_t *b, int *inx) 
+int inx2bitstr(bitstr_t *b, int *inx) 
 {
-	int i=0, j=0;
-	bitoff_t bitsize = 0;
+	int *p, rc=0;
 	
 	assert(b);
 	assert(inx);
 
-	bitsize = bit_size(b);
-	while(inx[i] >= 0) {
-		for(j = inx[i]; j <= inx[i+1]; j++) {
-			if(j < bitsize)
-				bit_set(b, j);
+	bit_nclear(b, 0, _bitstr_bits(b) - 1);
+	for (p = inx; *p != -1; p += 2) {
+		if ((*p < 0) || (*p >= _bitstr_bits(b))
+		    ||  (*(p + 1) < 0) || (*(p + 1) >= _bitstr_bits(b))) {
+			rc = -1;
+			break;
 		}
-		i += 2;
+		bit_nset(b, *p, *(p + 1));		
 	}
+	return rc;
 }
 
 /* bit_fmt_hexmask

@@ -113,6 +113,7 @@ typedef struct {
 	bool commandline;
 	int display;
 	int iterate;
+	bitstr_t *io_bit;
 	bool no_header;
 	hostlist_t hl;
 	char *resolve;

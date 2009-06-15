@@ -284,7 +284,19 @@ extern void get_bg_part()
 			if(!overlap) 
 				continue;
 		}
-
+		if(params.io_bit && new_bg_ptr->bg_info_array[i].ionodes) {
+			int overlap = 0;
+			bitstr_t *loc_bitmap =
+				bit_alloc(bit_size(params.io_bit));
+			inx2bitstr(loc_bitmap, 
+				   new_bg_ptr->bg_info_array[i].ionode_inx);
+			overlap = bit_overlap(loc_bitmap,
+					      params.io_bit);
+			FREE_NULL_BITMAP(loc_bitmap);
+			if(!overlap) 
+				continue;
+		}
+		
 		block_ptr = xmalloc(sizeof(db2_block_info_t));
 			
 		block_ptr->bg_block_name 
