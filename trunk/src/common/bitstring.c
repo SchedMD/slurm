@@ -1020,6 +1020,24 @@ bitfmt2int (char *bit_str_ptr)
 	return bit_int_ptr;
 }
 
+void inx2bitstr(bitstr_t *b, int *inx) 
+{
+	int i=0, j=0;
+	bitoff_t bitsize = 0;
+	
+	assert(b);
+	assert(inx);
+
+	bitsize = bit_size(b);
+	while(inx[i] >= 0) {
+		for(j = inx[i]; j <= inx[i+1]; j++) {
+			if(j < bitsize)
+				bit_set(b, j);
+		}
+		i += 2;
+	}
+}
+
 /* bit_fmt_hexmask
  *
  * Given a bitstr_t, allocate and return a string in the form of:

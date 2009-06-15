@@ -52,34 +52,36 @@ extern void parse_command_line(int argc, char *argv[])
 	int opt_char;
 	int option_index;
 	int tmp = 0;
+
 	static struct option long_options[] = {
 		{"commandline", no_argument, 0, 'c'},
 		{"display", required_argument, 0, 'D'},
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
-		{"parse", no_argument, 0, 'p'},
+		{"nodes", required_argument, 0, 'n'},
 		{"quiet", no_argument, 0, 'Q'},
 		{"resolve", required_argument, 0, 'R'},
+		{"verbose", no_argument, 0, 'v'},
 		{"version", no_argument, 0, 'V'},
 		{"help", no_argument, 0, OPT_LONG_HELP},
 		{"usage", no_argument, 0, OPT_LONG_USAGE},
 		{"hide", no_argument, 0, OPT_LONG_HIDE},
 		{NULL, 0, 0, 0}
 	};
-
+	
 	while ((opt_char =
-		getopt_long(argc, argv, "cD:hi:pQR:V",
+		getopt_long(argc, argv, "cD:hi:n:QR:vV",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
-		case (int) '?':
+		case '?':
 			fprintf(stderr,
 				"Try \"smap --help\" for more information\n");
 			exit(1);
 			break;
-		case (int) 'c':
+		case 'c':
 			params.commandline = TRUE;
 			break;
-		case (int) 'D':
+		case 'D':
 			if (!strcmp(optarg, "j"))
 				tmp = JOBS;
 			else if (!strcmp(optarg, "s"))
@@ -90,36 +92,48 @@ extern void parse_command_line(int argc, char *argv[])
 				tmp = COMMANDS;
 			else if (!strcmp(optarg, "r"))
 				tmp = RESERVATIONS;
-
+		
 			params.display = tmp;
 			break;
-		case (int) 'h':
+		case 'h':
 			params.no_header = true;
 			break;
-		case (int) 'i':
+		case 'i':
 			params.iterate = atoi(optarg);
 			if (params.iterate <= 0) {
 				error("Error: --iterate=%s");
 				exit(1);
 			}
 			break;
-		case (int) 'p':
-			params.parse = TRUE;
+		case 'n':
+			/*
+			 * confirm valid nodelist entry
+			 */
+			params.hl = hostlist_create(optarg);
+			if (!params.hl) {
+				error("'%s' invalid entry for --nodes",
+				      optarg);
+				exit(1);
+			}
+
 			break;
-		case (int) 'Q':
+		case 'Q':
 			quiet_flag = 1;
 			break;
-		case (int) 'R':
+		case 'R':
 			params.commandline = TRUE;
-			params.partition = strdup(optarg);
+			params.resolve = xstrdup(optarg);
 			break;
-		case (int) 'V':
+		case 'v':
+			params.verbose++;
+			break;
+		case 'V':
 			_print_version();
 			exit(0);
-		case (int) OPT_LONG_HELP:
+		case OPT_LONG_HELP:
 			_help();
 			exit(0);
-		case (int) OPT_LONG_USAGE:
+		case OPT_LONG_USAGE:
 			_usage();
 			exit(0);
 		case OPT_LONG_HIDE:
@@ -127,7 +141,6 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		}
 	}
-
 }
 
 extern void print_date()
@@ -163,9 +176,9 @@ static void _print_version(void)
 static void _usage(void)
 {
 #ifdef HAVE_BG
-	printf("Usage: smap [-chpQV] [-D bcjrs] [-i seconds]\n");
+	printf("Usage: smap [-chQV] [-D bcjrs] [-i seconds] [-n nodelist]\n");
 #else
-	printf("Usage: smap [-chpQV] [-D jrs] [-i seconds]\n");
+	printf("Usage: smap [-chQV] [-D jrs] [-i seconds] [-n nodelist]\n");
 #endif
 }
 
@@ -176,15 +189,16 @@ Usage: smap [OPTIONS]\n\
   -c, --commandline          output written with straight to the\n\
                              commandline.\n\
   -D, --display              set which display mode to use\n\
-                             b=bluegene blocks\n\
-                             c=set bluegene configuration\n\
-                             j=jobs\n\
-                             r=reservations\n\
-                             s=slurm partitions\n\
+                             b = bluegene blocks\n\
+                             c = set bluegene configuration\n\
+                             j = jobs\n\
+                             r = reservations\n\
+                             s = slurm partitions\n\
   -h, --noheader             no headers on output\n\
   -i, --iterate=seconds      specify an interation period\n\
-  -p, --parse                used with -c to not format output, but use\n\
-                             single tab delimitation.\n\
+  -n, --nodelist=[nodelist]  only show objects with these nodes\n\
+                             This does not have support for ionodes\n\
+                             in bluegene mode.\n\
   -R, --resolve              resolve an XYZ coord from a Rack/Midplane id \n\
                              or vice versa.\n\
                              (i.e. -R R101 for R/M input -R 101 for XYZ).\n\

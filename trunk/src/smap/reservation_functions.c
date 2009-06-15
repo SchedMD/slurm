@@ -52,6 +52,7 @@ extern void get_reservation(void)
 	static int printed_resv = 0;
 	static int count = 0;
 	static reserve_info_msg_t *resv_info_ptr = NULL, *new_resv_ptr = NULL;
+	bitstr_t *nodes_req = NULL;
 
 	if (resv_info_ptr) {
 		error_code = slurm_load_reservations(resv_info_ptr->last_update,
@@ -95,8 +96,20 @@ extern void get_reservation(void)
 	}
 	printed_resv = 0;
 	count = 0;
+	if(params.hl)
+		nodes_req = get_requested_node_bitmap();
 	for (i = 0; i < recs; i++) {
 		resv = new_resv_ptr->reservation_array[i];
+		if(nodes_req) {
+			int overlap = 0;
+			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
+			inx2bitstr(loc_bitmap, resv.node_inx);
+			overlap = bit_overlap(loc_bitmap, nodes_req);
+			FREE_NULL_BITMAP(loc_bitmap);
+			if(!overlap) 
+				continue;
+		}
+
 		if ((resv.start_time <= now) && (resv.end_time >= now))
 			active = 1;
 		else

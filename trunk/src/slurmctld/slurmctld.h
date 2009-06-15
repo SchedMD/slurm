@@ -80,12 +80,6 @@
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 
-#define FREE_NULL_BITMAP(_X)		\
-	do {				\
-		if (_X) bit_free (_X);	\
-		_X	= NULL; 	\
-	} while (0)
-
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures
 \*****************************************************************************/
