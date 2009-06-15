@@ -1044,6 +1044,35 @@ proc test_select_type { } {
 	return $type
 }
 
+################################################################
+#
+# Proc: test_select_type_params
+#
+# Purpose: Determine SelectTypeParameters being used
+#
+# Returns value of SelectTypeParameters
+#
+################################################################
+
+proc test_select_type_params { } {
+	global scontrol bin_bash bin_grep alpha_numeric_under
+
+	log_user 0
+	set params ""
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
+	expect {
+		-re "SelectTypeParameters *= *($alpha_numeric_under)" {
+			set params $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $params
+}
 
 ################################################################
 #
