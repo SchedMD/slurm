@@ -111,6 +111,8 @@ expect {
 		exp_continue
 	}
 	"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj" {
+		# This is the bottom line of the smap box I know it 
+		# looks wierd, but this is  what expect sees it as. 
 #		exec sleep 1
 		send "\n"
 		exp_continue
