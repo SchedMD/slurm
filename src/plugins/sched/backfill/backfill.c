@@ -122,7 +122,7 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 static bool _more_work(void);
 static int  _num_feature_count(struct job_record *job_ptr);
 static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
-static int  _try_sched(struct job_record *job_ptr, bitstr_t *avail_bitmap,
+static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes);
 
@@ -191,7 +191,7 @@ static int _num_feature_count(struct job_record *job_ptr)
  * IN/OUT avail_bitmap - nodes available/selected to use
  * RET SLURM_SUCCESS on success, otherwise an error code
  */
-static int  _try_sched(struct job_record *job_ptr, bitstr_t *avail_bitmap,
+static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes)
 {
@@ -225,12 +225,12 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t *avail_bitmap,
 		}
 		list_iterator_destroy(feat_iter);
 
-		if ((job_req_node_filter(job_ptr, avail_bitmap) != 
+		if ((job_req_node_filter(job_ptr, *avail_bitmap) != 
 		     SLURM_SUCCESS) ||
-		    (bit_set_count(avail_bitmap) < high_cnt)) {
+		    (bit_set_count(*avail_bitmap) < high_cnt)) {
 			rc = ESLURM_NODES_BUSY;
 		} else {
-			rc = select_g_job_test(job_ptr, avail_bitmap, 
+			rc = select_g_job_test(job_ptr, *avail_bitmap, 
 					       high_cnt, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN);
 		}
@@ -250,15 +250,15 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t *avail_bitmap,
 		uint16_t orig_shared;
 		orig_shared = job_ptr->details->shared;
 		job_ptr->details->shared = 0;
-		tmp_bitmap = bit_copy(avail_bitmap);
-		rc = select_g_job_test(job_ptr, avail_bitmap, min_nodes,
+		tmp_bitmap = bit_copy(*avail_bitmap);
+		rc = select_g_job_test(job_ptr, *avail_bitmap, min_nodes,
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN);
 		job_ptr->details->shared = orig_shared;
 		if ((rc != SLURM_SUCCESS) && (orig_shared != 0)) {
-			FREE_NULL_BITMAP(avail_bitmap);
-			avail_bitmap= tmp_bitmap;
-			rc = select_g_job_test(job_ptr, avail_bitmap, 
+			FREE_NULL_BITMAP(*avail_bitmap);
+			*avail_bitmap= tmp_bitmap;
+			rc = select_g_job_test(job_ptr, *avail_bitmap, 
 					       min_nodes, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN);
 		} else
@@ -462,11 +462,11 @@ static void _attempt_backfill(void)
 		if (job_req_node_filter(job_ptr, avail_bitmap))
 			continue;	/* nodes lack features */
 
-		j = _try_sched(job_ptr, avail_bitmap, 
+		j = _try_sched(job_ptr, &avail_bitmap, 
 			       min_nodes, max_nodes, req_nodes);
 		if (j != SLURM_SUCCESS)
 			continue;	/* not runable */
-
+		
 		job_ptr->start_time = MAX(job_ptr->start_time, start_res);
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, resv_bitmap);
