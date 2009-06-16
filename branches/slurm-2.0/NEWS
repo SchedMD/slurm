@@ -47,6 +47,7 @@ documents those changes that are of interest to users and admins.
     failed.
  -- BLUEGENE - Fix, for if you are setting an subbp into an error mode 
     where the subbp stated isn't the first ionode in a nodecard.
+ -- fix for backfill to not core when checking shared nodes
 
 * Changes in SLURM 2.0.1
 ========================
