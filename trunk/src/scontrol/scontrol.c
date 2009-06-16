@@ -461,14 +461,22 @@ _process_command (int argc, char *argv[])
 {
 	int error_code = 0;
 	char *tag = argv[0];
-	int taglen = strlen(tag);
+	int taglen = 0;
 
 	if (argc < 1) {
 		exit_code = 1;
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
+		return 0;
+	} else if(tag)
+		taglen = strlen(tag);
+	else {
+		if (quiet_flag == -1)
+			fprintf(stderr, "input problem");
+		return 0;
 	}
-	else if (strncasecmp (tag, "abort", MAX(taglen, 5)) == 0) {
+
+if (strncasecmp (tag, "abort", MAX(taglen, 5)) == 0) {
 		/* require full command name */
 		if (argc > 2) {
 			exit_code = 1;
