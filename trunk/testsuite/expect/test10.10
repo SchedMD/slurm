@@ -51,6 +51,7 @@ if {[file exists $smap] == 0} {
 #
 set timeout 10 
 spawn $smap --noheader
+#exp_internal -f test10.10.log 1
 expect {
 	-re "ID J" {
 		set stuff [concat $stuff "1"]
@@ -102,8 +103,15 @@ expect {
 		incr matches
 		exp_continue	        
 	}
-	-re "200\[0-9]" {
+	-re "20\[0-1]\[0-9]" {
+		set stuff [concat $stuff "11"]
+		incr matches
 		exec sleep 1
+		send "\n"
+		exp_continue
+	}
+	"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj" {
+#		exec sleep 1
 		send "\n"
 		exp_continue
 	}
