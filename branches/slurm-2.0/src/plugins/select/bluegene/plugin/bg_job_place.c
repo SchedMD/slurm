@@ -97,7 +97,6 @@ static int _check_for_booted_overlapping_blocks(
 	bool test_only);
 static int _dynamically_request(List block_list, int *blocks_added,
 				ba_request_t *request,
-				bitstr_t* slurm_block_bitmap,
 				char *user_req_nodes);
 static int _find_best_block_match(List block_list, int *blocks_added,
 				  struct job_record* job_ptr,
@@ -709,7 +708,6 @@ static int _check_for_booted_overlapping_blocks(
 
 static int _dynamically_request(List block_list, int *blocks_added,
 				ba_request_t *request,
-				bitstr_t* slurm_block_bitmap,
 				char *user_req_nodes)
 {
 	List list_of_lists = NULL;
@@ -1092,7 +1090,6 @@ static int _find_best_block_match(List block_list,
 		
 		if((rc = _dynamically_request(block_list, blocks_added,
 					      &request, 
-					      slurm_block_bitmap, 
 					      job_ptr->details->req_nodes))
 		   == SLURM_SUCCESS) {
 			create_try = 1;
