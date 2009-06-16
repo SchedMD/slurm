@@ -51,6 +51,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for scontrol to not core when hitting just return in interactive mode.
  -- Improve sched/backfill logic with respect to shared nodes (multiple jobs
     per node).
+ -- In sched/wiki (Maui interface) add job info fields QOS, RCLASS, DMEM and
+    TASKSPERNODE.
 
 * Changes in SLURM 2.0.1
 ========================
