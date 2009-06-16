@@ -43,7 +43,7 @@ set sleep_time  5
 
 
 # allocate a set of nodes (node_cnt) and the quit right after
-proc allocate_and_quit { node_cnt node } {
+proc allocate_and_quit { node_cnt node error_cnt check} {
 	global salloc number alpha_numeric_under prompt
 	set job_id 0
 	set block ""
@@ -66,6 +66,12 @@ proc allocate_and_quit { node_cnt node } {
 			exp_continue
 		}
 		-re $prompt {
+			if {$check} {
+				send_user "looking for $error_cnt $node_cnt\n"
+				if {[check_node $node $error_cnt $node_cnt] } {
+					set block ""
+				}
+			}
 			send "exit\n"
 			exp_continue
 		}
@@ -87,8 +93,8 @@ proc allocate_and_quit { node_cnt node } {
 	}
 
 	if {![string compare $block ""]} {
-		send_user "\nFAILURE: unable to allocate full system\n";
-		exit 1
+		send_user "\nFAILURE: unable to fulfill allocation request\n";
+		return ""
 	}
 
 	return $block
@@ -190,6 +196,87 @@ proc is_block_in_state { block state } {
 	return 0
 }
 
+proc check_node { node error_cnt alloc_cnt } {
+	global scontrol sinfo procs_per_cnode number prompt
+	upvar spawn_id spawn_id 
+
+	set error_procs [expr $error_cnt * $procs_per_cnode]
+	set alloc_procs [expr $alloc_cnt * $procs_per_cnode]
+	set total_procs 0
+	set match 0
+	send "$scontrol show node $node\n"
+	expect {
+		-nocase -re " Procs=($number)" {
+			incr match 
+			set total_procs $expect_out(1,string)
+			exp_continue
+		}
+		-nocase -re "AllocProcs=$alloc_procs" {
+			incr match 
+			exp_continue
+		}
+		-nocase -re "ErrProcs=$error_procs" {
+			incr match 
+			exp_continue
+		}
+		-re $prompt {
+		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: smap not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 3} {
+		send_user "\nFAILURE: scontrol didn't give correct proc counts $total_procs.\n"
+		return 1
+	}
+
+	set total_cnt [expr ($total_procs / $procs_per_cnode) - $alloc_cnt - $error_cnt]
+	set idle_procs [expr $total_procs - $error_procs - $alloc_procs]
+	set match 0
+	send "$sinfo -h --format \"%C %A\" -n $node\n"
+
+	# make sure we get by the sinfo command so we don't 
+	# think the %'s are a prompt
+	expect {
+		"%C %A" {
+		}
+	}
+	expect {
+		-nocase -re "$alloc_procs.$idle_procs.$error_procs.$total_procs $alloc_cnt.$total_cnt" {
+			set match 1
+			exp_continue
+		}
+		-re $prompt {
+		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: smap not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 1} {
+		send_user "\nFAILURE: sinfo didn't give correct proc counts $match.\n"
+		return 1
+	}
+	return 0
+}
+
 # set a block in a error state
 proc change_block_state { block state} {
 	global scontrol
@@ -208,9 +295,6 @@ proc change_block_state { block state} {
 		}
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -231,8 +315,6 @@ proc change_subbp_state { node ionodes state } {
 	global scontrol smap
  
 	set exit_code 0
-	send_user "got $node "
-	send_user "and \[$ionodes\]\n"
 
 	set my_pid [spawn $scontrol update subbpname=$node\[$ionodes\] state=$state]
 	expect {
@@ -246,9 +328,6 @@ proc change_subbp_state { node ionodes state } {
 		}
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -278,9 +357,6 @@ proc change_subbp_state { node ionodes state } {
 		}
 		timeout {
 			send_user "\nFAILURE: smap not responding\n"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -347,7 +423,6 @@ if {$type == 0} {
 if {![string compare $type "P"]} {
 	if {$psets >= 32} {
 		set smallest 16
-		set smallest_io [expr $psets / $smallest]
 	} elseif {$psets >= 16} {
 		set smallest 32
 	} elseif {$psets >= 8} {
@@ -365,10 +440,15 @@ if {![string compare $type "P"]} {
 	send_user "\nFAILURE: unknown bluegene system type '$type'\n";
 	exit 1
 }
+if {$smallest > 32} {
+	set error_block $smallest
+} else {
+	set error_block 32
+}
 
 # allocate the entire system (this should work on all layout types since a 
 # full block is always makable unless they aren't using the entire system.
-set block [allocate_and_quit $num_nodes ""]
+set block [allocate_and_quit $num_nodes "" 0 0]
 
 #use this node for all future tests
 set first_node [get_first_node]
@@ -384,7 +464,12 @@ if {![string compare $layout "Dynamic"]} {
 	# lets make 1 ionode in an error state
 	set exit_code [change_subbp_state $first_node "0" "error"]
 	#allocate something with that node	
-	set block [allocate_and_quit $smallest $first_node]
+	set block [allocate_and_quit $smallest $first_node $error_block 1]
+	if {![string compare $block ""]} {
+		set exit_code 1
+	}
+
+	#make sure sinfo/scontrol has it correct
 	set exit_code [change_subbp_state $first_node "0" "free"]
 
 } elseif {![string compare $layout "Overlap"]} {
