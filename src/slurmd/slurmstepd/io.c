@@ -1028,15 +1028,16 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 #ifdef HAVE_PTY_H
 	if (job->pty) {
 		if (task->gtid == 0) {
+			/* Make a file descriptor for the task to write to, but
+			   don't make a separate one read from, because in pty 
+			   mode we can't distinguish between stdout and stderr
+			   coming from the remote shell.  Both streams from the
+			   shell will go to task->stdout_fd, which is okay in 
+			   pty mode because any output routed through the stepd
+			   will be displayed. */
 			task->stderr_fd = dup(task->stdin_fd);
 			fd_set_close_on_exec(task->stderr_fd);
-			task->from_stderr = dup(task->to_stdin);
-			fd_set_close_on_exec(task->from_stderr);
-			fd_set_nonblocking(task->from_stderr);
-			task->err = _create_task_out_eio(task->from_stderr,
-						 SLURM_IO_STDERR, job, task);
-			list_append(job->stderr_eio_objs, (void *)task->err);
-			eio_new_initial_obj(job->eio, (void *)task->err);
+			task->from_stderr = -1;
 		} else {
 			xfree(task->efname);
 			task->efname = xstrdup("/dev/null");
