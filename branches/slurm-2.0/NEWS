@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     jobs before creating the reservation. Without this flag, nodes allocated
     jobs expected to running when the reservation begins can not be placed 
     into a reservation.
+ -- In task/affinity plugin, add layer of abstraction to logic translating
+    block masks to physical machine masks. Patch from Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.0.2
 ========================

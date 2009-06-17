@@ -50,7 +50,8 @@
 
 static char *_alloc_mask(launch_tasks_request_msg_t *req,
 			 int *whole_node_cnt, int *whole_socket_cnt, 
-			 int *whole_core_cnt, int *whole_thread_cnt,		 				 int *part_socket_cnt, int *part_core_cnt);
+			 int *whole_core_cnt, int *whole_thread_cnt,
+			 int *part_socket_cnt, int *part_core_cnt);
 static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 				uint16_t *hw_sockets, uint16_t *hw_cores,
 				uint16_t *hw_threads);
@@ -495,10 +496,11 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 			 int *part_socket_cnt, int *part_core_cnt)
 {
 	uint16_t sockets, cores, threads;
-	int c, s, t, i, mask;
+	int c, s, t, i;
 	int c_miss, s_miss, t_miss, c_hit, t_hit;
 	bitstr_t *alloc_bitmap;
 	char *str_mask;
+	bitstr_t *alloc_mask;
 
 	*whole_node_cnt   = 0;
 	*whole_socket_cnt = 0;
@@ -511,12 +513,19 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 	if (!alloc_bitmap)
 		return NULL;
 
-	i = mask = 0;
+	alloc_mask = bit_alloc(bit_size(alloc_bitmap));
+	if (!alloc_mask) {
+		error("malloc error");
+		bit_free(alloc_bitmap);
+		return NULL;
+	}
+
+	i = 0;
 	for (s=0, s_miss=false; s<sockets; s++) {
 		for (c=0, c_hit=c_miss=false; c<cores; c++) {
 			for (t=0, t_hit=t_miss=false; t<threads; t++) {
 				if (bit_test(alloc_bitmap, i)) {
-					mask |= (1 << i);
+					bit_set(alloc_mask, i);
 					(*whole_thread_cnt)++;
 					t_hit = true;
 					c_hit = true;
@@ -544,8 +553,17 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 		(*whole_node_cnt)++;
 	bit_free(alloc_bitmap);
 
-	str_mask = xmalloc(16);
-	snprintf(str_mask, 16, "%x", mask);
+	/* translate abstract masks to actual hardware layout */
+	_lllp_map_abstract_masks(1, &alloc_mask);
+
+#ifdef HAVE_NUMA
+	if (req->cpu_bind_type & CPU_BIND_TO_LDOMS) {
+		_match_masks_to_ldom(1, &alloc_mask);
+	}
+#endif
+
+	str_mask = bit_fmt_hexmask(alloc_mask);
+	bit_free(alloc_mask);
 	return str_mask;
 }
 
