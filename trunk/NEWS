@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
     into a reservation.
  -- In task/affinity plugin, add layer of abstraction to logic translating
     block masks to physical machine masks. Patch from Matthieu Hautreux, CEA.
+ -- Fix for setting the node_bitmap in a job to NULL if the job does not 
+    start correctly when expected to start.
 
 * Changes in SLURM 2.0.2
 ========================
