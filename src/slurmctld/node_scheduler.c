@@ -1105,6 +1105,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
 		job_ptr->end_time = 0;
+		job_ptr->node_bitmap = NULL;
 		goto cleanup;
 	}
 
