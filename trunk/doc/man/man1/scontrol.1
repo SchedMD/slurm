@@ -625,13 +625,27 @@ Identify the partition to be reserved.
 .TP
 \fIFlags\fP=<flags>
 Flags associated with the reservation. 
-Currently "MAINT" (maintenance mode, receives special accounting treatment), 
-"DAILY" (repeat the reservation every day), 
-"WEEKLY" (repeat the reservation every week) and
-"SPEC_NODES" (reservation is for specific nodes, output only) is supported.
-In order to remove the "MAINT", "DAILY" or "WEEKLY" flag with the update
-option, preceed the name with a minus sign. For example:
-Flags=\-MAINT.
+In order to remove a flag with the update option, preceed the name with 
+a minus sign. For example: Flags=\-MAINT.
+Currently supported flags include:
+.RS
+.TP 12
+\fIMAINT\fR
+Maintenance mode, receives special accounting treatment
+.TP
+\fIIGNORE_JOBS\fR
+Ignore currently running jobs when creating the reservation.
+This can be especially useful when reserving all nodes in the system for maintenance
+.TP
+\fIDAILY\fR
+Repeat the reservation at the same time every day
+.TP
+\fIWEEKLY\fR
+Repeat the reservation at the same time every week
+.TP
+\fISPEC_NODES\fR
+Reservation is for specific nodes (output only)
+.RE
 
 .TP
 \fIFeatures\fP=<features>

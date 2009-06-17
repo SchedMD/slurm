@@ -929,10 +929,10 @@ include "minutes", "minutes:seconds", "hours:minutes:seconds",
 .TP
 \fB\-\-task\-epilog\fR=<\fIexecutable\fR>
 The \fBslurmd\fR daemon will run \fIexecutable\fR just after each task
-terminates. This will be before after any TaskEpilog parameter
-in slurm.conf is executed. This is meant to be a very short\-lived 
-program. If it fails to terminate within a few seconds, it will 
-be killed along with any descendant processes.
+terminates. This will be executed before any TaskEpilog parameter in
+slurm.conf is executed. This is meant to be a very short\-lived
+program. If it fails to terminate within a few seconds, it will be
+killed along with any descendant processes.
 
 .TP
 \fB\-\-task\-prolog\fR=<\fIexecutable\fR>

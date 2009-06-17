@@ -27,19 +27,27 @@ an entire computer at a particular time for a system down time.
 The example below shows the creation of a full-system reservation 
 at 16:00 hours on 6 February and lasting for 120 minutes. 
 The "maint" flag is used to identify the reservation for accounting 
-purposes as system maintenance. As the reservation time approaches, 
+purposes as system maintenance. 
+The "ignore_jobs" flag is used to indicate that we can ignore currently 
+running jobs when creating this reservation. 
+By default, only nodes which are not expected to have a running job
+at the start time can be reserved (the time limit of all running 
+jobs will have been reached).
+In this case we can manually cancel the running jobs as needed 
+to perform system maintenance.
+As the reservation time approaches, 
 only jobs that can complete by the reservation time will be 
 initiated.</p>
 <pre>
 $ scontrol create reservation starttime=2009-02-06T16:00:00 \
-   duration=120 user=root flags=maint nodes=ALL
+   duration=120 user=root flags=maint,ignore_jobs nodes=ALL
 Reservation created: root_4
 
 $ scontrol show reservation
 ReservationName=root_4 StartTime=2009-02-06T16:00:00 
    EndTime=2009-02-06T18:00:00 Duration=120
    Nodes=ALL NodeCnt=20 Features=(null) PartitionName=(null)
-   Flags=MAINT,SPEC_NODES Users=root Accounts=(null)
+   Flags=MAINT,SPEC_NODES,IGNORE_JOBS Users=root Accounts=(null)
 </pre>
 
 <p>Another mode of operation would be to reserve specific nodes
@@ -159,7 +167,7 @@ made more flexible to accept multiple features with AND or OR operators.</li>
 </ol>
 
 
-<p style="text-align: center;">Last modified 2 June 2009</p>
+<p style="text-align: center;">Last modified 15 June 2009</p>
 
 <!--#include virtual="footer.txt"-->
 
