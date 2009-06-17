@@ -44,13 +44,25 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - add support for scontrol show blocks.
  -- Added support for job step time limits.
 
+* Changes in SLURM 2.0.3
+========================
+ -- Add reservation creation/update flag of Ignore_Jobs to enable the creation
+    of a reservation that overlaps jobs expected to still be running when
+    the reservation starts. This would be especially useful to reserve all 
+    nodes for system maintenence without adjusting time limits of running
+    jobs before creating the reservation. Without this flag, nodes allocated
+    jobs expected to running when the reservation begins can not be placed 
+    into a reservation.
+ -- In task/affinity plugin, add layer of abstraction to logic translating
+    block masks to physical machine masks. Patch from Matthieu Hautreux, CEA.
+
 * Changes in SLURM 2.0.2
 ========================
  -- Fix, don't remove job details when a job is cancelled while pending.
  -- Do correct type for mktime so garbage isn't returned on 64bit systems 
     for accounting archival.
  -- Better checking in sacctmgr to avoid infinite loops.
- -- fix minor memory leak in fake_slurm_step_layout_create()
+ -- Fix minor memory leak in fake_slurm_step_layout_create()
  -- Fix node weight (scheduling priority) calculation for powered down
     nodes. Patch from Hongjia Cao, NUDT.
  -- Fix node suspend/resume rate calculations. Patch from Hongjia Cao, NUDT.
@@ -75,7 +87,8 @@ documents those changes that are of interest to users and admins.
     not set in the slurm.conf.
  -- Added a set of SBATCH_CPU_BIND* and SBATCH_MEM_BIND* env variables to keep
     jobsteps launched from within a batch script from inheriting the CPU and
-    memory affinity that was applied to the batch script.
+    memory affinity that was applied to the batch script. Patch from Matthieu
+    Hautreux, CEA.
  -- Ignore the extra processors on a node above configured size if either 
     sched/gang or select/cons_res is configured.
  -- Fix bug in tracking memory allocated on a node for select/cons_res plugin.
@@ -95,7 +108,7 @@ documents those changes that are of interest to users and admins.
  -- Improve sched/backfill logic with respect to shared nodes (multiple jobs
     per node).
  -- In sched/wiki (Maui interface) add job info fields QOS, RCLASS, DMEM and
-    TASKSPERNODE.
+    TASKSPERNODE. Patch from Bjorn-Helge Mevik, University of Oslo.
 
 * Changes in SLURM 2.0.1
 ========================
