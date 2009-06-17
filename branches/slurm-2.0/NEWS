@@ -14,6 +14,9 @@ documents those changes that are of interest to users and admins.
     block masks to physical machine masks. Patch from Matthieu Hautreux, CEA.
  -- Fix for setting the node_bitmap in a job to NULL if the job does not 
     start correctly when expected to start.
+ -- Fixed bug in srun --pty logic. Output from the task was split up 
+    arbitrarily into stdout and stderr streams, and sometimes was printed 
+    out of order.
 
 * Changes in SLURM 2.0.2
 ========================
