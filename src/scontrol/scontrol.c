@@ -56,7 +56,8 @@ static void	_create_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
 static void     _show_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
-static void     _ping_slurmctld(char *control_machine, char *backup_controller);
+static void     _ping_slurmctld(char *control_machine, 
+				char *backup_controller);
 static void	_print_config (char *config_param);
 static void     _print_daemons (void);
 static void	_print_ping (void);
@@ -303,8 +304,10 @@ _print_config (char *config_param)
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = SLURM_SUCCESS;
-			if (quiet_flag == -1)
-				printf ("slurm_load_ctl_conf no change in data\n");
+			if (quiet_flag == -1) {
+				printf ("slurm_load_ctl_conf no change "
+					"in data\n");
+			}
 		}
 	}
 	else

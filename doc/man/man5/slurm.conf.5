@@ -222,10 +222,14 @@ By default the \fBControlAddr\fR will be identical in value to
 .TP
 \fBControlMachine\fR
 The short hostname of the machine where SLURM control functions are
-executed.  I.e., the hostname returned by the \fIgethostname()\fR
-function cut at the first dot (e.g. use "tux001" rather than
-"tux001.my.com").  This value must be specified.  See the
-\fBRELOCATING CONTROLLERS\fR section if you change this.
+executed (i.e. the name returned by the command "hostname -s", use 
+"tux001" rather than "tux001.my.com").  
+This value must be specified. 
+In order to support some high availability architectures, multiple
+hostnames may be listed with comma separators and one \fBControlAddr\fR
+must be specified. The high availability system must insure that the
+slurmctld daemon is running on only one of these hosts at a time.
+See the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
 .TP
 \fBCryptoType\fR

@@ -4,7 +4,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -78,12 +78,12 @@
 #define SHUTDOWN_WAIT     2	/* Time to wait for primary server shutdown */
 
 static int          _background_process_msg(slurm_msg_t * msg);
-static int          _backup_reconfig(void);
 static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
+static int          _backup_reconfig(void);
 static int          _ping_controller(void);
-inline static void  _update_cred_key(void);
 static int          _shutdown_primary_controller(int wait_time);
+inline static void  _update_cred_key(void);
 
 /* Local variables */
 static bool          dump_core = false;

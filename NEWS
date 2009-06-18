@@ -4,7 +4,10 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.1.0-pre2
 =============================
  -- Added support for smap to query off node name for display.
- -- Slurmdbd modified to set user ID and group ID to SlurmUser if started as root.
+ -- Slurmdbd modified to set user ID and group ID to SlurmUser if started as 
+    user root.
+ -- Configuration parameter ControlMachine changed to  accept multiple comma-
+    separated hostnames for support of some high-availability architectures.
 
 * Changes in SLURM 2.1.0-pre1
 =============================

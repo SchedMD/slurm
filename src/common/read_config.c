@@ -1718,8 +1718,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->complete_wait = DEFAULT_COMPLETE_WAIT;
 
 	if (!s_p_get_string(&conf->control_machine, "ControlMachine", hashtbl))
-		fatal ("_validate_and_set_defaults: "
-		       "ControlMachine not specified.");
+		fatal ("ControlMachine not specified.");
 	else if (strcasecmp("localhost", conf->control_machine) == 0) {
 		xfree (conf->control_machine);
 		conf->control_machine = xmalloc(MAX_SLURM_NAME);
@@ -1727,12 +1726,17 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			fatal("getnodename: %m");
 	}
 
-	if (!s_p_get_string(&conf->control_addr, "ControlAddr", hashtbl)
-	    && conf->control_machine != NULL)
+	if (!s_p_get_string(&conf->control_addr, "ControlAddr", hashtbl) &&
+	    (conf->control_machine != NULL)) {
+		if (strchr(conf->control_machine, ',')) {
+			fatal("ControlMachine has multiple host names so "
+			      "ControlAddr must be specified");
+		}
 		conf->control_addr = xstrdup (conf->control_machine);
+	}
 
-	if ((conf->backup_controller != NULL)
-	    && (strcmp(conf->backup_controller, conf->control_machine) == 0)) {
+	if ((conf->backup_controller != NULL) &&
+	    (strcmp(conf->backup_controller, conf->control_machine) == 0)) {
 		error("ControlMachine and BackupController identical");
 		xfree(conf->backup_addr);
 		xfree(conf->backup_controller);
@@ -1749,8 +1753,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->job_credential_public_certificate,
 		      "JobCredentialPublicCertificate", hashtbl);
 
-	if (s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl)
-	    && conf->max_job_cnt < 1)
+	if (s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl) &&
+	    (conf->max_job_cnt < 1))
 		fatal("MaxJobCount=%u, No jobs permitted", conf->max_job_cnt);
 
 	if (!s_p_get_string(&conf->authtype, "AuthType", hashtbl))
