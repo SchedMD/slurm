@@ -75,8 +75,8 @@ if {$job_id == 0} {
 #
 # Wait for job completion
 #
-if {[wait_for_step $job_id.0] != 0} {
-	send_user "\nFAILURE: waiting for step to complete\n"
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
 	set exit_code 1
 }
 
@@ -121,15 +121,6 @@ if {[wait_for_file $file_err] == 0} {
 	send_user "\nFAILURE: Job error file missing\n"
 	set exit_code 1
 }
-
-#
-# Wait for job completion
-#
-if {[wait_for_job $job_id DONE] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	set exit_code 1
-}
-
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
