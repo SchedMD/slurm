@@ -359,9 +359,11 @@ int main(int argc, char *argv[])
 	*/
 	if (running_cache) {
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&assoc_cache_thread, &thread_attr, 
-				  _assoc_cache_mgr, NULL))
-			fatal("pthread_create error %m");
+		while (pthread_create(&assoc_cache_thread, &thread_attr, 
+				      _assoc_cache_mgr, NULL)) {
+			error("pthread_create error %m");
+			sleep(1);
+		}
 		slurm_attr_destroy(&thread_attr);
 	}
 	
@@ -477,39 +479,48 @@ int main(int argc, char *argv[])
 		slurmctld_config.server_thread_count++;
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&slurmctld_config.thread_id_rpc, 
-				&thread_attr, _slurmctld_rpc_mgr, NULL))
-			fatal("pthread_create error %m");
+		while (pthread_create(&slurmctld_config.thread_id_rpc, 
+				      &thread_attr, _slurmctld_rpc_mgr, 
+				      NULL)) {
+			error("pthread_create error %m");
+			sleep(1);
+		}
 		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * create attached thread for signal handling
 		 */
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&slurmctld_config.thread_id_sig,
-				   &thread_attr, _slurmctld_signal_hand,
-				   NULL))
-			fatal("pthread_create %m");
+		while (pthread_create(&slurmctld_config.thread_id_sig,
+				      &thread_attr, _slurmctld_signal_hand,
+				      NULL)) {
+			error("pthread_create %m");
+			sleep(1);
+		}
 		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * create attached thread for state save
 		 */
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&slurmctld_config.thread_id_save,
-				   &thread_attr, slurmctld_state_save,
-				   NULL))
-			fatal("pthread_create %m");
+		while (pthread_create(&slurmctld_config.thread_id_save,
+				      &thread_attr, slurmctld_state_save,
+				      NULL)) {
+			error("pthread_create %m");
+			sleep(1);
+		}
 		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * create attached thread for node power management
 		 */
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&slurmctld_config.thread_id_power,
-				   &thread_attr, init_power_save,
-				   NULL))
-			fatal("pthread_create %m");
+		while (pthread_create(&slurmctld_config.thread_id_power,
+				      &thread_attr, init_power_save,
+				      NULL)) {
+			error("pthread_create %m");
+			sleep(1);
+		}
 		slurm_attr_destroy(&thread_attr);
 
 		/*
