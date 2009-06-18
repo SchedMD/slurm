@@ -96,7 +96,7 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/srun_comm.h"
 
-#define MAX_RETRIES	10
+#define MAX_RETRIES	100
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
