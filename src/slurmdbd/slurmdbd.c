@@ -40,6 +40,7 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
+#include <grp.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -55,6 +56,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -81,6 +83,7 @@ static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_rollup = 0;
 
 /* Local functions */
+static void  _become_slurm_user(void);
 static void  _daemonize(void);
 static void  _default_sigaction(int sig);
 static void  _init_config(void);
@@ -120,6 +123,7 @@ int main(int argc, char *argv[])
 	if (foreground == 0)
 		_daemonize();
 	_init_pidfile();
+	_become_slurm_user();
 	log_config();
 
 	if (xsignal_block(dbd_sigarray) < 0)
@@ -528,4 +532,46 @@ static void _default_sigaction(int sig)
 	act.sa_handler = SIG_DFL;
 	if (sigaction(sig, &act, NULL))
 		error("sigaction(%d): %m", sig);
+}
+
+static void _become_slurm_user(void)
+{
+	gid_t slurm_user_gid;
+
+	/* Determine SlurmUser gid */
+	slurm_user_gid = gid_from_uid(slurmdbd_conf->slurm_user_id);
+	if (slurm_user_gid == (gid_t) -1) {
+		fatal("Failed to determine gid of SlurmUser(%u)", 
+		      slurmdbd_conf->slurm_user_id);
+	}
+
+	/* Initialize supplementary groups ID list for SlurmUser */
+	if (getuid() == 0) {
+		/* root does not need supplementary groups */
+		if ((slurmdbd_conf->slurm_user_id == 0) &&
+		    (setgroups(0, NULL) != 0)) {
+			fatal("Failed to drop supplementary groups, "
+			      "setgroups: %m");
+		} else if ((slurmdbd_conf->slurm_user_id != getuid()) &&
+			   initgroups(slurmdbd_conf->slurm_user_name, 
+				      slurm_user_gid)) {
+			fatal("Failed to set supplementary groups, "
+			      "initgroups: %m");
+		}
+	} else {
+		info("Not running as root. Can't drop supplementary groups");
+	}
+
+	/* Set GID to GID of SlurmUser */
+	if ((slurm_user_gid != getegid()) &&
+	    (setgid(slurm_user_gid))) {
+		fatal("Failed to set GID to %d", slurm_user_gid);
+	}
+
+	/* Set UID to UID of SlurmUser */
+	if ((slurmdbd_conf->slurm_user_id != getuid()) &&
+	    (setuid(slurmdbd_conf->slurm_user_id))) {
+		fatal("Can not set uid to SlurmUser(%u): %m",
+		      slurmdbd_conf->slurm_user_id);
+	}
 }
