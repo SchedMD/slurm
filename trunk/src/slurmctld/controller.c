@@ -176,10 +176,12 @@ static int controller_sigarray[] = {
 	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
 };
 
-static void         _default_sigaction(int sig);
-inline static void  _free_server_thread(void);
 static int          _accounting_cluster_ready();
 static int          _accounting_mark_all_nodes_down(char *reason);
+static void *       _assoc_cache_mgr(void *no_data);
+static void         _become_slurm_user(void);
+static void         _default_sigaction(int sig);
+inline static void  _free_server_thread(void);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
@@ -194,8 +196,6 @@ static void *       _slurmctld_signal_hand(void *no_data);
 inline static void  _update_cred_key(void);
 inline static void  _usage(char *prog_name);
 static bool         _wait_for_server_thread(void);
-static void *       _assoc_cache_mgr(void *no_data);
-static void         _become_slurm_user(void);
 
 typedef struct connection_arg {
 	int newsockfd;
@@ -1798,8 +1798,8 @@ static void _become_slurm_user(void)
 	/* Determine SlurmUser gid */
 	slurm_user_gid = gid_from_uid(slurmctld_conf.slurm_user_id);
 	if (slurm_user_gid == (gid_t) -1) {
-		fatal("Failed to determine gid of SlurmUser(%d)", 
-		      slurm_user_gid);
+		fatal("Failed to determine gid of SlurmUser(%u)", 
+		      slurmctld_conf.slurm_user_id);
 	}
 
 	/* Initialize supplementary groups ID list for SlurmUser */
@@ -1828,7 +1828,7 @@ static void _become_slurm_user(void)
 	/* Set UID to UID of SlurmUser */
 	if ((slurmctld_conf.slurm_user_id != getuid()) &&
 	    (setuid(slurmctld_conf.slurm_user_id))) {
-		fatal("Can not set uid to SlurmUser(%d): %m",
+		fatal("Can not set uid to SlurmUser(%u): %m",
 		      slurmctld_conf.slurm_user_id);
 	}
 }
