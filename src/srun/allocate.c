@@ -695,6 +695,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 {
 	int i, rc;
 	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
+	unsigned long my_sleep = 0;
 
 	slurm_step_ctx_params_t_init(&job->ctx_params);
 	job->ctx_params.job_id = job->jobid;
@@ -796,9 +797,13 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 			ointf  = xsignal(SIGINT,  _intr_handler);
 			otermf  = xsignal(SIGTERM, _intr_handler);
 			oquitf  = xsignal(SIGQUIT, _intr_handler);
-		} else
+			my_sleep = (getpid() % 1000) * 100 + 100000;
+		} else {
 			verbose("Job step creation still disabled, retrying");
-		sleep(MIN((i*10+1), 60));
+			my_sleep = MIN((my_sleep * 2), 60000000);
+		}
+		/* sleep 0.1 to 60 secs with exponential back-off */
+		usleep(my_sleep);
 	}
 	if (i > 0) {
 		xsignal(SIGINT,  ointf);
