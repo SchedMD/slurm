@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed bug in srun --pty logic. Output from the task was split up 
     arbitrarily into stdout and stderr streams, and sometimes was printed 
     out of order.
+ -- If job requests minimum and maximum node count range with select/cons_res,
+    try to satisfy the higher value (formerly only allocated the minimum).
 
 * Changes in SLURM 2.0.2
 ========================

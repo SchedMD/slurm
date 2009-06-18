@@ -1693,7 +1693,9 @@ static bool _opt_verify(void)
 			opt.nodes_set = true;
 		}
 	}
-	if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
+	if ((opt.nodes_set || opt.extra_set)				&& 
+	    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))	&& 
+	    !opt.nprocs_set) {
 		/* 1 proc / node default */
 		opt.nprocs = opt.min_nodes;
 
