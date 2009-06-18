@@ -19,7 +19,10 @@ documents those changes that are of interest to users and admins.
     out of order.
  -- If job requests minimum and maximum node count range with select/cons_res,
     try to satisfy the higher value (formerly only allocated the minimum).
- -- fix for checking for a non-existant job when querying steps
+ -- Fix for checking for a non-existant job when querying steps
+ -- For job steps with the --exclusive option, base initial time in 
+    exponential back-off be partly based upon the process ID for better 
+    performance with many job steps started at the same time. 
 
 * Changes in SLURM 2.0.2
 ========================
