@@ -195,6 +195,7 @@ static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
 inline static void  _update_cred_key(void);
 inline static void  _usage(char *prog_name);
+static bool         _valid_controller(void);
 static bool         _wait_for_server_thread(void);
 
 typedef struct connection_arg {
@@ -412,9 +413,7 @@ int main(int argc, char *argv[])
 			slurm_sched_fini();	/* make sure shutdown */
 			primary = 0;
 			run_backup();
-		} else if (slurmctld_conf.control_machine &&
-			   (strcmp(node_name, slurmctld_conf.control_machine)
-			    == 0)) {
+		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			/* Now recover the remaining state information */
 			if (switch_restore(slurmctld_conf.state_save_location,
@@ -839,9 +838,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		    slurmctld_conf.backup_addr) != 0)) {
 		node_addr = slurmctld_conf.backup_addr ;
 	}
-	else if ((strcmp(node_name,slurmctld_conf.control_machine) == 0) &&
-		 (strcmp(slurmctld_conf.control_machine,
-			 slurmctld_conf.control_addr) != 0)) {
+	else if (_valid_controller() &&
+		 strcmp(slurmctld_conf.control_machine,
+			 slurmctld_conf.control_addr)) {
 		node_addr = slurmctld_conf.control_addr ;
 	}
 
@@ -1833,4 +1832,30 @@ static void _become_slurm_user(void)
 	}
 }
 
+/* Return true if node_name (a global) is a valid controller host name */
+static bool  _valid_controller(void)
+{
+	bool match = false;
 
+	if (slurmctld_conf.control_machine == NULL)
+		return match;
+
+	if (strcmp(node_name, slurmctld_conf.control_machine) == 0)
+		match = true;
+	else if (strchr(slurmctld_conf.control_machine, ',')) {
+		char *token, *last;
+		char *tmp_name = xstrdup(slurmctld_conf.control_machine);
+
+		token = strtok_r(tmp_name, ",", &last);
+		while (token) {
+			if (strcmp(node_name, token) == 0) {
+				match = true;
+				break;
+			}
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_name);
+	}
+
+	return match;
+}

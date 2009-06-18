@@ -280,7 +280,8 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 				   slurm_ctl_conf_ptr->crypto_type);
 	if (slurm_ctl_conf_ptr->def_mem_per_task & MEM_PER_CPU) {
 		snprintf(temp_str, sizeof(temp_str), "%u", 
-			 slurm_ctl_conf_ptr->def_mem_per_task & (~MEM_PER_CPU));
+			 slurm_ctl_conf_ptr->def_mem_per_task & 
+			 (~MEM_PER_CPU));
 		add_display_treestore_line(update, treestore, &iter, 
 					   "DefMemPerCPU", temp_str);
 	} else {
