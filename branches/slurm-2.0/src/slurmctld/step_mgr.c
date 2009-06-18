@@ -1585,49 +1585,46 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 		}
 		list_iterator_destroy(job_iterator);
 
-	} else if (step_id == 0) {
-		/* Return all steps for specific job_id */
+	} else {
 		job_ptr = find_job_record(job_id);
-		if (((show_flags & SHOW_ALL) == 0) && 
-		    (job_ptr->part_ptr) && 
-		    (job_ptr->part_ptr->hidden))
-			job_ptr = NULL;
-		else if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
-			job_ptr = NULL;
+		/* first lets filter this step based on permission and
+		   request if not allowable set job_ptr = NULL */
+		if(job_ptr) {
+			if (((show_flags & SHOW_ALL) == 0) 
+			    &&  (job_ptr->part_ptr) 
+			    &&  (job_ptr->part_ptr->hidden))
+				job_ptr = NULL;
+			else if ((slurmctld_conf.private_data 
+				  & PRIVATE_DATA_JOBS)
+				 && (job_ptr->user_id != uid)
+				 && !validate_super_user(uid))
+				job_ptr = NULL;
+		}
 
+		/* now send the requested steps */
 		if (job_ptr) {
 			step_iterator = 
 				list_iterator_create(job_ptr->step_list);
-			while ((step_ptr =
-					(struct step_record *)
-					list_next(step_iterator))) {
-				_pack_ctld_job_step_info(step_ptr, buffer);
-				steps_packed++;
+			/* If step_id is 0 that means to send all
+			   steps (We understand this is incorrect
+			   since 0 is a valid job step,
+			   but changing it would need to be done in
+			   the api and so we wait until 2.1 */
+			while ((step_ptr = list_next(step_iterator))) {
+				if ((step_id == 0) 
+				    || (step_ptr->step_id == step_id)) {
+					_pack_ctld_job_step_info(
+						step_ptr, buffer);
+					steps_packed++;
+				}
 			}
 			list_iterator_destroy(step_iterator);
+
+			if(!steps_packed)
+				error_code = ESLURM_INVALID_JOB_ID;
 		} else
 			error_code = ESLURM_INVALID_JOB_ID;
-	} else {
-		/* Return data for specific job_id.step_id */
-		job_ptr = find_job_record(job_id);
-		if (((show_flags & SHOW_ALL) == 0) 
-		&&  (job_ptr != NULL)
-		&&  (job_ptr->part_ptr) 
-		&&  (job_ptr->part_ptr->hidden))
-			job_ptr = NULL;
-		else if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
-			job_ptr = NULL;
-
-		step_ptr = find_step_record(job_ptr, step_id);
-		if (step_ptr == NULL)
-			error_code = ESLURM_INVALID_JOB_ID;
-		else {
-			_pack_ctld_job_step_info(step_ptr, buffer);
-			steps_packed++;
-		}
-	}
+	} 
 	part_filter_clear();
 
 	/* put the real record count in the message body header */
