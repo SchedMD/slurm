@@ -596,6 +596,7 @@ proc wait_for_step { step_id } {
 			return 1
 		}
 
+		send_user "Step $step_id not done yet waiting for $sleep_time seconds\n"
 		exec sleep $sleep_time
 		set my_delay [expr $my_delay + $sleep_time]
 		set sleep_time  [expr $sleep_time * 2]
