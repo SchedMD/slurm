@@ -19,7 +19,7 @@ documents those changes that are of interest to users and admins.
     out of order.
  -- If job requests minimum and maximum node count range with select/cons_res,
     try to satisfy the higher value (formerly only allocated the minimum).
- -- fix for checking for a non-existant step
+ -- fix for checking for a non-existant job when querying steps
 
 * Changes in SLURM 2.0.2
 ========================
