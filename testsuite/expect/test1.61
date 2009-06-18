@@ -35,27 +35,23 @@ source ./globals
 set test_id     "1.61"
 set exit_code   0
 set job_id 0
-set file_in     "test.$test_id.input"
-set file_out    "test.$test_id.output"
-set file_err    "test.$test_id.error"
-set test_acct   "test_acct"
+set file_in     "test$test_id.input"
+set file_out    "test$test_id.output"
+set file_err    "test$test_id.error"
 set timeout 60
+
+
 print_header $test_id
 
-	exec $bin_rm -f $file_in file_out file_err
-
-#
-# Spawn a job via sbatch using this account
-#
+exec $bin_rm -f $file_in file_out file_err
 make_bash_script $file_in "
-  $squeue -s
-$srun -t1 $scontrol show step \$SLURM_JOB_ID &
-  $squeue -s
-$srun -t1 sleep 200
-  $squeue -s
-$srun -t1 sleep 200 &
-  $squeue -s
+  $bin_date
+  $srun -t1 $scontrol show step \$SLURM_JOB_ID
+  $bin_date
+  $srun -t1 sleep 200
+  $bin_date
 "
+
 set job_id 0
 spawn $sbatch -t5 --output=$file_out --error=$file_err $file_in
 expect {
@@ -73,44 +69,59 @@ expect {
 }
 if {$job_id == 0} {
 	send_user "\nFAILURE: did not get sbatch job_id\n"
+	exit 1
+}
+
+#
+# Wait for job completion
+#
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
 	set exit_code 1
 }
-#
-# Wait for step  to begin execution
-#
-if {[wait_for_step $job_id.2] == 0} {
-	cancel_job $job_id
-}
 
-spawn cat $file_out
-expect {
-	-re " TimeLimit=00:01:00" {
-		set tl $expect_out(1,string)
-		exp_continue
+if {[wait_for_file $file_out] == 0} {
+	set tl 0
+	spawn cat $file_out
+	expect {
+		-re " TimeLimit=00:01:00" {
+			set tl 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		send_user "\nFAILURE: srun time limit not set\n"
+	if {$tl == 0} {
+		send_user "\nFAILURE: srun time limit not found\n"
 		set exit_code 1
 	}
-	eof {
-		wait
-	}
+} else {
+	send_user "\nFAILURE: Job output file missing\n"
+	set exit_code 1
 }
 
-spawn cat $file_err
-expect {
-	-re " STEP $job_id.1 CANCELLED AT.*DUE TO TIME LIMIT " {
-		set tl $expect_out(1,string)
-		exp_continue
+if {[wait_for_file $file_err] == 0} {
+	set tl 0
+	spawn cat $file_err
+	expect {
+		-re " STEP $job_id.1 CANCELLED AT.*DUE TO TIME LIMIT " {
+			set tl 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		send_user "\nFAILURE: srun not cancelled\n"
+	if {$tl == 0} {
+		send_user "\nFAILURE: srun time limit not enforced\n"
 		set exit_code 1
 	}
-	eof {
-		wait
-	}
+} else {
+	send_user "\nFAILURE: Job error file missing\n"
+	set exit_code 1
 }
+
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
 	send_user "\nSUCCESS\n"
