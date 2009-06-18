@@ -531,7 +531,8 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.licenses = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "StartTime", MAX(taglen, 2)) == 0) {
+		else if (!strncasecmp(tag, "EligibleTime", MAX(taglen, 2)) ||
+			 !strncasecmp(tag, "StartTime",    MAX(taglen, 2))) {
 			job_msg.begin_time = parse_time(val, 0);
 			update_cnt++;
 		}

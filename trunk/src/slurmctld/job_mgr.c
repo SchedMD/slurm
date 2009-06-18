@@ -87,7 +87,6 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 #define DETAILS_FLAG 0xdddd
-#define MAX_RETRIES  10
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
