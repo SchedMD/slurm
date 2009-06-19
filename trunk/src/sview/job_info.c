@@ -2477,7 +2477,7 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 	show_flags |= SHOW_ALL;
 	if (old_step_ptr) {
 		error_code = slurm_get_job_steps(old_step_ptr->last_update, 
-						 0, 0, &new_step_ptr, 
+						 NO_VAL, NO_VAL, &new_step_ptr, 
 						 show_flags);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_step_info_response_msg(old_step_ptr);
@@ -2488,7 +2488,7 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 			changed = 0;
 		}
 	} else {
-		error_code = slurm_get_job_steps((time_t) NULL, 0, 0, 
+		error_code = slurm_get_job_steps((time_t) NULL, NO_VAL, NO_VAL, 
 						 &new_step_ptr, show_flags);
 		changed = 1;
 	}

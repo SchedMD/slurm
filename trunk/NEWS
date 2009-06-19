@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
     user root.
  -- Configuration parameter ControlMachine changed to  accept multiple comma-
     separated hostnames for support of some high-availability architectures.
+ -- ALTERED API CALL slurm_get_job_steps 0 has been changed to NO_VAL for both
+    job and step id to recieve all jobs/steps.  Please make adjustments to
+    your code.
 
 * Changes in SLURM 2.1.0-pre1
 =============================

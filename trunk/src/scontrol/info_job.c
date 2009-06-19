@@ -289,7 +289,7 @@ extern void
 scontrol_print_step (char *job_step_id_str)
 {
 	int error_code, i;
-	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
+	uint32_t job_id = NO_VAL, step_id = NO_VAL;
 	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr;
 	job_step_info_t * job_step_ptr;
@@ -300,10 +300,8 @@ scontrol_print_step (char *job_step_id_str)
 
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
-		if (next_str[0] == '.') {
+		if (next_str[0] == '.') 
 			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
-			step_id_set = 1;
-		}
 	}
 
 	if (all_flag)
@@ -359,9 +357,6 @@ scontrol_print_step (char *job_step_id_str)
 
 	job_step_ptr = job_step_info_ptr->job_steps ;
 	for (i = 0; i < job_step_info_ptr->job_step_count; i++) {
-		if (step_id_set && (step_id == 0) && 
-		    (job_step_ptr[i].step_id != 0)) 
-			continue;
 		slurm_print_job_step_info (stdout, & job_step_ptr[i], 
 		                           one_liner ) ;
 	}

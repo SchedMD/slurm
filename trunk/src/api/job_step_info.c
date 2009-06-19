@@ -159,11 +159,11 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 /*
  * slurm_get_job_steps - issue RPC to get specific slurm job step   
  *	configuration information if changed since update_time.
- *	a job_id value of zero implies all jobs, a step_id value of 
- *	zero implies all steps
+ *	a job_id value of NO_VAL implies all jobs, a step_id value of 
+ *	NO_VAL implies all steps
  * IN update_time - time of current configuration data
- * IN job_id - get information for specific job id, zero for all jobs
- * IN step_id - get information for specific job step id, zero for all 
+ * IN job_id - get information for specific job id, NO_VAL for all jobs
+ * IN step_id - get information for specific job step id, NO_VAL for all 
  *	job steps
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags - job step filtering options

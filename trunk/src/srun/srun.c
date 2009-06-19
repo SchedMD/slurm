@@ -917,7 +917,8 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
  * used, but we need to load the symbols. */
 static void _define_symbols(void)
 {
-	slurm_signal_job_step(0,0,0);	/* needed by mvapich and mpichgm */
+	/* needed by mvapich and mpichgm */
+	slurm_signal_job_step(NO_VAL, NO_VAL, 0);
 }
 
 static void _pty_restore(void)
