@@ -199,7 +199,7 @@ if {[wait_for_file $file_out_time] != 0} {
 #	Trigger events happen on a periodic basis, so there is likely to 
 #	be a delay up to 20 seconds
 	if {$run_time < 30 || $run_time > 59} {
-		send_user "\nFAILURE: file $file_out_time contents are bad\n"
+		send_user "\nFAILURE: file $file_out_time contents are bad, R run time\n"
 		set exit_code 1
 	}
 }
@@ -221,7 +221,7 @@ if {[wait_for_file $file_out_fini] != 0} {
 		}
 	}
 	if {$job_fini == 0} {
-		send_user "\nFAILURE: file $file_out_fini contents are bad\n"
+		send_user "\nFAILURE: file $file_out_fini contents are bad, CD run time\n"
 		set exit_code 1
 	}
 }
