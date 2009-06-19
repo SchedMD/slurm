@@ -275,7 +275,6 @@ static void _opt_default()
 
 	opt.immediate	= 0;
 	opt.overcommit	= false;
-	opt.max_wait	= 0;
 
 	opt.quiet = 0;
 	opt.verbose = 0;
@@ -349,7 +348,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
-  {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL          },
+  {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
   {NULL, 0, NULL, NULL}
 };
@@ -670,7 +669,7 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'I':
 			if (optarg)
-				opt.immediate = strtol(optarg, NULL, 10);
+				opt.immediate = _get_int(optarg, "immediate");
 			else
 				opt.immediate = DEFAULT_IMMEDIATE;
 			break;
@@ -769,7 +768,9 @@ void set_options(const int argc, char **argv)
 #endif
 			break;
 		case 'W':
-			opt.max_wait = _get_int(optarg, "wait");
+			verbose("wait option has been deprecated, use "
+				"immediate option");
+			opt.immediate = _get_int(optarg, "wait");
 			break;
 		case 'x':
 			xfree(opt.exc_nodes);
@@ -1313,11 +1314,6 @@ static bool _opt_verify(void)
 			opt.ntasks_per_node);
 	}
 
-	if (opt.max_wait) {
-		/* FIXME: Eliminate max_wait in slurm v2.1 */
-		opt.immediate = MAX(opt.immediate, opt.max_wait);
-	}
-
 	return verified;
 }
 
@@ -1554,7 +1550,6 @@ static void _opt_list()
 		info("time_limit     : INFINITE");
 	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
-	info("wait           : %d", opt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
@@ -1687,8 +1682,6 @@ static void _help(void)
 "  -U, --account=name          charge job to specified account\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -W, --wait=sec              seconds to wait for allocation if not\n"
-"                              immediately available\n"
 "\n"
 "Constraint options:\n"
 "      --contiguous            demand a contiguous range of nodes\n"

@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- ALTERED API CALL slurm_get_job_steps 0 has been changed to NO_VAL for both
     job and step id to recieve all jobs/steps.  Please make adjustments to
     your code.
+ -- salloc's --wait=<secs> option deprecated by --immediate=<secs> option to 
+    match the srun command.
 
 * Changes in SLURM 2.1.0-pre1
 =============================

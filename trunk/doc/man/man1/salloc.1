@@ -756,12 +756,7 @@ errors will be displayed.
 
 .TP
 \fB\-W\fR, \fB\-\-wait\fR=<\fIseconds\fR>
-If the resources needed to satisy a job allocation are not immediately
-available, the job allocation is enqueued and is said to be PENDING.  This
-option tells salloc how long (in seconds) to wait for the allocation to be
-granted before giving up.  When the wait limit has been reached, salloc
-will exit without running the \fIcommand\fR parameter.  By default, salloc
-will wait indefinitely.  (The \-\-immediate option makes \-\-wait moot.)
+This option has been replaced by \fB\-\-immediate\fR=<\fIseconds\fR>.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fInode name list\fR>
