@@ -193,7 +193,8 @@ int main(int argc, char *argv[])
 	callbacks.user_msg = _user_msg_handler;
 	callbacks.node_fail = _node_fail_handler;
 	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port, &callbacks);
+	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port, 
+						  &callbacks);
 
 	xsignal(SIGHUP, _signal_while_allocating);
 	xsignal(SIGINT, _signal_while_allocating);
@@ -204,7 +205,7 @@ int main(int argc, char *argv[])
 	xsignal(SIGUSR2, _signal_while_allocating);
 	
 	before = time(NULL);
-	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait,
+	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.immediate,
 					_pending_callback)) == NULL) {
 		if ((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) ||
 		    (retries >= MAX_RETRIES))
@@ -222,12 +223,15 @@ int main(int argc, char *argv[])
 		} else if (errno == EINTR) {
 			error("Interrupted by signal."
 			      "  Allocation request rescinded.");
+		} else if ((errno == ETIMEDOUT) && opt.immediate) {
+			error("Unable to allocate resources: %s",
+			      slurm_strerror(ESLURM_NODES_BUSY));
 		} else {
 			error("Failed to allocate resources: %m");
 		}
 		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(1);
-	} else if(!allocation_interrupted) {
+	} else if (!allocation_interrupted) {
 		/*
 		 * Allocation granted!
 		 */
@@ -382,7 +386,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	desc->features = opt.constraints;
-	desc->immediate = opt.immediate ? 1 : 0;
+	if (opt.immediate == 1)	
+		desc->immediate = 1;
 	desc->name = xstrdup(opt.job_name);
 	desc->reservation = xstrdup(opt.reservation);
 	desc->wckey  = xstrdup(opt.wckey);

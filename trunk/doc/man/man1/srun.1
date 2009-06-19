@@ -372,10 +372,12 @@ show this help message
 .RE
 
 .TP
-\fB\-I\fR, \fB\-\-immediate\fR
-exit if resources are not immediately available. By default,
-\fB\-\-immediate\fR is off, and
-.B srun
+\fB\-I\fR, \fB\-\-immediate\fR[=<\fIseconds\fR>]
+exit if resources are not available within the 
+time period specified. 
+If no argument is given, resources must be available immediately
+for the request to succeed.
+By default, \fB\-\-immediate\fR is off, and the command
 will block until resources become available.
 
 .TP
