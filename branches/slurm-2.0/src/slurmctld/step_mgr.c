@@ -1563,7 +1563,7 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 		while ((job_ptr = 
 				(struct job_record *) 
 				list_next(job_iterator))) {
-			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
+			if (((show_flags & SHOW_ALL) == 0) &&
 			    (job_ptr->part_ptr) && 
 			    (job_ptr->part_ptr->hidden))
 				continue;
