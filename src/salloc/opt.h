@@ -34,15 +34,16 @@
 #  include "config.h"
 #endif
 
-#include <time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
-#include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
+#include "src/common/macros.h" /* true and false */
 
-#define MAX_USERNAME	9
-#define DEFAULT_BELL_DELAY 10
+#define DEFAULT_IMMEDIATE	1
+#define MAX_USERNAME		9
+#define DEFAULT_BELL_DELAY	10
 
 typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
 
@@ -92,7 +93,7 @@ typedef struct salloc_options {
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/
 
-	int immediate;		/* -i, --immediate      	*/
+	int immediate;		/* -I, --immediate      	*/
 
 	bool hold;		/* --hold, -H			*/
 	bool no_kill;		/* --no-kill, -k		*/

@@ -177,7 +177,7 @@ static void _node_fail_handler(srun_node_fail_msg_t *msg)
 
 
 
-static bool _retry()
+static bool _retry(void)
 {
 	static int  retries = 0;
 	static char *msg = "Slurm controller not responding, "
@@ -194,10 +194,16 @@ static bool _retry()
 	} else if (errno == EINTR) {
 		/* srun may be interrupted by the BLCR checkpoint signal */
 		/*
-		 * XXX: this will cause the old job cancelled and a new job allocated
+		 * XXX: this will cause the old job cancelled and a new 
+		 * job allocated
 		 */
-		debug("Syscall interrupted while allocating resources, retrying.");
+		debug("Syscall interrupted while allocating resources, "
+		      "retrying.");
 		return true;
+	} else if ((errno == ETIMEDOUT) && opt.immediate) {
+		error("Unable to allocate resources: %s",
+		      slurm_strerror(ESLURM_NODES_BUSY));
+		return false;
 	} else {
 		error("Unable to allocate resources: %m");
 		return false;
@@ -349,14 +355,14 @@ allocate_nodes(void)
 	job_desc_msg_t *j = job_desc_msg_create_from_opts();
 	slurm_allocation_callbacks_t callbacks;
 
-	if(!j)
+	if (!j)
 		return NULL;
 	
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
 	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
 		info("WARNING: Creating SLURM job allocation from within "
-			"another allocation");
+		     "another allocation");
 		info("WARNING: You are attempting to initiate a second job");
 		if (!opt.jobid_set)	/* Let slurmctld set jobid */
 			j->job_id = NO_VAL;
@@ -379,7 +385,7 @@ allocate_nodes(void)
 	xsignal(SIGUSR2, _signal_while_allocating);
 
 	while (!resp) {
-		resp = slurm_allocate_resources_blocking(j, 0,
+		resp = slurm_allocate_resources_blocking(j, opt.immediate,
 							 _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
@@ -389,7 +395,7 @@ allocate_nodes(void)
 		}
 	}
 	
-	if(resp && !destroy_job) {
+	if (resp && !destroy_job) {
 		/*
 		 * Allocation granted!
 		 */
@@ -517,7 +523,8 @@ job_desc_msg_create_from_opts ()
 	
 	j->contiguous     = opt.contiguous;
 	j->features       = opt.constraints;
-	j->immediate      = opt.immediate;
+	if (opt.immediate == 1)
+		j->immediate = opt.immediate;
 	if (opt.job_name)
 		j->name   = xstrdup(opt.job_name);
 	else
@@ -528,7 +535,7 @@ job_desc_msg_create_from_opts ()
 	j->req_nodes      = xstrdup(opt.nodelist);
 	
 	/* simplify the job allocation nodelist, 
-	  not laying out tasks until step */
+	 * not laying out tasks until step */
 	if(j->req_nodes) {
 		hl = hostlist_create(j->req_nodes);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
@@ -690,6 +697,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	int i, rc;
 	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
 	unsigned long my_sleep = 0;
+	time_t begin_time;
 
 	slurm_step_ctx_params_t_init(&job->ctx_params);
 	job->ctx_params.job_id = job->jobid;
@@ -715,7 +723,8 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
 	job->ctx_params.ckpt_dir = opt.ckpt_dir;
 	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
-	job->ctx_params.immediate = (uint16_t)opt.immediate;
+	if (opt.immediate == 1)
+		job->ctx_params.immediate = (uint16_t)opt.immediate;
 	job->ctx_params.verbose_level = (uint16_t)_verbose;
 	if (opt.resv_port_cnt != NO_VAL)
 		job->ctx_params.resv_port_cnt = (uint16_t) opt.resv_port_cnt;
@@ -759,9 +768,10 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	debug("cpus %u, tasks %u, name %s, relative %u", 
 	      job->ctx_params.cpu_count, job->ctx_params.task_count,
 	      job->ctx_params.name, job->ctx_params.relative);
+	begin_time = time(NULL);
 
 	for (i=0; (!destroy_job); i++) {
-		if(opt.no_alloc) {
+		if (opt.no_alloc) {
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
 				&job->ctx_params, job->stepid);
 		} else
@@ -775,7 +785,8 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		}
 		rc = slurm_get_errno();
 
-		if (opt.immediate ||
+		if (((opt.immediate != 0) && 
+		     (difftime(time(NULL), begin_time) > opt.immediate)) ||
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
 		     (rc != ESLURM_PROLOG_RUNNING) && 
 		     (rc != ESLURM_DISABLED))) {

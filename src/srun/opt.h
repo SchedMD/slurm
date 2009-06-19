@@ -54,8 +54,9 @@
 #include "src/common/env.h"
 #include "src/srun/fname.h"
 
-#define MAX_THREADS	60
-#define MAX_USERNAME	9
+#define DEFAULT_IMMEDIATE	1
+#define MAX_THREADS		60
+#define MAX_USERNAME		9
 
 #define INT_UNASSIGNED ((int)-1)
 
@@ -64,14 +65,15 @@ extern int _verbose;
 
 extern enum modes mode;
 
-#define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
-		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
-		                 (t == SLURM_DIST_PLANE) ? "plane" : \
-		                 (t == SLURM_DIST_CYCLIC_CYCLIC) ? "cyclic:cyclic" : \
-		                 (t == SLURM_DIST_CYCLIC_BLOCK) ? "cyclic:block" : \
-		                 (t == SLURM_DIST_BLOCK_CYCLIC) ? "block:cyclic" : \
-		                 (t == SLURM_DIST_BLOCK_BLOCK) ? "block:block" : \
-			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
+#define format_task_dist_states(t) \
+	(t == SLURM_DIST_BLOCK) ? "block" :   \
+	(t == SLURM_DIST_CYCLIC) ? "cyclic" : \
+	(t == SLURM_DIST_PLANE) ? "plane" : \
+	(t == SLURM_DIST_CYCLIC_CYCLIC) ? "cyclic:cyclic" : \
+	(t == SLURM_DIST_CYCLIC_BLOCK) ? "cyclic:block" : \
+	(t == SLURM_DIST_BLOCK_CYCLIC) ? "block:cyclic" : \
+	(t == SLURM_DIST_BLOCK_BLOCK) ? "block:block" : \
+	(t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
 			         "unknown"
 
 typedef struct srun_options {
@@ -146,7 +148,7 @@ typedef struct srun_options {
 	/*int verbose;*/	/* -v, --verbose		*/	
 	/*int debug;*/		/* -d, --debug			*/
 
-	int immediate;		/* -i, --immediate      	*/
+	int immediate;		/* -I, --immediate=secs      	*/
 
 	bool hold;		/* --hold, -H			*/
 	bool labelio;		/* --label-output, -l		*/
