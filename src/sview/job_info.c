@@ -2257,8 +2257,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 				memcpy(step_ptr->node_inx, job_ptr->node_inx, 
 				       sizeof(int) * count);
 #endif
-				list_push(sview_job_info_ptr->step_list, 
-					  step_ptr);
+				list_append(sview_job_info_ptr->step_list, 
+					    step_ptr);
 			}			
 		}
 		list_append(odd_info_list, sview_job_info_ptr);
