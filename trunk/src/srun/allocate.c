@@ -794,7 +794,8 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		rc = slurm_get_errno();
 
 		if (((opt.immediate != 0) && 
-		     (difftime(time(NULL), begin_time) > opt.immediate)) ||
+		     ((opt.immediate == 1) ||
+		      (difftime(time(NULL), begin_time) > opt.immediate))) ||
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
 		     (rc != ESLURM_PROLOG_RUNNING) && 
 		     (rc != ESLURM_DISABLED))) {
