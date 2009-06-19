@@ -98,6 +98,7 @@
 #define OPT_ACCTG_FREQ  0x0f
 #define OPT_CPU_BIND    0x10
 #define OPT_MEM_BIND    0x11
+#define OPT_IMMEDIATE   0x12
 #define OPT_WCKEY       0x15
 
 /* generic getopt_long flags, integers and *not* valid characters */
@@ -272,7 +273,7 @@ static void _opt_default()
 	opt.kill_command_signal = SIGTERM;
 	opt.kill_command_signal_set = false;
 
-	opt.immediate	= false;
+	opt.immediate	= 0;
 	opt.overcommit	= false;
 	opt.max_wait	= 0;
 
@@ -331,25 +332,25 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-  {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
-  {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL           },
-  {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
-  {"SALLOC_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
-  {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
-  {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
-  {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
-  {"SALLOC_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL           },
-  {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL           },
-  {"SALLOC_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
-  {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL           },
-  {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL           },
-  {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
-  {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
-  {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-  {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
-  {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL           },
+  {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
+  {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL          },
+  {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
+  {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
+  {"SALLOC_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL          },
+  {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
+  {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
+  {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
+  {"SALLOC_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL          },
+  {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL          },
+  {"SALLOC_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
+  {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
+  {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
+  {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL          },
+  {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
+  {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
+  {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL          },
+  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
   {NULL, 0, NULL, NULL}
 };
 
@@ -390,8 +391,10 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_INT:
 		if (val != NULL) {
 			*((int *) e->arg) = (int) strtol(val, &end, 10);
-			if (!(end && *end == '\0')) 
-				error("%s=%s invalid. ignoring...", e->var, val);
+			if (!(end && *end == '\0')) {
+				error("%s=%s invalid. ignoring...", 
+				      e->var, val);
+			}
 		}
 		break;
 
@@ -444,6 +447,14 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
+
+	case OPT_IMMEDIATE:
+		if (val)
+			opt.immediate = strtol(val, NULL, 10);
+		else
+			opt.immediate = DEFAULT_IMMEDIATE;
+		break;
+
 	case OPT_BELL:
 		opt.bell = BELL_ALWAYS;
 		break;
@@ -518,7 +529,7 @@ void set_options(const int argc, char **argv)
 		{"geometry",      required_argument, 0, 'g'},
 		{"help",          no_argument,       0, 'h'},
 		{"hold",          no_argument,       0, 'H'},
-		{"immediate",     no_argument,       0, 'I'},
+		{"immediate",     optional_argument, 0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
@@ -658,7 +669,10 @@ void set_options(const int argc, char **argv)
 			opt.hold = true;
 			break;
 		case 'I':
-			opt.immediate = true;
+			if (optarg)
+				opt.immediate = strtol(optarg, NULL, 10);
+			else
+				opt.immediate = DEFAULT_IMMEDIATE;
 			break;
 		case 'J':
 			xfree(opt.job_name);
@@ -1265,16 +1279,6 @@ static bool _opt_verify(void)
 			opt.time_limit = INFINITE;
 	}
 
-	if (opt.immediate) {
-		char *sched_name = slurm_get_sched_type();
-		if (strcmp(sched_name, "sched/wiki") == 0) {
-			info("WARNING: Ignoring the -I/--immediate option "
-				"(not supported by Maui)");
-			opt.immediate = false;
-		}
-		xfree(sched_name);
-	}
-
 #ifdef HAVE_AIX
 	if (opt.network == NULL)
 		opt.network = "us,sn_all,bulk_xfer";
@@ -1307,6 +1311,11 @@ static bool _opt_verify(void)
 	    (getenv("SLURM_NTASKS_PER_NODE") == NULL)) {
 		setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d", 
 			opt.ntasks_per_node);
+	}
+
+	if (opt.max_wait) {
+		/* FIXME: Eliminate max_wait in slurm v2.1 */
+		opt.immediate = MAX(opt.immediate, opt.max_wait);
 	}
 
 	return verified;
@@ -1536,7 +1545,10 @@ static void _opt_list()
 	if(opt.distribution == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
 	info("verbose        : %d", opt.verbose);
-	info("immediate      : %s", tf_(opt.immediate));
+	if (opt.immediate <= 1)
+		info("immediate      : %s", tf_(opt.immediate));
+	else
+		info("immediate      : %d secs", (opt.immediate - 1));
 	info("overcommit     : %s", tf_(opt.overcommit));
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
@@ -1610,7 +1622,7 @@ static void _usage(void)
  	printf(
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"              [--immediate] [--no-kill] [--overcommit] [-D path]\n"
+"              [--immediate[=secs]] [--no-kill] [--overcommit] [-D path]\n"
 "              [--share] [-J jobname] [--jobid=id]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--licenses=names]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
@@ -1650,7 +1662,7 @@ static void _help(void)
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "  -H, --hold                  submit job in held state\n"
-"  -I, --immediate             exit if resources are not immediately available\n"
+"  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"
 "      --jobid=id              specify jobid to use\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"

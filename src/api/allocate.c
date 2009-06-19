@@ -252,7 +252,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			/* yes, allocation has been granted */
 			errno = SLURM_PROTOCOL_SUCCESS;
 		} else if (!req->immediate) {
-			if(resp->error_code != SLURM_SUCCESS) 
+			if (resp->error_code != SLURM_SUCCESS) 
 				info("%s", slurm_strerror(resp->error_code));
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
@@ -263,7 +263,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 							     timeout);
 			/* If NULL, we didn't get the allocation in 
 			   the time desired, so just free the job id */
-			if (resp == NULL && errno != ESLURM_ALREADY_DONE) {
+			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
 				errnum = errno;
 				slurm_complete_job(job_id, -1);
 			}
