@@ -1900,11 +1900,11 @@ extern int slurm_notify_job PARAMS(( uint32_t job_id, char *message ));
 /*
  * slurm_get_job_steps - issue RPC to get specific slurm job step   
  *	configuration information if changed since update_time.
- *	a job_id value of zero implies all jobs, a step_id value of 
- *	zero implies all steps
+ *	a job_id value of NO_VAL implies all jobs, a step_id value of 
+ *	NO_VAL implies all steps
  * IN update_time - time of current configuration data
- * IN job_id - get information for specific job id, zero for all jobs
- * IN step_id - get information for specific job step id, zero for all 
+ * IN job_id - get information for specific job id, NO_VAL for all jobs
+ * IN step_id - get information for specific job step id, NO_VAL for all 
  *	job steps
  * IN step_response_pptr - place to store a step response pointer
  * IN show_flags - job step filtering options

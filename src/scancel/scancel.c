@@ -402,9 +402,10 @@ _cancel_job_id (void *ci)
 						     (uint16_t)opt.batch);
 		} else {
 			if (opt.batch)
-				error_code = slurm_signal_job_step(job_id,
-							   SLURM_BATCH_SCRIPT,
-							   sig);
+				error_code = slurm_signal_job_step(
+					job_id,
+					SLURM_BATCH_SCRIPT,
+					sig);
 			else
 				error_code = slurm_signal_job (job_id, sig);
 		}

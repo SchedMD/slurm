@@ -1556,17 +1556,17 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 
 /* 
  * pack_ctld_job_step_info_response_msg - packs job step info
- * IN job_id - specific id or zero for all
- * IN step_id - specific id or zero for all
+ * IN job_id - specific id or NO_VAL for all
+ * IN step_id - specific id or NO_VAL for all
  * IN uid - user issuing request
  * IN show_flags - job step filtering options
  * OUT buffer - location to store data, pointers automatically advanced 
  * RET - 0 or error code
  * NOTE: MUST free_buf buffer
  */
-extern int pack_ctld_job_step_info_response_msg(uint32_t job_id, 
-			uint32_t step_id, uid_t uid, 
-			uint16_t show_flags, Buf buffer)
+extern int pack_ctld_job_step_info_response_msg(
+	uint32_t job_id, uint32_t step_id, uid_t uid, 
+	uint16_t show_flags, Buf buffer)
 {
 	ListIterator job_iterator;
 	ListIterator step_iterator;
@@ -1575,79 +1575,45 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 	struct step_record *step_ptr;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+	int valid_job = 0;
 
 	pack_time(now, buffer);
 	pack32(steps_packed, buffer);	/* steps_packed placeholder */
 
 	part_filter_set(uid);
-	if (job_id == 0) {
-		/* Return all steps for all jobs */
-		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = 
-				(struct job_record *) 
-				list_next(job_iterator))) {
-			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-			    (job_ptr->part_ptr) && 
-			    (job_ptr->part_ptr->hidden))
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		if ((job_id != NO_VAL) && (job_ptr->job_id != job_id)) 
+			continue;
+
+		if (((show_flags & SHOW_ALL) == 0) 
+		    && (job_ptr->part_ptr)
+		    && (job_ptr->part_ptr->hidden))
+			continue;
+		
+		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
+		    && (job_ptr->user_id != uid) 
+		    && !validate_super_user(uid))
+			continue;
+		
+		valid_job = 1;
+
+		step_iterator = list_iterator_create(job_ptr->step_list);
+		while ((step_ptr = list_next(step_iterator))) {
+			if ((step_id != NO_VAL) 
+			    && (step_ptr->step_id != step_id)) 
 				continue;
-
-			if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-			&&  (job_ptr->user_id != uid) 
-			&&  !validate_super_user(uid))
-				continue;
-
-			step_iterator =
-			    list_iterator_create(job_ptr->step_list);
-			while ((step_ptr =
-					(struct step_record *)
-					list_next(step_iterator))) {
-				_pack_ctld_job_step_info(step_ptr, buffer);
-				steps_packed++;
-			}
-			list_iterator_destroy(step_iterator);
+			_pack_ctld_job_step_info(step_ptr, buffer);
+			steps_packed++;
 		}
-		list_iterator_destroy(job_iterator);
+		list_iterator_destroy(step_iterator);
+	}
+	list_iterator_destroy(job_iterator);
+	
+	if(!valid_job && !steps_packed)
+		error_code = ESLURM_INVALID_JOB_ID;
 
-	} else {
-		job_ptr = find_job_record(job_id);
-		/* first lets filter this step based on permission and
-		   request if not allowable set job_ptr = NULL */
-		if(job_ptr) {
-			if (((show_flags & SHOW_ALL) == 0) 
-			    &&  (job_ptr->part_ptr) 
-			    &&  (job_ptr->part_ptr->hidden))
-				job_ptr = NULL;
-			else if ((slurmctld_conf.private_data 
-				  & PRIVATE_DATA_JOBS)
-				 && (job_ptr->user_id != uid)
-				 && !validate_super_user(uid))
-				job_ptr = NULL;
-		}
-
-		/* now send the requested steps */
-		if (job_ptr) {
-			step_iterator = 
-				list_iterator_create(job_ptr->step_list);
-			/* If step_id is 0 that means to send all
-			   steps (We understand this is incorrect
-			   since 0 is a valid job step,
-			   but changing it would need to be done in
-			   the api and so we wait until 2.1 */
-			while ((step_ptr = list_next(step_iterator))) {
-				if ((step_id == 0) 
-				    || (step_ptr->step_id == step_id)) {
-					_pack_ctld_job_step_info(
-						step_ptr, buffer);
-					steps_packed++;
-				}
-			}
-			list_iterator_destroy(step_iterator);
-
-			if(!steps_packed)
-				error_code = ESLURM_INVALID_JOB_ID;
-		} else
-			error_code = ESLURM_INVALID_JOB_ID;
-	} 
 	part_filter_clear();
 
 	/* put the real record count in the message body header */

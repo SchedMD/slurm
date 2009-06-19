@@ -247,7 +247,7 @@ int main(int argc, char **argv)
 			job_step_info_response_msg_t *step_ptr = NULL;
 			int i = 0;
 			if(slurm_get_job_steps(
-				   0, selected_step->jobid, 0, 
+				   0, selected_step->jobid, NO_VAL, 
 				   &step_ptr, SHOW_ALL)) {
 				error("couldn't get steps for job %u",
 				      selected_step->jobid);

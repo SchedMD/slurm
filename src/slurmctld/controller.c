@@ -1843,7 +1843,7 @@ static bool  _valid_controller(void)
 	if (strcmp(node_name, slurmctld_conf.control_machine) == 0)
 		match = true;
 	else if (strchr(slurmctld_conf.control_machine, ',')) {
-		char *token, *last;
+		char *token, *last = NULL;
 		char *tmp_name = xstrdup(slurmctld_conf.control_machine);
 
 		token = strtok_r(tmp_name, ",", &last);
