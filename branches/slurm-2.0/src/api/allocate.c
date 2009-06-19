@@ -2,7 +2,8 @@
  *  allocate.c - allocate nodes for a job or step with supplied contraints
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -252,7 +253,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			/* yes, allocation has been granted */
 			errno = SLURM_PROTOCOL_SUCCESS;
 		} else if (!req->immediate) {
-			if(resp->error_code != SLURM_SUCCESS) 
+			if (resp->error_code != SLURM_SUCCESS) 
 				info("%s", slurm_strerror(resp->error_code));
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
@@ -263,7 +264,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 							     timeout);
 			/* If NULL, we didn't get the allocation in 
 			   the time desired, so just free the job id */
-			if (resp == NULL && errno != ESLURM_ALREADY_DONE) {
+			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
 				errnum = errno;
 				slurm_complete_job(job_id, -1);
 			}

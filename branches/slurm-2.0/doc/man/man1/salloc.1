@@ -326,10 +326,13 @@ show this help message
 .RE
 
 .TP
-\fB\-I\fR, \fB\-\-immediate\fR
-Grab the requested resources immediately, or abort if the resources
-are not currently available.  The \fIcommand\fR parameter will not be
-run if the resources are not available.
+\fB\-I\fR, \fB\-\-immediate\fR[=<\fIseconds\fR>]
+exit if resources are not available within the 
+time period specified. 
+If no argument is given, resources must be available immediately
+for the request to succeed.
+By default, \fB\-\-immediate\fR is off, and the command
+will block until resources become available.
 
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
