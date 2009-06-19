@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
  -- For job steps with the --exclusive option, base initial time in 
     exponential back-off be partly based upon the process ID for better 
     performance with many job steps started at the same time. 
+ -- Fix for correct step ordering in sview.
 
 * Changes in SLURM 2.0.2
 ========================
