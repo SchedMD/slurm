@@ -103,7 +103,6 @@ typedef struct salloc_options {
 	int kill_command_signal;/* --kill-command, -K           */
 	bool kill_command_signal_set;
 	uint16_t shared;	/* --share,   -s		*/
-	int  max_wait;		/* --wait,    -W		*/
 	int  quiet;
 	int  verbose;
 

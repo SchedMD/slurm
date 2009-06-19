@@ -43,13 +43,18 @@ print_header $test_id
 # The job can't run immediately with a priority of zero
 #
 set timeout 10
-set salloc_pid [spawn $salloc --immediate --hold -t1 -v $bin_pwd]
+set salloc_pid [spawn $salloc --immediate=3 --hold -t1 -v $bin_pwd]
 expect {
 	-re "Pending job allocation ($number)" {
 		set job_id $expect_out(1,string)
+		incr matches
 		exp_continue
 	}
-	-re "Failed to allocate resources" {
+	-re "queued and waiting for resources" {
+		incr matches
+		exp_continue
+	}
+	-re "Unable to allocate resources" {
 		send_user "This error is expected, no worries\n"
 		incr matches
 		exp_continue
@@ -66,11 +71,12 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	send_user "\nFAILURE: failed to hold job as requested\n"
+if {$matches != 3} {
+	send_user "\nFAILURE: failed to hold job as requested ($matches != 3)\n"
 	set exit_code 1
+} else {
+	send_user "\nSo far, so good\n\n"
 }
-
 
 #
 # Spawn a salloc immediate execution job, it should run or fail immediately
