@@ -56,6 +56,7 @@
 #include <unistd.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/macros.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -76,6 +77,9 @@
 pid_t  child_pid[PID_CNT];	/* pid of process		*/
 time_t child_time[PID_CNT];	/* start time of process	*/
 
+pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
+bool power_save_enabled = false;
+
 int idle_time, suspend_rate, resume_timeout, resume_rate, suspend_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
@@ -91,6 +95,7 @@ static void  _do_power_work(void);
 static void  _do_resume(char *host);
 static void  _do_suspend(char *host);
 static int   _init_power_config(void);
+static void *_init_power_save(void *arg);
 static int   _kill_procs(void);
 static int   _reap_procs(void);
 static void  _re_wake(void);
@@ -391,6 +396,7 @@ static int  _kill_procs(void)
 	return killed;
 }
 
+/* shutdown power save daemons */
 static void _shutdown_power(void)
 {
 	int i, proc_cnt, max_timeout;
@@ -555,12 +561,37 @@ static bool _valid_prog(char *file_name)
 	return true;
 }
 
+/* start_power_mgr - Start power management thread as needed. The thread 
+ *	terminates automatically at slurmctld shutdown time.
+ * IN thread_id - pointer to thread ID of the started pthread. 
+ */
+extern void start_power_mgr(pthread_t *thread_id)
+{
+	pthread_attr_t thread_attr;
+
+	slurm_mutex_lock(&power_mutex);
+	if (power_save_enabled) {     /* Already running */
+		slurm_mutex_unlock(&power_mutex);
+		return;
+	}
+	power_save_enabled = true;
+	slurm_mutex_unlock(&power_mutex);
+
+	slurm_attr_init(&thread_attr);
+	while (pthread_create(thread_id, &thread_attr, _init_power_save, 
+			      NULL)) {
+		error("pthread_create %m");
+		sleep(1);
+	}
+	slurm_attr_destroy(&thread_attr);
+}
+
 /*
- * init_power_save - initialize the power save module. Started as a
+ * init_power_save - Onitialize the power save module. Started as a
  *	pthread. Terminates automatically at slurmctld shutdown time.
  *	Input and output are unused.
  */
-extern void *init_power_save(void *arg)
+static void *_init_power_save(void *arg)
 {
         /* Locks: Read nodes */
         slurmctld_lock_t node_read_lock = {
@@ -620,5 +651,8 @@ extern void *init_power_save(void *arg)
 fini:	_clear_power_config();
 	FREE_NULL_BITMAP(suspend_node_bitmap);
 	_shutdown_power();
+	slurm_mutex_lock(&power_mutex);
+	power_save_enabled = false;
+	slurm_mutex_unlock(&power_mutex);
 	return NULL;
 }
