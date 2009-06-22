@@ -1847,6 +1847,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		}
 		in_progress = false;
 		unlock_slurmctld(config_write_lock);
+		start_power_mgr(&slurmctld_config.thread_id_power);
 		trigger_reconfig();
 	}
 	END_TIMER2("_slurm_rpc_reconfigure_controller");

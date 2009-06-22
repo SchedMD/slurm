@@ -53,6 +53,11 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - add support for scontrol show blocks.
  -- Added support for job step time limits.
 
+* Changes in SLURM 2.0.4
+========================
+ -- Permit node suspend/resume logic to be enabled through "scontrol reconfig"
+    given appropriate changes to slurm configuration file.
+
 * Changes in SLURM 2.0.3
 ========================
  -- Add reservation creation/update flag of Ignore_Jobs to enable the creation

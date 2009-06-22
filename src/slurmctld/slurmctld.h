@@ -888,13 +888,6 @@ extern int init_node_conf ();
 extern int init_part_conf (void);
 
 /*
- * init_power_save - initialize the power save module. Started as a 
- *	pthread. Terminates automatically at slurmctld shutdown time.
- *	Input and output are unused.
- */
-extern void *init_power_save(void *arg);
-
-/*
  * is_node_down - determine if the specified node's state is DOWN
  * IN name - name of the node
  * RET true if node exists and is down, otherwise false 
@@ -1560,6 +1553,13 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint16_t cpus_per_task,
 					       uint16_t task_dist,
 					       uint32_t plane_size);
+
+/* start_power_mgr - Start power management thread as needed. The thread 
+ *	terminates automatically at slurmctld shutdown time.
+ * IN thread_id - pointer to thread ID of the started pthread. 
+ */
+extern void start_power_mgr(pthread_t *thread_id);
+
 /*
  * step_epilog_complete - note completion of epilog on some node and 
  *	release it's switch windows if appropriate. can perform partition 
