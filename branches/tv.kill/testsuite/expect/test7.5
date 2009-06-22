@@ -132,6 +132,8 @@ if {$fini_cnt > 0} {
 
 if {$exit_code == 0} {
 	send_user "\n\nSo far, so good\n\n"
+} else {
+	exit $exit_code
 }
 
 #
