@@ -1196,8 +1196,14 @@ static void _handle_intr()
 	static time_t last_intr      = 0;
 	static time_t last_intr_sent = 0;
 
-	if (!opt.quit_on_intr && 
-	    (((time(NULL) - last_intr) > 1) && !opt.disable_status)) {
+	if (MPIR_being_debugged) {
+		update_job_state(job, SRUN_JOB_FORCETERM);
+		if (last_intr_sent == (time_t) 0)
+			info("forcing job termination");
+		last_intr_sent = time(NULL);
+		slurm_step_launch_abort(job->step_ctx);	/* sends SIGKILL */
+	} else if (!opt.quit_on_intr && 
+		   (((time(NULL) - last_intr) > 1) && !opt.disable_status)) {
 		if (job->state < SRUN_JOB_FORCETERM)
 			info("interrupt (one more within 1 sec to abort)");
 		else
