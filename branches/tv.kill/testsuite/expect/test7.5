@@ -103,6 +103,11 @@ expect {
 		send_user "\nSent SIGTERM\n"
 		exp_continue
 	}
+	-re "TIME LIMIT" {
+		send_user "\nFAILURE: job not terminated with SIGINT\n"
+		set exit_code 1
+		exp_continue
+	}
 	-re "error.*not running" {
 		send_user "\nDon't worry about the error...\n"
 		exp_continue
@@ -163,6 +168,11 @@ expect {
 		send_user "\nFAILURE: job not stopped in debugger mode\n"
 		set exit_code 1
 		send_user "\nSent SIGTERM\n"
+		exp_continue
+	}
+	-re "TIME LIMIT" {
+		send_user "\nFAILURE: job not terminated with SIGINT\n"
+		set exit_code 1
 		exp_continue
 	}
 	-re "error.*not running" {
