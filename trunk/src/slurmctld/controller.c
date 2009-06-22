@@ -513,14 +513,7 @@ int main(int argc, char *argv[])
 		/*
 		 * create attached thread for node power management
 		 */
-		slurm_attr_init(&thread_attr);
-		while (pthread_create(&slurmctld_config.thread_id_power,
-				      &thread_attr, init_power_save,
-				      NULL)) {
-			error("pthread_create %m");
-			sleep(1);
-		}
-		slurm_attr_destroy(&thread_attr);
+		start_power_mgr(&slurmctld_config.thread_id_power);
 
 		/*
 		 * process slurm background activities, could run as pthread
@@ -718,6 +711,7 @@ extern int slurm_reconfigure(void)
 		set_slurmctld_state_loc();
 	}
 	unlock_slurmctld(config_write_lock);
+	start_power_mgr(&slurmctld_config.thread_id_power);
 	trigger_reconfig();
 	slurm_sched_partition_change();	/* notify sched plugin */
 	select_g_reconfigure();		/* notify select plugin too */
