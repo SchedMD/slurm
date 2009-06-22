@@ -593,7 +593,7 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 	 * Signal the process group
 	 */
 	pthread_mutex_lock(&suspend_mutex);
-	if (suspended) {
+	if (suspended && (signal != SIGKILL)) {
 		rc = ESLURMD_STEP_SUSPENDED;
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
