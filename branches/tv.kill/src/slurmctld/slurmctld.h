@@ -1505,8 +1505,10 @@ extern void set_slurmd_addr (void);
  * signal_step_tasks - send specific signal to specific job step
  * IN step_ptr - step record pointer
  * IN signal - signal to send
+ * IN msg_type - message type to send
  */
-extern void signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
+void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
+		       slurm_msg_type_t msg_type);
 
 /* Read configuration file.
  * Same name as API function for use in accounting_storage plugin */
