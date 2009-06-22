@@ -539,7 +539,7 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	req.msg_type = REQUEST_SIGNAL_TASKS;
 	req.data     = &msg;
 	
-	debug3("sending signal to host %s", name);
+	debug3("sending signal %d to host %s", signo, name);
 	
 	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0, false))) { 
 		error("fwd_signal: slurm_send_recv_msgs really failed bad");
