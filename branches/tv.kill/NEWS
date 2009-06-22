@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
     your code.
  -- salloc's --wait=<secs> option deprecated by --immediate=<secs> option to 
     match the srun command.
+ -- Modify srun so that a SIGTERM or SIGINT x3 delivered while running under the
+    TotalView debugger causes the spawned tasks to immediately receive SIGKILL.
+    Previous logic would send SIGCONT, SIGTERM, wait KillWait seconds, SIGKILL.
 
 * Changes in SLURM 2.1.0-pre1
 =============================
