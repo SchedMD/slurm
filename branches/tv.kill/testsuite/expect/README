@@ -285,7 +285,7 @@ test7.3    Test of slurm_step_launch API with spawn_io=true
            (needed by poe on IBM AIX systems).
 test7.4    Test of TotalView operation with srun, with and without bulk 
            transfer.
-test7.5    REMOVED
+test7.5    Test of TotalView termination logic for srun.
 test7.6    Test of TotalView operation with sattach
 test7.7    Test of sched/wiki2 plugin. This is intended to execute in the 
            place of Moab or Maui and emulate its actions to confirm proper
