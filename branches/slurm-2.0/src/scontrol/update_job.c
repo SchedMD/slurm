@@ -572,15 +572,17 @@ scontrol_job_notify(int argc, char *argv[])
 		return 1;
 	}
 
-	message[0] = '\0';
 	for (i=1; i<argc; i++) {
 		if (message)
 			xstrfmtcat(message, " %s", argv[i]);
 		else
 			xstrcat(message, argv[i]);
 	}
-			
-	if (slurm_notify_job(job_id, message))
+
+	i = slurm_notify_job(job_id, message);
+	xfree(message);
+
+	if (i)
 		return slurm_get_errno ();
 	else
 		return 0;
