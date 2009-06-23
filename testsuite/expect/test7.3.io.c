@@ -38,15 +38,15 @@
 int main(int argc, char **argv)
 {
 	char buf1[128], buf2[128], *tmp;
-	int size, j, procid = -1;
+	int size, j, procid = -1, rc = 0;
 
 	tmp = getenv("SLURM_PROCID");
 	if (tmp)
 		procid = atoi(tmp);
 	sprintf(buf1, "task %d write to stdout:", procid);
-	write(STDOUT_FILENO, buf1, strlen(buf1));
+	rc = write(STDOUT_FILENO, buf1, strlen(buf1));
 	sprintf(buf1, "task %d write to stderr:", procid);
-	write(STDOUT_FILENO, buf1, strlen(buf1));
+	rc = write(STDOUT_FILENO, buf1, strlen(buf1));
 	while  ((size = read(STDIN_FILENO, buf1, sizeof(buf1))) != 0) {
 		if (size > 0) {
 			int offset;
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 				buf2[offset+j] = buf1[j];
 			buf2[offset+j] = ':';
 			buf2[offset+j+1] = '\0';
-			write(STDOUT_FILENO, buf2, strlen(buf2));
+			rc = write(STDOUT_FILENO, buf2, strlen(buf2));
 			break;
 		} else {
 			if ((errno == EINTR) || (errno == EAGAIN)) {
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 				continue;
 			}
 			sprintf(buf1, "io read errno:%d:", errno);
-			write(STDOUT_FILENO, buf1, strlen(buf1));
+			rc = write(STDOUT_FILENO, buf1, strlen(buf1));
 			break;
 		}
 	}

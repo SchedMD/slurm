@@ -175,7 +175,7 @@ cleanup:
  */
 static int _bp_coordinate(const char *name)
 {
-	int i, io_val = 999, low_val = -1, high_val;
+	int i, io_val = 999, low_val = -1, high_val = -1;
 
 	for (i=0; name[i]; i++) {
 		if (name[i] == '[') {

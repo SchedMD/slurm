@@ -87,12 +87,10 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 		rc = slurm_checkpoint_able (job_id, step_id, &start_time);
 		if (rc == SLURM_SUCCESS) {
 			if (start_time) {
-				char buf[128], time_str[32];
+				char time_str[32];
 				slurm_make_time_str(&start_time, time_str,
-					sizeof(time_str));
-				snprintf(buf, sizeof(buf), 
-					"Began at %s\n", time_str); 
-				printf(buf);
+						    sizeof(time_str));
+				printf("Began at %s\n", time_str);
 			} else
 				printf("Yes\n");
 		} else if (slurm_get_errno() == ESLURM_DISABLED) {
@@ -566,7 +564,7 @@ scontrol_job_notify(int argc, char *argv[])
 {
 	int i;
 	uint32_t job_id;
-	char message[256];
+	char *message = NULL;
 
 	job_id = atoi(argv[0]);
 	if (job_id <= 0) {
@@ -576,9 +574,10 @@ scontrol_job_notify(int argc, char *argv[])
 
 	message[0] = '\0';
 	for (i=1; i<argc; i++) {
-		if (i > 1)
-			strncat(message, " ", sizeof(message));
-		strncat(message, argv[i], sizeof(message));
+		if (message)
+			xstrfmtcat(message, " %s", argv[i]);
+		else
+			xstrcat(message, argv[i]);
 	}
 			
 	if (slurm_notify_job(job_id, message))

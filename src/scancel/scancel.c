@@ -494,6 +494,7 @@ _confirmation (int i, uint32_t step_id)
 {
 	char in_line[128];
 	job_info_t *job_ptr = NULL;
+	char *line = NULL;
 
 	job_ptr = job_buffer_ptr->job_array ;
 	while (1) {
@@ -507,7 +508,9 @@ _confirmation (int i, uint32_t step_id)
 				job_ptr[i].partition);
 		}
 
-		fgets (in_line, sizeof (in_line), stdin);
+		/* we only set this here to avoid a warning.  We throw it away
+		   later. */
+		line = fgets (in_line, sizeof (in_line), stdin);
 		if ((in_line[0] == 'y') || (in_line[0] == 'Y'))
 			return 1;
 		if ((in_line[0] == 'n') || (in_line[0] == 'N'))

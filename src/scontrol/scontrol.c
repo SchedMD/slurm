@@ -198,7 +198,10 @@ getline(const char *prompt)
 
 	printf("%s", prompt);
 
-	fgets(buf, 4096, stdin);
+	/* we only set this here to avoid a warning.  We throw it away
+	   later. */
+	line = fgets(buf, 4096, stdin);
+
 	len = strlen(buf);
 	if ((len > 0) && (buf[len-1] == '\n'))
 		buf[len-1] = '\0';
