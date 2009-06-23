@@ -487,7 +487,7 @@ slurmctld_msg_init(void)
 {
 	slurm_addr slurm_address;
 	uint16_t port;
-	static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
+	static slurm_fd slurmctld_fd   = (slurm_fd) 0;
 
 	if (slurmctld_fd)	/* May set early for queued job allocation */
 		return slurmctld_fd;

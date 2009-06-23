@@ -151,7 +151,7 @@ static xppid_t **_build_hashtbl()
 	char path[PATH_MAX], *endptr, *num, rbuf[1024];
 	char myname[1024], cmd[1024];
 	int fd;
-	long pid, ppid;
+	long pid, ppid, ret_l;
 	xppid_t **hashtbl;
 
 	if ((dir = opendir("/proc")) == NULL) {
@@ -165,7 +165,11 @@ static xppid_t **_build_hashtbl()
 
 	while ((de = readdir(dir)) != NULL) {
 		num = de->d_name;
-		strtol(num, &endptr, 10);
+		ret_l = strtol(num, &endptr, 10);
+		if(errno == ERANGE)
+			error("couldn't do a strtol on str %s(%d): %m",
+			      num, ret_l);
+
 		if (endptr == NULL || *endptr != 0)
 			continue;
 		sprintf(path, "/proc/%s/stat", num);
