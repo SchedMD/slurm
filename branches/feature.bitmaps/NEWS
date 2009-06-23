@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     your code.
  -- salloc's --wait=<secs> option deprecated by --immediate=<secs> option to 
     match the srun command.
+ -- Multiple features can be specified when creating a reservation. Use "&" 
+    (AND) or "|" (OR) separators between the feature names.
 
 * Changes in SLURM 2.1.0-pre1
 =============================

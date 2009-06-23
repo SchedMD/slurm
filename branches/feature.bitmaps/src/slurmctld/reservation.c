@@ -1353,9 +1353,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		xfree(resv_ptr->features);
 	}
 	if (resv_desc_ptr->features) {
-		xfree(resv_ptr->features);
-		resv_ptr->features = resv_desc_ptr->features;
-		resv_desc_ptr->features = NULL;	/* Nothing left to free */
+		/* To support in the future, the reservation resources would 
+		 * need to be selected again. For now, administrator can 
+		 * delete this reservation and create a new one. */
+		info("Attempt to change features of reservation %s",
+		     resv_desc_ptr->name);
+		error_code = ESLURM_NOT_SUPPORTED;
+		goto update_failure;
 	}
 	if (resv_desc_ptr->users) {
 		rc = _update_uid_list(resv_ptr, resv_desc_ptr->users);
@@ -1453,7 +1457,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		goto update_failure;
 	}
 	_set_cpu_cnt(resv_ptr);
-	if((error_code = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
+	if ((error_code = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
 		goto update_failure;
 
 	slurm_make_time_str(&resv_ptr->start_time, start_time, 
@@ -2116,9 +2120,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 {
 	slurmctld_resv_t *resv_ptr;
 	bitstr_t *node_bitmap;
-	struct node_record *node_ptr;
 	ListIterator iter;
-	int i, j;
+	int i, rc = SLURM_SUCCESS;
 
 	if (*part_ptr == NULL) {
 		*part_ptr = default_part_loc;
@@ -2148,26 +2151,70 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 
 	/* Satisfy feature specification */
 	if (resv_desc_ptr->features) {
-		/* FIXME: Just support a single feature name for now */
-		node_ptr = node_record_table_ptr;
-		for (i=0; i<node_record_count; i++, node_ptr++) {
-			if (!bit_test(node_bitmap, i))
-				continue;
-			if (!node_ptr->config_ptr->feature_array) {
-				bit_clear(node_bitmap, i);
-				continue;
-			}
-			for (j=0; node_ptr->config_ptr->feature_array[j]; j++){
-				if (!strcmp(resv_desc_ptr->features,
-					    node_ptr->config_ptr->
-					    feature_array[j]))
+		int   op_code = FEATURE_OP_AND, last_op_code = FEATURE_OP_AND;
+		char *features = xstrdup(resv_desc_ptr->features);
+		char *sep_ptr, *token = features;
+		bitstr_t *feature_bitmap = bit_copy(node_bitmap);
+		struct features_record *feature_ptr;
+		ListIterator feature_iter;
+		bool match;
+
+		if (feature_bitmap == NULL)
+			fatal("bit_copy malloc failure");
+
+		while (1) {
+			for (i=0; ; i++) {
+				if (token[i] == '\0') {
+					sep_ptr = NULL;
 					break;
+				} else if (token[i] == '|') {
+					op_code = FEATURE_OP_OR;
+					token[i] = '\0';
+					sep_ptr = &token[i];
+					break;
+				} else if ((token[i] == '&') ||
+					   (token[i] == ',')) {
+					op_code = FEATURE_OP_AND;
+					token[i] = '\0';
+					sep_ptr = &token[i];
+					break;
+				}
 			}
-			if (!node_ptr->config_ptr->feature_array[j]) {
-				bit_clear(node_bitmap, i);
-				continue;
+
+			match = false;
+			feature_iter = list_iterator_create(feature_list);
+			if (feature_iter == NULL)
+				fatal("list_iterator_create malloc failure");
+			while ((feature_ptr = (struct features_record *) 
+					list_next(feature_iter))) {
+				if (strcmp(token, feature_ptr->name))
+					continue;
+				if (last_op_code == FEATURE_OP_OR) {
+					bit_or(feature_bitmap, 
+					       feature_ptr->node_bitmap);
+				} else {
+					bit_and(feature_bitmap, 
+						feature_ptr->node_bitmap);
+				}
+				match = true;
+				break;
 			}
+			list_iterator_destroy(feature_iter);
+			if (!match) {
+				info("reservation feature invalid: %s", token);
+				rc = ESLURM_INVALID_FEATURE;
+				bit_nclear(feature_bitmap, 0, 
+					   (node_record_count - 1));
+				break;
+			}
+			if (sep_ptr == NULL)
+				break;
+			token = sep_ptr + 1;
+			last_op_code = op_code;
 		}
+		xfree(features);
+		bit_and(node_bitmap, feature_bitmap);
+		bit_free(feature_bitmap);
 	}
 
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) {
@@ -2175,7 +2222,9 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		bit_and(node_bitmap, avail_node_bitmap);
 	}
 	*resv_bitmap = NULL;
-	if (bit_set_count(node_bitmap) < resv_desc_ptr->node_cnt)
+	if (rc != SLURM_SUCCESS)
+		;
+	else if (bit_set_count(node_bitmap) < resv_desc_ptr->node_cnt)
 		verbose("reservation requests more nodes than are available");
 	else if ((i = bit_overlap(node_bitmap, idle_node_bitmap)) >=
 		 resv_desc_ptr->node_cnt) {	/* Reserve idle nodes */
@@ -2184,7 +2233,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 					    resv_desc_ptr->node_cnt);
 	} else if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) {
 		/* Reserve nodes that are idle first, then busy nodes */
-		*resv_bitmap = _pick_idle_nodes2(node_bitmap, resv_desc_ptr);	
+		*resv_bitmap = _pick_idle_nodes2(node_bitmap, 
+						 resv_desc_ptr);	
 	} else {
 		/* Reserve nodes that are or will be idle.
 		 * This algorithm is slower than above logic that just 
@@ -2193,8 +2243,12 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	}
 
 	bit_free(node_bitmap);
-	if (*resv_bitmap == NULL)
-		return ESLURM_NODES_BUSY;
+	if (*resv_bitmap == NULL) {
+		if (rc == SLURM_SUCCESS)
+			rc = ESLURM_NODES_BUSY;
+		return rc;
+	}
+
 	resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
 	return SLURM_SUCCESS;
 }
