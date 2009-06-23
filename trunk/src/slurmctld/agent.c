@@ -1413,9 +1413,11 @@ static void _mail_proc(mail_info_t *mi)
 		(void) close(0);
 		(void) close(1);
 		(void) close(2);
-		fd = open("/dev/null", O_RDWR);
-		dup(fd);
-		dup(fd);
+		fd = open("/dev/null", O_RDWR); // 0
+		if(dup(fd) == -1) // 1
+			error("Couldn't do a dup for 1: %m");
+		if(dup(fd) == -1) // 2
+			error("Couldn't do a dup for 2 %m");
 		execle(slurmctld_conf.mail_prog, "mail", 
 			"-s", mi->message, mi->user_name,
 			NULL, NULL);

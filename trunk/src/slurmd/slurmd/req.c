@@ -924,8 +924,12 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 	}
 	snprintf(err_name, 128, "Error running slurm prolog: %d\n", 
 		WEXITSTATUS(rc));
-	write(fd, err_name, strlen(err_name));
-	fchown(fd, (uid_t) req->uid, (gid_t) req->gid);
+	safe_write(fd, err_name, strlen(err_name));
+	if(fchown(fd, (uid_t) req->uid, (gid_t) req->gid) == -1)
+		snprintf(err_name, 128,
+			 "Couldn't change fd owner to %u:%u: %m\n", 
+			 req->uid, req->gid);
+rwfail:
 	close(fd);
 }
 
@@ -3422,7 +3426,11 @@ _getgroups(void)
 		return NULL;
 	}
 	gg = (gid_t *)xmalloc(n * sizeof(gid_t));
-	getgroups(n, gg);
+	if(getgroups(n, gg) == -1) {
+		error("_getgroups: couldn't get %d groups: %m", n);
+		xfree(gg);
+		return NULL;
+	}
 	return _alloc_gids(n, gg);
 }
 
@@ -3449,7 +3457,11 @@ init_gids_cache(int cache)
 		return;
 	}
 	orig_gids = (gid_t *)xmalloc(ngids * sizeof(gid_t));
-	getgroups(ngids, orig_gids);
+	if(getgroups(ngids, orig_gids) == -1) {
+		error("init_gids_cache: couldn't get %d groups: %m", ngids);
+		xfree(orig_gids);
+		return;
+	}
 
 #ifdef HAVE_AIX
 	setpwent_r(&fp);
