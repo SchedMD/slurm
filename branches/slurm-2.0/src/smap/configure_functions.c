@@ -573,8 +573,11 @@ static int _resolve(char *com)
 	int *coord = NULL;
 #endif
 	
-	while(com[i-1] != ' ' && com[i] != '\0')
+	while(com[i] != '\0') {
+		if((i>0) && (com[i-1] != ' '))
+			break;
 		i++;
+	}
 	if(com[i] == 'r')
 		com[i] = 'R';
 		
@@ -893,7 +896,9 @@ static int _copy_allocation(char *com, List allocated_blocks)
 	int count = 1;
 	int *geo = NULL, *geo_ptr = NULL;
 			
-	while(com[i-1]!=' ' && i<=len) {
+	while(i<=len) {
+		if((i>0) && (com[i-1] != ' '))
+			break;
 		i++;
 	}
 	

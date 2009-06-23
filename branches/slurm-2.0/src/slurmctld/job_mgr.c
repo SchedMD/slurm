@@ -382,9 +382,13 @@ int dump_all_job_state(void)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		(void) link(reg_file, old_file);
+		if(link(reg_file, old_file))
+			error("unable to create link for %s -> %s: %m",
+			      reg_file, old_file);
 		(void) unlink(reg_file);
-		(void) link(new_file, reg_file);
+		if(link(new_file, reg_file))
+			error("unable to create link for %s -> %s: %m",
+			      new_file, reg_file);
 		(void) unlink(new_file);
 	}
 	xfree(old_file);
@@ -7060,9 +7064,13 @@ static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		(void) link(ckpt_file, old_file);
+		if(link(ckpt_file, old_file))
+			error("unable to create link for %s -> %s: %m",
+			      ckpt_file, old_file);
 		(void) unlink(ckpt_file);
-		(void) link(new_file, ckpt_file);
+		if(link(new_file, ckpt_file))
+			error("unable to create link for %s -> %s: %m",
+			      new_file, ckpt_file);
 		(void) unlink(new_file);
 	}
 

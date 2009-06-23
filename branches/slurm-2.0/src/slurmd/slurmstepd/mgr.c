@@ -1677,7 +1677,12 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 
 	ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
 
-	getgroups(ps->ngids, ps->gid_list);
+	if(getgroups(ps->ngids, ps->gid_list) == -1) {
+		error("_drop_privileges: couldn't get %d groups: %m",
+		      ps->ngids);
+		xfree(ps->gid_list);
+		return -1;
+	}
 
 	/*
 	 * No need to drop privileges if we're not running as root
@@ -1962,7 +1967,9 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 			exit(127);
 		}
 
-		chdir(job->cwd);
+		if(chdir(job->cwd) == -1)
+			error("run_script_as_user: couldn't "
+			      "change working dir to %s: %m", job->cwd);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else
