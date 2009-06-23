@@ -1411,7 +1411,7 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 	}
 
 	feat_iter = list_iterator_create(feature_list);
-	while((feat_ptr = (struct feature_record *)list_next(feat_iter))) {
+	while ((feat_ptr = (struct feature_record *)list_next(feat_iter))) {
 		if (feat_ptr->op_code == FEATURE_OP_XOR) {
 			if (bracket == 0)
 				xstrcat(buf, "[");

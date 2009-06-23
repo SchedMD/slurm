@@ -1229,43 +1229,40 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		}
 		FREE_NULL_BITMAP(feature_bitmap);
 		if (slurmctld_conf.fast_schedule) {
-			if ((detail_ptr->job_min_procs    > 
-			     config_ptr->cpus       )
-			||  ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) > 
-			      config_ptr->real_memory) 
-			||  (detail_ptr->job_min_tmp_disk > 
+			if ((detail_ptr->job_min_procs > config_ptr->cpus)   ||
+			    ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) > 
+			      config_ptr->real_memory) 			     ||
+			    (detail_ptr->job_min_tmp_disk > 
 			     config_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
-			if (mc_ptr
-			&&  ((mc_ptr->min_sockets     > config_ptr->sockets  )
-			||   (mc_ptr->min_cores       > config_ptr->cores    )
-			||   (mc_ptr->min_threads     > config_ptr->threads  )
-			||   (mc_ptr->job_min_sockets > config_ptr->sockets  )
-			||   (mc_ptr->job_min_cores   > config_ptr->cores    )
-			||   (mc_ptr->job_min_threads > 
-			      config_ptr->threads  ))) {
+			if (mc_ptr &&
+			    ((mc_ptr->min_sockets     > config_ptr->sockets) ||
+			     (mc_ptr->min_cores       > config_ptr->cores)   ||
+			     (mc_ptr->min_threads     > config_ptr->threads) ||
+			     (mc_ptr->job_min_sockets > config_ptr->sockets) ||
+			     (mc_ptr->job_min_cores   > config_ptr->cores)   ||
+			     (mc_ptr->job_min_threads > config_ptr->threads))){
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
 		} else {
-			if ((detail_ptr->job_min_procs    > 
-			     node_ptr->cpus       )
-			||  ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) >
-			      node_ptr->real_memory) 
-			||  (detail_ptr->job_min_tmp_disk > 
+			if ((detail_ptr->job_min_procs > node_ptr->cpus)     ||
+			    ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) >
+			      node_ptr->real_memory)                         ||
+			    (detail_ptr->job_min_tmp_disk > 
 			     node_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
-			if (mc_ptr
-			&&  ((mc_ptr->min_sockets     > node_ptr->sockets  )
-			||   (mc_ptr->min_cores       > node_ptr->cores    )
-			||   (mc_ptr->min_threads     > node_ptr->threads  )
-			||   (mc_ptr->job_min_sockets > node_ptr->sockets  )
-			||   (mc_ptr->job_min_cores   > node_ptr->cores    )
-			||   (mc_ptr->job_min_threads > node_ptr->threads  ))) {
+			if (mc_ptr &&
+			    ((mc_ptr->min_sockets     > node_ptr->sockets)   ||
+			     (mc_ptr->min_cores       > node_ptr->cores)     ||
+			     (mc_ptr->min_threads     > node_ptr->threads)   ||
+			     (mc_ptr->job_min_sockets > node_ptr->sockets)   ||
+			     (mc_ptr->job_min_cores   > node_ptr->cores)     ||
+			     (mc_ptr->job_min_threads > node_ptr->threads))) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
