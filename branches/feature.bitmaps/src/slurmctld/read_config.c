@@ -203,7 +203,6 @@ static int _build_bitmaps(void)
 	config_iterator = list_iterator_create(config_list);
 	if (config_iterator == NULL)
 		fatal ("memory allocation failure");
-
 	while ((config_ptr = (struct config_record *)
 				      list_next(config_iterator))) {
 		FREE_NULL_BITMAP(config_ptr->node_bitmap);
@@ -261,6 +260,16 @@ static int _build_bitmaps(void)
 		if (node_ptr->config_ptr)
 			bit_set(node_ptr->config_ptr->node_bitmap, i);
 	}
+
+	config_iterator = list_iterator_create(config_list);
+	if (config_iterator == NULL)
+		fatal ("memory allocation failure");
+	while ((config_ptr = (struct config_record *)
+				      list_next(config_iterator))) {
+		build_config_feature_array(config_ptr);
+	}
+	list_iterator_destroy(config_iterator);
+
 	return error_code;
 }
 
@@ -539,7 +548,6 @@ static int _build_all_nodeline_info(void)
 		config_ptr->weight = node->weight;
 		if (node->feature)
 			config_ptr->feature = xstrdup(node->feature);
-		build_config_feature_array(config_ptr);
 
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}

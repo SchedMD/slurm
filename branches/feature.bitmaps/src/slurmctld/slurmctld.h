@@ -164,8 +164,9 @@ extern int   cluster_procs;
 /*****************************************************************************\
  *  NODE parameters and data structures
 \*****************************************************************************/
-#define CONFIG_MAGIC 0xc065eded
-#define NODE_MAGIC   0x0de575ed
+#define CONFIG_MAGIC	0xc065eded
+#define FEATURE_MAGIC	0x34dfd8b5
+#define NODE_MAGIC	0x0de575ed
 
 struct config_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
@@ -182,8 +183,14 @@ struct config_record {
 	char *nodes;		/* name of nodes with this configuration */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
 };
-
 extern List config_list;	/* list of config_record entries */
+
+struct features_record {
+	uint32_t magic;		/* magic cookie to test data integrity */
+	char *name;		/* name of a feature */
+	bitstr_t *node_bitmap;	/* bitmap of nodes with this feature */
+};
+extern List feature_list;	/* list of features_record entries */
 
 struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
