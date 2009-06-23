@@ -743,7 +743,7 @@ static void _list_delete_config (void *config_entry)
 	xassert(config_ptr);
 	xassert(config_ptr->magic == CONFIG_MAGIC);
 	xfree (config_ptr->feature);
-	build_config_feature_array(config_ptr);
+	build_config_feature_list(config_ptr);
 	xfree (config_ptr->nodes);
 	FREE_NULL_BITMAP (config_ptr->node_bitmap);
 	xfree (config_ptr);
@@ -1373,7 +1373,7 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = 
 				bitmap2node_name(tmp_bitmap);
-			build_config_feature_array(new_config_ptr);
+			build_config_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */ 
@@ -1438,7 +1438,7 @@ static int _update_node_features(char *node_names, char *features)
 				config_ptr->feature = xstrdup(features);
 			else
 				config_ptr->feature = NULL;
-			build_config_feature_array(config_ptr);
+			build_config_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = create_config_record();
@@ -1457,7 +1457,7 @@ static int _update_node_features(char *node_names, char *features)
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = 
 				bitmap2node_name(tmp_bitmap);
-			build_config_feature_array(new_config_ptr);
+			build_config_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */ 
@@ -2721,10 +2721,8 @@ static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
 	}
 }
 
-/* Given a config_record, clear any existing feature_array and
- * if feature is set, then rebuild feature_array
- * Filter out any white-space from the feature string */
-extern void  build_config_feature_array(struct config_record *config_ptr)
+/* Given a config_record with it's bitmap already set, update feature_list */
+extern void  build_config_feature_list(struct config_record *config_ptr)
 {
 	struct features_record *feature_ptr;
 	ListIterator feature_iter;

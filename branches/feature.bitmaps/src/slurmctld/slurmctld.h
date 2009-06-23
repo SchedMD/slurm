@@ -671,9 +671,8 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
  */
 extern char * bitmap2node_name (bitstr_t *bitmap) ;
 
-/* Given a config_record, clear any existing feature_array and
- * if feature is set, then rebuild feature_array */
-extern void  build_config_feature_array(struct config_record *config_ptr);
+/* Given a config_record with it's bitmap already set, update feature_list */
+extern void  build_config_feature_list(struct config_record *config_ptr);
 
 /*
  * create_config_record - create a config_record entry and set is values to 

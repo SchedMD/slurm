@@ -266,7 +266,7 @@ static int _build_bitmaps(void)
 		fatal ("memory allocation failure");
 	while ((config_ptr = (struct config_record *)
 				      list_next(config_iterator))) {
-		build_config_feature_array(config_ptr);
+		build_config_feature_list(config_ptr);
 	}
 	list_iterator_destroy(config_iterator);
 
