@@ -304,12 +304,12 @@ extern int select_p_state_save(char *dir_name)
 	else {			/* file shuffle */
 		(void) unlink(old_file);
 		if(link(reg_file, old_file))
-			error("unable to create link for %s -> %s: %m",
-			      reg_file, old_file);
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
 		(void) unlink(reg_file);
 		if(link(new_file, reg_file))
-			error("unable to create link for %s -> %s: %m",
-			      new_file, reg_file);
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
 		(void) unlink(new_file);
 	}
 	xfree(old_file);

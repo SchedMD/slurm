@@ -313,12 +313,12 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	else {			/* file shuffle */
 		(void) unlink(old_file);
 		if(link(state_file, old_file))
-			error("unable to create link for %s -> %s: %m",
-			      state_file, old_file);
+			debug4("unable to create link for %s -> %s: %m",
+			       state_file, old_file);
 		(void) unlink(state_file);
 		if(link(new_file, state_file))
-			error("unable to create link for %s -> %s: %m",
-			      new_file, state_file);
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, state_file);
 		(void) unlink(new_file);
 	}
 	xfree(old_file);
