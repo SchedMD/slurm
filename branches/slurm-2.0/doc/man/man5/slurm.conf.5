@@ -1626,17 +1626,19 @@ systems.
 .TP
 \fBUnkillableStepProgram\fR
 If the processes in a job step are determined to be unkillable for a period
-of time specified by the UnkillableStepTimeout variable, the program
-specified by the UnkillableStepProgram string will be executed.  This 
-program can be used to take special actions to clean up the unkillable
-processes.  The program will be run as the same user as the slurmd (usually
-"root").
+of time specified by the \fBUnkillableStepTimeout\fR variable, the program
+specified by \fBUnkillableStepProgram\fR will be executed.  
+This program can be used to take special actions to clean up the unkillable
+processes and/or notify computer administrators.  
+The program will be run \fBSlurmdUser\fR (usually "root"). 
+By default no program is run.
 
 .TP
 \fBUnkillableStepTimeout\fR
 The length of time, in seconds, that SLURM will wait before deciding that
 processes in a job step are unkillable (after they have been signaled with
-SIGKILL).  The default timeout value is 60 seconds.
+SIGKILL) and execute \fBUnkillableStepProgram\fR as described above.  
+The default timeout value is 60 seconds.
 
 .TP
 \fBUsePAM\fR
