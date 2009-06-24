@@ -108,8 +108,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    struct part_record *part_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, bool test_only);
-static void _reset_feature_counts(struct job_details *details_ptr);
-static bool _valid_feature_counts(struct job_details *details_ptr);
+static bool _valid_feature_counts(struct job_details *detail_ptr, 
+				  bitstr_t *node_bitmap);
 static bitstr_t *_valid_features(struct job_details *detail_ptr, 
 				 struct config_record *config_ptr,
 				 bool update_count);
@@ -1151,41 +1151,104 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	return error_code;
 }
 
-/* Clear tmp_cnt for all features of given job */
-static void _reset_feature_counts(struct job_details *details_ptr)
+/* 
+ * _list_find_feature - find an entry in the feature list, see list.h for   
+ *	documentation 
+ * IN key - is feature name or NULL for all features
+ * RET 1 if found, 0 otherwise
+ */
+static int _list_find_feature(void *feature_entry, void *key) 
 {
-	ListIterator feat_iter;
-	struct feature_record *feat_ptr;
+	struct features_record *feature_ptr;
 
-	if (details_ptr->feature_list == NULL)	/* no constraints */
-		return;
+	if (key == NULL)
+		return 1;
 
-	feat_iter = list_iterator_create(details_ptr->feature_list);
-	while ((feat_ptr = (struct feature_record *) list_next(feat_iter))) {
-		feat_ptr->tmp_cnt = 0;
-	}
-	list_iterator_destroy(feat_iter);
+	feature_ptr = (struct features_record *) feature_entry;
+	if (strcmp(feature_ptr->name, (char *) key) == 0)
+		return 1;
+	return 0;
 }
 
-/* Verify that tmp_cnt >= count for all features of given job */
-static bool _valid_feature_counts(struct job_details *details_ptr)
+/*
+ * _valid_feature_counts - validate a job's features can be satisfied
+ *	by the selected nodes (NOTE: does not process XOR operators)
+ * IN detail_ptr - job details
+ * IN/OUT node_bitmap - nodes available for use, clear if unusable
+ * RET true if valid, false otherwise
+ */
+static bool _valid_feature_counts(struct job_details *detail_ptr, 
+				  bitstr_t *node_bitmap)
 {
-	ListIterator feat_iter;
-	struct feature_record *feat_ptr;
-	bool result = true;
+	ListIterator job_feat_iter;
+	struct feature_record *job_feat_ptr;
+	struct features_record *feat_ptr;
+	int have_count = false, last_op = FEATURE_OP_AND;
+	bitstr_t *feature_bitmap;
+	bool rc = true;
 
-	if (details_ptr->feature_list == NULL)	/* no constraints */
-		return result;
+	if (detail_ptr->feature_list == NULL)	/* no constraints */
+		return rc;
 
-	feat_iter = list_iterator_create(details_ptr->feature_list);
-	while ((feat_ptr = (struct feature_record *) list_next(feat_iter))) {
-		if (feat_ptr->tmp_cnt >= feat_ptr->count)
-			continue;
-		result = false;
-		break;
+	feature_bitmap = bit_copy(node_bitmap);
+	if (feature_bitmap == NULL)
+		fatal("bit_copy malloc error");
+	job_feat_iter = list_iterator_create(detail_ptr->feature_list);
+	if (job_feat_iter)
+		fatal("list_iterator_create malloc error");
+	while ((job_feat_ptr = (struct feature_record *) 
+			list_next(job_feat_iter))) {
+		feat_ptr = list_find_first(feature_list, _list_find_feature, 
+					   (void *) job_feat_ptr->name);
+		if (feat_ptr) {
+			if (last_op == FEATURE_OP_AND)
+				bit_and(feature_bitmap, feat_ptr->node_bitmap);
+			else	/* OR or XOR */
+				bit_or(feature_bitmap, feat_ptr->node_bitmap);
+		} else {	/* feature not found */
+			if (last_op == FEATURE_OP_AND) {
+				bit_nclear(feature_bitmap, 0, 
+					   (node_record_count - 1));
+			}
+		}
+		last_op = job_feat_ptr->op_code;
+		if (job_feat_ptr->count)
+			have_count = true;
 	}
-	list_iterator_destroy(feat_iter);
-	return result;
+	list_iterator_destroy(job_feat_iter);
+	bit_and(node_bitmap, feature_bitmap);
+	bit_free(feature_bitmap);
+
+	if (have_count) {
+		job_feat_iter = list_iterator_create(detail_ptr->
+						     feature_list);
+		if (job_feat_iter)
+			fatal("list_iterator_create malloc error");
+		while ((job_feat_ptr = (struct feature_record *) 
+				list_next(job_feat_iter))) {
+			if (job_feat_ptr->count == 0)
+				continue;
+			feat_ptr = list_find_first(feature_list, 
+						   _list_find_feature, 
+						   (void *)job_feat_ptr->name);
+			if (!feat_ptr) {
+				rc = false;
+				break;
+			}
+			feature_bitmap = bit_copy(node_bitmap);
+			if (feature_bitmap == NULL)
+				fatal("bit_copy malloc error");
+			bit_and(feature_bitmap, feat_ptr->node_bitmap);
+			if (bit_set_count(feature_bitmap) <job_feat_ptr->count)
+				rc = false;
+			bit_free(feature_bitmap);
+			if (!rc)
+				break;
+		}
+		list_iterator_destroy(job_feat_iter);
+	}
+
+	return rc;
 }
 
 /*
@@ -1206,7 +1269,6 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 	multi_core_data_t *mc_ptr;
 	struct node_record *node_ptr;
 	struct config_record *config_ptr;
-	bitstr_t *feature_bitmap = NULL;
 
 	if (detail_ptr == NULL) {
 		error("job_req_node_filter: job %u has no details", 
@@ -1214,20 +1276,12 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		return EINVAL;
 	}
 
-	_reset_feature_counts(detail_ptr);
 	mc_ptr = detail_ptr->mc_ptr;
 	for (i=0; i< node_record_count; i++) {
 		if (!bit_test(avail_bitmap, i))
 			continue;
 		node_ptr = node_record_table_ptr + i;
 		config_ptr = node_ptr->config_ptr;
-		feature_bitmap = _valid_features(detail_ptr, config_ptr, true);
-		if ((feature_bitmap == NULL) || 
-		    (!bit_test(feature_bitmap, 0))) {
-			bit_clear(avail_bitmap, i);
-			continue;
-		}
-		FREE_NULL_BITMAP(feature_bitmap);
 		if (slurmctld_conf.fast_schedule) {
 			if ((detail_ptr->job_min_procs > config_ptr->cpus)   ||
 			    ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) > 
@@ -1268,9 +1322,8 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 			}
 		}
 	}
-	FREE_NULL_BITMAP(feature_bitmap);
 
-	if (!_valid_feature_counts(detail_ptr))
+	if (!_valid_feature_counts(detail_ptr, avail_bitmap))
 		return EINVAL;
 
 	return SLURM_SUCCESS;
