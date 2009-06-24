@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Check for return codes on functions with warn_unused_result set
  -- Fix memory leak in getting step information
  -- Better logging for when job's request bad output locations.
+ -- Fix issue where if user specified non-existant file to write to slurmstepd
+    will regain privileges before sending batch script ended to the controller.
 
 * Changes in SLURM 2.0.3
 ========================
