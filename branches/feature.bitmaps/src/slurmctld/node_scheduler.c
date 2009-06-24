@@ -109,7 +109,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, bool test_only);
 static bool _valid_feature_counts(struct job_details *detail_ptr, 
-				  bitstr_t *node_bitmap);
+				  bitstr_t *node_bitmap, bool *has_xor);
 static bitstr_t *_valid_features(struct job_details *detail_ptr, 
 				 struct config_record *config_ptr,
 				 bool update_count);
@@ -1178,15 +1178,20 @@ static int _list_find_feature(void *feature_entry, void *key)
  * RET true if valid, false otherwise
  */
 static bool _valid_feature_counts(struct job_details *detail_ptr, 
-				  bitstr_t *node_bitmap)
+				  bitstr_t *node_bitmap, bool *has_xor)
 {
 	ListIterator job_feat_iter;
 	struct feature_record *job_feat_ptr;
 	struct features_record *feat_ptr;
 	int have_count = false, last_op = FEATURE_OP_AND;
-	bitstr_t *feature_bitmap;
+	bitstr_t *feature_bitmap, *tmp_bitmap;
 	bool rc = true;
 
+	xassert(detail_ptr);
+	xassert(node_bitmap);
+	xassert(has_xor);
+
+	*has_xor = false;
 	if (detail_ptr->feature_list == NULL)	/* no constraints */
 		return rc;
 
@@ -1203,7 +1208,10 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 		if (feat_ptr) {
 			if (last_op == FEATURE_OP_AND)
 				bit_and(feature_bitmap, feat_ptr->node_bitmap);
-			else	/* OR or XOR */
+			else if (last_op == FEATURE_OP_XOR) {
+				*has_xor = true;
+				bit_or(feature_bitmap, feat_ptr->node_bitmap);
+			} else	/* FEATURE_OP_OR */
 				bit_or(feature_bitmap, feat_ptr->node_bitmap);
 		} else {	/* feature not found */
 			if (last_op == FEATURE_OP_AND) {
@@ -1216,8 +1224,6 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 			have_count = true;
 	}
 	list_iterator_destroy(job_feat_iter);
-	bit_and(node_bitmap, feature_bitmap);
-	bit_free(feature_bitmap);
 
 	if (have_count) {
 		job_feat_iter = list_iterator_create(detail_ptr->
@@ -1235,17 +1241,21 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 				rc = false;
 				break;
 			}
-			feature_bitmap = bit_copy(node_bitmap);
-			if (feature_bitmap == NULL)
+			tmp_bitmap = bit_copy(feature_bitmap);
+			if (tmp_bitmap == NULL)
 				fatal("bit_copy malloc error");
-			bit_and(feature_bitmap, feat_ptr->node_bitmap);
-			if (bit_set_count(feature_bitmap) <job_feat_ptr->count)
+			bit_and(tmp_bitmap, feat_ptr->node_bitmap);
+			if (bit_set_count(tmp_bitmap) < job_feat_ptr->count)
 				rc = false;
-			bit_free(feature_bitmap);
+			bit_free(tmp_bitmap);
 			if (!rc)
 				break;
 		}
 		list_iterator_destroy(job_feat_iter);
+		bit_free(feature_bitmap);
+	} else {
+		bit_and(node_bitmap, feature_bitmap);
+		bit_free(feature_bitmap);
 	}
 
 	return rc;
@@ -1269,6 +1279,7 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 	multi_core_data_t *mc_ptr;
 	struct node_record *node_ptr;
 	struct config_record *config_ptr;
+	bool has_xor = false;
 
 	if (detail_ptr == NULL) {
 		error("job_req_node_filter: job %u has no details", 
@@ -1323,7 +1334,7 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		}
 	}
 
-	if (!_valid_feature_counts(detail_ptr, avail_bitmap))
+	if (!_valid_feature_counts(detail_ptr, avail_bitmap, &has_xor))
 		return EINVAL;
 
 	return SLURM_SUCCESS;
@@ -1354,6 +1365,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
 	uint32_t max_weight = 0;
+	bool has_xor = false;
 
 	if (job_ptr->resv_name) {
 		/* Limit node selection to those in selected reservation */
@@ -1395,6 +1407,18 @@ static int _build_node_list(struct job_record *job_ptr,
 				fatal("bit_copy malloc failure");
 			bit_not(usable_node_mask);
 		}
+	} else {
+		usable_node_mask = bit_alloc(node_record_count);
+		if (usable_node_mask == NULL)
+			fatal("bit_alloc malloc failure");
+		bit_nset(usable_node_mask, 0, (node_record_count - 1));
+	}
+
+	if (!_valid_feature_counts(detail_ptr, usable_node_mask, &has_xor)) {
+		info("No job %u feature requirements can not be met", 
+		     job_ptr->job_id);
+		bit_free(usable_node_mask);
+		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
 	config_iterator = list_iterator_create(config_list);
@@ -1443,8 +1467,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		}
 		node_set_ptr[node_set_inx].nodes =
 			bit_set_count(node_set_ptr[node_set_inx].my_bitmap);
-		if (check_node_config 
-		&&  (node_set_ptr[node_set_inx].nodes != 0)) {
+		if (check_node_config &&
+		    (node_set_ptr[node_set_inx].nodes != 0)) {
 			_filter_nodes_in_set(&node_set_ptr[node_set_inx], 
 					     detail_ptr);
 		}
@@ -1453,11 +1477,18 @@ static int _build_node_list(struct job_record *job_ptr,
 			continue;
 		}
 
-		tmp_feature = _valid_features(job_ptr->details, config_ptr, 
-					      false);
-		if (tmp_feature == NULL) {
-			FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
-			continue;
+		if (has_xor) {
+//FIXME more work here
+			tmp_feature = _valid_features(job_ptr->details, 
+						config_ptr, false);
+			if (tmp_feature == NULL) {
+				FREE_NULL_BITMAP(node_set_ptr[node_set_inx].
+						 my_bitmap);
+				continue;
+			}
+		} else {
+			tmp_feature = bit_alloc(MAX_FEATURES);
+			bit_set(tmp_feature, 0);
 		}
 		/* NOTE: Must bit_free(tmp_feature) to avoid memory leak */
 
