@@ -88,9 +88,8 @@ struct node_set {		/* set of nodes with same configuration */
 	uint32_t nodes;
 	uint32_t weight;
 	char     *features;
-	char	**feature_array;	/* POINTER, NOT COPIED */
-	bitstr_t *feature_bits;
-	bitstr_t *my_bitmap;
+	bitstr_t *feature_bits;		/* XORed feature's position */
+	bitstr_t *my_bitmap;		/* node bitmap */
 };
 
 static int  _build_node_list(struct job_record *job_ptr, 
@@ -98,6 +97,7 @@ static int  _build_node_list(struct job_record *job_ptr,
 			     int *node_set_size);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr);
+static int _list_find_feature(void *feature_entry, void *key);
 static int _match_feature(char *seek, struct node_set *node_set_ptr);
 static int _nodes_in_sets(bitstr_t *req_bitmap, 
 			  struct node_set * node_set_ptr, 
@@ -240,18 +240,19 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
  */
 static int _match_feature(char *seek, struct node_set *node_set_ptr)
 {
-	int i;
+	struct features_record *feat_ptr;
 
 	if (seek == NULL)
 		return 1;	/* nothing to look for */
-	if (node_set_ptr->feature_array == NULL)
-		return 0;	/* nothing to find */
 
-	for (i=0; node_set_ptr->feature_array[i]; i++) {
-		if (strcmp(seek, node_set_ptr->feature_array[i]) == 0)
-			return 1;	/* this is it */
-	}
-	return 0;	/* not found */
+	feat_ptr = list_find_first(feature_list, _list_find_feature, 
+				   (void *) seek);
+	if (feat_ptr == NULL)
+		return 0;	/* no such feature */
+
+	if (bit_super_set(node_set_ptr->my_bitmap, feat_ptr->node_bitmap))
+		return 1;	/* nodes have this feature */
+	return 0;
 }
 
 
@@ -419,9 +420,6 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					node_set_ptr[i].weight;
 				tmp_node_set_ptr[tmp_node_set_size].features = 
 					xstrdup(node_set_ptr[i].features);
-				tmp_node_set_ptr[tmp_node_set_size].
-					feature_array =
-					node_set_ptr[i].feature_array;
 				tmp_node_set_ptr[tmp_node_set_size].
 					feature_bits = 
 					bit_copy(node_set_ptr[i].feature_bits);
@@ -779,23 +777,25 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			avail_nodes = bit_set_count(avail_bitmap);
 			tried_sched = false;	/* need to test these nodes */
 
-			if (shared && ((i+1) < node_set_size) && 
+			if (shared && ((i+1) < node_set_size)	&& 
 			    (node_set_ptr[i].weight == 
-			     node_set_ptr[i+1].weight)) {
+			     node_set_ptr[i+1].weight)		&&
+			    ((i+1) < node_set_size)) {
 				/* Keep accumulating so we can pick the
 				 * most lightly loaded nodes */
 				continue;
 			}
 
+			if ((avail_nodes  < min_nodes)	||
+			    ((avail_nodes >= min_nodes)	&&
+			     (avail_nodes < req_nodes)	&&
+			     ((i+1) < node_set_size)))
+				continue;	/* Keep accumulating nodes */
+
 			if ((job_ptr->details->req_node_bitmap) &&
 			    (!bit_super_set(job_ptr->details->req_node_bitmap, 
-					avail_bitmap)))
+					    avail_bitmap)))
 				continue;
-
-			if ((avail_nodes  < min_nodes) ||
-			    ((req_nodes   > min_nodes) &&
-			     (avail_nodes < req_nodes)))
-				continue;	/* Keep accumulating nodes */
 
 			/* NOTE: select_g_job_test() is destructive of
 			 * avail_bitmap, so save a backup copy */
@@ -839,9 +839,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		} /* for (i = 0; i < node_set_size; i++) */
 
 		/* try to get req_nodes now for this feature */
-		if (avail_bitmap && (!tried_sched)
-		&&  (avail_nodes >= min_nodes)
-		&&  ((job_ptr->details->req_node_bitmap == NULL) ||
+		if (avail_bitmap && (!tried_sched)	&&
+		    (avail_nodes >= min_nodes)		&&
+		    ((job_ptr->details->req_node_bitmap == NULL) ||
 		     bit_super_set(job_ptr->details->req_node_bitmap, 
                                         avail_bitmap))) {
 			pick_code = select_g_job_test(job_ptr, avail_bitmap, 
@@ -862,10 +862,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 * nodes available) */
 		if (total_bitmap)
 			total_nodes = bit_set_count(total_bitmap);
-		if (total_bitmap
-		&&  (!runable_ever || !runable_avail)
-		&&  (total_nodes >= min_nodes)
-		&&  ((job_ptr->details->req_node_bitmap == NULL) ||
+		if (total_bitmap			&&
+		    (!runable_ever || !runable_avail)	&&
+		    (total_nodes >= min_nodes)		&&
+		    ((job_ptr->details->req_node_bitmap == NULL) ||
 		     (bit_super_set(job_ptr->details->req_node_bitmap, 
 					total_bitmap)))) {
 			if (!runable_avail) {
@@ -1500,8 +1500,6 @@ static int _build_node_list(struct job_record *job_ptr,
 		max_weight = MAX(max_weight, config_ptr->weight);
 		node_set_ptr[node_set_inx].features = 
 			xstrdup(config_ptr->feature);
-		node_set_ptr[node_set_inx].feature_array = 
-			config_ptr->feature_array;	/* NOTE: NOT COPIED */
 		node_set_ptr[node_set_inx].feature_bits = tmp_feature;
 		debug2("found %d usable nodes from config containing %s",
 		       node_set_ptr[node_set_inx].nodes, config_ptr->nodes);
@@ -1549,8 +1547,6 @@ static int _build_node_list(struct job_record *job_ptr,
 			node_set_ptr[i].weight + max_weight;
 		node_set_ptr[node_set_inx].features =
 			xstrdup(node_set_ptr[i].features);
-		node_set_ptr[node_set_inx].feature_array =
-			node_set_ptr[i].feature_array;
 		node_set_ptr[node_set_inx].feature_bits =
 			bit_copy(node_set_ptr[i].feature_bits);
 		node_set_ptr[node_set_inx].my_bitmap = 

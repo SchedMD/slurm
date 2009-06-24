@@ -2742,16 +2742,8 @@ extern void  build_config_feature_list(struct config_record *config_ptr)
 	list_iterator_destroy(feature_iter);
 	bit_not(config_ptr->node_bitmap);
 
-	/* clear any old feature_array */
-	if (config_ptr->feature_array) {
-		for (i=0; config_ptr->feature_array[i]; i++)
-			xfree(config_ptr->feature_array[i]);
-		xfree(config_ptr->feature_array);
-	}
-
 	if (config_ptr->feature) {
 		i = strlen(config_ptr->feature) + 1;	/* oversized */
-		config_ptr->feature_array = xmalloc(i * sizeof(char *));
 		tmp_str = xmalloc(i);
 		/* Remove white space from feature specification */
 		for (i=0, j=0; config_ptr->feature[i]; i++) {
@@ -2760,11 +2752,9 @@ extern void  build_config_feature_list(struct config_record *config_ptr)
 		}
 		if (i != j)
 			strcpy(config_ptr->feature, tmp_str);
-		i = 0;
 		token = strtok_r(tmp_str, ",", &last);
 		while (token) {
 			_add_config_feature(token, config_ptr->node_bitmap);
-			config_ptr->feature_array[i++] = xstrdup(token);
 			token = strtok_r(NULL, ",", &last);
 		}
 		xfree(tmp_str);

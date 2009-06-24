@@ -382,7 +382,6 @@ struct feature_record {
 	char *name;			/* name of feature */
 	uint16_t count;			/* count of nodes with this feature */
 	uint8_t op_code;		/* separator, see FEATURE_OP_ above */
-	uint16_t tmp_cnt;		/* temporary, allocated node counter */
 };
 
 /* job_details - specification of a job's constraints, 

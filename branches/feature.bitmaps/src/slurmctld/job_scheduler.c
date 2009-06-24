@@ -1376,6 +1376,11 @@ extern int build_feature_list(struct job_record *job_ptr)
 				list_append(detail_ptr->feature_list, feat);
 			}
 			break;
+		} else if (tmp_requested[i] == ',') {
+			info("Job %u invalid constraint %s", 
+				job_ptr->job_id, detail_ptr->features);
+			xfree(tmp_requested);
+			return ESLURM_INVALID_FEATURE;
 		} else if (feature == NULL) {
 			feature = &tmp_requested[i];
 		}
