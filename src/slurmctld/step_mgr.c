@@ -1611,7 +1611,7 @@ extern int pack_ctld_job_step_info_response_msg(
 	}
 	list_iterator_destroy(job_iterator);
 	
-	if(!valid_job && !steps_packed)
+	if(list_count(job_list) && !valid_job && !steps_packed)
 		error_code = ESLURM_INVALID_JOB_ID;
 
 	part_filter_clear();
