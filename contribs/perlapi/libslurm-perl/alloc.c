@@ -140,7 +140,7 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 		avp = (AV*)SvRV(*svp);
 		for(i = 0; i < SYSTEM_DIMENSIONS; i ++) {
 			if(! (svp = av_fetch(avp, i, FALSE))) {
-				Perl_warn(aTHX_ "geometry of dimension %s missing in job descriptor", i);
+				Perl_warn(aTHX_ "geometry of dimension %d missing in job descriptor", i);
 				free_job_desc_msg_memory(job_desc_msg);
 				return -1;
 			}

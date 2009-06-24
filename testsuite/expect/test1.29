@@ -220,8 +220,8 @@ expect {
 
 if {$matches != 5} {
 	send_user "\nFAILURE: User limits not propagated got $matches matches\n"
-	send_user"  Check $file_err for errors\n"
-	send_user"  A long running slurmd could cause a file size limit error\n"
+	send_user "Check $file_err for errors\n"
+	send_user "A long running slurmd could cause a file size limit error\n"
 	set exit_code 1
 }
 

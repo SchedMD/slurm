@@ -1501,7 +1501,10 @@ static void _slurm_free_job_step_info_members (job_step_info_t * msg)
 {
 	if (msg != NULL) {
 		xfree(msg->partition);
+		xfree(msg->resv_ports);
 		xfree(msg->nodes);
+		xfree(msg->name);
+		xfree(msg->network);
 		xfree(msg->ckpt_dir);
 	}
 }

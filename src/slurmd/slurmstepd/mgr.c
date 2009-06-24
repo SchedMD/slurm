@@ -174,7 +174,7 @@ static int  _drop_privileges(slurmd_job_t *job, bool do_setuid,
 			     struct priv_state *state);
 static int  _reclaim_privileges(struct priv_state *state);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
-static void _slurmd_job_log_init(slurmd_job_t *job);
+static int  _slurmd_job_log_init(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
 			   int status);
@@ -414,8 +414,12 @@ _setup_normal_io(slurmd_job_t *job)
 						file_flags, job, job->labelio,
 						job->task[ii]->id,
 						same ? job->task[ii]->id : -2);
-					if (rc != SLURM_SUCCESS)
+					if (rc != SLURM_SUCCESS) {
+						error("Could not open output "
+						      "file %s: %m", 
+						      job->task[ii]->ofname);
 						return ESLURMD_IO_ERROR;
+					}
 				}
 				srun_stdout_tasks = -2;
 				if (same)
@@ -426,9 +430,12 @@ _setup_normal_io(slurmd_job_t *job)
 					job->task[0]->ofname, 
 					file_flags, job, job->labelio,
 					-1, same ? -1 : -2);
-				if (rc != SLURM_SUCCESS)
+				if (rc != SLURM_SUCCESS) {
+					error("Could not open output "
+					      "file %s: %m", 
+					      job->task[0]->ofname);
 					return ESLURMD_IO_ERROR;
-
+				}
 				srun_stdout_tasks = -2;
 				if (same)
 					srun_stderr_tasks = -2;
@@ -443,8 +450,14 @@ _setup_normal_io(slurmd_job_t *job)
 							file_flags, job, 
 							job->labelio,
 							-2, job->task[ii]->id);
-						if (rc != SLURM_SUCCESS)
+						if (rc != SLURM_SUCCESS) {
+							error("Could not "
+							      "open error "
+							      "file %s: %m", 
+							      job->task[ii]->
+							      efname);
 							return ESLURMD_IO_ERROR;
+						}
 					}
 					srun_stderr_tasks = -2;
 				} else if (errpattern == SLURMD_ALL_SAME) {
@@ -453,14 +466,16 @@ _setup_normal_io(slurmd_job_t *job)
 						job->task[0]->efname, 
 						file_flags, job, job->labelio,
 						-2, -1);
-					if (rc != SLURM_SUCCESS)
+					if (rc != SLURM_SUCCESS) {
+						error("Could not open error "
+						      "file %s: %m", 
+						      job->task[0]->efname);
 						return ESLURMD_IO_ERROR;
-
+					}
 					srun_stderr_tasks = -2;
 				}
 			}
 		}
-
 		rc = io_initial_client_connect(srun, job, srun_stdout_tasks, 
 					       srun_stderr_tasks);
 		if (rc < 0) 
@@ -476,7 +491,7 @@ _setup_normal_io(slurmd_job_t *job)
 		if (io_thread_start(job) < 0)
 			return ESLURMD_IO_ERROR;
 	}
-
+	
 	debug2("Leaving  _setup_normal_io");
 	return SLURM_SUCCESS;
 }
@@ -811,6 +826,13 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 	
+#ifndef NDEBUG
+#  ifdef PR_SET_DUMPABLE
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		debug ("Unable to set dumpable to 1");
+#  endif /* PR_SET_DUMPABLE */
+#endif   /* !NDEBUG	 */
+
 	set_umask(job);		/* set umask for stdout/err files */
 	if (job->user_managed_io)
 		rc = _setup_user_managed_io(job);
@@ -819,15 +841,9 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Initialize log facility to copy errors back to srun
 	 */
-	_slurmd_job_log_init(job);
+	if(!rc)
+		rc = _slurmd_job_log_init(job);
 	
-#ifndef NDEBUG
-#  ifdef PR_SET_DUMPABLE
-	if (prctl(PR_SET_DUMPABLE, 1) < 0)
-		debug ("Unable to set dumpable to 1");
-#  endif /* PR_SET_DUMPABLE */
-#endif   /* !NDEBUG	 */
-
 	if (rc) {
 		error("IO setup failed: %m");
 		rc = SLURM_SUCCESS;	/* drains node otherwise */
@@ -1734,7 +1750,7 @@ _reclaim_privileges(struct priv_state *ps)
 }
 
 
-static void
+static int
 _slurmd_job_log_init(slurmd_job_t *job) 
 {
 	char argv0[64];
@@ -1761,15 +1777,16 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	
 	log_alter(conf->log_opts, 0, NULL);
 	log_set_argv0(argv0);
-	
+       
 	/* Connect slurmd stderr to job's stderr */
 	if (!job->user_managed_io && job->task != NULL) {
 		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
 			error("job_log_init: dup2(stderr): %m");
-			return;
+			return ESLURMD_IO_ERROR;
 		}
 	}
 	verbose("debug level = %d", conf->log_opts.stderr_level);
+	return SLURM_SUCCESS;
 }
 
 

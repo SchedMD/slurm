@@ -945,7 +945,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		/* open file on task's stdin */
 		debug5("  stdin file name = %s", task->ifname);
 		if ((task->stdin_fd = open(task->ifname, O_RDONLY)) == -1) {
-			error("Could not open stdin file: %m");
+			error("Could not open stdin file %s: %m", task->ifname);
 			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stdin_fd);
@@ -999,6 +999,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		debug5("  stdout file name = %s", task->ofname);
 		task->stdout_fd = open(task->ofname, file_flags, 0666);
 		if (task->stdout_fd == -1) {
+			error("Could not open stdout file %s: %m",
+			      task->ofname);
 			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stdout_fd);
@@ -1055,6 +1057,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		debug5("  stderr file name = %s", task->efname);
 		task->stderr_fd = open(task->efname, file_flags, 0666);
 		if (task->stderr_fd == -1) {
+			error("Could not open stderr file %s: %m",
+			      task->efname);
 			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stderr_fd);
@@ -1278,7 +1282,7 @@ io_close_all(slurmd_job_t *job)
 	 *  and log facility may still try to write to stderr.
 	 */
 	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
-		error("Unable to open /dev/null: %m");
+		error("Could not open /dev/null: %m");
 	} else {
 		if (dup2(devnull, STDERR_FILENO) < 0)
 			error("Unable to dup /dev/null onto stderr\n");
