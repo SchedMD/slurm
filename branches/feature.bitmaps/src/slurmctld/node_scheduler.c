@@ -1194,7 +1194,7 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 	if (feature_bitmap == NULL)
 		fatal("bit_copy malloc error");
 	job_feat_iter = list_iterator_create(detail_ptr->feature_list);
-	if (job_feat_iter)
+	if (job_feat_iter == NULL)
 		fatal("list_iterator_create malloc error");
 	while ((job_feat_ptr = (struct feature_record *) 
 			list_next(job_feat_iter))) {
@@ -1222,7 +1222,7 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 	if (have_count) {
 		job_feat_iter = list_iterator_create(detail_ptr->
 						     feature_list);
-		if (job_feat_iter)
+		if (job_feat_iter == NULL)
 			fatal("list_iterator_create malloc error");
 		while ((job_feat_ptr = (struct feature_record *) 
 				list_next(job_feat_iter))) {
