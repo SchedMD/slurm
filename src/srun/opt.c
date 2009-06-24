@@ -479,8 +479,9 @@ env_vars_t env_vars[] = {
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
 {"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
-{"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,      
-					&opt.job_name_set_env},
+{"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &opt.job_name_set_env},
+/* SLURM_JOBID was used in slurm version 1.3 and below, it is now vestigial */
+{"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_JOB_ID",        OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL             },
 {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL             },
