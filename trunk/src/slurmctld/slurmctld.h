@@ -164,8 +164,9 @@ extern int   cluster_procs;
 /*****************************************************************************\
  *  NODE parameters and data structures
 \*****************************************************************************/
-#define CONFIG_MAGIC 0xc065eded
-#define NODE_MAGIC   0x0de575ed
+#define CONFIG_MAGIC	0xc065eded
+#define FEATURE_MAGIC	0x34dfd8b5
+#define NODE_MAGIC	0x0de575ed
 
 struct config_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
@@ -182,8 +183,14 @@ struct config_record {
 	char *nodes;		/* name of nodes with this configuration */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
 };
-
 extern List config_list;	/* list of config_record entries */
+
+struct features_record {
+	uint32_t magic;		/* magic cookie to test data integrity */
+	char *name;		/* name of a feature */
+	bitstr_t *node_bitmap;	/* bitmap of nodes with this feature */
+};
+extern List feature_list;	/* list of features_record entries */
 
 struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
@@ -375,7 +382,6 @@ struct feature_record {
 	char *name;			/* name of feature */
 	uint16_t count;			/* count of nodes with this feature */
 	uint8_t op_code;		/* separator, see FEATURE_OP_ above */
-	uint16_t tmp_cnt;		/* temporary, allocated node counter */
 };
 
 /* job_details - specification of a job's constraints, 
@@ -664,9 +670,8 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
  */
 extern char * bitmap2node_name (bitstr_t *bitmap) ;
 
-/* Given a config_record, clear any existing feature_array and
- * if feature is set, then rebuild feature_array */
-extern void  build_config_feature_array(struct config_record *config_ptr);
+/* Given a config_record with it's bitmap already set, update feature_list */
+extern void  build_config_feature_list(struct config_record *config_ptr);
 
 /*
  * create_config_record - create a config_record entry and set is values to 

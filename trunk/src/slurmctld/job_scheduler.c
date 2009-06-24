@@ -1376,6 +1376,11 @@ extern int build_feature_list(struct job_record *job_ptr)
 				list_append(detail_ptr->feature_list, feat);
 			}
 			break;
+		} else if (tmp_requested[i] == ',') {
+			info("Job %u invalid constraint %s", 
+				job_ptr->job_id, detail_ptr->features);
+			xfree(tmp_requested);
+			return ESLURM_INVALID_FEATURE;
 		} else if (feature == NULL) {
 			feature = &tmp_requested[i];
 		}
@@ -1411,7 +1416,7 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 	}
 
 	feat_iter = list_iterator_create(feature_list);
-	while((feat_ptr = (struct feature_record *)list_next(feat_iter))) {
+	while ((feat_ptr = (struct feature_record *)list_next(feat_iter))) {
 		if (feat_ptr->op_code == FEATURE_OP_XOR) {
 			if (bracket == 0)
 				xstrcat(buf, "[");
@@ -1445,28 +1450,23 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 
 static int _valid_node_feature(char *feature)
 {
-	int i, rc = ESLURM_INVALID_FEATURE;
-	ListIterator config_iterator;
-	struct config_record *config_ptr;
+	int rc = ESLURM_INVALID_FEATURE;
+	struct features_record *feature_ptr;
+	ListIterator feature_iter;
 
-	config_iterator = list_iterator_create(config_list);
-	if (config_iterator == NULL)
-		fatal("list_iterator_create malloc failure");
-	while ((config_ptr = (struct config_record *) 
-			list_next(config_iterator))) {
-		if (config_ptr->feature_array == NULL)
+	/* Clear these nodes from the feature_list record,
+	 * then restore as needed */
+	feature_iter = list_iterator_create(feature_list);
+	if (feature_iter == NULL)
+		fatal("list_inerator_create malloc failure");
+	while ((feature_ptr = (struct features_record *) 
+			list_next(feature_iter))) {
+		if (strcmp(feature_ptr->name, feature))
 			continue;
-		for (i=0; ; i++) {
-			if (config_ptr->feature_array[i] == NULL)
-				break;
-			if (strcmp(feature, config_ptr->feature_array[i]))
-				continue;
-			rc = SLURM_SUCCESS;
-			break;
-		}
-		if (rc == SLURM_SUCCESS)
-			break;
+		rc = SLURM_SUCCESS;
+		break;
 	}
-	list_iterator_destroy(config_iterator);
+	list_iterator_destroy(feature_iter);
+
 	return rc;
 }
