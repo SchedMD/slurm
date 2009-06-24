@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Permit node suspend/resume logic to be enabled through "scontrol reconfig"
     given appropriate changes to slurm configuration file.
  -- Check for return codes on functions with warn_unused_result set
+ -- fix memory leak in getting step information
 
 * Changes in SLURM 2.0.3
 ========================
