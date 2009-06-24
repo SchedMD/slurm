@@ -2621,6 +2621,7 @@ unpack_error:
 	xfree(step->name);
 	xfree(step->network);
 	xfree(step->node_inx);
+	xfree(step->ckpt_dir);
 	return SLURM_ERROR;
 }
 
