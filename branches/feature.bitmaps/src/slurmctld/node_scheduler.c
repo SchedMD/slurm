@@ -111,8 +111,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 static bool _valid_feature_counts(struct job_details *detail_ptr, 
 				  bitstr_t *node_bitmap, bool *has_xor);
 static bitstr_t *_valid_features(struct job_details *detail_ptr, 
-				 struct config_record *config_ptr,
-				 bool update_count);
+				 struct config_record *config_ptr);
 
 
 /*
@@ -1478,15 +1477,15 @@ static int _build_node_list(struct job_record *job_ptr,
 		}
 
 		if (has_xor) {
-//FIXME more work here
 			tmp_feature = _valid_features(job_ptr->details, 
-						config_ptr, false);
+						config_ptr);
 			if (tmp_feature == NULL) {
 				FREE_NULL_BITMAP(node_set_ptr[node_set_inx].
 						 my_bitmap);
 				continue;
 			}
 		} else {
+			/* We've already filtered for AND/OR features */
 			tmp_feature = bit_alloc(MAX_FEATURES);
 			bit_set(tmp_feature, 0);
 		}
@@ -1721,12 +1720,10 @@ extern void build_node_details(struct job_record *job_ptr)
 }
 
 /*
- * _valid_features - determine if the requested features are satisfied by
- *	the available nodes
+ * _valid_features - Determine if the requested features are satisfied by
+ *	the available nodes. This is only used for XOR operators.
  * IN details_ptr - job requirement details, includes requested features
  * IN config_ptr - node's configuration record
- * IN update_count - if set, then increment tmp_cnt (temporary counter)
- *	for matched features
  * RET NULL if request is not satisfied, otherwise a bitmap indicating 
  *	which mutually exclusive features are satisfied. For example
  *	_valid_features("[fs1|fs2|fs3|fs4]", "fs3") returns a bitmap with
@@ -1737,91 +1734,42 @@ extern void build_node_details(struct job_record *job_ptr)
  *	mutually exclusive feature list.
  */
 static bitstr_t *_valid_features(struct job_details *details_ptr, 
-				 struct config_record *config_ptr,
-				 bool update_count)
+				 struct config_record *config_ptr)
 {
 	bitstr_t *result_bits = (bitstr_t *) NULL;
 	ListIterator feat_iter;
-	struct feature_record *feat_ptr;
-	bool found, test_names, result;
-	int last_op, position = 0;
-	int save_op = FEATURE_OP_AND, save_result = 1;
+	struct feature_record *job_feat_ptr;
+	struct features_record *feat_ptr;
+	int last_op = FEATURE_OP_AND, position = 0;
 
+	result_bits = bit_alloc(MAX_FEATURES);
+	if (result_bits == NULL)
+		fatal("bit_alloc malloc failure");
 	if (details_ptr->feature_list == NULL) {	/* no constraints */
-		result_bits = bit_alloc(MAX_FEATURES);
 		bit_set(result_bits, 0);
 		return result_bits;
 	}
 
-	result = true;				/* assume good for now */
-	last_op = FEATURE_OP_AND;
 	feat_iter = list_iterator_create(details_ptr->feature_list);
-	while ((feat_ptr = (struct feature_record *) list_next(feat_iter))) {
-		test_names = false;
-		found = false;
-		if (feat_ptr->count) {
-			found = true;
-			if (update_count)
-				test_names = true;
-		} else	
-			test_names = true;
-
-		if (test_names && config_ptr->feature_array) {
-			int i;
-			for (i=0; config_ptr->feature_array[i]; i++) {
-				if (strcmp(feat_ptr->name, 
-					   config_ptr->feature_array[i]))
-					continue;
-				found = true;
-				if (update_count && feat_ptr->count)
-					feat_ptr->tmp_cnt++;
-				break;
-			}
-		}
-
-		if ((last_op == FEATURE_OP_XOR) ||
-		    (feat_ptr->op_code == FEATURE_OP_XOR)) {
-			if (position == 0) {
-				save_op = last_op;
-				save_result = result;
-				result = found;
-			} else
-				result |= found;
-
-			if (!result_bits)
-				result_bits = bit_alloc(MAX_FEATURES);
-
-			if (!found)
-				;
-			else if (position < MAX_FEATURES)
+	if (feat_iter == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((job_feat_ptr = (struct feature_record *) 
+			list_next(feat_iter))) {
+		if ((job_feat_ptr->op_code == FEATURE_OP_XOR) ||
+		    (last_op == FEATURE_OP_XOR)) {
+			feat_ptr = list_find_first(feature_list, 
+						   _list_find_feature,
+						   (void *)job_feat_ptr->name);
+			if (feat_ptr && 
+			    bit_super_set(config_ptr->node_bitmap, 
+					  feat_ptr->node_bitmap)) {
 				bit_set(result_bits, position);
-			else
-				error("_valid_features: overflow");
-			position++;
-
-			if (feat_ptr->op_code != FEATURE_OP_XOR) {
-				if (save_op == FEATURE_OP_OR)
-					result |= save_result;
-				else /* (save_op == FEATURE_OP_AND) */
-					result &= save_result;
 			}
-		} else if (last_op == FEATURE_OP_OR) {
-			result |= found;
-		} else if (last_op == FEATURE_OP_AND) {
-			result &= found;
+			position++;
 		}
-		last_op = feat_ptr->op_code;
+		last_op = job_feat_ptr->op_code;
 	}
 	list_iterator_destroy(feat_iter);
-
-	if (result) {
-		if (!result_bits) {
-			result_bits = bit_alloc(MAX_FEATURES);
-			bit_set(result_bits, 0);
-		}
-	} else {
-		FREE_NULL_BITMAP(result_bits);
-	}
 
 	return result_bits;
 }
