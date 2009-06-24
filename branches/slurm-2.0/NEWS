@@ -7,7 +7,7 @@ documents those changes that are of interest to users and admins.
     given appropriate changes to slurm configuration file.
  -- Check for return codes on functions with warn_unused_result set
  -- Fix memory leak in getting step information
- -- Better logging for when job's request bad output locations.
+ -- Better logging for when job's request bad output file locations.
  -- Fix issue where if user specified non-existant file to write to slurmstepd
     will regain privileges before sending batch script ended to the controller.
 
@@ -29,10 +29,10 @@ documents those changes that are of interest to users and admins.
     out of order.
  -- If job requests minimum and maximum node count range with select/cons_res,
     try to satisfy the higher value (formerly only allocated the minimum).
- -- Fix for checking for a non-existant job when querying steps
- -- For job steps with the --exclusive option, base initial time in 
-    exponential back-off be partly based upon the process ID for better 
-    performance with many job steps started at the same time.
+ -- Fix for checking for a non-existant job when querying steps.
+ -- For job steps with the --exclusive option, base initial wait time in 
+    partly upon the process ID for better performance with many job steps 
+    started at the same time. Maintain exponential back-off as needed.
  -- Fix for correct step ordering in sview.
  -- Support optional argument to srun and salloc --immediate option. Specify
     timeout value in seconds for job or step to be allocated resources.
