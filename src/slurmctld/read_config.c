@@ -1011,6 +1011,8 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 		xfree(old_node_table_ptr[i].os);
 		xfree(old_node_table_ptr[i].part_pptr);
 		xfree(old_node_table_ptr[i].reason);
+		select_g_select_nodeinfo_free(
+			node_record_table_ptr[i].select_nodeinfo);
 	}
 	xfree(old_node_table_ptr);
 }
