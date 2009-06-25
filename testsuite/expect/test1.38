@@ -110,7 +110,7 @@ expect {
 	}
 }
 if {[expr $match_run + $match_wait + $match_term] != 3} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT matches was $matches\n"
+	send_user "\nFAILURE: srun failed to properly process SIGINT matches was $match_run $match_wait $match_term\n"
 	set exit_code 1
 }
 
@@ -157,7 +157,7 @@ expect {
 }
 cancel_job $job_id
 if {[expr $match_run + $match_wait + $match_term] != 2} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT\n"
+	send_user "\nFAILURE: srun failed to properly process SIGINT $match_run $match_wait $match_term\n"
 	set exit_code 1
 }
 

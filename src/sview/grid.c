@@ -1093,6 +1093,8 @@ extern void sview_reset_grid()
 		    || (grid_button->state & NODE_STATE_DRAIN)) {
 			continue;
 		}
+		_put_button_as_up(grid_button);
+		grid_button->color = "white";
 		gtk_widget_modify_bg(grid_button->button, 
 				     GTK_STATE_NORMAL, &color);
 	}
