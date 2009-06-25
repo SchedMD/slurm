@@ -138,7 +138,7 @@ void *_page_thr(void *arg)
 			return NULL;
 	}
 	gdk_threads_enter();
-	sview_reset_grid();
+	//sview_reset_grid();
 	thread_count++;
 	gdk_flush();
 	gdk_threads_leave();
