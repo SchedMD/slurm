@@ -1505,6 +1505,7 @@ static void _slurm_free_job_step_info_members (job_step_info_t * msg)
 		xfree(msg->nodes);
 		xfree(msg->name);
 		xfree(msg->network);
+		xfree(msg->node_inx);
 		xfree(msg->ckpt_dir);
 	}
 }

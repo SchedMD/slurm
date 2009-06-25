@@ -372,8 +372,10 @@ _setup_normal_io(slurmd_job_t *job)
 	if (_drop_privileges(job, true, &sprivs) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
-	if (io_init_tasks_stdio(job) != SLURM_SUCCESS)
-		return ESLURMD_IO_ERROR;
+	if (io_init_tasks_stdio(job) != SLURM_SUCCESS) {
+		rc = ESLURMD_IO_ERROR;
+		goto claim;
+	}
 
 	/*
 	 * MUST create the initial client object before starting
@@ -418,7 +420,8 @@ _setup_normal_io(slurmd_job_t *job)
 						error("Could not open output "
 						      "file %s: %m", 
 						      job->task[ii]->ofname);
-						return ESLURMD_IO_ERROR;
+						rc = ESLURMD_IO_ERROR;
+						goto claim;
 					}
 				}
 				srun_stdout_tasks = -2;
@@ -434,7 +437,8 @@ _setup_normal_io(slurmd_job_t *job)
 					error("Could not open output "
 					      "file %s: %m", 
 					      job->task[0]->ofname);
-					return ESLURMD_IO_ERROR;
+					rc = ESLURMD_IO_ERROR;
+					goto claim;
 				}
 				srun_stdout_tasks = -2;
 				if (same)
@@ -456,7 +460,8 @@ _setup_normal_io(slurmd_job_t *job)
 							      "file %s: %m", 
 							      job->task[ii]->
 							      efname);
-							return ESLURMD_IO_ERROR;
+							rc = ESLURMD_IO_ERROR;
+							goto claim;
 						}
 					}
 					srun_stderr_tasks = -2;
@@ -470,30 +475,34 @@ _setup_normal_io(slurmd_job_t *job)
 						error("Could not open error "
 						      "file %s: %m", 
 						      job->task[0]->efname);
-						return ESLURMD_IO_ERROR;
+						rc = ESLURMD_IO_ERROR;
+						goto claim;
 					}
 					srun_stderr_tasks = -2;
 				}
 			}
 		}
-		rc = io_initial_client_connect(srun, job, srun_stdout_tasks, 
-					       srun_stderr_tasks);
-		if (rc < 0) 
-			return ESLURMD_IO_ERROR;
+		
+		if(io_initial_client_connect(srun, job, srun_stdout_tasks, 
+					     srun_stderr_tasks) < 0) {
+			rc = ESLURMD_IO_ERROR;
+			goto claim;
+		}
 	}
 
+claim:
 	if (_reclaim_privileges(&sprivs) < 0) {
 		error("sete{u/g}id(%lu/%lu): %m",
 		      (u_long) sprivs.saved_uid, (u_long) sprivs.saved_gid);
 	}
 
-	if (!job->batch) {
+	if (!rc && !job->batch) {
 		if (io_thread_start(job) < 0)
-			return ESLURMD_IO_ERROR;
+			rc = ESLURMD_IO_ERROR;
 	}
 	
 	debug2("Leaving  _setup_normal_io");
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int
