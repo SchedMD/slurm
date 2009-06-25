@@ -1412,6 +1412,9 @@ extern void part_filter_set(uid_t uid);
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
 
+/* Purge the contents of a node record */
+extern void purge_node_rec(struct node_record *node_ptr);
+
 /*
  * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago

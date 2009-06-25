@@ -235,6 +235,18 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 	return node_ptr;
 }
 
+/* Purge the contents of a node record */
+extern void purge_node_rec(struct node_record *node_ptr)
+{
+	xfree(node_ptr->arch);
+	xfree(node_ptr->comm_name);
+	xfree(node_ptr->features);
+	xfree(node_ptr->name);
+	xfree(node_ptr->os);
+	xfree(node_ptr->part_pptr);
+	xfree(node_ptr->reason);
+	select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);
+}
 
 /*
  * _delete_config_record - delete all configuration records
@@ -696,18 +708,11 @@ int init_node_conf (void)
 {
 	last_node_update = time (NULL);
 	int i;
+	struct node_record *node_ptr;
 
-	for (i=0; i<node_record_count; i++) {
-		xfree(node_record_table_ptr[i].arch);
-		xfree(node_record_table_ptr[i].comm_name);
-		xfree(node_record_table_ptr[i].features);
-		xfree(node_record_table_ptr[i].name);
-		xfree(node_record_table_ptr[i].os);
-		xfree(node_record_table_ptr[i].part_pptr);
-		xfree(node_record_table_ptr[i].reason);
-		select_g_select_nodeinfo_free(
-			node_record_table_ptr[i].select_nodeinfo);
-	}
+	node_ptr = node_record_table_ptr;
+	for (i=0; i< node_record_count; i++, node_ptr++)
+		purge_node_rec(node_ptr);
 
 	node_record_count = 0;
 	xfree(node_record_table_ptr);
@@ -2638,6 +2643,7 @@ void make_node_idle(struct node_record *node_ptr,
 void node_fini(void)
 {
 	int i;
+	struct node_record *node_ptr;
 
 	if (config_list) {
 		list_destroy(config_list);
@@ -2646,17 +2652,9 @@ void node_fini(void)
 		feature_list = NULL;
 	}
 
-	for (i=0; i< node_record_count; i++) {
-		xfree(node_record_table_ptr[i].arch);
-		xfree(node_record_table_ptr[i].comm_name);
-		xfree(node_record_table_ptr[i].features);
-		xfree(node_record_table_ptr[i].name);
-		xfree(node_record_table_ptr[i].os);
-		xfree(node_record_table_ptr[i].part_pptr);
-		xfree(node_record_table_ptr[i].reason);
-		select_g_select_nodeinfo_free(
-			node_record_table_ptr[i].select_nodeinfo);
-	}
+	node_ptr = node_record_table_ptr;
+	for (i=0; i< node_record_count; i++, node_ptr++)
+		purge_node_rec(node_ptr);
 
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
