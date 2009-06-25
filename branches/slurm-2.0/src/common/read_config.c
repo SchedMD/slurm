@@ -858,19 +858,36 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 
 	/* Create the new data structure and link it into the hash tables */
 	new = (names_ll_t *)xmalloc(sizeof(*new));
-	new->alias = xstrdup(alias);
-	new->hostname = xstrdup(hostname);
-	new->address = xstrdup(address);
-	new->port = port;
+	new->alias	= xstrdup(alias);
+	new->hostname	= xstrdup(hostname);
+	new->address	= xstrdup(address);
+	new->port	= port;
 	new->cpus	= cpus;
 	new->sockets	= sockets;
 	new->cores	= cores;
 	new->threads	= threads;
 	new->addr_initialized = false;
-	new->next_hostname = host_to_node_hashtbl[hostname_idx];
-	host_to_node_hashtbl[hostname_idx] = new;
-	new->next_alias = node_to_host_hashtbl[alias_idx];
-	node_to_host_hashtbl[alias_idx] = new;
+
+	/* Put on end of each list */
+	new->next_alias	= NULL;
+	if (node_to_host_hashtbl[alias_idx]) {
+		p = node_to_host_hashtbl[alias_idx];
+		while (p->next_alias)
+			p = p->next_alias;
+		p->next_alias = new;
+	} else {
+		node_to_host_hashtbl[alias_idx] = new;
+	}
+
+	new->next_hostname = NULL;
+	if (host_to_node_hashtbl[hostname_idx]) {
+		p = host_to_node_hashtbl[hostname_idx];
+		while (p->next_hostname)
+			p = p->next_hostname;
+		p->next_hostname = new;
+	} else {
+		host_to_node_hashtbl[hostname_idx] = new;
+	}
 }
 
 /*
@@ -939,13 +956,8 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 #endif
 
 	/* now build the individual node structures */
-#ifdef HAVE_FRONT_END
-	/* we always want the first on in the list to be the one
-	 * returned when looking for localhost
-	 */
-	while ((alias = hostlist_pop(alias_list))) {
-#else
 	while ((alias = hostlist_shift(alias_list))) {
+#ifndef HAVE_FRONT_END
 		hostname = hostlist_shift(hostname_list);
 		address = hostlist_shift(address_list);
 #endif
