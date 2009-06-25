@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Better logging for when job's request bad output file locations.
  -- Fix issue where if user specified non-existant file to write to slurmstepd
     will regain privileges before sending batch script ended to the controller.
+ -- Fix bug when using the priority_multifactor plugin with no associations yet.
 
 * Changes in SLURM 2.0.3
 ========================
