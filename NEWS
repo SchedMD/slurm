@@ -16,7 +16,9 @@ documents those changes that are of interest to users and admins.
  -- Add new slurmctld list for node features with node bitmaps for simplified
     scheduling logic.
  -- Multiple features can be specified when creating a reservation. Use "&" 
-    (AND) or "|" (OR) separators between the feature names. 
+    (AND) or "|" (OR) separators between the feature names.
+ -- Changed internal node name caching so that front-end mode would work with
+    multiple lines of node name definitions. 
 
 * Changes in SLURM 2.1.0-pre1
 =============================
