@@ -7,7 +7,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008-2009 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -207,6 +208,42 @@ expect {
 }
 if {$matches != 1} {
 	send_user "\nFAILURE: scontrol failed to specific job step\n"
+	set exit_code 1
+}
+
+#
+# Look at specific _invalid_ job step with scontrol
+# (At least it should be invalid)
+#
+set matches 0
+set job_id3 [expr $job_id1 + 10000]
+spawn $scontrol show step $job_id3.0
+expect {
+	-re "StepId=$job_id3.0 " {
+		send_user "\nFAILURE: scontrol found unexpected job step\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "Invalid job id" {
+		send_user "\nNo worries, error expectd\n"
+		incr matches
+		exp_continue
+	}
+	-re "StepId=" {
+		send_user "\nFAILURE: scontrol filter by step id\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol found unexpected job step\n"
 	set exit_code 1
 }
 
