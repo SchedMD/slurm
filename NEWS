@@ -68,6 +68,13 @@ documents those changes that are of interest to users and admins.
  -- Better logging for when job's request bad output file locations.
  -- Fix issue where if user specified non-existant file to write to slurmstepd
     will regain privileges before sending batch script ended to the controller.
+ -- Fix bug when using the priority_multifactor plugin with no associations yet.
+ -- BLUEGENE - we no longer check for the images to sync state.  This was 
+    needed long ago when rebooting blocks wasn't a possibility and should 
+    had been removed when that functionality was available.
+ -- Added message about no connection with the database for sacctmgr.
+ -- On BlueGene, let srun or salloc exit on SIGINT if slurmctld dies while
+    booting its block.
 
 * Changes in SLURM 2.0.3
 ========================

@@ -138,6 +138,7 @@ static int _apply_decay(double decay_factor)
 		return SLURM_SUCCESS;
 
 	xassert(assoc_mgr_association_list);
+	xassert(assoc_mgr_qos_list);
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
@@ -938,7 +939,14 @@ int init ( void )
 		      temp);
 		calc_fairshare = 0;
 		weight_fs = 0;
-	} else {
+	} else if(weight_fs) {
+		if(!assoc_mgr_root_assoc)
+			fatal("It appears you don't have any association "
+			      "data from your database.  "
+			      "The priority/multifactor plugin requires "
+			      "this information to run correctly.  Please "
+			      "check your database connection and try again.");
+
 		if(!cluster_procs)
 			fatal("We need to have a cluster cpu count "
 			      "before we can init the priority/multifactor "
@@ -960,7 +968,9 @@ int init ( void )
 			fatal("pthread_create error %m");
 		
 		slurm_attr_destroy(&thread_attr);
-	}
+	} else
+		calc_fairshare = 0;
+
 	xfree(temp);
 
 	verbose("%s loaded", plugin_name);

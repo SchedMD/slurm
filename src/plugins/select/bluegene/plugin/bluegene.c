@@ -1416,7 +1416,8 @@ static int _validate_config_nodes(List curr_block_list,
 	while ((bg_record = list_next(itr_conf))) {
 		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
-			if (strcasecmp(bg_record->nodes, init_bg_record->nodes))
+			if (strcasecmp(bg_record->nodes, 
+				       init_bg_record->nodes))
 				continue; /* wrong nodes */
 			if(!bit_equal(bg_record->ionode_bitmap,
 				      init_bg_record->ionode_bitmap))
@@ -1424,28 +1425,12 @@ static int _validate_config_nodes(List curr_block_list,
 #ifdef HAVE_BGL
 			if (bg_record->conn_type != init_bg_record->conn_type)
 				continue; /* wrong conn_type */
-			if(bg_record->blrtsimage &&
-			   strcasecmp(bg_record->blrtsimage,
-				      init_bg_record->blrtsimage)) 
-				continue;
 #else
 			if ((bg_record->conn_type != init_bg_record->conn_type)
 			    && ((bg_record->conn_type < SELECT_SMALL)
 				&& (init_bg_record->conn_type < SELECT_SMALL)))
 				continue; /* wrong conn_type */
 #endif
-			if(bg_record->linuximage &&
-			   strcasecmp(bg_record->linuximage,
-				      init_bg_record->linuximage))
-				continue;
-			if(bg_record->mloaderimage &&
-			   strcasecmp(bg_record->mloaderimage,
-				      init_bg_record->mloaderimage))
-				continue;
-			if(bg_record->ramdiskimage &&
-			   strcasecmp(bg_record->ramdiskimage,
-				      init_bg_record->ramdiskimage))
-				continue;
 		       			
 			copy_bg_record(init_bg_record, bg_record);
 			/* remove from the curr list since we just
