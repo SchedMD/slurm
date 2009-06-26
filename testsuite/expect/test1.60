@@ -48,6 +48,11 @@ set file_out_n_glob  ""
 
 print_header $test_id
 
+if { [test_bluegene] } {
+	send_user "\nWARNING: This test is not compatible with bluegene systesm\n"
+	exit 0
+}
+
 #
 # Spawn a program that generates "task_id" (%t) in stdout file names
 # and confirm they are created
@@ -99,6 +104,7 @@ for {set task_id 0} {$task_id < $node_count} {incr task_id} {
 	set file_out_t_glob  "test$test_id.t.$task_id.output"
 	if {[wait_for_file $file_out_t_glob] != 0} {
 		set exit_code 1
+		break
 	} else {
 		set test_task_id -1
 		spawn $bin_cat $file_out_t_glob
@@ -164,6 +170,7 @@ for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 	set file_out_n_glob  "test$test_id.n.$node_id.output"
 	if {[wait_for_file $file_out_n_glob] != 0} {
 		set exit_code 1
+		break
 	} else {
 		set t0found false
 		set t1found false
