@@ -48,11 +48,6 @@ set file_out_n_glob  ""
 
 print_header $test_id
 
-if { [test_bluegene] } {
-	send_user "\nWARNING: This test is not compatible with bluegene systesm\n"
-	exit 0
-}
-
 #
 # Spawn a program that generates "task_id" (%t) in stdout file names
 # and confirm they are created
@@ -83,14 +78,18 @@ if {$job_id == 0} {
 }
 
 set node_count 0
-spawn $squeue -tall -j $job_id -o "%i %D"
-expect {
-	-re "$job_id ($number)" {
-		set node_count $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
+if { [test_bluegene] } {
+	set node_count 1
+} else {
+	spawn $squeue -tall -j $job_id -o "%i %D"
+	expect {
+		-re "$job_id ($number)" {
+			set node_count $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
 	}
 }
 if {$node_count == 0} {
