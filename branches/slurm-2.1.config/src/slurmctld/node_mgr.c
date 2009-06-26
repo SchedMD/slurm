@@ -555,7 +555,8 @@ extern int load_all_node_state ( bool state_only )
 				if (node_state & NODE_STATE_FAIL)
 					node_ptr->node_state |=
 						NODE_STATE_FAIL;
-				if (node_state & NODE_STATE_POWER_SAVE) {
+				if ((node_state & NODE_STATE_POWER_SAVE) ||
+				    (node_state & NODE_STATE_POWER_UP)) {
 					if (power_save_mode) {
 						node_ptr->node_state =
 							node_state;
@@ -573,9 +574,11 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->features = features;
 		} else {
 			node_cnt++;
-			if ((node_state & NODE_STATE_POWER_SAVE) && 
-			    (!power_save_mode)) {
+			if ((!power_save_mode) &&
+			    ((node_state & NODE_STATE_POWER_SAVE) ||
+ 			     (node_state & NODE_STATE_POWER_UP))) {
 				node_state &= (~NODE_STATE_POWER_SAVE);
+				node_state &= (~NODE_STATE_POWER_UP);
 				if (hs)
 					hostset_insert(hs, node_name);
 				else
@@ -1771,6 +1774,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		last_node_update = time (NULL);
 		reset_job_priority();
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (error_code) {
@@ -1967,6 +1971,7 @@ extern int validate_nodes_via_front_end(
 		if (IS_NODE_NO_RESPOND(node_ptr)) {
 			updated_job = true;
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		}
 
 		if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
@@ -2155,6 +2160,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 		last_node_update = now;
 		reset_job_priority();
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_UNKNOWN(node_ptr)) {

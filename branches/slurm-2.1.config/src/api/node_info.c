@@ -167,8 +167,10 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	total_used -= err_cpus;
 
 	if((alloc_cpus && err_cpus) 
-	   || (total_used  && (total_used != node_ptr->cpus))) 
-		my_state = NODE_STATE_MIXED;
+	   || (total_used  && (total_used != node_ptr->cpus))) {
+		my_state &= NODE_STATE_FLAGS;
+		my_state |= NODE_STATE_MIXED;
+	}
 
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line),

@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     (AND) or "|" (OR) separators between the feature names.
  -- Changed internal node name caching so that front-end mode would work with
     multiple lines of node name definitions. 
+ -- Add node state flag for power-up/configuring. Represented by "#" suffix
+    on the node state name (e.g. "ALLOCATED#") for command output.
 
 * Changes in SLURM 2.1.0-pre1
 =============================

@@ -161,8 +161,9 @@ static void _do_power_work(void)
 			resume_cnt++;
 			resume_cnt_f++;
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			node_ptr->node_state |=   NODE_STATE_POWER_UP;
+			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, i);
-			node_ptr->node_state   |= NODE_STATE_NO_RESPOND;
 			node_ptr->last_response = now + resume_timeout;
 			bit_set(wake_node_bitmap, i);
 		}
@@ -173,6 +174,7 @@ static void _do_power_work(void)
 		    ((suspend_rate == 0) || (suspend_cnt < suspend_rate)) &&
 		    IS_NODE_IDLE(node_ptr)				&&
 		    (!IS_NODE_COMPLETING(node_ptr))			&&
+		    (!IS_NODE_POWER_UP(node_ptr))			&&
 		    (node_ptr->last_idle < (now - idle_time))		&&
 		    ((exc_node_bitmap == NULL) || 
 		     (bit_test(exc_node_bitmap, i) == 0))) {

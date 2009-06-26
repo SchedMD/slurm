@@ -945,8 +945,11 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 		}
 		if (drain_flag)
 			node_ptr->node_state |= NODE_STATE_DRAIN; 
-		if (IS_NODE_POWER_SAVE(node_ptr) && (!power_save_mode)) {
+		if ((!power_save_mode) &&
+		    (IS_NODE_POWER_SAVE(node_ptr) ||
+		     IS_NODE_POWER_UP(node_ptr))) {
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 			if (hs)
 				hostset_insert(hs, node_ptr->name);
 			else
