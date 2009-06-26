@@ -97,7 +97,7 @@ static void _node_fail_handler(srun_node_fail_msg_t *msg);
 #define POLL_SLEEP 3			/* retry interval in seconds  */
 static int _wait_bluegene_block_ready(
 			resource_allocation_response_msg_t *alloc);
-static int _blocks_dealloc();
+static int _blocks_dealloc(void);
 #endif
 
 #ifdef HAVE_CRAY_XT
@@ -678,7 +678,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 			     &block_id);
 
 	for (i=0; (cur_delay < max_delay); i++) {
-		if(i == 1)
+		if (i == 1)
 			info("Waiting for block %s to become ready for job",
 			     block_id);
 		if (i) {
@@ -701,13 +701,14 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 			is_ready = 1;
 			break;
 		}
+		if (allocation_interrupted)
+			break;
 	}
 	if (is_ready)
      		info("Block %s is ready for job", block_id);
-	else if(!allocation_interrupted)
+	else if (!allocation_interrupted)
 		error("Block %s still not ready", block_id);
-	else /* this should never happen, but if allocation_intrrupted
-		send back not ready */
+	else	/* allocation_interrupted and slurmctld not responing */
 		is_ready = 0;
 
 	xfree(block_id);
@@ -723,7 +724,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
  *	0:  no deallocate in progress
  *     -1: error occurred
  */
-static int _blocks_dealloc()
+static int _blocks_dealloc(void)
 {
 	static node_select_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
 	int rc = 0, error_code = 0, i;
