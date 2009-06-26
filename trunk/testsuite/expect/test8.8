@@ -44,13 +44,15 @@ set sleep_time  5
 
 # allocate a set of nodes (node_cnt) and the quit right after
 proc allocate_and_quit { node_cnt node error_cnt check} {
-	global salloc number alpha_numeric_under prompt
+	global salloc number alpha_numeric_under max_job_delay prompt
 	set job_id 0
 	set block ""
 	set line "-N$node_cnt-$node_cnt"
 	if {[string compare $node ""]} {
 		set line "$line -w $node"
 	}
+	set part_config_prob 0
+	set timeout $max_job_delay
 	set my_pid [eval spawn $salloc $line]
 	expect {
 		-re "Granted job allocation ($number)" {
@@ -64,6 +66,13 @@ proc allocate_and_quit { node_cnt node error_cnt check} {
 		-re "Block ($alpha_numeric_under) is ready for job" {
 			set block $expect_out(1,string)
 			exp_continue
+		}
+		-re "Requested partition configuration not available now" {
+			send_user "\nWARNING: This is not unexpected with some configurations\n"
+			set part_config_prob 1
+			if {$job_id != 0} {
+				cancel_job $job_id
+			}
 		}
 		-re $prompt {
 			if {$check} {
@@ -92,7 +101,7 @@ proc allocate_and_quit { node_cnt node error_cnt check} {
 		}
 	}
 
-	if {![string compare $block ""]} {
+	if {![string compare $block ""] && ($part_config_prob == 0) } {
 		send_user "\nFAILURE: unable to fulfill allocation request\n";
 		return ""
 	}
@@ -446,16 +455,24 @@ if {$smallest > 32} {
 	set error_block 32
 }
 
-# allocate the entire system (this should work on all layout types since a 
+# allocate the entire system. this should work on all layout types since a 
 # full block is always makable unless they aren't using the entire system.
+# however it may not work with all configurations.
 set block [allocate_and_quit $num_nodes "" 0 0]
+if {![string compare $block ""]} {
+	exit 1
+}
 
-#use this node for all future tests
+# use this node for all future tests
 set first_node [get_first_node]
 
 # first make sure we can set the block in an error state and then free it
-set exit_code [change_block_state $block "error"]
-set exit_code [change_block_state $block "free"]
+if {[change_block_state $block "error"]} {
+	set exit_code 1
+}
+if {[change_block_state $block "free"]} {
+	set exit_code 1
+}
 if {$exit_code} {
 	exit $exit_code
 }
@@ -467,11 +484,10 @@ if {![string compare $layout "Dynamic"]} {
 	set block [allocate_and_quit $smallest $first_node $error_block 1]
 	if {![string compare $block ""]} {
 		set exit_code 1
+	} else {
+		# make sure sinfo/scontrol has it correct
+		set exit_code [change_subbp_state $first_node "0" "free"]
 	}
-
-	#make sure sinfo/scontrol has it correct
-	set exit_code [change_subbp_state $first_node "0" "free"]
-
 } elseif {![string compare $layout "Overlap"]} {
 } else {
 }
