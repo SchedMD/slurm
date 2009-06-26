@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     needed long ago when rebooting blocks wasn't a possibility and should 
     had been removed when that functionality was available.
  -- Added message about no connection with the database for sacctmgr.
+ -- On BlueGene, let srun or salloc exit on SIGINT if slurmctld dies while
+    booting its block.
 
 * Changes in SLURM 2.0.3
 ========================
