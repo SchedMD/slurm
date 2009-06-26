@@ -2389,9 +2389,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->suspend_program, "SuspendProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->suspend_rate, "SuspendRate", hashtbl))
 		conf->suspend_rate = DEFAULT_SUSPEND_RATE;
-	if (s_p_get_long(&long_suspend_time, "SuspendTime", hashtbl))
+	if (s_p_get_long(&long_suspend_time, "SuspendTime", hashtbl)) {
+		if ((long_suspend_time > 0) && 
+		    (strcmp(conf->select_type, "select/bluegene") == 0)) {
+			fatal("SuspendTime (power save mode) incomptible with "
+			      "select/bluegene");
+		}
 		conf->suspend_time = long_suspend_time + 1;
-	else
+	} else
 		conf->suspend_time = 0;
 	if (!s_p_get_uint16(&conf->suspend_timeout, "SuspendTimeout", hashtbl))
 		conf->suspend_timeout = DEFAULT_SUSPEND_TIMEOUT;
