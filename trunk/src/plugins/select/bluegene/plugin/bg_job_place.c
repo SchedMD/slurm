@@ -1308,9 +1308,15 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 		} else
 			select_ptr->cpu_array_reps[k]++;
 		total_cpus += node_cpus;
-
+#if 0
+		/* This function could be used to control allocation of 
+		 * specific c-nodes for multiple job steps per job allocation. 
+		 * Such functionality is not currently support on BlueGene 
+		 * systems. 
+		 * Also see #ifdef HAVE_BG logic in common/select_job_res.c */
 		if (set_select_job_res_node(select_ptr, j))
 			error("select_p_job_test: set_select_job_res_node: %m");
+#endif
 		j++;
 	}
 	if (select_ptr->nprocs != total_cpus) {

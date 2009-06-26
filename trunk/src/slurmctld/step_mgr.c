@@ -952,8 +952,6 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	bool pick_step_cores = true;
 
 	xassert(select_ptr);
-	xassert(select_ptr->core_bitmap);
-	xassert(select_ptr->core_bitmap_used);
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
 
@@ -965,6 +963,11 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	if (i_first == -1)	/* empty bitmap */
 		return;
 
+#ifdef HAVE_BG
+	pick_step_cores = false;
+#else
+	xassert(select_ptr->core_bitmap);
+	xassert(select_ptr->core_bitmap_used);
 	if (step_ptr->core_bitmap_job) {
 		/* "scontrol reconfig" of live system */
 		pick_step_cores = false;
@@ -975,6 +978,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		step_ptr->core_bitmap_job = bit_copy(select_ptr->core_bitmap);
 		pick_step_cores = false;
 	}
+#endif
 
 	if (step_ptr->mem_per_task &&
 	    ((select_ptr->memory_allocated == NULL) ||
@@ -1071,8 +1075,6 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	int job_node_inx = -1, step_node_inx = -1;
 
 	xassert(select_ptr);
-	xassert(select_ptr->core_bitmap);
-	xassert(select_ptr->core_bitmap_used);
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
 
@@ -1133,6 +1135,10 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
+
+#ifndef HAVE_BG
+	xassert(select_ptr->core_bitmap);
+	xassert(select_ptr->core_bitmap_used);
 	if (step_ptr->core_bitmap_job) {
 		/* Mark the job's cores as no longer in use */
 		bit_not(step_ptr->core_bitmap_job);
@@ -1141,6 +1147,7 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		/* no need for bit_not(step_ptr->core_bitmap_job); */
 		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	}
+#endif
 }
 
 /*
