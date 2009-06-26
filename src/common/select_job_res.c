@@ -116,11 +116,13 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 		select_job_res->sock_core_rep_count[sock_inx]++;
 		core_cnt += (cores * socks);
 	}
+#ifndef HAVE_BG
 	select_job_res->core_bitmap      = bit_alloc(core_cnt);
 	select_job_res->core_bitmap_used = bit_alloc(core_cnt);
 	if ((select_job_res->core_bitmap == NULL) ||
 	    (select_job_res->core_bitmap_used == NULL))
 		fatal("bit_alloc malloc failure");
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -524,8 +526,6 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 		return;
 	}
 
-	xassert(select_job_res_ptr->core_bitmap);
-	xassert(select_job_res_ptr->core_bitmap_used);
 	xassert(select_job_res_ptr->cores_per_socket);
 	xassert(select_job_res_ptr->cpus);
 	xassert(select_job_res_ptr->nhosts);
@@ -583,6 +583,9 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	pack32_array(select_job_res_ptr->sock_core_rep_count, 
 		     (uint32_t) i, buffer);
 
+#ifndef HAVE_BG
+	xassert(select_job_res_ptr->core_bitmap);
+	xassert(select_job_res_ptr->core_bitmap_used);
 	pack32(core_cnt, buffer);
 	xassert(core_cnt == bit_size(select_job_res_ptr->core_bitmap));
 	pack_bit_fmt(select_job_res_ptr->core_bitmap, buffer);
@@ -590,13 +593,14 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	pack_bit_fmt(select_job_res_ptr->core_bitmap_used, buffer);
 	/* Do not pack the node_bitmap, but rebuild it in reset_node_bitmap()
 	 * based upon job_ptr->nodes and the current node table */
+#endif
 }
 
 extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr, 
 				 Buf buffer)
 {
 	char *bit_fmt = NULL;
-	uint32_t core_cnt, empty, tmp32;
+	uint32_t core_cnt = 0, empty, tmp32;
 	select_job_res_t select_job_res;
 
 	xassert(select_job_res_pptr);
@@ -645,6 +649,7 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 	safe_unpack32_array(&select_job_res->sock_core_rep_count,
 			    &tmp32, buffer);
 
+#ifndef HAVE_BG
 	safe_unpack32(&core_cnt, buffer);    /* NOTE: Not part of struct */
 	safe_unpackstr_xmalloc(&bit_fmt, &tmp32, buffer);
 	select_job_res->core_bitmap = bit_alloc((bitoff_t) core_cnt);
@@ -658,6 +663,7 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 	xfree(bit_fmt);
 	/* node_bitmap is not packed, but rebuilt in reset_node_bitmap()
 	 * based upon job_ptr->nodes and the current node table */
+#endif
 
 	*select_job_res_pptr = select_job_res;
 	return SLURM_SUCCESS;
