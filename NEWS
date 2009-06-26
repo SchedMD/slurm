@@ -11,6 +11,9 @@ documents those changes that are of interest to users and admins.
  -- Fix issue where if user specified non-existant file to write to slurmstepd
     will regain privileges before sending batch script ended to the controller.
  -- Fix bug when using the priority_multifactor plugin with no associations yet.
+ -- BLUEGENE - we no longer check for the images to sync state.  This was 
+    needed long ago when rebooting blocks wasn't a possibility and should 
+    had been removed when that functionality was available.
 
 * Changes in SLURM 2.0.3
 ========================
