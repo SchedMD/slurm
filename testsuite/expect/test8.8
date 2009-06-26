@@ -68,7 +68,7 @@ proc allocate_and_quit { node_cnt node error_cnt check} {
 			exp_continue
 		}
 		-re "Requested partition configuration not available now" {
-			send_user "\nWARNING: This is not unexpected with some configurations\n"
+			send_user "\nFAILURE: This is not unexpected with some configurations\n"
 			set part_config_prob 1
 			if {$job_id != 0} {
 				cancel_job $job_id
