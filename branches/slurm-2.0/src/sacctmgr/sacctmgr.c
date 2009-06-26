@@ -193,11 +193,14 @@ main (int argc, char *argv[])
 	errno = 0;
 	db_conn = acct_storage_g_get_connection(false, 0, 1);
 	if(errno != SLURM_SUCCESS) {
+		int tmp_errno = errno;
 		if((input_field_count == 2) &&
 		   (!strncasecmp(argv[2], "Configuration", strlen(argv[1]))) &&
 		   ((!strncasecmp(argv[1], "list", strlen(argv[0]))) || 
 		    (!strncasecmp(argv[1], "show", strlen(argv[0])))))
 			sacctmgr_list_config(false);
+		errno = tmp_errno;
+		fprintf(stderr, "Problem talking to the database: %m\n");
 		exit(1);
 	}
 	my_uid = getuid();
