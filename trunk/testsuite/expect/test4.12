@@ -321,6 +321,10 @@ expect {
 		set def_hostlist $expect_out(1,string) 
 		exp_continue
 	}
+	-re " BasePartitions=($alpha_numeric_nodelist)" {
+		set def_hostlist $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
@@ -347,7 +351,7 @@ expect {
 }
 log_user 1
 if {$host_cnt == 0} {
-	send_user "\nFAILURE: could not any nodes in default partition\n"
+	send_user "\nFAILURE: could not find any nodes in default partition\n"
 	exit 1
 }
 
@@ -385,7 +389,7 @@ if {!$inode_found} {
 	exit 1
 }
 
-send_user "found idle node $inode_name with $inode_procs\n"
+send_user "found idle node $inode_name with $inode_procs processors\n"
 
 # figure out the select plugin we are using
 set select_type [test_select_type]
