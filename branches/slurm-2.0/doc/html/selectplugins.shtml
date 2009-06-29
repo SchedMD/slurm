@@ -175,6 +175,16 @@ to the node for which information is requested.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
+<p class="commandline">int select_p_update_node_config (int index);</p>
+<p style="margin-left:.2in"><b>Description</b>: note that a node has
+registered with a different configuration than previously registered.
+For example, the node was configured with 1GB of memory in slurm.conf,
+but actually registered with 2GB of memory.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> index</span>&nbsp;&nbsp;&nbsp;(input) index
+of the node in reference to the entire system.<br><br>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
+
 <p class="commandline">int select_p_update_node_state (int index, uint16_t state);</p>
 <p style="margin-left:.2in"><b>Description</b>: push a change of state
 into the plugin the index should be the index from the slurmctld of

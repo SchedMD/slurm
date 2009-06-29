@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res fix bug that could result in invalid memory pointer
     if node configurations in slurm.conf contains 8 or more distinct 
     socket/core/thread counts.
+ -- Modify select/cons_res to recognize updated memory size upon node startup
+    if FastSchedule=0.
 
 * Changes in SLURM 2.0.3
 ========================

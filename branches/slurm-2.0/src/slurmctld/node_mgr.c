@@ -1862,6 +1862,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			last_node_update = now;
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 		}
+		select_g_update_node_config((node_ptr-node_record_table_ptr));
 		select_g_update_node_state((node_ptr - node_record_table_ptr),
 					   node_ptr->node_state);
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
