@@ -261,24 +261,22 @@ static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
 			continue;
 		}
 		if (cr_num_core_count[i] > 0) {
-			i++;
-			if (i > array_size) {
+			if (++i >= array_size) {
 				array_size += CR_NUM_CORE_ARRAY_INCREMENT;
 				xrealloc(cr_node_num_cores,
 					array_size * sizeof(uint16_t));
-				xrealloc(cr_node_num_cores,
-					array_size * sizeof(uint16_t));
+				xrealloc(cr_num_core_count,
+					array_size * sizeof(uint32_t));
 			}
 		}
 		cr_node_num_cores[i] = cores;
 		cr_num_core_count[i] = 1;
 	}
-	/* make sure we have '0'-terminate fields at the end */
-	i++;
-	if (i > array_size) {
-		array_size += CR_NUM_CORE_ARRAY_INCREMENT;
+	/* make sure we have '0'-terminate the arrays */
+	if (++i >= array_size) {
+		array_size = i + 1;
 		xrealloc(cr_node_num_cores, array_size * sizeof(uint16_t));
-		xrealloc(cr_node_num_cores, array_size * sizeof(uint16_t));
+		xrealloc(cr_num_core_count, array_size * sizeof(uint32_t));
 	}
 }
 
