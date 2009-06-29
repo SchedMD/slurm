@@ -1558,6 +1558,11 @@ extern int select_p_get_info_from_plugin (enum select_data_info info,
 	return SLURM_SUCCESS;
 }
 
+extern int select_p_update_node_config (int index)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_update_node_state (int index, uint16_t state)
 {
 	return SLURM_SUCCESS;

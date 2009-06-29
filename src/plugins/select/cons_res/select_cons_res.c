@@ -1636,6 +1636,24 @@ extern int select_p_get_info_from_plugin(enum select_data_info info,
 	return rc;
 }
 
+/* For right now, we just update the node's memory size. In order to update
+ * socket, core, thread or cpu count, we would need to rebuild many bitmaps. */
+extern int select_p_update_node_config (int index)
+{
+	if (index >= select_node_cnt) {
+		error("select_p_update_node_config: index too large %d>%d",
+		      index, select_node_cnt);
+		return SLURM_ERROR;
+	}
+
+	if (select_fast_schedule)
+		return SLURM_SUCCESS;
+
+	select_node_record[index].real_memory = select_node_record[index].
+						node_ptr->real_memory;
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_update_node_state (int index, uint16_t state)
 {
 	return SLURM_SUCCESS;
