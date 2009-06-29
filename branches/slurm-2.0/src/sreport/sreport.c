@@ -749,6 +749,9 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                                                            \n\
   Below are the format options for each report.                            \n\
                                                                            \n\
+  One can get an number of characters by following the field option with   \n\
+  a %NUMBER option.  i.e. format=name%30 will print 30 chars of field name.\n\
+                                                                           \n\
        Cluster                                                             \n\
        - AccountUtilizationByUser                                          \n\
        - UserUtilizationByAccount                                          \n\

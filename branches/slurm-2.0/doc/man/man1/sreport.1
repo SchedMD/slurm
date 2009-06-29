@@ -222,6 +222,13 @@ YYYY-MM-DD[THH[:MM[:SS]]]
 .TP
 .B Format=<OPT>
 Comma separated list of fields to display in report.
+
+When using the format option for listing various fields you can put a
+%NUMBER afterwards to specify how many characters should be printed.
+
+i.e. format=name%30 will print 30 characters of field name right
+justified.  A -30 will print 30 characters left justified.  
+
 .TP
 .B Start=<OPT>
 Period start for report.  Default is 00:00:00 of previous day.
