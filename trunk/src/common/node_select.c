@@ -132,6 +132,7 @@ typedef struct slurm_select_ops {
 						select_plugindata_info dinfo,
 						struct job_record *job_ptr,
 						void *data);
+	int		(*update_node_config)  (int index);
 	int             (*update_node_state)   (int index, uint16_t state);
 	int             (*alter_node_cnt)      (enum select_node_cnt type,
 						void *data);
@@ -204,8 +205,9 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
   		"select_p_select_jobinfo_sprint",
   		"select_p_select_jobinfo_xstrdup",
     		"select_p_update_block",
- 		"select_p_update_sub_node",
-                "select_p_get_info_from_plugin",
+		"select_p_update_sub_node",
+		"select_p_get_info_from_plugin",
+		"select_p_update_node_config",
 		"select_p_update_node_state",
 		"select_p_alter_node_cnt",
 		"select_p_reconfigure",
@@ -1170,6 +1172,20 @@ extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo,
 
        return (*(g_select_context->ops.get_info_from_plugin))
 	       (dinfo, job_ptr, data);
+}
+
+/*
+ * Updated a node configuration. This happens when a node registers with
+ *     more resources than originally configured (e.g. memory).
+ * IN index  - index into the node record list
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
+extern int select_g_update_node_config (int index)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.update_node_config))(index);
 }
 
 /* 
