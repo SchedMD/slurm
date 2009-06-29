@@ -164,6 +164,7 @@ static void _do_power_work(void)
 			node_ptr->node_state |=   NODE_STATE_POWER_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, i);
+			bit_clear(avail_node_bitmap, i);
 			node_ptr->last_response = now + resume_timeout;
 			bit_set(wake_node_bitmap, i);
 		}

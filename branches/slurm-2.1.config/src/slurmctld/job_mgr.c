@@ -3529,6 +3529,18 @@ void job_time_limit(void)
 
 		xassert (job_ptr->magic == JOB_MAGIC);
 
+		if (IS_JOB_CONFIGURING(job_ptr)) {
+			if (!IS_JOB_RUNNING(job_ptr) ||
+			    ((bit_overlap(job_ptr->node_bitmap, 
+					  power_node_bitmap) == 0) &&
+			     (bit_overlap(job_ptr->node_bitmap, 
+					  avail_node_bitmap) == 0))) {
+				info("job %u no longer configuring", 
+				     job_ptr->job_id);
+				job_ptr->job_state &= (~JOB_CONFIGURING);
+			}
+		}
+
 		resv_status = job_resv_check(job_ptr);
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
@@ -3537,7 +3549,7 @@ void job_time_limit(void)
 		assoc =	(acct_association_rec_t *)job_ptr->assoc_ptr;
 
 		/* find out how many cpu minutes this job has been
-		   running for. */
+		 * running for. */
 		job_cpu_usage_mins = (uint64_t)
 			((((now - job_ptr->start_time)
 			   - job_ptr->tot_sus_time) / 60) 
