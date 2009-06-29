@@ -164,7 +164,7 @@ static int _apply_decay(double decay_factor)
 }
 
 /*
- * reset usage_raw, and grp_used_cpu_mins on all associations 
+ * reset usage_raw, and grp_used_wall on all associations 
  * This should be called every PriorityUsageResetPeriod
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
