@@ -2,7 +2,7 @@
  *  node_select.h - Define node selection plugin functions.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -143,6 +143,14 @@ extern int select_g_update_sub_node (update_part_msg_t *part_desc_ptr);
 extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo, 
 					  struct job_record *job_ptr,
 					  void *data);
+
+/* 
+ * Updated a node configuration. This happens when a node registers with 
+ *	more resources than originally configured (e.g. memory).
+ * IN index  - index into the node record list
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
+extern int select_g_update_node_config (int index);
 
 /* 
  * Updated a node state in the plugin, this should happen when a node is

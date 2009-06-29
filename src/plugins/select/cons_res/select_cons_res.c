@@ -287,24 +287,22 @@ static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
 			continue;
 		}
 		if (cr_num_core_count[i] > 0) {
-			i++;
-			if (i > array_size) {
+			if (++i >= array_size) {
 				array_size += CR_NUM_CORE_ARRAY_INCREMENT;
 				xrealloc(cr_node_num_cores,
 					array_size * sizeof(uint16_t));
-				xrealloc(cr_node_num_cores,
-					array_size * sizeof(uint16_t));
+				xrealloc(cr_num_core_count,
+					array_size * sizeof(uint32_t));
 			}
 		}
 		cr_node_num_cores[i] = cores;
 		cr_num_core_count[i] = 1;
 	}
-	/* make sure we have '0'-terminate fields at the end */
-	i++;
-	if (i > array_size) {
-		array_size += CR_NUM_CORE_ARRAY_INCREMENT;
+	/* make sure we have '0'-terminate the arrays */
+	if (++i >= array_size) {
+		array_size = i + 1;
 		xrealloc(cr_node_num_cores, array_size * sizeof(uint16_t));
-		xrealloc(cr_node_num_cores, array_size * sizeof(uint16_t));
+		xrealloc(cr_num_core_count, array_size * sizeof(uint32_t));
 	}
 }
 
@@ -1801,6 +1799,24 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 		break;
 	}
 	return rc;
+}
+
+/* For right now, we just update the node's memory size. In order to update
+ * socket, core, thread or cpu count, we would need to rebuild many bitmaps. */
+extern int select_p_update_node_config (int index)
+{
+	if (index >= select_node_cnt) {
+		error("select_p_update_node_config: index too large %d>%d",
+		      index, select_node_cnt);
+		return SLURM_ERROR;
+	}
+
+	if (select_fast_schedule)
+		return SLURM_SUCCESS;
+
+	select_node_record[index].real_memory = select_node_record[index].
+						node_ptr->real_memory;
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_update_node_state (int index, uint16_t state)
