@@ -17,6 +17,9 @@ documents those changes that are of interest to users and admins.
  -- Added message about no connection with the database for sacctmgr.
  -- On BlueGene, let srun or salloc exit on SIGINT if slurmctld dies while
     booting its block.
+ -- In select/cons_res fix bug that could result in invalid memory pointer
+    if node configurations in slurm.conf contains 8 or more distinct 
+    socket/core/thread counts.
 
 * Changes in SLURM 2.0.3
 ========================
