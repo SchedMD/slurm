@@ -871,7 +871,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   Format options are different for listing each entity pair.               \n\
                                                                            \n\
   One can get an number of characters by following the field option with   \n\
-  a %NUMBER option.  i.e. format=name%30 will print 30 chars of field name.\n\
+  a %%NUMBER option.  i.e. format=name%%30 will print 30 chars of field name.\n\
                                                                            \n\
        Account            - Account, CoordinatorList, Description,         \n\
                             Organization                                   \n\
