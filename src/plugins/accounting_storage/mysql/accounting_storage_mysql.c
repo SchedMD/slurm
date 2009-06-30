@@ -10506,9 +10506,10 @@ no_rollup_change:
 	} else {
 		char temp_bit[BUF_SIZE];
 
-		if(job_ptr->node_bitmap) 
+		if(job_ptr->node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
 					   job_ptr->node_bitmap);
+		}
 #ifdef HAVE_BG
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
 				     SELECT_JOBDATA_BLOCK_ID, 
@@ -10783,9 +10784,10 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	} else {
 		char temp_bit[BUF_SIZE];
 
-		if(step_ptr->step_node_bitmap) 
+		if(step_ptr->step_node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
 					   step_ptr->step_node_bitmap);
+		}
 #ifdef HAVE_BG
 		tasks = cpus = step_ptr->job_ptr->num_procs;
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 

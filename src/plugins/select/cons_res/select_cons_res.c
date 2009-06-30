@@ -192,7 +192,7 @@ static void _dump_job_res(select_job_res_t job) {
 	char str[64];
 
 	if (job->core_bitmap)
-		bit_fmt(str, 63, job->core_bitmap);
+		bit_fmt(str, sizeof(str), job->core_bitmap);
 	else
 		sprintf(str, "[no core_bitmap]");
 	info("DEBUG: Dump select_job_res: nhosts %u cb %s", job->nhosts, str);
@@ -226,7 +226,7 @@ static void _dump_part(struct part_res_record *p_ptr)
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		char str[64]; /* print first 64 bits of bitmaps */
 		if (p_ptr->row[i].row_bitmap) {
-			bit_fmt(str, 63, p_ptr->row[i].row_bitmap);
+			bit_fmt(str, sizeof(str), p_ptr->row[i].row_bitmap);
 		} else {
 			sprintf(str, "[no row_bitmap]");
 		}
