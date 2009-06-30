@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     socket/core/thread counts.
  -- Modify select/cons_res to recognize updated memory size upon node startup
     if FastSchedule=0.
+ -- Fixed bug if not enforcing associations, but running with them and the 
+    priority/multifactor, the slurmctld will not core dump on processing usage.
 
 * Changes in SLURM 2.0.3
 ========================
