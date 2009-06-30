@@ -1105,8 +1105,7 @@ static void _remove_assoc(acct_association_rec_t *rec)
 {
 	int cnt = 0;
 
-	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-		cnt = job_cancel_by_assoc_id(rec->id);
+	cnt = job_cancel_by_assoc_id(rec->id);
 
 	if (cnt) {
 		info("Removed association id:%u user:%s, cancelled %u jobs",

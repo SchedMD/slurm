@@ -491,8 +491,8 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	int rc = SLURM_SUCCESS;
 	struct step_launch_state *sls = ctx->launch_state;
 	
-	debug2("forward signal %d to job", signo);
-	
+	debug2("forward signal %d to job %u", signo, ctx->job_id);
+
 	/* common to all tasks */
 	msg.job_id      = ctx->job_id;
 	msg.job_step_id = ctx->step_resp->job_step_id;
@@ -539,7 +539,8 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	req.msg_type = REQUEST_SIGNAL_TASKS;
 	req.data     = &msg;
 	
-	debug3("sending signal to host %s", name);
+	debug3("sending signal %d to job %u on host %s", 
+	       signo, ctx->job_id, name);
 	
 	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0, false))) { 
 		error("fwd_signal: slurm_send_recv_msgs really failed bad");
