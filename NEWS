@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     if FastSchedule=0.
  -- Fixed bug if not enforcing associations, but running with them and the 
     priority/multifactor, the slurmctld will not core dump on processing usage.
+ -- QOS will not be reset to the default when added back a previously deleted
+    association.
 
 * Changes in SLURM 2.0.3
 ========================
