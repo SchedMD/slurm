@@ -929,13 +929,14 @@ extern char *reservation_flags_string(uint16_t flags)
 
 char *node_state_string(uint16_t inx)
 {
-	int  base         = (inx & NODE_STATE_BASE);
-	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
-	bool drain_flag   = (inx & NODE_STATE_DRAIN);
-	bool fail_flag    = (inx & NODE_STATE_FAIL);
-	bool maint_flag   = (inx & NODE_STATE_MAINT);
-	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
-	bool power_flag   = (inx & NODE_STATE_POWER_SAVE);
+	int  base            = (inx & NODE_STATE_BASE);
+	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
+	bool drain_flag      = (inx & NODE_STATE_DRAIN);
+	bool fail_flag       = (inx & NODE_STATE_FAIL);
+	bool maint_flag      = (inx & NODE_STATE_MAINT);
+	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
+	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
 
 	if (maint_flag) {
 		if (no_resp_flag)
@@ -964,6 +965,7 @@ char *node_state_string(uint16_t inx)
 			return "FAIL";
 		}
 	}
+
 	if (inx == NODE_STATE_POWER_SAVE)
 		return "POWER_DOWN";
 	if (inx == NODE_STATE_POWER_UP)
@@ -973,7 +975,12 @@ char *node_state_string(uint16_t inx)
 			return "DOWN*";
 		return "DOWN";
 	}
+
 	if (base == NODE_STATE_ALLOCATED) {
+		if (power_up_flag)
+			return "ALLOCATED#";
+		if (power_down_flag)
+			return "ALLOCATED~";
 		if (no_resp_flag)
 			return "ALLOCATED*";
 		if (comp_flag)
@@ -986,31 +993,35 @@ char *node_state_string(uint16_t inx)
 		return "COMPLETING";
 	}
 	if (base == NODE_STATE_IDLE) {
+		if (power_up_flag)
+			return "IDLE#";
+		if (power_down_flag)
+			return "IDLE~";
 		if (no_resp_flag)
 			return "IDLE*";
-		if (power_flag)
-			return "IDLE~";
 		return "IDLE";
 	}
 	if (base == NODE_STATE_ERROR) {
+		if (power_up_flag)
+			return "ERROR#";
+		if (power_down_flag)
+			return "ERROR~";
 		if (no_resp_flag)
 			return "ERROR*";
-		if (power_flag)
-			return "ERROR~";
 		return "ERROR";
 	}
 	if (base == NODE_STATE_MIXED) {
+		if (power_up_flag)
+			return "MIXED#";
+		if (power_down_flag)
+			return "MIXED~";
 		if (no_resp_flag)
 			return "MIXED*";
-		if (power_flag)
-			return "MIXED~";
 		return "MIXED";
 	}
 	if (base == NODE_STATE_FUTURE) {
 		if (no_resp_flag)
 			return "FUTURE*";
-		if (power_flag)
-			return "FUTURE~";
 		return "FUTURE";
 	}
 	if (base == NODE_STATE_UNKNOWN) {
@@ -1023,12 +1034,13 @@ char *node_state_string(uint16_t inx)
 
 char *node_state_string_compact(uint16_t inx)
 {
-	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
-	bool drain_flag   = (inx & NODE_STATE_DRAIN);
-	bool fail_flag    = (inx & NODE_STATE_FAIL);
-	bool maint_flag   = (inx & NODE_STATE_MAINT);
-	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
-	bool power_flag   = (inx & NODE_STATE_POWER_SAVE);
+	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
+	bool drain_flag      = (inx & NODE_STATE_DRAIN);
+	bool fail_flag       = (inx & NODE_STATE_FAIL);
+	bool maint_flag      = (inx & NODE_STATE_MAINT);
+	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
+	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
@@ -1059,12 +1071,22 @@ char *node_state_string_compact(uint16_t inx)
 			return "FAIL";
 		}
 	}
+
+	if (inx == NODE_STATE_POWER_SAVE)
+		return "POW_DN";
+	if (inx == NODE_STATE_POWER_UP)
+		return "POW_UP";
 	if (inx == NODE_STATE_DOWN) {
 		if (no_resp_flag)
 			return "DOWN*";
 		return "DOWN";
 	}
+
 	if (inx == NODE_STATE_ALLOCATED) {
+		if (power_up_flag)
+			return "ALLOC#";
+		if (power_down_flag)
+			return "ALLOC~";
 		if (no_resp_flag)
 			return "ALLOC*";
 		if (comp_flag)
@@ -1077,31 +1099,35 @@ char *node_state_string_compact(uint16_t inx)
 		return "COMP";
 	}
 	if (inx == NODE_STATE_IDLE) {
+		if (power_up_flag)
+			return "IDLE#";
+		if (power_down_flag)
+			return "IDLE~";
 		if (no_resp_flag)
 			return "IDLE*";
-		if (power_flag)
-			return "IDLE~";
 		return "IDLE";
 	}
 	if (inx == NODE_STATE_ERROR) {
+		if (power_up_flag)
+			return "ERR#";
+		if (power_down_flag)
+			return "ERR~";
 		if (no_resp_flag)
 			return "ERR*";
-		if (power_flag)
-			return "ERR~";
 		return "ERR";
 	}
 	if (inx == NODE_STATE_MIXED) {
+		if (power_up_flag)
+			return "MIX#";
+		if (power_down_flag)
+			return "MIX~";
 		if (no_resp_flag)
 			return "MIX*";
-		if (power_flag)
-			return "MIX~";
 		return "MIX";
 	}
 	if (inx == NODE_STATE_FUTURE) {
 		if (no_resp_flag)
 			return "FUTR*";
-		if (power_flag)
-			return "FUTR~";
 		return "FUTR";
 	}
 	if (inx == NODE_STATE_UNKNOWN) {

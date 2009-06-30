@@ -370,9 +370,12 @@ any new work.  If the node remains non\-responsive, it will
 be placed in the \fBDOWN\fR state (except in the case of
 \fBCOMPLETING\fR, \fBDRAINED\fR, \fBDRAINING\fR,
 \fBFAIL\fR, \fBFAILING\fR nodes).
+
 If the node state code is followed by "~", this indicates
 the node is presently in a power saving mode (typically
 running at reduced frequency).
+If the node state code is followed by "#", this indicates
+the node is presently being powered up or configured.
 .TP 12
 \fBALLOCATED\fR
 The node has been allocated to one or more jobs.
@@ -523,6 +526,7 @@ Not Responding                      dev8
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

@@ -2,7 +2,8 @@
  *  node_info.c - Functions related to node display 
  *  mode of sview.
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -180,8 +181,10 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_ERR_CPUS),
 				   tmp_cnt);
 	if((alloc_cpus && err_cpus) 
-	   || (total_used  && (total_used != node_ptr->cpus))) 
-		node_ptr->node_state = NODE_STATE_MIXED;
+	   || (total_used  && (total_used != node_ptr->cpus))) {
+		node_ptr->node_state &= NODE_STATE_FLAGS;
+		node_ptr->node_state |= NODE_STATE_MIXED;
+	}
 	
 	upper = node_state_string(node_ptr->node_state);
 	lower = str_tolower(upper);
@@ -287,8 +290,10 @@ static void _update_node_record(node_info_t *node_ptr,
 			   tmp_cnt, -1);
 
 	if((alloc_cpus && err_cpus) 
-	   || (total_used  && (total_used != node_ptr->cpus))) 
-		node_ptr->node_state = NODE_STATE_MIXED;
+	   || (total_used  && (total_used != node_ptr->cpus))) {
+		node_ptr->node_state &= NODE_STATE_FLAGS;
+		node_ptr->node_state |= NODE_STATE_MIXED;
+	}
 	 
 	upper = node_state_string(node_ptr->node_state);
 	lower = str_tolower(upper);
