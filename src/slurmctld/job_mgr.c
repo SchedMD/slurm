@@ -5668,7 +5668,8 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 			 * very rare and there is no srun to work with (POE) */
 			info("Node %s rebooted, killing missing step %u.%u", 
 			     node_name, job_ptr->job_id, step_ptr->step_id);
-			signal_step_tasks(step_ptr, SIGKILL);
+			signal_step_tasks(step_ptr, SIGKILL, 
+					  REQUEST_TERMINATE_TASKS);
 		}
 	}		
 	list_iterator_destroy (step_iterator);
