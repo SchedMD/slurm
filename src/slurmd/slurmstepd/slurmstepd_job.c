@@ -277,6 +277,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->pty         = msg->pty;
 	job->open_mode   = msg->open_mode;
 	job->options     = msg->options;
+	job->alloc_cores = format_core_allocs(msg->cred, conf->node_name);
 	
 	list_append(job->sruns, (void *) srun);
 
@@ -510,6 +511,7 @@ job_destroy(slurmd_job_t *job)
 	xfree(job->node_name);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
+	xfree(job->alloc_cores);
 	xfree(job);
 }
 
