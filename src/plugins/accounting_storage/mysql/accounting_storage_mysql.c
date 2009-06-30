@@ -622,8 +622,12 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
 	}
 
-	if((qos_level != QOS_LEVEL_MODIFY)
-	   && assoc->qos_list && list_count(assoc->qos_list)) {
+	/* when modifying the qos it happens in the actual function
+	   since we have to wait until we hear about the parent first. */
+	if(qos_level == QOS_LEVEL_MODIFY) 
+		goto end_qos;
+
+	if(assoc->qos_list && list_count(assoc->qos_list)) {
 		char *qos_type = "qos";
 		char *qos_val = NULL;
 		char *tmp_char = NULL;
@@ -639,12 +643,10 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 			}
 			xstrfmtcat(qos_val, ",%s", tmp_char);
 		}
-
+		
 		list_iterator_destroy(qos_itr);
-
-		xstrfmtcat(*cols, ", %s", qos_type);
 		
-		
+		xstrfmtcat(*cols, ", %s", qos_type);		
 		xstrfmtcat(*vals, ", '%s'", qos_val); 		
 		xstrfmtcat(*extra, ", %s=\"%s\"", qos_type, qos_val); 
 		xfree(qos_val);
@@ -653,7 +655,13 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*cols, ", qos");
 		xstrfmtcat(*vals, ", '%s'", default_qos_str);
 		xstrfmtcat(*extra, ", qos=\"%s\"", default_qos_str);
+	} else {
+		/* clear the qos */
+		xstrcat(*cols, ", qos, delta_qos");
+		xstrcat(*vals, ", '', ''");
+		xstrcat(*extra, ", qos=\"\", delta_qos=\"\"");
 	}
+end_qos:
 
 	return SLURM_SUCCESS;
 
