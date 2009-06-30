@@ -1115,6 +1115,57 @@ slurm_cred_get_signature(slurm_cred_t cred, char **datap, uint32_t *datalen)
 	return SLURM_SUCCESS;
 }
 
+char*
+format_core_allocs(slurm_cred_t cred, char *node_name)
+{
+	bitstr_t	*core_bitmap;
+	char		*str = NULL;
+	hostset_t	hset = NULL;
+	int		host_index = -1;
+	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
+
+	if (!(hset = hostset_create(cred->job_hostlist))) {
+		error("Unable to create job hostlist: `%s'",
+		      cred->job_hostlist);
+	}
+
+	host_index = hostset_find(hset, node_name);
+	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
+		error("Invalid host_index %d for job %u",
+		      host_index, cred->jobid);
+		return NULL;
+	}
+	host_index++;	/* change from 0-origin to 1-origin */
+	for (i=0; host_index; i++) {
+		if (host_index > cred->sock_core_rep_count[i]) {
+			i_first_bit += cred->sockets_per_node[i] *
+				cred->cores_per_socket[i] *
+				cred->sock_core_rep_count[i];
+			host_index -= cred->sock_core_rep_count[i];
+		} else {
+			i_first_bit += cred->sockets_per_node[i] *
+				cred->cores_per_socket[i] *
+				(host_index - 1);
+			i_last_bit = i_first_bit +
+				cred->sockets_per_node[i] *
+				cred->cores_per_socket[i];
+			break;
+		}
+	}
+
+	core_bitmap = bit_alloc(i_last_bit - i_first_bit);
+	for (i = i_first_bit, j = 0; i < i_last_bit; i++, j++) {
+		if (bit_test(cred->core_bitmap, i))
+			bit_set(core_bitmap, j);
+	}
+
+	str = xmalloc(1024);
+	bit_fmt(str, 1024, core_bitmap);
+	bit_free(core_bitmap);
+
+	return str;
+}
+
 void
 slurm_cred_pack(slurm_cred_t cred, Buf buffer)
 {

@@ -1572,6 +1572,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	pid_t *p2pid;
 	pid_t  pid;
 	char ***p2argv;
+	char **p2str;
 	char **p2vers;
 	slurmd_task_info_t *task;
 	slurmd_job_t  *slurmd_job = NULL;
@@ -1762,6 +1763,10 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		uint32 = va_arg(vargs, uint32_t);
 		p2uint32 = va_arg(vargs, uint32_t *);
 		rc = global_to_local_id (slurmd_job, uint32, p2uint32);
+		break;
+	case S_JOB_ALLOC_CORES:
+		p2str = va_arg(vargs, char **);
+		*p2str = slurmd_job->alloc_cores;
 		break;
 	case S_SLURM_VERSION:
 		p2vers = va_arg(vargs, char  **);

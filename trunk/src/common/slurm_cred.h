@@ -293,6 +293,12 @@ int slurm_cred_get_signature(slurm_cred_t cred, char **datap,
 			     uint32_t *len);
 
 /*
+ * Retrieve the set of cores that were allocated to the job and format them
+ * in the List Format (e.g., "0-2,7,12-14")
+ */
+char* format_core_allocs(slurm_cred_t cred, char *node_name);
+
+/*
  * Print a slurm job credential using the info() call
  */
 void slurm_cred_print(slurm_cred_t cred);
