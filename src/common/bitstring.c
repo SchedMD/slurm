@@ -920,8 +920,10 @@ bit_fmt(char *str, int len, bitstr_t *b)
 		if (bit_test(b, bit)) {
 			count++;
 			start = bit;
-			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1))
+			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1)) {
 				bit++;
+				count++;
+			}
 			if (bit == start)	/* add single bit position */
 				ret = snprintf(str+strlen(str), 
 				               len-strlen(str),
