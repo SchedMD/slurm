@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
     priority/multifactor, the slurmctld will not core dump on processing usage.
  -- QOS will not be reset to the default when added back a previously deleted
     association.
+ -- Do not set a job's virtual memory limit based upon the job's specified
+    memory limit (which should be a real memory limit, not virtual).
 
 * Changes in SLURM 2.0.3
 ========================
