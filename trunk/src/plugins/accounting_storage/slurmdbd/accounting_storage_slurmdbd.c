@@ -1588,10 +1588,11 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	req.job_state     = job_ptr->job_state & JOB_STATE_BASE;
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
-	if(job_ptr->node_bitmap) 
+	if(job_ptr->node_bitmap) {
 		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
 				       job_ptr->node_bitmap);
-	
+	}
+
 	req.partition     = job_ptr->partition;
 	req.req_cpus      = job_ptr->num_procs;
 	req.resv_id       = job_ptr->resv_id;
@@ -1740,9 +1741,10 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
-	if(step_ptr->step_node_bitmap) 
+	if(step_ptr->step_node_bitmap) { 
 		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
 				       step_ptr->step_node_bitmap);
+	}
 	req.node_cnt    = nodes;
 	req.start_time  = step_ptr->start_time;
 	if (step_ptr->job_ptr->details)

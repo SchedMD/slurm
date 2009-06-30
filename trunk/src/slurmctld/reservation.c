@@ -448,9 +448,10 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	resv.id = resv_ptr->resv_id;
 	resv.name = resv_ptr->name;
 	resv.nodes = resv_ptr->node_list;
-	if(resv_ptr->node_bitmap) 
+	if (resv_ptr->node_bitmap) { 
 		resv.node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
 					resv_ptr->node_bitmap);
+	}
 
 	resv.time_end = resv_ptr->end_time;
 	resv.time_start = resv_ptr->start_time;
@@ -544,9 +545,10 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.time_start = resv_ptr->start_time;
 	resv.time_start_prev = resv_ptr->start_time_prev;
 
-	if(resv.nodes && resv_ptr->node_bitmap) 
+	if (resv.nodes && resv_ptr->node_bitmap) { 
 		resv.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					resv_ptr->node_bitmap);
+	}
 
 	rc = acct_storage_g_modify_reservation(acct_db_conn, &resv);
 

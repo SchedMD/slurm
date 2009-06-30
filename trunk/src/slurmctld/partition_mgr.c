@@ -783,7 +783,6 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 void pack_part(struct part_record *part_ptr, Buf buffer)
 {
 	uint16_t default_part_flag;
-	char node_inx_ptr[BUF_SIZE];
 	uint32_t altered;
 
 	if (default_part_loc == part_ptr)
@@ -812,12 +811,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	packstr(part_ptr->allow_groups, buffer);
 	packstr(part_ptr->allow_alloc_nodes, buffer);
 	packstr(part_ptr->nodes, buffer);
-	if (part_ptr->node_bitmap) {
-		bit_fmt(node_inx_ptr, BUF_SIZE,
-			part_ptr->node_bitmap);
-		packstr((char *)node_inx_ptr, buffer);
-	} else
-		packstr("", buffer);
+	pack_bit_fmt(part_ptr->node_bitmap, buffer);
 }
 
 
