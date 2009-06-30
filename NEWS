@@ -22,6 +22,9 @@ documents those changes that are of interest to users and admins.
  -- Add node state flag for power-up/configuring. Represented by "#" suffix
     on the node state name (e.g. "ALLOCATED#") for command output.
  -- Add CONFIGURING/CF job state flag for node power-up/configuring.
+ -- Modify job step cancel logic for scancel and srun (on reciept of SIGTERM 
+    or three SIGINT) to immediately send SIGKILL to spawned tasks.  Previous 
+    logic would send SIGCONT, SIGTERM, wait KillWait seconds, SIGKILL.
 
 * Changes in SLURM 2.1.0-pre1
 =============================
