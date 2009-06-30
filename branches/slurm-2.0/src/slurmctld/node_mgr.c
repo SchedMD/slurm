@@ -1090,8 +1090,14 @@ int update_node ( update_node_msg_t * update_node_msg )
 		
 		if ((update_node_msg -> reason) && 
 		    (update_node_msg -> reason[0])) {
+			char *bad_char;
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup(update_node_msg->reason);
+			/* Strip out any quotes, they confuse Moab */
+			while ((bad_char = strchr(node_ptr->reason, '\'')))
+				bad_char[0] = ' ';
+			while ((bad_char = strchr(node_ptr->reason, '\"')))
+				bad_char[0] = ' ';
 			info ("update_node: node %s reason set to: %s",
 				this_node_name, node_ptr->reason);
 		}
