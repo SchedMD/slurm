@@ -321,7 +321,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		srun_step_complete(step_ptr);
 	}
 
-	signal_step_tasks(step_ptr, signal);
+	signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
 	return SLURM_SUCCESS;
 }
 
@@ -329,8 +329,10 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
  * signal_step_tasks - send specific signal to specific job step
  * IN step_ptr - step record pointer
  * IN signal - signal to send
+ * IN msg_type - message type to send
  */
-void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
+void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
+		       slurm_msg_type_t msg_type)
 {
 	int i;
 	kill_tasks_msg_t *kill_tasks_msg;
@@ -338,11 +340,8 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 	
 	xassert(step_ptr);
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	if (signal == SIGKILL)
-		agent_args->msg_type = REQUEST_TERMINATE_TASKS;
-	else
-		agent_args->msg_type = REQUEST_SIGNAL_TASKS;
-	agent_args->retry = 1;
+	agent_args->msg_type = msg_type;
+	agent_args->retry    = 1;
 	agent_args->hostlist = hostlist_create("");
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
@@ -1663,7 +1662,7 @@ extern int kill_step_on_node(struct job_record  *job_ptr,
 		info("killing step %u.%u on down node %s", 
 		     job_ptr->job_id, step_ptr->step_id, node_ptr->name);
 		srun_step_complete(step_ptr);
-		signal_step_tasks(step_ptr, SIGKILL);
+		signal_step_tasks(step_ptr, SIGKILL, REQUEST_TERMINATE_TASKS);
 		found++;
 	}		
 
