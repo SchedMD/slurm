@@ -1125,8 +1125,9 @@ format_core_allocs(slurm_cred_t cred, char *node_name)
 	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
 
 	if (!(hset = hostset_create(cred->job_hostlist))) {
-		error("Unable to create job hostlist: `%s'",
+		error("Unable to create job hostset: `%s'",
 		      cred->job_hostlist);
+		return NULL;
 	}
 
 	host_index = hostset_find(hset, node_name);
