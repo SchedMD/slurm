@@ -557,8 +557,17 @@ extern int load_all_node_state ( bool state_only )
 						NODE_STATE_FAIL;
 				if (node_state & NODE_STATE_POWER_SAVE) {
 					if (power_save_mode) {
-						node_ptr->node_state =
-							node_state;
+						node_ptr->node_state |=
+							NODE_STATE_POWER_SAVE;
+					} else if (hs)
+						hostset_insert(hs, node_name);
+					else
+						hs = hostset_create(node_name);
+				}
+				if (node_state & NODE_STATE_POWER_UP) {
+					if (power_save_mode) {
+						node_ptr->node_state |=
+							NODE_STATE_POWER_UP;
 					} else if (hs)
 						hostset_insert(hs, node_name);
 					else
@@ -573,9 +582,11 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->features = features;
 		} else {
 			node_cnt++;
-			if ((node_state & NODE_STATE_POWER_SAVE) && 
-			    (!power_save_mode)) {
+			if ((!power_save_mode) &&
+			    ((node_state & NODE_STATE_POWER_SAVE) ||
+ 			     (node_state & NODE_STATE_POWER_UP))) {
 				node_state &= (~NODE_STATE_POWER_SAVE);
+				node_state &= (~NODE_STATE_POWER_UP);
 				if (hs)
 					hostset_insert(hs, node_name);
 				else
@@ -1771,6 +1782,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		last_node_update = time (NULL);
 		reset_job_priority();
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (error_code) {
@@ -1937,6 +1949,7 @@ extern int validate_nodes_via_front_end(
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) ||
+		    IS_JOB_CONFIGURING(job_ptr) ||
 		    (job_ptr->batch_flag == 0))
 			continue;
 #ifdef HAVE_BG
@@ -1968,6 +1981,7 @@ extern int validate_nodes_via_front_end(
 		if (IS_NODE_NO_RESPOND(node_ptr)) {
 			updated_job = true;
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		}
 
 		if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
@@ -2156,6 +2170,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 		last_node_update = now;
 		reset_job_priority();
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_UNKNOWN(node_ptr)) {
