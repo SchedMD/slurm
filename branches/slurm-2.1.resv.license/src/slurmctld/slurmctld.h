@@ -345,6 +345,7 @@ typedef struct slurmctld_resv {
 	uint16_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
 	uint32_t job_pend_cnt;	/* number of pending jobs		*/
 	uint32_t job_run_cnt;	/* number of running jobs		*/
+	char *licenses;		/* required system licenses		*/
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
 	bool maint_set_node;	/* NODE_STATE_MAINT set for nodes	*/
 	char *name;		/* name of reservation			*/

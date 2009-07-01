@@ -1056,6 +1056,7 @@ typedef struct reserve_info {
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
 	uint16_t flags;		/* see RESERVE_FLAG_* above */
+	char *licenses;		/* names of licenses to be reserved */
 	char *name;		/* name of reservation */
 	uint32_t node_cnt;	/* count of nodes required */
 	int *node_inx;		/* list index pairs into node_table for *nodes:
@@ -1079,6 +1080,7 @@ typedef struct resv_desc_msg {
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
 	uint16_t flags;		/* see RESERVE_FLAG_* above */
+	char *licenses;		/* names of licenses to be reserved */
 	char *name;		/* name of reservation (optional on create) */
 	uint32_t node_cnt;	/* count of nodes required */
 	char *node_list;	/* list of reserved nodes or ALL */

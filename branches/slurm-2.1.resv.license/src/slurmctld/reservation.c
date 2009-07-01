@@ -78,7 +78,7 @@
 /* Change RESV_STATE_VERSION value when changing the state save format
  * Add logic to permit reading of the previous version's state in order
  * to avoid losing reservations between releases major SLURM updates. */
-#define RESV_STATE_VERSION      "VER002"
+#define RESV_STATE_VERSION      "VER003"
 
 time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
@@ -152,6 +152,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->flags = resv_orig_ptr->flags;
 	resv_copy_ptr->job_pend_cnt = resv_orig_ptr->job_pend_cnt;
 	resv_copy_ptr->job_run_cnt = resv_orig_ptr->job_run_cnt;
+	resv_copy_ptr->licenses = xstrdup(resv_orig_ptr->licenses);
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
 	resv_copy_ptr->node_bitmap = bit_copy(resv_orig_ptr->node_bitmap);
@@ -202,6 +203,7 @@ static void _del_resv_rec(void *x)
 		xfree(resv_ptr->account_list);
 		xfree(resv_ptr->assoc_list);
 		xfree(resv_ptr->features);
+		xfree(resv_ptr->licenses);
 		xfree(resv_ptr->name);
 		if (resv_ptr->node_bitmap)
 			bit_free(resv_ptr->node_bitmap);
@@ -263,11 +265,11 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 
 	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
 	     "Flags=%s NodeCnt=%d NodeList=%s Features=%s "
-	     "PartitionName=%s Users=%s Accounts=%s",
+	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, resv_ptr->node_cnt, resv_ptr->node_list, 
 	     resv_ptr->features, resv_ptr->partition, 
-	     resv_ptr->users, resv_ptr->accounts);
+	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses);
 
 	xfree(flag_str);
 #endif
@@ -956,6 +958,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	packstr(resv_ptr->accounts,	buffer);
 	pack_time(resv_ptr->end_time,	buffer);
 	packstr(resv_ptr->features,	buffer);
+	packstr(resv_ptr->licenses,	buffer);
 	packstr(resv_ptr->name,		buffer);
 	pack32(resv_ptr->node_cnt,	buffer);
 	packstr(resv_ptr->node_list,	buffer);
@@ -1155,6 +1158,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (rc)
 			goto bad_parse;
 	}
+	if (resv_desc_ptr->licenses) {
+info("FIXME: Need to validate licenses: %s", resv_desc_ptr->licenses);
+	}
 	if (resv_desc_ptr->node_list) {
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
 		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
@@ -1182,7 +1188,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_NODES_BUSY;
 			goto bad_parse;
 		}
-	} else if (resv_desc_ptr->node_cnt == NO_VAL) {
+	} else if ((resv_desc_ptr->node_cnt == NO_VAL) &&
+		   (resv_desc_ptr->licenses == NULL)) {
 		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
 		goto bad_parse;
@@ -1224,6 +1231,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->end_time	= resv_desc_ptr->end_time;
 	resv_ptr->features	= resv_desc_ptr->features;
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
+	resv_ptr->licenses	= resv_desc_ptr->licenses;
+	resv_desc_ptr->licenses = NULL;		/* Nothing left to free */
 	resv_ptr->resv_id       = top_suffix;
 	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
@@ -1323,7 +1332,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKLY)
 			resv_ptr->flags &= (~RESERVE_FLAG_WEEKLY);
 	}
-	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
+	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')){
 		/* Clear the partition */
 		xfree(resv_desc_ptr->partition);
 		xfree(resv_ptr->partition);
@@ -1350,8 +1359,18 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 	}
+	if (resv_desc_ptr->licenses && (resv_desc_ptr->licenses[0] == '\0')) {
+		xfree(resv_desc_ptr->licenses);	/* clear licenses */
+		xfree(resv_ptr->licenses);
+	}
+	if (resv_desc_ptr->licenses) {
+info("FIXME: Need to validate licenses: %s", resv_desc_ptr->licenses);
+		xfree(resv_ptr->licenses);
+		resv_ptr->licenses	= resv_desc_ptr->licenses;
+		resv_desc_ptr->licenses = NULL; /* Nothing left to free */
+	}
 	if (resv_desc_ptr->features && (resv_desc_ptr->features[0] == '\0')) {
-		xfree(resv_desc_ptr->features);
+		xfree(resv_desc_ptr->features);	/* clear features */
 		xfree(resv_ptr->features);
 	}
 	if (resv_desc_ptr->features) {
@@ -1971,6 +1990,8 @@ extern int load_all_resv_state(int recover)
 				       &uint32_tmp,	buffer);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->features,
+				       &uint32_tmp, 	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->licenses,
 				       &uint32_tmp, 	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->name,	&uint32_tmp, buffer);
 		safe_unpack32(&resv_ptr->node_cnt,	buffer);
@@ -2687,8 +2708,7 @@ static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now)
 		else
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
 		/* mark that this node is now down and in maint mode
-		   or was removed from maint mode 
-		*/
+		 * or was removed from maint mode */
 		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
 		    IS_NODE_FAIL(node_ptr)) { 
 			clusteracct_storage_g_node_down(
