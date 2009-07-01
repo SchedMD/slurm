@@ -1119,7 +1119,7 @@ char*
 format_core_allocs(slurm_cred_t cred, char *node_name)
 {
 	bitstr_t	*core_bitmap;
-	char		*str = NULL;
+	char		str[1024], *bracket_ptr;
 	hostset_t	hset = NULL;
 	int		host_index = -1;
 	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
@@ -1134,6 +1134,7 @@ format_core_allocs(slurm_cred_t cred, char *node_name)
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->jobid);
+		hostset_destroy(hset);
 		return NULL;
 	}
 	host_index++;	/* change from 0-origin to 1-origin */
@@ -1155,16 +1156,28 @@ format_core_allocs(slurm_cred_t cred, char *node_name)
 	}
 
 	core_bitmap = bit_alloc(i_last_bit - i_first_bit);
+	if (core_bitmap == NULL) {
+		error("bit_alloc malloc failure");
+		hostset_destroy(hset);
+		return NULL;
+	}
 	for (i = i_first_bit, j = 0; i < i_last_bit; i++, j++) {
 		if (bit_test(cred->core_bitmap, i))
 			bit_set(core_bitmap, j);
 	}
 
-	str = xmalloc(1024);
-	bit_fmt(str, 1024, core_bitmap);
+	bit_fmt(str, sizeof(str), core_bitmap);
 	bit_free(core_bitmap);
+	hostset_destroy(hset);
 
-	return str;
+	if (str[0] != '[')
+		return xstrdup(str);
+
+	/* strip off brackets */
+	bracket_ptr = strchr(str, ']');
+	if (bracket_ptr)
+		bracket_ptr[0] = '\0';
+	return xstrdup(str+1);
 }
 
 void
