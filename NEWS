@@ -92,6 +92,12 @@ documents those changes that are of interest to users and admins.
     priority/multifactor, the slurmctld will not core dump on processing usage.
  -- QOS will not be reset to the default when added back a previously deleted
     association.
+ -- Do not set a job's virtual memory limit based upon the job's specified
+    memory limit (which should be a real memory limit, not virtual).
+ -- Strip single and double quotes out of a node's reason string to avoid
+    confusing Moab.
+ -- BLUEGENE - fix for sinfo/sview for displaying proper node count for nodes 
+    in draining state.
 
 * Changes in SLURM 2.0.3
 ========================

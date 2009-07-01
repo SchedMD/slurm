@@ -290,8 +290,16 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 	snprintf(tmp, sizeof(tmp), ":STATE=%s;", _get_node_state(node_ptr));
 	xstrcat(buf, tmp);
 	if (node_ptr->reason) {
-		snprintf(tmp, sizeof(tmp), "CAT=\"%s\";", node_ptr->reason);
+		/* Strip out any quotes, they confuse Moab */
+		char *reason, *bad_char;
+		reason = xstrdup(node_ptr->reason);
+		while ((bad_char = strchr(node_ptr->reason, '\'')))
+			bad_char[0] = ' ';
+		while ((bad_char = strchr(node_ptr->reason, '\"')))
+			bad_char[0] = ' ';
+		snprintf(tmp, sizeof(tmp), "CAT=\"%s\";", reason);
 		xstrcat(buf, tmp);
+		xfree(reason);
 	}
 	
 	if (update_time > last_node_update)
