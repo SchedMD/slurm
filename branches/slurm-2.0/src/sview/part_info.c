@@ -1497,9 +1497,6 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 						NODE_STATE_FLAGS;
 					node_ptr->node_state |=
 						NODE_STATE_DRAIN;
-					if(block_error)
-						node_ptr->node_state
-							|= NODE_STATE_FAIL;
 					node_ptr->threads = node_ptr->cores;
 					break;
 				default:
@@ -1539,6 +1536,11 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 			 */
 			if(norm) 
 				break;
+			else if(i == SVIEW_BG_ERROR_STATE) {
+				if(block_error)
+					node_ptr->node_state
+						|= NODE_STATE_FAIL;
+                        }
 			}
 #endif
 		}
