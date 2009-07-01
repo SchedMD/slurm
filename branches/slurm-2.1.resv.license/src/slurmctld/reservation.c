@@ -2116,9 +2116,10 @@ extern int load_all_resv_state(int recover)
 
 /*
  * Determine if a job request can use the specified reservations
+ *
  * IN/OUT job_ptr - job to validate, set its resv_id and resv_flags
  * RET SLURM_SUCCESS or error code (not found or access denied)
-*/
+ */
 extern int validate_job_resv(struct job_record *job_ptr)
 {
 	slurmctld_resv_t *resv_ptr = NULL;
@@ -2458,6 +2459,7 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 
 /*
  * Determine if a job can start now based only upon reservations
+ *
  * IN job_ptr      - job to test
  * RET	SLURM_SUCCESS if runable now, otherwise an error code
  */
@@ -2626,8 +2628,10 @@ extern void begin_job_resv_check(void)
 }
 
 /* Test a particular job for valid reservation
+ *
  * RET ESLURM_INVALID_TIME_VALUE if reservation is terminated
- *     SLURM_SUCCESS if reservation is still valid */
+ *     SLURM_SUCCESS if reservation is still valid
+ */
 extern int job_resv_check(struct job_record *job_ptr)
 {
 	bool run_flag = false;
@@ -2653,7 +2657,12 @@ extern int job_resv_check(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* Finish scan of all jobs for valid reservations */
+/* Finish scan of all jobs for valid reservations
+ *
+ * Purge vestigial reservation records.
+ * Advance daily or weekly reservations that are no longer 
+ *	being actively used.
+ */
 extern void fini_job_resv_check(void)
 {
 	ListIterator iter;
