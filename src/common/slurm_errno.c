@@ -244,6 +244,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requires more ports than can be reserved"		},
 	{ ESLURM_PROLOG_RUNNING,
 	  "SlurmctldProlog is still running"			},
+	{ ESLURM_NO_STEPS,
+	  "Job steps can not be run on this cluster"		},
 
 	/* slurmd error codes */
 
