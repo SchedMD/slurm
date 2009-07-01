@@ -68,6 +68,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_accounting_storage.h"
 
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
@@ -98,7 +99,9 @@ static void _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
-static bool _job_overlap(time_t start_time, uint16_t flags, bitstr_t *node_bitmap);
+static bool _job_overlap(time_t start_time, uint16_t flags, 
+			 bitstr_t *node_bitmap);
+static List _list_dup(List license_list);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal);
 static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
@@ -130,6 +133,28 @@ static int  _valid_job_access_resv(struct job_record *job_ptr,
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
 
+static List _list_dup(List license_list)
+{
+	ListIterator iter;
+	licenses_t *license_src, *license_dest;
+	List lic_list;
+
+	lic_list = list_create(license_free_rec);
+	if (lic_list == NULL)
+		fatal("list_create malloc failure");
+	iter = list_iterator_create(license_list);
+	if (iter == NULL)
+		fatal("list_interator_create malloc failure");
+	while ((license_src = (licenses_t *) list_next(iter))) {
+		license_dest = xmalloc(sizeof(licenses_t));
+		license_dest->name = xstrdup(license_src->name);
+		license_dest->used = license_src->used;
+		list_push(lic_list, license_dest);
+	}
+	list_iterator_destroy(iter);
+	return lic_list;
+}
+
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 {
 	slurmctld_resv_t *resv_copy_ptr;
@@ -153,6 +178,10 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->job_pend_cnt = resv_orig_ptr->job_pend_cnt;
 	resv_copy_ptr->job_run_cnt = resv_orig_ptr->job_run_cnt;
 	resv_copy_ptr->licenses = xstrdup(resv_orig_ptr->licenses);
+	if (resv_orig_ptr->license_list) {
+		resv_copy_ptr->license_list = _list_dup(resv_orig_ptr->
+							license_list);
+	}
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
 	resv_copy_ptr->node_bitmap = bit_copy(resv_orig_ptr->node_bitmap);
@@ -203,6 +232,8 @@ static void _del_resv_rec(void *x)
 		xfree(resv_ptr->account_list);
 		xfree(resv_ptr->assoc_list);
 		xfree(resv_ptr->features);
+		if (resv_ptr->license_list)
+			list_destroy(resv_ptr->license_list);
 		xfree(resv_ptr->licenses);
 		xfree(resv_ptr->name);
 		if (resv_ptr->node_bitmap)
@@ -349,7 +380,7 @@ static int _append_assoc_list(List assoc_list, acct_association_rec_t *assoc)
 		}
 		
 	} 
-	if(assoc_ptr) {
+	if (assoc_ptr) {
 		list_append(assoc_list, assoc_ptr);
 		rc = SLURM_SUCCESS;
 	}
@@ -1097,6 +1128,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	char **account_list = NULL;
 	uid_t *user_list = NULL;
 	char start_time[32], end_time[32];
+	List license_list = (List) NULL;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -1159,7 +1191,15 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 	}
 	if (resv_desc_ptr->licenses) {
-info("FIXME: Need to validate licenses: %s", resv_desc_ptr->licenses);
+		bool valid;
+		license_list = license_job_validate(resv_desc_ptr->licenses, 
+						    &valid);
+		if (!valid) {
+			info("Reservation request has invalid licenses %s",
+			     resv_desc_ptr->licenses);
+			rc = ESLURM_INVALID_LICENSES;
+			goto bad_parse;
+		}
 	}
 	if (resv_desc_ptr->node_list) {
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
@@ -1233,6 +1273,8 @@ info("FIXME: Need to validate licenses: %s", resv_desc_ptr->licenses);
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
 	resv_ptr->licenses	= resv_desc_ptr->licenses;
 	resv_desc_ptr->licenses = NULL;		/* Nothing left to free */
+	resv_ptr->license_list	= license_list;
+	license_list		= NULL;		/* Nothing left to free */
 	resv_ptr->resv_id       = top_suffix;
 	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
@@ -1275,6 +1317,8 @@ info("FIXME: Need to validate licenses: %s", resv_desc_ptr->licenses);
 	for (i=0; i<account_cnt; i++)
 		xfree(account_list[i]);
 	xfree(account_list);
+	if (license_list)
+		list_destroy(license_list);
 	if (node_bitmap)
 		bit_free(node_bitmap);
 	xfree(user_list);
@@ -1360,14 +1404,37 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 	}
 	if (resv_desc_ptr->licenses && (resv_desc_ptr->licenses[0] == '\0')) {
+		if ((resv_desc_ptr->node_cnt == 0) ||
+		    ((resv_desc_ptr->node_cnt == NO_VAL) && 
+		     (resv_ptr->node_cnt == 0))) {
+			info("Reservation attempt to clear licenses with "
+			     "NodeCount=0");
+			rc = ESLURM_INVALID_LICENSES;
+			goto update_failure;
+		}    
 		xfree(resv_desc_ptr->licenses);	/* clear licenses */
 		xfree(resv_ptr->licenses);
+		if (resv_ptr->license_list)
+			list_destroy(resv_ptr->license_list);
 	}
+
 	if (resv_desc_ptr->licenses) {
-info("FIXME: Need to validate licenses: %s", resv_desc_ptr->licenses);
+		bool valid = true;
+		List license_list;
+		license_list = license_job_validate(resv_desc_ptr->licenses, 
+						    &valid);
+		if (!valid) {
+			info("Reservation invalid license update (%s)",
+			     resv_desc_ptr->licenses);
+			error_code = ESLURM_INVALID_LICENSES;
+			goto update_failure;
+		}
 		xfree(resv_ptr->licenses);
 		resv_ptr->licenses	= resv_desc_ptr->licenses;
 		resv_desc_ptr->licenses = NULL; /* Nothing left to free */
+		if (resv_ptr->license_list)
+			list_destroy(resv_ptr->license_list);
+		resv_ptr->license_list  = license_list;
 	}
 	if (resv_desc_ptr->features && (resv_desc_ptr->features[0] == '\0')) {
 		xfree(resv_desc_ptr->features);	/* clear features */
@@ -1767,6 +1834,19 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		xfree(resv_ptr->account_list);
 		resv_ptr->account_cnt  = account_cnt;
 		resv_ptr->account_list = account_list;
+	}
+	if (resv_ptr->licenses) {
+		bool valid;
+		if (resv_ptr->license_list)
+			list_destroy(resv_ptr->license_list);
+		resv_ptr->license_list = license_job_validate(resv_ptr->
+							      licenses, 
+							      &valid);
+		if (!valid) {
+			error("Reservation %s has invalid licenses (%s)",
+			      resv_ptr->name, resv_ptr->licenses);
+			return false;
+		}
 	}
 	if (resv_ptr->users) {
 		int rc, user_cnt = 0;

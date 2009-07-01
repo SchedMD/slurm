@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  licenses.c - Functions for handling cluster-wide consumable resources
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -79,7 +79,7 @@ static inline void _licenses_print(char *header, List licenses)
 }
 
 /* Free a license_t record (for use by list_destroy) */
-static void _license_free_rec(void *x)
+extern void license_free_rec(void *x)
 {
 	licenses_t *license_entry = (licenses_t *) x;
 
@@ -114,7 +114,7 @@ static List _build_license_list(char *licenses, bool *valid)
 	if ((licenses == NULL) || (licenses[0] == '\0'))
 		return NULL;
 
-	lic_list = list_create(_license_free_rec);
+	lic_list = list_create(license_free_rec);
 	tmp_str = xstrdup(licenses);
 	token = strtok_r(tmp_str, ",;", &last);
 	while (token && *valid) {
@@ -126,7 +126,7 @@ static List _build_license_list(char *licenses, bool *valid)
 			}
 			if (token[i] == '*') {
 				token[i++] = '\0';
-				num = (uint16_t)strtol(&token[i], &end_num, 10);
+				num = (uint16_t)strtol(&token[i], &end_num,10);
 			}
 		}
 		if (num <= 0) {
@@ -198,8 +198,10 @@ extern int license_update(char *licenses)
 			     license_entry->name, license_entry->used);
 		} else {
 			match->used = license_entry->used;
-			if (match->used > match->total)
-				info("license %s count decreased", match->name);
+			if (match->used > match->total) {
+				info("license %s count decreased", 
+				     match->name);
+			}
 		}
 	}
 	list_iterator_destroy(iter);
