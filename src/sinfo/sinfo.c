@@ -478,9 +478,6 @@ static int _build_sinfo_data(List sinfo_list,
 						NODE_STATE_FLAGS;
 					node_ptr->node_state |= 
 						NODE_STATE_DRAIN;
-					if(block_error)
-						node_ptr->node_state
-							|= NODE_STATE_FAIL;
 					node_ptr->threads = node_ptr->cores;
 					break;
 				default:
@@ -510,6 +507,11 @@ static int _build_sinfo_data(List sinfo_list,
 			 */
 			if(norm) 
 				break;
+			else if(i == SINFO_BG_ERROR_STATE) {
+				if(block_error)
+					node_ptr->node_state
+						|= NODE_STATE_FAIL;
+                        }
 			}
 #endif
 		}
@@ -857,8 +859,9 @@ static void _update_nodes_for_bg(int node_scaling,
 			 * the user isn't slurm or the block 
 			 * is in an error state.  
 			 */
-			if((node_ptr->node_state & NODE_STATE_BASE) 
-			   == NODE_STATE_DOWN) 
+			if(((node_ptr->node_state & NODE_STATE_BASE) 
+			    == NODE_STATE_DOWN)
+			   || (node_ptr->node_state & NODE_STATE_DRAIN))
 				continue;
 			
 			if(bg_info_record->state

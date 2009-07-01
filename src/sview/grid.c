@@ -998,8 +998,9 @@ get_bg:
 				 * the user isn't slurm or the block 
 				 * is in an error state.  
 				 */
-				if((node_ptr->node_state & NODE_STATE_BASE) 
-				   == NODE_STATE_DOWN) 
+				if(((node_ptr->node_state & NODE_STATE_BASE) 
+				    == NODE_STATE_DOWN)
+				   || (node_ptr->node_state & NODE_STATE_DRAIN))
 					continue;
 				
 				if(bg_info_record->state
