@@ -2362,7 +2362,8 @@ need_refresh:
 		}
 		list_iterator_destroy(itr);
 	}
-	
+	post_setup_popup_grid_list(popup_win);
+
 	if(!found) {
 		if(!popup_win->not_found) { 
 			char *temp = "JOB ALREADY FINISHED OR NOT FOUND\n";
@@ -2774,6 +2775,7 @@ display_it:
 		i++;
 	}
 	list_iterator_destroy(itr);
+	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
 
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
@@ -3017,6 +3019,7 @@ display_it:
 		}
 	}
 	list_iterator_destroy(itr);
+	post_setup_popup_grid_list(popup_win);
 
 	_update_info_job(send_info_list,
 			 GTK_TREE_VIEW(spec_info->display_widget));
