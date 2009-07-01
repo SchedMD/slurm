@@ -87,6 +87,8 @@
 #define POS_LOC 0
 #define DEFAULT_ENTRY_LENGTH 500
 
+#define MAKE_INIT -4
+#define MAKE_DOWN -3
 #define MAKE_BLACK -2
 #define MAKE_WHITE -1
 
@@ -202,36 +204,37 @@ struct specific_info {
 };
 
 struct popup_info {
-	int type; /* window type */
-	int toggled;
+	display_data_t *display_data;
+	GtkWidget *event_box;
 	int force_refresh;
-	int *running;
-	int *node_inx;
-	int show_grid;
 	int full_grid;
+	List grid_button_list;
+	GtkTable *grid_table;
+	GtkTreeIter iter;
+	GtkTreeModel *model;
+	int *node_inx;
+	int node_inx_id;
 	bool not_found;
 	GtkWidget *popup;
-	GtkWidget *event_box;
-	GtkTable *table;
-	GtkTable *grid_table;
-	List grid_button_list;
+	int *running;
+	int show_grid;
 	specific_info_t *spec_info;
-	display_data_t *display_data;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	int node_inx_id;
+	GtkTable *table;
+	int toggled;
+	int type; /* window type */
 };
 
 typedef struct {
 	GtkWidget *button;
-	GtkTooltips *tip;
-	GtkTable *table;
-	char *node_name;
 	char *color;
+	int color_inx;
 	int inx;
+	char *node_name;
 	int state;
+	GtkTable *table;
 	int table_x;
 	int table_y;
+	GtkTooltips *tip;
 	bool used;
 } grid_button_t;
 
@@ -245,6 +248,7 @@ extern int text_line_cnt;
 
 extern void parse_command_line(int argc, char *argv[]);
 
+extern int fini;
 extern ba_system_t *ba_system_ptr;
 extern int quiet_flag;
 extern bool toggled;
@@ -301,7 +305,9 @@ extern int get_system_stats(GtkTable *table);
 extern int setup_grid_table(GtkTable *table, List button_list, List node_list);
 extern void sview_init_grid();
 extern void sview_reset_grid();
+extern void sview_clear_unused_grid(List button_list, int color_inx);
 extern void setup_popup_grid_list(popup_info_t *popup_win);
+extern void post_setup_popup_grid_list(popup_info_t *popup_win);
 
 // part_info.c
 extern void refresh_part(GtkAction *action, gpointer user_data);
@@ -439,4 +445,5 @@ extern void add_display_treestore_line(int update,
 				       GtkTreeStore *treestore,
 				       GtkTreeIter *iter,
 				       const char *name, char *value);
+
 #endif

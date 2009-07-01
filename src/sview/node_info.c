@@ -580,9 +580,12 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 
 	if(*info_ptr != node_info_ptr) 
 		error_code = SLURM_SUCCESS;
-	
-	g_node_scaling = new_node_ptr->node_scaling;
-	cpus_per_node = new_node_ptr->node_array[0].cpus / g_node_scaling;
+
+	if(new_node_ptr) {
+		g_node_scaling = new_node_ptr->node_scaling;
+		cpus_per_node = 
+			new_node_ptr->node_array[0].cpus / g_node_scaling;
+	}
 
 	*info_ptr = new_node_ptr;
 	return error_code;
@@ -1133,6 +1136,7 @@ display_it:
 				  i, i, 0, true, 0);
 	}
 	list_iterator_destroy(itr);
+	post_setup_popup_grid_list(popup_win);
 
 	if(search_info->gchar_data) {
 		hostlist_iterator_destroy(host_itr);
