@@ -1014,7 +1014,8 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
  * Test if a new/updated reservation request will overlap running jobs
  * RET true if overlap
  */
-static bool _job_overlap(time_t start_time, uint16_t flags, bitstr_t *node_bitmap)
+static bool _job_overlap(time_t start_time, uint16_t flags, 
+			 bitstr_t *node_bitmap)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -1200,6 +1201,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_LICENSES;
 			goto bad_parse;
 		}
+		if ((resv_desc_ptr->node_cnt == NO_VAL) && 
+		    (resv_desc_ptr->node_list == NULL))
+			resv_desc_ptr->node_cnt = 0;
 	}
 	if (resv_desc_ptr->node_list) {
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
@@ -1228,8 +1232,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_NODES_BUSY;
 			goto bad_parse;
 		}
-	} else if ((resv_desc_ptr->node_cnt == NO_VAL) &&
-		   (resv_desc_ptr->licenses == NULL)) {
+	} else if (resv_desc_ptr->node_cnt == NO_VAL) {
 		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
 		goto bad_parse;
@@ -1274,7 +1277,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->licenses	= resv_desc_ptr->licenses;
 	resv_desc_ptr->licenses = NULL;		/* Nothing left to free */
 	resv_ptr->license_list	= license_list;
-	license_list		= NULL;		/* Nothing left to free */
 	resv_ptr->resv_id       = top_suffix;
 	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
@@ -2341,7 +2343,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	} else if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) {
 		/* Reserve nodes that are idle first, then busy nodes */
 		*resv_bitmap = _pick_idle_nodes2(node_bitmap, 
-						 resv_desc_ptr);	
+						 resv_desc_ptr);
 	} else {
 		/* Reserve nodes that are or will be idle.
 		 * This algorithm is slower than above logic that just 
