@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
     confusing Moab.
  -- BLUEGENE - fix for sinfo/sview for displaying proper node count for nodes 
     in draining state.
+ -- Fix for sview when viewing a certain part of a group (like 1 job) so it 
+    doesn't core when the part is gone.
 
 * Changes in SLURM 2.0.3
 ========================
