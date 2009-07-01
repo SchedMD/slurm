@@ -1355,7 +1355,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	if (!validate_super_user(uid)) {
 		info("Attempt to execute job step by uid=%u",
 			(unsigned int) uid);
-		slurm_send_rc_msg(msg, ESLURM_BATCH_ONLY);
+		slurm_send_rc_msg(msg, ESLURM_NO_STEPS);
 		return;
 	}
 #endif
@@ -2185,7 +2185,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			if (!validate_super_user(uid)) {
 				info("Attempt to execute batch job step by uid=%u",
 					(unsigned int) uid);
-				slurm_send_rc_msg(msg, ESLURM_BATCH_ONLY);
+				slurm_send_rc_msg(msg, ESLURM_NO_STEPS);
 				unlock_slurmctld(job_write_lock);
 				return;
 			}

@@ -171,6 +171,7 @@ enum {
 	ESLURM_PORTS_BUSY,
 	ESLURM_PORTS_INVALID,
 	ESLURM_PROLOG_RUNNING,
+	ESLURM_NO_STEPS,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
