@@ -1,0 +1,21 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Getting Help</h1>
+<p>Try the following steps if you are having problems with SLURM:</p>
+<ol>
+<li>See if the problem is addressed in the <a href="faq.html">SLURM FAQ</a>,
+<a href="troubleshoot.html">SLURM Troubleshooting Guide</a> or the 
+<a href="http://groups.google.com/group/slurm-devel">slurm-dev mailing list archive</a>.</li>
+<li>For run-time problems, try running the command or daemons in verbose mode 
+(<span class="commandline">-v</span> option), and see if additional information 
+helps you resolve the problem.</li>
+<li>Customers of HP, Linux NetworX and others providing commercial support 
+for SLURM should contact their support staff.</li>
+<li>Send a detailed description of the problem, the output from the command
+"scontrol show config", logs, back traces from any core files, etc. to 
+<a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
+</ol>
+
+<p style="text-align:center;">Last modified 30 June 2009</p>
+
+<!--#include virtual="footer.txt"-->
