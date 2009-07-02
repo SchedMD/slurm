@@ -2331,7 +2331,7 @@ need_refresh:
 					popup_win->grid_button_list,
 					sview_job_info->job_ptr->node_inx[j],
 					sview_job_info->job_ptr->node_inx[j+1],
-					i, true, 0);
+					i, false, 0);
 			j += 2;
 		}
 		_layout_job_record(treeview, sview_job_info, update);
@@ -2351,7 +2351,7 @@ need_refresh:
 						step_ptr->node_inx[j],
 						step_ptr->
 						node_inx[j+1],
-						i, true, 0);
+						i, false, 0);
 					j += 2;
 				}
 				_layout_step_record(treeview, 
@@ -2769,13 +2769,15 @@ display_it:
 				change_grid_color(grid_button_list,
 						  job_ptr->node_inx[j],
 						  job_ptr->node_inx[j+1],
-						  i, true, 0);
+						  i, false, 0);
 			j += 2;
 		}
 		i++;
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
+	gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+	gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);

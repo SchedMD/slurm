@@ -445,5 +445,7 @@ extern void add_display_treestore_line(int update,
 				       GtkTreeStore *treestore,
 				       GtkTreeIter *iter,
 				       const char *name, char *value);
+extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
+				   const GdkColor color);
 
 #endif

@@ -51,6 +51,7 @@ char *sview_colors[] = {"#0000FF", "#00FF00", "#00FFFF", "#FFFF00",
 			"#A020F0", "#8293ED", "#FFA500", "#FFC0CB",
 			"#8B6914", "#18A24E", "#F827FC", "#B8A40C"};
 char *blank_color = "#919191";
+char *white_color = "#FFFFFF";
 
 int sview_colors_cnt = 20;
 
@@ -202,11 +203,9 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 				 1, 1);
 	
 	gdk_color_parse("black", &color);
-	gtk_widget_modify_bg(grid_button->button, 
-			     GTK_STATE_NORMAL, &color);
-	gdk_color_parse("white", &color);
-	gtk_widget_modify_bg(grid_button->button, 
-			     GTK_STATE_PRELIGHT, &color);
+	sview_widget_modify_bg(grid_button->button, GTK_STATE_NORMAL, color);
+	gdk_color_parse(white_color, &color);
+	sview_widget_modify_bg(grid_button->button, GTK_STATE_PRELIGHT, color);
 	if(state == NODE_STATE_DRAIN)
 		image = gtk_image_new_from_stock(GTK_STOCK_DIALOG_ERROR,
 						 GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -221,7 +220,6 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 void _put_button_as_up(grid_button_t *grid_button)
 {
 	if(GTK_IS_BUTTON(grid_button->button)) {
-		//gtk_widget_set_sensitive (grid_button->button, TRUE);
 		return;
 	}
 	gtk_widget_destroy(grid_button->button);		
@@ -327,7 +325,7 @@ extern grid_button_t *create_grid_button_from_another(
 	} else if(color_inx == MAKE_BLACK) 
 		new_col = blank_color;
 	else 
-		new_col = "#FFFFFF";
+		new_col = white_color;
        			
 	send_grid_button = xmalloc(sizeof(grid_button_t));
 	memcpy(send_grid_button, grid_button, sizeof(grid_button_t));
@@ -342,8 +340,8 @@ extern grid_button_t *create_grid_button_from_another(
 		//gtk_widget_set_sensitive (send_grid_button->button, FALSE);
 		gdk_color_parse(new_col, &color);
 		send_grid_button->color = new_col;
-		gtk_widget_modify_bg(send_grid_button->button, 
-				     GTK_STATE_NORMAL, &color);
+		sview_widget_modify_bg(send_grid_button->button, 
+				       GTK_STATE_NORMAL, color);
 	} else if((color_inx >= 0) && node_base_state == NODE_STATE_DOWN) {
 		GtkWidget *image = gtk_image_new_from_stock(
 			GTK_STOCK_CANCEL,
@@ -353,11 +351,11 @@ extern grid_button_t *create_grid_button_from_another(
 			GTK_EVENT_BOX(send_grid_button->button),
 			FALSE);
 		gdk_color_parse("black", &color);
-		gtk_widget_modify_bg(send_grid_button->button, 
-				     GTK_STATE_NORMAL, &color);
+		sview_widget_modify_bg(send_grid_button->button, 
+				       GTK_STATE_NORMAL, color);
 		gdk_color_parse("white", &color);
-		gtk_widget_modify_bg(send_grid_button->button, 
-				     GTK_STATE_PRELIGHT, &color);
+		sview_widget_modify_bg(send_grid_button->button, 
+				     GTK_STATE_PRELIGHT, color);
 		gtk_container_add(
 			GTK_CONTAINER(send_grid_button->button),
 			image);
@@ -373,11 +371,11 @@ extern grid_button_t *create_grid_button_from_another(
 			GTK_EVENT_BOX(send_grid_button->button),
 			FALSE);
 		gdk_color_parse("black", &color);
-		gtk_widget_modify_bg(send_grid_button->button, 
-				     GTK_STATE_NORMAL, &color);
+		sview_widget_modify_bg(send_grid_button->button, 
+				       GTK_STATE_NORMAL, color);
 		gdk_color_parse("white", &color);
-		gtk_widget_modify_bg(send_grid_button->button, 
-				     GTK_STATE_PRELIGHT, &color);
+		sview_widget_modify_bg(send_grid_button->button, 
+				       GTK_STATE_PRELIGHT, color);
 		gtk_container_add(
 			GTK_CONTAINER(send_grid_button->button),
 			image);		
@@ -385,8 +383,8 @@ extern grid_button_t *create_grid_button_from_another(
 		send_grid_button->button = gtk_button_new();
 		send_grid_button->color = new_col;		
 		gdk_color_parse(new_col, &color);
-		gtk_widget_modify_bg(send_grid_button->button, 
-				     GTK_STATE_NORMAL, &color);
+		sview_widget_modify_bg(send_grid_button->button, 
+				       GTK_STATE_NORMAL, color);
 	}
 	gtk_widget_set_size_request(send_grid_button->button, 10, 10);
 	send_grid_button->tip = gtk_tooltips_new();
@@ -402,7 +400,7 @@ extern grid_button_t *create_grid_button_from_another(
 
 /* start == -1 for all */
 extern char *change_grid_color(List button_list, int start, int end,
-			       int color_inx, bool change_unused,
+			       int color_inx, bool only_change_unused,
 			       enum node_states state_override)
 {
 	ListIterator itr = NULL;
@@ -410,9 +408,13 @@ extern char *change_grid_color(List button_list, int start, int end,
 	uint16_t node_base_state;
 	GdkColor color;
 	char *new_col = NULL;
-
+	static GQuark quark_rc_style = 0;
+  
 	if(!button_list)
 		return NULL;
+
+	if(!quark_rc_style)
+		quark_rc_style = g_quark_from_static_string ("gtk-rc-style");
 
 	if(color_inx >= 0) {
 		color_inx %= sview_colors_cnt;
@@ -420,7 +422,7 @@ extern char *change_grid_color(List button_list, int start, int end,
 	} else if(color_inx == MAKE_BLACK) 
 		new_col = blank_color;
 	else 
-		new_col = "#FFFFFF";
+		new_col = white_color;
 	
 	gdk_color_parse(new_col, &color);
 
@@ -432,17 +434,17 @@ extern char *change_grid_color(List button_list, int start, int end,
 			    ||  (grid_button->inx > end)) 
 				continue;
 		
-		if(change_unused && grid_button->used)
+		if(only_change_unused && grid_button->used)
 			continue;
-		
+
 		grid_button->used = true;
 		if(color_inx == MAKE_BLACK) {
 			if(grid_button->color_inx != color_inx) {
 				_put_button_as_inactive(grid_button);
 				grid_button->color = new_col;
 				grid_button->color_inx = color_inx;
-				gtk_widget_modify_bg(grid_button->button, 
-						     GTK_STATE_NORMAL, &color);
+				sview_widget_modify_bg(grid_button->button, 
+						       GTK_STATE_NORMAL, color);
 			}
 			
 			continue;
@@ -460,8 +462,36 @@ extern char *change_grid_color(List button_list, int start, int end,
 			_put_button_as_up(grid_button);
 			grid_button->color = new_col;
 			grid_button->color_inx = color_inx;
-			gtk_widget_modify_bg(grid_button->button,
-					     GTK_STATE_NORMAL, &color);
+			sview_widget_modify_bg(grid_button->button, 
+					       GTK_STATE_NORMAL, color);
+/* 			START_TIMER; */
+/* 			GtkRcStyle *rc_style = gtk_widget_get_modifier_style (grid_button->button); */
+/* 			END_TIMER; */
+/* 			g_print("%d 1 took %s\n", grid_button->inx, TIME_STR); */
+
+/* 			grid_button->button-> */
+/* 				style->bg[GTK_STATE_NORMAL] = color; */
+/* 			/\* grid_button->button-> *\/ */
+/* /\* 				style->style->flags[GTK_STATE_NORMAL] = color; *\/ */
+/* 			START_TIMER; */
+/* 			rc_style->bg[GTK_STATE_NORMAL] = color; */
+/* 			rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG; */
+/* 			/\* g_object_set_qdata (G_OBJECT(grid_button->button), *\/ */
+/* /\* 						 quark_rc_style, *\/ */
+/* /\* 					    rc_style); *\/ */
+/* 			END_TIMER; */
+/* 			g_print("%d 2 took %s\n", grid_button->inx, TIME_STR); */
+/* 			START_TIMER; */
+/* 			gtk_widget_reset_rc_styles (grid_button->button); */
+/* /\* 			gtk_widget_set_sensitive(grid_button->button, 0); *\/ */
+/* /\* 			gtk_widget_set_sensitive(grid_button->button, 1); *\/ */
+
+/* /\* 			gtk_widget_hide_all(grid_button->button); *\/ */
+/* /\* 			gtk_widget_show_all(grid_button->button); *\/ */
+/* /\* 			gtk_widget_modify_bg(grid_button->button, *\/ */
+/* /\* 					     GTK_STATE_NORMAL, &color); *\/ */
+/* 			END_TIMER; */
+/* 			g_print("%d 3 took %s\n", grid_button->inx, TIME_STR); */
 		}
 	}
 	list_iterator_destroy(itr);
@@ -811,7 +841,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		g_print("setup_grid_table: no node_list given\n");
 		return SLURM_ERROR;
 	}
-	
+
 	gtk_table_resize(table, table_y, table_x);
 	itr = list_iterator_create(node_list);
 	while((sview_node_info_ptr = list_next(itr))) {
@@ -1006,6 +1036,9 @@ extern void post_setup_popup_grid_list(popup_info_t *popup_win)
 		}
 	}
 
-	change_grid_color(grid_button_list, -1, -1,
+	change_grid_color(popup_win->grid_button_list, -1, -1,
 			  MAKE_BLACK, true, NODE_STATE_IDLE);
+	gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 0);
+	gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 1);
+
 }

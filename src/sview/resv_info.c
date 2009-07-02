@@ -747,7 +747,7 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i, true, 0);
+					resv_ptr->node_inx[j+1], i, false, 0);
 				j += 2;
 			}
 			_layout_resv_record(treeview, sview_resv_info, update);
@@ -1004,13 +1004,15 @@ display_it:
 				change_grid_color(grid_button_list,
 						  resv_ptr->node_inx[j],
 						  resv_ptr->node_inx[j+1],
-						  i, true, 0);
+						  i, false, 0);
 			j += 2;
 		}
 		i++;
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
+	gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+	gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
 	
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);

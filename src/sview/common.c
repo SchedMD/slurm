@@ -1229,3 +1229,23 @@ found:
 	
 	return;
 }
+
+/* I know what you are thinking, hey, why not use gtk_widget_modify_bg
+ * instead here?  Well, it turns out that takes an outrageous amount
+ * of relative time.  Here on only take around 40 microsecs where
+ * gtk_widget_modify_bg takes around 2500.  This isn't that big of a
+ * deal on most systems, but if you have like 10000 nodes this makes
+ * an outrageous difference.  You must follow this up by doing a
+ * gtk_widget_set_sensitive 0, and then 1 on the parent container to
+ * make the color stick.  
+ */
+extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
+				   const GdkColor color)
+{
+	GtkRcStyle *rc_style = gtk_widget_get_modifier_style (widget);
+
+	widget->style->bg[state] = color;
+	rc_style->bg[state] = color;
+	rc_style->color_flags[state] |= GTK_RC_BG;
+	gtk_widget_reset_rc_styles (widget);
+}
