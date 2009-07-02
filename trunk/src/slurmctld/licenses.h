@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  licenses.h - Definitions for handling cluster-wide consumable resources
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -61,6 +61,8 @@ extern int license_update(char *licenses);
 /* Free memory associated with licenses on this system */
 extern void license_free(void);
 
+/* Free a license_t record (for use by list_destroy) */
+extern void license_free_rec(void *x);
 
 /*
  * license_job_get - Get the licenses required for a job
@@ -79,17 +81,24 @@ extern int license_job_return(struct job_record *job_ptr);
 /*
  * license_job_test - Test if the licenses required for a job are available
  * IN job_ptr - job identification
- * RET SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
+ * IN when    - time to check
+ * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */ 
-extern int license_job_test(struct job_record *job_ptr);
+extern int license_job_test(struct job_record *job_ptr, time_t when);
 
 /*
- * license_job_validate - Test if the licenses required by a job are valid
+ * license_validate - Test if the required licenses are valid
  * IN licenses - required licenses
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
  */ 
-extern List license_job_validate(char *licenses, bool *valid);
+extern List license_validate(char *licenses, bool *valid);
+
+/*
+ * license_list_overlap - test if there is any overlap in licenses
+ *	names found in the two lists
+ */
+extern bool license_list_overlap(List list_1, List list_2);
 
 #endif /* !_LICENSES_H */

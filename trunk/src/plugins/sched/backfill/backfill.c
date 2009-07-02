@@ -383,7 +383,7 @@ static void _attempt_backfill(void)
 			continue;
 
 		if ((!job_independent(job_ptr)) ||
-		    (license_job_test(job_ptr) != SLURM_SUCCESS))
+		    (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS))
 			continue;
 
 		/* Determine minimum and maximum node counts */

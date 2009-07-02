@@ -463,9 +463,10 @@ void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 	if (msg) {
 		xfree(msg->accounts);
 		xfree(msg->features);
-		xfree(msg->partition);
+		xfree(msg->licenses);
 		xfree(msg->name);
 		xfree(msg->node_list);
+		xfree(msg->partition);
 		xfree(msg->users);
 		xfree(msg);
 	}
@@ -1656,6 +1657,7 @@ static void _slurm_free_reserve_info_members(reserve_info_t * resv)
 	if (resv) {
 		xfree(resv->accounts);
 		xfree(resv->features);
+		xfree(resv->licenses);
 		xfree(resv->name);
 		xfree(resv->node_inx);
 		xfree(resv->node_list);

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  licenses.c - Functions for handling cluster-wide consumable resources
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -49,6 +49,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/licenses.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define _DEBUG 0
@@ -79,7 +80,7 @@ static inline void _licenses_print(char *header, List licenses)
 }
 
 /* Free a license_t record (for use by list_destroy) */
-static void _license_free_rec(void *x)
+extern void license_free_rec(void *x)
 {
 	licenses_t *license_entry = (licenses_t *) x;
 
@@ -114,7 +115,7 @@ static List _build_license_list(char *licenses, bool *valid)
 	if ((licenses == NULL) || (licenses[0] == '\0'))
 		return NULL;
 
-	lic_list = list_create(_license_free_rec);
+	lic_list = list_create(license_free_rec);
 	tmp_str = xstrdup(licenses);
 	token = strtok_r(tmp_str, ",;", &last);
 	while (token && *valid) {
@@ -126,7 +127,7 @@ static List _build_license_list(char *licenses, bool *valid)
 			}
 			if (token[i] == '*') {
 				token[i++] = '\0';
-				num = (uint16_t)strtol(&token[i], &end_num, 10);
+				num = (uint16_t)strtol(&token[i], &end_num,10);
 			}
 		}
 		if (num <= 0) {
@@ -198,8 +199,10 @@ extern int license_update(char *licenses)
 			     license_entry->name, license_entry->used);
 		} else {
 			match->used = license_entry->used;
-			if (match->used > match->total)
-				info("license %s count decreased", match->name);
+			if (match->used > match->total) {
+				info("license %s count decreased", 
+				     match->name);
+			}
 		}
 	}
 	list_iterator_destroy(iter);
@@ -223,13 +226,13 @@ extern void license_free(void)
 }
 
 /*
- * license_job_validate - Test if the licenses required by a job are valid
+ * license_validate - Test if the required licenses are valid
  * IN licenses - required licenses
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
  */ 
-extern List license_job_validate(char *licenses, bool *valid)
+extern List license_validate(char *licenses, bool *valid)
 {
 	ListIterator iter;
 	licenses_t *license_entry, *match;
@@ -275,13 +278,14 @@ extern List license_job_validate(char *licenses, bool *valid)
 /*
  * license_job_test - Test if the licenses required for a job are available
  * IN job_ptr - job identification
+ * IN when    - time to check
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */ 
-extern int license_job_test(struct job_record *job_ptr)
+extern int license_job_test(struct job_record *job_ptr, time_t when)
 {
 	ListIterator iter;
 	licenses_t *license_entry, *match;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, resv_licenses;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
@@ -307,6 +311,15 @@ extern int license_job_test(struct job_record *job_ptr)
 			   match->total) {
 			rc = EAGAIN;
 			break;
+		} else {
+			resv_licenses = job_test_lic_resv(job_ptr,
+							  license_entry->name,
+							  when);
+			if ((license_entry->total + match->used + 
+			     resv_licenses) > match->total) {
+				rc = EAGAIN;
+				break;
+			}
 		}
 	}
 	list_iterator_destroy(iter);
@@ -393,3 +406,30 @@ extern int license_job_return(struct job_record *job_ptr)
 	return rc;
 }
 
+/*
+ * license_list_overlap - test if there is any overlap in licenses
+ *	names found in the two lists
+ */
+extern bool license_list_overlap(List list_1, List list_2)
+{
+	ListIterator iter;
+	licenses_t *license_entry;
+	bool match = false;
+
+	if (!list_1 || !list_2)
+		return false;
+
+	iter = list_iterator_create(list_1);
+	if (iter == NULL)
+		fatal("malloc failure from list_iterator_create");
+	while ((license_entry = (licenses_t *) list_next(iter))) {
+		if (list_find_first(list_2, _license_find_rec, 
+				    license_entry->name)) {
+			match = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return match;
+}

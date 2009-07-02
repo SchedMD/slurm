@@ -68,6 +68,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_accounting_storage.h"
 
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
@@ -78,7 +79,7 @@
 /* Change RESV_STATE_VERSION value when changing the state save format
  * Add logic to permit reading of the previous version's state in order
  * to avoid losing reservations between releases major SLURM updates. */
-#define RESV_STATE_VERSION      "VER002"
+#define RESV_STATE_VERSION      "VER003"
 
 time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
@@ -98,7 +99,9 @@ static void _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
-static bool _job_overlap(time_t start_time, uint16_t flags, bitstr_t *node_bitmap);
+static bool _job_overlap(time_t start_time, uint16_t flags, 
+			 bitstr_t *node_bitmap);
+static List _list_dup(List license_list);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal);
 static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
@@ -130,6 +133,31 @@ static int  _valid_job_access_resv(struct job_record *job_ptr,
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
 
+static List _list_dup(List license_list)
+{
+	ListIterator iter;
+	licenses_t *license_src, *license_dest;
+	List lic_list = (List) NULL;
+
+	if (!license_list)
+		return lic_list;
+
+	lic_list = list_create(license_free_rec);
+	if (lic_list == NULL)
+		fatal("list_create malloc failure");
+	iter = list_iterator_create(license_list);
+	if (iter == NULL)
+		fatal("list_interator_create malloc failure");
+	while ((license_src = (licenses_t *) list_next(iter))) {
+		license_dest = xmalloc(sizeof(licenses_t));
+		license_dest->name = xstrdup(license_src->name);
+		license_dest->used = license_src->used;
+		list_push(lic_list, license_dest);
+	}
+	list_iterator_destroy(iter);
+	return lic_list;
+}
+
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 {
 	slurmctld_resv_t *resv_copy_ptr;
@@ -152,6 +180,9 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->flags = resv_orig_ptr->flags;
 	resv_copy_ptr->job_pend_cnt = resv_orig_ptr->job_pend_cnt;
 	resv_copy_ptr->job_run_cnt = resv_orig_ptr->job_run_cnt;
+	resv_copy_ptr->licenses = xstrdup(resv_orig_ptr->licenses);
+	resv_copy_ptr->license_list = _list_dup(resv_orig_ptr->
+						license_list);
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
 	resv_copy_ptr->node_bitmap = bit_copy(resv_orig_ptr->node_bitmap);
@@ -202,6 +233,9 @@ static void _del_resv_rec(void *x)
 		xfree(resv_ptr->account_list);
 		xfree(resv_ptr->assoc_list);
 		xfree(resv_ptr->features);
+		if (resv_ptr->license_list)
+			list_destroy(resv_ptr->license_list);
+		xfree(resv_ptr->licenses);
 		xfree(resv_ptr->name);
 		if (resv_ptr->node_bitmap)
 			bit_free(resv_ptr->node_bitmap);
@@ -263,11 +297,11 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 
 	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
 	     "Flags=%s NodeCnt=%d NodeList=%s Features=%s "
-	     "PartitionName=%s Users=%s Accounts=%s",
+	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, resv_ptr->node_cnt, resv_ptr->node_list, 
 	     resv_ptr->features, resv_ptr->partition, 
-	     resv_ptr->users, resv_ptr->accounts);
+	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses);
 
 	xfree(flag_str);
 #endif
@@ -347,7 +381,7 @@ static int _append_assoc_list(List assoc_list, acct_association_rec_t *assoc)
 		}
 		
 	} 
-	if(assoc_ptr) {
+	if (assoc_ptr) {
 		list_append(assoc_list, assoc_ptr);
 		rc = SLURM_SUCCESS;
 	}
@@ -956,6 +990,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	packstr(resv_ptr->accounts,	buffer);
 	pack_time(resv_ptr->end_time,	buffer);
 	packstr(resv_ptr->features,	buffer);
+	packstr(resv_ptr->licenses,	buffer);
 	packstr(resv_ptr->name,		buffer);
 	pack32(resv_ptr->node_cnt,	buffer);
 	packstr(resv_ptr->node_list,	buffer);
@@ -980,7 +1015,8 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
  * Test if a new/updated reservation request will overlap running jobs
  * RET true if overlap
  */
-static bool _job_overlap(time_t start_time, uint16_t flags, bitstr_t *node_bitmap)
+static bool _job_overlap(time_t start_time, uint16_t flags, 
+			 bitstr_t *node_bitmap)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -1094,6 +1130,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	char **account_list = NULL;
 	uid_t *user_list = NULL;
 	char start_time[32], end_time[32];
+	List license_list = (List) NULL;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -1154,6 +1191,20 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 				     &user_cnt, &user_list);
 		if (rc)
 			goto bad_parse;
+	}
+	if (resv_desc_ptr->licenses) {
+		bool valid;
+		license_list = license_validate(resv_desc_ptr->licenses, 
+						&valid);
+		if (!valid) {
+			info("Reservation request has invalid licenses %s",
+			     resv_desc_ptr->licenses);
+			rc = ESLURM_INVALID_LICENSES;
+			goto bad_parse;
+		}
+		if ((resv_desc_ptr->node_cnt == NO_VAL) && 
+		    (resv_desc_ptr->node_list == NULL))
+			resv_desc_ptr->node_cnt = 0;
 	}
 	if (resv_desc_ptr->node_list) {
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
@@ -1224,6 +1275,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->end_time	= resv_desc_ptr->end_time;
 	resv_ptr->features	= resv_desc_ptr->features;
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
+	resv_ptr->licenses	= resv_desc_ptr->licenses;
+	resv_desc_ptr->licenses = NULL;		/* Nothing left to free */
+	resv_ptr->license_list	= license_list;
 	resv_ptr->resv_id       = top_suffix;
 	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
@@ -1266,6 +1320,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	for (i=0; i<account_cnt; i++)
 		xfree(account_list[i]);
 	xfree(account_list);
+	if (license_list)
+		list_destroy(license_list);
 	if (node_bitmap)
 		bit_free(node_bitmap);
 	xfree(user_list);
@@ -1323,7 +1379,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKLY)
 			resv_ptr->flags &= (~RESERVE_FLAG_WEEKLY);
 	}
-	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
+	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')){
 		/* Clear the partition */
 		xfree(resv_desc_ptr->partition);
 		xfree(resv_ptr->partition);
@@ -1350,8 +1406,41 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 	}
+	if (resv_desc_ptr->licenses && (resv_desc_ptr->licenses[0] == '\0')) {
+		if ((resv_desc_ptr->node_cnt == 0) ||
+		    ((resv_desc_ptr->node_cnt == NO_VAL) && 
+		     (resv_ptr->node_cnt == 0))) {
+			info("Reservation attempt to clear licenses with "
+			     "NodeCount=0");
+			rc = ESLURM_INVALID_LICENSES;
+			goto update_failure;
+		}    
+		xfree(resv_desc_ptr->licenses);	/* clear licenses */
+		xfree(resv_ptr->licenses);
+		if (resv_ptr->license_list)
+			list_destroy(resv_ptr->license_list);
+	}
+
+	if (resv_desc_ptr->licenses) {
+		bool valid = true;
+		List license_list;
+		license_list = license_validate(resv_desc_ptr->licenses, 
+						&valid);
+		if (!valid) {
+			info("Reservation invalid license update (%s)",
+			     resv_desc_ptr->licenses);
+			error_code = ESLURM_INVALID_LICENSES;
+			goto update_failure;
+		}
+		xfree(resv_ptr->licenses);
+		resv_ptr->licenses	= resv_desc_ptr->licenses;
+		resv_desc_ptr->licenses = NULL; /* Nothing left to free */
+		if (resv_ptr->license_list)
+			list_destroy(resv_ptr->license_list);
+		resv_ptr->license_list  = license_list;
+	}
 	if (resv_desc_ptr->features && (resv_desc_ptr->features[0] == '\0')) {
-		xfree(resv_desc_ptr->features);
+		xfree(resv_desc_ptr->features);	/* clear features */
 		xfree(resv_ptr->features);
 	}
 	if (resv_desc_ptr->features) {
@@ -1749,6 +1838,18 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		resv_ptr->account_cnt  = account_cnt;
 		resv_ptr->account_list = account_list;
 	}
+	if (resv_ptr->licenses) {
+		bool valid;
+		if (resv_ptr->license_list)
+			list_destroy(resv_ptr->license_list);
+		resv_ptr->license_list = license_validate(resv_ptr->licenses, 
+							  &valid);
+		if (!valid) {
+			error("Reservation %s has invalid licenses (%s)",
+			      resv_ptr->name, resv_ptr->licenses);
+			return false;
+		}
+	}
 	if (resv_ptr->users) {
 		int rc, user_cnt = 0;
 		uid_t *user_list = NULL;
@@ -1972,6 +2073,8 @@ extern int load_all_resv_state(int recover)
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->features,
 				       &uint32_tmp, 	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->licenses,
+				       &uint32_tmp, 	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->name,	&uint32_tmp, buffer);
 		safe_unpack32(&resv_ptr->node_cnt,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->node_list,
@@ -2013,9 +2116,10 @@ extern int load_all_resv_state(int recover)
 
 /*
  * Determine if a job request can use the specified reservations
+ *
  * IN/OUT job_ptr - job to validate, set its resv_id and resv_flags
  * RET SLURM_SUCCESS or error code (not found or access denied)
-*/
+ */
 extern int validate_job_resv(struct job_record *job_ptr)
 {
 	slurmctld_resv_t *resv_ptr = NULL;
@@ -2240,7 +2344,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	} else if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) {
 		/* Reserve nodes that are idle first, then busy nodes */
 		*resv_bitmap = _pick_idle_nodes2(node_bitmap, 
-						 resv_desc_ptr);	
+						 resv_desc_ptr);
 	} else {
 		/* Reserve nodes that are or will be idle.
 		 * This algorithm is slower than above logic that just 
@@ -2355,6 +2459,7 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 
 /*
  * Determine if a job can start now based only upon reservations
+ *
  * IN job_ptr      - job to test
  * RET	SLURM_SUCCESS if runable now, otherwise an error code
  */
@@ -2387,6 +2492,81 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+/* For a given license_list, return the total count of licenses of the 
+ *	specified name */
+static int _license_cnt(List license_list, char *lic_name)
+{
+	int lic_cnt = 0;
+	ListIterator iter;
+	licenses_t *license_ptr;
+
+	if (license_list == NULL)
+		return lic_cnt;
+
+	iter = list_iterator_create(license_list);
+	if (iter == NULL)
+		fatal("list_interator_create malloc failure");
+	while ((license_ptr = list_next(iter))) {
+		if (strcmp(license_ptr->name, lic_name) == 0)
+			lic_cnt += license_ptr->total;
+	}
+	list_iterator_destroy(iter);
+
+	return lic_cnt;
+}
+
+/*
+ * Determine how many licenses of the give type the specified job is 
+ *	prevented from using due to reservations
+ *
+ * IN job_ptr   - job to test
+ * IN lic_name  - name of license
+ * IN when      - when the job is expected to start
+ * RET number of licenses of this type the job is prevented from using
+ */
+extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
+			     time_t when)
+{
+	slurmctld_resv_t * resv_ptr;
+	time_t job_start_time, job_end_time;
+	uint32_t duration;
+	ListIterator iter;
+	int resv_cnt = 0;
+
+	if (job_ptr->time_limit == INFINITE)
+		duration = 365 * 24 * 60 * 60;
+	else if (job_ptr->time_limit != NO_VAL)
+		duration = (job_ptr->time_limit * 60);
+	else {	/* partition time limit */
+		if (job_ptr->part_ptr->max_time == INFINITE)
+			duration = 365 * 24 * 60 * 60;
+		else
+			duration = (job_ptr->part_ptr->max_time * 60);
+	}
+	job_start_time = job_end_time = when;
+	job_end_time += duration;
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->start_time >= job_end_time) ||
+		    (resv_ptr->end_time   <= job_start_time))
+			continue;	/* reservation at different time */
+
+		if (job_ptr->resv_name &&
+		    (strcmp(job_ptr->resv_name, resv_ptr->name) == 0))
+			continue;	/* job can use this reservation */
+
+		resv_cnt += _license_cnt(resv_ptr->license_list, lic_name);
+	}
+	list_iterator_destroy(iter);
+
+	/* info("job %u blocked from %d licenses of type %s", 
+	     job_ptr->job_id, resv_cnt, lic_name); */
+	return resv_cnt;
+}
+
 /*
  * Determine which nodes a job can use based upon reservations
  * IN job_ptr      - job to test
@@ -2406,7 +2586,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap)
 {
 	slurmctld_resv_t * resv_ptr;
-	time_t job_start_time, job_end_time;
+	time_t job_start_time, job_end_time, lic_resv_time;
 	uint32_t duration;
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS;
@@ -2457,6 +2637,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	for (i=0; ; i++) {
 		job_start_time = job_end_time = *when;
 		job_end_time += duration;
+		lic_resv_time = (time_t) 0;
 
 		iter = list_iterator_create(resv_list);
 		if (!iter)
@@ -2473,12 +2654,26 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				rc = ESLURM_NODES_BUSY;
 				break;
 			}
+			if (license_list_overlap(job_ptr->license_list,
+						 resv_ptr->license_list)) {
+				if ((lic_resv_time == (time_t) 0) ||
+				    (lic_resv_time > resv_ptr->end_time))
+					lic_resv_time = resv_ptr->end_time;
+			}
 			bit_not(resv_ptr->node_bitmap);
 			bit_and(*node_bitmap, resv_ptr->node_bitmap);
 			bit_not(resv_ptr->node_bitmap);
 		}
 		list_iterator_destroy(iter);
 
+		if ((rc == SLURM_SUCCESS) && move_time) {
+			if (license_job_test(job_ptr, job_start_time) 
+			    == EAGAIN) {
+				/* Need to postpone for licenses */
+				rc = ESLURM_NODES_BUSY;
+				*when = lic_resv_time;
+			}
+		}
 		if (rc == SLURM_SUCCESS)
 			break;
 		/* rc == ESLURM_NODES_BUSY here from above break */
@@ -2523,8 +2718,10 @@ extern void begin_job_resv_check(void)
 }
 
 /* Test a particular job for valid reservation
+ *
  * RET ESLURM_INVALID_TIME_VALUE if reservation is terminated
- *     SLURM_SUCCESS if reservation is still valid */
+ *     SLURM_SUCCESS if reservation is still valid
+ */
 extern int job_resv_check(struct job_record *job_ptr)
 {
 	bool run_flag = false;
@@ -2550,7 +2747,12 @@ extern int job_resv_check(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* Finish scan of all jobs for valid reservations */
+/* Finish scan of all jobs for valid reservations
+ *
+ * Purge vestigial reservation records.
+ * Advance daily or weekly reservations that are no longer 
+ *	being actively used.
+ */
 extern void fini_job_resv_check(void)
 {
 	ListIterator iter;
@@ -2687,8 +2889,7 @@ static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now)
 		else
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
 		/* mark that this node is now down and in maint mode
-		   or was removed from maint mode 
-		*/
+		 * or was removed from maint mode */
 		if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
 		    IS_NODE_FAIL(node_ptr)) { 
 			clusteracct_storage_g_node_down(

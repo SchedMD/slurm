@@ -1812,7 +1812,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if(job_ptr->priority == NO_VAL)
 		_set_job_prio(job_ptr);
 
-	if (license_job_test(job_ptr) != SLURM_SUCCESS)
+	if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS)
 		independent = false;
 
 	/* Avoid resource fragmentation if important */
@@ -2558,7 +2558,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	license_list = license_job_validate(job_desc->licenses, &valid);
+	license_list = license_validate(job_desc->licenses, &valid);
 	if (!valid) {
 		info("Job's requested licenses are invalid: %s", 
 		     job_desc->licenses);
@@ -5265,11 +5265,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->licenses) {
-		List license_list = NULL;
+		List license_list;
 		bool valid;
-		license_list = license_job_validate(job_specs->licenses,
-						    &valid);
 
+		license_list = license_validate(job_specs->licenses, &valid);
 		if (!valid) {
 			info("update_job: invalid licenses: %s",
 			     job_specs->licenses);

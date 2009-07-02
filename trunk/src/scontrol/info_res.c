@@ -56,13 +56,16 @@ scontrol_load_reservations(reserve_info_msg_t **res_buffer_pptr)
 		} else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			res_info_ptr = old_res_info_ptr;
 			error_code = SLURM_SUCCESS;
-			if (quiet_flag == -1)
-				printf ("slurm_load_reservations: no change in data\n");
+			if (quiet_flag == -1) {
+				printf ("slurm_load_reservations: no change "
+					"in data\n");
+			}
 		}
 	}
-	else
+	else {
 		error_code = slurm_load_reservations((time_t) NULL,
 						     &res_info_ptr);
+	}
 
 	if (error_code == SLURM_SUCCESS) {
 		old_res_info_ptr = res_info_ptr;
