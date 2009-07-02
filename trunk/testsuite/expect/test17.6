@@ -89,6 +89,7 @@ if {$job_id != 0} {
 	}
 	if {[wait_for_job $job_id "DONE"] != 0} {
 		send_user "\nFAILURE: waiting for job to complete\n"
+		cancel_job $job_id
 		set exit_code 1
 	}
 	if {[wait_for_file $file_out] == 0} {
