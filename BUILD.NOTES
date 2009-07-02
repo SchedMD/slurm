@@ -98,7 +98,7 @@ To build and run on AIX:
    make uninstall  # remove old shared libraries, aix caches them
    make install
 3. To build RPMs (NOTE: GNU tools early in PATH as described above in #0):
-   Create a file specifying system specific files:
+   Create a .rpmmacros file specifying system specific files:
 	#
 	# RPM Macros for use with SLURM on AIX
 	# The system-wide macros for RPM are in /usr/lib/rpm/macros
