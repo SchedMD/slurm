@@ -1242,10 +1242,47 @@ found:
 extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 				   const GdkColor color)
 {
-	GtkRcStyle *rc_style = gtk_widget_get_modifier_style (widget);
+/* 	DEF_TIMERS; */
 
-	widget->style->bg[state] = color;
-	rc_style->bg[state] = color;
-	rc_style->color_flags[state] |= GTK_RC_BG;
-	gtk_widget_reset_rc_styles (widget);
+/* 	START_TIMER; */
+	if(fast_bg) {
+		GtkRcStyle *rc_style = gtk_widget_get_modifier_style (widget);
+		widget->style->bg[state] = color;
+		rc_style->bg[state] = color;
+		rc_style->color_flags[state] |= GTK_RC_BG;
+		gtk_widget_reset_rc_styles (widget);
+	} else
+		gtk_widget_modify_bg(widget, GTK_STATE_NORMAL, &color);
+/* 	END_TIMER; */
+/* 	g_print("got %s\n", TIME_STR); */
+
+/* 			START_TIMER; */
+/* 			GtkRcStyle *rc_style = gtk_widget_get_modifier_style (grid_button->button); */
+/* 			END_TIMER; */
+/* 			g_print("%d 1 took %s\n", grid_button->inx, TIME_STR); */
+
+/* 			grid_button->button-> */
+/* 				style->bg[GTK_STATE_NORMAL] = color; */
+/* 			/\* grid_button->button-> *\/ */
+/* /\* 				style->style->flags[GTK_STATE_NORMAL] = color; *\/ */
+/* 			START_TIMER; */
+/* 			rc_style->bg[GTK_STATE_NORMAL] = color; */
+/* 			rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG; */
+/* 			/\* g_object_set_qdata (G_OBJECT(grid_button->button), *\/ */
+/* /\* 						 quark_rc_style, *\/ */
+/* /\* 					    rc_style); *\/ */
+/* 			END_TIMER; */
+/* 			g_print("%d 2 took %s\n", grid_button->inx, TIME_STR); */
+/* 			START_TIMER; */
+/* 			gtk_widget_reset_rc_styles (grid_button->button); */
+/* /\* 			gtk_widget_set_sensitive(grid_button->button, 0); *\/ */
+/* /\* 			gtk_widget_set_sensitive(grid_button->button, 1); *\/ */
+
+/* /\* 			gtk_widget_hide_all(grid_button->button); *\/ */
+/* /\* 			gtk_widget_show_all(grid_button->button); *\/ */
+/* /\* 			gtk_widget_modify_bg(grid_button->button, *\/ */
+/* /\* 					     GTK_STATE_NORMAL, &color); *\/ */
+/* 			END_TIMER; */
+/* 			g_print("%d 3 took %s\n", grid_button->inx, TIME_STR); */
+
 }

@@ -263,6 +263,7 @@ extern GtkTable *main_grid_table;
 extern GStaticMutex sview_mutex;	
 extern int cpus_per_node;
 extern int g_node_scaling;
+extern int fast_bg;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);

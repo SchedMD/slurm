@@ -464,34 +464,6 @@ extern char *change_grid_color(List button_list, int start, int end,
 			grid_button->color_inx = color_inx;
 			sview_widget_modify_bg(grid_button->button, 
 					       GTK_STATE_NORMAL, color);
-/* 			START_TIMER; */
-/* 			GtkRcStyle *rc_style = gtk_widget_get_modifier_style (grid_button->button); */
-/* 			END_TIMER; */
-/* 			g_print("%d 1 took %s\n", grid_button->inx, TIME_STR); */
-
-/* 			grid_button->button-> */
-/* 				style->bg[GTK_STATE_NORMAL] = color; */
-/* 			/\* grid_button->button-> *\/ */
-/* /\* 				style->style->flags[GTK_STATE_NORMAL] = color; *\/ */
-/* 			START_TIMER; */
-/* 			rc_style->bg[GTK_STATE_NORMAL] = color; */
-/* 			rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG; */
-/* 			/\* g_object_set_qdata (G_OBJECT(grid_button->button), *\/ */
-/* /\* 						 quark_rc_style, *\/ */
-/* /\* 					    rc_style); *\/ */
-/* 			END_TIMER; */
-/* 			g_print("%d 2 took %s\n", grid_button->inx, TIME_STR); */
-/* 			START_TIMER; */
-/* 			gtk_widget_reset_rc_styles (grid_button->button); */
-/* /\* 			gtk_widget_set_sensitive(grid_button->button, 0); *\/ */
-/* /\* 			gtk_widget_set_sensitive(grid_button->button, 1); *\/ */
-
-/* /\* 			gtk_widget_hide_all(grid_button->button); *\/ */
-/* /\* 			gtk_widget_show_all(grid_button->button); *\/ */
-/* /\* 			gtk_widget_modify_bg(grid_button->button, *\/ */
-/* /\* 					     GTK_STATE_NORMAL, &color); *\/ */
-/* 			END_TIMER; */
-/* 			g_print("%d 3 took %s\n", grid_button->inx, TIME_STR); */
 		}
 	}
 	list_iterator_destroy(itr);
@@ -806,6 +778,9 @@ extern int get_system_stats(GtkTable *table)
 	node_list = create_node_info_list(node_info_ptr, changed);
 	setup_grid_table(main_grid_table, grid_button_list, node_list);
 	gtk_widget_show_all(GTK_WIDGET(main_grid_table));
+
+	fast_bg = GTK_CHECK_VERSION(2,16,0);
+
 	return SLURM_SUCCESS;
 }
 
