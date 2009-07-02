@@ -86,12 +86,12 @@ extern int license_job_return(struct job_record *job_ptr);
 extern int license_job_test(struct job_record *job_ptr);
 
 /*
- * license_job_validate - Test if the licenses required by a job are valid
+ * license_validate - Test if the required licenses are valid
  * IN licenses - required licenses
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
  */ 
-extern List license_job_validate(char *licenses, bool *valid);
+extern List license_validate(char *licenses, bool *valid);
 
 #endif /* !_LICENSES_H */

@@ -94,6 +94,18 @@ extern int load_all_resv_state(int recover);
 extern int validate_job_resv(struct job_record *job_ptr);
 
 /*
+ * Determine how many licenses of the give type the specified job is 
+ *	prevented from using due to reservations
+ *
+ * IN job_ptr   - job to test
+ * IN lic_name  - name of license
+ * IN when      - when the job is expected to start
+ * RET number of licenses of this type the job is prevented from using
+ */
+extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
+			     time_t when);
+
+/*
  * Determine which nodes a job can use based upon reservations
  *
  * IN job_ptr      - job to test

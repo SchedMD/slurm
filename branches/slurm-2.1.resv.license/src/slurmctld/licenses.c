@@ -49,6 +49,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/licenses.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define _DEBUG 0
@@ -225,13 +226,13 @@ extern void license_free(void)
 }
 
 /*
- * license_job_validate - Test if the licenses required by a job are valid
+ * license_validate - Test if the required licenses are valid
  * IN licenses - required licenses
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
  */ 
-extern List license_job_validate(char *licenses, bool *valid)
+extern List license_validate(char *licenses, bool *valid)
 {
 	ListIterator iter;
 	licenses_t *license_entry, *match;
@@ -283,7 +284,7 @@ extern int license_job_test(struct job_record *job_ptr)
 {
 	ListIterator iter;
 	licenses_t *license_entry, *match;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, resv_licenses;
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
@@ -309,6 +310,15 @@ extern int license_job_test(struct job_record *job_ptr)
 			   match->total) {
 			rc = EAGAIN;
 			break;
+		} else {
+			resv_licenses = job_test_lic_resv(job_ptr,
+							  license_entry->name,
+							  time(NULL));
+			if ((license_entry->total + match->used + 
+			     resv_licenses) > match->total) {
+				rc = EAGAIN;
+				break;
+			}
 		}
 	}
 	list_iterator_destroy(iter);

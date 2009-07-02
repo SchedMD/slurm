@@ -1193,8 +1193,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 	if (resv_desc_ptr->licenses) {
 		bool valid;
-		license_list = license_job_validate(resv_desc_ptr->licenses, 
-						    &valid);
+		license_list = license_validate(resv_desc_ptr->licenses, 
+						&valid);
 		if (!valid) {
 			info("Reservation request has invalid licenses %s",
 			     resv_desc_ptr->licenses);
@@ -1423,8 +1423,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->licenses) {
 		bool valid = true;
 		List license_list;
-		license_list = license_job_validate(resv_desc_ptr->licenses, 
-						    &valid);
+		license_list = license_validate(resv_desc_ptr->licenses, 
+						&valid);
 		if (!valid) {
 			info("Reservation invalid license update (%s)",
 			     resv_desc_ptr->licenses);
@@ -1841,9 +1841,8 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		bool valid;
 		if (resv_ptr->license_list)
 			list_destroy(resv_ptr->license_list);
-		resv_ptr->license_list = license_job_validate(resv_ptr->
-							      licenses, 
-							      &valid);
+		resv_ptr->license_list = license_validate(resv_ptr->licenses, 
+							  &valid);
 		if (!valid) {
 			error("Reservation %s has invalid licenses (%s)",
 			      resv_ptr->name, resv_ptr->licenses);
@@ -2490,6 +2489,81 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+/* For a given license_list, return the total count of licenses of the 
+ *	specified name */
+static int _license_cnt(List license_list, char *lic_name)
+{
+	int lic_cnt = 0;
+	ListIterator iter;
+	licenses_t *license_ptr;
+
+	if (license_list == NULL)
+		return lic_cnt;
+
+	iter = list_iterator_create(license_list);
+	if (iter == NULL)
+		fatal("list_interator_create malloc failure");
+	while ((license_ptr = list_next(iter))) {
+		if (strcmp(license_ptr->name, lic_name) == 0)
+			lic_cnt += license_ptr->total;
+	}
+	list_iterator_destroy(iter);
+
+	return lic_cnt;
+}
+
+/*
+ * Determine how many licenses of the give type the specified job is 
+ *	prevented from using due to reservations
+ *
+ * IN job_ptr   - job to test
+ * IN lic_name  - name of license
+ * IN when      - when the job is expected to start
+ * RET number of licenses of this type the job is prevented from using
+ */
+extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
+			     time_t when)
+{
+	slurmctld_resv_t * resv_ptr;
+	time_t job_start_time, job_end_time;
+	uint32_t duration;
+	ListIterator iter;
+	int resv_cnt = 0;
+
+	if (job_ptr->time_limit == INFINITE)
+		duration = 365 * 24 * 60 * 60;
+	else if (job_ptr->time_limit != NO_VAL)
+		duration = (job_ptr->time_limit * 60);
+	else {	/* partition time limit */
+		if (job_ptr->part_ptr->max_time == INFINITE)
+			duration = 365 * 24 * 60 * 60;
+		else
+			duration = (job_ptr->part_ptr->max_time * 60);
+	}
+	job_start_time = job_end_time = when;
+	job_end_time += duration;
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->start_time >= job_end_time) ||
+		    (resv_ptr->end_time   <= job_start_time))
+			continue;	/* reservation at different time */
+
+		if (job_ptr->resv_name &&
+		    (strcmp(job_ptr->resv_name, resv_ptr->name) == 0))
+			continue;	/* job can use this reservation */
+
+		resv_cnt += _license_cnt(resv_ptr->license_list, lic_name);
+	}
+	list_iterator_destroy(iter);
+
+	info("job %u blocked from %d licenses of type %s", 
+	     job_ptr->job_id, resv_cnt, lic_name);
+	return resv_cnt;
 }
 
 /*
