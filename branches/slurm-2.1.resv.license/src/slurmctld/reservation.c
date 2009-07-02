@@ -2561,8 +2561,8 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 	}
 	list_iterator_destroy(iter);
 
-	info("job %u blocked from %d licenses of type %s", 
-	     job_ptr->job_id, resv_cnt, lic_name);
+	/* info("job %u blocked from %d licenses of type %s", 
+	     job_ptr->job_id, resv_cnt, lic_name); */
 	return resv_cnt;
 }
 
@@ -2585,7 +2585,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap)
 {
 	slurmctld_resv_t * resv_ptr;
-	time_t job_start_time, job_end_time;
+	time_t job_start_time, job_end_time, lic_resv_time;
 	uint32_t duration;
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS;
@@ -2636,6 +2636,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	for (i=0; ; i++) {
 		job_start_time = job_end_time = *when;
 		job_end_time += duration;
+		lic_resv_time = (time_t) 0;
 
 		iter = list_iterator_create(resv_list);
 		if (!iter)
@@ -2652,6 +2653,12 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				rc = ESLURM_NODES_BUSY;
 				break;
 			}
+			if (license_list_overlap(job_ptr->license_list,
+						 resv_ptr->license_list)) {
+				if ((lic_resv_time == 0) ||
+				    (lic_resv_time > resv_ptr->end_time))
+					lic_resv_time = resv_ptr->end_time;
+			}
 			bit_not(resv_ptr->node_bitmap);
 			bit_and(*node_bitmap, resv_ptr->node_bitmap);
 			bit_not(resv_ptr->node_bitmap);
@@ -2663,7 +2670,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    == EAGAIN) {
 				/* Need to postpone for licenses */
 				rc = ESLURM_NODES_BUSY;
-				*when += 600;	/* FIXME */
+				*when = lic_resv_time;
 			}
 		}
 		if (rc == SLURM_SUCCESS)

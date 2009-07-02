@@ -95,4 +95,10 @@ extern int license_job_test(struct job_record *job_ptr, time_t when);
  */ 
 extern List license_validate(char *licenses, bool *valid);
 
+/*
+ * license_list_overlap - test if there is any overlap in licenses
+ *	names found in the two lists
+ */
+extern bool license_list_overlap(List list_1, List list_2);
+
 #endif /* !_LICENSES_H */

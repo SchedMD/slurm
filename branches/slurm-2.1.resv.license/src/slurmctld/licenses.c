@@ -406,3 +406,30 @@ extern int license_job_return(struct job_record *job_ptr)
 	return rc;
 }
 
+/*
+ * license_list_overlap - test if there is any overlap in licenses
+ *	names found in the two lists
+ */
+extern bool license_list_overlap(List list_1, List list_2)
+{
+	ListIterator iter;
+	licenses_t *license_entry;
+	bool match = false;
+
+	if (!list_1 || !list_2)
+		return false;
+
+	iter = list_iterator_create(list_1);
+	if (iter == NULL)
+		fatal("malloc failure from list_iterator_create");
+	while ((license_entry = (licenses_t *) list_next(iter))) {
+		if (list_find_first(list_2, _license_find_rec, 
+				    license_entry->name)) {
+			match = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return match;
+}
