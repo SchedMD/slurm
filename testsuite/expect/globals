@@ -553,7 +553,7 @@ proc wait_for_job { job_id desired_state } {
 		}
 
 		if { $my_delay > $max_job_state_delay } {
-			send_user "FAILURE: Timeout waiting for job state $state\n"
+			send_user "FAILURE: Timeout waiting for job state $desired_state\n"
 			return 1
 		}
 
