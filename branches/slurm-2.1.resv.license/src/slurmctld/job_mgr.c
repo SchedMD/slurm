@@ -1812,7 +1812,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if(job_ptr->priority == NO_VAL)
 		_set_job_prio(job_ptr);
 
-	if (license_job_test(job_ptr) != SLURM_SUCCESS)
+	if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS)
 		independent = false;
 
 	/* Avoid resource fragmentation if important */

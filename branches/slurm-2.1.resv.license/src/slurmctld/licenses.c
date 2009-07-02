@@ -278,9 +278,10 @@ extern List license_validate(char *licenses, bool *valid)
 /*
  * license_job_test - Test if the licenses required for a job are available
  * IN job_ptr - job identification
+ * IN when    - time to check
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */ 
-extern int license_job_test(struct job_record *job_ptr)
+extern int license_job_test(struct job_record *job_ptr, time_t when)
 {
 	ListIterator iter;
 	licenses_t *license_entry, *match;
@@ -313,7 +314,7 @@ extern int license_job_test(struct job_record *job_ptr)
 		} else {
 			resv_licenses = job_test_lic_resv(job_ptr,
 							  license_entry->name,
-							  time(NULL));
+							  when);
 			if ((license_entry->total + match->used + 
 			     resv_licenses) > match->total) {
 				rc = EAGAIN;

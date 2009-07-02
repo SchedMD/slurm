@@ -2658,6 +2658,14 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		}
 		list_iterator_destroy(iter);
 
+		if ((rc == SLURM_SUCCESS) && move_time) {
+			if (license_job_test(job_ptr, job_start_time) 
+			    == EAGAIN) {
+				/* Need to postpone for licenses */
+				rc = ESLURM_NODES_BUSY;
+				*when += 600;	/* FIXME */
+			}
+		}
 		if (rc == SLURM_SUCCESS)
 			break;
 		/* rc == ESLURM_NODES_BUSY here from above break */

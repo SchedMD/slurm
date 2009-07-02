@@ -81,9 +81,10 @@ extern int license_job_return(struct job_record *job_ptr);
 /*
  * license_job_test - Test if the licenses required for a job are available
  * IN job_ptr - job identification
- * RET SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
+ * IN when    - time to check
+ * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */ 
-extern int license_job_test(struct job_record *job_ptr);
+extern int license_job_test(struct job_record *job_ptr, time_t when);
 
 /*
  * license_validate - Test if the required licenses are valid
