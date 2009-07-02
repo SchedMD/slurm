@@ -119,7 +119,7 @@ void *_page_thr(void *arg)
 	GtkTable *table = page->table;
 	display_data_t *display_data = &main_display_data[num];
 	static int thread_count = 0;
-	DEF_TIMERS;
+/* 	DEF_TIMERS; */
 	xfree(page);
 	
 	if(!grid_init) {
@@ -143,7 +143,7 @@ void *_page_thr(void *arg)
 	gdk_flush();
 	gdk_threads_leave();
 	while(page_running[num]) {		
-		START_TIMER;
+/* 		START_TIMER; */
 		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
 		sview_init_grid();
@@ -151,8 +151,8 @@ void *_page_thr(void *arg)
 		gdk_flush();
 		gdk_threads_leave();
 		g_static_mutex_unlock(&sview_mutex);
-		END_TIMER;
-//		g_print("got for initeration: %s\n", TIME_STR);
+/* 		END_TIMER; */
+/* 		g_print("got for initeration: %s\n", TIME_STR); */
 		sleep(global_sleep_time);
 		
 		gdk_threads_enter();
@@ -351,10 +351,13 @@ static gboolean _delete(GtkWidget *widget,
                         GtkWidget *event,
                         gpointer data)
 {
-	gtk_main_quit ();
-	list_destroy(popup_list);
 	fini = 1;
-
+	gtk_main_quit();
+	ba_fini();
+	if(grid_button_list)
+		list_destroy(grid_button_list);
+	if(popup_list)
+		list_destroy(popup_list);
 	return FALSE;
 }
 

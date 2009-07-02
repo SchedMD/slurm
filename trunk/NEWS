@@ -27,7 +27,7 @@ documents those changes that are of interest to users and admins.
     logic would send SIGCONT, SIGTERM, wait KillWait seconds, SIGKILL.
  -- Create a spank_get_item() option that the SPANK cpuset plugin can use to
     discover the cpus that the select/cons_res plugin has allocated to a job.
- -- Improve sview performance on very large machines.
+ -- Improve sview performance (outrageously) on very large machines.
 
 * Changes in SLURM 2.1.0-pre1
 =============================
