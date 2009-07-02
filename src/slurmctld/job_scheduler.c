@@ -343,7 +343,7 @@ extern int schedule(void)
 			job_ptr->state_reason = WAIT_RESOURCES;
 			continue;
 		}
-		if (license_job_test(job_ptr) != SLURM_SUCCESS) {
+		if (license_job_test(job_ptr, time(NULL)) != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
 			xfree(job_ptr->state_desc);
 			continue;

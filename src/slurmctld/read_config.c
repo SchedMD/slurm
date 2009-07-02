@@ -1278,13 +1278,14 @@ static int _restore_job_dependencies(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
-			if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+			if (IS_JOB_RUNNING(job_ptr) || 
+			    IS_JOB_SUSPENDED(job_ptr))
 				acct_policy_job_begin(job_ptr);
 			if (!IS_JOB_FINISHED(job_ptr))
 				acct_policy_add_job_submit(job_ptr);
 		}
 
-		license_list = license_job_validate(job_ptr->licenses, &valid);
+		license_list = license_validate(job_ptr->licenses, &valid);
 		if (job_ptr->license_list)
 			list_destroy(job_ptr->license_list);
 		if (valid)

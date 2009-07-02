@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "May 2009" "scontrol 2.0" "Slurm components"
+.TH SCONTROL "1" "July 2009" "scontrol 2.0" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -575,6 +575,15 @@ Identify the name of the reservation to be created, updated, or deleted.
 This parameter is required for update and is the only parameter for delete.  
 For create, if you do not want to give a reservation name, use 
 "scontrol create res ..." and a name will be created automatically.
+
+.TP
+\fILicenses\fP=<license>
+Specification of licenses (or other resources available on all 
+nodes of the cluster) which are to be reserved.
+License names can be followed by an asterisk and count 
+(the default count is one).
+Multiple license names should be comma separated (e.g.
+"Licenses=foo*4,bar").
 
 .TP
 \fINodeCnt\fP=<num>

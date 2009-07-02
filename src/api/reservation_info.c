@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -139,8 +139,8 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	
 	/****** Line 3 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
-		 "Users=%s Accounts=%s", 
-		 resv_ptr->users, resv_ptr->accounts);
+		 "Users=%s Accounts=%s Licenses=%s", 
+		 resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, "\n");

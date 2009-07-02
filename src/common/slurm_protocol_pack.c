@@ -2145,6 +2145,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer)
 	pack32(msg->node_cnt,      buffer);
 	packstr(msg->node_list,    buffer);
 	packstr(msg->features,     buffer);
+	packstr(msg->licenses,     buffer);
 	packstr(msg->partition,    buffer);
 
 	packstr(msg->users,        buffer);
@@ -2171,9 +2172,10 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer)
 	safe_unpack32(&tmp_ptr->node_cnt,      buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->features,  &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&tmp_ptr->licenses,  &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->partition, &uint32_tmp, buffer);
 
-	safe_unpackstr_xmalloc(&tmp_ptr->users,     &uint32_tmp, buffer);	
+	safe_unpackstr_xmalloc(&tmp_ptr->users,     &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->accounts,  &uint32_tmp, buffer);
 	return SLURM_SUCCESS;
 
@@ -2626,6 +2628,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer)
 	safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
 	safe_unpack_time(&resv->end_time,	buffer);
 	safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&resv->licenses, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
 	safe_unpack32(&resv->node_cnt,		buffer);
 	safe_unpackstr_xmalloc(&resv->node_list,&uint32_tmp, buffer);
@@ -2646,6 +2649,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer)
 unpack_error:
 	xfree(resv->accounts);
 	xfree(resv->features);
+	xfree(resv->licenses);
 	xfree(resv->name);
 	xfree(node_inx_str);
 	xfree(resv->node_inx);
