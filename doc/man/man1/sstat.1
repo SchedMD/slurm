@@ -48,7 +48,7 @@ Displays a general help message.
 \f3\-j \fP\f3,\fP \f3\-\-jobs\fP
 Format is <job(.step)>. Stat this job step or comma-separated list of
 job steps. This option is required.  The step portion will default to
-step 0 if not specified, unless the --allsteps flag is set where not
+step 0 if not specified, unless the \-\-allsteps flag is set where not
 specifing a step will result in all running steps to be displayed.
 
 .TP 
@@ -57,8 +57,8 @@ No header will be added to the beginning of output. The default is to print a he
 
 .TP 
 \f3\-o \fP\f3,\fP \f3\-\-format\fP,\fP \f3\-\-fields\fP
-Comma seperated list of fields. (use
-'\-\-helpformat' for a list of available fields).
+Comma seperated list of fields.
+(use '\-\-helpformat' for a list of available fields).
 
 .TP 
 \f3\-p \fP\f3,\fP \f3\-\-parsable\fP
@@ -168,11 +168,11 @@ The following are the field options:
 .SH "EXAMPLES"
 
 .TP
-\f3sstat --format=AveCPU,AvePages,AveRSS,AveVSize,JobID -j 11\fP
+\f3sstat \-\-format=AveCPU,AvePages,AveRSS,AveVSize,JobID \-j 11\fP
 25:02.000  0K         1.37M      5.93M      9.0
 
 .TP
-\f3sstat -p --format=AveCPU,AvePages,AveRSS,AveVSize,JobID -j 11\fP
+\f3sstat \-p \-\-format=AveCPU,AvePages,AveRSS,AveVSize,JobID \-j 11\fP
 25:02.000|0K|1.37M|5.93M|9.0|
 
 .SH "COPYING"

@@ -207,9 +207,11 @@ The default is to display information on all jobs.
 
 .TP 
 \f3\-l\fP\f3,\fP \f3\-\-long\fP
-Equivelent to specifying:
+Equivalent to specifying:
 .IP
-\'--fields=jobid,jobname,partition,maxvsize,maxvsizenode,maxvsizetask,avevsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode\' 
+.na
+\'\-\-fields=jobid,jobname,partition,maxvsize,maxvsizenode,maxvsizetask,avevsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode\' 
+.ad
 
 
 .TP 
@@ -306,8 +308,8 @@ YYYY-MM-DD[THH[:MM[:SS]]]
 
 .TP 
 \f3\-T \fP\f3,\fP \f3\-\-truncate\fP
-Truncate time.  So if a job started before --starttime the start time
-would be truncated to --starttime.  The same for end time and --endtime.
+Truncate time.  So if a job started before \-\-starttime the start time
+would be truncated to \-\-starttime.  The same for end time and \-\-endtime.
 
 .TP 
 \f3\-u \fP\f2uid_list\fP\f3,\fP  \f3\-\-uid\fP\f3=\fP\f2uid_list\fP \f3\-\-user\fP\f3=\fP\f2user_list\fP
