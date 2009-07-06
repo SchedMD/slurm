@@ -270,6 +270,8 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 	}
 	slurm_mutex_lock(&block_state_mutex);
 
+	bg_update_ptr->job_ptr->num_procs = bg_record->cpu_cnt;
+	bg_update_ptr->job_ptr->total_procs = bg_update_ptr->job_ptr->num_procs;
 	bg_record->job_running = bg_update_ptr->job_ptr->job_id;
 	bg_record->job_ptr = bg_update_ptr->job_ptr;
 
@@ -878,14 +880,14 @@ static void _block_op(bg_update_t *bg_update_ptr)
 	    &&  ((bg_update_list = list_create(_bg_list_del)) == NULL))
 		fatal("malloc failure in start_job/list_create");
 
-	/* push TERM_OP on the head of the queue
-	 * append START_OP and SYNC_OP to the tail of the queue */
-	if (bg_update_ptr->op == TERM_OP) {
+	/* push SYNC_OP and TERM_OP on the head of the queue
+	 * append START_OP to the tail of the queue */
+	if (bg_update_ptr->op == START_OP) {
+		if (list_append(bg_update_list, bg_update_ptr) == NULL)
+			fatal("malloc failure in _block_op/list_append");
+	} else {
 		if (list_push(bg_update_list, bg_update_ptr) == NULL)
 			fatal("malloc failure in _block_op/list_push");
-	} else {
-		if (list_enqueue(bg_update_list, bg_update_ptr) == NULL)
-			fatal("malloc failure in _block_op/list_enqueue");
 	}
 		
 	/* already running MAX_AGENTS we don't really need more 
@@ -1034,12 +1036,12 @@ extern int start_job(struct job_record *job_ptr)
 			     SELECT_DATA_BLOCK_ID, 
 			     &(bg_update_ptr->bg_block_id));
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_BLRTS_IMAGE, 
-			     &(bg_update_ptr->blrtsimage));
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_REBOOT, 
 			     &(bg_update_ptr->reboot));
 #ifdef HAVE_BGL
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_BLRTS_IMAGE, 
+			     &(bg_update_ptr->blrtsimage));
 	if(!bg_update_ptr->blrtsimage) {
 		bg_update_ptr->blrtsimage =
 			xstrdup(bg_conf->default_blrtsimage);
@@ -1171,6 +1173,9 @@ extern int sync_jobs(List job_list)
 				continue;
 			
 			bg_update_ptr = xmalloc(sizeof(bg_update_t));
+			bg_update_ptr->op = SYNC_OP;
+			bg_update_ptr->job_ptr = job_ptr;
+
 			select_g_get_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID, 
 					     &(bg_update_ptr->bg_block_id));
@@ -1178,6 +1183,10 @@ extern int sync_jobs(List job_list)
 			select_g_get_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLRTS_IMAGE, 
 					     &(bg_update_ptr->blrtsimage));
+#else
+			select_g_get_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_CONN_TYPE, 
+					     &(bg_update_ptr->conn_type));
 #endif
 			select_g_get_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_LINUX_IMAGE, 
@@ -1220,8 +1229,6 @@ extern int sync_jobs(List job_list)
 			       job_ptr->job_id, 
 			       bg_update_ptr->bg_block_id,
 			       job_ptr->end_time);
-			bg_update_ptr->op = SYNC_OP;
-			bg_update_ptr->job_ptr = job_ptr;
 			_block_op(bg_update_ptr);
 		}
 		list_iterator_destroy(job_iterator);
