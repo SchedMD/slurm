@@ -939,14 +939,7 @@ int init ( void )
 		      temp);
 		calc_fairshare = 0;
 		weight_fs = 0;
-	} else if(weight_fs) {
-		if(!assoc_mgr_root_assoc)
-			fatal("It appears you don't have any association "
-			      "data from your database.  "
-			      "The priority/multifactor plugin requires "
-			      "this information to run correctly.  Please "
-			      "check your database connection and try again.");
-
+	} else if(assoc_mgr_root_assoc) {
 		if(!cluster_procs)
 			fatal("We need to have a cluster cpu count "
 			      "before we can init the priority/multifactor "
@@ -968,8 +961,16 @@ int init ( void )
 			fatal("pthread_create error %m");
 		
 		slurm_attr_destroy(&thread_attr);
-	} else
+	} else {
+		if(weight_fs)
+			fatal("It appears you don't have any association "
+			      "data from your database.  "
+			      "The priority/multifactor plugin requires "
+			      "this information to run correctly.  Please "
+			      "check your database connection and try again.");
+		
 		calc_fairshare = 0;
+	}
 
 	xfree(temp);
 
