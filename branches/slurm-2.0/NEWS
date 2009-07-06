@@ -34,6 +34,9 @@ documents those changes that are of interest to users and admins.
     in draining state.
  -- Fix for sview when viewing a certain part of a group (like 1 job) so it 
     doesn't core when the part is gone.
+ -- BLUEGENE - Changed order of SYNC's to be on the front of the list to
+    avoid having a job terminated with a TERM before the SYNC of the 
+    job happens.
 
 * Changes in SLURM 2.0.3
 ========================
