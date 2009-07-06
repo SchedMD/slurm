@@ -1037,8 +1037,8 @@ _scan_slurm_job_list()
 		}
 		
 		/* if the job is not pending, suspended, or running, then
-		   it's completing or completed. Make sure we've released
-		   this job */		
+		 * it's completing or completed. Make sure we've released
+		 * this job */		
 		p_ptr = _find_gs_part(job_ptr->partition);
 		if (!p_ptr) /* no partition */
 			continue;

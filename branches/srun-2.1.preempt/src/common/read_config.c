@@ -2300,7 +2300,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			      "incompatible with SchedulerType=%s",
 			      conf->schedtype);
 		}
-	}
+	} else if (strcmp(conf->schedtype, "sched/gang")  == 0)
+		conf->enable_preemption = 1;	/* on by default */
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);

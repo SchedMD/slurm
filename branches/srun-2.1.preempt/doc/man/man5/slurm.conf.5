@@ -351,10 +351,12 @@ If set to "YES" then high priority jobs can preempt (suspend) low priority
 jobs in order to begin execution more quickly. 
 The low priority job will resume execution once the high priority job 
 completes.
-The default value is "NO".
+The default value is "NO" unless "SchedulerType=sched/gang".
+A value of "YES" is incompatible with "SchedulerType=sched/wiki" or 
+"SchedulerType=sched/wiki2".
 Two different mechanisms can be used to determine when preeption can 
 take place. 
-SLURM partitions can have different \fBPriority\fR values and contain 
+SLURM partitions can have different Priority values and contain 
 the same nodes, in which case jobs from the higher priority 
 partition will preempt jobs from the lower priority partition.
 Alternatly jobs can have different Quality Of Service (QOS) values,
