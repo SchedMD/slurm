@@ -523,7 +523,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_add_toggle_actions(action_group, toggle_entries, 
 					   G_N_ELEMENTS(toggle_entries), 
 					   NULL);
-	admin_action_group = gtk_action_group_new ("MenuActions");
+	admin_action_group = gtk_action_group_new ("MenuAdminActions");
 	gtk_action_group_add_actions(admin_action_group, admin_entries, 
 				     G_N_ELEMENTS(admin_entries),
 				     window);
