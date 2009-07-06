@@ -45,6 +45,15 @@ The sview command can only be build if \fIgtk+\-2.0\fR is installed.
 Systems lacking these libraries will have SLURM installed without
 the sview command.
 
+On larger systems (2000+ nodes) some gtk themes can considerably slow down 
+the grid display.  If you think this is happening you may
+try defining SVIEW_GRID_SPEEDUP=1 in your environment.  This will use
+a code path to try to avoid functions that typically take a
+relatively large amount of time.  THIS OPTION DOESN'T WORK FOR EVERY
+GTK THEME, but if it does work for your theme this provides an
+outrageous amount of speedup.  We have found it to work very well with
+QT based themes.
+
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

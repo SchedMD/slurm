@@ -927,10 +927,11 @@ display_it:
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
-#ifdef HAVE_QT_THEME
-	gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
-	gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
-#endif
+	if(grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
+	}
+
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;

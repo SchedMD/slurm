@@ -1236,24 +1236,25 @@ extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 /* 	DEF_TIMERS; */
 
 /* 	START_TIMER; */
-#ifdef HAVE_QT_THEME
-	/* For some reason, QT Themes have a very slow call to for
-	 * gtk_widget_modify_bg as of 7-6-09.  
-	 * Here we only take around 40 microsecs where
-	 * gtk_widget_modify_bg takes around 2500.  This isn't that big of a
-	 * deal on most systems, but if you have like 10000 nodes this makes
-	 * an outrageous difference.  You must follow this up by doing a
-	 * gtk_widget_set_sensitive 0, and then 1 on the parent container to
-	 * make the color stick.  
-	 */
-	GtkRcStyle *rc_style = gtk_widget_get_modifier_style (widget);
-	widget->style->bg[state] = color;
-	rc_style->bg[state] = color;
-	rc_style->color_flags[state] |= GTK_RC_BG;
-	gtk_widget_reset_rc_styles (widget);
-#else
-	gtk_widget_modify_bg(widget, GTK_STATE_NORMAL, &color);
-#endif
+	if(grid_speedup) {
+		/* For some reason, QT Themes have a very slow call to for
+		 * gtk_widget_modify_bg as of 7-6-09.  
+		 * Here we only take around 40 microsecs where
+		 * gtk_widget_modify_bg takes around 2500.  This isn't
+		 * that big of a deal on most systems, but if you have
+		 * like 10000 nodes this makes an outrageous
+		 * difference.  You must follow this up by doing a
+		 * gtk_widget_set_sensitive 0, and then 1 on the
+		 * parent container to make the color stick.  
+		 */
+		GtkRcStyle *rc_style = gtk_widget_get_modifier_style (widget);
+		widget->style->bg[state] = color;
+		rc_style->bg[state] = color;
+		rc_style->color_flags[state] |= GTK_RC_BG;
+		gtk_widget_reset_rc_styles (widget);
+	} else 
+		gtk_widget_modify_bg(widget, GTK_STATE_NORMAL, &color);
+
 /* 	END_TIMER; */
 /* 	g_print("got %s\n", TIME_STR); */
 
