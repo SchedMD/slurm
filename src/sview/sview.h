@@ -84,11 +84,6 @@
 #define OPT_LONG_USAGE	0x101
 #define OPT_LONG_HIDE	0x102
 
-/* If you are noticing a slow down with your grid it may be the gtk theme
- * you are using.  Defining this may speed up things dramatically.
- */
-/* #define HAVE_QT_THEME 1 */
-
 #define POS_LOC 0
 #define DEFAULT_ENTRY_LENGTH 500
 
@@ -268,7 +263,7 @@ extern GtkTable *main_grid_table;
 extern GStaticMutex sview_mutex;	
 extern int cpus_per_node;
 extern int g_node_scaling;
-extern int fast_bg;
+extern int grid_speedup;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);

@@ -66,7 +66,7 @@ GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
 GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
 GtkActionGroup *admin_action_group = NULL;
-int fast_bg = 0;
+int grid_speedup = 0;
 
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
@@ -590,6 +590,9 @@ int main(int argc, char *argv[])
 	GtkBin *bin = NULL;
 	GtkViewport *view = NULL;
 	int i=0;
+
+	if(getenv("SVIEW_GRID_SPEEDUP"))
+		grid_speedup = 1;
 	
 	_init_pages();
 	g_thread_init(NULL);

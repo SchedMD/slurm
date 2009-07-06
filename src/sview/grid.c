@@ -779,8 +779,6 @@ extern int get_system_stats(GtkTable *table)
 	setup_grid_table(main_grid_table, grid_button_list, node_list);
 	gtk_widget_show_all(GTK_WIDGET(main_grid_table));
 
-	fast_bg = GTK_CHECK_VERSION(2,16,0);
-
 	return SLURM_SUCCESS;
 }
 
@@ -1013,8 +1011,8 @@ extern void post_setup_popup_grid_list(popup_info_t *popup_win)
 
 	change_grid_color(popup_win->grid_button_list, -1, -1,
 			  MAKE_BLACK, true, NODE_STATE_IDLE);
-#ifdef HAVE_QT_THEME
-	gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 0);
-	gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 1);
-#endif
+	if(grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(popup_win->grid_table), 1);
+	}
 }
