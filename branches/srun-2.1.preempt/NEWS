@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.1.0-pre3
 =============================
  -- Added configuration parameter EnablePreemption=yes/no.
+ -- If the --partition option is used with the sinfo or squeue command then
+    print information about even hidden partitions.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
