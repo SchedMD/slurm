@@ -205,7 +205,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		fprintf(out, "DisableRootJobs         = YES\n");
 	else
 		fprintf(out, "DisableRootJobs         = NO\n");
-
+	if (slurm_ctl_conf_ptr->enable_preemption)
+		fprintf(out, "EnablePreemption        = YES\n");
+	else
+		fprintf(out, "EnablePreemption        = NO\n");
 	if (slurm_ctl_conf_ptr->enforce_part_limits)
 		fprintf(out, "EnforcePartLimits       = YES\n");
 	else

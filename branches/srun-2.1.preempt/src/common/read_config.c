@@ -162,6 +162,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefMemPerCPU", S_P_UINT32},
 	{"DefMemPerNode", S_P_UINT32},
 	{"DisableRootJobs", S_P_BOOLEAN},
+	{"EnablePreemption", S_P_BOOLEAN},
 	{"EnforcePartLimits", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
@@ -1406,6 +1407,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->def_mem_per_task          = 0;
 	ctl_conf_ptr->debug_flags		= 0;
 	ctl_conf_ptr->disable_root_jobs         = 0;
+	ctl_conf_ptr->enable_preemption         = 0;
 	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= (uint32_t) NO_VAL;
@@ -1805,6 +1807,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs, 
 			     "DisableRootJobs", hashtbl))
 		conf->disable_root_jobs = DEFAULT_DISABLE_ROOT_JOBS;
+
+	s_p_get_boolean((bool *) &conf->enable_preemption, "EnablePreemption", 
+			hashtbl);
 
 	if (!s_p_get_boolean((bool *) &conf->enforce_part_limits, 
 			     "EnforcePartLimits", hashtbl))
@@ -2281,13 +2286,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		 (conf->fast_schedule == 0))
 		fatal("FastSchedule=0 is not supported with sched/gang");
 	if (strcmp(conf->priority_type, "priority/multifactor") == 0) {
-		if (strcmp(conf->schedtype, "sched/wiki") == 0) {
+		if ((strcmp(conf->schedtype, "sched/wiki")  == 0) ||
+		    (strcmp(conf->schedtype, "sched/wiki2") == 0)) {
 			fatal("PriorityType=priority/multifactor is "
-			      "incompatible with SchedulerType=sched/wiki");
+			      "incompatible with SchedulerType=%s",
+			      conf->schedtype);
 		}
-		if (strcmp(conf->schedtype, "sched/wiki2") == 0) {
-			fatal("PriorityType=priority/multifactor is "
-			      "incompatible with SchedulerType=sched/wiki2");
+	}
+	if (conf->enable_preemption) {
+		if ((strcmp(conf->schedtype, "sched/wiki")  == 0) ||
+		    (strcmp(conf->schedtype, "sched/wiki2") == 0)) {
+			fatal("EnablePreemption=YES is "
+			      "incompatible with SchedulerType=%s",
+			      conf->schedtype);
 		}
 	}
 
