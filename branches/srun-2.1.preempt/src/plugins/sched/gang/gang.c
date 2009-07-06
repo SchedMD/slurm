@@ -1008,6 +1008,9 @@ _scan_slurm_job_list()
 			job_ptr->job_id);		
 		if (IS_JOB_PENDING(job_ptr))
 			continue;
+		if (IS_JOB_SUSPENDED(job_ptr) && (job_ptr->priority == 0))
+			continue;	/* not suspended by us */
+
 		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
 			/* are we tracking this job already? */
 			p_ptr = _find_gs_part(job_ptr->partition);

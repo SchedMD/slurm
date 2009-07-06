@@ -6453,6 +6453,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_SUSPENDED;
+		job_ptr->priority  = 0;
 		if (job_ptr->suspend_time) {
 			job_ptr->pre_sus_time +=
 				difftime(now, 
@@ -6473,6 +6474,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_RUNNING;
+		_set_job_prio(job_ptr);
 		job_ptr->tot_sus_time +=
 			difftime(now, job_ptr->suspend_time);
 		if (job_ptr->time_limit != INFINITE) {
