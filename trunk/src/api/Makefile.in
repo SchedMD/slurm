@@ -306,7 +306,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @WITH_GNU_LD_TRUE@VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@	version.map
 

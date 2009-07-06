@@ -1118,6 +1118,9 @@ slurm_cred_get_signature(slurm_cred_t cred, char **datap, uint32_t *datalen)
 char*
 format_core_allocs(slurm_cred_t cred, char *node_name)
 {
+#ifdef HAVE_BG
+	return NULL;
+#else
 	bitstr_t	*core_bitmap;
 	char		str[1024], *bracket_ptr;
 	hostset_t	hset = NULL;
@@ -1178,6 +1181,7 @@ format_core_allocs(slurm_cred_t cred, char *node_name)
 	if (bracket_ptr)
 		bracket_ptr[0] = '\0';
 	return xstrdup(str+1);
+#endif
 }
 
 void

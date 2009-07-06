@@ -361,7 +361,7 @@ AUTOMAKE_OPTIONS = foreign
 @HAVE_UNSETENV_TRUE@build_unsetenv_src = 
 @HAVE_UNSETENV_FALSE@extra_unsetenv_src = 
 @HAVE_UNSETENV_TRUE@extra_unsetenv_src = unsetenv.c unsetenv.h
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 noinst_LTLIBRARIES = \
 	libcommon.la 			\
 	libdaemonize.la 		\

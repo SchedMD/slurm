@@ -600,7 +600,7 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 				 Buf buffer)
 {
 	char *bit_fmt = NULL;
-	uint32_t core_cnt = 0, empty, tmp32;
+	uint32_t empty, tmp32;
 	select_job_res_t select_job_res;
 
 	xassert(select_job_res_pptr);
@@ -650,6 +650,8 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 			    &tmp32, buffer);
 
 #ifndef HAVE_BG
+{
+	uint32_t core_cnt = 0;
 	safe_unpack32(&core_cnt, buffer);    /* NOTE: Not part of struct */
 	safe_unpackstr_xmalloc(&bit_fmt, &tmp32, buffer);
 	select_job_res->core_bitmap = bit_alloc((bitoff_t) core_cnt);
@@ -663,6 +665,7 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 	xfree(bit_fmt);
 	/* node_bitmap is not packed, but rebuilt in reset_node_bitmap()
 	 * based upon job_ptr->nodes and the current node table */
+}
 #endif
 
 	*select_job_res_pptr = select_job_res;

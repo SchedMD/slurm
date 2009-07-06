@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
 if WITH_GNU_LD
 VERSION_SCRIPT = \

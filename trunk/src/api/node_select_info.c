@@ -59,8 +59,10 @@
 
 #include "src/api/node_select_info.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/plugins/select/bluegene/plugin/bluegene.h"
 
 
