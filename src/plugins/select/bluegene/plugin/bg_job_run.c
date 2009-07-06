@@ -1361,7 +1361,8 @@ extern int boot_block(bg_record_t *bg_record)
 	if(bg_record->state != RM_PARTITION_CONFIGURING)
 		bg_record->state = RM_PARTITION_CONFIGURING;
 	debug("Setting bootflag for %s", bg_record->bg_block_id);
-	
+	if(bg_record->job_ptr)
+		bg_record->job_ptr->job_state |= JOB_CONFIGURING;
 	bg_record->boot_state = 1;
 	//bg_record->boot_count = 0;
 	last_bg_update = time(NULL);

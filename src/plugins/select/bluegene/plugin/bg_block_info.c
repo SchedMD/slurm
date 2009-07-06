@@ -430,7 +430,9 @@ extern int update_block_list()
 				
 				if(update_block_user(bg_record, 0) == 1)
 					last_bg_update = time(NULL);
-				
+				if(bg_record->job_ptr)
+					bg_record->job_ptr->job_state |=
+						JOB_CONFIGURING;
 				break;
 			case RM_PARTITION_ERROR:
 				bg_record->boot_state = 0;
@@ -510,6 +512,9 @@ extern int update_block_list()
 			case RM_PARTITION_READY:
 				debug("block %s is ready.",
 				      bg_record->bg_block_id);
+				if(bg_record->job_ptr)
+					bg_record->job_ptr->job_state &=
+						(~JOB_CONFIGURING);
 				if(set_block_user(bg_record) == SLURM_ERROR) {
 					freeit = xmalloc(
 						sizeof(kill_job_struct_t));

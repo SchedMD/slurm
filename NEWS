@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
     discover the cpus that the select/cons_res plugin has allocated to a job.
  -- Improve sview performance (outrageously) on very large machines.
  -- Add support for licenses in resource reservation.
+ -- BLUEGENE - Jobs waiting for a block to boot will now be in Configuring
+    state. 
 
 * Changes in SLURM 2.1.0-pre1
 =============================

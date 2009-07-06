@@ -6053,6 +6053,11 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 
 	acct_policy_remove_job_submit(job_ptr);
 
+	/* Remove configuring state just to make sure it isn't there
+	 * since it will throw off displays of the job.
+	 */
+	job_ptr->job_state &= (~JOB_CONFIGURING);
+
 	/* make sure all parts of the job are notified */
 	srun_job_complete(job_ptr);
 	
