@@ -1080,7 +1080,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		}
 	}
 
-	select_g_free_node_info(&node_select_ptr);
+	node_select_info_msg_free(&node_select_ptr);
 	free_buf(buffer);
 	return SLURM_SUCCESS;
 #endif

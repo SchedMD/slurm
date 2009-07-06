@@ -18,7 +18,7 @@ build_unsetenv_src = unsetenv.c unsetenv.h
 extra_unsetenv_src = 
 endif
 
-INCLUDES     = -I$(top_srcdir)
+INCLUDES     = -I$(top_srcdir) $(BG_INCLUDES)
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 
