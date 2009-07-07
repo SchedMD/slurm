@@ -4264,7 +4264,8 @@ void reset_job_bitmaps(void)
 	struct part_record *part_ptr;
 	bool job_fail = false;
 	time_t now = time(NULL);
-	static uint32_t cr_flag = NO_VAL, gang_flag = NO_VAL;
+	bool gang_flag = false;
+	static uint32_t cr_flag = NO_VAL;
 
 	xassert(job_list);
 
@@ -4276,14 +4277,8 @@ void reset_job_bitmaps(void)
 		}
 			
 	}
-	if (gang_flag == NO_VAL) {
-		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/gang"))
-			gang_flag = 0;
-		else
-			gang_flag = 1;
-		xfree(sched_type);
-	}
+	if (slurm_get_enable_preemption())
+		gang_flag = true;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -6249,8 +6244,8 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SUSPEND;
-	agent_args->retry = 0;	/* don't resend or gang schedulers
-				 * (sched/gang or sched/wiki) can
+	agent_args->retry = 0;	/* don't resend, gang scheduler
+				 * sched/wiki or sched/wiki2 can
 				 * can quickly induce huge backlog
 				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create("");
@@ -6285,17 +6280,8 @@ static int _suspend_job_nodes(struct job_record *job_ptr)
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t node_flags;
-	static bool sched_gang_test = false;
-	static bool sched_gang = false;
 
-	if (!sched_gang_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/gang") == 0)
-			sched_gang = true;
-		xfree(sched_type);
-		sched_gang_test = true;
-	}
-	if ((sched_gang == false) &&
+	if ((slurm_get_enable_preemption() == 0) &&
 	    ((rc = select_g_job_suspend(job_ptr)) != SLURM_SUCCESS))
 		return rc;
 
@@ -6346,17 +6332,8 @@ static int _resume_job_nodes(struct job_record *job_ptr)
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t node_flags;
-	static bool sched_gang_test = false;
-	static bool sched_gang = false;
 
-	if (!sched_gang_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/gang") == 0)
-			sched_gang = true;
-		xfree(sched_type);
-		sched_gang_test = true;
-	}
-	if ((sched_gang == false) &&
+	if ((slurm_get_enable_preemption() == 0) &&
 	    ((rc = select_g_job_resume(job_ptr)) != SLURM_SUCCESS))
 		return rc;
 

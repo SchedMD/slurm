@@ -2282,9 +2282,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->schedtype, "SchedulerType", hashtbl))
 		conf->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
-	else if ((strcmp(conf->schedtype, "sched/gang") == 0) &&
-		 (conf->fast_schedule == 0))
-		fatal("FastSchedule=0 is not supported with sched/gang");
+
 	if (strcmp(conf->priority_type, "priority/multifactor") == 0) {
 		if ((strcmp(conf->schedtype, "sched/wiki")  == 0) ||
 		    (strcmp(conf->schedtype, "sched/wiki2") == 0)) {
@@ -2300,8 +2298,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			      "incompatible with SchedulerType=%s",
 			      conf->schedtype);
 		}
-	} else if (strcmp(conf->schedtype, "sched/gang")  == 0)
-		conf->enable_preemption = 1;	/* on by default */
+		if (conf->fast_schedule == 0) {
+			fatal("EnablePreemption=YES is incompatible with "
+			      "FastSchedule=0 ");
+		}
+	}
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);

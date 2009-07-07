@@ -1640,7 +1640,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	char *reason_down = NULL;
 	uint16_t node_flags;
 	time_t now = time(NULL);
-	static uint32_t cr_flag = NO_VAL, gang_flag = NO_VAL;
+	bool gang_flag = false;
+	static uint32_t cr_flag = NO_VAL;
 
 	node_ptr = find_node_record (reg_msg->node_name);
 	if (node_ptr == NULL)
@@ -1688,14 +1689,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			cr_flag = NO_VAL;	/* error */
 		}
 	}
-	if (gang_flag == NO_VAL) {
-		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/gang"))
-			gang_flag = 0;
-		else
-			gang_flag = 1;
-		xfree(sched_type);
-	}
+	if (slurm_get_enable_preemption())
+		gang_flag = true;
 
 	if (slurmctld_conf.fast_schedule != 2) {
 		int cores1, cores2;	/* total cores on node */
@@ -1710,7 +1705,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			error_code = EINVAL;
 			reason_down = "Low socket*core*thread count";
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
-			   ((cr_flag == 1) || (gang_flag == 1)) && 
+			   ((cr_flag == 1) || gang_flag) && 
 			   ((cores1 > cores2) || (threads1 > threads2))) {
 			error("Node %s has high socket*core*thread count %u, "
 			      "extra resources ignored", 
@@ -1734,7 +1729,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			error_code  = EINVAL;
 			reason_down = "Low CPUs";
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
-			   ((cr_flag == 1) || (gang_flag == 1)) &&
+			   ((cr_flag == 1) || gang_flag) &&
 			   (reg_msg->cpus > config_ptr->cpus)) {
 			error("Node %s has high CPU count %u, "
 			      "extra resources ignored",
