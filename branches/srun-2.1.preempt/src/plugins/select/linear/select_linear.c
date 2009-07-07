@@ -2258,6 +2258,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 extern int select_p_reconfigure(void)
 {
 	slurm_mutex_lock(&cr_mutex);
+	cr_priority_selection = false;
+	cr_priority_test = false;
 	_free_node_cr(node_cr_ptr);
 	node_cr_ptr = NULL;
 	if (step_cr_list)

@@ -1836,6 +1836,8 @@ extern int select_p_reconfigure(void)
 	info("cons_res: select_p_reconfigure");
 
 	/* Rebuild the global data structures */
+	cr_priority_selection = false;
+	cr_priority_test = false;
 	rc = select_p_node_init(node_record_table_ptr, node_record_count);
 	if (rc != SLURM_SUCCESS)
 		return rc;
