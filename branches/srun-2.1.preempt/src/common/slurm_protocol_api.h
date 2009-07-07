@@ -400,6 +400,12 @@ uint32_t slurm_get_accounting_storage_port(void);
  */
 int slurm_set_accounting_storage_port(uint32_t storage_port);
 
+/* slurm_get_enable_preemption
+ * returns the EnablePreemption value from slurmctld_conf object
+ * RET uint16_t   - EnablePreemption value
+ */
+uint16_t slurm_get_enable_preemption(void);
+
 /* slurm_get_jobacct_gather_type
  * returns the job accounting type from slurmctld_conf object
  * RET char *    - job accounting type,  MUST be xfreed by caller
