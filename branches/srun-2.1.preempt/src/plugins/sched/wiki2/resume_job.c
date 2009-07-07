@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  resume_job.c - Process Wiki resume job request
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -70,7 +71,7 @@ extern int	resume_job(char *cmd_ptr, int *err_code, char **err_msg)
 	msg.job_id = jobid;
 	msg.op = RESUME_JOB;
 	lock_slurmctld(job_write_lock);
-	slurm_rc = job_suspend(&msg, 0, -1);
+	slurm_rc = job_suspend(&msg, 0, -1, false);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;

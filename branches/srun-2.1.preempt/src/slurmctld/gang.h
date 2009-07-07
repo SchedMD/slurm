@@ -51,6 +51,7 @@ extern int 	gs_fini(void);
 extern int	gs_job_start(struct job_record *job_ptr);
 extern int	gs_job_scan(void);
 extern int	gs_job_fini(struct job_record *job_ptr);
+extern void	gs_wake_jobs(void);
 extern int	gs_reconfig(void);
 
 #endif

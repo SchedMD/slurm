@@ -1059,6 +1059,7 @@ static int _update_preempt(uint16_t old_enable_preempt)
 
 	if (new_enable_preempt == 0) {
 		info("Disabling job preemption and gang scheduling");
+		gs_wake_jobs();
 		return gs_fini();
 	}
 

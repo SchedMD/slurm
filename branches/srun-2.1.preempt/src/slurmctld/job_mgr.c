@@ -6395,10 +6395,14 @@ static int _resume_job_nodes(struct job_record *job_ptr)
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply, 
  *              -1 if none
+ * IN clear_prio - if set, then clear the job's priority after
+ *		   suspending it, this is used to distinguish
+ *		   jobs explicitly suspended by admins/users from
+ *		   jobs suspended though automatic preemption
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid, 
-		slurm_fd conn_fd)
+		       slurm_fd conn_fd, bool clear_prio)
 {
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
@@ -6453,7 +6457,8 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_SUSPENDED;
-		job_ptr->priority  = 0;
+		if (clear_prio)
+			job_ptr->priority = 0;
 		if (job_ptr->suspend_time) {
 			job_ptr->pre_sus_time +=
 				difftime(now, 

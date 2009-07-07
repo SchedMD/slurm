@@ -647,16 +647,17 @@ _signal_job(uint32_t job_id, int sig)
 		debug3("sched/gang: resuming %u", job_id);
 		msg.op = RESUME_JOB;
 	}
-	rc = job_suspend(&msg, 0, -1);
-	if (rc)
-		error("sched/gang: error (%d) signaling(%d) job %u", rc, sig,
-		      job_id);
+	rc = job_suspend(&msg, 0, -1, false);
+	if (rc) {
+		error("sched/gang: error (%d) signaling(%d) job %u", 
+		      rc, sig, job_id);
+	}
 }
 
 
 /* construct gs_part_sorted as a sorted list of the current partitions */
 static void
-_sort_partitions()
+_sort_partitions(void)
 {
 	struct gs_part *p_ptr;
 	int i, j, size = 0;
@@ -1208,6 +1209,25 @@ gs_job_scan(void)
 	debug3("sched/gang: leaving gs_job_scan");
 
 	return SLURM_SUCCESS;
+}
+
+extern void
+gs_wake_jobs(void)
+{
+	struct job_record *job_ptr;
+	ListIterator job_iterator;
+
+	if (!job_list)	/* no jobs */
+		return;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (IS_JOB_SUSPENDED(job_ptr) && (job_ptr->priority != 0)) {
+			info("waking preempted job %u", job_ptr->job_id); 
+			_signal_job(job_ptr->job_id, GS_RESUME);
+		}
+	}
+	list_iterator_destroy(job_iterator);
 }
 
 extern int

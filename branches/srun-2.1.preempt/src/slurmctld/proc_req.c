@@ -2825,7 +2825,7 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 		op, (unsigned int) uid);
 
 	lock_slurmctld(job_write_lock);
-	error_code = job_suspend(sus_ptr, uid, msg->conn_fd);
+	error_code = job_suspend(sus_ptr, uid, msg->conn_fd, true);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_suspend");
 	
