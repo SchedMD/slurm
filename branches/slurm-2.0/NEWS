@@ -37,6 +37,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Changed order of SYNC's to be on the front of the list to
     avoid having a job terminated with a TERM before the SYNC of the 
     job happens.
+ -- Validate configured PluginDir value is a valid directory before trying to
+    use it.
 
 * Changes in SLURM 2.0.3
 ========================
