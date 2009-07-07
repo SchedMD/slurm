@@ -2298,10 +2298,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			      "incompatible with SchedulerType=%s",
 			      conf->schedtype);
 		}
-		if (conf->fast_schedule == 0) {
-			fatal("EnablePreemption=YES is incompatible with "
-			      "FastSchedule=0 ");
-		}
 	}
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
