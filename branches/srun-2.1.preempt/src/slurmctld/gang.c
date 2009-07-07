@@ -155,25 +155,34 @@ static uint32_t num_sorted_part = 0;
 #define GS_CPU_ARRAY_INCREMENT 8
 
 /* function declarations */
-static void *_timeslicer_thread();
+static void *_timeslicer_thread(void *arg);
 
 
-char *_print_flag(int flag) {
+static char *_print_flag(int flag)
+{
 	switch (flag) {
-	case GS_SUSPEND:   return "GS_SUSPEND";
-	case GS_RESUME:    return "GS_RESUME";
-	case GS_NO_PART:   return "GS_NO_PART";
-	case GS_SUCCESS:   return "GS_SUCCESS";
-	case GS_ACTIVE:    return "GS_ACTIVE";
-	case GS_NO_ACTIVE: return "GS_NO_ACTIVE";
-	case GS_FILLER:    return "GS_FILLER";
-	default:           return "unknown";
+		case GS_SUSPEND:
+			return "GS_SUSPEND";
+		case GS_RESUME:
+			return "GS_RESUME";
+		case GS_NO_PART:
+			return "GS_NO_PART";
+		case GS_SUCCESS:
+			return "GS_SUCCESS";
+		case GS_ACTIVE:
+			return "GS_ACTIVE";
+		case GS_NO_ACTIVE:
+			return "GS_NO_ACTIVE";
+		case GS_FILLER:
+			return "GS_FILLER";
+		default:
+			return "unknown";
 	}
 	return "unknown";
 }
 
 
-void _print_jobs(struct gs_part *p_ptr)
+static void _print_jobs(struct gs_part *p_ptr)
 {
 	int i;
 	debug3("sched/gang:  part %s has %u jobs, %u shadows:",
@@ -198,19 +207,18 @@ void _print_jobs(struct gs_part *p_ptr)
 	}
 }
 
-static uint16_t
-_get_gr_type() {
-
+static uint16_t _get_gr_type(void)
+{
 	switch (slurmctld_conf.select_type_param) {
-	case CR_CORE:
-	case CR_CORE_MEMORY:
-		return GS_CORE;
-	case CR_CPU:
-	case CR_CPU_MEMORY:
-		return GS_CPU;
-	case CR_SOCKET:
-	case CR_SOCKET_MEMORY:
-		return GS_SOCKET;
+		case CR_CORE:
+		case CR_CORE_MEMORY:
+			return GS_CORE;
+		case CR_CPU:
+		case CR_CPU_MEMORY:
+			return GS_CPU;
+		case CR_SOCKET:
+		case CR_SOCKET_MEMORY:
+			return GS_SOCKET;
 	}
 	/* note that CR_MEMORY is node-level scheduling with
 	 * memory management */
@@ -218,7 +226,7 @@ _get_gr_type() {
 }
 
 
-static void _load_socket_cnt()
+static void _load_socket_cnt(void)
 {
 	uint32_t i, index = 0, array_size = GS_CPU_ARRAY_INCREMENT;
 
@@ -272,8 +280,7 @@ static void _load_socket_cnt()
  * cores per per node.
  * This function also sets gs_resmap_size;
  */
-static void
-_load_phys_res_cnt()
+static void _load_phys_res_cnt(void)
 {
 	uint32_t i, index = 0, array_size = GS_CPU_ARRAY_INCREMENT;
 
@@ -282,7 +289,8 @@ _load_phys_res_cnt()
 	xfree(gs_sockets_per_node);
 	xfree(gs_socket_rep_count);
 
-	if (gr_type != GS_CPU && gr_type != GS_CORE && gr_type != GS_SOCKET)
+	if ((gr_type != GS_CPU) && (gr_type != GS_CORE) && 
+	    (gr_type != GS_SOCKET))
 		return;
 
 	gs_bits_per_node = xmalloc(array_size * sizeof(uint16_t));
@@ -375,7 +383,8 @@ static uint16_t _get_socket_cnt(int node_index)
  * To destroy a gs_part entity, you need to delete the name, the
  * list of jobs, the shadow list, and the active_resmap.
  */
-static void _destroy_parts() {
+static void _destroy_parts(void)
+{
 	int i;
 	struct gs_part *tmp, *ptr = gs_part_list;
 
@@ -398,7 +407,8 @@ static void _destroy_parts() {
 
 /* Build the gs_part_list. The job_list will be created later,
  * once a job is added. */
-static void _build_parts() {
+static void _build_parts(void)
+{
 	ListIterator part_iterator;
 	struct part_record *p_ptr;
 	int i, num_parts;
@@ -432,8 +442,7 @@ static void _build_parts() {
 }
 
 /* Find the gs_part entity with the given name */
-static struct gs_part *
-_find_gs_part(char *name)
+static struct gs_part *_find_gs_part(char *name)
 {
 	struct gs_part *p_ptr = gs_part_list;
 	for (; p_ptr; p_ptr = p_ptr->next) {
@@ -444,8 +453,8 @@ _find_gs_part(char *name)
 }
 
 /* Find the job_list index of the given job_id in the given partition */
-static int
-_find_job_index(struct gs_part *p_ptr, uint32_t job_id) {
+static int _find_job_index(struct gs_part *p_ptr, uint32_t job_id)
+{
 	int i;
 	for (i = 0; i < p_ptr->num_jobs; i++) {
 		if (p_ptr->job_list[i]->job_ptr->job_id == job_id)
@@ -455,8 +464,7 @@ _find_job_index(struct gs_part *p_ptr, uint32_t job_id) {
 }
 
 /* Return 1 if job "cpu count" fits in this row, else return 0 */
-static int
-_can_cpus_fit(struct job_record *job_ptr, struct gs_part *p_ptr)
+static int _can_cpus_fit(struct job_record *job_ptr, struct gs_part *p_ptr)
 {
 	int i, j, size;
 	uint16_t *p_cpus, *j_cpus;
@@ -484,8 +492,8 @@ _can_cpus_fit(struct job_record *job_ptr, struct gs_part *p_ptr)
 
 
 /* Return 1 if job fits in this row, else return 0 */
-static int
-_job_fits_in_active_row(struct job_record *job_ptr, struct gs_part *p_ptr)
+static int _job_fits_in_active_row(struct job_record *job_ptr, 
+				   struct gs_part *p_ptr)
 {
 	select_job_res_t job_res = job_ptr->select_job;
 	int count;
@@ -564,8 +572,8 @@ static void _fill_sockets(bitstr_t *job_nodemap, struct gs_part *p_ptr)
 
 /* Add the given job to the "active" structures of
  * the given partition and increment the run count */
-static void
-_add_job_to_active(struct job_record *job_ptr, struct gs_part *p_ptr)
+static void _add_job_to_active(struct job_record *job_ptr, 
+			       struct gs_part *p_ptr)
 {
 	select_job_res_t job_res = job_ptr->select_job;
 
@@ -633,8 +641,7 @@ _add_job_to_active(struct job_record *job_ptr, struct gs_part *p_ptr)
 }
 
 
-static void
-_signal_job(uint32_t job_id, int sig)
+static void _signal_job(uint32_t job_id, int sig)
 {
 	int rc;
 	suspend_msg_t msg;
@@ -656,8 +663,7 @@ _signal_job(uint32_t job_id, int sig)
 
 
 /* construct gs_part_sorted as a sorted list of the current partitions */
-static void
-_sort_partitions(void)
+static void _sort_partitions(void)
 {
 	struct gs_part *p_ptr;
 	int i, j, size = 0;
@@ -698,8 +704,7 @@ _sort_partitions(void)
 
 /* Scan the partition list. Add the given job as a "shadow" to every
  * partition with a lower priority than the given partition */
-static void
-_cast_shadow(struct gs_job *j_ptr, uint16_t priority)
+static void _cast_shadow(struct gs_job *j_ptr, uint16_t priority)
 {
 	struct gs_part *p_ptr;
 	int i;
@@ -736,8 +741,7 @@ _cast_shadow(struct gs_job *j_ptr, uint16_t priority)
 
 
 /* Remove the given job as a "shadow" from all partitions */
-static void
-_clear_shadow(struct gs_job *j_ptr)
+static void _clear_shadow(struct gs_job *j_ptr)
 {
 	struct gs_part *p_ptr;
 	int i;
@@ -770,8 +774,7 @@ _clear_shadow(struct gs_job *j_ptr)
  * the partition or if a higher priority "shadow" has been added
  * which could preempt running jobs.
  */
-static void
-_update_active_row(struct gs_part *p_ptr, int add_new_jobs)
+static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 {
 	int i;
 	struct gs_job *j_ptr;
@@ -851,8 +854,7 @@ _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
  * - suspend any jobs that have been "shadowed" (preempted)
  * - resume any "filler" jobs that can be found
  */
-static void
-_update_all_active_rows()
+static void _update_all_active_rows(void)
 {
 	int i;
 	
@@ -867,8 +869,7 @@ _update_all_active_rows()
 }
 
 /* remove the given job from the given partition */
-static void
-_remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
+static void _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
 {
 	int i;
 	struct gs_job *j_ptr;
@@ -912,8 +913,8 @@ _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
  * then "cast it's shadow" over the active row of any partition with a
  * lower priority than the given partition. Return the sig state of the
  * job (GS_SUSPEND or GS_RESUME) */
-static uint16_t
-_add_job_to_part(struct gs_part *p_ptr, struct job_record *job_ptr)
+static uint16_t _add_job_to_part(struct gs_part *p_ptr, 
+				 struct job_record *job_ptr)
 {
 	int i;
 	struct gs_job *j_ptr;
@@ -997,8 +998,7 @@ _add_job_to_part(struct gs_part *p_ptr, struct job_record *job_ptr)
  * this procedure assumes that the gs data has already been
  * locked by the caller! 
  */
-static void
-_scan_slurm_job_list()
+static void _scan_slurm_job_list(void)
 {
 	struct job_record *job_ptr;
 	struct gs_part *p_ptr;
@@ -1082,8 +1082,7 @@ _scan_slurm_job_list()
  *
  ***************************/
 
-static void
-_spawn_timeslicer_thread()
+static void _spawn_timeslicer_thread(void)
 {
 	pthread_attr_t thread_attr_msg;
 
@@ -1105,8 +1104,7 @@ _spawn_timeslicer_thread()
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
 
-extern int
-gs_init()
+extern int gs_init(void)
 {
 	if (timeslicer_thread_id)
 		return SLURM_SUCCESS;
@@ -1132,8 +1130,7 @@ gs_init()
 	return SLURM_SUCCESS;
 }
 
-extern int
-gs_fini()
+extern int gs_fini(void)
 {
 	/* terminate the timeslicer thread */
 	debug3("sched/gang: entering gs_fini");
@@ -1167,8 +1164,7 @@ gs_fini()
 	return SLURM_SUCCESS;
 }
 
-extern int
-gs_job_start(struct job_record *job_ptr)
+extern int gs_job_start(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
 	uint16_t job_state;
@@ -1196,8 +1192,7 @@ gs_job_start(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int
-gs_job_scan(void)
+extern int gs_job_scan(void)
 {
 	/* scan the master SLURM job list for any new
 	 * jobs to add, or for any old jobs to remove
@@ -1211,8 +1206,7 @@ gs_job_scan(void)
 	return SLURM_SUCCESS;
 }
 
-extern void
-gs_wake_jobs(void)
+extern void gs_wake_jobs(void)
 {
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
@@ -1230,8 +1224,7 @@ gs_wake_jobs(void)
 	list_iterator_destroy(job_iterator);
 }
 
-extern int
-gs_job_fini(struct job_record *job_ptr)
+extern int gs_job_fini(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
 	
@@ -1280,8 +1273,7 @@ gs_job_fini(struct job_record *job_ptr)
  *    for resources that we could begin timeslicing.
  * 4. delete the old global structures and return.
  */
-extern int
-gs_reconfig()
+extern int gs_reconfig(void)
 {
 	int i;
 	struct gs_part *p_ptr, *old_part_list, *newp_ptr;
@@ -1368,8 +1360,7 @@ gs_reconfig()
 
 /* Build the active row from the job_list.
  * The job_list is assumed to be sorted */
-static void
-_build_active_row(struct gs_part *p_ptr)
+static void _build_active_row(struct gs_part *p_ptr)
 {
 	int i;
 	
@@ -1408,8 +1399,7 @@ _build_active_row(struct gs_part *p_ptr)
  *    each other).
  * 4. Loop back to step 2, starting with the new "first job in the list".
  */
-static void
-_cycle_job_list(struct gs_part *p_ptr)
+static void _cycle_job_list(struct gs_part *p_ptr)
 {
 	int i, j;
 	struct gs_job *j_ptr;
@@ -1465,8 +1455,8 @@ _cycle_job_list(struct gs_part *p_ptr)
 }
 
 /* The timeslicer thread */
-static void *
-_timeslicer_thread() {
+static void *_timeslicer_thread(void *arg)
+{
 	struct gs_part *p_ptr;
 	int i;
 	
