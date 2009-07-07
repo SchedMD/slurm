@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
     job happens.
  -- Validate configured PluginDir value is a valid directory before trying to
     use it.
+ -- Fix to resolve agent_queue_request symbol from some checkpoint plugins.
 
 * Changes in SLURM 2.0.3
 ========================

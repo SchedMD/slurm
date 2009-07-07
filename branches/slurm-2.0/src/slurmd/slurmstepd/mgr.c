@@ -796,6 +796,15 @@ _send_step_complete_msgs(slurmd_job_t *job)
 	pthread_mutex_unlock(&step_complete.lock);
 }
 
+/* This dummy function is provided so that the checkpoint functions can
+ * 	resolve this symbol name (as needed for some of the checkpoint  
+ *	functions used by slurmctld). */
+extern void agent_queue_request(void *dummy)
+{
+	fatal("Invalid agent_queue_request function call, likely from "
+	      "checkpoint plugin");
+}
+
 /* 
  * Executes the functions of the slurmd job manager process,
  * which runs as root and performs shared memory and interconnect
@@ -816,11 +825,11 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Preload plugins.
 	 */
-	if (switch_init() != SLURM_SUCCESS
-	    || slurmd_task_init() != SLURM_SUCCESS
-	    || slurm_proctrack_init() != SLURM_SUCCESS
-	    || checkpoint_init(ckpt_type) != SLURM_SUCCESS
-	    || slurm_jobacct_gather_init() != SLURM_SUCCESS) {
+	if ((switch_init() != SLURM_SUCCESS)			||
+	    (slurmd_task_init() != SLURM_SUCCESS)		||
+	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
+	    (checkpoint_init(ckpt_type) != SLURM_SUCCESS)	||
+	    (slurm_jobacct_gather_init() != SLURM_SUCCESS)) {
 		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
