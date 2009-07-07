@@ -1100,6 +1100,9 @@ _spawn_timeslicer_thread()
 extern int
 gs_init()
 {
+	if (timeslicer_thread_id)
+		return SLURM_SUCCESS;
+
 	/* initialize global variables */
 	debug3("sched/gang: entering gs_init");
 	timeslicer_seconds = slurmctld_conf.sched_time_slice;

@@ -275,10 +275,8 @@ static int _fini_status_pthread(void)
 static inline bool _cr_priority_selection_enabled(void)
 {
 	if (!cr_priority_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/gang") == 0)
+		if (slurm_get_enable_preemption())
 			cr_priority_selection = true;
-		xfree(sched_type);
 		cr_priority_test = true;
 	}
 	return cr_priority_selection;

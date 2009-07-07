@@ -78,11 +78,12 @@ sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
 am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	backup.$(OBJEXT) basil_interface.$(OBJEXT) \
-	controller.$(OBJEXT) job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) \
-	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
-	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
-	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
-	proc_req.$(OBJEXT) read_config.$(OBJEXT) reservation.$(OBJEXT) \
+	controller.$(OBJEXT) gang.$(OBJEXT) job_mgr.$(OBJEXT) \
+	job_scheduler.$(OBJEXT) licenses.$(OBJEXT) locks.$(OBJEXT) \
+	node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
+	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
+	port_mgr.$(OBJEXT) power_save.$(OBJEXT) proc_req.$(OBJEXT) \
+	read_config.$(OBJEXT) reservation.$(OBJEXT) \
 	sched_plugin.$(OBJEXT) srun_comm.$(OBJEXT) \
 	state_save.$(OBJEXT) step_mgr.$(OBJEXT) topo_plugin.$(OBJEXT) \
 	trigger_mgr.$(OBJEXT)
@@ -298,6 +299,8 @@ slurmctld_SOURCES = \
 	basil_interface.c \
 	basil_interface.h \
 	controller.c 	\
+	gang.c		\
+	gang.h		\
 	job_mgr.c 	\
 	job_scheduler.c \
 	job_scheduler.h \
@@ -410,6 +413,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/basil_interface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/controller.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gang.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_scheduler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/licenses.Po@am__quote@

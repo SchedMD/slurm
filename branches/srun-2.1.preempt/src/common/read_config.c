@@ -677,7 +677,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				p->max_share = 4;
 			else if (strncasecmp(tmp, "FORCE:", 6) == 0) {
 				int i = strtol(&tmp[6], (char **) NULL, 10);
-				if (i <= 1) {
+				if (i < 1) {
 					error("Ignoring bad Shared value: %s",
 					      tmp);
 					p->max_share = 1; /* Shared=NO */
