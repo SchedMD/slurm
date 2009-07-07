@@ -177,7 +177,7 @@ void _print_jobs(struct gs_part *p_ptr)
 {
 	int i;
 	debug3("sched/gang:  part %s has %u jobs, %u shadows:",
-		p_ptr->part_name, p_ptr->num_jobs, p_ptr->num_shadows);
+	       p_ptr->part_name, p_ptr->num_jobs, p_ptr->num_shadows);
 	for (i = 0; i < p_ptr->num_shadows; i++) {
 		debug3("sched/gang:   shadow job %u row_s %s, sig_s %s",
 			p_ptr->shadow[i]->job_ptr->job_id,
@@ -193,7 +193,8 @@ void _print_jobs(struct gs_part *p_ptr)
 	if (p_ptr->active_resmap) {
 		int s = bit_size(p_ptr->active_resmap);
 		i = bit_set_count(p_ptr->active_resmap);
-		debug3("sched/gang:  active resmap has %d of %d bits set", i, s);
+		debug3("sched/gang:  active resmap has %d of %d bits set", 
+		       i, s);
 	}
 }
 
@@ -291,14 +292,17 @@ _load_phys_res_cnt()
 	for (i = 0; i < node_record_count; i++) {
 		uint16_t bit;
 		if (gr_type == GS_CPU) {
-			if (gs_fast_schedule) 
-				bit = node_record_table_ptr[i].config_ptr->cpus;
-			else
+			if (gs_fast_schedule) {
+				bit = node_record_table_ptr[i].config_ptr->
+				      cpus;
+			} else
 				bit = node_record_table_ptr[i].cpus;
 		} else {
 			if (gs_fast_schedule) {
-				bit  = node_record_table_ptr[i].config_ptr->cores;
-				bit *= node_record_table_ptr[i].config_ptr->sockets;
+				bit  = node_record_table_ptr[i].config_ptr->
+				       cores;
+				bit *= node_record_table_ptr[i].config_ptr->
+				       sockets;
 			} else {
 				bit  = node_record_table_ptr[i].cores;
 				bit *= node_record_table_ptr[i].sockets;
@@ -332,8 +336,9 @@ _load_phys_res_cnt()
 	}
 
 	for (i = 0; i < index; i++) {
-		debug3("sched/gang: _load_phys_res_cnt: grp %d bits %u reps %u",
-			i, gs_bits_per_node[i], gs_bit_rep_count[i]);
+		debug3("sched/gang: _load_phys_res_cnt: "
+		       "grp %d bits %u reps %u",
+		       i, gs_bits_per_node[i], gs_bit_rep_count[i]);
 
 	}
 	if (gr_type == GS_SOCKET)
@@ -583,7 +588,8 @@ _add_job_to_active(struct job_record *job_ptr, struct gs_part *p_ptr)
 		} else if (p_ptr->jobs_active == 0) {
 			debug3("sched/gang: _add_job_to_active: job %u copied",
 				job_ptr->job_id);
-			bit_copybits(p_ptr->active_resmap,job_res->node_bitmap);
+			bit_copybits(p_ptr->active_resmap,
+				     job_res->node_bitmap);
 		} else {
 			debug3("sched/gang: _add_job_to_active: adding job %u",
 				job_ptr->job_id);
@@ -891,8 +897,8 @@ _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
 	
 	/* make sure the job is not suspended, and then delete it */
 	if (j_ptr->sig_state == GS_SUSPEND) {
-		debug3("sched/gang: _remove_job_from_part: resuming suspended job %u",
-			j_ptr->job_id);
+		debug3("sched/gang: _remove_job_from_part: resuming suspended "
+		       "job %u", j_ptr->job_id);
 		_signal_job(j_ptr->job_id, GS_RESUME);
 	}
 	j_ptr->job_ptr = NULL;
@@ -935,8 +941,8 @@ _add_job_to_part(struct gs_part *p_ptr, struct job_record *job_ptr)
 		 * may have changed. In any case, remove the existing
 		 * job before adding this new one.
 		 */
-		debug3("sched/gang: _add_job_to_part: duplicate job %u detected",
-			job_ptr->job_id);
+		debug3("sched/gang: _add_job_to_part: duplicate job %u "
+		       "detected", job_ptr->job_id);
 		_remove_job_from_part(job_ptr->job_id, p_ptr);
 		_update_active_row(p_ptr, 0);
 	}
@@ -1082,7 +1088,8 @@ _spawn_timeslicer_thread()
 
 	pthread_mutex_lock( &thread_flag_mutex );
 	if (thread_running) {
-		error("timeslicer thread already running, not starting another");
+		error("timeslicer thread already running, not starting "
+		      "another");
 		pthread_mutex_unlock(&thread_flag_mutex);
 		return;
 	}
@@ -1279,10 +1286,12 @@ gs_reconfig()
 			/* this partition was removed, so resume
 			 * any suspended jobs and continue */
 			for (i = 0; i < p_ptr->num_jobs; i++) {
-				if (p_ptr->job_list[i]->sig_state == GS_SUSPEND) {
+				if (p_ptr->job_list[i]->sig_state == 
+				    GS_SUSPEND) {
 					_signal_job(p_ptr->job_list[i]->job_id,
 						   GS_RESUME);
-					p_ptr->job_list[i]->sig_state = GS_RESUME;
+					p_ptr->job_list[i]->sig_state = 
+						GS_RESUME;
 				}	
 			}
 			continue;
@@ -1356,7 +1365,8 @@ _build_active_row(struct gs_part *p_ptr)
 	
 	/* attempt to add jobs from the job_list in the current order */
 	for (i = 0; i < p_ptr->num_jobs; i++) {
-		if (_job_fits_in_active_row(p_ptr->job_list[i]->job_ptr, p_ptr)) {
+		if (_job_fits_in_active_row(p_ptr->job_list[i]->job_ptr, 
+					    p_ptr)) {
 			_add_job_to_active(p_ptr->job_list[i]->job_ptr, p_ptr);
 			p_ptr->job_list[i]->row_state = GS_ACTIVE;
 		}
@@ -1388,7 +1398,7 @@ _cycle_job_list(struct gs_part *p_ptr)
 	/* re-prioritize the job_list and set all row_states to GS_NO_ACTIVE */
 	for (i = 0; i < p_ptr->num_jobs; i++) {
 		while (p_ptr->job_list[i]->row_state == GS_ACTIVE) {
-			/* move this job to the back row and "de-activate" it */
+			/* move this job to the back row and "deactivate" it */
 			j_ptr = p_ptr->job_list[i];
 			j_ptr->row_state = GS_NO_ACTIVE;
 			for (j = i; j+1 < p_ptr->num_jobs; j++) {
@@ -1411,8 +1421,8 @@ _cycle_job_list(struct gs_part *p_ptr)
 		j_ptr = p_ptr->job_list[i];
 		if (j_ptr->row_state == GS_NO_ACTIVE &&
 		    j_ptr->sig_state == GS_RESUME) {
-		    	debug3("sched/gang: _cycle_job_list: suspending job %u",
-				j_ptr->job_id);
+		    	debug3("sched/gang: _cycle_job_list: suspending "
+			       "job %u", j_ptr->job_id);
 			_signal_job(j_ptr->job_id, GS_SUSPEND);
 			j_ptr->sig_state = GS_SUSPEND;
 			_clear_shadow(j_ptr);
@@ -1450,9 +1460,9 @@ _timeslicer_thread() {
 		debug3("sched/gang: _timeslicer_thread: scanning partitions");
 		for (i = 0; i < num_sorted_part; i++) {
 			p_ptr = gs_part_sorted[i];
-			debug3("sched/gang: _timeslicer_thread: part %s: run %u total %u",
-				p_ptr->part_name, p_ptr->jobs_active,
-				p_ptr->num_jobs);
+			debug3("sched/gang: _timeslicer_thread: part %s: "
+			       "run %u total %u", p_ptr->part_name, 
+			       p_ptr->jobs_active, p_ptr->num_jobs);
 			if (p_ptr->jobs_active <
 					p_ptr->num_jobs + p_ptr->num_shadows)
 				_cycle_job_list(p_ptr);
