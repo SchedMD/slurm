@@ -5,7 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Removed sched/gang plugin and moved the logic directly into the slurmctld
     daemon so that job preemption and gang scheduling can be used with the
-    sched/backfill plugin. Added EnablePreemption=yes/no configuration 
+    sched/backfill plugin. Added PreemptMode=off|suspend|kill configuration 
     parameter to enable/disable the job preemption logic (disabled by default).
  -- If the --partition option is used with the sinfo or squeue command then
     print information about even hidden partitions.

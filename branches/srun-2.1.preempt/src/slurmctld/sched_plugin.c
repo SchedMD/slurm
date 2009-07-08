@@ -240,7 +240,8 @@ slurm_sched_init( void )
 		goto done;
 	}
 
-	if ( slurm_get_enable_preemption() && (gs_init() != SLURM_SUCCESS))
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) && 
+	     (gs_init() != SLURM_SUCCESS))
 		error( "cannot start gang scheduler ");
 
  done:
@@ -263,7 +264,8 @@ slurm_sched_fini( void )
 	rc = slurm_sched_context_destroy(g_sched_context);
 	g_sched_context = NULL;
 
-	if ( slurm_get_enable_preemption() && (gs_fini() != SLURM_SUCCESS))
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_fini() != SLURM_SUCCESS))
 		error( "cannot stop gang scheduler" );
 
 	return rc;
@@ -279,7 +281,8 @@ slurm_sched_reconfig( void )
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	if ( slurm_get_enable_preemption() && (gs_reconfig() != SLURM_SUCCESS))
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_reconfig() != SLURM_SUCCESS))
 		error( "cannot reconfigure gang scheduler" );
 
 	return (*(g_sched_context->ops.reconfig))();
@@ -296,7 +299,8 @@ slurm_sched_schedule( void )
 
 #if 0
 	/* synchronize job listings? Here? */
-	if ( slurm_get_enable_preemption() && (gs_job_scan() != SLURM_SUCCESS))
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_job_scan() != SLURM_SUCCESS))
 		error( "gang scheduler could not rescan jobs" );
 #endif
 
@@ -312,7 +316,7 @@ slurm_sched_newalloc( struct job_record *job_ptr )
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	if ( slurm_get_enable_preemption() && 
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) && 
 	     (gs_job_start( job_ptr ) != SLURM_SUCCESS)) {
 		error( "gang scheduler problem starting job %u", 
 		       job_ptr->job_id);
@@ -330,7 +334,7 @@ slurm_sched_freealloc( struct job_record *job_ptr )
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	if ( slurm_get_enable_preemption() && 
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) && 
 	     (gs_job_fini( job_ptr ) != SLURM_SUCCESS)) {
 		error( "gang scheduler problem finishing job %u", 
 		       job_ptr->job_id);
@@ -363,7 +367,8 @@ slurm_sched_job_is_pending( void )
 	if ( slurm_sched_init() < 0 )
 		return;
 
-	if ( slurm_get_enable_preemption() && (gs_reconfig() != SLURM_SUCCESS))
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_reconfig() != SLURM_SUCCESS))
 		error( "cannot reconfigure gang scheduler" );
 
 	(*(g_sched_context->ops.job_is_pending))();
@@ -380,7 +385,8 @@ slurm_sched_partition_change( void )
 
 #if 0
 	/* synchronize job listings? Here? */
-	if ( slurm_get_enable_preemption() && (gs_job_scan() != SLURM_SUCCESS))
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_job_scan() != SLURM_SUCCESS))
 		error( "gang scheduler could not rescan jobs" );
 #endif
 

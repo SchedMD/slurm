@@ -1658,7 +1658,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			cr_flag = NO_VAL;	/* error */
 		}
 	}
-	if (slurm_get_enable_preemption())
+	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
 
 	if (slurmctld_conf.fast_schedule != 2) {

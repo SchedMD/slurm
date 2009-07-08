@@ -624,7 +624,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	/* If job preemption is enabled, then do NOT limit the set of available
 	 * nodes by their current 'sharable' or 'idle' setting */
-	if (slurm_get_enable_preemption())
+	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		sched_gang = true;		
 
 	if (cr_enabled) {

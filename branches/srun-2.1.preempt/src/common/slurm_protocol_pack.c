@@ -2930,7 +2930,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack32(build_ptr->debug_flags, buffer);
 	pack16(build_ptr->disable_root_jobs, buffer);
 
-	pack16(build_ptr->enable_preemption, buffer);
 	packstr(build_ptr->epilog, buffer);
 	pack32(build_ptr->epilog_msg_time, buffer);
 	packstr(build_ptr->epilog_slurmctld, buffer);
@@ -2982,6 +2981,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->plugstack, buffer);
+	pack16(build_ptr->preempt_mode, buffer);
 
 	pack32(build_ptr->priority_decay_hl, buffer);
 	pack16(build_ptr->priority_favor_small, buffer);
@@ -3140,7 +3140,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack32(&build_ptr->debug_flags, buffer);
 	safe_unpack16(&build_ptr->disable_root_jobs, buffer);
 
-	safe_unpack16(&build_ptr->enable_preemption, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp, buffer);
 	safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->epilog_slurmctld, &uint32_tmp, 
@@ -3199,6 +3198,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugstack, &uint32_tmp, buffer);
 
+	safe_unpack16(&build_ptr->preempt_mode, buffer);
 	safe_unpack32(&build_ptr->priority_decay_hl, buffer);
 	safe_unpack16(&build_ptr->priority_favor_small, buffer);
 	safe_unpack32(&build_ptr->priority_max_age, buffer);

@@ -1105,6 +1105,10 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_CPU_BIND	0x00000008	/* CPU binding */
 #define DEBUG_FLAG_WIKI		0x00000010	/* wiki communications */
 
+#define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
+#define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */
+#define PREEMPT_MODE_KILL	0x0002	/* requeue or kill jobs to preempt */
+
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	uint16_t accounting_storage_enforce; /* job requires valid association:
@@ -1135,7 +1139,6 @@ typedef struct slurm_ctl_conf {
 	uint32_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint32_t def_mem_per_task; /* default MB memory per spawned task */
 	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
-	uint16_t enable_preemption; /* if set, preempt lower priority jobs  */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding 
 					 * partition size and/or time limits */
 	char *epilog;		/* pathname of job epilog */
@@ -1186,6 +1189,7 @@ typedef struct slurm_ctl_conf {
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config
 				 * file */
+	uint16_t preempt_mode;	/* See PREEMPT_MODE_* above */
 	uint32_t priority_decay_hl; /* priority decay half life in
 				     * seconds */
 	uint16_t priority_favor_small; /* favor small jobs over large */

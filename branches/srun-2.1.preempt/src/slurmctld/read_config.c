@@ -757,7 +757,7 @@ int read_slurm_conf(int recover)
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
-	uint16_t old_enable_preempt = slurmctld_conf.enable_preemption;
+	uint16_t old_preempt_mode = slurmctld_conf.preempt_mode;
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
 	char *old_crypto_type     = xstrdup(slurmctld_conf.crypto_type);
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
@@ -896,7 +896,7 @@ int read_slurm_conf(int recover)
 			       old_select_type, old_switch_type);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
-	rc = _update_preempt(old_enable_preempt);
+	rc = _update_preempt(old_preempt_mode);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	/* Update plugin parameters as possible */
@@ -1045,26 +1045,27 @@ static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr,
 
 /* Start or stop the gang scheduler module as needed based upon changes in 
  *	job preemption support */
-static int _update_preempt(uint16_t old_enable_preempt)
+static int _update_preempt(uint16_t old_preempt_mode)
 {
-	uint16_t new_enable_preempt = slurm_get_enable_preemption();
+	uint16_t new_preempt_mode = slurm_get_preempt_mode();
 
-	if (old_enable_preempt == new_enable_preempt)
+	if ((old_preempt_mode == PREEMPT_MODE_OFF) == 
+	    (new_preempt_mode == PREEMPT_MODE_OFF))
 		return SLURM_SUCCESS;
 
-	if (old_enable_preempt == 0) {
+	if (old_preempt_mode == PREEMPT_MODE_OFF) {
 		info("Enabling job preemption and gang scheduling");
 		return gs_init();
 	}
 
-	if (new_enable_preempt == 0) {
+	if (new_preempt_mode == PREEMPT_MODE_OFF) {
 		info("Disabling job preemption and gang scheduling");
 		gs_wake_jobs();
 		return gs_fini();
 	}
 
 	error("Invalid value for EnablePreemption (old:%u new:%u)",
-	      old_enable_preempt, new_enable_preempt);
+	      old_preempt_mode, new_preempt_mode);
 	return EINVAL;
 }
 

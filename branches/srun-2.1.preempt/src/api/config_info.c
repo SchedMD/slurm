@@ -205,10 +205,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		fprintf(out, "DisableRootJobs         = YES\n");
 	else
 		fprintf(out, "DisableRootJobs         = NO\n");
-	if (slurm_ctl_conf_ptr->enable_preemption)
-		fprintf(out, "EnablePreemption        = YES\n");
-	else
-		fprintf(out, "EnablePreemption        = NO\n");
 	if (slurm_ctl_conf_ptr->enforce_part_limits)
 		fprintf(out, "EnforcePartLimits       = YES\n");
 	else
@@ -302,6 +298,13 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "PlugStackConfig         = %s\n",
 		slurm_ctl_conf_ptr->plugstack);
+
+	if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_OFF)
+		fprintf(out, "PreemptMode             = OFF\n");
+	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_SUSPEND)
+		fprintf(out, "PreemptMode             = SUSPEND\n");
+	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_KILL)
+		fprintf(out, "PreemptMode             = KILL\n");
 
 	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
 		fprintf(out, "PriorityType            = %s\n",

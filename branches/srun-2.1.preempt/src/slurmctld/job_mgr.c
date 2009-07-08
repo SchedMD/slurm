@@ -4277,7 +4277,7 @@ void reset_job_bitmaps(void)
 		}
 			
 	}
-	if (slurm_get_enable_preemption())
+	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
 
 	job_iterator = list_iterator_create(job_list);
@@ -6281,7 +6281,7 @@ static int _suspend_job_nodes(struct job_record *job_ptr)
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t node_flags;
 
-	if ((slurm_get_enable_preemption() == 0) &&
+	if ((slurm_get_preempt_mode() == PREEMPT_MODE_OFF) &&
 	    ((rc = select_g_job_suspend(job_ptr)) != SLURM_SUCCESS))
 		return rc;
 
@@ -6333,7 +6333,7 @@ static int _resume_job_nodes(struct job_record *job_ptr)
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t node_flags;
 
-	if ((slurm_get_enable_preemption() == 0) &&
+	if ((slurm_get_preempt_mode() == PREEMPT_MODE_OFF) &&
 	    ((rc = select_g_job_resume(job_ptr)) != SLURM_SUCCESS))
 		return rc;
 

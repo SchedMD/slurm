@@ -162,7 +162,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefMemPerCPU", S_P_UINT32},
 	{"DefMemPerNode", S_P_UINT32},
 	{"DisableRootJobs", S_P_BOOLEAN},
-	{"EnablePreemption", S_P_BOOLEAN},
 	{"EnforcePartLimits", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
@@ -208,6 +207,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
+	{"PreemptMode", S_P_STRING},
 	{"PriorityDecayHalfLife", S_P_STRING},
 	{"PriorityFavorSmall", S_P_BOOLEAN},
 	{"PriorityMaxAge", S_P_STRING},
@@ -1407,7 +1407,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->def_mem_per_task          = 0;
 	ctl_conf_ptr->debug_flags		= 0;
 	ctl_conf_ptr->disable_root_jobs         = 0;
-	ctl_conf_ptr->enable_preemption         = 0;
 	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= (uint32_t) NO_VAL;
@@ -1443,6 +1442,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->over_time_limit           = 0;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
+	ctl_conf_ptr->preempt_mode              = 0;
 	ctl_conf_ptr->private_data              = 0;
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
@@ -1808,9 +1808,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			     "DisableRootJobs", hashtbl))
 		conf->disable_root_jobs = DEFAULT_DISABLE_ROOT_JOBS;
 
-	s_p_get_boolean((bool *) &conf->enable_preemption, "EnablePreemption", 
-			hashtbl);
-
 	if (!s_p_get_boolean((bool *) &conf->enforce_part_limits, 
 			     "EnforcePartLimits", hashtbl))
 		conf->enforce_part_limits = DEFAULT_ENFORCE_PART_LIMITS;
@@ -2109,8 +2106,18 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->plugstack, "PlugStackConfig", hashtbl))
 		conf->plugstack = xstrdup(default_plugstack);
 
-	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))
-		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
+	if (s_p_get_string(&temp_str, "PreemptMode", hashtbl)) {
+		if (strcasecmp(temp_str, "off") == 0)
+			conf->preempt_mode = PREEMPT_MODE_OFF;
+		else if ((strcasecmp(temp_str, "on") == 0) ||
+			 (strcasecmp(temp_str, "suspend") == 0))
+			conf->preempt_mode = PREEMPT_MODE_SUSPEND;
+		else if ((strcasecmp(temp_str, "kill") == 0) ||
+			 (strcasecmp(temp_str, "requeue") == 0))
+			conf->preempt_mode = PREEMPT_MODE_KILL;
+		else
+			fatal("Invalid PreemptMode: %s", temp_str);
+	}
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
@@ -2188,6 +2195,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint32(&conf->priority_weight_qos,
 			    "PriorityWeightQOS", hashtbl))
 		conf->priority_weight_qos = 0;
+
+	/* Out of order due to use with ProctrackType */
+	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))
+		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
 
 	if (!s_p_get_string(&conf->proctrack_type, "ProctrackType", hashtbl)) {
 		if (!strcmp(conf->switch_type,"switch/elan"))
@@ -2291,11 +2302,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			      conf->schedtype);
 		}
 	}
-	if (conf->enable_preemption) {
+	if (conf->preempt_mode) {
 		if ((strcmp(conf->schedtype, "sched/wiki")  == 0) ||
 		    (strcmp(conf->schedtype, "sched/wiki2") == 0)) {
-			fatal("EnablePreemption=YES is "
-			      "incompatible with SchedulerType=%s",
+			fatal("Job preemption is incompatible with "
+			      "SchedulerType=%s",
 			      conf->schedtype);
 		}
 	}

@@ -251,7 +251,7 @@ static void _dump_state(struct part_res_record *p_ptr)
 extern bool cr_priority_selection_enabled()
 {
 	if (!cr_priority_test) {
-		if (slurm_get_enable_preemption())
+		if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 			cr_priority_selection = true;
 		cr_priority_test = true;
 	}

@@ -346,24 +346,6 @@ The default value is "NO", meaning user root will be able to execute jobs.
 \fBDisableRootJobs\fR may also be set by partition.
 
 .TP
-\fBEnablePreemption\fR
-If set to "YES" then high priority jobs can preempt (suspend) low priority 
-jobs in order to begin execution more quickly. 
-The low priority job will resume execution once the high priority job 
-completes.
-The default value is "NO" unless "SchedulerType=sched/gang".
-A value of "YES" is incompatible with "SchedulerType=sched/wiki" or 
-"SchedulerType=sched/wiki2".
-Two different mechanisms can be used to determine when preeption can 
-take place. 
-SLURM partitions can have different Priority values and contain 
-the same nodes, in which case jobs from the higher priority 
-partition will preempt jobs from the lower priority partition.
-Alternatly jobs can have different Quality Of Service (QOS) values,
-but be submitted to the same partition. 
-Jobs having higher QOS will preempt jobs with lower QOS values.
-
-.TP
 \fBEnforcePartLimits\fR
 If set to "YES" then jobs which exceed a partition's size and/or time limits
 will be rejected at submission time. If set to "NO" then the job will be 
@@ -732,6 +714,34 @@ be called before and/or after execution of each task spawned as
 part of a user's job step.  Default location is "plugstack.conf"
 in the same directory as the system slurm.conf. For more information
 on SPANK plugins, see the \fBspank\fR(8) manual.
+
+.TP
+\fBPreemptMode\fR
+Controls the ability to preempt lower priority jobs in order to execute
+higher priority jobs.
+Two different mechanisms can be used to determine when preeption can 
+take place. 
+SLURM partitions can have different Priority values and contain 
+the same nodes, in which case jobs from the higher priority 
+partition will preempt jobs from the lower priority partition.
+Alternatly jobs can have different Quality Of Service (QOS) values,
+but be submitted to the same partition. 
+Jobs having higher QOS will preempt jobs with lower QOS values.
+.RS
+.TP 12
+\fBOFF\fR
+is the default value and disables job preemption.
+This is the only option compatible with "SchedulerType=sched/wiki" 
+or "SchedulerType=sched/wiki2".
+.TP
+\fBKILL\fR
+preempts jobs by killing or requeuing them.
+.TP
+\fBSUSPEND\fR
+preempts jobs by suspending them.
+A suspended job will resume execution once the high priority job 
+completes.
+.RE
 
 .TP
 \fBPriorityDecayHalfLife\fR

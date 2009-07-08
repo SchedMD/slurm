@@ -275,7 +275,7 @@ static int _fini_status_pthread(void)
 static inline bool _cr_priority_selection_enabled(void)
 {
 	if (!cr_priority_test) {
-		if (slurm_get_enable_preemption())
+		if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 			cr_priority_selection = true;
 		cr_priority_test = true;
 	}

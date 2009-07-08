@@ -1189,22 +1189,22 @@ int slurm_set_accounting_storage_port(uint32_t storage_port)
 	return 0;	
 }
 
-/* slurm_get_enable_preemption
- * returns the EnablePreemption value from slurmctld_conf object
- * RET uint16_t   - EnablePreemption value
+/* slurm_get_preempt_mode
+ * returns the PreemptMode value from slurmctld_conf object
+ * RET uint16_t   - PreemptMode value (See PREEMPT_MODE_* in slurm.h)
  */
-uint16_t slurm_get_enable_preemption(void)
+uint16_t slurm_get_preempt_mode(void)
 {
-	uint16_t enable_preemption = 0;
+	uint16_t preempt_mode = 0;
 	slurm_ctl_conf_t *conf;
 
 	if(slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		enable_preemption = conf->enable_preemption;
+		preempt_mode = conf->preempt_mode;
 		slurm_conf_unlock();
 	}
-	return enable_preemption;
+	return preempt_mode;
 }
 
 /* slurm_get_jobacct_gather_type
