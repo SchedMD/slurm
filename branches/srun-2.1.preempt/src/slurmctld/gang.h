@@ -56,18 +56,19 @@ extern int 	gs_fini(void);
 extern int	gs_job_start(struct job_record *job_ptr);
 
 /* scan the master SLURM job list for any new jobs to add, or for any old jobs 
- * to remove */
+ *	to remove */
 extern int	gs_job_scan(void);
 
 /* Notify the gang scheduler that a job has completed */
 extern int	gs_job_fini(struct job_record *job_ptr);
 
 /* Gang scheduling has been disabled by change in configuration, 
- * resume any suspended jobs */
+ *	resume any suspended jobs */
 extern void	gs_wake_jobs(void);
 
 /* Tell gang scheduler that system reconfiguration has been performed
- * configuration parameters may have changed. */
+ *	configuration parameters may have changed. Rebuild data structures 
+ *	from scratch */
 extern int	gs_reconfig(void);
 
 #endif
