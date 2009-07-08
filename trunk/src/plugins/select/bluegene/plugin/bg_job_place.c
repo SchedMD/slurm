@@ -1462,19 +1462,22 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				       "%u on %s",
 				       test_only, job_ptr->job_id, starttime,
 				       bg_record->nodes);
-				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					     SELECT_JOBDATA_BLOCK_ID,
-					     "unassigned");
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_BLOCK_ID,
+					"unassigned");
 
 				min_nodes = bg_record->node_cnt;
-				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					     SELECT_JOBDATA_NODE_CNT,
-					     &min_nodes);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_NODE_CNT,
+					&min_nodes);
 				memset(geo, 0, 
 				       sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
-				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_GEOMETRY, 
-						     &geo);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_GEOMETRY, 
+					&geo);
 				/* This is a fake record so we need to
 				 * destroy it after we get the info from
 				 * it */
