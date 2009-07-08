@@ -658,17 +658,17 @@ static int _sview_resv_sort_aval_dec(sview_resv_info_t* rec_a,
 	int size_a = rec_a->resv_ptr->node_cnt;
 	int size_b = rec_b->resv_ptr->node_cnt;
 
-	if (size_a > size_b)
+	if (size_a < size_b)
 		return -1;
-	else if (size_a < size_b)
+	else if (size_a > size_b)
 		return 1;
 
 	if(rec_a->resv_ptr->node_list && rec_b->resv_ptr->node_list) {
 		size_a = strcmp(rec_a->resv_ptr->node_list, 
 				rec_b->resv_ptr->node_list);
-		if (size_a > 0)
+		if (size_a < 0)
 			return -1;
-		else if (size_a < 0)
+		else if (size_a > 0)
 			return 1;
 	}
 	return 0;
