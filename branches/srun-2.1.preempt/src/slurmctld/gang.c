@@ -541,7 +541,7 @@ static void _fill_sockets(bitstr_t *job_nodemap, struct gs_part *p_ptr)
 	first_bit = bit_ffs(job_nodemap);
 	last_bit  = bit_fls(job_nodemap);
 	if (first_bit < 0 || last_bit < 0)
-		fatal("sched/gang: _add_job_to_active: nodeless job?");
+		fatal("sched/gang: _afill_sockets: nodeless job?");
 
 	for (c = 0, n = 0; n < first_bit; n++) {
 		c += _get_phys_bit_cnt(n);
@@ -640,27 +640,63 @@ static void _add_job_to_active(struct job_record *job_ptr,
 	p_ptr->jobs_active += 1;
 }
 
-
-static void _signal_job(uint32_t job_id, int sig)
+static void _suspend_job(uint32_t job_id)
 {
 	int rc;
 	suspend_msg_t msg;
-	
+
 	msg.job_id = job_id;
-	if (sig == GS_SUSPEND) {
-		debug3("sched/gang: suspending %u", job_id);
-		msg.op = SUSPEND_JOB;
-	} else {
-		debug3("sched/gang: resuming %u", job_id);
-		msg.op = RESUME_JOB;
-	}
+	debug3("sched/gang: suspending %u", job_id);
+	msg.op = SUSPEND_JOB;
 	rc = job_suspend(&msg, 0, -1, false);
 	if (rc) {
-		error("sched/gang: error (%d) signaling(%d) job %u", 
-		      rc, sig, job_id);
+		error("sched/gang: suspending job %u: %s", 
+		      job_id, slurm_strerror(rc));
 	}
 }
 
+static void _resume_job(uint32_t job_id)
+{
+	int rc;
+	suspend_msg_t msg;
+
+	msg.job_id = job_id;
+	debug3("sched/gang: resuming %u", job_id);
+	msg.op = RESUME_JOB;
+	rc = job_suspend(&msg, 0, -1, false);
+	if (rc) {
+		error("sched/gang: resuming job %u: %s", 
+		      job_id, slurm_strerror(rc));
+	}
+}
+
+#if 0
+static void _preempt_job(uint32_t job_id)
+{
+	int rc;
+
+	if (slurm_get_preempt_mode() == PREEMPT_MODE_SUSPEND) {
+		_suspend_job(job_id);
+		return;
+	}
+
+	/* NOTE: job_requeue eventually calls gs_job_fini(),
+	 * so we can't process the request in real-time */
+	rc = job_requeue(0, job_id, -1);
+	if (rc == SLURM_SUCCESS) {
+		info("Preempted job %u has been requeued", job_id);
+		return;
+	}
+
+	rc = job_signal(job_id, SIGKILL, 0, 0);
+	if (rc == SLURM_SUCCESS)
+		info("Preempted job %u has been killed", job_id);
+	else {
+		info("Preempted job %u kill failure %s", 
+		     job_id, slurm_strerror(rc));
+	}
+}
+#endif
 
 /* construct gs_part_sorted as a sorted list of the current partitions */
 static void _sort_partitions(void)
@@ -800,7 +836,7 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
-				_signal_job(j_ptr->job_id, GS_SUSPEND);
+				_suspend_job(j_ptr->job_id);
 				j_ptr->sig_state = GS_SUSPEND;
 				_clear_shadow(j_ptr);
 			}
@@ -819,7 +855,7 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
-				_signal_job(j_ptr->job_id, GS_SUSPEND);
+				_suspend_job(j_ptr->job_id);
 				j_ptr->sig_state = GS_SUSPEND;
 				_clear_shadow(j_ptr);
 			}
@@ -842,7 +878,7 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			j_ptr->row_state = GS_FILLER;
 			/* resume the job */
 			if (j_ptr->sig_state == GS_SUSPEND) {
-				_signal_job(j_ptr->job_id, GS_RESUME);
+				_resume_job(j_ptr->job_id);
 				j_ptr->sig_state = GS_RESUME;
 			}
 		}
@@ -901,7 +937,7 @@ static void _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
 	if (j_ptr->sig_state == GS_SUSPEND) {
 		debug3("sched/gang: _remove_job_from_part: resuming suspended "
 		       "job %u", j_ptr->job_id);
-		_signal_job(j_ptr->job_id, GS_RESUME);
+		_resume_job(j_ptr->job_id);
 	}
 	j_ptr->job_ptr = NULL;
 	xfree(j_ptr);
@@ -985,7 +1021,7 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 	} else {
 		debug3("sched/gang: _add_job_to_part: suspending job %u",
 			job_ptr->job_id);
-		_signal_job(job_ptr->job_id, GS_SUSPEND);
+		_suspend_job(job_ptr->job_id);
 		j_ptr->sig_state = GS_SUSPEND;
 	}
 	
@@ -1031,17 +1067,19 @@ static void _scan_slurm_job_list(void)
 			/* We're not tracking this job. Resume it if it's
 			 * suspended, and then add it to the job list. */
 			
-			if (IS_JOB_SUSPENDED(job_ptr))
-			/* The likely scenario here is that the slurmctld has
-			 * failed over, and this is a job that the sched/gang
-			 * plugin had previously suspended.
-			 * It's not possible to determine the previous order
-			 * of jobs without preserving sched/gang state, which
-			 * is not worth the extra infrastructure. Just resume
-			 * the job and then add it to the job list.
-			 */
-				_signal_job(job_ptr->job_id, GS_RESUME);
-			
+			if (IS_JOB_SUSPENDED(job_ptr)) {
+				/* The likely scenario here is that the 
+				 * failed over, and this is a job that the 
+				 * sched/gang plugin had previously suspended.
+				 * It's not possible to determine the previous 
+				 * order of jobs without preserving sched/gang 
+				 * state, which is not worth the extra 
+				 * infrastructure. Just resume the job and then
+				 * add it to the job list.
+				 */
+				_resume_job(job_ptr->job_id);
+			}
+
 			_add_job_to_part(p_ptr, job_ptr);
 			continue;
 		}
@@ -1104,6 +1142,7 @@ static void _spawn_timeslicer_thread(void)
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
 
+/* Initialize data structures and start the gang scheduling thread */
 extern int gs_init(void)
 {
 	if (timeslicer_thread_id)
@@ -1130,6 +1169,7 @@ extern int gs_init(void)
 	return SLURM_SUCCESS;
 }
 
+/* Terminate the gang scheduling thread and free its data structures */
 extern int gs_fini(void)
 {
 	/* terminate the timeslicer thread */
@@ -1164,6 +1204,7 @@ extern int gs_fini(void)
 	return SLURM_SUCCESS;
 }
 
+/* Notify the gang scheduler that a job has been started */
 extern int gs_job_start(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
@@ -1192,11 +1233,10 @@ extern int gs_job_start(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+/* scan the master SLURM job list for any new jobs to add, or for any old jobs 
+ * to remove */
 extern int gs_job_scan(void)
 {
-	/* scan the master SLURM job list for any new
-	 * jobs to add, or for any old jobs to remove
-	 */
 	debug3("sched/gang: entering gs_job_scan");
 	pthread_mutex_lock(&data_mutex);
 	_scan_slurm_job_list();
@@ -1206,6 +1246,8 @@ extern int gs_job_scan(void)
 	return SLURM_SUCCESS;
 }
 
+/* Gang scheduling has been disabled by change in configuration, 
+ * resume any suspended jobs */
 extern void gs_wake_jobs(void)
 {
 	struct job_record *job_ptr;
@@ -1218,12 +1260,13 @@ extern void gs_wake_jobs(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_SUSPENDED(job_ptr) && (job_ptr->priority != 0)) {
 			info("waking preempted job %u", job_ptr->job_id); 
-			_signal_job(job_ptr->job_id, GS_RESUME);
+			_resume_job(job_ptr->job_id);
 		}
 	}
 	list_iterator_destroy(job_iterator);
 }
 
+/* Notify the gang scheduler that a job has completed */
 extern int gs_job_fini(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
@@ -1300,8 +1343,8 @@ extern int gs_reconfig(void)
 			for (i = 0; i < p_ptr->num_jobs; i++) {
 				if (p_ptr->job_list[i]->sig_state == 
 				    GS_SUSPEND) {
-					_signal_job(p_ptr->job_list[i]->job_id,
-						   GS_RESUME);
+					_resume_job(p_ptr->job_list[i]->
+						   job_id);
 					p_ptr->job_list[i]->sig_state = 
 						GS_RESUME;
 				}	
@@ -1329,7 +1372,7 @@ extern int gs_reconfig(void)
 			}
 			/* resume any job that is suspended */
 			if (IS_JOB_SUSPENDED(job_ptr))
-				_signal_job(job_ptr->job_id, GS_RESUME);
+				_resume_job(job_ptr->job_id);
 
 			/* transfer the job as long as it is still active */
 			if (IS_JOB_SUSPENDED(job_ptr) ||
@@ -1433,7 +1476,7 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 		    j_ptr->sig_state == GS_RESUME) {
 		    	debug3("sched/gang: _cycle_job_list: suspending "
 			       "job %u", j_ptr->job_id);
-			_signal_job(j_ptr->job_id, GS_SUSPEND);
+			_suspend_job(j_ptr->job_id);
 			j_ptr->sig_state = GS_SUSPEND;
 			_clear_shadow(j_ptr);
 		}
@@ -1446,7 +1489,7 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 		    j_ptr->sig_state == GS_SUSPEND) {
 		    	debug3("sched/gang: _cycle_job_list: resuming job %u",
 				j_ptr->job_id);
-			_signal_job(j_ptr->job_id, GS_RESUME);
+			_resume_job(j_ptr->job_id);
 			j_ptr->sig_state = GS_RESUME;
 			_cast_shadow(j_ptr, p_ptr->priority);
 		}
