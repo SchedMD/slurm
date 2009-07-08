@@ -417,7 +417,8 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data);
 extern GtkTreeView *create_treeview(display_data_t *local);
 extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table);
 extern GtkTreeStore *create_treestore(GtkTreeView *tree_view, 
-				      display_data_t *display_data, int count);
+				      display_data_t *display_data,
+				      int count, int sort_column);
 
 extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path, 
 				 GdkEventButton *event, 

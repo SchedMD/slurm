@@ -183,7 +183,7 @@ void *_grid_init_thr(void *arg)
 	GtkTable *table = NULL;
 	int rc = SLURM_SUCCESS;
 		
-	while(!grid_init) {
+	while(!grid_init && !fini) {
 		gdk_threads_enter();
 		page = gtk_notebook_get_current_page(
 			GTK_NOTEBOOK(main_notebook));
@@ -355,10 +355,10 @@ static gboolean _delete(GtkWidget *widget,
 	fini = 1;
 	gtk_main_quit();
 	ba_fini();
-	if(grid_button_list)
-		list_destroy(grid_button_list);
 	if(popup_list)
 		list_destroy(popup_list);
+	if(grid_button_list)
+		list_destroy(grid_button_list);
 	return FALSE;
 }
 

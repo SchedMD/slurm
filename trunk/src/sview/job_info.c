@@ -370,7 +370,6 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 			      GtkTreeIter *step_iter,
 			      GtkTreeIter *iter);
 
-
 /* translate name name to number */
 static uint16_t _xlate_signal_name(const char *signal_name) 
 {
@@ -2085,10 +2084,11 @@ static void _update_info_job(List info_list,
 			}
 		}
 	}
-	
+
 	itr = list_iterator_create(info_list);
 	while ((sview_job_info = (sview_job_info_t*) list_next(itr))) {
 		job_ptr = sview_job_info->job_ptr;
+		g_print("here job %d with %d %d\n", job_ptr->job_id, job_ptr->num_procs, sview_job_info->node_cnt);
 		/* get the iter, or find out the list is empty goto add */
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
 			goto adding;
@@ -2149,16 +2149,16 @@ static int _sview_job_sort_aval_dec(sview_job_info_t* rec_a,
 	int size_a = rec_a->node_cnt;
 	int size_b = rec_b->node_cnt;
 
-	if (size_a > size_b)
+	if (size_a < size_b)
 		return -1;
-	else if (size_a < size_b)
+	else if (size_a > size_b)
 		return 1;
 
 	if(rec_a->nodes && rec_b->nodes) {
 		size_a = strcmp(rec_a->nodes, rec_b->nodes);
-		if (size_a > 0)
+		if (size_a < 0)
 			return -1;
-		else if (size_a < 0)
+		else if (size_a > 0)
 			return 1;
 	}
 	return 0;
@@ -2271,14 +2271,12 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		list_append(info_list, sview_job_info_ptr);
 	}
 
+	list_sort(info_list, (ListCmpF)_sview_job_sort_aval_dec);
 
-	list_sort(info_list,
-		  (ListCmpF)_sview_job_sort_aval_dec);
-
-	list_sort(odd_info_list,
-		  (ListCmpF)_sview_job_sort_aval_dec);
+	list_sort(odd_info_list, (ListCmpF)_sview_job_sort_aval_dec);
 
 update_color:
+
 	if(want_odd_states)
 		return odd_info_list;
 	else
@@ -2331,7 +2329,7 @@ need_refresh:
 					popup_win->grid_button_list,
 					sview_job_info->job_ptr->node_inx[j],
 					sview_job_info->job_ptr->node_inx[j+1],
-					i, false, 0);
+					i, true, 0);
 			j += 2;
 		}
 		_layout_job_record(treeview, sview_job_info, update);
@@ -2346,11 +2344,9 @@ need_refresh:
 				j=0;
 				while(step_ptr->node_inx[j] >= 0) {
 					change_grid_color(
-						popup_win->
-						grid_button_list,
+						popup_win->grid_button_list,
 						step_ptr->node_inx[j],
-						step_ptr->
-						node_inx[j+1],
+						step_ptr->node_inx[j+1],
 						i, false, 0);
 					j += 2;
 				}
@@ -2759,6 +2755,7 @@ display_it:
 	if(!info_list)
 		return;
 	i=0;
+	
 	/* set up the grid */
 	itr = list_iterator_create(info_list);
 	while ((sview_job_info_ptr = list_next(itr))) {
@@ -2769,7 +2766,7 @@ display_it:
 				change_grid_color(grid_button_list,
 						  job_ptr->node_inx[j],
 						  job_ptr->node_inx[j+1],
-						  i, false, 0);
+						  i, true, 0);
 			j += 2;
 		}
 		i++;
@@ -2795,7 +2792,8 @@ display_it:
 		/* since this function sets the model of the tree_view 
 		   to the treestore we don't really care about 
 		   the return value */
-		create_treestore(tree_view, display_data_job, SORTID_CNT);
+		create_treestore(tree_view, display_data_job,
+				 SORTID_CNT, SORTID_SUBMIT_TIME);
 	}
 
 	view = INFO_VIEW;
@@ -2906,7 +2904,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data, 
-				 SORTID_CNT);
+				 SORTID_CNT, SORTID_SUBMIT_TIME);
 	}
 
 	setup_popup_grid_list(popup_win);
@@ -3018,7 +3016,7 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				job_ptr->node_inx[j],
-				job_ptr->node_inx[j+1], i, false, 0);
+				job_ptr->node_inx[j+1], i, true, 0);
 			j += 2;
 		}
 	}
