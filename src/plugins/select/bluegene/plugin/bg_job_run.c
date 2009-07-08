@@ -1076,11 +1076,11 @@ extern int start_job(struct job_record *job_ptr)
 				    SELECT_JOBDATA_BLOCK_ID, 
 				    &(bg_update_ptr->bg_block_id));
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_DATA_REBOOT, 
+				    SELECT_JOBDATA_REBOOT, 
 				    &(bg_update_ptr->reboot));
 #ifdef HAVE_BGL
 	select_g_selectt_jobinfo_get(job_ptr->select_jobinfo,
-				     SELECT_DATA_BLRTS_IMAGE, 
+				     SELECT_JOBDATA_BLRTS_IMAGE, 
 				     &(bg_update_ptr->blrtsimage));
 	if(!bg_update_ptr->blrtsimage) {
 		bg_update_ptr->blrtsimage =
@@ -1222,7 +1222,7 @@ extern int sync_jobs(List job_list)
 
 			select_g_select_jobinfo_get(
 				job_ptr->select_jobinfo,
-				SELECT_DATA_BLOCK_ID, 
+				SELECT_JOBDATA_BLOCK_ID, 
 				&(bg_update_ptr->bg_block_id));
 #ifdef HAVE_BGL
 			select_g_select_jobinfo_get(
@@ -1232,7 +1232,7 @@ extern int sync_jobs(List job_list)
 #else
 			select_g_select_jobinfo_get(
 				job_ptr->select_jobinfo,
-				SELECT_DATA_CONN_TYPE, 
+				SELECT_JOBDATA_CONN_TYPE, 
 				&(bg_update_ptr->conn_type));
 #endif
 			select_g_select_jobinfo_get(
