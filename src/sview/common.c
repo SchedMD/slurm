@@ -649,7 +649,7 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 
 extern GtkTreeStore *create_treestore(GtkTreeView *tree_view, 
 				      display_data_t *display_data,
-				      int count)
+				      int count, int sort_column)
 {
 	GtkTreeStore *treestore = NULL;
 	GType types[count];
@@ -717,7 +717,7 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 		}
 	}
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(treestore), 
-					     1, 
+					     sort_column, 
 					     GTK_SORT_ASCENDING);
 	
 	g_object_unref(treestore);

@@ -1999,7 +1999,8 @@ display_it:
 		/* since this function sets the model of the tree_view 
 		   to the treestore we don't really care about 
 		   the return value */
-		create_treestore(tree_view, display_data_part, SORTID_CNT);
+		create_treestore(tree_view, display_data_part,
+				 SORTID_CNT, SORTID_NAME);
 	}
 	view = INFO_VIEW;
 	_update_info_part(info_list, GTK_TREE_VIEW(display_widget));
@@ -2131,7 +2132,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data, 
-				 SORTID_CNT);
+				 SORTID_CNT, SORTID_NAME);
 	}
 	
 	setup_popup_grid_list(popup_win);

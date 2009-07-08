@@ -747,7 +747,7 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i, false, 0);
+					resv_ptr->node_inx[j+1], i, true, 0);
 				j += 2;
 			}
 			_layout_resv_record(treeview, sview_resv_info, update);
@@ -1004,7 +1004,7 @@ display_it:
 				change_grid_color(grid_button_list,
 						  resv_ptr->node_inx[j],
 						  resv_ptr->node_inx[j+1],
-						  i, false, 0);
+						  i, true, 0);
 			j += 2;
 		}
 		i++;
@@ -1030,7 +1030,8 @@ display_it:
 		/* since this function sets the model of the tree_view 
 		   to the treestore we don't really care about 
 		   the return value */
-		create_treestore(tree_view, display_data_resv, SORTID_CNT);
+		create_treestore(tree_view, display_data_resv,
+				 SORTID_CNT, SORTID_START_TIME);
 	}
 	view = INFO_VIEW;
 	_update_info_resv(info_list, GTK_TREE_VIEW(display_widget));
@@ -1113,8 +1114,8 @@ display_it:
 		/* since this function sets the model of the tree_view 
 		   to the treestore we don't really care about 
 		   the return value */
-		create_treestore(tree_view, 
-				 popup_win->display_data, SORTID_CNT);
+		create_treestore(tree_view, popup_win->display_data,
+				 SORTID_CNT, SORTID_START_TIME);
 	}
 
 	setup_popup_grid_list(popup_win);
@@ -1177,7 +1178,7 @@ display_it:
 				change_grid_color(
 					popup_win->grid_button_list,
 					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i, false, 0);
+					resv_ptr->node_inx[j+1], i, true, 0);
 			j += 2;
 		}
 	}
