@@ -22,6 +22,10 @@ AC_DEFUN([X_AC_GTK],
     if test -d "/usr/lib64/pkgconfig"; then
 	    PKG_CONFIG_PATH="/usr/lib64/pkgconfig/"
     fi
+
+    if test -d "/opt/gnome/lib64/pkgconfig"; then
+	    PKG_CONFIG_PATH="$PKG_CONFIG_PATH/opt/gnome/lib64/pkgconfig/:"
+    fi 
  
 ### Check for pkg-config program
     AC_ARG_WITH(
