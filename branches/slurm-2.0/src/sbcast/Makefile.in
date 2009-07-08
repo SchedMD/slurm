@@ -43,6 +43,11 @@ DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
+	$(top_srcdir)/auxdir/libtool.m4 \
+	$(top_srcdir)/auxdir/ltoptions.m4 \
+	$(top_srcdir)/auxdir/ltsugar.m4 \
+	$(top_srcdir)/auxdir/ltversion.m4 \
+	$(top_srcdir)/auxdir/lt~obsolete.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
 	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
