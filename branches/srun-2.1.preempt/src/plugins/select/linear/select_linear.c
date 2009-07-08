@@ -1535,7 +1535,8 @@ static void _init_node_cr(void)
 	/* record running and suspended jobs in node_cr_records */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
+		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr) &&
+		    !IS_JOB_COMPLETING(job_ptr))
 			continue;
 		if ((select_ptr = job_ptr->select_job) == NULL) {
 			error("job %u lacks a select_job_res struct",
@@ -1600,7 +1601,8 @@ static void _init_node_cr(void)
 					continue;
 				}
 				part_cr_ptr->tot_job_cnt++;
-				if (IS_JOB_RUNNING(job_ptr))
+				if (IS_JOB_RUNNING(job_ptr) || 
+				    IS_JOB_COMPLETING(job_ptr))
 					part_cr_ptr->run_job_cnt++;
 				break;
 			}
@@ -1823,7 +1825,7 @@ extern int select_p_block_init(List part_list)
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
  * RET zero on success, EINVAL otherwise
  * globals (passed via select_p_node_init): 
- *	node_record_count - count of nodes configured
+ *	node_recurd_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
  * NOTE: the job information that is considered for scheduling includes:
  *	req_node_bitmap: bitmap of specific nodes required by the job
