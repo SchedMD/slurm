@@ -2088,7 +2088,6 @@ static void _update_info_job(List info_list,
 	itr = list_iterator_create(info_list);
 	while ((sview_job_info = (sview_job_info_t*) list_next(itr))) {
 		job_ptr = sview_job_info->job_ptr;
-		g_print("here job %d with %d %d\n", job_ptr->job_id, job_ptr->num_procs, sview_job_info->node_cnt);
 		/* get the iter, or find out the list is empty goto add */
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
 			goto adding;

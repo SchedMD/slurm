@@ -949,6 +949,10 @@ char *node_state_string(uint16_t inx)
 			if (no_resp_flag)
 				return "DRAINING*";
 			return "DRAINING";
+		} else if (base == NODE_STATE_ERROR) {
+			if (no_resp_flag)
+				return "ERROR*";
+			return "ERROR";
 		} else {
 			if (no_resp_flag)
 				return "DRAINED*";
