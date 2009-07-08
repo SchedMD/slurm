@@ -75,8 +75,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Permit node suspend/resume logic to be enabled through "scontrol reconfig"
     given appropriate changes to slurm configuration file.
- -- Check for return codes on functions with warn_unused_result set
- -- Fix memory leak in getting step information
+ -- Check for return codes on functions with warn_unused_result set.
+ -- Fix memory leak in getting step information (as used by squeue -s).
  -- Better logging for when job's request bad output file locations.
  -- Fix issue where if user specified non-existant file to write to slurmstepd
     will regain privileges before sending batch script ended to the controller.
@@ -98,12 +98,18 @@ documents those changes that are of interest to users and admins.
     association.
  -- Do not set a job's virtual memory limit based upon the job's specified
     memory limit (which should be a real memory limit, not virtual).
- -- Strip single and double quotes out of a node's reason string to avoid
-    confusing Moab.
+ -- In sched/wiki2 - Strip single and double quotes out of a node's reason 
+    string to avoid confusing Moab's parser.
  -- BLUEGENE - fix for sinfo/sview for displaying proper node count for nodes 
     in draining state.
  -- Fix for sview when viewing a certain part of a group (like 1 job) so it 
     doesn't core when the part is gone.
+ -- BLUEGENE - Changed order of SYNC's to be on the front of the list to
+    avoid having a job terminated with a TERM before the SYNC of the 
+    job happens.
+ -- Validate configured PluginDir value is a valid directory before trying to
+    use it.
+ -- Fix to resolve agent_queue_request symbol from some checkpoint plugins.
 
 * Changes in SLURM 2.0.3
 ========================

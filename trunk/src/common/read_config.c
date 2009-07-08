@@ -46,14 +46,15 @@
 #include <ctype.h>
 #include <errno.h>
 #include <netdb.h>
+#include <pthread.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <pthread.h>
 
 #include <slurm/slurm.h>
 
@@ -118,6 +119,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover);
 static void _destroy_nodename(void *ptr);
+static bool _is_valid_dir(char *file_name);
 static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
 				const char *line, char **leftover);
@@ -283,6 +285,14 @@ s_p_options_t slurm_conf_options[] = {
 	{NULL}
 };
 
+static bool _is_valid_dir(char *file_name)
+{
+	struct stat buf;
+
+	if (stat(file_name, &buf) || !S_ISDIR(buf.st_mode))
+		return false;
+	return true;
+}
 
 static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
@@ -2100,6 +2110,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
 		conf->plugindir = xstrdup(default_plugin_path);
+	if (!_is_valid_dir(conf->plugindir))
+		fatal("Bad value \"%s\" for PluginDir", conf->plugindir);
 
 	if (!s_p_get_string(&conf->plugstack, "PlugStackConfig", hashtbl))
 		conf->plugstack = xstrdup(default_plugstack);

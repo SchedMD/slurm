@@ -507,8 +507,8 @@ static void _ckpt_dequeue_timeout(uint32_t job_id, uint32_t step_id,
 		goto fini;
 	iter = list_iterator_create(ckpt_timeout_list);
 	while ((rec = list_next(iter))) {
-		if ((rec->job_id != job_id) || (rec->step_id != step_id)
-		||  (start_time && (rec->start_time != start_time)))
+		if ((rec->job_id != job_id) || (rec->step_id != step_id) ||
+		    (start_time && (rec->start_time != start_time)))
 			continue;
 		/* debug("dequeue %u.%u", job_id, step_id); */
 		list_delete_item(iter);
