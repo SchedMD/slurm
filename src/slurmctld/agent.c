@@ -223,8 +223,9 @@ void *agent(void *args)
 	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type);
 #endif
 	slurm_mutex_lock(&agent_cnt_mutex);
-	while (slurmctld_config.shutdown_time == 0) {
-		if (agent_cnt < MAX_AGENT_CNT) {
+	while (1) {
+		if (slurmctld_config.shutdown_time ||
+		    (agent_cnt < MAX_AGENT_CNT)) {
 			agent_cnt++;
 			break;
 		} else {	/* wait for state change and retry */

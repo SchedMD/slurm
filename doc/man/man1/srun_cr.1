@@ -21,7 +21,7 @@ See "man srun" for details.
 .SH "DETAILS"
 After initialization, \fBsrun_cr\fR registers a thread context callback
 function.
-Then it forks a process and executes "cr_run --omit srun" with its arguments.
+Then it forks a process and executes "cr_run \-\-omit srun" with its arguments.
 \fBcr_run\fR is employed to exclude the \fBsrun\fR process from being dumped 
 upon checkpoint.
 All catchable signals except SIGCHLD sent to \fBsrun_cr\fR will be forwarded 
