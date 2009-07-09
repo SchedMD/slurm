@@ -383,7 +383,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		/* job script has not yet been written out to disk --
 		 * argv will be filled in later by _make_batch_script()
 		 */
-		job->argv    = (char **) xmalloc(sizeof(char *));
+		job->argv    = (char **) xmalloc(2 * sizeof(char *));
 	}
 
 	job->task = (slurmd_task_info_t **)

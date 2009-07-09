@@ -300,11 +300,12 @@ extern int read_slurmdbd_conf(void)
 	if(slurmdbd_conf->plugindir == NULL)
 		slurmdbd_conf->plugindir = xstrdup(default_plugin_path);
 	if (slurmdbd_conf->slurm_user_name) {
-		uid_t pw_uid = uid_from_string(slurmdbd_conf->slurm_user_name);
-		if (pw_uid == (uid_t) -1) {
+		uid_t pw_uid;
+		if (uid_from_string (slurmdbd_conf->slurm_user_name,
+					&pw_uid) < 0)
 			fatal("Invalid user for SlurmUser %s, ignored",
 			      slurmdbd_conf->slurm_user_name);
-		} else
+		else
 			slurmdbd_conf->slurm_user_id = pw_uid;
 	} else {
 		slurmdbd_conf->slurm_user_name = xstrdup("root");

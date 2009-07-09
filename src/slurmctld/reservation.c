@@ -810,8 +810,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 	tmp = xstrdup(users);
 	tok = strtok_r(tmp, ",", &last);
 	while (tok) {
-		u_tmp = uid_from_string(tok);
-		if (u_tmp == (uid_t) -1) {
+		if (uid_from_string (tok, &u_tmp) < 0) {
 			info("Reservation request has invalid user %s", tok);
 			goto inval;
 		}
@@ -871,11 +870,12 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 			goto inval;
 		} else
 			u_type[u_cnt] = 3;	/* set */
-		u_tmp = uid_from_string(tok);
-		if (u_tmp == (uid_t) -1) {
+
+		if (uid_from_string (tok, &u_tmp) < 0) {
 			info("Reservation request has invalid user %s", tok);
 			goto inval;
 		}
+
 		u_name[u_cnt] = tok;
 		u_list[u_cnt++] = u_tmp;
 		tok = strtok_r(NULL, ",", &last);

@@ -111,6 +111,11 @@ documents those changes that are of interest to users and admins.
  -- Validate configured PluginDir value is a valid directory before trying to
     use it.
  -- Fix to resolve agent_queue_request symbol from some checkpoint plugins.
+ -- Fix possible execve error for sbatch script read from stdin.
+ -- Modify handling of user ID/name and group ID/name in the slurm.conf file
+    to properly handle user names that contain all digits. Return error code 
+    from uid_from_string() and gid_from_string() functions rather than a uid of
+    -1, which might be a valid uid or gid on some systems.
 
 * Changes in SLURM 2.0.3
 ========================
