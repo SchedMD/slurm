@@ -3032,14 +3032,14 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "int unsigned default 0 not null" },
 		{ "sys_usec", "int unsigned default 0 not null" },
-		{ "max_vsize", "int unsigned default 0 not null" },
+		{ "max_vsize", "bigint unsigned default 0 not null" },
 		{ "max_vsize_task", "smallint unsigned default 0 not null" },
 		{ "max_vsize_node", "int unsigned default 0 not null" },
-		{ "ave_vsize", "float default 0.0 not null" },
-		{ "max_rss", "int unsigned default 0 not null" },
+		{ "ave_vsize", "double default 0.0 not null" },
+		{ "max_rss", "bigint unsigned default 0 not null" },
 		{ "max_rss_task", "smallint unsigned default 0 not null" },
 		{ "max_rss_node", "int unsigned default 0 not null" },
-		{ "ave_rss", "float default 0.0 not null" },
+		{ "ave_rss", "double default 0.0 not null" },
 		{ "max_pages", "int unsigned default 0 not null" },
 		{ "max_pages_task", "smallint unsigned default 0 not null" },
 		{ "max_pages_node", "int unsigned default 0 not null" },
@@ -10970,13 +10970,13 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		"user_sec=%ld, user_usec=%ld, "
 		"sys_sec=%ld, sys_usec=%ld, "
 		"max_vsize=%u, max_vsize_task=%u, "
-		"max_vsize_node=%u, ave_vsize=%.2f, "
+		"max_vsize_node=%u, ave_vsize=%f, "
 		"max_rss=%u, max_rss_task=%u, "
-		"max_rss_node=%u, ave_rss=%.2f, "
+		"max_rss_node=%u, ave_rss=%f, "
 		"max_pages=%u, max_pages_task=%u, "
-		"max_pages_node=%u, ave_pages=%.2f, "
-		"min_cpu=%.2f, min_cpu_task=%u, "
-		"min_cpu_node=%u, ave_cpu=%.2f "
+		"max_pages_node=%u, ave_pages=%f, "
+		"min_cpu=%f, min_cpu_task=%u, "
+		"min_cpu_node=%u, ave_cpu=%f "
 		"where id=%d and stepid=%u",
 		step_table, (int)now,
 		comp_status,
