@@ -66,6 +66,7 @@ enum {
 #ifdef HAVE_BGL
 	SORTID_BLRTSIMAGE,
 #endif
+	SORTID_COLOR,
 	SORTID_CONN,
 	SORTID_JOB,
 	SORTID_LINUXIMAGE,
@@ -90,6 +91,8 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_BLOCK, "Bluegene Block", 
 	 TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_NONE,
+	 refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_JOB, "JobID", TRUE, EDIT_NONE, refresh_block,
@@ -281,6 +284,8 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 {
 	char tmp_cnt[18];
 	
+	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
+			   sview_colors[block_ptr->color_inx], -1);
 	gtk_tree_store_set(treestore, iter, SORTID_BLOCK, 
 			   block_ptr->bg_block_name, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_PARTITION, 
@@ -477,6 +482,8 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->color_inx = 
 			atoi(block_ptr->bg_block_name+3);
 #endif
+		block_ptr->color_inx %= sview_colors_cnt;
+		
 		block_ptr->nodes 
 			= xstrdup(node_select_ptr->bg_info_array[i].nodes);
 		if(node_select_ptr->bg_info_array[i].ionodes) {
@@ -831,7 +838,7 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	static GtkWidget *display_widget = NULL;
 	List block_list = NULL;
 	int changed = 1;
-	int i=0, j=0;
+	int j=0;
 	ListIterator itr = NULL;
 	sview_block_info_t *sview_block_info_ptr = NULL;
 
@@ -898,7 +905,7 @@ display_it:
 					changed);
 	if(!block_list)
 		return;
-	i=0;
+
 	/* set up the grid */
 	itr = list_iterator_create(block_list);
 	while ((sview_block_info_ptr = list_next(itr))) {
@@ -911,7 +918,6 @@ display_it:
 					  true, 0);
 			j += 2;
 		}
-		i++;
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
@@ -934,7 +940,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, display_data_block,
-				 SORTID_CNT, SORTID_NODELIST);
+				 SORTID_CNT, SORTID_NODELIST, SORTID_COLOR);
 	}
 	view = INFO_VIEW;
 	_update_info_block(block_list, GTK_TREE_VIEW(display_widget));
@@ -1044,7 +1050,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data,
-				 SORTID_CNT, SORTID_BLOCK);
+				 SORTID_CNT, SORTID_BLOCK, SORTID_COLOR);
 	}
 
 	setup_popup_grid_list(popup_win);

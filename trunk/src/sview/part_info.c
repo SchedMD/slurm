@@ -55,10 +55,10 @@ typedef struct {
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
+	int color_inx;
 	/* part_info contains partition, avail, max_time, job_size, 
 	 * root, share, groups */
 	partition_info_t* part_ptr;
-	char *color;
 	List sub_list;
 } sview_part_info_t;
 
@@ -74,6 +74,7 @@ enum {
 #ifdef HAVE_BG
 	SORTID_NODELIST, 
 #endif
+	SORTID_COLOR,
 	SORTID_CPUS, 
 	SORTID_DEFAULT,
 	SORTID_FEATURES, 
@@ -107,6 +108,8 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
 	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_NONE, refresh_part,
+	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
@@ -160,7 +163,6 @@ static display_data_t display_data_part[] = {
 	 refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -908,6 +910,9 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	GtkTreeIter sub_iter;
 	int childern = 0;
 	
+	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
+			   sview_colors[sview_part_info->color_inx], -1);
+
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
 	if(part_ptr->default_part)
@@ -1490,6 +1495,8 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		
 		sview_part_info = _create_sview_part_info(part_ptr);
 		list_append(info_list, sview_part_info);
+		sview_part_info->color_inx = i % sview_colors_cnt;
+
 		j2 = 0;
 		while(part_ptr->node_inx[j2] >= 0) {
 			int i2 = 0;
@@ -1566,7 +1573,8 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					part_ptr->node_inx[j],
-					part_ptr->node_inx[j+1], i,
+					part_ptr->node_inx[j+1],
+					sview_part_info->color_inx,
 					true, 0);
 				j += 2;
 			}
@@ -1876,7 +1884,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
 	int changed = 1;
-	int j=0, i=0;
+	int j=0;
 	sview_part_info_t *sview_part_info = NULL;
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
@@ -1969,14 +1977,14 @@ display_it:
 		part_ptr = sview_part_info->part_ptr;
 		j=0;
 		while(part_ptr->node_inx[j] >= 0) {
-			sview_part_info->color = 
+			
 				change_grid_color(grid_button_list,
 						  part_ptr->node_inx[j],
 						  part_ptr->node_inx[j+1],
-						  i, true, 0);
+						  sview_part_info->color_inx,
+						  true, 0);
 			j += 2;
 		}
-		i++;
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
@@ -2000,7 +2008,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, display_data_part,
-				 SORTID_CNT, SORTID_NAME);
+				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 	view = INFO_VIEW;
 	_update_info_part(info_list, GTK_TREE_VIEW(display_widget));
@@ -2132,7 +2140,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data, 
-				 SORTID_CNT, SORTID_NAME);
+				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 	
 	setup_popup_grid_list(popup_win);
@@ -2185,7 +2193,8 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				part_ptr->node_inx[j],
-				part_ptr->node_inx[j+1], i, true, 0);
+				part_ptr->node_inx[j+1],
+				sview_part_info_ptr->color_inx, true, 0);
 			j += 2;
 		}
 	}

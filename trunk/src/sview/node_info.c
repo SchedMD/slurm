@@ -38,6 +38,7 @@ int g_node_scaling = 1;
 /* These need to be in alpha order (except POS and CNT) */
 enum { 
 	SORTID_POS = POS_LOC,
+	SORTID_COLOR,
 	SORTID_CPUS, 
 	SORTID_CORES,
 	SORTID_DISK, 
@@ -60,6 +61,8 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, EDIT_NONE, refresh_node,
+	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_COLOR, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_node,
 	 create_model_node, admin_edit_node},
@@ -254,6 +257,9 @@ static void _update_node_record(node_info_t *node_ptr,
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 	int total_used = node_ptr->cpus;
 	
+/* 	gtk_tree_store_set(treestore, iter, SORTID_COLOR, */
+/* 			   sview_colors[sview_job_info_ptr->color_inx], -1); */
+
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, node_ptr->name, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM, 
@@ -947,7 +953,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, display_data_node,
-				 SORTID_CNT, SORTID_NAME);
+				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 	view = INFO_VIEW;
 	_update_info_node(info_list, GTK_TREE_VIEW(display_widget));
@@ -1032,7 +1038,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data, 
-				 SORTID_CNT, SORTID_NAME);
+				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 
 	spec_info->view = INFO_VIEW;

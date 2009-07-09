@@ -256,13 +256,13 @@ static void *_editing_thr(gpointer arg)
 	return NULL;	
 }
 
-
 static void _add_col_to_treeview(GtkTreeView *tree_view, 
-				 display_data_t *display_data)
+				 display_data_t *display_data, int color_column)
 {
 	GtkTreeViewColumn *col = gtk_tree_view_column_new();
 	GtkListStore *model = (display_data->create_model)(display_data->id);
 	GtkCellRenderer *renderer = NULL;
+
 	if(model && display_data->extra != EDIT_NONE) {
 		renderer = gtk_cell_renderer_combo_new();
 		g_object_set(renderer,
@@ -292,17 +292,24 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 			  GINT_TO_POINTER(display_data->id));
 	
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute(col, renderer, 
-					   "text", display_data->id);
-	
-	gtk_tree_view_column_set_title(col, display_data->name);
-	gtk_tree_view_column_set_reorderable(col, true);
-	gtk_tree_view_column_set_resizable(col, true);
-	gtk_tree_view_column_set_expand(col, true);
-	gtk_tree_view_append_column(tree_view, col);
-	//	gtk_tree_view_insert_column(tree_view, col, display_data->id);
-	gtk_tree_view_column_set_sort_column_id(col, display_data->id);
 
+	if(display_data->id == color_column) {
+		gtk_tree_view_column_add_attribute(col, renderer,
+						   "cell-background",
+						   color_column);
+		g_object_set(renderer,
+			     "cell-background-set", TRUE,
+			     NULL);
+	} else {
+		gtk_tree_view_column_add_attribute(col, renderer,
+						   "text", display_data->id);
+		gtk_tree_view_column_set_expand(col, true);
+		gtk_tree_view_column_set_reorderable(col, true);
+		gtk_tree_view_column_set_resizable(col, true);
+		gtk_tree_view_column_set_sort_column_id(col, display_data->id);
+		gtk_tree_view_column_set_title(col, display_data->name);
+	}	
+	gtk_tree_view_append_column(tree_view, col);
 }
 
 static void _toggle_state_changed(GtkCheckMenuItem *menuitem, 
@@ -649,7 +656,8 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 
 extern GtkTreeStore *create_treestore(GtkTreeView *tree_view, 
 				      display_data_t *display_data,
-				      int count, int sort_column)
+				      int count, int sort_column,
+				      int color_column)
 {
 	GtkTreeStore *treestore = NULL;
 	GType types[count];
@@ -667,11 +675,14 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 	}
 	
 	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(treestore));
+
 	for(i=1; i<count; i++) {
 		if(!display_data[i].show) 
 			continue;
 		
-		_add_col_to_treeview(tree_view, &display_data[i]);
+		_add_col_to_treeview(tree_view, &display_data[i], color_column);
+		if(!display_data[i].name) 
+			continue;
 		switch(display_data[i].type) {
 		case G_TYPE_INT:
 			gtk_tree_sortable_set_sort_func(
@@ -1190,8 +1201,8 @@ extern void add_display_treestore_line(int update,
 				       const char *name, char *value)
 {
 	if(!name) {
-		g_print("error, name = %s and value = %s\n",
-			name, value);
+/* 		g_print("error, name = %s and value = %s\n", */
+/* 			name, value); */
 		return;
 	}
 	if(update) {

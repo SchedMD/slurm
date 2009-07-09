@@ -34,8 +34,8 @@
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
+	int color_inx;
 	reserve_info_t *resv_ptr;
-	char *color;
 } sview_resv_info_t;
 
 enum { 
@@ -48,6 +48,7 @@ enum {
 	SORTID_POS = POS_LOC,
 	SORTID_ACCOUNTS,
 	SORTID_ACTION,
+	SORTID_COLOR,
 	SORTID_DURATION,
 	SORTID_END_TIME,
 	SORTID_FEATURES,
@@ -72,6 +73,8 @@ static display_data_t display_data_resv[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NAME,       "Name", TRUE, EDIT_NONE, 
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_COLOR,    NULL, TRUE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACTION,     "Action", FALSE, EDIT_MODEL,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -524,6 +527,8 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	char tmp_char[50];
 	reserve_info_t *resv_ptr = sview_resv_info_ptr->resv_ptr;
       
+	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
+			   sview_colors[sview_resv_info_ptr->color_inx], -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 
 	gtk_tree_store_set(treestore, iter,
@@ -699,6 +704,7 @@ static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr,
 		resv_ptr = &(resv_info_ptr->reservation_array[i]);
 		sview_resv_info_ptr = xmalloc(sizeof(sview_resv_info_t));
 		sview_resv_info_ptr->resv_ptr = resv_ptr;
+		sview_resv_info_ptr->color_inx = i % sview_colors_cnt;
 		list_append(info_list, sview_resv_info_ptr);
 	}
 
@@ -747,7 +753,9 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i, true, 0);
+					resv_ptr->node_inx[j+1], 
+					sview_resv_info->color_inx,
+					true, 0);
 				j += 2;
 			}
 			_layout_resv_record(treeview, sview_resv_info, update);
@@ -950,7 +958,7 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	int i = 0, j = 0;
+	int j=0;
 	int changed = 1;
 	ListIterator itr = NULL;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
@@ -1000,14 +1008,13 @@ display_it:
 			continue;	/* only map current reservations */
 		j=0;
 		while(resv_ptr->node_inx[j] >= 0) {
-			sview_resv_info_ptr->color = 
-				change_grid_color(grid_button_list,
-						  resv_ptr->node_inx[j],
-						  resv_ptr->node_inx[j+1],
-						  i, true, 0);
+			change_grid_color(grid_button_list,
+					  resv_ptr->node_inx[j],
+					  resv_ptr->node_inx[j+1],
+					  sview_resv_info_ptr->color_inx,
+					  true, 0);
 			j += 2;
 		}
-		i++;
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
@@ -1031,7 +1038,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, display_data_resv,
-				 SORTID_CNT, SORTID_START_TIME);
+				 SORTID_CNT, SORTID_START_TIME, SORTID_COLOR);
 	}
 	view = INFO_VIEW;
 	_update_info_resv(info_list, GTK_TREE_VIEW(display_widget));
@@ -1115,7 +1122,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data,
-				 SORTID_CNT, SORTID_START_TIME);
+				 SORTID_CNT, SORTID_START_TIME, SORTID_COLOR);
 	}
 
 	setup_popup_grid_list(popup_win);
@@ -1178,7 +1185,9 @@ display_it:
 				change_grid_color(
 					popup_win->grid_button_list,
 					resv_ptr->node_inx[j],
-					resv_ptr->node_inx[j+1], i, true, 0);
+					resv_ptr->node_inx[j+1], 
+					sview_resv_info_ptr->color_inx,
+					true, 0);
 			j += 2;
 		}
 	}
