@@ -264,6 +264,8 @@ extern GStaticMutex sview_mutex;
 extern int cpus_per_node;
 extern int g_node_scaling;
 extern int grid_speedup;
+extern char *sview_colors[];
+extern int sview_colors_cnt;
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
@@ -418,7 +420,8 @@ extern GtkTreeView *create_treeview(display_data_t *local);
 extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table);
 extern GtkTreeStore *create_treestore(GtkTreeView *tree_view, 
 				      display_data_t *display_data,
-				      int count, int sort_column);
+				      int count, int sort_column,
+				      int color_column);
 
 extern void right_button_pressed(GtkTreeView *tree_view, GtkTreePath *path, 
 				 GdkEventButton *event, 

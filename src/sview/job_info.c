@@ -40,6 +40,7 @@
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
+	int color_inx;
 	job_info_t *job_ptr;
 	char *nodes;
 	int node_cnt;
@@ -71,6 +72,7 @@ enum {
 	SORTID_NODELIST, 
 	SORTID_BLOCK, 
 #endif
+	SORTID_COLOR,
 	SORTID_COMMENT,
 #ifdef HAVE_BG
 	SORTID_CONNECTION,
@@ -159,6 +161,8 @@ static display_data_t display_data_job[] = {
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_JOBID, "JobID", TRUE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_NONE,
+	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ACTION, "Action", FALSE,
 	 EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_ALLOC, NULL, FALSE, EDIT_NONE, refresh_job,
@@ -1498,6 +1502,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		secs2time_str(now_time, tmp_char, sizeof(tmp_char));
 		nodes = sview_job_info_ptr->nodes;	
 	}
+	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
+			   sview_colors[sview_job_info_ptr->color_inx], -1);
 	gtk_tree_store_set(treestore, iter, SORTID_TIME, tmp_char, -1);
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, tmp_char,
 			    sizeof(tmp_char));
@@ -2204,6 +2210,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		sview_job_info_ptr->step_list = list_create(NULL);
 		sview_job_info_ptr->node_cnt = 0;
 		sview_job_info_ptr->nodes = NULL;
+		sview_job_info_ptr->color_inx =
+			job_ptr->job_id % sview_colors_cnt;
 #ifdef HAVE_BG
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
 					    SELECT_JOBDATA_IONODES, 
@@ -2327,7 +2335,7 @@ need_refresh:
 					popup_win->grid_button_list,
 					sview_job_info->job_ptr->node_inx[j],
 					sview_job_info->job_ptr->node_inx[j+1],
-					sview_job_info->job_ptr->job_id,
+					sview_job_info->color_inx,
 					true, 0);
 			j += 2;
 		}
@@ -2691,7 +2699,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
 	int changed = 1;
-	int i = 0, j = 0;
+	int j=0;
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
@@ -2753,7 +2761,6 @@ display_it:
 					  changed, 0);
 	if(!info_list)
 		return;
-	i=0;
 	
 	/* set up the grid */
 	itr = list_iterator_create(info_list);
@@ -2764,10 +2771,10 @@ display_it:
 			change_grid_color(grid_button_list,
 					  job_ptr->node_inx[j],
 					  job_ptr->node_inx[j+1],
-					  job_ptr->job_id, true, 0);
+					  sview_job_info_ptr->color_inx,
+					  true, 0);
 			j += 2;
 		}
-		i++;
 	}
 	list_iterator_destroy(itr);
 	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
@@ -2791,7 +2798,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, display_data_job,
-				 SORTID_CNT, SORTID_SUBMIT_TIME);
+				 SORTID_CNT, SORTID_SUBMIT_TIME, SORTID_COLOR);
 	}
 
 	view = INFO_VIEW;
@@ -2902,7 +2909,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data, 
-				 SORTID_CNT, SORTID_SUBMIT_TIME);
+				 SORTID_CNT, SORTID_SUBMIT_TIME, SORTID_COLOR);
 	}
 
 	setup_popup_grid_list(popup_win);
@@ -3014,7 +3021,8 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				job_ptr->node_inx[j],
-				job_ptr->node_inx[j+1], job_ptr->job_id,
+				job_ptr->node_inx[j+1],
+				sview_job_info_ptr->color_inx,
 				true, 0);
 			j += 2;
 		}
