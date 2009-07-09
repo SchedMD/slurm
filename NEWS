@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
  -- Add support for licenses in resource reservation.
  -- BLUEGENE - Jobs waiting for a block to boot will now be in Configuring
     state. 
+ -- bit_fmt now does not return brackets surrounding any set of data.
 
 * Changes in SLURM 2.1.0-pre1
 =============================
