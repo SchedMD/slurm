@@ -40,6 +40,7 @@ documents those changes that are of interest to users and admins.
  -- Validate configured PluginDir value is a valid directory before trying to
     use it.
  -- Fix to resolve agent_queue_request symbol from some checkpoint plugins.
+ -- Fix possible execve error for sbatch script read from stdin.
 
 * Changes in SLURM 2.0.3
 ========================
