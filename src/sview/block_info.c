@@ -934,7 +934,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, display_data_block,
-				 SORTID_CNT, SORTID_BLOCK);
+				 SORTID_CNT, SORTID_NODELIST);
 	}
 	view = INFO_VIEW;
 	_update_info_block(block_list, GTK_TREE_VIEW(display_widget));
