@@ -922,7 +922,7 @@ display_it:
 	/* set up the grid */
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info_ptr = list_next(itr))) {
-		change_grid_color(grid_button_list, i, i, i, false, 0);
+		change_grid_color(grid_button_list, i, i, i, true, 0);
 		i++;
 	}
 	list_iterator_destroy(itr);
@@ -1139,7 +1139,7 @@ display_it:
 		
 		list_push(send_info_list, sview_node_info_ptr);
 		change_grid_color(popup_win->grid_button_list,
-				  i, i, 0, false, 0);
+				  i, i, 0, true, 0);
 	}
 	list_iterator_destroy(itr);
 	post_setup_popup_grid_list(popup_win);
