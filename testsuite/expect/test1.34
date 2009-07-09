@@ -84,7 +84,7 @@ if {$matches != 1} {
 #
 if {$exit_code == 0} {
 	make_bash_script $file_in "$bin_rm -f *${test_prog}*core"
-	exec $file_in
+	exec ./$file_in
 	exec $bin_rm -f $file_in $test_prog
 	send_user "\nSUCCESS\n"
 }
