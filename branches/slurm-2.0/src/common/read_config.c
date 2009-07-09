@@ -2304,8 +2304,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->slurm_user_name = xstrdup("root");
 		conf->slurm_user_id   = 0;
 	} else {
-		uid_t my_uid = uid_from_string(conf->slurm_user_name);
-		if (my_uid == (uid_t) -1) {
+		uid_t my_uid;
+		if (uid_from_string (conf->slurm_user_name, &my_uid) < 0) {
 			fatal ("Invalid user for SlurmUser %s, ignored",
 			       conf->slurm_user_name);
 			xfree(conf->slurm_user_name);
@@ -2318,8 +2318,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->slurmd_user_name = xstrdup("root");
 		conf->slurmd_user_id   = 0;
 	} else {
-		uid_t my_uid = uid_from_string(conf->slurmd_user_name);
-		if (my_uid == (uid_t) -1) {
+		uid_t my_uid;
+		if (uid_from_string (conf->slurmd_user_name, &my_uid) < 0) {
 			fatal ("Invalid user for SlurmdUser %s, ignored",
 			       conf->slurmd_user_name);
 			xfree(conf->slurmd_user_name);
