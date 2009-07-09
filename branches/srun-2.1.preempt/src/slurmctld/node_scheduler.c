@@ -308,8 +308,9 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_max_share,
 	/* no sharing if part=EXCLUSIVE */
 	if (part_max_share == 0)
 		return 0;
-	/* sharing if part=FORCE */
-	if (part_max_share & SHARED_FORCE)
+	/* sharing if part=FORCE with count > 1 */
+	if ((part_max_share & SHARED_FORCE) &&
+	    ((part_max_share & (~SHARED_FORCE)) > 1))
 		return 2;
 
 	if (cons_res_flag) {
