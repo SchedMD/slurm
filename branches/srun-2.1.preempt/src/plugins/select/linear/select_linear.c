@@ -1609,7 +1609,7 @@ static void _init_node_cr(void)
 			if (part_cr_ptr == NULL) {
 				error("_init_node_cr: could not find "
 					"partition %s for node %s",
-					job_ptr->part_ptr->name,
+					job_ptr->partition,
 					node_record_table_ptr[i].name);
 			}
 		}
