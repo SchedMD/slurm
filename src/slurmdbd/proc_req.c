@@ -1140,8 +1140,8 @@ static int _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 	job_cond.partition_list = get_jobs_msg->selected_parts;
 
 	if (get_jobs_msg->user) {
-		uid_t pw_uid = uid_from_string(get_jobs_msg->user);
-		if (pw_uid != (uid_t) -1) {
+		uid_t pw_uid;
+		if (uid_from_string (get_jobs_msg->user, &pw_uid) >= 0) {
 			char *temp = xstrdup_printf("%u", pw_uid);
 			job_cond.userid_list = list_create(slurm_destroy_char);
 			list_append(job_cond.userid_list, temp);
@@ -2093,9 +2093,11 @@ static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 		if(user_cond && user_cond->assoc_cond 
 		   && user_cond->assoc_cond->user_list
 		   && (list_count(user_cond->assoc_cond->user_list) == 1)) {
-			uid_t pw_uid = uid_from_string(
-				list_peek(user_cond->assoc_cond->user_list));
-			if (pw_uid == *uid) {
+			uid_t pw_uid;
+			char *name;
+			name = list_peek (user_cond->assoc_cond->user_list);
+		        if ((uid_from_string (name, &pw_uid) >= 0)
+			    && pw_uid == *uid) {
 				same_user = 1;
 				goto is_same_user;
 			}

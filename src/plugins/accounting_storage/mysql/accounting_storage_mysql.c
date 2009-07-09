@@ -7602,8 +7602,7 @@ empty:
 		 * different machine where this user may not exist or
 		 * may have a different uid
 		 */
-/* 		pw_uid = uid_from_string(user->name); */
-/* 		if(pw_uid == (uid_t) -1)  */
+/* 		if (uid_from_string (user->name, &pw_uid) < 0)  */
 /* 			user->uid = (uint32_t)NO_VAL; */
 /* 		else */
 /* 			user->uid = passwd_ptr->pw_uid; */

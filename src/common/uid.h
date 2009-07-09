@@ -55,10 +55,10 @@
  * Return validated uid_t for string in ``name'' which contains
  *  either the UID number or user name
  * 
- * Returns uid after verifying presence in /etc/passwd, or
- *  (uid_t) -1 on failure.
+ * Returns uid int uidp after verifying presence in /etc/passwd, or
+ *  -1 on failure.
  */
-uid_t uid_from_string (char *name);
+int uid_from_string (char *name, uid_t *uidp);
 
 /*
  * Return the primary group id for a given user id, or 
@@ -69,7 +69,7 @@ gid_t gid_from_uid (uid_t uid);
 /*
  * Same as uid_from_name(), but for group name/id.
  */
-gid_t gid_from_string (char *name);
+int gid_from_string (char *name, gid_t *gidp);
 
 /* 
  * Translate uid to user name, 

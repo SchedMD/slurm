@@ -79,8 +79,8 @@ static int _getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
 	return rc;
 }
 
-uid_t
-uid_from_string (char *name)
+int
+uid_from_string (char *name, uid_t *uidp)
 {
 	struct passwd pwd, *result;
 	char buffer[PW_BUF_SIZE], *p = NULL;
@@ -90,8 +90,10 @@ uid_from_string (char *name)
 	 *  Check to see if name is a valid username first.
 	 */
 	if ((_getpwnam_r (name, &pwd, buffer, PW_BUF_SIZE, &result) == 0)
-	    && result != NULL)
-		return result->pw_uid;
+	    && result != NULL) {
+		*uidp = result->pw_uid;
+		return 0;
+	}
 
 	/*
 	 *  If username was not valid, check for a valid UID.
@@ -103,15 +105,16 @@ uid_from_string (char *name)
 	   || (*p != '\0')
 	   || (l < 0)
 	   || (l > INT_MAX))
-		return (uid_t) -1;
+		return -1;
 
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
-	if (_getpwuid_r (l, &pwd, buffer, PW_BUF_SIZE, &result) == 0)
-		return (uid_t) l;
+	if (_getpwuid_r (l, &pwd, buffer, PW_BUF_SIZE, &result) != 0)
+		return -1;
 
-	return (uid_t) -1;
+	*uidp = (uid_t) l;
+	return 0;
 }
 
 char *
@@ -182,8 +185,8 @@ static int _getgrgid_r (gid_t gid, struct group *grp, char *buf,
 	return rc;
 }
 
-gid_t
-gid_from_string (char *name)
+int
+gid_from_string (char *name, gid_t *gidp)
 {
 	struct group grp, *result;
 	char buffer[PW_BUF_SIZE], *p = NULL;
@@ -193,8 +196,10 @@ gid_from_string (char *name)
 	 *  Check for valid group name first.
 	 */
 	if ((_getgrnam_r (name, &grp, buffer, PW_BUF_SIZE, &result) == 0)
-	    && result != NULL)
-		return result->gr_gid;
+	    && result != NULL) {
+		*gidp = result->gr_gid;
+		return 0;
+	}
 
 	/*
 	 *  If group name was not valid, perhaps it is a  valid GID.
@@ -206,16 +211,17 @@ gid_from_string (char *name)
 	   || (*p != '\0')
 	   || (l < 0)
 	   || (l > INT_MAX))
-		return (gid_t) -1;
+		return -1;
 
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
-	if ((_getgrgid_r (l, &grp, buffer, PW_BUF_SIZE, &result) == 0)
-	    && result != NULL)
-		return (gid_t) l;
+	if ((_getgrgid_r (l, &grp, buffer, PW_BUF_SIZE, &result) != 0)
+	    || result == NULL)
+		return -1;
 
-	return (gid_t) -1;
+	*gidp = (gid_t) l;
+	return 0;
 }
 
 char *
