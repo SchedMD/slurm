@@ -2185,7 +2185,7 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				part_ptr->node_inx[j],
-				part_ptr->node_inx[j+1], i, false, 0);
+				part_ptr->node_inx[j+1], i, true, 0);
 			j += 2;
 		}
 	}

@@ -49,9 +49,9 @@ typedef struct {
 	int *bp_inx;            /* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
+	int color_inx;
 	int job_running;
 	bool printed;
-	char *color;
 #ifdef HAVE_BGL
 	char *blrtsimage;       /* BlrtsImage for this block */
 #endif
@@ -470,6 +470,13 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->bg_block_name 
 			= xstrdup(node_select_ptr->
 				  bg_info_array[i].bg_block_id);
+#ifdef HAVE_BG_FILES
+		block_ptr->color_inx = 
+			atoi(block_ptr->bg_block_name+7);
+#else
+		block_ptr->color_inx = 
+			atoi(block_ptr->bg_block_name+3);
+#endif
 		block_ptr->nodes 
 			= xstrdup(node_select_ptr->bg_info_array[i].nodes);
 		if(node_select_ptr->bg_info_array[i].ionodes) {
@@ -580,8 +587,9 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					block_ptr->bp_inx[j],
-					block_ptr->bp_inx[j+1], i, false,
-					state);
+					block_ptr->bp_inx[j+1],
+					block_ptr->color_inx, true,
+					0);
 				j += 2;
 			}
 			_layout_block_record(treeview, block_ptr, update);
@@ -896,13 +904,11 @@ display_it:
 	while ((sview_block_info_ptr = list_next(itr))) {
 		j=0;
 		while(sview_block_info_ptr->bp_inx[j] >= 0) {
-			sview_block_info_ptr->color =
-				change_grid_color(grid_button_list,
-						  sview_block_info_ptr->
-						  bp_inx[j],
-						  sview_block_info_ptr->
-						  bp_inx[j+1],
-						  i, false, 0);
+			change_grid_color(grid_button_list,
+					  sview_block_info_ptr->bp_inx[j],
+					  sview_block_info_ptr->bp_inx[j+1],
+					  sview_block_info_ptr->color_inx,
+					  true, 0);
 			j += 2;
 		}
 		i++;
@@ -1130,7 +1136,8 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				block_ptr->bp_inx[j],
-				block_ptr->bp_inx[j+1], i, false, state);
+				block_ptr->bp_inx[j+1], block_ptr->color_inx,
+				true, state);
 			j += 2;
 		}
 	}

@@ -43,7 +43,6 @@ typedef struct {
 	job_info_t *job_ptr;
 	char *nodes;
 	int node_cnt;
-	char *color;
 	List step_list;
 } sview_job_info_t;
 
@@ -2328,7 +2327,8 @@ need_refresh:
 					popup_win->grid_button_list,
 					sview_job_info->job_ptr->node_inx[j],
 					sview_job_info->job_ptr->node_inx[j+1],
-					i, true, 0);
+					sview_job_info->job_ptr->job_id,
+					true, 0);
 			j += 2;
 		}
 		_layout_job_record(treeview, sview_job_info, update);
@@ -2346,7 +2346,7 @@ need_refresh:
 						popup_win->grid_button_list,
 						step_ptr->node_inx[j],
 						step_ptr->node_inx[j+1],
-						i, false, 0);
+						step_ptr->step_id, false, 0);
 					j += 2;
 				}
 				_layout_step_record(treeview, 
@@ -2761,11 +2761,10 @@ display_it:
 		job_ptr = sview_job_info_ptr->job_ptr;
 		j=0;
 		while(job_ptr->node_inx[j] >= 0) {
-			sview_job_info_ptr->color =
-				change_grid_color(grid_button_list,
-						  job_ptr->node_inx[j],
-						  job_ptr->node_inx[j+1],
-						  i, true, 0);
+			change_grid_color(grid_button_list,
+					  job_ptr->node_inx[j],
+					  job_ptr->node_inx[j+1],
+					  job_ptr->job_id, true, 0);
 			j += 2;
 		}
 		i++;
@@ -3015,7 +3014,8 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				job_ptr->node_inx[j],
-				job_ptr->node_inx[j+1], i, true, 0);
+				job_ptr->node_inx[j+1], job_ptr->job_id,
+				true, 0);
 			j += 2;
 		}
 	}
