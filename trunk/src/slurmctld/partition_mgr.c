@@ -1213,13 +1213,11 @@ uid_t *_get_group_members(char *group_name)
 
 	j = 0;
 	for (i=0; i<uid_cnt; i++) {
-		my_uid = uid_from_string(grp_result->gr_mem[i]);
-		if (my_uid == (uid_t) -1) {
+		if (uid_from_string (grp_result->gr_mem[i], &my_uid) < 0)
 			error("Could not find user %s in configured group %s",
 			      grp_result->gr_mem[i], group_name);
-		} else if (my_uid) {
+		else if (my_uid)
 			group_uids[j++] = my_uid;
-		}
 	}
 
 #ifdef HAVE_AIX

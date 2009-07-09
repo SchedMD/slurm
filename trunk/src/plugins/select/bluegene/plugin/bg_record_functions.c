@@ -573,8 +573,7 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 		uid_t pw_uid;
 		xfree(bg_record->user_name);
 		bg_record->user_name = xstrdup(bg_record->target_name);
-		pw_uid = uid_from_string(bg_record->user_name);
-		if(pw_uid == (uid_t) -1) {
+		if (uid_from_string (bg_record->user_name, &pw_uid) < 0) {
 			error("No such user: %s", bg_record->user_name);
 			return -1;
 		} else {
@@ -690,12 +689,10 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
 	
-	pw_uid = uid_from_string(bg_record->user_name);
-	if(pw_uid == (uid_t) -1) {
+	if (uid_from_string (bg_record->user_name, &pw_uid) < 0)
 		error("add_bg_record: No such user: %s", bg_record->user_name);
-	} else {
+	else
 		bg_record->user_uid = pw_uid;
-	}
 
 	bg_record->bg_block_list = list_create(destroy_ba_node);
 	if(used_nodes) {
@@ -1432,12 +1429,11 @@ extern int put_block_in_error_state(bg_record_t *bg_record, int state)
 	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
 	
-	pw_uid = uid_from_string(bg_record->user_name);
-	if(pw_uid == (uid_t) -1) {
+	if (uid_from_string (bg_record->user_name, &pw_uid) < 0)
 		error("No such user: %s", bg_record->user_name);
-	} else {
+	else
 		bg_record->user_uid = pw_uid;
-	}
+
 	slurm_mutex_unlock(&block_state_mutex);
 
 	trigger_block_error();

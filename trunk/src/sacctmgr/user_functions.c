@@ -1069,8 +1069,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				}
 				first = 0;				
 			}
-			pw_uid = uid_from_string(name);
-			if(pw_uid == (uid_t) -1) {
+			if (uid_from_string (name, &pw_uid) < 0) {
 				char *warning = xstrdup_printf(
 					"There is no uid for user '%s'"
 					"\nAre you sure you want to continue?",
