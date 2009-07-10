@@ -3435,7 +3435,18 @@ void job_time_limit(void)
 
 		xassert (job_ptr->magic == JOB_MAGIC);
 
+		/* This needs to be near the top of the loop, checks every 
+		 * running, suspended and pending job */
 		resv_status = job_resv_check(job_ptr);
+
+		if ((job_ptr->priority == 1) && (!IS_JOB_FINISHED(job_ptr))) {
+			/* Rather than resetting job priorities whenever a 
+			 * DOWN, DRAINED or non-responsive node is returned to 
+			 * service, we pick them up here. There will be a small
+			 * delay in restting a job's priority, but the code is 
+			 * a lot cleaner this way. */
+			_set_job_prio(job_ptr);
+		}
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 
