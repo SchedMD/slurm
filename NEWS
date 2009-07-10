@@ -9,6 +9,10 @@ documents those changes that are of interest to users and admins.
     parameter to enable/disable the job preemption logic (disabled by default).
  -- If the --partition option is used with the sinfo or squeue command then
     print information about even hidden partitions.
+ -- Replaced misc cpu allocation members in job_info_t with select_job_res_t
+    which will only be populated when requested (show_flags & SHOW_DETAIL)
+ -- Added a --detail option to "scontrol show job" to display the cpu/mem
+    allocation info on a node-by-node basis.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
