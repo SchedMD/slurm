@@ -22,6 +22,8 @@ slurmctld_SOURCES = 	\
 	basil_interface.c \
 	basil_interface.h \
 	controller.c 	\
+	gang.c		\
+	gang.h		\
 	job_mgr.c 	\
 	job_scheduler.c \
 	job_scheduler.h \

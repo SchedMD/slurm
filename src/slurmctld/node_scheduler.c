@@ -308,8 +308,9 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_max_share,
 	/* no sharing if part=EXCLUSIVE */
 	if (part_max_share == 0)
 		return 0;
-	/* sharing if part=FORCE */
-	if (part_max_share & SHARED_FORCE)
+	/* sharing if part=FORCE with count > 1 */
+	if ((part_max_share & SHARED_FORCE) &&
+	    ((part_max_share & (~SHARED_FORCE)) > 1))
 		return 2;
 
 	if (cons_res_flag) {
@@ -593,8 +594,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_avail = false;	/* Job can run with available nodes */
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
-	static bool sched_gang_test = false;
-	static bool sched_gang = false;
+	bool sched_gang = false;
 	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE; 
 	int shared = 0, select_mode;
 
@@ -622,6 +622,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	shared = _resolve_shared_status(job_ptr->details->shared,
 					part_ptr->max_share, cr_enabled);
 	job_ptr->details->shared = shared;
+
+	/* If job preemption is enabled, then do NOT limit the set of available
+	 * nodes by their current 'sharable' or 'idle' setting */
+	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
+		sched_gang = true;		
 
 	if (cr_enabled) {
 		/* Determine which nodes might be used by this job based upon
@@ -673,16 +678,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				return ESLURM_NODES_BUSY;
 			}
 		}
-		/* If preemption is available via sched/gang, then
-		 * do NOT limit the set of available nodes by their
-		 * current 'sharable' or 'idle' setting */
-		if (!sched_gang_test) {
-			char *sched_type = slurm_get_sched_type();
-			if (strcmp(sched_type, "sched/gang") == 0)
-				sched_gang = true;
-			xfree(sched_type);
-			sched_gang_test = true;
-		}
+
 		if (!sched_gang) {
 			if (shared) {
 				if (!bit_super_set(job_ptr->details->
@@ -746,16 +742,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				bit_and(node_set_ptr[i].my_bitmap,
 					partially_idle_node_bitmap);
 			}
-			/* If preemption is available via sched/gang, then
-			 * do NOT limit the set of available nodes by their
-			 * current 'sharable' or 'idle' setting */
-			if (!sched_gang_test) {
-				char *sched_type = slurm_get_sched_type();
-				if (strcmp(sched_type, "sched/gang") == 0)
-					sched_gang = true;
-				xfree(sched_type);
-				sched_gang_test = true;
-			}
+
 			if (!sched_gang) {
 				if (shared) {
 					bit_and(node_set_ptr[i].my_bitmap,

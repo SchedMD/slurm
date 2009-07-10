@@ -114,8 +114,10 @@ extern void parse_command_line(int argc, char *argv[])
 
 	if (getenv("SINFO_ALL"))
 		params.all_flag = true;
-	if ( ( env_val = getenv("SINFO_PARTITION") ) )
+	if ( ( env_val = getenv("SINFO_PARTITION") ) ) {
 		params.partition = xstrdup(env_val);
+		params.all_flag = true;
+	}
 	if ( ( env_val = getenv("SINFO_SORT") ) )
 		params.sort = xstrdup(env_val);
 
@@ -183,6 +185,7 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int) 'p':
 			xfree(params.partition);
 			params.partition = xstrdup(optarg);
+			params.all_flag = true;
 			break;
 		case (int) 'r':
 			params.responding_nodes = true;

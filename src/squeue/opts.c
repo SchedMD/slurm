@@ -176,6 +176,7 @@ parse_command_line( int argc, char* argv[] )
 				params.partitions = xstrdup(optarg);
 				params.part_list = 
 					_build_str_list( params.partitions );
+				params.all_flag = true;
 				break;
 			case (int) 'U':
 				xfree(params.accounts);
@@ -281,6 +282,7 @@ parse_command_line( int argc, char* argv[] )
 	     ( env_val = getenv("SQUEUE_PARTITION") ) ) {
 		params.partitions = xstrdup(env_val);
 		params.part_list = _build_str_list( params.partitions );
+		params.all_flag = true;
 	}
 
 	if ( ( params.accounts == NULL ) && 

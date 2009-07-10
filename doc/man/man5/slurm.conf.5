@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "May 2009" "slurm.conf 2.0" "Slurm configuration file"
+.TH "slurm.conf" "5" "July 2009" "slurm.conf 2.1" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -37,6 +37,11 @@ configuration file.
 The overall configuration parameters available include:
 
 .TP
+\fBAccountingStorageBackupHost\fR
+The name of the backup machine hosting the accounting storage database.
+Only used for accounting_storage/slurmdbd plugin, ignored otherwise.
+
+.TP
 \fBAccountingStorageEnforce\fR
 This controls what level of enforcement you want on associations when new
 jobs are submitted.  Valid options are any combination of associations, limits,
@@ -47,11 +52,6 @@ unless a corresponding association exists in the system.  If limits are
 enforced users can be limited by association to how many nodes or how long 
 jobs can run or other limits.  With wckeys enforced jobs will not be scheduled 
 unless a valid workload characterization key is specified.
-
-.TP
-\fBAccountingStorageBackupHost\fR
-The name of the backup machine hosting the accounting storage database.
-Only used for accounting_storage/slurmdbd plugin, ignored otherwise.
 
 .TP
 \fBAccountingStorageHost\fR
@@ -716,13 +716,47 @@ in the same directory as the system slurm.conf. For more information
 on SPANK plugins, see the \fBspank\fR(8) manual.
 
 .TP
+\fBPreemptMode\fR
+Controls the mechanism used to preempt lower priority jobs in order to 
+execute higher priority jobs.
+For gang scheduling of jobs having the same priority, job suspend will
+always be used and \fBPreemptMode\fR must be set to \fIKILL\fR or \fISUSPEND\fR 
+(anything other than OFF).
+Two different mechanisms can be used to determine when preeption can 
+take place. 
+SLURM partitions can have different \fBPriority\fR values and contain 
+the same nodes, in which case jobs from the higher priority 
+partition will preempt jobs from the lower priority partition.
+Alternately when SLURM is used with an accounting database, the jobs can be
+submitted to the same partition but have different Quality Of Service (QOS) 
+values. 
+Jobs from a QOS with a descriptor containing \fIPREEMPTOR\fR are capable
+of preempting jobs from a QOS with a descriptor containing \fIPREEMPTEE\fR.
+.RS
+.TP 12
+\fBOFF\fR
+is the default value and disables job preemption and gang scheduling.
+This is the only option compatible with \fBSchedulerType=sched/wiki\fR 
+or \fBSchedulerType=sched/wiki2\fR (used by Maui and Moab respecitvely, 
+which provide their own job preemption functionality).
+.TP
+\fBKILL\fR
+preempts jobs by killing or requeuing them.
+.TP
+\fBSUSPEND\fR
+preempts jobs by suspending them.
+A suspended job will resume execution once the high priority job 
+preempting it completes.
+.RE
+
+.TP
 \fBPriorityDecayHalfLife\fR
 This controls how long prior resource use is considered in determining
 how over\- or under\-serviced an association is (user, bank account and 
 cluster) in determining job priority.  If set to 0 no decay will be applied.  
 This is helpful if you want to enforce hard time limits per association.  If 
-set to 0 PriorityUsageResetPeriod must be set to some interval.
-Applicable only if PriorityType=priority/multifactor.
+set to 0 \fBPriorityUsageResetPeriod\fR must be set to some interval.
+Applicable only if \fBPriorityType=priority/multifactor\fR.
 The unit is a time string (i.e. min, hr:min:00, days\-hr:min:00, 
 or days\-hr).  The default value is 7\-0 (7 days).
 
@@ -2102,8 +2136,8 @@ is very important.
 memory as a consumable resource and the \fB\-\-mem\fR option
 should be used for job allocations.
 Possible values for \fBShared\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
-Sharing of resources is typically useful only when using
-\fBSchedulerType=sched/gang\fR.
+Sharing of resources is typically useful only when using gang scheduling
+(\fBPreemptMode=suspend\fR or \fBPreemptMode=kill\fR).
 For more information see the following web pages:
 .br
 .na

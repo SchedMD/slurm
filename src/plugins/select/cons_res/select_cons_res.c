@@ -251,10 +251,8 @@ static void _dump_state(struct part_res_record *p_ptr)
 extern bool cr_priority_selection_enabled()
 {
 	if (!cr_priority_test) {
-		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/gang") == 0)
+		if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 			cr_priority_selection = true;
-		xfree(sched_type);
 		cr_priority_test = true;
 	}
 	return cr_priority_selection;
@@ -1050,8 +1048,10 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 	
 	if (max_share == 0)
 		return NODE_CR_RESERVED;
-	
-	if (max_share & SHARED_FORCE)
+
+	/* sharing if part=FORCE with count > 1 */
+	if ((max_share & SHARED_FORCE) &&
+	    ((max_share & (~SHARED_FORCE)) > 1))
 		return NODE_CR_AVAILABLE;
 
 	/* Shared=NO or Shared=YES */
@@ -1518,8 +1518,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* NOTE: This function is not called with sched/gang because it needs
- * to track how many jobs are running or suspended on each node.
+/* NOTE: This function is not called with gang scheduling because it 
+ * needs to track how many jobs are running or suspended on each node.
  * This sum is compared with the partition's Shared parameter */
 extern int select_p_job_suspend(struct job_record *job_ptr)
 {
@@ -1838,6 +1838,8 @@ extern int select_p_reconfigure(void)
 	info("cons_res: select_p_reconfigure");
 
 	/* Rebuild the global data structures */
+	cr_priority_selection = false;
+	cr_priority_test = false;
 	rc = select_p_node_init(node_record_table_ptr, node_record_count);
 	if (rc != SLURM_SUCCESS)
 		return rc;

@@ -367,7 +367,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
-		 src/plugins/sched/gang/Makefile
 		 src/plugins/sched/hold/Makefile
 		 src/plugins/sched/wiki/Makefile
 		 src/plugins/sched/wiki2/Makefile

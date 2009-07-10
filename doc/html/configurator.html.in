@@ -219,6 +219,7 @@ function displayfile()
    "# <br>" +
    "# SCHEDULING <br>" +
    "#DefMemPerCPU=0 <br>" +
+   "#EnablePreemption=no <br>" +
    "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
    "#MaxMemPerCPU=0 <br>" +
    "#SchedulerRootFilter=1 <br>" +
