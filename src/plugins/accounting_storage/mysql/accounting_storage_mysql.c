@@ -3035,7 +3035,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "max_vsize", "bigint unsigned default 0 not null" },
 		{ "max_vsize_task", "smallint unsigned default 0 not null" },
 		{ "max_vsize_node", "int unsigned default 0 not null" },
-		{ "ave_vsize", "double default 0.0 not null" },
+		{ "ave_vsize", "double unsigned default 0.0 not null" },
 		{ "max_rss", "bigint unsigned default 0 not null" },
 		{ "max_rss_task", "smallint unsigned default 0 not null" },
 		{ "max_rss_node", "int unsigned default 0 not null" },
