@@ -2992,7 +2992,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "preemptees", "text not null default ''" },
 		{ "preemptors", "text not null default ''" },
 		{ "priority", "int default 0" },
-		{ "usage_factor", "float default 1.0 not null" },
+		{ "usage_factor", "double default 1.0 not null" },
 		{ NULL, NULL}		
 	};
 
@@ -3039,15 +3039,15 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "max_rss", "bigint unsigned default 0 not null" },
 		{ "max_rss_task", "smallint unsigned default 0 not null" },
 		{ "max_rss_node", "int unsigned default 0 not null" },
-		{ "ave_rss", "double default 0.0 not null" },
+		{ "ave_rss", "double unsigned default 0.0 not null" },
 		{ "max_pages", "int unsigned default 0 not null" },
 		{ "max_pages_task", "smallint unsigned default 0 not null" },
 		{ "max_pages_node", "int unsigned default 0 not null" },
-		{ "ave_pages", "float default 0.0 not null" },
+		{ "ave_pages", "double unsigned default 0.0 not null" },
 		{ "min_cpu", "int unsigned default 0 not null" },
 		{ "min_cpu_task", "smallint unsigned default 0 not null" },
 		{ "min_cpu_node", "int unsigned default 0 not null" },
-		{ "ave_cpu", "float default 0.0 not null" },
+		{ "ave_cpu", "double unsigned default 0.0 not null" },
 		{ NULL, NULL}
 	};
 
