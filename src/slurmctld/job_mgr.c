@@ -4006,7 +4006,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
 			continue;
 
-		pack_job(job_ptr, buffer);
+		pack_job(job_ptr, show_flags, buffer);
 		jobs_packed++;
 	}
 	part_filter_clear();
@@ -4028,13 +4028,14 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
  * IN job_id - ID of job that we want info for
+ * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c 
  *	whenever the data format changes
  */
 extern int pack_one_job(char **buffer_ptr, int *buffer_size,
-			 uint32_t job_id, uid_t uid)
+			uint32_t job_id, uint16_t show_flags, uid_t uid)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -4063,7 +4064,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	buffer = init_buf(BUF_SIZE);
 	pack32(jobs_packed, buffer);
 	pack_time(time(NULL), buffer);
-	pack_job(job_ptr, buffer);
+	pack_job(job_ptr, show_flags, buffer);
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
@@ -4074,12 +4075,13 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
  * pack_job - dump all configuration information about a specific job in 
  *	machine independent form (for network transmission)
  * IN dump_job_ptr - pointer to job for which information is requested
+ * IN show_flags - job filtering options
  * IN/OUT buffer - buffer in which data is placed, pointers automatically 
  *	updated
  * NOTE: change _unpack_job_info_members() in common/slurm_protocol_pack.c
  *	  whenever the data format changes
  */
-void pack_job(struct job_record *dump_job_ptr, Buf buffer)
+void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 {
 	struct job_details *detail_ptr;
 
@@ -4123,15 +4125,12 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack32(dump_job_ptr->exit_code, buffer);
 
-	if (dump_job_ptr->select_job && 
-	    dump_job_ptr->select_job->cpu_array_cnt) {
-		pack32(dump_job_ptr->select_job->cpu_array_cnt, buffer);
-		pack16_array(dump_job_ptr->select_job->cpu_array_value,
-			     dump_job_ptr->select_job->cpu_array_cnt, buffer);
-		pack32_array(dump_job_ptr->select_job->cpu_array_reps,
-			     dump_job_ptr->select_job->cpu_array_cnt, buffer);
-	} else
-		pack32((uint32_t) 0, buffer);
+	if (show_flags & SHOW_DETAIL) {
+		pack_select_job_res(dump_job_ptr->select_job, buffer);
+	} else {
+		uint32_t empty = NO_VAL;
+		pack32(empty, buffer);
+	}
 
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->wckey, buffer);

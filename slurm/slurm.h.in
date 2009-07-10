@@ -133,7 +133,7 @@ BEGIN_C_DECLS
    typedef struct switch_jobinfo *switch_jobinfo_t;	/* opaque data type */
 #endif
 
-/* Define select_jobinfo_t, select_nodeinfo_t below 
+/* Define select_job_res_t below
  * to avoid including extraneous slurm headers */
 #ifndef __select_job_res_t_defined
 #  define  __select_job_res_t_defined	/* Opaque data for select plugins */
@@ -460,6 +460,7 @@ enum node_states {
 /* Used as show_flags for slurm_get_ and slurm_load_ function calls.
  * Values can be can be ORed */
 #define SHOW_ALL	1	/* Show info for "hidden" partitions */
+#define SHOW_DETAIL	0x02	/* Show detailed resource information */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {
@@ -660,8 +661,6 @@ typedef struct job_info {
 	char *command;		/* command to be executed */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
-	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
-	uint16_t *cpus_per_node;/* cpus per node */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
 	char *dependency;	/* syncrhonize job execution with other jobs */
 	time_t end_time;	/* time of termination, actual or expected */
@@ -697,7 +696,6 @@ typedef struct job_info {
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
-	uint32_t num_cpu_groups;/* elements in cpu arrays below */
 
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_procs;	/* number of processors required by job */
@@ -714,6 +712,7 @@ typedef struct job_info {
 	char *resv_name;	/* reservation name */
 	select_jobinfo_t *select_jobinfo; /* opaque data type,
 				 * process using slurm_get_select_jobinfo() */
+	select_job_res_t select_job_res; /* job resources from select plugin */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	time_t start_time;	/* time execution begins, actual or expected */
 	char *state_desc;	/* optional details for state_reason */
@@ -1804,10 +1803,12 @@ void slurm_print_key_pairs PARAMS((
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN job_id -  ID of job we want information about 
+ * IN show_flags - job filtering options
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-extern int slurm_load_job PARAMS((job_info_msg_t **resp, uint32_t job_id));
+extern int slurm_load_job PARAMS((job_info_msg_t **resp, uint32_t job_id,
+	uint16_t show_flags));
 
 /*
  * slurm_load_jobs - issue RPC to get slurm all job configuration  

@@ -45,6 +45,7 @@
 
 char *command_name;
 int all_flag;		/* display even hidden partitions */
+int detail_flag;	/* display additional details */
 int exit_code;		/* scontrol's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
@@ -79,6 +80,7 @@ main (int argc, char *argv[])
 	int option_index;
 	static struct option long_options[] = {
 		{"all",      0, 0, 'a'},
+		{"details",  0, 0, 'd'},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"oneliner", 0, 0, 'o'},
@@ -91,6 +93,7 @@ main (int argc, char *argv[])
 
 	command_name      = argv[0];
 	all_flag          = 0;
+	detail_flag       = 0;
 	exit_code         = 0;
 	exit_flag         = 0;
 	input_field_count = 0;
@@ -101,7 +104,7 @@ main (int argc, char *argv[])
 	if (getenv ("SCONTROL_ALL"))
 		all_flag= 1;
 
-	while((opt_char = getopt_long(argc, argv, "ahoQvV",
+	while((opt_char = getopt_long(argc, argv, "adhoQvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -112,12 +115,16 @@ main (int argc, char *argv[])
 		case (int)'a':
 			all_flag = 1;
 			break;
+		case (int)'d':
+			detail_flag = 1;
+			break;
 		case (int)'h':
 			_usage ();
 			exit(exit_code);
 			break;
 		case OPT_LONG_HIDE:
 			all_flag = 0;
+			detail_flag = 0;
 			break;
 		case (int)'o':
 			one_liner = 1;
@@ -517,6 +524,16 @@ if (strncasecmp (tag, "abort", MAX(taglen, 5)) == 0) {
 		}		
 		_create_it ((argc - 1), &argv[1]);
 	}
+	else if (strncasecmp (tag, "details", MAX(taglen, 1)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n", 
+				 tag);
+			return 0;
+		}
+		detail_flag = 1;
+	}
 	else if (strncasecmp (tag, "exit", MAX(taglen, 1)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -535,8 +552,10 @@ if (strncasecmp (tag, "abort", MAX(taglen, 5)) == 0) {
 		}
 		_usage ();
 	}
-	else if (strncasecmp (tag, "hide", MAX(taglen, 2)) == 0)
+	else if (strncasecmp (tag, "hide", MAX(taglen, 2)) == 0) {
 		all_flag = 0;
+		detail_flag = 0;
+	}
 	else if (strncasecmp (tag, "oneliner", MAX(taglen, 1)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -1256,6 +1275,7 @@ _usage () {
 scontrol [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
      -a or --all: equivalent to \"all\" command                            \n\
+     -d or --details: equivalent to \"details\" command                    \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
@@ -1277,6 +1297,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      completing               display jobs in completing state along with  \n\
                               their completing or down nodes               \n\
      create <SPECIFICATIONS>  create a new partition or reservation        \n\
+     details                  evokes additional details from the \"show\"  \n\
+                              command                                      \n\
      delete <SPECIFICATIONS>  delete the specified partition or reservation\n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\

@@ -82,11 +82,15 @@ _scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
 	if (all_flag)
 		show_flags |= SHOW_ALL;
 
+	if (detail_flag)
+		show_flags |= SHOW_DETAIL;
+
 	if (old_job_info_ptr) {
 		if (last_show_flags != show_flags)
 			old_job_info_ptr->last_update = (time_t) 0;
 		if (job_id) {
-			error_code = slurm_load_job(&job_info_ptr, job_id);
+			error_code = slurm_load_job(&job_info_ptr, job_id,
+						    show_flags);
 		} else {
 			error_code = slurm_load_jobs(
 					old_job_info_ptr->last_update,
@@ -101,7 +105,7 @@ _scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
  				printf ("slurm_load_jobs no change in data\n");
 		}
 	} else if (job_id) {
-		error_code = slurm_load_job(&job_info_ptr, job_id);
+		error_code = slurm_load_job(&job_info_ptr, job_id, show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &job_info_ptr,
 					     show_flags);
