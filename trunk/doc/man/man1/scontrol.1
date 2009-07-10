@@ -29,6 +29,9 @@ and jobs steps. This causes information to be displayed about partitions
 that are configured as hidden and partitions that are unavailable to user's 
 group.
 .TP
+\fB\-d\fR, \fB\-\-detail\fR
+Causes the \fBshow\fR command to provide additional details where available.
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of scontrol.
 .TP
@@ -117,6 +120,11 @@ COMPLETING or DOWN state.
 Delete the entry with the specified \fISPECIFICATION\fP.
 The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP
 and \fIReservation=<name>\fP
+
+.TP
+\fBdetail\fP
+Causes the \fIshow\fP command to provide additional details where available.
+(currently only for \fIshow job\fP).
 
 .TP
 \fBexit\fP

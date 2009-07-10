@@ -151,7 +151,8 @@ _print_job ( void )
 
 	if (old_job_ptr) {
 		if (job_id) {
-			error_code = slurm_load_job(&new_job_ptr, job_id);
+			error_code = slurm_load_job(&new_job_ptr, job_id,
+						    show_flags);
 		} else {
 			error_code = slurm_load_jobs(old_job_ptr->last_update,
 						     &new_job_ptr, show_flags);
@@ -163,7 +164,7 @@ _print_job ( void )
 			new_job_ptr = old_job_ptr;
 		}
 	} else if (job_id) {
-		error_code = slurm_load_job(&new_job_ptr, job_id);
+		error_code = slurm_load_job(&new_job_ptr, job_id, show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
 				show_flags);

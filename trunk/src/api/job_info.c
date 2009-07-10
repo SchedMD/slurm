@@ -125,12 +125,19 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 extern char *
 slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
-	int i, j;
+	bitstr_t	*core_bitmap;
+	int abs_node_inx, rel_node_inx;
+	int bit_inx, bit_reps;
+	int i, j, last;
+	int sock_inx, sock_reps;
 	char time_str[32], select_buf[122], *group_name, *user_name;
 	char tmp1[128], tmp2[128], *tmp3_ptr;
 	char tmp_line[512];
+	char *host;
 	char *ionodes = NULL;
+	hostlist_t hl;
 	uint16_t exit_status = 0, term_sig = 0;
+	select_job_res_t select_job_res = job_ptr->select_job_res;
 	char *out = NULL;
 	
 #ifdef HAVE_BG
@@ -272,47 +279,79 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, tmp_line);
 #endif
 
-	if ((job_ptr->num_cpu_groups > 0) && 
-	    (job_ptr->cpus_per_node) &&
-	    (job_ptr->cpu_count_reps)) {
-		int length = 0;
-		xstrcat(out, "AllocCPUs=");
-		length += 10;
-		for (i = 0; i < job_ptr->num_cpu_groups; i++) {
-			if (length > 70) {
-				/* skip to last CPU group entry */
-			    	if (i < job_ptr->num_cpu_groups - 1) {
-			    		continue;
-				}
-				/* add elipsis before last entry */
-			    	xstrcat(out, "...,");
-				length += 4;
-			}
+	if (!select_job_res || !select_job_res->core_bitmap)
+		goto line7;
 
-			snprintf(tmp_line, sizeof(tmp_line),
-				"%d",
-				 job_ptr->cpus_per_node[i]);
-			xstrcat(out, tmp_line);
-			length += strlen(tmp_line);
-		    	if (job_ptr->cpu_count_reps[i] > 1) {
-				snprintf(tmp_line, sizeof(tmp_line),
-					"*%d",
-					 job_ptr->cpu_count_reps[i]);
-				xstrcat(out, tmp_line);
-				length += strlen(tmp_line);
-			}
-			if (i < job_ptr->num_cpu_groups - 1) {
-				xstrcat(out, ",");
-				length++;
-			}
+	bit_inx = bit_ffs(select_job_res->core_bitmap);
+	if (bit_inx == -1)
+		goto line7;
+
+	last  = bit_fls(select_job_res->core_bitmap);
+	if (last == -1)
+		goto line7;
+
+	hl = hostlist_create(job_ptr->nodes);
+	if (!hl) {
+		error("slurm_sprint_job_info: hostlist_create");
+		return NULL;
+	}
+
+	i = sock_inx = sock_reps = 0;
+	abs_node_inx = job_ptr->node_inx[i];
+
+	for (rel_node_inx=0; rel_node_inx < select_job_res->nhosts;
+	     rel_node_inx++) {
+
+		if (sock_reps >=
+		    select_job_res->sock_core_rep_count[sock_inx]) {
+			sock_inx++;
+			sock_reps = 0;
 		}
+		sock_reps++;
+
+		bit_reps = select_job_res->sockets_per_node[sock_inx] *
+			select_job_res->cores_per_socket[sock_inx];
+
+		core_bitmap = bit_alloc(bit_reps);
+		if (core_bitmap == NULL) {
+			error("bit_alloc malloc failure");
+			return NULL;
+		}
+
+		for (j=0; j < bit_reps; j++) {
+			if (bit_test(select_job_res->core_bitmap, bit_inx))
+				bit_set(core_bitmap, j);
+			bit_inx++;
+		}
+
+		bit_fmt(tmp1, sizeof(tmp1), core_bitmap);
+		bit_free(core_bitmap);
+		host = hostlist_shift(hl);
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "Node=%s CPUs=%s Mem=%d", host, tmp1,
+			 select_job_res->memory_allocated ?
+			 select_job_res->memory_allocated[rel_node_inx] : 0);
+		xstrcat(out, tmp_line);
+		free(host);
+
 		if (one_liner)
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-	}
 
-	/****** Line 7 ******/
+		if (bit_inx > last)
+			break;
+
+		if (abs_node_inx > job_ptr->node_inx[i+1]) {
+			i += 2;
+			abs_node_inx = job_ptr->node_inx[i];
+		} else {
+			abs_node_inx++;
+		}
+	}
+	hostlist_destroy(hl);
+
+line7:	/****** Line 7 ******/
 	convert_num_unit((float)job_ptr->num_procs, tmp1, sizeof(tmp1), 
 			 UNIT_NONE);
 #ifdef HAVE_BG
@@ -632,11 +671,12 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN job_id -  ID of job we want information about 
+ * IN show_flags -  job filtering options
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int
-slurm_load_job (job_info_msg_t **resp, uint32_t job_id)
+slurm_load_job (job_info_msg_t **resp, uint32_t job_id, uint16_t show_flags)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -647,6 +687,7 @@ slurm_load_job (job_info_msg_t **resp, uint32_t job_id)
 	slurm_msg_t_init(&resp_msg);
 
 	req.job_id = job_id;
+	req.show_flags = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
 	req_msg.data     = &req;
 

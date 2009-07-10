@@ -2814,11 +2814,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->resv_name,  &uint32_tmp, buffer);
 
 	safe_unpack32(&job->exit_code, buffer);
-	safe_unpack32(&job->num_cpu_groups, buffer);
-	if (job->num_cpu_groups) {
-		safe_unpack16_array(&job->cpus_per_node, &uint32_tmp, buffer);
-		safe_unpack32_array(&job->cpu_count_reps, &uint32_tmp, buffer);
-	}
+	unpack_select_job_res(&job->select_job_res, buffer);
 
 	safe_unpackstr_xmalloc(&job->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->wckey, &uint32_tmp, buffer);
@@ -4871,6 +4867,7 @@ _pack_job_ready_msg(job_id_msg_t * msg, Buf buffer)
 	xassert ( msg != NULL );
 
 	pack32((uint32_t)msg->job_id  , buffer ) ;
+	pack16((uint16_t)msg->show_flags, buffer);
 }
 
 static int
@@ -4883,6 +4880,7 @@ _unpack_job_ready_msg(job_id_msg_t ** msg_ptr, Buf buffer)
 	*msg_ptr = msg ;
 
 	safe_unpack32(&msg->job_id  , buffer ) ;
+	safe_unpack16(&msg->show_flags, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

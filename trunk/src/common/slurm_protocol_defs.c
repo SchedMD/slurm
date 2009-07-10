@@ -391,8 +391,6 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->alloc_node);
 		xfree(job->command);
 		xfree(job->comment);
-		xfree(job->cpu_count_reps);
-		xfree(job->cpus_per_node);
 		xfree(job->dependency);
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
@@ -403,10 +401,11 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->node_inx);
 		xfree(job->nodes);
 		xfree(job->partition);
-		xfree(job->resv_name);
-		xfree(job->req_nodes);
 		xfree(job->req_node_inx);
+		xfree(job->req_nodes);
+		xfree(job->resv_name);
 		select_g_select_jobinfo_free(job->select_jobinfo);
+		free_select_job_res(&job->select_job_res);
 		xfree(job->state_desc);
 		xfree(job->wckey);
 		xfree(job->work_dir);

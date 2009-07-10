@@ -442,6 +442,7 @@ typedef struct job_notify_msg {
 
 typedef struct job_id_msg {
 	uint32_t job_id;
+	uint16_t show_flags;
 } job_id_msg_t;
 
 typedef struct job_step_id_msg {

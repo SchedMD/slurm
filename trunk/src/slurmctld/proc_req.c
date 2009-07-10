@@ -845,7 +845,7 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 	char *dump = NULL;
 	int dump_size, rc;
 	slurm_msg_t response_msg;
-	job_id_msg_t *job_info_request_msg = (job_id_msg_t *) msg->data;
+	job_id_msg_t *job_id_msg = (job_id_msg_t *) msg->data;
 	/* Locks: Read config job, write node (for hiding) */
 	slurmctld_lock_t job_read_lock = { 
 		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
@@ -856,7 +856,8 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 		(unsigned int) uid);
 	lock_slurmctld(job_read_lock);
 
-	rc = pack_one_job(&dump, &dump_size, job_info_request_msg->job_id,
+	rc = pack_one_job(&dump, &dump_size, job_id_msg->job_id,
+			  job_id_msg->show_flags,
 			  g_slurm_auth_get_uid(msg->auth_cred, NULL));
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2("_slurm_rpc_dump_job_single");
