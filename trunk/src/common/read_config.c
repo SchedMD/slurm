@@ -209,6 +209,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
+	{"PreemptMode", S_P_STRING},
 	{"PriorityDecayHalfLife", S_P_STRING},
 	{"PriorityFavorSmall", S_P_BOOLEAN},
 	{"PriorityMaxAge", S_P_STRING},
@@ -686,7 +687,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				p->max_share = 4;
 			else if (strncasecmp(tmp, "FORCE:", 6) == 0) {
 				int i = strtol(&tmp[6], (char **) NULL, 10);
-				if (i <= 1) {
+				if (i < 1) {
 					error("Ignoring bad Shared value: %s",
 					      tmp);
 					p->max_share = 1; /* Shared=NO */
@@ -1451,6 +1452,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->over_time_limit           = 0;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
+	ctl_conf_ptr->preempt_mode              = 0;
 	ctl_conf_ptr->private_data              = 0;
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
@@ -2116,8 +2118,18 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->plugstack, "PlugStackConfig", hashtbl))
 		conf->plugstack = xstrdup(default_plugstack);
 
-	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))
-		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
+	if (s_p_get_string(&temp_str, "PreemptMode", hashtbl)) {
+		if (strcasecmp(temp_str, "off") == 0)
+			conf->preempt_mode = PREEMPT_MODE_OFF;
+		else if ((strcasecmp(temp_str, "on") == 0) ||
+			 (strcasecmp(temp_str, "suspend") == 0))
+			conf->preempt_mode = PREEMPT_MODE_SUSPEND;
+		else if ((strcasecmp(temp_str, "kill") == 0) ||
+			 (strcasecmp(temp_str, "requeue") == 0))
+			conf->preempt_mode = PREEMPT_MODE_KILL;
+		else
+			fatal("Invalid PreemptMode: %s", temp_str);
+	}
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
@@ -2195,6 +2207,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint32(&conf->priority_weight_qos,
 			    "PriorityWeightQOS", hashtbl))
 		conf->priority_weight_qos = 0;
+
+	/* Out of order due to use with ProctrackType */
+	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))
+		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
 
 	if (!s_p_get_string(&conf->proctrack_type, "ProctrackType", hashtbl)) {
 		if (!strcmp(conf->switch_type,"switch/elan"))
@@ -2289,17 +2305,21 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->schedtype, "SchedulerType", hashtbl))
 		conf->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
-	else if ((strcmp(conf->schedtype, "sched/gang") == 0) &&
-		 (conf->fast_schedule == 0))
-		fatal("FastSchedule=0 is not supported with sched/gang");
+
 	if (strcmp(conf->priority_type, "priority/multifactor") == 0) {
-		if (strcmp(conf->schedtype, "sched/wiki") == 0) {
+		if ((strcmp(conf->schedtype, "sched/wiki")  == 0) ||
+		    (strcmp(conf->schedtype, "sched/wiki2") == 0)) {
 			fatal("PriorityType=priority/multifactor is "
-			      "incompatible with SchedulerType=sched/wiki");
+			      "incompatible with SchedulerType=%s",
+			      conf->schedtype);
 		}
-		if (strcmp(conf->schedtype, "sched/wiki2") == 0) {
-			fatal("PriorityType=priority/multifactor is "
-			      "incompatible with SchedulerType=sched/wiki2");
+	}
+	if (conf->preempt_mode) {
+		if ((strcmp(conf->schedtype, "sched/wiki")  == 0) ||
+		    (strcmp(conf->schedtype, "sched/wiki2") == 0)) {
+			fatal("Job preemption is incompatible with "
+			      "SchedulerType=%s",
+			      conf->schedtype);
 		}
 	}
 

@@ -479,6 +479,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);
 	conf_ptr->plugstack           = xstrdup(conf->plugstack);
 
+	conf_ptr->preempt_mode        = conf->preempt_mode;
 	conf_ptr->priority_decay_hl   = conf->priority_decay_hl;
 	conf_ptr->priority_favor_small= conf->priority_favor_small;
 	conf_ptr->priority_max_age    = conf->priority_max_age;
@@ -2824,7 +2825,7 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 		op, (unsigned int) uid);
 
 	lock_slurmctld(job_write_lock);
-	error_code = job_suspend(sus_ptr, uid, msg->conn_fd);
+	error_code = job_suspend(sus_ptr, uid, msg->conn_fd, true);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_suspend");
 	

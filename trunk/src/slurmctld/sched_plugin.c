@@ -2,6 +2,7 @@
  *  sched_plugin.c - scheduler plugin stub.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -44,6 +45,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/gang.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -218,7 +220,8 @@ slurm_sched_init( void )
 	
 	slurm_mutex_lock( &g_sched_context_lock );
 
-	if ( g_sched_context ) goto done;
+	if ( g_sched_context )
+		goto done;
 
 	sched_type = slurm_get_sched_type();
 	g_sched_context = slurm_sched_context_create( sched_type );
@@ -234,7 +237,12 @@ slurm_sched_init( void )
 		slurm_sched_context_destroy( g_sched_context );
 		g_sched_context = NULL;
 		retval = SLURM_ERROR;
+		goto done;
 	}
+
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) && 
+	     (gs_init() != SLURM_SUCCESS))
+		error( "cannot start gang scheduler ");
 
  done:
 	slurm_mutex_unlock( &g_sched_context_lock );
@@ -255,6 +263,11 @@ slurm_sched_fini( void )
 
 	rc = slurm_sched_context_destroy(g_sched_context);
 	g_sched_context = NULL;
+
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_fini() != SLURM_SUCCESS))
+		error( "cannot stop gang scheduler" );
+
 	return rc;
 }
 
@@ -268,6 +281,10 @@ slurm_sched_reconfig( void )
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_reconfig() != SLURM_SUCCESS))
+		error( "cannot reconfigure gang scheduler" );
+
 	return (*(g_sched_context->ops.reconfig))();
 }
 
@@ -279,7 +296,14 @@ slurm_sched_schedule( void )
 {
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
-	
+
+#if 0
+	/* synchronize job listings? Here? */
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_job_scan() != SLURM_SUCCESS))
+		error( "gang scheduler could not rescan jobs" );
+#endif
+
 	return (*(g_sched_context->ops.schedule))();
 }
 
@@ -291,7 +315,13 @@ slurm_sched_newalloc( struct job_record *job_ptr )
 {
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
-	
+
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) && 
+	     (gs_job_start( job_ptr ) != SLURM_SUCCESS)) {
+		error( "gang scheduler problem starting job %u", 
+		       job_ptr->job_id);
+	}
+
 	return (*(g_sched_context->ops.newalloc))( job_ptr );
 }
 
@@ -303,7 +333,13 @@ slurm_sched_freealloc( struct job_record *job_ptr )
 {
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
-	
+
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) && 
+	     (gs_job_fini( job_ptr ) != SLURM_SUCCESS)) {
+		error( "gang scheduler problem finishing job %u", 
+		       job_ptr->job_id);
+	}
+
 	return (*(g_sched_context->ops.freealloc))( job_ptr );
 }
 
@@ -331,6 +367,10 @@ slurm_sched_job_is_pending( void )
 	if ( slurm_sched_init() < 0 )
 		return;
 
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_reconfig() != SLURM_SUCCESS))
+		error( "cannot reconfigure gang scheduler" );
+
 	(*(g_sched_context->ops.job_is_pending))();
 }
 
@@ -342,6 +382,13 @@ slurm_sched_partition_change( void )
 {
 	if ( slurm_sched_init() < 0 )
 		return;
+
+#if 0
+	/* synchronize job listings? Here? */
+	if ( (slurm_get_preempt_mode() != PREEMPT_MODE_OFF) &&
+	     (gs_job_scan() != SLURM_SUCCESS))
+		error( "gang scheduler could not rescan jobs" );
+#endif
 
 	(*(g_sched_context->ops.partition_change))();
 }
