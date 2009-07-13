@@ -1778,8 +1778,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * Step 1: Seek idle nodes across all partitions. If successful then
 	 *         place job and exit. If not successful, then continue:
 	 *
-	 * Step 2: Remove resources that are in use by higher-pri partitions,
-	 *         and test that job can still succeed. If not then exit.
+	 * Step 2: Remove resources that are in use by higher-priority 
+	 *         partitions, and test that job can still succeed. If not 
+	 *         then exit.
 	 *
 	 * Step 3: Seek idle nodes among the partitions with the same
 	 *         priority as the job's partition. If successful then
@@ -1837,11 +1838,13 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (jp_ptr->part_ptr == job_ptr->part_ptr)
 			break;
 	}
-	if (!jp_ptr)
+	if (!jp_ptr) {
 		fatal("cons_res error: could not find partition for job %u",
 			job_ptr->job_id);
+	}
 
-	/* remove hi-pri existing allocations from avail_cores */
+	/* remove existing allocations (jobs) from higher-priority partitions 
+	 * from avail_cores */
 	for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
 		if (p_ptr->part_ptr->priority <= jp_ptr->part_ptr->priority)
 			continue;
@@ -1875,7 +1878,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bit_copybits(bitmap, orig_map);
 	bit_copybits(free_cores, avail_cores);
 	
-	/* remove same-priority existing allocations from free_cores */
+	/* remove existing allocations (jobs) from same-priority partitions 
+	 * from avail_cores */
 	for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
 		if (p_ptr->part_ptr->priority != jp_ptr->part_ptr->priority)
 			continue;
@@ -1893,11 +1897,11 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				   bitmap, cr_node_cnt, free_cores,
 				   node_usage, cr_type, test_only);
 	if (cpu_count) {
-		/* lo-pri jobs are the only thing left in our way.
-		 * for now we'll ignore them, but FIXME: we need
-		 * a good placement algorithm here that optimizes
-		 * "job overlap" between this job (in these idle
-		 * nodes) and the lo-pri jobs */
+		/* jobs from low-priority partitions are the only thing left 
+		 * in our way. for now we'll ignore them, but FIXME: we need
+		 * a good placement algorithm here that optimizes "job overlap"
+		 * between this job (in these idle nodes) and the low-priority 
+		 * jobs */
 		debug3("cons_res: cr_job_test: test 3 pass - found resources");
 		goto alloc_job;
 	}
@@ -1906,8 +1910,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	
 	
 	/*** Step 4 ***/	
-	/* try to fit the job into an existing row */
-	/*
+	/* try to fit the job into an existing row
+	 *
 	 * tmpcore = worker core_bitmap
 	 * free_cores = core_bitmap to be built
 	 * avail_cores = static core_bitmap of all available cores
@@ -1953,7 +1957,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		debug3("cons_res: cr_job_test: test 4 fail - row %i", i);
 	}
 
-	if (i < c && !jp_ptr->row[i].row_bitmap) {
+	if ((i < c) && !jp_ptr->row[i].row_bitmap) {
 		/* we've found an empty row, so use it */
 		bit_copybits(bitmap, orig_map);
 		bit_copybits(free_cores, avail_cores);
@@ -1972,8 +1976,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/*** CONSTRUCTION ZONE FOR STEPs 5 AND 6 ***
-	 *  Note that while the job may have fit into a row, it should
-	 *  still be run through a good placement algorithm here that
+	 * Note that while the job may have fit into a row, it should
+	 * still be run through a good placement algorithm here that
 	 * optimizes "job overlap" between this job (in these idle nodes)
 	 * and existing jobs in the other partitions with <= priority to
 	 * this partition */
@@ -2100,7 +2104,7 @@ alloc_job:
 	else
 		job_ptr->total_procs = total_cpus;	/* best guess */
 
-	if ((cr_type != CR_CPU_MEMORY) && (cr_type != CR_CORE_MEMORY) &&
+	if ((cr_type != CR_CPU_MEMORY)    && (cr_type != CR_CORE_MEMORY) &&
 	    (cr_type != CR_SOCKET_MEMORY) && (cr_type != CR_MEMORY))
 		return error_code;
 
