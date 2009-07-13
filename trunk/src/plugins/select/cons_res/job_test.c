@@ -731,7 +731,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		 * then we cannot rule out nodes just because Shared=NO
 		 * (NODE_CR_ONE_ROW) or Shared=EXCLUSIVE(NODE_CR_RESERVED)
 		 */
-		if (cr_priority_selection_enabled())
+		if (cr_preemption_enabled())
 			continue;
 
 		/* exclusive node check */
@@ -1806,7 +1806,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* remove all existing allocations from free_cores */
 	tmpcore = bit_copy(free_cores);
-	for(p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
+	for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
 		if (!p_ptr->row)
 			continue;
 		for (i = 0; i < p_ptr->num_rows; i++) {
@@ -1842,7 +1842,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			job_ptr->job_id);
 
 	/* remove hi-pri existing allocations from avail_cores */
-	for(p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
+	for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
 		if (p_ptr->part_ptr->priority <= jp_ptr->part_ptr->priority)
 			continue;
 		if (!p_ptr->row)
@@ -1876,7 +1876,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bit_copybits(free_cores, avail_cores);
 	
 	/* remove same-priority existing allocations from free_cores */
-	for(p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
+	for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
 		if (p_ptr->part_ptr->priority != jp_ptr->part_ptr->priority)
 			continue;
 		if (!p_ptr->row)
