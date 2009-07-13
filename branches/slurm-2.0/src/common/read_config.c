@@ -2470,7 +2470,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 #ifdef HAVE_BG
 	if (conf->node_prefix == NULL)
-		fatal("Node valid node name prefix identified");
+		fatal("No valid node name prefix identified");
 #endif
 
 	xfree(default_storage_type);
