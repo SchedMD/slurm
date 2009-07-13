@@ -2515,6 +2515,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->unkillable_timeout,
 			    "UnkillableStepTimeout", hashtbl))
 		conf->unkillable_timeout = DEFAULT_UNKILLABLE_TIMEOUT;
+
+#ifdef HAVE_BG
+	if (conf->node_prefix == NULL)
+		fatal("No valid node name prefix identified");
+#endif
+
 	xfree(default_storage_type);
 	xfree(default_storage_loc);
 	xfree(default_storage_host);
