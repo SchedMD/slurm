@@ -165,8 +165,9 @@ static struct node_record *select_node_ptr = NULL;
 static int select_node_cnt = 0;
 static uint16_t select_fast_schedule;
 static uint16_t cr_type;
-static bool cr_priority_test      = false;
-static bool cr_priority_selection = false;
+static bool job_preemption_enabled = false;
+static bool job_preemption_killing = false;
+static bool job_preemption_tested  = false;
 
 static struct node_cr_record *node_cr_ptr = NULL;
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -272,14 +273,24 @@ static int _fini_status_pthread(void)
 }
 #endif
 
-static inline bool _cr_priority_selection_enabled(void)
+static inline bool _job_preemption_enabled(void)
 {
-	if (!cr_priority_test) {
-		if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
-			cr_priority_selection = true;
-		cr_priority_test = true;
+	if (!job_preemption_tested) {
+		uint16_t mode = slurm_get_preempt_mode();
+		if (mode == PREEMPT_MODE_SUSPEND)
+			job_preemption_enabled = true;
+		else if (mode == PREEMPT_MODE_KILL) {
+			job_preemption_enabled = true;
+			job_preemption_killing = true;
+		}
+		job_preemption_tested = true;
 	}
-	return cr_priority_selection;
+	return job_preemption_enabled;
+}
+static inline bool _job_preemption_killing(void)
+{
+	(void) _job_preemption_enabled();
+	return job_preemption_killing;
 	
 }
 
@@ -478,8 +489,10 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			     int run_job_cnt, int tot_job_cnt)
 {
 	int i, count = 0, total_jobs, total_run_jobs;
+	int lower_prio_jobs, same_prio_jobs, higher_prio_jobs;
 	struct part_cr_record *part_cr_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
+	uint32_t alloc_mem = 0, job_mem = 0, avail_mem = 0;
 	bool exclusive;
 
 	xassert(node_cr_ptr);
@@ -506,7 +519,6 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			continue;
 		}
 		if (job_memory_cpu || job_memory_node) {
-			uint32_t alloc_mem, job_mem, avail_mem;
 			alloc_mem = node_cr_ptr[i].alloc_memory;
 			if (select_fast_schedule) {
 				avail_mem = node_record_table_ptr[i].
@@ -527,33 +539,52 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 				} else
 					job_mem = job_memory_node;
 			}
-			if ((alloc_mem + job_mem) >avail_mem) {
-				bit_clear(jobmap, i);
-				continue;
-			}
 		}
 
 		if ((run_job_cnt != NO_SHARE_LIMIT) &&
-		    (!_cr_priority_selection_enabled()) &&
+		    (!_job_preemption_enabled()) &&
 		    (node_cr_ptr[i].exclusive_jobid != 0)) {
 			/* already reserved by some exclusive job */
 			bit_clear(jobmap, i);
 			continue;
 		}
 
-		if (_cr_priority_selection_enabled()) {
+		if (_job_preemption_enabled()) {
 			/* clear this node if any higher-priority
 			 * partitions have existing allocations */
-			total_jobs = 0;
+			lower_prio_jobs = 0;
+			same_prio_jobs = 0;
+			higher_prio_jobs = 0;
 			part_cr_ptr = node_cr_ptr[i].parts;
-			for( ;part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
-				if (part_cr_ptr->part_ptr->priority <=
-				    job_ptr->part_ptr->priority)
-					continue;
-				total_jobs += part_cr_ptr->tot_job_cnt;
+			for ( ;part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
+				if (part_cr_ptr->part_ptr->priority <
+				    job_ptr->part_ptr->priority) {
+					lower_prio_jobs += part_cr_ptr->
+							   tot_job_cnt;
+				} else if (part_cr_ptr->part_ptr->priority ==
+					   job_ptr->part_ptr->priority) {
+					same_prio_jobs += part_cr_ptr->
+							  tot_job_cnt;
+				} else {
+					higher_prio_jobs += part_cr_ptr->
+							    tot_job_cnt;
+				}
 			}
 			if ((run_job_cnt != NO_SHARE_LIMIT) &&
-			    (total_jobs > 0)) {
+			    (higher_prio_jobs > 0)) {
+				bit_clear(jobmap, i);
+				continue;
+			}
+			/* We're not currently tracking memory allocation 
+			 * by partition, so we avoid nodes where the total 
+			 * allocated memory would exceed that available
+			 * and there are *any* jobs left on the node after
+			 * this one is started. */
+			if (((alloc_mem + job_mem) >avail_mem)		&&
+			    ((_job_preemption_killing()			&& 
+			     (same_prio_jobs > 0))			||
+			     (!_job_preemption_killing()		&& 
+			     ((same_prio_jobs + lower_prio_jobs) > 0)))) {
 				bit_clear(jobmap, i);
 				continue;
 			}
@@ -563,7 +594,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			total_jobs = 0;
 			total_run_jobs = 0;
 			part_cr_ptr = node_cr_ptr[i].parts;
-			for( ; part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
+			for ( ; part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
 				if (part_cr_ptr->part_ptr->priority !=
 				    job_ptr->part_ptr->priority)
 					continue;
@@ -1391,7 +1422,8 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 					node_record_table_ptr[i].cpus;
 		}
 		if (exclusive) {
-			if (node_cr_ptr[i].exclusive_jobid) {
+			if (node_cr_ptr[i].exclusive_jobid &&
+			    !_job_preemption_killing()) {
 				error("select/linear: conflicting exclusive "
 				      "jobs %u and %u on %s",
 				      job_ptr->job_id, 
@@ -1573,7 +1605,8 @@ static void _init_node_cr(void)
 			if (!bit_test(select_ptr->node_bitmap, i))
 				continue;
 			if (exclusive) {
-				if (node_cr_ptr[i].exclusive_jobid) {
+				if (node_cr_ptr[i].exclusive_jobid &&
+				    !_job_preemption_killing()) {
 					error("select/linear: conflicting "
 				 	      "exclusive jobs %u and %u on %s",
 				 	      job_ptr->job_id, 
@@ -2260,8 +2293,9 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 extern int select_p_reconfigure(void)
 {
 	slurm_mutex_lock(&cr_mutex);
-	cr_priority_selection = false;
-	cr_priority_test = false;
+	job_preemption_enabled = false;
+	job_preemption_killing = false;
+	job_preemption_tested  = false;
 	_free_node_cr(node_cr_ptr);
 	node_cr_ptr = NULL;
 	if (step_cr_list)
