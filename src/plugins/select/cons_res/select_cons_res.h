@@ -123,6 +123,8 @@ extern struct node_use_record *select_node_usage;
 extern void cr_sort_part_rows(struct part_res_record *p_ptr);
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
 extern uint32_t cr_get_node_num_cores(uint32_t node_index);
-extern bool cr_priority_selection_enabled();
+
+extern bool cr_preemption_enabled(void);
+extern bool cr_preemption_killing(void);
 
 #endif /* !_CONS_RES_H */

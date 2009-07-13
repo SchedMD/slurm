@@ -170,8 +170,9 @@ struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
 static int select_node_cnt = 0;
-static bool cr_priority_test      = false;
-static bool cr_priority_selection = false;
+static bool job_preemption_enabled = false;
+static bool job_preemption_killing = false;
+static bool job_preemption_tested  = false;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
@@ -248,14 +249,24 @@ static void _dump_state(struct part_res_record *p_ptr)
 #endif
 
 /*  */
-extern bool cr_priority_selection_enabled()
+extern bool cr_preemption_enabled(void)
 {
-	if (!cr_priority_test) {
-		if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
-			cr_priority_selection = true;
-		cr_priority_test = true;
+	if (!job_preemption_tested) {
+		uint16_t mode = slurm_get_preempt_mode();
+		if (mode == PREEMPT_MODE_SUSPEND)
+			job_preemption_enabled = true;
+		else if (mode == PREEMPT_MODE_KILL) {
+			job_preemption_enabled = true;
+			job_preemption_killing = true;
+		}
+		job_preemption_tested = true;
 	}
-	return cr_priority_selection;
+	return job_preemption_enabled;
+}
+extern bool cr_preemption_killing(void)
+{
+	(void) cr_preemption_enabled();
+	return job_preemption_killing;
 	
 }
 
@@ -840,8 +851,9 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				continue;
 			select_node_usage[i].alloc_memory +=
 						job->memory_allocated[n];
-			if (select_node_usage[i].alloc_memory >
-			    select_node_record[i].real_memory) {
+			if ((select_node_usage[i].alloc_memory >
+			     select_node_record[i].real_memory)	&&
+			     !cr_preemption_killing()) {
 				error("error: node %s mem is overallocated "
 				      "(%u) for job %u",
 				      select_node_record[i].node_ptr->name,
@@ -1164,9 +1176,9 @@ static uint16_t _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 	cpu_end   = cr_get_coremap_offset(node_i+1);
 	
 	if (select_node_usage[node_i].node_state >= NODE_CR_RESERVED) {
-		if (!cr_priority_selection_enabled())
+		if (!cr_preemption_enabled())
 			return (uint16_t) 0;
-		/* cr_priority_selection has been enabled:
+		/* job_preemption has been enabled:
 		 * check to see if the existing job that reserved
 		 * this node is in a partition with a priority that
 		 * is equal-to or greater-than this partition. If it
@@ -1838,8 +1850,9 @@ extern int select_p_reconfigure(void)
 	info("cons_res: select_p_reconfigure");
 
 	/* Rebuild the global data structures */
-	cr_priority_selection = false;
-	cr_priority_test = false;
+	job_preemption_enabled = false;
+	job_preemption_killing = false;
+	job_preemption_tested  = false;
 	rc = select_p_node_init(node_record_table_ptr, node_record_count);
 	if (rc != SLURM_SUCCESS)
 		return rc;
