@@ -459,8 +459,8 @@ enum node_states {
 
 /* Used as show_flags for slurm_get_ and slurm_load_ function calls.
  * Values can be can be ORed */
-#define SHOW_ALL	1	/* Show info for "hidden" partitions */
-#define SHOW_DETAIL	0x02	/* Show detailed resource information */
+#define SHOW_ALL	0x0001	/* Show info for "hidden" partitions */
+#define SHOW_DETAIL	0x0002	/* Show detailed resource information */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {
