@@ -292,7 +292,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	hl = hostlist_create(job_ptr->nodes);
 	if (!hl) {
-		error("slurm_sprint_job_info: hostlist_create");
+		error("slurm_sprint_job_info: hostlist_create: %s",
+		      job_ptr->nodes);
 		return NULL;
 	}
 
@@ -310,7 +311,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		sock_reps++;
 
 		bit_reps = select_job_res->sockets_per_node[sock_inx] *
-			select_job_res->cores_per_socket[sock_inx];
+			   select_job_res->cores_per_socket[sock_inx];
 
 		core_bitmap = bit_alloc(bit_reps);
 		if (core_bitmap == NULL) {
@@ -328,7 +329,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		bit_free(core_bitmap);
 		host = hostlist_shift(hl);
 		snprintf(tmp_line, sizeof(tmp_line),
-			 "Node=%s CPUs=%s Mem=%d", host, tmp1,
+			 "Node=%s CPUs=%s Mem=%u", host, tmp1,
 			 select_job_res->memory_allocated ?
 			 select_job_res->memory_allocated[rel_node_inx] : 0);
 		xstrcat(out, tmp_line);
