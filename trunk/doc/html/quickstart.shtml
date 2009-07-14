@@ -258,7 +258,7 @@ adev0: srun -n4 -l /bin/hostname
 3: adev3
 </pre>
 
-<p>One common mode of operation is to submit a the for later execution.
+<p>One common mode of operation is to submit a script for later execution.
 In this example the script name is <i>my.script</i> and we explicitly use 
 the nodes adev9 and adev10 (<i>-w "adev[9-10]"</i>, note the use of a 
 node range expression). 
@@ -301,7 +301,7 @@ adev9
 
 <p>The final mode of operation is to create a resource allocation 
 and spawn job steps within that allocation. 
-The <span class="commandline">salloc</span> command is would be used
+The <span class="commandline">salloc</span> command is used
 to create a resource allocation and typically start a shell within 
 that allocation. 
 One or more job steps would typically be executed within that allocation 
