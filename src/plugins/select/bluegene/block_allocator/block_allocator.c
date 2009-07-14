@@ -3819,7 +3819,7 @@ static bool _node_used(ba_node_t* ba_node, int x_size)
 			return true;
 		}
 	}
-		
+	
 	return false;
 
 }
@@ -4026,6 +4026,35 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 
 	/* set up split x */
 	if(DIM_SIZE[X] == 1) {
+	} else if(DIM_SIZE[X] == 4) {
+		switch(count) {
+		case 0:
+		case 3:
+			/* 0 and 3rd Node */
+			/* nothing */
+			break;
+		case 1:
+			/* 1st Node */
+			target = &ba_system_ptr->grid[0]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 4->3 of 0th */
+			_switch_config(source, target, dim, 4, 3);
+			break;	
+		case 2:
+			/* 2nd Node */
+			target = &ba_system_ptr->grid[3]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 4->3 of 3rd and back */
+			_switch_config(source, target, dim, 4, 3);
+			_switch_config(source, target, dim, 3, 4);
+			break;
+		default:
+			fatal("got %d for a count on a %d X-dim system",
+			      count, DIM_SIZE[X]);
+			break;
+		}
 	} else if(DIM_SIZE[X] == 5) {
 		/* 4 X dim fixes for wires */
 		switch(count) {
