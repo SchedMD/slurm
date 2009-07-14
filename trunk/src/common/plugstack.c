@@ -1770,6 +1770,10 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2str = va_arg(vargs, char **);
 		*p2str = slurmd_job->alloc_cores;
 		break;
+	case S_JOB_ALLOC_MEM:
+		p2uint32 = va_arg(vargs, uint32_t *);
+		*p2uint32 = slurmd_job->job_mem;
+		break;
 	case S_SLURM_VERSION:
 		p2vers = va_arg(vargs, char  **);
 		*p2vers = SLURM_VERSION;

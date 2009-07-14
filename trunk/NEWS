@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     allocation info on a node-by-node basis.
  -- Added logic to give correct request uid for individual steps that 
     were cancelled.
+ -- Created a spank_get_item() option (S_JOB_ALLOC_MEM) that conveys the memory
+    that the select/cons_res plugin has allocated to a job.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
@@ -40,8 +42,8 @@ documents those changes that are of interest to users and admins.
  -- Modify job step cancel logic for scancel and srun (on reciept of SIGTERM 
     or three SIGINT) to immediately send SIGKILL to spawned tasks.  Previous 
     logic would send SIGCONT, SIGTERM, wait KillWait seconds, SIGKILL.
- -- Create a spank_get_item() option that the SPANK cpuset plugin can use to
-    discover the cpus that the select/cons_res plugin has allocated to a job.
+ -- Created a spank_get_item() option (S_JOB_ALLOC_CORES) that conveys the cpus
+    that the select/cons_res plugin has allocated to a job.
  -- Improve sview performance (outrageously) on very large machines.
  -- Add support for licenses in resource reservation.
  -- BLUEGENE - Jobs waiting for a block to boot will now be in Configuring
