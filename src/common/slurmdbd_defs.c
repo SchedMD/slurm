@@ -2745,6 +2745,7 @@ slurmdbd_pack_job_complete_msg(uint16_t rpc_version,
 	pack32(msg->job_id, buffer);
 	pack16(msg->job_state, buffer);
 	packstr(msg->nodes, buffer);
+	pack32(msg->req_uid, buffer);
 	pack_time(msg->start_time, buffer);
 	pack_time(msg->submit_time, buffer);
 }
@@ -2763,6 +2764,7 @@ slurmdbd_unpack_job_complete_msg(uint16_t rpc_version,
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpack16(&msg_ptr->job_state, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+	safe_unpack32(&msg_ptr->req_uid, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
 	safe_unpack_time(&msg_ptr->submit_time, buffer);
 	return SLURM_SUCCESS;

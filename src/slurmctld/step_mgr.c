@@ -115,6 +115,8 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	step_ptr->time_limit = INFINITE ;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
 	step_ptr->ckpt_dir = NULL;
+	step_ptr->requid = -1;
+
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("_create_step_record: unable to allocate memory");
 
@@ -317,7 +319,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL) {
-		step_ptr->job_ptr->requid = uid;
+		step_ptr->requid = uid;
 		srun_step_complete(step_ptr);
 	}
 

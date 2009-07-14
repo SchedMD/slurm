@@ -76,12 +76,7 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	06 /* We only incremented the number
-				    * here to differenciate between
-				    * 2.1 to 2.0.  Nothing has changed
-				    * in the rpcs yet though.  If they
-				    * do, remove this comment.
-				    */
+#define SLURMDBD_VERSION	06
 #define SLURMDBD_VERSION_MIN	02
 
 /* SLURM DBD message types */
@@ -242,6 +237,7 @@ typedef struct dbd_job_comp_msg {
 	uint32_t job_id;	/* job ID */
 	uint16_t job_state;	/* job state */
 	char *   nodes;		/* hosts allocated to the job */
+	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time needed to find job
 				 * record in db */

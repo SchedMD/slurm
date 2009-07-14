@@ -10521,9 +10521,6 @@ no_rollup_change:
 #endif 		
 	}
 
-	job_ptr->requid = -1; /* force to -1 for sacct to know this
-			       * hasn't been set yet */
-	
 	/* if there is a start_time get the wckeyid */
 	if(job_ptr->start_time && job_ptr->assoc_id) 
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
@@ -10819,9 +10816,6 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 #endif
 	}
 
-	step_ptr->job_ptr->requid = -1; /* force to -1 for sacct to know this
-					 * hasn't been set yet  */
-
 	if(!step_ptr->job_ptr->db_index) {
 		if(!(step_ptr->job_ptr->db_index = 
 		     _get_db_index(mysql_conn->db_conn,
@@ -10982,7 +10976,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		"where id=%d and stepid=%u",
 		step_table, (int)now,
 		comp_status,
-		step_ptr->job_ptr->requid, 
+		step_ptr->requid, 
 		exit_code,
 		/* user seconds */
 		jobacct->user_cpu_sec,	

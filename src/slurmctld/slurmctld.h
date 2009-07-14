@@ -604,6 +604,7 @@ struct 	step_record {
 	int *resv_port_array;		/* reserved port indexes */
 	uint16_t resv_port_cnt;		/* count of ports reserved per node */
 	char *resv_ports;		/* ports reserved for job */
+	uint32_t requid;            	/* requester user ID */
 	time_t start_time;      	/* step allocation start time */
 	uint32_t time_limit;      	/* step allocation time limit */
 	uint32_t step_id;		/* step number */

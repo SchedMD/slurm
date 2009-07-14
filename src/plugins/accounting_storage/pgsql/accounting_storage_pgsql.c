@@ -1240,8 +1240,6 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 				     SELECT_JOBDATA_BLOCK_ID, 
 				     &block_id);
 	}
-	job_ptr->requid = -1; /* force to -1 for sacct to know this
-			       * hasn't been set yet */
 
 	if(!job_ptr->db_index) {
 		query = xstrdup_printf(
@@ -1465,9 +1463,6 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 #endif
 	}
 
-	step_ptr->job_ptr->requid = -1; /* force to -1 for sacct to know this
-					 * hasn't been set yet  */
-
 	if(!step_ptr->job_ptr->db_index) {
 		step_ptr->job_ptr->db_index = 
 			_get_db_index(acct_pgsql_db,
@@ -1608,7 +1603,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		"where id=%u and stepid=%u",
 		step_table, (int)now,
 		comp_status,
-		step_ptr->job_ptr->requid, 
+		step_ptr->requid, 
 		exit_code, 
 		/* user seconds */
 		jobacct->user_cpu_sec,	

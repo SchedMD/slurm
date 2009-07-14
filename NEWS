@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     which will only be populated when requested (show_flags & SHOW_DETAIL)
  -- Added a --detail option to "scontrol show job" to display the cpu/mem
     allocation info on a node-by-node basis.
+ -- Added logic to give correct request uid for individual steps that 
+    were cancelled.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
