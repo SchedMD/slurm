@@ -130,13 +130,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	int bit_inx, bit_reps;
 	int i, j, last;
 	int sock_inx, sock_reps;
+	char last_hosts[128];
 	char time_str[32], select_buf[122], *group_name, *user_name;
 	char tmp1[128], tmp2[128], *tmp3_ptr;
 	char tmp_line[512];
 	char *host;
 	char *ionodes = NULL;
-	hostlist_t hl;
+	hostlist_t hl, hl_last;
 	uint16_t exit_status = 0, term_sig = 0;
+	uint32_t *last_mem_alloc_ptr = NULL;
+	uint32_t last_mem_alloc = NO_VAL;
 	select_job_res_t select_job_res = job_ptr->select_job_res;
 	char *out = NULL;
 	
@@ -282,10 +285,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (!select_job_res || !select_job_res->core_bitmap)
 		goto line7;
 
-	bit_inx = bit_ffs(select_job_res->core_bitmap);
-	if (bit_inx == -1)
-		goto line7;
-
 	last  = bit_fls(select_job_res->core_bitmap);
 	if (last == -1)
 		goto line7;
@@ -296,10 +295,18 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		      job_ptr->nodes);
 		return NULL;
 	}
+	hl_last = hostlist_create(NULL);
+	if (!hl_last) {
+		error("slurm_sprint_job_info: hostlist_create: NULL");
+		return NULL;
+	}
 
+	bit_inx = 0;
 	i = sock_inx = sock_reps = 0;
 	abs_node_inx = job_ptr->node_inx[i];
 
+/*	tmp1[] stores the current cpu(s) allocated	*/
+	tmp2[0] = '\0';	/* stores last cpu(s) allocated */
 	for (rel_node_inx=0; rel_node_inx < select_job_res->nhosts;
 	     rel_node_inx++) {
 
@@ -328,17 +335,42 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		bit_fmt(tmp1, sizeof(tmp1), core_bitmap);
 		bit_free(core_bitmap);
 		host = hostlist_shift(hl);
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "Node=%s CPUs=%s Mem=%u", host, tmp1,
-			 select_job_res->memory_allocated ?
-			 select_job_res->memory_allocated[rel_node_inx] : 0);
-		xstrcat(out, tmp_line);
-		free(host);
+/*
+ *		If the allocation values for this host are not the same as the
+ *		last host, print the report of the last group of hosts that had
+ *		identical allocation values.
+ */
+		if (strcmp(tmp1, tmp2) ||
+		    (last_mem_alloc_ptr != select_job_res->memory_allocated) ||
+		    (select_job_res->memory_allocated &&
+		     (last_mem_alloc !=
+		      select_job_res->memory_allocated[rel_node_inx]))) {
+			if (hostlist_count(hl_last)) {
+				hostlist_ranged_string(hl_last,
+					       sizeof(last_hosts), last_hosts);
+				snprintf(tmp_line, sizeof(tmp_line),
+					 "Node=%s CPUs=%s Mem=%u", last_hosts,
+					 tmp2, last_mem_alloc_ptr ?
+					 last_mem_alloc : 0);
+				xstrcat(out, tmp_line);
+				if (one_liner)
+					xstrcat(out, " ");
+				else
+					xstrcat(out, "\n   ");
 
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
+				hostlist_destroy(hl_last);
+				hl_last = hostlist_create(NULL);
+			}
+			strcpy(tmp2, tmp1);
+			last_mem_alloc_ptr = select_job_res->memory_allocated;
+			if (last_mem_alloc_ptr)
+				last_mem_alloc = select_job_res->
+					         memory_allocated[rel_node_inx];
+			else
+				last_mem_alloc = NO_VAL;
+		}
+		hostlist_push_host(hl_last, host);
+		free(host);
 
 		if (bit_inx > last)
 			break;
@@ -350,7 +382,20 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			abs_node_inx++;
 		}
 	}
+
+	if (hostlist_count(hl_last)) {
+		hostlist_ranged_string(hl_last, sizeof(last_hosts), last_hosts);
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "Node=%s CPUs=%s Mem=%u", last_hosts, tmp2,
+			 last_mem_alloc_ptr ? last_mem_alloc : 0);
+		xstrcat(out, tmp_line);
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
 	hostlist_destroy(hl);
+	hostlist_destroy(hl_last);
 
 line7:	/****** Line 7 ******/
 	convert_num_unit((float)job_ptr->num_procs, tmp1, sizeof(tmp1), 
