@@ -1635,6 +1635,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	job.exit_code = job_comp_msg->exit_code;
 	job.job_id = job_comp_msg->job_id;
 	job.job_state = job_comp_msg->job_state;
+	job.requid = job_comp_msg->req_uid;
 	job.nodes = job_comp_msg->nodes;
 	job.start_time = job_comp_msg->start_time;
 	details.submit_time = job_comp_msg->submit_time;
@@ -3013,7 +3014,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	step.exit_code = step_comp_msg->exit_code;
 	step.jobacct = step_comp_msg->jobacct;
 	job.job_id = step_comp_msg->job_id;
-	job.requid = step_comp_msg->req_uid;
+	step.requid = step_comp_msg->req_uid;
 	job.start_time = step_comp_msg->start_time;
 	details.submit_time = step_comp_msg->job_submit_time;
 	step.step_id = step_comp_msg->step_id;

@@ -1564,7 +1564,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 		return SLURM_ERROR;
 	}
 	memset(&req, 0, sizeof(dbd_job_start_msg_t));
-
+	
 	req.alloc_cpus    = job_ptr->total_procs;
 	req.cluster       = cluster_name;
 	req.account       = job_ptr->account;
@@ -1667,6 +1667,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	req.exit_code   = job_ptr->exit_code;
 	req.job_id      = job_ptr->job_id;
 	req.job_state   = job_ptr->job_state & JOB_STATE_BASE;
+	req.req_uid     = job_ptr->requid;
 	req.nodes       = job_ptr->nodes;
 	req.start_time  = job_ptr->start_time;
 	if (job_ptr->details)
@@ -1821,7 +1822,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	req.exit_code   = step_ptr->exit_code;
 	req.jobacct     = step_ptr->jobacct;
 	req.job_id      = step_ptr->job_ptr->job_id;
-	req.req_uid     = step_ptr->job_ptr->requid;
+	req.req_uid     = step_ptr->requid;
 	req.start_time  = step_ptr->start_time;
 	if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
