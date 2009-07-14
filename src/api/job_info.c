@@ -349,8 +349,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 				hostlist_ranged_string(hl_last,
 					       sizeof(last_hosts), last_hosts);
 				snprintf(tmp_line, sizeof(tmp_line),
-					 "Node=%s CPUs=%s Mem=%u", last_hosts,
-					 tmp2, last_mem_alloc_ptr ?
+					 "  Nodes=%s CPUs=%s Mem=%u",
+					 last_hosts, tmp2, last_mem_alloc_ptr ?
 					 last_mem_alloc : 0);
 				xstrcat(out, tmp_line);
 				if (one_liner)
@@ -386,7 +386,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (hostlist_count(hl_last)) {
 		hostlist_ranged_string(hl_last, sizeof(last_hosts), last_hosts);
 		snprintf(tmp_line, sizeof(tmp_line),
-			 "Node=%s CPUs=%s Mem=%u", last_hosts, tmp2,
+			 "  Nodes=%s CPUs=%s Mem=%u", last_hosts, tmp2,
 			 last_mem_alloc_ptr ? last_mem_alloc : 0);
 		xstrcat(out, tmp_line);
 		if (one_liner)

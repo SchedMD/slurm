@@ -150,7 +150,8 @@ enum spank_item {
     S_SLURM_VERSION_MICRO,   /* Current slurm version micro release (char **) */
     S_STEP_CPUS_PER_TASK,    /* CPUs allocated per task (=1 if --overcommit
                               * option is used, uint32_t *)                   */
-    S_JOB_ALLOC_CORES        /* Allocated cores in list format	      */
+    S_JOB_ALLOC_CORES,       /* Allocated cores in list format                */
+    S_JOB_ALLOC_MEM          /* Allocated memory in MB                        */
 };
 
 typedef enum spank_item spank_item_t;
