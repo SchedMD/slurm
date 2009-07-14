@@ -19,7 +19,7 @@ node failure</li>
 <h2>User Commands</h2>
 
 <p>The following documents SLURM changes specific to BLCR support.
-Baic familiarity with SLURM commands is assumed.</p>
+Basic familiarity with SLURM commands is assumed.</p>
 
 <h3>srun</h3>
 
@@ -27,7 +27,7 @@ Baic familiarity with SLURM commands is assumed.</p>
 <ul>
 <li><b>--checkpoint</b>: Specify the interval between periodic checkpoint
 of a job step, in seconds</li>
-<li><b>--checkpoint-dir</b>:Specify the directory when the checkpoint image
+<li><b>--checkpoint-dir</b>:Specify the directory where the checkpoint image
 files of a job step will be stored.
 The default value is the current working directory.
 Checkpoint files will be of the form <i>"&lt;job_id&gt;.ckpt"</i> for jobs
