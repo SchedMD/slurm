@@ -740,8 +740,11 @@ This is the only option compatible with \fBSchedulerType=sched/wiki\fR
 or \fBSchedulerType=sched/wiki2\fR (used by Maui and Moab respecitvely, 
 which provide their own job preemption functionality).
 .TP
-\fBKILL\fR
-preempts jobs by killing or requeuing them.
+\fBCHECKPOINT\fR
+preempts jobs by checkpointing them (if possible) or killing them.
+.TP
+\fBREQUEUE\fR
+preempts jobs by requeuing them (if possible) or killing them.
 .TP
 \fBSUSPEND\fR
 preempts jobs by suspending them.

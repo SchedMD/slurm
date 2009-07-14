@@ -255,7 +255,8 @@ extern bool cr_preemption_enabled(void)
 		uint16_t mode = slurm_get_preempt_mode();
 		if (mode == PREEMPT_MODE_SUSPEND)
 			job_preemption_enabled = true;
-		else if (mode == PREEMPT_MODE_KILL) {
+		else if ((mode == PREEMPT_MODE_CHECKPOINT) ||
+			 (mode == PREEMPT_MODE_REQUEUE)) {
 			job_preemption_enabled = true;
 			job_preemption_killing = true;
 		}

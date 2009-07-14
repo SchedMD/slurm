@@ -2126,7 +2126,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->preempt_mode = PREEMPT_MODE_SUSPEND;
 		else if ((strcasecmp(temp_str, "kill") == 0) ||
 			 (strcasecmp(temp_str, "requeue") == 0))
-			conf->preempt_mode = PREEMPT_MODE_KILL;
+			conf->preempt_mode = PREEMPT_MODE_REQUEUE;
+		else if (strcasecmp(temp_str, "checkpoint") == 0)
+			conf->preempt_mode = PREEMPT_MODE_CHECKPOINT;
 		else
 			fatal("Invalid PreemptMode: %s", temp_str);
 	}

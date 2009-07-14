@@ -640,7 +640,7 @@ static void _add_job_to_active(struct job_record *job_ptr,
 	p_ptr->jobs_active += 1;
 }
 
-static void _suspend_job(uint32_t job_id)
+static int _suspend_job(uint32_t job_id)
 {
 	int rc;
 	suspend_msg_t msg;
@@ -653,6 +653,7 @@ static void _suspend_job(uint32_t job_id)
 		error("gang: suspending job %u: %s", 
 		      job_id, slurm_strerror(rc));
 	}
+	return rc;
 }
 
 static void _resume_job(uint32_t job_id)
@@ -670,6 +671,39 @@ static void _resume_job(uint32_t job_id)
 	}
 }
 
+static int _checkpoint_job(uint32_t job_id)
+{
+	int rc;
+	checkpoint_msg_t ckpt_msg;
+
+	/* NOTE: job_checkpoint(VACATE) eventually calls gs_job_fini(),
+	 * so we can't process this request in real-time */
+	memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
+	ckpt_msg.op        = CHECK_VACATE;
+	rc = job_checkpoint(&ckpt_msg, 0, -1);
+	if (rc == SLURM_SUCCESS) {
+		info("gang: preempted job %u has been checkpointed",
+		     job_id);
+	}
+
+	return rc;
+}
+
+static int _requeue_job(uint32_t job_id)
+{
+	int rc;
+
+	/* NOTE: job_requeue eventually calls gs_job_fini(),
+	 * so we can't process this request in real-time */
+	rc = job_requeue(0, job_id, -1);
+	if (rc == SLURM_SUCCESS) {
+		info("gang: preempted job %u has been requeued",
+		     job_id);
+	}
+
+	return rc;
+}
+
 void _preempt_job_list_del(void *x)
 {
 	xfree(x);
@@ -684,33 +718,32 @@ static void _preempt_job_queue(uint32_t job_id)
 
 static void _preempt_job_dequeue(void)
 {
-	int rc;
+	int rc = 0;
 	uint32_t job_id, *tmp_id;
+	uint16_t preempt_mode = slurm_get_preempt_mode();
 
 	while ((tmp_id = list_pop(preempt_job_list))) {
 		job_id = *tmp_id;
 		xfree(tmp_id);
 
-		if (slurm_get_preempt_mode() == PREEMPT_MODE_SUSPEND) {
-			_suspend_job(job_id);
-			continue;
-		}
+		if (preempt_mode == PREEMPT_MODE_SUSPEND)
+			rc = _suspend_job(job_id);
+		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
+			rc = _requeue_job(job_id);
+		else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
+			rc = _checkpoint_job(job_id);
+		else
+			fatal("Invalid preempt_mode: %u", preempt_mode);
 
-		/* NOTE: job_requeue eventually calls gs_job_fini(),
-		 * so we can't process the request in real-time */
-		rc = job_requeue(0, job_id, -1);
-		if (rc == SLURM_SUCCESS) {
-			info("gang: preempted job %u has been requeued",
-			     job_id);
-			continue;
-		}
-
-		rc = job_signal(job_id, SIGKILL, 0, 0);
-		if (rc == SLURM_SUCCESS)
-			info("gang: preempted job %u has been killed", job_id);
-		else {
-			info("gang: preempted job %u kill failure %s", 
-			     job_id, slurm_strerror(rc));
+		if (rc != SLURM_SUCCESS) {
+			rc = job_signal(job_id, SIGKILL, 0, 0);
+			if (rc == SLURM_SUCCESS)
+				info("gang: preempted job %u had to be killed", 
+				     job_id);
+			else {
+				info("gang: preempted job %u kill failure %s", 
+				     job_id, slurm_strerror(rc));
+			}
 		}
 	}
 	return;
