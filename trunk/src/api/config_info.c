@@ -303,8 +303,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		fprintf(out, "PreemptMode             = OFF\n");
 	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_SUSPEND)
 		fprintf(out, "PreemptMode             = SUSPEND\n");
-	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_KILL)
-		fprintf(out, "PreemptMode             = KILL\n");
+	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_CHECKPOINT)
+		fprintf(out, "PreemptMode             = CHECKPOINT\n");
+	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_REQUEUE)
+		fprintf(out, "PreemptMode             = REQUEUE\n");
 
 	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
 		fprintf(out, "PriorityType            = %s\n",

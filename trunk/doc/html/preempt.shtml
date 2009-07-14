@@ -26,6 +26,9 @@ or be preempted by other jobs.-->
 SLURM version 2.1 offers the option of requeuing low priority jobs
 rather than suspending them, which may permit the preempted jobs to restart 
 faster by using different resources.
+SLURM version 2.1 also offers the option of checkpointing low priority jobs
+rather than suspending them
+Checkpointed jobs are not automatically requeued or restarted.
 Requeuing jobs also releases their memory space for use by other jobs.
 In SLURM version 2.1, the job preemption logic was moved directly into the
 main code bases to permit use of both job preemption plus the backfill 
@@ -73,12 +76,15 @@ limits, it will be canceled in order to prevent it from adversely effecting
 other jobs sharing the same resources.
 </LI>
 <LI>
-<B>PreemptMode</B>: Configure to <I>SUSPEND</I> or <I>KILL</I> depending on
-the desired action for low priority jobs. 
+<B>PreemptMode</B>: Configure to <I>CHECKPOINT</I>, <I>SUSPEND</I> or 
+<I>REQUEUE</I> depending on the desired action for low priority jobs. 
+A value of <I>CHECKPOINT</I> will checkpoint (if possible) or kill low 
+priority jobs.
+Checkpointed jobs are not automatically restarted.
+A value of <I>REQUEUE</I> will requeue (if possible) or kill low priority jobs.
+Requeued jobs are permitted to be restarted on different resources.
 A value of <I>SUSPEND</I> will suspend and automatically resume the low 
 priority jobs. 
-A value of <I>KILL</I> will requeue (if possible) or kill low priority jobs.
-Requeued jobs are permitted to be restarted on different resources.
 </LI>
 <LI>
 <B>Priority</B>: Configure the partition's <I>Priority</I> setting relative to
@@ -282,6 +288,16 @@ the design. Any and all help is welcome here!
 </P>
 
 <P>
+<B>Better memory management</B>: Some additional work is required to 
+better track memory when preempted jobs are checkpointed, requeued or
+killed. 
+In those cases, the memory originally assigned to the job is freed.
+Some addition logic is required to properly track memory being freed
+by these preempted jobs, especially for the select/cons_res plugin,
+which typically runs multiple jobs per node.
+</P>
+
+<P>
 <B>Job preemption based upon Quality of Service (QOS) rather than 
 partition priority</B>: Granting user's a QOS with preemption capabilities
 could be used as an alternative to prartition priorities. 
@@ -293,6 +309,6 @@ It would also necessitate major changes to the shadow bitmap data structures
 which are currently used.
 </P>
 
-<p style="text-align:center;">Last modified 9 July 2009</p>
+<p style="text-align:center;">Last modified 14 July 2009</p>
 
 <!--#include virtual="footer.txt"-->
