@@ -4,6 +4,12 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.0.5
 ========================
  -- BLUEGENE - Added support for emulating systems with a X-dimension of 4.
+ -- BLUEGENE - When a nodecard goes down on a non-Dynamic system SLURM will 
+    now only drain blocks under 1 midplane, if no such block exists then SLURM 
+    will drain the entire midplane and not mark any block in error state.  
+    Previously SLURM would drain every overlapping block of the nodecard 
+    making it possible for a large block to make other blocks not work since 
+    they overlap some other part of the block that really isn't bad.
 
 * Changes in SLURM 2.0.4
 ========================
