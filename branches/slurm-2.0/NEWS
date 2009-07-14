@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.0.5
+========================
+ -- BLUEGENE - Added support for emulating systems with a X-dimension of 4.
+
 * Changes in SLURM 2.0.4
 ========================
  -- Permit node suspend/resume logic to be enabled through "scontrol reconfig"
