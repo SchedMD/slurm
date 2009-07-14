@@ -123,8 +123,16 @@ and \fIReservation=<name>\fP
 
 .TP
 \fBdetail\fP
-Causes the \fIshow\fP command to provide additional details where available.
-(currently only for \fIshow job\fP).
+Causes the \fIshow\fP command to provide additional details where available,
+namely the specific CPUs and NUMA memory allocated on each node. 
+Note that on computers with hyperthreading enabled and SLURM configured to
+allocate cores, each listed CPU represents one physical core.
+Each hyperthread on that core can be allocated a separate task, so a job's
+CPU count and task count may differ.
+See the \fB\-\-cpu_bind\fR and \fB\-\-mem_bind\fR option descriptions in
+srun man pages for more information.
+The \fBdetail\fP option is currently only supported for the \fIshow job\fP 
+command.
 
 .TP
 \fBexit\fP
@@ -353,7 +361,7 @@ Value may be cleared with blank data value, "Features=".
 Reset the required job geometry.
 On Blue Gene the value should be three digits separated by 
 "x" or ",". The digits represent the allocation size in 
-X, Y and Z dimentions (e.g. "2x3x4").
+X, Y and Z dimensions (e.g. "2x3x4").
 .TP
 \fIRotate\fP=<yes|no>
 Permit the job's geometry to be rotated.
