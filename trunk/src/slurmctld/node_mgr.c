@@ -2655,9 +2655,12 @@ void node_fini(void)
 extern int send_nodes_to_accounting(time_t event_time)
 {
 	int rc = SLURM_SUCCESS, i = 0;
-	struct node_record *node_ptr;
+	struct node_record *node_ptr = NULL;
+	uint32_t node_scaling = 0;
 	slurmctld_lock_t node_read_lock = { 
 		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+
+	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, &node_scaling);
 
  	lock_slurmctld(node_read_lock);
 	/* send nodes not in not 'up' state */
@@ -2665,9 +2668,51 @@ extern int send_nodes_to_accounting(time_t event_time)
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0' ||
 		   (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr) &&
-		    !IS_NODE_DOWN(node_ptr)))
-			continue;
+		    !IS_NODE_DOWN(node_ptr))) {
+			/* on some systems we need to make sure there
+			   aren't some part of a node in an error state. */
+			if(node_ptr->select_nodeinfo) {
+				uint16_t err_cpus = 0;
+				select_g_select_nodeinfo_get(
+					node_ptr->select_nodeinfo, 
+					SELECT_NODEDATA_SUBCNT,
+					NODE_STATE_ERROR,
+					&err_cpus);
+				if(err_cpus) {
+					struct node_record send_node;
+					struct config_record config_rec;
+					int cpus_per_node = 1;
 
+					memset(&send_node, 0,
+					       sizeof(struct node_record));
+					memset(&config_rec, 0,
+					       sizeof(struct config_record));
+					send_node.name = node_ptr->name;
+					send_node.config_ptr = &config_rec;
+					select_g_alter_node_cnt(
+						SELECT_GET_NODE_SCALING, 
+						&node_scaling);
+					
+					if(node_scaling)
+						cpus_per_node = node_ptr->cpus 
+							/ node_scaling;
+					err_cpus *= cpus_per_node;
+
+					send_node.cpus = err_cpus;
+					send_node.node_state = NODE_STATE_ERROR;
+					config_rec.cpus = err_cpus;
+
+					rc = clusteracct_storage_g_node_down(
+						acct_db_conn,
+						slurmctld_cluster_name,
+						&send_node, event_time,
+						NULL);
+
+					continue;
+				}
+			} else
+				continue;
+		}
 		rc = clusteracct_storage_g_node_down(acct_db_conn,
 						     slurmctld_cluster_name,
 						     node_ptr, event_time,

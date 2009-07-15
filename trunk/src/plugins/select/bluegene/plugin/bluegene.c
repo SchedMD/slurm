@@ -1242,7 +1242,8 @@ extern int validate_current_blocks(char *dir)
 	itr = list_iterator_create(bg_lists->main);
 	while((bg_record = list_next(itr))) {
 		if(bg_record->state == RM_PARTITION_ERROR) 
-			put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
+			put_block_in_error_state(bg_record, 
+						 BLOCK_ERROR_STATE, NULL);
 	}
 	list_iterator_destroy(itr);
 

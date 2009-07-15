@@ -2306,6 +2306,9 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 	node_ptr.node_state = node_state_msg->state;
 
 	slurmctld_conf.fast_schedule = 0;
+	
+	if(!node_ptr.cpus)
+		node_state_msg->new_state = DBD_NODE_STATE_UP;
 
 	if(node_state_msg->new_state == DBD_NODE_STATE_UP) {
 		debug3("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 

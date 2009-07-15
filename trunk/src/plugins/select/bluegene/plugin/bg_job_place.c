@@ -1048,7 +1048,8 @@ static int _find_best_block_match(List block_list,
 					      "because of bad bps.",
 					      bg_record->bg_block_id);
 					put_block_in_error_state(
-						bg_record, BLOCK_ERROR_STATE);
+						bg_record, BLOCK_ERROR_STATE,
+						"Block had bad BPs");
 					continue;
 				}
 			}
