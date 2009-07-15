@@ -6546,11 +6546,6 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		goto reply;
 	}
 
-	/* reset the priority */
-	_set_job_prio(job_ptr);
-	slurm_sched_requeue(job_ptr, "Job requeued by user/admin");
-	last_job_update = now;
-
 	/* nothing else to do if pending */
 	if (IS_JOB_PENDING(job_ptr))
 		goto reply;
@@ -6566,6 +6561,11 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		rc = EINVAL;
 		goto reply;
 	}
+
+	/* reset the priority */
+	_set_job_prio(job_ptr);
+	slurm_sched_requeue(job_ptr, "Job requeued by user/admin");
+	last_job_update = now;
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		enum job_states suspend_job_state = job_ptr->job_state;
@@ -6597,6 +6597,9 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		job_ptr->job_state |= JOB_COMPLETING;
 	
 	job_ptr->details->submit_time = now;
+	job_ptr->pre_sus_time = (time_t) 0;
+	job_ptr->suspend_time = (time_t) 0;
+	job_ptr->tot_sus_time = (time_t) 0;
 	job_ptr->restart_cnt++;
 	/* Since the job completion logger removes the submit we need
 	   to add it again.
