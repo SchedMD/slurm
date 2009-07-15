@@ -1090,7 +1090,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		   opposed to draining the node.  
 		*/
 		if(smallest_bg_record 
-		   && (smallest_bg_record->node_cnt <= bg_conf->bp_node_cnt)){
+		   && (smallest_bg_record->node_cnt < bg_conf->bp_node_cnt)){
 			if(smallest_bg_record->state == RM_PARTITION_ERROR) {
 				rc = SLURM_NO_CHANGE_IN_DATA;
 				goto cleanup;
@@ -1101,7 +1101,8 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			goto cleanup;
 		} 
 		
-		debug("didn't get a smallest block");
+		debug("No block under 1 midplane available for this nodecard.  "
+		      "Draining the whole node.");
 		if(!node_already_down(bp_name)) {
 			time_t now = time(NULL);
 			char reason[128], time_str[32];
