@@ -103,6 +103,10 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Handle L3 errors on boot better.
  -- Don't revoke a pending batch launch request from the slurmctld if the
     job is immediately suspended (a normal event with gang scheduling).
+ -- BLUEGENE - Fixed issue with restart of slurmctld would allow error block 
+    nodes to be considered for building new blocks when testing if a job would 
+    run.  This is a visual bug only, jobs would never run on new block, but 
+    the block would appear in slurm tools.
 
 * Changes in SLURM 2.0.4
 ========================

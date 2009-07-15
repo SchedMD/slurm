@@ -668,6 +668,10 @@ static int _check_for_booted_overlapping_blocks(
 								bg_record);
 					}
 
+					debug("Removing unusable block %s "
+					      "from the system.",
+					      bg_record->bg_block_id);
+					
 					if(!found_record) {
 						debug("This record %s wasn't "
 						      "found in the "
@@ -678,10 +682,6 @@ static int _check_for_booted_overlapping_blocks(
 						found_record = bg_record;
 					} else
 						destroy_bg_record(bg_record);
-					
-					debug("removing the block %s"
-					      "from the system",
-					      bg_record->bg_block_id);
 					
 					list_push(temp_list, found_record);
 					free_block_list(temp_list);
