@@ -581,11 +581,9 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			 * allocated memory would exceed that available
 			 * and there are *any* jobs left on the node after
 			 * this one is started. */
-			if (((alloc_mem + job_mem) >avail_mem)		&&
-			    ((_job_preemption_killing()			&& 
-			     (same_prio_jobs > 0))			||
-			     (!_job_preemption_killing()		&& 
-			     ((same_prio_jobs + lower_prio_jobs) > 0)))) {
+			if (((alloc_mem + job_mem) > avail_mem)		&&
+			    ((!_job_preemption_killing())		||
+			     ((same_prio_jobs + higher_prio_jobs) > 0))) {
 				bit_clear(jobmap, i);
 				continue;
 			}
