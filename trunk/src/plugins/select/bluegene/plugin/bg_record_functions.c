@@ -510,7 +510,7 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 	itr = list_iterator_create(my_list);
 	while((bg_record = list_next(itr))) {
 		if(bg_record->bg_block_id)
-			if(!strcmp(bg_record->bg_block_id, bg_block_id))
+			if (!strcasecmp(bg_record->bg_block_id, bg_block_id))
 				break;
 	}
 	list_iterator_destroy(itr);
@@ -1067,26 +1067,19 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		if(bg_record->job_running > NO_JOB_RUNNING) 
 			slurm_fail_job(bg_record->job_running);
 
-		/* mark every one of these in an error state */
-		if(bg_conf->layout_mode != LAYOUT_DYNAMIC) {
-			if(!delete_list)
-				delete_list = list_create(NULL);
-			list_append(delete_list, bg_record);
-			continue;
-		} 
-
-		/* below is only for dynamic modes since there are
-		   never overlapping blocks there */
-		/* if the block is smaller than the create size just
-		   continue on.
+		/* If Running Dynamic mode and the the block is
+		   smaller than the create size just continue on.
 		*/
-		if(bg_record->node_cnt < create_size) {
+		if((bg_conf->layout_mode == LAYOUT_DYNAMIC)
+		   && (bg_record->node_cnt < create_size)) {
 			if(!delete_list)
 				delete_list = list_create(NULL);
 			list_append(delete_list, bg_record);
 			continue;
 		}
 
+		/* keep track of the smallest size that is at least
+		   the size of create_size. */
 		if(!smallest_bg_record || 
 		   (smallest_bg_record->node_cnt > bg_record->node_cnt))
 			smallest_bg_record = bg_record;
@@ -1096,27 +1089,24 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	
 	if(bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		debug3("running non-dynamic mode");
-		if(delete_list) {
-			int cnt_set = 0;
-			/* don't lock here since it is handled inside
-			   the put_block_in_error_state
-			*/
-			itr = list_iterator_create(delete_list);
-			while ((bg_record = list_next(itr))) {
-				/* we already handled this */
-				if(bg_record->state == RM_PARTITION_ERROR) {
-					rc = SLURM_NO_CHANGE_IN_DATA;
-					continue;
-				}
-								
-				rc = put_block_in_error_state(
-					bg_record, BLOCK_ERROR_STATE);
-				cnt_set++;
-			}
-			if(cnt_set)
-				rc = SLURM_SUCCESS;
-			list_iterator_destroy(itr);
+		
+		/* This should never happen, but just in case... */
+		if(delete_list) 
 			list_destroy(delete_list);
+
+		/* If we found a block that is smaller or equal to a
+		   midplane we will just mark it in an error state as
+		   opposed to draining the node.  
+		*/
+		if(smallest_bg_record 
+		   && (smallest_bg_record->node_cnt <= bg_conf->bp_node_cnt)){
+			if(smallest_bg_record->state == RM_PARTITION_ERROR) {
+				rc = SLURM_NO_CHANGE_IN_DATA;
+				goto cleanup;
+			}
+			
+			rc = put_block_in_error_state(
+				smallest_bg_record, BLOCK_ERROR_STATE);
 			goto cleanup;
 		} 
 		

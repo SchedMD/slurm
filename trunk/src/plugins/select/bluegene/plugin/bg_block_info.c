@@ -412,7 +412,18 @@ extern int update_block_list()
 				}
 				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
-			} 
+			} else if(bg_record->state == RM_PARTITION_ERROR) {
+				if(bg_record->boot_state == 1)
+					error("Block %s in an error "
+					      "state while booting.",
+					      bg_record->bg_block_id);
+				else					
+					error("Block %s in an error state.",
+					      bg_record->bg_block_id);
+				remove_from_bg_list(bg_lists->booted,
+						    bg_record);
+				trigger_block_error();
+			}
 			updated = 1;
 			
 		}
@@ -435,32 +446,14 @@ extern int update_block_list()
 						JOB_CONFIGURING;
 				break;
 			case RM_PARTITION_ERROR:
-				bg_record->boot_state = 0;
-				bg_record->boot_count = 0;
-				if(bg_record->job_running > NO_JOB_RUNNING) {
-					error("Block %s in an error "
-					      "state while booting.  "
-					      "Failing job %u.",
-					      bg_record->bg_block_id,
-					      bg_record->job_running);
-					freeit = xmalloc(
-						sizeof(kill_job_struct_t));
-					freeit->jobid = bg_record->job_running;
-					list_push(kill_job_list, freeit);
-					if(remove_from_bg_list(
-						   bg_lists->job_running, 
-						   bg_record) 
-					   == SLURM_SUCCESS) {
-						num_unused_cpus += 
-							bg_record->cpu_cnt;
-					} 
-				} else 
-					error("block %s in an error "
-					      "state while booting.",
-					      bg_record->bg_block_id);
-				remove_from_bg_list(bg_lists->booted,
-						    bg_record);
-				trigger_block_error();
+				/* If we get an error on boot that
+				 * means it is a transparent L3 error
+				 * and should be trying to fix
+				 * itself.  If this is the case we
+				 * just hang out waiting for the state
+				 * to go to free where we will try to
+				 * boot again below.
+				 */
 				break;
 			case RM_PARTITION_FREE:
 				if(bg_record->boot_count < RETRY_BOOT_COUNT) {
