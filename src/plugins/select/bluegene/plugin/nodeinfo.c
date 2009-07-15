@@ -215,14 +215,14 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	
 	/* only set this once when the last_bg_update is newer than
 	   the last time we set things up. */
-	if(last_set_all && (last_bg_update < last_set_all)) {
+	if(last_set_all && (last_bg_update-1 < last_set_all)) {
 		debug2("Node select info for set all hasn't "
 		       "changed since %d", 
 		       last_set_all);
 		return SLURM_NO_CHANGE_IN_DATA;	
 	}
 	last_set_all = last_bg_update;
-	
+
 	/* set this here so we know things have changed */
 	last_node_update = time(NULL);
 	
@@ -241,16 +241,19 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 		enum node_states state = NODE_STATE_UNKNOWN;
 		node_subgrp_t *subgrp = NULL;
 
-		/* Only mark small unidle blocks */
-		if((bg_record->conn_type < SELECT_SMALL)
-		   || (bg_record->job_running == NO_JOB_RUNNING)) 
+		/* Only mark unidle blocks */
+		if(bg_record->job_running == NO_JOB_RUNNING)
 			continue;
 
 		if(bg_record->state == RM_PARTITION_ERROR) 
 			state = NODE_STATE_ERROR;
-		else if(bg_record->job_running > NO_JOB_RUNNING) 
+		else if(bg_record->job_running > NO_JOB_RUNNING) {
+			/* we don't need to set the allocated here
+			 * since the whole midplane is allocated */
+			if(bg_record->conn_type < SELECT_SMALL)
+				continue;
 			state = NODE_STATE_ALLOCATED;
-		else {
+		} else {
 			error("not sure why we got here with block %s",
 			      bg_record->bg_block_id);
 			continue;
@@ -266,9 +269,15 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 				state, bg_conf->numpsets);
  			
 			if(subgrp->node_cnt < bg_conf->bp_node_cnt) {
-				bit_or(subgrp->bitmap,
-				       bg_record->ionode_bitmap);
-				subgrp->node_cnt += bg_record->node_cnt;
+				if(bg_record->node_cnt < bg_conf->bp_node_cnt) {
+					bit_or(subgrp->bitmap,
+					       bg_record->ionode_bitmap);
+					subgrp->node_cnt += bg_record->node_cnt;
+				} else {
+					bit_nset(subgrp->bitmap, 
+						 0, (bg_conf->numpsets-1));
+					subgrp->node_cnt = bg_conf->bp_node_cnt;
+				}
 			}
 		}
 	}

@@ -59,6 +59,8 @@ List part_list = NULL;
 int node_record_count;
 time_t last_node_update;
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+void *acct_db_conn = NULL;
+char *slurmctld_cluster_name = NULL;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -788,7 +790,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 
 	if(!part_desc_ptr->state_up) {
 		slurm_mutex_unlock(&block_state_mutex);
-		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
+		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
 	} else if(part_desc_ptr->state_up){
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);

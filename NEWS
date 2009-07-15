@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
     were cancelled.
  -- Created a spank_get_item() option (S_JOB_ALLOC_MEM) that conveys the memory
     that the select/cons_res plugin has allocated to a job.
+ -- BLUEGENE - blocks in error state are now handled correctly in accounting.
 
 * Changes in SLURM 2.1.0-pre2
 =============================

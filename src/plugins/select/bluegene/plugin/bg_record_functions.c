@@ -41,12 +41,14 @@
 #include "dynamic_block.h"
 
 #include "src/common/uid.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "src/slurmctld/locks.h"
 
 /* some local functions */
-static int  _addto_node_list(bg_record_t *bg_record, int *start, int *end);
-static int  _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b);
+static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason);
+static int _addto_node_list(bg_record_t *bg_record, int *start, int *end);
+static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b);
 
 extern void print_bg_record(bg_record_t* bg_record)
 {
@@ -649,7 +651,7 @@ end_it:
 		sleep(1);
 	}
 	
-	put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
+	put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
 	return;
 }
 
@@ -1002,8 +1004,14 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	static int create_size = NO_VAL;
 	static blockreq_t blockreq; 
 	int rc = SLURM_SUCCESS;
-
+	time_t now = time(NULL);
+	char reason[128], time_str[32];
+	
 	xassert(bp_name);
+	
+	slurm_make_time_str(&now, time_str, sizeof(time_str));
+	snprintf(reason, sizeof(reason), 
+		 "select_bluegene: nodecard down [SLURM@%s]", time_str); 
 
 	if(io_cnt == NO_VAL) {
 		io_cnt = 1;
@@ -1089,7 +1097,6 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	
 	if(bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		debug3("running non-dynamic mode");
-		
 		/* This should never happen, but just in case... */
 		if(delete_list) 
 			list_destroy(delete_list);
@@ -1106,20 +1113,12 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			}
 			
 			rc = put_block_in_error_state(
-				smallest_bg_record, BLOCK_ERROR_STATE);
+				smallest_bg_record, BLOCK_ERROR_STATE, reason);
 			goto cleanup;
 		} 
 		
 		debug("didn't get a smallest block");
 		if(!node_already_down(bp_name)) {
-			time_t now = time(NULL);
-			char reason[128], time_str[32];
-			slurm_make_time_str(&now, time_str,
-					    sizeof(time_str));
-			snprintf(reason, sizeof(reason), 
-				 "select_bluegene: "
-				 "nodecard down [SLURM@%s]", 
-				 time_str); 
 			slurm_drain_nodes(bp_name, reason);
 		}
 		rc = SLURM_SUCCESS;
@@ -1181,7 +1180,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 
 		if(smallest_bg_record->node_cnt == create_size) {
 			rc = put_block_in_error_state(
-				smallest_bg_record, BLOCK_ERROR_STATE);
+				smallest_bg_record, BLOCK_ERROR_STATE, reason);
 			goto cleanup;
 		} 
 
@@ -1191,7 +1190,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			 * block that is already made.
 			 */
 			rc = put_block_in_error_state(
-				smallest_bg_record, BLOCK_ERROR_STATE);
+				smallest_bg_record, BLOCK_ERROR_STATE, reason);
 			goto cleanup;
 		}
 		debug3("node count is %d", smallest_bg_record->node_cnt);
@@ -1305,7 +1304,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			/* here we know the error block doesn't exist
 			   so just set the state here */
 			rc = put_block_in_error_state(
-				bg_record, BLOCK_ERROR_STATE);
+				bg_record, BLOCK_ERROR_STATE, reason);
 		}
 	}
 	list_destroy(requests);
@@ -1375,7 +1374,8 @@ extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap)
 	return SLURM_SUCCESS;
 }
 
-extern int put_block_in_error_state(bg_record_t *bg_record, int state)
+extern int put_block_in_error_state(bg_record_t *bg_record,
+				    int state, char *reason)
 {
 	uid_t pw_uid;
 
@@ -1424,10 +1424,13 @@ extern int put_block_in_error_state(bg_record_t *bg_record, int state)
 	else
 		bg_record->user_uid = pw_uid;
 
+	/* Only send if reason is set.  If it isn't set then
+	   accounting should already know about this error state */
+	if(reason)
+		_set_block_nodes_accounting(bg_record, reason);
 	slurm_mutex_unlock(&block_state_mutex);
 
 	trigger_block_error();
-
 	return SLURM_SUCCESS;
 }
 
@@ -1451,11 +1454,85 @@ extern int resume_block(bg_record_t *bg_record)
 	bg_record->job_running = NO_JOB_RUNNING;
 	bg_record->state = RM_PARTITION_FREE;
 	last_bg_update = time(NULL);
+	_set_block_nodes_accounting(bg_record, NULL);
 
 	return SLURM_SUCCESS;
 }
 
 /************************* local functions ***************************/
+
+/* block_state_mutex should be locked before calling */
+static int _check_all_blocks_error(int node_inx, time_t event_time,
+				   char *reason)
+{
+	bg_record_t *bg_record = NULL;
+	ListIterator itr = NULL;
+	struct node_record send_node;
+	struct config_record config_rec;
+	int total_cpus = 0;
+	int rc = SLURM_SUCCESS;
+
+	xassert(node_inx <= node_record_count);
+	
+	memset(&send_node, 0, sizeof(struct node_record));
+	memset(&config_rec, 0, sizeof(struct config_record));
+	send_node.name = node_record_table_ptr[node_inx].name;
+	send_node.config_ptr = &config_rec;
+
+	/* here we need to check if there are any other blocks on this
+	   midplane and adjust things correctly */
+	itr = list_iterator_create(bg_lists->main);
+	while((bg_record = list_next(itr))) {
+		/* only look at other nodes in error state */
+		if(bg_record->state != RM_PARTITION_ERROR)
+			continue;
+		if(!bit_test(bg_record->bitmap, node_inx))
+			continue;
+		if(bg_record->node_cnt >= bg_conf->bp_node_cnt) {
+			total_cpus = bg_conf->bp_node_cnt;
+			break;
+		} else
+			total_cpus += bg_record->cpu_cnt;
+	}
+	list_iterator_destroy(itr);
+
+	send_node.cpus = total_cpus;
+	config_rec.cpus = total_cpus;
+
+	if(send_node.cpus) {
+		if(!reason)
+			reason = "update block: setting partial node down.";
+		send_node.node_state = NODE_STATE_ERROR;
+		rc = clusteracct_storage_g_node_down(acct_db_conn,
+						     slurmctld_cluster_name,
+						     &send_node, event_time,
+						     reason);	
+	} else {
+		send_node.node_state = NODE_STATE_IDLE;
+		rc = clusteracct_storage_g_node_up(acct_db_conn,
+						   slurmctld_cluster_name,
+						   &send_node, event_time);	
+	}
+
+	return rc;
+}
+
+
+/* block_state_mutex should be locked before calling */
+static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason)
+{
+	time_t now = time(NULL);
+	int rc = SLURM_SUCCESS;
+	int i = 0;
+
+	for(i = 0; i < node_record_count; i++) {
+		if(!bit_test(bg_record->bitmap, i))
+			continue;
+		rc = _check_all_blocks_error(i, now, reason);
+	}
+	
+	return rc;
+}
 
 static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 {
