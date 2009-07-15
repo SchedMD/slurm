@@ -163,7 +163,8 @@ static int _remove_job(db_job_id_t job_id)
 		else if(job_state == RM_JOB_DYING) {
 			if(count > MAX_POLL_RETRIES) 
 				error("Job %d isn't dying, trying for "
-				      "%d seconds", count*POLL_INTERVAL);
+				      "%d seconds", job_id, 
+				      count*POLL_INTERVAL);
 			continue;
 		} else if(job_state == RM_JOB_ERROR) {
 			error("job %d is in a error state.", job_id);
