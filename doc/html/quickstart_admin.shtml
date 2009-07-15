@@ -176,8 +176,8 @@ manages user jobs, it must execute as the user root.</p>
 
 <p>If you want to archive job accounting records to a database, the 
 <b>slurmdbd</b> (SLURM DataBase Daemon) should be used. We recommend that 
-you defer adding accounting support until after basic SLURM functionality has 
-established you your system. An <a href="accounting.html">Accounting</a> web 
+you defer adding accounting support until after basic SLURM functionality is 
+established on your system. An <a href="accounting.html">Accounting</a> web 
 page contains more information.</p>
 
 <p><b>slurmctld</b> and/or <b>slurmd</b> should be initiated at node startup 
@@ -197,7 +197,7 @@ users and groups must be configured on those hosts.</p>
 <h3>Authentication of SLURM communications</h3>
 <p>All communications between SLURM components are authenticated. The 
 authentication infrastructure is provided by a dynamically loaded
-plugin chosen at runtame via the <b>AuthType</b> keyword in the SLURM 
+plugin chosen at runtime via the <b>AuthType</b> keyword in the SLURM 
 configuration file.  Currently available authentication types include
 <a href="http://www.theether.org/authd/">authd</a>, 
 <a href="http://home.gna.org/munge/">munge</a>, and none.
@@ -457,7 +457,7 @@ match the values of <b>JobCredentialPrivateKey</b> and
 <b>JobCredentialPublicCertificate</b> in your configuration file. 
 The <b>JobCredentialPrivateKey</b> file must be readable only by <b>SlurmUser</b>. 
 The <b>JobCredentialPublicCertificate</b> file must be readable by all users.
-Note that you should build the key files one one node and then distribute 
+Note that you should build the key files one on node and then distribute 
 them to all nodes in the cluster.
 This insures that all nodes have a consistent set of digital signature 
 keys.
@@ -472,7 +472,7 @@ credential, which is sent to <i>srun</i> and then forwarded to
 
 <h3>MUNGE</h3>
 <p>If using MUNGE digital signatures, no SLURM keys are required.
-This will be address in the installation and configuration of MUNGE.</p>
+This will be addressed in the installation and configuration of MUNGE.</p>
 
 <h3>Authentication</h3>
 <p>Authentication of communications (identifying who generated a particular
@@ -630,7 +630,7 @@ See <i>testsuite/expect/README</i> for more information.</p>
 <p>When upgrading to a new major or minor release of SLURM (e.g. 1.1.x to 1.2.x) 
 all running and pending jobs will be purged due to changes in state save 
 information. It is possible to develop software to translate state information 
-between versions, but we do not normally expect to do so.
+between versions, but we do not expect to do so.
 When upgrading to a new micro release of SLURM (e.g. 1.2.1 to 1.2.2) all
 running and pending jobs will be preserved. Just install a new version of
 SLURM and restart the daemons.
