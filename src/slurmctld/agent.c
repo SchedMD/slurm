@@ -1506,7 +1506,6 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		info("agent(batch_launch): removed pending request for "
 		     "cancelled job %u",
 		     launch_msg_ptr->job_id);
-info("state:%u", job_ptr->job_state);
 		return -1;	/* job cancelled while waiting */
 	}
 
