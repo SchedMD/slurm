@@ -499,10 +499,10 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 	int count;
 	bitstr_t *job_map;
 
-	if (p_ptr->active_resmap == NULL || p_ptr->jobs_active == 0)
+	if ((p_ptr->active_resmap == NULL) || (p_ptr->jobs_active == 0))
 		return 1;
 
-	if (gr_type == GS_CORE || gr_type == GS_SOCKET) {
+	if ((gr_type == GS_CORE) || (gr_type == GS_SOCKET)) {
 		return can_select_job_cores_fit(job_res, p_ptr->active_resmap,
 						gs_bits_per_node,
 						gs_bit_rep_count);
@@ -962,8 +962,13 @@ static void _update_all_active_rows(void)
 	}
 }
 
-/* remove the given job from the given partition */
-static void _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
+/* remove the given job from the given partition
+ * IN job_id - job to remove
+ * IN p_ptr  - GS partition structure
+ * IN fini   - true is job is in finish state (e.g. not to be resumed)
+ */
+static void _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr,
+				  bool fini)
 {
 	int i;
 	struct gs_job *j_ptr;
@@ -985,14 +990,14 @@ static void _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
 	_clear_shadow(j_ptr);
 	
 	/* remove the job from the job_list by shifting everyone else down */
-	p_ptr->num_jobs -= 1;
+	p_ptr->num_jobs--;
 	for (; i < p_ptr->num_jobs; i++) {
 		p_ptr->job_list[i] = p_ptr->job_list[i+1];
 	}
 	p_ptr->job_list[i] = NULL;
 	
 	/* make sure the job is not suspended, and then delete it */
-	if (j_ptr->sig_state == GS_SUSPEND) {
+	if (!fini && (j_ptr->sig_state == GS_SUSPEND)) {
 		debug3("gang: _remove_job_from_part: resuming suspended "
 		       "job %u", j_ptr->job_id);
 		_resume_job(j_ptr->job_id);
@@ -1026,7 +1031,7 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 	if (!p_ptr->job_list) {
 		p_ptr->job_list_size = default_job_list_size;
 		p_ptr->job_list = xmalloc(p_ptr->job_list_size *
-						sizeof(struct gs_job *));
+					  sizeof(struct gs_job *));
 		/* job_list is initialized to be NULL filled */
 	}
 	
@@ -1039,17 +1044,16 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 		 */
 		debug3("gang: _add_job_to_part: duplicate job %u detected",
 		       job_ptr->job_id);
-		_remove_job_from_part(job_ptr->job_id, p_ptr);
+		_remove_job_from_part(job_ptr->job_id, p_ptr, false);
 		_update_active_row(p_ptr, 0);
 	}
 	
 	/* more memory management */
-	if (p_ptr->num_jobs+1 == p_ptr->job_list_size) {
+	if ((p_ptr->num_jobs + 1) == p_ptr->job_list_size) {
 		p_ptr->job_list_size *= 2;
 		xrealloc(p_ptr->job_list, p_ptr->job_list_size *
-						sizeof(struct gs_job *));
-		for (i = p_ptr->num_jobs+1; i < p_ptr->job_list_size; i++)
-			p_ptr->job_list[i] = NULL;
+			 sizeof(struct gs_job *));
+		/* enlarged job_list is initialized to be NULL filled */
 	}
 	j_ptr = xmalloc(sizeof(struct gs_job));
 	
@@ -1150,7 +1154,7 @@ static void _scan_slurm_job_list(void)
 		p_ptr = _find_gs_part(job_ptr->partition);
 		if (!p_ptr) /* no partition */
 			continue;
-		_remove_job_from_part(job_ptr->job_id, p_ptr);
+		_remove_job_from_part(job_ptr->job_id, p_ptr, false);
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -1273,7 +1277,7 @@ extern int gs_job_start(struct job_record *job_ptr)
 	struct gs_part *p_ptr;
 	uint16_t job_state;
 
-	debug3("gang: entering gs_job_start");
+	debug3("gang: entering gs_job_start for job %u", job_ptr->job_id);
 	/* add job to partition */
 	pthread_mutex_lock(&data_mutex);
 	p_ptr = _find_gs_part(job_ptr->partition);
@@ -1339,7 +1343,7 @@ extern int gs_job_fini(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
 	
-	debug3("gang: entering gs_job_fini");
+	debug3("gang: entering gs_job_fini for job %u", job_ptr->job_id);
 	pthread_mutex_lock(&data_mutex);
 	p_ptr = _find_gs_part(job_ptr->partition);
 	if (!p_ptr) {
@@ -1349,7 +1353,7 @@ extern int gs_job_fini(struct job_record *job_ptr)
 	}
 
 	/* remove job from the partition */
-	_remove_job_from_part(job_ptr->job_id, p_ptr);
+	_remove_job_from_part(job_ptr->job_id, p_ptr, true);
 	/* this job may have preempted other jobs, so
 	 * check by updating all active rows */
 	_update_all_active_rows();
