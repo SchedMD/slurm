@@ -668,7 +668,7 @@ static int _check_for_booted_overlapping_blocks(
 								bg_record);
 					}
 
-					debug("Removing unusable block %s"
+					debug("Removing unusable block %s "
 					      "from the system.",
 					      bg_record->bg_block_id);
 					
