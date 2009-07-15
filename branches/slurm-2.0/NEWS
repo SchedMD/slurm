@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
     Previously SLURM would drain every overlapping block of the nodecard 
     making it possible for a large block to make other blocks not work since 
     they overlap some other part of the block that really isn't bad.
+ -- BLUEGENE - Handle L3 errors on boot better.
 
 * Changes in SLURM 2.0.4
 ========================
