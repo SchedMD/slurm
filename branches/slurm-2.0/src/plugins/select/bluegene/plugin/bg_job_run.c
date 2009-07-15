@@ -216,14 +216,16 @@ static int _reset_block(bg_record_t *bg_record)
 		/* remove user from list */		
 		
 		if(bg_record->target_name) {
-			if(strcmp(bg_record->target_name, bg_conf->slurm_user_name)) {
+			if(strcmp(bg_record->target_name, 
+				  bg_conf->slurm_user_name)) {
 				xfree(bg_record->target_name);
 				bg_record->target_name = 
 					xstrdup(bg_conf->slurm_user_name);
 			}
 			update_block_user(bg_record, 1);
 		} else {
-			bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
+			bg_record->target_name = 
+				xstrdup(bg_conf->slurm_user_name);
 		}	
 		
 			
@@ -231,10 +233,17 @@ static int _reset_block(bg_record_t *bg_record)
 		bg_record->boot_count = 0;
 		
 		last_bg_update = time(NULL);
-		if(remove_from_bg_list(bg_lists->job_running, bg_record) 
-		   == SLURM_SUCCESS) {
-			num_unused_cpus += bg_record->cpu_cnt;
-		}
+		/* Only remove from the job_running list if
+		   job_running == NO_JOB_RUNNING, since blocks in
+		   error state could also be in this list and we don't
+		   want to remove them.
+		*/
+		if(bg_record->job_running == NO_JOB_RUNNING)
+			if(remove_from_bg_list(bg_lists->job_running,
+					       bg_record) 
+			   == SLURM_SUCCESS) {
+				num_unused_cpus += bg_record->cpu_cnt;
+			}
 	} else {
 		error("No block given to reset");
 		rc = SLURM_ERROR;
