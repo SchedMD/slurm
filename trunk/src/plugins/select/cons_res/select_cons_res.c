@@ -1169,7 +1169,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 /* Helper function for _synchronize_bitmap().  Check
  * if the given node has at least one available CPU */
-static uint16_t _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
+static bool _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 {
 	uint32_t i, r, cpu_begin, cpu_end;
 
@@ -1178,7 +1178,7 @@ static uint16_t _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 	
 	if (select_node_usage[node_i].node_state >= NODE_CR_RESERVED) {
 		if (!cr_preemption_enabled())
-			return (uint16_t) 0;
+			return false;
 		/* job_preemption has been enabled:
 		 * check to see if the existing job that reserved
 		 * this node is in a partition with a priority that
@@ -1195,10 +1195,10 @@ static uint16_t _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 				continue;
 			for (i = cpu_begin; i < cpu_end; i++) {
 				if (bit_test(s_ptr->row[0].row_bitmap, i))
-					return (uint16_t) 0;
+					return false;
 			}
 		}
-		return (uint16_t) 1;
+		return true;
 	}
 	if (select_node_usage[node_i].node_state >= NODE_CR_ONE_ROW) {
 		/* An existing job has requested that it's CPUs
@@ -1209,25 +1209,25 @@ static uint16_t _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 		 * node in the given partition.
 		 */
 		if (!p_ptr->row || !p_ptr->row[0].row_bitmap)
-			return (uint16_t) 1;
+			return true;
 		for (i = cpu_begin; i < cpu_end; i++) {
 			if (!bit_test(p_ptr->row[0].row_bitmap, i))
-				return (uint16_t) 1;
+				return true;
 		}
 	} else {
 		/* check the core_bitmap in all rows */
 		if (!p_ptr->row)
-			return (uint16_t) 1;
+			return true;
 		for (r = 0; r < p_ptr->num_rows; r++) {
 			if (!p_ptr->row[r].row_bitmap)
-				return (uint16_t) 1;
+				return true;
 			for (i = cpu_begin; i < cpu_end; i++) {
 				if (!bit_test(p_ptr->row[r].row_bitmap, i))
-					return (uint16_t) 1;
+					return true;
 			}
 		}
 	}
-	return (uint16_t) 0;
+	return false;
 }
 
 
