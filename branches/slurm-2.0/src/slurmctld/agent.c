@@ -1476,8 +1476,6 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	return;
 }
 
-/* return true if the requests is to launch a batch job and the message
- * destination is not yet powered up, otherwise return false */
 /* Test if a batch launch request should be defered
  * RET -1: abort the request, pending job cancelled
  *      0: execute the request now
@@ -1503,7 +1501,9 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 
 	launch_msg_ptr = (batch_job_launch_msg_t *)agent_arg_ptr->msg_args;
 	job_ptr = find_job_record(launch_msg_ptr->job_id);
-	if ((job_ptr == NULL) || (job_ptr->job_state != JOB_RUNNING)) {
+	if ((job_ptr == NULL) || 
+	    ((job_ptr->job_state != JOB_RUNNING) &&
+	     (job_ptr->job_state != JOB_SUSPENDED))) {
 		info("agent(batch_launch): removed pending request for "
 		     "cancelled job %u",
 		     launch_msg_ptr->job_id);
