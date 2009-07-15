@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     making it possible for a large block to make other blocks not work since 
     they overlap some other part of the block that really isn't bad.
  -- BLUEGENE - Handle L3 errors on boot better.
+ -- Don't revoke a pending batch launch request from the slurmctld if the
+    job is immediately suspended (a normal event with gang scheduling).
 
 * Changes in SLURM 2.0.4
 ========================
@@ -56,7 +58,7 @@ documents those changes that are of interest to users and admins.
     to properly handle user names that contain all digits. Return error code 
     from uid_from_string() and gid_from_string() functions rather than a uid of
     -1, which might be a valid uid or gid on some systems.
- -- Fix in re-calcuation of job priorities do to DOWN or DRAINED nodes.
+ -- Fix in re-calcuation of job priorities due to DOWN or DRAINED nodes.
 
 * Changes in SLURM 2.0.3
 ========================
