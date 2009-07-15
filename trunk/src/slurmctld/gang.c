@@ -887,7 +887,10 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
-				_suspend_job(j_ptr->job_id);
+				if (p_ptr->shadow_size)
+					_preempt_job_queue(j_ptr->job_id);
+				else
+					_suspend_job(j_ptr->job_id);
 				j_ptr->sig_state = GS_SUSPEND;
 				_clear_shadow(j_ptr);
 			}
@@ -906,7 +909,10 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
-				_preempt_job_queue(j_ptr->job_id);
+				if (p_ptr->shadow_size)
+					_preempt_job_queue(j_ptr->job_id);
+				else
+					_suspend_job(j_ptr->job_id);
 				j_ptr->sig_state = GS_SUSPEND;
 				_clear_shadow(j_ptr);
 			}
@@ -1073,7 +1079,10 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 	} else {
 		debug3("gang: _add_job_to_part: suspending job %u",
 			job_ptr->job_id);
-		_suspend_job(job_ptr->job_id);
+		if (p_ptr->shadow_size)
+			_preempt_job_queue(job_ptr->job_id);
+		else
+			_suspend_job(job_ptr->job_id);
 		j_ptr->sig_state = GS_SUSPEND;
 	}
 	
@@ -1535,11 +1544,15 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 	/* Suspend running jobs that are GS_NO_ACTIVE */
 	for (i = 0; i < p_ptr->num_jobs; i++) {
 		j_ptr = p_ptr->job_list[i];
-		if (j_ptr->row_state == GS_NO_ACTIVE &&
-		    j_ptr->sig_state == GS_RESUME) {
+		if ((p_ptr->shadow_size)		||
+		    ((j_ptr->row_state == GS_NO_ACTIVE) &&
+		     (j_ptr->sig_state == GS_RESUME))) {
 		    	debug3("gang: _cycle_job_list: suspending job %u", 
 			       j_ptr->job_id);
-			_suspend_job(j_ptr->job_id);
+			if (p_ptr->shadow_size)
+				_preempt_job_queue(j_ptr->job_id);
+			else
+				_suspend_job(j_ptr->job_id);
 			j_ptr->sig_state = GS_SUSPEND;
 			_clear_shadow(j_ptr);
 		}
@@ -1584,7 +1597,10 @@ static void *_timeslicer_thread(void *arg)
 				_cycle_job_list(p_ptr);
 		}
 		pthread_mutex_unlock(&data_mutex);
-		
+
+		/* Preempt jobs that were formerly only suspended */
+		_preempt_job_dequeue();	/* MUST BE OUTSIDE data_mutex lock */
+
 		/* sleep AND check for thread termination requests */
 		pthread_testcancel();
 		debug3("gang: _timeslicer_thread: preparing to sleep");
