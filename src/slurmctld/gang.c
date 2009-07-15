@@ -649,9 +649,10 @@ static int _suspend_job(uint32_t job_id)
 	debug3("gang: suspending %u", job_id);
 	msg.op = SUSPEND_JOB;
 	rc = job_suspend(&msg, 0, -1, false);
-	if (rc != SLURM_SUCCESS) {
-		error("gang: suspending job %u: %s", 
-		      job_id, slurm_strerror(rc));
+	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
+	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_DISABLED)) {
+		info("gang: suspending job %u: %s", 
+		     job_id, slurm_strerror(rc));
 	}
 	return rc;
 }
@@ -727,7 +728,7 @@ static void _preempt_job_dequeue(void)
 		xfree(tmp_id);
 
 		if (preempt_mode == PREEMPT_MODE_SUSPEND)
-			rc = _suspend_job(job_id);
+			(void) _suspend_job(job_id);
 		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
 			rc = _requeue_job(job_id);
 		else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
@@ -887,7 +888,7 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
-				if (p_ptr->shadow_size)
+				if (p_ptr->num_shadows)
 					_preempt_job_queue(j_ptr->job_id);
 				else
 					_suspend_job(j_ptr->job_id);
@@ -909,7 +910,7 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
-				if (p_ptr->shadow_size)
+				if (p_ptr->num_shadows)
 					_preempt_job_queue(j_ptr->job_id);
 				else
 					_suspend_job(j_ptr->job_id);
@@ -1083,7 +1084,7 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 	} else {
 		debug3("gang: _add_job_to_part: suspending job %u",
 			job_ptr->job_id);
-		if (p_ptr->shadow_size)
+		if (p_ptr->num_shadows)
 			_preempt_job_queue(job_ptr->job_id);
 		else
 			_suspend_job(job_ptr->job_id);
@@ -1553,7 +1554,7 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 		     (j_ptr->sig_state == GS_RESUME))) {
 		    	debug3("gang: _cycle_job_list: suspending job %u", 
 			       j_ptr->job_id);
-			if (p_ptr->shadow_size)
+			if (p_ptr->num_shadows)
 				_preempt_job_queue(j_ptr->job_id);
 			else
 				_suspend_job(j_ptr->job_id);
