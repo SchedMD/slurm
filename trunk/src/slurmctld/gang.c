@@ -887,7 +887,7 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
-				_preempt_job_queue(j_ptr->job_id);
+				_suspend_job(j_ptr->job_id);
 				j_ptr->sig_state = GS_SUSPEND;
 				_clear_shadow(j_ptr);
 			}
@@ -925,7 +925,8 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 		if (_job_fits_in_active_row(j_ptr->job_ptr, p_ptr)) {
 			_add_job_to_active(j_ptr->job_ptr, p_ptr);
 			_cast_shadow(j_ptr, p_ptr->priority);
-			/* note that this job is a "filler" for this row */
+			/* note that this job is a "filler" for this row,
+			 * blocked by a higher priority job */
 			j_ptr->row_state = GS_FILLER;
 			/* resume the job */
 			if (j_ptr->sig_state == GS_SUSPEND) {
@@ -1072,7 +1073,7 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 	} else {
 		debug3("gang: _add_job_to_part: suspending job %u",
 			job_ptr->job_id);
-		_preempt_job_queue(job_ptr->job_id);
+		_suspend_job(job_ptr->job_id);
 		j_ptr->sig_state = GS_SUSPEND;
 	}
 	
