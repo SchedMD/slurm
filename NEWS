@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     nodes to be considered for building new blocks when testing if a job would 
     run.  This is a visual bug only, jobs would never run on new block, but 
     the block would appear in slurm tools.
+ -- Better responsiveness when starting new allocations when running with the 
+    slurmdbd.
 
 * Changes in SLURM 2.0.4
 ========================
