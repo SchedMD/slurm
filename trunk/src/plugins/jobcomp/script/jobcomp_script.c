@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -562,9 +562,8 @@ int slurm_jobcomp_log_record (struct job_record *record)
 
 	pthread_mutex_lock(&comp_list_mutex);
 	list_append(comp_list, job);
-	pthread_mutex_unlock(&comp_list_mutex);
-
 	pthread_cond_broadcast(&comp_list_cond);
+	pthread_mutex_unlock(&comp_list_mutex);
 
 	return SLURM_SUCCESS;
 }

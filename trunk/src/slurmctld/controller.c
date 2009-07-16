@@ -998,8 +998,8 @@ static void _free_server_thread(void)
 		slurmctld_config.server_thread_count--;
 	else
 		error("slurmctld_config.server_thread_count underflow");
-	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 	pthread_cond_broadcast(&server_thread_cond);
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 }
 
 static int _accounting_cluster_ready()
