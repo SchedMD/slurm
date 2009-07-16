@@ -1267,7 +1267,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	int i, j, k;
 	int first_bit, last_bit;
 	uint32_t node_cpus, total_cpus = 0, node_cnt;
-	select_job_res_t select_ptr;
+	select_job_res_t *select_ptr;
 
 	if (job_ptr->select_job) {
 		error("select_p_job_test: already have select_job");

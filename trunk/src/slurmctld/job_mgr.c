@@ -702,7 +702,7 @@ static int _load_job_state(Buf buffer)
 	struct part_record *part_ptr;
 	int error_code, i;
 	select_jobinfo_t *select_jobinfo = NULL;
-	select_job_res_t select_job = NULL;
+	select_job_res_t *select_job = NULL;
 	check_jobinfo_t check_job = NULL;
 	acct_association_rec_t assoc_rec;
 	acct_qos_rec_t qos_rec;
@@ -1504,7 +1504,7 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 {
 	int i, orig_pos = -1, new_pos = -1;
 	bitstr_t *orig_bitmap = bit_copy(job_ptr->node_bitmap);
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 
 	xassert(select_ptr);
 	xassert(select_ptr->cpus);

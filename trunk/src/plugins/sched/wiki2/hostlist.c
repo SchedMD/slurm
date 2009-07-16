@@ -165,7 +165,7 @@ static char * _task_list(struct job_record *job_ptr)
 {
 	int i, j, node_inx = 0, task_cnt;
 	char *buf = NULL, *host;
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 
 	xassert(select_ptr);
 	for (i=0; i<select_ptr->nhosts; i++) {
@@ -264,7 +264,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 	int i, node_inx = 0, reps = -1, task_cnt;
 	char *buf = NULL, *host;
 	hostlist_t hl_tmp = (hostlist_t) NULL;
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 
 	xassert(select_ptr);
 	for (i=0; i<select_ptr->nhosts; i++) {

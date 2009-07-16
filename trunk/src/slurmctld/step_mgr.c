@@ -450,7 +450,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	int error_code, nodes_picked_cnt=0, cpus_picked_cnt = 0, i;
 	ListIterator step_iterator;
 	struct step_record *step_p;
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 
 	xassert(select_ptr);
 	xassert(select_ptr->cpus);
@@ -864,7 +864,7 @@ static int _count_cpus(bitstr_t *bitmap)
  *	Add the specified task count for a specific node in the job's 
  *	and step's allocation */
 static void _pick_step_cores(struct step_record *step_ptr, 
-			     select_job_res_t select_ptr, 
+			     select_job_res_t *select_ptr, 
 			     int job_node_inx, uint16_t task_cnt)
 {
 	int bit_offset, core_inx, i, sock_inx;
@@ -948,7 +948,7 @@ static void _pick_step_cores(struct step_record *step_ptr,
 extern void step_alloc_lps(struct step_record *step_ptr)
 {
 	struct job_record  *job_ptr = step_ptr->job_ptr;
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 	int cpus_alloc;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
@@ -1036,7 +1036,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 static void _dump_step_layout(struct step_record *step_ptr)
 {
 	struct job_record* job_ptr = step_ptr->job_ptr;
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 	int i, bit_inx, core_inx, node_inx, rep, sock_inx;
 
 	if ((step_ptr->core_bitmap_job == NULL) ||
@@ -1072,7 +1072,7 @@ static void _dump_step_layout(struct step_record *step_ptr)
 static void _step_dealloc_lps(struct step_record *step_ptr)
 {
 	struct job_record  *job_ptr = step_ptr->job_ptr;
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 	int cpus_alloc;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
@@ -1446,7 +1446,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	int pos = -1;
 	int first_bit, last_bit;
 	struct job_record *job_ptr = step_ptr->job_ptr;
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 
 	xassert(select_ptr);
 	xassert(select_ptr->cpus);

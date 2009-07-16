@@ -85,7 +85,7 @@ extern void srun_allocate (uint32_t job_id)
 	    job_ptr->select_job->cpu_array_cnt) {
 		slurm_addr * addr;
 		resource_allocation_response_msg_t *msg_arg;
-		select_job_res_t select_ptr = job_ptr->select_job;
+		select_job_res_t *select_ptr = job_ptr->select_job;
 
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->alloc_resp_port, 
