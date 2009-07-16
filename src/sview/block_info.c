@@ -88,7 +88,7 @@ enum {
 static display_data_t display_data_block[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_BLOCK, "Bluegene Block", 
+	{G_TYPE_STRING, SORTID_BLOCK, "Block ID", 
 	 TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_NONE,
