@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "May 2009" "squeue 2.9" "Slurm components"
+.TH SQUEUE "1" "July 2009" "squeue 2.1" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -41,6 +41,8 @@ By default, prints a time stamp with the header.
 .TP
 \fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
 Requests a comma separated list of job ids to display.  Defaults to all jobs.
+The \fB\-\-jobs=<job_id_list>\fR option may be used in conjunction with the
+\fB\-\-steps\fR option to print step information about specific jobs.
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -252,11 +254,6 @@ the job.
 .RE
 
 .TP
-\fB\-U <account_list>\fR, \fB\-\-account=<account_list>\fR
-Specify the accounts of the jobs to view. Accepts a comma separated 
-list of account names. This have no effect when listing job steps.
-
-.TP
 \fB\-p <part_list>\fR, \fB\-\-partition=<part_list>\fR
 Specify the partitions of the jobs or steps to view. Accepts a comma separated 
 list of partition names.
@@ -294,6 +291,11 @@ COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
 FAILED (F), TIMEOUT (TO), and NODE_FAIL (NF). Note the \fB<state_list>\fR
 supplied is case insensitve ("pd" and "PD" work the same).
 See the \fBJOB STATE CODES\fR section below for more information.
+
+.TP
+\fB\-U <account_list>\fR, \fB\-\-account=<account_list>\fR
+Specify the accounts of the jobs to view. Accepts a comma separated 
+list of account names. This have no effect when listing job steps.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR

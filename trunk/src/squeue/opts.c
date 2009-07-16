@@ -19,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -125,8 +125,9 @@ parse_command_line( int argc, char* argv[] )
 	if ( ( env_val = getenv("SQUEUE_SORT") ) )
 		params.sort = xstrdup(env_val);
 
-	while((opt_char = getopt_long(argc, argv, "ahi:j::ln:o:p:s::S:t:u:U:vV",
-			long_options, &option_index)) != -1) {
+	while((opt_char = getopt_long(argc, argv, 
+				      "ahi:j::ln:o:p:s::S:t:u:U:vV",
+				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
 				fprintf(stderr, "Try \"squeue --help\" "
@@ -188,7 +189,7 @@ parse_command_line( int argc, char* argv[] )
 				if (optarg) {
 					params.steps = xstrdup(optarg);
 					params.step_list = 
-						_build_step_list( params.steps );
+						_build_step_list(params.steps);
 				}
 				params.step_flag = true;
 				break;
@@ -242,8 +243,13 @@ parse_command_line( int argc, char* argv[] )
 	}
 
 	if ( params.job_flag && params.step_flag) {
-		error("Incompatable options --jobs and --steps\n");
-		exit(1);
+		if (params.job_list) {
+			verbose("Printing job steps with job filter");
+			params.job_flag = false;
+		} else {
+			error("Incompatable options --jobs and --steps");
+			exit(1);
+		}
 	}
 
 	if ( params.nodes ) {
@@ -825,13 +831,12 @@ _build_job_list( char* str )
 	int i;
 	uint32_t *job_id = NULL;
 
-	if ( str == NULL)
+	if ( str == NULL )
 		return NULL;
 	my_list = list_create( NULL );
 	my_job_list = xstrdup( str );
 	job = strtok_r( my_job_list, ",", &tmp_char );
-	while (job) 
-	{
+	while (job) {
 		i = strtol( job, (char **) NULL, 10 );
 		if (i <= 0) {
 			error( "Invalid job id: %s", job );
