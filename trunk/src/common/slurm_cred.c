@@ -68,7 +68,7 @@
 
 #ifndef __sbcast_cred_t_defined
 #  define  __sbcast_cred_t_defined
-   typedef struct sbcast_cred *sbcast_cred_t;		/* opaque data type */
+   typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #endif
 
 /* 
@@ -1963,7 +1963,7 @@ _job_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 \*****************************************************************************/
 
 /* Pack sbcast credential without the digital signature */
-static void _pack_sbcast_cred(sbcast_cred_t sbcast_cred, Buf buffer)
+static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer)
 {
 	pack_time(sbcast_cred->ctime, buffer);
 	pack_time(sbcast_cred->expiration, buffer);
@@ -1974,12 +1974,12 @@ static void _pack_sbcast_cred(sbcast_cred_t sbcast_cred, Buf buffer)
 /* Create an sbcast credential for the specified job and nodes
  *	including digital signature.
  * RET the sbcast credential or NULL on error */
-sbcast_cred_t create_sbcast_cred(slurm_cred_ctx_t ctx, 
+sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx, 
 				 uint32_t job_id, char *nodes)
 {
 	Buf buffer;
 	int rc;
-	sbcast_cred_t sbcast_cred;
+	sbcast_cred_t *sbcast_cred;
 	time_t now = time(NULL);
 
 	xassert(ctx);
@@ -2011,9 +2011,9 @@ sbcast_cred_t create_sbcast_cred(slurm_cred_ctx_t ctx,
 
 /* Copy an sbcast credential created using create_sbcast_cred() or 
  *	unpack_sbcast_cred() */
-sbcast_cred_t copy_sbcast_cred(sbcast_cred_t sbcast_cred)
+sbcast_cred_t *copy_sbcast_cred(sbcast_cred_t *sbcast_cred)
 {
-	sbcast_cred_t rcred = NULL;
+	sbcast_cred_t *rcred = NULL;
 
 	xassert(sbcast_cred);
 	rcred->ctime      = sbcast_cred->ctime;
@@ -2027,7 +2027,7 @@ sbcast_cred_t copy_sbcast_cred(sbcast_cred_t sbcast_cred)
 
 /* Delete an sbcast credential created using create_sbcast_cred() or 
  *	unpack_sbcast_cred() */
-void delete_sbcast_cred(sbcast_cred_t sbcast_cred)
+void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 {
 	if (sbcast_cred) {
 		xfree(sbcast_cred->nodes);
@@ -2043,7 +2043,7 @@ void delete_sbcast_cred(sbcast_cred_t sbcast_cred)
  *	recent signature on file (in our cache).
  * RET 0 on success, -1 on error */
 int extract_sbcast_cred(slurm_cred_ctx_t ctx, 
-			sbcast_cred_t sbcast_cred, uint16_t block_no,
+			sbcast_cred_t *sbcast_cred, uint16_t block_no,
 			uint32_t *job_id, char **nodes)
 {
 	static time_t   cache_expire[SBCAST_CACHE_SIZE];
@@ -2130,7 +2130,7 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 }
 
 /* Pack an sbcast credential into a buffer including the digital signature */
-void pack_sbcast_cred(sbcast_cred_t sbcast_cred, Buf buffer)
+void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer)
 {
 	xassert(sbcast_cred);
 	xassert(sbcast_cred->siglen > 0);
@@ -2140,10 +2140,10 @@ void pack_sbcast_cred(sbcast_cred_t sbcast_cred, Buf buffer)
 }
 
 /* Pack an sbcast credential into a buffer including the digital signature */
-sbcast_cred_t unpack_sbcast_cred(Buf buffer)
+sbcast_cred_t *unpack_sbcast_cred(Buf buffer)
 {
 	uint32_t len;
-	sbcast_cred_t sbcast_cred;
+	sbcast_cred_t *sbcast_cred;
 	uint32_t uint32_tmp;
 
 	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
@@ -2164,7 +2164,7 @@ unpack_error:
 	return NULL;
 }
 
-void  print_sbcast_cred(sbcast_cred_t sbcast_cred)
+void  print_sbcast_cred(sbcast_cred_t *sbcast_cred)
 {
 	info("Sbcast_cred: Jobid   %u", sbcast_cred->jobid         );
 	info("Sbcast_cred: Nodes   %s", sbcast_cred->nodes         );

@@ -1749,7 +1749,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	job_alloc_info_msg_t *job_info_msg =
 		(job_alloc_info_msg_t *) msg->data;
 	job_sbcast_cred_msg_t job_info_resp_msg;
-	sbcast_cred_t sbcast_cred;
+	sbcast_cred_t *sbcast_cred;
 	/* Locks: Read config, job, read node */
 	slurmctld_lock_t job_read_lock = { 
 		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };

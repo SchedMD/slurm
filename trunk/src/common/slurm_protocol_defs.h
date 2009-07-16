@@ -817,7 +817,7 @@ typedef struct file_bcast_msg {
 	uint32_t gid;		/* group for destination file */
 	time_t atime;		/* last access time for destination file */
 	time_t mtime;		/* last modification time for dest file */
-	sbcast_cred_t cred;	/* credential for the RPC */
+	sbcast_cred_t *cred;	/* credential for the RPC */
 	uint32_t block_len;	/* length of this data block */
 	char *block;		/* data for this block */
 } file_bcast_msg_t; 
