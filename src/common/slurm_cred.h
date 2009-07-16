@@ -309,16 +309,16 @@ void slurm_cred_print(slurm_cred_t *cred);
  * Functions to create, delete, pack, and unpack an sbcast credential
  * Caller of extract_sbcast_cred() must xfree returned node string
  */
-sbcast_cred_t create_sbcast_cred(slurm_cred_ctx_t ctx, 
+sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx, 
 				 uint32_t job_id, char *nodes);
-sbcast_cred_t copy_sbcast_cred(sbcast_cred_t sbcast_cred);
-void          delete_sbcast_cred(sbcast_cred_t sbcast_cred);
+sbcast_cred_t *copy_sbcast_cred(sbcast_cred_t *sbcast_cred);
+void          delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
 int           extract_sbcast_cred(slurm_cred_ctx_t ctx, 
-				  sbcast_cred_t sbcast_cred, uint16_t block_no,
+				  sbcast_cred_t *sbcast_cred, uint16_t block_no,
 				  uint32_t *job_id, char **nodes);
-void          pack_sbcast_cred(sbcast_cred_t sbcast_cred, Buf buffer);
-sbcast_cred_t unpack_sbcast_cred(Buf buffer);
-void          print_sbcast_cred(sbcast_cred_t sbcast_cred);
+void          pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer);
+sbcast_cred_t *unpack_sbcast_cred(Buf buffer);
+void          print_sbcast_cred(sbcast_cred_t *sbcast_cred);
 
 
 #ifdef DISABLE_LOCALTIME

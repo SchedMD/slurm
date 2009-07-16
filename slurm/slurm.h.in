@@ -163,7 +163,7 @@ BEGIN_C_DECLS
 
 #ifndef __sbcast_cred_t_defined
 #  define  __sbcast_cred_t_defined
-   typedef struct sbcast_cred *sbcast_cred_t;		/* opaque data type */
+   typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #endif
 
 /*****************************************************************************\
@@ -1323,11 +1323,10 @@ typedef struct job_sbcast_cred_msg {
 	slurm_addr   *node_addr;	/* network addresses */
 	uint32_t      node_cnt;		/* count of nodes */
 	char         *node_list;	/* assigned list of nodes */
-	sbcast_cred_t sbcast_cred;	/* opaque data structure */
+	sbcast_cred_t *sbcast_cred;	/* opaque data structure */
 } job_sbcast_cred_msg_t;
 
 /* Opaque data type for slurm_step_ctx_* functions */
-typedef struct slurm_step_ctx_struct *slurm_step_ctx;
 typedef struct slurm_step_ctx_struct slurm_step_ctx_t;
 
 #define TRIGGER_RES_TYPE_JOB   1
