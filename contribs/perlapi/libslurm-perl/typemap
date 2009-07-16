@@ -1,9 +1,9 @@
 slurm_t		T_SLURM
 hostlist_t	T_HOSTLIST
-slurm_step_ctx	T_STEPCTX
+slurm_step_ctx_t * T_STEPCTX
 signo_t		T_SIGNO
-slurm_cred_t	T_PTRREF
-switch_jobinfo_t	T_PTRREF
+slurm_cred_t	* T_PTRREF
+switch_jobinfo_t * T_PTRREF
 
 #####################################
 OUTPUT
