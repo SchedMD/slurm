@@ -124,7 +124,7 @@ BEGIN_C_DECLS
 
 #ifndef __slurm_cred_t_defined
 #  define __slurm_cred_t_defined
-   typedef struct slurm_job_credential * slurm_cred_t;
+   typedef struct slurm_job_credential slurm_cred_t;
 #endif
 
 /* Define switch_jobinfo_t below to avoid including extraneous slurm headers */

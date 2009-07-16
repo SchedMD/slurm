@@ -63,7 +63,7 @@
  */
 #ifndef __slurm_cred_t_defined
 #  define __slurm_cred_t_defined
-   typedef struct slurm_job_credential * slurm_cred_t;
+   typedef struct slurm_job_credential slurm_cred_t;
 #endif
 
 /*
@@ -172,13 +172,13 @@ int slurm_crypto_fini(void);
  *
  * Returns NULL on failure.
  */
-slurm_cred_t slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg);
+slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg);
 
 /*
  * Copy a slurm credential.
  * Returns NULL on failure.
  */
-slurm_cred_t slurm_cred_copy(slurm_cred_t cred);
+slurm_cred_t *slurm_cred_copy(slurm_cred_t *cred);
 
 /*
  * Create a "fake" credential with bogus data in the signature.
@@ -186,14 +186,14 @@ slurm_cred_t slurm_cred_copy(slurm_cred_t cred);
  * to talk to slurmd directly, bypassing the controller
  * (which normally signs creds)
  */
-slurm_cred_t slurm_cred_faker(slurm_cred_arg_t *arg);
+slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg);
 
 /* Free the credential arguments as loaded by either
  * slurm_cred_get_args() or slurm_cred_verify() */
 void slurm_cred_free_args(slurm_cred_arg_t *arg);
 
 /* Make a copy of the credential's arguements */
-int slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg);
+int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg);
 
 /*
  * Verify the signed credential `cred,' and return cred contents in
@@ -206,7 +206,7 @@ int slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg);
  *   - Credential has not been revoked
  *   - Credential has not been replayed
  */
-int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred, 
+int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred, 
 		      slurm_cred_arg_t *arg);
 
 /*
@@ -214,7 +214,7 @@ int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
  *  be used again. Returns SLURM_FAILURE if no credential state is found
  *  to be rewound, SLURM_SUCCESS otherwise.
  */
-int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred);
+int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 /*
  * Check to see if this credential is a reissue of an existing credential
@@ -222,7 +222,7 @@ int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred);
  * this credential is a reissue, then the old credential is cleared
  * from the cred context "ctx".
  */
-void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t cred);
+void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 /*
  * Revoke all credentials for job id jobid
@@ -239,7 +239,7 @@ int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time);
  * than the revoke time, see "scontrol requeue", purge the old 
  * job record and make like it never existed
  */
-bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred);
+bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 /*
  * Begin expiration period for the revocation of credentials
@@ -273,23 +273,23 @@ int slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid);
 
 /* Free memory associated with slurm credential `cred.'
  */
-void slurm_cred_destroy(slurm_cred_t cred);
+void slurm_cred_destroy(slurm_cred_t *cred);
 
 /*
  * Pack a slurm credential for network transmission
  */
-void slurm_cred_pack(slurm_cred_t cred, Buf buffer);
+void slurm_cred_pack(slurm_cred_t *cred, Buf buffer);
 
 /*
  * Unpack a slurm job credential
  */
-slurm_cred_t slurm_cred_unpack(Buf buffer);
+slurm_cred_t *slurm_cred_unpack(Buf buffer);
 
 /*
  * Get a pointer to the slurm credential signature
  * (used by slurm IO connections to verify connecting agent)
  */
-int slurm_cred_get_signature(slurm_cred_t cred, char **datap, 
+int slurm_cred_get_signature(slurm_cred_t *cred, char **datap, 
 			     uint32_t *len);
 
 /*
@@ -298,12 +298,12 @@ int slurm_cred_get_signature(slurm_cred_t cred, char **datap,
  *
  * NOTE: caller must xfree the returned string.
  */
-char* format_core_allocs(slurm_cred_t cred, char *node_name);
+char* format_core_allocs(slurm_cred_t *cred, char *node_name);
 
 /*
  * Print a slurm job credential using the info() call
  */
-void slurm_cred_print(slurm_cred_t cred);
+void slurm_cred_print(slurm_cred_t *cred);
 
 /*
  * Functions to create, delete, pack, and unpack an sbcast credential

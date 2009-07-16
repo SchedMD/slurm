@@ -212,7 +212,7 @@ void job_kill(slurmd_job_t *job, int signal);
 
 void job_destroy(slurmd_job_t *job);
 
-struct srun_info * srun_info_create(slurm_cred_t cred, slurm_addr *respaddr, 
+struct srun_info * srun_info_create(slurm_cred_t *cred, slurm_addr *respaddr, 
 		                    slurm_addr *ioaddr);
 
 void  srun_info_destroy(struct srun_info *srun);

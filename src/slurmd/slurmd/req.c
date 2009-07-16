@@ -639,7 +639,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	bool             verified = true;
 	int              host_index = -1;
 	int              rc;
-	slurm_cred_t     cred = req->cred;
+	slurm_cred_t    *cred = req->cred;
 	uint32_t         jobid = req->job_id;
 	uint32_t         stepid = req->job_step_id;
 	int              tasks_to_launch = req->tasks_to_launch[node_id];

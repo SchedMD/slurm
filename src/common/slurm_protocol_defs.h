@@ -575,7 +575,7 @@ typedef struct job_step_create_response_msg {
 	char *resv_ports;		/* reserved ports */
 	slurm_step_layout_t *step_layout; /* information about how the 
                                            * step is laid out */
-	slurm_cred_t cred;    	  /* slurm job credential */
+	slurm_cred_t *cred;    	  /* slurm job credential */
 	switch_jobinfo_t switch_job;	/* switch context, opaque 
                                          * data structure */
 } job_step_create_response_msg_t;
@@ -637,7 +637,7 @@ typedef struct launch_tasks_request_msg {
 
 	uint16_t   slurmd_debug; /* remote slurmd debug level */
 
-	slurm_cred_t cred;	/* job credential            */
+	slurm_cred_t *cred;	/* job credential            */
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
 	job_options_t options;  /* Arbitrary job options */
 	char *complete_nodelist;
@@ -697,7 +697,7 @@ typedef struct reattach_tasks_request_msg {
 	uint16_t    *resp_port; /* array of available response ports */
 	uint16_t     num_io_port;
 	uint16_t    *io_port;   /* array of available client IO ports */
-	slurm_cred_t cred;      /* used only a weak authentication mechanism
+	slurm_cred_t *cred;      /* used only a weak authentication mechanism
 				   for the slurmstepd to use when connecting
 				   back to the client */
 } reattach_tasks_request_msg_t;
@@ -737,7 +737,7 @@ typedef struct batch_job_launch_msg {
 	char **environment;	/* environment variables to set for job, 
 				 *   name=value pairs, one per line */
 	select_jobinfo_t *select_jobinfo;	/* opaque data type */
-	slurm_cred_t cred;
+	slurm_cred_t *cred;
 	uint8_t open_mode;	/* stdout/err append or truncate */
 	uint8_t overcommit;	/* if resources being over subscribed */
 	uint16_t acctg_freq;	/* accounting polling interval	*/
