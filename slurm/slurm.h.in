@@ -151,7 +151,7 @@ BEGIN_C_DECLS
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
 #ifndef __jobacctinfo_t_defined
 #  define  __jobacctinfo_t_defined
-   typedef struct jobacctinfo *jobacctinfo_t;     /* opaque data type */
+   typedef struct jobacctinfo jobacctinfo_t;     /* opaque data type */
 #endif
 
 /* Define allocation_msg_thread_t below to avoid including extraneous 
@@ -343,7 +343,7 @@ enum select_node_cnt {
 
 /* jobacct data types */
 enum jobacct_data_type {
-	JOBACCT_DATA_TOTAL,	/* data-> jobacctinfo_t */
+	JOBACCT_DATA_TOTAL,	/* data-> jobacctinfo_t * */
 	JOBACCT_DATA_PIPE,      /* data-> file descriptor */
 	JOBACCT_DATA_RUSAGE,	/* data-> rusage set user_cpu_sec,
 				 * user_cpu_usec, sys_cpu_sec, sys_cpu_usec */

@@ -193,7 +193,7 @@ struct jobacctinfo {
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
 #ifndef __jobacctinfo_t_defined
 #  define  __jobacctinfo_t_defined
-   typedef struct jobacctinfo *jobacctinfo_t;     /* opaque data type */
+   typedef struct jobacctinfo jobacctinfo_t;     /* opaque data type */
 #endif
 
 extern jobacct_step_rec_t *create_jobacct_step_rec();
