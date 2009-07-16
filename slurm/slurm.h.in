@@ -158,7 +158,7 @@ BEGIN_C_DECLS
  * slurm headers */
 #ifndef __allocation_msg_thread_t_defined
 #  define  __allocation_msg_thread_t_defined
-   typedef struct allocation_msg_thread *allocation_msg_thread_t;
+   typedef struct allocation_msg_thread allocation_msg_thread_t;
 #endif
 
 #ifndef __sbcast_cred_t_defined
