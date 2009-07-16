@@ -576,7 +576,7 @@ typedef struct job_step_create_response_msg {
 	slurm_step_layout_t *step_layout; /* information about how the 
                                            * step is laid out */
 	slurm_cred_t *cred;    	  /* slurm job credential */
-	switch_jobinfo_t switch_job;	/* switch context, opaque 
+	switch_jobinfo_t *switch_job;	/* switch context, opaque 
                                          * data structure */
 } job_step_create_response_msg_t;
 
@@ -638,7 +638,7 @@ typedef struct launch_tasks_request_msg {
 	uint16_t   slurmd_debug; /* remote slurmd debug level */
 
 	slurm_cred_t *cred;	/* job credential            */
-	switch_jobinfo_t switch_job;	/* switch credential for the job */
+	switch_jobinfo_t *switch_job;	/* switch credential for the job */
 	job_options_t options;  /* Arbitrary job options */
 	char *complete_nodelist;
 	char *ckpt_dir;		/* checkpoint path */

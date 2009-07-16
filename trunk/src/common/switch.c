@@ -60,35 +60,35 @@ typedef struct slurm_switch_ops {
 	int          (*state_save)        ( char *dir_name );
 	int          (*state_restore)     ( char *dir_name, bool recover );
 
-	int          (*alloc_jobinfo)     ( switch_jobinfo_t *jobinfo );
-	int          (*build_jobinfo)     ( switch_jobinfo_t jobinfo,
+	int          (*alloc_jobinfo)     ( switch_jobinfo_t **jobinfo );
+	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
 						char *nodelist,
 						uint16_t *tasks_per_node, 
 						int cyclic_alloc, 
 						char *network);
-	switch_jobinfo_t (*copy_jobinfo)  ( switch_jobinfo_t jobinfo );
-	void         (*free_jobinfo)      ( switch_jobinfo_t jobinfo );
-	int          (*pack_jobinfo)      ( switch_jobinfo_t jobinfo, 
+	switch_jobinfo_t *(*copy_jobinfo)  ( switch_jobinfo_t *jobinfo );
+	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
+	int          (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo, 
 						Buf buffer );
-	int          (*unpack_jobinfo)    ( switch_jobinfo_t jobinfo, 
+	int          (*unpack_jobinfo)    ( switch_jobinfo_t *jobinfo, 
 						Buf buffer );
-	int          (*get_jobinfo)       ( switch_jobinfo_t switch_job,
+	int          (*get_jobinfo)       ( switch_jobinfo_t *switch_job,
 						int key, void *data);
 	void         (*print_jobinfo)     ( FILE *fp, 
-						switch_jobinfo_t jobinfo );
-	char *       (*string_jobinfo)    ( switch_jobinfo_t jobinfo, 
+						switch_jobinfo_t *jobinfo );
+	char *       (*string_jobinfo)    ( switch_jobinfo_t *jobinfo, 
 						char *buf, size_t size);
 	int          (*node_init)         ( void );
 	int          (*node_fini)         ( void );
-	int          (*job_preinit)       ( switch_jobinfo_t jobinfo );
-	int          (*job_init)          ( switch_jobinfo_t jobinfo,
+	int          (*job_preinit)       ( switch_jobinfo_t *jobinfo );
+	int          (*job_init)          ( switch_jobinfo_t *jobinfo,
 						uid_t uid );
-	int          (*job_fini)          ( switch_jobinfo_t jobinfo );
-	int          (*job_postfini)      ( switch_jobinfo_t jobinfo,
+	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
+	int          (*job_postfini)      ( switch_jobinfo_t *jobinfo,
 						uid_t pgid, 
 						uint32_t job_id, 
 						uint32_t step_id );
-	int          (*job_attach)        ( switch_jobinfo_t jobinfo, 
+	int          (*job_attach)        ( switch_jobinfo_t *jobinfo, 
 						char ***env, uint32_t nodeid, 
 						uint32_t procid, uint32_t nnodes, 
 						uint32_t nprocs, uint32_t rank);
@@ -104,12 +104,12 @@ typedef struct slurm_switch_ops {
 	int          (*free_nodeinfo)     ( switch_node_info_t *nodeinfo );
 	char *       (*sprintf_nodeinfo)  ( switch_node_info_t nodeinfo,
 						char *buf, size_t size );
-	int          (*step_complete)     ( switch_jobinfo_t jobinfo,
+	int          (*step_complete)     ( switch_jobinfo_t *jobinfo,
 						char *nodelist );
-	int          (*step_part_comp)    ( switch_jobinfo_t jobinfo,
+	int          (*step_part_comp)    ( switch_jobinfo_t *jobinfo,
 						char *nodelist );
 	bool         (*part_comp)         ( void );
-	int          (*step_allocated)    ( switch_jobinfo_t jobinfo,
+	int          (*step_allocated)    ( switch_jobinfo_t *jobinfo,
 					        char *nodelist );
 	int          (*state_clear)       ( void );
 	int          (*slurmctld_init)    ( void );
@@ -343,7 +343,7 @@ extern int  switch_clear(void)
 	return (*(g_context->ops.state_clear))( );
 }
 
-extern int  switch_alloc_jobinfo(switch_jobinfo_t *jobinfo)
+extern int  switch_alloc_jobinfo(switch_jobinfo_t **jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -351,7 +351,7 @@ extern int  switch_alloc_jobinfo(switch_jobinfo_t *jobinfo)
 	return (*(g_context->ops.alloc_jobinfo))( jobinfo );
 }
 
-extern int  switch_build_jobinfo(switch_jobinfo_t jobinfo, 
+extern int  switch_build_jobinfo(switch_jobinfo_t *jobinfo, 
 		char *nodelist, uint16_t *tasks_per_node, 
 		int cyclic_alloc, char *network)
 {
@@ -362,7 +362,7 @@ extern int  switch_build_jobinfo(switch_jobinfo_t jobinfo,
 			tasks_per_node, cyclic_alloc, network );
 }
 
-extern switch_jobinfo_t switch_copy_jobinfo(switch_jobinfo_t jobinfo)
+extern switch_jobinfo_t *switch_copy_jobinfo(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return NULL;
@@ -370,7 +370,7 @@ extern switch_jobinfo_t switch_copy_jobinfo(switch_jobinfo_t jobinfo)
 	return (*(g_context->ops.copy_jobinfo))( jobinfo );
 }
 
-extern void switch_free_jobinfo(switch_jobinfo_t jobinfo)
+extern void switch_free_jobinfo(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return;
@@ -378,7 +378,7 @@ extern void switch_free_jobinfo(switch_jobinfo_t jobinfo)
 	(*(g_context->ops.free_jobinfo))( jobinfo );
 }
 
-extern int switch_pack_jobinfo(switch_jobinfo_t jobinfo, Buf buffer)
+extern int switch_pack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -386,7 +386,7 @@ extern int switch_pack_jobinfo(switch_jobinfo_t jobinfo, Buf buffer)
 	return (*(g_context->ops.pack_jobinfo))( jobinfo, buffer );
 }
 
-extern int switch_unpack_jobinfo(switch_jobinfo_t jobinfo, Buf buffer)
+extern int switch_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -394,7 +394,7 @@ extern int switch_unpack_jobinfo(switch_jobinfo_t jobinfo, Buf buffer)
 	return (*(g_context->ops.unpack_jobinfo))( jobinfo, buffer );
 }
 
-extern int  switch_g_get_jobinfo(switch_jobinfo_t jobinfo, 
+extern int  switch_g_get_jobinfo(switch_jobinfo_t *jobinfo, 
 	int data_type, void *data)
 {
 	if ( switch_init() < 0 )
@@ -403,7 +403,7 @@ extern int  switch_g_get_jobinfo(switch_jobinfo_t jobinfo,
 	return (*(g_context->ops.get_jobinfo))( jobinfo, data_type, data);
 }
 
-extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo)
+extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return;
@@ -411,7 +411,7 @@ extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo)
 	(*(g_context->ops.print_jobinfo)) (fp, jobinfo);
 }
 
-extern char *switch_sprint_jobinfo( switch_jobinfo_t jobinfo,
+extern char *switch_sprint_jobinfo( switch_jobinfo_t *jobinfo,
 	       char *buf, size_t size)
 {
 	if ( switch_init() < 0 )
@@ -436,7 +436,7 @@ extern int interconnect_node_fini(void)
 	return (*(g_context->ops.node_fini)) ();
 }
 
-extern int interconnect_preinit(switch_jobinfo_t jobinfo)
+extern int interconnect_preinit(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -444,7 +444,7 @@ extern int interconnect_preinit(switch_jobinfo_t jobinfo)
 	return (*(g_context->ops.job_preinit)) (jobinfo);
 }
 
-extern int interconnect_init(switch_jobinfo_t jobinfo, uid_t uid)
+extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -452,7 +452,7 @@ extern int interconnect_init(switch_jobinfo_t jobinfo, uid_t uid)
 	return (*(g_context->ops.job_init)) (jobinfo, uid);
 }
 
-extern int interconnect_fini(switch_jobinfo_t jobinfo)
+extern int interconnect_fini(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -460,7 +460,7 @@ extern int interconnect_fini(switch_jobinfo_t jobinfo)
 	return (*(g_context->ops.job_fini)) (jobinfo);
 }
 
-extern int interconnect_postfini(switch_jobinfo_t jobinfo, uid_t pgid, 
+extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid, 
 				uint32_t job_id, uint32_t step_id )
 {
 	if ( switch_init() < 0 )
@@ -470,7 +470,7 @@ extern int interconnect_postfini(switch_jobinfo_t jobinfo, uid_t pgid,
 		job_id, step_id);
 }
 
-extern int interconnect_attach(switch_jobinfo_t jobinfo, char ***env,
+extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
 		uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
 		uint32_t nprocs, uint32_t gid)
 {
@@ -561,7 +561,7 @@ extern char*switch_g_sprintf_node_info(switch_node_info_t switch_node,
 	return (*(g_context->ops.sprintf_nodeinfo))( switch_node, buf, size );
 }
 
-extern int switch_g_job_step_complete(switch_jobinfo_t jobinfo,
+extern int switch_g_job_step_complete(switch_jobinfo_t *jobinfo,
 	char *nodelist)
 {
 	if ( switch_init() < 0 )
@@ -570,7 +570,7 @@ extern int switch_g_job_step_complete(switch_jobinfo_t jobinfo,
 	return (*(g_context->ops.step_complete))( jobinfo, nodelist );
 }
 
-extern int switch_g_job_step_part_comp(switch_jobinfo_t jobinfo,
+extern int switch_g_job_step_part_comp(switch_jobinfo_t *jobinfo,
 	char *nodelist)
 {
 	if ( switch_init() < 0 )
@@ -588,7 +588,7 @@ extern bool switch_g_part_comp(void)
 }
 
 
-extern int switch_g_job_step_allocated(switch_jobinfo_t jobinfo,
+extern int switch_g_job_step_allocated(switch_jobinfo_t *jobinfo,
 	char *nodelist)
 {
 	if ( switch_init() < 0 )

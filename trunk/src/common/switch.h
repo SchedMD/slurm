@@ -113,7 +113,7 @@ extern char *switch_strerror(int errnum);
  * RET         - slurm error code
  * NOTE: storage must be freed using g_switch_free_jobinfo
  */
-extern int  switch_alloc_jobinfo (switch_jobinfo_t *jobinfo);
+extern int  switch_alloc_jobinfo (switch_jobinfo_t **jobinfo);
 
 /* fill a job's switch credential
  * OUT jobinfo  - storage for a switch job credential
@@ -123,7 +123,7 @@ extern int  switch_alloc_jobinfo (switch_jobinfo_t *jobinfo);
  * IN  network  - plugin-specific network info (e.g. protocol)
  * NOTE: storage must be freed using g_switch_free_jobinfo
  */
-extern int  switch_build_jobinfo (switch_jobinfo_t jobinfo, 
+extern int  switch_build_jobinfo (switch_jobinfo_t *jobinfo, 
 		char *nodelist, uint16_t *tasks_per_node, 
 		int cyclic_alloc, char *network);
 
@@ -132,19 +132,19 @@ extern int  switch_build_jobinfo (switch_jobinfo_t jobinfo,
  * RET        - the copy
  * NOTE: returned value must be freed using g_switch_free_jobinfo
  */
-extern switch_jobinfo_t switch_copy_jobinfo(switch_jobinfo_t jobinfo);
+extern switch_jobinfo_t *switch_copy_jobinfo(switch_jobinfo_t *jobinfo);
 
 /* free storage previously allocated for a switch job credential
  * IN jobinfo  - the switch job credential to be freed
  */
-extern void switch_free_jobinfo  (switch_jobinfo_t jobinfo);
+extern void switch_free_jobinfo  (switch_jobinfo_t *jobinfo);
 
 /* pack a switch job credential into a buffer in machine independent form
  * IN jobinfo  - the switch job credential to be saved
  * OUT buffer  - buffer with switch credential appended
  * RET         - slurm error code
  */
-extern int  switch_pack_jobinfo  (switch_jobinfo_t jobinfo, Buf buffer);
+extern int  switch_pack_jobinfo  (switch_jobinfo_t *jobinfo, Buf buffer);
 
 /* unpack a switch job credential from a buffer
  * OUT jobinfo - the switch job credential read
@@ -152,7 +152,7 @@ extern int  switch_pack_jobinfo  (switch_jobinfo_t jobinfo, Buf buffer);
  * RET         - slurm error code
  * NOTE: returned value must be freed using g_switch_free_jobinfo
  */
-extern int  switch_unpack_jobinfo(switch_jobinfo_t jobinfo, Buf buffer);
+extern int  switch_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer);
 
 /* get some field from a switch job credential
  * IN jobinfo - the switch job credential
@@ -160,14 +160,14 @@ extern int  switch_unpack_jobinfo(switch_jobinfo_t jobinfo, Buf buffer);
  * OUT data - the desired data from the credential
  * RET         - slurm error code
  */
-extern int  switch_g_get_jobinfo(switch_jobinfo_t jobinfo, 
+extern int  switch_g_get_jobinfo(switch_jobinfo_t *jobinfo, 
 	int data_type, void *data);
 
 /*
  * Note that the job step associated with the specified nodelist 
  * has completed execution.
  */
-extern int switch_g_job_step_complete(switch_jobinfo_t jobinfo,
+extern int switch_g_job_step_complete(switch_jobinfo_t *jobinfo,
 	char *nodelist);
 
 /*
@@ -176,7 +176,7 @@ extern int switch_g_job_step_complete(switch_jobinfo_t jobinfo,
  * nodes, but switch resources associated with it on the specified 
  * nodes are no longer in use. 
  */
-extern int switch_g_job_step_part_comp(switch_jobinfo_t jobinfo,
+extern int switch_g_job_step_part_comp(switch_jobinfo_t *jobinfo,
 	char *nodelist);
 
 /*
@@ -193,14 +193,14 @@ extern bool switch_g_part_comp(void);
  * allocated job step, most likely to restore the switch information
  * after a call to switch_clear().
  */
-extern int switch_g_job_step_allocated(switch_jobinfo_t jobinfo,
+extern int switch_g_job_step_allocated(switch_jobinfo_t *jobinfo,
 	char *nodelist);
 
 /* write job credential string representation to a file
  * IN fp      - an open file pointer
  * IN jobinfo - a switch job credential
  */
-extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo);
+extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo);
 
 /* write job credential to a string
  * IN jobinfo - a switch job credential
@@ -208,7 +208,7 @@ extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo);
  * IN size    - byte size of buf
  * RET        - the string, same as buf
  */
-extern char *switch_sprint_jobinfo( switch_jobinfo_t jobinfo,
+extern char *switch_sprint_jobinfo( switch_jobinfo_t *jobinfo,
 			char *buf, size_t size);
 
 /********************************************************************\
@@ -262,7 +262,7 @@ extern int interconnect_node_fini(void);
  * that needs to be performed in the same process as interconnect_fini()
  * 
  */
-extern int interconnect_preinit(switch_jobinfo_t jobinfo);
+extern int interconnect_preinit(switch_jobinfo_t *jobinfo);
 
 /* 
  * initialize interconnect on node for job. This function is run from the 
@@ -271,7 +271,7 @@ extern int interconnect_preinit(switch_jobinfo_t jobinfo);
  * than the process executing interconnect_fini() [e.g. QsNet])
  *
  */
-extern int interconnect_init(switch_jobinfo_t jobinfo, uid_t uid);
+extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid);
 
 /*
  * This function is run from the same process as interconnect_init()
@@ -279,7 +279,7 @@ extern int interconnect_init(switch_jobinfo_t jobinfo, uid_t uid);
  * the process in question has already setuid to the job owner.
  *
  */
-extern int interconnect_fini(switch_jobinfo_t jobinfo);
+extern int interconnect_fini(switch_jobinfo_t *jobinfo);
 
 /*
  * Finalize interconnect on node.
@@ -289,7 +289,7 @@ extern int interconnect_fini(switch_jobinfo_t jobinfo);
  * that need to be run with root privileges should be run from this
  * function.
  */
-extern int interconnect_postfini(switch_jobinfo_t jobinfo, uid_t pgid, 
+extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid, 
 				uint32_t job_id, uint32_t step_id );
 
 /* 
@@ -297,7 +297,7 @@ extern int interconnect_postfini(switch_jobinfo_t jobinfo, uid_t pgid,
  * (Called from within the process, so it is appropriate to set 
  * interconnect specific environment variables here)
  */
-extern int interconnect_attach(switch_jobinfo_t jobinfo, char ***env,
+extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
 		uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
 		uint32_t nprocs, uint32_t rank);
 

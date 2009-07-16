@@ -615,7 +615,7 @@ struct 	step_record {
 /*	time_t suspend_time;		 * time step last suspended or resumed
 					 * implicitly the same as suspend_time
 					 * in the job record */
-	switch_jobinfo_t switch_job;	/* switch context, opaque */
+	switch_jobinfo_t *switch_job;	/* switch context, opaque */
 	time_t time_last_active;	/* time step was last found on node */
 	time_t tot_sus_time;		/* total time in suspended state */
 };
