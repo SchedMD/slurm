@@ -88,7 +88,7 @@ static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
 					uid_t uid, uint32_t *step_id);
 static int          _make_step_cred(struct step_record *step_rec, 
-				    slurm_cred_t *slurm_cred);
+				    slurm_cred_t **slurm_cred);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
@@ -601,7 +601,7 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 
 /* create a credential for a given job step, return error code */
 static int _make_step_cred(struct step_record *step_ptr, 
-			   slurm_cred_t *slurm_cred)
+			   slurm_cred_t **slurm_cred)
 {
 	slurm_cred_arg_t cred_arg;
 	struct job_record* job_ptr = step_ptr->job_ptr;
@@ -1332,7 +1332,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	job_step_create_response_msg_t job_step_resp;
 	job_step_create_request_msg_t *req_step_msg =
 	    (job_step_create_request_msg_t *) msg->data;
-	slurm_cred_t slurm_cred = (slurm_cred_t) NULL;
+	slurm_cred_t *slurm_cred = (slurm_cred_t *) NULL;
 	/* Locks: Write jobs, read nodes */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };

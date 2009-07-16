@@ -1006,7 +1006,7 @@ client_io_t *
 client_io_handler_create(slurm_step_io_fds_t fds,
 			 int num_tasks,
 			 int num_nodes,
-			 slurm_cred_t cred,
+			 slurm_cred_t *cred,
 			 bool label)
 {
 	client_io_t *cio;

@@ -541,7 +541,7 @@ _array_free(char ***array)
 
 
 struct srun_info *
-srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
+srun_info_create(slurm_cred_t *cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 {
 	char             *data = NULL;
 	uint32_t          len  = 0;
