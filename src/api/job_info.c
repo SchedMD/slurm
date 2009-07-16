@@ -282,7 +282,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, tmp_line);
 #endif
 
-	if (!select_job_res || !select_job_res->core_bitmap)
+	if (!select_job_res)
+		goto line7;
+
+#ifndef HAVE_BG
+	if (!select_job_res->core_bitmap)
 		goto line7;
 
 	last  = bit_fls(select_job_res->core_bitmap);
@@ -396,6 +400,45 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 	hostlist_destroy(hl);
 	hostlist_destroy(hl_last);
+#else
+	if ((select_job_res->cpu_array_cnt > 0) &&
+	    (select_job_res->cpu_array_value) &&
+	    (select_job_res->cpu_array_reps)) {
+		int length = 0;
+		xstrcat(out, "AllocCPUs=");
+		length += 10;
+		for (i = 0; i < select_job_res->cpu_array_cnt; i++) {
+			if (length > 70) {
+				/* skip to last CPU group entry */
+			    	if (i < select_job_res->cpu_array_cnt - 1) {
+			    		continue;
+				}
+				/* add elipsis before last entry */
+			    	xstrcat(out, "...,");
+				length += 4;
+			}
+
+			snprintf(tmp_line, sizeof(tmp_line), "%d",
+				 select_job_res->cpu_array_value[i]);
+			xstrcat(out, tmp_line);
+			length += strlen(tmp_line);
+		    	if (select_job_res->cpu_array_reps[i] > 1) {
+				snprintf(tmp_line, sizeof(tmp_line), "*%d",
+					 select_job_res->cpu_array_reps[i]);
+				xstrcat(out, tmp_line);
+				length += strlen(tmp_line);
+			}
+			if (i < select_job_res->cpu_array_cnt - 1) {
+				xstrcat(out, ",");
+				length++;
+			}
+		}
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
+#endif
 
 line7:	/****** Line 7 ******/
 	convert_num_unit((float)job_ptr->num_procs, tmp1, sizeof(tmp1), 
