@@ -577,7 +577,7 @@ static char * _task_list(struct job_record *job_ptr)
 	int i, j, task_cnt;
 	char *buf = NULL, *host;
 	hostlist_t hl = hostlist_create(job_ptr->nodes);
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 
 	xassert(select_ptr && select_ptr->cpus);
 	buf = xstrdup("");

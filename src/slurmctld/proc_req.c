@@ -605,7 +605,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 {
 	slurm_cred_arg_t cred_arg;
 	struct job_record* job_ptr = step_ptr->job_ptr;
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 
 	xassert(select_ptr && select_ptr->cpus);
 	cred_arg.jobid    = job_ptr->job_id;

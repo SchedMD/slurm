@@ -137,7 +137,7 @@ BEGIN_C_DECLS
  * to avoid including extraneous slurm headers */
 #ifndef __select_job_res_t_defined
 #  define  __select_job_res_t_defined	/* Opaque data for select plugins */
-   typedef struct select_job_res *select_job_res_t;
+   typedef struct select_job_res select_job_res_t;
 #endif
 
 /* Define select_jobinfo_t, select_nodeinfo_t below 
@@ -712,7 +712,7 @@ typedef struct job_info {
 	char *resv_name;	/* reservation name */
 	select_jobinfo_t *select_jobinfo; /* opaque data type,
 				 * process using slurm_get_select_jobinfo() */
-	select_job_res_t select_job_res; /* job resources from select plugin */
+	select_job_res_t *select_job_res; /* job resources from select plugin */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	time_t start_time;	/* time execution begins, actual or expected */
 	char *state_desc;	/* optional details for state_reason */

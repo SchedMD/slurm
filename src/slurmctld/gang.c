@@ -468,7 +468,7 @@ static int _can_cpus_fit(struct job_record *job_ptr, struct gs_part *p_ptr)
 {
 	int i, j, size;
 	uint16_t *p_cpus, *j_cpus;
-	select_job_res_t job_res = job_ptr->select_job;
+	select_job_res_t *job_res = job_ptr->select_job;
 
 	if (gr_type != GS_CPU)
 		return 0;
@@ -495,7 +495,7 @@ static int _can_cpus_fit(struct job_record *job_ptr, struct gs_part *p_ptr)
 static int _job_fits_in_active_row(struct job_record *job_ptr, 
 				   struct gs_part *p_ptr)
 {
-	select_job_res_t job_res = job_ptr->select_job;
+	select_job_res_t *job_res = job_ptr->select_job;
 	int count;
 	bitstr_t *job_map;
 
@@ -575,7 +575,7 @@ static void _fill_sockets(bitstr_t *job_nodemap, struct gs_part *p_ptr)
 static void _add_job_to_active(struct job_record *job_ptr, 
 			       struct gs_part *p_ptr)
 {
-	select_job_res_t job_res = job_ptr->select_job;
+	select_job_res_t *job_res = job_ptr->select_job;
 
 	/* add job to active_resmap */
 	if (gr_type == GS_CORE || gr_type == GS_SOCKET) {

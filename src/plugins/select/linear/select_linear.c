@@ -394,7 +394,7 @@ static uint16_t _get_total_cpus(int index)
 		return node_ptr->cpus;
 }
 
-/* Build the full select_job_res_t structure for a job based upon the nodes
+/* Build the full select_job_res_t *structure for a job based upon the nodes
  *	allocated to it (the bitmap) and the job's memory requirement */
 static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 {
@@ -404,7 +404,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	struct node_record *node_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	bool memory_info = false;
-	select_job_res_t select_ptr;
+	select_job_res_t *select_ptr;
 
 	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY)) {
 		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
@@ -1266,7 +1266,7 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 {
 	int i, i_first, i_last, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
-	select_job_res_t select_ptr;
+	select_job_res_t *select_ptr;
 	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
 
 	if (node_cr_ptr == NULL) {
@@ -1378,7 +1378,7 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 {
 	int i, i_first, i_last, rc = SLURM_SUCCESS, exclusive = 0;
 	struct part_cr_record *part_cr_ptr;
-	select_job_res_t select_ptr;
+	select_job_res_t *select_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 
 	if (node_cr_ptr == NULL) {
@@ -1534,7 +1534,7 @@ static void _init_node_cr(void)
 {
 	struct part_record *part_ptr;
 	struct part_cr_record *part_cr_ptr;
-	select_job_res_t select_ptr;
+	select_job_res_t *select_ptr;
 	ListIterator part_iterator;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;

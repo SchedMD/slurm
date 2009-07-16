@@ -1697,7 +1697,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bool test_only;
 	uint32_t c, i, n, csize, total_cpus, save_mem = 0;
 	int32_t build_cnt;
-	select_job_res_t job_res;
+	select_job_res_t *job_res;
 	struct part_res_record *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
 

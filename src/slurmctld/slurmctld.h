@@ -541,7 +541,7 @@ struct job_record {
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t *select_jobinfo;/* opaque data, BlueGene */
-	select_job_res_t select_job;	/* details of allocated cores */
+	select_job_res_t *select_job;	/* details of allocated cores */
 	char **spank_job_env;		/* environment variables for job prolog
 					 * and epilog scripts as set by SPANK 
 					 * plugins */

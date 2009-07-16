@@ -140,7 +140,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	uint16_t exit_status = 0, term_sig = 0;
 	uint32_t *last_mem_alloc_ptr = NULL;
 	uint32_t last_mem_alloc = NO_VAL;
-	select_job_res_t select_job_res = job_ptr->select_job_res;
+	select_job_res_t *select_job_res = job_ptr->select_job_res;
 	char *out = NULL;
 	
 #ifdef HAVE_BG

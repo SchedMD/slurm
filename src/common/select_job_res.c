@@ -49,9 +49,9 @@
 
 
 /* Create an empty select_job_res data structure */
-extern select_job_res_t create_select_job_res(void)
+extern select_job_res_t *create_select_job_res(void)
 {
-	select_job_res_t select_job_res;
+	select_job_res_t *select_job_res;
 
 	select_job_res = xmalloc(sizeof(struct select_job_res));
 	return select_job_res;
@@ -64,12 +64,12 @@ extern select_job_res_t create_select_job_res(void)
  * the total number of cores in the allocation). Call this ONLY from 
  * slurmctld. Example of use:
  *
- * select_job_res_t select_job_res_ptr = create_select_job_res();
+ * select_job_res_t *select_job_res_ptr = create_select_job_res();
  * node_name2bitmap("dummy[2,5,12,16]", true, &(select_res_ptr->node_bitmap));
  * rc = build_select_job_res(select_job_res_ptr, node_record_table_ptr,
  *			     slurmctld_conf.fast_schedule);
  */
-extern int build_select_job_res(select_job_res_t select_job_res,
+extern int build_select_job_res(select_job_res_t *select_job_res,
 				void *node_rec_table,
 				uint16_t fast_schedule)
 {
@@ -129,7 +129,7 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 /* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
  * values of nhosts and cpus in an existing data structure
  * Return total CPU count or -1 on error */
-extern int build_select_job_res_cpu_array(select_job_res_t select_job_res_ptr)
+extern int build_select_job_res_cpu_array(select_job_res_t *select_job_res_ptr)
 {
 	int cpu_count = 0, i;
 	uint32_t last_cpu_cnt = 0;
@@ -171,7 +171,7 @@ extern int build_select_job_res_cpu_array(select_job_res_t select_job_res_ptr)
 /* Rebuild cpus array based upon the values of nhosts, cpu_array_value and
  * cpu_array_reps in an existing data structure
  * Return total CPU count or -1 on error */
-extern int build_select_job_res_cpus_array(select_job_res_t select_job_res_ptr)
+extern int build_select_job_res_cpus_array(select_job_res_t *select_job_res_ptr)
 {
 	int cpu_count = 0, cpu_inx, i, j;
 
@@ -220,7 +220,7 @@ extern int build_select_job_res_cpus_array(select_job_res_t select_job_res_ptr)
  * This is needed after a restart/reconfiguration since nodes can 
  * be added or removed from the system resulting in changing in 
  * the bitmap size or bit positions */
-extern void reset_node_bitmap(select_job_res_t select_job_res_ptr,
+extern void reset_node_bitmap(select_job_res_t *select_job_res_ptr,
 			      bitstr_t *new_node_bitmap)
 {
 	if (select_job_res_ptr) {
@@ -233,7 +233,7 @@ extern void reset_node_bitmap(select_job_res_t select_job_res_ptr,
 	}
 }
 
-extern int valid_select_job_res(select_job_res_t select_job_res,
+extern int valid_select_job_res(select_job_res_t *select_job_res,
 				void *node_rec_table,
 				uint16_t fast_schedule)
 {
@@ -286,11 +286,11 @@ extern int valid_select_job_res(select_job_res_t select_job_res,
 	return SLURM_SUCCESS;
 }
 
-extern select_job_res_t copy_select_job_res(select_job_res_t
-					    select_job_res_ptr)
+extern select_job_res_t *copy_select_job_res(
+	select_job_res_t *select_job_res_ptr)
 {
 	int i, sock_inx = 0;
-	select_job_res_t new_layout = xmalloc(sizeof(struct select_job_res));
+	select_job_res_t *new_layout = xmalloc(sizeof(struct select_job_res));
 
 	xassert(select_job_res_ptr);
 	new_layout->nhosts = select_job_res_ptr->nhosts;
@@ -386,9 +386,9 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 	return new_layout;
 }
 
-extern void free_select_job_res(select_job_res_t *select_job_res_pptr)
+extern void free_select_job_res(select_job_res_t **select_job_res_pptr)
 {
-	select_job_res_t select_job_res_ptr = *select_job_res_pptr;
+	select_job_res_t *select_job_res_ptr = *select_job_res_pptr;
 
 	if (select_job_res_ptr) {
 		if (select_job_res_ptr->core_bitmap)
@@ -413,7 +413,7 @@ extern void free_select_job_res(select_job_res_t *select_job_res_pptr)
 
 /* Log the contents of a select_job_res data structure using info() */
 extern void log_select_job_res(uint32_t job_id,
-			       select_job_res_t select_job_res_ptr)
+			       select_job_res_t *select_job_res_ptr)
 {
 	int bit_inx = 0, bit_reps, i;
 	int array_size, node_inx;
@@ -514,7 +514,7 @@ extern void log_select_job_res(uint32_t job_id,
 	info("====================");
 }
 
-extern void pack_select_job_res(select_job_res_t select_job_res_ptr, 
+extern void pack_select_job_res(select_job_res_t *select_job_res_ptr, 
 				Buf buffer)
 {
 	int i;
@@ -596,12 +596,12 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 #endif
 }
 
-extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr, 
+extern int unpack_select_job_res(select_job_res_t **select_job_res_pptr, 
 				 Buf buffer)
 {
 	char *bit_fmt = NULL;
 	uint32_t empty, tmp32;
-	select_job_res_t select_job_res;
+	select_job_res_t *select_job_res;
 
 	xassert(select_job_res_pptr);
 	safe_unpack32(&empty, buffer);
@@ -678,7 +678,7 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 	return SLURM_ERROR;
 }
 
-extern int get_select_job_res_offset(select_job_res_t select_job_res_ptr, 
+extern int get_select_job_res_offset(select_job_res_t *select_job_res_ptr, 
 				     uint32_t node_id, uint16_t socket_id, 
 				     uint16_t core_id)
 {
@@ -723,7 +723,7 @@ extern int get_select_job_res_offset(select_job_res_t select_job_res_ptr,
 	return bit_inx;
 }
 
-extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr, 
+extern int get_select_job_res_bit(select_job_res_t *select_job_res_ptr, 
 				  uint32_t node_id, uint16_t socket_id, 
 				  uint16_t core_id)
 {
@@ -735,7 +735,7 @@ extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr,
 	return bit_test(select_job_res_ptr->core_bitmap, bit_inx);
 }
 
-extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr, 
+extern int set_select_job_res_bit(select_job_res_t *select_job_res_ptr, 
 				  uint32_t node_id, uint16_t socket_id, 
 				  uint16_t core_id)
 {
@@ -748,7 +748,7 @@ extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern int get_select_job_res_node(select_job_res_t select_job_res_ptr, 
+extern int get_select_job_res_node(select_job_res_t *select_job_res_ptr, 
 				   uint32_t node_id)
 {
 	int i, bit_inx = 0, core_cnt = 0;
@@ -788,7 +788,7 @@ extern int get_select_job_res_node(select_job_res_t select_job_res_ptr,
 	return 0;
 }
 
-extern int set_select_job_res_node(select_job_res_t select_job_res_ptr, 
+extern int set_select_job_res_node(select_job_res_t *select_job_res_ptr, 
 				   uint32_t node_id)
 {
 	int i, bit_inx = 0, core_cnt = 0;
@@ -828,7 +828,7 @@ extern int set_select_job_res_node(select_job_res_t select_job_res_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern int get_select_job_res_cnt(select_job_res_t select_job_res_ptr, 
+extern int get_select_job_res_cnt(select_job_res_t *select_job_res_ptr, 
 				  uint32_t node_id,
 				  uint16_t *socket_cnt, 
 				  uint16_t *cores_per_socket_cnt)
@@ -860,7 +860,7 @@ extern int get_select_job_res_cnt(select_job_res_t select_job_res_ptr,
 /* Return 1 if the given job can fit into the given full-length core_bitmap,
  * else return 0.
  */
-extern int can_select_job_cores_fit(select_job_res_t select_ptr,
+extern int can_select_job_cores_fit(select_job_res_t *select_ptr,
 				    bitstr_t *full_bitmap,
 				    const uint16_t *bits_per_node,
 				    const uint32_t *bit_rep_count)
@@ -892,7 +892,7 @@ extern int can_select_job_cores_fit(select_job_res_t select_ptr,
 }
 
 /* add the given job to the given full_core_bitmap */
-extern void add_select_job_to_row(select_job_res_t select_ptr,
+extern void add_select_job_to_row(select_job_res_t *select_ptr,
 				  bitstr_t **full_core_bitmap,
 				  const uint16_t *cores_per_node,
 				  const uint32_t *core_rep_count)
