@@ -118,7 +118,7 @@ BEGIN_C_DECLS
 #  ifndef __slurm_addr_defined
 #    include <netinet/in.h>
 #    define  __slurm_addr_defined
-     typedef struct sockaddr_in slurm_addr ;
+     typedef struct sockaddr_in slurm_addr;
 #  endif
 #endif
 
@@ -130,7 +130,7 @@ BEGIN_C_DECLS
 /* Define switch_jobinfo_t below to avoid including extraneous slurm headers */
 #ifndef __switch_jobinfo_t_defined
 #  define  __switch_jobinfo_t_defined
-   typedef struct switch_jobinfo *switch_jobinfo_t;	/* opaque data type */
+   typedef struct switch_jobinfo switch_jobinfo_t;	/* opaque data type */
 #endif
 
 /* Define select_job_res_t below
@@ -1653,7 +1653,7 @@ extern int slurm_step_ctx_get PARAMS((slurm_step_ctx_t *ctx,
  * OUT data - the requested data type
  * RET SLURM_SUCCESS or SLURM_ERROR (with slurm_errno set)
  */
-extern int slurm_jobinfo_ctx_get PARAMS((switch_jobinfo_t jobinfo, 
+extern int slurm_jobinfo_ctx_get PARAMS((switch_jobinfo_t *jobinfo, 
 	int data_type, void *data));
 
 /*

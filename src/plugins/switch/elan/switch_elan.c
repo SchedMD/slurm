@@ -313,12 +313,12 @@ int switch_p_libstate_clear ( void )
 /*
  * switch functions for job step specific credential
  */
-int switch_p_alloc_jobinfo(switch_jobinfo_t *jp)
+int switch_p_alloc_jobinfo(switch_jobinfo_t **jp)
 {
 	return qsw_alloc_jobinfo((qsw_jobinfo_t *)jp);
 }
 
-int switch_p_build_jobinfo ( switch_jobinfo_t switch_job, char *nodelist,
+int switch_p_build_jobinfo ( switch_jobinfo_t *switch_job, char *nodelist,
 		uint16_t *tasks_per_node, int cyclic_alloc, char *network)
 {
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
@@ -374,32 +374,32 @@ int switch_p_build_jobinfo ( switch_jobinfo_t switch_job, char *nodelist,
 	return error_code;
 }
 
-switch_jobinfo_t switch_p_copy_jobinfo(switch_jobinfo_t j)
+switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *j)
 {
 	return (switch_jobinfo_t) qsw_copy_jobinfo((qsw_jobinfo_t) j);
 }
 
-void switch_p_free_jobinfo(switch_jobinfo_t k)
+void switch_p_free_jobinfo(switch_jobinfo_t *k)
 {
 	qsw_free_jobinfo((qsw_jobinfo_t) k);
 }
 
-int switch_p_pack_jobinfo(switch_jobinfo_t k, Buf buffer)
+int switch_p_pack_jobinfo(switch_jobinfo_t *k, Buf buffer)
 {
 	return qsw_pack_jobinfo((qsw_jobinfo_t) k, buffer);
 }
 
-int switch_p_unpack_jobinfo(switch_jobinfo_t k, Buf buffer)
+int switch_p_unpack_jobinfo(switch_jobinfo_t *k, Buf buffer)
 {
 	return qsw_unpack_jobinfo((qsw_jobinfo_t) k, buffer);
 }
 
-void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo)
+void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 {
 	qsw_print_jobinfo(fp, (qsw_jobinfo_t) jobinfo);
 }
 
-char *switch_p_sprint_jobinfo(switch_jobinfo_t switch_jobinfo, char *buf,
+char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
 		size_t size)
 {
 	return qsw_capability_string((struct qsw_jobinfo *) switch_jobinfo,
@@ -606,7 +606,7 @@ extern int switch_p_node_fini ( void )
 #endif /*  HAVE_LIBELAN3 */
 }
 
-int switch_p_job_preinit ( switch_jobinfo_t jobinfo )
+int switch_p_job_preinit ( switch_jobinfo_t *jobinfo )
 {
 	return SLURM_SUCCESS;
 }
@@ -614,7 +614,7 @@ int switch_p_job_preinit ( switch_jobinfo_t jobinfo )
 /* 
  * prepare node for interconnect use
  */
-int switch_p_job_init ( switch_jobinfo_t jobinfo, uid_t uid )
+int switch_p_job_init ( switch_jobinfo_t *jobinfo, uid_t uid )
 {
 	char buf[4096];
 
@@ -641,19 +641,19 @@ int switch_p_job_init ( switch_jobinfo_t jobinfo, uid_t uid )
 	return SLURM_SUCCESS; 
 }
 
-int switch_p_job_fini ( switch_jobinfo_t jobinfo )
+int switch_p_job_fini ( switch_jobinfo_t *jobinfo )
 {
 	qsw_prog_fini((qsw_jobinfo_t)jobinfo); 
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_postfini ( switch_jobinfo_t jobinfo, uid_t pgid, 
+int switch_p_job_postfini ( switch_jobinfo_t *jobinfo, uid_t pgid, 
 				uint32_t job_id, uint32_t step_id )
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env, 
+int switch_p_job_attach ( switch_jobinfo_t *jobinfo, char ***env, 
 			uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
 			uint32_t nprocs, uint32_t rank )
 {
@@ -694,7 +694,7 @@ int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_get_jobinfo(switch_jobinfo_t switch_job,
+extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 	int key, void *resulting_data)
 {
 	slurm_seterrno(EINVAL);
@@ -800,7 +800,7 @@ extern char*switch_p_sprintf_node_info(switch_node_info_t switch_node,
 	return NULL;
 }
 
-extern int switch_p_job_step_complete(switch_jobinfo_t jobinfo,
+extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	char *nodelist)
 {
 	qsw_teardown_jobinfo((qsw_jobinfo_t) jobinfo); /* frees hw context */
@@ -808,7 +808,7 @@ extern int switch_p_job_step_complete(switch_jobinfo_t jobinfo,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_part_comp(switch_jobinfo_t jobinfo,
+extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo,
 	char *nodelist)
 {
 	return SLURM_SUCCESS;
@@ -819,7 +819,8 @@ extern bool switch_p_part_comp(void)
 	return false;
 }
 
-extern int switch_p_job_step_allocated(switch_jobinfo_t jobinfo, char *nodelist)
+extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
+				       char *nodelist)
 {
 	return qsw_restore_jobinfo((qsw_jobinfo_t) jobinfo);
 }

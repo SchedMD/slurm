@@ -2204,7 +2204,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL, *bit_fmt = NULL;
-	switch_jobinfo_t switch_tmp = NULL;
+	switch_jobinfo_t *switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	

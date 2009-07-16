@@ -133,7 +133,7 @@ typedef struct slurmd_job {
 	char          *cpu_bind;       /* binding map for map/mask_cpu      */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=                       */
 	char          *mem_bind;       /* binding map for tasks to memory   */
-	switch_jobinfo_t switch_job; /* switch-specific job information     */
+	switch_jobinfo_t *switch_job; /* switch-specific job information     */
 	uid_t         uid;     /* user id for job                           */
 	gid_t         gid;     /* group ID for job                          */
 	int           ngids;   /* length of the following gids array        */
