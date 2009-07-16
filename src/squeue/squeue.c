@@ -2,7 +2,7 @@
  *  squeue.c - Report jobs in the slurm system
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -18,7 +18,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -82,8 +82,8 @@ main (int argc, char *argv[])
 	
 	while (1) 
 	{
-		if ((!params.no_header)
-		 && (params.iterate || params.verbose || params.long_list))
+		if ((!params.no_header) &&
+		    (params.iterate || params.verbose || params.long_list))
 			_print_date ();
 		
 		if ( params.step_flag )
@@ -214,8 +214,8 @@ _print_job_steps( void )
 	if (old_step_ptr) {
 		/* Use a last_update time of 0 so that we can get an updated
 		 * run_time for jobs rather than just its start_time */
-		error_code = slurm_get_job_steps (
-			(time_t) 0, NO_VAL, NO_VAL, &new_step_ptr, show_flags);
+		error_code = slurm_get_job_steps ((time_t) 0, NO_VAL, NO_VAL, 
+						  &new_step_ptr, show_flags);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
