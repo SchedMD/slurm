@@ -821,8 +821,8 @@ DESTROY(hl)
 ##############################################
 MODULE=Slurm PACKAGE=Slurm::Stepctx PREFIX=slurm_step_ctx_
 
-slurm_step_ctx
-slurm_step_ctx_create(slurm_step_ctx ctx = NO_INIT, HV* req = NULL)
+slurm_step_ctx_t *
+slurm_step_ctx_create(slurm_step_ctx_t *ctx = NO_INIT, HV* req = NULL)
 	PREINIT:
 		slurm_step_ctx_params_t params;
 	CODE:
@@ -838,7 +838,7 @@ slurm_step_ctx_create(slurm_step_ctx ctx = NO_INIT, HV* req = NULL)
 
 # XXX: slurm_step_ctx_get is divided into the following methods
 U32
-slurm_step_ctx_get_jobid(slurm_step_ctx ctx = NULL)
+slurm_step_ctx_get_jobid(slurm_step_ctx_t *ctx = NULL)
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_JOBID, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -847,7 +847,7 @@ slurm_step_ctx_get_jobid(slurm_step_ctx ctx = NULL)
 		RETVAL
 
 U32
-slurm_step_ctx_get_stepid(slurm_step_ctx ctx = NULL)
+slurm_step_ctx_get_stepid(slurm_step_ctx_t *ctx = NULL)
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_STEPID, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -856,7 +856,7 @@ slurm_step_ctx_get_stepid(slurm_step_ctx ctx = NULL)
 		RETVAL
 
 U32
-slurm_step_ctx_get_num_hosts(slurm_step_ctx ctx = NULL)
+slurm_step_ctx_get_num_hosts(slurm_step_ctx_t *ctx = NULL)
 	PREINIT:
 		uint32_t num_hosts;
 	CODE:
@@ -868,7 +868,7 @@ slurm_step_ctx_get_num_hosts(slurm_step_ctx ctx = NULL)
 		RETVAL
 
 AV*
-slurm_step_ctx_get_tasks(slurm_step_ctx ctx = NULL)
+slurm_step_ctx_get_tasks(slurm_step_ctx_t *ctx = NULL)
 	PREINIT:
 		int i;
 		uint32_t num_hosts;
@@ -891,7 +891,7 @@ slurm_step_ctx_get_tasks(slurm_step_ctx ctx = NULL)
 		RETVAL
 
 AV*
-slurm_step_ctx_get_tid(slurm_step_ctx ctx = NULL, U32 index)
+slurm_step_ctx_get_tid(slurm_step_ctx_t *ctx = NULL, U32 index)
 	PREINIT:
 		int i;
 		uint16_t *tasks;
@@ -914,11 +914,11 @@ slurm_step_ctx_get_tid(slurm_step_ctx ctx = NULL, U32 index)
 		RETVAL
 
 # XXX: should we return it as a HV* ?
-#slurm_step_ctx_get_resp(slurm_step_ctx ctx)
+#slurm_step_ctx_get_resp(slurm_step_ctx_t *ctx)
 
 # XXX: the returned value is no longer valid if ctx goes away
-slurm_cred_t
-slurm_step_ctx_get_cred(slurm_step_ctx ctx = NULL)
+slurm_cred_t *
+slurm_step_ctx_get_cred(slurm_step_ctx_t *ctx = NULL)
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_CRED, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -927,8 +927,8 @@ slurm_step_ctx_get_cred(slurm_step_ctx ctx = NULL)
 		RETVAL
 
 # XXX: the returned value is no longer valid if ctx goes away
-switch_jobinfo_t
-slurm_step_ctx_get_switch_job(slurm_step_ctx ctx = NULL)
+switch_jobinfo_t *
+slurm_step_ctx_get_switch_job(slurm_step_ctx_t *ctx = NULL)
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_SWITCH_JOB, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -937,7 +937,7 @@ slurm_step_ctx_get_switch_job(slurm_step_ctx ctx = NULL)
 		RETVAL
 
 char*
-slurm_step_ctx_get_host(slurm_step_ctx ctx = NULL, U32 index)
+slurm_step_ctx_get_host(slurm_step_ctx_t *ctx = NULL, U32 index)
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_HOST, index, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -946,7 +946,7 @@ slurm_step_ctx_get_host(slurm_step_ctx ctx = NULL, U32 index)
 		RETVAL
 
 AV*
-slurm_step_ctx_get_user_managed_sockets(slurm_step_ctx ctx = NULL)
+slurm_step_ctx_get_user_managed_sockets(slurm_step_ctx_t *ctx = NULL)
 	PREINIT:
 		int i;
 		int tasks_requested;
@@ -967,18 +967,18 @@ slurm_step_ctx_get_user_managed_sockets(slurm_step_ctx ctx = NULL)
 
 
 int
-slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx ctx = NULL)
+slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx_t *ctx = NULL)
 	C_ARGS:
 		ctx
 
 # TODO
 #int
-#slurm_jobinfo_ctx_get(slurm_t self, switch_jobinfo_t job_info, int data_type, OUTPUT void* data)
+#slurm_jobinfo_ctx_get(slurm_t self, switch_jobinfo_t *job_info, int data_type, OUTPUT void* data)
 #	C_ARGS:
 #		job_info, data_type, data
 
 void
-DESTROY(slurm_step_ctx ctx = NULL)
+DESTROY(slurm_step_ctx_t *ctx = NULL)
 	CODE:
 		if(slurm_step_ctx_destroy(ctx) != SLURM_SUCCESS) {
 			Perl_croak(aTHX_ "Failed to destory slurm_step_ctx");
@@ -987,7 +987,7 @@ DESTROY(slurm_step_ctx ctx = NULL)
 
 MODULE=Slurm PACKAGE=Slurm::Stepctx PREFIX=slurm_step_
 int
-slurm_step_launch(slurm_step_ctx ctx = NULL, HV* hv = NULL, SV* start_cb = NULL, SV* finish_cb = NULL)
+slurm_step_launch(slurm_step_ctx_t *ctx = NULL, HV* hv = NULL, SV* start_cb = NULL, SV* finish_cb = NULL)
 	PREINIT:
 		slurm_step_launch_callbacks_t callbacks = {NULL, NULL};
 		slurm_step_launch_params_t params;
@@ -1010,17 +1010,17 @@ slurm_step_launch(slurm_step_ctx ctx = NULL, HV* hv = NULL, SV* start_cb = NULL,
 
 
 int
-slurm_step_launch_wait_start(slurm_step_ctx ctx = NULL)
+slurm_step_launch_wait_start(slurm_step_ctx_t *ctx = NULL)
 	C_ARGS:
 		ctx
 
 
 void
-slurm_step_launch_wait_finish(slurm_step_ctx ctx = NULL)
+slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx = NULL)
 	C_ARGS:
 		ctx
 
 void
-slurm_step_launch_abort(slurm_step_ctx ctx = NULL)
+slurm_step_launch_abort(slurm_step_ctx_t *ctx = NULL)
 	C_ARGS:
 		ctx
