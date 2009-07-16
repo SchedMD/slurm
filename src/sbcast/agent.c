@@ -112,8 +112,8 @@ static void *_agent_thread(void *args)
 		list_destroy(ret_list);
 	slurm_mutex_lock(&agent_cnt_mutex);
 	agent_cnt--;
-	slurm_mutex_unlock(&agent_cnt_mutex);
 	pthread_cond_broadcast(&agent_cnt_cond);
+	slurm_mutex_unlock(&agent_cnt_mutex);
 	return NULL;
 }
 

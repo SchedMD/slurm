@@ -338,10 +338,9 @@ void *agent(void *args)
 
 	if (agent_cnt && agent_cnt < MAX_AGENT_CNT) 
 		agent_retry(RPC_RETRY_INTERVAL, true);
-	
-	slurm_mutex_unlock(&agent_cnt_mutex);
-	
+
 	pthread_cond_broadcast(&agent_cnt_cond);
+	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	return NULL;
 }

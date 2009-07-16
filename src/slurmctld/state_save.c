@@ -61,8 +61,8 @@ extern void schedule_job_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_jobs++;
-	slurm_mutex_unlock(&state_save_lock);
 	pthread_cond_broadcast(&state_save_cond);
+	slurm_mutex_unlock(&state_save_lock);
 }
 
 /* Queue saving of node state information */
@@ -70,8 +70,8 @@ extern void schedule_node_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_nodes++;
-	slurm_mutex_unlock(&state_save_lock);
 	pthread_cond_broadcast(&state_save_cond);
+	slurm_mutex_unlock(&state_save_lock);
 }
 
 /* Queue saving of partition state information */
@@ -79,8 +79,8 @@ extern void schedule_part_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_parts++;
-	slurm_mutex_unlock(&state_save_lock);
 	pthread_cond_broadcast(&state_save_cond);
+	slurm_mutex_unlock(&state_save_lock);
 }
 
 /* Queue saving of reservation state information */
@@ -88,8 +88,8 @@ extern void schedule_resv_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_resv++;
-	slurm_mutex_unlock(&state_save_lock);
 	pthread_cond_broadcast(&state_save_cond);
+	slurm_mutex_unlock(&state_save_lock);
 }
 
 /* Queue saving of trigger state information */
@@ -97,8 +97,8 @@ extern void schedule_trigger_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_triggers++;
-	slurm_mutex_unlock(&state_save_lock);
 	pthread_cond_broadcast(&state_save_cond);
+	slurm_mutex_unlock(&state_save_lock);
 }
 
 /* shutdown the slurmctld_state_save thread */
@@ -106,8 +106,8 @@ extern void shutdown_state_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	run_save_thread = false;
-	slurm_mutex_unlock(&state_save_lock);
 	pthread_cond_broadcast(&state_save_cond);
+	slurm_mutex_unlock(&state_save_lock);
 }
 
 /*
