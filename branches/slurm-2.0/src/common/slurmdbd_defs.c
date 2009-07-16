@@ -89,9 +89,11 @@ static pthread_t agent_tid      = 0;
 static time_t    agent_shutdown = 0;
 
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 static slurm_fd  slurmdbd_fd         = -1;
 static char *    slurmdbd_auth_info  = NULL;
 static bool      rollback_started    = 0;
+static bool      halt_agent          = 0;
 
 static void * _agent(void *x);
 static void   _agent_queue_del(void *x);
@@ -232,15 +234,21 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	xassert(req);
 	xassert(resp);
 
+	/* To make sure we can get this to send instead of the agent
+	   sending stuff that can happen anytime we set halt_agent and
+	   then after we get into the mutex we unset.
+	*/
+	halt_agent = 1;
 	read_timeout = SLURMDBD_TIMEOUT * 1000;
 	slurm_mutex_lock(&slurmdbd_lock);
+	halt_agent = 0;
 	if (slurmdbd_fd < 0) {
 		/* Either slurm_open_slurmdbd_conn() was not executed or
 		 * the connection to Slurm DBD has been closed */
 		_open_slurmdbd_fd();
 		if (slurmdbd_fd < 0) {
-			slurm_mutex_unlock(&slurmdbd_lock);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 	}
 
@@ -251,16 +259,15 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	if (rc != SLURM_SUCCESS) {
 		error("slurmdbd: Sending message type %u: %d: %m",
 		      req->msg_type, rc);
-		slurm_mutex_unlock(&slurmdbd_lock);
-		return rc;
+		goto end_it;
 	}
 
 	buffer = _recv_msg(read_timeout);
 	if (buffer == NULL) {
 		error("slurmdbd: Getting response to message type %u", 
 		      req->msg_type);
-		slurm_mutex_unlock(&slurmdbd_lock);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 		
 	rc = unpack_slurmdbd_msg(rpc_version, resp, buffer);
@@ -270,6 +277,8 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 		rc = ((dbd_id_rc_msg_t *)resp->data)->return_code;
 	
 	free_buf(buffer);
+end_it:
+	pthread_cond_signal(&slurmdbd_cond);
 	slurm_mutex_unlock(&slurmdbd_lock);
 	
 	return rc;
@@ -315,8 +324,9 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		error("slurmdbd: agent queue is full, discarding request");
 		rc = SLURM_ERROR;
 	}
-	slurm_mutex_unlock(&agent_lock);
+
 	pthread_cond_broadcast(&agent_cond);
+	slurm_mutex_unlock(&agent_lock);
 	return rc;
 }
 
@@ -1688,8 +1698,10 @@ static void *_agent(void *x)
 	xsignal_unblock(sigarray);
 
 	while (agent_shutdown == 0) {
-
 		slurm_mutex_lock(&slurmdbd_lock);
+		if(halt_agent)
+			pthread_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
+
 		if ((slurmdbd_fd < 0) && 
 		    (difftime(time(NULL), fail_time) >= 10)) {			
 			/* The connection to Slurm DBD is not open */
