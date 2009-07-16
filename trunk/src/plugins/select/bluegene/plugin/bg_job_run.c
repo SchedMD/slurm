@@ -1089,15 +1089,15 @@ extern int start_job(struct job_record *job_ptr)
 				    SELECT_JOBDATA_REBOOT, 
 				    &(bg_update_ptr->reboot));
 #ifdef HAVE_BGL
-	select_g_selectt_jobinfo_get(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_BLRTS_IMAGE, 
-				     &(bg_update_ptr->blrtsimage));
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_BLRTS_IMAGE, 
+				    &(bg_update_ptr->blrtsimage));
 	if(!bg_update_ptr->blrtsimage) {
 		bg_update_ptr->blrtsimage =
 			xstrdup(bg_conf->default_blrtsimage);
 		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_BLRTS_IMAGE, 
-				     bg_update_ptr->blrtsimage);
+					    SELECT_JOBDATA_BLRTS_IMAGE, 
+					    bg_update_ptr->blrtsimage);
 	}
 #else
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
