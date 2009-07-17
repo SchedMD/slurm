@@ -30,16 +30,6 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	if(job_info->comment)
 		STORE_FIELD(hv, job_info, comment, charp);
 	STORE_FIELD(hv, job_info, contiguous, uint16_t);
-/* 	avp = newAV(); */
-/* 	for(j = 0; j < job_info->num_cpu_groups; j ++) { */
-/* 		av_store(avp, j, newSVuv(job_info->cpus_per_node[j])); */
-/* 	} */
-/* 	hv_store_sv(hv, "cpus_per_node", newRV_noinc((SV*)avp)); */
-/* 	avp = newAV(); */
-/* 	for(j = 0; j < job_info->num_cpu_groups; j ++) { */
-/* 		av_store(avp, j, newSVuv(job_info->cpu_count_reps[j])); */
-/* 	} */
-/* 	hv_store_sv(hv, "cpu_count_reps", newRV_noinc((SV*)avp)); */
 	STORE_FIELD(hv, job_info, cpus_per_task, uint16_t);
 	STORE_FIELD(hv, job_info, dependency, charp);
 	STORE_FIELD(hv, job_info, end_time, time_t);
@@ -92,7 +82,6 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, ntasks_per_core, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_node, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_socket, uint16_t);
-/* 	STORE_FIELD(hv, job_info, num_cpu_groups, uint32_t); */
 	STORE_FIELD(hv, job_info, num_nodes, uint32_t);
 	STORE_FIELD(hv, job_info, num_procs, uint32_t);
 	if(job_info->partition)
@@ -114,6 +103,7 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	if(job_info->resv_name)
 		STORE_FIELD(hv, job_info, resv_name, charp);
 	/* TODO: select_jobinfo */
+	/* TODO: select_job_res */
 	STORE_FIELD(hv, job_info, shared, uint16_t);
 	STORE_FIELD(hv, job_info, start_time, time_t);
 	if(job_info->state_desc)
