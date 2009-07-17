@@ -125,21 +125,12 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 extern char *
 slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
-	bitstr_t	*core_bitmap;
-	int abs_node_inx, rel_node_inx;
-	int bit_inx, bit_reps;
-	int i, j, last;
-	int sock_inx, sock_reps;
-	char last_hosts[128];
+	int i, j;
 	char time_str[32], select_buf[122], *group_name, *user_name;
 	char tmp1[128], tmp2[128], *tmp3_ptr;
 	char tmp_line[512];
-	char *host;
 	char *ionodes = NULL;
-	hostlist_t hl, hl_last;
 	uint16_t exit_status = 0, term_sig = 0;
-	uint32_t *last_mem_alloc_ptr = NULL;
-	uint32_t last_mem_alloc = NO_VAL;
 	select_job_res_t *select_job_res = job_ptr->select_job_res;
 	char *out = NULL;
 	
@@ -149,6 +140,15 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			     SELECT_JOBDATA_IONODES, 
 			     &ionodes);
 #else
+	bitstr_t *core_bitmap;
+	char *host;
+	int sock_inx, sock_reps, last;
+	int abs_node_inx, rel_node_inx;
+	int bit_inx, bit_reps;
+	uint32_t *last_mem_alloc_ptr = NULL;
+	uint32_t last_mem_alloc = NO_VAL;
+	char last_hosts[128];
+	hostlist_t hl, hl_last;
 	char *nodelist = "NodeList";
 #endif	
 
