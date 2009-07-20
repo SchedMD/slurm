@@ -366,6 +366,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/script/Makefile
 		 src/plugins/jobcomp/mysql/Makefile
 		 src/plugins/jobcomp/pgsql/Makefile
+		 src/plugins/preempt/Makefile
+		 src/plugins/preempt/partition_prio/Makefile
 		 src/plugins/priority/Makefile
 		 src/plugins/priority/basic/Makefile
 		 src/plugins/priority/multifactor/Makefile

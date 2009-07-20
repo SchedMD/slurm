@@ -460,6 +460,11 @@ uint32_t slurm_get_jobcomp_port(void);
  */
 int slurm_set_jobcomp_port(uint32_t port);
 
+/* slurm_get_preempt_type
+ * get PreemptType from slurmctld_conf object
+ * RET char *   - select_type, MUST be xfreed by caller
+ */
+char *slurm_get_preempt_type(void);
 
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurmctld_conf object

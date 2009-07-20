@@ -1374,6 +1374,24 @@ int slurm_set_jobcomp_port(uint32_t port)
 	return 0;
 }
 
+/* slurm_get_preempt_type
+ * get PreemptType from slurmctld_conf object
+ * RET char *   - select_type, MUST be xfreed by caller
+ */
+char *slurm_get_preempt_type(void)
+{
+	char *preempt_type = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		preempt_type = xstrdup(conf->preempt_type);
+		slurm_conf_unlock();
+	}
+	return preempt_type;
+}
+
 /* slurm_get_proctrack_type
  * get ProctrackType from slurmctld_conf object
  * RET char *   - proctrack type, MUST be xfreed by caller
