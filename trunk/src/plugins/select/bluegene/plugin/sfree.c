@@ -40,582 +40,132 @@
 
 #include "sfree.h"
 
-#define MAX_POLL_RETRIES    220
-#define POLL_INTERVAL        3
-#define MAX_PTHREAD_RETRIES  1
-
 /* Globals */
 
 int all_blocks = 0;
-char *bg_block_id = NULL;
+int remove_blocks = 0;
+List block_list = NULL;
 bool wait_full = false;
-
-#ifdef HAVE_BG_FILES
-
-typedef struct bg_records {
-	char *bg_block_id;
-	int state;
-} delete_record_t; 
-
-int num_block_to_free = 0;
-int num_block_freed = 0;
-static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static List delete_record_list = NULL;
 
 /************
  * Functions *
  ************/
-
-	
-static int _free_block(delete_record_t *delete_record);
-static int _update_bg_record_state();
-static void _term_jobs_on_block(char *bg_block_id);
-static char *_bg_err_str(status_t inx);
-static int _remove_job(db_job_id_t job_id);
-
-
-static void _clean_destroy_list(void* object)
+static int _get_new_info_node_select(node_select_info_msg_t **node_select_ptr)
 {
-	delete_record_t* delete_record = (delete_record_t*) object;
+	int error_code = SLURM_NO_CHANGE_IN_DATA;
+#ifdef HAVE_BG
+	static node_select_info_msg_t *bg_info_ptr = NULL;
+	static node_select_info_msg_t *new_bg_ptr = NULL;
 
-	if (delete_record) {
-		xfree(delete_record->bg_block_id);
-		xfree(delete_record);
+	if (bg_info_ptr) {
+		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
+						    &new_bg_ptr);
+		if (error_code == SLURM_SUCCESS) {
+			node_select_info_msg_free(&bg_info_ptr);
+		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_NO_CHANGE_IN_DATA;
+			new_bg_ptr = bg_info_ptr;
+		}
+	} else {
+		error_code = slurm_load_node_select((time_t) NULL, 
+						    &new_bg_ptr);
 	}
+
+	bg_info_ptr = new_bg_ptr;
+
+	if(*node_select_ptr != bg_info_ptr) 
+		error_code = SLURM_SUCCESS;
+	
+	*node_select_ptr = new_bg_ptr;
+#endif
+	return error_code;
 }
 
-/* Free multiple blocks in parallel */
-static void *_mult_free_block(void *args)
+static int _check_status()
 {
-	delete_record_t *delete_record = (delete_record_t *) args;
-
-	debug("destroying the bgblock %s.", delete_record->bg_block_id);
-	_free_block(delete_record);	
+	ListIterator itr = list_iterator_create(block_list);	
+	int i=0;
+	node_select_info_msg_t *node_select_ptr = NULL;
+	char *block_name = NULL;
 	
-	slurm_mutex_lock(&freed_cnt_mutex);
-	num_block_freed++;
-	slurm_mutex_unlock(&freed_cnt_mutex);
-	
-	return NULL;
+	while(list_count(block_list)) {
+		info("waiting for %d bgblocks to free...",
+		     list_count(block_list));
+		if(_get_new_info_node_select(&node_select_ptr) 
+		   == SLURM_SUCCESS) {
+			while((block_name = list_next(itr))) {
+				for (i=0; i<node_select_ptr->record_count;
+				     i++) {
+					if(!strcmp(block_name, 
+						   node_select_ptr->
+						   bg_info_array[i].
+						   bg_block_id)) {
+						if(node_select_ptr->
+						   bg_info_array[i].
+						   state == RM_PARTITION_FREE)
+							list_delete_item(itr);
+						break;
+					}
+				}
+				/* Here if we didn't find the record
+				   it is gone so we just will delete it. */
+				if(i >= node_select_ptr->record_count)
+					list_delete_item(itr);
+			}
+			list_iterator_reset(itr);
+		}
+		sleep(1);
+	}
+	list_iterator_destroy(itr);
+	return SLURM_SUCCESS;
 }
 
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-	rm_partition_list_t *block_list = NULL;
-	rm_partition_state_flag_t block_state = PARTITION_ALL_FLAG;
-	int j, num_blocks = 0;
-	rm_partition_t *block_ptr = NULL;
-	int rc;
-	pthread_attr_t attr_agent;
-	pthread_t thread_agent;
-	int retries;
-	delete_record_t *delete_record = NULL;
-	
-	bridge_init();
-	if (!have_db2) {
-		error("Required libraries can not be found "
-		       "to access the Bluegene system.\nPlease "
-		       "set your LD_LIBRARY_PATH correctly to "
-		       "point to them.");
-		exit(0);
-	}
+	update_block_msg_t msg;
+	ListIterator itr = NULL;
+	char *block_name = NULL;
+	int rc = SLURM_SUCCESS;
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 
-	delete_record_list = list_create(_clean_destroy_list);
-	
-	if(!all_blocks) {
-		if(!bg_block_id) {
-			error("you need to specify a bgblock");
-			exit(0);
-		}
-		delete_record = xmalloc(sizeof(delete_record_t));
-		delete_record->bg_block_id = xstrdup(bg_block_id);
-		delete_record->state = NO_VAL;
-		list_push(delete_record_list, delete_record);
-
-		slurm_attr_init(&attr_agent);
-		if (pthread_attr_setdetachstate(
-			    &attr_agent, 
-			    PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetach"
-			      "state error %m");
-		
-		retries = 0;
-		while (pthread_create(&thread_agent, 
-				      &attr_agent, 
-				      _mult_free_block, 
-				      (void *)delete_record)) {
-			error("pthread_create "
-			      "error %m");
-			if (++retries 
-			    > MAX_PTHREAD_RETRIES)
-				fatal("Can't create "
-				      "pthread");
-			/* sleep and retry */
-			usleep(1000);	
-		}
-		slurm_attr_destroy(&attr_agent);
-		num_block_to_free++;
-	} else {
-		if ((rc = bridge_get_blocks_info(block_state, &block_list))
-		    != STATUS_OK) {
-			error("bridge_get_blocks_info(): %s", 
-			      _bg_err_str(rc));
-			return -1; 
-		}
-
-		if ((rc = bridge_get_data(block_list, RM_PartListSize, 
-					  &num_blocks)) != STATUS_OK) {
-			error("bridge_get_data(RM_PartListSize): %s", 
-			      _bg_err_str(rc));
-			
-			num_blocks = 0;
-		}
-			
-		for (j=0; j<num_blocks; j++) {
-			if (j) {
-				if ((rc = bridge_get_data(block_list, 
-							  RM_PartListNextPart, 
-							  &block_ptr)) 
-				    != STATUS_OK) {
-					error("bridge_get_data"
-					      "(RM_PartListNextPart): %s",
-					      _bg_err_str(rc));
-					
-					break;
-				}
-			} else {
-				if ((rc = bridge_get_data(block_list, 
-							  RM_PartListFirstPart,
-							  &block_ptr)) 
-				    != STATUS_OK) {
-					error("bridge_get_data"
-					      "(RM_PartListFirstPart: %s",
-					      _bg_err_str(rc));
-					
-					break;
-				}
-			}
-			if ((rc = bridge_get_data(block_ptr, RM_PartitionID, 
-						  &bg_block_id))
-			    != STATUS_OK) {
-				error("bridge_get_data(RM_PartitionID): %s", 
-				      _bg_err_str(rc));
-				
-				break;
-			}
-
-			if(!bg_block_id) {
-				error("No Part ID was returned from database");
-				continue;
-			}
-
-			if(strncmp("RMP", bg_block_id, 3)) {
-				free(bg_block_id);
-				continue;
-			}
-				
-			delete_record = xmalloc(sizeof(delete_record_t));
-			delete_record->bg_block_id = xstrdup(bg_block_id);
-			
-			free(bg_block_id);
-			
-			if ((rc = bridge_get_data(block_ptr,
-						  RM_PartitionState,
-						  &delete_record->state))
-			    != STATUS_OK) {
-				error("bridge_get_data"
-				      "(RM_PartitionState): %s",
-				      _bg_err_str(rc));
-			} 
-			
-			list_push(delete_record_list, delete_record);
-
-			slurm_attr_init(&attr_agent);
-			if (pthread_attr_setdetachstate(
-				    &attr_agent, 
-				    PTHREAD_CREATE_DETACHED))
-				error("pthread_attr_setdetach"
-				      "state error %m");
-			
-			retries = 0;
-			while (pthread_create(&thread_agent, 
-					      &attr_agent, 
-					      _mult_free_block, 
-					      (void *)delete_record)) {
-				error("pthread_create "
-				      "error %m");
-				if (++retries 
-				    > MAX_PTHREAD_RETRIES)
-					fatal("Can't create "
-					      "pthread");
-				/* sleep and retry */
-				usleep(1000);	
-			}
-			slurm_attr_destroy(&attr_agent);
-			num_block_to_free++;
-		}
-		if ((rc = bridge_free_block_list(block_list)) != STATUS_OK) {
-			error("bridge_free_block_list(): %s",
-			      _bg_err_str(rc));
-		}
-	}
-	while(num_block_to_free > num_block_freed) {
-		info("waiting for all bgblocks to free...");
-		_update_bg_record_state();
-		sleep(1);
-	}
-	list_destroy(delete_record_list);
-	
-	bridge_fini();
-	return 0;
-}
-
-static int _free_block(delete_record_t *delete_record)
-{
-	int rc;
-	int i=0;
-
-	info("freeing bgblock %s", delete_record->bg_block_id);
-	_term_jobs_on_block(delete_record->bg_block_id);
-	while (1) {
-		if (delete_record->state != (rm_partition_state_t)NO_VAL
-		    && delete_record->state != RM_PARTITION_FREE 
-		    && delete_record->state != RM_PARTITION_DEALLOCATING) {
-			info("bridge_destroy %s", delete_record->bg_block_id);
-#ifdef HAVE_BG_FILES
-			if ((rc = bridge_destroy_block(
-				     delete_record->bg_block_id))
-			    != STATUS_OK) {
-				if(rc == PARTITION_NOT_FOUND) {
-					info("block %s is not found");
-					break;
-				} else if(rc == INCOMPATIBLE_STATE) {
-					debug2("bridge_destroy_partition"
-					       "(%s): %s State = %d",
-					       delete_record->bg_block_id, 
-					       _bg_err_str(rc), 
-					       delete_record->state);
-				} else {
-					error("bridge_destroy_block(%s): %s",
-					      delete_record->bg_block_id,
-					      _bg_err_str(rc));
-				}
-			}
-#else
-			bg_record->state = RM_PARTITION_FREE;	
-#endif
-		}
-		
-		if(!wait_full) {
-			if(i>5)
-				delete_record->state = RM_PARTITION_FREE;
-			
-			i++;
-		}
-
-		if ((delete_record->state == RM_PARTITION_FREE)
-#ifdef HAVE_BGL
-		    ||  (delete_record->state == RM_PARTITION_ERROR)
-#endif
-			) {
-			break;
-		}
-		sleep(3);
-	}
-	info("bgblock %s is freed", delete_record->bg_block_id);
-	return SLURM_SUCCESS;
-}
-
-static int _update_bg_record_state()
-{
-	char *name = NULL;
-	int rc;
-	rm_partition_state_t state = -2;
-	rm_partition_t *block_ptr = NULL;
-	delete_record_t *delete_record = NULL;
-	ListIterator itr;
-	
-	if(!delete_record_list) {
-		return SLURM_SUCCESS;
+	memset(&msg, 0, sizeof(update_block_msg_t));
+	if(!all_blocks && (!block_list || !list_count(block_list))) {
+		error("you need at least one block to remove.");
+		exit(1);
 	}
 
-	itr = list_iterator_create(delete_record_list);
-	while ((delete_record = (delete_record_t*) list_next(itr))) {	
-		if(!delete_record->bg_block_id) {
-			continue;
-		}
-		
-		if ((delete_record->state == RM_PARTITION_FREE)
-		    || (delete_record->state == RM_PARTITION_ERROR)) {
-			continue;
-		}
-		name = delete_record->bg_block_id;
-		
-		if ((rc = bridge_get_block_info(name, &block_ptr)) 
-		    != STATUS_OK) {
-			if(rc == PARTITION_NOT_FOUND 
-			   || rc == INCONSISTENT_DATA) {
-				debug("block %s is not found",
-				      delete_record->bg_block_id);
-				continue;
-			}
-			
-			error("bridge_get_block_info(%s): %s", 
-			      name, 
-			      _bg_err_str(rc));
-			goto finished;
-		}
-		state = 1;
+	if(all_blocks) {
+		int i=0;
+		node_select_info_msg_t *node_select_ptr = NULL;
+		_get_new_info_node_select(&node_select_ptr);
+		if(block_list)
+			list_flush(block_list);
+		else
+			block_list = list_create(slurm_destroy_char);
 
-		if ((rc = bridge_get_data(block_ptr,
-					  RM_PartitionState,
-					  &delete_record->state))
-		    != STATUS_OK) {
-			error("bridge_get_data"
-			      "(RM_PartitionState): %s",
-			      _bg_err_str(rc));
-		} 
-		if ((rc = bridge_free_block(block_ptr)) 
-		    != STATUS_OK) {
-			error("bridge_free_block(): %s", 
-			      _bg_err_str(rc));
+		for (i=0; i<node_select_ptr->record_count; i++) {
+			list_append(block_list,
+				    xstrdup(node_select_ptr->
+					    bg_info_array[i].bg_block_id));
 		}
-	finished:
-		if(state != 1) {
-			error("The requested block %s was not "
-			      "found in system.",
-			      name);
-			slurm_mutex_lock(&freed_cnt_mutex);
-			num_block_freed++;
-			slurm_mutex_unlock(&freed_cnt_mutex);
-		}
+	} 
+
+	itr = list_iterator_create(block_list);
+	while((block_name = list_next(itr))) {
+		msg.state = RM_PARTITION_FREE;
+		msg.bg_block_id = block_name;
+		rc = slurm_update_block(&msg);
+		if(rc != SLURM_SUCCESS)
+			error("Error trying to free block %s: %s",
+			      block_name, slurm_strerror(rc));
 	}
 	list_iterator_destroy(itr);
-	
-	return state;
-}
-
-/* Perform job termination work */
-static void _term_jobs_on_block(char *bg_block_id)
-{
-	int i, jobs, rc, job_found = 0;
-	rm_job_list_t *job_list;
-	int live_states;
-	rm_element_t *job_elem;
-	pm_partition_id_t block_id;
-	db_job_id_t job_id;
-	
-	//debug("getting the job info");
-	live_states = JOB_ALL_FLAG
-		& (~JOB_TERMINATED_FLAG)
-		& (~JOB_ERROR_FLAG)
-		& (~JOB_KILLED_FLAG);
-	if ((rc = bridge_get_jobs(live_states, &job_list)) != STATUS_OK) {
-		error("bridge_get_jobs(): %s", _bg_err_str(rc));
-		return;
-	}
-	
-	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs)) 
-	    != STATUS_OK) {
-		error("bridge_get_data(RM_JobListSize): %s", _bg_err_str(rc));
-		jobs = 0;
-	} else if (jobs > 300)
-		fatal("Active job count (%d) invalid, restart MMCS", jobs);
-	//debug("job count %d",jobs);
-	for (i=0; i<jobs; i++) {
-		if (i) {
-			if ((rc = bridge_get_data(job_list, RM_JobListNextJob,
-						  &job_elem)) != STATUS_OK) {
-				error("bridge_get_data(RM_JobListNextJob): %s",
-				      _bg_err_str(rc));
-				continue;
-			}
-		} else {
-			if ((rc = bridge_get_data(job_list, RM_JobListFirstJob,
-						  &job_elem)) != STATUS_OK) {
-				error("bridge_get_data"
-				      "(RM_JobListFirstJob): %s",
-				      _bg_err_str(rc));
-				continue;
-			}
-		}
-		
-		if(!job_elem) {
-			error("No Job Elem breaking out job count = %d\n",
-			      jobs);
-			break;
-		}
-		if ((rc = bridge_get_data(job_elem, RM_JobPartitionID, 
-					  &block_id)) != STATUS_OK) {
-			error("bridge_get_data(RM_JobPartitionID) %s: %s",
-			      block_id, _bg_err_str(rc));
-			continue;
-		}
-
-		if(!block_id) {
-			error("No Block ID was returned from database");
-			continue;
-		}
-
-		if (strcmp(block_id, bg_block_id) != 0) {
-			free(block_id);
-			continue;
-		}
-		free(block_id);
-		job_found = 1;
-		if ((rc = bridge_get_data(job_elem, RM_JobDBJobID, &job_id))
-		    != STATUS_OK) {
-			error("bridge_get_data(RM_JobDBJobID): %s",
-			      _bg_err_str(rc));
-			continue;
-		}
-		info("got job_id %d",job_id);
-		if((rc = _remove_job(job_id)) == INTERNAL_ERROR) {
-			goto not_removed;
-		}
-	}
-	if(job_found == 0)
-		info("No jobs on bgblock %s", bg_block_id);
-	
-not_removed:
-	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)
-		error("bridge_free_job_list(): %s", _bg_err_str(rc));
-}
-
-/*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-static char *_bg_err_str(status_t inx)
-{
-	switch (inx) {
-	case STATUS_OK:
-		return "Status OK";
-	case PARTITION_NOT_FOUND:
-		return "Partition not found";
-	case JOB_NOT_FOUND:
-		return "Job not found";
-	case BP_NOT_FOUND:
-		return "Base partition not found";
-	case SWITCH_NOT_FOUND:
-		return "Switch not found";
-#ifndef HAVE_BGL
-	case PARTITION_ALREADY_DEFINED:
-		return "Partition already defined";
-#endif
-	case JOB_ALREADY_DEFINED:
-		return "Job already defined";
-	case CONNECTION_ERROR:
-		return "Connection error";
-	case INTERNAL_ERROR:
-		return "Internal error";
-	case INVALID_INPUT:
-		return "Invalid input";
-	case INCOMPATIBLE_STATE:
-		return "Incompatible state";
-	case INCONSISTENT_DATA:
-		return "Inconsistent data";
-	}
-	return "?";
-}
-
-/* Kill a job and remove its record from MMCS */
-static int _remove_job(db_job_id_t job_id)
-{
-	int rc, count = 0;
-	rm_job_t *job_rec = NULL;
-	rm_job_state_t job_state;
-
-	info("removing job %d from MMCS", job_id);
-	while(1) {
-		if (count)
-			sleep(POLL_INTERVAL);
-		count++;
-
-		/* Find the job */
-		if ((rc = bridge_get_job(job_id, &job_rec)) != STATUS_OK) {
-			if (rc == JOB_NOT_FOUND) {
-				debug("job %d removed from MMCS", job_id);
-				return STATUS_OK;
-			} 
-
-			error("bridge_get_job(%d): %s", job_id, 
-			      _bg_err_str(rc));
-			continue;
-		}
-
-		if ((rc = bridge_get_data(job_rec, RM_JobState, &job_state)) 
-		    != STATUS_OK) {
-			(void) bridge_free_job(job_rec);
-			if (rc == JOB_NOT_FOUND) {
-				debug("job %d not found in MMCS", job_id);
-				return STATUS_OK;
-			} 
-
-			error("bridge_get_data(RM_JobState) for jobid=%d "
-			      "%s", job_id, _bg_err_str(rc));
-			continue;
-		}
-		if ((rc = bridge_free_job(job_rec)) != STATUS_OK)
-			error("bridge_free_job: %s", _bg_err_str(rc));
-
-		info("job %d is in state %d", job_id, job_state);
-		
-		/* check the state and process accordingly */
-		if(job_state == RM_JOB_TERMINATED)
-			return STATUS_OK;
-		else if(job_state == RM_JOB_DYING) {
-			if(count > MAX_POLL_RETRIES) 
-				error("Job %d isn't dying, trying for "
-				      "%d seconds", count*POLL_INTERVAL);
-			continue;
-		} else if(job_state == RM_JOB_ERROR) {
-			error("job %d is in a error state.", job_id);
-			
-			//free_bg_block();
-			return STATUS_OK;
-		}
-
-		/* we have been told the next 2 lines do the same
-		 * thing, but I don't believe it to be true.  In most
-		 * cases when you do a signal of SIGTERM the mpirun
-		 * process gets killed with a SIGTERM.  In the case of
-		 * bridge_cancel_job it always gets killed with a
-		 * SIGKILL.  From IBM's point of view that is a bad
-		 * deally, so we are going to use signal ;).
-		 */
-
-//		 rc = bridge_cancel_job(job_id);
-		 rc = bridge_signal_job(job_id, SIGTERM);
-
-		if (rc != STATUS_OK) {
-			if (rc == JOB_NOT_FOUND) {
-				debug("job %d removed from MMCS", job_id);
-				return STATUS_OK;
-			} 
-			if(rc == INCOMPATIBLE_STATE)
-				debug("job %d is in an INCOMPATIBLE_STATE",
-				      job_id);
-			else
-				error("bridge_cancel_job(%d): %s", job_id, 
-				      _bg_err_str(rc));
-		}
-	}
-	error("Failed to remove job %d from MMCS", job_id);
-	return INTERNAL_ERROR;
-}
-
-#else 
-
-int main(int argc, char *argv[])
-{
-	printf("Only can be ran on the service node of a Bluegene system.\n");
+	if(wait_full)
+		_check_status();
+	list_destroy(block_list);
+	info("done");
 	return 0;
 }
-
-#endif

@@ -50,7 +50,6 @@
 #  include "config.h"
 #endif
 
-#include "src/api/node_select_info.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
 #include "src/slurmctld/proc_req.h"

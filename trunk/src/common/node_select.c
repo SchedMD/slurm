@@ -124,10 +124,10 @@ typedef struct slurm_select_ops {
 						int mode);
 	char *          (*jobinfo_xstrdup)     (select_jobinfo_t *jobinfo,
 						int mode);
-        int             (*update_block)        (update_part_msg_t 
-						*part_desc_ptr);
-        int             (*update_sub_node)     (update_part_msg_t
-						*part_desc_ptr);
+        int             (*update_block)        (update_block_msg_t 
+						*block_desc_ptr);
+        int             (*update_sub_node)     (update_block_msg_t
+						*block_desc_ptr);
 	int             (*get_info_from_plugin)(enum 
 						select_plugindata_info dinfo,
 						struct job_record *job_ptr,
@@ -328,29 +328,15 @@ static void _free_bg_info_record(bg_info_record_t *bg_info_record)
 static int _unpack_bg_info_record_info(bg_info_record_t *bg_info_record,
 				       Buf buffer)
 {
-	uint16_t uint16_tmp;
 	uint32_t uint32_tmp;
-	char *bp_inx_str;
+	char *bp_inx_str = NULL;
 	
-	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(bg_info_record->ionodes), 
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->owner_name,
-			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id,
 			       &uint32_tmp, buffer);
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->state     = (int) uint16_tmp;
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->conn_type = (int) uint16_tmp;
 #ifdef HAVE_BGL
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->node_use = (int) uint16_tmp;
+	safe_unpackstr_xmalloc(&bg_info_record->blrtsimage,  
+			       &uint32_tmp, buffer);
 #endif
-	safe_unpack32(&uint32_tmp, buffer);
-	bg_info_record->node_cnt = (int) uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	bg_info_record->job_running = (int) uint32_tmp;
 	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
 	if (bp_inx_str == NULL) {
 		bg_info_record->bp_inx = bitfmt2int("");
@@ -358,6 +344,9 @@ static int _unpack_bg_info_record_info(bg_info_record_t *bg_info_record,
 		bg_info_record->bp_inx = bitfmt2int(bp_inx_str);
 		xfree(bp_inx_str);
 	}
+	safe_unpack16(&bg_info_record->conn_type, buffer);
+	safe_unpackstr_xmalloc(&(bg_info_record->ionodes), 
+			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
 	if (bp_inx_str == NULL) {
 		bg_info_record->ionode_inx = bitfmt2int("");
@@ -365,16 +354,21 @@ static int _unpack_bg_info_record_info(bg_info_record_t *bg_info_record,
 		bg_info_record->ionode_inx = bitfmt2int(bp_inx_str);
 		xfree(bp_inx_str);
 	}
+	safe_unpack32(&bg_info_record->job_running, buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->linuximage,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->mloaderimage,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint32_tmp, buffer);
+	safe_unpack32(&bg_info_record->node_cnt, buffer);
 #ifdef HAVE_BGL
-	safe_unpackstr_xmalloc(&bg_info_record->blrtsimage,   &uint32_tmp, 
-			       buffer);
+	safe_unpack16(&bg_info_record->node_use, buffer);
 #endif
-	safe_unpackstr_xmalloc(&bg_info_record->linuximage,   &uint32_tmp, 
-			       buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->mloaderimage, &uint32_tmp, 
-			       buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->ramdiskimage, &uint32_tmp, 
-			       buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->owner_name,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->ramdiskimage,
+			       &uint32_tmp, buffer);
+	safe_unpack16(&bg_info_record->state, buffer);
 	
 	return SLURM_SUCCESS;
 
@@ -382,6 +376,94 @@ unpack_error:
 	error("_unpack_node_info: error unpacking here");
 	_free_bg_info_record(bg_info_record);
 	return SLURM_ERROR;
+}
+
+extern int node_select_free_bg_info_record(bg_info_record_t *bg_info_record)
+{
+	if(bg_info_record) {
+		_free_bg_info_record(bg_info_record);
+		xfree(bg_info_record);
+	}
+	return SLURM_SUCCESS;
+}
+
+extern void node_select_pack_bg_info_record(bg_info_record_t *bg_info_record,
+					    Buf buffer)
+{
+	if(!bg_info_record) {
+		packnull(buffer);
+#ifdef HAVE_BGL
+		packnull(buffer);
+#endif		
+		pack16((uint16_t)NO_VAL, buffer);
+		packnull(buffer);
+
+		packnull(buffer);
+		packnull(buffer);
+
+		pack32(NO_VAL, buffer);
+
+		packnull(buffer);
+		packnull(buffer);
+		packnull(buffer);
+		pack32(NO_VAL, buffer);
+#ifdef HAVE_BGL
+		pack16((uint16_t)NO_VAL, buffer);
+#endif		
+
+		packnull(buffer);
+		packnull(buffer);
+		pack16((uint16_t)NO_VAL, buffer);
+	} else {
+		packstr(bg_info_record->bg_block_id, buffer);
+#ifdef HAVE_BGL
+		packstr(bg_info_record->blrtsimage, buffer);
+#endif		
+
+		if(bg_info_record->bp_inx) {
+			char *bitfmt = inx2bitfmt(bg_info_record->bp_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+		
+		pack16(bg_info_record->conn_type, buffer);
+
+		packstr(bg_info_record->ionodes, buffer);
+		
+		if(bg_info_record->ionode_inx) {
+			char *bitfmt = inx2bitfmt(bg_info_record->ionode_inx);
+			packstr(bitfmt, buffer);
+			xfree(bitfmt);
+		} else
+			packnull(buffer);
+
+		pack32(bg_info_record->job_running, buffer);
+		
+		packstr(bg_info_record->linuximage, buffer);
+		packstr(bg_info_record->mloaderimage, buffer);
+		packstr(bg_info_record->nodes, buffer);
+		pack32(bg_info_record->node_cnt, buffer);
+#ifdef HAVE_BGL
+		pack16(bg_info_record->node_use, buffer);	
+#endif
+		packstr(bg_info_record->owner_name, buffer);
+		packstr(bg_info_record->ramdiskimage, buffer);
+		pack16(bg_info_record->state, buffer);
+	}
+}
+
+extern int node_select_unpack_bg_info_record(bg_info_record_t **bg_info_record,
+					     Buf buffer)
+{
+        int rc = SLURM_SUCCESS;
+	bg_info_record_t *bg_rec = xmalloc(sizeof(bg_info_record_t));
+
+	if((rc = _unpack_bg_info_record_info(bg_rec, buffer)) != SLURM_SUCCESS)
+		xfree(bg_rec);
+	else
+		*bg_info_record = bg_rec;
+	return rc;
 }
 
 extern int node_select_info_msg_free (
@@ -1135,26 +1217,26 @@ extern char *select_g_select_jobinfo_xstrdup(
 
 /* 
  * Update specific block (usually something has gone wrong)  
- * IN part_desc_ptr - information about the block
+ * IN block_desc_ptr - information about the block
  */
-extern int select_g_update_block (update_part_msg_t *part_desc_ptr)
+extern int select_g_update_block (update_block_msg_t *block_desc_ptr)
 {
        if (slurm_select_init() < 0)
                return SLURM_ERROR;
 
-       return (*(g_select_context->ops.update_block))(part_desc_ptr);
+       return (*(g_select_context->ops.update_block))(block_desc_ptr);
 }
 
 /* 
  * Update specific sub nodes (usually something has gone wrong)  
- * IN part_desc_ptr - information about the block
+ * IN block_desc_ptr - information about the block
  */
-extern int select_g_update_sub_node (update_part_msg_t *part_desc_ptr)
+extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr)
 {
        if (slurm_select_init() < 0)
                return SLURM_ERROR;
 
-       return (*(g_select_context->ops.update_sub_node))(part_desc_ptr);
+       return (*(g_select_context->ops.update_sub_node))(block_desc_ptr);
 }
 
 /* 

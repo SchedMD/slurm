@@ -54,7 +54,6 @@
 #include "src/api/job_info.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
-#include "src/api/node_select_info.h"
 #include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
 
 #define _DEBUG 0

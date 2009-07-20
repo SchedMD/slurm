@@ -64,7 +64,6 @@
 
 #ifdef HAVE_BG
 #include "src/api/job_info.h"
-#include "src/api/node_select_info.h"
 #include "src/common/node_select.h"
 #include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"

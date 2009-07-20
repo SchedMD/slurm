@@ -47,7 +47,6 @@
 #include <string.h>
 
 #include "src/api/slurm_pmi.h"
-#include "src/api/node_select_info.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
@@ -592,6 +591,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_resv_name_msg((reservation_name_msg_t *) msg->
 				     data, buffer);
 		break;
+	case REQUEST_UPDATE_BLOCK:
+		node_select_pack_bg_info_record((bg_info_record_t *)
+						msg->data, buffer);
+		break;
 	case REQUEST_REATTACH_TASKS:
 		_pack_reattach_tasks_request_msg(
 			(reattach_tasks_request_msg_t *) msg->data, buffer);
@@ -971,6 +974,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case RESPONSE_CREATE_RESERVATION:
 		rc = _unpack_resv_name_msg((reservation_name_msg_t **)
 					     &(msg->data), buffer);
+		break;
+	case REQUEST_UPDATE_BLOCK:
+		rc = node_select_unpack_bg_info_record((bg_info_record_t **) 
+					      &(msg->data), buffer);
 		break;
 	case RESPONSE_RESERVATION_INFO:
 		rc = _unpack_reserve_info_msg((reserve_info_msg_t **)

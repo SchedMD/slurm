@@ -48,6 +48,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
@@ -1010,6 +1011,34 @@ bitfmt2int (char *bit_str_ptr)
 	assert(bit_inx < (size*2+1));
 	bit_int_ptr[bit_inx] = -1;
 	return bit_int_ptr;
+}
+
+/*
+ * intbitfmt - convert a array of interger (start/end) pairs
+ *	terminated by -1 (e.g. "0, 30, 45, 45, 50, 60, -1") to a
+ *	string describing bitmap (output from bit_fmt, e.g. "0-30,45,50-60") 
+ * input: int array
+ * output: char *
+ * NOTE: the caller must xfree the returned memory
+ */
+char *
+inx2bitfmt (int *inx) 
+{
+	int j=0;
+	char *bit_char_ptr = NULL;
+
+	if (inx == NULL) 
+		return NULL;
+	
+	while (inx[j] >= 0) {
+		if(bit_char_ptr)
+			xstrfmtcat(bit_char_ptr, ",%d-%d", inx[j], inx[j+1]);
+		else
+			xstrfmtcat(bit_char_ptr, "%d-%d", inx[j], inx[j+1]);
+		j += 2;
+	}
+
+	return bit_char_ptr;
 }
 
 int inx2bitstr(bitstr_t *b, int *inx) 

@@ -101,7 +101,6 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** initialize the status pthread */
 static int _init_status_pthread(void);
-static char *_block_state_str(int state);
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
 
@@ -131,21 +130,6 @@ static int _init_status_pthread(void)
 	slurm_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
-}
-
-static char *_block_state_str(int state)
-{
-	static char tmp[16];
-
-	switch (state) {
-		case 0: 
-			return "ERROR";
-		case 1:
-			return "FREE";
-	}
-
-	snprintf(tmp, sizeof(tmp), "%d", state);
-	return tmp;
 }
 
 static List _get_config(void)
@@ -705,15 +689,22 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	return xstrdup_select_jobinfo(jobinfo, mode);
 }
 
-extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
+extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
 	time_t now;
 	char reason[128], tmp[64], time_str[32];
 
+	if(!block_desc_ptr->bg_block_id) {
+		error("update_block: No name specified");
+		return SLURM_ERROR;
+	}
+
+
 	slurm_mutex_lock(&block_state_mutex);
-	bg_record = find_bg_record_in_list(bg_lists->main, part_desc_ptr->name);
+	bg_record = find_bg_record_in_list(bg_lists->main,
+					   block_desc_ptr->bg_block_id);
 	if(!bg_record) {
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
@@ -726,7 +717,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		 "update_block: "
 		 "Admin set block %s state to %s %s",
 		 bg_record->bg_block_id, 
-		 _block_state_str(part_desc_ptr->state_up), tmp); 
+		 bg_block_state_string(block_desc_ptr->state), tmp); 
 	
 	/* First fail any job running on this block */
 	if(bg_record->job_running > NO_JOB_RUNNING) {
@@ -742,7 +733,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	/* Free all overlapping blocks and kill any jobs only
 	 * if we are going into an error state */ 
 	if (bg_conf->layout_mode != LAYOUT_DYNAMIC
-	    && !part_desc_ptr->state_up) {
+	    && (block_desc_ptr->state == RM_PARTITION_ERROR)) {
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
@@ -788,15 +779,16 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		list_destroy(delete_list);
 	}
 
-	if(!part_desc_ptr->state_up) {
+	if(block_desc_ptr->state == RM_PARTITION_ERROR) {
 		slurm_mutex_unlock(&block_state_mutex);
 		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
-	} else if(part_desc_ptr->state_up){
+	} else if(block_desc_ptr->state == RM_PARTITION_FREE) {
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 	} else {
 		slurm_mutex_unlock(&block_state_mutex);
-		error("state is ? %d", part_desc_ptr->state_up);
+		error("state is ? %s",
+		      bg_block_state_string(block_desc_ptr->state));
 		return rc;
 	}
 				
@@ -806,7 +798,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	return rc;
 }
 
-extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
+extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	int i = 0, j = 0;
@@ -815,7 +807,8 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 	int set = 0;
 	double nc_pos = 0, last_pos = -1;
 	bitstr_t *ionode_bitmap = NULL;
-	
+	char *name = NULL;
+
 	if(bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		info("You can't use this call unless you are on a Dynamically "
 		     "allocated system.  Please use update BlockName instead");
@@ -825,66 +818,67 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 
 	memset(coord, 0, sizeof(coord));
 	memset(ionodes, 0, 128);
-	if(!part_desc_ptr->name) {
+	if(!block_desc_ptr->nodes) {
 		error("update_sub_node: No name specified");
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-
-	while (part_desc_ptr->name[j] != '\0') {
-		if (part_desc_ptr->name[j] == '[') {
+	name = block_desc_ptr->nodes;
+	
+	while (name[j] != '\0') {
+		if (name[j] == '[') {
 			if(set<1) {
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			i = j++;
-			if((part_desc_ptr->name[j] < '0'
-			    || part_desc_ptr->name[j] > 'Z'
-			    || (part_desc_ptr->name[j] > '9' 
-				&& part_desc_ptr->name[j] < 'A'))) {
-				error("update_sub_node: sub part is empty");
+			if((name[j] < '0'
+			    || name[j] > 'Z'
+			    || (name[j] > '9' 
+				&& name[j] < 'A'))) {
+				error("update_sub_node: sub block is empty");
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
-			while(part_desc_ptr->name[i] != '\0') {
-				if(part_desc_ptr->name[i] == ']') 
+			while(name[i] != '\0') {
+				if(name[i] == ']') 
 					break;
 				i++;
 			}
-			if(part_desc_ptr->name[i] != ']') {
+			if(name[i] != ']') {
 				error("update_sub_node: "
-				      "No close (']') on sub part");
+				      "No close (']') on sub block");
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			
-			strncpy(ionodes, part_desc_ptr->name+j, i-j); 
+			strncpy(ionodes, name+j, i-j); 
 			set++;
 			break;
-		} else if((part_desc_ptr->name[j] >= '0'
-			   && part_desc_ptr->name[j] <= '9')
-			  || (part_desc_ptr->name[j] >= 'A'
-			      && part_desc_ptr->name[j] <= 'Z')) {
+		} else if((name[j] >= '0'
+			   && name[j] <= '9')
+			  || (name[j] >= 'A'
+			      && name[j] <= 'Z')) {
 			if(set) {
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			/* make sure we are asking for a correct name */
 			for(i = 0; i < BA_SYSTEM_DIMENSIONS; i++) {
-				if((part_desc_ptr->name[j+i] >= '0'
-				    && part_desc_ptr->name[j+i] <= '9')
-				   || (part_desc_ptr->name[j+i] >= 'A'
-				      && part_desc_ptr->name[j+i] <= 'Z')) 
+				if((name[j+i] >= '0'
+				    && name[j+i] <= '9')
+				   || (name[j+i] >= 'A'
+				      && name[j+i] <= 'Z')) 
 					continue;
 				
 				error("update_sub_node: "
 				      "misformatted name given %s",
-				      part_desc_ptr->name);
+				      name);
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			
-			strncpy(coord, part_desc_ptr->name+j,
+			strncpy(coord, name+j,
 				BA_SYSTEM_DIMENSIONS); 
 			j += BA_SYSTEM_DIMENSIONS-1;
 			set++;
@@ -908,7 +902,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 	}
 	node_name = xstrdup_printf("%s%s", bg_conf->slurm_node_prefix, coord);
 	/* find out how many nodecards to get for each ionode */
-	if(!part_desc_ptr->state_up) {
+	if(block_desc_ptr->state == RM_PARTITION_ERROR) {
 		info("Admin setting %s[%s] in an error state",
 		     node_name, ionodes);
 		for(i = 0; i<bg_conf->numpsets; i++) {
@@ -923,13 +917,13 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 			}
 			nc_pos += bg_conf->nc_ratio;
 		}
-	} else if(part_desc_ptr->state_up){
+	} else if(block_desc_ptr->state == RM_PARTITION_FREE){
 		info("Admin setting %s[%s] in an free state",
 		     node_name, ionodes);
 		up_nodecard(node_name, ionode_bitmap);
 	} else {
-		error("update_sub_node: Unknown state %d", 
-		      part_desc_ptr->state_up);
+		error("update_sub_node: Unknown state %s", 
+		      bg_block_state_string(block_desc_ptr->state));
 		rc = SLURM_ERROR;
 	}
 	

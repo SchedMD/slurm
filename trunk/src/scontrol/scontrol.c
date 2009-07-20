@@ -40,6 +40,7 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
 
 #define OPT_LONG_HIDE   0x102
 
@@ -1135,11 +1136,9 @@ _update_bluegene_block (int argc, char *argv[])
 {
 #ifdef HAVE_BG
 	int i, update_cnt = 0;
-	update_part_msg_t part_msg;
+	update_block_msg_t block_msg;
 
-	slurm_init_part_desc_msg ( &part_msg );
-	/* means this is for bluegene and altering a block */
-	part_msg.hidden = (uint16_t)INFINITE;
+	slurm_init_update_block_msg ( &block_msg );
 
 	for (i=0; i<argc; i++) {
 		char *tag = argv[i];
@@ -1152,17 +1151,18 @@ _update_bluegene_block (int argc, char *argv[])
 			vallen = strlen(val);
 		} else {
 			exit_code = 1;
-			error("Invalid input for BlueGene block update %s", argv[i]);
+			error("Invalid input for BlueGene block update %s",
+			      argv[i]);
 			return 0;
 		}
 
 		if (strncasecmp(tag, "BlockName", MAX(taglen, 2)) == 0) {
-			part_msg.name = val;
+			block_msg.bg_block_id = val;
 		} else if (strncasecmp(tag, "State", MAX(taglen, 2)) == 0) {
 			if (strncasecmp(val, "ERROR", MAX(vallen, 1)) == 0)
-				part_msg.state_up = 0;
+				block_msg.state = RM_PARTITION_ERROR;
 			else if (strncasecmp(val, "FREE", MAX(vallen, 1)) == 0)
-				part_msg.state_up = 1;
+				block_msg.state = RM_PARTITION_FREE;
 			else {
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
@@ -1174,16 +1174,22 @@ _update_bluegene_block (int argc, char *argv[])
 			update_cnt++;
 		} else {
 			exit_code = 1;
-			error("Invalid input for BlueGene block update %s", argv[i]);
+			error("Invalid input for BlueGene block update %s",
+			      argv[i]);
 			return 0;
 		}
 	}
 
-	if(!part_msg.name) {
-		error("You didn't supply a name.");
+	if(!block_msg.bg_block_id) {
+		error("You didn't supply a block name.");
 		return 0;
+	} else if (block_msg.state == (uint16_t)NO_VAL) {
+		error("You didn't give me a state to set %s to "
+		      "(i.e. FREE, ERROR).", block_msg.nodes);
+		return 0;	
 	}
-	if (slurm_update_partition(&part_msg)) {
+
+	if (slurm_update_block(&block_msg)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
@@ -1207,11 +1213,9 @@ _update_bluegene_subbp (int argc, char *argv[])
 {
 #ifdef HAVE_BG
 	int i, update_cnt = 0;
-	update_part_msg_t part_msg;
+	update_block_msg_t block_msg;
 
-	slurm_init_part_desc_msg ( &part_msg );
-	/* means this is for bluegene and altering a sub node */
-	part_msg.root_only = (uint16_t)INFINITE;
+	slurm_init_update_block_msg ( &block_msg );
 
 	for (i=0; i<argc; i++) {
 		char *tag = argv[i];
@@ -1230,12 +1234,12 @@ _update_bluegene_subbp (int argc, char *argv[])
 		}
 
 		if (strncasecmp(tag, "SubBPName", MAX(taglen, 2)) == 0)
-			part_msg.name = val;
+			block_msg.nodes = val;
 		else if (strncasecmp(tag, "State", MAX(taglen, 2)) == 0) {
 			if (strncasecmp(val, "ERROR", MAX(vallen, 1)) == 0)
-				part_msg.state_up = 0;
+				block_msg.state = RM_PARTITION_ERROR;
 			else if (strncasecmp(val, "FREE", MAX(vallen, 1)) == 0)
-				part_msg.state_up = 1;
+				block_msg.state = RM_PARTITION_FREE;
 			else {
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
@@ -1253,11 +1257,16 @@ _update_bluegene_subbp (int argc, char *argv[])
 		}
 	}
 
-	if(!part_msg.name) {
-		error("You didn't supply a name.");
+	if(!block_msg.nodes) {
+		error("You didn't supply an ionode list.");
 		return 0;
+	} else if (block_msg.state == (uint16_t)NO_VAL) {
+		error("You didn't give me a state to set %s to "
+		      "(i.e. FREE, ERROR).", block_msg.nodes);
+		return 0;	
 	}
-	if (slurm_update_partition(&part_msg)) {
+
+	if (slurm_update_block(&block_msg)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
