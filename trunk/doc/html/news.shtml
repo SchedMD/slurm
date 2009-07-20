@@ -77,7 +77,7 @@ job time limit).</li>
 <li>Provide a web-based SLURM administration tool.</li>
 <li>Improve fault-tolerance in recognizing compute node reboots.</li>
 <li>Add sinfo and squeue information about specific cores allocated.</li>
-<li>Support for Solaris.</li>
+<li>Support for Solaris (OpenSolaris build 116).</li>
 </ul>
 
 <h2><a name="22">Major Updates in SLURM Version 2.2 and beyond</a></h2>
@@ -95,6 +95,6 @@ hierarchical switches).</li>
 and refresh.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 13 July 2009</p>
+<p style="text-align:center;">Last modified 20 July 2009</p>
 
 <!--#include virtual="footer.txt"-->
