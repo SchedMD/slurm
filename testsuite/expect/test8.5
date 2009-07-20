@@ -82,7 +82,7 @@ proc run_and_test { size } {
 	set matches 0
 	set requested_cpus [expr $size * $procs_per_cnode]
 
-	set scon_pid [spawn $scontrol show job $job_id]
+	set scon_pid [spawn $scontrol -d show job $job_id]
 	expect {
 		-re "AllocCPUs=$requested_cpus" {
 			incr matches
