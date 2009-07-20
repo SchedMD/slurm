@@ -1,0 +1,36 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Platforms</h1>
+<h2>Operating Systems</h2>
+<ul>
+<li><b>AIX</b>&#151;SLURM support for AIX has been thoroughly tested.</li>
+<li><b>Linux</b>&#151;SLURM has been thoroughly tested on most popular Linux 
+distributions using i386, ia64, and x86_64 architectures.</li>
+<li><b>OS X</b>&#151;SLURM support for OS X is available.</li>
+<li><b>Solaris</b>&#151;SLURM support for Solaris (OpenSolaris build 116) was 
+added in version 2.1.</li>
+<li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
+</ul>
+<h2>Interconnects</h2>
+<ul>
+<li><b>BlueGene</b>&#151;SLURM support for IBM's BlueGene/L and BlueGene/P 
+systems has been thoroughly tested.</li>
+<li><b>Cray XT</b>&#151;Much of the infrastructure to support a Cray XT
+system is current in SLURM. The interface to ALPS/BASIL remains to be done.
+Please contact us if you would be interested in this work.</li>
+<li><b>Ethernet</b>&#151;Ethernet requires no special support from SLURM and has 
+been thoroughly tested.</li>
+<li><b>IBM Federation</b>&#151;SLURM support for IBM's Federation Switch 
+has been thoroughly tested.</li>
+<li><b>Infiniband</b>&#151;Infiniband support has been thoroughly tested.</li>
+<li><b>Myrinet</b>&#151;Myrinet, MPICH-GM and MPICH-MX are supported.</li>
+<li><b>Quadrics Elan</b>&#151;SLURM support for Quadrics Elan 3 and Elan 4 switches 
+are available in all versions of SLURM and have been thoroughly tested.</li>
+<li><b>Sun Constellation</b>&#151;Resource allocation has been optimized
+for the three-dimensional torus interconnect.</li>
+<li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
+</ul>
+
+<p style="text-align:center;">Last modified 20 July 2009</p>
+
+<!--#include virtual="footer.txt"-->
