@@ -720,8 +720,8 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 Controls the mechanism used to preempt lower priority jobs in order to 
 execute higher priority jobs.
 For gang scheduling of jobs having the same priority, job suspend will
-always be used and \fBPreemptMode\fR must be set to \fIKILL\fR or \fISUSPEND\fR 
-(anything other than OFF).
+always be used and \fBPreemptMode\fR must be set to \fICANCEL\fR, 
+\fIREQUEUE\fR or \fISUSPEND\fR (anything other than \fIOFF\fR).
 Two different mechanisms can be used to determine when preeption can 
 take place. 
 SLURM partitions can have different \fBPriority\fR values and contain 
@@ -740,11 +740,14 @@ This is the only option compatible with \fBSchedulerType=sched/wiki\fR
 or \fBSchedulerType=sched/wiki2\fR (used by Maui and Moab respecitvely, 
 which provide their own job preemption functionality).
 .TP
+\fBCANCEL\fR
+always cancel the job.
+.TP
 \fBCHECKPOINT\fR
-preempts jobs by checkpointing them (if possible) or killing them.
+preempts jobs by checkpointing them (if possible) or cancelling them.
 .TP
 \fBREQUEUE\fR
-preempts jobs by requeuing them (if possible) or killing them.
+preempts jobs by requeuing them (if possible) or cancelling them.
 .TP
 \fBSUSPEND\fR
 preempts jobs by suspending them.

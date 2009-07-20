@@ -6,11 +6,11 @@ documents those changes that are of interest to users and admins.
  -- Removed sched/gang plugin and moved the logic directly into the slurmctld
     daemon so that job preemption and gang scheduling can be used with the
     sched/backfill plugin. Added configuration parameter:
-    PreemptMode=off|suspend|kill|requeue|checkpoint 
+    PreemptMode=off|suspend|cancel|requeue|checkpoint 
     to enable/disable the job preemption logic (disabled by default).
-    (NOTE: There are some problems with memory management which could prevent a 
+    (NOTE: There are some problems with memory management which could prevent a
     job from starting when memory would be freed by a job being requeued or 
-    otherwise removed)
+    otherwise removed, these are being worked on)
  -- If the --partition option is used with the sinfo or squeue command then
     print information about even hidden partitions.
  -- Replaced misc cpu allocation members in job_info_t with select_job_res_t

@@ -2121,14 +2121,16 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (s_p_get_string(&temp_str, "PreemptMode", hashtbl)) {
 		if (strcasecmp(temp_str, "off") == 0)
 			conf->preempt_mode = PREEMPT_MODE_OFF;
+		else if (strcasecmp(temp_str, "cancel") == 0)
+			conf->preempt_mode = PREEMPT_MODE_CANCEL;
+		else if (strcasecmp(temp_str, "checkpoint") == 0)
+			conf->preempt_mode = PREEMPT_MODE_CHECKPOINT;
+		else if (strcasecmp(temp_str, "requeue") == 0)
+			conf->preempt_mode = PREEMPT_MODE_REQUEUE;
 		else if ((strcasecmp(temp_str, "on") == 0) ||
 			 (strcasecmp(temp_str, "suspend") == 0))
 			conf->preempt_mode = PREEMPT_MODE_SUSPEND;
-		else if ((strcasecmp(temp_str, "kill") == 0) ||
-			 (strcasecmp(temp_str, "requeue") == 0))
-			conf->preempt_mode = PREEMPT_MODE_REQUEUE;
-		else if (strcasecmp(temp_str, "checkpoint") == 0)
-			conf->preempt_mode = PREEMPT_MODE_CHECKPOINT;
+
 		else
 			fatal("Invalid PreemptMode: %s", temp_str);
 	}
