@@ -1516,7 +1516,7 @@ extern int select_g_unpack_node_info(
 	int i, record_count = 0;
 	node_select_info_msg_t *buf;
 
-	buf = xmalloc(sizeof(bg_info_record_t));
+	buf = xmalloc(sizeof(node_select_info_msg_t));
 	safe_unpack32(&(buf->record_count), buffer);
 	safe_unpack_time(&(buf->last_update), buffer);
 	buf->bg_info_array = xmalloc(sizeof(bg_info_record_t) * 
@@ -1530,10 +1530,7 @@ extern int select_g_unpack_node_info(
 	return SLURM_SUCCESS;
 
 unpack_error:
-	for(i=0; i<record_count; i++)
-		_free_node_info(&(buf->bg_info_array[i]));
-	xfree(buf->bg_info_array);
-	xfree(buf);
+	select_g_free_node_info(&buf);
 	return SLURM_ERROR;
 }
 
