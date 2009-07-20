@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     (NOTE: There are some problems with memory management which could prevent a
     job from starting when memory would be freed by a job being requeued or 
     otherwise removed, these are being worked on)
+ -- Added PreemptType configuration parameter to identify preemptable jobs.
  -- If the --partition option is used with the sinfo or squeue command then
     print information about even hidden partitions.
  -- Replaced misc cpu allocation members in job_info_t with select_job_res_t

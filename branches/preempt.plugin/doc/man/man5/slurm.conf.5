@@ -756,6 +756,14 @@ preempting it completes.
 .RE
 
 .TP
+\fBPreemptType\fR
+This specifies the plugin used to identify which jobs can be 
+preempted in order to start a pending job. 
+The default value is "preempt/partition_prio". 
+If a database is configured with Quality Of Service (QOS) specifications, 
+then "preempt/qos" may be selected. 
+
+.TP
 \fBPriorityDecayHalfLife\fR
 This controls how long prior resource use is considered in determining
 how over\- or under\-serviced an association is (user, bank account and 
