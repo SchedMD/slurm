@@ -672,6 +672,16 @@ static void _resume_job(uint32_t job_id)
 	}
 }
 
+static int _cancel_job(uint32_t job_id)
+{
+	int rc;
+
+	rc = job_signal(job_id, SIGKILL, 0, 0);
+	if (rc == SLURM_SUCCESS)
+		info("gang: preempted job %u has been killed", job_id);
+
+	return rc;
+}
 static int _checkpoint_job(uint32_t job_id)
 {
 	int rc;
@@ -731,6 +741,8 @@ static void _preempt_job_dequeue(void)
 			(void) _suspend_job(job_id);
 		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
 			rc = _requeue_job(job_id);
+		else if (preempt_mode == PREEMPT_MODE_CANCEL)
+			rc = _cancel_job(job_id);
 		else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
 			rc = _checkpoint_job(job_id);
 		else
@@ -739,7 +751,7 @@ static void _preempt_job_dequeue(void)
 		if (rc != SLURM_SUCCESS) {
 			rc = job_signal(job_id, SIGKILL, 0, 0);
 			if (rc == SLURM_SUCCESS)
-				info("gang: preempted job %u had to be killed", 
+				info("gang: preempted job %u had to be killed",
 				     job_id);
 			else {
 				info("gang: preempted job %u kill failure %s", 

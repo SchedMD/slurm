@@ -76,15 +76,19 @@ limits, it will be canceled in order to prevent it from adversely effecting
 other jobs sharing the same resources.
 </LI>
 <LI>
-<B>PreemptMode</B>: Configure to <I>CHECKPOINT</I>, <I>SUSPEND</I> or 
-<I>REQUEUE</I> depending on the desired action for low priority jobs. 
-A value of <I>CHECKPOINT</I> will checkpoint (if possible) or kill low 
-priority jobs.
-Checkpointed jobs are not automatically restarted.
-A value of <I>REQUEUE</I> will requeue (if possible) or kill low priority jobs.
-Requeued jobs are permitted to be restarted on different resources.
-A value of <I>SUSPEND</I> will suspend and automatically resume the low 
+<B>PreemptMode</B>: Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>, 
+<I>SUSPEND</I> or <I>REQUEUE</I> depending on the desired action for low 
 priority jobs. 
+<UL>
+<LI>A value of <I>CANCEL</I> will always cancel the job.</LI>
+<LI>A value of <I>CHECKPOINT</I> will checkpoint (if possible) or kill low 
+priority jobs.</LI>
+Checkpointed jobs are not automatically restarted.
+<LI>A value of <I>REQUEUE</I> will requeue (if possible) or kill low priority 
+jobs. Requeued jobs are permitted to be restarted on different resources.</LI>
+<LI>A value of <I>SUSPEND</I> will suspend and automatically resume the low 
+priority jobs. </LI>
+</UL>
 </LI>
 <LI>
 <B>Priority</B>: Configure the partition's <I>Priority</I> setting relative to
@@ -309,6 +313,6 @@ It would also necessitate major changes to the shadow bitmap data structures
 which are currently used.
 </P>
 
-<p style="text-align:center;">Last modified 14 July 2009</p>
+<p style="text-align:center;">Last modified 20 July 2009</p>
 
 <!--#include virtual="footer.txt"-->
