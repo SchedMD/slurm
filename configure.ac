@@ -45,6 +45,13 @@ case "$host" in
 			[Define slurm_ prefix function aliases for plugins]) ;;
 esac
 
+dnl
+dnl add some flags for Solaris
+dnl
+case "$host" in
+	*solaris*) CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS -I/usr/sfw/include"
+esac
+
 dnl Checks for programs.
 dnl
 AC_PROG_CC
@@ -215,6 +222,10 @@ AC_SUBST(HAVE_FEDERATION)
 dnl check for SGI job container support
 dnl
 X_AC_SGI_JOB
+
+dnl check if we can use standard printf functions
+dnl
+X_AC_PRINTF_NULL
 
 dnl Check for whether to include readline support
 dnl 

@@ -74,6 +74,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
+	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
