@@ -16,11 +16,14 @@ AC_DEFUN([X_AC_PRINTF_NULL], [
   AC_TRY_RUN([
 	#include <stdio.h>
 	#include <stdlib.h>
-	int main() { printf("%s", NULL); exit(0); } ],
+	int main() { char tmp[8]; snprintf(tmp,8,"%s",NULL); exit(0); } ],
     printf_null_ok=yes,
+    printf_null_ok=no,
     printf_null_ok=no)
 
-  if test "$printf_null_ok" == "no"; then
+  if test "$printf_null_ok" == "yes"; then
+    AC_MSG_RESULT([yes])
+  else
     AC_MSG_ERROR([printf("%s", NULL) results in abort. If using OpenSolaris, upgrade to release 116 or higher.])
   fi
 ])
