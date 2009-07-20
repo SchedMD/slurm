@@ -623,7 +623,7 @@ int main(int argc, char *argv[])
 			 G_CALLBACK(_delete), NULL);
 	
 	gtk_window_set_title(GTK_WINDOW(main_window), "Sview");
-	gtk_window_set_default_size(GTK_WINDOW(main_window), 700, 450);
+	gtk_window_set_default_size(GTK_WINDOW(main_window), 1000, 450);
 	gtk_container_set_border_width(
 		GTK_CONTAINER(GTK_DIALOG(main_window)->vbox), 1);
 	/* Create the main notebook, place the position of the tabs */

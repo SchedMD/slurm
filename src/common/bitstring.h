@@ -175,6 +175,7 @@ void	bit_rotate(bitstr_t *b1, int n);
 char	*bit_fmt(char *str, int len, bitstr_t *b);
 int 	bit_unfmt(bitstr_t *b, char *str);
 int 	*bitfmt2int (char *bit_str_ptr);
+char *  inx2bitfmt (int *inx);
 int     inx2bitstr(bitstr_t *b, int *inx);
 char	*bit_fmt_hexmask(bitstr_t *b);
 int 	bit_unfmt_hexmask(bitstr_t *b, const char *str);

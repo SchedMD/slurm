@@ -57,7 +57,6 @@
 
 #include <slurm/slurm.h>
 
-#include "src/api/node_select_info.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
@@ -242,13 +241,6 @@ extern int slurm_free_node_select(
 	node_select_info_msg_t **node_select_info_msg_pptr)
 {
 	return node_select_info_msg_free(node_select_info_msg_pptr);
-}
-
-/* Unpack node select info from a buffer */
-extern int slurm_unpack_node_select(
-	node_select_info_msg_t **node_select_info_msg_pptr, Buf buffer)
-{
-	return node_select_info_msg_unpack(node_select_info_msg_pptr, buffer);
 }
 
 extern int slurm_get_select_jobinfo(select_jobinfo_t *jobinfo,

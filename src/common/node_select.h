@@ -44,7 +44,6 @@
 #include <slurm/slurm_errno.h>
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/api/node_select_info.h"
 
 typedef struct {
 	bitstr_t *avail_nodes;      /* usable nodes are set on input, nodes
@@ -64,6 +63,13 @@ typedef struct {
 /*****************************************\
  * GLOBAL SELECT STATE MANGEMENT FUNCIONS *
 \*****************************************/
+
+extern int node_select_free_bg_info_record(bg_info_record_t *bg_info_record);
+
+extern void node_select_pack_bg_info_record(bg_info_record_t *bg_info_record,
+					    Buf buffer);
+extern int node_select_unpack_bg_info_record(bg_info_record_t **bg_info_record,
+					     Buf buffer);
 
 /*
  * node_select_info_msg_free - free buffer returned by 
@@ -122,15 +128,15 @@ extern int select_g_block_init(List part_list);
 
 /* 
  * Update specific block (usually something has gone wrong)  
- * IN part_desc_ptr - information about the block
+ * IN block_desc_ptr - information about the block
  */
-extern int select_g_update_block (update_part_msg_t *part_desc_ptr);
+extern int select_g_update_block (update_block_msg_t *block_desc_ptr);
 
 /* 
  * Update specific sub nodes (usually something has gone wrong)  
- * IN part_desc_ptr - information about the block
+ * IN block_desc_ptr - information about the block
  */
-extern int select_g_update_sub_node (update_part_msg_t *part_desc_ptr);
+extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr);
 
 /* 
  * Get select data from a plugin

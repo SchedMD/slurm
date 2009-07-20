@@ -137,6 +137,7 @@ inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
+inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
 inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
 inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
@@ -295,6 +296,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_DELETE_RESERVATION:
 		_slurm_rpc_resv_delete(msg);
 		slurm_free_resv_name_msg(msg->data);
+		break;
+	case REQUEST_UPDATE_BLOCK:
+		_slurm_rpc_update_block(msg);
+		node_select_free_bg_info_record(msg->data);
 		break;
 	case REQUEST_RESERVATION_INFO:
 		_slurm_rpc_resv_show(msg);
@@ -2432,11 +2437,7 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		if(part_desc_ptr->hidden == (uint16_t)INFINITE) 
-			error_code = select_g_update_block(part_desc_ptr);
-		else if(part_desc_ptr->root_only == (uint16_t)INFINITE) 
-			error_code = select_g_update_sub_node(part_desc_ptr);
-		else if (msg->msg_type == REQUEST_CREATE_PARTITION) {
+		if (msg->msg_type == REQUEST_CREATE_PARTITION) {
 			lock_slurmctld(part_write_lock);
 			error_code = update_part(part_desc_ptr, true);
 			unlock_slurmctld(part_write_lock);
@@ -2709,6 +2710,55 @@ static void _slurm_rpc_resv_show(slurm_msg_t * msg)
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		xfree(dump);
+	}
+}
+
+/* _slurm_rpc_update_block - process RPC to update the configuration 
+ *	of a block (e.g. FREE/ERROR/DELETE) */
+static void _slurm_rpc_update_block(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	update_block_msg_t *block_desc_ptr = (update_block_msg_t *) msg->data;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	char *name = NULL;
+	START_TIMER;
+
+	debug2("Processing RPC: REQUEST_UPDATE_BLOCK from uid=%u",
+		(unsigned int) uid);
+	if (!validate_super_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, UPDATE_BLOCK RPC from uid=%u",
+		      (unsigned int) uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		/* do RPC call */
+		if(block_desc_ptr->bg_block_id) {
+			error_code = select_g_update_block(block_desc_ptr);
+			END_TIMER2("_slurm_rpc_update_block");
+			name = block_desc_ptr->bg_block_id;
+		} else if(block_desc_ptr->nodes) {
+			error_code = select_g_update_sub_node(block_desc_ptr);
+			END_TIMER2("_slurm_rpc_update_subbp");			
+			name = block_desc_ptr->nodes;
+		} else {
+			error("Unknown update for blocks");
+			error_code = SLURM_ERROR;
+			END_TIMER2("_slurm_rpc_update_block");			
+		}
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_update_block %s: %s",
+		     name,
+		     slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		debug2("_slurm_rpc_update_block complete for %s %s",
+			name, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }
 

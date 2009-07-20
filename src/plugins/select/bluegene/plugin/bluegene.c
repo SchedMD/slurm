@@ -610,8 +610,7 @@ extern void *mult_destroy_block(void *args)
 		slurm_mutex_unlock(&block_state_mutex);
 								
 #ifdef HAVE_BG_FILES
-		debug2("removing from database %s", 
-		       (char *)bg_record->bg_block_id);
+		debug2("removing %s from database", bg_record->bg_block_id);
 		
 		rc = bridge_remove_block(bg_record->bg_block_id);
 		if (rc != STATUS_OK) {

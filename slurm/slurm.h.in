@@ -1036,6 +1036,101 @@ typedef struct partition_info_msg {
 	partition_info_t *partition_array; /* the partition records */
 } partition_info_msg_t;
 
+
+/* BLUEGENE specific information */
+
+typedef struct {
+	char *bg_block_id;
+	char *blrtsimage;       /* BlrtsImage for this block */
+	int *bp_inx;            /* list index pairs into node_table for *nodes:
+				 * start_range_1, end_range_1,
+				 * start_range_2, .., -1  */
+	uint16_t conn_type;
+	char *ionodes;
+	int *ionode_inx;        /* list index pairs for ionodes in the
+				 * node listed for *ionodes:
+				 * start_range_1, end_range_1,
+				 * start_range_2, .., -1  */
+	uint32_t job_running;
+	char *linuximage;       /* LinuxImage for this block */
+	char *mloaderimage;     /* mloaderImage for this block */
+	char *nodes;
+	uint32_t node_cnt;
+	uint16_t node_use;
+	char *owner_name;
+	char *ramdiskimage;     /* RamDiskImage for this block */
+	uint16_t state;
+} bg_info_record_t;
+
+typedef struct {
+	bg_info_record_t *bg_info_array;
+	time_t    last_update;
+	uint32_t  record_count;
+} node_select_info_msg_t;
+
+typedef bg_info_record_t update_block_msg_t;
+
+/*
+ * slurm_print_node_select_info_msg - output information about all Bluegene 
+ *	blocks based upon message as loaded using slurm_load_node_select
+ * IN out - file to write to
+ * IN info_ptr - node_select information message pointer
+ * IN one_liner - print as a single line if true
+ */
+extern void slurm_print_node_select_info_msg PARAMS((
+	FILE *out, node_select_info_msg_t *info_ptr, int one_liner));
+
+/*
+ * slurm_print_node_select_info - output information about a specific Bluegene 
+ *	block based upon message as loaded using slurm_load_node_select
+ * IN out - file to write to
+ * IN bg_info_ptr - an individual block information record pointer
+ * IN one_liner - print as a single line if true
+ */
+extern void slurm_print_node_select_info PARAMS((
+	FILE *out, bg_info_record_t *bg_info_ptr, int one_liner));
+
+/*
+ * slurm_sprint_node_select_info - output information about a specific Bluegene 
+ *	block based upon message as loaded using slurm_load_node_select
+ * IN bg_info_ptr - an individual partition information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * containing formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+extern char *slurm_sprint_node_select_info PARAMS((
+	bg_info_record_t * bg_info_ptr, int one_liner));
+
+/*
+ * slurm_load_node_select - issue RPC to get slurm all node select plugin 
+ *      information if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN node_select_info_msg_pptr - place to store a node select configuration 
+ *      pointer
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_node_select_info_msg
+ */
+extern int slurm_load_node_select PARAMS((
+	time_t update_time, 
+	node_select_info_msg_t **node_select_info_msg_pptr));
+
+/*
+ * node_select_info_msg_free - free buffer returned by 
+ *	slurm_load_node_select
+ * IN node_select_info_msg_pptr - data is freed and pointer is set to NULL
+ * RET 0 or a slurm error code
+ */
+extern int slurm_free_node_select PARAMS((
+        node_select_info_msg_t **node_select_info_msg_pptr));
+
+/* update state or remove block */
+extern int slurm_update_block PARAMS((update_block_msg_t *block_msg));
+
+void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
+
+
+/*********************************/
+
 /*
  * Resource reservation data structures.
  * Create, show, modify and delete functions are required

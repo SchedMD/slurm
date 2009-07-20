@@ -30,7 +30,6 @@
 
 #include "src/sview/sview.h"
 #include "src/common/node_select.h"
-#include "src/api/node_select_info.h"
 
 #define _DEBUG 0
 
@@ -699,7 +698,7 @@ extern int update_state_block(GtkDialog *dialog,
 	int i = 0;
 	int rc = SLURM_SUCCESS;
 	char tmp_char[100];
-	update_part_msg_t part_msg;
+	update_block_msg_t block_msg;
 	GtkWidget *label = NULL;
 	int no_dialog = 0;
 
@@ -713,10 +712,8 @@ extern int update_state_block(GtkDialog *dialog,
 				NULL));	
 		no_dialog = 1;
 	}
-	slurm_init_part_desc_msg(&part_msg);
-	/* means this is for bluegene */
-	part_msg.hidden = (uint16_t)INFINITE;
-	part_msg.name = (char *)blockid;
+	slurm_init_update_block_msg(&block_msg);
+	block_msg.bg_block_id = (char *)blockid;
 	
 	label = gtk_dialog_add_button(dialog,
 				      GTK_STOCK_YES, GTK_RESPONSE_OK);
@@ -730,13 +727,13 @@ extern int update_state_block(GtkDialog *dialog,
 			 "Are you sure you want to put block %s "
 			 "in an error state?",
 			 blockid);
-		part_msg.state_up = 0;
+		block_msg.state = RM_PARTITION_ERROR;
 	} else {
 		snprintf(tmp_char, sizeof(tmp_char), 
 			 "Are you sure you want to put block %s "
 			 "in a free state?",
 			 blockid);
-		part_msg.state_up = 1;
+		block_msg.state = RM_PARTITION_FREE;
 	}
 	
 	label = gtk_label_new(tmp_char);
@@ -746,7 +743,7 @@ extern int update_state_block(GtkDialog *dialog,
 	gtk_widget_show_all(GTK_WIDGET(dialog));
 	i = gtk_dialog_run(dialog);
 	if (i == GTK_RESPONSE_OK) {
-		if(slurm_update_partition(&part_msg) == SLURM_SUCCESS) {
+		if(slurm_update_block(&block_msg) == SLURM_SUCCESS) {
 			snprintf(tmp_char, sizeof(tmp_char), 
 				 "Block %s updated successfully",
 				blockid);

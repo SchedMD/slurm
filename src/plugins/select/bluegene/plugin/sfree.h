@@ -55,8 +55,9 @@
 
 typedef void (*sighandler_t) (int);
 
-extern char *bg_block_id;
+extern List block_list;
 extern int all_blocks;
+extern int remove_blocks;
 extern bool wait_full;
 
 extern void parse_command_line(int argc, char *argv[]);

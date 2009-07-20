@@ -441,10 +441,7 @@ void slurm_free_update_node_msg(update_node_msg_t * msg)
 void slurm_free_update_part_msg(update_part_msg_t * msg)
 {
 	if (msg) {
-		xfree(msg->allow_alloc_nodes);
-		xfree(msg->allow_groups);
-		xfree(msg->name);
-		xfree(msg->nodes);
+		_slurm_free_partition_info_members((partition_info_t *)msg);
 		xfree(msg);
 	}
 }
@@ -821,6 +818,7 @@ void inline slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
                 xfree(msg);
         }
 }
+
 char *job_state_string(uint16_t inx)
 {
 	/* Process JOB_STATE_FLAGS */

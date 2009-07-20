@@ -56,43 +56,49 @@ void parse_command_line(int argc, char *argv[])
 		{"all",       no_argument,       0, 'a'},
 		{"bgblock",   required_argument, 0, 'b'},
 		{"partition", required_argument, 0, 'p'},
+		{"remove",    no_argument,       0, 'r'},
 		{"wait",      no_argument,       0, 'w'},
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, 'h'},
 		{"usage",     no_argument,       0, 'u'},
 		{NULL, 0, 0, 0}
 	};
-
+	
 	while ((opt_char =
-		getopt_long(argc, argv, "ab:hup:wV",
+		getopt_long(argc, argv, "ab:hp:ruVw",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int) '?':
 			fprintf(stderr,
 				"Try \"sfree --help\" for more information\n");
-			exit(1);
+		        exit(1);
 			break;
 		case (int) 'a':
 			all_blocks = 1;
-			break;
-		case (int) 'V':
-			_print_version();
-			exit(0);
+		        break;
 		case (int) 'b':
 		case (int) 'p':
-			bg_block_id = optarg;
-			break;
-		case (int) 'w':
-			wait_full = true;
+			if(!block_list)
+				block_list = list_create(slurm_destroy_char);
+		        slurm_addto_char_list(block_list, optarg);
 			break;
 		case (int) 'h':
 		case (int) OPT_LONG_HELP:
 			_help();
 			exit(0);
+		case (int) 'r':
+			remove_blocks = 1;
+			break;
 		case (int) 'u':
 		case (int) OPT_LONG_USAGE:
 			_usage();
 			exit(0);
+		case (int) 'V':
+			_print_version();
+			exit(0);
+		case (int) 'w':
+			wait_full = true;
+			break;
 		}
 	}
 
@@ -105,7 +111,7 @@ static void _print_version(void)
 
 static void _usage(void)
 {
-	printf("Usage: sfree [-huwVa] [-b <name>]\n");
+	printf("Usage: sfree [-ahruVw] [-b <name>]\n");
 }
 
 static void _help(void)
@@ -115,13 +121,15 @@ static void _help(void)
 
 	printf("\
 Usage: sfree [OPTIONS]\n\
-  -b <name>, --bgblock=<name>  free specific bgblock named\n\
   -a, --all                    free all bgblocks\n\
+  -b <name>, --bgblock=<name>  free specific bgblock named\n\
+  -r, --remove                 On Dynamic systems this option will remove the\n\
+                               block from the system after they are freed.\n\
+  -V, --version                output version information and exit\n\
   -w, --wait                   wait to make sure all blocks have been freed\n\
                                (Otherwise sfree will start the free and once\n\
                                sure the block(s) have started to free will\n\
                                exit)\n\
-  -V, --version                output version information and exit\n\
 \nHelp options:\n\
   --help                       show this help message\n\
   --usage                      display brief usage message\n");

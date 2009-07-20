@@ -42,7 +42,6 @@
 #include "src/smap/smap.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
-#include "src/api/node_select_info.h"
 #include "src/plugins/select/bluegene/plugin/bluegene.h"
 
 #define _DEBUG 0

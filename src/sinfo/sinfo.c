@@ -41,7 +41,6 @@
 #  include "config.h"
 #endif
 
-#include "src/api/node_select_info.h"
 #include "src/common/xstring.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
