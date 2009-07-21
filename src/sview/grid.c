@@ -561,8 +561,8 @@ extern List copy_main_button_list(int initial_color)
 extern void add_extra_bluegene_buttons(List *button_list, int inx, 
 				       int *color_inx)
 {
-	node_select_info_msg_t *node_select_ptr = NULL;
-	bg_info_record_t *bg_info_ptr = NULL;
+	block_info_msg_t *block_ptr = NULL;
+	block_info_t *bg_info_ptr = NULL;
 	int error_code = SLURM_SUCCESS;
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
@@ -574,7 +574,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 	int coord_y=0;
 	uint16_t orig_state;
 
-	error_code = get_new_info_node_select(&node_select_ptr, 0);
+	error_code = get_new_info_block(&block_ptr, 0);
 	
 	if (error_code != SLURM_SUCCESS 
 	    && error_code != SLURM_NO_CHANGE_IN_DATA) {
@@ -606,8 +606,8 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 	}
 	list_iterator_destroy(itr);
 	
-	for (i=0; i < node_select_ptr->record_count; i++) {
-		bg_info_ptr = &node_select_ptr->bg_info_array[i];
+	for (i=0; i < block_ptr->record_count; i++) {
+		bg_info_ptr = &block_ptr->block_array[i];
 		if(!_block_in_node(bg_info_ptr->bp_inx, inx))
 			continue;
 		found = 1;

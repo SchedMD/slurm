@@ -106,11 +106,11 @@ am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = allocate.lo allocate_msg.lo cancel.lo checkpoint.lo \
 	complete.lo config_info.lo init_msg.lo job_info.lo \
-	job_step_info.lo node_info.lo node_select_info.lo \
-	partition_info.lo reservation_info.lo signal.lo \
-	slurm_hostlist.lo slurm_pmi.lo step_ctx.lo step_io.lo \
-	step_launch.lo pmi_server.lo submit.lo suspend.lo topo_info.lo \
-	triggers.lo reconfigure.lo update_config.lo
+	job_step_info.lo node_info.lo block_info.lo partition_info.lo \
+	reservation_info.lo signal.lo slurm_hostlist.lo slurm_pmi.lo \
+	step_ctx.lo step_io.lo step_launch.lo pmi_server.lo submit.lo \
+	suspend.lo topo_info.lo triggers.lo reconfigure.lo \
+	update_config.lo
 am_libslurmhelper_la_OBJECTS = $(am__objects_1)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 PROGRAMS = $(noinst_PROGRAMS)
@@ -388,7 +388,7 @@ slurmapi_src = \
 	job_info.c job_info.h \
 	job_step_info.c  \
 	node_info.c      \
-	node_select_info.c \
+	block_info.c \
 	partition_info.c \
 	reservation_info.c \
 	signal.c         \
@@ -545,6 +545,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate_msg.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cancel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/complete.Plo@am__quote@
@@ -553,7 +554,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_step_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_info.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_select_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi_server.Plo@am__quote@

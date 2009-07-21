@@ -66,7 +66,7 @@ static int cpus_per_node = 1;
 /************
  * Funtions *
  ************/
-static int  _bg_report(node_select_info_msg_t *node_select_ptr);
+static int  _bg_report(block_info_msg_t *block_ptr);
 static int  _build_sinfo_data(List sinfo_list, 
 			      partition_info_msg_t *partition_msg,
 			      node_info_msg_t *node_msg);
@@ -81,7 +81,7 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
                              partition_info_t* part_ptr);
 static int  _query_server(partition_info_msg_t ** part_pptr,
 			  node_info_msg_t ** node_pptr,
-			  node_select_info_msg_t ** node_select_pptr);
+			  block_info_msg_t ** block_pptr);
 static void _sort_hostlist(List sinfo_list);
 static int  _strcmp(char *data1, char *data2);
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	partition_info_msg_t *partition_msg = NULL;
 	node_info_msg_t *node_msg = NULL;
-	node_select_info_msg_t *node_select_msg = NULL;
+	block_info_msg_t *block_msg = NULL;
 	List sinfo_list = NULL;
 	int rc = 0;
 
@@ -115,11 +115,11 @@ int main(int argc, char *argv[])
 		&&  (params.iterate || params.verbose || params.long_output))
 			print_date();
 
-		if (_query_server(&partition_msg, &node_msg, &node_select_msg)
+		if (_query_server(&partition_msg, &node_msg, &block_msg)
 		    != 0)
 			rc = 1;
 		else if (params.bg_flag)
-			(void) _bg_report(node_select_msg);
+			(void) _bg_report(block_msg);
 		else {
 			sinfo_list = list_create(_sinfo_list_delete);
 			_build_sinfo_data(sinfo_list, partition_msg, node_msg);
@@ -197,12 +197,12 @@ static char *_part_state_str(int state)
 /*
  * _bg_report - download and print current bgblock state information
  */
-static int _bg_report(node_select_info_msg_t *node_select_ptr)
+static int _bg_report(block_info_msg_t *block_ptr)
 {
 	int i;
 
-	if (!node_select_ptr) {
-		slurm_perror("No node_select_ptr given");
+	if (!block_ptr) {
+		slurm_perror("No block_ptr given");
 		return SLURM_ERROR;
 	}
 
@@ -211,17 +211,17 @@ static int _bg_report(node_select_info_msg_t *node_select_ptr)
 /*                      1234567890123456 123456789012 12345678 12345678 1234567890 12345+ */
 /*                      RMP_22Apr1544018 bg[123x456]  name     READY    TORUS      COPROCESSOR */
 
-	for (i=0; i<node_select_ptr->record_count; i++) {
+	for (i=0; i<block_ptr->record_count; i++) {
 		printf("%-16.16s %-12.12s %-8.8s %-8.8s %-10.10s %s\n",
-		       node_select_ptr->bg_info_array[i].bg_block_id,
-		       node_select_ptr->bg_info_array[i].nodes,
-		       node_select_ptr->bg_info_array[i].owner_name,
+		       block_ptr->block_array[i].bg_block_id,
+		       block_ptr->block_array[i].nodes,
+		       block_ptr->block_array[i].owner_name,
 		       _part_state_str(
-			       node_select_ptr->bg_info_array[i].state),
+			       block_ptr->block_array[i].state),
 		       _conn_type_str(
-			       node_select_ptr->bg_info_array[i].conn_type),
+			       block_ptr->block_array[i].conn_type),
 		       _node_use_str(
-			       node_select_ptr->bg_info_array[i].node_use));
+			       block_ptr->block_array[i].node_use));
 	}
 
 	return SLURM_SUCCESS;
@@ -236,12 +236,12 @@ static int _bg_report(node_select_info_msg_t *node_select_ptr)
 static int
 _query_server(partition_info_msg_t ** part_pptr,
 	      node_info_msg_t ** node_pptr,
-	      node_select_info_msg_t ** node_select_pptr)
+	      block_info_msg_t ** block_pptr)
 {
 	static partition_info_msg_t *old_part_ptr = NULL, *new_part_ptr;
 	static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
 #ifdef HAVE_BG
-	static node_select_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
+	static block_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
 #endif
 	int error_code;
 	uint16_t show_flags = 0;
@@ -293,24 +293,24 @@ _query_server(partition_info_msg_t ** part_pptr,
 
 #ifdef HAVE_BG
 	if (old_bg_ptr) {
-		error_code = slurm_load_node_select(old_bg_ptr->last_update, 
-						    &new_bg_ptr);
+		error_code = slurm_load_block_info(old_bg_ptr->last_update, 
+						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			node_select_info_msg_free(&old_bg_ptr);
+			slurm_free_block_info_msg(&old_bg_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_bg_ptr = old_bg_ptr;
 		}
 	} else {
-		error_code = slurm_load_node_select((time_t) NULL, 
-						    &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL, 
+						   &new_bg_ptr);
 	}
 	if (error_code) {
-		slurm_perror("slurm_load_node_select");
+		slurm_perror("slurm_load_block");
 		return error_code;
 	}
 	old_bg_ptr = new_bg_ptr;
-	*node_select_pptr = new_bg_ptr;
+	*block_pptr = new_bg_ptr;
 #endif
 	return SLURM_SUCCESS;
 }

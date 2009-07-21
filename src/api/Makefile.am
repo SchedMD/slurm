@@ -74,7 +74,7 @@ slurmapi_src =           \
 	job_info.c job_info.h \
 	job_step_info.c  \
 	node_info.c      \
-	node_select_info.c \
+	block_info.c \
 	partition_info.c \
 	reservation_info.c \
 	signal.c         \

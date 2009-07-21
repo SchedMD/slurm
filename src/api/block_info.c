@@ -66,17 +66,17 @@
 
 
 /*
- * slurm_print_node_select_info_msg - output information about all Bluegene 
- *	blocks based upon message as loaded using slurm_load_node_select
+ * slurm_print_block_info_msg - output information about all Bluegene 
+ *	blocks based upon message as loaded using slurm_load_block
  * IN out - file to write to
- * IN info_ptr - node_select information message pointer
+ * IN info_ptr - block information message pointer
  * IN one_liner - print as a single line if true
  */
-void slurm_print_node_select_info_msg(
-	FILE *out, node_select_info_msg_t *info_ptr, int one_liner)
+void slurm_print_block_info_msg(
+	FILE *out, block_info_msg_t *info_ptr, int one_liner)
 {
 	int i ;
-	bg_info_record_t * bg_info_ptr = info_ptr->bg_info_array;
+	block_info_t * block_ptr = info_ptr->block_array;
 	char time_str[32];
 
 	slurm_make_time_str ((time_t *)&info_ptr->last_update, time_str, 
@@ -85,36 +85,36 @@ void slurm_print_node_select_info_msg(
 		time_str, info_ptr->record_count);
 
 	for (i = 0; i < info_ptr->record_count; i++) 
-		slurm_print_node_select_info(out, & bg_info_ptr[i], one_liner);
+		slurm_print_block_info(out, & block_ptr[i], one_liner);
 }
 
 /*
- * slurm_print_node_select_info - output information about a specific Bluegene 
- *	block based upon message as loaded using slurm_load_node_select
+ * slurm_print_block_info - output information about a specific Bluegene 
+ *	block based upon message as loaded using slurm_load_block
  * IN out - file to write to
- * IN bg_info_ptr - an individual block information record pointer
+ * IN block_ptr - an individual block information record pointer
  * IN one_liner - print as a single line if true
  */
-void slurm_print_node_select_info(
-	FILE *out, bg_info_record_t *bg_info_ptr, int one_liner)
+void slurm_print_block_info(
+	FILE *out, block_info_t *block_ptr, int one_liner)
 {
-	char *print_this = slurm_sprint_node_select_info(
-		bg_info_ptr, one_liner);
+	char *print_this = slurm_sprint_block_info(
+		block_ptr, one_liner);
 	fprintf(out, "%s", print_this);
 	xfree(print_this);
 }
 
 
 /*
- * slurm_sprint_node_select_info - output information about a specific Bluegene 
- *	block based upon message as loaded using slurm_load_node_select
- * IN bg_info_ptr - an individual partition information record pointer
+ * slurm_sprint_block_info - output information about a specific Bluegene 
+ *	block based upon message as loaded using slurm_load_block
+ * IN block_ptr - an individual partition information record pointer
  * IN one_liner - print as a single line if true
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-char *slurm_sprint_node_select_info(
-	bg_info_record_t * bg_info_ptr, int one_liner)
+char *slurm_sprint_block_info(
+	block_info_t * block_ptr, int one_liner)
 {
 	int j;
 	char tmp1[16];
@@ -125,61 +125,61 @@ char *slurm_sprint_node_select_info(
 		line_end = " ";
 
 	/****** Line 1 ******/
-	convert_num_unit((float)bg_info_ptr->node_cnt, tmp1, sizeof(tmp1),
+	convert_num_unit((float)block_ptr->node_cnt, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
 
 	out = xstrdup_printf("BlockName=%s TotalNodes=%s State=%s%s", 
-			     bg_info_ptr->bg_block_id, tmp1,
-			     bg_block_state_string(bg_info_ptr->state),
+			     block_ptr->bg_block_id, tmp1,
+			     bg_block_state_string(block_ptr->state),
 			     line_end);
 	
 	/****** Line 2 ******/
-	if (bg_info_ptr->job_running > NO_JOB_RUNNING)
-		xstrfmtcat(out, "JobRunning=%u ", bg_info_ptr->job_running);
+	if (block_ptr->job_running > NO_JOB_RUNNING)
+		xstrfmtcat(out, "JobRunning=%u ", block_ptr->job_running);
 	else 
 		xstrcat(out, "JobRunning=NONE ");	  
 
 	xstrfmtcat(out, "User=%s ConnType=%s",
-		   bg_info_ptr->owner_name, 
-		   conn_type_string(bg_info_ptr->conn_type));
+		   block_ptr->owner_name, 
+		   conn_type_string(block_ptr->conn_type));
 #ifdef HAVE_BGL
 	xstrfmtcat(out, " NodeUse=%s",
-		   node_use_string(bg_info_ptr->node_use));
+		   node_use_string(block_ptr->node_use));
 #endif
 	xstrcat(out, line_end);
 	
 	/****** Line 3 ******/
-	if(bg_info_ptr->ionodes) 
+	if(block_ptr->ionodes) 
 		xstrfmtcat(out, "BasePartitions=%s[%s] BPIndices=",
-			   bg_info_ptr->nodes, bg_info_ptr->ionodes);
+			   block_ptr->nodes, block_ptr->ionodes);
 	else
-		xstrfmtcat(out, "BasePartitions=%s BPIndices=", bg_info_ptr->nodes);
+		xstrfmtcat(out, "BasePartitions=%s BPIndices=", block_ptr->nodes);
 	for (j = 0; 
-	     (bg_info_ptr->bp_inx && (bg_info_ptr->bp_inx[j] != -1)); 
+	     (block_ptr->bp_inx && (block_ptr->bp_inx[j] != -1)); 
 	     j+=2) {
 		if (j > 0)
 			xstrcat(out, ",");
-		xstrfmtcat(out, "%d-%d", bg_info_ptr->bp_inx[j],
-			   bg_info_ptr->bp_inx[j+1]);
+		xstrfmtcat(out, "%d-%d", block_ptr->bp_inx[j],
+			   block_ptr->bp_inx[j+1]);
 	}
 	xstrcat(out, line_end);
 
 	/****** Line 4 ******/
 	xstrfmtcat(out, "MloaderImage=%s%s",
-		   bg_info_ptr->mloaderimage, line_end);
+		   block_ptr->mloaderimage, line_end);
 
 #ifdef HAVE_BGL
 	/****** Line 5 ******/
-	xstrfmtcat(out, "BlrtsImage=%s%s", bg_info_ptr->blrtsimage, line_end);
+	xstrfmtcat(out, "BlrtsImage=%s%s", block_ptr->blrtsimage, line_end);
 	/****** Line 6 ******/
-	xstrfmtcat(out, "LinuxImage=%s%s", bg_info_ptr->linuximage, line_end);
+	xstrfmtcat(out, "LinuxImage=%s%s", block_ptr->linuximage, line_end);
 	/****** Line 7 ******/
-	xstrfmtcat(out, "RamdiskImage=%s", bg_info_ptr->ramdiskimage);
+	xstrfmtcat(out, "RamdiskImage=%s", block_ptr->ramdiskimage);
 #else
 	/****** Line 5 ******/
-	xstrfmtcat(out, "CnloadImage=%s%s", bg_info_ptr->linuximage, line_end);
+	xstrfmtcat(out, "CnloadImage=%s%s", block_ptr->linuximage, line_end);
 	/****** Line 6 ******/
-	xstrfmtcat(out, "IoloadImage=%s", bg_info_ptr->ramdiskimage);
+	xstrfmtcat(out, "IoloadImage=%s", block_ptr->ramdiskimage);
 #endif	
 	if (one_liner)
 		xstrcat(out, "\n");
@@ -190,35 +190,35 @@ char *slurm_sprint_node_select_info(
 }
 
 /*
- * slurm_load_node_select - issue RPC to get slurm all node select plugin 
+ * slurm_load_block_info - issue RPC to get slurm all node select plugin 
  *	information if changed since update_time 
  * IN update_time - time of current configuration data
- * IN node_select_info_msg_pptr - place to store a node select configuration 
+ * IN block_info_msg_pptr - place to store a node select configuration 
  *	pointer
  * RET 0 or a slurm error code
- * NOTE: free the response using slurm_free_node_select_info_msg
+ * NOTE: free the response using slurm_free_block_info_msg
  */
-extern int slurm_load_node_select (
-	time_t update_time, node_select_info_msg_t **node_select_info_msg_pptr)
+extern int slurm_load_block_info (
+	time_t update_time, block_info_msg_t **block_info_msg_pptr)
 {
         int rc;
         slurm_msg_t req_msg;
         slurm_msg_t resp_msg;
-	node_info_select_request_msg_t req;
+	block_info_request_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
         req.last_update  = update_time;
-        req_msg.msg_type = REQUEST_NODE_SELECT_INFO;
+        req_msg.msg_type = REQUEST_BLOCK_INFO;
         req_msg.data     = &req;
 	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 	
 	switch (resp_msg.msg_type) {
-	case RESPONSE_NODE_SELECT_INFO:
-		*node_select_info_msg_pptr = (node_select_info_msg_t *) 
+	case RESPONSE_BLOCK_INFO:
+		*block_info_msg_pptr = (block_info_msg_t *) 
 			resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
@@ -226,10 +226,10 @@ extern int slurm_load_node_select (
 		slurm_free_return_code_msg(resp_msg.data);	
 		if (rc) 
 			slurm_seterrno_ret(rc);
-		*node_select_info_msg_pptr = NULL;
+		*block_info_msg_pptr = NULL;
 		break;
 	default:
-		*node_select_info_msg_pptr = NULL;
+		*block_info_msg_pptr = NULL;
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
@@ -237,10 +237,9 @@ extern int slurm_load_node_select (
         return SLURM_SUCCESS;
 }
 
-extern int slurm_free_node_select(
-	node_select_info_msg_t **node_select_info_msg_pptr)
+extern int slurm_free_block_info_msg(block_info_msg_t **block_info_msg_pptr)
 {
-	return node_select_info_msg_free(node_select_info_msg_pptr);
+	return node_select_block_info_msg_free(block_info_msg_pptr);
 }
 
 extern int slurm_get_select_jobinfo(select_jobinfo_t *jobinfo,

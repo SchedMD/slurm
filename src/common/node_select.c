@@ -305,19 +305,19 @@ static int _select_context_destroy( slurm_select_context_t *c )
 	return rc;
 }
 
-static void _free_bg_info_record(bg_info_record_t *bg_info_record)
+static void _free_block_info(block_info_t *block_info)
 {
-	if(bg_info_record) {
-		xfree(bg_info_record->bg_block_id);
-		xfree(bg_info_record->blrtsimage);
-		xfree(bg_info_record->bp_inx);
-		xfree(bg_info_record->ionodes);
-		xfree(bg_info_record->ionode_inx);
-		xfree(bg_info_record->linuximage);
-		xfree(bg_info_record->mloaderimage);
-		xfree(bg_info_record->nodes);
-		xfree(bg_info_record->owner_name);
-		xfree(bg_info_record->ramdiskimage);
+	if(block_info) {
+		xfree(block_info->bg_block_id);
+		xfree(block_info->blrtsimage);
+		xfree(block_info->bp_inx);
+		xfree(block_info->ionodes);
+		xfree(block_info->ionode_inx);
+		xfree(block_info->linuximage);
+		xfree(block_info->mloaderimage);
+		xfree(block_info->nodes);
+		xfree(block_info->owner_name);
+		xfree(block_info->ramdiskimage);
 	}
 }
 
@@ -325,72 +325,70 @@ static void _free_bg_info_record(bg_info_record_t *bg_info_record)
  * plugin. The unpack functions can not be there since the plugin is 
  * dependent upon libraries which do not exist on the BlueGene front-end 
  * nodes. */
-static int _unpack_bg_info_record_info(bg_info_record_t *bg_info_record,
-				       Buf buffer)
+static int _unpack_block_info(block_info_t *block_info, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	char *bp_inx_str = NULL;
 	
-	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id,
+	safe_unpackstr_xmalloc(&block_info->bg_block_id,
 			       &uint32_tmp, buffer);
 #ifdef HAVE_BGL
-	safe_unpackstr_xmalloc(&bg_info_record->blrtsimage,  
+	safe_unpackstr_xmalloc(&block_info->blrtsimage,  
 			       &uint32_tmp, buffer);
 #endif
 	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
 	if (bp_inx_str == NULL) {
-		bg_info_record->bp_inx = bitfmt2int("");
+		block_info->bp_inx = bitfmt2int("");
 	} else {
-		bg_info_record->bp_inx = bitfmt2int(bp_inx_str);
+		block_info->bp_inx = bitfmt2int(bp_inx_str);
 		xfree(bp_inx_str);
 	}
-	safe_unpack16(&bg_info_record->conn_type, buffer);
-	safe_unpackstr_xmalloc(&(bg_info_record->ionodes), 
+	safe_unpack16(&block_info->conn_type, buffer);
+	safe_unpackstr_xmalloc(&(block_info->ionodes), 
 			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
 	if (bp_inx_str == NULL) {
-		bg_info_record->ionode_inx = bitfmt2int("");
+		block_info->ionode_inx = bitfmt2int("");
 	} else {
-		bg_info_record->ionode_inx = bitfmt2int(bp_inx_str);
+		block_info->ionode_inx = bitfmt2int(bp_inx_str);
 		xfree(bp_inx_str);
 	}
-	safe_unpack32(&bg_info_record->job_running, buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->linuximage,
+	safe_unpack32(&block_info->job_running, buffer);
+	safe_unpackstr_xmalloc(&block_info->linuximage,
 			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->mloaderimage,
+	safe_unpackstr_xmalloc(&block_info->mloaderimage,
 			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint32_tmp, buffer);
-	safe_unpack32(&bg_info_record->node_cnt, buffer);
+	safe_unpackstr_xmalloc(&(block_info->nodes), &uint32_tmp, buffer);
+	safe_unpack32(&block_info->node_cnt, buffer);
 #ifdef HAVE_BGL
-	safe_unpack16(&bg_info_record->node_use, buffer);
+	safe_unpack16(&block_info->node_use, buffer);
 #endif
-	safe_unpackstr_xmalloc(&bg_info_record->owner_name,
+	safe_unpackstr_xmalloc(&block_info->owner_name,
 			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->ramdiskimage,
+	safe_unpackstr_xmalloc(&block_info->ramdiskimage,
 			       &uint32_tmp, buffer);
-	safe_unpack16(&bg_info_record->state, buffer);
+	safe_unpack16(&block_info->state, buffer);
 	
 	return SLURM_SUCCESS;
 
 unpack_error:
 	error("_unpack_node_info: error unpacking here");
-	_free_bg_info_record(bg_info_record);
+	_free_block_info(block_info);
 	return SLURM_ERROR;
 }
 
-extern int node_select_free_bg_info_record(bg_info_record_t *bg_info_record)
+extern int node_select_free_block_info(block_info_t *block_info)
 {
-	if(bg_info_record) {
-		_free_bg_info_record(bg_info_record);
-		xfree(bg_info_record);
+	if(block_info) {
+		_free_block_info(block_info);
+		xfree(block_info);
 	}
 	return SLURM_SUCCESS;
 }
 
-extern void node_select_pack_bg_info_record(bg_info_record_t *bg_info_record,
-					    Buf buffer)
+extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer)
 {
-	if(!bg_info_record) {
+	if(!block_info) {
 		packnull(buffer);
 #ifdef HAVE_BGL
 		packnull(buffer);
@@ -415,102 +413,100 @@ extern void node_select_pack_bg_info_record(bg_info_record_t *bg_info_record,
 		packnull(buffer);
 		pack16((uint16_t)NO_VAL, buffer);
 	} else {
-		packstr(bg_info_record->bg_block_id, buffer);
+		packstr(block_info->bg_block_id, buffer);
 #ifdef HAVE_BGL
-		packstr(bg_info_record->blrtsimage, buffer);
+		packstr(block_info->blrtsimage, buffer);
 #endif		
 
-		if(bg_info_record->bp_inx) {
-			char *bitfmt = inx2bitfmt(bg_info_record->bp_inx);
+		if(block_info->bp_inx) {
+			char *bitfmt = inx2bitfmt(block_info->bp_inx);
 			packstr(bitfmt, buffer);
 			xfree(bitfmt);
 		} else
 			packnull(buffer);
 		
-		pack16(bg_info_record->conn_type, buffer);
+		pack16(block_info->conn_type, buffer);
 
-		packstr(bg_info_record->ionodes, buffer);
+		packstr(block_info->ionodes, buffer);
 		
-		if(bg_info_record->ionode_inx) {
-			char *bitfmt = inx2bitfmt(bg_info_record->ionode_inx);
+		if(block_info->ionode_inx) {
+			char *bitfmt = inx2bitfmt(block_info->ionode_inx);
 			packstr(bitfmt, buffer);
 			xfree(bitfmt);
 		} else
 			packnull(buffer);
 
-		pack32(bg_info_record->job_running, buffer);
+		pack32(block_info->job_running, buffer);
 		
-		packstr(bg_info_record->linuximage, buffer);
-		packstr(bg_info_record->mloaderimage, buffer);
-		packstr(bg_info_record->nodes, buffer);
-		pack32(bg_info_record->node_cnt, buffer);
+		packstr(block_info->linuximage, buffer);
+		packstr(block_info->mloaderimage, buffer);
+		packstr(block_info->nodes, buffer);
+		pack32(block_info->node_cnt, buffer);
 #ifdef HAVE_BGL
-		pack16(bg_info_record->node_use, buffer);	
+		pack16(block_info->node_use, buffer);	
 #endif
-		packstr(bg_info_record->owner_name, buffer);
-		packstr(bg_info_record->ramdiskimage, buffer);
-		pack16(bg_info_record->state, buffer);
+		packstr(block_info->owner_name, buffer);
+		packstr(block_info->ramdiskimage, buffer);
+		pack16(block_info->state, buffer);
 	}
 }
 
-extern int node_select_unpack_bg_info_record(bg_info_record_t **bg_info_record,
-					     Buf buffer)
+extern int node_select_unpack_block_info(block_info_t **block_info, Buf buffer)
 {
         int rc = SLURM_SUCCESS;
-	bg_info_record_t *bg_rec = xmalloc(sizeof(bg_info_record_t));
+	block_info_t *bg_rec = xmalloc(sizeof(block_info_t));
 
-	if((rc = _unpack_bg_info_record_info(bg_rec, buffer)) != SLURM_SUCCESS)
+	if((rc = _unpack_block_info(bg_rec, buffer)) != SLURM_SUCCESS)
 		xfree(bg_rec);
 	else
-		*bg_info_record = bg_rec;
+		*block_info = bg_rec;
 	return rc;
 }
 
-extern int node_select_info_msg_free (
-	node_select_info_msg_t **node_select_info_msg_pptr)
+extern int node_select_block_info_msg_free (
+	block_info_msg_t **block_info_msg_pptr)
 {
-	node_select_info_msg_t *node_select_info_msg = NULL;
+	block_info_msg_t *block_info_msg = NULL;
 
-	if (node_select_info_msg_pptr == NULL)
+	if (block_info_msg_pptr == NULL)
 		return EINVAL;
 
-	node_select_info_msg = *node_select_info_msg_pptr;
-	if (node_select_info_msg->bg_info_array) {
+	block_info_msg = *block_info_msg_pptr;
+	if (block_info_msg->block_array) {
 		int i;
-		for(i=0; i<node_select_info_msg->record_count; i++)
-			_free_bg_info_record(
-				&(node_select_info_msg->bg_info_array[i]));
-		xfree(node_select_info_msg->bg_info_array);
+		for(i=0; i<block_info_msg->record_count; i++)
+			_free_block_info(
+				&(block_info_msg->block_array[i]));
+		xfree(block_info_msg->block_array);
 	}
-	xfree(node_select_info_msg);
+	xfree(block_info_msg);
 
-	*node_select_info_msg_pptr = NULL;
+	*block_info_msg_pptr = NULL;
 	return SLURM_SUCCESS;
 }
 
 /* Unpack node select info from a buffer */
-extern int node_select_info_msg_unpack(
-	node_select_info_msg_t **node_select_info_msg_pptr, Buf buffer)
+extern int node_select_block_info_msg_unpack(
+	block_info_msg_t **block_info_msg_pptr, Buf buffer)
 {
 	int i;
-	node_select_info_msg_t *buf;
+	block_info_msg_t *buf;
 
-	buf = xmalloc(sizeof(bg_info_record_t));
+	buf = xmalloc(sizeof(block_info_t));
 	safe_unpack32(&(buf->record_count), buffer);
 	safe_unpack_time(&(buf->last_update), buffer);
-	buf->bg_info_array = xmalloc(sizeof(bg_info_record_t) * 
+	buf->block_array = xmalloc(sizeof(block_info_t) * 
 		buf->record_count);
 	for(i=0; i<buf->record_count; i++) {
-		if (_unpack_bg_info_record_info(&(buf->bg_info_array[i]), 
-						buffer)) 
+		if (_unpack_block_info(&(buf->block_array[i]), buffer)) 
 			goto unpack_error;
 	}
-	*node_select_info_msg_pptr = buf;
+	*block_info_msg_pptr = buf;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	node_select_info_msg_free(&buf);
-	*node_select_info_msg_pptr = NULL;	
+	node_select_block_info_msg_free(&buf);
+	*block_info_msg_pptr = NULL;	
 	return SLURM_ERROR;
 }
 

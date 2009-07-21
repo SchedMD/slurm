@@ -996,7 +996,7 @@ _show_it (int argc, char *argv[])
 	}
 
 	if (strncasecmp (tag, "blocks", MAX(taglen, 1)) == 0) {
-		scontrol_print_node_select (val);
+		scontrol_print_block (val);
 	} else if (strncasecmp (tag, "config", MAX(taglen, 1)) == 0) {
 		_print_config (val);
 	} else if (strncasecmp (tag, "daemons", MAX(taglen, 1)) == 0) {

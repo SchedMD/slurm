@@ -447,7 +447,7 @@ static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
 }
 
 static List _create_block_list(partition_info_msg_t *part_info_ptr,
-			       node_select_info_msg_t *node_select_ptr,
+			       block_info_msg_t *block_info_ptr,
 			       int changed)
 {
 	int i, j;
@@ -468,12 +468,12 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		g_print("malloc error\n");
 		return NULL;
 	}
-	for (i=0; i<node_select_ptr->record_count; i++) {
+	for (i=0; i<block_info_ptr->record_count; i++) {
 		block_ptr = xmalloc(sizeof(sview_block_info_t));
 			
 		block_ptr->bg_block_name 
-			= xstrdup(node_select_ptr->
-				  bg_info_array[i].bg_block_id);
+			= xstrdup(block_info_ptr->
+				  block_array[i].bg_block_id);
 #ifdef HAVE_BG_FILES
 		block_ptr->color_inx = 
 			atoi(block_ptr->bg_block_name+7);
@@ -484,42 +484,42 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->color_inx %= sview_colors_cnt;
 		
 		block_ptr->nodes 
-			= xstrdup(node_select_ptr->bg_info_array[i].nodes);
-		if(node_select_ptr->bg_info_array[i].ionodes) {
+			= xstrdup(block_info_ptr->block_array[i].nodes);
+		if(block_info_ptr->block_array[i].ionodes) {
 			snprintf(tmp_nodes, sizeof(tmp_nodes),
 				 "%s[%s]",
 				 block_ptr->nodes,
-				 node_select_ptr->bg_info_array[i].ionodes);
+				 block_info_ptr->block_array[i].ionodes);
 			xfree(block_ptr->nodes);
 			block_ptr->nodes = xstrdup(tmp_nodes);
 		}
 				
 		block_ptr->bg_user_name 
-			= xstrdup(node_select_ptr->
-				  bg_info_array[i].owner_name);
+			= xstrdup(block_info_ptr->
+				  block_array[i].owner_name);
 #ifdef HAVE_BGL
 		block_ptr->blrtsimage = xstrdup(
-			node_select_ptr->bg_info_array[i].blrtsimage);
+			block_info_ptr->block_array[i].blrtsimage);
 #endif
 		block_ptr->linuximage = xstrdup(
-			node_select_ptr->bg_info_array[i].linuximage);
+			block_info_ptr->block_array[i].linuximage);
 		block_ptr->mloaderimage = xstrdup(
-			node_select_ptr->bg_info_array[i].mloaderimage);
+			block_info_ptr->block_array[i].mloaderimage);
 		block_ptr->ramdiskimage = xstrdup(
-			node_select_ptr->bg_info_array[i].ramdiskimage);
+			block_info_ptr->block_array[i].ramdiskimage);
 		
 		block_ptr->state 
-			= node_select_ptr->bg_info_array[i].state;
+			= block_info_ptr->block_array[i].state;
 		block_ptr->bg_conn_type 
-			= node_select_ptr->bg_info_array[i].conn_type;
+			= block_info_ptr->block_array[i].conn_type;
 #ifdef HAVE_BGL
 		block_ptr->bg_node_use 
-			= node_select_ptr->bg_info_array[i].node_use;
+			= block_info_ptr->block_array[i].node_use;
 #endif
 		block_ptr->node_cnt 
-			= node_select_ptr->bg_info_array[i].node_cnt;
+			= block_info_ptr->block_array[i].node_cnt;
 		block_ptr->bp_inx 
-			= node_select_ptr->bg_info_array[i].bp_inx;
+			= block_info_ptr->block_array[i].bp_inx;
 		for(j = 0; j < part_info_ptr->record_count; j++) {
 			part = part_info_ptr->partition_array[j];
 			if(_in_slurm_partition(part.node_inx,
@@ -530,7 +530,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			}
 		}
 		block_ptr->job_running =
-			node_select_ptr->bg_info_array[i].job_running;
+			block_info_ptr->block_array[i].job_running;
 		if(block_ptr->bg_conn_type >= SELECT_SMALL)
 			block_ptr->size = 0;
 
@@ -645,31 +645,31 @@ extern void refresh_block(GtkAction *action, gpointer user_data)
 	specific_info_block(popup_win);
 }
 
-extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
+extern int get_new_info_block(block_info_msg_t **block_ptr,
 				    int force)
 {
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 #ifdef HAVE_BG
-	static node_select_info_msg_t *bg_info_ptr = NULL;
-	static node_select_info_msg_t *new_bg_ptr = NULL;
+	static block_info_msg_t *bg_info_ptr = NULL;
+	static block_info_msg_t *new_bg_ptr = NULL;
 	time_t now = time(NULL);
 	static time_t last;
 	static bool changed = 0;
 		
 	if(!force && ((now - last) < global_sleep_time)) {
-		if(*node_select_ptr != bg_info_ptr)
+		if(*block_ptr != bg_info_ptr)
 			error_code = SLURM_SUCCESS;
-		*node_select_ptr = bg_info_ptr;
+		*block_ptr = bg_info_ptr;
 		if(changed) 
 			return SLURM_SUCCESS;
 		return error_code;
 	}
 	last = now;
 	if (bg_info_ptr) {
-		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
-						    &new_bg_ptr);
+		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
+						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS) {
-			node_select_info_msg_free(&bg_info_ptr);
+			slurm_free_block_info_msg(&bg_info_ptr);
 			changed = 1;
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
@@ -677,17 +677,17 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 			changed = 0;
 		}
 	} else {
-		error_code = slurm_load_node_select((time_t) NULL, 
-						    &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL, 
+						   &new_bg_ptr);
 		changed = 1;
 	}
 
 	bg_info_ptr = new_bg_ptr;
 
-	if(*node_select_ptr != bg_info_ptr) 
+	if(*block_ptr != bg_info_ptr) 
 		error_code = SLURM_SUCCESS;
 	
-	*node_select_ptr = new_bg_ptr;
+	*block_ptr = new_bg_ptr;
 #endif
 	return error_code;
 }
@@ -828,7 +828,7 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	int block_error_code = SLURM_SUCCESS;
 	static int view = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
-	static node_select_info_msg_t *node_select_ptr = NULL;
+	static block_info_msg_t *block_ptr = NULL;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
@@ -871,7 +871,7 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		goto end_it;
 	}
 
-	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
+	if((block_error_code = get_new_info_block(&block_ptr, 
 							force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
 		if((!display_widget || view == ERROR_VIEW) 
@@ -885,7 +885,7 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		view = ERROR_VIEW;
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
-		sprintf(error_char, "slurm_load_node_select: %s",
+		sprintf(error_char, "slurm_load_block: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(table, 
@@ -898,7 +898,7 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		
 display_it:
 
-	block_list = _create_block_list(part_info_ptr, node_select_ptr,
+	block_list = _create_block_list(part_info_ptr, block_ptr,
 					changed);
 	if(!block_list)
 		return;
@@ -953,7 +953,7 @@ extern void specific_info_block(popup_info_t *popup_win)
 	int part_error_code = SLURM_SUCCESS;
 	int block_error_code = SLURM_SUCCESS;
 	static partition_info_msg_t *part_info_ptr = NULL;
-	static node_select_info_msg_t *node_select_ptr = NULL;
+	static block_info_msg_t *block_info_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
 	sview_search_info_t *search_info = spec_info->search_info;
 	char error_char[100];
@@ -999,8 +999,7 @@ extern void specific_info_block(popup_info_t *popup_win)
 	}
 
 	if((block_error_code = 
-	    get_new_info_node_select(&node_select_ptr,
-				     popup_win->force_refresh))
+	    get_new_info_block(&block_info_ptr, popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!spec_info->display_widget 
 		    || spec_info->view == ERROR_VIEW) 
@@ -1015,7 +1014,7 @@ extern void specific_info_block(popup_info_t *popup_win)
 		spec_info->view = ERROR_VIEW;
 		if(spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
-		sprintf(error_char, "slurm_load_node_select: %s",
+		sprintf(error_char, "slurm_load_block: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(popup_win->table, 
@@ -1027,7 +1026,7 @@ extern void specific_info_block(popup_info_t *popup_win)
 	}
 	
 display_it:
-	block_list = _create_block_list(part_info_ptr, node_select_ptr,
+	block_list = _create_block_list(part_info_ptr, block_info_ptr,
 					changed);
 	if(!block_list)
 		return;

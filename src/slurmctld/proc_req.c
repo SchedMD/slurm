@@ -113,7 +113,7 @@ inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_node_registration(slurm_msg_t * msg);
-inline static void  _slurm_rpc_node_select_info(slurm_msg_t * msg);
+inline static void  _slurm_rpc_block_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg);
 inline static void  _slurm_rpc_ping(slurm_msg_t * msg);
@@ -299,7 +299,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_UPDATE_BLOCK:
 		_slurm_rpc_update_block(msg);
-		node_select_free_bg_info_record(msg->data);
+		node_select_block_info_msg_free(msg->data);
 		break;
 	case REQUEST_RESERVATION_INFO:
 		_slurm_rpc_resv_show(msg);
@@ -334,9 +334,9 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_job_ready(msg);
 		slurm_free_job_id_msg(msg->data);
 		break;
-	case REQUEST_NODE_SELECT_INFO:
-		_slurm_rpc_node_select_info(msg);
-		 slurm_free_node_select_msg(msg->data);
+	case REQUEST_BLOCK_INFO:
+		_slurm_rpc_block_info(msg);
+		slurm_free_block_info_request_msg(msg->data);
 		break;
 	case REQUEST_STEP_COMPLETE:
 		_slurm_rpc_step_complete(msg);
@@ -2792,12 +2792,12 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 }
 
 /* get node select info plugin */
-static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
+static void  _slurm_rpc_block_info(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
 	Buf buffer = NULL;
-	node_info_select_request_msg_t *sel_req_msg =
-		(node_info_select_request_msg_t *) msg->data;
+	block_info_request_msg_t *sel_req_msg =
+		(block_info_request_msg_t *) msg->data;
 	slurm_msg_t response_msg;
 	/* Locks: read config */
 	slurmctld_lock_t config_read_lock = { 
@@ -2806,13 +2806,13 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_NODE_SELECT_INFO from uid=%u",
+	debug2("Processing RPC: REQUEST_BLOCK_INFO from uid=%u",
 		(unsigned int) uid);
 	lock_slurmctld(config_read_lock);
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
 	&&  (!validate_super_user(uid))) {
 		error_code = ESLURM_ACCESS_DENIED;
-		error("Security violation, NODE_SELECT_INFO RPC from uid=u",
+		error("Security violation, REQUEST_BLOCK_INFO RPC from uid=u",
 			(unsigned int) uid);
 	} 
 	unlock_slurmctld(config_read_lock);
@@ -2821,17 +2821,17 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 			sel_req_msg->last_update,
 			&buffer);
 	}
-	END_TIMER2("_slurm_rpc_node_select_info");
+	END_TIMER2("_slurm_rpc_block_info");
 
 	if (error_code) {
-		debug3("_slurm_rpc_node_select_info: %s", 
+		debug3("_slurm_rpc_block_info: %s", 
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		/* init response_msg structure */
 		slurm_msg_t_init(&response_msg);
 		response_msg.address = msg->address;
-		response_msg.msg_type = RESPONSE_NODE_SELECT_INFO;
+		response_msg.msg_type = RESPONSE_BLOCK_INFO;
 		response_msg.data = get_buf_data(buffer);
 		response_msg.data_size = get_buf_offset(buffer);
 		/* send message */

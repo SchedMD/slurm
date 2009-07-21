@@ -336,8 +336,7 @@ extern void admin_edit_block(GtkCellRendererText *cell,
 			     const char *path_string,
 			     const char *new_text,
 			     gpointer data);
-extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
-				    int force);
+extern int get_new_info_block(block_info_msg_t **block_ptr, int force);
 extern void get_info_block(GtkTable *table, display_data_t *display_data);
 extern void specific_info_block(popup_info_t *popup_win);
 extern void set_menus_block(void *arg, GtkTreePath *path, 
