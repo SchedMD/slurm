@@ -64,25 +64,23 @@ typedef struct {
  * GLOBAL SELECT STATE MANGEMENT FUNCIONS *
 \*****************************************/
 
-extern int node_select_free_bg_info_record(bg_info_record_t *bg_info_record);
+extern int node_select_free_block_info(block_info_t *block_info);
 
-extern void node_select_pack_bg_info_record(bg_info_record_t *bg_info_record,
-					    Buf buffer);
-extern int node_select_unpack_bg_info_record(bg_info_record_t **bg_info_record,
-					     Buf buffer);
+extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer);
+extern int node_select_unpack_block_info(block_info_t **block_info, Buf buffer);
 
 /*
- * node_select_info_msg_free - free buffer returned by 
+ * node_select_block_info_msg_free - free buffer returned by 
  *	slurm_load_node_select
- * IN node_select_info_msg_pptr - data is freed and pointer is set to NULL
+ * IN block_info_msg_pptr - data is freed and pointer is set to NULL
  * RET 0 or a slurm error code
  */
-extern int node_select_info_msg_free (
-	node_select_info_msg_t **node_select_info_msg_pptr);
+extern int node_select_block_info_msg_free (
+	block_info_msg_t **block_info_msg_pptr);
 
 /* Unpack node select info from a buffer */
-extern int node_select_info_msg_unpack(
-	node_select_info_msg_t **node_select_info_msg_pptr, Buf buffer);
+extern int node_select_block_info_msg_unpack(
+	block_info_msg_t **block_info_msg_pptr, Buf buffer);
 
 /*
  * Initialize context for node selection plugin

@@ -1714,8 +1714,8 @@ extern void slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg)
 	}
 }
 
-void inline slurm_free_node_select_msg(
-                node_info_select_request_msg_t *msg)
+void inline slurm_free_block_info_request_msg(
+                block_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
@@ -1910,8 +1910,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_PRIORITY_FACTORS:
 		slurm_free_priority_factors_response_msg(data);
 		break;
-	case REQUEST_NODE_SELECT_INFO:
-		slurm_free_node_select_msg(data);
+	case REQUEST_BLOCK_INFO:
+		slurm_free_block_info_request_msg(data);
 		break;
 	case REQUEST_STEP_COMPLETE:
 		slurm_free_step_complete_msg(data);

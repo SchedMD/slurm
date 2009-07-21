@@ -177,8 +177,8 @@ typedef enum {
 	RESPONSE_ACCOUNTING_INFO,
 	REQUEST_JOB_ID,
 	RESPONSE_JOB_ID,
-	REQUEST_NODE_SELECT_INFO,
-	RESPONSE_NODE_SELECT_INFO,
+	REQUEST_BLOCK_INFO,
+	RESPONSE_BLOCK_INFO,
 	REQUEST_TRIGGER_SET,
 	REQUEST_TRIGGER_GET,
 	REQUEST_TRIGGER_CLEAR,
@@ -468,9 +468,9 @@ typedef struct node_info_request_msg {
 	uint16_t show_flags;
 } node_info_request_msg_t;
 
-typedef struct node_info_select_request_msg {
+typedef struct block_info_request_msg {
 	time_t last_update;
-} node_info_select_request_msg_t;
+} block_info_request_msg_t;
 
 typedef struct part_info_request_msg {
 	time_t last_update;
@@ -1022,8 +1022,8 @@ void slurm_free_will_run_response_msg(will_run_response_msg_t *msg);
 void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
 void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
-void inline slurm_free_node_select_msg(
-		node_info_select_request_msg_t *msg);
+void inline slurm_free_block_info_request_msg(
+		block_info_request_msg_t *msg);
 void inline slurm_free_job_notify_msg(job_notify_msg_t * msg);
 
 void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg);

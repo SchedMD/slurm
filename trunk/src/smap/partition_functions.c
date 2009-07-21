@@ -189,8 +189,8 @@ extern void get_bg_part()
 	int error_code, i, j, recs=0, count = 0, last_count = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
-	static node_select_info_msg_t *bg_info_ptr = NULL;
-	static node_select_info_msg_t *new_bg_ptr = NULL;
+	static block_info_msg_t *bg_info_ptr = NULL;
+	static block_info_msg_t *new_bg_ptr = NULL;
 
 	partition_info_t part;
 	db2_block_info_t *block_ptr = NULL;
@@ -229,28 +229,28 @@ extern void get_bg_part()
 		return;
 	}
 	if (bg_info_ptr) {
-		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
-						    &new_bg_ptr);
+		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
+						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			node_select_info_msg_free(&bg_info_ptr);
+			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_node_select((time_t) NULL, 
-						    &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL, 
+						   &new_bg_ptr);
 	}
 	if (error_code) {
 		if (quiet_flag != 1) {
 			if(!params.commandline) {
 				mvwprintw(text_win,
 					  main_ycord, 1,
-					  "slurm_load_node_select: %s",
+					  "slurm_load_block: %s",
 					  slurm_strerror(slurm_get_errno()));
 				main_ycord++;
 			} else {
-				printf("slurm_load_node_select: %s\n",
+				printf("slurm_load_block: %s\n",
 					  slurm_strerror(slurm_get_errno()));
 			}
 		}
@@ -277,18 +277,18 @@ extern void get_bg_part()
 			int overlap = 0;
 			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
 			inx2bitstr(loc_bitmap, 
-				   new_bg_ptr->bg_info_array[i].bp_inx);
+				   new_bg_ptr->block_array[i].bp_inx);
 			overlap = bit_overlap(loc_bitmap, nodes_req);
 			FREE_NULL_BITMAP(loc_bitmap);
 			if(!overlap) 
 				continue;
 		}
-		if(params.io_bit && new_bg_ptr->bg_info_array[i].ionodes) {
+		if(params.io_bit && new_bg_ptr->block_array[i].ionodes) {
 			int overlap = 0;
 			bitstr_t *loc_bitmap =
 				bit_alloc(bit_size(params.io_bit));
 			inx2bitstr(loc_bitmap, 
-				   new_bg_ptr->bg_info_array[i].ionode_inx);
+				   new_bg_ptr->block_array[i].ionode_inx);
 			overlap = bit_overlap(loc_bitmap,
 					      params.io_bit);
 			FREE_NULL_BITMAP(loc_bitmap);
@@ -299,26 +299,21 @@ extern void get_bg_part()
 		block_ptr = xmalloc(sizeof(db2_block_info_t));
 			
 		block_ptr->bg_block_name 
-			= xstrdup(new_bg_ptr->bg_info_array[i].bg_block_id);
-		block_ptr->nodes 
-			= xstrdup(new_bg_ptr->bg_info_array[i].nodes);
+			= xstrdup(new_bg_ptr->block_array[i].bg_block_id);
+		block_ptr->nodes = xstrdup(new_bg_ptr->block_array[i].nodes);
 		block_ptr->nodelist = list_create(_nodelist_del);
 		_make_nodelist(block_ptr->nodes,block_ptr->nodelist);
 		
 		block_ptr->bg_user_name 
-			= xstrdup(new_bg_ptr->bg_info_array[i].owner_name);
-		block_ptr->state 
-			= new_bg_ptr->bg_info_array[i].state;
-		block_ptr->bg_conn_type 
-			= new_bg_ptr->bg_info_array[i].conn_type;
+			= xstrdup(new_bg_ptr->block_array[i].owner_name);
+		block_ptr->state = new_bg_ptr->block_array[i].state;
+		block_ptr->bg_conn_type	= new_bg_ptr->block_array[i].conn_type;
 #ifdef HAVE_BGL
-		block_ptr->bg_node_use 
-			= new_bg_ptr->bg_info_array[i].node_use;
+		block_ptr->bg_node_use = new_bg_ptr->block_array[i].node_use;
 #endif
 		block_ptr->ionodes 
-			= xstrdup(new_bg_ptr->bg_info_array[i].ionodes);
-		block_ptr->node_cnt 
-			= new_bg_ptr->bg_info_array[i].node_cnt;
+			= xstrdup(new_bg_ptr->block_array[i].ionodes);
+		block_ptr->node_cnt = new_bg_ptr->block_array[i].node_cnt;
 	       
 		itr = list_iterator_create(block_list);
 		while ((found_block = (db2_block_info_t*)list_next(itr)) 
@@ -336,7 +331,7 @@ extern void get_bg_part()
 			_marknodes(block_ptr, last_count);
 		}
 		block_ptr->job_running =
-			new_bg_ptr->bg_info_array[i].job_running;
+			new_bg_ptr->block_array[i].job_running;
 		if(block_ptr->bg_conn_type >= SELECT_SMALL)
 			block_ptr->size = 0;
 

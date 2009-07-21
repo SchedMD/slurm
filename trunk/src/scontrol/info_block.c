@@ -40,71 +40,71 @@
 
 /* Load current partiton table information into *part_buffer_pptr */
 extern int 
-scontrol_load_node_select (node_select_info_msg_t **node_select_info_pptr)
+scontrol_load_block (block_info_msg_t **block_info_pptr)
 {
 	int error_code;
-	static node_select_info_msg_t *last_info_ptr = NULL;
-	node_select_info_msg_t *info_ptr = NULL;
+	static block_info_msg_t *last_info_ptr = NULL;
+	block_info_msg_t *info_ptr = NULL;
 
 	if (last_info_ptr) {
-		error_code = slurm_load_node_select(
+		error_code = slurm_load_block_info(
 			last_info_ptr->last_update, &info_ptr);
 		if (error_code == SLURM_SUCCESS)
-			slurm_free_node_select(&last_info_ptr);
+			slurm_free_block_info_msg(&last_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			info_ptr = last_info_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
-				printf ("slurm_load_node_select no "
+				printf ("slurm_load_block no "
 					"change in data\n");
 		}
 	} else
-		error_code = slurm_load_node_select((time_t)NULL, &info_ptr);
+		error_code = slurm_load_block_info((time_t)NULL, &info_ptr);
 
 	if (error_code == SLURM_SUCCESS) {
 		last_info_ptr = info_ptr;
-		*node_select_info_pptr = info_ptr;
+		*block_info_pptr = info_ptr;
 	}
 
 	return error_code;
 }
 
 /*
- * scontrol_print_node_select - print the specified block's information
+ * scontrol_print_block - print the specified block's information
  * IN block_name - NULL to print information about all block 
  */
 extern void 
-scontrol_print_node_select (char *block_name) 
+scontrol_print_block (char *block_name) 
 {
 	int error_code, i, print_cnt = 0;
-	node_select_info_msg_t *node_select_info_ptr = NULL;
-	bg_info_record_t *node_select_ptr = NULL;
+	block_info_msg_t *block_info_ptr = NULL;
+	block_info_t *block_ptr = NULL;
 
-	error_code = scontrol_load_node_select(&node_select_info_ptr);
+	error_code = scontrol_load_block(&block_info_ptr);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_node_select error");
+			slurm_perror ("slurm_load_block error");
 		return;
 	}
 
 	if (quiet_flag == -1) {
 		char time_str[32];
 		slurm_make_time_str(
-			(time_t *)&node_select_info_ptr->last_update, 
+			(time_t *)&block_info_ptr->last_update, 
 			time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n", 
-			time_str, node_select_info_ptr->record_count);
+			time_str, block_info_ptr->record_count);
 	}
 
-	node_select_ptr = node_select_info_ptr->bg_info_array;
-	for (i = 0; i < node_select_info_ptr->record_count; i++) {
+	block_ptr = block_info_ptr->block_array;
+	for (i = 0; i < block_info_ptr->record_count; i++) {
 		if (block_name
-		    && strcmp(block_name, node_select_ptr[i].bg_block_id))
+		    && strcmp(block_name, block_ptr[i].bg_block_id))
 			continue;
 		print_cnt++;
-		slurm_print_node_select_info(
-			stdout, &node_select_ptr[i], one_liner);
+		slurm_print_block_info(
+			stdout, &block_ptr[i], one_liner);
 		if (block_name)
 			break;
 	}

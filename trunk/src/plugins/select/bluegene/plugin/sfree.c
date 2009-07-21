@@ -50,33 +50,32 @@ bool wait_full = false;
 /************
  * Functions *
  ************/
-static int _get_new_info_node_select(node_select_info_msg_t **node_select_ptr)
+static int _get_new_info_block(block_info_msg_t **block_ptr)
 {
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 #ifdef HAVE_BG
-	static node_select_info_msg_t *bg_info_ptr = NULL;
-	static node_select_info_msg_t *new_bg_ptr = NULL;
+	static block_info_msg_t *bg_info_ptr = NULL;
+	static block_info_msg_t *new_bg_ptr = NULL;
 
 	if (bg_info_ptr) {
-		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
-						    &new_bg_ptr);
+		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
+						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS) {
-			node_select_info_msg_free(&bg_info_ptr);
+			slurm_free_block_info_msg(&bg_info_ptr);
 		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_node_select((time_t) NULL, 
-						    &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr);
 	}
 
 	bg_info_ptr = new_bg_ptr;
 
-	if(*node_select_ptr != bg_info_ptr) 
+	if(*block_ptr != bg_info_ptr) 
 		error_code = SLURM_SUCCESS;
 	
-	*node_select_ptr = new_bg_ptr;
+	*block_ptr = new_bg_ptr;
 #endif
 	return error_code;
 }
@@ -85,23 +84,23 @@ static int _check_status()
 {
 	ListIterator itr = list_iterator_create(block_list);	
 	int i=0;
-	node_select_info_msg_t *node_select_ptr = NULL;
+	block_info_msg_t *block_ptr = NULL;
 	char *block_name = NULL;
 	
 	while(list_count(block_list)) {
 		info("waiting for %d bgblocks to free...",
 		     list_count(block_list));
-		if(_get_new_info_node_select(&node_select_ptr) 
+		if(_get_new_info_block(&block_ptr) 
 		   == SLURM_SUCCESS) {
 			while((block_name = list_next(itr))) {
-				for (i=0; i<node_select_ptr->record_count;
+				for (i=0; i<block_ptr->record_count;
 				     i++) {
 					if(!strcmp(block_name, 
-						   node_select_ptr->
-						   bg_info_array[i].
+						   block_ptr->
+						   block_array[i].
 						   bg_block_id)) {
-						if(node_select_ptr->
-						   bg_info_array[i].
+						if(block_ptr->
+						   block_array[i].
 						   state == RM_PARTITION_FREE)
 							list_delete_item(itr);
 						break;
@@ -109,7 +108,7 @@ static int _check_status()
 				}
 				/* Here if we didn't find the record
 				   it is gone so we just will delete it. */
-				if(i >= node_select_ptr->record_count)
+				if(i >= block_ptr->record_count)
 					list_delete_item(itr);
 			}
 			list_iterator_reset(itr);
@@ -139,17 +138,17 @@ int main(int argc, char *argv[])
 
 	if(all_blocks) {
 		int i=0;
-		node_select_info_msg_t *node_select_ptr = NULL;
-		_get_new_info_node_select(&node_select_ptr);
+		block_info_msg_t *block_ptr = NULL;
+		_get_new_info_block(&block_ptr);
 		if(block_list)
 			list_flush(block_list);
 		else
 			block_list = list_create(slurm_destroy_char);
 
-		for (i=0; i<node_select_ptr->record_count; i++) {
+		for (i=0; i<block_ptr->record_count; i++) {
 			list_append(block_list,
-				    xstrdup(node_select_ptr->
-					    bg_info_array[i].bg_block_id));
+				    xstrdup(block_ptr->
+					    block_array[i].bg_block_id));
 		}
 	} 
 

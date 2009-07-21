@@ -1466,7 +1466,7 @@ static int _sview_sub_part_sort(sview_part_sub_t* rec_a,
 
 static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				   node_info_msg_t *node_info_ptr,
-				   node_select_info_msg_t *node_select_ptr,
+				   block_info_msg_t *block_ptr,
 				   int changed)
 {
 	sview_part_info_t *sview_part_info = NULL;
@@ -1877,7 +1877,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	static int view = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static node_info_msg_t *node_info_ptr = NULL;
-	static node_select_info_msg_t *node_select_ptr = NULL;
+	static block_info_msg_t *block_ptr = NULL;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
@@ -1937,8 +1937,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		goto end_it;
 	}
 
-	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
-							force_refresh))
+	if((block_error_code = get_new_info_block(&block_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!display_widget || view == ERROR_VIEW) 
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA)
@@ -1952,7 +1951,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		view = ERROR_VIEW;
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
-		sprintf(error_char, "slurm_load_node_select: %s",
+		sprintf(error_char, "slurm_load_block: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(table, 
@@ -1967,7 +1966,7 @@ display_it:
 
 	info_list = _create_part_info_list(part_info_ptr,
 					   node_info_ptr,
-					   node_select_ptr,
+					   block_ptr,
 					   changed);
 	if(!info_list)
 		return;
@@ -2026,7 +2025,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 	int block_error_code = SLURM_SUCCESS;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static node_info_msg_t *node_info_ptr = NULL;
-	static node_select_info_msg_t *node_select_ptr = NULL;
+	static block_info_msg_t *block_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
 	char error_char[100];
 	GtkWidget *label = NULL;
@@ -2089,8 +2088,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 		goto end_it;
 	}
 
-	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
-							force_refresh))
+	if((block_error_code = get_new_info_block(&block_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!spec_info->display_widget
 		    || spec_info->view == ERROR_VIEW) 
@@ -2104,7 +2102,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 		if(spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
 		spec_info->view = ERROR_VIEW;
-		sprintf(error_char, "slurm_load_node_select: %s",
+		sprintf(error_char, "slurm_load_block: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		spec_info->display_widget = gtk_widget_ref(label);
@@ -2117,7 +2115,7 @@ display_it:
 	
 	info_list = _create_part_info_list(part_info_ptr,
 					   node_info_ptr,
-					   node_select_ptr,
+					   block_ptr,
 					   changed);
 	if(!info_list)
 		return;		
