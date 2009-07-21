@@ -717,6 +717,8 @@ extern int slurm_reconfigure(void)
 	slurm_sched_partition_change();	/* notify sched plugin */
 	select_g_reconfigure();		/* notify select plugin too */
 	priority_g_reconfig();          /* notify priority plugin too */
+	schedule();			/* has its own locks */
+	save_all_state();
 
 	return rc;
 }
