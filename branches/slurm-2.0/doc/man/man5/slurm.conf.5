@@ -53,7 +53,9 @@ of the slurmctld daemon.
 .TP
 \fBAccountingStorageBackupHost\fR
 The name of the backup machine hosting the accounting storage database.
-Only used for accounting_storage/slurmdbd plugin, ignored otherwise.
+If used with the accounting_storage/slurmdbd plugin, this is where the backup 
+slurmdbd would be running.
+Only used for database type storage plugins, ignored otherwise.
 
 .TP
 \fBAccountingStorageHost\fR
