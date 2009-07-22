@@ -608,6 +608,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->resv_id, buffer);
 	pack32(dump_job_ptr->next_step_id, buffer);
+	pack32(dump_job_ptr->preemptor_job_id, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -625,6 +626,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->state_reason, buffer);
 	pack16(dump_job_ptr->restart_cnt, buffer);
 	pack16(dump_job_ptr->resv_flags, buffer);
+	pack16(dump_job_ptr->preemptor_flag, buffer);
 
 	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resp_host, buffer);
@@ -686,12 +688,13 @@ static int _load_job_state(Buf buffer)
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	uint32_t exit_code, num_procs, assoc_id, db_index, name_len;
 	uint32_t next_step_id, total_procs, resv_id, spank_job_env_size = 0;
+	uint32_t preemptor_job_id;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t now = time(NULL);
 	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
-	uint16_t restart_cnt, resv_flags, ckpt_interval;
+	uint16_t restart_cnt, resv_flags, ckpt_interval, preemptor_flag;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -721,6 +724,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&resv_id, buffer);
 	safe_unpack32(&next_step_id, buffer);
+	safe_unpack32(&preemptor_job_id, buffer);
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -738,6 +742,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&state_reason, buffer);
 	safe_unpack16(&restart_cnt, buffer);
 	safe_unpack16(&resv_flags, buffer);
+	safe_unpack16(&preemptor_flag, buffer);
 
 	safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
 	safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
@@ -793,6 +798,11 @@ static int _load_job_state(Buf buffer)
 	if (kill_on_node_fail > 1) {
 		error("Invalid data for job %u: kill_on_node_fail=%u",
 		      job_id, kill_on_node_fail);
+		goto unpack_error;
+	}
+	if (preemptor_flag > 1) {
+		error("Invalid data for job %u: preemptor_flag=%u",
+		      job_id, preemptor_flag);
 		goto unpack_error;
 	}
 	if (partition == NULL) {
@@ -899,7 +909,9 @@ static int _load_job_state(Buf buffer)
 	xfree(job_ptr->partition);
 	job_ptr->partition    = partition;
 	partition             = NULL;	/* reused, nothing left to free */
-	job_ptr->part_ptr = part_ptr;
+	job_ptr->part_ptr     = part_ptr;
+	job_ptr->preemptor_flag   = preemptor_flag;
+	job_ptr->preemptor_job_id = preemptor_job_id;
 	job_ptr->pre_sus_time = pre_sus_time;
 	job_ptr->priority     = priority;
 	job_ptr->qos          = qos;
@@ -947,8 +959,8 @@ static int _load_job_state(Buf buffer)
 				    accounting_enforce,
 				    (acct_association_rec_t **)
 				    &job_ptr->assoc_ptr) &&
-	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-	    && (!IS_JOB_FINISHED(job_ptr))) {
+	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
+	    (!IS_JOB_FINISHED(job_ptr))) {
 		info("Cancelling job %u with invalid association",
 		     job_id);
 		job_ptr->job_state = JOB_CANCELLED;

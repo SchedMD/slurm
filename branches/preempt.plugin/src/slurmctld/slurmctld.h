@@ -521,6 +521,8 @@ struct job_record {
 	uint16_t other_port;		/* port for client communications */
 	char *partition;		/* name of the partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
+	uint16_t preemptor_flag;	/* 1 if this job preempted others */
+	uint32_t preemptor_job_id;	/* job ID of preemptor */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
