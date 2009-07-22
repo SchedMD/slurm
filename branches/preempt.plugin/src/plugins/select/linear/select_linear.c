@@ -323,8 +323,10 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	uint16_t avail_cpus;
 	uint16_t cpus, sockets, cores, threads;
 	uint16_t cpus_per_task = 1;
-	uint16_t ntasks_per_node = 0, ntasks_per_socket = 0, ntasks_per_core = 0;
-	uint16_t max_sockets = 0xffff, max_cores = 0xffff, max_threads = 0xffff;
+	uint16_t ntasks_per_node = 0, ntasks_per_socket = 0;
+	uint16_t ntasks_per_core = 0;
+	uint16_t max_sockets = 0xffff, max_cores = 0xffff;
+	uint16_t max_threads = 0xffff;
 	multi_core_data_t *mc_ptr = NULL;
 	int min_sockets = 0, min_cores = 0;
 
@@ -604,7 +606,8 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 					total_jobs += part_cr_ptr->tot_job_cnt;
 					continue;
 				}
-				if (part_cr_ptr->part_ptr == job_ptr->part_ptr){
+				if (part_cr_ptr->part_ptr == 
+				    job_ptr->part_ptr){
 					total_run_jobs +=
 						      part_cr_ptr->run_job_cnt;
 					total_jobs += part_cr_ptr->tot_job_cnt;
@@ -625,10 +628,10 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 		total_run_jobs = 0;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			if (exclusive) {      /* count jobs in all partitions */
+			if (exclusive) {     /* count jobs in all partitions */
 				total_run_jobs += part_cr_ptr->run_job_cnt;
 				total_jobs     += part_cr_ptr->tot_job_cnt;
-			} else if (part_cr_ptr->part_ptr == job_ptr->part_ptr) {
+			} else if (part_cr_ptr->part_ptr == job_ptr->part_ptr){
 				total_run_jobs += part_cr_ptr->run_job_cnt;
 				total_jobs     += part_cr_ptr->tot_job_cnt; 
 				break;
@@ -846,7 +849,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			if ((best_fit_nodes == 0) ||	
 			    ((best_fit_req == -1) && (consec_req[i] != -1)) ||
 			    (sufficient && (best_fit_sufficient == 0)) ||
-			    (sufficient && (consec_cpus[i] < best_fit_cpus)) ||	
+			    (sufficient && (consec_cpus[i] < best_fit_cpus)) ||
 			    ((sufficient == 0) && 
 			     (consec_cpus[i] > best_fit_cpus))) {
 				best_fit_cpus = consec_cpus[i];
@@ -940,8 +943,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		consec_nodes[best_fit_location] = 0;
 	}
 
-	if (error_code && (rem_cpus <= 0)
-	&&  _enough_nodes(0, rem_nodes, min_nodes, req_nodes)) {
+	if (error_code && (rem_cpus <= 0) &&
+	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes)) {
 		error_code = SLURM_SUCCESS;
 	}
 	if (error_code == SLURM_SUCCESS) {
@@ -1328,7 +1331,7 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 				part_cr_ptr->run_job_cnt--;
 			else {
 				error("%s: run_job_cnt underflow for node %s",
-					pre_err, node_record_table_ptr[i].name);
+				      pre_err, node_record_table_ptr[i].name);
 			}
 			if (remove_all) {
 				if (part_cr_ptr->tot_job_cnt > 0)
@@ -1519,11 +1522,15 @@ static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
 				node_cr_ptr[i].exclusive_jobid;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			new_part_cr_ptr = xmalloc(sizeof(struct part_cr_record));
+			new_part_cr_ptr = 
+				xmalloc(sizeof(struct part_cr_record));
 			new_part_cr_ptr->part_ptr    = part_cr_ptr->part_ptr;
-			new_part_cr_ptr->run_job_cnt = part_cr_ptr->run_job_cnt;
-			new_part_cr_ptr->tot_job_cnt = part_cr_ptr->tot_job_cnt;
-			new_part_cr_ptr->next 	     = new_node_cr_ptr[i].parts;
+			new_part_cr_ptr->run_job_cnt = part_cr_ptr->
+						       run_job_cnt;
+			new_part_cr_ptr->tot_job_cnt = part_cr_ptr->
+						       tot_job_cnt;
+			new_part_cr_ptr->next 	     = new_node_cr_ptr[i].
+						       parts;
 			new_node_cr_ptr[i].parts     = new_part_cr_ptr;
 			part_cr_ptr = part_cr_ptr->next;
 		}
@@ -1613,7 +1620,8 @@ static void _init_node_cr(void)
 				 	      node_cr_ptr[i].exclusive_jobid,
 				 	      node_record_table_ptr[i].name);
 				}
-				node_cr_ptr[i].exclusive_jobid = job_ptr->job_id;
+				node_cr_ptr[i].exclusive_jobid = job_ptr->
+								 job_id;
 			}
 			if (job_memory_cpu == 0)
 				node_cr_ptr[i].alloc_memory += job_memory_node;
@@ -1629,7 +1637,8 @@ static void _init_node_cr(void)
 			}
 			part_cr_ptr = node_cr_ptr[i].parts;
 			while (part_cr_ptr) {
-				if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
+				if (part_cr_ptr->part_ptr != 
+				    job_ptr->part_ptr) {
 					part_cr_ptr = part_cr_ptr->next;
 					continue;
 				}
@@ -1653,7 +1662,7 @@ static void _init_node_cr(void)
 
 /* Determine where and when the job at job_ptr can begin execution by updating 
  * a scratch node_cr_record structure to reflect each job terminating at the 
- * end of its time limit and use this to show where and when the job at job_ptr 
+ * end of its time limit and use this to show where and when the job at job_ptr
  * will begin execution. Used by Moab for backfill scheduling. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
@@ -1713,7 +1722,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Remove the running jobs one at a time from exp_node_cr and try
 	 * scheduling the pending job after each one */
 	job_iterator = list_iterator_create(cr_job_list);
-	while ((tmp_job_pptr = (struct job_record **) list_next(job_iterator))) {
+	while ((tmp_job_pptr = (struct job_record **)list_next(job_iterator))){
 		tmp_job_ptr = *tmp_job_pptr;
 		_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 				   "_will_run_test", 1);
@@ -1885,7 +1894,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		_init_node_cr();
 		if (node_cr_ptr == NULL) {
 			slurm_mutex_unlock(&cr_mutex);
-			error("select_p_job_test: node_cr_ptr not initialized");
+			error("select_p_job_test: node_cr_ptr not "
+			      "initialized");
 			return SLURM_ERROR;
 		}
 	}
@@ -1928,8 +1938,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					      orig_map, bitmap, 
 					      max_run_job, 
 					      max_run_job + sus_jobs);
-			debug3("select/linear: job_test: found %d nodes for %u",
-				j, job_ptr->job_id);
+			debug3("select/linear: job_test: job %u "
+			       "found %d nodes ", job_ptr->job_id, j);
 			if ((j == prev_cnt) || (j < min_nodes))
 				continue;
 			prev_cnt = j;
@@ -1937,7 +1947,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			    && (max_run_job > 0)) {
 				/* We need to share. Try to find 
 				 * suitable job to share nodes with */
-				rc = _find_job_mate(job_ptr, bitmap, min_nodes, 
+				rc = _find_job_mate(job_ptr, bitmap, min_nodes,
 						    max_nodes, req_nodes);
 				if (rc == SLURM_SUCCESS)
 					break;
