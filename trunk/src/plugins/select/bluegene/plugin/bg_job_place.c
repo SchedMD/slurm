@@ -1366,26 +1366,13 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if(conn_type == SELECT_NAV) {
-		uint32_t max_procs = (uint32_t)NO_VAL;
 		if(bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
 			conn_type = SELECT_SMALL;
-		else if(min_nodes > 1) {
+		else if(min_nodes > 1) 
 			conn_type = SELECT_TORUS;
-			/* make sure the max procs are set to NO_VAL */
-			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					     SELECT_JOBDATA_MAX_PROCS,
-					     &max_procs);
-
-		} else {
-			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					     SELECT_JOBDATA_MAX_PROCS,
-					     &max_procs);
-			if((max_procs > bg_conf->procs_per_bp)
-			   || (max_procs == NO_VAL))
-				conn_type = SELECT_TORUS;
-			else
-				conn_type = SELECT_SMALL;
-		}
+		else if(job_ptr->num_procs < bg_conf->procs_per_bp)
+			conn_type = SELECT_SMALL;
+		
 		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 				     SELECT_JOBDATA_CONN_TYPE,
 				     &conn_type);
@@ -1570,26 +1557,14 @@ extern int test_job_list(List req_list)
 		select_g_select_jobinfo_get(will_run->job_ptr->select_jobinfo,
 				     SELECT_JOBDATA_CONN_TYPE, &conn_type);
 		if(conn_type == SELECT_NAV) {
-			uint32_t max_procs = (uint32_t)NO_VAL;
-			if(will_run->min_nodes > 1) {
+			if(bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
+				conn_type = SELECT_SMALL;
+			else if(will_run->min_nodes > 1) 
 				conn_type = SELECT_TORUS;
-				/* make sure the max procs are set to NO_VAL */
-				select_g_select_jobinfo_set(
-					will_run->job_ptr->select_jobinfo,
-					SELECT_JOBDATA_MAX_PROCS,
-					&max_procs);
-				
-			} else {
-				select_g_select_jobinfo_get(
-					will_run->job_ptr->select_jobinfo,
-					SELECT_JOBDATA_MAX_PROCS,
-					&max_procs);
-				if((max_procs > bg_conf->procs_per_bp)
-				   || (max_procs == NO_VAL))
-					conn_type = SELECT_TORUS;
-				else
+			else if(will_run->job_ptr->num_procs 
+				  < bg_conf->procs_per_bp)
 					conn_type = SELECT_SMALL;
-			}
+			
 			select_g_select_jobinfo_set(
 				will_run->job_ptr->select_jobinfo,
 				SELECT_JOBDATA_CONN_TYPE,

@@ -2426,7 +2426,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	       job_desc->num_procs);
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
 	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-			     SELECT_JOBDATA_MAX_PROCS, &max_procs);
+				    SELECT_JOBDATA_MAX_PROCS, &max_procs);
 	debug3("after alteration asking for nodes %u-%u procs %u-%u", 
 	       job_desc->min_nodes, job_desc->max_nodes,
 	       job_desc->num_procs, max_procs);

@@ -3212,6 +3212,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		      nodelist);
 		return NULL;
 	}
+/* 	info("got %s and %s", nodelist, name); */
 	hl = hostlist_create(name);
 	free(name);
 }
