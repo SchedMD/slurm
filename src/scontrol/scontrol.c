@@ -949,6 +949,22 @@ _delete_it (int argc, char *argv[])
 			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
 			slurm_perror(errmsg);
 		}
+	} else if (strncasecmp (tag, "BlockName", MAX(taglen, 1)) == 0) {
+#ifdef HAVE_BG
+		update_block_msg_t   block_msg;
+		slurm_init_update_block_msg ( &block_msg );
+
+		block_msg.bg_block_id = val;
+		block_msg.state = RM_PARTITION_NAV;
+		if (slurm_update_block(&block_msg)) {
+			char errmsg[64];
+			snprintf(errmsg, 64, "delete_block %s", argv[0]);
+			slurm_perror(errmsg);
+		}
+#else
+		exit_code = 1;
+		fprintf(stderr, "This only works on a bluegene system.\n");
+#endif
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "Invalid deletion entity: %s\n", argv[0]);
@@ -1163,12 +1179,15 @@ _update_bluegene_block (int argc, char *argv[])
 				block_msg.state = RM_PARTITION_ERROR;
 			else if (strncasecmp(val, "FREE", MAX(vallen, 1)) == 0)
 				block_msg.state = RM_PARTITION_FREE;
+			else if (strncasecmp(val, "REMOVE",
+					     MAX(vallen, 1)) == 0)
+				block_msg.state = RM_PARTITION_NAV;
 			else {
 				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
 				fprintf (stderr, "Acceptable State values "
-					"are FREE and ERROR\n");
+					"are FREE, ERROR, REMOVE\n");
 				return 0;
 			}
 			update_cnt++;
@@ -1195,7 +1214,8 @@ _update_bluegene_block (int argc, char *argv[])
 	} else
 		return 0;
 #else
-	printf("This only works on a bluegene system.\n");
+	exit_code = 1;
+	fprintf(stderr, "This only works on a bluegene system.\n");
 	return 0;
 #endif
 }
@@ -1272,7 +1292,8 @@ _update_bluegene_subbp (int argc, char *argv[])
 	} else
 		return 0;
 #else
-	printf("This only works on a bluegene system.\n");
+	exit_code = 1;
+	fprintf(stderr, "This only works on a bluegene system.\n");
 	return 0;
 #endif
 }
@@ -1309,6 +1330,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      details                  evokes additional details from the \"show\"  \n\
                               command                                      \n\
      delete <SPECIFICATIONS>  delete the specified partition or reservation\n\
+                              On Dynamic layout Bluegene systems you can also\n\
+                              delete blocks.                               \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
      hide                     do not display information about hidden      \n\
@@ -1368,7 +1391,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   <SPECIFICATIONS> are specified in the same format as the configuration   \n\
   file. You may wish to use the \"show\" keyword then use its output as    \n\
   input for the update keyword, editing as needed.  Bluegene blocks/subbps \n\
-  are only able to be set to an error or free state.                       \n\
+  are only able to be set to an error or free state.  You can also remove  \n\
+  blocks by specifying 'remove' as the state.  The remove option is only   \n\
+  valid on Dynamic layout systems.                                         \n\
   (Bluegene systems only)                                                  \n\
                                                                            \n\
   <CH_OP> identify checkpoint operations and may be \"able\", \"disable\", \n\

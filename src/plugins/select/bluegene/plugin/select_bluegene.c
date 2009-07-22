@@ -698,27 +698,39 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 
 	if(!block_desc_ptr->bg_block_id) {
 		error("update_block: No name specified");
-		return SLURM_ERROR;
+		return ESLURM_INVALID_BLOCK_NAME;
 	}
-
 
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main,
 					   block_desc_ptr->bg_block_id);
 	if(!bg_record) {
 		slurm_mutex_unlock(&block_state_mutex);
-		return SLURM_ERROR;
+		return ESLURM_INVALID_BLOCK_NAME;
 	}
 
 	now = time(NULL);
 	slurm_make_time_str(&now, time_str, sizeof(time_str));
 	snprintf(tmp, sizeof(tmp), "[SLURM@%s]", time_str);
-	snprintf(reason, sizeof(reason),
-		 "update_block: "
-		 "Admin set block %s state to %s %s",
-		 bg_record->bg_block_id, 
-		 bg_block_state_string(block_desc_ptr->state), tmp); 
-	
+	if(block_desc_ptr->state == RM_PARTITION_NAV) {
+		if(bg_record->conn_type < SELECT_SMALL)
+			snprintf(reason, sizeof(reason),
+				 "update_block: "
+				 "Admin removing block %s %s",
+				 bg_record->bg_block_id, tmp); 
+		else
+			snprintf(reason, sizeof(reason),
+				 "update_block: "
+				 "Removing all blocks on midplane %s %s",
+				 bg_record->nodes, tmp); 
+			
+	} else {
+		snprintf(reason, sizeof(reason),
+			 "update_block: "
+			 "Admin set block %s state to %s %s",
+			 bg_record->bg_block_id, 
+			 bg_block_state_string(block_desc_ptr->state), tmp); 
+	}
 	/* First fail any job running on this block */
 	if(bg_record->job_running > NO_JOB_RUNNING) {
 		slurm_fail_job(bg_record->job_running);	
@@ -785,11 +797,70 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 	} else if(block_desc_ptr->state == RM_PARTITION_FREE) {
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
+	} else if (bg_conf->layout_mode == LAYOUT_DYNAMIC
+		   && (block_desc_ptr->state == RM_PARTITION_NAV)) {
+		/* This means remove the block from the system.  If
+		   the block is a small block we need to remove all the
+		   blocks on that midplane.
+		*/
+		bg_record_t *found_record = NULL;
+		ListIterator itr;
+		List delete_list = list_create(NULL);
+
+		list_push(delete_list, bg_record);
+		/* only do the while loop if we are dealing with a
+		   small block */
+		if(bg_record->conn_type < SELECT_SMALL)
+			goto large_block;
+
+		itr = list_iterator_create(bg_lists->main);
+		while ((found_record = list_next(itr))) {
+			if (bg_record == found_record)
+				continue;
+			
+			if(!bit_equal(bg_record->bitmap,
+				      found_record->bitmap)) {
+				debug2("block %s isn't part of to be freed %s",
+				       found_record->bg_block_id, 
+				       bg_record->bg_block_id);
+				continue;
+			}
+			if(found_record->job_running > NO_JOB_RUNNING) {
+				info("Failing job %u block %s "
+				     "failed because overlapping block %s "
+				     "is in an error state.", 
+				     found_record->job_running, 
+				     found_record->bg_block_id,
+				     bg_record->bg_block_id);
+				/* We need to fail this job first to
+				   get the correct result even though
+				   we are freeing the block later */
+				slurm_fail_job(found_record->job_running);
+				/* need to set the job_ptr to NULL
+				   here or we will get error message
+				   about us trying to free this block
+				   with a job in it.
+				*/
+				found_record->job_ptr = NULL;
+			} else {
+				debug2("block %s is part of to be freed %s "
+				       "but no running job",
+				       found_record->bg_block_id, 
+				       bg_record->bg_block_id);	
+			}
+			list_push(delete_list, found_record);
+		}		
+		list_iterator_destroy(itr);
+
+	large_block:
+		free_block_list(delete_list);
+		list_destroy(delete_list);		
+		slurm_mutex_unlock(&block_state_mutex);
 	} else {
 		slurm_mutex_unlock(&block_state_mutex);
 		error("state is ? %s",
 		      bg_block_state_string(block_desc_ptr->state));
-		return rc;
+		return ESLURM_INVALID_NODE_STATE;
 	}
 				
 	info("%s", reason);
@@ -812,7 +883,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	if(bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		info("You can't use this call unless you are on a Dynamically "
 		     "allocated system.  Please use update BlockName instead");
-		rc = SLURM_ERROR;
+		rc = ESLURM_INVALID_BLOCK_LAYOUT;
 		goto end_it;
 	}
 
@@ -820,7 +891,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	memset(ionodes, 0, 128);
 	if(!block_desc_ptr->nodes) {
 		error("update_sub_node: No name specified");
-		rc = SLURM_ERROR;
+		rc = ESLURM_INVALID_BLOCK_NAME;
 		goto end_it;
 	}
 	name = block_desc_ptr->nodes;
@@ -917,14 +988,14 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 			}
 			nc_pos += bg_conf->nc_ratio;
 		}
-	} else if(block_desc_ptr->state == RM_PARTITION_FREE){
+	} else if(block_desc_ptr->state == RM_PARTITION_FREE) {
 		info("Admin setting %s[%s] in an free state",
 		     node_name, ionodes);
 		up_nodecard(node_name, ionode_bitmap);
 	} else {
 		error("update_sub_node: Unknown state %s", 
 		      bg_block_state_string(block_desc_ptr->state));
-		rc = SLURM_ERROR;
+		rc = ESLURM_INVALID_BLOCK_STATE;
 	}
 	
 	FREE_NULL_BITMAP(ionode_bitmap);

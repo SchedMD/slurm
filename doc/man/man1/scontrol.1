@@ -118,8 +118,9 @@ COMPLETING or DOWN state.
 .TP
 \fBdelete\fP \fISPECIFICATION\fP
 Delete the entry with the specified \fISPECIFICATION\fP.
-The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP
-and \fIReservation=<name>\fP
+The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP and
+\fIReservation=<name>\fP.  On Dynamically laid out Bluegene systems
+\fIBlockName=<name>\fP also works.
 
 .TP
 \fBdetail\fP
@@ -701,11 +702,13 @@ Bluegene systems only!
 \fIBlockName\fP=<name>
 Identify the bluegene block to be updated. This specification is required.
 .TP
-\fIState\fP=<free|error>
+\fIState\fP=<free|error|remove>
 This will update the state of a bluegene block to either FREE or ERROR. 
 (i.e. update BlockName=RMP0 STATE=ERROR) State error will not allow jobs
 to run on the block. \fBWARNING!!!!\fR This will cancel any
-running job on the block!
+running job on the block!  On dynamically laid out systems REMOVE will
+free and remove the block from the system.  If the block is smaller
+than a midplane every block on that midplane will be removed.
 .TP
 \fISubBPName\fP=<name>
 Identify the bluegene ionodes to be updated (i.e. bg000[0\-3]). This

@@ -246,6 +246,12 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "SlurmctldProlog is still running"			},
 	{ ESLURM_NO_STEPS,
 	  "Job steps can not be run on this cluster"		},
+	{ ESLURM_INVALID_BLOCK_STATE, 
+	  "Invalid block state specified"			},
+	{ ESLURM_INVALID_BLOCK_LAYOUT, 
+	  "Functionality not available with current block layout mode"},
+	{ ESLURM_INVALID_BLOCK_NAME, 
+	  "Invalid block name specified"			},
 
 	/* slurmd error codes */
 

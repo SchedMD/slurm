@@ -299,7 +299,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_UPDATE_BLOCK:
 		_slurm_rpc_update_block(msg);
-		node_select_block_info_msg_free(msg->data);
+		node_select_free_block_info(msg->data);
 		break;
 	case REQUEST_RESERVATION_INFO:
 		_slurm_rpc_resv_show(msg);
