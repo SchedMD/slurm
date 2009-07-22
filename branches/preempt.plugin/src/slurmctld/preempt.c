@@ -70,10 +70,10 @@ static pthread_mutex_t	    g_preempt_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /* ************************************************************************ */
-/*  TAG(                    slurm_preempt_get_ops                        )  */
+/*  TAG(                    _slurm_preempt_get_ops                       )  */
 /* ************************************************************************ */
 static slurm_preempt_ops_t *
-		slurm_preempt_get_ops( slurm_preempt_context_t *c )
+		_slurm_preempt_get_ops( slurm_preempt_context_t *c )
 {
 	/*
 	 * Must be synchronized with slurm_preempt_ops_t above.
@@ -129,10 +129,10 @@ static slurm_preempt_ops_t *
 
 
 /* ************************************************************************ */
-/*  TAG(               slurm_preempt_context_create                      )  */
+/*  TAG(               _slurm_preempt_context_create                     )  */
 /* ************************************************************************ */
 static slurm_preempt_context_t *
-		slurm_preempt_context_create( const char *preempt_type )
+		_slurm_preempt_context_create( const char *preempt_type )
 {
 	slurm_preempt_context_t *c;
 
@@ -152,9 +152,9 @@ static slurm_preempt_context_t *
 
 
 /* ************************************************************************ */
-/*  TAG(               slurm_preempt_context_destroy                     )  */
+/*  TAG(               _slurm_preempt_context_destroy                    )  */
 /* ************************************************************************ */
-static int slurm_preempt_context_destroy( slurm_preempt_context_t *c )
+static int _slurm_preempt_context_destroy( slurm_preempt_context_t *c )
 {
 	/*
 	 * Must check return code here because plugins might still
@@ -189,7 +189,7 @@ extern int slurm_preempt_init(void)
 		goto done;
 
 	preempt_type = slurm_get_preempt_type();
-	g_preempt_context = slurm_preempt_context_create( preempt_type );
+	g_preempt_context = _slurm_preempt_context_create( preempt_type );
 	if ( g_preempt_context == NULL ) {
 		error( "cannot create preempt context for %s",
 			 preempt_type );
@@ -197,9 +197,9 @@ extern int slurm_preempt_init(void)
 		goto done;
 	}
 
-	if ( slurm_preempt_get_ops( g_preempt_context ) == NULL ) {
+	if ( _slurm_preempt_get_ops( g_preempt_context ) == NULL ) {
 		error( "cannot resolve preempt plugin operations" );
-		slurm_preempt_context_destroy( g_preempt_context );
+		_slurm_preempt_context_destroy( g_preempt_context );
 		g_preempt_context = NULL;
 		retval = SLURM_ERROR;
 	}
@@ -220,7 +220,7 @@ extern int slurm_preempt_fini(void)
 	if (!g_preempt_context)
 		return SLURM_SUCCESS;
 
-	rc = slurm_preempt_context_destroy(g_preempt_context);
+	rc = _slurm_preempt_context_destroy(g_preempt_context);
 	g_preempt_context = NULL;
 	return rc;
 }

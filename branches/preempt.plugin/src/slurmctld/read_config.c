@@ -77,6 +77,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/port_mgr.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
@@ -760,6 +761,7 @@ int read_slurm_conf(int recover)
 	uint16_t old_preempt_mode = slurmctld_conf.preempt_mode;
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
 	char *old_crypto_type     = xstrdup(slurmctld_conf.crypto_type);
+	char *old_preempt_type    = xstrdup(slurmctld_conf.preempt_type);
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
 	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
@@ -896,6 +898,14 @@ int read_slurm_conf(int recover)
 			       old_select_type, old_switch_type);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
+	if (strcmp(old_preempt_type, slurmctld_conf.preempt_type)) {
+		info("Changing PreemptType from %s to %s",
+		     old_preempt_type, slurmctld_conf.preempt_type);
+		(void) slurm_preempt_fini();
+		if (slurm_preempt_init() != SLURM_SUCCESS)
+			fatal( "failed to initialize preempt plugin" );
+	}
+	xfree(old_preempt_type);
 	rc = _update_preempt(old_preempt_mode);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
