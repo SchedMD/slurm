@@ -154,7 +154,10 @@ int main(int argc, char *argv[])
 
 	itr = list_iterator_create(block_list);
 	while((block_name = list_next(itr))) {
-		msg.state = RM_PARTITION_FREE;
+		if(remove_blocks)
+			msg.state = RM_PARTITION_NAV;
+		else
+			msg.state = RM_PARTITION_FREE;
 		msg.bg_block_id = block_name;
 		rc = slurm_update_block(&msg);
 		if(rc != SLURM_SUCCESS)
