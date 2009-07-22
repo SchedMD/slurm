@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - blocks in error state are now handled correctly in accounting.
  -- Modify squeue to print job step information about a specific job ID using
     the following syntax: "squeue -j <job_id> -s".
+ -- BLUEGENE - scontrol delete block and update block can now remove blocks 
+    on dynamic laid out systems.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
