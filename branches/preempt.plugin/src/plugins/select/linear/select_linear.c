@@ -1722,6 +1722,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bit_free(orig_map);
 	return rc;
 }
+
+/* preempt a job using the proper mechanism (suspend, requeue, etc.) */
 static void _preempt_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
@@ -1772,6 +1774,38 @@ static void _preempt_job(struct job_record *job_ptr)
 			     job_ptr->job_id, slurm_strerror(rc));
 		}
 	}
+}
+/* resume all jobs preempted by the identified job */
+static void _resume_jobs(struct job_record *job_ptr)
+{
+	struct job_record *j_ptr;
+	ListIterator job_iterator;
+	suspend_msg_t msg;
+
+	if (job_ptr->preemptor_flag == 0)
+		return;
+	if (slurm_get_preempt_mode() != PREEMPT_MODE_SUSPEND)
+		return;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((j_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (j_ptr->preemptor_job_id != job_ptr->job_id)
+			continue;
+		if (job_ptr->preemptor_job_id) {
+			/* Preemptor was preempted then terminated
+			 * move preemptor_job_id down to it's children */
+			j_ptr->preemptor_job_id = job_ptr->preemptor_job_id;
+			continue;
+		}
+		j_ptr->preemptor_job_id = 0;
+		if (!IS_JOB_SUSPENDED(j_ptr))
+			continue;	/* previously restarted manually */
+		debug("resuming preempted job %u", j_ptr->job_id);
+		msg.job_id = j_ptr->job_id;
+		msg.op = RESUME_JOB;
+		(void) job_suspend(&msg, 0, -1, false);
+	}
+	list_iterator_destroy(job_iterator);
 }
 
 static void _cr_job_list_del(void *x)
@@ -1967,10 +2001,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			j = _job_count_bitmap(node_cr_ptr, job_ptr, 
 					      orig_map, bitmap, 
 					      max_run_job, tot_jobs);
-			debug3("select/linear: job_test: job %u "
-			       "found %d nodes ", job_ptr->job_id, j);
 			if ((j == prev_cnt) || (j < min_nodes))
 				continue;
+			debug3("select/linear: job_test: job %u "
+			       "found %d nodes ", job_ptr->job_id, j);
 			prev_cnt = j;
 			if ((mode == SELECT_MODE_RUN_NOW) &&
 			    (max_run_job > 0)) {
@@ -1996,10 +2030,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	    (preempt_jobs = slurm_find_preemptable_jobs(job_ptr))) {
 		struct node_cr_record *exp_node_cr;
 		bool kill_jobs = _job_preemption_killing();
+		debug3("attempt preempt for job %u", job_ptr->job_id);
 		exp_node_cr = _dup_node_cr(node_cr_ptr);
 		for (i=0; exp_node_cr && preempt_jobs[i]; i++) {
 			_rm_job_from_nodes(exp_node_cr, preempt_jobs[i],
 					   "_will_run_test", kill_jobs);
+			debug3("try preempt job %u", preempt_jobs[i]->job_id);
 			j = _job_count_bitmap(exp_node_cr, job_ptr, 
 					      orig_map, bitmap,
 					      (max_share-1), NO_SHARE_LIMIT);
@@ -2123,6 +2159,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 		_init_node_cr();
 	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_fini", true);
 	slurm_mutex_unlock(&cr_mutex);
+	_resume_jobs(job_ptr);
 	return rc;
 }
 
@@ -2211,7 +2248,7 @@ extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 	static time_t last_set_all = 0;
 
 	/* only set this once when the last_node_update is newer than
-	   the last time we set things up. */
+	 * the last time we set things up. */
 	if(last_set_all && (last_node_update < last_set_all)) {
 		debug2("Node select info for set all hasn't "
 		       "changed since %d", 
