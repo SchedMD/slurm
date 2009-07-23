@@ -1348,12 +1348,20 @@ extern int allocate_block(ba_request_t* ba_request, List results)
 extern int remove_block(List nodes, int new_count)
 {
 	int dim;
+	ba_node_t* curr_ba_node = NULL;
 	ba_node_t* ba_node = NULL;
 	ba_switch_t *curr_switch = NULL; 
 	ListIterator itr;
 	
 	itr = list_iterator_create(nodes);
-	while((ba_node = (ba_node_t*) list_next(itr)) != NULL) {
+	while((curr_ba_node = (ba_node_t*) list_next(itr))) {
+		/* since the list that comes in might not be pointers
+		   to the main list we need to point to that main list */
+		ba_node = &ba_system_ptr->
+			grid[curr_ba_node->coord[X]]
+			[curr_ba_node->coord[Y]]
+			[curr_ba_node->coord[Z]];
+
 		ba_node->used = false;
 		ba_node->color = 7;
 		ba_node->letter = '.';
@@ -1365,7 +1373,8 @@ extern int remove_block(List nodes, int new_count)
 		}
 	}
 	list_iterator_destroy(itr);
-	if(new_count == -1)
+	if(new_count == NO_VAL) {
+	} else if(new_count == -1)
 		color_count--;
 	else
 		color_count=new_count;			
@@ -1570,6 +1579,7 @@ extern char *set_bg_block(List results, int *start,
 		      alpha_num[geometry[Z]]);		      
 		return NULL;
 	}
+	//info("looking at %d%d%d", geometry[X], geometry[Y], geometry[Z]);
 
 	size = geometry[X] * geometry[Y] * geometry[Z];
 	ba_node = &ba_system_ptr->grid[start[X]][start[Y]][start[Z]];
@@ -3602,6 +3612,7 @@ static int _find_match(ba_request_t *ba_request, List results)
 	ba_node_t *ba_node = NULL;
 	char *name=NULL;
 	int startx = (start[X]-1);
+	int *geo_ptr;
 	
 	if(startx == -1)
 		startx = DIM_SIZE[X]-1;
@@ -3619,6 +3630,15 @@ static int _find_match(ba_request_t *ba_request, List results)
 	}
 	x=0;
 	
+	/* set up the geo here */
+	if(!(geo_ptr = list_peek(ba_request->elongate_geos)))
+		return 0;
+	ba_request->rotate_count=0;
+	ba_request->elongate_count=1;
+	ba_request->geometry[X] = geo_ptr[X];
+	ba_request->geometry[Y] = geo_ptr[Y];
+	ba_request->geometry[Z] = geo_ptr[Z];
+
 	if(ba_request->geometry[X]>DIM_SIZE[X] 
 #ifdef HAVE_3D
 	   || ba_request->geometry[Y]>DIM_SIZE[Y]
