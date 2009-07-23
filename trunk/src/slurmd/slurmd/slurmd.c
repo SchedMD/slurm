@@ -894,6 +894,10 @@ _init_conf(void)
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
 
 	slurm_mutex_init(&conf->config_mutex);
+
+	conf->starting_steps = list_create(NULL);
+	slurm_mutex_init(&conf->starting_steps_lock);
+	pthread_cond_init(&conf->starting_steps_cond, NULL);
 	return;
 }
 
@@ -919,6 +923,9 @@ _destroy_conf(void)
 		xfree(conf->stepd_loc);
 		xfree(conf->tmpfs);
 		slurm_mutex_destroy(&conf->config_mutex);
+		list_destroy(conf->starting_steps);
+		slurm_mutex_destroy(&conf->starting_steps_lock);
+		pthread_cond_destroy(&conf->starting_steps_cond);
 		slurm_cred_ctx_destroy(conf->vctx);
 		xfree(conf);
 	}
