@@ -191,7 +191,11 @@ extern int block_ready(struct job_record *job_ptr)
 			else
 				rc = READY_JOB_ERROR;	/* try again */
 		} else {
-			error("block_ready: block %s not in bg_lists->main.",
+			/* This means the block has been removed and
+			   is no longer valid.  This could happen
+			   often during an epilog on a busy system.
+			*/
+			debug2("block_ready: block %s not in bg_lists->main.",
 			      block_id);
 			rc = READY_JOB_FATAL;	/* fatal error */
 		}

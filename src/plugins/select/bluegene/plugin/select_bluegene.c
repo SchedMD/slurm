@@ -1123,6 +1123,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	
 		if(job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
+
 		get_select_jobinfo(job_desc->select_jobinfo,
 				     SELECT_JOBDATA_GEOMETRY, &req_geometry);
 
@@ -1135,7 +1136,14 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes *= bg_conf->bp_node_cnt;
 			job_desc->max_nodes = job_desc->min_nodes;
 		}
-		
+
+		/* make sure if the user only specified num_procs to
+		   set min_nodes correctly
+		*/
+		if(job_desc->num_procs > job_desc->min_nodes)
+			job_desc->min_nodes = 
+				job_desc->num_procs / bg_conf->proc_ratio;
+
 		/* initialize num_procs to the min_nodes */
 		job_desc->num_procs = job_desc->min_nodes * bg_conf->proc_ratio;
 
