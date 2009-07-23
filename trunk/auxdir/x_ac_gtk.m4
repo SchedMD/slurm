@@ -86,6 +86,11 @@ AC_DEFUN([X_AC_GTK],
             AC_MSG_RESULT([GTK test program built properly.])
             AC_SUBST(GTK2_CFLAGS)
             AC_SUBST(GTK2_LIBS)
+	    min_gtk_version="2.12.0"
+	    $HAVEPKGCONFIG --atleast-version=$min_gtk_version gtk+-2.0
+	    if ! test $? -eq 1 ; then
+		    AC_DEFINE(GTK2_USE_TOOLTIP, 1, [Define to 1 if using gtk+-2.0 version 2.12.0 or higher])
+	    fi
         else
             AC_MSG_WARN([*** GTK test program execution failed.])
         fi

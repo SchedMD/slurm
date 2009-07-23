@@ -234,7 +234,9 @@ typedef struct {
 	GtkTable *table;
 	int table_x;
 	int table_y;
+#ifndef GTK2_USE_TOOLTIP
 	GtkTooltips *tip;
+#endif
 	bool used;
 } grid_button_t;
 

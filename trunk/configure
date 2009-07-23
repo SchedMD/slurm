@@ -21869,6 +21869,15 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 $as_echo "GTK test program built properly." >&6; }
 
 
+	    min_gtk_version="2.12.0"
+	    $HAVEPKGCONFIG --atleast-version=$min_gtk_version gtk+-2.0
+	    if ! test $? -eq 1 ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define GTK2_USE_TOOLTIP 1
+_ACEOF
+
+	    fi
         else
             { $as_echo "$as_me:$LINENO: WARNING: *** GTK test program execution failed." >&5
 $as_echo "$as_me: WARNING: *** GTK test program execution failed." >&2;}
