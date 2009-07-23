@@ -28,6 +28,9 @@ documents those changes that are of interest to users and admins.
     on dynamic laid out systems.
  -- BLUEGENE - Vastly improve Dynamic layout mode algorithm.
  -- Address some issues for SLURM support of Solaris.
+ -- Applied patch from Doug Parisek (Doug.Parisek@bull.com) for speeding up 
+    start of sview by delaying to creation of tooltips until requested.
+ -- Changed GtkToolTips to GtkToolTip for newer versions of GTK.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
