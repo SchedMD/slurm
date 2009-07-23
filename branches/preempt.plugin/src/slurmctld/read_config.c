@@ -923,6 +923,9 @@ int read_slurm_conf(int recover)
 	basil_query();
 #endif
 
+	/* Sync select plugin with synchronized job/node/part data */
+	select_g_reconfigure();
+
 	slurmctld_conf.last_update = time(NULL);
 	END_TIMER2("read_slurm_conf");
 	return error_code;

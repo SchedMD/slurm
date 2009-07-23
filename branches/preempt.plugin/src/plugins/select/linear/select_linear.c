@@ -1808,6 +1808,36 @@ static void _resume_jobs(struct job_record *job_ptr)
 	list_iterator_destroy(job_iterator);
 }
 
+/* Resume suspended jobs when the preemptor goes away */
+static void _sync_preempted_jobs(void)
+{
+	struct job_record *job_ptr;
+	struct job_record *j_ptr;
+	ListIterator job_iterator;
+
+	if (slurm_get_preempt_mode() != PREEMPT_MODE_SUSPEND)
+		return;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((j_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (j_ptr->preemptor_job_id == 0)
+			continue;
+		job_ptr = find_job_record(j_ptr->preemptor_job_id);
+		if (job_ptr && 
+		    (IS_JOB_RUNNING(job_ptr) || job_ptr->preemptor_job_id))
+			continue;
+		/* Preemptor is completed */
+		j_ptr->preemptor_job_id = 0;
+		if (!IS_JOB_SUSPENDED(j_ptr))
+			continue;	/* previously restarted manually */
+		debug("resuming preempted job %u", j_ptr->job_id);
+		msg.job_id = j_ptr->job_id;
+		msg.op = RESUME_JOB;
+		(void) job_suspend(&msg, 0, -1, false);
+	}
+	list_iterator_destroy(job_iterator);
+}
+
 static void _cr_job_list_del(void *x)
 {
 	xfree(x);
@@ -2333,7 +2363,8 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 }
 
 extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
-				 enum select_jobdata_type data_type, void *data)
+					enum select_jobdata_type data_type, 
+					void *data)
 {
 	return SLURM_SUCCESS;
 }
@@ -2420,6 +2451,8 @@ extern int select_p_reconfigure(void)
 	step_cr_list = NULL;
 	_init_node_cr();
 	slurm_mutex_unlock(&cr_mutex);
+
+	_sync_preempted_jobs();
 
 	return SLURM_SUCCESS;
 }
