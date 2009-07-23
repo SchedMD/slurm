@@ -65,7 +65,7 @@
 #include <string.h>
 #include <syslog.h>
 
-#ifdef HAVE_AIX
+#if defined(HAVE_AIX) || defined(__sun)
 #  include <sys/times.h>
 #  include <sys/types.h>
 #else
@@ -403,7 +403,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 
 extern int get_up_time(uint32_t *up_time)
 {
-#ifdef HAVE_AIX
+#if defined(HAVE_AIX) || defined(__sun)
 	clock_t tm;
 	struct tms buf;
 
