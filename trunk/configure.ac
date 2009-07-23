@@ -49,7 +49,9 @@ dnl
 dnl add some flags for Solaris
 dnl
 case "$host" in
-	*solaris*) CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS -I/usr/sfw/include"
+	*solaris*) CC="/usr/sfw/bin/gcc"
+		   CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS -I/usr/sfw/include"
+		   LDFLAGS="$LDFLAGS -L/usr/sfw/lib"
 esac
 
 dnl Checks for programs.

@@ -92,6 +92,20 @@ Requires: slurm-plugins
 BuildRequires: python
 %endif
 
+$ifos solaris
+Requires:	SUNWgnome-base-libs
+BuildRequires:	SUNWgnome-base-libs
+
+Requires:	SUNWopenssl
+BuildRequires:	SUNWopenssl
+
+BuildRequires:	SUNWaconf
+BuildRequires:	SUNWgnu-automake-110
+BuildRequires:	SUNWlibtool
+BuildRequires:	SUNWgcc
+BuildRequires:	SUNWgnome-common-devel
+%endif
+
 %if %{?chaos}0
 BuildRequires: gtk2-devel >= 2.7.1
 BuildRequires: ncurses-devel
