@@ -1359,8 +1359,11 @@ extern int remove_block(List nodes, int new_count)
 		   to the main list we need to point to that main list */
 		ba_node = &ba_system_ptr->
 			grid[curr_ba_node->coord[X]]
+#ifdef HAVE_BG
 			[curr_ba_node->coord[Y]]
-			[curr_ba_node->coord[Z]];
+			[curr_ba_node->coord[Z]]
+#endif
+			;
 
 		ba_node->used = false;
 		ba_node->color = 7;
