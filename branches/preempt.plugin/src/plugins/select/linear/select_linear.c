@@ -553,7 +553,6 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 		}
 
 		if ((run_job_cnt != NO_SHARE_LIMIT) &&
-		    (!_job_preemption_enabled()) &&
 		    (node_cr_ptr[i].exclusive_jobid != 0)) {
 			/* already reserved by some exclusive job */
 			bit_clear(jobmap, i);
@@ -1256,8 +1255,10 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			error("%s: memory underflow for node %s",
 				pre_err, node_record_table_ptr[i].name);
 		}
-		if (node_cr_ptr[i].exclusive_jobid == job_ptr->job_id)
+		if (remove_all &&
+		    (node_cr_ptr[i].exclusive_jobid == job_ptr->job_id))
 			node_cr_ptr[i].exclusive_jobid = 0;
+
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
 			if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
