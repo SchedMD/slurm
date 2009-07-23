@@ -51,8 +51,8 @@ struct part_cr_record {
 	struct part_record *part_ptr;	/* pointer to partition in slurmctld */
 	uint16_t run_job_cnt;		/* number of running jobs on this node
 					 * for this partition */
-	uint16_t tot_job_cnt;		/* number of jobs allocated to this node
-					 * for this partition */
+	uint16_t tot_job_cnt;		/* number of jobs allocated to this 
+					 * node for this partition */
 	struct part_cr_record *next;	/* ptr to next part_cr_record */
 };
 

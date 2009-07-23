@@ -1523,9 +1523,9 @@ static void _init_node_cr(void)
 
 		job_memory_cpu  = 0;
 		job_memory_node = 0;
-		if (job_ptr->details && 
-		    job_ptr->details->job_min_memory 
-		    && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details			&& 
+		    job_ptr->details->job_min_memory	&&
+		    (cr_type == CR_MEMORY)) {
 			if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
 				job_memory_cpu = job_ptr->details->
 						 job_min_memory &
@@ -1656,11 +1656,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			job_ptr->start_time = now + 1;
 			break;
 		}
-		if (rc == SLURM_SUCCESS) {
-			xfree(preempt_jobs);
-			_free_node_cr(exp_node_cr);
-			return rc;
-		}
+		if (rc == SLURM_SUCCESS)
+			goto FINI;
 	}
 
 	/* Build list of running jobs */
@@ -1693,7 +1690,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	list_iterator_destroy(job_iterator);
 	list_sort(cr_job_list, _cr_job_list_sort);
-	xfree(preempt_jobs);
 
 	/* Remove the running jobs one at a time from exp_node_cr and try
 	 * scheduling the pending job after each one */
@@ -1718,6 +1714,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	list_iterator_destroy(job_iterator);
 	list_destroy(cr_job_list);
+
+FINI:	xfree(preempt_jobs);
 	_free_node_cr(exp_node_cr);
 	bit_free(orig_map);
 	return rc;
@@ -1800,7 +1798,7 @@ static void _resume_jobs(struct job_record *job_ptr)
 		j_ptr->preemptor_job_id = 0;
 		if (!IS_JOB_SUSPENDED(j_ptr))
 			continue;	/* previously restarted manually */
-		debug("resuming preempted job %u", j_ptr->job_id);
+		info("resuming preempted job %u", j_ptr->job_id);
 		msg.job_id = j_ptr->job_id;
 		msg.op = RESUME_JOB;
 		(void) job_suspend(&msg, 0, -1, false);
@@ -1814,6 +1812,7 @@ static void _sync_preempted_jobs(void)
 	struct job_record *job_ptr;
 	struct job_record *j_ptr;
 	ListIterator job_iterator;
+	suspend_msg_t msg;
 
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_SUSPEND)
 		return;
