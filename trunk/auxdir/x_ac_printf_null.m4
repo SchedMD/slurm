@@ -25,6 +25,11 @@
 #     workaround isn't always easy to apply (or it is too late data has been
 #     lost or corrupted by that point)."
 #
+#    In the case of SLURM, setting LD_PRELOAD to the appropriate value before
+#    building the code or running any applications will fix the problem. We
+#    expect to release a version of SLURM supporting OpenSolaris about the same
+#    as a version of OpenSolaris with this problem fixed is released, so the 
+#    use of LD_PRELOAD will be temporary.
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_PRINTF_NULL], [
@@ -32,12 +37,23 @@ AC_DEFUN([X_AC_PRINTF_NULL], [
   AC_TRY_RUN([
 	#include <stdio.h>
 	#include <stdlib.h>
-	int main() { printf("%s", NULL); exit(0); } ],
+	int main() { char tmp[8]; snprintf(tmp,8,"%s",NULL); exit(0); } ],
     printf_null_ok=yes,
     printf_null_ok=no)
 
-  if test "$printf_null_ok" == "no"; then
-    AC_MSG_ERROR([printf("%s", NULL) results in abort. If using OpenSolaris, upgrade to release 119 or set LD_PRELOAD=/usr/lib/0@0.so.1.])
+  case "$host" in
+	*solaris*) have_solaris=yes ;;
+	*) have_solaris=no ;;
+  esac
+
+  if test   "$printf_null_ok" == "no" -a "$have_solaris" == "yes" -a -d /usr/lib64/0@0.so.1; then
+    AC_MSG_ERROR([printf("%s", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib64/0@0.so.1])
+  elif test "$printf_null_ok" == "no" -a "$have_solaris" == "yes" -a -d /usr/lib/0@0.so.1; then
+    AC_MSG_ERROR([printf("%s", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib/0@0.so.1])
+  elif test "$printf_null_ok" == "no" -a "$have_solaris" == "yes"; then
+    AC_MSG_ERROR([printf("%s", NULL) results in abort, upgrade to OpenSolaris release 119])
+  elif test "$printf_null_ok" == "no"; then
+    AC_MSG_ERROR([printf("%s", NULL) results in abort])
   fi
 ])
 

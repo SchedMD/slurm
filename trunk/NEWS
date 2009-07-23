@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - scontrol delete block and update block can now remove blocks 
     on dynamic laid out systems.
  -- BLUEGENE - Vastly improve Dynamic layout mode algorithm.
+ -- Address some issues for SLURM support of Solaris.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
