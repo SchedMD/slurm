@@ -130,6 +130,11 @@ typedef struct slurmd_config {
 	uint16_t	task_plugin_param; /* TaskPluginParams, expressed
 					 * using cpu_bind_type_t flags */
 	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */
+
+	List		starting_steps; /* steps that are starting but cannot 
+					   receive RPCs yet */
+	pthread_mutex_t	starting_steps_lock;
+	pthread_cond_t	starting_steps_cond;
 } slurmd_conf_t;
 
 extern slurmd_conf_t * conf;
