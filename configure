@@ -23146,7 +23146,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 
 	#include <stdio.h>
 	#include <stdlib.h>
-	int main() { printf("%s", NULL); exit(0); }
+	int main() { char tmp[8]; snprintf(tmp,8,"%s",NULL); exit(0); }
 _ACEOF
 rm -f conftest$ac_exeext
 if { (ac_try="$ac_link"
@@ -23185,9 +23185,26 @@ fi
 
 
 
-  if test "$printf_null_ok" == "no"; then
-    { { $as_echo "$as_me:$LINENO: error: printf(\"%s\", NULL) results in abort. If using OpenSolaris, upgrade to release 119 or set LD_PRELOAD=/usr/lib/0@0.so.1." >&5
-$as_echo "$as_me: error: printf(\"%s\", NULL) results in abort. If using OpenSolaris, upgrade to release 119 or set LD_PRELOAD=/usr/lib/0@0.so.1." >&2;}
+  case "$host" in
+	*solaris*) have_solaris=yes ;;
+	*) have_solaris=no ;;
+  esac
+
+  if test   "$printf_null_ok" == "no" -a "$have_solaris" == "yes" -a -d /usr/lib64/0@0.so.1; then
+    { { $as_echo "$as_me:$LINENO: error: printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib64/0@0.so.1" >&5
+$as_echo "$as_me: error: printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib64/0@0.so.1" >&2;}
+   { (exit 1); exit 1; }; }
+  elif test "$printf_null_ok" == "no" -a "$have_solaris" == "yes" -a -d /usr/lib/0@0.so.1; then
+    { { $as_echo "$as_me:$LINENO: error: printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib/0@0.so.1" >&5
+$as_echo "$as_me: error: printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119 or set LD_PRELOAD=/usr/lib/0@0.so.1" >&2;}
+   { (exit 1); exit 1; }; }
+  elif test "$printf_null_ok" == "no" -a "$have_solaris" == "yes"; then
+    { { $as_echo "$as_me:$LINENO: error: printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119" >&5
+$as_echo "$as_me: error: printf(\"%s\", NULL) results in abort, upgrade to OpenSolaris release 119" >&2;}
+   { (exit 1); exit 1; }; }
+  elif test "$printf_null_ok" == "no"; then
+    { { $as_echo "$as_me:$LINENO: error: printf(\"%s\", NULL) results in abort" >&5
+$as_echo "$as_me: error: printf(\"%s\", NULL) results in abort" >&2;}
    { (exit 1); exit 1; }; }
   fi
 
