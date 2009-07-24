@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
     slurmdbd.
  -- Fixed race condition when reconfiguring the slurmctld and using the 
     consumable resources plugin which would cause the controller to core.
+ -- Fixed race condition that sometimes caused jobs to stay in completing
+    state longer than necessary after being terminated.
 
 * Changes in SLURM 2.0.4
 ========================
