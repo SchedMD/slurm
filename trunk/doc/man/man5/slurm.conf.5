@@ -39,7 +39,9 @@ The overall configuration parameters available include:
 .TP
 \fBAccountingStorageBackupHost\fR
 The name of the backup machine hosting the accounting storage database.
-Only used for accounting_storage/slurmdbd plugin, ignored otherwise.
+If used with the accounting_storage/slurmdbd plugin, this is where the backup 
+slurmdbd would be running.
+Only used for database type storage plugins, ignored otherwise.
 
 .TP
 \fBAccountingStorageEnforce\fR
@@ -51,7 +53,9 @@ TrackWckey being set.  By enforcing Associations no new job is allowed to run
 unless a corresponding association exists in the system.  If limits are 
 enforced users can be limited by association to how many nodes or how long 
 jobs can run or other limits.  With wckeys enforced jobs will not be scheduled 
-unless a valid workload characterization key is specified.
+unless a valid workload characterization key is specified.  This value may not 
+be reset via "scontrol reconfig". It only takes effect upon restart 
+of the slurmctld daemon.
 
 .TP
 \fBAccountingStorageHost\fR

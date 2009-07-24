@@ -1855,6 +1855,10 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
 		}
 		in_progress = false;
+		select_g_reconfigure();		/* notify select
+						 * plugin too.  This
+						 * needs to happen
+						 * inside the lock. */
 		unlock_slurmctld(config_write_lock);
 		start_power_mgr(&slurmctld_config.thread_id_power);
 		trigger_reconfig();
@@ -1871,7 +1875,6 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 			TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_sched_partition_change();	/* notify sched plugin */
-		select_g_reconfigure();		/* notify select plugin too */
 		priority_g_reconfig();          /* notify priority plugin too */
 		schedule();			/* has its own locks */
 		save_all_state();

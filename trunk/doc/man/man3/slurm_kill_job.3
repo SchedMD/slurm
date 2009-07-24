@@ -80,11 +80,14 @@ This function may only be successfully executed by the job's owner or user root.
 .LP 
 \fBslurm_kill_job_step\fR Request that a signal be sent to a specific job step. 
 This function may only be successfully executed by the job's owner or user root.
-\fBslurm_signal_job\fR Request that send the specified signal to all
+.LP
+\fBslurm_signal_job\fR Request that the specified signal be sent to all
 steps of an existing job. 
-\fBslurm_signal_job_step\fR Request that send the specified signal to
+.LP
+\fBslurm_signal_job_step\fR Request that the specified signal be sent to
 an existing job step. 
-\fBslurm_terminate_job\fR Request that terminates all steps of an
+.LP
+\fBslurm_terminate_job\fR Request termination of all steps of an
 existing job by sending a REQUEST_TERMINATE_JOB rpc to all slurmd in
 the the job allocation, and then calls slurm_complete_job(). 
 \fBslurm_signal_job_step\fR Request that terminates a job step by

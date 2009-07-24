@@ -492,7 +492,7 @@ extern int node_select_block_info_msg_unpack(
 	int i;
 	block_info_msg_t *buf;
 
-	buf = xmalloc(sizeof(block_info_t));
+	buf = xmalloc(sizeof(block_info_msg_t));
 	safe_unpack32(&(buf->record_count), buffer);
 	safe_unpack_time(&(buf->last_update), buffer);
 	buf->block_array = xmalloc(sizeof(block_info_t) * 

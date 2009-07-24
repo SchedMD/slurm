@@ -711,11 +711,14 @@ extern int slurm_reconfigure(void)
 		_update_cred_key();
 		set_slurmctld_state_loc();
 	}
+	select_g_reconfigure();		/* notify select
+					 * plugin too.  This
+					 * needs to happen
+					 * inside the lock. */
 	unlock_slurmctld(config_write_lock);
 	start_power_mgr(&slurmctld_config.thread_id_power);
 	trigger_reconfig();
 	slurm_sched_partition_change();	/* notify sched plugin */
-	select_g_reconfigure();		/* notify select plugin too */
 	priority_g_reconfig();          /* notify priority plugin too */
 	schedule();			/* has its own locks */
 	save_all_state();
