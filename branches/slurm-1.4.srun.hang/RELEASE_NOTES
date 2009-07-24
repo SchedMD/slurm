@@ -1,17 +1,17 @@
-RELEASE NOTES FOR SLURM VERSION 2.0
-11 February 2009 (after SLURM 1.4.0-pre8 released)
+RELEASE NOTES FOR SLURM VERSION 2.1
+1 June 2009 (after SLURM 2.1.0-pre1)
 
 
 IMPORTANT NOTE:
-SLURM state files in version 2.0 are different from those of version 1.3.
-After installing SLURM version 2.0, plan to restart without preserving 
-jobs or other state information. While SLURM version 1.3 is still running, 
+SLURM state files in version 2.1 are different from those of version 2.0.
+After installing SLURM version 2.1, plan to restart without preserving 
+jobs or other state information. While SLURM version 2.0 is still running, 
 cancel all pending and running jobs (e.g.
 "scancel --state=pending; scancel --state=running"). Then stop and restart 
 daemons with the "-c" option or use "/etc/init.d/slurm startclean".
 
 If using the slurmdbd (SLURM DataBase Daemon) you must update this first.  
-The 2.0 slurmdbd will work with SLURM daemons at version 1.3.7 and above.  
+The 2.1 slurmdbd will work with SLURM daemons at version 2.0.0 and above.  
 You will not need to update all clusters at the same time, but it is very 
 important to update slurmdbd first and having it running before updating 
 any other clusters making use of it.  No real harm will come from updating 
@@ -22,128 +22,27 @@ There are substantial changes in the slurm.conf configuration file. It
 is recommended that you rebuild your configuration file using the tool
 doc/html/configurator.html that comes with the distribution.
 
-SLURM can continue to be used as a simple resource manager, but optional
-plugins support sophisticated scheduling algorithms. These plugins do require 
-the use of a database containing user and bank account information, so 
-more administration work is required. SLURM's modular design lets you 
-control the functionality that you want it to provide.
 
 HIGHLIGHTS
-* Sophisticated scheduling algorithms are available in a new plugin. Jobs
-  can be prioritized based upon their age, size and/or fair-share resource 
-  allocation using hierarchical bank accounts. For more information see:
-  https://computing.llnl.gov/linux/slurm/job_priority.html
-* An assortment of resource limits can be imposed upon individual users 
-  and/or hierarchical bank accounts such as maximum job time limit, maximum 
-  job size and maximum number of running jobs. For more information see:
-  https://computing.llnl.gov/linux/slurm/resource_limits.html
-* Advanced reservations can be made to insure resources will be available when
-  needed. For more information see:
-  https://computing.llnl.gov/linux/slurm/reservations.html
-* Idle nodes can now be completely powered down when idle and automatically
-  restarted when there is work available. For more information see:
-  https://computing.llnl.gov/linux/slurm/power_save.html
-* SLURM has been modified to allocate specific cores to jobs and job steps in
-  the centralized scheduler rather than the daemons running on the individual
-  compute nodes. This permits effective preemption or gang schedule jobs.
-* New configuration parameters, PrologSlurmctld and EpilogSlurmctld, can be 
-  used to support the booting of different operating systems for each job. 
-  See "man slurm.conf" for details. 
-* Preemption of jobs from lower priority partitions in order to execute jobs
-  in higher priority partitions is now supported. The jobs from the lower 
-  priority partition will resume once preempting job completes. For more 
-  information see:
-  https://computing.llnl.gov/linux/slurm/preempt.html
-* Added support for optimized resource allocation with respect to network
-  topology. Requires switch configuration information be added to slurm.conf.
-* Support added for Sun Constellation system with optimized resource allocation
-  for a 3-dimensional torus interconnect. For more information see:
-  https://computing.llnl.gov/linux/slurm/sun_const.html
-* Support added for IBM BlueGene/P systems, including High Throughput Computing
-  (HTC) mode.
-* Support for checkpoint/restart using BLCR added using the checkpoint/blcr
-  plugin. For more information see:
-  https://computing.llnl.gov/linux/slurm/checkpoint_blcr.html
-  https://ftg.lbl.gov/CheckpointRestart/CheckpointRestart.shtml
+* Support has been added for Solaris.
+
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
-* The default AuthType is now "auth/munge" rather than "auth/none".
-* The default CryptoType is now "crypto/munge". OpenSSL is no longer required
-  by SLURM in the default configuration.
-* DefaultTime has been added to specify a default job time limit in the 
-  partition. If not set, uses the partition's MaxTime.
-* PrologSlurmctld has been added and can be used to boot nodes into a 
-  particular state for each job.
-* DefMemPerTask has been removed. Use DefMemPerCPU or DefMemPerNode instead.
-* KillOnBadExit added to immediately terminate a job step whenever any tasks
-  terminates with a non-zero exit code.
-* Added new node state of "FUTURE". These node records are created in SLURM
-  tables for future use without a reboot of the SLURM daemons, but are not
-  reported by any SLURM commands or APIs.
-* BatchStartTime has been added to control how long to wait for a batch job
-  to start (complete Prolog, load environment for Moab, etc.).
-* CompleteTime has been added to control how long to wait for a job's 
-  completion before allocating already released resources to pending jobs.
-* OverTimeLimit added to permit jobs to exceed their (soft) time limit by a
-  configurable amount. Backfill scheduling will be based upon the soft time
-  limit.
-* For select/cons_res or sched/gang only: Each nodes processor count must be
-  specified in the configuration file. Additional resources found by SLURM
-  daemons on the compute nodes will not be used.
-* DebugFlags added to provide detailed logging for specific subsystems.
-* Added job priority plugin.  Default for PriorityType is "priority/basic" 
-  which is the same logic SLURM has today (job priorities are assigned at
-  submit time with decreasing value).  "priority/multifactor" is a new plugin 
-  which utilizes logic to set a priority on a job based on many different 
-  configuration parameters as described here:  
-  https://computing.llnl.gov/linux/slurm/job_priority.html
-* The task/affinity plugin will automatically bind a job step to the CPUs
-  it has been allocated. The entity bound to (sockets, cores or threads)
-  will be automatically set based upon the allocation size and task count
-  SLURM's SPANK cpuset plugin is no longer be needed.
-* Resource allocations can now be optimized according to network topology.
-  The following switch topology configuration options have been added: 
-  TopologyPlugin and in a new topology.conf file: SwitchName, Nodes, 
-  Switches. More information is available in man pages for slurm.conf, 
-  topology.conf, and https://computing.llnl.gov/linux/slurm/topology.html
-* SrunIOTimeout has been added to optionally ping srun's tasks for better 
-  fault tolerance (e.g. killed and restarteed SLURM daemons on compute node).
-* BLUEGENE - Added option DenyPassthrough in the bluegene.conf.  Can be set
-  to any combination of X,Y,Z to not allow passthroughs when running in 
-  dynamic layout mode. (see "man bluegene.conf" for details)
+
 
 COMMAND CHANGES (see man pages for details)
-* --task-mem and --job-mem options have been removed from salloc, sbatch and
-  srun. Use --mem-per-cpu or --mem instead.
-* Added the srun option --preserve-env to pass the current values of 
-  environment variables SLURM_NNODES and SLURM_NPROCS through to the 
-  executable, rather than computing them from commandline parameters.
-* --ctrl-comm-ifhn-addr option has been removed from the srun command (it is 
-  no longer useful).
-* Batch jobs have an environment variable SLURM_RESTART_COUNT set when 
-  restarted.
-* To create a partition using the scontrol command, use the "create" command
-  rather than "update" with a new partition name.
-* Time format of all SLURM command set to ISO 8601 (yyyy-mm-ddThh:mm:ss)
-  unless the configure option "--disable-iso8601" is used at build time.
-* sacct -S to status a job will no longer work.  Use sstat from now on.
-* sacct and sstat have been rewritten to have a more sacctmgr like feel
-* Added the sprio command to view the factors that comprise a job's scheduling
-  priority - works only with the priority/multifactor plugin.
-
-ACCOUNTING CHANGES
-* Added ability for slurmdbd to archive and purge step and/or job records.
-* Added support for Workload Characterization Key (WCKey) in accounting 
-  records. This is an optional string that can be used to identify the type of
-  work being performed (in addition to user ID, account name, job name, etc.).
-* Added configuration parameter AccountingStorageBackupHost for fault-tolerance
-  in communications to SlurmDBD.
+* Several redundant squeue output and sorting options have been removed: 
+  "%o" (use %D"), "%b" (use "%S"), "%X", %Y, and "%Z" (use "%z").
+* Standardized on the use of the '-Q' flag for all commands that offer the
+  --quiet option.
 
 OTHER CHANGES
-* Modify PMI_Get_clique_ranks() to return an array of integers rather
-  than a char * to satisfy PMI standard. Correct logic in
-  PMI_Get_clique_size() for when srun --overcommit option is used.
-* Set "/proc/self/oom_adj" for slurmd and slurmstepd daemons based upon
-  the values of SLURMD_OOM_ADJ and SLURMSTEPD_OOM_ADJ environment
-  variables. This can be used to prevent daemons being killed when
-  a node's memory is exhausted.
+* A mechanism has beeded added for SPANK plugins to set environment variables 
+  for Prolog, Epilog, PrologSLurmctld and EpilogSlurmctld programs using the
+  functions spank_get_job_env, spank_set_job_env, and spank_unset_job_env. See 
+  "man spank" for more information.
+* The RPM previously named "slurm-aix-federation-<version>.rpm" has been 
+  renamed to just "slurm-aix-<version>.rpm" (the federation switch plugin may 
+  not be present).
+* Added sched/wiki2 (Moab) JOBMODIFY command support for VARIABLELIST option
+  to set supplemental environment variables for pending batch jobs.

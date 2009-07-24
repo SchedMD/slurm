@@ -52,7 +52,7 @@ Output will be '|' delimited with a '|' at the end.
 Output will be '|' delimited without a '|' at the end.
 
 .TP
-\fB\-q\fR, \fB\-\-quiet\fR
+\fB\-Q\fR, \fB\-\-quiet\fR
 Print no messages other than error messages.
 This is equivalent to the \fBquiet\fR command.
 
@@ -222,7 +222,13 @@ of this association.
 To clear a previously set value use the modify command with a new
 value of \-1.  (NOTE: This limit is not enforced if set on the root
 association of a cluster.  So even though it may appear in sacctmgr
-output it will not be enforced.)
+output it will not be enforced.  
+NOTE: This limit only applys when using the Priority Multifactor
+plugin.  The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf.  Currently when
+this limit is reached jobs will be delayed until they are able to run
+inside the limit.  No jobs will be killed if this limit is reached,
+this will change in future versions of SLURM.)
 
 .TP
 \fIGrpCPUs\fP=<max cpus>
@@ -259,7 +265,13 @@ this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 (NOTE: This limit is not enforced if set on the root
 association of a cluster.  So even though it may appear in sacctmgr
-output it will not be enforced.)
+output it will not be enforced.  
+NOTE: This limit only applys when using the Priority Multifactor
+plugin.  The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf.  Currently when
+this limit is reached jobs will be delayed until they are able to run
+inside the limit.  No jobs will be killed if this limit is reached,
+this will change in future versions of SLURM.)
 
 .TP
 \fIMaxCPUMins\fP=<max cpu minutes> 
@@ -668,6 +680,13 @@ about the various associations the user may have on all the
 clusters in the system.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
+
+.SH "GLOBAL FORMAT OPTION"
+When using the format option for listing various fields you can put a
+%NUMBER afterwards to specify how many characters should be printed.
+
+i.e. format=name%30 will print 30 characters of field name right
+justified.  A -30 will print 30 characters left justified.  
 
 .SH "FLAT FILE DUMP AND LOAD"
 sacctmgr has the capability to load and dump SLURM association data to and

@@ -93,10 +93,7 @@ static char *mysql_db_name = NULL;
 static time_t global_last_rollup = 0;
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 
-#define DEFAULT_ACCT_DB "slurm_acct_db"
 #define DELETE_SEC_BACK 86400
-
-
 
 char *acct_coord_table = "acct_coord_table";
 char *acct_table = "acct_table";
@@ -283,7 +280,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 		wckey_rec.user = user;
 		wckey_rec.cluster = cluster;
 		if(assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
-					   1, NULL) != SLURM_SUCCESS) {
+					   ACCOUNTING_ENFORCE_WCKEYS,
+					   NULL) != SLURM_SUCCESS) {
 			List wckey_list = NULL;
 			acct_wckey_rec_t *wckey_ptr = NULL;
 						
@@ -294,7 +292,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			wckey_ptr->user = xstrdup(user);
 			wckey_ptr->cluster = xstrdup(cluster);
 			list_append(wckey_list, wckey_ptr);
-			/* info("adding wckey '%s' '%s' '%s'",  */
+/* 			info("adding wckey '%s' '%s' '%s'", */
 /* 				     wckey_ptr->name, wckey_ptr->user, */
 /* 				     wckey_ptr->cluster); */
 			/* we have already checked to make
@@ -308,7 +306,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 				acct_storage_p_commit(mysql_conn, 1);
 			/* If that worked lets get it */
 			assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
-						1, NULL);
+						ACCOUNTING_ENFORCE_WCKEYS,
+						NULL);
 				
 			list_destroy(wckey_list);
 		}
@@ -623,8 +622,12 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
 	}
 
-	if((qos_level != QOS_LEVEL_MODIFY)
-	   && assoc->qos_list && list_count(assoc->qos_list)) {
+	/* when modifying the qos it happens in the actual function
+	   since we have to wait until we hear about the parent first. */
+	if(qos_level == QOS_LEVEL_MODIFY) 
+		goto end_qos;
+
+	if(assoc->qos_list && list_count(assoc->qos_list)) {
 		char *qos_type = "qos";
 		char *qos_val = NULL;
 		char *tmp_char = NULL;
@@ -640,12 +643,10 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 			}
 			xstrfmtcat(qos_val, ",%s", tmp_char);
 		}
-
+		
 		list_iterator_destroy(qos_itr);
-
-		xstrfmtcat(*cols, ", %s", qos_type);
 		
-		
+		xstrfmtcat(*cols, ", %s", qos_type);		
 		xstrfmtcat(*vals, ", '%s'", qos_val); 		
 		xstrfmtcat(*extra, ", %s=\"%s\"", qos_type, qos_val); 
 		xfree(qos_val);
@@ -654,7 +655,13 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*cols, ", qos");
 		xstrfmtcat(*vals, ", '%s'", default_qos_str);
 		xstrfmtcat(*extra, ", qos=\"%s\"", default_qos_str);
+	} else {
+		/* clear the qos */
+		xstrcat(*cols, ", qos, delta_qos");
+		xstrcat(*vals, ", '', ''");
+		xstrcat(*extra, ", qos=\"\", delta_qos=\"\"");
 	}
+end_qos:
 
 	return SLURM_SUCCESS;
 
@@ -2806,7 +2813,7 @@ static mysql_db_info_t *_mysql_acct_create_db_info()
 	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
 	db_info->port = slurm_get_accounting_storage_port();
 	if(!db_info->port) {
-		db_info->port = 3306;
+		db_info->port = DEFAULT_MYSQL_PORT;
 		slurm_set_accounting_storage_port(db_info->port);
 	}
 	db_info->host = slurm_get_accounting_storage_host();	
@@ -2886,8 +2893,8 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "control_host", "tinytext not null default ''" },
-		{ "control_port", "mediumint not null default 0" },
-		{ "rpc_version", "mediumint not null default 0" },
+		{ "control_port", "int unsigned not null default 0" },
+		{ "rpc_version", "smallint unsigned not null default 0" },
 		{ "classification", "smallint unsigned default 0" },
 		{ NULL, NULL}		
 	};
@@ -2923,10 +2930,10 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	storage_field_t job_table_fields[] = {
 		{ "id", "int not null auto_increment" },
 		{ "deleted", "tinyint default 0" },
-		{ "jobid", "mediumint unsigned not null" },
-		{ "associd", "mediumint unsigned not null" },
+		{ "jobid", "int unsigned not null" },
+		{ "associd", "int unsigned not null" },
 		{ "wckey", "tinytext not null default ''" },
-		{ "wckeyid", "mediumint unsigned not null" },
+		{ "wckeyid", "int unsigned not null" },
 		{ "uid", "smallint unsigned not null" },
 		{ "gid", "smallint unsigned not null" },
 		{ "cluster", "tinytext not null" },
@@ -2944,9 +2951,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "state", "smallint not null" }, 
 		{ "comp_code", "int default 0 not null" },
 		{ "priority", "int not null" },
-		{ "req_cpus", "mediumint unsigned not null" }, 
-		{ "alloc_cpus", "mediumint unsigned not null" }, 
-		{ "alloc_nodes", "mediumint unsigned not null" }, 
+		{ "req_cpus", "int unsigned not null" }, 
+		{ "alloc_cpus", "int unsigned not null" }, 
+		{ "alloc_nodes", "int unsigned not null" }, 
 		{ "nodelist", "text" },
 		{ "node_inx", "text" },
 		{ "kill_requid", "smallint default -1 not null" },
@@ -2985,7 +2992,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "preemptees", "text not null default ''" },
 		{ "preemptors", "text not null default ''" },
 		{ "priority", "int default 0" },
-		{ "usage_factor", "float default 1.0 not null" },
+		{ "usage_factor", "double default 1.0 not null" },
 		{ NULL, NULL}		
 	};
 
@@ -2994,7 +3001,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "name", "text not null" },
 		{ "cluster", "text not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "cpus", "mediumint unsigned not null" },
+		{ "cpus", "int unsigned not null" },
 		{ "assoclist", "text not null default ''" },
 		{ "nodelist", "text not null default ''" },
 		{ "node_inx", "text not null default ''" },
@@ -3017,36 +3024,36 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "state", "smallint not null" },
 		{ "kill_requid", "smallint default -1 not null" },
 		{ "comp_code", "int default 0 not null" },
-		{ "nodes", "mediumint unsigned not null" },
-		{ "cpus", "mediumint unsigned not null" },
-		{ "tasks", "mediumint unsigned not null" },
+		{ "nodes", "int unsigned not null" },
+		{ "cpus", "int unsigned not null" },
+		{ "tasks", "int unsigned not null" },
 		{ "task_dist", "smallint default 0" },
 		{ "user_sec", "int unsigned default 0 not null" },
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "int unsigned default 0 not null" },
 		{ "sys_usec", "int unsigned default 0 not null" },
-		{ "max_vsize", "int unsigned default 0 not null" },
+		{ "max_vsize", "bigint unsigned default 0 not null" },
 		{ "max_vsize_task", "smallint unsigned default 0 not null" },
-		{ "max_vsize_node", "mediumint unsigned default 0 not null" },
-		{ "ave_vsize", "float default 0.0 not null" },
-		{ "max_rss", "int unsigned default 0 not null" },
+		{ "max_vsize_node", "int unsigned default 0 not null" },
+		{ "ave_vsize", "double unsigned default 0.0 not null" },
+		{ "max_rss", "bigint unsigned default 0 not null" },
 		{ "max_rss_task", "smallint unsigned default 0 not null" },
-		{ "max_rss_node", "mediumint unsigned default 0 not null" },
-		{ "ave_rss", "float default 0.0 not null" },
-		{ "max_pages", "mediumint unsigned default 0 not null" },
+		{ "max_rss_node", "int unsigned default 0 not null" },
+		{ "ave_rss", "double unsigned default 0.0 not null" },
+		{ "max_pages", "int unsigned default 0 not null" },
 		{ "max_pages_task", "smallint unsigned default 0 not null" },
-		{ "max_pages_node", "mediumint unsigned default 0 not null" },
-		{ "ave_pages", "float default 0.0 not null" },
-		{ "min_cpu", "mediumint unsigned default 0 not null" },
+		{ "max_pages_node", "int unsigned default 0 not null" },
+		{ "ave_pages", "double unsigned default 0.0 not null" },
+		{ "min_cpu", "int unsigned default 0 not null" },
 		{ "min_cpu_task", "smallint unsigned default 0 not null" },
-		{ "min_cpu_node", "mediumint unsigned default 0 not null" },
-		{ "ave_cpu", "float default 0.0 not null" },
+		{ "min_cpu_node", "int unsigned default 0 not null" },
+		{ "ave_cpu", "double unsigned default 0.0 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t suspend_table_fields[] = {
 		{ "id", "int not null" },
-		{ "associd", "mediumint not null" },
+		{ "associd", "int not null" },
 		{ "start", "int unsigned default 0 not null" },
 		{ "end", "int unsigned default 0 not null" },
 		{ NULL, NULL}		
@@ -3398,20 +3405,20 @@ extern int init ( void )
 
 	location = slurm_get_accounting_storage_loc();
 	if(!location)
-		mysql_db_name = xstrdup(DEFAULT_ACCT_DB);
+		mysql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 	else {
 		int i = 0;
 		while(location[i]) {
 			if(location[i] == '.' || location[i] == '/') {
 				debug("%s doesn't look like a database "
 				      "name using %s",
-				      location, DEFAULT_ACCT_DB);
+				      location, DEFAULT_ACCOUNTING_DB);
 				break;
 			}
 			i++;
 		}
 		if(location[i]) {
-			mysql_db_name = xstrdup(DEFAULT_ACCT_DB);
+			mysql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 			xfree(location);
 		} else
 			mysql_db_name = location;
@@ -7595,8 +7602,7 @@ empty:
 		 * different machine where this user may not exist or
 		 * may have a different uid
 		 */
-/* 		pw_uid = uid_from_string(user->name); */
-/* 		if(pw_uid == (uid_t) -1)  */
+/* 		if (uid_from_string (user->name, &pw_uid) < 0)  */
 /* 			user->uid = (uint32_t)NO_VAL; */
 /* 		else */
 /* 			user->uid = passwd_ptr->pw_uid; */
@@ -10392,11 +10398,69 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	
 	debug2("mysql_jobacct_job_start() called");
-	if(!check_time)
-		check_time = job_ptr->details->submit_time;
- 
+
+	/* See what we are hearing about here if no start time. If
+	 * this job latest time is before the last roll up we will
+	 * need to reset it to look at this job. */
+	if(!check_time) {
+		check_time = job_ptr->details->begin_time;
+ 		
+		if(!check_time)
+			check_time = job_ptr->details->submit_time;
+	}
+
 	slurm_mutex_lock(&rollup_lock);
 	if(check_time < global_last_rollup) {
+		MYSQL_RES *result = NULL;
+		MYSQL_ROW row;
+
+		/* check to see if we are hearing about this time for the
+		 * first time.
+		 */
+		query = xstrdup_printf("select id from %s where jobid=%u and "
+				       "submit=%d and eligible=%d "
+				       "and start=%d;",
+				       job_table, job_ptr->job_id,
+				       job_ptr->details->submit_time, 
+				       job_ptr->details->begin_time, 
+				       job_ptr->start_time);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		if(!(result =
+		     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			slurm_mutex_unlock(&rollup_lock);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+		if((row = mysql_fetch_row(result))) {
+			mysql_free_result(result);
+			debug4("revieved an update for a "
+			       "job (%u) already known about",
+			       job_ptr->job_id);
+			slurm_mutex_unlock(&rollup_lock);
+			goto no_rollup_change;
+		}
+		mysql_free_result(result);
+
+		if(job_ptr->start_time)
+			debug("Need to reroll usage from %sJob %u "
+			      "from %s started then and we are just "
+			      "now hearing about it.",
+			      ctime(&check_time),
+			      job_ptr->job_id, cluster_name);
+		else if(job_ptr->details->begin_time) 
+			debug("Need to reroll usage from %sJob %u "
+			      "from %s became eligible then and we are just "
+			      "now hearing about it.",
+			      ctime(&check_time), 
+			      job_ptr->job_id, cluster_name);
+		else
+			debug("Need to reroll usage from %sJob %u "
+			      "from %s was submitted then and we are just "
+			      "now hearing about it.",
+			      ctime(&check_time),
+			      job_ptr->job_id, cluster_name);
+			
 		global_last_rollup = check_time;
 		slurm_mutex_unlock(&rollup_lock);
 		
@@ -10409,7 +10473,9 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		xfree(query);
 	} else
 		slurm_mutex_unlock(&rollup_lock);
-	
+
+no_rollup_change:
+
 	if(!cluster_name && job_ptr->assoc_id) {
 		no_cluster = 1;
 		cluster_name = _get_cluster_from_associd(mysql_conn,
@@ -10439,24 +10505,22 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	} else {
 		char temp_bit[BUF_SIZE];
 
-		if(job_ptr->node_bitmap) 
+		if(job_ptr->node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
 					   job_ptr->node_bitmap);
+		}
 #ifdef HAVE_BG
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_BLOCK_ID, 
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_BLOCK_ID, 
 				     &block_id);
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_NODE_CNT, 
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_NODE_CNT, 
 				     &node_cnt);
 #else
 		node_cnt = job_ptr->node_cnt;
 #endif 		
 	}
 
-	job_ptr->requid = -1; /* force to -1 for sacct to know this
-			       * hasn't been set yet */
-	
 	/* if there is a start_time get the wckeyid */
 	if(job_ptr->start_time && job_ptr->assoc_id) 
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
@@ -10524,10 +10588,10 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   (int)job_ptr->details->submit_time,
 			   (int)job_ptr->start_time,
 			   jname, track_steps,
-			   job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->job_state & JOB_STATE_BASE,
 			   job_ptr->priority, job_ptr->num_procs,
 			   job_ptr->total_procs, node_cnt,
-			   job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->job_state & JOB_STATE_BASE,
 			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id,
 			   job_ptr->time_limit);
 
@@ -10581,7 +10645,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   "associd=%u, wckeyid=%u, resvid=%u, timelimit=%u "
 			   "where id=%d",
 			   (int)job_ptr->start_time,
-			   jname, job_ptr->job_state & (~JOB_COMPLETING),
+			   jname, job_ptr->job_state & JOB_STATE_BASE,
 			   job_ptr->total_procs, node_cnt, 
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit, 
@@ -10670,7 +10734,7 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 			       "kill_requid=%d where id=%d",
 			       job_table, (int)start_time,
 			       (int)job_ptr->end_time, 
-			       job_ptr->job_state & (~JOB_COMPLETING),
+			       job_ptr->job_state & JOB_STATE_BASE,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
@@ -10716,13 +10780,14 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	} else {
 		char temp_bit[BUF_SIZE];
 
-		if(step_ptr->step_node_bitmap) 
+		if(step_ptr->step_node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
 					   step_ptr->step_node_bitmap);
+		}
 #ifdef HAVE_BG
 		tasks = cpus = step_ptr->job_ptr->num_procs;
-		select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-				     SELECT_DATA_IONODES, 
+		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_IONODES, 
 				     &ionodes);
 		if(ionodes) {
 			snprintf(node_list, BUFFER_SIZE, 
@@ -10731,8 +10796,8 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		} else
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
-		select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-				     SELECT_DATA_NODE_CNT, 
+		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_NODE_CNT, 
 				     &nodes);
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
@@ -10750,9 +10815,6 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		}
 #endif
 	}
-
-	step_ptr->job_ptr->requid = -1; /* force to -1 for sacct to know this
-					 * hasn't been set yet  */
 
 	if(!step_ptr->job_ptr->db_index) {
 		if(!(step_ptr->job_ptr->db_index = 
@@ -10904,17 +10966,17 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		"user_sec=%ld, user_usec=%ld, "
 		"sys_sec=%ld, sys_usec=%ld, "
 		"max_vsize=%u, max_vsize_task=%u, "
-		"max_vsize_node=%u, ave_vsize=%.2f, "
+		"max_vsize_node=%u, ave_vsize=%f, "
 		"max_rss=%u, max_rss_task=%u, "
-		"max_rss_node=%u, ave_rss=%.2f, "
+		"max_rss_node=%u, ave_rss=%f, "
 		"max_pages=%u, max_pages_task=%u, "
-		"max_pages_node=%u, ave_pages=%.2f, "
-		"min_cpu=%.2f, min_cpu_task=%u, "
-		"min_cpu_node=%u, ave_cpu=%.2f "
+		"max_pages_node=%u, ave_pages=%f, "
+		"min_cpu=%f, min_cpu_task=%u, "
+		"min_cpu_node=%u, ave_cpu=%f "
 		"where id=%d and stepid=%u",
 		step_table, (int)now,
 		comp_status,
-		step_ptr->job_ptr->requid, 
+		step_ptr->requid, 
 		exit_code,
 		/* user seconds */
 		jobacct->user_cpu_sec,	
@@ -10985,7 +11047,7 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 		   "update %s set suspended=%d-suspended, state=%d "
 		   "where id=%d;",
 		   job_table, (int)job_ptr->suspend_time, 
-		   job_ptr->job_state & (~JOB_COMPLETING),
+		   job_ptr->job_state & JOB_STATE_BASE,
 		   job_ptr->db_index);
 	if(suspended)
 		xstrfmtcat(query,

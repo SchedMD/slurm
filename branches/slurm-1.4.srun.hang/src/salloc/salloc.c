@@ -46,7 +46,12 @@
 #include "src/common/env.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/xmalloc.h"
+#include "src/common/xmalloc.h"/* external functions available for SPANK plugins to modify the environment
+ * exported to the SLURM Prolog and Epilog programs */
+extern char *spank_get_job_env(const char *name);
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite);
+extern int   spank_unset_job_env(const char *name);
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/plugstack.h"
@@ -56,7 +61,6 @@
 
 #ifdef HAVE_BG
 #include "src/api/job_info.h"
-#include "src/api/node_select_info.h"
 #include "src/common/node_select.h"
 #include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
@@ -81,7 +85,7 @@ static time_t last_timeout = 0;
 
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void _ring_terminal_bell(void);
-static int  _fork_command(char **command);
+static pid_t  _fork_command(char **command);
 static void _pending_callback(uint32_t job_id);
 static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
@@ -97,7 +101,7 @@ static void _node_fail_handler(srun_node_fail_msg_t *msg);
 #define POLL_SLEEP 3			/* retry interval in seconds  */
 static int _wait_bluegene_block_ready(
 			resource_allocation_response_msg_t *alloc);
-static int _blocks_dealloc();
+static int _blocks_dealloc(void);
 #endif
 
 #ifdef HAVE_CRAY_XT
@@ -188,7 +192,8 @@ int main(int argc, char *argv[])
 	callbacks.user_msg = _user_msg_handler;
 	callbacks.node_fail = _node_fail_handler;
 	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port, &callbacks);
+	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port, 
+						  &callbacks);
 
 	xsignal(SIGHUP, _signal_while_allocating);
 	xsignal(SIGINT, _signal_while_allocating);
@@ -197,9 +202,9 @@ int main(int argc, char *argv[])
 	xsignal(SIGTERM, _signal_while_allocating);
 	xsignal(SIGUSR1, _signal_while_allocating);
 	xsignal(SIGUSR2, _signal_while_allocating);
-
+	
 	before = time(NULL);
-	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait,
+	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.immediate,
 					_pending_callback)) == NULL) {
 		if ((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) ||
 		    (retries >= MAX_RETRIES))
@@ -217,30 +222,36 @@ int main(int argc, char *argv[])
 		} else if (errno == EINTR) {
 			error("Interrupted by signal."
 			      "  Allocation request rescinded.");
+		} else if ((errno == ETIMEDOUT) && opt.immediate) {
+			error("Unable to allocate resources: %s",
+			      slurm_strerror(ESLURM_NODES_BUSY));
 		} else {
 			error("Failed to allocate resources: %m");
 		}
 		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(1);
-	}
-
-	/*
-	 * Allocation granted!
-	 */
-	info("Granted job allocation %d", alloc->job_id);
+	} else if (!allocation_interrupted) {
+		/*
+		 * Allocation granted!
+		 */
+		info("Granted job allocation %d", alloc->job_id);
 #ifdef HAVE_BG
-	if (!_wait_bluegene_block_ready(alloc)) {
-		if(!allocation_interrupted)
-			error("Something is wrong with the boot of the block.");
-		goto relinquish;
-	}
+		if (!_wait_bluegene_block_ready(alloc)) {
+			if(!allocation_interrupted)
+				error("Something is wrong with the "
+				      "boot of the block.");
+			goto relinquish;
+		}
 #endif
 #ifdef HAVE_CRAY_XT
-	if (!_claim_reservation(alloc)) {
-		error("Something is wrong with the ALPS resource reservation.");
-		goto relinquish;
-	}
+		if (!_claim_reservation(alloc)) {
+			if(!allocation_interrupted)
+				error("Something is wrong with the ALPS "
+				      "resource reservation.");
+			goto relinquish;
+		}
 #endif
+	}
 
 	after = time(NULL);
 
@@ -350,9 +361,21 @@ relinquish:
 		} else if (WIFSIGNALED(status)) {
 			verbose("Command \"%s\" was terminated by signal %d",
 				command_argv[0], WTERMSIG(status));
+			/* if we get these signals we return a normal
+			   exit since this was most likely sent from the
+			   user */
+			switch(WTERMSIG(status)) {
+			case SIGHUP:
+			case SIGINT:
+			case SIGQUIT:
+			case SIGKILL:
+				rc = 0;
+				break;
+			default:
+				break;
+			}
 		}
 	}
-
 	return rc;
 }
 
@@ -362,7 +385,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	desc->features = opt.constraints;
-	desc->immediate = opt.immediate ? 1 : 0;
+	if (opt.immediate == 1)	
+		desc->immediate = 1;
 	desc->name = xstrdup(opt.job_name);
 	desc->reservation = xstrdup(opt.reservation);
 	desc->wckey  = xstrdup(opt.wckey);
@@ -482,6 +506,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->time_limit = opt.time_limit;
 	desc->shared = opt.shared;
 	desc->job_id = opt.jobid;
+
+	if (opt.spank_job_env_size) {
+		desc->spank_job_env      = opt.spank_job_env;
+		desc->spank_job_env_size = opt.spank_job_env_size;
+	}
 
 	return 0;
 }
@@ -654,11 +683,12 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
 	pending_job_id = alloc->job_id;
-	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
-			     &block_id);
-
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &block_id);
+	
 	for (i=0; (cur_delay < max_delay); i++) {
-		if(i == 1)
+		if (i == 1)
 			info("Waiting for block %s to become ready for job",
 			     block_id);
 		if (i) {
@@ -681,13 +711,14 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 			is_ready = 1;
 			break;
 		}
+		if (allocation_interrupted)
+			break;
 	}
 	if (is_ready)
      		info("Block %s is ready for job", block_id);
-	else if(!allocation_interrupted)
+	else if (!allocation_interrupted)
 		error("Block %s still not ready", block_id);
-	else /* this should never happen, but if allocation_intrrupted
-		send back not ready */
+	else	/* allocation_interrupted and slurmctld not responing */
 		is_ready = 0;
 
 	xfree(block_id);
@@ -703,22 +734,22 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
  *	0:  no deallocate in progress
  *     -1: error occurred
  */
-static int _blocks_dealloc()
+static int _blocks_dealloc(void)
 {
-	static node_select_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
+	static block_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
 	int rc = 0, error_code = 0, i;
 	
 	if (bg_info_ptr) {
-		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
+		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&bg_info_ptr);
+			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_node_select((time_t) NULL, &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr);
 	}
 
 	if (error_code) {
@@ -727,7 +758,7 @@ static int _blocks_dealloc()
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->bg_info_array[i].state 
+		if(new_bg_ptr->block_array[i].state 
 		   == RM_PARTITION_DEALLOCATING) {
 			rc = 1;
 			break;
@@ -745,8 +776,9 @@ static int _claim_reservation(resource_allocation_response_msg_t *alloc)
 	int rc = 0;
 	char *resv_id = NULL;
 
-	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_RESV_ID,
-			     &resv_id);
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_RESV_ID,
+				    &resv_id);
 	if (resv_id == NULL)
 		return rc;
 	if (basil_resv_conf(resv_id, alloc->job_id) == SLURM_SUCCESS)

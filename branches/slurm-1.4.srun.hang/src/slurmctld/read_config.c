@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -71,6 +71,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/basil_interface.h"
+#include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -104,6 +105,7 @@ static int  _restore_node_state(struct node_record *old_node_table_ptr,
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
 static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
+static int  _update_preempt(uint16_t old_enable_preempt);
 #ifdef 	HAVE_ELAN
 static void _validate_node_proc_count(void);
 #endif
@@ -175,6 +177,7 @@ static int _build_bitmaps(void)
 	ListIterator config_iterator;
 	struct config_record *config_ptr;
 	struct job_record    *job_ptr;
+	struct node_record   *node_ptr;
 	ListIterator job_iterator;
 
 	last_node_update = time(NULL);
@@ -202,7 +205,6 @@ static int _build_bitmaps(void)
 	config_iterator = list_iterator_create(config_list);
 	if (config_iterator == NULL)
 		fatal ("memory allocation failure");
-
 	while ((config_ptr = (struct config_record *)
 				      list_next(config_iterator))) {
 		FREE_NULL_BITMAP(config_ptr->node_bitmap);
@@ -220,7 +222,7 @@ static int _build_bitmaps(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bitstr_t *tmp_bits;
-		if ((job_ptr->job_state   != JOB_RUNNING) ||
+		if (!IS_JOB_RUNNING(job_ptr) ||
 		    (job_ptr->node_bitmap == NULL)        ||
 		    (job_ptr->details     == NULL)        ||
 		    (job_ptr->details->shared != 0))
@@ -236,32 +238,40 @@ static int _build_bitmaps(void)
 
 	/* scan all nodes and identify which are up, idle and 
 	 * their configuration, resync DRAINED vs. DRAINING state */
-	for (i = 0; i < node_record_count; i++) {
-		uint16_t base_state, drain_flag, no_resp_flag, job_cnt;
-		struct node_record *node_ptr = node_record_table_ptr + i;
+	for (i=0, node_ptr=node_record_table_ptr;
+	     i<node_record_count; i++, node_ptr++) {
+		uint16_t drain_flag, job_cnt;
 
 		if (node_ptr->name[0] == '\0')
 			continue;	/* defunct */
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		drain_flag = node_ptr->node_state &
-				(NODE_STATE_DRAIN | NODE_STATE_FAIL);
-		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+		drain_flag = IS_NODE_DRAIN(node_ptr) | 
+			     IS_NODE_FAIL(node_ptr);
 		job_cnt = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 
-		if (((base_state == NODE_STATE_IDLE) && (job_cnt == 0))
-		||  (base_state == NODE_STATE_DOWN))
+		if ((IS_NODE_IDLE(node_ptr) && (job_cnt == 0)) ||
+		    IS_NODE_DOWN(node_ptr))
 			bit_set(idle_node_bitmap, i);
-		if ((base_state == NODE_STATE_IDLE)
-		||  (base_state == NODE_STATE_ALLOCATED)) {
-			if ((drain_flag == 0) && (no_resp_flag == 0))
+		if (IS_NODE_IDLE(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
+			if ((drain_flag == 0) && 
+			    (!IS_NODE_NO_RESPOND(node_ptr)))
 				bit_set(avail_node_bitmap, i);
 			bit_set(up_node_bitmap, i);
 		}
-		if (node_ptr->node_state & NODE_STATE_POWER_SAVE)
+		if (IS_NODE_POWER_SAVE(node_ptr))
 			bit_set(power_node_bitmap, i);
 		if (node_ptr->config_ptr)
 			bit_set(node_ptr->config_ptr->node_bitmap, i);
 	}
+
+	config_iterator = list_iterator_create(config_list);
+	if (config_iterator == NULL)
+		fatal ("memory allocation failure");
+	while ((config_ptr = (struct config_record *)
+				      list_next(config_iterator))) {
+		build_config_feature_list(config_ptr);
+	}
+	list_iterator_destroy(config_iterator);
+
 	return error_code;
 }
 
@@ -540,7 +550,6 @@ static int _build_all_nodeline_info(void)
 		config_ptr->weight = node->weight;
 		if (node->feature)
 			config_ptr->feature = xstrdup(node->feature);
-		build_config_feature_array(config_ptr);
 
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}
@@ -748,6 +757,7 @@ int read_slurm_conf(int recover)
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
+	uint16_t old_preempt_mode = slurmctld_conf.preempt_mode;
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
 	char *old_crypto_type     = xstrdup(slurmctld_conf.crypto_type);
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
@@ -840,10 +850,10 @@ int read_slurm_conf(int recover)
 
 	_build_bitmaps_pre_select();
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
-	     != SLURM_SUCCESS) 
-	    || (select_g_block_init(part_list) != SLURM_SUCCESS) 
-	    || (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) 
-	    || (select_g_job_init(job_list) != SLURM_SUCCESS)) {
+	     != SLURM_SUCCESS)						||
+	    (select_g_block_init(part_list) != SLURM_SUCCESS)		||
+	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS)	||
+	    (select_g_job_init(job_list) != SLURM_SUCCESS)) {
 		fatal("failed to initialize node selection plugin state, "
 		      "Clean start required.");
 	}
@@ -886,6 +896,9 @@ int read_slurm_conf(int recover)
 			       old_select_type, old_switch_type);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
+	rc = _update_preempt(old_preempt_mode);
+	error_code = MAX(error_code, rc);	/* not fatal */
+
 	/* Update plugin parameters as possible */
 	rc = _preserve_select_type_param(&slurmctld_conf,
 					 old_select_type_p);
@@ -909,10 +922,17 @@ int read_slurm_conf(int recover)
 /* Restore node state and size information from saved records.
  * If a node was re-configured to be down or drained, we set those states */
 static int _restore_node_state(struct node_record *old_node_table_ptr, 
-				int old_node_record_count)
+			       int old_node_record_count)
 {
 	struct node_record *node_ptr;
 	int i, rc = SLURM_SUCCESS;
+	hostset_t hs = NULL;
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
+	bool power_save_mode = false;
+
+	if (conf->suspend_program && conf->resume_program)
+		power_save_mode = true;
+	slurm_conf_unlock();
 
 	for (i = 0; i < old_node_record_count; i++) {
 		uint16_t drain_flag = false, down_flag = false;
@@ -920,9 +940,9 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 		if (node_ptr == NULL)
 			continue;
 
-		if ((node_ptr->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN)
+		if (IS_NODE_DOWN(node_ptr))
 			down_flag = true;
-		if (node_ptr->node_state & NODE_STATE_DRAIN)
+		if (IS_NODE_DRAIN(node_ptr))
 			drain_flag = true;
 		node_ptr->node_state = old_node_table_ptr[i].node_state;
 		if (down_flag) {
@@ -931,7 +951,17 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 		}
 		if (drain_flag)
 			node_ptr->node_state |= NODE_STATE_DRAIN; 
-			
+		if ((!power_save_mode) &&
+		    (IS_NODE_POWER_SAVE(node_ptr) ||
+		     IS_NODE_POWER_UP(node_ptr))) {
+			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+			if (hs)
+				hostset_insert(hs, node_ptr->name);
+			else
+				hs = hostset_create(node_ptr->name);
+		}
+
 		node_ptr->last_response = old_node_table_ptr[i].last_response;
 		if (old_node_table_ptr[i].port != node_ptr->config_ptr->cpus) {
 			rc = ESLURM_NEED_RESTART;
@@ -966,6 +996,13 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 			old_node_table_ptr[i].os = NULL;
 		}
 	}
+
+	if (hs) {
+		char node_names[128];
+		hostset_ranged_string(hs, sizeof(node_names), node_names);
+		info("Cleared POWER_SAVE flag from nodes %s", node_names);
+		hostset_destroy(hs);
+	}
 	return rc;
 }
 
@@ -974,16 +1011,12 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count)
 {
 	int i;
+	struct node_record *node_ptr;
 
-	for (i = 0; i < old_node_record_count; i++) {
-		xfree(old_node_table_ptr[i].arch);
-		xfree(old_node_table_ptr[i].comm_name);
-		xfree(old_node_table_ptr[i].features);
-		xfree(old_node_table_ptr[i].name);
-		xfree(old_node_table_ptr[i].os);
-		xfree(old_node_table_ptr[i].part_pptr);
-		xfree(old_node_table_ptr[i].reason);
-	}
+	node_ptr = old_node_table_ptr;
+	for (i=0; i< old_node_record_count; i++, node_ptr++)
+		purge_node_rec(node_ptr);
+
 	xfree(old_node_table_ptr);
 }
 
@@ -1008,6 +1041,32 @@ static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr,
 		}
 	}
 	return rc;
+}
+
+/* Start or stop the gang scheduler module as needed based upon changes in 
+ *	job preemption support */
+static int _update_preempt(uint16_t old_preempt_mode)
+{
+	uint16_t new_preempt_mode = slurm_get_preempt_mode();
+
+	if ((old_preempt_mode == PREEMPT_MODE_OFF) == 
+	    (new_preempt_mode == PREEMPT_MODE_OFF))
+		return SLURM_SUCCESS;
+
+	if (old_preempt_mode == PREEMPT_MODE_OFF) {
+		info("Enabling job preemption and gang scheduling");
+		return gs_init();
+	}
+
+	if (new_preempt_mode == PREEMPT_MODE_OFF) {
+		info("Disabling job preemption and gang scheduling");
+		gs_wake_jobs();
+		return gs_fini();
+	}
+
+	error("Invalid value for EnablePreemption (old:%u new:%u)",
+	      old_preempt_mode, new_preempt_mode);
+	return EINVAL;
 }
 
 /*
@@ -1105,8 +1164,7 @@ static int _sync_nodes_to_jobs(void)
 		if (job_ptr->node_bitmap == NULL)
 			continue;
 
-		if ((job_ptr->job_state == JOB_RUNNING) ||
-		    (job_ptr->job_state &  JOB_COMPLETING))
+		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
 			update_cnt += _sync_nodes_to_active_job(job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
@@ -1127,11 +1185,11 @@ static int _sync_nodes_to_comp_job(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->node_bitmap) &&
-		    (job_ptr->job_state & JOB_COMPLETING)) {
+		if ((job_ptr->node_bitmap) && IS_JOB_COMPLETING(job_ptr)) {
 			update_cnt++;
 			info("Killing job_id %u", job_ptr->job_id);
 			deallocate_nodes(job_ptr, false, false);
+			job_completion_logger(job_ptr);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -1146,7 +1204,7 @@ static int _sync_nodes_to_comp_job(void)
 static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 {
 	int i, cnt = 0;
-	uint16_t base_state, node_flags;
+	uint16_t node_flags;
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
@@ -1154,19 +1212,17 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
  
 		node_ptr->run_job_cnt++; /* NOTE:
 				* This counter moved to comp_job_cnt 
 				* by _sync_nodes_to_comp_job() */
-		if (((job_ptr->job_state == JOB_RUNNING) ||
-		     (job_ptr->job_state &  JOB_COMPLETING)) &&
+		if ((IS_JOB_RUNNING(job_ptr) || IS_JOB_COMPLETING(job_ptr)) &&
 		    (job_ptr->details) && (job_ptr->details->shared == 0))
 			node_ptr->no_share_job_cnt++;
 
-		if ((base_state == NODE_STATE_DOWN)     &&
-		    (job_ptr->job_state == JOB_RUNNING) &&
+		if (IS_NODE_DOWN(node_ptr)              &&
+		    IS_JOB_RUNNING(job_ptr)             &&
 		    (job_ptr->kill_on_node_fail == 0)   &&
 		    (job_ptr->node_cnt > 1)) {
 			/* This should only happen if a job was running 
@@ -1176,7 +1232,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			srun_node_fail(job_ptr->job_id, node_ptr->name);
 			kill_step_on_node(job_ptr, node_ptr);
 			excise_node_from_job(job_ptr, node_ptr);
-		} else if (base_state == NODE_STATE_DOWN) {
+		} else if (IS_NODE_DOWN(node_ptr)) {
 			time_t now = time(NULL);
 			info("Killing job %u on DOWN node %s",
 			     job_ptr->job_id, node_ptr->name);
@@ -1187,8 +1243,8 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			xfree(job_ptr->state_desc);
 			job_completion_logger(job_ptr);
 			cnt++;
-		} else if ((base_state == NODE_STATE_UNKNOWN) || 
-			   (base_state == NODE_STATE_IDLE)) {
+		} else if (IS_NODE_UNKNOWN(node_ptr) || 
+			   IS_NODE_IDLE(node_ptr)) {
 			cnt++;
 			node_ptr->node_state =
 				NODE_STATE_ALLOCATED | node_flags;
@@ -1220,9 +1276,8 @@ static void _validate_node_proc_count(void)
 			if (slurmctld_conf.fast_schedule)
 				node_size = node_ptr->config_ptr->cpus;
 			else if (node_ptr->cpus < node_ptr->config_ptr->cpus)
-				continue;	/* node too small, will be DOWN */
-			else if ((node_ptr->node_state & NODE_STATE_BASE) 
-					== NODE_STATE_DOWN)
+				continue;    /* node too small, will be DOWN */
+			else if (IS_NODE_DOWN(node_ptr))
 				continue;
 			else
 				node_size = node_ptr->cpus;
@@ -1255,19 +1310,19 @@ static int _restore_job_dependencies(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
-			if((job_ptr->job_state == JOB_RUNNING) ||
-			   (job_ptr->job_state == JOB_SUSPENDED))
+			if (IS_JOB_RUNNING(job_ptr) || 
+			    IS_JOB_SUSPENDED(job_ptr))
 				acct_policy_job_begin(job_ptr);
-			if(!IS_JOB_FINISHED(job_ptr))
+			if (!IS_JOB_FINISHED(job_ptr))
 				acct_policy_add_job_submit(job_ptr);
 		}
 
-		license_list = license_job_validate(job_ptr->licenses, &valid);
+		license_list = license_validate(job_ptr->licenses, &valid);
 		if (job_ptr->license_list)
 			list_destroy(job_ptr->license_list);
 		if (valid)
 			job_ptr->license_list = license_list;
-		if (job_ptr->job_state == JOB_RUNNING) 
+		if (IS_JOB_RUNNING(job_ptr)) 
 			license_job_get(job_ptr);
 
 		if ((job_ptr->details == NULL) ||
@@ -1302,10 +1357,9 @@ static void _acct_restore_active_jobs(void)
 					     time(NULL));
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->job_state == JOB_SUSPENDED)
+		if (IS_JOB_SUSPENDED(job_ptr))
 			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-		if ((job_ptr->job_state == JOB_SUSPENDED) ||
-		    (job_ptr->job_state == JOB_RUNNING)) {
+		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
 			jobacct_storage_g_job_start(
 				acct_db_conn, slurmctld_cluster_name, job_ptr);
 			step_iterator = list_iterator_create(

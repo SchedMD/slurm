@@ -138,6 +138,7 @@ static int _apply_decay(double decay_factor)
 		return SLURM_SUCCESS;
 
 	xassert(assoc_mgr_association_list);
+	xassert(assoc_mgr_qos_list);
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
@@ -163,7 +164,7 @@ static int _apply_decay(double decay_factor)
 }
 
 /*
- * reset usage_raw, and grp_used_cpu_mins on all associations 
+ * reset usage_raw, and grp_used_wall on all associations 
  * This should be called every PriorityUsageResetPeriod
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
@@ -312,9 +313,13 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		(void) link(state_file, old_file);
+		if(link(state_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       state_file, old_file);
 		(void) unlink(state_file);
-		(void) link(new_file, state_file);
+		if(link(new_file, state_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, state_file);
 		(void) unlink(new_file);
 	}
 	xfree(old_file);
@@ -430,14 +435,41 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 	}
 
 	if(weight_js) {
+		/* FIXME: This will not work correctly when
+		 * the job is requesting smaller than 1 node.
+		 * We need a way to figure out how to look at
+		 * cpus requested here for those situations.  This can
+		 * probably be done with the num_procs, but
+		 * that isn't always used.  This is usually
+		 * set on bluegene systems, which is where
+		 * this problem arose.  The code below was
+		 * tested on a bluegene system, seemed to
+		 * work, but isn't probably that generic.
+		 * Also the variable total_cpus doesn't exist
+		 * yet so that would need to be defined.
+		 */
+		
 		if(favor_small) {
 			factors->priority_js = (double)(node_record_count
 					   - job_ptr->details->min_nodes)
 				/ (double)node_record_count;
-		} else
+/* 			if(job_ptr->num_procs && job_ptr->num_procs != NO_VAL) { */
+/* 				factors->priority_js +=  */
+/* 					(double)(total_cpus - job_ptr->num_procs) */
+/* 					/ (double)total_cpus; */
+/* 				factors->priority_js /= 2;			 */
+/* 			} */
+		} else {
 			factors->priority_js =
 				(double)job_ptr->details->min_nodes
 				/ (double)node_record_count;
+/* 			if(job_ptr->num_procs && job_ptr->num_procs != NO_VAL) { */
+/* 				factors->priority_js +=  */
+/* 					(double)job_ptr->num_procs */
+/* 					/ (double)total_cpus; */
+/* 				factors->priority_js /= 2;			 */
+/* 			} */
+		}
 		if (factors->priority_js < .0)
 			factors->priority_js = 0.0;
 		else if (factors->priority_js > 1.0)
@@ -907,7 +939,7 @@ int init ( void )
 		      temp);
 		calc_fairshare = 0;
 		weight_fs = 0;
-	} else {
+	} else if(assoc_mgr_root_assoc) {
 		if(!cluster_procs)
 			fatal("We need to have a cluster cpu count "
 			      "before we can init the priority/multifactor "
@@ -929,7 +961,17 @@ int init ( void )
 			fatal("pthread_create error %m");
 		
 		slurm_attr_destroy(&thread_attr);
+	} else {
+		if(weight_fs)
+			fatal("It appears you don't have any association "
+			      "data from your database.  "
+			      "The priority/multifactor plugin requires "
+			      "this information to run correctly.  Please "
+			      "check your database connection and try again.");
+		
+		calc_fairshare = 0;
 	}
+
 	xfree(temp);
 
 	verbose("%s loaded", plugin_name);

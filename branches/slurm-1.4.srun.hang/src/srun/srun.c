@@ -154,6 +154,26 @@ static void  _task_start(launch_tasks_response_msg_t *msg);
 static void  _task_finish(task_exit_msg_t *msg);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
 
+/*
+ * from libvirt-0.6.2 GPL2
+ *
+ * console.c: A dumb serial console client
+ *
+ * Copyright (C) 2007, 2008 Red Hat, Inc.
+ *
+ */
+#ifndef HAVE_CFMAKERAW
+void cfmakeraw(struct termios *attr)
+{
+	attr->c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP
+				| INLCR | IGNCR | ICRNL | IXON);
+	attr->c_oflag &= ~OPOST;
+	attr->c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+	attr->c_cflag &= ~(CSIZE | PARENB);
+	attr->c_cflag |= CS8;
+}
+#endif
+
 int srun(int ac, char **av)
 {
 	resource_allocation_response_msg_t *resp;
@@ -255,6 +275,10 @@ int srun(int ac, char **av)
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
 
+		if (opt.begin != 0)
+			error("--begin is ignored because nodes"
+				" are already allocated.");
+
 		if (!job || create_job_step(job, false) < 0)
 			exit(1);
 	} else {
@@ -315,6 +339,7 @@ int srun(int ac, char **av)
 	env->slurmd_debug = opt.slurmd_debug;
 	env->labelio = opt.labelio;
 	env->comm_port = slurmctld_comm_addr.port;
+	env->batch_flag = 0;
 	if (job) {
 		uint16_t *tasks = NULL;
 		slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, 
@@ -382,6 +407,9 @@ int srun(int ac, char **av)
 	launch_params.ckpt_dir		= opt.ckpt_dir;
 	launch_params.restart_dir       = opt.restart_dir;
 	launch_params.preserve_env      = opt.preserve_env;
+	launch_params.spank_job_env     = opt.spank_job_env;
+	launch_params.spank_job_env_size = opt.spank_job_env_size;
+	launch_params.io_timeout	= opt.io_timeout;
 	/* job structure should now be filled in */
 	_setup_signals();
 
@@ -442,7 +470,7 @@ int srun(int ac, char **av)
 			if (create_job_step(job, true) < 0)
 				exit(1);
 		} else {
-			if (create_job_step(job, true) < 0)
+			if (create_job_step(job, false) < 0)
 				exit(1);
 		}
 		task_state_destroy(task_state);
@@ -452,8 +480,14 @@ int srun(int ac, char **av)
 cleanup:
 	if(got_alloc) {
 		cleanup_allocation();
-		slurm_complete_job(job->jobid, global_rc);
+
+		/* send the controller we were cancelled */
+		if (job->state >= SRUN_JOB_CANCELLED)
+			slurm_complete_job(job->jobid, NO_VAL);
+		else
+			slurm_complete_job(job->jobid, global_rc);
 	}
+
 	_run_srun_epilog(job);
 	slurm_step_ctx_destroy(job->step_ctx);
 	mpir_cleanup();
@@ -778,7 +812,7 @@ static int _run_srun_script (srun_job_t *job, char *script)
 		if (waitpid(cpid, &status, 0) < 0) {
 			if (errno == EINTR)
 				continue;
-			error("waidpid: %m");
+			error("waitpid: %m");
 			return 0;
 		} else
 			return status;
@@ -884,7 +918,8 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
  * used, but we need to load the symbols. */
 static void _define_symbols(void)
 {
-	slurm_signal_job_step(0,0,0);	/* needed by mvapich and mpichgm */
+	/* needed by mvapich and mpichgm */
+	slurm_signal_job_step(NO_VAL, NO_VAL, 0);
 }
 
 static void _pty_restore(void)
@@ -1161,13 +1196,9 @@ static void _handle_intr()
 {
 	static time_t last_intr      = 0;
 	static time_t last_intr_sent = 0;
-	if (opt.quit_on_intr) {
-		job_force_termination(job);
-		slurm_step_launch_abort(job->step_ctx);
-		return;
-	}
 
-	if (((time(NULL) - last_intr) > 1) && !opt.disable_status) {
+	if (!opt.quit_on_intr && 
+	    (((time(NULL) - last_intr) > 1) && !opt.disable_status)) {
 		if (job->state < SRUN_JOB_FORCETERM)
 			info("interrupt (one more within 1 sec to abort)");
 		else

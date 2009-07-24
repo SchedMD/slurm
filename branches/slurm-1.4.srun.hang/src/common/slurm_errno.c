@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -217,7 +217,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_WCKEY,
 	  "Job has invalid wckey"				},
 	{ ESLURM_INVALID_LICENSES,
-	  "Job has invalid license specification"		},
+	  "Invalid license specification"			},
 	{ ESLURM_NEED_RESTART,
 	  "The node configuration changes that were made require restart "
 	  "of the slurmctld daemon to take effect"},
@@ -244,6 +244,14 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requires more ports than can be reserved"		},
 	{ ESLURM_PROLOG_RUNNING,
 	  "SlurmctldProlog is still running"			},
+	{ ESLURM_NO_STEPS,
+	  "Job steps can not be run on this cluster"		},
+	{ ESLURM_INVALID_BLOCK_STATE, 
+	  "Invalid block state specified"			},
+	{ ESLURM_INVALID_BLOCK_LAYOUT, 
+	  "Functionality not available with current block layout mode"},
+	{ ESLURM_INVALID_BLOCK_NAME, 
+	  "Invalid block name specified"			},
 
 	/* slurmd error codes */
 

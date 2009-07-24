@@ -41,7 +41,7 @@ typedef struct env_options {
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	task_dist_states_t distribution; /* --distribution=, -m dist	*/
-	int plane_size;         /* plane_size for SLURM_DIST_PLANE */
+	uint16_t plane_size;         /* plane_size for SLURM_DIST_PLANE */
 	cpu_bind_type_t
 		cpu_bind_type;	/* --cpu_bind=			*/
 	char *cpu_bind;		/* binding map for map/mask_cpu	*/
@@ -51,7 +51,7 @@ typedef struct env_options {
 	bool overcommit;	/* --overcommit,   -O		*/
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	bool labelio;		/* --label-output, -l		*/
-	select_jobinfo_t select_jobinfo;
+	select_jobinfo_t *select_jobinfo;
 	int nhosts;
 	char *nodelist;		/* nodelist in string form */
 	char **env;             /* job environment */
@@ -75,6 +75,7 @@ typedef struct env_options {
 	uint8_t ws_row;		/* window size, row count */
 	char *ckpt_dir;		/* --ckpt-dir=                 */
 	uint16_t restart_cnt;	/* count of job restarts	*/
+	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 } env_t;
 
 

@@ -64,10 +64,30 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+
+#if defined(HAVE_AIX) || defined(__sun)
+#  include <sys/times.h>
+#  include <sys/types.h>
+#else
+/* NOTE: Getting the system uptime on AIX uses completely different logic.
+ * sys/sysinfo.h on AIX defines structures that conflict with SLURM code. */
+#  include <sys/sysinfo.h>
+#endif
+
 #include <sys/utsname.h>
+
+#ifdef HAVE_SYS_STATFS_H
+#  include <sys/statfs.h>
+#else
 #ifdef HAVE_SYS_VFS_H
 #  include <sys/vfs.h>
 #endif
+#endif
+
+#ifdef HAVE_KSTAT_H
+# include <kstat.h>
+#endif
+
 #include <unistd.h>
 
 #include "src/common/hostlist.h"
@@ -79,17 +99,17 @@
 
 static char* _cpuinfo_path = "/proc/cpuinfo";
 
-int compute_block_map(uint16_t numproc,
-			uint16_t **block_map, uint16_t **block_map_inv);
-int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
-int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
-int chk_cpuinfo_float(char *buffer, char *keyword, float *val);
+static int _compute_block_map(uint16_t numproc,
+			      uint16_t **block_map, uint16_t **block_map_inv);
+static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
+static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 
 /* #define DEBUG_DETAIL	1 */	/* enable detailed debugging within SLURM */
 
 #if DEBUG_MODULE
 #define DEBUG_DETAIL	1
-#define debug0	printf
+#define error 	printf
+#define debug 	printf
 #define debug1	printf
 #define debug2	printf
 #define debug3	printf
@@ -110,6 +130,8 @@ main(int argc, char * argv[])
 	char node_name[MAX_SLURM_NAME];
 	float speed;
 	uint16_t testnumproc = 0;
+	uint32_t up_time = 0;
+	int days, hours, mins, secs;
 
 	if (argc > 1) {
 	    	_cpuinfo_path = argv[1];
@@ -132,6 +154,7 @@ main(int argc, char * argv[])
 	xfree(block_map_inv);	/* not used here */
 	error_code += get_memory(&this_node.real_memory);
 	error_code += get_tmp_disk(&this_node.tmp_disk, "/tmp");
+	error_code += get_up_time(&up_time);
 #ifdef USE_CPU_SPEED
 	error_code += get_speed(&speed);
 #endif
@@ -142,6 +165,12 @@ main(int argc, char * argv[])
 		this_node.sockets, this_node.cores, this_node.threads);
 	debug3("\tRealMemory=%u TmpDisk=%u Speed=%f\n",
 		this_node.real_memory, this_node.tmp_disk, speed);
+	secs  = up_time % 60;
+	mins  = (up_time / 60) % 60;
+	hours = (up_time / 3600) % 24;
+	days  = (up_time / 86400);
+	debug3("\tUpTime=%u=%u-%2.2u:%2.2u:%2.2u\n",
+	       up_time, days, hours, mins, secs);
 	if (error_code != 0) 
 		debug3("get_mach_stat error_code=%d encountered\n", error_code);
 	exit (error_code);
@@ -352,7 +381,11 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 
 	if (tmp_fs_name == NULL)
 		tmp_fs_name = "/tmp";
+#if defined (__sun)
+	if (statfs(tmp_fs_name, &stat_buf, 0, 0) == 0) {
+#else
 	if (statfs(tmp_fs_name, &stat_buf) == 0) {
+#endif
 		total_size = (long)stat_buf.f_blocks;
 	}
 	else if (errno != ENOENT) {
@@ -368,8 +401,37 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 	return error_code;
 }
 
+extern int get_up_time(uint32_t *up_time)
+{
+#if defined(HAVE_AIX) || defined(__sun)
+	clock_t tm;
+	struct tms buf;
 
-/* chk_cpuinfo_str
+	tm = times(&buf);
+	if (tm == (clock_t) -1) {
+		*up_time = 0;
+		return errno;
+	}
+
+	*up_time = tm / sysconf(_SC_CLK_TCK);
+#else
+	/* NOTE for Linux: The return value of times() may overflow the 
+	 * possible range of type clock_t. There is also an offset of 
+	 * 429 million seconds on some implementations. We just use the 
+	 * simpler sysinfo() function instead. */
+	struct sysinfo info;
+
+	if (sysinfo(&info) < 0) {
+		*up_time = 0;
+		return errno;
+	}
+
+	*up_time = info.uptime;
+#endif
+	return 0;
+}
+
+/* _chk_cpuinfo_str
  *	check a line of cpuinfo data (buffer) for a keyword.  If it
  *	exists, return the string value for that keyword in *valptr.
  * Input:  buffer - single line of cpuinfo data
@@ -377,7 +439,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
  * Output: valptr - string value corresponding to keyword
  *         return code - true if keyword found, false if not found
  */
-int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
+static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
 {
 	char *ptr;
 	if (strncmp(buffer, keyword, strlen(keyword)))
@@ -390,7 +452,7 @@ int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
 	return true;
 }
 
-/* chk_cpuinfo_uint32
+/* _chk_cpuinfo_uint32
  *	check a line of cpuinfo data (buffer) for a keyword.  If it
  *	exists, return the uint16 value for that keyword in *valptr.
  * Input:  buffer - single line of cpuinfo data
@@ -398,18 +460,18 @@ int chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
  * Output: valptr - uint32 value corresponding to keyword
  *         return code - true if keyword found, false if not found
  */
-int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val)
+static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val)
 {
 	char *valptr;
-	if (chk_cpuinfo_str(buffer, keyword, &valptr)) {
+	if (_chk_cpuinfo_str(buffer, keyword, &valptr)) {
 		*val = strtoul(valptr, (char **)NULL, 10);
 		return true;
 	} else {
 		return false;
 	}
 }
-
-/* chk_cpuinfo_float
+#ifdef USE_CPU_SPEED
+/* _chk_cpuinfo_float
  *	check a line of cpuinfo data (buffer) for a keyword.  If it
  *	exists, return the float value for that keyword in *valptr.
  * Input:  buffer - single line of cpuinfo data
@@ -417,10 +479,10 @@ int chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val)
  * Output: valptr - float value corresponding to keyword
  *         return code - true if keyword found, false if not found
  */
-int chk_cpuinfo_float(char *buffer, char *keyword, float *val)
+static int _chk_cpuinfo_float(char *buffer, char *keyword, float *val)
 {
 	char *valptr;
-	if (chk_cpuinfo_str(buffer, keyword, &valptr)) {
+	if (_chk_cpuinfo_str(buffer, keyword, &valptr)) {
 		*val = (float) strtod(valptr, (char **)NULL);
 		return true;
 	} else {
@@ -428,7 +490,6 @@ int chk_cpuinfo_float(char *buffer, char *keyword, float *val)
 	}
 }
 
-#ifdef USE_CPU_SPEED
 /*
  * get_speed - Return the speed of procs on this system (MHz clock)
  * Input: procs - buffer for the CPU speed
@@ -438,21 +499,39 @@ int chk_cpuinfo_float(char *buffer, char *keyword, float *val)
 extern int 
 get_speed(float *speed) 
 {
+#if defined (__sun)
+	kstat_ctl_t   *kc;
+	kstat_t       *ksp;
+	kstat_named_t *knp;
+
+	kc = kstat_open();
+	if (kc == NULL) {
+		error ("get speed: kstat error %d\n", errno);
+		return errno;
+	}
+
+	ksp = kstat_lookup(kc, "cpu_info", -1, NULL);
+	kstat_read(kc, ksp, NULL);
+	knp = kstat_data_lookup(ksp, "clock_MHz");
+
+	*speed = knp->value.l;
+#else
 	FILE *cpu_info_file;
 	char buffer[128];
 
 	*speed = 1.0;
 	cpu_info_file = fopen(_cpuinfo_path, "r");
 	if (cpu_info_file == NULL) {
-		error ("get_speed: error %d opening %s\n", errno, _cpuinfo_path);
+		error("get_speed: error %d opening %s\n", errno, _cpuinfo_path);
 		return errno;
 	} 
 
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
-		chk_cpuinfo_float(buffer, "cpu MHz", speed);
+		_chk_cpuinfo_float(buffer, "cpu MHz", speed);
 	} 
 
 	fclose(cpu_info_file);
+#endif
 	return 0;
 } 
 
@@ -487,10 +566,7 @@ get_cpuinfo(uint16_t numproc,
 		uint16_t *block_map_size,
 		uint16_t **block_map, uint16_t **block_map_inv)
 {
-	FILE *cpu_info_file;
-	char buffer[128];
 	int retval;
-	uint16_t curcpu, sockets, cores, threads;
 	uint16_t numcpu	   = 0;		/* number of cpus seen */
 	uint16_t numphys   = 0;		/* number of unique "physical id"s */
 	uint16_t numcores  = 0;		/* number of unique "cores id"s */
@@ -507,6 +583,18 @@ get_cpuinfo(uint16_t numproc,
 	uint32_t minphysid = 0xffffffff;/* minimum "physical id" */
 	uint32_t mincoreid = 0xffffffff;/* minimum "core id" */
 	int i;
+#if defined (__sun)
+#if defined (_LP64)
+	int64_t curcpu, val, sockets, cores, threads;
+#else
+	int32_t curcpu, val, sockets, cores, threads;
+#endif
+	int32_t chip_id, core_id, ncore_per_chip, ncpu_per_chip;
+#else
+	FILE *cpu_info_file;
+	char buffer[128];
+	uint16_t curcpu, sockets, cores, threads;
+#endif
 
 	*p_sockets = numproc;		/* initially all single core/thread */
 	*p_cores   = 1;
@@ -515,13 +603,24 @@ get_cpuinfo(uint16_t numproc,
 	*block_map      = NULL;
 	*block_map_inv  = NULL;
 
+#if defined (__sun)
+	kstat_ctl_t   *kc;
+	kstat_t       *ksp;
+	kstat_named_t *knp;
+
+	kc = kstat_open();
+	if (kc == NULL) {
+		error ("get speed: kstat error %d\n", errno);
+		return errno;
+	}
+#else
 	cpu_info_file = fopen(_cpuinfo_path, "r");
 	if (cpu_info_file == NULL) {
 		error ("get_cpuinfo: error %d opening %s\n", 
 			errno, _cpuinfo_path);
 		return errno;
 	}
-
+#endif
 
 	/* Note: assumes all processor IDs are within [0:numproc-1] */
 	/*       treats physical/core IDs as tokens, not indices */
@@ -530,10 +629,73 @@ get_cpuinfo(uint16_t numproc,
 	else
 		cpuinfo = xmalloc(numproc * sizeof(cpuinfo_t));
 
+#if defined (__sun)
+	ksp = kstat_lookup(kc, "cpu_info", -1, NULL);
+	for (; ksp != NULL; ksp = ksp->ks_next) {
+		if (strcmp(ksp->ks_module, "cpu_info"))
+			continue;
+
+		numcpu++;
+		kstat_read(kc, ksp, NULL);
+
+		knp = kstat_data_lookup(ksp, "chip_id");
+		chip_id = knp->value.l;
+		knp = kstat_data_lookup(ksp, "core_id");
+		core_id = knp->value.l;
+		knp = kstat_data_lookup(ksp, "ncore_per_chip");
+		ncore_per_chip = knp->value.l;
+		knp = kstat_data_lookup(ksp, "ncpu_per_chip");
+		ncpu_per_chip = knp->value.l;
+
+		if (chip_id >= numproc) {
+			debug("cpuid is %ld (> %d), ignored", curcpu, numproc);
+			continue;
+		}
+
+		cpuinfo[chip_id].seen = 1;
+		cpuinfo[chip_id].cpuid = chip_id;
+
+		maxcpuid = MAX(maxcpuid, chip_id);
+		mincpuid = MIN(mincpuid, chip_id);
+
+		for (i = 0; i < numproc; i++) {
+			if ((cpuinfo[i].coreid == core_id) &&
+			    (cpuinfo[i].corecnt))
+				break;
+		}
+
+		if (i == numproc) {
+			numcores++;
+		} else {
+			cpuinfo[i].corecnt++;
+		}
+
+		if (chip_id < numproc) {
+			cpuinfo[chip_id].corecnt++;
+			cpuinfo[chip_id].coreid = core_id;
+		}
+
+		maxcoreid = MAX(maxcoreid, core_id);
+		mincoreid = MIN(mincoreid, core_id);
+
+		if (ncore_per_chip > numproc) {
+			debug("cores is %u (> %d), ignored",
+			      ncore_per_chip, numproc);
+				continue;
+		}
+
+		if (chip_id < numproc)
+			cpuinfo[chip_id].cores = ncore_per_chip;
+
+		maxcores = MAX(maxcores, ncore_per_chip);
+		mincores = MIN(mincores, ncore_per_chip);
+	}
+#else
+
 	curcpu = 0;
 	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
 		uint32_t val;
-		if (chk_cpuinfo_uint32(buffer, "processor", &val)) {
+		if (_chk_cpuinfo_uint32(buffer, "processor", &val)) {
 			numcpu++;
 			curcpu = val;
 		    	if (val >= numproc) {	/* out of bounds, ignore */
@@ -545,7 +707,7 @@ get_cpuinfo(uint16_t numproc,
 			cpuinfo[val].cpuid = val;
 			maxcpuid = MAX(maxcpuid, val);
 			mincpuid = MIN(mincpuid, val);
-		} else if (chk_cpuinfo_uint32(buffer, "physical id", &val)) {
+		} else if (_chk_cpuinfo_uint32(buffer, "physical id", &val)) {
 			/* see if the ID has already been seen */
 			for (i=0; i<numproc; i++) {
 				if ((cpuinfo[i].physid == val)
@@ -566,7 +728,7 @@ get_cpuinfo(uint16_t numproc,
 
 			maxphysid = MAX(maxphysid, val);
 			minphysid = MIN(minphysid, val);
-		} else if (chk_cpuinfo_uint32(buffer, "core id", &val)) {
+		} else if (_chk_cpuinfo_uint32(buffer, "core id", &val)) {
 			/* see if the ID has already been seen */
 			for (i = 0; i < numproc; i++) {
 				if ((cpuinfo[i].coreid == val)
@@ -587,7 +749,7 @@ get_cpuinfo(uint16_t numproc,
 
 			maxcoreid = MAX(maxcoreid, val);
 			mincoreid = MIN(mincoreid, val);
-		} else if (chk_cpuinfo_uint32(buffer, "siblings", &val)) {
+		} else if (_chk_cpuinfo_uint32(buffer, "siblings", &val)) {
 			/* Note: this value is a count, not an index */
 		    	if (val > numproc) {	/* out of bounds, ignore */
 				debug("siblings is %u (> %d), ignored",
@@ -598,7 +760,7 @@ get_cpuinfo(uint16_t numproc,
 				cpuinfo[curcpu].siblings = val;
 			maxsibs = MAX(maxsibs, val);
 			minsibs = MIN(minsibs, val);
-		} else if (chk_cpuinfo_uint32(buffer, "cpu cores", &val)) {
+		} else if (_chk_cpuinfo_uint32(buffer, "cpu cores", &val)) {
 			/* Note: this value is a count, not an index */
 		    	if (val > numproc) {	/* out of bounds, ignore */
 				debug("cores is %u (> %d), ignored",
@@ -613,7 +775,7 @@ get_cpuinfo(uint16_t numproc,
 	}
 
 	fclose(cpu_info_file);
-
+#endif
 
 	/*** Sanity check ***/
 	if (minsibs == 0) minsibs = 1;		/* guaranteee non-zero */
@@ -695,7 +857,7 @@ get_cpuinfo(uint16_t numproc,
 #endif
 
 	*block_map_size = numcpu;
-	retval = compute_block_map(*block_map_size, block_map, block_map_inv);
+	retval = _compute_block_map(*block_map_size, block_map, block_map_inv);
 
 	xfree(cpuinfo);		/* done with raw cpuinfo data */
 
@@ -703,7 +865,7 @@ get_cpuinfo(uint16_t numproc,
 }
 
 /*
- * compute_block_map - Compute abstract->machine block mapping (and inverse)
+ * _compute_block_map - Compute abstract->machine block mapping (and inverse)
  *   allows computation of CPU ID masks for an abstract block distribution
  *   of logical processors which can then be mapped the IDs used in the
  *   actual machine processor ID ordering (which can be BIOS/OS dependendent)
@@ -764,7 +926,7 @@ static int _icmp32(uint32_t a, uint32_t b)
 	}
 }
 
-int _compare_cpus(const void *a1, const void *b1) {
+static int _compare_cpus(const void *a1, const void *b1) {
 	uint16_t *a = (uint16_t *) a1;
 	uint16_t *b = (uint16_t *) b1;
 	int cmp;
@@ -785,8 +947,8 @@ int _compare_cpus(const void *a1, const void *b1) {
 	return cmp;
 }
 
-int compute_block_map(uint16_t numproc,
-		uint16_t **block_map, uint16_t **block_map_inv)
+static int _compute_block_map(uint16_t numproc,
+			      uint16_t **block_map, uint16_t **block_map_inv)
 {
 	uint16_t i;
 	/* Compute abstract->machine block mapping (and inverse) */

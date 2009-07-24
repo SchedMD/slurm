@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -72,10 +72,13 @@
 #  include <inttypes.h>
 #endif
 
+#if HAVE_PATHS_H
+#  include <paths.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <paths.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -204,10 +207,10 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 
 	/*
 	 *  Job will typically be COMPLETING when this code is called.
-	 *  We remove the COMPLETING flag to hopefully get the evenual
+	 *  We remove the flags to hopefully get the eventual
 	 *  completion state: e.g.: JOB_FAILED, TIMEOUT, ....
 	 */
-	state = job->job_state & (~JOB_COMPLETING);
+	state = job->job_state & JOB_STATE_BASE;
 	j->jobstate = xstrdup (job_state_string (state));
 
 	j->partition = xstrdup (job->partition);
@@ -225,11 +228,11 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	else
 		j->work_dir = xstrdup("unknown");
 #ifdef HAVE_BG
-	j->connect_type = select_g_xstrdup_jobinfo(job->select_jobinfo,
+	j->connect_type = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
 						   SELECT_PRINT_CONNECTION);
-	j->geometry = select_g_xstrdup_jobinfo(job->select_jobinfo,
+	j->geometry = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
 					       SELECT_PRINT_GEOMETRY);
-	j->blockid = select_g_xstrdup_jobinfo(job->select_jobinfo,
+	j->blockid = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
 					      SELECT_PRINT_BG_ID);
 #endif
 	return (j);
@@ -413,7 +416,7 @@ static void _jobcomp_child (char * script, struct jobcomp_info *job)
 		exit (1);
 
 	if (chdir (tmpdir) != 0) {
-		error ("jobcomp/script: chdir (%s): %m", _PATH_TMP);
+		error ("jobcomp/script: chdir (%s): %m", tmpdir);
 		exit(1);
 	}
 
@@ -559,9 +562,8 @@ int slurm_jobcomp_log_record (struct job_record *record)
 
 	pthread_mutex_lock(&comp_list_mutex);
 	list_append(comp_list, job);
-	pthread_mutex_unlock(&comp_list_mutex);
-
 	pthread_cond_broadcast(&comp_list_cond);
+	pthread_mutex_unlock(&comp_list_mutex);
 
 	return SLURM_SUCCESS;
 }

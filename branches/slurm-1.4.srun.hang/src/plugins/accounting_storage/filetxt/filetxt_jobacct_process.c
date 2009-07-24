@@ -3,8 +3,8 @@
  *                               information from the filetxt jobacct
  *                               storage.
  *****************************************************************************
- *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
@@ -1398,7 +1398,9 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 	
 	if (new_file) {  /* By default, the expired file looks like the log */
 		chmod(logfile_name, prot);
-		chown(logfile_name, uid, gid);
+		if(chown(logfile_name, uid, gid) == -1)
+			error("Couldn't change ownership of %s to %u:%u",
+			      logfile_name, uid, gid);
 	}
 	xfree(logfile_name);
 
@@ -1411,7 +1413,9 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 		goto finished;
 	}
 	chmod(logfile_name, prot);     /* preserve file protection */
-	chown(logfile_name, uid, gid); /* and ownership */
+	if(chown(logfile_name, uid, gid) == -1)/* and ownership */
+		error("2 Couldn't change ownership of %s to %u:%u",
+		      logfile_name, uid, gid);
 	/* Use line buffering to allow us to safely write
 	 * to the log file at the same time as slurmctld. */ 
 	if (setvbuf(new_logfile, NULL, _IOLBF, 0)) {

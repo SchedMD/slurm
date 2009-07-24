@@ -152,7 +152,7 @@ function displayfile()
    get_field("Epilog",document.config.epilog) + "<br>" +
    "#PrologSlurmctld= <br>" +
    "#FirstJobId=1 <br>" +
-   "#JobCheckpointDir=/var/slurm/checkpoint <br>"
+   "#JobCheckpointDir=/var/slurm/checkpoint <br>" +
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
    "#JobFileAppend=0 <br>" +
@@ -219,6 +219,7 @@ function displayfile()
    "# <br>" +
    "# SCHEDULING <br>" +
    "#DefMemPerCPU=0 <br>" +
+   "#EnablePreemption=no <br>" +
    "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
    "#MaxMemPerCPU=0 <br>" +
    "#SchedulerRootFilter=1 <br>" +
@@ -269,6 +270,8 @@ function displayfile()
    "# POWER SAVE SUPPORT FOR IDLE NODES (optional) <br>" +
    "#SuspendProgram= <br>" +
    "#ResumeProgram= <br>" +
+   "#SuspendTimeout= <br>" +
+   "#ResumeTimeout= <br>" +
    "#ResumeRate= <br>" +
    "#SuspendExcNodes= <br>" +
    "#SuspendExcParts= <br>" +
@@ -280,7 +283,7 @@ function displayfile()
    "NodeName=" + document.config.node_name.value +
    get_field2(" NodeAddr",document.config.node_addr) +
    get_field2(" Procs",document.config.procs) +
-   get_field2(" Memory",document.config.memory) +
+   get_field2(" RealMemory",document.config.memory) +
    get_field2(" Sockets",document.config.sockets) +
    get_field2(" CoresPerSocket",document.config.cores_per_socket) +
    get_field2(" ThreadsPerCore",document.config.threads_per_core) +
@@ -416,7 +419,7 @@ the logical number of processors per socket.
 <B>ThreadsPerCore</B>:
 Number of logical threads in a single physical core.
 <P>
-<input type="text" name="memory" value=""> <B>Memory</B>: Amount 
+<input type="text" name="memory" value=""> <B>RealMemory</B>: Amount 
 of real memory. This parameter is required when specifying Memory as a 
 consumable resource with the select/cons_res plug-in. See below 
 under Resource Selection. 
@@ -839,6 +842,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 9 April 2009</P>
+Last modified 13 May 2009</P>
 </BODY>
 

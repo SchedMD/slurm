@@ -93,6 +93,7 @@
 
 extern char *command_name;
 extern int all_flag;	/* display even hidden partitions */
+extern int detail_flag;	/* display additional details */
 extern int exit_code;	/* scontrol's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
 extern int input_words;	/* number of words of input permitted */
@@ -106,8 +107,10 @@ extern int	scontrol_job_notify(int argc, char *argv[]);
 extern int 	scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr);
 extern int 	scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr, 
 				     uint16_t show_flags);
-extern int 	scontrol_load_partitions (partition_info_msg_t 
-					  **part_info_pptr);
+extern int 	scontrol_load_partitions (
+	partition_info_msg_t **part_info_pptr);
+extern int 	scontrol_load_block(
+	block_info_msg_t **block_info_pptr);
 extern void	scontrol_pid_info(pid_t job_pid);
 extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr, 
@@ -118,6 +121,7 @@ extern void	scontrol_print_node (char *node_name,
 				     node_info_msg_t *node_info_ptr);
 extern void	scontrol_print_node_list (char *node_list);
 extern void	scontrol_print_part (char *partition_name);
+extern void	scontrol_print_block (char *block_name);
 extern void	scontrol_print_res (char *reservation_name);
 extern void	scontrol_print_step (char *job_step_id_str);
 extern void	scontrol_print_topo (char *node_list);

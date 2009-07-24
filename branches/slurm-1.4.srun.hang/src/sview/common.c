@@ -175,7 +175,7 @@ cleanup:
  */
 static int _bp_coordinate(const char *name)
 {
-	int i, io_val = 999, low_val = -1, high_val;
+	int i, io_val = 999, low_val = -1, high_val = -1;
 
 	for (i=0; name[i]; i++) {
 		if (name[i] == '[') {
@@ -256,13 +256,13 @@ static void *_editing_thr(gpointer arg)
 	return NULL;	
 }
 
-
 static void _add_col_to_treeview(GtkTreeView *tree_view, 
-				 display_data_t *display_data)
+				 display_data_t *display_data, int color_column)
 {
 	GtkTreeViewColumn *col = gtk_tree_view_column_new();
 	GtkListStore *model = (display_data->create_model)(display_data->id);
 	GtkCellRenderer *renderer = NULL;
+
 	if(model && display_data->extra != EDIT_NONE) {
 		renderer = gtk_cell_renderer_combo_new();
 		g_object_set(renderer,
@@ -292,17 +292,24 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 			  GINT_TO_POINTER(display_data->id));
 	
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute(col, renderer, 
-					   "text", display_data->id);
-	
-	gtk_tree_view_column_set_title(col, display_data->name);
-	gtk_tree_view_column_set_reorderable(col, true);
-	gtk_tree_view_column_set_resizable(col, true);
-	gtk_tree_view_column_set_expand(col, true);
-	gtk_tree_view_append_column(tree_view, col);
-	//	gtk_tree_view_insert_column(tree_view, col, display_data->id);
-	gtk_tree_view_column_set_sort_column_id(col, display_data->id);
 
+	if(display_data->id == color_column) {
+		gtk_tree_view_column_add_attribute(col, renderer,
+						   "cell-background",
+						   color_column);
+		g_object_set(renderer,
+			     "cell-background-set", TRUE,
+			     NULL);
+	} else {
+		gtk_tree_view_column_add_attribute(col, renderer,
+						   "text", display_data->id);
+		gtk_tree_view_column_set_expand(col, true);
+		gtk_tree_view_column_set_reorderable(col, true);
+		gtk_tree_view_column_set_resizable(col, true);
+		gtk_tree_view_column_set_sort_column_id(col, display_data->id);
+		gtk_tree_view_column_set_title(col, display_data->name);
+	}	
+	gtk_tree_view_append_column(tree_view, col);
 }
 
 static void _toggle_state_changed(GtkCheckMenuItem *menuitem, 
@@ -649,7 +656,8 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 
 extern GtkTreeStore *create_treestore(GtkTreeView *tree_view, 
 				      display_data_t *display_data,
-				      int count)
+				      int count, int sort_column,
+				      int color_column)
 {
 	GtkTreeStore *treestore = NULL;
 	GType types[count];
@@ -667,11 +675,14 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 	}
 	
 	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(treestore));
+
 	for(i=1; i<count; i++) {
 		if(!display_data[i].show) 
 			continue;
 		
-		_add_col_to_treeview(tree_view, &display_data[i]);
+		_add_col_to_treeview(tree_view, &display_data[i], color_column);
+		if(!display_data[i].name) 
+			continue;
 		switch(display_data[i].type) {
 		case G_TYPE_INT:
 			gtk_tree_sortable_set_sort_func(
@@ -717,7 +728,7 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 		}
 	}
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(treestore), 
-					     1, 
+					     sort_column, 
 					     GTK_SORT_ASCENDING);
 	
 	g_object_unref(treestore);
@@ -1190,8 +1201,8 @@ extern void add_display_treestore_line(int update,
 				       const char *name, char *value)
 {
 	if(!name) {
-		g_print("error, name = %s and value = %s\n",
-			name, value);
+/* 		g_print("error, name = %s and value = %s\n", */
+/* 			name, value); */
 		return;
 	}
 	if(update) {
@@ -1228,4 +1239,63 @@ found:
 			   -1);
 	
 	return;
+}
+
+extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
+				   const GdkColor color)
+{
+/* 	DEF_TIMERS; */
+
+/* 	START_TIMER; */
+	if(grid_speedup) {
+		/* For some reason, QT Themes have a very slow call to for
+		 * gtk_widget_modify_bg as of 7-6-09.  
+		 * Here we only take around 40 microsecs where
+		 * gtk_widget_modify_bg takes around 2500.  This isn't
+		 * that big of a deal on most systems, but if you have
+		 * like 10000 nodes this makes an outrageous
+		 * difference.  You must follow this up by doing a
+		 * gtk_widget_set_sensitive 0, and then 1 on the
+		 * parent container to make the color stick.  
+		 */
+		GtkRcStyle *rc_style = gtk_widget_get_modifier_style (widget);
+		widget->style->bg[state] = color;
+		rc_style->bg[state] = color;
+		rc_style->color_flags[state] |= GTK_RC_BG;
+		gtk_widget_reset_rc_styles (widget);
+	} else 
+		gtk_widget_modify_bg(widget, GTK_STATE_NORMAL, &color);
+
+/* 	END_TIMER; */
+/* 	g_print("got %s\n", TIME_STR); */
+
+/* 			START_TIMER; */
+/* 			GtkRcStyle *rc_style = gtk_widget_get_modifier_style (grid_button->button); */
+/* 			END_TIMER; */
+/* 			g_print("%d 1 took %s\n", grid_button->inx, TIME_STR); */
+
+/* 			grid_button->button-> */
+/* 				style->bg[GTK_STATE_NORMAL] = color; */
+/* 			/\* grid_button->button-> *\/ */
+/* /\* 				style->style->flags[GTK_STATE_NORMAL] = color; *\/ */
+/* 			START_TIMER; */
+/* 			rc_style->bg[GTK_STATE_NORMAL] = color; */
+/* 			rc_style->color_flags[GTK_STATE_NORMAL] |= GTK_RC_BG; */
+/* 			/\* g_object_set_qdata (G_OBJECT(grid_button->button), *\/ */
+/* /\* 						 quark_rc_style, *\/ */
+/* /\* 					    rc_style); *\/ */
+/* 			END_TIMER; */
+/* 			g_print("%d 2 took %s\n", grid_button->inx, TIME_STR); */
+/* 			START_TIMER; */
+/* 			gtk_widget_reset_rc_styles (grid_button->button); */
+/* /\* 			gtk_widget_set_sensitive(grid_button->button, 0); *\/ */
+/* /\* 			gtk_widget_set_sensitive(grid_button->button, 1); *\/ */
+
+/* /\* 			gtk_widget_hide_all(grid_button->button); *\/ */
+/* /\* 			gtk_widget_show_all(grid_button->button); *\/ */
+/* /\* 			gtk_widget_modify_bg(grid_button->button, *\/ */
+/* /\* 					     GTK_STATE_NORMAL, &color); *\/ */
+/* 			END_TIMER; */
+/* 			g_print("%d 3 took %s\n", grid_button->inx, TIME_STR); */
+
 }

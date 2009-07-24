@@ -149,7 +149,7 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 		    && step_info->job_steps[i].step_id == step_id) {
  			rc = _signal_job_step(&step_info->job_steps[i],
  					      alloc_info, signal);
- 			save_errno = errno;
+ 			save_errno = rc;
 			break;
 		}
 	}

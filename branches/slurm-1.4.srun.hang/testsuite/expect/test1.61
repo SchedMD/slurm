@@ -1,13 +1,13 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test sacct --allusers option.
+#          test to verify job step time limit
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2008-2009 TheLawrence Livermore National Security, LLC .
+# Copyright (C) 2009 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -32,83 +32,98 @@
 ############################################################################
 source ./globals
 
-set test_id     "12.3"
+set test_id     "1.61"
 set exit_code   0
-set matches     0
-set not_support 0
+set job_id 0
+set file_in     "test$test_id.input"
+set file_out    "test$test_id.output"
+set file_err    "test$test_id.error"
+set timeout 60
+
 
 print_header $test_id
 
-################################################################
-#
-# Proc: sacct
-#
-# Purpose:  Pass sacct options and test
-#
-# Returns: Number of matches.
-#
-# Input: Switch options -a and --allusers
-#
-################################################################
+exec $bin_rm -f $file_in file_out file_err
+make_bash_script $file_in "
+  $bin_date
+  $srun -t1 $scontrol show step \$SLURM_JOB_ID
+  $bin_date
+  $srun -t1 sleep 200
+  $bin_date
+"
 
-proc sacct_job { soption } {
-	global sacct
-set exit_code   0
-set matches     0
-set not_support 0
-	send_user "sacct -$soption\n"
-set timeout 60
-spawn $sacct -$soption
+set job_id 0
+spawn $sbatch -t5 --output=$file_out --error=$file_err $file_in
 expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
-	}
-	-re "JobID.*JobName.*Partition" {
-		incr matches
-		exp_continue
-	}
-	-re "Account.*AllocCPUS" {
-		incr matches
-		exp_continue
-	}
-	-re "State.*ExitCode" {
-		incr matches
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
+if {$job_id == 0} {
+	send_user "\nFAILURE: did not get sbatch job_id\n"
+	exit 1
+}
 
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 3} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
-	return $matches
-}
-################################################################
-set matches [sacct_job -allusers]
-if {$matches != 3} {
-	send_user "\nFAILURE: sacct --allusers failed ($matches)\n"
+#
+# Wait for job completion
+#
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
 	set exit_code 1
 }
 
-set matches [sacct_job a]
-if {$matches != 3} {
-	send_user "\nFAILURE: sacct -a failed ($matches)\n"
+if {[wait_for_file $file_out] == 0} {
+	set tl 0
+	spawn cat $file_out
+	expect {
+		-re " TimeLimit=00:01:00" {
+			set tl 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$tl == 0} {
+		send_user "\nFAILURE: srun time limit not found\n"
+		set exit_code 1
+	}
+} else {
+	send_user "\nFAILURE: Job output file missing\n"
+	set exit_code 1
+}
+
+if {[wait_for_file $file_err] == 0} {
+	set tl 0
+	spawn cat $file_err
+	expect {
+		-re " STEP $job_id.1 CANCELLED AT.*DUE TO TIME LIMIT " {
+			set tl 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$tl == 0} {
+		send_user "\nFAILURE: srun time limit not enforced\n"
+		set exit_code 1
+	}
+} else {
+	send_user "\nFAILURE: Job error file missing\n"
 	set exit_code 1
 }
 
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out $file_err
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

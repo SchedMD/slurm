@@ -112,16 +112,22 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			    int one_liner )
 {
 	char time_str[32];
+	char limit_str[32];
 	char tmp_line[128];
 	char *out = NULL;
 
 	/****** Line 1 ******/
 	slurm_make_time_str ((time_t *)&job_step_ptr->start_time, time_str,
 		sizeof(time_str));
+	if (job_step_ptr->time_limit == INFINITE)
+		sprintf(limit_str, "UNLIMITED");
+	else
+		secs2time_str ((time_t)job_step_ptr->time_limit * 60,
+				limit_str, sizeof(limit_str));
 	snprintf(tmp_line, sizeof(tmp_line),
-		"StepId=%u.%u UserId=%u Tasks=%u StartTime=%s", 
+		"StepId=%u.%u UserId=%u StartTime=%s TimeLimit=%s", 
 		job_step_ptr->job_id, job_step_ptr->step_id, 
-		job_step_ptr->user_id, job_step_ptr->num_tasks, time_str);
+		job_step_ptr->user_id, time_str, limit_str);
 	out = xstrdup(tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -130,9 +136,10 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 2 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Partition=%s Nodes=%s Name=%s Network=%s", 
+		"Partition=%s Nodes=%s Tasks=%u Name=%s Network=%s", 
 		job_step_ptr->partition, job_step_ptr->nodes,
-		job_step_ptr->name, job_step_ptr->network);
+		job_step_ptr->num_tasks, job_step_ptr->name,
+		job_step_ptr->network);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -152,11 +159,11 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 /*
  * slurm_get_job_steps - issue RPC to get specific slurm job step   
  *	configuration information if changed since update_time.
- *	a job_id value of zero implies all jobs, a step_id value of 
- *	zero implies all steps
+ *	a job_id value of NO_VAL implies all jobs, a step_id value of 
+ *	NO_VAL implies all steps
  * IN update_time - time of current configuration data
- * IN job_id - get information for specific job id, zero for all jobs
- * IN step_id - get information for specific job step id, zero for all 
+ * IN job_id - get information for specific job id, NO_VAL for all jobs
+ * IN step_id - get information for specific job step id, NO_VAL for all 
  *	job steps
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags - job step filtering options

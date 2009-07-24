@@ -46,6 +46,10 @@
 #  include "src/common/getopt.h"
 #endif
 
+#ifdef HAVE_LIMITS_H
+#  include <limits.h>
+#endif
+
 #include <fcntl.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
@@ -319,6 +323,48 @@ static void _opt_default()
 	opt.ckpt_dir = xstrdup(opt.cwd);
 }
 
+static void _set_distribution(task_dist_states_t distribution,
+			      char **dist, char **lllp_dist)
+{
+	if (((int)distribution >= 0)
+	&&  (distribution != SLURM_DIST_UNKNOWN)) {
+		switch(distribution) {
+		case SLURM_DIST_CYCLIC:
+			*dist      = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK:
+			*dist      = "block";
+			break;
+		case SLURM_DIST_PLANE:
+			*dist      = "plane";
+			*lllp_dist = "plane";
+			break;
+		case SLURM_DIST_ARBITRARY:
+			*dist      = "arbitrary";
+			break;
+		case SLURM_DIST_CYCLIC_CYCLIC:
+			*dist      = "cyclic";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_CYCLIC_BLOCK:
+			*dist      = "cyclic";
+			*lllp_dist = "block";
+			break;
+		case SLURM_DIST_BLOCK_CYCLIC:
+			*dist      = "block";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK_BLOCK:
+			*dist      = "block";
+			*lllp_dist = "block";
+			break;
+		default:
+			error("unknown dist, type %d", distribution);
+			break;
+		}
+	}
+}
+
 /*---[ env var processing ]-----------------------------------------------*/
 
 /*
@@ -455,8 +501,6 @@ _process_env_var(env_vars_t *e, const char *val)
 						    &opt.plane_size);
 		if (opt.distribution == SLURM_DIST_UNKNOWN)
 			error("distribution type `%s' is invalid", optarg);
-		else
-			setenv("SLURM_DISTRIBUTION", optarg, 1);
 		break;
 
 	case OPT_NODES:
@@ -609,7 +653,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:bB:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:P:qR:st:uU:vVw:x:";
+	"+bB:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:P:QRst:uU:vVw:x:";
 
 
 /*
@@ -1070,7 +1114,6 @@ static void _set_options(int argc, char **argv)
 				      "is not recognized", optarg);
 				exit(1);
 			} 
-			setenv("SLURM_DISTRIBUTION", optarg, 1);
 			break;
 		case 'n':
 			opt.nprocs_set = true;
@@ -1104,7 +1147,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'd':
 		case 'P':
-			/* use -P instead */
+			/* use -P instead of -d (deprecated) */
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
@@ -1230,15 +1273,13 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_UID:
 			if (opt.euid != (uid_t) -1)
 				fatal ("duplicate --uid option");
-			opt.euid = uid_from_string (optarg);
-			if (opt.euid == (uid_t) -1)
+			if (uid_from_string (optarg, &opt.euid) < 0)
 				fatal ("--uid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_GID:
 			if (opt.egid != (gid_t) -1)
 				fatal ("duplicate --gid option");
-			opt.egid = gid_from_string (optarg);
-			if (opt.egid == (gid_t) -1)
+			if (gid_from_string (optarg, &opt.egid) < 0)
 				fatal ("--gid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_CONNTYPE:
@@ -1811,6 +1852,7 @@ static void _parse_pbs_resource_list(char *rl)
 static bool _opt_verify(void)
 {
 	bool verified = true;
+	char *dist = NULL, *lllp_dist = NULL;
 
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
@@ -1831,21 +1873,50 @@ static bool _opt_verify(void)
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
-		error("%s: invalid number of processes (-n %d)",
-		      opt.progname, opt.nprocs);
+		error("invalid number of processes (-n %d)", opt.nprocs);
 		verified = false;
 	}
 
 	if (opt.cpus_per_task <= 0) {
-		error("%s: invalid number of cpus per task (-c %d)\n",
-		      opt.progname, opt.cpus_per_task);
+		error("invalid number of cpus per task (-c %d)\n",
+		      opt.cpus_per_task);
 		verified = false;
 	}
 
 	if ((opt.min_nodes < 0) || (opt.max_nodes < 0) || 
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-		error("%s: invalid number of nodes (-N %d-%d)\n",
-		      opt.progname, opt.min_nodes, opt.max_nodes);
+		error("invalid number of nodes (-N %d-%d)\n",
+		      opt.min_nodes, opt.max_nodes);
+		verified = false;
+	}
+
+#ifdef HAVE_BGL
+	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
+		error("invalid BlrtsImage given '%s'", opt.blrtsimage);
+		verified = false;
+	}
+#endif
+
+	if (opt.linuximage && strchr(opt.linuximage, ' ')) {
+#ifdef HAVE_BGL
+		error("invalid LinuxImage given '%s'", opt.linuximage);
+#else
+		error("invalid CnloadImage given '%s'", opt.linuximage);
+#endif
+		verified = false;
+	}
+
+	if (opt.mloaderimage && strchr(opt.mloaderimage, ' ')) {
+		error("invalid MloaderImage given '%s'", opt.mloaderimage);
+		verified = false;
+	}
+
+	if (opt.ramdiskimage && strchr(opt.ramdiskimage, ' ')) {
+#ifdef HAVE_BGL
+		error("invalid RamDiskImage given '%s'", opt.ramdiskimage);
+#else
+		error("invalid IoloadImage given '%s'", opt.ramdiskimage);
+#endif
 		verified = false;
 	}
 
@@ -1883,6 +1954,23 @@ static bool _opt_verify(void)
 		}
 	}
 
+	_set_distribution(opt.distribution, &dist, &lllp_dist);
+	if(dist) 
+		if (setenvf(NULL, "SLURM_DISTRIBUTION", "%s", dist)) {
+			error("Can't set SLURM_DISTRIBUTION env variable");
+		}
+		
+	if(opt.distribution == SLURM_DIST_PLANE)
+		if (setenvf(NULL, "SLURM_DIST_PLANESIZE", "%d", 
+			    opt.plane_size)) {
+			error("Can't set SLURM_DIST_PLANESIZE env variable");
+		}
+
+	if(lllp_dist)
+		if (setenvf(NULL, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
+			error("Can't set SLURM_DIST_LLLP env variable");
+		}
+
 	/* bound max_threads/cores from ntasks_cores/sockets */ 
 	if ((opt.max_threads_per_core <= 0) &&
 	    (opt.ntasks_per_core > 0)) {
@@ -1910,7 +1998,9 @@ static bool _opt_verify(void)
 	}
 
 	/* massage the numbers */
-	if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
+	if ((opt.nodes_set || opt.extra_set)				&& 
+	    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))	&& 
+	    !opt.nprocs_set) {
 		/* 1 proc / node default */
 		opt.nprocs = MAX(opt.min_nodes, 1);
 
@@ -2003,24 +2093,24 @@ static bool _opt_verify(void)
 	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
 				  &opt.cpu_bind_type))
 		exit(1);
-	if (opt.cpu_bind_type && (getenv("SLURM_CPU_BIND") == NULL)) {
+	if (opt.cpu_bind_type && (getenv("SBATCH_CPU_BIND") == NULL)) {
 		char tmp[64];
 		slurm_sprint_cpu_bind_type(tmp, opt.cpu_bind_type);
 		if (opt.cpu_bind) {
-			setenvf(NULL, "SLURM_CPU_BIND", "%s:%s", 
+			setenvf(NULL, "SBATCH_CPU_BIND", "%s:%s", 
 				tmp, opt.cpu_bind);
 		} else {
-			setenvf(NULL, "SLURM_CPU_BIND", "%s", tmp);
+			setenvf(NULL, "SBATCH_CPU_BIND", "%s", tmp);
 		}
 	}
-	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND") == NULL)) {
+	if (opt.mem_bind_type && (getenv("SBATCH_MEM_BIND") == NULL)) {
 		char tmp[64];
 		slurm_sprint_mem_bind_type(tmp, opt.mem_bind_type);
 		if (opt.mem_bind) {
-			setenvf(NULL, "SLURM_MEM_BIND", "%s:%s", 
+			setenvf(NULL, "SBATCH_MEM_BIND", "%s:%s", 
 				tmp, opt.mem_bind);
 		} else {
-			setenvf(NULL, "SLURM_MEM_BIND", "%s", tmp);
+			setenvf(NULL, "SBATCH_MEM_BIND", "%s", tmp);
 		}
 	}
 
@@ -2055,6 +2145,98 @@ static uint16_t _parse_pbs_mail_type(const char *arg)
 		rc = 0;		/* arg="n" or failure */
 
 	return rc;
+}
+
+/* Functions used by SPANK plugins to read and write job environment
+ * variables for use within job's Prolog and/or Epilog */
+extern char *spank_get_job_env(const char *name)
+{
+	int i, len;
+	char *tmp_str = NULL;
+
+	if ((name == NULL) || (name[0] == '\0') ||
+	    (strchr(name, (int)'=') != NULL)) {
+		slurm_seterrno(EINVAL);
+		return NULL;
+	}
+
+	xstrcat(tmp_str, name);
+	xstrcat(tmp_str, "=");
+	len = strlen(tmp_str);
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+			continue;
+		xfree(tmp_str);
+		return (opt.spank_job_env[i] + len);
+	}
+
+	return NULL;
+}
+
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite)
+{
+	int i, len;
+	char *tmp_str = NULL;
+
+	if ((name == NULL) || (name[0] == '\0') ||
+	    (strchr(name, (int)'=') != NULL)) {
+		slurm_seterrno(EINVAL);
+		return -1;
+	}
+
+	xstrcat(tmp_str, name);
+	xstrcat(tmp_str, "=");
+	len = strlen(tmp_str);
+	xstrcat(tmp_str, value);
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+			continue;
+		if (overwrite) {
+			xfree(opt.spank_job_env[i]);
+			opt.spank_job_env[i] = tmp_str;
+		} else
+			xfree(tmp_str);
+		return 0;
+	}
+
+	/* Need to add an entry */
+	opt.spank_job_env_size++;
+	xrealloc(opt.spank_job_env, sizeof(char *) * opt.spank_job_env_size);
+	opt.spank_job_env[i] = tmp_str;
+	return 0;
+}
+
+extern int   spank_unset_job_env(const char *name)
+{
+	int i, j, len;
+	char *tmp_str = NULL;
+
+	if ((name == NULL) || (name[0] == '\0') ||
+	    (strchr(name, (int)'=') != NULL)) {
+		slurm_seterrno(EINVAL);
+		return -1;
+	}
+
+	xstrcat(tmp_str, name);
+	xstrcat(tmp_str, "=");
+	len = strlen(tmp_str);
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+			continue;
+		xfree(opt.spank_job_env[i]);
+		for (j=(i+1); j<opt.spank_job_env_size; i++, j++)
+			opt.spank_job_env[i] = opt.spank_job_env[j];
+		opt.spank_job_env_size--;
+		if (opt.spank_job_env_size == 0)
+			xfree(opt.spank_job_env);
+		return 0;
+	}
+
+	return 0;	/* not found */
 }
 
 /* helper function for printing options

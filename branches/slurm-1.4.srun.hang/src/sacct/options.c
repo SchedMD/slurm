@@ -2,7 +2,7 @@
  *  options.c - option functions for sacct
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -456,7 +456,12 @@ sacct [<OPTION>]                                                            \n\
 	           completed (cd), failed (f), timeout (to), and            \n\
                    node_fail (nf).                                          \n\
      -S, --starttime:                                                       \n\
-                   Select jobs eligible after this time.                    \n\
+                   Select jobs eligible after this time.  Default is        \n\
+                   midnight of current day.                                 \n\
+     -T, --truncate:                                                        \n\
+                   Truncate time.  So if a job started before --starttime   \n\
+                   the start time would be truncated to --starttime.        \n\
+                   The same for end time and --endtime.                     \n\
      -u, --uid, --user:                                                     \n\
 	           Use this comma seperated list of uids or user names      \n\
                    to select jobs to display.  By default, the running      \n\
@@ -491,6 +496,7 @@ void _init_params()
 {
 	memset(&params, 0, sizeof(sacct_parameters_t));
 	params.job_cond = xmalloc(sizeof(acct_job_cond_t));
+	params.job_cond->without_usage_truncation = 1;
 }
 
 int decode_state_char(char *state)
@@ -622,6 +628,7 @@ void parse_command_line(int argc, char **argv)
 		{"partition", 1, 0, 'r'},
 		{"state", 1, 0, 's'},
 		{"starttime", 1, 0, 'S'},
+		{"truncate", 0, 0, 'T'},
 		{"uid", 1, 0, 'u'},
 		{"usage", 0, &params.opt_help, 3},
 		{"user", 1, 0, 'u'},
@@ -758,6 +765,9 @@ void parse_command_line(int argc, char **argv)
 		case 'S':
 			job_cond->usage_start = parse_time(optarg, 1);
 			break;
+		case 'T':
+			job_cond->without_usage_truncation = 0;
+			break;
 		case 'U':
 			params.opt_help = 3;
 			break;
@@ -811,6 +821,39 @@ void parse_command_line(int argc, char **argv)
 		params.opt_dup |= FDUMP_FLAG;
 
 	job_cond->duplicates = params.opt_dup;
+
+	if(!job_cond->usage_start) {
+		job_cond->usage_start = time(NULL);
+		struct tm start_tm;
+
+		if(!localtime_r(&job_cond->usage_start, &start_tm)) {
+			error("Couldn't get localtime from %d", 
+			      job_cond->usage_start);
+			return;
+		}
+		start_tm.tm_sec = 0;
+		start_tm.tm_min = 0;
+		start_tm.tm_hour = 0;
+		start_tm.tm_isdst = -1;
+		job_cond->usage_start = mktime(&start_tm);
+	}
+	
+	if(verbosity > 0) {
+		char *start_char =NULL, *end_char = NULL;
+		
+		start_char = xstrdup(ctime(&job_cond->usage_start));
+		/* remove the new line */
+		start_char[strlen(start_char)-1] = '\0';
+		if(job_cond->usage_end) {
+			end_char = xstrdup(ctime(&job_cond->usage_end));
+			/* remove the new line */
+			end_char[strlen(end_char)-1] = '\0';
+		} else
+			end_char = xstrdup("Now");
+		info("Jobs eligible from %s - %s\n", start_char, end_char);
+		xfree(start_char);
+		xfree(end_char);
+	}
 
 	debug("Options selected:\n"
 	      "\topt_completion=%d\n"

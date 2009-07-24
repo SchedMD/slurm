@@ -3,7 +3,8 @@
  *	 wiring, mapping for smap, etc.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov>, Danny Auble <da@llnl.gov>
  *  
@@ -201,7 +202,8 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 /* 			     List nodes, int dim,  */
 /* 			     int count, int highest_phys_x);  */
 /* */
-static int _finish_torus(ba_switch_t *curr_switch, int source_port, 
+static int _finish_torus(List results, 
+			 ba_switch_t *curr_switch, int source_port, 
 			 int dim, int count, int *start);
 /* */
 static int *_set_best_path();
@@ -211,39 +213,6 @@ static int _set_one_dim(int *start, int *end, int *coord);
 
 /* */
 static void _destroy_geo(void *object);
-
-
-extern char *bg_block_state_string(rm_partition_state_t state)
-{
-	static char tmp[16];
-
-#ifdef HAVE_BG
-	switch (state) {
-#ifdef HAVE_BGL
-		case RM_PARTITION_BUSY: 
-			return "BUSY";
-#else
-		case RM_PARTITION_REBOOTING: 
-			return "REBOOTING";
-#endif
-		case RM_PARTITION_CONFIGURING:
-			return "CONFIG";
-		case RM_PARTITION_DEALLOCATING:
-			return "DEALLOC";
-		case RM_PARTITION_ERROR:
-			return "ERROR";
-		case RM_PARTITION_FREE:
-			return "FREE";
-		case RM_PARTITION_NAV:
-			return "NAV";
-		case RM_PARTITION_READY:
-			return "READY";
-	}
-#endif
-
-	snprintf(tmp, sizeof(tmp), "%d", state);
-	return tmp;
-}
 
 extern char *ba_passthroughs_string(uint16_t passthrough)
 {
@@ -399,8 +368,8 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 				image_group->name = xmalloc(i-j+2);
 				snprintf(image_group->name,
 					 (i-j)+1, "%s", tmp+j);
-				image_group->gid =
-					gid_from_string(image_group->name);
+				gid_from_string (image_group->name,
+						&image_group->gid);
 				debug3("adding group %s %d", image_group->name,
 				       image_group->gid);
 				list_append(n->groups, image_group);
@@ -412,15 +381,14 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 			image_group = xmalloc(sizeof(image_group_t));
 			image_group->name = xmalloc(i-j+2);
 			snprintf(image_group->name, (i-j)+1, "%s", tmp+j);
-			image_group->gid = gid_from_string(image_group->name);
-			if (image_group->gid == (gid_t) -1) {
+			if (gid_from_string (image_group->name,
+			                     &image_group->gid) < 0)
 				fatal("Invalid bluegene.conf parameter "
 				      "Groups=%s", 
 				      image_group->name);
-			} else {
+			else
 				debug3("adding group %s %d", image_group->name,
 				       image_group->gid);
-			}
 			list_append(n->groups, image_group);
 		}
 		xfree(tmp);
@@ -501,12 +469,11 @@ extern int new_ba_request(ba_request_t* ba_request)
 #ifdef HAVE_BG
 	float sz=1;
 	int geo[BA_SYSTEM_DIMENSIONS] = {0,0,0};
-	int i2, i3, picked, total_sz=1 , size2;
-	ListIterator itr;
+	int i2, i3, picked, total_sz=1, size2=0;
 	int checked[DIM_SIZE[X]];
 	int *geo_ptr;
 	int messed_with = 0;
-	
+
 	ba_request->save_name= NULL;
 	ba_request->rotate_count= 0;
 	ba_request->elongate_count = 0;
@@ -623,11 +590,12 @@ extern int new_ba_request(ba_request_t* ba_request)
 		for (i=picked; i<BA_SYSTEM_DIMENSIONS; i++) { 
 			if(size2 <= 1) 
 				break;
+	
 			sz = size2 % DIM_SIZE[i];
 			if(!sz) {
 				geo[i] = DIM_SIZE[i];	
 				size2 /= DIM_SIZE[i];
-			} else if (size2 > DIM_SIZE[i]){
+			} else if (size2 > DIM_SIZE[i]) {
 				for(i2=(DIM_SIZE[i]-1); i2 > 1; i2--) {
 					/* go through each number to see if 
 					   the size is divisable by a smaller 
@@ -635,7 +603,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 					   good in the other dims. */
 					if (!(size2%i2) && !checked[i2]) {
 						size2 /= i2;
-						
+					
 						if(i==0)
 							checked[i2]=1;
 							
@@ -658,14 +626,15 @@ extern int new_ba_request(ba_request_t* ba_request)
 				   run.  
 				*/
 				if(i2==1) {
-					error("Can't make a block of "
-					      "%d into a cube.",
-					      ba_request->size);
-					return 0;
+					if(!list_count(
+						   ba_request->elongate_geos))
+						error("Can't make a block of "
+						      "%d into a cube.",
+						      ba_request->size);
+					goto endit;
 /* 					ba_request->size +=1; */
 /* 					goto startagain; */
 				}
-						
 			} else {
 				geo[i] = sz;	
 				break;
@@ -690,7 +659,10 @@ extern int new_ba_request(ba_request_t* ba_request)
 				    ba_request->rotate);		
 	
 		}
-		if((geo[X]/2) <= DIM_SIZE[Y]) {
+
+		/* Make sure geo[X] is even and then see if we can get
+		   it into the Y or Z dim. */
+		if(!(geo[X]%2) && ((geo[X]/2) <= DIM_SIZE[Y])) {
 			if(geo[Y] == 1) {
 				ba_request->geometry[Y] = geo[X]/2;
 				messed_with = 1;
@@ -793,11 +765,7 @@ extern int new_ba_request(ba_request_t* ba_request)
 	}
 	
 endit:
-	itr = list_iterator_create(ba_request->elongate_geos);
-	geo_ptr = list_next(itr);
-	list_iterator_destroy(itr);
-	
-	if(geo_ptr == NULL)
+	if(!(geo_ptr = list_peek(ba_request->elongate_geos)))
 		return 0;
 
 	ba_request->elongate_count++;
@@ -1222,7 +1190,7 @@ extern void ba_fini()
 	bridge_fini();
 #endif
 	_delete_ba_system();
-//	debug2("pa system destroyed");
+//	debug3("pa system destroyed");
 }
 
 
@@ -1312,7 +1280,7 @@ extern int copy_node_path(List nodes, List *dest_nodes)
 		list_iterator_destroy(itr2);
 	
 		if(!new_ba_node) {
-			debug2("adding %c%c%c as a new node",
+			debug3("adding %c%c%c as a new node",
 			       alpha_num[ba_node->coord[X]], 
 			       alpha_num[ba_node->coord[Y]],
 			       alpha_num[ba_node->coord[Z]]);
@@ -1380,12 +1348,23 @@ extern int allocate_block(ba_request_t* ba_request, List results)
 extern int remove_block(List nodes, int new_count)
 {
 	int dim;
+	ba_node_t* curr_ba_node = NULL;
 	ba_node_t* ba_node = NULL;
 	ba_switch_t *curr_switch = NULL; 
 	ListIterator itr;
 	
 	itr = list_iterator_create(nodes);
-	while((ba_node = (ba_node_t*) list_next(itr)) != NULL) {
+	while((curr_ba_node = (ba_node_t*) list_next(itr))) {
+		/* since the list that comes in might not be pointers
+		   to the main list we need to point to that main list */
+		ba_node = &ba_system_ptr->
+			grid[curr_ba_node->coord[X]]
+#ifdef HAVE_BG
+			[curr_ba_node->coord[Y]]
+			[curr_ba_node->coord[Z]]
+#endif
+			;
+
 		ba_node->used = false;
 		ba_node->color = 7;
 		ba_node->letter = '.';
@@ -1397,7 +1376,8 @@ extern int remove_block(List nodes, int new_count)
 		}
 	}
 	list_iterator_destroy(itr);
-	if(new_count == -1)
+	if(new_count == NO_VAL) {
+	} else if(new_count == -1)
 		color_count--;
 	else
 		color_count=new_count;			
@@ -1507,7 +1487,7 @@ extern int check_and_set_node_list(List nodes)
 			[ba_node->coord[Y]]
 			[ba_node->coord[Z]];
 		if(ba_node->used && curr_ba_node->used) {
-			debug3("I have already been to "
+			debug4("I have already been to "
 			       "this node %c%c%c",
 			       alpha_num[ba_node->coord[X]], 
 			       alpha_num[ba_node->coord[Y]],
@@ -1530,7 +1510,7 @@ extern int check_and_set_node_list(List nodes)
 				   && curr_ba_switch->int_wire[j].used
 					&& j != curr_ba_switch->
 				   int_wire[j].port_tar) {
-					debug3("%c%c%c dim %d port %d "
+					debug4("%c%c%c dim %d port %d "
 					       "is already in use to %d",
 					       alpha_num[ba_node->coord[X]], 
 					       alpha_num[ba_node->coord[Y]],
@@ -1602,6 +1582,7 @@ extern char *set_bg_block(List results, int *start,
 		      alpha_num[geometry[Z]]);		      
 		return NULL;
 	}
+	//info("looking at %d%d%d", geometry[X], geometry[Y], geometry[Z]);
 
 	size = geometry[X] * geometry[Y] * geometry[Z];
 	ba_node = &ba_system_ptr->grid[start[X]][start[Y]][start[Z]];
@@ -1633,7 +1614,7 @@ extern char *set_bg_block(List results, int *start,
 		if(ba_node->letter == '.') {
 			ba_node->letter = letters[color_count%62];
 			ba_node->color = colors[color_count%6];
-			debug3("count %d setting letter = %c "
+			debug4("count %d setting letter = %c "
 			       "color = %d",
 			       color_count,
 			       ba_node->letter,
@@ -1936,7 +1917,6 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 {
 	node_info_t *node_ptr = NULL;
 	int x, i = 0;
-	uint16_t node_base_state;
 	/* For systems with more than 62 active jobs or BG blocks, 
 	 * we just repeat letters */
 
@@ -1948,13 +1928,9 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 				if(node_info_ptr!=NULL) {
 					node_ptr = 
 						&node_info_ptr->node_array[i];
-					node_base_state = node_ptr->node_state 
-						& NODE_STATE_BASE;
 					ba_system_ptr->grid[x][y][z].color = 7;
-					if ((node_base_state 
-					     == NODE_STATE_DOWN) || 
-					    (node_ptr->node_state &
-					     NODE_STATE_DRAIN)) {
+					if (IS_NODE_DOWN(node_ptr)
+					    || IS_NODE_DRAIN(node_ptr)) {
 						ba_system_ptr->
 							grid[x][y][z].color 
 							= 0;
@@ -1988,11 +1964,8 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 	for (x = 0; x < DIM_SIZE[X]; x++) {
 		if(node_info_ptr!=NULL) {
 			node_ptr = &node_info_ptr->node_array[i];
-			node_base_state = node_ptr->node_state 
-				& NODE_STATE_BASE;
 			ba_system_ptr->grid[x].color = 7;
-			if ((node_base_state == NODE_STATE_DOWN) || 
-			    (node_ptr->node_state & NODE_STATE_DRAIN)) {
+			if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr)) {
 				ba_system_ptr->grid[x].color = 0;
 				ba_system_ptr->grid[x].letter = '#';
 				if(_initialized) {
@@ -2191,20 +2164,36 @@ extern int *find_bp_loc(char* bp_id)
 			check[4] = '\0';
 		}
 	}
+	
+	if((check[1] < '0' || check[1] > '9')
+	   || (check[2] < '0' || check[2] > '9')
+	   || (check[3] < '0' || check[3] > '9')) {
+		error("%s is not a valid Rack-Midplane (i.e. R000)", bp_id);
+		goto cleanup;
+	}
+			
 #else
 	if(check[3] != '-') {
 		xfree(check);
 		check = xstrdup_printf("R%c%c-M%c",
 				       bp_id[1], bp_id[2], bp_id[3]);
 	}
-#endif
 
+	if((check[1] < '0' || check[1] > '9')
+	   || (check[2] < '0' || check[2] > '9')
+	   || (check[5] < '0' || check[5] > '9')) {
+		error("%s is not a valid Rack-Midplane (i.e. R00-M0)", bp_id);
+		goto cleanup;
+	}
+#endif
+	
 	itr = list_iterator_create(bp_map_list);
 	while ((bp_map = list_next(itr)))  
 		if (!strcasecmp(bp_map->bp_id, check)) 
 			break;	/* we found it */
 	list_iterator_destroy(itr);
 
+cleanup:
 	xfree(check);
 
 	if(bp_map != NULL)
@@ -2231,11 +2220,22 @@ extern char *find_bp_rack_mid(char* xyz)
 	len -= 3;
 	if(len<0)
 		return NULL;
+
+	if((xyz[len] < '0' || xyz[len] > '9')
+	   || (xyz[len+1] < '0' || xyz[len+1] > '9')
+	   || (xyz[len+2] < '0' || xyz[len+2] > '9')) {
+		error("%s is not a valid Location (i.e. 000)", xyz);
+		return NULL;
+	}
+
+
 	number = xstrntol(&xyz[X]+len, NULL,
 			  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 	coord[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 	coord[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE)) / HOSTLIST_BASE;
 	coord[Z] = (number % HOSTLIST_BASE);
+
+
 	if(!bp_map_list) {
 		if(set_bp_map() == -1)
 			return NULL;
@@ -2277,7 +2277,7 @@ extern int load_block_wiring(char *bg_block_id)
 	ba_switch_t *ba_switch = NULL; 
 	int *geo = NULL;
 	
-	debug2("getting info for block %s\n", bg_block_id);
+	debug3("getting info for block %s\n", bg_block_id);
 	
 	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
 		error("bridge_get_block(%s): %s", 
@@ -2293,7 +2293,7 @@ extern int load_block_wiring(char *bg_block_id)
 		return SLURM_ERROR;
 	} 
 	if(!switch_cnt) {
-		debug3("no switch_cnt");
+		debug4("no switch_cnt");
 		if ((rc = bridge_get_data(block_ptr, 
 					  RM_PartitionFirstBP, 
 					  &curr_bp)) 
@@ -2366,7 +2366,7 @@ extern int load_block_wiring(char *bg_block_id)
 			      bg_err_str(rc));
 			return SLURM_ERROR;
 		}
-		debug2("switch id = %s dim %d conns = %d", 
+		debug3("switch id = %s dim %d conns = %d", 
 		       switchid, dim, cnt);
 		ba_switch = &ba_system_ptr->
 			grid[geo[X]][geo[Y]][geo[Z]].axis_switch[dim];
@@ -2439,7 +2439,7 @@ extern int load_block_wiring(char *bg_block_id)
 				ba_system_ptr->grid[geo[X]][geo[Y]][geo[Z]].
 					used = true;		
 			}
-			debug3("connection going from %d -> %d",
+			debug4("connection going from %d -> %d",
 			      curr_conn.p1, curr_conn.p2);
 			
 			if(ba_switch->int_wire[curr_conn.p1].used) {
@@ -2501,7 +2501,7 @@ extern List get_and_set_block_wiring(char *bg_block_id)
 	List results = list_create(destroy_ba_node);
 	ListIterator itr = NULL;
 	
-	debug2("getting info for block %s\n", bg_block_id);
+	debug3("getting info for block %s\n", bg_block_id);
 	
 	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
 		error("bridge_get_block(%s): %s", 
@@ -2517,7 +2517,7 @@ extern List get_and_set_block_wiring(char *bg_block_id)
 		goto end_it;
 	} 
 	if(!switch_cnt) {
-		debug3("no switch_cnt");
+		debug4("no switch_cnt");
 		if ((rc = bridge_get_data(block_ptr, 
 					  RM_PartitionFirstBP, 
 					  &curr_bp)) 
@@ -2596,7 +2596,7 @@ extern List get_and_set_block_wiring(char *bg_block_id)
 			      bg_err_str(rc));
 			goto end_it;
 		}
-		debug2("switch id = %s dim %d conns = %d", 
+		debug3("switch id = %s dim %d conns = %d", 
 		       switchid, dim, cnt);
 		
 		itr = list_iterator_create(results);
@@ -2683,7 +2683,7 @@ extern List get_and_set_block_wiring(char *bg_block_id)
 				}
 				ba_node->used = true;		
 			}
-			debug3("connection going from %d -> %d",
+			debug4("connection going from %d -> %d",
 			      curr_conn.p1, curr_conn.p2);
 			
 			if(ba_switch->int_wire[curr_conn.p1].used) {
@@ -2908,13 +2908,13 @@ static int _append_geo(int *geometry, List geos, int rotate)
 		
 	}
 	list_iterator_destroy(itr);
-	
+
 	if(geo_ptr == NULL) { 
 		geo = xmalloc(sizeof(int)*BA_SYSTEM_DIMENSIONS);
 		geo[X] = geometry[X];
 		geo[Y] = geometry[Y];
 		geo[Z] = geometry[Z];
-		debug3("adding geo %c%c%c",
+		debug4("adding geo %c%c%c",
 		       alpha_num[geo[X]], alpha_num[geo[Y]],
 		       alpha_num[geo[Z]]);
 		list_append(geos, geo);
@@ -2978,7 +2978,7 @@ static int _fill_in_coords(List results, List start_list,
 					continue;
 
 				if (!_node_used(ba_node, geometry[X])) {
-					debug3("here Adding %c%c%c",
+					debug4("here Adding %c%c%c",
 					       alpha_num[ba_node->coord[X]],
 					       alpha_num[ba_node->coord[Y]],
 					       alpha_num[ba_node->coord[Z]]);
@@ -3082,7 +3082,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 	node_curr = curr_switch->ext_wire[0].node_tar;
 	node_tar = curr_switch->ext_wire[port_tar].node_tar;
 	if(mark_switch->int_wire[source].used)
-		debug2("setting dim %d %c%c%c %d-> %c%c%c %d",
+		debug3("setting dim %d %c%c%c %d-> %c%c%c %d",
 		       dim,
 		       alpha_num[node_curr[X]],
 		       alpha_num[node_curr[Y]],
@@ -3110,7 +3110,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 	   && node_curr[Z] == node_tar[Z]) {
 		/* We are going to the same node! this should never
 		   happen */
-		debug4("something bad happened!! "
+		debug5("something bad happened!! "
 		       "we are on %c%c%c and are going to it "
 		       "from port %d - > %d", 
 		       alpha_num[node_curr[X]],
@@ -3150,7 +3150,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 					       [mark_node_tar[Z]]);
 			_new_ba_node(ba_node, mark_node_tar, false);
 			list_push(nodes, ba_node);
-			debug3("haven't seen %c%c%c adding it",
+			debug4("haven't seen %c%c%c adding it",
 			       alpha_num[ba_node->coord[X]], 
 			       alpha_num[ba_node->coord[Y]],
 			       alpha_num[ba_node->coord[Z]]);
@@ -3176,7 +3176,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 
 	for(i2=1;i2<=2;i2++) {
 		if(geometry[i2] > 1) {
-			debug3("%d node %c%c%c port 2 -> ",
+			debug4("%d node %c%c%c port 2 -> ",
 			       i2,
 			       alpha_num[ba_node->coord[X]],
 			       alpha_num[ba_node->coord[Y]],
@@ -3184,7 +3184,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 							       
 			dim_curr_switch = &ba_node->axis_switch[i2];
 			if(dim_curr_switch->int_wire[2].used) {
-				debug4("returning here");
+				debug5("returning here");
 				return 0;
 			}
 							
@@ -3193,16 +3193,16 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 			next_node = &ba_system_ptr->
 				grid[node_tar[X]][node_tar[Y]][node_tar[Z]];
 			dim_next_switch = &next_node->axis_switch[i2];
-			debug3("%c%c%c port 5",
+			debug4("%c%c%c port 5",
 			       alpha_num[next_node->coord[X]],
 			       alpha_num[next_node->coord[Y]],
 			       alpha_num[next_node->coord[Z]]);
 							  
 			if(dim_next_switch->int_wire[5].used) {
-				debug2("returning here 2");
+				debug3("returning here 2");
 				return 0;
 			}
-			debug4("%d %d %d %d",i2, node_tar[i2],
+			debug5("%d %d %d %d",i2, node_tar[i2],
 			       first[i2], geometry[i2]);
 
 			/* Here we need to see where we are in
@@ -3219,7 +3219,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 				count = (node_tar[i2]-first[i2]);
 
 			if(count == geometry[i2]) {
-				debug4("found end of me %c%c%c",
+				debug5("found end of me %c%c%c",
 				       alpha_num[node_tar[X]],
 				       alpha_num[node_tar[Y]],
 				       alpha_num[node_tar[Z]]);
@@ -3242,7 +3242,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 								PASS_FOUND_Z;
 					}
 					while(node_tar[i2] != first[i2]) {
-						debug3("on dim %d at %d "
+						debug4("on dim %d at %d "
 						       "looking for %d",
 						       i2,
 						       node_tar[i2],
@@ -3250,7 +3250,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 						
 						if(dim_curr_switch->
 						   int_wire[2].used) {
-							debug3("returning "
+							debug4("returning "
 							       "here 3");
 							return 0;
 						} 
@@ -3280,7 +3280,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 							axis_switch[i2];
 					}
 									
-					debug3("back to first on dim %d "
+					debug4("back to first on dim %d "
 					       "at %d looking for %d",
 					       i2,
 					       node_tar[i2],
@@ -3351,7 +3351,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 			*/
 
 			dim_curr_switch = &ba_node->axis_switch[i2];
-			debug3("%d node %c%c%c port 0 -> 1",
+			debug4("%d node %c%c%c port 0 -> 1",
 			       i2,
 			       alpha_num[ba_node->coord[X]],
 			       alpha_num[ba_node->coord[Y]],
@@ -3477,7 +3477,7 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 		      port_tar);
 		return 0;
 	}
-	debug4("from %c%c%c %d %d -> %c%c%c %d",
+	debug5("from %c%c%c %d %d -> %c%c%c %d",
 	       alpha_num[node_curr[X]],
 	       alpha_num[node_curr[Y]],
 	       alpha_num[node_curr[Z]],
@@ -3490,7 +3490,7 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 	if(node_curr[X] == node_tar[X]
 	   && node_curr[Y] == node_tar[Y]
 	   && node_curr[Z] == node_tar[Z]) {
-		debug4("%d something bad happened!!", dim);
+		debug5("%d something bad happened!!", dim);
 		return 0;
 	}
 	next_switch = &ba_system_ptr->
@@ -3615,6 +3615,7 @@ static int _find_match(ba_request_t *ba_request, List results)
 	ba_node_t *ba_node = NULL;
 	char *name=NULL;
 	int startx = (start[X]-1);
+	int *geo_ptr;
 	
 	if(startx == -1)
 		startx = DIM_SIZE[X]-1;
@@ -3632,6 +3633,15 @@ static int _find_match(ba_request_t *ba_request, List results)
 	}
 	x=0;
 	
+	/* set up the geo here */
+	if(!(geo_ptr = list_peek(ba_request->elongate_geos)))
+		return 0;
+	ba_request->rotate_count=0;
+	ba_request->elongate_count=1;
+	ba_request->geometry[X] = geo_ptr[X];
+	ba_request->geometry[Y] = geo_ptr[Y];
+	ba_request->geometry[Z] = geo_ptr[Z];
+
 	if(ba_request->geometry[X]>DIM_SIZE[X] 
 #ifdef HAVE_3D
 	   || ba_request->geometry[Y]>DIM_SIZE[Y]
@@ -3651,7 +3661,7 @@ start_again:
 		x = startx-1;
 	while(x!=startx) {
 		x++;
-		debug3("finding %c%c%c try %d",
+		debug4("finding %c%c%c try %d",
 		       alpha_num[ba_request->geometry[X]],
 #ifdef HAVE_3D
 		       alpha_num[ba_request->geometry[Y]],
@@ -3661,7 +3671,7 @@ start_again:
 #ifdef HAVE_3D
 	new_node:
 #endif
-		debug2("starting at %c%c%c",
+		debug3("starting at %c%c%c",
 		       alpha_num[start[X]]
 #ifdef HAVE_3D
 		       , alpha_num[start[Y]],
@@ -3678,7 +3688,7 @@ start_again:
 			;
 
 		if (!_node_used(ba_node, ba_request->geometry[X])) {
-			debug3("trying this node %c%c%c %c%c%c %d",
+			debug4("trying this node %c%c%c %c%c%c %d",
 			       alpha_num[start[X]],
 			       alpha_num[start[Y]],
 			       alpha_num[start[Z]],
@@ -3763,7 +3773,7 @@ static bool _node_used(ba_node_t* ba_node, int x_size)
 	
 	/* if we've used this node in another block already */
 	if (!ba_node || ba_node->used) {
-		debug3("node %c%c%c used", 
+		debug4("node %c%c%c used", 
 		       alpha_num[ba_node->coord[X]],
 		       alpha_num[ba_node->coord[Y]],
 		       alpha_num[ba_node->coord[Z]]);
@@ -3785,14 +3795,14 @@ static bool _node_used(ba_node_t* ba_node, int x_size)
 		   other they must be connected to the other ports.
 		*/
 		if(ba_switch->int_wire[3].used && ba_switch->int_wire[5].used) {
-			debug3("switch full in the X dim on node %c%c%c!",
+			debug4("switch full in the X dim on node %c%c%c!",
 			       alpha_num[ba_node->coord[X]],
 			       alpha_num[ba_node->coord[Y]],
 			       alpha_num[ba_node->coord[Z]]);
 			return true;
 		}
 	}
-		
+	
 	return false;
 
 }
@@ -3970,7 +3980,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			       _port_enum(from_port),
 			       _port_enum(to_port));	
 		
-		debug2("dim %d from %c%c%c %d -> %c%c%c %d",
+		debug3("dim %d from %c%c%c %d -> %c%c%c %d",
 		       dim,
 		       alpha_num[source->coord[X]],
 		       alpha_num[source->coord[Y]],
@@ -3999,6 +4009,35 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 
 	/* set up split x */
 	if(DIM_SIZE[X] == 1) {
+	} else if(DIM_SIZE[X] == 4) {
+		switch(count) {
+		case 0:
+		case 3:
+			/* 0 and 3rd Node */
+			/* nothing */
+			break;
+		case 1:
+			/* 1st Node */
+			target = &ba_system_ptr->grid[0]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 4->3 of 0th */
+			_switch_config(source, target, dim, 4, 3);
+			break;	
+		case 2:
+			/* 2nd Node */
+			target = &ba_system_ptr->grid[3]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 4->3 of 3rd and back */
+			_switch_config(source, target, dim, 4, 3);
+			_switch_config(source, target, dim, 3, 4);
+			break;
+		default:
+			fatal("got %d for a count on a %d X-dim system",
+			      count, DIM_SIZE[X]);
+			break;
+		}
 	} else if(DIM_SIZE[X] == 5) {
 		/* 4 X dim fixes for wires */
 		switch(count) {
@@ -4097,50 +4136,47 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 	} else if(DIM_SIZE[X] == 9) {
 		switch(count) {
 		case 0:
-		case 1:
-		case 5:
+		case 4:
 			/* 0 and 4th Node */
 			/* nothing */
-			break;
-		case 2:
+		case 5:
 		case 6:
+		case 7:
+			/*already handled below */
+			break;
+		case 1:
 			/* 1st Node */
-			target = &ba_system_ptr->grid[count-1]
-				[source->coord[Y]]
-				[source->coord[Z]];
-			/* 4->3 of previous */
-			_switch_config(source, target, dim, 4, 3);
-			break;	
-		case 3:
-			/* 2nd Node */
 			target = &ba_system_ptr->grid[7]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 4->3 of last */
+			/* 4->3 of 7th and back */
 			_switch_config(source, target, dim, 4, 3);
-			break;
-		case 4:
-			/* 3rd Node */
+			_switch_config(target, source, dim, 4, 3);
+			break;	
+		case 2:
+			/* 2nd Node */
 			target = &ba_system_ptr->grid[6]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 4->3 of 6th */
+			/* 4->3 of 6th and back */
 			_switch_config(source, target, dim, 4, 3);
+			_switch_config(target, source, dim, 4, 3);
 			break;
-		case 7:
-			/* 6th Node */
-			target = &ba_system_ptr->grid[3]
+		case 3:
+			/* 3rd Node */
+			target = &ba_system_ptr->grid[5]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 4->3 of 3rd */
-			_switch_config(source, target, dim, 4, 3);	
+			/* 4->3 of 5th and back */
+			_switch_config(source, target, dim, 4, 3);
+			_switch_config(target, source, dim, 4, 3);
 			break;
 		case 8:
-			/* 7th Node */
-			target = &ba_system_ptr->grid[2]
+			/* 8th Node */
+			target = &ba_system_ptr->grid[0]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 4->3 of 2nd */
+			/* 4->3 of 0th */
 			_switch_config(source, target, dim, 4, 3);	
 			break;
 		default:
@@ -4171,7 +4207,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		case 5:
 			/* get the node count - 1 then subtract it
 			 * from 12 to get the new target and then go
-			 * from 3->4 and back again
+			 * from 4->3 and back again
 			 */
 			temp_num = 12 - (count - 1);
 			if(temp_num < 5) 
@@ -4181,10 +4217,10 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			target = &ba_system_ptr->grid[temp_num]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 */
-			_switch_config(source, target, dim, 3, 4);
-			/* and back 3->4 */
-			_switch_config(target, source, dim, 3, 4);
+			/* 4->3 */
+			_switch_config(source, target, dim, 4, 3);
+			/* and back 4->3 */
+			_switch_config(target, source, dim, 4, 3);
 			break;
 		case 7:
 			/* 7th Node */
@@ -4239,7 +4275,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 			 alpha_num[ba_node[count]->coord[X]],
 			 alpha_num[ba_node[count]->coord[Y]],
 			 alpha_num[ba_node[count]->coord[Z]]);
-		debug3("name = %s", temp_name);
+		debug4("name = %s", temp_name);
 		count++;
 		hostlist_push(hostlist, temp_name);
 	}
@@ -4256,7 +4292,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 			if(ba_node[i]->letter == '.') {
 				ba_node[i]->letter = letters[color_count%62];
 				ba_node[i]->color = colors[color_count%6];
-				debug3("count %d setting letter = %c "
+				debug4("count %d setting letter = %c "
 				       "color = %d",
 				       color_count,
 				       ba_node[i]->letter,
@@ -4353,7 +4389,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 		return 0;
 	}			
 	
-	debug3("Algo(%d) found - %d", algo, found);
+	debug4("Algo(%d) found - %d", algo, found);
 
 	/* Check the 2 ports we can leave though in ports_to_try */
 	for(i=0;i<2;i++) {
@@ -4393,7 +4429,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			   already been before */
 			itr = list_iterator_create(results);
 			while((next_node = list_next(itr))) {
-				debug3("Algo(%d) looking at %c%c%c and %c%c%c",
+				debug4("Algo(%d) looking at %c%c%c and %c%c%c",
 				       algo,
 				       alpha_num[next_node->coord[X]],
 				       alpha_num[next_node->coord[Y]],
@@ -4410,7 +4446,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			}
 			list_iterator_destroy(itr);
 			if(not_first && found < DIM_SIZE[X]) {
-				debug2("Algo(%d) already been there before",
+				debug3("Algo(%d) already been there before",
 				       algo);
 				not_first = 0;
 				continue;
@@ -4427,17 +4463,17 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			next_switch = &next_node->axis_switch[X];
 
  			if((conn_type == SELECT_MESH) && (found == (x_size))) {
-				debug2("Algo(%d) we found the end of the mesh",
+				debug3("Algo(%d) we found the end of the mesh",
 				       algo);
 				return 1;
 			}
-			debug3("Algo(%d) Broke = %d Found = %d x_size = %d",
+			debug4("Algo(%d) Broke = %d Found = %d x_size = %d",
 			       algo, broke, found, x_size);
 
 			if(broke && (found == x_size)) {
 				goto found_path;
 			} else if(found == x_size) {
-				debug2("Algo(%d) finishing the torus!", algo);
+				debug3("Algo(%d) finishing the torus!", algo);
 
 				if(deny_pass && (*deny_pass & PASS_DENY_X)) {
 					info("we don't allow passthroughs 1");
@@ -4455,10 +4491,11 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				else
 					path = list_create(_delete_path_list);
 				
-				_finish_torus(curr_switch, 0, X, 0, start);
+				_finish_torus(results, 
+					      curr_switch, 0, X, 0, start);
 
 				if(best_count < BEST_COUNT_INIT) {
-					debug2("Algo(%d) Found a best path "
+					debug3("Algo(%d) Found a best path "
 					       "with %d steps.",
 					       algo, best_count);
 					_set_best_path();
@@ -4473,7 +4510,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 
 			if (!_node_used(next_node, x_size)) {
 #ifdef HAVE_BG
-				debug2("Algo(%d) found %d looking at %c%c%c "
+				debug3("Algo(%d) found %d looking at %c%c%c "
 				       "%d going to %c%c%c %d",
 				       algo,
 				       found,
@@ -4499,7 +4536,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				list_iterator_destroy(itr);
 				if(!check_node) {
 #ifdef HAVE_BG
-					debug2("Algo(%d) add %c%c%c",
+					debug3("Algo(%d) add %c%c%c",
 					       algo,
 					       alpha_num[next_node->coord[X]],
 					       alpha_num[next_node->coord[Y]],
@@ -4508,7 +4545,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 					list_append(results, next_node);
 				} else {
 #ifdef HAVE_BG
-					debug2("Algo(%d) Hey this is already "
+					debug3("Algo(%d) Hey this is already "
 					       "added %c%c%c",
 					       algo,
 					       alpha_num[node_tar[X]],
@@ -4529,7 +4566,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				} else {
 				found_path:
 #ifdef HAVE_BG
-					debug2("Algo(%d) added node %c%c%c "
+					debug3("Algo(%d) added node %c%c%c "
 					       "%d %d -> %c%c%c %d %d",
 					       algo,
 					       alpha_num[ba_node->coord[X]],
@@ -4570,11 +4607,11 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	}
 
 	if(algo == BLOCK_ALGO_FIRST) {
-		debug2("Algo(%d) couldn't find path", algo);
+		debug3("Algo(%d) couldn't find path", algo);
 		return 0;
 	} else if(algo == BLOCK_ALGO_SECOND) {
 #ifdef HAVE_BG
-		debug2("Algo(%d) looking for the next free node "
+		debug3("Algo(%d) looking for the next free node "
 		       "starting at %c%c%c",
 		       algo,
 		       alpha_num[ba_node->coord[X]],
@@ -4595,7 +4632,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 		_find_next_free_using_port_2(curr_switch, 0, results, X, 0);
 		
 		if(best_count < BEST_COUNT_INIT) {
-			debug2("Algo(%d) yes found next free %d", algo,
+			debug3("Algo(%d) yes found next free %d", algo,
 			       best_count);
 			node_tar = _set_best_path();
 
@@ -4615,7 +4652,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			next_switch = &next_node->axis_switch[X];
 			
 #ifdef HAVE_BG
-			debug2("Algo(%d) found %d looking at %c%c%c "
+			debug3("Algo(%d) found %d looking at %c%c%c "
 			       "going to %c%c%c %d",
 			       algo, found,
 			       alpha_num[ba_node->coord[X]],
@@ -4636,12 +4673,12 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				found--;
 				_reset_the_path(curr_switch, 0, 1, X);
 				_remove_node(results, next_node->coord);
-				debug2("Algo(%d) couldn't finish "
+				debug3("Algo(%d) couldn't finish "
 				       "the path off this one", algo);
 			}
 		} 
 		
-		debug2("Algo(%d) couldn't find path", algo);
+		debug3("Algo(%d) couldn't find path", algo);
 		return 0;
 	}
 
@@ -4662,7 +4699,7 @@ static int _remove_node(List results, int *node_tar)
 		if(node_tar[X] == ba_node->coord[X] 
 		   && node_tar[Y] == ba_node->coord[Y] 
 		   && node_tar[Z] == ba_node->coord[Z]) {
-			debug2("removing %c%c%c from list",
+			debug3("removing %c%c%c from list",
 			       alpha_num[node_tar[X]],
 			       alpha_num[node_tar[Y]],
 			       alpha_num[node_tar[Z]]);
@@ -4671,7 +4708,7 @@ static int _remove_node(List results, int *node_tar)
 		}
 #else
 		if(node_tar[X] == ba_node->coord[X]) {
-			debug2("removing %d from list",
+			debug3("removing %d from list",
 			       node_tar[X]);
 			list_remove (itr);
 			break;
@@ -4741,7 +4778,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 	   .used) {
 		
 #ifdef HAVE_BG
-		debug2("this one not found %c%c%c",
+		debug3("this one not found %c%c%c",
 		       alpha_num[node_tar[X]],
 		       alpha_num[node_tar[Y]],
 		       alpha_num[node_tar[Z]]);
@@ -4802,6 +4839,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 		}
 		list_iterator_destroy(itr);
 			
+		/* check to see if wire 0 is used with this port */
 		if(curr_switch->
 		   ext_wire[port_to_try].node_tar[X]
 		   == curr_switch->ext_wire[0].node_tar[X]  
@@ -4839,7 +4877,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 					dim, count);
 			while((temp_switch = list_pop(path)) != path_add){
 				xfree(temp_switch);
-				debug3("something here 1");
+				debug4("something here 1");
 			}
 		}
 	}
@@ -4865,7 +4903,8 @@ return_0:
  * to apply this path to the main system (ba_system_ptr)
  */
 
-static int _finish_torus(ba_switch_t *curr_switch, int source_port,
+static int _finish_torus(List results, 
+			 ba_switch_t *curr_switch, int source_port,
 			 int dim, int count, int *start)
 {
 	ba_switch_t *next_switch = NULL;
@@ -4962,6 +5001,8 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				}
 			}
 			list_iterator_destroy(itr);
+
+			/* check to see if wire 0 is used with this port */
 			if((curr_switch->
 			    ext_wire[ports_to_try[i]].node_tar[X] ==
 			    curr_switch->ext_wire[0].node_tar[X] &&
@@ -4973,12 +5014,50 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 			    curr_switch->ext_wire[0].node_tar[Z])) {
 				continue;
 			}
+
+
 			if(!used) {
+				ba_node_t *next_node = NULL;
 				port_tar = curr_switch->
 					ext_wire[ports_to_try[i]].port_tar;
 				node_tar = curr_switch->
 					ext_wire[ports_to_try[i]].node_tar;
-				
+
+				/* Check to see if I am going to a place I have
+				   already been before, because even
+				   though we may be able to do this
+				   electrically this doesn't mean the
+				   under lying infrastructure will
+				   allow it. */
+				itr = list_iterator_create(results);
+				while((next_node = list_next(itr))) {
+					debug4("finishing_torus: "
+					       "looking at %c%c%c and %c%c%c",
+					       alpha_num[next_node->coord[X]],
+					       alpha_num[next_node->coord[Y]],
+					       alpha_num[next_node->coord[Z]],
+					       alpha_num[node_tar[X]],
+					       alpha_num[node_tar[Y]],
+					       alpha_num[node_tar[Z]]);
+					if((node_tar[X] == next_node->coord[X]) 
+					   && (node_tar[Y] 
+					       == next_node->coord[Y])
+					   && (node_tar[Z] 
+					       == next_node->coord[Z])) {
+						break;
+					}				
+				}
+				list_iterator_destroy(itr);
+				if(next_node) {
+					debug3("finishing_torus: "
+					       "Can't finish torus with "
+					       "%c%c%c we already were there.",
+					       alpha_num[next_node->coord[X]],
+					       alpha_num[next_node->coord[Y]],
+					       alpha_num[next_node->coord[Z]]);
+					continue;
+				}
+
 				next_switch = &ba_system_ptr->grid[node_tar[X]]
 #ifdef HAVE_3D
 					[node_tar[Y]]
@@ -4990,12 +5069,12 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				count++;
 				path_add->out = ports_to_try[i];
 				list_push(path, path_add);
-				_finish_torus(next_switch, port_tar, 
+				_finish_torus(results, next_switch, port_tar, 
 					      dim, count, start);
 				while((temp_switch = list_pop(path))
 				      != path_add){
 					xfree(temp_switch);
-					debug3("something here 3");
+					debug4("something here 3");
 				}
 			}
 		}
@@ -5027,7 +5106,7 @@ static int *_set_best_path()
 			debug2("got a passthrough in X");
 		}
 #ifdef HAVE_3D
-		debug3("mapping %c%c%c %d->%d",
+		debug4("mapping %c%c%c %d->%d",
 		       alpha_num[path_switch->geometry[X]],
 		       alpha_num[path_switch->geometry[Y]],
 		       alpha_num[path_switch->geometry[Z]],
@@ -5088,189 +5167,3 @@ static void _destroy_geo(void *object)
 	int *geo_ptr = (int *)object;
 	xfree(geo_ptr);
 }
-
-//#define BUILD_EXE
-#ifdef BUILD_EXE
-/** */
-int main(int argc, char** argv)
-{
-	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
-	log_options_t log_opts = LOG_OPTS_INITIALIZER;
-	int debug_level = 6;
-	node_info_msg_t *new_node_ptr = NULL;
-
-	List results;
-//	List results2;
-//	int i,j;
-	log_opts.stderr_level  = debug_level;
-	log_opts.logfile_level = debug_level;
-	log_opts.syslog_level  = debug_level;
-	
-	log_alter(log_opts, LOG_DAEMON, 
-		  "/dev/null");
-	
-	DIM_SIZE[X]=0;
-	DIM_SIZE[Y]=0;
-	DIM_SIZE[Z]=0;
-	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) { 
-		
-		sleep(10);	/* keep trying to reconnect */
-	}
-	
-	ba_init(new_node_ptr);
-	init_wires(NULL);
-						
-	results = list_create(NULL);
-	request->geometry[0] = 1;
-	request->geometry[1] = 1;
-	request->geometry[2] = 1;
-	request->start[0] = 6;
-	request->start[1] = 3;
-	request->start[2] = 2;
-	request->start_req = 1;
-//	request->size = 1;
-	request->rotate = 0;
-	request->elongate = 0;
-	request->conn_type = SELECT_TORUS;
-	new_ba_request(request);
-	print_ba_request(request);
-	if(!allocate_block(request, results)) {
-       		debug("couldn't allocate %c%c%c",
-		       request->geometry[0],
-		       request->geometry[1],
-		       request->geometry[2]);
-	}
-	list_destroy(results);
-
-	results = list_create(NULL);
-	request->geometry[0] = 2;
-	request->geometry[1] = 4;
-	request->geometry[2] = 1;
-	request->start[0] = 3;
-	request->start[1] = 0;
-	request->start[2] = 2;
-	request->start_req = 1;
-//	request->size = 16;
-	request->rotate = 0;
-	request->elongate = 0;
-	request->conn_type = SELECT_TORUS;
-	new_ba_request(request);
-	print_ba_request(request);
-	if(!allocate_block(request, results)) {
-       		debug("couldn't allocate %c%c%c",
-		       alpha_num[request->geometry[0]],
-		       alpha_num[request->geometry[1]],
-		       alpha_num[request->geometry[2]]);
-	}
-	list_destroy(results);
-
-	results = list_create(NULL);
-	request->geometry[0] = 2;
-	request->geometry[1] = 1;
-	request->geometry[2] = 4;
-	request->start[0] = 5;
-	request->start[1] = 2;
-	request->start[2] = 0;
-	request->start_req = 1;
-	request->rotate = 0;
-	request->elongate = 0;
-	request->conn_type = SELECT_TORUS;
-	new_ba_request(request);
-	print_ba_request(request);
-	if(!allocate_block(request, results)) {
-       		debug("couldn't allocate %c%c%c",
-		       alpha_num[request->geometry[0]],
-		       alpha_num[request->geometry[1]],
-		       alpha_num[request->geometry[2]]);
-	}
-	list_destroy(results);
-	
-/* 	results = list_create(NULL); */
-/* 	request->geometry[0] = 4; */
-/* 	request->geometry[1] = 4; */
-/* 	request->geometry[2] = 4; */
-/* 	//request->size = 2; */
-/* 	request->conn_type = SELECT_TORUS; */
-/* 	new_ba_request(request); */
-/* 	print_ba_request(request); */
-/* 	if(!allocate_block(request, results)) { */
-/*        		printf("couldn't allocate %c%c%c\n", */
-/* 		       request->geometry[0], */
-/* 		       request->geometry[1], */
-/* 		       request->geometry[2]); */
-/* 	} */
-
-/* 	results = list_create(NULL); */
-/* 	request->geometry[0] = 1; */
-/* 	request->geometry[1] = 4; */
-/* 	request->geometry[2] = 4; */
-/* 	//request->size = 2; */
-/* 	request->conn_type = SELECT_TORUS; */
-/* 	new_ba_request(request); */
-/* 	print_ba_request(request); */
-/* 	if(!allocate_block(request, results)) { */
-/*        		printf("couldn't allocate %c%c%c\n", */
-/* 		       request->geometry[0], */
-/* 		       request->geometry[1], */
-/* 		       request->geometry[2]); */
-/* 	} */
-	
-	int dim,j;
-	int x,y,z;
-	int startx=0;
-	int starty=0;
-	int startz=0;
-	int endx=DIM_SIZE[X];
-	int endy=1;//DIM_SIZE[Y];
-	int endz=1;//DIM_SIZE[Z];
-
-	for(x=startx;x<endx;x++) {
-		for(y=starty;y<endy;y++) {
-			for(z=startz;z<endz;z++) {
-				ba_node_t *curr_node = 
-					&(ba_system_ptr->grid[x][y][z]);
-				info("Node %c%c%c Used = %d Letter = %c",
-				     alpha_num[x],alpha_num[y],alpha_num[z],
-				     curr_node->used,
-				     curr_node->letter);
-				for(dim=0;dim<1;dim++) {
-					info("Dim %d",dim);
-					ba_switch_t *wire =
-						&curr_node->axis_switch[dim];
-					for(j=0;j<NUM_PORTS_PER_NODE;j++)
-						info("\t%d -> %d -> %c%c%c %d "
-						     "Used = %d",
-						     j, wire->int_wire[j].
-						     port_tar,
-						     alpha_num[wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-							       node_tar[X]],
-						     alpha_num[wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-						     node_tar[Y]],
-						     alpha_num[wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-						     node_tar[Z]],
-						     wire->ext_wire[
-							     wire->int_wire[j].
-							     port_tar].
-						     port_tar,
-						     wire->int_wire[j].used);
-				}
-			}
-		}
-	}
-	/* list_destroy(results); */
-
-/* 	ba_fini(); */
-
-/* 	delete_ba_request(request); */
-	
-	return 0;
-}
-
-
-#endif

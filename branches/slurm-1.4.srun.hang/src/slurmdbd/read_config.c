@@ -300,19 +300,49 @@ extern int read_slurmdbd_conf(void)
 	if(slurmdbd_conf->plugindir == NULL)
 		slurmdbd_conf->plugindir = xstrdup(default_plugin_path);
 	if (slurmdbd_conf->slurm_user_name) {
-		uid_t pw_uid = uid_from_string(slurmdbd_conf->slurm_user_name);
-		if (pw_uid == (uid_t) -1) {
+		uid_t pw_uid;
+		if (uid_from_string (slurmdbd_conf->slurm_user_name,
+					&pw_uid) < 0)
 			fatal("Invalid user for SlurmUser %s, ignored",
 			      slurmdbd_conf->slurm_user_name);
-		} else
+		else
 			slurmdbd_conf->slurm_user_id = pw_uid;
 	} else {
 		slurmdbd_conf->slurm_user_name = xstrdup("root");
 		slurmdbd_conf->slurm_user_id = 0;
 	}
+	
 	if (slurmdbd_conf->storage_type == NULL)
 		fatal("StorageType must be specified");
+
+	if (!slurmdbd_conf->storage_host)
+		slurmdbd_conf->storage_host = xstrdup(DEFAULT_STORAGE_HOST);
+
+	if (!slurmdbd_conf->storage_user) 		
+		slurmdbd_conf->storage_user = xstrdup(getlogin());
 	
+	if(!strcmp(slurmdbd_conf->storage_type, 
+			  "accounting_storage/mysql")) {
+		if(!slurmdbd_conf->storage_port)
+			slurmdbd_conf->storage_port = DEFAULT_MYSQL_PORT;
+		if(!slurmdbd_conf->storage_loc)
+			slurmdbd_conf->storage_loc =
+				xstrdup(DEFAULT_ACCOUNTING_DB);
+	} else if(!strcmp(slurmdbd_conf->storage_type,
+			  "accounting_storage/pgsql")) {
+		if(!slurmdbd_conf->storage_port)
+			slurmdbd_conf->storage_port = DEFAULT_PGSQL_PORT;
+		if(!slurmdbd_conf->storage_loc)
+			slurmdbd_conf->storage_loc =
+				xstrdup(DEFAULT_ACCOUNTING_DB);
+	} else {
+		if(!slurmdbd_conf->storage_port)
+			slurmdbd_conf->storage_port = DEFAULT_STORAGE_PORT;
+		if(!slurmdbd_conf->storage_loc)
+			slurmdbd_conf->storage_loc =
+				xstrdup(DEFAULT_STORAGE_LOC);
+	}
+
 	if (slurmdbd_conf->archive_dir) {
 		if(stat(slurmdbd_conf->archive_dir, &buf) < 0) 
 			fatal("Failed to stat the archive directory %s: %m",

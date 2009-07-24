@@ -1,4 +1,4 @@
-.TH SMAP "1" "April 2009" "smap 2.0" "Slurm components"
+.TH SMAP "1" "June 2009" "smap 2.1" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -65,9 +65,20 @@ If user is in configure mode type 'exit' to exit program, 'quit'
 to exit configure mode.
 
 .TP
-\fB\-p\fR, \fB\-\-parse\fR
-Used with \-c commandline option. Don't format output send only single 
-tab delimited output to stdout.
+\fB\-I\fR, \fB\-\-ionodes\fR
+Only show objects with these ionodes this support is only for
+bluegene systems. This should be used inconjuction with the '\-n'
+option.  Only specify the ionode number range here.  Specify the node
+name with the '\-n' option. 
+
+.TP
+\fB\-n\fR, \fB\-\-nodes\fR
+Only show objects with these nodes.  If querying to the ionode level
+use the option '\-I' in conjunction with this option.
+
+.TP
+\fB\-Q\fR, \fB\-\-quiet\fR
+Avoid printing error messages.
 
 .TP
 \fB\-R <RACK_MIDPLANE_ID/XYZ>\fR, \fB\-\-resolve=<RACK_MIDPLANE_ID/XYZ>\fR
@@ -135,7 +146,7 @@ default partition.
 \fBST\fR
 State of a job in compact form. Possible states include:
 PD (pending), R (running), S (suspended), 
-CG (completing), CD  (completed), 
+CD  (completed), CF (configuring), CG (completing), 
 F (failed), TO (timeout), and NF (node failure). See 
 \fBJOB STATE CODES\fR section below for more information.
 .TP
@@ -351,6 +362,8 @@ be placed in the \fBDOWN\fR state (except in the case of
 If the node state code is followed by "~", this indicates
 the node is presently in a power saving mode (typically
 running at reduced frequency).
+If the node state code is followed by "#", this indicates
+the node is presently being powered up or configured.
 .TP 12
 \fBALLOCATED\fR
 The node has been allocated to one or more jobs.
@@ -428,6 +441,10 @@ Job has terminated all processes on all nodes.
 .TP
 \fBCG  COMPLETING\fR
 Job is in the process of completing. Some processes on some nodes may still be active.
+.TP
+\fBCF  CONFIGURING\fR
+Job has been allocated resources, but are waiting for them to become ready for use
+(e.g. booting).
 .TP
 \fBF   FAILED\fR
 Job terminated with non\-zero exit code or other failure condition.

@@ -120,7 +120,7 @@ static void _print_version (void);
 static void _xlate_job_step_ids(char **rest);
 
 /* translate job state name to number */
-static enum job_states _xlate_state_name(const char *state_name);
+static uint16_t _xlate_state_name(const char *state_name);
 
 /* translate name name to number */
 static uint16_t _xlate_signal_name(const char *signal_name);
@@ -150,7 +150,7 @@ int initialize_and_process_args(int argc, char *argv[])
 
 }
 
-static enum job_states 
+static uint16_t 
 _xlate_state_name(const char *state_name)
 {
 	enum job_states i;
@@ -167,7 +167,13 @@ _xlate_state_name(const char *state_name)
 	    (strcasecmp(state_name, 
 			job_state_string_compact(JOB_COMPLETING)) == 0)) {
 		return JOB_COMPLETING;
-	}	
+	}
+	if ((strcasecmp(state_name, 
+			job_state_string(JOB_CONFIGURING)) == 0) ||
+	    (strcasecmp(state_name, 
+			job_state_string_compact(JOB_CONFIGURING)) == 0)) {
+		return JOB_CONFIGURING;
+	}
 
 	fprintf (stderr, "Invalid job state specified: %s\n", state_name);
 	state_names = xstrdup(job_state_string(0));
@@ -177,6 +183,8 @@ _xlate_state_name(const char *state_name)
 	}
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_COMPLETING));
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_CONFIGURING));
 	fprintf (stderr, "Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	exit (1);
@@ -326,7 +334,7 @@ static void _opt_args(int argc, char **argv)
 		{"interactive", no_argument,       0, 'i'},
 		{"name",        required_argument, 0, 'n'},
 		{"partition",   required_argument, 0, 'p'},
-		{"quiet",       no_argument,       0, 'q'},
+		{"quiet",       no_argument,       0, 'Q'},
 		{"signal",      required_argument, 0, 's'},
 		{"state",       required_argument, 0, 't'},
 		{"user",        required_argument, 0, 'u'},
@@ -339,7 +347,7 @@ static void _opt_args(int argc, char **argv)
 		{NULL,          0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "bin:p:qs:t:u:vVw:",
+	while((opt_char = getopt_long(argc, argv, "bin:p:Qs:t:u:vVw:",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
@@ -362,7 +370,7 @@ static void _opt_args(int argc, char **argv)
 			case (int)'p':
 				opt.partition = xstrdup(optarg);
 				break;
-			case (int)'q':
+			case (int)'Q':
 				opt.verbose = -1;
 				break;
 			case (int)'s':
@@ -507,7 +515,7 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-q] [-s name | integer]\n");
+	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-Q] [-s name | integer]\n");
 	printf("               [--batch] [-t PENDING | RUNNING | SUSPENDED] [--usage] [-v] [-V]\n");
 	printf("               [-w hosts...] [job_id[.step_id]]\n");
 }
@@ -520,7 +528,7 @@ static void _help(void)
 	printf("  -i, --interactive               require response from user for each job\n");
 	printf("  -n, --name=job_name             name of job to be signaled\n");
 	printf("  -p, --partition=partition       name of job's partition\n");
-	printf("  -q, --quiet                     disable warnings\n");
+	printf("  -Q, --quiet                     disable warnings\n");
 	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
 	printf("  -t, --state=states              states of jobs to be signaled,\n");
 	printf("                                  default is pending, running, and\n");

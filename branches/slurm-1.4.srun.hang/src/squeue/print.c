@@ -2,7 +2,7 @@
  *  print.c - squeue print job functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -482,15 +482,13 @@ long job_time_used(job_info_t * job_ptr)
 {
 	time_t end_time;
 
-	if ((job_ptr->start_time == 0)
-	||   (job_ptr->job_state == JOB_PENDING))
+	if ((job_ptr->start_time == 0) || IS_JOB_PENDING(job_ptr))
 		return 0L;
 
-	if (job_ptr->job_state == JOB_SUSPENDED)
+	if (IS_JOB_SUSPENDED(job_ptr))
 		return (long) job_ptr->pre_sus_time;
 
-	if ((job_ptr->job_state == JOB_RUNNING)
-	||  (job_ptr->end_time == 0))
+	if (IS_JOB_RUNNING(job_ptr) || (job_ptr->end_time == 0))
 		end_time = time(NULL);
 	else
 		end_time = job_ptr->end_time;
@@ -578,6 +576,10 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 {
 	char *ionodes = NULL;
 	char tmp_char[16];
+	uint16_t base_state = 0;
+
+	if (job)
+		base_state = job->job_state & JOB_STATE_BASE;
 	
 	if (job == NULL) {	/* Print the Header instead */
 #ifdef HAVE_BG
@@ -585,9 +587,9 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 #else
 		_print_str("NODELIST(REASON)", width, right, false);
 #endif
-	} else if ((job->job_state == JOB_PENDING)
-	||         (job->job_state == JOB_TIMEOUT)
-	||         (job->job_state == JOB_FAILED)) {
+	} else if ((base_state == JOB_PENDING) ||
+	           (base_state == JOB_TIMEOUT) ||
+	           (base_state == JOB_FAILED)) {
 		char id[FORMAT_STRING_SIZE], *reason;
 		if (job->state_desc)
 			reason = job->state_desc;
@@ -597,9 +599,9 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		_print_str(id, width, right, true);
 	} else {
 #ifdef HAVE_BG
-		select_g_get_jobinfo(job->select_jobinfo, 
-				     SELECT_DATA_IONODES, 
-				     &ionodes);
+		select_g_select_jobinfo_get(job->select_jobinfo, 
+					    SELECT_JOBDATA_IONODES, 
+					    &ionodes);
 #endif
 		
 		_print_nodes(job->nodes, width, right, false);
@@ -642,13 +644,13 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		if ((job->num_cpu_groups > 0) &&
-		    (job->cpus_per_node) &&
-		    (job->cpu_count_reps)) {
+		if ((job->select_job_res->cpu_array_cnt > 0) &&
+		    (job->select_job_res->cpu_array_value) &&
+		    (job->select_job_res->cpu_array_reps)) {
 			uint32_t cnt = 0, i;
-			for (i=0; i<job->num_cpu_groups; i++) {
-				cnt += job->cpus_per_node[i] * 
-				       job->cpu_count_reps[i];
+			for (i=0; i<job->select_job_res->cpu_array_cnt; i++) {
+				cnt += job->select_job_res->cpu_array_value[i] *
+				       job->select_job_res->cpu_array_reps[i];
 			}
 			convert_num_unit((float)cnt, tmp_char, 
 					 sizeof(tmp_char), UNIT_NONE);
@@ -673,9 +675,9 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 		_print_str("NODES", width, right_justify, true);
 	else {
 #ifdef HAVE_BG
-		select_g_get_jobinfo(job->select_jobinfo, 
-				     SELECT_DATA_NODE_CNT, 
-				     &node_cnt);
+		select_g_select_jobinfo_get(job->select_jobinfo, 
+					    SELECT_JOBDATA_NODE_CNT, 
+					    &node_cnt);
 #endif
 		if ((node_cnt == 0) || (node_cnt == NO_VAL))
 			node_cnt = _get_node_cnt(job);
@@ -735,54 +737,6 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 		_print_str("S:C:T", width, right_justify, true);
 	}
 
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_num_sockets(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[10];
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("SOCKETS", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->min_sockets, tmp_char, 
-				 sizeof(tmp_char), UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_num_cores(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[10];
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("CORES", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->min_cores, tmp_char, 
-				 sizeof(tmp_char), UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_num_threads(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[10];
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("THREADS", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->min_threads, tmp_char, 
-				 sizeof(tmp_char), UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -1058,10 +1012,10 @@ int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 	char select_buf[100];
 
 	if (job == NULL)	/* Print the Header instead */
-		select_g_sprint_jobinfo(NULL,
+		select_g_select_jobinfo_sprint(NULL,
 			select_buf, sizeof(select_buf), SELECT_PRINT_HEAD);
 	else
-		select_g_sprint_jobinfo(job->select_jobinfo,
+		select_g_select_jobinfo_sprint(job->select_jobinfo,
 			select_buf, sizeof(select_buf), SELECT_PRINT_DATA);
 	_print_str(select_buf, width, right_justify, true);
 
@@ -1202,6 +1156,20 @@ int _print_step_user_name(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_step_time_limit(job_step_info_t * step, int width, bool right, 
+			   char* suffix)
+{
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("LIMIT", width, false, true);
+	else if (step->time_limit == INFINITE)
+		_print_str("UNLIMITED", width, right, true);
+	else
+		_print_secs(step->time_limit * 60, width, right, false);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_step_time_start(job_step_info_t * step, int width, bool right, 
 			   char* suffix)
 {
@@ -1275,7 +1243,7 @@ static int _filter_job(job_info_t * job)
 	int filter;
 	ListIterator iterator;
 	uint32_t *job_id, *user;
-	enum job_states *state_id;
+	uint16_t *state_id;
 	char *part, *account;
 
 	if (params.job_list) {
@@ -1327,6 +1295,8 @@ static int _filter_job(job_info_t * job)
 		while ((state_id = list_next(iterator))) {
 			if ((*state_id == job->job_state) ||
 			    ((*state_id == JOB_COMPLETING) && 
+			     (*state_id & job->job_state)) ||
+			    ((*state_id == JOB_CONFIGURING) &&
 			     (*state_id & job->job_state))) {
 				filter = 0;
 				break;
@@ -1336,10 +1306,11 @@ static int _filter_job(job_info_t * job)
 		if (filter == 1)
 			return 3;
 	} else {
-		if ((job->job_state != JOB_PENDING)
-		&&  (job->job_state != JOB_RUNNING)
-		&&  (job->job_state != JOB_SUSPENDED)
-		&&  ((job->job_state & JOB_COMPLETING) == 0))
+		uint16_t base_state = job->job_state & JOB_STATE_BASE;
+		if ((base_state != JOB_PENDING)   &&
+		    (base_state != JOB_RUNNING)   &&
+		    (base_state != JOB_SUSPENDED) &&
+		    (!(job->job_state & JOB_COMPLETING)))
 			return 4;
 	}
 

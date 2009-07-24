@@ -50,10 +50,10 @@ extern time_t last_resv_update;
 /* Create a resource reservation */
 extern int create_resv(resv_desc_msg_t *resv_desc_ptr);
 
-/* Update an exiting resource reservation */
+/* Update an existing resource reservation */
 extern int update_resv(resv_desc_msg_t *resv_desc_ptr);
 
-/* Delete an exiting resource reservation */
+/* Delete an existing resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr);
 
 /* Dump the reservation records to a buffer */
@@ -87,27 +87,47 @@ extern int load_all_resv_state(int recover);
 
 /*
  * Determine if a job request can use the specified reservations
+ *
  * IN/OUT job_ptr - job to validate, set its resv_id and resv_type
  * RET SLURM_SUCCESS or error code (not found or access denied)
-*/
+ */
 extern int validate_job_resv(struct job_record *job_ptr);
 
 /*
+ * Determine how many licenses of the give type the specified job is 
+ *	prevented from using due to reservations
+ *
+ * IN job_ptr   - job to test
+ * IN lic_name  - name of license
+ * IN when      - when the job is expected to start
+ * RET number of licenses of this type the job is prevented from using
+ */
+extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
+			     time_t when);
+
+/*
  * Determine which nodes a job can use based upon reservations
+ *
  * IN job_ptr      - job to test
  * IN/OUT when     - when we want the job to start (IN)
  *                   when the reservation is available (OUT)
+ * IN move_time    - if true, then permit the start time to advance from
+ *                   "when" as needed IF job has no reservervation
  * OUT node_bitmap - nodes which the job can use, caller must free
  * RET	SLURM_SUCCESS if runable now
  *	ESLURM_RESERVATION_ACCESS access to reservation denied
  *	ESLURM_RESERVATION_INVALID reservation invalid
  *	ESLURM_INVALID_TIME_VALUE reservation invalid at time "when"
+ *	ESLURM_NODES_BUSY job has no reservation, but required nodes are
+ *			  reserved
  */
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
-			 bitstr_t **node_bitmap);
+			 bool move_time, bitstr_t **node_bitmap);
 
 /*
- * Determine if a job can start now based only upon reservations
+ * Determine if a job can start now based only upon its reservations
+ *	specification, if any
+ *
  * IN job_ptr      - job to test
  * RET	SLURM_SUCCESS if runable now, otherwise an error code
  */
@@ -117,11 +137,18 @@ extern int job_test_resv_now(struct job_record *job_ptr);
 extern void begin_job_resv_check(void);
 
 /* Test a particular job for valid reservation
+ *
  * RET ESLURM_INVALID_TIME_VALUE if reservation is terminated
- *     SLURM_SUCCESS if reservation is still valid */
+ *     SLURM_SUCCESS if reservation is still valid
+ */
 extern int job_resv_check(struct job_record *job_ptr);
 
-/* Finish scan of all jobs for valid reservations */
+/* Finish scan of all jobs for valid reservations
+ *
+ * Purge vestigial reservation records.
+ * Advance daily or weekly reservations that are no longer 
+ *	being actively used.
+ */
 extern void fini_job_resv_check(void);
 
 #endif /* !_RESERVATION_H */

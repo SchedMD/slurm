@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "May 2009" "slurm.conf 2.0" "Slurm configuration file"
+.TH "slurm.conf" "5" "July 2009" "slurm.conf 2.1" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -37,6 +37,13 @@ configuration file.
 The overall configuration parameters available include:
 
 .TP
+\fBAccountingStorageBackupHost\fR
+The name of the backup machine hosting the accounting storage database.
+If used with the accounting_storage/slurmdbd plugin, this is where the backup 
+slurmdbd would be running.
+Only used for database type storage plugins, ignored otherwise.
+
+.TP
 \fBAccountingStorageEnforce\fR
 This controls what level of enforcement you want on associations when new
 jobs are submitted.  Valid options are any combination of associations, limits,
@@ -46,12 +53,9 @@ TrackWckey being set.  By enforcing Associations no new job is allowed to run
 unless a corresponding association exists in the system.  If limits are 
 enforced users can be limited by association to how many nodes or how long 
 jobs can run or other limits.  With wckeys enforced jobs will not be scheduled 
-unless a valid workload characterization key is specified.
-
-.TP
-\fBAccountingStorageBackupHost\fR
-The name of the backup machine hosting the accounting storage database.
-Only used for accounting_storage/slurmdbd plugin, ignored otherwise.
+unless a valid workload characterization key is specified.  This value may not 
+be reset via "scontrol reconfig". It only takes effect upon restart 
+of the slurmctld daemon.
 
 .TP
 \fBAccountingStorageHost\fR
@@ -222,10 +226,14 @@ By default the \fBControlAddr\fR will be identical in value to
 .TP
 \fBControlMachine\fR
 The short hostname of the machine where SLURM control functions are
-executed.  I.e., the hostname returned by the \fIgethostname()\fR
-function cut at the first dot (e.g. use "tux001" rather than
-"tux001.my.com").  This value must be specified.  See the
-\fBRELOCATING CONTROLLERS\fR section if you change this.
+executed (i.e. the name returned by the command "hostname -s", use 
+"tux001" rather than "tux001.my.com").  
+This value must be specified. 
+In order to support some high availability architectures, multiple
+hostnames may be listed with comma separators and one \fBControlAddr\fR
+must be specified. The high availability system must insure that the
+slurmctld daemon is running on only one of these hosts at a time.
+See the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
 .TP
 \fBCryptoType\fR
@@ -712,13 +720,53 @@ in the same directory as the system slurm.conf. For more information
 on SPANK plugins, see the \fBspank\fR(8) manual.
 
 .TP
+\fBPreemptMode\fR
+Controls the mechanism used to preempt lower priority jobs in order to 
+execute higher priority jobs.
+For gang scheduling of jobs having the same priority, job suspend will
+always be used and \fBPreemptMode\fR must be set to \fICANCEL\fR, 
+\fIREQUEUE\fR or \fISUSPEND\fR (anything other than \fIOFF\fR).
+Two different mechanisms can be used to determine when preeption can 
+take place. 
+SLURM partitions can have different \fBPriority\fR values and contain 
+the same nodes, in which case jobs from the higher priority 
+partition will preempt jobs from the lower priority partition.
+Alternately when SLURM is used with an accounting database, the jobs can be
+submitted to the same partition but have different Quality Of Service (QOS) 
+values. 
+Jobs from a QOS with a descriptor containing \fIPREEMPTOR\fR are capable
+of preempting jobs from a QOS with a descriptor containing \fIPREEMPTEE\fR.
+.RS
+.TP 12
+\fBOFF\fR
+is the default value and disables job preemption and gang scheduling.
+This is the only option compatible with \fBSchedulerType=sched/wiki\fR 
+or \fBSchedulerType=sched/wiki2\fR (used by Maui and Moab respecitvely, 
+which provide their own job preemption functionality).
+.TP
+\fBCANCEL\fR
+always cancel the job.
+.TP
+\fBCHECKPOINT\fR
+preempts jobs by checkpointing them (if possible) or cancelling them.
+.TP
+\fBREQUEUE\fR
+preempts jobs by requeuing them (if possible) or cancelling them.
+.TP
+\fBSUSPEND\fR
+preempts jobs by suspending them.
+A suspended job will resume execution once the high priority job 
+preempting it completes.
+.RE
+
+.TP
 \fBPriorityDecayHalfLife\fR
 This controls how long prior resource use is considered in determining
 how over\- or under\-serviced an association is (user, bank account and 
 cluster) in determining job priority.  If set to 0 no decay will be applied.  
 This is helpful if you want to enforce hard time limits per association.  If 
-set to 0 PriorityUsageResetPeriod must be set to some interval.
-Applicable only if PriorityType=priority/multifactor.
+set to 0 \fBPriorityUsageResetPeriod\fR must be set to some interval.
+Applicable only if \fBPriorityType=priority/multifactor\fR.
 The unit is a time string (i.e. min, hr:min:00, days\-hr:min:00, 
 or days\-hr).  The default value is 7\-0 (7 days).
 
@@ -997,7 +1045,7 @@ the node down.
 \fBResumeProgram\fR is the program that will be executed when a node 
 in power save mode is assigned work to perform.
 For reasons of reliability, \fBResumeProgram\fR may execute more than once
-for a node.
+for a node when the \fBslurmctld\fR daemon crashes and is restarted.
 If \fBResumeProgram\fR is unable to restore a node to service, it should
 requeue any node associated with the node and set the node state to DRAIN.
 The program executes as \fBSlurmUser\fR.
@@ -1005,9 +1053,9 @@ The argument to the program will be the names of nodes to
 be removed from power savings mode (using SLURM's hostlist
 expression format).
 By default no program is run.
-Related configuration options include \fBResumeRate\fR, \fBSuspendRate\fR,
-\fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, and
-\fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeRate\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 More information is available at the SLURM web site
 (https://computing.llnl.gov/linux/slurm/power_save.html).
 
@@ -1018,11 +1066,24 @@ operation by \fBResumeProgram\fR.
 The value is number of nodes per minute and it can be used to prevent 
 power surges if a large number of nodes in power save mode are 
 assigned work at the same time (e.g. a large job starts).
-A value of zero results in no limits being imposed.
+A value of zero results in no limits being imposed. 
 The default value is 300 nodes per minute.
-Related configuration options include \fBResumeProgram\fR, \fBSuspendRate\fR,
-\fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, and
-\fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
+
+.TP
+\fBResumeTimeout\fR
+Maximum time permitted (in second) between when a node is resume request 
+is issued and when the node is actually available for use. 
+Nodes which fail to respond in this time frame may be marked DOWN and
+the jobs scheduled on the node requeued.
+The default value is 60 seconds.
+Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
+More information is available at the SLURM web site
+(https://computing.llnl.gov/linux/slurm/power_save.html).
 
 .TP
 \fBResvOverRun\fR
@@ -1391,9 +1452,9 @@ Specifies the nodes which are to not be placed in power save mode, even
 if the node remains idle for an extended period of time.
 Use SLURM's hostlist expression to identify nodes.
 By default no nodes are excluded.
-Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
-\fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR and
-\fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, 
+\fBResumeTimeout\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendExcParts\fR
@@ -1401,9 +1462,9 @@ Specifies the partitions whose nodes are to not be placed in power save
 mode, even if the node remains idle for an extended period of time.
 Multiple partitions can be identified and separated by commas.
 By default no nodes are excluded.
-Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
-\fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR and
-\fBSuspendExcNodes\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR 
+\fBResumeTimeout\fR, and \fBSuspendExcNodes\fR.
 
 .TP
 \fBSuspendProgram\fR
@@ -1417,9 +1478,9 @@ The argument to the program will be the names of nodes to
 be placed into power savings mode (using SLURM's hostlist
 expression format).
 By default, no program is run.
-Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendExcNodes\fR, and
-\fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBResumeRate\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendRate\fR
@@ -1428,18 +1489,31 @@ The value is number of nodes per minute and it can be used to prevent
 a large drop in power power consumption (e.g. after a large job completes).
 A value of zero results in no limits being imposed.
 The default value is 60 nodes per minute.
-Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
-\fBSuspendProgram\fR, \fBSuspendTime\fR, \fBSuspendExcNodes\fR, and
-\fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendTime\fR
 Nodes which remain idle for this number of seconds will be placed into 
-power save mode by \fBSuspendProgram\fR,
+power save mode by \fBSuspendProgram\fR. 
 A value of \-1 disables power save mode and is the default.
-Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
-\fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendExcNodes\fR, and
-\fBSuspendExcParts\fR.
+Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
+\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTimeout\fR, 
+\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
+
+.TP
+\fBSuspendTimeout\fR
+Maximum time permitted (in second) between when a node suspend request 
+is issued and when the node shutdown.
+At that time the node must ready for a resume request to be issued 
+as needed for new work. 
+The default value is 30 seconds.
+Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR, 
+\fBResumeTimeout\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendProgram\fR, 
+\fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
+More information is available at the SLURM web site
+(https://computing.llnl.gov/linux/slurm/power_save.html).
 
 .TP
 \fBSwitchType\fR
@@ -1600,17 +1674,19 @@ systems.
 .TP
 \fBUnkillableStepProgram\fR
 If the processes in a job step are determined to be unkillable for a period
-of time specified by the UnkillableStepTimeout variable, the program
-specified by the UnkillableStepProgram string will be executed.  This 
-program can be used to take special actions to clean up the unkillable
-processes.  The program will be run as the same user as the slurmd (usually
-"root").
+of time specified by the \fBUnkillableStepTimeout\fR variable, the program
+specified by \fBUnkillableStepProgram\fR will be executed.  
+This program can be used to take special actions to clean up the unkillable
+processes and/or notify computer administrators.  
+The program will be run \fBSlurmdUser\fR (usually "root"). 
+By default no program is run.
 
 .TP
 \fBUnkillableStepTimeout\fR
 The length of time, in seconds, that SLURM will wait before deciding that
 processes in a job step are unkillable (after they have been signaled with
-SIGKILL).  The default timeout value is 60 seconds.
+SIGKILL) and execute \fBUnkillableStepProgram\fR as described above.  
+The default timeout value is 60 seconds.
 
 .TP
 \fBUsePAM\fR
@@ -2070,10 +2146,11 @@ is very important.
 memory as a consumable resource and the \fB\-\-mem\fR option
 should be used for job allocations.
 Possible values for \fBShared\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
-Sharing of resources is typically useful only when using
-\fBSchedulerType=sched/gang\fR.
+Sharing of resources is typically useful only when using gang scheduling
+(\fBPreemptMode=suspend\fR or \fBPreemptMode=kill\fR).
 For more information see the following web pages:
 .br
+.na
 \fIhttps://computing.llnl.gov/linux/slurm/cons_res.html\fR,
 .br
 \fIhttps://computing.llnl.gov/linux/slurm/cons_res_share.html\fR,
@@ -2081,6 +2158,7 @@ For more information see the following web pages:
 \fIhttps://computing.llnl.gov/linux/slurm/gang_scheduling.html\fR, and
 .br
 \fIhttps://computing.llnl.gov/linux/slurm/preempt.html\fR.
+.ad
 
 .RS
 .TP 12
@@ -2315,7 +2393,9 @@ WaitTime=30
 .br
 JobCredentialPrivateKey=/usr/local/slurm/private.key
 .br
+.na
 JobCredentialPublicCertificate=/usr/local/slurm/public.cert
+.ad
 .br
 #
 .br

@@ -1,7 +1,8 @@
 /*****************************************************************************\
- *  src/common/slurm_cred.h  - SLURM job credential operations
+ *  src/common/slurm_cred.h - SLURM job and sbcast credential functions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -62,7 +63,17 @@
  */
 #ifndef __slurm_cred_t_defined
 #  define __slurm_cred_t_defined
-   typedef struct slurm_job_credential * slurm_cred_t;
+   typedef struct slurm_job_credential slurm_cred_t;
+#endif
+
+/*
+ * The incomplete slurm_cred_t type is also defined in slurm_protocol_defs.h
+ * so check to ensure that this header has not been included after 
+ * slurm_protocol_defs.h:
+ */
+#ifndef __sbcast_cred_t_defined
+#  define  __sbcast_cred_t_defined
+   typedef struct sbcast_cred *sbcast_cred_t;		/* opaque data type */
 #endif
 
 /* 
@@ -161,13 +172,13 @@ int slurm_crypto_fini(void);
  *
  * Returns NULL on failure.
  */
-slurm_cred_t slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg);
+slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg);
 
 /*
  * Copy a slurm credential.
  * Returns NULL on failure.
  */
-slurm_cred_t slurm_cred_copy(slurm_cred_t cred);
+slurm_cred_t *slurm_cred_copy(slurm_cred_t *cred);
 
 /*
  * Create a "fake" credential with bogus data in the signature.
@@ -175,14 +186,14 @@ slurm_cred_t slurm_cred_copy(slurm_cred_t cred);
  * to talk to slurmd directly, bypassing the controller
  * (which normally signs creds)
  */
-slurm_cred_t slurm_cred_faker(slurm_cred_arg_t *arg);
+slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg);
 
 /* Free the credential arguments as loaded by either
  * slurm_cred_get_args() or slurm_cred_verify() */
 void slurm_cred_free_args(slurm_cred_arg_t *arg);
 
 /* Make a copy of the credential's arguements */
-int slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg);
+int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg);
 
 /*
  * Verify the signed credential `cred,' and return cred contents in
@@ -195,7 +206,7 @@ int slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg);
  *   - Credential has not been revoked
  *   - Credential has not been replayed
  */
-int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred, 
+int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred, 
 		      slurm_cred_arg_t *arg);
 
 /*
@@ -203,7 +214,7 @@ int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
  *  be used again. Returns SLURM_FAILURE if no credential state is found
  *  to be rewound, SLURM_SUCCESS otherwise.
  */
-int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred);
+int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 /*
  * Check to see if this credential is a reissue of an existing credential
@@ -211,7 +222,7 @@ int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred);
  * this credential is a reissue, then the old credential is cleared
  * from the cred context "ctx".
  */
-void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t cred);
+void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 /*
  * Revoke all credentials for job id jobid
@@ -228,7 +239,7 @@ int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time);
  * than the revoke time, see "scontrol requeue", purge the old 
  * job record and make like it never existed
  */
-bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred);
+bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 /*
  * Begin expiration period for the revocation of credentials
@@ -262,28 +273,53 @@ int slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid);
 
 /* Free memory associated with slurm credential `cred.'
  */
-void slurm_cred_destroy(slurm_cred_t cred);
+void slurm_cred_destroy(slurm_cred_t *cred);
 
 /*
  * Pack a slurm credential for network transmission
  */
-void slurm_cred_pack(slurm_cred_t cred, Buf buffer);
+void slurm_cred_pack(slurm_cred_t *cred, Buf buffer);
 
 /*
  * Unpack a slurm job credential
  */
-slurm_cred_t slurm_cred_unpack(Buf buffer);
+slurm_cred_t *slurm_cred_unpack(Buf buffer);
 
 /*
  * Get a pointer to the slurm credential signature
  * (used by slurm IO connections to verify connecting agent)
  */
-int slurm_cred_get_signature(slurm_cred_t cred, char **datap, int *len);
+int slurm_cred_get_signature(slurm_cred_t *cred, char **datap, 
+			     uint32_t *len);
+
+/*
+ * Retrieve the set of cores that were allocated to the job and format them
+ * in the List Format (e.g., "0-2,7,12-14").
+ *
+ * NOTE: caller must xfree the returned string.
+ */
+char* format_core_allocs(slurm_cred_t *cred, char *node_name);
 
 /*
  * Print a slurm job credential using the info() call
  */
-void slurm_cred_print(slurm_cred_t cred);
+void slurm_cred_print(slurm_cred_t *cred);
+
+/*
+ * Functions to create, delete, pack, and unpack an sbcast credential
+ * Caller of extract_sbcast_cred() must xfree returned node string
+ */
+sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx, 
+				 uint32_t job_id, char *nodes);
+sbcast_cred_t *copy_sbcast_cred(sbcast_cred_t *sbcast_cred);
+void          delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
+int           extract_sbcast_cred(slurm_cred_ctx_t ctx, 
+				  sbcast_cred_t *sbcast_cred, uint16_t block_no,
+				  uint32_t *job_id, char **nodes);
+void          pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer);
+sbcast_cred_t *unpack_sbcast_cred(Buf buffer);
+void          print_sbcast_cred(sbcast_cred_t *sbcast_cred);
+
 
 #ifdef DISABLE_LOCALTIME
 extern char * timestr (const time_t *tp, char *buf, size_t n);

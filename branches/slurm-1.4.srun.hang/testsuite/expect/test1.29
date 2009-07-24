@@ -43,7 +43,7 @@ set file_out         "test$test_id.output"
 set file_prog_get    "test$test_id.prog"
 set job_id           0
 set limit_core       943
-set limit_fsize      274515
+set limit_fsize      674515
 set limit_nofile     1016
 set limit_nproc      345
 set limit_stack      2021
@@ -220,6 +220,8 @@ expect {
 
 if {$matches != 5} {
 	send_user "\nFAILURE: User limits not propagated got $matches matches\n"
+	send_user "Check $file_err for errors\n"
+	send_user "A long running slurmd could cause a file size limit error\n"
 	set exit_code 1
 }
 

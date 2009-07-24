@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov> 
  *  CODE-OCEC-09-009. All rights reserved.
@@ -74,9 +74,37 @@
 
 #define MUNGE_ERRNO_OFFSET	1000
 
-const char plugin_name[]       	= "auth plugin for Munge (http://home.gna.org/munge/)";
+/*
+ * These variables are required by the generic plugin interface.  If they
+ * are not found in the plugin, the plugin loader will ignore it.
+ *
+ * plugin_name - a string giving a human-readable description of the
+ * plugin.  There is no maximum length, but the symbol must refer to
+ * a valid string.
+ *
+ * plugin_type - a string suggesting the type of the plugin or its
+ * applicability to a particular form of data or method of data handling.
+ * If the low-level plugin API is used, the contents of this string are
+ * unimportant and may be anything.  SLURM uses the higher-level plugin
+ * interface which requires this string to be of the form
+ *
+ *	<application>/<method>
+ *
+ * where <application> is a description of the intended application of
+ * the plugin (e.g., "auth" for SLURM authentication) and <method> is a
+ * description of how this plugin satisfies that application.  SLURM will
+ * only load authentication plugins if the plugin_type string has a prefix
+ * of "auth/".
+ *
+ * plugin_version   - specifies the version number of the plugin.  
+ * min_plug_version - specifies the minumum version number of incomming 
+ *                    messages that this plugin can accept
+ */
+const char plugin_name[]       	= "auth plugin for Munge "
+				  "(http://home.gna.org/munge/)";
 const char plugin_type[]       	= "auth/munge";
-const uint32_t plugin_version	= 10;
+const uint32_t plugin_version   = 100;
+const uint32_t min_plug_version = 10; /* minimum version accepted */
 
 static int plugin_errno = SLURM_SUCCESS;
 
@@ -246,7 +274,7 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
 int
-slurm_auth_verify( slurm_auth_credential_t *c, void *argv, char *socket )
+slurm_auth_verify( slurm_auth_credential_t *c, char *socket )
 {
 	if (!c) {
 		plugin_errno = SLURM_AUTH_BADARG;
@@ -366,8 +394,8 @@ slurm_auth_unpack( Buf buf )
 		return NULL;
 	}
 	safe_unpack32( &version, buf );
-	if ( version != plugin_version ) {
-		plugin_errno = SLURM_AUTH_MISMATCH;
+	if ( version < min_plug_version ) {
+		plugin_errno = SLURM_AUTH_VERSION;
 		return NULL;
 	}
 

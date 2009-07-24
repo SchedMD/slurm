@@ -34,15 +34,16 @@
 #  include "config.h"
 #endif
 
-#include <time.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
-#include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
+#include "src/common/macros.h" /* true and false */
 
-#define MAX_USERNAME	9
-#define DEFAULT_BELL_DELAY 10
+#define DEFAULT_IMMEDIATE	1
+#define MAX_USERNAME		9
+#define DEFAULT_BELL_DELAY	10
 
 typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
 
@@ -92,7 +93,7 @@ typedef struct salloc_options {
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/
 
-	int immediate;		/* -i, --immediate      	*/
+	int immediate;		/* -I, --immediate      	*/
 
 	bool hold;		/* --hold, -H			*/
 	bool no_kill;		/* --no-kill, -k		*/
@@ -102,7 +103,6 @@ typedef struct salloc_options {
 	int kill_command_signal;/* --kill-command, -K           */
 	bool kill_command_signal_set;
 	uint16_t shared;	/* --share,   -s		*/
-	int  max_wait;		/* --wait,    -W		*/
 	int  quiet;
 	int  verbose;
 
@@ -141,6 +141,9 @@ typedef struct salloc_options {
 	char *cwd;		/* current working directory	*/
 	char *reservation;	/* --reservation		*/
 	char *wckey;            /* --wckey workload characterization key */
+	char **spank_job_env;	/* SPANK controlled environment for job
+				 * Prolog and Epilog		*/
+	int spank_job_env_size;	/* size of spank_job_env	*/
 } opt_t;
 
 extern opt_t opt;
@@ -156,5 +159,11 @@ int initialize_and_process_args(int argc, char *argv[]);
 /* set options based upon commandline args */
 void set_options(const int argc, char **argv);
 
+/* external functions available for SPANK plugins to modify the environment
+ * exported to the SLURM Prolog and Epilog programs */
+extern char *spank_get_job_env(const char *name);
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite);
+extern int   spank_unset_job_env(const char *name);
 
 #endif	/* _HAVE_OPT_H */

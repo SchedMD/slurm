@@ -1,11 +1,338 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.1.0-pre3
+=============================
+ -- Removed sched/gang plugin and moved the logic directly into the slurmctld
+    daemon so that job preemption and gang scheduling can be used with the
+    sched/backfill plugin. Added configuration parameter:
+    PreemptMode=off|suspend|cancel|requeue|checkpoint 
+    to enable/disable the job preemption logic (disabled by default).
+    (NOTE: There are some problems with memory management which could prevent a
+    job from starting when memory would be freed by a job being requeued or 
+    otherwise removed, these are being worked on)
+ -- If the --partition option is used with the sinfo or squeue command then
+    print information about even hidden partitions.
+ -- Replaced misc cpu allocation members in job_info_t with select_job_res_t
+    which will only be populated when requested (show_flags & SHOW_DETAIL)
+ -- Added a --detail option to "scontrol show job" to display the cpu/mem
+    allocation info on a node-by-node basis.
+ -- Added logic to give correct request uid for individual steps that 
+    were cancelled.
+ -- Created a spank_get_item() option (S_JOB_ALLOC_MEM) that conveys the memory
+    that the select/cons_res plugin has allocated to a job.
+ -- BLUEGENE - blocks in error state are now handled correctly in accounting.
+ -- Modify squeue to print job step information about a specific job ID using
+    the following syntax: "squeue -j <job_id> -s".
+ -- BLUEGENE - scontrol delete block and update block can now remove blocks 
+    on dynamic laid out systems.
+ -- BLUEGENE - Vastly improve Dynamic layout mode algorithm.
+ -- Address some issues for SLURM support of Solaris.
+ -- Applied patch from Doug Parisek (Doug.Parisek@bull.com) for speeding up 
+    start of sview by delaying to creation of tooltips until requested.
+ -- Changed GtkToolTips to GtkToolTip for newer versions of GTK.
+
+* Changes in SLURM 2.1.0-pre2
+=============================
+ -- Added support for smap to query off node name for display.
+ -- Slurmdbd modified to set user ID and group ID to SlurmUser if started as 
+    user root.
+ -- Configuration parameter ControlMachine changed to  accept multiple comma-
+    separated hostnames for support of some high-availability architectures.
+ -- ALTERED API CALL slurm_get_job_steps 0 has been changed to NO_VAL for both
+    job and step id to recieve all jobs/steps.  Please make adjustments to
+    your code.
+ -- salloc's --wait=<secs> option deprecated by --immediate=<secs> option to 
+    match the srun command.
+ -- Add new slurmctld list for node features with node bitmaps for simplified
+    scheduling logic.
+ -- Multiple features can be specified when creating a reservation. Use "&" 
+    (AND) or "|" (OR) separators between the feature names.
+ -- Changed internal node name caching so that front-end mode would work with
+    multiple lines of node name definitions. 
+ -- Add node state flag for power-up/configuring. Represented by "#" suffix
+    on the node state name (e.g. "ALLOCATED#") for command output.
+ -- Add CONFIGURING/CF job state flag for node power-up/configuring.
+ -- Modify job step cancel logic for scancel and srun (on reciept of SIGTERM 
+    or three SIGINT) to immediately send SIGKILL to spawned tasks.  Previous 
+    logic would send SIGCONT, SIGTERM, wait KillWait seconds, SIGKILL.
+ -- Created a spank_get_item() option (S_JOB_ALLOC_CORES) that conveys the cpus
+    that the select/cons_res plugin has allocated to a job.
+ -- Improve sview performance (outrageously) on very large machines.
+ -- Add support for licenses in resource reservation.
+ -- BLUEGENE - Jobs waiting for a block to boot will now be in Configuring
+    state. 
+ -- bit_fmt now does not return brackets surrounding any set of data.
+
+* Changes in SLURM 2.1.0-pre1
+=============================
+ -- Slurmd notifies slurmctld of node boot time to better clean up after node
+    reboots.
+ -- Slurmd sends node registration information repeatedly until successful
+    transmit.
+ -- Change job_state in job structure to dedicate 8-bits to state flags. 
+    Added macros to get state information (IS_JOB_RUNNING(job_ptr), etc.)
+ -- Added macros to get node state information (IS_NODE_DOWN(node_ptr), etc).
+ -- Added support for Solaris. Patch from David Hoppner.
+ -- Rename "slurm-aix-federation-<version>.rpm" to just 
+    "slurm-aix-<version>.rpm" (federation switch plugin may not be present).
+ -- Eliminated the redundant squeue output format and sort options of 
+    "%o" and "%b". Use "%D" and "%S" formats respectively. Also eliminated 
+    "%X" and "%Y" and "%Z" formats. Use "%z" instead.
+ -- Added mechanism for SPANK plugins to set environment variables for
+    Prolog, Epilog, PrologSLurmctld and EpilogSlurmctld programs using
+    the functions spank_get_job_env, spank_set_job_env, and 
+    spank_unset_job_env. See "man spank" for more information.
+ -- Completed the work to begun in 2.0.0 to standardize on using '-Q' as the
+    --quiet flag for all the commands.
+ -- BLUEGENE - sinfo and sview now display correct cpu counts for partitions
+ -- Cleaned up the cons_res plugin.  It now uses a ptr to a part_record
+    instead of having to do strcmp's to find the correct one.
+ -- Pushed most all the plugin specific info in src/common/node_select.c 
+    into the respected plugin.
+ -- BLUEGENE - closed some corner cases where a block could had been removed 
+    while a job was waiting for it to become ready because an underlying 
+    part of the block was put into an error state.
+ -- Modify sbcast logic to prevent a user from moving files to nodes they
+    have not been allocated (this would be possible in previous versions
+    only by hacking the sbcast code).
+ -- Add contribs/sjstat script (Perl tool to report job state information).
+    Put into new RPM: sjstat.
+ -- Add sched/wiki2 (Moab) JOBMODIFY command support for VARIABLELIST option
+    to set supplemental environment variables for pending batch jobs.
+ -- BLUEGENE - add support for scontrol show blocks.
+ -- Added support for job step time limits.
+
+* Changes in SLURM 2.0.5
+========================
+ -- BLUEGENE - Added support for emulating systems with a X-dimension of 4.
+ -- BLUEGENE - When a nodecard goes down on a non-Dynamic system SLURM will 
+    now only drain blocks under 1 midplane, if no such block exists then SLURM 
+    will drain the entire midplane and not mark any block in error state.  
+    Previously SLURM would drain every overlapping block of the nodecard 
+    making it possible for a large block to make other blocks not work since 
+    they overlap some other part of the block that really isn't bad.
+ -- BLUEGENE - Handle L3 errors on boot better.
+ -- Don't revoke a pending batch launch request from the slurmctld if the
+    job is immediately suspended (a normal event with gang scheduling).
+ -- BLUEGENE - Fixed issue with restart of slurmctld would allow error block 
+    nodes to be considered for building new blocks when testing if a job would 
+    run.  This is a visual bug only, jobs would never run on new block, but 
+    the block would appear in slurm tools.
+ -- Better responsiveness when starting new allocations when running with the 
+    slurmdbd.
+ -- Fixed race condition when reconfiguring the slurmctld and using the 
+    consumable resources plugin which would cause the controller to core.
+ -- Fixed race condition that sometimes caused jobs to stay in completing
+    state longer than necessary after being terminated.
+
+* Changes in SLURM 2.0.4
+========================
+ -- Permit node suspend/resume logic to be enabled through "scontrol reconfig"
+    given appropriate changes to slurm configuration file.
+ -- Check for return codes on functions with warn_unused_result set.
+ -- Fix memory leak in getting step information (as used by squeue -s).
+ -- Better logging for when job's request bad output file locations.
+ -- Fix issue where if user specified non-existant file to write to slurmstepd
+    will regain privileges before sending batch script ended to the controller.
+ -- Fix bug when using the priority_multifactor plugin with no associations 
+    yet.
+ -- BLUEGENE - we no longer check for the images to sync state.  This was 
+    needed long ago when rebooting blocks wasn't a possibility and should 
+    had been removed when that functionality was available.
+ -- Added message about no connection with the database for sacctmgr.
+ -- On BlueGene, let srun or salloc exit on SIGINT if slurmctld dies while
+    booting its block.
+ -- In select/cons_res fix bug that could result in invalid memory pointer
+    if node configurations in slurm.conf contains 8 or more distinct 
+    socket/core/thread counts.
+ -- Modify select/cons_res to recognize updated memory size upon node startup
+    if FastSchedule=0.
+ -- Fixed bug if not enforcing associations, but running with them and the 
+    priority/multifactor, the slurmctld will not core dump on processing usage.
+ -- QOS will not be reset to the default when added back a previously deleted
+    association.
+ -- Do not set a job's virtual memory limit based upon the job's specified
+    memory limit (which should be a real memory limit, not virtual).
+ -- In sched/wiki2 - Strip single and double quotes out of a node's reason 
+    string to avoid confusing Moab's parser.
+ -- BLUEGENE - fix for sinfo/sview for displaying proper node count for nodes 
+    in draining state.
+ -- Fix for sview when viewing a certain part of a group (like 1 job) so it 
+    doesn't core when the part is gone.
+ -- BLUEGENE - Changed order of SYNC's to be on the front of the list to
+    avoid having a job terminated with a TERM before the SYNC of the 
+    job happens.
+ -- Validate configured PluginDir value is a valid directory before trying to
+    use it.
+ -- Fix to resolve agent_queue_request symbol from some checkpoint plugins.
+ -- Fix possible execve error for sbatch script read from stdin.
+ -- Modify handling of user ID/name and group ID/name in the slurm.conf file
+    to properly handle user names that contain all digits. Return error code 
+    from uid_from_string() and gid_from_string() functions rather than a uid of
+    -1, which might be a valid uid or gid on some systems.
+ -- Fix in re-calcuation of job priorities due to DOWN or DRAINED nodes.
+
+* Changes in SLURM 2.0.3
+========================
+ -- Add reservation creation/update flag of Ignore_Jobs to enable the creation
+    of a reservation that overlaps jobs expected to still be running when
+    the reservation starts. This would be especially useful to reserve all 
+    nodes for system maintenence without adjusting time limits of running
+    jobs before creating the reservation. Without this flag, nodes allocated
+    jobs expected to running when the reservation begins can not be placed 
+    into a reservation.
+ -- In task/affinity plugin, add layer of abstraction to logic translating
+    block masks to physical machine masks. Patch from Matthieu Hautreux, CEA.
+ -- Fix for setting the node_bitmap in a job to NULL if the job does not 
+    start correctly when expected to start.
+ -- Fixed bug in srun --pty logic. Output from the task was split up 
+    arbitrarily into stdout and stderr streams, and sometimes was printed 
+    out of order.
+ -- If job requests minimum and maximum node count range with select/cons_res,
+    try to satisfy the higher value (formerly only allocated the minimum).
+ -- Fix for checking for a non-existant job when querying steps.
+ -- For job steps with the --exclusive option, base initial wait time in 
+    partly upon the process ID for better performance with many job steps 
+    started at the same time. Maintain exponential back-off as needed.
+ -- Fix for correct step ordering in sview.
+ -- Support optional argument to srun and salloc --immediate option. Specify
+    timeout value in seconds for job or step to be allocated resources.
+
+* Changes in SLURM 2.0.2
+========================
+ -- Fix, don't remove job details when a job is cancelled while pending.
+ -- Do correct type for mktime so garbage isn't returned on 64bit systems 
+    for accounting archival.
+ -- Better checking in sacctmgr to avoid infinite loops.
+ -- Fix minor memory leak in fake_slurm_step_layout_create()
+ -- Fix node weight (scheduling priority) calculation for powered down
+    nodes. Patch from Hongjia Cao, NUDT.
+ -- Fix node suspend/resume rate calculations. Patch from Hongjia Cao, NUDT.
+ -- Change calculations using ResumeRate and SuspendRate to provide higher
+    resolution.
+ -- Log the IP address for incoming messages having an invalid protocol 
+    version number.
+ -- Fix for sacct to show jobs that start the same second as the sacct
+    command is issued.
+ -- BLUEGENE - Fix for -n option to work on correct cpu counts for each 
+    midplane instead of treating -n as a c-node count.
+ -- salloc now sets SLURM_NTASKS_PER_NODE if --ntasks-per-node option is set.
+ -- Fix select/linear to properly set a job's count of allocated processors
+    (all processors on the allocated nodes).
+ -- Fix select/cons_res to allocate proper CPU count when --ntasks-per-node
+    option is used without a task count in the job request.
+ -- Insure that no node is allocated to a job for which the CPU count is less
+    than --ntasks-per-node * --cpus-per-task.
+ -- Correct AllocProcs reported by "scontrol show node" when ThreadsPerCore
+    is greater than 1 and select/cons_res is used.
+ -- Fix scontrol show config for accounting information when values are 
+    not set in the slurm.conf.
+ -- Added a set of SBATCH_CPU_BIND* and SBATCH_MEM_BIND* env variables to keep
+    jobsteps launched from within a batch script from inheriting the CPU and
+    memory affinity that was applied to the batch script. Patch from Matthieu
+    Hautreux, CEA.
+ -- Ignore the extra processors on a node above configured size if either 
+    sched/gang or select/cons_res is configured.
+ -- Fix bug in tracking memory allocated on a node for select/cons_res plugin.
+ -- Fixed a race condition when writing labelled output with a file per task
+    or per node, which potentially closed a file before all data was written.
+ -- BLUEGENE - Fix, for if a job comes in spanning both less than and 
+    over 1 midplane in size we check the connection type appropriately.
+ -- Make sched/backfill properly schedule jobs with constraints having node 
+    counts. NOTE: Backfill of jobs with constraings having exclusive OR 
+    operators are not fully supported.  
+ -- If srun is cancelled by SIGINT, set the job state to cancelled, not 
+    failed.
+ -- BLUEGENE - Fix, for if you are setting an subbp into an error mode 
+    where the subbp stated isn't the first ionode in a nodecard.
+ -- Fix for backfill to not core when checking shared nodes.
+ -- Fix for scontrol to not core when hitting just return in interactive mode.
+ -- Improve sched/backfill logic with respect to shared nodes (multiple jobs
+    per node).
+ -- In sched/wiki (Maui interface) add job info fields QOS, RCLASS, DMEM and
+    TASKSPERNODE. Patch from Bjorn-Helge Mevik, University of Oslo.
+
+* Changes in SLURM 2.0.1
+========================
+ -- Fix, truncate time of start and end for job steps in sacct.
+ -- Initialize all messages to slurmdbd. Previously uninitialized string could
+    cause slurmctld to fail with invalid memory reference.
+ -- BLUEGENE - Fix, for when trying to finish a torus on a block already 
+    visited.  Even though this may be possible electrically this isn't valid
+    in the under lying infrastructure.
+ -- Fix, in mysql plugins change mediumints to int to support full 32bit 
+    numbers.
+ -- Add sinfo node state filtering support for NO_RESPOND, POWER_SAVE, FAIL, 
+    MAINT, DRAINED and DRAINING states. The state filter of DRAIN still maps
+    to any node in either DRAINED or DRAINING state.
+ -- Fix reservation logic when job requests specific nodes that are already
+    in some reservation the job can not use.
+ -- Fix recomputation of a job's end time when allocated nodes which are
+    being powered up. The end time would be set in the past if the job's
+    time limit was INFINITE, resulting in it being prematurely terminated.
+ -- Permit regular user to change the time limit of his pending jobs up to
+    the partition's limit.
+ -- Fix "-Q" (quiet) option for salloc and sbatch which was previously 
+    ignored.
+ -- BLUEGENE - fix for finding odd shaped blocks in dynamic mode.
+ -- Fix logic supporting SuspendRate and ResumeRate configuration parameters.
+    Previous logic was changing state of one too many nodes per minute.
+ -- Save new reservation state file on shutdown (even if no changes).
+ -- Fix, when partitions are deleted the sched and select plugins are notified.
+ -- Fix for slurmdbd to create wckeyid's when they don't exist
+ -- Fix linking problem that prevented checkpoint/aix from working.
+
 * Changes in SLURM 2.0.0
-==============================
+========================
+ -- Fix for bluegene systems to be able to create 32 node blocks with only 
+    16 psets defined in dynamic layout mode.
+ -- Improve srun_cr handling of child srun forking. Patch from Hongjia Cao, 
+    NUDT.
+ -- Configuration parameter ResumeDelay replaced by SuspendTimeout and 
+    ResumeTimeout.
+ -- BLUEGENE - sview/sinfo now displays correct cnode numbers for drained nodes
+    or blocks in error state.
+ -- Fix some batch job launch bugs when powering up suspended nodes.
+ -- Added option '-T' for sacct to truncate time of start and end and set
+    default of --starttime to Midnight of current day.
+
+* Changes in SLURM 2.0.0-rc2
+============================
+ -- Change fanout logic to start on calling node instead of first node in 
+    message nodelist.
+ -- Fix bug so that smap builds properly on Sun Constellation system.
+ -- Filter white-space out from node feature specification.
+ -- Fixed issue with duration not being honored when updating start time in 
+    reservations.
+ -- Fix bug in sched/wiki and sched/wiki2 plugins for reporting job resource
+    allocation properly when node names are configured out of sort order 
+    with more than one numeric suffix (e.g. "tux10-1" is configured after 
+    "tux5-1").
+ -- Avoid re-use of job_id (if specified at submit time) when the existing
+    job is in completing state (possible race condition with Moab).
+ -- Added SLURM_DISTRIBUTION to env for salloc.
+ -- Add support for "scontrol takeover" command for backup controller to 
+    assume control immediately. Patch from Matthieu Hautreux, CEA.
+ -- If srun is unable to communicate with the slurmd tasks are now marked as 
+    failed with the controller.
+ -- Fixed issues with requeued jobs not being accounted for correctly in 
+    the accounting.
+ -- Clear node's POWER_SAVE flag if configuration changes to one lacking a
+    ResumeProgram.
+ -- Extend a job's time limit as appropriate due to delays powering up nodes.
+ -- If sbatch is used to launch a job step within an existing allocation (as
+    used by LSF) and the required node is powered down, print the message
+    "Job step creation temporarily disabled, retrying", sleep, and retry.
+ -- Configuration parameter ResumeDelay added to control how much time must 
+    after a node has been suspended before resume it (e.g. powering it back 
+    up).
+ -- Fix CPU binding for batch program. Patch from Matthieu Hautreux, CEA.
+ -- Fix for front end systems non-responding nodes now show up correctly in
+    sinfo.
 
 * Changes in SLURM 2.0.0-rc1
-==============================
+============================
  -- Fix bug in preservation of advanced reservations when slurmctld restarts.
  -- Updated perlapi to match correctly with slurm.h structures
  -- Do not install the srun command on BlueGene systems (mpirun must be used to
@@ -280,12 +607,14 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.17
 =========================
+ -- Fix bug in configure script that can clear user specified LIBS.
 
 * Changes in SLURM 1.3.16
 =========================
  -- Fix memory leak in forward logic of tree message passing.
  -- Fix job exit code recorded for srun job allocation.
- -- Bluegene - Bug fix for too many parameters being passed to a debug statement -- Bluegene - Bug fix for systems running more than 8 in the X dim running
+ -- Bluegene - Bug fix for too many parameters being passed to a debug statement
+ -- Bluegene - Bug fix for systems running more than 8 in the X dim running
     Dynamic mode.
 
 * Changes in SLURM 1.3.15

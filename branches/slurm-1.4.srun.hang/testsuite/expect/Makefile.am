@@ -75,6 +75,7 @@ EXTRA_DIST = \
 	test1.58			\
 	test1.59			\
 	test1.60			\
+	test1.61			\
 	test1.80			\
 	test1.81			\
 	test1.82			\
@@ -127,6 +128,7 @@ EXTRA_DIST = \
 	test4.9				\
 	test4.10			\
 	test4.11			\
+	test4.12			\
 	test5.1				\
 	test5.2				\
 	test5.3				\
@@ -159,6 +161,8 @@ EXTRA_DIST = \
 	test7.3.prog.c			\
 	test7.4				\
 	test7.4.prog.c			\
+	test7.5				\
+	test7.5.prog.c			\
 	test7.6				\
 	test7.6.prog.c			\
 	test7.7				\
@@ -181,6 +185,7 @@ EXTRA_DIST = \
 	test8.7				\
 	test8.7.crypto.c		\
 	test8.7.prog.c			\
+	test8.8				\
 	test9.1				\
 	test9.2				\
 	test9.3				\
@@ -213,7 +218,6 @@ EXTRA_DIST = \
 	test12.1			\
 	test12.2			\
 	test12.2.prog.c			\
-	test12.3			\
 	test12.4			\
 	test12.5			\
 	test13.1			\
@@ -274,7 +278,6 @@ EXTRA_DIST = \
 	test17.16			\
 	test17.17			\
 	test17.18			\
-	test17.19			\
 	test17.20			\
 	test17.21			\
 	test17.22			\

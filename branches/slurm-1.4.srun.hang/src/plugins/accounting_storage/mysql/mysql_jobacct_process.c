@@ -91,7 +91,8 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 			       char *arch_type, char *insert,
 			       bool with_deleted)
 {
-	int period_start = 0, fd = 0;
+	time_t period_start = 0;
+	int fd = 0;
 	int rc = SLURM_SUCCESS;
 	MYSQL_ROW row;
 	struct tm time_tm;
@@ -115,9 +116,6 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 			time_tm.tm_min = 0;
 			time_tm.tm_hour = 0;
 			time_tm.tm_mday = 1;
-			time_tm.tm_isdst = -1;
-			period_start = mktime(&time_tm);
-			localtime_r((time_t *)&period_start, &time_tm);
 			snprintf(start_char, sizeof(start_char),
 				 "%4.4u-%2.2u-%2.2u"
 				 "T%2.2u:%2.2u:%2.2u",
@@ -472,7 +470,6 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	char *table_level = "t2";
 	jobacct_selected_step_t *selected_step = NULL;
-	time_t now = time(NULL);
 
 	if(!job_cond)
 		return 0;
@@ -653,17 +650,20 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 	}
 
 	if(job_cond->usage_start) {
-		if(!job_cond->usage_end)
-			job_cond->usage_end = now;
-
 		if(*extra)
 			xstrcat(*extra, " && (");
 		else
 			xstrcat(*extra, " where (");
-		xstrfmtcat(*extra, 
-			   "(t1.eligible < %d "
-			   "&& (t1.end >= %d || t1.end = 0)))",
-			   job_cond->usage_end, job_cond->usage_start);
+
+		if(!job_cond->usage_end)
+			xstrfmtcat(*extra, 
+				   "t1.end >= %d || t1.end = 0)",
+				   job_cond->usage_start);
+		else
+			xstrfmtcat(*extra, 
+				   "(t1.eligible < %d "
+				   "&& (t1.end >= %d || t1.end = 0)))",
+				   job_cond->usage_end, job_cond->usage_start);
 	} else if(job_cond->usage_end) {
 		if(*extra)
 			xstrcat(*extra, " && (");
@@ -793,6 +793,43 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t2.lft"
 	};
 
+	enum {
+		JOB_REQ_ID,
+		JOB_REQ_JOBID,
+		JOB_REQ_ASSOCID,
+		JOB_REQ_WCKEY,
+		JOB_REQ_WCKEYID,
+		JOB_REQ_UID,
+		JOB_REQ_GID,
+		JOB_REQ_RESVID,
+		JOB_REQ_PARTITION,
+		JOB_REQ_BLOCKID,
+		JOB_REQ_CLUSTER1,
+		JOB_REQ_ACCOUNT1,
+		JOB_REQ_ELIGIBLE,
+		JOB_REQ_SUBMIT,
+		JOB_REQ_START,
+		JOB_REQ_END,
+		JOB_REQ_SUSPENDED,
+		JOB_REQ_NAME,
+		JOB_REQ_TRACKSTEPS,
+		JOB_REQ_STATE,
+		JOB_REQ_COMP_CODE,
+		JOB_REQ_PRIORITY,
+		JOB_REQ_REQ_CPUS,
+		JOB_REQ_ALLOC_CPUS,
+		JOB_REQ_ALLOC_NODES,
+		JOB_REQ_NODELIST,
+		JOB_REQ_NODE_INX,
+		JOB_REQ_KILL_REQUID,
+		JOB_REQ_QOS,
+		JOB_REQ_USER_NAME,
+		JOB_REQ_CLUSTER,
+		JOB_REQ_ACCOUNT,
+		JOB_REQ_LFT,
+		JOB_REQ_COUNT		
+	};
+
 	/* if this changes you will need to edit the corresponding 
 	 * enum below also t1 is step_table */
 	char *step_req_inx[] = {
@@ -832,42 +869,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.ave_cpu"
 	};
 
-	enum {
-		JOB_REQ_ID,
-		JOB_REQ_JOBID,
-		JOB_REQ_ASSOCID,
-		JOB_REQ_WCKEY,
-		JOB_REQ_WCKEYID,
-		JOB_REQ_UID,
-		JOB_REQ_GID,
-		JOB_REQ_RESVID,
-		JOB_REQ_PARTITION,
-		JOB_REQ_BLOCKID,
-		JOB_REQ_CLUSTER1,
-		JOB_REQ_ACCOUNT1,
-		JOB_REQ_ELIGIBLE,
-		JOB_REQ_SUBMIT,
-		JOB_REQ_START,
-		JOB_REQ_END,
-		JOB_REQ_SUSPENDED,
-		JOB_REQ_NAME,
-		JOB_REQ_TRACKSTEPS,
-		JOB_REQ_STATE,
-		JOB_REQ_COMP_CODE,
-		JOB_REQ_PRIORITY,
-		JOB_REQ_REQ_CPUS,
-		JOB_REQ_ALLOC_CPUS,
-		JOB_REQ_ALLOC_NODES,
-		JOB_REQ_NODELIST,
-		JOB_REQ_NODE_INX,
-		JOB_REQ_KILL_REQUID,
-		JOB_REQ_QOS,
-		JOB_REQ_USER_NAME,
-		JOB_REQ_CLUSTER,
-		JOB_REQ_ACCOUNT,
-		JOB_REQ_LFT,
-		JOB_REQ_COUNT		
-	};
 	enum {
 		STEP_REQ_STEPID,
 		STEP_REQ_START,
@@ -1098,20 +1099,25 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job->submit = submit;
 		job->start = atoi(row[JOB_REQ_START]);
 		job->end = atoi(row[JOB_REQ_END]);
-		/* since the job->end could be set later end it here */
-		if(job->end)
-			job_ended = 1;
 
-		if(job_cond && job_cond->usage_start) {
+		/* since the job->end could be set later end it here */
+		if(job->end) {
+			job_ended = 1;
+			if(!job->start || (job->start > job->end))
+				job->start = job->end;
+		}
+
+		if(job_cond && !job_cond->without_usage_truncation
+		   && job_cond->usage_start) {
 			if(job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
-
-			if(!job->start && job->end)
-				job->start = job->end;
 
 			if(!job->end || job->end > job_cond->usage_end) 
 				job->end = job_cond->usage_end;
 
+			if(!job->start)
+				job->start = job->end;
+			
 			job->elapsed = job->end - job->start;
 
 			if(row[JOB_REQ_SUSPENDED]) {
@@ -1255,6 +1261,11 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			return NULL;
 		}
 		xfree(query);
+		
+		/* Querying the steps in the fashion was faster than
+		   doing only 1 query and then matching the steps up
+		   later with the job.  
+		*/
 		while ((step_row = mysql_fetch_row(step_result))) {
 			/* check the bitmap to see if this is one of the steps
 			   we are looking for */
@@ -1291,7 +1302,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				step->state = job->state;
 			}
 
-			if(job_cond && job_cond->usage_start) {
+			if(job_cond && !job_cond->without_usage_truncation
+			   && job_cond->usage_start) {
 				if(step->start 
 				   && (step->start < job_cond->usage_start))
 					step->start = job_cond->usage_start;
@@ -1304,7 +1316,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					step->end = job_cond->usage_end;
 			}
 
-			step->elapsed = step->end - step->start;
 			/* figure this out by start stop */
 			step->suspended = atoi(step_row[STEP_REQ_SUSPENDED]);
 			if(!step->end) {

@@ -3,7 +3,8 @@
  *	            configuration files
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -18,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -132,6 +133,23 @@ slurm_shutdown (uint16_t options)
 	 */
 	(void) _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
 	return _send_message_controller(PRIMARY_CONTROLLER,   &req_msg);
+}
+
+/*
+ * slurm_takeover - issue RPC to have Slurm backup controller take over the 
+ *                  primary controller. REQUEST_CONTROL is sent by the backup 
+ *                  to the primary controller to take control
+ * RET 0 or a slurm error code
+ */
+int
+slurm_takeover ( void )
+{
+	slurm_msg_t req_msg;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type     = REQUEST_TAKEOVER;
+		
+	return _send_message_controller(SECONDARY_CONTROLLER, &req_msg);
 }
 
 int

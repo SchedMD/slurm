@@ -2,7 +2,7 @@
  *  squeue.c - Report jobs in the slurm system
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -18,7 +18,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -56,7 +56,6 @@
  * Global Variables *
  ********************/
 struct squeue_parameters params;
-int quiet_flag = 0;
 int max_line_size;
 
 /************
@@ -83,8 +82,8 @@ main (int argc, char *argv[])
 	
 	while (1) 
 	{
-		if ((!params.no_header)
-		 && (params.iterate || params.verbose || params.long_list))
+		if ((!params.no_header) &&
+		    (params.iterate || params.verbose || params.long_list))
 			_print_date ();
 		
 		if ( params.step_flag )
@@ -152,7 +151,8 @@ _print_job ( void )
 
 	if (old_job_ptr) {
 		if (job_id) {
-			error_code = slurm_load_job(&new_job_ptr, job_id);
+			error_code = slurm_load_job(&new_job_ptr, job_id,
+						    show_flags);
 		} else {
 			error_code = slurm_load_jobs(old_job_ptr->last_update,
 						     &new_job_ptr, show_flags);
@@ -164,7 +164,7 @@ _print_job ( void )
 			new_job_ptr = old_job_ptr;
 		}
 	} else if (job_id) {
-		error_code = slurm_load_job(&new_job_ptr, job_id);
+		error_code = slurm_load_job(&new_job_ptr, job_id, show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
 				show_flags);
@@ -178,9 +178,10 @@ _print_job ( void )
 	if (job_id)
 		old_job_ptr->last_update = (time_t) 0;
 	
-	if (quiet_flag == -1)
+	if (params.verbose) {
 		printf ("last_update_time=%ld\n", 
 		        (long) new_job_ptr->last_update);
+	}
 
 	if (params.format == NULL) {
 		if (params.long_list)
@@ -213,8 +214,8 @@ _print_job_steps( void )
 	if (old_step_ptr) {
 		/* Use a last_update time of 0 so that we can get an updated
 		 * run_time for jobs rather than just its start_time */
-		error_code = slurm_get_job_steps ((time_t) 0, 
-				0, 0, &new_step_ptr, show_flags);
+		error_code = slurm_get_job_steps ((time_t) 0, NO_VAL, NO_VAL, 
+						  &new_step_ptr, show_flags);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -223,18 +224,19 @@ _print_job_steps( void )
 		}
 	}
 	else
-		error_code = slurm_get_job_steps ((time_t) 0, 0, 0, 
-				&new_step_ptr, show_flags);
+		error_code = slurm_get_job_steps ((time_t) 0, NO_VAL, NO_VAL, 
+						  &new_step_ptr, show_flags);
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");
 		return SLURM_ERROR;
 	}
 	old_step_ptr = new_step_ptr;
 
-	if (quiet_flag == -1)
+	if (params.verbose) {
 		printf ("last_update_time=%ld\n", 
 		        (long) new_step_ptr->last_update);
-	
+	}
+
 	if (params.format == NULL)
 		params.format = "%10i %.8j %.9P %.8u %.9M %N";
 	if (params.format_list == NULL)

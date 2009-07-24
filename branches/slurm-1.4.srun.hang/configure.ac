@@ -45,6 +45,15 @@ case "$host" in
 			[Define slurm_ prefix function aliases for plugins]) ;;
 esac
 
+dnl
+dnl add some flags for Solaris
+dnl
+case "$host" in
+	*solaris*) CC="/usr/sfw/bin/gcc"
+		   CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS -I/usr/sfw/include"
+		   LDFLAGS="$LDFLAGS -L/usr/sfw/lib"
+esac
+
 dnl Checks for programs.
 dnl
 AC_PROG_CC
@@ -57,6 +66,10 @@ AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
 
 dnl Checks for libraries
 dnl
+AC_CHECK_LIB(socket,socket,LIBS="$LIBS -lsocket",)
+AC_CHECK_LIB(nsl,gethostbyname,LIBS="$LIBS -lnsl",)
+AC_CHECK_LIB(resolv,hstrerror,LIBS="$LIBS -lresolv",)
+AC_CHECK_LIB(kstat,kstat_open,LIBS="$LIBS -lkstat",)
 
 dnl Checks for header files.
 dnl
@@ -68,6 +81,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
                  pty.h utmp.h \
 		 sys/syslog.h \
+		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
 		)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -132,6 +146,7 @@ AC_CHECK_FUNCS( \
    inet_pton \
    setproctitle \
    sysctlbyname \
+   cfmakeraw \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
@@ -209,6 +224,10 @@ AC_SUBST(HAVE_FEDERATION)
 dnl check for SGI job container support
 dnl
 X_AC_SGI_JOB
+
+dnl check if we can use standard printf functions
+dnl
+X_AC_PRINTF_NULL
 
 dnl Check for whether to include readline support
 dnl 
@@ -361,7 +380,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
-		 src/plugins/sched/gang/Makefile
 		 src/plugins/sched/hold/Makefile
 		 src/plugins/sched/wiki/Makefile
 		 src/plugins/sched/wiki2/Makefile

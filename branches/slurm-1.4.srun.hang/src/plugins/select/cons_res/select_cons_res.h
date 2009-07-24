@@ -89,11 +89,10 @@ struct part_row_data {
 
 /* partition CPU allocation data */
 struct part_res_record {
-	char *name;			/* name of the partition */
-	uint16_t priority;		/* Partition priority */
-	uint16_t num_rows;		/* Number of row_bitmaps */
-	struct part_row_data *row;	/* array of rows containing jobs */
 	struct part_res_record *next;	/* Ptr to next part_res_record */
+	uint16_t num_rows;		/* Number of row_bitmaps */
+	struct part_record *part_ptr;   /* controller part record pointer */
+	struct part_row_data *row;	/* array of rows containing jobs */
 };
 
 /* per-node resource data */
@@ -124,6 +123,8 @@ extern struct node_use_record *select_node_usage;
 extern void cr_sort_part_rows(struct part_res_record *p_ptr);
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
 extern uint32_t cr_get_node_num_cores(uint32_t node_index);
-extern bool cr_priority_selection_enabled();
+
+extern bool cr_preemption_enabled(void);
+extern bool cr_preemption_killing(void);
 
 #endif /* !_CONS_RES_H */

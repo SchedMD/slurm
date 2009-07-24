@@ -1,6 +1,7 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Power Saving Guide</h1>
+
 <p>SLURM provides an integrated power saving mechanism for idle nodes.
 Nodes that remain idle for an configurable period of time can be placed 
 in a power saving mode. 
@@ -19,14 +20,21 @@ SLURM's support to increase power demands in a gradual fashion.</p>
 
 
 <h2>Configuration</h2>
+
 <p>A great deal of flexibility is offered in terms of when and 
-how idle nodes are put into or removed from power save mode.
+how idle nodes are put into or removed from power save mode. 
+Note that the SLURM control daemon, <i>slurmctld</i>, must be 
+restarted to initially enable power saving mode. 
+Changes in the configuration parameters (e.g. <i>SuspendTime</i>)
+will take effect after modifying the <i>slurm.conf</i> configuration
+file and executing "<i>scontrol reconfig</i>".
 The following configuration parameters are available:
 <ul>
 
 <li><b>SuspendTime</b>:
 Nodes becomes eligible for power saving mode after being idle 
 for this number of seconds. 
+The configured value should exceed the time to suspend and resume a node.
 A negative number disables power saving mode.
 The default value is -1 (disabled).</li>
 
@@ -58,7 +66,31 @@ The program executes as <i>SlurmUser</i> (as configured in
 <i>slurm.conf</i>). 
 The argument to the program will be the names of nodes to 
 be removed from power savings mode (using SLURM's hostlist 
-expression format).</li>
+expression format).
+This program may use the <i>scontrol show node</i> command
+to insure that a node has booted and the <i>slurmd</i> 
+daemon started. 
+If the <i>slurmd</i> daemon fails to respond within the
+configured <b>SlurmdTimeout</b> value, the node will be 
+placed in a DOWN state and the job requesting the node
+will be requeued.
+For reasons of reliability, <b>ResumeProgram</b> may execute 
+more than once for a node when the <b>slurmctld</b> daemon 
+crashes and is restarted.</li>
+
+<li><b>SuspendTimeout</b>:
+Maximum time permitted (in second) between when a node suspend request 
+is issued and when the node shutdown is complete. 
+At that time the node must ready for a resume request to be issued 
+as needed for new workload.  
+The default value is 30 seconds.</li>
+
+<li><b>ResumeTimeout</b>:
+Maximum time permitted (in second) between when a node resume request 
+is issued and when the node is actually available for use. 
+Nodes which fail to respond in this time frame may be marked DOWN and
+the jobs scheduled on the node requeued.
+The default value is 60 seconds.</li>
 
 <li><b>SuspendExcNodes</b>:
 List of nodes to never place in power saving mode. 
@@ -81,6 +113,14 @@ names, the <i>scontrol show hostnames</i> command may prove useful.
 The commands used to boot or shut down nodes will depend upon your
 cluster management tools.</p>
 
+<p>Note that <i>SuspendProgram</i> and <i>ResumeProgram</i> are not 
+subject to any time limits.
+They should perform the required action, ideally verify the action
+(e.g. node boot and start the <i>slurmd</i> daemon, thus the node is
+no longer non-responsive to <i>slurmctld</i>) and terminate. 
+Long running programs will be logged by <i>slurmctld</i>, but not
+aborted.</p>
+
 <pre>
 #!/bin/bash
 # Example SuspendProgram
@@ -99,6 +139,22 @@ do
 done
 </pre>
 
+<p>Subject to the various rates, limits and exclusions, the power save 
+code follows this logic:
+<ol>
+<li>Identifiy nodes which have been idle for at least <b>SuspendTime</b>.</li>
+<li>Execute <b>SuspendProgram</b> with an argument of the idle node names.</li>
+<li>Identify the nodes which are in power save mode (a flag in the node's 
+state field), but have been allocated to jobs.</li>
+<li>Execute <b>ResumeProgram</b> with an argument of the allocated node names.</li>
+<li>Once the <i>slurmd</i> responds, initiate the job and/or job steps 
+allocated to it.</li>
+<li>If the <i>slurmd</i> fails to respond within the value configured for 
+<b>SlurmdTimeout</b>, the node will be marked DOWN and the job requeued
+if possible.</li>
+<li>Repeat indefinitely.</li>
+</ol></p>
+
 <p>The slurmctld daemon will periodically (every 10 minutes) log how many 
 nodes are in power save mode using messages of this sort:
 <pre>
@@ -108,10 +164,61 @@ nodes are in power save mode using messages of this sort:
 ...
 [May 02 15:51:28] Power save mode 22 nodes
 </pre>
-<p>Using these logs you can easily see the effect of SLURM's power saving support.
-You can also configure SLURM without SuspendProgram or ResumeProgram values
-to assess the potential impact of power saving mode before enabling it.</p>
 
-<p style="text-align:center;">Last modified 4 May 2009</p>
+<p>Using these logs you can easily see the effect of SLURM's power saving 
+support.
+You can also configure SLURM with programs that perform no aciton as <b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential 
+impact of power saving mode before enabling it.</p>
+
+<h2>Use of Allocations</h2>
+
+<p>A resource allocation request will be granted as soon as resources
+are selected for use, possibly before the nodes are all available 
+for use.
+The launching of job steps will be delayed until the required nodes 
+have been restored to service (it prints a warning about waiting for
+nodes to become available and periodically retries until they are 
+available).</p>
+
+<p>In the case of an <i>sbatch</i> command, the batch program will start
+when node zero of the allocation is ready for use and pre-processing can
+be performed as needed before using <i>srun</i> to launch job steps.
+The operation of <i>salloc</i> and <i>srun</i> follow a similar pattern 
+of getting an job allocation at one time, but possibly being unable to 
+launch job steps until later. 
+If <i>ssh</i> or some other tools is used by <i>salloc</i> it may be
+desirable to execute "<i>srun /bin/true</i>" or some other command
+first to insure that all nodes are booted and ready for use. 
+We plan to add a job and node state of <i>CONFIGURING</i> in SLURM
+version 2.1, which could be used to prevent salloc from executing
+any processes (including <i>ssh</i>) until all of the nodes are 
+ready for use.</p>
+
+<h2>Fault Tolerance</h2>
+
+<p>If the <i>slurmctld</i> daemon is terminated gracefully, it will
+wait up to <b>SuspendTimeout</b> or <b>ResumeTimeout</b> (whichever
+is larger) for any spawned <b>SuspendProgram</b> or 
+<b>ResumeProgram</b> to terminate before the daemon terminates. 
+If the spawned program does not terminate within that time period, 
+the event will be logged and <i>slurmctld</i> will exit in order to 
+permit another <i>slurmctld</i> daemon to be initiated.
+Syncrhonization problems could also occur when the <i>slurmctld</i> 
+daemon crashes (a rare event) and is restarted. </p>
+
+<p>In either event, the newly initiated <i>slurmctld</i> daemon (or 
+the backup server) will recover saved node state information that 
+may not accurately describe the actual node state.
+In the case of a failed <b>SuspendProgram</b>, the negative impact is 
+limited to increased power consumption, so no special action is 
+currently taken to execute <b>SuspendProgram</b> multiple times in 
+order to insure the node is in a reduced power mode.
+The case of a failed <b>ResumeProgram</b> is more serious in that the 
+node could be placed into a DOWN state and/or jobs could fail.
+In order to minimize this risk, when the <i>slurmctld</i> daemon is 
+started and node which should be allocated to a job fails to respond, 
+the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
+
+<p style="text-align:center;">Last modified 2 June 2009</p>
 
 <!--#include virtual="footer.txt"-->

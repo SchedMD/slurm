@@ -174,7 +174,7 @@ static int  _drop_privileges(slurmd_job_t *job, bool do_setuid,
 			     struct priv_state *state);
 static int  _reclaim_privileges(struct priv_state *state);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
-static void _slurmd_job_log_init(slurmd_job_t *job);
+static int  _slurmd_job_log_init(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
 			   int status);
@@ -372,8 +372,10 @@ _setup_normal_io(slurmd_job_t *job)
 	if (_drop_privileges(job, true, &sprivs) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
-	if (io_init_tasks_stdio(job) != SLURM_SUCCESS)
-		return ESLURMD_IO_ERROR;
+	if (io_init_tasks_stdio(job) != SLURM_SUCCESS) {
+		rc = ESLURMD_IO_ERROR;
+		goto claim;
+	}
 
 	/*
 	 * MUST create the initial client object before starting
@@ -414,8 +416,13 @@ _setup_normal_io(slurmd_job_t *job)
 						file_flags, job, job->labelio,
 						job->task[ii]->id,
 						same ? job->task[ii]->id : -2);
-					if (rc != SLURM_SUCCESS)
-						return ESLURMD_IO_ERROR;
+					if (rc != SLURM_SUCCESS) {
+						error("Could not open output "
+						      "file %s: %m", 
+						      job->task[ii]->ofname);
+						rc = ESLURMD_IO_ERROR;
+						goto claim;
+					}
 				}
 				srun_stdout_tasks = -2;
 				if (same)
@@ -426,9 +433,13 @@ _setup_normal_io(slurmd_job_t *job)
 					job->task[0]->ofname, 
 					file_flags, job, job->labelio,
 					-1, same ? -1 : -2);
-				if (rc != SLURM_SUCCESS)
-					return ESLURMD_IO_ERROR;
-
+				if (rc != SLURM_SUCCESS) {
+					error("Could not open output "
+					      "file %s: %m", 
+					      job->task[0]->ofname);
+					rc = ESLURMD_IO_ERROR;
+					goto claim;
+				}
 				srun_stdout_tasks = -2;
 				if (same)
 					srun_stderr_tasks = -2;
@@ -443,8 +454,15 @@ _setup_normal_io(slurmd_job_t *job)
 							file_flags, job, 
 							job->labelio,
 							-2, job->task[ii]->id);
-						if (rc != SLURM_SUCCESS)
-							return ESLURMD_IO_ERROR;
+						if (rc != SLURM_SUCCESS) {
+							error("Could not "
+							      "open error "
+							      "file %s: %m", 
+							      job->task[ii]->
+							      efname);
+							rc = ESLURMD_IO_ERROR;
+							goto claim;
+						}
 					}
 					srun_stderr_tasks = -2;
 				} else if (errpattern == SLURMD_ALL_SAME) {
@@ -453,32 +471,38 @@ _setup_normal_io(slurmd_job_t *job)
 						job->task[0]->efname, 
 						file_flags, job, job->labelio,
 						-2, -1);
-					if (rc != SLURM_SUCCESS)
-						return ESLURMD_IO_ERROR;
-
+					if (rc != SLURM_SUCCESS) {
+						error("Could not open error "
+						      "file %s: %m", 
+						      job->task[0]->efname);
+						rc = ESLURMD_IO_ERROR;
+						goto claim;
+					}
 					srun_stderr_tasks = -2;
 				}
 			}
 		}
-
-		rc = io_initial_client_connect(srun, job, srun_stdout_tasks, 
-					       srun_stderr_tasks);
-		if (rc < 0) 
-			return ESLURMD_IO_ERROR;
+		
+		if(io_initial_client_connect(srun, job, srun_stdout_tasks, 
+					     srun_stderr_tasks) < 0) {
+			rc = ESLURMD_IO_ERROR;
+			goto claim;
+		}
 	}
 
+claim:
 	if (_reclaim_privileges(&sprivs) < 0) {
 		error("sete{u/g}id(%lu/%lu): %m",
 		      (u_long) sprivs.saved_uid, (u_long) sprivs.saved_gid);
 	}
 
-	if (!job->batch) {
+	if (!rc && !job->batch) {
 		if (io_thread_start(job) < 0)
-			return ESLURMD_IO_ERROR;
+			rc = ESLURMD_IO_ERROR;
 	}
-
+	
 	debug2("Leaving  _setup_normal_io");
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int
@@ -630,6 +654,8 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	static bool acct_sent = false;
 
 	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
+
+	memset(&msg, 0, sizeof(step_complete_msg_t));
 	msg.job_id = job->jobid;
 	msg.job_step_id = job->stepid;
 	msg.range_first = first;
@@ -770,6 +796,15 @@ _send_step_complete_msgs(slurmd_job_t *job)
 	pthread_mutex_unlock(&step_complete.lock);
 }
 
+/* This dummy function is provided so that the checkpoint functions can
+ * 	resolve this symbol name (as needed for some of the checkpoint  
+ *	functions used by slurmctld). */
+extern void agent_queue_request(void *dummy)
+{
+	fatal("Invalid agent_queue_request function call, likely from "
+	      "checkpoint plugin");
+}
+
 /* 
  * Executes the functions of the slurmd job manager process,
  * which runs as root and performs shared memory and interconnect
@@ -790,11 +825,11 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Preload plugins.
 	 */
-	if (switch_init() != SLURM_SUCCESS
-	    || slurmd_task_init() != SLURM_SUCCESS
-	    || slurm_proctrack_init() != SLURM_SUCCESS
-	    || checkpoint_init(ckpt_type) != SLURM_SUCCESS
-	    || slurm_jobacct_gather_init() != SLURM_SUCCESS) {
+	if ((switch_init() != SLURM_SUCCESS)			||
+	    (slurmd_task_init() != SLURM_SUCCESS)		||
+	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
+	    (checkpoint_init(ckpt_type) != SLURM_SUCCESS)	||
+	    (slurm_jobacct_gather_init() != SLURM_SUCCESS)) {
 		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
@@ -809,6 +844,13 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 	
+#ifndef NDEBUG
+#  ifdef PR_SET_DUMPABLE
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		debug ("Unable to set dumpable to 1");
+#  endif /* PR_SET_DUMPABLE */
+#endif   /* !NDEBUG	 */
+
 	set_umask(job);		/* set umask for stdout/err files */
 	if (job->user_managed_io)
 		rc = _setup_user_managed_io(job);
@@ -817,15 +859,9 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Initialize log facility to copy errors back to srun
 	 */
-	_slurmd_job_log_init(job);
+	if(!rc)
+		rc = _slurmd_job_log_init(job);
 	
-#ifndef NDEBUG
-#  ifdef PR_SET_DUMPABLE
-	if (prctl(PR_SET_DUMPABLE, 1) < 0)
-		debug ("Unable to set dumpable to 1");
-#  endif /* PR_SET_DUMPABLE */
-#endif   /* !NDEBUG	 */
-
 	if (rc) {
 		error("IO setup failed: %m");
 		rc = SLURM_SUCCESS;	/* drains node otherwise */
@@ -917,11 +953,9 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->batch && !job->user_managed_io && io_initialized) {
-		eio_signal_shutdown(job->eio);
+	if (!job->batch && !job->user_managed_io && io_initialized) 
 		_wait_for_io(job);
-	}
-
+	
 	debug2("Before call to spank_fini()");
 	if (spank_fini (job)  < 0) {
 		error ("spank_fini failed\n");
@@ -1353,6 +1387,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			job->envtp->localid = job->task[i]->id;
 			
 			job->envtp->distribution = -1;
+			job->envtp->batch_flag = job->batch;
 			setup_env(job->envtp);
 			job->env = job->envtp->env;
 			if (job->task_epilog) {
@@ -1468,6 +1503,9 @@ _wait_for_io(slurmd_job_t *job)
 		pthread_join(job->ioid, NULL);
 	} else
 		info("_wait_for_io: ioid==0");
+
+	/* Close any files for stdout/stderr opened by the stepd */
+	io_close_local_fds(job);
 
 	return;
 }
@@ -1673,7 +1711,12 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 
 	ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
 
-	getgroups(ps->ngids, ps->gid_list);
+	if(getgroups(ps->ngids, ps->gid_list) == -1) {
+		error("_drop_privileges: couldn't get %d groups: %m",
+		      ps->ngids);
+		xfree(ps->gid_list);
+		return -1;
+	}
 
 	/*
 	 * No need to drop privileges if we're not running as root
@@ -1725,7 +1768,7 @@ _reclaim_privileges(struct priv_state *ps)
 }
 
 
-static void
+static int
 _slurmd_job_log_init(slurmd_job_t *job) 
 {
 	char argv0[64];
@@ -1752,15 +1795,16 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	
 	log_alter(conf->log_opts, 0, NULL);
 	log_set_argv0(argv0);
-	
+       
 	/* Connect slurmd stderr to job's stderr */
 	if (!job->user_managed_io && job->task != NULL) {
 		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
 			error("job_log_init: dup2(stderr): %m");
-			return;
+			return ESLURMD_IO_ERROR;
 		}
 	}
 	verbose("debug level = %d", conf->log_opts.stderr_level);
+	return SLURM_SUCCESS;
 }
 
 
@@ -1958,7 +2002,9 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 			exit(127);
 		}
 
-		chdir(job->cwd);
+		if(chdir(job->cwd) == -1)
+			error("run_script_as_user: couldn't "
+			      "change working dir to %s: %m", job->cwd);
 #ifdef SETPGRP_TWO_ARGS
 		setpgrp(0, 0);
 #else

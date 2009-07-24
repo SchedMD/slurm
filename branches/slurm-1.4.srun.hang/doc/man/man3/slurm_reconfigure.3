@@ -1,9 +1,9 @@
-.TH "Slurm API" "3" "Jan 2009" "Morris Jette et.al." "Slurm administrative calls"
+.TH "Slurm API" "3" "May 2009" "Morris Jette" "Slurm administrative calls"
 .SH "NAME"
 slurm_create_partition, slurm_create_reservation, 
 slurm_delete_partition, slurm_delete_reservation, 
 slurm_init_part_desc_msg, slurm_init_resv_desc_msg,
-slurm_reconfigure, slurm_shutdown, slurm_update_job, 
+slurm_reconfigure, slurm_shutdown, slurm_takeover, slurm_update_job, 
 ,slurm_init_update_node_msg slurm_update_node, slurm_update_partition,
 slurm_update_reservation
 \- Slurm administrative functions 
@@ -54,6 +54,8 @@ int \fBslurm_shutdown\fR (
 	uint16_t \fIshutdown_options\fP
 .br
 );
+.LP 
+int \fBslurm_takeover\fR ( );
 .LP
 int \fBslurm_update_job\fR (
 .br 
@@ -161,6 +163,10 @@ immediately. This function may only be successfully executed by user root.
 .LP 
 \fBslurm_shutdown\fR Request that the Slurm controller terminate. This 
 function may only be successfully executed by user root.
+.LP 
+\fBslurm_takeover\fR Request that the Slurm primary controller shutdown 
+immediately and the backup controller take over.
+This function may only be successfully executed by user root.
 .LP 
 \fBslurm_update_job\fR Request that the configuration of a job be updated. Note 
 that most, but not all parameters of a job may be changed by this function. 

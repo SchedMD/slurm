@@ -3,7 +3,8 @@
  *
  *  $Id: accounting_storage_filetxt.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
- *  Copyright (C) 2004-2008 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
@@ -143,8 +144,8 @@ static int _print_record(struct job_record *job_ptr,
 	debug2("_print_record, job=%u, \"%s\"",
 	       job_ptr->job_id, data);
 #ifdef HAVE_BG
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_BLOCK_ID, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_BLOCK_ID, 
 			     &block_id);
 		
 #endif
@@ -602,7 +603,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	snprintf(buf, BUFFER_SIZE, "%d %d %d %u %u",
 		 JOB_TERMINATED,
 		 (int) (job_ptr->end_time - job_ptr->start_time),
-		 job_ptr->job_state & (~JOB_COMPLETING),
+		 job_ptr->job_state & JOB_STATE_BASE,
 		 job_ptr->requid, job_ptr->exit_code);
 	
 	return  _print_record(job_ptr, job_ptr->end_time, buf);
@@ -630,8 +631,8 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 
 #ifdef HAVE_BG
 	cpus = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_IONODES, 
 			     &ionodes);
 	if(ionodes) {
 		snprintf(node_list, BUFFER_SIZE, 
@@ -760,8 +761,8 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 
 #ifdef HAVE_BG
 	cpus = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_IONODES, 
 			     &ionodes);
 	if(ionodes) {
 		snprintf(node_list, BUFFER_SIZE, 
@@ -891,7 +892,7 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 	snprintf(buf, BUFFER_SIZE, "%d %d %d",
 		 JOB_SUSPEND,
 		 elapsed,
-		 job_ptr->job_state & (~JOB_COMPLETING));/* job status */
+		 job_ptr->job_state & JOB_STATE_BASE);/* job status */
 		
 	return _print_record(job_ptr, now, buf);
 }

@@ -133,7 +133,7 @@ typedef struct slurmd_job {
 	char          *cpu_bind;       /* binding map for map/mask_cpu      */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=                       */
 	char          *mem_bind;       /* binding map for tasks to memory   */
-	switch_jobinfo_t switch_job; /* switch-specific job information     */
+	switch_jobinfo_t *switch_job; /* switch-specific job information     */
 	uid_t         uid;     /* user id for job                           */
 	gid_t         gid;     /* group ID for job                          */
 	int           ngids;   /* length of the following gids array        */
@@ -201,6 +201,7 @@ typedef struct slurmd_job {
 	char          *restart_dir;	/* restart from context */
 	char          *resv_id;		/* Cray/BASIL reservation ID	*/
 	uint16_t       restart_cnt;	/* batch job restart count	*/
+	char	      *alloc_cores;	/* needed by the SPANK cpuset plugin */
 } slurmd_job_t;
 
 
@@ -211,7 +212,7 @@ void job_kill(slurmd_job_t *job, int signal);
 
 void job_destroy(slurmd_job_t *job);
 
-struct srun_info * srun_info_create(slurm_cred_t cred, slurm_addr *respaddr, 
+struct srun_info * srun_info_create(slurm_cred_t *cred, slurm_addr *respaddr, 
 		                    slurm_addr *ioaddr);
 
 void  srun_info_destroy(struct srun_info *srun);

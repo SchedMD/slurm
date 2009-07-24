@@ -228,7 +228,7 @@ msg_thr_create(slurmd_job_t *job)
 	int rc = SLURM_SUCCESS, retries = 0;
 	errno = 0;
 	fd = _domain_socket_create(conf->spooldir, conf->node_name,
-				  job->jobid, job->stepid);
+				   job->jobid, job->stepid);
 	if (fd == -1)
 		return SLURM_ERROR;
 
@@ -593,7 +593,7 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 	 * Signal the process group
 	 */
 	pthread_mutex_lock(&suspend_mutex);
-	if (suspended) {
+	if (suspended && (signal != SIGKILL)) {
 		rc = ESLURMD_STEP_SUSPENDED;
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;

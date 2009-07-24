@@ -86,8 +86,12 @@ struct client_io {
 			         * buffers in use.
 			         */
 
-	struct step_launch_state *sls;   /* Used to notify the main thread of an
+	struct step_launch_state *sls; /* Used to notify the main thread of an
 				       I/O problem.  */
+
+	bool test_io_activity;  /* If true, update a timestamp on each read or
+				 * write to a node.
+				 */
 };
 
 typedef struct client_io client_io_t;
@@ -104,8 +108,8 @@ typedef struct client_io client_io_t;
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds,
 				      int num_tasks,
 				      int num_nodes,
-				      slurm_cred_t cred,
-				      bool label);
+				      slurm_cred_t *cred,
+				      bool label, bool test_io);
 
 int client_io_handler_start(client_io_t *cio);
 

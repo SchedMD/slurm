@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "April 2009" "scontrol 2.0" "Slurm components"
+.TH SCONTROL "1" "July 2009" "scontrol 2.0" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -29,6 +29,9 @@ and jobs steps. This causes information to be displayed about partitions
 that are configured as hidden and partitions that are unavailable to user's 
 group.
 .TP
+\fB\-d\fR, \fB\-\-detail\fR
+Causes the \fBshow\fR command to provide additional details where available.
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of scontrol.
 .TP
@@ -40,7 +43,7 @@ unavailable to user's group will be displayed (i.e. this is the default behavior
 \fB\-o\fR, \fB\-\-oneliner\fR
 Print information one line per record.
 .TP
-\fB\-q\fR, \fB\-\-quiet\fR
+\fB\-Q\fR, \fB\-\-quiet\fR
 Print no warning or informational messages, only fatal error messages.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -115,8 +118,22 @@ COMPLETING or DOWN state.
 .TP
 \fBdelete\fP \fISPECIFICATION\fP
 Delete the entry with the specified \fISPECIFICATION\fP.
-The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP
-and \fIReservation=<name>\fP
+The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP and
+\fIReservation=<name>\fP.  On Dynamically laid out Bluegene systems
+\fIBlockName=<name>\fP also works.
+
+.TP
+\fBdetail\fP
+Causes the \fIshow\fP command to provide additional details where available,
+namely the specific CPUs and NUMA memory allocated on each node. 
+Note that on computers with hyperthreading enabled and SLURM configured to
+allocate cores, each listed CPU represents one physical core.
+Each hyperthread on that core can be allocated a separate task, so a job's
+CPU count and task count may differ.
+See the \fB\-\-cpu_bind\fR and \fB\-\-mem_bind\fR option descriptions in
+srun man pages for more information.
+The \fBdetail\fP option is currently only supported for the \fIshow job\fP 
+command.
 
 .TP
 \fBexit\fP
@@ -264,6 +281,18 @@ upon receipt of SIGCONT for this operation to be effective.
 Not all architectures and configurations support job suspension.
 
 .TP
+\fBtakeover\fP
+Instruct SLURM's backup controller (slurmctld) to take over system control.
+SLURM's backup controller requests control from the primary and waits for 
+its termination. After that, it switches from backup mode to controller
+mode. If primary controller can not be contacted, it directly switches to 
+controller mode. This can be used to speed up the SLURM controller 
+fail\-over mechanism when the primary node is down.
+This can be used to minimize disruption if the computer executing the
+primary SLURM controller is scheduled down.
+(Note: SLURM's primary controller will take the control back at startup.)
+
+.TP
 \fBupdate\fP \fISPECIFICATION\fP 
 Update job, node, partition, or reservation configuration per the supplied 
 specification. \fISPECIFICATION\fP is in the same format as the Slurm 
@@ -296,6 +325,11 @@ Repeat the last command executed.
 Account name to be changed for this job's resource use.
 Value may be cleared with blank data value, "Account=".
 .TP
+\fIConnection\fP=<type>
+Reset the node connection type.
+Possible values on Blue Gene are "MESH", "TORUS" and "NAV" 
+(mesh else torus).
+.TP
 \fIContiguous\fP=<yes|no>
 Set the job's requirement for contiguous (consecutive) nodes to be allocated. 
 Possible values are "YES" and "NO".
@@ -303,6 +337,9 @@ Possible values are "YES" and "NO".
 \fIDependency\fP=<job_id>
 Defer job's initiation until specified job_id completes.
 Cancel dependency with job_id value of "0", "Dependency=0".
+.TP
+\fIEligibleTime\fP=<time_spec>
+Equivalent to \fIStartTime\fP. 
 .TP
 \fIExcNodeList\fP=<nodes>
 Set the job's list of excluded node. Multiple node names may be 
@@ -320,6 +357,16 @@ Set the job's required node features. Multiple values
 may be comma separated if all features are required (AND operation) or 
 separated by "|" if any of the specified features are required (OR operation).
 Value may be cleared with blank data value, "Features=".
+.TP
+\fIGeometry\fP=<geo>
+Reset the required job geometry.
+On Blue Gene the value should be three digits separated by 
+"x" or ",". The digits represent the allocation size in 
+X, Y and Z dimensions (e.g. "2x3x4").
+.TP
+\fIRotate\fP=<yes|no>
+Permit the job's geometry to be rotated.
+Possible values are "YES" and "NO".
 .TP
 \fIJobId\fP=<id>
 Identify the job to be updated. This specification is required.
@@ -345,6 +392,9 @@ Set the job's minimum temporary disk space required per node to the specified va
 \fIName\fP=<name>
 Set the job's name to the specified value.
 .TP
+\fINice\fP[=delta]
+Adjust job's priority by the specified value. Default value is 100.
+.TP
 \fIPartition\fP=<name>
 Set the job's partition to the specified value.
 .TP
@@ -354,11 +404,8 @@ Note that a job priority of zero prevents the job from ever being scheduled.
 By setting a job's priority to zero it is held.
 Set the priority to a non\-zero value to permit it to run.
 .TP
-\fINice\fP[=delta]
-Adjust job's priority by the specified value. Default value is 100.
-.TP
-\fIReqProcs\fP=<count>
-Set the job's count of required processes to the specified value.
+\fIReqCores\fP=<count>
+Set the job's count of required cores to the specified value.
 .TP
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using 
@@ -368,11 +415,11 @@ Value may be cleared with blank data value, "ReqNodeList=".
 \fIReqNodes\fP=<min_count>[\-<max_count>]
 Set the job's minimum and optionally maximum count of nodes to be allocated.
 .TP
+\fIReqProcs\fP=<count>
+Set the job's count of required processes to the specified value.
+.TP
 \fIReqSockets\fP=<count>
 Set the job's count of required sockets to the specified value.
-.TP
-\fIReqCores\fP=<count>
-Set the job's count of required cores to the specified value.
 .TP
 \fIReqThreads\fP=<count>
 Set the job's count of required threads to the specified value.
@@ -397,7 +444,6 @@ can be \fIminutes\fR, \fIhours\fR, \fIdays\fR, or \fIweeks\fR
 and you can tell SLURM to run the job today with the keyword
 \fItoday\fR and to run the job tomorrow with the keyword
 \fItomorrow\fR.
-
 .TP
 \fITimeLimit\fP=<time>
 The job's time limit.
@@ -407,22 +453,6 @@ hours:minutes:seconds, days\-hours, days\-hours:minutes or
 days\-hours:minutes:seconds.
 Time resolution is one minute and second values are rounded up to 
 the next minute.
-
-.TP
-\fIConnection\fP=<type>
-Reset the node connection type.
-Possible values on Blue Gene are "MESH", "TORUS" and "NAV" 
-(mesh else torus).
-.TP
-\fIGeometry\fP=<geo>
-Reset the required job geometry.
-On Blue Gene the value should be three digits separated by 
-"x" or ",". The digits represent the allocation size in 
-X, Y and Z dimentions (e.g. "2x3x4").
-.TP
-\fIRotate\fP=<yes|no>
-Permit the job's geometry to be rotated.
-Possible values are "YES" and "NO".
 
 .TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, NODES\fR
@@ -564,6 +594,15 @@ For create, if you do not want to give a reservation name, use
 "scontrol create res ..." and a name will be created automatically.
 
 .TP
+\fILicenses\fP=<license>
+Specification of licenses (or other resources available on all 
+nodes of the cluster) which are to be reserved.
+License names can be followed by an asterisk and count 
+(the default count is one).
+Multiple license names should be comma separated (e.g.
+"Licenses=foo*4,bar").
+
+.TP
 \fINodeCnt\fP=<num>
 Identify number of nodes to be reserved.  A new reservation must specify either
 NodeCnt or Nodes.
@@ -613,18 +652,32 @@ Identify the partition to be reserved.
 .TP
 \fIFlags\fP=<flags>
 Flags associated with the reservation. 
-Currently "MAINT" (maintenance mode, receives special accounting treatment), 
-"DAILY" (repeat the reservation every day), 
-"WEEKLY" (repeat the reservation every week) and
-"SPEC_NODES" (reservation is for specific nodes, output only) is supported.
-In order to remove the "MAINT", "DAILY" or "WEEKLY" flag with the update
-option, preceed the name with a minus sign. For example:
-Flags=\-MAINT.
+In order to remove a flag with the update option, preceed the name with 
+a minus sign. For example: Flags=\-MAINT.
+Currently supported flags include:
+.RS
+.TP 12
+\fIMAINT\fR
+Maintenance mode, receives special accounting treatment
+.TP
+\fIIGNORE_JOBS\fR
+Ignore currently running jobs when creating the reservation.
+This can be especially useful when reserving all nodes in the system for maintenance
+.TP
+\fIDAILY\fR
+Repeat the reservation at the same time every day
+.TP
+\fIWEEKLY\fR
+Repeat the reservation at the same time every week
+.TP
+\fISPEC_NODES\fR
+Reservation is for specific nodes (output only)
+.RE
 
 .TP
 \fIFeatures\fP=<features>
 Set the reservation's required node features. Multiple values 
-may be comma separated if all features are required (AND operation) or 
+may be "&" separated if all features are required (AND operation) or 
 separated by "|" if any of the specified features are required (OR operation).
 Value may be cleared with blank data value, "Features=".
 
@@ -649,11 +702,13 @@ Bluegene systems only!
 \fIBlockName\fP=<name>
 Identify the bluegene block to be updated. This specification is required.
 .TP
-\fIState\fP=<free|error>
+\fIState\fP=<free|error|remove>
 This will update the state of a bluegene block to either FREE or ERROR. 
 (i.e. update BlockName=RMP0 STATE=ERROR) State error will not allow jobs
 to run on the block. \fBWARNING!!!!\fR This will cancel any
-running job on the block!
+running job on the block!  On dynamically laid out systems REMOVE will
+free and remove the block from the system.  If the block is smaller
+than a midplane every block on that midplane will be removed.
 .TP
 \fISubBPName\fP=<name>
 Identify the bluegene ionodes to be updated (i.e. bg000[0\-3]). This
@@ -755,6 +810,7 @@ details.
 \fBslurm_load_partitions\fR(3), 
 \fBslurm_reconfigure\fR(3),  \fBslurm_requeue\fR(3), \fBslurm_resume\fR(3),
 \fBslurm_shutdown\fR(3), \fBslurm_suspend\fR(3),
+\fBslurm_takeover\fR(3),
 \fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), 
 \fBslurm_update_partition\fR(3),
 \fBslurm.conf\fR(5)

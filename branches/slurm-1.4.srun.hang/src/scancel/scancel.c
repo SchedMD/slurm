@@ -169,15 +169,17 @@ _filter_job_records (void)
 {
 	int i, j;
 	job_info_t *job_ptr = NULL;
+	uint16_t job_base_state;
 
 	job_ptr = job_buffer_ptr->job_array ;
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
 		if (job_ptr[i].job_id == 0) 
 			continue;
 
-		if ((job_ptr[i].job_state != JOB_PENDING)
-		&&  (job_ptr[i].job_state != JOB_RUNNING)
-		&&  (job_ptr[i].job_state != JOB_SUSPENDED)) {
+		job_base_state = job_ptr[i].job_state & JOB_STATE_BASE;
+		if ((job_base_state != JOB_PENDING) &&
+		    (job_base_state != JOB_RUNNING) &&
+		    (job_base_state != JOB_SUSPENDED)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}
@@ -400,9 +402,10 @@ _cancel_job_id (void *ci)
 						     (uint16_t)opt.batch);
 		} else {
 			if (opt.batch)
-				error_code = slurm_signal_job_step(job_id,
-							   SLURM_BATCH_SCRIPT,
-							   sig);
+				error_code = slurm_signal_job_step(
+					job_id,
+					SLURM_BATCH_SCRIPT,
+					sig);
 			else
 				error_code = slurm_signal_job (job_id, sig);
 		}
@@ -494,6 +497,7 @@ _confirmation (int i, uint32_t step_id)
 {
 	char in_line[128];
 	job_info_t *job_ptr = NULL;
+	char *line = NULL;
 
 	job_ptr = job_buffer_ptr->job_array ;
 	while (1) {
@@ -507,7 +511,9 @@ _confirmation (int i, uint32_t step_id)
 				job_ptr[i].partition);
 		}
 
-		fgets (in_line, sizeof (in_line), stdin);
+		/* we only set this here to avoid a warning.  We throw it away
+		   later. */
+		line = fgets (in_line, sizeof (in_line), stdin);
 		if ((in_line[0] == 'y') || (in_line[0] == 'Y'))
 			return 1;
 		if ((in_line[0] == 'n') || (in_line[0] == 'N'))

@@ -8,7 +8,7 @@
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
- # Please also read the supplied file: DISCLAIMER.
+# Please also read the supplied file: DISCLAIMER.
 #
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
@@ -158,6 +158,7 @@ test1.57   Test of srun --jobid for a new job allocation (used by Moab)
 test1.58   Test of srun --jobid for an existing job allocation
 test1.59   Test of hostfile logic for job steps
 test1.60   Test of labelling output when writing a file per task or per node
+test1.61   Test of srun job step time limit
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
@@ -236,6 +237,7 @@ test4.9    Check sinfo formating options (--format option and SINFO_FORMAT
 test4.10   Confirm that sinfo reports a proper version number (--version 
            option).
 test4.11   Test down node reason display (--list-reasons option).
+test4.12   Test cpu total and allocation numbers.
 
 
 test5.#    Testing of squeue options.
@@ -283,7 +285,7 @@ test7.3    Test of slurm_step_launch API with spawn_io=true
            (needed by poe on IBM AIX systems).
 test7.4    Test of TotalView operation with srun, with and without bulk 
            transfer.
-test7.5    REMOVED
+test7.5    Test of TotalView termination logic for srun.
 test7.6    Test of TotalView operation with sattach
 test7.7    Test of sched/wiki2 plugin. This is intended to execute in the 
            place of Moab or Maui and emulate its actions to confirm proper
@@ -304,9 +306,10 @@ test8.1    Test of Blue Gene specific sbatch command line options
 test8.2    Test of Blue Gene specific sbatch environment variables
 test8.3    Test of Blue Gene specific job geometry support
 test8.4    Test of Blue Gene MPI job execution
-test8.5    Confirm we can make a 32, 128, and 512 cnode block.
+test8.5    Test creation of all blocks 1 midplane and smaller.
 test8.6    Stress test Dynamic mode block creation.
 test8.7    Test of Blue Gene scheduling with sched/wik2 plugin.
+test8.8    Test result of marking smaller blocks in an error state.
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
@@ -356,7 +359,7 @@ test12.#   Testing of sacct command and options
 test12.1   Test sacct --help option.
 test12.2   Test validity/accuracy of accounting data for exit code, 
            memory and real-time information along with stating a running job.
-test12.3   Test sacct --allusers option.
+test12.3   (EMPTY)
 test12.4   Test sacct --b, g, j, l, n, p, u, v options.
 test12.5   Test sacct --helpformat option.
 
@@ -460,8 +463,7 @@ test17.17  Confirm that node sharing flags are respected  (--nodelist and
            --share options)
 test17.18  Test of job dependencies and deferred begin time (--depedency 
            and --begin options).
-test17.19  Test the launch of a batch job within an existing job allocation.
-           This logic is used by LSF
+test17.19  REMOVED
 test17.20  Test of mail options (--mail-type and --mail-user options)
 test17.21  Tests #SLURM entry functionality in a batch script
 test17.22  Test of running non-existant job, confirm timely termination.

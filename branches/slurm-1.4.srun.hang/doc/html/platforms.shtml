@@ -7,6 +7,8 @@
 <li><b>Linux</b>&#151;SLURM has been thoroughly tested on most popular Linux 
 distributions using i386, ia64, and x86_64 architectures.</li>
 <li><b>OS X</b>&#151;SLURM support for OS X is available.</li>
+<li><b>Solaris</b>&#151;SLURM support for Solaris (OpenSolaris build 119) was 
+added in version 2.1.</li>
 <li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
 </ul>
 <h2>Interconnects</h2>
@@ -29,6 +31,6 @@ for the three-dimensional torus interconnect.</li>
 <li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 9 February 2009</p>
+<p style="text-align:center;">Last modified 23 July 2009</p>
 
 <!--#include virtual="footer.txt"-->

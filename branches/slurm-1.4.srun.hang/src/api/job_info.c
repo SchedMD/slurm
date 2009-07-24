@@ -131,14 +131,24 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char tmp_line[512];
 	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
+	select_job_res_t *select_job_res = job_ptr->select_job_res;
 	char *out = NULL;
 	
 #ifdef HAVE_BG
 	char *nodelist = "BP_List";
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+			     SELECT_JOBDATA_IONODES, 
 			     &ionodes);
 #else
+	bitstr_t *core_bitmap;
+	char *host;
+	int sock_inx, sock_reps, last;
+	int abs_node_inx, rel_node_inx;
+	int bit_inx, bit_reps;
+	uint32_t *last_mem_alloc_ptr = NULL;
+	uint32_t last_mem_alloc = NO_VAL;
+	char last_hosts[128];
+	hostlist_t hl, hl_last;
 	char *nodelist = "NodeList";
 #endif	
 
@@ -212,7 +222,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
-	if (job_ptr->job_state == JOB_PENDING)
+	if (IS_JOB_PENDING(job_ptr))
 		tmp3_ptr = "EligibleTime";
 	else
 		tmp3_ptr = "StartTime";
@@ -272,16 +282,135 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, tmp_line);
 #endif
 
-	if ((job_ptr->num_cpu_groups > 0) && 
-	    (job_ptr->cpus_per_node) &&
-	    (job_ptr->cpu_count_reps)) {
+	if (!select_job_res)
+		goto line7;
+
+#ifndef HAVE_BG
+	if (!select_job_res->core_bitmap)
+		goto line7;
+
+	last  = bit_fls(select_job_res->core_bitmap);
+	if (last == -1)
+		goto line7;
+
+	hl = hostlist_create(job_ptr->nodes);
+	if (!hl) {
+		error("slurm_sprint_job_info: hostlist_create: %s",
+		      job_ptr->nodes);
+		return NULL;
+	}
+	hl_last = hostlist_create(NULL);
+	if (!hl_last) {
+		error("slurm_sprint_job_info: hostlist_create: NULL");
+		return NULL;
+	}
+
+	bit_inx = 0;
+	i = sock_inx = sock_reps = 0;
+	abs_node_inx = job_ptr->node_inx[i];
+
+/*	tmp1[] stores the current cpu(s) allocated	*/
+	tmp2[0] = '\0';	/* stores last cpu(s) allocated */
+	for (rel_node_inx=0; rel_node_inx < select_job_res->nhosts;
+	     rel_node_inx++) {
+
+		if (sock_reps >=
+		    select_job_res->sock_core_rep_count[sock_inx]) {
+			sock_inx++;
+			sock_reps = 0;
+		}
+		sock_reps++;
+
+		bit_reps = select_job_res->sockets_per_node[sock_inx] *
+			   select_job_res->cores_per_socket[sock_inx];
+
+		core_bitmap = bit_alloc(bit_reps);
+		if (core_bitmap == NULL) {
+			error("bit_alloc malloc failure");
+			return NULL;
+		}
+
+		for (j=0; j < bit_reps; j++) {
+			if (bit_test(select_job_res->core_bitmap, bit_inx))
+				bit_set(core_bitmap, j);
+			bit_inx++;
+		}
+
+		bit_fmt(tmp1, sizeof(tmp1), core_bitmap);
+		bit_free(core_bitmap);
+		host = hostlist_shift(hl);
+/*
+ *		If the allocation values for this host are not the same as the
+ *		last host, print the report of the last group of hosts that had
+ *		identical allocation values.
+ */
+		if (strcmp(tmp1, tmp2) ||
+		    (last_mem_alloc_ptr != select_job_res->memory_allocated) ||
+		    (select_job_res->memory_allocated &&
+		     (last_mem_alloc !=
+		      select_job_res->memory_allocated[rel_node_inx]))) {
+			if (hostlist_count(hl_last)) {
+				hostlist_ranged_string(hl_last,
+					       sizeof(last_hosts), last_hosts);
+				snprintf(tmp_line, sizeof(tmp_line),
+					 "  Nodes=%s CPUs=%s Mem=%u",
+					 last_hosts, tmp2, last_mem_alloc_ptr ?
+					 last_mem_alloc : 0);
+				xstrcat(out, tmp_line);
+				if (one_liner)
+					xstrcat(out, " ");
+				else
+					xstrcat(out, "\n   ");
+
+				hostlist_destroy(hl_last);
+				hl_last = hostlist_create(NULL);
+			}
+			strcpy(tmp2, tmp1);
+			last_mem_alloc_ptr = select_job_res->memory_allocated;
+			if (last_mem_alloc_ptr)
+				last_mem_alloc = select_job_res->
+					         memory_allocated[rel_node_inx];
+			else
+				last_mem_alloc = NO_VAL;
+		}
+		hostlist_push_host(hl_last, host);
+		free(host);
+
+		if (bit_inx > last)
+			break;
+
+		if (abs_node_inx > job_ptr->node_inx[i+1]) {
+			i += 2;
+			abs_node_inx = job_ptr->node_inx[i];
+		} else {
+			abs_node_inx++;
+		}
+	}
+
+	if (hostlist_count(hl_last)) {
+		hostlist_ranged_string(hl_last, sizeof(last_hosts), last_hosts);
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "  Nodes=%s CPUs=%s Mem=%u", last_hosts, tmp2,
+			 last_mem_alloc_ptr ? last_mem_alloc : 0);
+		xstrcat(out, tmp_line);
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+	}
+	hostlist_destroy(hl);
+	hostlist_destroy(hl_last);
+#else
+	if ((select_job_res->cpu_array_cnt > 0) &&
+	    (select_job_res->cpu_array_value) &&
+	    (select_job_res->cpu_array_reps)) {
 		int length = 0;
 		xstrcat(out, "AllocCPUs=");
 		length += 10;
-		for (i = 0; i < job_ptr->num_cpu_groups; i++) {
+		for (i = 0; i < select_job_res->cpu_array_cnt; i++) {
 			if (length > 70) {
 				/* skip to last CPU group entry */
-			    	if (i < job_ptr->num_cpu_groups - 1) {
+			    	if (i < select_job_res->cpu_array_cnt - 1) {
 			    		continue;
 				}
 				/* add elipsis before last entry */
@@ -289,19 +418,17 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 				length += 4;
 			}
 
-			snprintf(tmp_line, sizeof(tmp_line),
-				"%d",
-				 job_ptr->cpus_per_node[i]);
+			snprintf(tmp_line, sizeof(tmp_line), "%d",
+				 select_job_res->cpu_array_value[i]);
 			xstrcat(out, tmp_line);
 			length += strlen(tmp_line);
-		    	if (job_ptr->cpu_count_reps[i] > 1) {
-				snprintf(tmp_line, sizeof(tmp_line),
-					"*%d",
-					 job_ptr->cpu_count_reps[i]);
+		    	if (select_job_res->cpu_array_reps[i] > 1) {
+				snprintf(tmp_line, sizeof(tmp_line), "*%d",
+					 select_job_res->cpu_array_reps[i]);
 				xstrcat(out, tmp_line);
 				length += strlen(tmp_line);
 			}
-			if (i < job_ptr->num_cpu_groups - 1) {
+			if (i < select_job_res->cpu_array_cnt - 1) {
 				xstrcat(out, ",");
 				length++;
 			}
@@ -311,8 +438,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		else
 			xstrcat(out, "\n   ");
 	}
+#endif
 
-	/****** Line 7 ******/
+line7:	/****** Line 7 ******/
 	convert_num_unit((float)job_ptr->num_procs, tmp1, sizeof(tmp1), 
 			 UNIT_NONE);
 #ifdef HAVE_BG
@@ -501,7 +629,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line 19 (optional) ******/
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MIXED);
 	if (select_buf[0] != '\0') {
@@ -513,7 +641,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 #ifdef HAVE_BG
 	/****** Line 20 (optional) ******/
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_BLRTS_IMAGE);
 	if (select_buf[0] != '\0') {
@@ -526,7 +654,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, tmp_line);
 	}
 	/****** Line 21 (optional) ******/
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_LINUX_IMAGE);
 	if (select_buf[0] != '\0') {
@@ -544,7 +672,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, tmp_line);
 	}
 	/****** Line 22 (optional) ******/
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MLOADER_IMAGE);
 	if (select_buf[0] != '\0') {
@@ -557,7 +685,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, tmp_line);
 	}
 	/****** Line 23 (optional) ******/
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_RAMDISK_IMAGE);
 	if (select_buf[0] != '\0') {
@@ -632,11 +760,12 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN job_id -  ID of job we want information about 
+ * IN show_flags -  job filtering options
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int
-slurm_load_job (job_info_msg_t **resp, uint32_t job_id)
+slurm_load_job (job_info_msg_t **resp, uint32_t job_id, uint16_t show_flags)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -647,6 +776,7 @@ slurm_load_job (job_info_msg_t **resp, uint32_t job_id)
 	slurm_msg_t_init(&resp_msg);
 
 	req.job_id = job_id;
+	req.show_flags = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
 	req_msg.data     = &req;
 
@@ -864,19 +994,6 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	}
 
 	return SLURM_SUCCESS;
-}
-
-/*
- * slurm_get_select_jobinfo - get data from a select job credential
- * IN jobinfo  - updated select job credential
- * IN data_type - type of data to enter into job credential
- * IN/OUT data - the data to enter into job credential
- * RET 0 or -1 on error
- */
-extern int slurm_get_select_jobinfo (select_jobinfo_t jobinfo,
-		enum select_data_type data_type, void *data)
-{
-	return select_g_get_jobinfo (jobinfo, data_type, data);
 }
 
 /*

@@ -3,24 +3,36 @@
 <H1>Preemption</H1>
 
 <P>
-SLURM version 1.2 and earlier supported dedication of resources
-to jobs based on a simple "first come, first served" policy with backfill.
-Beginning in SLURM version 1.3, priority partitions and priority-based
-<I>preemption</I> are supported. Preemption is the act of suspending one or more
-"low-priority" jobs to let a "high-priority" job run uninterrupted until it
-completes. Preemption provides the ability to prioritize the workload on a
-cluster.
+SLURM supports job preemption, the act of stopping one or more "low-priority"
+jobs to let a "high-priority" job run uninterrupted until it completes. 
+Job preemption is implemented as a variation of SLURM's 
+<a href="gang_scheduling.html">Gang Scheduling</a> logic.
+When a high-priority job has been allocated resources that have already been
+allocated to one or more low priority jobs, the low priority job(s) are 
+preempted. 
+The low priority job(s) can resume once the high priority job completes.
+Alternately, the low priority job(s) can be requeued and started using other 
+resources if so configured in newer versions of SLURM.
 </P>
 <P>
-The SLURM version 1.3.1 <I>sched/gang</I> plugin supports preemption. 
-When configured, 
-the plugin monitors each of the partitions in SLURM. If a new job in a
-high-priority partition has been allocated to resources that have already been
-allocated to one or more existing jobs from lower priority partitions, the
-plugin respects the partition priority and suspends the low-priority job(s). The
-low-priority job(s) remain suspended until the job from the high-priority
-partition completes. Once the high-priority job completes then the low-priority
-job(s) are resumed.
+In SLURM version 2.0 and earlier, high priority work is identified by the 
+priority of the job's partition and low priority jobs are always suspended.
+The job preemption logic is within the <I>sched/gang</I> plugin.
+</P>
+<P>
+<!--In SLURM version 2.1 and higher, the job's partition priority or its 
+Quality Of Service (QOS) can be used to identify the which jobs can preempt 
+or be preempted by other jobs.-->
+SLURM version 2.1 offers the option of requeuing low priority jobs
+rather than suspending them, which may permit the preempted jobs to restart 
+faster by using different resources.
+SLURM version 2.1 also offers the option of checkpointing low priority jobs
+rather than suspending them
+Checkpointed jobs are not automatically requeued or restarted.
+Requeuing jobs also releases their memory space for use by other jobs.
+In SLURM version 2.1, the job preemption logic was moved directly into the
+main code bases to permit use of both job preemption plus the backfill 
+scheduler plugin, <i>sched/backfill</I>.
 </P>
 
 <H2>Configuration</H2>
@@ -29,12 +41,12 @@ There are several important configuration parameters relating to preemption:
 </P>
 <UL>
 <LI>
-<B>SelectType</B>: The SLURM <I>sched/gang</I> plugin supports nodes 
-allocated by the <I>select/linear</I> plugin and socket/core/CPU resources 
-allocated by the <I>select/cons_res</I> plugin.
+<B>SelectType</B>: SLURM job preemption logic supports nodes allocated by the 
+<I>select/linear</I> plugin and socket/core/CPU resources allocated by the 
+<I>select/cons_res</I> plugin.
 </LI>
 <LI>
-<B>SelectTypeParameter</B>: Since resources will be getting overallocated 
+<B>SelectTypeParameter</B>: Since resources may be getting overallocated 
 with jobs (suspended jobs remain in memory), the resource selection
 plugin should be configured to track the amount of memory used by each job to
 ensure that memory page swapping does not occur. When <I>select/linear</I> is
@@ -64,8 +76,19 @@ limits, it will be canceled in order to prevent it from adversely effecting
 other jobs sharing the same resources.
 </LI>
 <LI>
-<B>SchedulerType</B>: Configure the <I>sched/gang</I> plugin by setting
-<I>SchedulerType=sched/gang</I> in <I>slurm.conf</I>.
+<B>PreemptMode</B>: Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>, 
+<I>SUSPEND</I> or <I>REQUEUE</I> depending on the desired action for low 
+priority jobs. 
+<UL>
+<LI>A value of <I>CANCEL</I> will always cancel the job.</LI>
+<LI>A value of <I>CHECKPOINT</I> will checkpoint (if possible) or kill low 
+priority jobs.</LI>
+Checkpointed jobs are not automatically restarted.
+<LI>A value of <I>REQUEUE</I> will requeue (if possible) or kill low priority 
+jobs. Requeued jobs are permitted to be restarted on different resources.</LI>
+<LI>A value of <I>SUSPEND</I> will suspend and automatically resume the low 
+priority jobs. </LI>
+</UL>
 </LI>
 <LI>
 <B>Priority</B>: Configure the partition's <I>Priority</I> setting relative to
@@ -77,13 +100,14 @@ of the two partitions are equal then no preemption will occur. The default
 <I>Priority</I> value is 1.
 </LI>
 <LI>
-<B>SchedulerTimeSlice</B>: The default timeslice interval is 30 seconds. 
-To change this duration, set <I>SchedulerTimeSlice</I> to the desired interval 
-(in seconds) in <I>slurm.conf</I>. For example, to set the timeslice interval 
-to one minute, set <I>SchedulerTimeSlice=60</I>. Short values can increase 
-the overhead of gang scheduling. This parameter is only relevant if timeslicing
-within a partition will be configured. Preemption and timeslicing can occur at
-the same time.
+<B>Shared</B>: Configure the partition's <I>Shared</I> setting to 
+<I>FORCE</I> for all partitions in which job preemption is to take place. 
+The <I>FORCE</I> option supports an additional parameter that controls 
+how many jobs can share a resource (FORCE[:max_share]). By default the 
+max_share value is 4. In order to preempt jobs (and not gang schedule them),
+always set max_share to 1. To allow up to 2 jobs from this partition to be 
+allocated to a common resource (and gang scheduled), set 
+<I>Shared=FORCE:2</I>.
 </LI>
 </UL>
 <P>
@@ -97,54 +121,52 @@ SLURM requires a full restart of the daemons. If you just change the partition
 <H2>Preemption Design and Operation</H2>
 
 <P>
-When enabled, the <I>sched/gang</I> plugin keeps track of the resources
-allocated to all jobs. For each partition an "active bitmap" is maintained that
-tracks all concurrently running jobs in the SLURM cluster. Each partition also
-maintains a job list for that partition, and a list of "shadow" jobs. The
-"shadow" jobs are job allocations from higher priority partitions that "cast
-shadows" on the active bitmaps of the lower priority partitions. Jobs in lower
-priority partitions that are caught in these "shadows" will be suspended.
+When enabled, the gang scheduling logic (which is also supports job 
+preemption) keeps track of the resources allocated to all jobs. 
+For each partition an "active bitmap" is maintained that tracks all 
+concurrently running jobs in the SLURM cluster. 
+Each partition also maintains a job list for that partition, and a list of 
+"shadow" jobs. 
+The "shadow" jobs are high priority job allocations that "cast shadows" on the 
+active bitmaps of the low priority jobs. 
+Jobs caught in these "shadows" will be preempted.
 </P>
 <P>
-Each time a new job is allocated to resources in a partition and begins running,
-the <I>sched/gang</I> plugin adds a "shadow" of this job to all lower priority
-partitions. The active bitmap of these lower priority partitions are then
-rebuilt, with the shadow jobs added first. Any existing jobs that were replaced
-by one or more "shadow" jobs are suspended (preempted). Conversely, when a 
-high-priority running job completes, it's "shadow" goes away and the active 
-bitmaps of the lower priority partitions are rebuilt to see if any suspended 
-jobs can be resumed.
+Each time a new job is allocated to resources in a partition and begins 
+running, the gang scheduler adds a "shadow" of this job to all lower priority
+partitions. 
+The active bitmap of these lower priority partitions are then rebuilt, with the shadow jobs added first. 
+Any existing jobs that were replaced by one or more "shadow" jobs are 
+suspended (preempted). Conversely, when a high priority running job completes, 
+it's "shadow" goes away and the active bitmaps of the lower priority 
+partitions are rebuilt to see if any suspended jobs can be resumed.
 </P>
 <P>
 The gang scheduler plugin is designed to be <I>reactive</I> to the resource
-allocation decisions made by the "select" plugins. The "select" plugins have
-been enhanced to recognize when "sched/gang" has been configured, and to factor
-in the priority of each partition when selecting resources for a job. When
-choosing resources for each job, the selector avoids resources that are in use
-by other jobs (unless sharing has been configured, in which case it does some
-load-balancing). However, when "sched/gang" is enabled, the select plugins may
-choose resources that are already in use by jobs from partitions with a lower
+allocation decisions made by the "select" plugins. 
+The "select" plugins have been enhanced to recognize when job preemption has 
+been configured, and to factor in the priority of each partition when selecting resources for a job. 
+When choosing resources for each job, the selector avoids resources that are 
+in use by other jobs (unless sharing has been configured, in which case it 
+does some load-balancing). 
+However, when job preemption is enabled, the select plugins may choose 
+resources that are already in use by jobs from partitions with a lower
 priority setting, even when sharing is disabled in those partitions.
 </P>
 <P>
-This leaves the gang scheduler in charge of controlling which jobs should run on
-the overallocated resources. The <I>sched/gang</I> plugin suspends jobs via the
-same internal functions that support <I>scontrol suspend</I> and <I>scontrol
-resume</I>. A good way to observe the act of preemption is by running <I>watch
-squeue</I> in a terminal window.
-</P>
-<P>
-The <I>sched/gang</I> plugin suspends jobs via the same internal functions that
-support <I>scontrol suspend</I> and <I>scontrol resume</I>. A good way to
-observe the act of preemption is by running <I>watch squeue</I> in a terminal
-window.
+This leaves the gang scheduler in charge of controlling which jobs should run 
+on the over-allocated resources. 
+If <I>PreemptMode=SUSPEND</I>, jobs are suspended using the same internal 
+functions that support <I>scontrol suspend</I> and <I>scontrol resume</I>. 
+A good way to observe the operation of the gang scheduler is by running 
+<I>squeue -i&lt;time&gt;</I> in a terminal window.
 </P>
 
 <H2>A Simple Example</H2>
 
 <P>
 The following example is configured with <I>select/linear</I> and
-<I>sched/gang</I>. This example takes place on a cluster of 5 nodes:
+<I>PreemptMode=SUSPEND</I>. This example takes place on a cluster of 5 nodes:
 </P>
 <PRE>
 [user@n16 ~]$ <B>sinfo</B>
@@ -157,8 +179,9 @@ Here are the Partition settings:
 </P>
 <PRE>
 [user@n16 ~]$ <B>grep PartitionName /shared/slurm/slurm.conf</B>
-PartitionName=active Priority=1 Default=YES Shared=NO Nodes=n[12-16]
-PartitionName=hipri  Priority=2             Shared=NO Nodes=n[12-16]
+PartitionName=DEFAULT Shared=FORCE:1 Nodes=n[12-16]
+PartitionName=active Priority=1 Default=YES
+PartitionName=hipri  Priority=2
 </PRE>
 <P>
 The <I>runit.pl</I> script launches a simple load-generating app that runs
@@ -223,12 +246,9 @@ JOBID PARTITION     NAME   USER  ST   TIME  NODES NODELIST
 
 <P>
 <B>More intelligence in the select plugins</B>: This implementation of
-preemption relies on intelligent job placement by the <I>select</I> plugins. In
-SLURM 1.3.1 the <I>select/linear</I> plugin has a decent preemptive placement
-algorithm, but the consumable resource <I>select/cons_res</I> plugin had no
-preemptive placement support. In SLURM 1.4 preemptive placement support was
-added to the <I>select/cons_res</I> plugin, but there is still room for
-improvement.
+preemption relies on intelligent job placement by the <I>select</I> plugins. 
+In SLURM version 2.0 preemptive placement support was added to the 
+SelectType plugins, but there is still room for improvement.
 </P><P>
 Take the following example:
 </P>
@@ -270,28 +290,29 @@ algorithm would have to include factors such as job size and required nodes in
 order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
-<P>
-<B>Preemptive backfill</B>: the current backfill scheduler plugin
-("sched/backfill") is a nice way to make efficient use of otherwise idle
-resources. But SLURM only supports one scheduler plugin at a time. Fortunately,
-given the design of the new "sched/gang" plugin, there is no direct overlap
-between the backfill functionality and the gang-scheduling functionality. Thus,
-it's possible that these two plugins could technically be merged into a new
-scheduler plugin that supported preemption <U>and</U> backfill. <B>NOTE:</B>
-this is only an idea based on a code review so there would likely need to be
-some additional development, and plenty of testing!
-</P><P>
 
-</P>
 <P>
-<B>Requeue a preempted job</B>: In some situations is may be desirable to
-requeue a low-priority job rather than suspend it. Suspending a job leaves the
-job in memory. Requeuing a job involves terminating the job and resubmitting it
-again. The "sched/gang" plugin would need to be modified to recognize when a job
-is able to be requeued and when it can requeue a job (for preemption only, not
-for timeslicing!), and perform the requeue request.
+<B>Better memory management</B>: Some additional work is required to 
+better track memory when preempted jobs are checkpointed, requeued or
+killed. 
+In those cases, the memory originally assigned to the job is freed.
+Some addition logic is required to properly track memory being freed
+by these preempted jobs, especially for the select/cons_res plugin,
+which typically runs multiple jobs per node.
 </P>
 
-<p style="text-align:center;">Last modified 5 December 2008</p>
+<P>
+<B>Job preemption based upon Quality of Service (QOS) rather than 
+partition priority</B>: Granting user's a QOS with preemption capabilities
+could be used as an alternative to prartition priorities. 
+Granting some user access to a QOS with a descriptor of <I>PREEMPTOR</I> 
+could be used to grant him the ability to preempt any job from any partition
+without creating various partitions with different priorities.
+However this mechanism lacks the ability to support many priority levels.
+It would also necessitate major changes to the shadow bitmap data structures
+which are currently used.
+</P>
+
+<p style="text-align:center;">Last modified 20 July 2009</p>
 
 <!--#include virtual="footer.txt"-->

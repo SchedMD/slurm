@@ -282,8 +282,8 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 		assoc_mgr_root_assoc = assoc;
 		
 	if(assoc->user) {
-		uid_t pw_uid = uid_from_string(assoc->user);
-		if(pw_uid == (uid_t) -1) 
+		uid_t pw_uid;
+		if (uid_from_string (assoc->user, &pw_uid) < 0)
 			assoc->uid = (uint32_t)NO_VAL;
 		else
 			assoc->uid = pw_uid;	
@@ -346,8 +346,8 @@ static int _post_user_list(List user_list)
 	ListIterator itr = list_iterator_create(user_list);
 	//START_TIMER;
 	while((user = list_next(itr))) {
-		uid_t pw_uid = uid_from_string(user->name);
-		if(pw_uid == (uid_t) -1) {
+		uid_t pw_uid;
+		if (uid_from_string (user->name, &pw_uid) < 0) {
 			if(slurmdbd_conf)
 				debug("post user: couldn't get a "
 				      "uid for user %s",
@@ -366,8 +366,8 @@ static int _post_wckey_list(List wckey_list)
 	ListIterator itr = list_iterator_create(wckey_list);
 	//START_TIMER;
 	while((wckey = list_next(itr))) {
-		uid_t pw_uid = uid_from_string(wckey->user);
-		if(pw_uid == (uid_t) -1) {
+		uid_t pw_uid;
+		if (uid_from_string (wckey->user, &pw_uid) < 0) {
 			if(slurmdbd_conf)
 				debug("post wckey: couldn't get a uid "
 				      "for user %s",
@@ -1889,8 +1889,7 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			pw_uid = uid_from_string(object->user);
-			if(pw_uid == (uid_t) -1) {
+			if (uid_from_string (object->user, &pw_uid) < 0) {
 				debug("wckey add couldn't get a uid "
 				      "for user %s",
 				      object->name);
@@ -1969,8 +1968,7 @@ extern int assoc_mgr_update_users(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			pw_uid = uid_from_string(object->name);
-			if(pw_uid == (uid_t) -1) {
+			if (uid_from_string (object->name, &pw_uid) < 0) {
 				debug("user add couldn't get a uid for user %s",
 				      object->name);
 				object->uid = NO_VAL;
@@ -2235,9 +2233,13 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		(void) link(reg_file, old_file);
+		if(link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
 		(void) unlink(reg_file);
-		(void) link(new_file, reg_file);
+		if(link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
 		(void) unlink(new_file);
 	}
 	xfree(old_file);
@@ -2302,9 +2304,13 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		(void) link(reg_file, old_file);
+		if(link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
 		(void) unlink(reg_file);
-		(void) link(new_file, reg_file);
+		if(link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
 		(void) unlink(new_file);
 	}
 	xfree(old_file);

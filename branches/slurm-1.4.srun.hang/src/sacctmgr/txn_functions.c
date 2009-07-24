@@ -191,7 +191,13 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 		PRINT_WHERE
 	};
 
-	_set_cond(&i, argc, argv, txn_cond, format_list);
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		_set_cond(&i, argc, argv, txn_cond, format_list);
+	}
 
 	if(exit_code) {
 		destroy_acct_txn_cond(txn_cond);
@@ -265,7 +271,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 				       MAX(command_len, 1))) {
 			field->type = PRINT_TS;
 			field->name = xstrdup("Time");
-			field->len = 15;
+			field->len = 19;
 			field->print_routine = print_fields_date;
 		} else if(!strncasecmp("Users", object, MAX(command_len, 4))) {
 			field->type = PRINT_USER;

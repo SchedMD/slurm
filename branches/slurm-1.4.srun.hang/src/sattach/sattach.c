@@ -66,7 +66,7 @@ static void _mpir_init(int num_tasks);
 static void _mpir_cleanup(void);
 static void _mpir_dump_proctable(void);
 static void print_layout_info(slurm_step_layout_t *layout);
-static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
+static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 					uid_t uid, char *nodelist, 
 					uint32_t node_cnt);
 static uint32_t _nodeid_from_layout(slurm_step_layout_t *layout,
@@ -74,7 +74,7 @@ static uint32_t _nodeid_from_layout(slurm_step_layout_t *layout,
 static int _attach_to_tasks(uint32_t jobid,
 			    uint32_t stepid,
 			    slurm_step_layout_t *layout,
-			    slurm_cred_t fake_cred,
+			    slurm_cred_t *fake_cred,
 			    uint16_t num_resp_ports,
 			    uint16_t *resp_ports,
 			    int num_io_ports,
@@ -112,7 +112,7 @@ int sattach(int argc, char *argv[])
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_step_layout_t *layout;
-	slurm_cred_t fake_cred;
+	slurm_cred_t *fake_cred;
 	message_thread_state_t *mts;
 	client_io_t *io;
 
@@ -154,7 +154,7 @@ int sattach(int argc, char *argv[])
 
 	io = client_io_handler_create(opt.fds, layout->task_cnt,
 				      layout->node_cnt, fake_cred,
-				      opt.labelio);
+				      opt.labelio, false);
 	client_io_handler_start(io);
 
 	_attach_to_tasks(opt.jobid, opt.stepid, layout, fake_cred,
@@ -218,12 +218,12 @@ static void print_layout_info(slurm_step_layout_t *layout)
 
 
 /* return a faked job credential */
-static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
+static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 					uid_t uid, char *nodelist,
 					uint32_t node_cnt)
 {
 	slurm_cred_arg_t arg;
-	slurm_cred_t cred;
+	slurm_cred_t *cred;
 
 	arg.jobid    = jobid;
 	arg.stepid   = stepid;
@@ -316,7 +316,7 @@ void _handle_response_msg_list(List other_nodes_resp, bitstr_t *tasks_started)
 static int _attach_to_tasks(uint32_t jobid,
 			    uint32_t stepid,
 			    slurm_step_layout_t *layout,
-			    slurm_cred_t fake_cred,
+			    slurm_cred_t *fake_cred,
 			    uint16_t num_resp_ports,
 			    uint16_t *resp_ports,
 			    int num_io_ports,

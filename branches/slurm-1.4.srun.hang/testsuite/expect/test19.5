@@ -192,6 +192,13 @@ if {[wait_for_file $file_out_time] != 0} {
 			set run_time $expect_out(1,string)
 			exp_continue
 		}
+		-re "CG *0:($number)" {
+			send_user "\nFAILURE: job unexpected found in completing state.\n"
+			send_user "  This may be a sign of node failure and job requeue.\n"
+			set exit_code 1
+			set run_time $expect_out(1,string)
+			exp_continue
+		}
 		eof {
 			wait
 		}
@@ -199,7 +206,7 @@ if {[wait_for_file $file_out_time] != 0} {
 #	Trigger events happen on a periodic basis, so there is likely to 
 #	be a delay up to 20 seconds
 	if {$run_time < 30 || $run_time > 59} {
-		send_user "\nFAILURE: file $file_out_time contents are bad\n"
+		send_user "\nFAILURE: file $file_out_time contents are bad, R run time\n"
 		set exit_code 1
 	}
 }
@@ -207,10 +214,12 @@ if {[wait_for_file $file_out_fini] != 0} {
 	send_user "\nFAILURE: file $file_out_fini is missing\n"
 	set exit_code 1
 } else {
+#	Check that job run time was one minute. If SLURM is configured to 
+#	power down idle nodes, this could possibly take a bit more time.
 	set job_fini 0
 	spawn $bin_cat $file_out_fini
 	expect {
-		-re "CD *1:0" {
+		-re "CD *1:($number)" {
 			set job_fini 1
 			exp_continue
 		}
@@ -219,8 +228,12 @@ if {[wait_for_file $file_out_fini] != 0} {
 		}
 	}
 	if {$job_fini == 0} {
-		send_user "\nFAILURE: file $file_out_fini contents are bad\n"
-		set exit_code 1
+		if {[test_power_save] == 0} {
+			send_user "\nFAILURE: file $file_out_fini contents are bad, CD run time\n"
+			set exit_code 1
+		} else {
+			send_user "\nWARNING: job timeout bad, possibly due to power save mode\n"
+		}
 	}
 }
 

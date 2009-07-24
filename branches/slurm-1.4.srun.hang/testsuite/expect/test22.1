@@ -288,7 +288,7 @@ if { $exit_code } {
 # Use sacct to see if the job loaded
 #
 set matches 0
-set my_pid [eval spawn $sacct -p -C $cluster --fields=cluster,account,associd,start,end,elapsed --noheader]
+set my_pid [eval spawn $sacct -p -C $cluster --fields=cluster,account,associd,start,end,elapsed --noheader --start=$start_str --end=$end_str]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -326,7 +326,6 @@ if {$matches != 3} {
 }
 
 if { $exit_code } {
-	send_user "here\n"
 	#incr exit_code [archive_load $sql_rem]
 	remove_user "" "" $users
 	remove_acct "" $accounts

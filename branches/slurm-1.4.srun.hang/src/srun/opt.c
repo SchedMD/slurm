@@ -57,6 +57,10 @@
 #  include "src/common/getopt.h"
 #endif
 
+#ifdef HAVE_LIMITS_H
+#  include <limits.h>
+#endif
+
 #include <fcntl.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
@@ -94,6 +98,7 @@
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
+#define OPT_IMMEDIATE   0x03
 #define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
 #define OPT_OVERCOMMIT  0x06
@@ -173,6 +178,7 @@
 #define LONG_OPT_WCKEY           0x14b
 #define LONG_OPT_RESERVATION     0x14c
 #define LONG_OPT_RESTART_DIR     0x14d
+#define LONG_OPT_IO_TIMEOUT      0x14e
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -376,7 +382,7 @@ static void _opt_default()
 	opt.no_kill = false;
 	opt.kill_bad_exit = false;
 
-	opt.immediate	= false;
+	opt.immediate	= 0;
 
 	opt.join	= false;
 	opt.max_wait	= slurm_get_wait_time();
@@ -385,6 +391,7 @@ static void _opt_default()
 	opt.disable_status = false;
 	opt.test_only   = false;
 	opt.preserve_env = false;
+	opt.io_timeout = slurm_get_srun_io_timeout();
 
 	opt.quiet = 0;
 	_verbose = 0;
@@ -425,6 +432,7 @@ static void _opt_default()
 
 	opt.prolog = slurm_get_srun_prolog();
 	opt.epilog = slurm_get_srun_epilog();
+	opt.begin = (time_t)0;
 
 	opt.task_prolog     = NULL;
 	opt.task_epilog     = NULL;
@@ -476,9 +484,10 @@ env_vars_t env_vars[] = {
 {"SLURM_DEPENDENCY",    OPT_STRING,     &opt.dependency,    NULL             },
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
-{"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL             },
-{"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,      
-					&opt.job_name_set_env},
+{"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
+{"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &opt.job_name_set_env},
+/* SLURM_JOBID was used in slurm version 1.3 and below, it is now vestigial */
+{"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_JOB_ID",        OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL             },
 {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL             },
@@ -489,6 +498,7 @@ env_vars_t env_vars[] = {
 {"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
 {"SLURM_NTHREADS_PER_CORE",OPT_NTHREADS,NULL,               NULL             },
+{"SLURM_NTASKS_PER_NODE", OPT_INT,      &opt.ntasks_per_node, NULL           },
 {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL             },
 {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set  },
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
@@ -646,6 +656,13 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
+	case OPT_IMMEDIATE:
+		if (val)
+			opt.immediate = strtol(val, NULL, 10);
+		else
+			opt.immediate = DEFAULT_IMMEDIATE;
+		break;
+
 	case OPT_MPI:
 		if (mpi_hook_client_init((char *)val) == SLURM_ERROR) {
 			fatal("\"%s=%s\" -- invalid MPI type, "
@@ -687,7 +704,7 @@ _get_int(const char *arg, const char *what, bool positive)
 
 static void set_options(const int argc, char **argv)
 {
-	int opt_char, option_index = 0;
+	int opt_char, option_index = 0, tmp;
 	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        no_argument,       0, 'a'},
@@ -704,7 +721,7 @@ static void set_options(const int argc, char **argv)
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"input",         required_argument, 0, 'i'},
-		{"immediate",     no_argument,       0, 'I'},
+		{"immediate",     optional_argument, 0, 'I'},
 		{"join",          no_argument,       0, 'j'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
@@ -795,10 +812,11 @@ static void set_options(const int argc, char **argv)
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
 		{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
+		{"io-timeout",       required_argument, 0, LONG_OPT_IO_TIMEOUT},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
-		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
+		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
 
@@ -870,8 +888,10 @@ static void set_options(const int argc, char **argv)
 			opt.cwd = xstrdup(optarg);
 			break;
 		case (int)'e':
-			if (opt.pty)
-				fatal("--error incompatable with --pty option");
+			if (opt.pty) {
+				fatal("--error incompatable with --pty "
+				      "option");
+			}
 			xfree(opt.efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.efname = xstrdup("/dev/null");
@@ -889,8 +909,10 @@ static void set_options(const int argc, char **argv)
 			opt.hold = true;
 			break;
 		case (int)'i':
-			if (opt.pty)
-				fatal("--input incompatable with --pty option");
+			if (opt.pty) {
+				fatal("--input incompatable with "
+				      "--pty option");
+			}
 			xfree(opt.ifname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ifname = xstrdup("/dev/null");
@@ -898,7 +920,10 @@ static void set_options(const int argc, char **argv)
 				opt.ifname = xstrdup(optarg);
 			break;
 		case (int)'I':
-			opt.immediate = true;
+			if (optarg)
+				opt.immediate = strtol(optarg, NULL, 10);
+			else
+				opt.immediate = DEFAULT_IMMEDIATE;
 			break;
 		case (int)'j':
 			opt.join = true;
@@ -1122,15 +1147,13 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_UID:
 			if (opt.euid != (uid_t) -1)
 				fatal ("duplicate --uid option");
-			opt.euid = uid_from_string (optarg);
-			if (opt.euid == (uid_t) -1)
+			if (uid_from_string (optarg, &opt.euid) < 0)
 				fatal ("--uid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_GID:
 			if (opt.egid != (gid_t) -1)
 				fatal ("duplicate --gid option");
-			opt.egid = gid_from_string (optarg);
-			if (opt.egid == (gid_t) -1)
+			if (gid_from_string (optarg, &opt.egid) < 0)
 				fatal ("--gid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_DEBUG_TS:
@@ -1339,6 +1362,14 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_RESTART_DIR:
 			xfree(opt.restart_dir);
 			opt.restart_dir = xstrdup(optarg);
+			break;
+		case LONG_OPT_IO_TIMEOUT:
+			tmp = _get_int(optarg, "io-timeout", true);
+			if (tmp < 0 || tmp > 65535)
+				error("Invalid --io-timeout argument: %d.  "
+				      "Ignored", tmp);
+			else
+				opt.io_timeout = (uint16_t)tmp;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -1600,21 +1631,50 @@ static bool _opt_verify(void)
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
-		error("%s: invalid number of processes (-n %d)",
-		      opt.progname, opt.nprocs);
+		error("invalid number of processes (-n %d)", opt.nprocs);
 		verified = false;
 	}
 
 	if (opt.cpus_per_task < 0) {
-		error("%s: invalid number of cpus per task (-c %d)\n",
-		      opt.progname, opt.cpus_per_task);
+		error("invalid number of cpus per task (-c %d)\n",
+		      opt.cpus_per_task);
 		verified = false;
 	}
 
 	if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) || 
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-		error("%s: invalid number of nodes (-N %d-%d)\n",
-		      opt.progname, opt.min_nodes, opt.max_nodes);
+		error("invalid number of nodes (-N %d-%d)\n",
+		      opt.min_nodes, opt.max_nodes);
+		verified = false;
+	}
+
+#ifdef HAVE_BGL
+	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
+		error("invalid BlrtsImage given '%s'", opt.blrtsimage);
+		verified = false;
+	}
+#endif
+
+	if (opt.linuximage && strchr(opt.linuximage, ' ')) {
+#ifdef HAVE_BGL
+		error("invalid LinuxImage given '%s'", opt.linuximage);
+#else
+		error("invalid CnloadImage given '%s'", opt.linuximage);
+#endif
+		verified = false;
+	}
+
+	if (opt.mloaderimage && strchr(opt.mloaderimage, ' ')) {
+		error("invalid MloaderImage given '%s'", opt.mloaderimage);
+		verified = false;
+	}
+
+	if (opt.ramdiskimage && strchr(opt.ramdiskimage, ' ')) {
+#ifdef HAVE_BGL
+		error("invalid RamDiskImage given '%s'", opt.ramdiskimage);
+#else
+		error("invalid IoloadImage given '%s'", opt.ramdiskimage);
+#endif
 		verified = false;
 	}
 
@@ -1662,7 +1722,9 @@ static bool _opt_verify(void)
 			opt.nodes_set = true;
 		}
 	}
-	if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
+	if ((opt.nodes_set || opt.extra_set)				&& 
+	    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))	&& 
+	    !opt.nprocs_set) {
 		/* 1 proc / node default */
 		opt.nprocs = opt.min_nodes;
 
@@ -1777,7 +1839,8 @@ static bool _opt_verify(void)
 
 	if (opt.ckpt_interval_str) {
 		opt.ckpt_interval = time_str2mins(opt.ckpt_interval_str);
-		if ((opt.ckpt_interval < 0) && (opt.ckpt_interval != INFINITE)) {
+		if ((opt.ckpt_interval < 0) && 
+		    (opt.ckpt_interval != INFINITE)) {
 			error("Invalid checkpoint interval specification");
 			exit(1);
 		}
@@ -1792,21 +1855,103 @@ static bool _opt_verify(void)
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid)) 
 		opt.gid = opt.egid;
 
-	if (opt.immediate) {
-		char *sched_name = slurm_get_sched_type();
-		if (strcmp(sched_name, "sched/wiki") == 0) {
-			info("WARNING: Ignoring the -I/--immediate option "
-				"(not supported by Maui)");
-			opt.immediate = false;
-		}
-		xfree(sched_name);
-	}
-
 	 if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
 				   &opt.cpu_bind_type))
 		exit(1);
 
 	return verified;
+}
+
+/* Functions used by SPANK plugins to read and write job environment
+ * variables for use within job's Prolog and/or Epilog */
+extern char *spank_get_job_env(const char *name)
+{
+	int i, len;
+	char *tmp_str = NULL;
+
+	if ((name == NULL) || (name[0] == '\0') ||
+	    (strchr(name, (int)'=') != NULL)) {
+		slurm_seterrno(EINVAL);
+		return NULL;
+	}
+
+	xstrcat(tmp_str, name);
+	xstrcat(tmp_str, "=");
+	len = strlen(tmp_str);
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+			continue;
+		xfree(tmp_str);
+		return (opt.spank_job_env[i] + len);
+	}
+
+	return NULL;
+}
+
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite)
+{
+	int i, len;
+	char *tmp_str = NULL;
+
+	if ((name == NULL) || (name[0] == '\0') ||
+	    (strchr(name, (int)'=') != NULL)) {
+		slurm_seterrno(EINVAL);
+		return -1;
+	}
+
+	xstrcat(tmp_str, name);
+	xstrcat(tmp_str, "=");
+	len = strlen(tmp_str);
+	xstrcat(tmp_str, value);
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+			continue;
+		if (overwrite) {
+			xfree(opt.spank_job_env[i]);
+			opt.spank_job_env[i] = tmp_str;
+		} else
+			xfree(tmp_str);
+		return 0;
+	}
+
+	/* Need to add an entry */
+	opt.spank_job_env_size++;
+	xrealloc(opt.spank_job_env, sizeof(char *) * opt.spank_job_env_size);
+	opt.spank_job_env[i] = tmp_str;
+	return 0;
+}
+
+extern int   spank_unset_job_env(const char *name)
+{
+	int i, j, len;
+	char *tmp_str = NULL;
+
+	if ((name == NULL) || (name[0] == '\0') ||
+	    (strchr(name, (int)'=') != NULL)) {
+		slurm_seterrno(EINVAL);
+		return -1;
+	}
+
+	xstrcat(tmp_str, name);
+	xstrcat(tmp_str, "=");
+	len = strlen(tmp_str);
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+			continue;
+		xfree(opt.spank_job_env[i]);
+		for (j=(i+1); j<opt.spank_job_env_size; i++, j++)
+			opt.spank_job_env[i] = opt.spank_job_env[j];
+		opt.spank_job_env_size--;
+		if (opt.spank_job_env_size == 0)
+			xfree(opt.spank_job_env);
+		return 0;
+	}
+
+	return 0;	/* not found */
 }
 
 /* helper function for printing options
@@ -1893,7 +2038,10 @@ static void _opt_list()
 	info("core format    : %s", core_format_name (opt.core_type));
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
-	info("immediate      : %s", tf_(opt.immediate));
+	if (opt.immediate <= 1)
+		info("immediate      : %s", tf_(opt.immediate));
+	else
+		info("immediate      : %d secs", (opt.immediate - 1));
 	info("label output   : %s", tf_(opt.labelio));
 	info("unbuffered IO  : %s", tf_(opt.unbuffered));
 	info("overcommit     : %s", tf_(opt.overcommit));
@@ -1928,7 +2076,8 @@ static void _opt_list()
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("preserve_env   : %s", tf_(opt.preserve_env));
-	
+	info("io_timeout     : %d", opt.io_timeout);
+
 #ifdef HAVE_BGL
 	if (opt.blrtsimage)
 		info("BlrtsImage     : %s", opt.blrtsimage);
@@ -1993,7 +2142,7 @@ static void _usage(void)
  	printf(
 "Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
 "            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"            [-D path] [--immediate] [--overcommit] [--no-kill]\n"
+"            [-D path] [--immediate[=secs]] [--overcommit] [--no-kill]\n"
 "            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#]\n"
 "            [--core=type] [-T threads] [-W sec] [--checkpoint=time]\n"
@@ -2005,6 +2154,7 @@ static void _usage(void)
 "            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
+"            [--io-timeout=secs]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [--reboot]\n"
 #ifdef HAVE_BGL
@@ -2048,7 +2198,8 @@ static void _help(void)
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "  -H, --hold                  submit job in held state\n"
 "  -i, --input=in              location of stdin redirection\n"
-"  -I, --immediate             exit if resources are not immediately available\n"
+"      --io-timeout=t          ping each node after t seconds of inactivity\n"
+"  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"
 "      --jobid=id              run under already allocated job\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"

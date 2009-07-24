@@ -354,9 +354,13 @@ int dump_all_part_state(void)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		(void) link(reg_file, old_file);
+		if(link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
 		(void) unlink(reg_file);
-		(void) link(new_file, reg_file);
+		if(link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
 		(void) unlink(new_file);
 	}
 	xfree(old_file);
@@ -723,7 +727,7 @@ extern void part_filter_clear(void)
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
 extern void pack_all_part(char **buffer_ptr, int *buffer_size, 
-		uint16_t show_flags, uid_t uid)
+			  uint16_t show_flags, uid_t uid)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
@@ -779,8 +783,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 void pack_part(struct part_record *part_ptr, Buf buffer)
 {
 	uint16_t default_part_flag;
-	char node_inx_ptr[BUF_SIZE];
-	uint32_t altered, node_scaling;
+	uint32_t altered;
 
 	if (default_part_loc == part_ptr)
 		default_part_flag = 1;
@@ -796,9 +799,6 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
 	pack32(altered, buffer);
-	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING, 
-				&node_scaling);
-	pack16(node_scaling, buffer);
 	pack32(part_ptr->total_cpus, buffer);
 	pack16(default_part_flag,    buffer);
 	pack16(part_ptr->disable_root_jobs, buffer);
@@ -811,12 +811,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	packstr(part_ptr->allow_groups, buffer);
 	packstr(part_ptr->allow_alloc_nodes, buffer);
 	packstr(part_ptr->nodes, buffer);
-	if (part_ptr->node_bitmap) {
-		bit_fmt(node_inx_ptr, BUF_SIZE,
-			part_ptr->node_bitmap);
-		packstr((char *)node_inx_ptr, buffer);
-	} else
-		packstr("", buffer);
+	pack_bit_fmt(part_ptr->node_bitmap, buffer);
 }
 
 
@@ -880,7 +875,8 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		info("update_part: DefaultTime would exceed MaxTime for "
 		     "partition %s", part_desc->name);
 	} else if (part_desc->default_time != NO_VAL) {
-		info("update_part: setting default_time to %u for partition %s", 
+		info("update_part: setting default_time to %u "
+		     "for partition %s", 
 		     part_desc->default_time, part_desc->name);
 		part_ptr->default_time = part_desc->default_time;
 	}
@@ -963,7 +959,8 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			info("update_part: setting default partition to %s", 
 			     part_desc->name);
 		} else if (strcmp(default_part_name, part_desc->name) != 0) {
-			info("update_part: changing default partition from %s to %s", 
+			info("update_part: changing default "
+			     "partition from %s to %s", 
 			     default_part_name, part_desc->name);
 		}
 		xfree(default_part_name);
@@ -1027,7 +1024,8 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			xfree(part_ptr->nodes);
 			part_ptr->nodes = backup_node_list;
 		} else {
-			info("update_part: setting nodes to %s for partition %s", 
+			info("update_part: setting nodes to %s "
+			     "for partition %s", 
 			     part_ptr->nodes, part_desc->name);
 			xfree(backup_node_list);
 		}
@@ -1215,13 +1213,11 @@ uid_t *_get_group_members(char *group_name)
 
 	j = 0;
 	for (i=0; i<uid_cnt; i++) {
-		my_uid = uid_from_string(grp_result->gr_mem[i]);
-		if (my_uid == (uid_t) -1) {
+		if (uid_from_string (grp_result->gr_mem[i], &my_uid) < 0)
 			error("Could not find user %s in configured group %s",
 			      grp_result->gr_mem[i], group_name);
-		} else if (my_uid) {
+		else if (my_uid)
 			group_uids[j++] = my_uid;
-		}
 	}
 
 #ifdef HAVE_AIX
@@ -1230,7 +1226,12 @@ uid_t *_get_group_members(char *group_name)
 		pwd_result = &pw;
 #else
 	setpwent();
+#if defined (__sun)
+	while ((pwd_result = getpwent_r(&pw, pw_buffer, PW_BUF_SIZE)) != NULL) {
+#else
+
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
+#endif
 #endif
  		if (pwd_result->pw_gid != my_gid)
 			continue;
@@ -1322,6 +1323,10 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr)
 	(void) kill_job_by_part_name(part_desc_ptr->name);
 	list_delete_all(part_list, list_find_part, part_desc_ptr->name);
 	last_part_update = time(NULL);
+
+	slurm_sched_partition_change();	/* notify sched plugin */
+	select_g_reconfigure();		/* notify select plugin too */
+	reset_job_priority();		/* free jobs */
 
 	return SLURM_SUCCESS;
 }

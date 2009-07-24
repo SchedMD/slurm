@@ -79,8 +79,6 @@ const char plugin_name[] = "Job completion POSTGRESQL plugin";
 const char plugin_type[] = "jobcomp/pgsql";
 const uint32_t plugin_version = 100;
 
-#define DEFAULT_JOBCOMP_DB "slurm_jobcomp_db"
-
 PGconn *jobcomp_pgsql_db = NULL;
 
 char *jobcomp_table = "jobcomp_table";
@@ -133,7 +131,7 @@ static pgsql_db_info_t *_pgsql_jobcomp_create_db_info()
 	/* it turns out it is better if using defaults to let postgres
 	   handle them on it's own terms */
 	if(!db_info->port) {
-		db_info->port = 5432;
+		db_info->port = DEFAULT_PGSQL_PORT;
 		slurm_set_jobcomp_port(db_info->port);
 	}
 	db_info->host = slurm_get_jobcomp_host();
@@ -273,19 +271,19 @@ extern int slurm_jobcomp_set_location(char *location)
 		return SLURM_SUCCESS;
 	
 	if(!location)
-		db_name = DEFAULT_JOBCOMP_DB;
+		db_name = DEFAULT_JOB_COMP_DB;
 	else {
 		while(location[i]) {
 			if(location[i] == '.' || location[i] == '/') {
 				debug("%s doesn't look like a database "
 				      "name using %s",
-				      location, DEFAULT_JOBCOMP_DB);
+				      location, DEFAULT_JOB_COMP_DB);
 				break;
 			}
 			i++;
 		}
 		if(location[i]) 
-			db_name = DEFAULT_JOBCOMP_DB;
+			db_name = DEFAULT_JOB_COMP_DB;
 		else
 			db_name = location;
 	}
@@ -333,27 +331,27 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 				(unsigned long) job_ptr->time_limit);
 
 	/* Job will typically be COMPLETING when this is called. 
-	 * We remove this flag to get the eventual completion state:
+	 * We remove the flags to get the eventual completion state:
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
-	job_state = job_ptr->job_state & (~JOB_COMPLETING);
+	job_state = job_ptr->job_state & JOB_STATE_BASE;
 	
-	connect_type = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	connect_type = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						SELECT_PRINT_CONNECTION);
-	reboot = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	reboot = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 					  SELECT_PRINT_REBOOT);
-	rotate = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	rotate = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 					  SELECT_PRINT_ROTATE);
-	maxprocs = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	maxprocs = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 					    SELECT_PRINT_MAX_PROCS);
-	geometry = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	geometry = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 					    SELECT_PRINT_GEOMETRY);
-	start = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	start = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 					 SELECT_PRINT_START);
 #ifdef HAVE_BG
-	blockid = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	blockid = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 					   SELECT_PRINT_BG_ID);
 #else
-	blockid = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	blockid = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 					   SELECT_PRINT_RESV_ID);
 #endif
 	query = xstrdup_printf(

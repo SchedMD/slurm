@@ -362,7 +362,7 @@ char * switch_p_sprintf_node_info(switch_node_info_t switch_node,
 /*
  * switch functions for job step specific credential
  */
-int switch_p_alloc_jobinfo(switch_jobinfo_t *switch_job)
+int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
 {
 	return fed_alloc_jobinfo((fed_jobinfo_t **)switch_job);
 }
@@ -390,7 +390,7 @@ static char *adapter_name_check(char *network)
 	return name;
 }
 
-int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist, 
+int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist, 
 			uint16_t *tasks_per_node, int cyclic_alloc, 
 			char *network) 
 {
@@ -443,9 +443,9 @@ int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist,
 	}
 }
 
-switch_jobinfo_t switch_p_copy_jobinfo(switch_jobinfo_t switch_job)
+switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
 {
-	switch_jobinfo_t j;
+	switch_jobinfo_t *j;
 
 	j = (switch_jobinfo_t)fed_copy_jobinfo((fed_jobinfo_t *)switch_job);
 	if (!j)
@@ -454,28 +454,29 @@ switch_jobinfo_t switch_p_copy_jobinfo(switch_jobinfo_t switch_job)
 	return j;
 }
 
-void switch_p_free_jobinfo(switch_jobinfo_t switch_job)
+void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
 	return fed_free_jobinfo((fed_jobinfo_t *)switch_job);
 }
 
-int switch_p_pack_jobinfo(switch_jobinfo_t switch_job, Buf buffer)
+int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
 	return fed_pack_jobinfo((fed_jobinfo_t *)switch_job, buffer);
 }
 
-int switch_p_unpack_jobinfo(switch_jobinfo_t switch_job, Buf buffer)
+int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
 	return fed_unpack_jobinfo((fed_jobinfo_t *)switch_job, buffer);
 }
 
-extern int switch_p_get_jobinfo(switch_jobinfo_t switch_job, int key, 
-	void *resulting_data)
+extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key, 
+				void *resulting_data)
 {
-	return fed_get_jobinfo((fed_jobinfo_t *)switch_job, key, resulting_data);
+	return fed_get_jobinfo((fed_jobinfo_t *)switch_job, key,
+			       resulting_data);
 } 
 
-static inline int _make_step_comp(switch_jobinfo_t jobinfo, char *nodelist)
+static inline int _make_step_comp(switch_jobinfo_t *jobinfo, char *nodelist)
 {
 	hostlist_t list = NULL;
 	int rc;
@@ -487,12 +488,13 @@ static inline int _make_step_comp(switch_jobinfo_t jobinfo, char *nodelist)
 	return rc;
 }
 
-extern int switch_p_job_step_complete(switch_jobinfo_t jobinfo, char *nodelist)
+extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
 {
 	return _make_step_comp(jobinfo, nodelist);
 }
 
-extern int switch_p_job_step_part_comp(switch_jobinfo_t jobinfo, char *nodelist)
+extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo, 
+				       char *nodelist)
 {
 	return _make_step_comp(jobinfo, nodelist);
 }
@@ -502,7 +504,7 @@ extern bool switch_p_part_comp(void)
 	return true;
 }
 
-extern int switch_p_job_step_allocated(switch_jobinfo_t jobinfo, char *nodelist)
+extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo, char *nodelist)
 {
 	hostlist_t list = NULL;
 	int rc;
@@ -514,12 +516,12 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t jobinfo, char *nodelist)
 	return rc;
 }
 
-void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo)
+void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 {
 	return;
 }
 
-char *switch_p_sprint_jobinfo(switch_jobinfo_t switch_jobinfo, char *buf,
+char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
 		size_t size)
 {
 	return NULL;
@@ -550,12 +552,12 @@ int switch_p_node_fini(void)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_preinit(switch_jobinfo_t jobinfo)
+int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_init (switch_jobinfo_t jobinfo, uid_t uid)
+int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid)
 {
 	pid_t pid;
 	
@@ -563,12 +565,12 @@ int switch_p_job_init (switch_jobinfo_t jobinfo, uid_t uid)
 	return fed_load_table((fed_jobinfo_t *)jobinfo, uid, pid);
 }
 
-int switch_p_job_fini (switch_jobinfo_t jobinfo)
+int switch_p_job_fini (switch_jobinfo_t *jobinfo)
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_postfini(switch_jobinfo_t jobinfo, uid_t pgid, 
+int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid, 
 				uint32_t job_id, uint32_t step_id)
 {
 	int err;
@@ -591,7 +593,7 @@ int switch_p_job_postfini(switch_jobinfo_t jobinfo, uid_t pgid,
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_attach(switch_jobinfo_t jobinfo, char ***env, 
+int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env, 
 			uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
 			uint32_t nprocs, uint32_t rank)
 {

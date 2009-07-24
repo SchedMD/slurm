@@ -4,7 +4,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -67,15 +67,27 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 
+#ifndef VOLATILE
+#if defined(__STDC__) || defined(__cplusplus)
+#define VOLATILE volatile
+#else
+#define VOLATILE
+#endif
+#endif
+
+#define SHUTDOWN_WAIT     2	/* Time to wait for primary server shutdown */
+
 static int          _background_process_msg(slurm_msg_t * msg);
-static int          _backup_reconfig(void);
 static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
+static int          _backup_reconfig(void);
 static int          _ping_controller(void);
+static int          _shutdown_primary_controller(int wait_time);
 inline static void  _update_cred_key(void);
 
 /* Local variables */
-static bool     dump_core = false;
+static bool          dump_core = false;
+static VOLATILE bool takeover = false;
 
 /*
  * Static list of signals to block in this process
@@ -97,6 +109,8 @@ void run_backup(void)
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	info("slurmctld running in background mode");
+	takeover = false;
+
 	/* default: don't resume if shutdown */
 	slurmctld_config.resume_backup = false;
 	if (xsignal_block(backup_sigarray) < 0)
@@ -106,18 +120,23 @@ void run_backup(void)
 	 * create attached thread to process RPCs
 	 */
 	slurm_attr_init(&thread_attr_rpc);
-	if (pthread_create(&slurmctld_config.thread_id_rpc, 
-			&thread_attr_rpc, _background_rpc_mgr, NULL))
-		fatal("pthread_create error %m");
+	while (pthread_create(&slurmctld_config.thread_id_rpc, 
+			      &thread_attr_rpc, _background_rpc_mgr, NULL)) {
+		error("pthread_create error %m");
+		sleep(1);
+	}
 	slurm_attr_destroy(&thread_attr_rpc);
 
 	/*
 	 * create attached thread for signal handling
 	 */
 	slurm_attr_init(&thread_attr_sig);
-	if (pthread_create(&slurmctld_config.thread_id_sig,
-			&thread_attr_sig, _background_signal_hand, NULL))
-		fatal("pthread_create %m");
+	while (pthread_create(&slurmctld_config.thread_id_sig, 
+			      &thread_attr_sig, _background_signal_hand, 
+			      NULL)) {
+		error("pthread_create %m");
+		sleep(1);
+	}
 	slurm_attr_destroy(&thread_attr_sig);
 
 	sleep(5);       /* Give the primary slurmctld set-up time */
@@ -125,23 +144,29 @@ void run_backup(void)
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 		/* Lock of slurmctld_conf below not important */
-		if (slurmctld_conf.slurmctld_timeout
-		&&  (difftime(time(NULL), last_ping) <
+		if (slurmctld_conf.slurmctld_timeout &&
+		    (takeover == false) &&
+		    (difftime(time(NULL), last_ping) <
 		     (slurmctld_conf.slurmctld_timeout / 3)))
 			continue;
 
 		last_ping = time(NULL);
 		if (_ping_controller() == 0)
 			last_controller_response = time(NULL);
-		else {
+		else if ( takeover == true ) {
+			/* in takeover mode, take control as soon as */
+			/* primary no longer respond */
+			break;
+		} else {
 			uint32_t timeout;
 			lock_slurmctld(config_read_lock);
 			timeout = slurmctld_conf.slurmctld_timeout;
 			unlock_slurmctld(config_read_lock);
 
 			if (difftime(time(NULL), last_controller_response) >
-					timeout)
+			    timeout) {
 				break;
+			}
 		}
 	}
 
@@ -367,6 +392,12 @@ static int _background_process_msg(slurm_msg_t * msg)
 			info("Performing RPC: REQUEST_SHUTDOWN");
 			pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 		} else if (super_user && 
+			   (msg->msg_type == REQUEST_TAKEOVER)) {
+			info("Performing RPC: REQUEST_TAKEOVER");
+			_shutdown_primary_controller(SHUTDOWN_WAIT);
+			takeover = true ;
+			error_code = SLURM_SUCCESS;
+		} else if (super_user && 
 			   (msg->msg_type == REQUEST_CONTROL)) {
 			debug3("Ignoring RPC: REQUEST_CONTROL");
 			error_code = ESLURM_DISABLED;
@@ -428,5 +459,57 @@ static int _backup_reconfig(void)
 	slurm_conf_reinit(NULL);
 	update_logging();
 	slurmctld_conf.last_update = time(NULL);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Tell the primary_controller to relinquish control, primary control_machine 
+ *	has to suspend operation
+ * Based on _shutdown_backup_controller from controller.c
+ * wait_time - How long to wait for primary controller to write state, seconds.
+ * RET 0 or an error code
+ * NOTE: READ lock_slurmctld config before entry (or be single-threaded)
+ */
+static int _shutdown_primary_controller(int wait_time)
+{
+	int rc;
+	slurm_msg_t req;
+
+	slurm_msg_t_init(&req);
+	if ((slurmctld_conf.control_addr == NULL) ||
+	    (slurmctld_conf.control_addr[0] == '\0')) {
+		error("_shutdown_primary_controller: "
+		      "no primary controller to shutdown");
+		return SLURM_ERROR;
+	}
+
+	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port,
+		       slurmctld_conf.control_addr);
+
+	/* send request message */
+	req.msg_type = REQUEST_CONTROL;
+	
+	if (slurm_send_recv_rc_msg_only_one(&req, &rc, 
+				(CONTROL_TIMEOUT * 1000)) < 0) {
+		error("_shutdown_primary_controller:send/recv: %m");
+		return SLURM_ERROR;
+	}
+	if (rc == ESLURM_DISABLED)
+		debug("primary controller responding");
+	else if (rc == 0) {
+		debug("primary controller has relinquished control");
+	} else {
+		error("_shutdown_primary_controller: %s", slurm_strerror(rc));
+		return SLURM_ERROR;
+	}
+
+	/* FIXME: Ideally the REQUEST_CONTROL RPC does not return until all   
+	 * other activity has ceased and the state has been saved. That is   
+	 * not presently the case (it returns when no other work is pending,  
+	 * so the state save should occur right away). We sleep for a while   
+	 * here and give the primary controller time to shutdown */
+	if (wait_time)
+		sleep(wait_time);
+
 	return SLURM_SUCCESS;
 }

@@ -37,8 +37,8 @@ typedef struct {
 	uint16_t node_state;
 
 	uint32_t node_cnt;
-	uint16_t min_cpus;
-	uint16_t max_cpus;
+	uint32_t min_cpus;
+	uint32_t max_cpus;
 	uint32_t min_disk;
 	uint32_t max_disk;
 	uint32_t min_mem;
@@ -55,10 +55,10 @@ typedef struct {
 
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
+	int color_inx;
 	/* part_info contains partition, avail, max_time, job_size, 
 	 * root, share, groups */
 	partition_info_t* part_ptr;
-	char *color;
 	List sub_list;
 } sview_part_info_t;
 
@@ -74,6 +74,7 @@ enum {
 #ifdef HAVE_BG
 	SORTID_NODELIST, 
 #endif
+	SORTID_COLOR,
 	SORTID_CPUS, 
 	SORTID_DEFAULT,
 	SORTID_FEATURES, 
@@ -107,6 +108,8 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
 	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_COLOR, NULL, TRUE, EDIT_NONE, refresh_part,
+	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
@@ -160,7 +163,6 @@ static display_data_t display_data_part[] = {
 	 refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -198,20 +200,6 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
-#ifdef HAVE_BG
-static void _update_nodes_for_bg(int node_scaling,
-				 node_info_msg_t *node_msg,
-				 bg_info_record_t *bg_info_record);
-/* ERROR_STATE must be last since that will affect the state of the rest of the
-   midplane.
-*/
-enum {
-	SVIEW_BG_IDLE_STATE,
-	SVIEW_BG_ALLOC_STATE,
-	SVIEW_BG_ERROR_STATE
-};
-#endif
-
 static display_data_t *local_display_data = NULL;
 
 static char *got_edit_signal = NULL;
@@ -223,46 +211,6 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    GtkTreeStore *treestore, GtkTreeIter *iter,
 				    int line);
-static node_info_t *_find_node(char *node_name, node_info_msg_t *node_msg);
-
-#ifdef HAVE_BG
-
-static void _update_nodes_for_bg(int node_scaling,
-				 node_info_msg_t *node_msg,
-				 bg_info_record_t *bg_info_record)
-{
-	node_info_t *node_ptr = NULL;
-	hostlist_t hl;
-	char *node_name = NULL;
-
-	/* we are using less than one node */
-	if(bg_info_record->conn_type == SELECT_SMALL) 
-		node_scaling = bg_info_record->node_cnt;
-       		   
-	hl = hostlist_create(bg_info_record->nodes);
-	while (1) {
-		node_name = hostlist_shift(hl);
-		if (!node_name)
-			break;
-		node_ptr = _find_node(node_name, node_msg);
-		free(node_name);
-		if (!node_ptr)
-			continue;
-		/* cores is overloaded to be the cnodes in an error
-		 * state and used_cpus is overloaded to be the nodes in
-		 * use.  No block should be sent in here if it isn't
-		 * in use (that doesn't mean in a free state, it means
-		 * the user isn't slurm or the block is in an error state.  
-		 */
-		if(bg_info_record->state == RM_PARTITION_ERROR) 
-			node_ptr->cores += node_scaling;
-		else
-			node_ptr->used_cpus += node_scaling;
-	}
-	hostlist_destroy(hl);
-	
-}
-#endif
 
 static int 
 _build_min_max_16_string(char *buffer, int buf_size, 
@@ -962,6 +910,9 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	GtkTreeIter sub_iter;
 	int childern = 0;
 	
+	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
+			   sview_colors[sview_part_info->color_inx], -1);
+
 	gtk_tree_store_set(treestore, iter, SORTID_NAME, part_ptr->name, -1);
 
 	if(part_ptr->default_part)
@@ -1257,53 +1208,14 @@ static void _destroy_part_sub(void *object)
 	}
 }
 
-/* like strcmp, but works with NULL pointers */
-static int _strcmp(char *data1, char *data2) 
-{
-	static char null_str[] = "(null)";
-
-	if (data1 == NULL)
-		data1 = null_str;
-	if (data2 == NULL)
-		data2 = null_str;
-	return strcmp(data1, data2);
-}
-
-/* 
- * _find_node - find a node by name
- * node_name IN     - name of node to locate
- * node_msg IN      - node information message from API
- */
-static node_info_t *_find_node(char *node_name, node_info_msg_t *node_msg)
-{
-	int i;
-	if (node_name == NULL)
-		return NULL;
-
-	for (i=0; i<node_msg->record_count; i++) {
-		if (_strcmp(node_name, node_msg->node_array[i].name))
-			continue;
-		return &(node_msg->node_array[i]);
-	}
-
-	/* not found */
-	return NULL;
-}
-
 static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub, 
 				   node_info_t *node_ptr, 
 				   int node_scaling)
 {
-	list_append(sview_part_sub->node_ptr_list, node_ptr);
+	xassert(sview_part_sub);
+	xassert(sview_part_sub->node_ptr_list);
+	xassert(sview_part_sub->hl);
 
-#ifdef HAVE_BG
-	node_scaling = node_ptr->threads;
-	if(!node_scaling)
-		return;
-#else
-	if(!node_scaling)
-		node_scaling = 1;
-#endif	
 	if (sview_part_sub->node_cnt == 0) {	/* first node added */
 		sview_part_sub->node_state = node_ptr->node_state;
 		sview_part_sub->features   = xstrdup(node_ptr->features);
@@ -1316,8 +1228,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 		sview_part_sub->max_mem    = node_ptr->real_memory;
 		sview_part_sub->min_weight = node_ptr->weight;
 		sview_part_sub->max_weight = node_ptr->weight;
-	} else if (hostlist_find(sview_part_sub->hl, 
-				 node_ptr->name) != -1) {
+	} else if (hostlist_find(sview_part_sub->hl, node_ptr->name) != -1) {
 		/* we already have this node in this record,
 		 * just return, don't duplicate */
 		return;
@@ -1344,6 +1255,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 	}
 
 	sview_part_sub->node_cnt += node_scaling;
+	list_append(sview_part_sub->node_ptr_list, node_ptr);
 	hostlist_push(sview_part_sub->hl, node_ptr->name);
 }
 
@@ -1359,15 +1271,6 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 	sview_part_sub_t *sview_part_sub_ptr = 
 		xmalloc(sizeof(sview_part_sub_t));
 	
-#ifdef HAVE_BG
-	node_scaling = node_ptr->threads;
-	if(!node_scaling)
-		return NULL;
-#else
-	if(!node_scaling)
-		node_scaling = 1;
-#endif
-
 	if (!part_ptr) {
 		g_print("got no part_ptr!\n");
 		xfree(sview_part_sub_ptr);
@@ -1379,31 +1282,135 @@ static sview_part_sub_t *_create_sview_part_sub(partition_info_t *part_ptr,
 		return NULL;
 	}
 	sview_part_sub_ptr->part_ptr = part_ptr;
-	sview_part_sub_ptr->node_state = node_ptr->node_state;
-	sview_part_sub_ptr->node_cnt = node_scaling;
-	
-	sview_part_sub_ptr->min_cpus = node_ptr->cpus;
-	sview_part_sub_ptr->max_cpus = node_ptr->cpus;
-
-	sview_part_sub_ptr->min_disk = node_ptr->tmp_disk;
-	sview_part_sub_ptr->max_disk = node_ptr->tmp_disk;
-
-	sview_part_sub_ptr->min_mem = node_ptr->real_memory;
-	sview_part_sub_ptr->max_mem = node_ptr->real_memory;
-
-	sview_part_sub_ptr->min_weight = node_ptr->weight;
-	sview_part_sub_ptr->max_weight = node_ptr->weight;
-
-	sview_part_sub_ptr->features = xstrdup(node_ptr->features);
-	sview_part_sub_ptr->reason   = xstrdup(node_ptr->reason);
-
-	sview_part_sub_ptr->hl = hostlist_create(node_ptr->name);
-	
+	sview_part_sub_ptr->hl = hostlist_create("");
 	sview_part_sub_ptr->node_ptr_list = list_create(NULL);
 
-	list_push(sview_part_sub_ptr->node_ptr_list, node_ptr);
+	_update_sview_part_sub(sview_part_sub_ptr, node_ptr, node_scaling);
 
 	return sview_part_sub_ptr;
+}
+
+static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
+				  partition_info_t *part_ptr,
+				  node_info_t *node_ptr, 
+				  int node_scaling)
+{
+	sview_part_sub_t *sview_part_sub = NULL;
+	ListIterator itr = list_iterator_create(sview_part_info->sub_list);
+
+	while((sview_part_sub = list_next(itr))) {
+		if(sview_part_sub->node_state
+		   == node_ptr->node_state) {
+			_update_sview_part_sub(sview_part_sub, 
+					       node_ptr,
+					       node_scaling);
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	
+	if(!sview_part_sub) {
+		if((sview_part_sub = _create_sview_part_sub(
+			   part_ptr, node_ptr, node_scaling)))
+			list_push(sview_part_info->sub_list, 
+				  sview_part_sub);
+	}
+	return SLURM_SUCCESS;
+}
+
+static int _handle_subgrps(sview_part_info_t *sview_part_info,
+			   partition_info_t *part_ptr,
+			   node_info_t *node_ptr, uint32_t node_scaling)
+{
+/* 	char *tmp_char = NULL, *orig_name = NULL; */
+/* 	bitstr_t *tmp_bitmap = NULL; */
+	uint16_t size;
+/* 	bitstr_t *bitmap = NULL; */
+	int i=0, state_cnt = 2;
+/* 	bool set = 0; */
+	enum node_states state[] =
+		{ NODE_STATE_ALLOCATED, NODE_STATE_ERROR };
+
+/* 	if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,  */
+/* 					SELECT_NODEDATA_BITMAP_SIZE, */
+/* 					0, */
+/* 					&size) != SLURM_SUCCESS) */
+/* 		return SLURM_ERROR; */
+	
+/* 	bitmap = bit_alloc(size); */
+	
+	/* If we ever update the hostlist stuff to support this stuff
+	 * then we can use this to tack on the end of the node name
+	 * the subgrp stuff.  On bluegene systems this would be nice
+	 * to see the ionodes in certain states.
+	 */
+/* 	orig_name = node_ptr->name; */
+/* 	node_ptr->name = NULL; */
+	for(i=0; i<state_cnt; i++) {
+		if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
+						SELECT_NODEDATA_SUBCNT,
+						state[i],
+						&size) == SLURM_SUCCESS
+		   && size) {
+/* 			if(select_g_select_nodeinfo_get( */
+/* 				   node_ptr->select_nodeinfo,  */
+/* 				   SELECT_NODEDATA_BITMAP, */
+/* 				   state[i], */
+/* 				   &tmp_bitmap) != SLURM_SUCCESS) */
+/* 				continue; */
+			
+/* 			if(select_g_select_nodeinfo_get( */
+/* 				   node_ptr->select_nodeinfo,  */
+/* 				   SELECT_NODEDATA_STR, */
+/* 				   state[i], */
+/* 				   &tmp_char) != SLURM_SUCCESS) { */
+/* 				FREE_NULL_BITMAP(tmp_bitmap); */
+/* 				continue; */
+/* 			} */
+/* 			bit_or(bitmap, tmp_bitmap); */
+/* 			FREE_NULL_BITMAP(tmp_bitmap); */
+/* 			xfree(node_ptr->name); */
+/* 			node_ptr->name = xstrdup_printf("%s[%s]", */
+/* 						  orig_name, tmp_char); */
+/* 			xfree(tmp_char); */
+			node_scaling -= size;
+			node_ptr->node_state &= NODE_STATE_FLAGS;
+			node_ptr->node_state |= state[i];
+/* 			info("%s got %s of %u", node_ptr->name, */
+/* 			     node_state_string(node_ptr->node_state), size); */
+			_insert_sview_part_sub(sview_part_info, part_ptr,
+					       node_ptr, size);
+/* 			set = 1; */
+		}
+	}
+/* 	xfree(node_ptr->name); */
+/* 	if(set) { */
+/* 		char bitstring[BITSIZE]; */
+/* 		bit_not(bitmap); */
+/* 		bit_fmt(bitstring, BITSIZE, bitmap); */
+
+/* 		node_ptr->name = xstrdup_printf("%s[%s]", */
+/* 						orig_name, bitstring); */
+/* 	} else { */
+/* 		xfree(node_ptr->name); */
+/* 		node_ptr->name = orig_name; */
+/* 	} */
+
+	/* now handle the idle */
+	node_ptr->node_state &= NODE_STATE_FLAGS;
+	node_ptr->node_state |= NODE_STATE_IDLE; 
+/* 	info("%s got %s of %u", node_ptr->name, */
+/* 	     node_state_string(node_ptr->node_state), size); */
+	if((int)node_scaling > 0)
+		_insert_sview_part_sub(sview_part_info, part_ptr,
+				       node_ptr, node_scaling);
+	
+/* 	FREE_NULL_BITMAP(bitmap); */
+/* 	if(set) { */
+/* 		xfree(node_ptr->name); */
+/* 		node_ptr->name = orig_name; */
+/* 	} */
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -1429,41 +1436,45 @@ static int _sview_part_sort_aval_dec(sview_part_info_t* rec_a,
 	int size_a = rec_a->part_ptr->total_nodes;
 	int size_b = rec_b->part_ptr->total_nodes;
 
-	if (size_a > size_b)
+	if (size_a < size_b)
 		return -1;
-	else if (size_a < size_b)
+	else if (size_a > size_b)
 		return 1;
 
 	if(rec_a->part_ptr->nodes && rec_b->part_ptr->nodes) {
 		size_a = strcmp(rec_a->part_ptr->nodes, rec_b->part_ptr->nodes);
-		if (size_a > 0)
+		if (size_a < 0)
 			return -1;
-		else if (size_a < 0)
+		else if (size_a > 0)
 			return 1;
 	}
 	return 0;
 }
 
+static int _sview_sub_part_sort(sview_part_sub_t* rec_a,
+				sview_part_sub_t* rec_b)
+{
+	int size_a = rec_a->node_state & NODE_STATE_BASE;
+	int size_b = rec_b->node_state & NODE_STATE_BASE;
+	
+	if (size_a < size_b)
+		return -1;
+	else if (size_a > size_b)
+		return 1;
+	return 0;
+}
+
 static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				   node_info_msg_t *node_info_ptr,
-				   node_select_info_msg_t *node_select_ptr,
+				   block_info_msg_t *block_ptr,
 				   int changed)
 {
 	sview_part_info_t *sview_part_info = NULL;
-	sview_part_sub_t *sview_part_sub = NULL;
 	partition_info_t *part_ptr = NULL;
 	node_info_t *node_ptr = NULL;
 	static List info_list = NULL;
-	char *node_name = NULL;
-	int i, found = 0;
-	ListIterator itr = NULL;
-	hostlist_t hl;
-#ifdef HAVE_BG
-	int j;
-	bg_info_record_t *bg_info_record = NULL;
-	int node_scaling = part_info_ptr->partition_array[0].node_scaling;
-	char *slurm_user = NULL;
-#endif
+	int i, j2;
+
 	if(!changed && info_list) {
 		return info_list;
 	}
@@ -1477,152 +1488,46 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		return NULL;
 	}
 
-#ifdef HAVE_BG
-	slurm_user = xstrdup(slurmctld_conf.slurm_user_name);
-
-	for (i=0; i<node_info_ptr->record_count; i++) {
-		node_ptr = &(node_info_ptr->node_array[i]);
-		/* in each node_ptr we overload the threads var
-		 * with the number of cnodes in the used_cpus var
-		 * will be used to tell how many cnodes are
-		 * allocated and the cores will represent the cnodes
-		 * in an error state. So we can get an idle count by
-		 * subtracting those 2 numbers from the total possible
-		 * cnodes (which are the idle cnodes).
-		 */
-		node_ptr->threads = node_scaling;
-		node_ptr->cores = 0;
-		node_ptr->used_cpus = 0;
-	}
-
-	for (i=0; i<node_select_ptr->record_count; i++) {
-		bg_info_record = &(node_select_ptr->bg_info_array[i]);
-		
-		/* this block is idle we won't mark it */
-		if (bg_info_record->state != RM_PARTITION_ERROR
-		    && !strcmp(slurm_user, bg_info_record->owner_name))
-			continue;
-		_update_nodes_for_bg(node_scaling, node_info_ptr,
-				     bg_info_record);
-	}
-	xfree(slurm_user);
-
-#endif
-
-
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
 		if (!part_ptr->nodes || (part_ptr->nodes[0] == '\0'))
 			continue;	/* empty partition */
 		
 		sview_part_info = _create_sview_part_info(part_ptr);
-		hl = hostlist_create(part_ptr->nodes);
-		while((node_name = hostlist_shift(hl))) {
-			node_ptr = _find_node(node_name, node_info_ptr);
-			free(node_name);
-#ifdef HAVE_BG
-			for(j=0; j<3; j++) {
-				int norm = 0;
-				switch(j) {
-				case SVIEW_BG_IDLE_STATE:
-					/* check to see if the node is
-					 * down if so just report the
-					 * whole thing is down and break
-					 * out.
-					 */
-					if((node_ptr->node_state 
-					    & NODE_STATE_BASE)
-					   == NODE_STATE_DOWN) {
-						norm = 1;
-						break;
-					}
-
-					/* get the idle node count if
-					 * we don't have any error or
-					 * allocated nodes then we set
-					 * the norm flag and add it
-					 * as it's current state 
-					 */
-					node_ptr->threads -=
-						(node_ptr->cores
-						 + node_ptr->used_cpus);
-					if(node_ptr->threads == node_scaling)
-						norm = 1;
-					else {
-						node_ptr->node_state &=
-							NODE_STATE_FLAGS;
-						node_ptr->node_state |=
-							NODE_STATE_IDLE;
-					}
-					break;
-				case SVIEW_BG_ALLOC_STATE:
-					/* get the allocated node count */
-					if(!node_ptr->used_cpus) 
-						continue;
-					node_ptr->node_state &=
-						NODE_STATE_FLAGS;
-					node_ptr->node_state |=
-						NODE_STATE_ALLOCATED;
-					
-					node_ptr->threads =
-						node_ptr->used_cpus;
-					break;
-				case SVIEW_BG_ERROR_STATE:
-					/* get the error node count */
-					if(!node_ptr->cores) 
-						continue;
-					node_ptr->node_state &=
-						NODE_STATE_FLAGS;
-					node_ptr->node_state |= 
-						NODE_STATE_DRAIN;
-					node_ptr->threads = node_ptr->cores;
-					break;
-				default:
-					error("unknown state");
-					break;
-				}
-#endif
-			itr = list_iterator_create(sview_part_info->sub_list);
-			while((sview_part_sub = list_next(itr))) {
-				if(sview_part_sub->node_state
-				   == node_ptr->node_state) {
-					_update_sview_part_sub(
-						sview_part_sub, 
-						node_ptr,
-						part_ptr->node_scaling);
-					found = 1;
-					break;
-				}
-			}
-			list_iterator_destroy(itr);
-
-			if(!found) {
-				sview_part_sub = 
-					_create_sview_part_sub(
-						part_ptr,
-						node_ptr,
-						part_ptr->node_scaling);
-				if(sview_part_sub)
-					list_push(sview_part_info->sub_list, 
-						  sview_part_sub);
-			}
-
-			found = 0;
-#ifdef HAVE_BG
-			/* if we used the current state of
-			 * the node then we just continue.
-			 */
-			if(norm) 
-				break;
-			}
-#endif
-		}
-		hostlist_destroy(hl);
 		list_append(info_list, sview_part_info);
-	}
+		sview_part_info->color_inx = i % sview_colors_cnt;
 
-	list_sort(info_list,
-		  (ListCmpF)_sview_part_sort_aval_dec);
+		j2 = 0;
+		while(part_ptr->node_inx[j2] >= 0) {
+			int i2 = 0;
+			uint16_t subgrp_size = 0;
+			for(i2 = part_ptr->node_inx[j2];
+			    i2 <= part_ptr->node_inx[j2+1];
+			    i2++) {
+				node_ptr = &(node_info_ptr->node_array[i2]);
+				if(select_g_select_nodeinfo_get(
+					   node_ptr->select_nodeinfo, 
+					   SELECT_NODEDATA_SUBGRP_SIZE,
+					   0,
+					   &subgrp_size) == SLURM_SUCCESS
+				   && subgrp_size)
+					_handle_subgrps(sview_part_info,
+							part_ptr,
+							node_ptr,
+							g_node_scaling);
+				else
+					_insert_sview_part_sub(sview_part_info,
+							       part_ptr,
+							       node_ptr,
+							       g_node_scaling);
+				
+			}			
+			j2 += 2;
+		}
+		list_sort(sview_part_info->sub_list, 
+			  (ListCmpF)_sview_sub_part_sort);
+	}
+	list_sort(info_list, (ListCmpF)_sview_part_sort_aval_dec);
 
 	return info_list;
 }
@@ -1668,8 +1573,9 @@ need_refresh:
 				change_grid_color(
 					popup_win->grid_button_list,
 					part_ptr->node_inx[j],
-					part_ptr->node_inx[j+1], i,
-					true);
+					part_ptr->node_inx[j+1],
+					sview_part_info->color_inx,
+					true, 0);
 				j += 2;
 			}
 			_layout_part_record(treeview, sview_part_info, update);
@@ -1678,7 +1584,8 @@ need_refresh:
 		}
 	}
 	list_iterator_destroy(itr);
-	
+	post_setup_popup_grid_list(popup_win);
+
 	if(!found) {
 		if(!popup_win->not_found) { 
 			char *temp = "PARTITION DOESN'T EXSIST\n";
@@ -1728,6 +1635,8 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	static bool changed = 0;
 		
 	if(!force && ((now - last) < global_sleep_time)) {
+		if(*part_ptr != part_info_ptr)
+			error_code = SLURM_SUCCESS;
 		*part_ptr = part_info_ptr;
 		if(changed) 
 			return SLURM_SUCCESS;
@@ -1752,6 +1661,10 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 	}
 	
 	part_info_ptr = new_part_ptr;
+
+	if(*part_ptr != part_info_ptr) 
+		error_code = SLURM_SUCCESS;
+
 	*part_ptr = new_part_ptr;
 	return error_code;
 }
@@ -1964,14 +1877,14 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	static int view = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static node_info_msg_t *node_info_ptr = NULL;
-	static node_select_info_msg_t *node_select_ptr = NULL;
+	static block_info_msg_t *block_ptr = NULL;
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	List info_list = NULL;
 	int changed = 1;
-	int j=0, i=0;
+	int j=0;
 	sview_part_info_t *sview_part_info = NULL;
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
@@ -2024,8 +1937,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		goto end_it;
 	}
 
-	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
-							force_refresh))
+	if((block_error_code = get_new_info_block(&block_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!display_widget || view == ERROR_VIEW) 
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA)
@@ -2039,7 +1951,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		view = ERROR_VIEW;
 		if(display_widget)
 			gtk_widget_destroy(display_widget);
-		sprintf(error_char, "slurm_load_node_select: %s",
+		sprintf(error_char, "slurm_load_block: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(table, 
@@ -2054,7 +1966,7 @@ display_it:
 
 	info_list = _create_part_info_list(part_info_ptr,
 					   node_info_ptr,
-					   node_select_ptr,
+					   block_ptr,
 					   changed);
 	if(!info_list)
 		return;
@@ -2064,17 +1976,22 @@ display_it:
 		part_ptr = sview_part_info->part_ptr;
 		j=0;
 		while(part_ptr->node_inx[j] >= 0) {
-			sview_part_info->color = 
+			
 				change_grid_color(grid_button_list,
 						  part_ptr->node_inx[j],
 						  part_ptr->node_inx[j+1],
-						  i, true);
+						  sview_part_info->color_inx,
+						  true, 0);
 			j += 2;
 		}
-		i++;
 	}
 	list_iterator_destroy(itr);
-		
+	change_grid_color(grid_button_list, -1, -1, MAKE_WHITE, true, 0);
+	if(grid_speedup) {
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 0);
+		gtk_widget_set_sensitive(GTK_WIDGET(main_grid_table), 1);
+	}
+
 	if(view == ERROR_VIEW && display_widget) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
@@ -2089,7 +2006,8 @@ display_it:
 		/* since this function sets the model of the tree_view 
 		   to the treestore we don't really care about 
 		   the return value */
-		create_treestore(tree_view, display_data_part, SORTID_CNT);
+		create_treestore(tree_view, display_data_part,
+				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 	view = INFO_VIEW;
 	_update_info_part(info_list, GTK_TREE_VIEW(display_widget));
@@ -2107,7 +2025,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 	int block_error_code = SLURM_SUCCESS;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static node_info_msg_t *node_info_ptr = NULL;
-	static node_select_info_msg_t *node_select_ptr = NULL;
+	static block_info_msg_t *block_ptr = NULL;
 	specific_info_t *spec_info = popup_win->spec_info;
 	char error_char[100];
 	GtkWidget *label = NULL;
@@ -2170,8 +2088,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 		goto end_it;
 	}
 
-	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
-							force_refresh))
+	if((block_error_code = get_new_info_block(&block_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!spec_info->display_widget
 		    || spec_info->view == ERROR_VIEW) 
@@ -2185,7 +2102,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 		if(spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
 		spec_info->view = ERROR_VIEW;
-		sprintf(error_char, "slurm_load_node_select: %s",
+		sprintf(error_char, "slurm_load_block: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		spec_info->display_widget = gtk_widget_ref(label);
@@ -2198,7 +2115,7 @@ display_it:
 	
 	info_list = _create_part_info_list(part_info_ptr,
 					   node_info_ptr,
-					   node_select_ptr,
+					   block_ptr,
 					   changed);
 	if(!info_list)
 		return;		
@@ -2221,7 +2138,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data, 
-				 SORTID_CNT);
+				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
 	
 	setup_popup_grid_list(popup_win);
@@ -2274,11 +2191,13 @@ display_it:
 			change_grid_color(
 				popup_win->grid_button_list,
 				part_ptr->node_inx[j],
-				part_ptr->node_inx[j+1], i, false);
+				part_ptr->node_inx[j+1],
+				sview_part_info_ptr->color_inx, true, 0);
 			j += 2;
 		}
 	}
 	list_iterator_destroy(itr);
+	post_setup_popup_grid_list(popup_win);
 	 
 	_update_info_part(send_info_list, 
 			  GTK_TREE_VIEW(spec_info->display_widget));

@@ -154,13 +154,15 @@ static void _print_stdout(char *buf)
 		buf_ptr = tmp_ptr + 6;
 		tmp_ptr = strchr(buf_ptr, '\n');
 		if (tmp_ptr) {
-			write(1, buf_ptr, (tmp_ptr - buf_ptr + 1));
+			safe_write(1, buf_ptr, (tmp_ptr - buf_ptr + 1));
 			buf_ptr = tmp_ptr + 1;
 		} else {
-			write(1, buf_ptr, strlen(buf_ptr));
+			safe_write(1, buf_ptr, strlen(buf_ptr));
 			break;
 		}
 	}		
+rwfail:
+	return;
 }
 
 /*
@@ -205,7 +207,8 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 		argv[0] = xstrdup(path);
 		argv[1] = NULL;
 		close(1);
-		dup(pfd[1]);
+		if(dup(pfd[1]) == -1)
+			error("couldn't do the dup: %m");
 		close(2);
 		close(0);
 #ifdef SETPGRP_TWO_ARGS
@@ -378,6 +381,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->mem_bind_type = job->mem_bind_type;
 	job->envtp->distribution = -1;
 	job->envtp->ckpt_dir = xstrdup(job->ckpt_dir);
+	job->envtp->batch_flag = job->batch;
 	setup_env(job->envtp);
 	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
 	job->env = job->envtp->env;

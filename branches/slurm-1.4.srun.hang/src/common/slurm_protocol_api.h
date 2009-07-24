@@ -103,6 +103,16 @@ inline slurm_protocol_config_t *slurm_get_api_config(void);
  */
 uint16_t slurm_get_batch_start_timeout(void);
 
+/* slurm_get_resume_timeout
+ * RET ResumeTimeout value from slurm.conf
+ */
+uint16_t slurm_get_resume_timeout(void);
+
+/* slurm_get_suspend_time
+ * RET SuspendTime value from slurm.conf
+ */
+uint16_t slurm_get_suspend_time(void);
+
 /* slurm_get_complete_wait
  * RET CompleteWait value from slurm.conf
  */
@@ -326,6 +336,12 @@ char *slurm_get_accounting_storage_type(void);
  */
 char *slurm_get_accounting_storage_user(void);
 
+/* slurm_set_accounting_storage_user
+ * IN: char *user (name of file or database)
+ * RET 0 or error code
+ */
+int slurm_set_accounting_storage_user(char *user);
+
 /* slurm_get_accounting_storage_backup_host
  * returns the storage host from slurmctld_conf object
  * RET char *    - storage backup host,  MUST be xfreed by caller
@@ -337,6 +353,12 @@ char *slurm_get_accounting_storage_backup_host(void);
  * RET char *    - storage host,  MUST be xfreed by caller
  */
 char *slurm_get_accounting_storage_host(void);
+
+/* slurm_set_accounting_storage_host
+ * IN: char *host (name of file or database)
+ * RET 0 or error code
+ */
+int slurm_set_accounting_storage_host(char *host);
 
 /* slurm_get_accounting_storage_enforce
  * returns what level to enforce associations at
@@ -377,6 +399,12 @@ uint32_t slurm_get_accounting_storage_port(void);
  * RET 0 or error code
  */
 int slurm_set_accounting_storage_port(uint32_t storage_port);
+
+/* slurm_get_preempt_mode
+ * returns the PreemptMode value from slurmctld_conf object
+ * RET uint16_t   - PreemptMode value (See PREEMPT_MODE_* in slurm.h)
+ */
+uint16_t slurm_get_preempt_mode(void);
 
 /* slurm_get_jobacct_gather_type
  * returns the job accounting type from slurmctld_conf object

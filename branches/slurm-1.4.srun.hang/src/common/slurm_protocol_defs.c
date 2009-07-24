@@ -59,6 +59,9 @@
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
+#ifdef HAVE_BG
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#endif
 
 static void _free_all_job_info (job_info_msg_t *msg);
 
@@ -326,7 +329,10 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->reservation);
 		xfree(msg->resp_host);
 		xfree(msg->script);
-		select_g_free_jobinfo(&msg->select_jobinfo);
+		select_g_select_jobinfo_free(msg->select_jobinfo);
+		for (i = 0; i < msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
 		xfree(msg->wckey);
 		xfree(msg->work_dir);
 		xfree(msg);
@@ -353,6 +359,9 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		for (i = 0; i < msg->argc; i++)
 			xfree(msg->argv[i]);
 		xfree(msg->argv);
+		for (i = 0; i < msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
 
 		if (msg->environment) {
 			for (i = 0; i < msg->envc; i++)
@@ -360,7 +369,7 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 			xfree(msg->environment);
 		}
 
-		select_g_free_jobinfo(&msg->select_jobinfo);
+		select_g_select_jobinfo_free(msg->select_jobinfo);
 		slurm_cred_destroy(msg->cred);
 
 		xfree(msg);
@@ -382,8 +391,6 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->alloc_node);
 		xfree(job->command);
 		xfree(job->comment);
-		xfree(job->cpu_count_reps);
-		xfree(job->cpus_per_node);
 		xfree(job->dependency);
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
@@ -394,10 +401,11 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->node_inx);
 		xfree(job->nodes);
 		xfree(job->partition);
-		xfree(job->resv_name);
-		xfree(job->req_nodes);
 		xfree(job->req_node_inx);
-		select_g_free_jobinfo(&job->select_jobinfo);
+		xfree(job->req_nodes);
+		xfree(job->resv_name);
+		select_g_select_jobinfo_free(job->select_jobinfo);
+		free_select_job_res(&job->select_job_res);
 		xfree(job->state_desc);
 		xfree(job->wckey);
 		xfree(job->work_dir);
@@ -433,10 +441,7 @@ void slurm_free_update_node_msg(update_node_msg_t * msg)
 void slurm_free_update_part_msg(update_part_msg_t * msg)
 {
 	if (msg) {
-		xfree(msg->allow_alloc_nodes);
-		xfree(msg->allow_groups);
-		xfree(msg->name);
-		xfree(msg->nodes);
+		_slurm_free_partition_info_members((partition_info_t *)msg);
 		xfree(msg);
 	}
 }
@@ -454,9 +459,10 @@ void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 	if (msg) {
 		xfree(msg->accounts);
 		xfree(msg->features);
-		xfree(msg->partition);
+		xfree(msg->licenses);
 		xfree(msg->name);
 		xfree(msg->node_list);
+		xfree(msg->partition);
 		xfree(msg->users);
 		xfree(msg);
 	}
@@ -517,8 +523,12 @@ void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 {
 	if (msg) {
+		int i;
 		xfree(msg->nodes);
-		select_g_free_jobinfo(&msg->select_jobinfo);
+		select_g_select_jobinfo_free(msg->select_jobinfo);
+		for (i=0; i<msg->spank_job_env_size; i++)
+			xfree(msg->spank_job_env[i]);
+		xfree(msg->spank_job_env);
 		xfree(msg);
 	}
 }
@@ -565,6 +575,10 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 		}
 		xfree(msg->argv);
 	}
+	for (i = 0; i < msg->spank_job_env_size; i++) {
+		xfree(msg->spank_job_env[i]);
+	}
+	xfree(msg->spank_job_env);
 	if(msg->nnodes && msg->global_task_ids)
 		for(i=0; i<msg->nnodes; i++) {
 			xfree(msg->global_task_ids[i]);
@@ -805,6 +819,328 @@ void inline slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
         }
 }
 
+char *job_state_string(uint16_t inx)
+{
+	/* Process JOB_STATE_FLAGS */
+	if (inx & JOB_COMPLETING)
+		return "COMPLETING";
+	if (inx & JOB_CONFIGURING)
+		return "CONFIGURING";
+
+	/* Process JOB_STATE_BASE */
+	switch (inx & JOB_STATE_BASE) {
+		case JOB_PENDING:
+			return "PENDING";
+		case JOB_RUNNING:
+			return "RUNNING";
+		case JOB_SUSPENDED:
+			return "SUSPENDED";
+		case JOB_COMPLETE:
+			return "COMPLETED";
+		case JOB_CANCELLED:
+			return "CANCELLED";
+		case JOB_FAILED:
+			return "FAILED";
+		case JOB_TIMEOUT:
+			return "TIMEOUT";
+		case JOB_NODE_FAIL:
+			return "NODE_FAIL";
+		default:
+			return "?";
+	}
+}
+
+char *job_state_string_compact(uint16_t inx)
+{
+	/* Process JOB_STATE_FLAGS */
+	if (inx & JOB_COMPLETING)
+		return "CG";
+	if (inx & JOB_CONFIGURING)
+		return "CF";
+
+	/* Process JOB_STATE_BASE */
+	switch (inx & JOB_STATE_BASE) {
+		case JOB_PENDING:
+			return "PD";
+		case JOB_RUNNING:
+			return "R";
+		case JOB_SUSPENDED:
+			return "S";
+		case JOB_COMPLETE:
+			return "CD";
+		case JOB_CANCELLED:
+			return "CA";
+		case JOB_FAILED:
+			return "F";
+		case JOB_TIMEOUT:
+			return "TO";
+		case JOB_NODE_FAIL:
+			return "NF";
+		default:
+			return "?";
+	}
+}
+
+extern char *reservation_flags_string(uint16_t flags)
+{
+	char *flag_str = xstrdup("");
+
+	if (flags & RESERVE_FLAG_MAINT)
+		xstrcat(flag_str, "MAINT");
+	if (flags & RESERVE_FLAG_NO_MAINT) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_MAINT");
+	}
+	if (flags & RESERVE_FLAG_IGN_JOBS) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "IGNORE_JOBS");
+	}
+	if (flags & RESERVE_FLAG_DAILY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "DAILY");
+	}
+	if (flags & RESERVE_FLAG_NO_DAILY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_DAILY");
+	}
+	if (flags & RESERVE_FLAG_WEEKLY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "WEEKLY");
+	}
+	if (flags & RESERVE_FLAG_NO_WEEKLY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_WEEKLY");
+	}
+	if (flags & RESERVE_FLAG_SPEC_NODES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "SPEC_NODES");
+	}
+	return flag_str;
+}
+
+char *node_state_string(uint16_t inx)
+{
+	int  base            = (inx & NODE_STATE_BASE);
+	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
+	bool drain_flag      = (inx & NODE_STATE_DRAIN);
+	bool fail_flag       = (inx & NODE_STATE_FAIL);
+	bool maint_flag      = (inx & NODE_STATE_MAINT);
+	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
+	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
+
+	if (maint_flag) {
+		if (no_resp_flag)
+			return "MAINT*";
+		return "MAINT";
+	}
+	if (drain_flag) {
+		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
+			if (no_resp_flag)
+				return "DRAINING*";
+			return "DRAINING";
+		} else if (base == NODE_STATE_ERROR) {
+			if (no_resp_flag)
+				return "ERROR*";
+			return "ERROR";
+		} else {
+			if (no_resp_flag)
+				return "DRAINED*";
+			return "DRAINED";
+		}
+	}
+	if (fail_flag) {
+		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
+			if (no_resp_flag)
+				return "FAILING*";
+			return "FAILING";
+		} else {
+			if (no_resp_flag)
+				return "FAIL*";
+			return "FAIL";
+		}
+	}
+
+	if (inx == NODE_STATE_POWER_SAVE)
+		return "POWER_DOWN";
+	if (inx == NODE_STATE_POWER_UP)
+		return "POWER_UP";
+	if (base == NODE_STATE_DOWN) {
+		if (no_resp_flag)
+			return "DOWN*";
+		return "DOWN";
+	}
+
+	if (base == NODE_STATE_ALLOCATED) {
+		if (power_up_flag)
+			return "ALLOCATED#";
+		if (power_down_flag)
+			return "ALLOCATED~";
+		if (no_resp_flag)
+			return "ALLOCATED*";
+		if (comp_flag)
+			return "ALLOCATED+";
+		return "ALLOCATED";
+	}
+	if (comp_flag) {
+		if (no_resp_flag)
+			return "COMPLETING*";
+		return "COMPLETING";
+	}
+	if (base == NODE_STATE_IDLE) {
+		if (power_up_flag)
+			return "IDLE#";
+		if (power_down_flag)
+			return "IDLE~";
+		if (no_resp_flag)
+			return "IDLE*";
+		return "IDLE";
+	}
+	if (base == NODE_STATE_ERROR) {
+		if (power_up_flag)
+			return "ERROR#";
+		if (power_down_flag)
+			return "ERROR~";
+		if (no_resp_flag)
+			return "ERROR*";
+		return "ERROR";
+	}
+	if (base == NODE_STATE_MIXED) {
+		if (power_up_flag)
+			return "MIXED#";
+		if (power_down_flag)
+			return "MIXED~";
+		if (no_resp_flag)
+			return "MIXED*";
+		return "MIXED";
+	}
+	if (base == NODE_STATE_FUTURE) {
+		if (no_resp_flag)
+			return "FUTURE*";
+		return "FUTURE";
+	}
+	if (base == NODE_STATE_UNKNOWN) {
+		if (no_resp_flag)
+			return "UNKNOWN*";
+		return "UNKNOWN";
+	}
+	return "?";
+}
+
+char *node_state_string_compact(uint16_t inx)
+{
+	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
+	bool drain_flag      = (inx & NODE_STATE_DRAIN);
+	bool fail_flag       = (inx & NODE_STATE_FAIL);
+	bool maint_flag      = (inx & NODE_STATE_MAINT);
+	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool power_down_flag = (inx & NODE_STATE_POWER_SAVE);
+	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
+
+	inx = (uint16_t) (inx & NODE_STATE_BASE);
+
+	if (maint_flag) {
+		if (no_resp_flag)
+			return "MAINT*";
+		return "MAINT";
+	}
+	if (drain_flag) {
+		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
+			if (no_resp_flag)
+				return "DRNG*";
+			return "DRNG";
+		} else {
+			if (no_resp_flag)
+				return "DRAIN*";
+			return "DRAIN";
+		}
+	}
+	if (fail_flag) {
+		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
+			if (no_resp_flag)
+				return "FAILG*";
+			return "FAILG";
+		} else {
+			if (no_resp_flag)
+				return "FAIL*";
+			return "FAIL";
+		}
+	}
+
+	if (inx == NODE_STATE_POWER_SAVE)
+		return "POW_DN";
+	if (inx == NODE_STATE_POWER_UP)
+		return "POW_UP";
+	if (inx == NODE_STATE_DOWN) {
+		if (no_resp_flag)
+			return "DOWN*";
+		return "DOWN";
+	}
+
+	if (inx == NODE_STATE_ALLOCATED) {
+		if (power_up_flag)
+			return "ALLOC#";
+		if (power_down_flag)
+			return "ALLOC~";
+		if (no_resp_flag)
+			return "ALLOC*";
+		if (comp_flag)
+			return "ALLOC+";
+		return "ALLOC";
+	}
+	if (comp_flag) {
+		if (no_resp_flag)
+			return "COMP*";
+		return "COMP";
+	}
+	if (inx == NODE_STATE_IDLE) {
+		if (power_up_flag)
+			return "IDLE#";
+		if (power_down_flag)
+			return "IDLE~";
+		if (no_resp_flag)
+			return "IDLE*";
+		return "IDLE";
+	}
+	if (inx == NODE_STATE_ERROR) {
+		if (power_up_flag)
+			return "ERR#";
+		if (power_down_flag)
+			return "ERR~";
+		if (no_resp_flag)
+			return "ERR*";
+		return "ERR";
+	}
+	if (inx == NODE_STATE_MIXED) {
+		if (power_up_flag)
+			return "MIX#";
+		if (power_down_flag)
+			return "MIX~";
+		if (no_resp_flag)
+			return "MIX*";
+		return "MIX";
+	}
+	if (inx == NODE_STATE_FUTURE) {
+		if (no_resp_flag)
+			return "FUTR*";
+		return "FUTR";
+	}
+	if (inx == NODE_STATE_UNKNOWN) {
+		if (no_resp_flag)
+			return "UNK*";
+		return "UNK";
+	}
+	return "?";
+}
+
+
 extern void
 private_data_string(uint16_t private_data, char *str, int str_len)
 {
@@ -848,254 +1184,106 @@ private_data_string(uint16_t private_data, char *str, int str_len)
 		strcat(str, "none");
 }
 
-char *job_state_string(enum job_states inx)
+extern void
+accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 {
-	if (inx & JOB_COMPLETING)
-		return "COMPLETING";
-
-	switch (inx) {
-		case JOB_PENDING:
-			return "PENDING";
-		case JOB_RUNNING:
-			return "RUNNING";
-		case JOB_SUSPENDED:
-			return "SUSPENDED";
-		case JOB_COMPLETE:
-			return "COMPLETED";
-		case JOB_CANCELLED:
-			return "CANCELLED";
-		case JOB_FAILED:
-			return "FAILED";
-		case JOB_TIMEOUT:
-			return "TIMEOUT";
-		case JOB_NODE_FAIL:
-			return "NODE_FAIL";
-		default:
-			return "?";
+	if (str_len > 0)
+		str[0] = '\0';
+	if (str_len < 26) {
+		error("enforce: output buffer too small");
+		return;
 	}
+
+	if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
+		strcat(str, "associations"); //12 len
+	if (enforce & ACCOUNTING_ENFORCE_LIMITS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "limits"); //7 len
+	}
+	if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "wckeys"); //7 len
+	}
+	// total len 26
+
+	if (str[0] == '\0')
+		strcat(str, "none");
 }
 
-char *job_state_string_compact(enum job_states inx)
+extern char *conn_type_string(enum connection_type conn_type)
 {
-	if (inx & JOB_COMPLETING)
-		return "CG";
-
-	switch (inx) {
-		case JOB_PENDING:
-			return "PD";
-		case JOB_RUNNING:
-			return "R";
-		case JOB_SUSPENDED:
-			return "S";
-		case JOB_COMPLETE:
-			return "CD";
-		case JOB_CANCELLED:
-			return "CA";
-		case JOB_FAILED:
-			return "F";
-		case JOB_TIMEOUT:
-			return "TO";
-		case JOB_NODE_FAIL:
-			return "NF";
-		default:
-			return "?";
+	switch (conn_type) {
+	case (SELECT_MESH):
+		return "MESH";
+	case (SELECT_TORUS):
+		return "TORUS";
+	case (SELECT_SMALL):
+		return "SMALL";
+	case (SELECT_NAV):
+		return "NAV";
+#ifndef HAVE_BGL
+	case SELECT_HTC_S:
+		return "HTC_S";
+	case SELECT_HTC_D:
+		return "HTC_D";
+	case SELECT_HTC_V:
+		return "HTC_V";
+	case SELECT_HTC_L:
+		return "HTC_L";
+#endif
+	default:
+		return "";
 	}
+	return "";
 }
 
-extern char *reservation_flags_string(uint16_t flags)
+#ifdef HAVE_BGL
+extern char* node_use_string(enum node_use_type node_use)
 {
-	char *flag_str = xstrdup("");
-
-	if (flags & RESERVE_FLAG_MAINT)
-		xstrcat(flag_str, "MAINT");
-	if (flags & RESERVE_FLAG_NO_MAINT) {
-		if (flag_str[0])
-			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "NO_MAINT");
+	switch (node_use) {
+	case (SELECT_COPROCESSOR_MODE): 
+		return "COPROCESSOR"; 
+	case (SELECT_VIRTUAL_NODE_MODE): 
+		return "VIRTUAL"; 
+	default:
+		break;
 	}
-	if (flags & RESERVE_FLAG_DAILY) {
-		if (flag_str[0])
-			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "DAILY");
-	}
-	if (flags & RESERVE_FLAG_NO_DAILY) {
-		if (flag_str[0])
-			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "NO_DAILY");
-	}
-	if (flags & RESERVE_FLAG_WEEKLY) {
-		if (flag_str[0])
-			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "WEEKLY");
-	}
-	if (flags & RESERVE_FLAG_NO_WEEKLY) {
-		if (flag_str[0])
-			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "NO_WEEKLY");
-	}
-	if (flags & RESERVE_FLAG_SPEC_NODES) {
-		if (flag_str[0])
-			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "SPEC_NODES");
-	}
-	return flag_str;
+	return "";
 }
+#endif
 
-char *node_state_string(enum node_states inx)
+extern char *bg_block_state_string(uint16_t state)
 {
-	int  base         = (inx & NODE_STATE_BASE);
-	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
-	bool drain_flag   = (inx & NODE_STATE_DRAIN);
-	bool fail_flag    = (inx & NODE_STATE_FAIL);
-	bool maint_flag   = (inx & NODE_STATE_MAINT);
-	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
-	bool power_flag   = (inx & NODE_STATE_POWER_SAVE);
+	static char tmp[16];
 
-	if (maint_flag) {
-		if (no_resp_flag)
-			return "MAINT*";
-		return "MAINT";
+#ifdef HAVE_BG
+	switch ((rm_partition_state_t)state) {
+#ifdef HAVE_BGL
+		case RM_PARTITION_BUSY: 
+			return "BUSY";
+#else
+		case RM_PARTITION_REBOOTING: 
+			return "REBOOTING";
+#endif
+		case RM_PARTITION_CONFIGURING:
+			return "CONFIG";
+		case RM_PARTITION_DEALLOCATING:
+			return "DEALLOC";
+		case RM_PARTITION_ERROR:
+			return "ERROR";
+		case RM_PARTITION_FREE:
+			return "FREE";
+		case RM_PARTITION_NAV:
+			return "NAV";
+		case RM_PARTITION_READY:
+			return "READY";
 	}
-	if (drain_flag) {
-		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
-			if (no_resp_flag)
-				return "DRAINING*";
-			return "DRAINING";
-		} else {
-			if (no_resp_flag)
-				return "DRAINED*";
-			return "DRAINED";
-		}
-	}
-	if (fail_flag) {
-		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
-			if (no_resp_flag)
-				return "FAILING*";
-			return "FAILING";
-		} else {
-			if (no_resp_flag)
-				return "FAIL*";
-			return "FAIL";
-		}
-	}
-	if (inx == NODE_STATE_POWER_SAVE)
-		return "POWER_DOWN";
-	if (inx == NODE_STATE_POWER_UP)
-		return "POWER_UP";
-	if (base == NODE_STATE_DOWN) {
-		if (no_resp_flag)
-			return "DOWN*";
-		return "DOWN";
-	}
-	if (base == NODE_STATE_ALLOCATED) {
-		if (no_resp_flag)
-			return "ALLOCATED*";
-		if (comp_flag)
-			return "ALLOCATED+";
-		return "ALLOCATED";
-	}
-	if (comp_flag) {
-		if (no_resp_flag)
-			return "COMPLETING*";
-		return "COMPLETING";
-	}
-	if (base == NODE_STATE_IDLE) {
-		if (no_resp_flag)
-			return "IDLE*";
-		if (power_flag)
-			return "IDLE~";
-		return "IDLE";
-	}
-	if (base == NODE_STATE_FUTURE) {
-		if (no_resp_flag)
-			return "FUTURE*";
-		if (power_flag)
-			return "FUTURE~";
-		return "FUTURE";
-	}
-	if (base == NODE_STATE_UNKNOWN) {
-		if (no_resp_flag)
-			return "UNKNOWN*";
-		return "UNKNOWN";
-	}
-	return "?";
-}
+#endif
 
-char *node_state_string_compact(enum node_states inx)
-{
-	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
-	bool drain_flag   = (inx & NODE_STATE_DRAIN);
-	bool fail_flag    = (inx & NODE_STATE_FAIL);
-	bool maint_flag   = (inx & NODE_STATE_MAINT);
-	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
-	bool power_flag   = (inx & NODE_STATE_POWER_SAVE);
-
-	inx = (uint16_t) (inx & NODE_STATE_BASE);
-
-	if (maint_flag) {
-		if (no_resp_flag)
-			return "MAINT*";
-		return "MAINT";
-	}
-	if (drain_flag) {
-		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
-			if (no_resp_flag)
-				return "DRNG*";
-			return "DRNG";
-		} else {
-			if (no_resp_flag)
-				return "DRAIN*";
-			return "DRAIN";
-		}
-	}
-	if (fail_flag) {
-		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
-			if (no_resp_flag)
-				return "FAILG*";
-			return "FAILG";
-		} else {
-			if (no_resp_flag)
-				return "FAIL*";
-			return "FAIL";
-		}
-	}
-	if (inx == NODE_STATE_DOWN) {
-		if (no_resp_flag)
-			return "DOWN*";
-		return "DOWN";
-	}
-	if (inx == NODE_STATE_ALLOCATED) {
-		if (no_resp_flag)
-			return "ALLOC*";
-		if (comp_flag)
-			return "ALLOC+";
-		return "ALLOC";
-	}
-	if (comp_flag) {
-		if (no_resp_flag)
-			return "COMP*";
-		return "COMP";
-	}
-	if (inx == NODE_STATE_IDLE) {
-		if (no_resp_flag)
-			return "IDLE*";
-		if (power_flag)
-			return "IDLE~";
-		return "IDLE";
-	}
-	if (inx == NODE_STATE_FUTURE) {
-		if (no_resp_flag)
-			return "FUTR*";
-		if (power_flag)
-			return "FUTR~";
-		return "FUTR";
-	}
-	if (inx == NODE_STATE_UNKNOWN) {
-		if (no_resp_flag)
-			return "UNK*";
-		return "UNK";
-	}
-	return "?";
+	snprintf(tmp, sizeof(tmp), "%d", state);
+	return tmp;
 }
 
 /*
@@ -1108,10 +1296,26 @@ void slurm_free_resource_allocation_response_msg (
 				resource_allocation_response_msg_t * msg)
 {
 	if (msg) {
-		select_g_free_jobinfo(&msg->select_jobinfo);
+		select_g_select_jobinfo_free(msg->select_jobinfo);
 		xfree(msg->node_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
+		xfree(msg);
+	}
+}
+
+/*
+ * slurm_free_sbcast_cred_msg - free slurm resource allocation response 
+ *	message including an sbcast credential
+ * IN msg - pointer to response message from slurm_sbcast_lookup()
+ * NOTE: buffer is loaded by slurm_allocate_resources
+ */
+void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->node_addr);
+		xfree(msg->node_list);
+		delete_sbcast_cred(msg->sbcast_cred);
 		xfree(msg);
 	}
 }
@@ -1125,7 +1329,7 @@ void slurm_free_resource_allocation_response_msg (
 void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg)
 {
 	if (msg) {
-		select_g_free_jobinfo(&msg->select_jobinfo);
+		select_g_select_jobinfo_free(msg->select_jobinfo);
 		xfree(msg->node_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
@@ -1242,6 +1446,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->tmp_fs);
 		xfree(config_ptr->topology_plugin);
 		xfree(config_ptr->unkillable_program);
+		xfree(config_ptr->z_char);
 		xfree(config_ptr);
 	}
 }
@@ -1324,7 +1529,11 @@ static void _slurm_free_job_step_info_members (job_step_info_t * msg)
 {
 	if (msg != NULL) {
 		xfree(msg->partition);
+		xfree(msg->resv_ports);
 		xfree(msg->nodes);
+		xfree(msg->name);
+		xfree(msg->network);
+		xfree(msg->node_inx);
 		xfree(msg->ckpt_dir);
 	}
 }
@@ -1366,6 +1575,7 @@ static void _slurm_free_node_info_members(node_info_t * node)
 		xfree(node->features);
 		xfree(node->os);
 		xfree(node->reason);
+		select_g_select_nodeinfo_free(node->select_nodeinfo);
 	}
 }
 
@@ -1448,6 +1658,7 @@ static void _slurm_free_reserve_info_members(reserve_info_t * resv)
 	if (resv) {
 		xfree(resv->accounts);
 		xfree(resv->features);
+		xfree(resv->licenses);
 		xfree(resv->name);
 		xfree(resv->node_inx);
 		xfree(resv->node_list);
@@ -1480,8 +1691,9 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->fname);
 		xfree(msg->block);
+		xfree(msg->fname);
+		delete_sbcast_cred(msg->cred);
 		xfree(msg);
 	}
 }
@@ -1502,8 +1714,8 @@ extern void slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg)
 	}
 }
 
-void inline slurm_free_node_select_msg(
-                node_info_select_request_msg_t *msg)
+void inline slurm_free_block_info_request_msg(
+                block_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
@@ -1698,8 +1910,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_PRIORITY_FACTORS:
 		slurm_free_priority_factors_response_msg(data);
 		break;
-	case REQUEST_NODE_SELECT_INFO:
-		slurm_free_node_select_msg(data);
+	case REQUEST_BLOCK_INFO:
+		slurm_free_block_info_request_msg(data);
 		break;
 	case REQUEST_STEP_COMPLETE:
 		slurm_free_step_complete_msg(data);
@@ -1758,6 +1970,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_PING:		
 	case REQUEST_RECONFIGURE:
 	case REQUEST_CONTROL:
+	case REQUEST_TAKEOVER:
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case RESPONSE_FORWARD_FAILED:
 	case REQUEST_DAEMON_STATUS:
@@ -1834,3 +2047,20 @@ static void _make_lower(char *change)
 	}
 }
 
+/* Validate SPANK specified job environment does not contain any invalid
+ * names. Log failures using info() */
+extern bool valid_spank_job_env(char **spank_job_env, 
+			        uint32_t spank_job_env_size, uid_t uid)
+{
+	int i;
+
+	for (i=0; i<spank_job_env_size; i++) {
+		if ((strncmp(spank_job_env[i], "LD_PRELOAD=", 11) == 0) ||
+		    (strncmp(spank_job_env[i], "PATH=",        5) == 0)) {
+			info("Invalid spank_job_env from uid %d: %s",
+			     (int) uid, spank_job_env[i]);
+			return false;
+		}
+	}
+	return true;
+}

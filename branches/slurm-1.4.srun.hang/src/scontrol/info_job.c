@@ -82,11 +82,15 @@ _scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
 	if (all_flag)
 		show_flags |= SHOW_ALL;
 
+	if (detail_flag)
+		show_flags |= SHOW_DETAIL;
+
 	if (old_job_info_ptr) {
 		if (last_show_flags != show_flags)
 			old_job_info_ptr->last_update = (time_t) 0;
 		if (job_id) {
-			error_code = slurm_load_job(&job_info_ptr, job_id);
+			error_code = slurm_load_job(&job_info_ptr, job_id,
+						    show_flags);
 		} else {
 			error_code = slurm_load_jobs(
 					old_job_info_ptr->last_update,
@@ -101,7 +105,7 @@ _scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
  				printf ("slurm_load_jobs no change in data\n");
 		}
 	} else if (job_id) {
-		error_code = slurm_load_job(&job_info_ptr, job_id);
+		error_code = slurm_load_job(&job_info_ptr, job_id, show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &job_info_ptr,
 					     show_flags);
@@ -200,7 +204,6 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 {
 	int i;
 	node_info_t *node_info;
-	uint16_t node_state, base_state;
 	hostlist_t all_nodes, comp_nodes, down_nodes;
 	char node_buf[MAXHOSTRANGELEN];
 
@@ -208,16 +211,14 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	comp_nodes = hostlist_create("");
 	down_nodes = hostlist_create("");
 
-	node_info = node_info_msg->node_array;
 	for (i=0; i<node_info_msg->record_count; i++) {
-		node_state = node_info[i].node_state;
-		base_state = node_info[i].node_state & NODE_STATE_BASE;
-		if ((node_state & NODE_STATE_COMPLETING) && 
+		node_info = &(node_info_msg->node_array[i]);
+		if (IS_NODE_COMPLETING(node_info) && 
 		    (_in_node_bit_list(i, job_ptr->node_inx)))
-			hostlist_push_host(comp_nodes, node_info[i].name);
-		else if ((base_state == NODE_STATE_DOWN) &&
-			 (hostlist_find(all_nodes, node_info[i].name) != -1))
-			hostlist_push_host(down_nodes, node_info[i].name);
+			hostlist_push_host(comp_nodes, node_info->name);
+		else if (IS_NODE_DOWN(node_info) &&
+			 (hostlist_find(all_nodes, node_info->name) != -1))
+			hostlist_push_host(down_nodes, node_info->name);
 	}
 
 	fprintf(stdout, "JobId=%u ", job_ptr->job_id);
@@ -292,7 +293,7 @@ extern void
 scontrol_print_step (char *job_step_id_str)
 {
 	int error_code, i;
-	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
+	uint32_t job_id = NO_VAL, step_id = NO_VAL;
 	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr;
 	job_step_info_t * job_step_ptr;
@@ -303,10 +304,8 @@ scontrol_print_step (char *job_step_id_str)
 
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
-		if (next_str[0] == '.') {
+		if (next_str[0] == '.') 
 			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
-			step_id_set = 1;
-		}
 	}
 
 	if (all_flag)
@@ -362,9 +361,6 @@ scontrol_print_step (char *job_step_id_str)
 
 	job_step_ptr = job_step_info_ptr->job_steps ;
 	for (i = 0; i < job_step_info_ptr->job_step_count; i++) {
-		if (step_id_set && (step_id == 0) && 
-		    (job_step_ptr[i].step_id != 0)) 
-			continue;
 		slurm_print_job_step_info (stdout, & job_step_ptr[i], 
 		                           one_liner ) ;
 	}

@@ -66,6 +66,7 @@ GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
 GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
 GtkActionGroup *admin_action_group = NULL;
+int grid_speedup = 0;
 
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
@@ -119,7 +120,7 @@ void *_page_thr(void *arg)
 	GtkTable *table = page->table;
 	display_data_t *display_data = &main_display_data[num];
 	static int thread_count = 0;
-
+/* 	DEF_TIMERS; */
 	xfree(page);
 	
 	if(!grid_init) {
@@ -138,11 +139,12 @@ void *_page_thr(void *arg)
 			return NULL;
 	}
 	gdk_threads_enter();
-	sview_reset_grid();
+	//sview_reset_grid();
 	thread_count++;
 	gdk_flush();
 	gdk_threads_leave();
 	while(page_running[num]) {		
+/* 		START_TIMER; */
 		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
 		sview_init_grid();
@@ -150,7 +152,8 @@ void *_page_thr(void *arg)
 		gdk_flush();
 		gdk_threads_leave();
 		g_static_mutex_unlock(&sview_mutex);
-				
+/* 		END_TIMER; */
+/* 		g_print("got for initeration: %s\n", TIME_STR); */
 		sleep(global_sleep_time);
 		
 		gdk_threads_enter();
@@ -180,7 +183,7 @@ void *_grid_init_thr(void *arg)
 	GtkTable *table = NULL;
 	int rc = SLURM_SUCCESS;
 		
-	while(!grid_init) {
+	while(!grid_init && !fini) {
 		gdk_threads_enter();
 		page = gtk_notebook_get_current_page(
 			GTK_NOTEBOOK(main_notebook));
@@ -349,9 +352,13 @@ static gboolean _delete(GtkWidget *widget,
                         GtkWidget *event,
                         gpointer data)
 {
-	gtk_main_quit ();
-	list_destroy(popup_list);
 	fini = 1;
+	gtk_main_quit();
+	ba_fini();
+	if(popup_list)
+		list_destroy(popup_list);
+	if(grid_button_list)
+		list_destroy(grid_button_list);
 	return FALSE;
 }
 
@@ -523,7 +530,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_add_toggle_actions(action_group, toggle_entries, 
 					   G_N_ELEMENTS(toggle_entries), 
 					   NULL);
-	admin_action_group = gtk_action_group_new ("MenuActions");
+	admin_action_group = gtk_action_group_new ("MenuAdminActions");
 	gtk_action_group_add_actions(admin_action_group, admin_entries, 
 				     G_N_ELEMENTS(admin_entries),
 				     window);
@@ -547,6 +554,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	/* Finally, return the actual menu bar created by the item factory. */
 	return gtk_ui_manager_get_widget (ui_manager, "/main");
 }
+
 void *_popup_thr_main(void *arg)
 {
 	popup_thr(arg);		
@@ -582,6 +590,9 @@ int main(int argc, char *argv[])
 	GtkBin *bin = NULL;
 	GtkViewport *view = NULL;
 	int i=0;
+
+	if(getenv("SVIEW_GRID_SPEEDUP"))
+		grid_speedup = 1;
 	
 	_init_pages();
 	g_thread_init(NULL);
@@ -612,7 +623,7 @@ int main(int argc, char *argv[])
 			 G_CALLBACK(_delete), NULL);
 	
 	gtk_window_set_title(GTK_WINDOW(main_window), "Sview");
-	gtk_window_set_default_size(GTK_WINDOW(main_window), 700, 450);
+	gtk_window_set_default_size(GTK_WINDOW(main_window), 1000, 450);
 	gtk_container_set_border_width(
 		GTK_CONTAINER(GTK_DIALOG(main_window)->vbox), 1);
 	/* Create the main notebook, place the position of the tabs */

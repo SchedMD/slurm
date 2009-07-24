@@ -43,7 +43,8 @@ static int _split_block(List block_list, List new_blocks,
 			bg_record_t *bg_record, int cnodes);
 
 static int _breakup_blocks(List block_list, List new_blocks,
-			   ba_request_t *request, List my_block_list);
+			   ba_request_t *request, List my_block_list,
+			   bool only_free, bool only_small);
 
 /*
  * create_dynamic_block - create new block(s) to be used for a new
@@ -182,14 +183,20 @@ extern List create_dynamic_block(List block_list,
 		request->conn_type = SELECT_SMALL;
 		new_blocks = list_create(destroy_bg_record);
 		if(_breakup_blocks(block_list, new_blocks, 
-				   request, my_block_list)
-		   != SLURM_SUCCESS) {
-			list_destroy(new_blocks);
-			new_blocks = NULL;
-			debug2("small block not able to be placed");
-			//rc = SLURM_ERROR;
-		} else 
+				   request, my_block_list,
+				   true, true)
+		   == SLURM_SUCCESS) 
 			goto finished;
+
+		if(_breakup_blocks(block_list, new_blocks, 
+				   request, my_block_list,
+				   true, false)
+		   == SLURM_SUCCESS) 
+			goto finished;
+		
+		list_destroy(new_blocks);
+		new_blocks = NULL;
+		debug2("small block not able to be placed inside others");
 	}
 
 	if(request->conn_type == SELECT_NAV)
@@ -212,92 +219,74 @@ extern List create_dynamic_block(List block_list,
 		goto finished;
 	} 
 	
-	if(!list_count(block_list) || !my_block_list) {
-		bg_record = NULL;
-		goto no_list;
-	}
-
-	/*Try to put block starting in the smallest of the exisiting blocks*/
-	if(!request->start_req) {
-		itr = list_iterator_create(block_list);
-		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-			request->rotate_count = 0;
-			request->elongate_count = 1;
+	/* try on free midplanes */
+	rc = SLURM_SUCCESS;
+	if(results)
+		list_flush(results);
+	else
+		results = list_create(NULL);
+	
+	if (allocate_block(request, results)) 
+		goto setup_records;
+	
+	debug2("allocate failure for size %d base "
+	       "partitions of free midplanes", 
+	       request->size);
+	rc = SLURM_ERROR;
 		
-			/* Here we are only looking for the first
-			   block on the midplane.  So either the count
-			   is greater or equal than
-			   bg_conf->bp_node_cnt or the first bit is
-			   set in the ionode_bitmap.
-			*/
-			if(bg_record->job_running == NO_JOB_RUNNING 
-			   && ((bg_record->node_cnt >= bg_conf->bp_node_cnt)
-			       || (bit_ffs(bg_record->ionode_bitmap) == 0))) {
-				
-				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-					request->start[i] = 
-						bg_record->start[i];
-				debug2("allocating %s %c%c%c %d",
-				       bg_record->nodes,
-				       alpha_num[request->start[X]],
-				       alpha_num[request->start[Y]],
-				       alpha_num[request->start[Z]],
-				       request->size);
-				request->start_req = 1;
-				rc = SLURM_SUCCESS;
-				if(results)
-					list_delete_all(
-						results,
-						&empty_null_destroy_list, "");
-				else
-					results = list_create(NULL);
-				if (!allocate_block(request, results)){
-					debug2("1 allocate failure for size %d "
-					       "base partitions", 
-					       request->size);
-					rc = SLURM_ERROR;
-				} else 
-					break;
-			}
-		}
-		list_iterator_destroy(itr);
-		
-		request->start_req = 0;
-		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-			request->start[i] = (uint16_t) NO_VAL;
-	}
-
-no_list:
-	if(!bg_record) {		
-		rc = SLURM_SUCCESS;
-		if(results)
-			list_delete_all(results, 
-					&empty_null_destroy_list, "");
-		else
-			results = list_create(NULL);
-		if (!allocate_block(request, results)) {
-			debug2("allocate failure for size %d base partitions", 
-			       request->size);
-			rc = SLURM_ERROR;
-		}
-	}
-
-	if(rc != SLURM_SUCCESS) 
+	if(!list_count(block_list) || !my_block_list) 
 		goto finished;
 	
-	/*set up bg_record(s) here */
-	new_blocks = list_create(destroy_bg_record);
+	/*Try to put block starting in the smallest of the exisiting blocks*/
+	itr = list_iterator_create(block_list);
+	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+		/* never check a block with a job running */
+		if(bg_record->job_running != NO_JOB_RUNNING)
+			continue;
+		
+		/* Here we are only looking for the first
+		   block on the midplane.  So either the count
+		   is greater or equal than
+		   bg_conf->bp_node_cnt or the first bit is
+		   set in the ionode_bitmap.
+		*/
+		if((bg_record->node_cnt < bg_conf->bp_node_cnt)
+		   && (bit_ffs(bg_record->ionode_bitmap) != 0))
+			continue;
+		
+		debug2("removing %s for request %d",
+		       bg_record->nodes, request->size);
+		remove_block(bg_record->bg_block_list, (int)NO_VAL);
+		rc = SLURM_SUCCESS;
+		if(results)
+			list_flush(results);
+		else
+			results = list_create(NULL);
+		if (allocate_block(request, results)) 
+			break;
 
-	blockreq.block = request->save_name;
+		debug2("allocate failure for size %d base partitions", 
+		       request->size);
+		rc = SLURM_ERROR;
+	}
+	list_iterator_destroy(itr);
+
+setup_records:
+	if(rc == SLURM_SUCCESS) {
+		/*set up bg_record(s) here */
+		new_blocks = list_create(destroy_bg_record);
+		
+		blockreq.block = request->save_name;
 #ifdef HAVE_BGL
-	blockreq.blrtsimage = request->blrtsimage;
+		blockreq.blrtsimage = request->blrtsimage;
 #endif
-	blockreq.linuximage = request->linuximage;
-	blockreq.mloaderimage = request->mloaderimage;
-	blockreq.ramdiskimage = request->ramdiskimage;
-	blockreq.conn_type = request->conn_type;
-
-	add_bg_record(new_blocks, results, &blockreq, 0, 0);
+		blockreq.linuximage = request->linuximage;
+		blockreq.mloaderimage = request->mloaderimage;
+		blockreq.ramdiskimage = request->ramdiskimage;
+		blockreq.conn_type = request->conn_type;
+		
+		add_bg_record(new_blocks, results, &blockreq, 0, 0);		
+	}
 
 finished:
 	reset_all_removed_bps();
@@ -577,12 +566,12 @@ finished:
 }
 
 static int _breakup_blocks(List block_list, List new_blocks,
-			   ba_request_t *request, List my_block_list)
+			   ba_request_t *request, List my_block_list,
+			   bool only_free, bool only_small)
 {
 	int rc = SLURM_ERROR;
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL, bit_itr = NULL;
-	int search_cnt = 0;
 	int total_cnode_cnt=0;
 	char tmp_char[256];
 	bitstr_t *ionodes = bit_alloc(bg_conf->numpsets);
@@ -613,25 +602,23 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		break;				
 	}
 
-	itr = list_iterator_create(block_list);	
 	/* First try with free blocks a midplane or less.  Then try with the
 	 * smallest blocks.
 	 */
-again:		
+	itr = list_iterator_create(block_list);	
 	while ((bg_record = list_next(itr))) {
+		/* never look at a block if a job is running */
 		if(bg_record->job_running != NO_JOB_RUNNING)
 			continue;
 		/* on the third time through look for just a block
 		 * that isn't used */
 		
 		/* check for free blocks on the first and second time */
-		if((search_cnt < 2)
-		   && (bg_record->state != RM_PARTITION_FREE))
-				continue;
+		if(only_free && (bg_record->state != RM_PARTITION_FREE))
+			continue;
 		/* check small blocks first */
-		if((search_cnt == 0)
-		   && (bg_record->node_cnt > bg_conf->bp_node_cnt))
-				continue;
+		if(only_small && (bg_record->node_cnt > bg_conf->bp_node_cnt))
+			continue;
 		
 		if (request->avail_node_bitmap &&
 		    !bit_super_set(bg_record->bitmap,
@@ -728,14 +715,6 @@ again:
 		break;
 	}
 	
-	if(!bg_record && (search_cnt < 2)) {
-		search_cnt++;
-		list_iterator_reset(itr);
-		bit_nclear(ionodes, 0, (bg_conf->numpsets-1));
-		total_cnode_cnt = 0;		
-		goto again;
-	}
-
 	if(bg_record) {
 		List temp_list = NULL;
 		bg_record_t *found_record = NULL;
@@ -774,7 +753,6 @@ again:
 		remove_from_bg_list(bg_lists->main, found_record);
 		temp_list = list_create(NULL);
 		list_push(temp_list, found_record);
-		num_block_to_free++;
 		free_block_list(temp_list);
 		list_destroy(temp_list);
 		rc = SLURM_SUCCESS;

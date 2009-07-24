@@ -5,7 +5,7 @@
 #
 # build options      .rpmmacros options      change to default action
 # ===============    ====================    ========================
-# --with aix         %_with_aix         1    build aix-federation RPM
+# --with aix         %_with_aix         1    build aix RPM
 # --with authd       %_with_authd       1    build auth-authd RPM
 # --with auth_none   %_with_auth_none   1    build auth-none RPM
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
@@ -92,8 +92,24 @@ Requires: slurm-plugins
 BuildRequires: python
 %endif
 
+$ifos solaris
+Requires:	SUNWgnome-base-libs
+BuildRequires:	SUNWgnome-base-libs
+
+Requires:	SUNWopenssl
+BuildRequires:	SUNWopenssl
+
+BuildRequires:	SUNWaconf
+BuildRequires:	SUNWgnu-automake-110
+BuildRequires:	SUNWlibtool
+BuildRequires:	SUNWgcc
+BuildRequires:	SUNWgnome-common-devel
+%endif
+
 %if %{?chaos}0
+BuildRequires: gtk2-devel >= 2.7.1
 BuildRequires: ncurses-devel
+BuildRequires: pkgconfig
 %endif
 
 %if %{slurm_with pam}
@@ -244,12 +260,12 @@ Requires: slurm-perlapi
 Wrappers to write directly to the slurmdb.
 
 %if %{slurm_with aix}
-%package aix-federation
+%package aix
 Summary: SLURM interfaces to IBM AIX and Federation switch.
 Group: System Environment/Base
 Requires: slurm
 BuildRequires: proctrack >= 3
-%description aix-federation
+%description aix
 SLURM plugins for IBM AIX and Federation switch.
 %endif
 
@@ -263,6 +279,13 @@ BuildRequires: job
 SLURM process tracking plugin for SGI job containers.
 (See http://oss.sgi.com/projects/pagg).
 %endif
+
+%package sjstat
+Summary: Perl tool to print SLURM job state information.
+Group: Development/System
+Requires: slurm
+%description sjstat
+Perl tool to print SLURM job state information.
 
 #############################################################################
 
@@ -299,6 +322,7 @@ fi
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurmdbd.conf.example
 install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
+install -D -m755 contribs/sjstat ${RPM_BUILD_ROOT}%{_bindir}/sjstat
 
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
@@ -318,6 +342,13 @@ install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/fed
 rm ${RPM_BUILD_ROOT}%{_bindir}/srun
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
 %endif
+
+LIST=./aix.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
+  echo %{_libdir}/slurm/proctrack_aix.so               >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so  &&
+  echo %{_libdir}/slurm/switch_federation.so           >> $LIST
 
 LIST=./slurmdbd.files
 touch $LIST
@@ -339,7 +370,7 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
    echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
-   echo %{_libdir}/slurm/task_affinity.so             >> $LIST
+   echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 
 #############################################################################
 
@@ -472,7 +503,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
-%{_libdir}/slurm/sched_gang.so
 %{_libdir}/slurm/sched_wiki.so
 %{_libdir}/slurm/sched_wiki2.so
 %{_libdir}/slurm/select_cons_res.so
@@ -510,10 +540,8 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %if %{slurm_with aix}
-%files aix-federation
+%files -f aix.files aix
 %defattr(-,root,root)
-%{_libdir}/slurm/switch_federation.so 
-%{_libdir}/slurm/proctrack_aix.so
 %{_libdir}/slurm/checkpoint_aix.so
 %config %{_sysconfdir}/federation.conf.example
 %endif
@@ -524,6 +552,11 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_libdir}/slurm/proctrack_sgi_job.so
 %endif
+#############################################################################
+
+%files sjstat
+%defattr(-,root,root)
+%{_bindir}/sjstat
 #############################################################################
 
 %pre

@@ -126,6 +126,9 @@ struct client_io_info {
 	int  ltaskid_stdout, ltaskid_stderr;
 	bool labelio;
 	int  label_width;
+
+	/* true if writing to a file, false if writing to a socket */
+	bool is_local_file;
 };
 
 
@@ -484,19 +487,8 @@ static bool
 _local_file_writable(eio_obj_t *obj)
 {
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
-	int rc;
 
 	xassert(client->magic == CLIENT_IO_MAGIC);
-
-	if (obj->shutdown) {
-		if (obj->fd >= 0) {
-			do {
-				rc = close(obj->fd);
-			} while (rc == -1 && errno == EINTR);
-			obj->fd = -1;
-		}
-		return false;
-	}
 
 	if (client->out_eof == true)
 		return false;
@@ -962,7 +954,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		/* open file on task's stdin */
 		debug5("  stdin file name = %s", task->ifname);
 		if ((task->stdin_fd = open(task->ifname, O_RDONLY)) == -1) {
-			error("Could not open stdin file: %m");
+			error("Could not open stdin file %s: %m", task->ifname);
 			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stdin_fd);
@@ -1016,6 +1008,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		debug5("  stdout file name = %s", task->ofname);
 		task->stdout_fd = open(task->ofname, file_flags, 0666);
 		if (task->stdout_fd == -1) {
+			error("Could not open stdout file %s: %m",
+			      task->ofname);
 			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stdout_fd);
@@ -1045,15 +1039,16 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 #ifdef HAVE_PTY_H
 	if (job->pty) {
 		if (task->gtid == 0) {
+			/* Make a file descriptor for the task to write to, but
+			   don't make a separate one read from, because in pty 
+			   mode we can't distinguish between stdout and stderr
+			   coming from the remote shell.  Both streams from the
+			   shell will go to task->stdout_fd, which is okay in 
+			   pty mode because any output routed through the stepd
+			   will be displayed. */
 			task->stderr_fd = dup(task->stdin_fd);
 			fd_set_close_on_exec(task->stderr_fd);
-			task->from_stderr = dup(task->to_stdin);
-			fd_set_close_on_exec(task->from_stderr);
-			fd_set_nonblocking(task->from_stderr);
-			task->err = _create_task_out_eio(task->from_stderr,
-						 SLURM_IO_STDERR, job, task);
-			list_append(job->stderr_eio_objs, (void *)task->err);
-			eio_new_initial_obj(job->eio, (void *)task->err);
+			task->from_stderr = -1;
 		} else {
 			xfree(task->efname);
 			task->efname = xstrdup("/dev/null");
@@ -1071,6 +1066,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		debug5("  stderr file name = %s", task->efname);
 		task->stderr_fd = open(task->efname, file_flags, 0666);
 		if (task->stderr_fd == -1) {
+			error("Could not open stderr file %s: %m",
+			      task->efname);
 			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stderr_fd);
@@ -1294,7 +1291,7 @@ io_close_all(slurmd_job_t *job)
 	 *  and log facility may still try to write to stderr.
 	 */
 	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
-		error("Unable to open /dev/null: %m");
+		error("Could not open /dev/null: %m");
 	} else {
 		if (dup2(devnull, STDERR_FILENO) < 0)
 			error("Unable to dup /dev/null onto stderr\n");
@@ -1306,11 +1303,39 @@ io_close_all(slurmd_job_t *job)
 	eio_signal_shutdown(job->eio);
 }
 
+void 
+io_close_local_fds(slurmd_job_t *job)
+{
+	ListIterator clients;
+	eio_obj_t *eio;
+	int rc;
+	struct client_io_info *client;
+
+	if (job == NULL || job->clients == NULL)
+		return;
+
+	clients = list_iterator_create(job->clients);
+	while((eio = list_next(clients))) {
+		client = (struct client_io_info *)eio->arg;
+		if (client->is_local_file) {
+			if (eio->fd >= 0) {
+				do {
+					rc = close(eio->fd);
+				} while (rc == -1 && errno == EINTR);
+				eio->fd = -1;
+			}
+		}
+	}
+}
+
+
+
 static void *
 _io_thr(void *arg)
 {
 	slurmd_job_t *job = (slurmd_job_t *) arg;
 	sigset_t set;
+	int rc;
 
 	/* A SIGHUP signal signals a reattach to the mgr thread.  We need
 	 * to block SIGHUP from being delivered to this thread so the mgr
@@ -1322,8 +1347,8 @@ _io_thr(void *arg)
 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	debug("IO handler started pid=%lu", (unsigned long) getpid());
-	eio_handle_mainloop(job->eio);
-	debug("IO handler exited");
+	rc = eio_handle_mainloop(job->eio);
+	debug("IO handler exited, rc=%d", rc);
 	return (void *)1;
 }
 
@@ -1345,11 +1370,6 @@ io_create_local_client(const char *filename, int file_flags,
 
 	fd = open(filename, file_flags, 0666);
 	if (fd == -1) {
-		/* error("Could not open stdout file: %m");
-		task->ofname = fname_create(job, "slurm-%J.out", 0);
-		fd = open(task->ofname, file_flags, 0666);
-		if (fd == -1)
-			return SLURM_ERROR; */
 		return ESLURMD_IO_ERROR;
 	}
 	fd_set_close_on_exec(fd);
@@ -1365,11 +1385,13 @@ io_create_local_client(const char *filename, int file_flags,
 	client->ltaskid_stdout = stdout_tasks;
 	client->ltaskid_stderr = stderr_tasks;
 	client->labelio = labelio;
+	client->is_local_file = true;
 
 	client->label_width = 1;
 	tmp = job->ntasks-1;
 	while ((tmp /= 10) > 0)
 		client->label_width++;
+
 
 	obj = eio_obj_create(fd, &local_file_ops, (void *)client);
 	list_append(job->clients, (void *)obj);
@@ -1438,6 +1460,7 @@ io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job,
 	client->ltaskid_stderr = stderr_tasks;
 	client->labelio = false;
 	client->label_width = 0;
+	client->is_local_file = false;
 
 	obj = eio_obj_create(sock, &client_ops, (void *)client);
 	list_append(job->clients, (void *)obj);
@@ -1497,6 +1520,7 @@ io_client_connect(srun_info_t *srun, slurmd_job_t *job)
 	client->ltaskid_stderr = -1;     /* accept from all tasks */
 	client->labelio = false;
 	client->label_width = 0;
+	client->is_local_file = false;
 
 	/* client object adds itself to job->clients in _client_writable */
 

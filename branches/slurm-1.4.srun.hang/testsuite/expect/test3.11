@@ -277,17 +277,18 @@ expect {
 #
 set badtests "
 	{}
-	{Duration=5   Nodes=$def_node   User=$user_name}
-	{StartTime=now   Nodes=$def_node   User=$user_name}
-	{StartTime=midnight   Duration=600   User=$user_name}
-	{StartTime=now   Duration=5   Nodes=ALL}
-	{StartTime=now   Duration=5   NodeCnt=  Nodes=   User=$user_name}
-	{StartTime=now   Duration=5   User=$user_name}
-	{StartTime=blah   Duration=5   Nodes=$def_node   User=$user_name}
-	{StartTime=now   Duration=foo   Nodes=$def_node   User=$user_name}
-	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=badpartname}
-	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=badtype}
-	{StartTime=now+10minutes   EndTime=now   Nodes=$def_node   User=$user_name}
+	{Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=midnight   Duration=600   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=ALL Flags=ignore_jobs}
+	{StartTime=now   Duration=5   NodeCnt=  Nodes=   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   User=$user_name Flags=ignore_jobs}
+	{StartTime=blah   Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=foo   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=badpartname Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=badtype,ignore_jobs}
+	{StartTime=now+10minutes   EndTime=now   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name Licenses=DUMMY_FOR_TESTING Flags=ignore_jobs}
 "
 #	{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
 
@@ -308,13 +309,13 @@ if {[test_super_user] == 0} {
 }
 
 set goodtests "
-	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name}
-	{StartTime=now+5minutes   EndTime=now+10minutes   Nodes=$def_node   User=$user_name}
-	{StartTime=midnight   Duration=600   Nodes=$def_node   User=$user_name}
-	{StartTime=now   Duration=5   Nodes=ALL   User=$user_name}
-	{StartTime=now   Duration=5   NodeCnt=1   User=$user_name}
-	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=$def_partition}
-	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now+5minutes   EndTime=now+10minutes   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=midnight   Duration=600   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=ALL   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   NodeCnt=1   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=$def_partition Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint Flags=ignore_jobs}
 "
 foreach test $goodtests {
 	set ret_code [create_res $test 0]

@@ -127,7 +127,10 @@ int main(int argc, char *argv[])
 		
 		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY)
 			msg = "Slurm job queue full, sleeping and retrying.";
-		else if (errno == EAGAIN) {
+		else if (errno == ESLURM_NODES_BUSY) {
+			msg = "Job step creation temporarily disabled, "
+			      "retrying";
+		} else if (errno == EAGAIN) {
 			msg = "Slurm temporarily unable to accept job, "
 			      "sleeping and retrying.";
 		} else
@@ -139,6 +142,8 @@ int main(int argc, char *argv[])
 
 		if (retries)
 			debug(msg);
+		else if (errno == ESLURM_NODES_BUSY)
+			info(msg);	/* Not an error, powering up nodes */
 		else
 			error(msg);
 		sleep (++retries);
@@ -303,6 +308,12 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->ckpt_dir = opt.ckpt_dir;
 	desc->ckpt_interval = (uint16_t)opt.ckpt_interval;
+
+	if (opt.spank_job_env_size) {
+		desc->spank_job_env      = opt.spank_job_env;
+		desc->spank_job_env_size = opt.spank_job_env_size;
+	}
+
 	return 0;
 }
 

@@ -152,7 +152,7 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	acct_wckey_cond_t *wckey_cond = xmalloc(sizeof(acct_wckey_cond_t));
 	List wckey_list = NULL;
-	int i=0, set=0;
+	int i=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	acct_wckey_rec_t *wckey = NULL;
@@ -171,7 +171,13 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 		PRINT_USER
 	};
 
-	set = _set_cond(&i, argc, argv, wckey_cond, format_list);
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		_set_cond(&i, argc, argv, wckey_cond, format_list);
+	}
 
 	if(exit_code) {
 		destroy_acct_wckey_cond(wckey_cond);

@@ -110,25 +110,14 @@ enum { JOBS, RESERVATIONS, SLURMPART, BGPART, COMMANDS };
 /* Input parameters */
 typedef struct {
 	bool all_flag;
-	bool no_header;
-
-	char *format;
-	char *sort;
-	char *states;
-
-	int iterate;
-	int verbose;
-	int display;
-
-	bool long_output;
 	bool commandline;
-	bool parse;
-
-	char *nodes;
-	char *partition;
-	
-	int node_field_size;
-
+	int display;
+	int iterate;
+	bitstr_t *io_bit;
+	bool no_header;
+	hostlist_t hl;
+	char *resolve;
+	int verbose;	
 } smap_parameters_t;
 
 extern WINDOW *grid_win;
@@ -151,6 +140,7 @@ extern int set_grid_inx(int start, int end, int count);
 extern int set_grid_name(char *nodes, int count);
 extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
+bitstr_t *get_requested_node_bitmap();
 
 extern void parse_command_line(int argc, char *argv[]);
 extern void print_date(void);

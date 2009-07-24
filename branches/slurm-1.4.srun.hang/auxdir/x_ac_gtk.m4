@@ -20,8 +20,12 @@ AC_DEFUN([X_AC_GTK],
 
     # use the correct libs if running on 64bit
     if test -d "/usr/lib64/pkgconfig"; then
-	    PKG_CONFIG_PATH="/usr/lib64/pkgconfig/"
+	    PKG_CONFIG_PATH="/usr/lib64/pkgconfig/:$PKG_CONFIG_PATH"
     fi
+
+    if test -d "/opt/gnome/lib64/pkgconfig"; then
+	    PKG_CONFIG_PATH="/opt/gnome/lib64/pkgconfig/:$PKG_CONFIG_PATH"
+    fi 
  
 ### Check for pkg-config program
     AC_ARG_WITH(
@@ -37,19 +41,9 @@ AC_DEFUN([X_AC_GTK],
     fi
     
     if test x$HAVEPKGCONFIG = xno; then
-            AC_MSG_WARN([*** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0.])
+            AC_MSG_WARN([*** pkg-config not found. Cannot probe for gtk+-2.0.])
             ac_have_gtk="no"
     fi
-
-### Check for libglade package (We don't need this right now so don't add it)
-#    if test "$ac_have_gtk" == "yes"; then   
-#        $HAVEPKGCONFIG --exists libglade-2.0
-#        if ! test $? -eq 0 ; then
-#            AC_MSG_WARN([*** libbglade-2.0 is not available.])
-#            ac_have_gtk="no"
-#        fi
-#    fi
-
 
 ### Check for min gtk package
     if test "$ac_have_gtk" == "yes" ; then
@@ -70,13 +64,8 @@ AC_DEFUN([X_AC_GTK],
 
 ### Run a test program
     if test "$ac_have_gtk" == "yes" ; then
- #       GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags libglade-2.0 gtk+-2.0 gthread-2.0`
         GTK2_CFLAGS=`$HAVEPKGCONFIG --cflags gtk+-2.0 gthread-2.0`
-#        GTK2_LIBS=`$HAVEPKGCONFIG --libs libglade-2.0 gtk+-2.0 gthread-2.0`
-       GTK2_LIBS=`$HAVEPKGCONFIG --libs gtk+-2.0 gthread-2.0`
-#        if test ! -z "GLADE_STATIC"  ; then
-#            GTK2_LIBS=`echo $GTK2_LIBS | sed "s/-lglade-2.0/$GLADE_STATIC -lglade-2.0 $BDYNAMIC/g"`
-#        fi
+        GTK2_LIBS=`$HAVEPKGCONFIG --libs gtk+-2.0 gthread-2.0`
         save_CFLAGS="$CFLAGS"
         save_LIBS="$LIBS"
         CFLAGS="$GTK2_CFLAGS $save_CFLAGS"
@@ -97,6 +86,11 @@ AC_DEFUN([X_AC_GTK],
             AC_MSG_RESULT([GTK test program built properly.])
             AC_SUBST(GTK2_CFLAGS)
             AC_SUBST(GTK2_LIBS)
+	    min_gtk_version="2.12.0"
+	    $HAVEPKGCONFIG --atleast-version=$min_gtk_version gtk+-2.0
+	    if ! test $? -eq 1 ; then
+		    AC_DEFINE(GTK2_USE_TOOLTIP, 1, [Define to 1 if using gtk+-2.0 version 2.12.0 or higher])
+	    fi
         else
             AC_MSG_WARN([*** GTK test program execution failed.])
         fi

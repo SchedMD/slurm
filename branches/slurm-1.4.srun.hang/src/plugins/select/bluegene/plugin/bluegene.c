@@ -120,13 +120,9 @@ extern int init_bg(void)
 		list_destroy(bg_conf->ramdisk_list);
 	bg_conf->ramdisk_list = list_create(destroy_image);	
 
-	bg_conf->smallest_block = 512;
-	bg_conf->bp_node_cnt = 512;
-	bg_conf->procs_per_bp = 512;
-
 	ba_init(NULL);
 
-	info("BlueGene plugin loaded successfully");
+	verbose("BlueGene plugin loaded successfully");
 
 	return SLURM_SUCCESS;
 }
@@ -294,52 +290,6 @@ extern int set_block_user(bg_record_t *bg_record)
 	return rc;
 }
 
-extern char* convert_conn_type(rm_connection_type_t conn_type)
-{
-	switch (conn_type) {
-	case (SELECT_MESH): 
-		return "MESH"; 
-	case (SELECT_TORUS): 
-		return "TORUS"; 
-	case (SELECT_SMALL): 
-		return "SMALL"; 
-	case (SELECT_NAV):
-		return "NAV";
-#ifndef HAVE_BGL
-	case SELECT_HTC_S:
-		return "HTC_S";
-		break;
-	case SELECT_HTC_D:
-		return "HTC_D";
-		break;
-	case SELECT_HTC_V:
-		return "HTC_V";
-		break;
-	case SELECT_HTC_L:
-		return "HTC_L";
-		break;
-#endif
-	default:
-		break;
-	}
-	return "";
-}
-
-#ifdef HAVE_BGL
-extern char* convert_node_use(rm_partition_mode_t pt)
-{
-	switch (pt) {
-	case (SELECT_COPROCESSOR_MODE): 
-		return "COPROCESSOR"; 
-	case (SELECT_VIRTUAL_NODE_MODE): 
-		return "VIRTUAL"; 
-	default:
-		break;
-	}
-	return "";
-}
-#endif
-
 /** 
  * sort the partitions by increasing size
  */
@@ -506,18 +456,17 @@ extern int bg_free_block(bg_record_t *bg_record)
 	}
 	
 	while (1) {
-		if(!bg_record) {
-			error("bg_free_block: there was no bg_record");
-			return SLURM_ERROR;
-		}
-		
-		slurm_mutex_lock(&block_state_mutex);			
+		/* Here we don't need to check if the block is still
+		 * in exsistance since this function can't be called on
+		 * the same block twice.  It may
+		 * had already been removed at this point also.
+		 */
+		slurm_mutex_lock(&block_state_mutex);
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
 			debug2("bridge_destroy %s", bg_record->bg_block_id);
-#ifdef HAVE_BG_FILES
-			
+#ifdef HAVE_BG_FILES			
 			rc = bridge_destroy_block(bg_record->bg_block_id);
 			if (rc != STATUS_OK) {
 				if(rc == PARTITION_NOT_FOUND) {
@@ -661,8 +610,7 @@ extern void *mult_destroy_block(void *args)
 		slurm_mutex_unlock(&block_state_mutex);
 								
 #ifdef HAVE_BG_FILES
-		debug2("removing from database %s", 
-		       (char *)bg_record->bg_block_id);
+		debug2("removing %s from database", bg_record->bg_block_id);
 		
 		rc = bridge_remove_block(bg_record->bg_block_id);
 		if (rc != STATUS_OK) {
@@ -737,12 +685,12 @@ extern int free_block_list(List delete_list)
 		/* push job onto queue in a FIFO */
 		debug3("adding %s to be freed", found_record->bg_block_id);
 		if(!block_ptr_exist_in_list(*block_list, found_record)) {
+			num_block_to_free++;
 			if (list_push(*block_list, found_record) == NULL)
 				fatal("malloc failure in _block_op/list_push");
 		} else {
 			error("we had block %s already on the freeing list",
 			      found_record->bg_block_id);
-			num_block_to_free--;
 			continue;
 		}
 		/* already running MAX_AGENTS we don't really need more 
@@ -1034,7 +982,17 @@ extern int read_bg_conf(void)
 
 		bg_conf->quarter_node_cnt = bg_conf->bp_node_cnt/4;
 	}
-
+	/* bg_conf->procs_per_bp should had already been set from the
+	 * node_init */
+	if(bg_conf->procs_per_bp < bg_conf->bp_node_cnt) {
+		fatal("For some reason we have only %u procs per bp, but "
+		      "have %u cnodes per bp.  You need at least the same "
+		      "number of procs as you have cnodes per bp.  "
+		      "Check the NodeName Procs= "
+		      "definition in the slurm.conf.", 
+		      bg_conf->procs_per_bp, bg_conf->bp_node_cnt); 
+	}
+	
 	bg_conf->proc_ratio = bg_conf->procs_per_bp/bg_conf->bp_node_cnt;
 	if(!bg_conf->proc_ratio)
 		fatal("We appear to have less than 1 proc on a cnode.  "
@@ -1043,7 +1001,8 @@ extern int read_bg_conf(void)
 		      "for each node in the slurm.conf",
 		      bg_conf->bp_node_cnt, bg_conf->procs_per_bp);
 	num_unused_cpus = 
-		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] * bg_conf->procs_per_bp;
+		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
+		* bg_conf->procs_per_bp;
 
 	if (!s_p_get_uint16(
 		    &bg_conf->nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {
@@ -1089,7 +1048,7 @@ extern int read_bg_conf(void)
 		/* figure out the smallest block we can have on the
 		   system */
 #ifdef HAVE_BGL
-		if(bg_conf->io_ratio >= 2)
+		if(bg_conf->io_ratio >= 1)
 			bg_conf->smallest_block=32;
 		else
 			bg_conf->smallest_block=128;
@@ -1126,7 +1085,8 @@ extern int read_bg_conf(void)
 				tmp_bitmap = bit_alloc(bg_conf->numpsets);
 				bit_nset(tmp_bitmap, i, i+small_size);
 				i += small_size+1;
-				list_append(bg_lists->valid_small32, tmp_bitmap);
+				list_append(bg_lists->valid_small32,
+					    tmp_bitmap);
 			}
 		}
 		/* If we only have 1 nodecard just jump to the end
@@ -1178,7 +1138,8 @@ no_calc:
 	if (!s_p_get_uint16(&bg_conf->bridge_api_verb, "BridgeAPIVerbose", tbl))
 		info("Warning: BridgeAPIVerbose not configured "
 		     "in bluegene.conf");
-	if (!s_p_get_string(&bg_conf->bridge_api_file, "BridgeAPILogFile", tbl)) 
+	if (!s_p_get_string(&bg_conf->bridge_api_file,
+			    "BridgeAPILogFile", tbl)) 
 		info("BridgeAPILogFile not configured in bluegene.conf");
 	else
 		_reopen_bridge_log();
@@ -1224,7 +1185,8 @@ no_calc:
 		}
 		
 		for (i = 0; i < count; i++) {
-			add_bg_record(bg_lists->main, NULL, blockreq_array[i], 0, 0);
+			add_bg_record(bg_lists->main, NULL,
+				      blockreq_array[i], 0, 0);
 		}
 	}
 	s_p_hashtbl_destroy(tbl);
@@ -1279,7 +1241,8 @@ extern int validate_current_blocks(char *dir)
 	itr = list_iterator_create(bg_lists->main);
 	while((bg_record = list_next(itr))) {
 		if(bg_record->state == RM_PARTITION_ERROR) 
-			put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
+			put_block_in_error_state(bg_record, 
+						 BLOCK_ERROR_STATE, NULL);
 	}
 	list_iterator_destroy(itr);
 
@@ -1453,7 +1416,8 @@ static int _validate_config_nodes(List curr_block_list,
 	while ((bg_record = list_next(itr_conf))) {
 		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
-			if (strcasecmp(bg_record->nodes, init_bg_record->nodes))
+			if (strcasecmp(bg_record->nodes, 
+				       init_bg_record->nodes))
 				continue; /* wrong nodes */
 			if(!bit_equal(bg_record->ionode_bitmap,
 				      init_bg_record->ionode_bitmap))
@@ -1461,28 +1425,12 @@ static int _validate_config_nodes(List curr_block_list,
 #ifdef HAVE_BGL
 			if (bg_record->conn_type != init_bg_record->conn_type)
 				continue; /* wrong conn_type */
-			if(bg_record->blrtsimage &&
-			   strcasecmp(bg_record->blrtsimage,
-				      init_bg_record->blrtsimage)) 
-				continue;
 #else
 			if ((bg_record->conn_type != init_bg_record->conn_type)
 			    && ((bg_record->conn_type < SELECT_SMALL)
 				&& (init_bg_record->conn_type < SELECT_SMALL)))
 				continue; /* wrong conn_type */
 #endif
-			if(bg_record->linuximage &&
-			   strcasecmp(bg_record->linuximage,
-				      init_bg_record->linuximage))
-				continue;
-			if(bg_record->mloaderimage &&
-			   strcasecmp(bg_record->mloaderimage,
-				      init_bg_record->mloaderimage))
-				continue;
-			if(bg_record->ramdiskimage &&
-			   strcasecmp(bg_record->ramdiskimage,
-				      init_bg_record->ramdiskimage))
-				continue;
 		       			
 			copy_bg_record(init_bg_record, bg_record);
 			/* remove from the curr list since we just
@@ -1509,7 +1457,7 @@ static int _validate_config_nodes(List curr_block_list,
 			info("Existing: BlockID:%s Nodes:%s Conn:%s",
 			     bg_record->bg_block_id, 
 			     tmp_char,
-			     convert_conn_type(bg_record->conn_type));
+			     conn_type_string(bg_record->conn_type));
 			if(((bg_record->state == RM_PARTITION_READY)
 			    || (bg_record->state == RM_PARTITION_CONFIGURING))
 			   && !block_ptr_exist_in_list(bg_lists->booted, 
@@ -1533,7 +1481,7 @@ static int _validate_config_nodes(List curr_block_list,
 				info("Existing: BlockID:%s Nodes:%s Conn:%s",
 				     bg_record->bg_block_id, 
 				     tmp_char,
-				     convert_conn_type(bg_record->conn_type));
+				     conn_type_string(bg_record->conn_type));
 				if(((bg_record->state == RM_PARTITION_READY)
 				    || (bg_record->state 
 					== RM_PARTITION_CONFIGURING))
@@ -1648,7 +1596,9 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 		retries++;
 		sleep(1);
 	}
-	
+
+	num_block_to_free = num_block_freed = 0;
+
 	info("I am done deleting");
 
 	return SLURM_SUCCESS;

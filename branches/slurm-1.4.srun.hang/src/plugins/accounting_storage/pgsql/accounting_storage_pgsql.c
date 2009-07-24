@@ -77,7 +77,6 @@ const uint32_t plugin_version = 100;
 #ifndef HAVE_PGSQL
 typedef void PGconn;
 #else
-#define DEFAULT_ACCT_DB "slurm_acct_db"
 
 static pgsql_db_info_t *pgsql_db_info = NULL;
 static char *pgsql_db_name = NULL;
@@ -138,7 +137,7 @@ static pgsql_db_info_t *_pgsql_acct_create_db_info()
 	/* it turns out it is better if using defaults to let postgres
 	   handle them on it's own terms */
 	if(!db_info->port) {
-		db_info->port = 5432;
+		db_info->port = DEFAULT_PGSQL_PORT;
 		slurm_set_accounting_storage_port(db_info->port);
 	}
 	db_info->host = slurm_get_accounting_storage_host();
@@ -732,20 +731,20 @@ extern int init ( void )
 
 	location = slurm_get_accounting_storage_loc();
 	if(!location)
-		pgsql_db_name = xstrdup(DEFAULT_ACCT_DB);
+		pgsql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 	else {
 		int i = 0;
 		while(location[i]) {
 			if(location[i] == '.' || location[i] == '/') {
 				debug("%s doesn't look like a database "
 				      "name using %s",
-				      location, DEFAULT_ACCT_DB);
+				      location, DEFAULT_ACCOUNTING_DB);
 				break;
 			}
 			i++;
 		}
 		if(location[i]) {
-			pgsql_db_name = xstrdup(DEFAULT_ACCT_DB);
+			pgsql_db_name = xstrdup(DEFAULT_ACCOUNTING_DB);
 			xfree(location);
 		} else
 			pgsql_db_name = location;
@@ -1237,12 +1236,10 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	if(slurmdbd_conf) {
 		block_id = xstrdup(job_ptr->comment);
 	} else {
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_BLOCK_ID, 
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_BLOCK_ID, 
 				     &block_id);
 	}
-	job_ptr->requid = -1; /* force to -1 for sacct to know this
-			       * hasn't been set yet */
 
 	if(!job_ptr->db_index) {
 		query = xstrdup_printf(
@@ -1285,7 +1282,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 			   (int)job_ptr->details->submit_time,
 			   (int)job_ptr->start_time,
 			   jname, track_steps,
-			   job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->job_state & JOB_STATE_BASE,
 			   priority, job_ptr->num_procs,
 			   job_ptr->total_procs);
 	try_again:
@@ -1322,7 +1319,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
 			   "alloc_cpus=%u, associd=%d where id=%d",
 			   (int)job_ptr->start_time,
-			   jname, job_ptr->job_state & (~JOB_COMPLETING),
+			   jname, job_ptr->job_state & JOB_STATE_BASE,
 			   job_ptr->total_procs, job_ptr->assoc_id,
 			   job_ptr->db_index);
 		rc = pgsql_db_query(acct_pgsql_db, query);
@@ -1394,7 +1391,7 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 			       "kill_requid=%d where id=%d",
 			       job_table, (int)job_ptr->start_time,
 			       (int)job_ptr->end_time, 
-			       job_ptr->job_state & (~JOB_COMPLETING),
+			       job_ptr->job_state & JOB_STATE_BASE,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
 	rc = pgsql_db_query(acct_pgsql_db, query);
@@ -1442,8 +1439,8 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	} else {
 #ifdef HAVE_BG
 		cpus = step_ptr->job_ptr->num_procs;
-		select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-				     SELECT_DATA_IONODES, 
+		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
+				     SELECT_JOBDATA_IONODES, 
 				     &ionodes);
 		if(ionodes) {
 			snprintf(node_list, BUFFER_SIZE, 
@@ -1465,9 +1462,6 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 		}
 #endif
 	}
-
-	step_ptr->job_ptr->requid = -1; /* force to -1 for sacct to know this
-					 * hasn't been set yet  */
 
 	if(!step_ptr->job_ptr->db_index) {
 		step_ptr->job_ptr->db_index = 
@@ -1609,7 +1603,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		"where id=%u and stepid=%u",
 		step_table, (int)now,
 		comp_status,
-		step_ptr->job_ptr->requid, 
+		step_ptr->requid, 
 		exit_code, 
 		/* user seconds */
 		jobacct->user_cpu_sec,	
@@ -1674,7 +1668,7 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
 		 "update %s set suspended=%u-suspended, state=%d "
 		 "where id=%u",
 		 job_table, (int)job_ptr->suspend_time, 
-		 job_ptr->job_state & (~JOB_COMPLETING),
+		 job_ptr->job_state & JOB_STATE_BASE,
 		 job_ptr->db_index);
 	rc = pgsql_db_query(acct_pgsql_db, query);
 	if(rc != SLURM_ERROR) {

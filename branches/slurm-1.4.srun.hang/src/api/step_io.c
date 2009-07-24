@@ -356,6 +356,12 @@ _server_read(eio_obj_t *obj, List objs)
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
+		/* This updates a timestamp every time we successfully read 
+		   or write to a node, so we can test connections periodically
+		   that have no activity. */
+		if (s->cio->sls && s->cio->test_io_activity)
+			step_launch_clear_questionable_state(s->cio->sls, 
+							     s->node_id);
 
 /* 		*(char *)(buf + n) = '\0'; */
 /* 		debug3("\"%s\"", buf); */
@@ -465,6 +471,13 @@ again:
 			return SLURM_ERROR;
 		}
 	}
+
+	/* This updates a timestamp every time we successfully read or write
+	   to a node, so we can test connections periodically that have no 
+	   activity. */
+	if (s->cio->sls && s->cio->test_io_activity)
+		step_launch_clear_questionable_state(s->cio->sls, s->node_id);
+
 	debug3("Wrote %d bytes to socket", n);
 	s->out_remaining -= n;
 	if (s->out_remaining > 0)
@@ -1036,13 +1049,13 @@ client_io_t *
 client_io_handler_create(slurm_step_io_fds_t fds,
 			 int num_tasks,
 			 int num_nodes,
-			 slurm_cred_t cred,
-			 bool label)
+			 slurm_cred_t *cred,
+			 bool label, bool test_io)
 {
 	client_io_t *cio;
 	int len;
 	int i;
-	int siglen;
+	uint32_t siglen;
 	char *sig;
 
 	cio = (client_io_t *)xmalloc(sizeof(client_io_t));
@@ -1057,6 +1070,8 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 		cio->label_width = _wid(cio->num_tasks);
 	else
 		cio->label_width = 0;
+
+	cio->test_io_activity = test_io;
 
 	len = sizeof(uint32_t) * num_tasks;
 

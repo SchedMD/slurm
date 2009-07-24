@@ -3,7 +3,8 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -18,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -124,8 +125,9 @@ parse_command_line( int argc, char* argv[] )
 	if ( ( env_val = getenv("SQUEUE_SORT") ) )
 		params.sort = xstrdup(env_val);
 
-	while((opt_char = getopt_long(argc, argv, "ahi:j::ln:o:p:s::S:t:u:U:vV",
-			long_options, &option_index)) != -1) {
+	while((opt_char = getopt_long(argc, argv, 
+				      "ahi:j::ln:o:p:s::S:t:u:U:vV",
+				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
 				fprintf(stderr, "Try \"squeue --help\" "
@@ -175,6 +177,7 @@ parse_command_line( int argc, char* argv[] )
 				params.partitions = xstrdup(optarg);
 				params.part_list = 
 					_build_str_list( params.partitions );
+				params.all_flag = true;
 				break;
 			case (int) 'U':
 				xfree(params.accounts);
@@ -186,7 +189,7 @@ parse_command_line( int argc, char* argv[] )
 				if (optarg) {
 					params.steps = xstrdup(optarg);
 					params.step_list = 
-						_build_step_list( params.steps );
+						_build_step_list(params.steps);
 				}
 				params.step_flag = true;
 				break;
@@ -240,8 +243,13 @@ parse_command_line( int argc, char* argv[] )
 	}
 
 	if ( params.job_flag && params.step_flag) {
-		error("Incompatable options --jobs and --steps\n");
-		exit(1);
+		if (params.job_list) {
+			verbose("Printing job steps with job filter");
+			params.job_flag = false;
+		} else {
+			error("Incompatable options --jobs and --steps");
+			exit(1);
+		}
 	}
 
 	if ( params.nodes ) {
@@ -280,6 +288,7 @@ parse_command_line( int argc, char* argv[] )
 	     ( env_val = getenv("SQUEUE_PARTITION") ) ) {
 		params.partitions = xstrdup(env_val);
 		params.part_list = _build_str_list( params.partitions );
+		params.all_flag = true;
 	}
 
 	if ( ( params.accounts == NULL ) && 
@@ -352,7 +361,12 @@ _parse_state( char* str, enum job_states* states )
 	    (strcasecmp(job_state_string_compact(JOB_COMPLETING),str) == 0)) {
 		*states = JOB_COMPLETING;
 		return SLURM_SUCCESS;
-	}	
+	}
+	if ((strcasecmp(job_state_string(JOB_CONFIGURING), str) == 0) ||
+	    (strcasecmp(job_state_string_compact(JOB_CONFIGURING),str) == 0)) {
+		*states = JOB_CONFIGURING;
+		return SLURM_SUCCESS;
+	}
 
 	error ("Invalid job state specified: %s", str);
 	state_names = xstrdup(job_state_string(0));
@@ -362,6 +376,8 @@ _parse_state( char* str, enum job_states* states )
 	}
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_COMPLETING));
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_CONFIGURING));
 	error ("Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	return SLURM_ERROR;
@@ -422,7 +438,11 @@ extern int parse_format( char* format )
 							field_size,
 							right_justify,
 							suffix );
-
+			else if (field[0] == 'l')
+				step_format_add_time_limit( params.format_list, 
+				                            field_size, 
+				                            right_justify, 
+				                            suffix );
 			else if (field[0] == 'M')
 				step_format_add_time_used( params.format_list, 
 				                            field_size, 
@@ -461,11 +481,6 @@ extern int parse_format( char* format )
 							field_size,
 							right_justify,
 							suffix  );
-			else if (field[0] == 'b')
-				job_format_add_time_start( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix  );
 			else if (field[0] == 'c')
 				job_format_add_min_procs( params.format_list, 
 				                          field_size, 
@@ -565,11 +580,6 @@ extern int parse_format( char* format )
 				job_format_add_nodes( params.format_list, 
 				                      field_size, 
 				                      right_justify, suffix );
-			else if (field[0] == 'o')
-				job_format_add_num_nodes( params.format_list, 
-				                          field_size, 
-				                          right_justify, 
-				                          suffix );
 			else if (field[0] == 'O')
 				job_format_add_contiguous( params.format_list, 
 				                           field_size, 
@@ -651,21 +661,6 @@ extern int parse_format( char* format )
 				                          field_size, 
 				                          right_justify, 
 				                          suffix );
-			else if (field[0] == 'X')
-				job_format_add_num_sockets( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
-			else if (field[0] == 'Y')
-				job_format_add_num_cores( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
-			else if (field[0] == 'Z')
-				job_format_add_num_threads( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
 			else if (field[0] == 'z')
 				job_format_add_num_sct( params.format_list, 
 				                           field_size, 
@@ -836,13 +831,12 @@ _build_job_list( char* str )
 	int i;
 	uint32_t *job_id = NULL;
 
-	if ( str == NULL)
+	if ( str == NULL )
 		return NULL;
 	my_list = list_create( NULL );
 	my_job_list = xstrdup( str );
 	job = strtok_r( my_job_list, ",", &tmp_char );
-	while (job) 
-	{
+	while (job) {
 		i = strtol( job, (char **) NULL, 10 );
 		if (i <= 0) {
 			error( "Invalid job id: %s", job );
@@ -902,7 +896,7 @@ _build_state_list( char* str )
 	state = strtok_r( my_state_list, ",", &tmp_char );
 	while (state) 
 	{
-		state_id = xmalloc( sizeof( enum job_states ) );
+		state_id = xmalloc( sizeof( uint16_t ) );
 		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
 		{
 			exit( 1 );
@@ -916,23 +910,26 @@ _build_state_list( char* str )
 
 /*
  * _build_all_states_list - build a list containing all possible job states
- * RET List of enum job_states values
+ * RET List of uint16_t values
  */
 static List 
 _build_all_states_list( void )
 {
 	List my_list;
 	int i;
-	enum job_states * state_id;
+	uint16_t * state_id;
 
 	my_list = list_create( NULL );
 	for (i = 0; i<JOB_END; i++) {
-		state_id = xmalloc( sizeof( enum job_states ) );
-		*state_id = ( enum job_states ) i;
+		state_id = xmalloc( sizeof(uint16_t) );
+		*state_id = (uint16_t) i;
 		list_append( my_list, state_id );
 	}
-	state_id = xmalloc( sizeof( enum job_states ) );
-	*state_id = ( enum job_states ) JOB_COMPLETING;
+	state_id = xmalloc( sizeof(uint16_t) );
+	*state_id = (uint16_t) JOB_COMPLETING;
+	list_append( my_list, state_id );
+	state_id = xmalloc( sizeof(uint16_t) );
+	*state_id = (uint16_t) JOB_CONFIGURING;
 	list_append( my_list, state_id );
 	return my_list;
 

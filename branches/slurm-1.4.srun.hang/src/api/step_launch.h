@@ -63,6 +63,10 @@ struct step_launch_state {
 	bitstr_t *tasks_exited;  /* or never started correctly */
 	bitstr_t *node_questionable;  /* set after SRUN_STEP_MISSING msg */
 	bitstr_t *node_io_error;      /* set after write or read error */
+
+	time_t *io_timestamp; /* timestamp per node, updated on successful
+				 read or write.  used only with normal io */
+
 	bool abort;
 	bool abort_action_taken;
 

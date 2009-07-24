@@ -148,8 +148,10 @@ enum spank_item {
     S_SLURM_VERSION_MAJOR,   /* Current slurm version major release (char **) */
     S_SLURM_VERSION_MINOR,   /* Current slurm version minor release (char **) */
     S_SLURM_VERSION_MICRO,   /* Current slurm version micro release (char **) */
-    S_STEP_CPUS_PER_TASK     /* CPUs allocated per task (=1 if --overcommit
+    S_STEP_CPUS_PER_TASK,    /* CPUs allocated per task (=1 if --overcommit
                               * option is used, uint32_t *)                   */
+    S_JOB_ALLOC_CORES,       /* Allocated cores in list format                */
+    S_JOB_ALLOC_MEM          /* Allocated memory in MB                        */
 };
 
 typedef enum spank_item spank_item_t;
@@ -328,6 +330,16 @@ spank_err_t spank_setenv (spank_t spank, const char *var, const char *val,
  *    SPANK_NOT_REMOTE = not called from slurmd.
  */
 spank_err_t spank_unsetenv (spank_t spank, const char *var);
+
+/* External functions available from SPANK plugins to modify the environment
+ * which is exported to the SLURM Prolog and Epilog programs. These environment
+ * variables are not otherwise visible to the job or SPANK functions. The
+ * syntax of these functions is identical to the getenv, setenv, and unsetenv
+ * functions. */
+extern char *spank_get_job_env(const char *name);
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite);
+extern int   spank_unset_job_env(const char *name);
 
 /*
  *  SLURM logging functions which are exported to plugins.

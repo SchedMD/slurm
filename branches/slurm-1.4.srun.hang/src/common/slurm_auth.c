@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  slurm_auth.c - implementation-independent authentication API definitions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -62,7 +63,7 @@ static bool auth_dummy = false;	/* for security testing */
 typedef struct slurm_auth_ops {
         void *       (*create)    ( void *argv[], char *auth_info );
         int          (*destroy)   ( void *cred );
-        int          (*verify)    ( void *cred, void *argv[], char *auth_info );
+        int          (*verify)    ( void *cred, char *auth_info );
         uid_t        (*get_uid)   ( void *cred, char *auth_info );
         gid_t        (*get_gid)   ( void *cred, char *auth_info );
         int          (*pack)      ( void *cred, Buf buf );
@@ -257,21 +258,23 @@ slurm_auth_generic_errstr( int slurm_errno )
                 int err;
                 const char *msg;
         } generic_table[] = {
-                { SLURM_SUCCESS, "no error" },
-                { SLURM_ERROR, "unknown error" },
-                { SLURM_AUTH_NOPLUGIN, "no authentication plugin installed" },
-                { SLURM_AUTH_BADARG, "bad argument to plugin function" },
-                { SLURM_AUTH_MEMORY, "memory management error" },
-                { SLURM_AUTH_NOUSER, "no such user" },
-                { SLURM_AUTH_INVALID, "authentication credential invalid" },
-                { SLURM_AUTH_MISMATCH, "authentication type mismatch" },
-                { 0, NULL }
+		{ SLURM_SUCCESS, "no error" },
+		{ SLURM_ERROR, "unknown error" },
+		{ SLURM_AUTH_NOPLUGIN, "no authentication plugin installed" },
+		{ SLURM_AUTH_BADARG, "bad argument to plugin function" },
+		{ SLURM_AUTH_MEMORY, "memory management error" },
+		{ SLURM_AUTH_NOUSER, "no such user" },
+		{ SLURM_AUTH_INVALID, "authentication credential invalid" },
+		{ SLURM_AUTH_MISMATCH, "authentication type mismatch" },
+		{ SLURM_AUTH_VERSION, "authentication version too old" },
+		{ 0, NULL }
         };
 
         int i;
 
         for ( i = 0; ; ++i ) {
-                if ( generic_table[ i ].msg == NULL ) return NULL;
+                if ( generic_table[ i ].msg == NULL )
+			return NULL;
                 if ( generic_table[ i ].err == slurm_errno )
                         return generic_table[ i ].msg;
         }
@@ -401,7 +404,7 @@ int
 g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
 {
         int ret;
-        void **argv;
+        void **argv = (void **) NULL;
 
         if ( slurm_auth_init(NULL) < 0 )
                 return SLURM_ERROR;
@@ -413,7 +416,7 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
                 return SLURM_ERROR;
         }
         
-        ret = (*(g_context->ops.verify))( cred, argv, auth_info );
+        ret = (*(g_context->ops.verify))( cred, auth_info );
         xfree( argv );
         return ret;
 }

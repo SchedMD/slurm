@@ -175,6 +175,8 @@ void	bit_rotate(bitstr_t *b1, int n);
 char	*bit_fmt(char *str, int len, bitstr_t *b);
 int 	bit_unfmt(bitstr_t *b, char *str);
 int 	*bitfmt2int (char *bit_str_ptr);
+char *  inx2bitfmt (int *inx);
+int     inx2bitstr(bitstr_t *b, int *inx);
 char	*bit_fmt_hexmask(bitstr_t *b);
 int 	bit_unfmt_hexmask(bitstr_t *b, const char *str);
 char	*bit_fmt_binmask(bitstr_t *b);
@@ -189,5 +191,12 @@ bitstr_t *bit_copy(bitstr_t *b);
 bitstr_t *bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_get_bit_num(bitstr_t *b, int pos);
 int      bit_get_pos_num(bitstr_t *b, bitoff_t pos);
+
+#define FREE_NULL_BITMAP(_X)		\
+	do {				\
+		if (_X) bit_free (_X);	\
+		_X	= NULL; 	\
+	} while (0)
+
 
 #endif /* !_BITSTRING_H_ */

@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -989,6 +989,9 @@ int spank_process_option(int optval, const char *arg)
 	struct spank_plugin_opt *opt;
 	int rc = 0;
 
+	if (option_cache == NULL || (list_count(option_cache) == 0))
+		return (-1);
+
 	opt =
 	    list_find_first(option_cache, (ListFindF) _opt_by_val,
 			    &optval);
@@ -1569,6 +1572,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	pid_t *p2pid;
 	pid_t  pid;
 	char ***p2argv;
+	char **p2str;
 	char **p2vers;
 	slurmd_task_info_t *task;
 	slurmd_job_t  *slurmd_job = NULL;
@@ -1635,7 +1639,8 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank_ctx == S_TYPE_LOCAL) {
 			if (launcher_job->step_layout)
-				*p2uint32 = launcher_job->step_layout->node_cnt;
+				*p2uint32 = launcher_job->step_layout->
+					    node_cnt;
 			else {
 				*p2uint32 = 0;
 				rc = ESPANK_ENV_NOEXIST;
@@ -1655,7 +1660,8 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank_ctx == S_TYPE_LOCAL) {
 			if (launcher_job->step_layout)
-				*p2uint32 = launcher_job->step_layout->task_cnt;
+				*p2uint32 = launcher_job->step_layout->
+					    task_cnt;
 			else {
 				*p2uint32 = 0;
 				rc = ESPANK_ENV_NOEXIST;
@@ -1759,6 +1765,14 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		uint32 = va_arg(vargs, uint32_t);
 		p2uint32 = va_arg(vargs, uint32_t *);
 		rc = global_to_local_id (slurmd_job, uint32, p2uint32);
+		break;
+	case S_JOB_ALLOC_CORES:
+		p2str = va_arg(vargs, char **);
+		*p2str = slurmd_job->alloc_cores;
+		break;
+	case S_JOB_ALLOC_MEM:
+		p2uint32 = va_arg(vargs, uint32_t *);
+		*p2uint32 = slurmd_job->job_mem;
 		break;
 	case S_SLURM_VERSION:
 		p2vers = va_arg(vargs, char  **);

@@ -30,6 +30,10 @@
 #  include "config.h"
 #endif
 
+#ifdef HAVE_LIMITS_H
+#  include <limits.h>
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -190,6 +194,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.gid = params->gid;
 	launch.argc = params->argc;
 	launch.argv = params->argv;
+	launch.spank_job_env = params->spank_job_env;
+	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	if (params->env == NULL) {
@@ -259,7 +265,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 						 ctx->step_req->num_tasks,
 						 launch.nnodes,
 						 ctx->step_resp->cred,
-						 params->labelio);
+						 params->labelio, 
+						 params->io_timeout != 0);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;
@@ -494,8 +501,8 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	int rc = SLURM_SUCCESS;
 	struct step_launch_state *sls = ctx->launch_state;
 	
-	debug2("forward signal %d to job", signo);
-	
+	debug2("forward signal %d to job %u", signo, ctx->job_id);
+
 	/* common to all tasks */
 	msg.job_id      = ctx->job_id;
 	msg.job_step_id = ctx->step_resp->job_step_id;
@@ -542,7 +549,8 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	req.msg_type = REQUEST_SIGNAL_TASKS;
 	req.data     = &msg;
 	
-	debug3("sending signal to host %s", name);
+	debug3("sending signal %d to job %u on host %s", 
+	       signo, ctx->job_id, name);
 	
 	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0, false))) { 
 		error("fwd_signal: slurm_send_recv_msgs really failed bad");
@@ -582,6 +590,8 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 {
 	struct step_launch_state *sls;
 	slurm_step_layout_t *layout = ctx->step_resp->step_layout;
+	int ii;
+	time_t now;
 
 	sls = xmalloc(sizeof(struct step_launch_state));
 	sls->slurmctld_socket_fd = -1;
@@ -594,6 +604,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
 	sls->node_questionable = bit_alloc(layout->node_cnt);
 	sls->node_io_error = bit_alloc(layout->node_cnt);
+	sls->io_timestamp = (time_t *)xmalloc(sizeof(time_t) * layout->node_cnt);
 	sls->layout = layout;
 	sls->resp_port = NULL;
 	sls->abort = false;
@@ -604,6 +615,11 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->mpi_state = NULL;
 	pthread_mutex_init(&sls->lock, NULL);
 	pthread_cond_init(&sls->cond, NULL);
+
+	time(&now);
+	for (ii = 0; ii < layout->node_cnt; ii++)
+		sls->io_timestamp[ii] = now;
+
 	return sls;
 }
 
@@ -619,6 +635,7 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 	bit_free(sls->tasks_exited);
 	bit_free(sls->node_questionable);
 	bit_free(sls->node_io_error);
+	xfree(sls->io_timestamp);
 
 	/* Now clean up anything created by slurm_step_launch() */
 	if (sls->resp_port != NULL) {
@@ -1203,6 +1220,38 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 /**********************************************************************
  * Task launch functions
  **********************************************************************/
+
+/* Since the slurmd usually controls the finishing of tasks to the
+ * controller this needs to happen here if there was a problem with a
+ * task launch to the slurmd since there will not be cleanup of this
+ * anywhere else.
+ */
+static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
+{
+	slurm_msg_t req;
+	step_complete_msg_t msg;
+	int rc = -1;
+	int nodeid = NO_VAL;
+
+	nodeid = nodelist_find(ctx->step_resp->step_layout->node_list, node);
+
+	memset(&msg, 0, sizeof(step_complete_msg_t));
+	msg.job_id = ctx->job_id;
+	msg.job_step_id = ctx->step_resp->job_step_id;
+
+	msg.range_first = msg.range_last = nodeid;
+	msg.step_rc = ret_code;
+
+	slurm_msg_t_init(&req);
+	req.msg_type = REQUEST_STEP_COMPLETE;
+	req.data = &msg;
+	
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+	       return SLURM_ERROR;
+	
+	return SLURM_SUCCESS;
+}
+
 static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
 			 uint32_t timeout)
@@ -1244,13 +1293,17 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		      rc, ret_data->err, ret_data->type);
 		if (rc != SLURM_SUCCESS) {
 			if (ret_data->err)
-				errno = ret_data->err;
+				tot_rc = ret_data->err;
 			else
-				errno = rc;
-			error("Task launch failed on node %s: %m",
+				tot_rc = rc;
+	
+			_fail_step_tasks(ctx, ret_data->node_name, tot_rc);
+
+			errno = tot_rc;
+			tot_rc = SLURM_ERROR;
+			error("Task launch for %u.%u failed on node %s: %m",
+			      ctx->job_id, ctx->step_resp->job_step_id,
 			      ret_data->node_name);
-			rc = SLURM_ERROR;
-			tot_rc = rc;
 		} else {
 #if 0 /* only for debugging, might want to make this a callback */
 			errno = ret_data->err;
@@ -1424,6 +1477,8 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 
 
 /*
+ * This is called after a node connects for the first time, and possibly
+ * on successful io to/from a node if the io_timeout is set.
  * Just in case the node was marked questionable very early in the 
  * job step setup, clear this flag if/when the node makes its initial 
  * connection.
@@ -1431,9 +1486,12 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 int 
 step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id)
 {
+	time_t now = time(NULL);
+
 	pthread_mutex_lock(&sls->lock);
 
 	bit_clear(sls->node_questionable, node_id);
+	sls->io_timestamp[node_id] = now;
 
 	pthread_mutex_unlock(&sls->lock);
 

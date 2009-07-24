@@ -54,7 +54,6 @@
 #include "src/api/job_info.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
-#include "src/api/node_select_info.h"
 #include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
 
 #define _DEBUG 0
@@ -188,20 +187,20 @@ static int _get_job_size(uint32_t job_id)
  */
 static int _partitions_dealloc()
 {
-	static node_select_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
+	static block_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
 	int rc = 0, error_code = 0, i;
 	
 	if (bg_info_ptr) {
-		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
+		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&bg_info_ptr);
+			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_node_select((time_t) NULL, &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr);
 	}
 
 	if (error_code) {
@@ -210,7 +209,7 @@ static int _partitions_dealloc()
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->bg_info_array[i].state 
+		if(new_bg_ptr->block_array[i].state 
 		   == RM_PARTITION_DEALLOCATING) {
 			rc = 1;
 			break;

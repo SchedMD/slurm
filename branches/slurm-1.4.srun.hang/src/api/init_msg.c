@@ -56,29 +56,13 @@
  */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
-	job_desc_msg->account		= NULL;
+	memset(job_desc_msg, 0, sizeof(job_desc_msg_t));
 	job_desc_msg->acctg_freq	= (uint16_t) NO_VAL;
-	job_desc_msg->alloc_node	= NULL;
-	job_desc_msg->alloc_resp_port	= 0;
 	job_desc_msg->alloc_sid		= NO_VAL;
-	job_desc_msg->argc		= 0;
-	job_desc_msg->argv		= ((char **) NULL);
-	job_desc_msg->begin_time	= 0;
-	job_desc_msg->blrtsimage	= NULL;
-	job_desc_msg->ckpt_dir          = NULL;
-	job_desc_msg->ckpt_interval     = 0;
-	job_desc_msg->comment		= NULL;
 	job_desc_msg->conn_type		= (uint16_t) NO_VAL;
 	job_desc_msg->contiguous	= (uint16_t) NO_VAL;
-	job_desc_msg->cpu_bind		= NULL;
 	job_desc_msg->cpu_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
-	job_desc_msg->dependency	= NULL;
-	job_desc_msg->environment	= ((char **) NULL);
-	job_desc_msg->env_size		= 0;
-	job_desc_msg->err		= NULL;
-	job_desc_msg->exc_nodes		= NULL;
-	job_desc_msg->features		= NULL;
 #if SYSTEM_DIMENSIONS
 {
 	int i;
@@ -87,8 +71,6 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 }
 #endif
 	job_desc_msg->group_id		= NO_VAL;
-	job_desc_msg->immediate		= 0;
-	job_desc_msg->in		= NULL;
 	job_desc_msg->job_id		= NO_VAL;
 	job_desc_msg->job_min_cores	= (uint16_t) NO_VAL;
 	job_desc_msg->job_min_procs	= (uint16_t) NO_VAL;
@@ -97,51 +79,31 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->job_min_memory    = NO_VAL;
 	job_desc_msg->job_min_tmp_disk  = NO_VAL;
 	job_desc_msg->kill_on_node_fail = (uint16_t) NO_VAL;
-	job_desc_msg->licenses		= NULL;
-	job_desc_msg->linuximage	= NULL;
-	job_desc_msg->mail_type		= 0;
-	job_desc_msg->mail_user		= NULL;
 	job_desc_msg->max_cores		= (uint16_t) NO_VAL;
 	job_desc_msg->max_nodes		= NO_VAL;
 	job_desc_msg->max_sockets	= (uint16_t) NO_VAL;
 	job_desc_msg->max_threads	= (uint16_t) NO_VAL;
-	job_desc_msg->mem_bind		= NULL;
 	job_desc_msg->mem_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->min_cores		= (uint16_t) NO_VAL;
 	job_desc_msg->min_nodes		= NO_VAL;
 	job_desc_msg->min_sockets	= (uint16_t) NO_VAL;
 	job_desc_msg->min_threads	= (uint16_t) NO_VAL;
-	job_desc_msg->mloaderimage	= NULL;
-	job_desc_msg->name		= NULL;
-	job_desc_msg->network		= NULL;
 	job_desc_msg->nice		= NICE_OFFSET;
 	job_desc_msg->ntasks_per_core	= (uint16_t) NO_VAL;
 	job_desc_msg->ntasks_per_node	= (uint16_t) NO_VAL;
 	job_desc_msg->ntasks_per_socket	= (uint16_t) NO_VAL;
 	job_desc_msg->num_procs		= NO_VAL;
 	job_desc_msg->num_tasks		= NO_VAL;
-	job_desc_msg->open_mode		= 0;	/* system default */
-	job_desc_msg->other_port	= 0;
-	job_desc_msg->out		= NULL;
 	job_desc_msg->overcommit	= (uint8_t) NO_VAL;
-	job_desc_msg->partition		= NULL;
 	job_desc_msg->plane_size	= (uint16_t) NO_VAL;
 	job_desc_msg->priority		= NO_VAL;
-	job_desc_msg->ramdiskimage	= NULL;
 	job_desc_msg->reboot		= (uint16_t) NO_VAL;
-	job_desc_msg->resp_host		= NULL;
-	job_desc_msg->req_nodes		= NULL;
 	job_desc_msg->requeue		= (uint16_t) NO_VAL;
-	job_desc_msg->reservation	= NULL;
 	job_desc_msg->rotate		= (uint16_t) NO_VAL;
-	job_desc_msg->script		= NULL;
-	job_desc_msg->select_jobinfo	= NULL;
 	job_desc_msg->shared		= (uint16_t) NO_VAL;
 	job_desc_msg->task_dist		= (uint16_t) NO_VAL;
 	job_desc_msg->time_limit	= NO_VAL;
 	job_desc_msg->user_id		= NO_VAL;
-	job_desc_msg->wckey		= NULL;
-	job_desc_msg->work_dir		= NULL;
 }
 
 /*
@@ -151,20 +113,17 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
  */
 void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 {
-	update_part_msg->name 		= NULL;
-	update_part_msg->nodes 		= NULL;
-	update_part_msg->allow_groups 	= NULL;
-	update_part_msg->default_time   = (uint32_t) NO_VAL;
-	update_part_msg->max_time 	= (uint32_t) NO_VAL;
-	update_part_msg->max_nodes 	= NO_VAL;
-	update_part_msg->min_nodes 	= NO_VAL;
-	update_part_msg->hidden 	= (uint16_t) NO_VAL;
+	memset(update_part_msg, 0, sizeof(update_part_msg_t));
 	update_part_msg->default_part 	= (uint16_t) NO_VAL;
-	update_part_msg->root_only 	= (uint16_t) NO_VAL;
+	update_part_msg->default_time   = (uint32_t) NO_VAL;
+	update_part_msg->hidden 	= (uint16_t) NO_VAL;
+	update_part_msg->max_nodes 	= NO_VAL;
 	update_part_msg->max_share 	= (uint16_t) NO_VAL;
+	update_part_msg->min_nodes 	= NO_VAL;
+	update_part_msg->max_time 	= (uint32_t) NO_VAL;
 	update_part_msg->priority 	= (uint16_t) NO_VAL;
+	update_part_msg->root_only 	= (uint16_t) NO_VAL;
 	update_part_msg->state_up 	= (uint16_t) NO_VAL;
-	update_part_msg->allow_alloc_nodes = NULL;
 }
 
 /*
@@ -174,17 +133,12 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
  */
 void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
 {
-	resv_msg->name		= NULL;
-	resv_msg->start_time	= (time_t) NO_VAL;
-	resv_msg->end_time	= (time_t) NO_VAL;
+	memset(resv_msg, 0, sizeof(resv_desc_msg_t));
 	resv_msg->duration	= NO_VAL;
+	resv_msg->end_time	= (time_t) NO_VAL;
 	resv_msg->flags		= (uint16_t) NO_VAL;
 	resv_msg->node_cnt	= NO_VAL;
-	resv_msg->node_list	= NULL;
-	resv_msg->features	= NULL;
-	resv_msg->partition	= NULL;
-	resv_msg->users		= NULL;
-	resv_msg->accounts	= NULL;
+	resv_msg->start_time	= (time_t) NO_VAL;
 }
 
 /*
@@ -193,9 +147,22 @@ void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
  */
 void slurm_init_update_node_msg (update_node_msg_t * update_node_msg)
 {
-	update_node_msg->node_names = NULL;
-	update_node_msg->features = NULL;
-	update_node_msg->reason = NULL;
+	memset(update_node_msg, 0, sizeof(update_node_msg_t));
 	update_node_msg->node_state = (uint16_t) NO_VAL;
 	update_node_msg->weight = (uint32_t) NO_VAL;
+}
+
+/*
+ * slurm_init_update_block_msg - initialize block update message
+ * OUT update_block_msg - user defined block descriptor
+ */
+void slurm_init_update_block_msg (update_block_msg_t *update_block_msg)
+{
+	memset(update_block_msg, 0, sizeof(update_block_msg_t));
+	update_block_msg->conn_type = (uint16_t)NO_VAL;
+	update_block_msg->job_running = NO_VAL;
+	update_block_msg->node_cnt = NO_VAL;
+	update_block_msg->node_use = (uint16_t)NO_VAL;
+	update_block_msg->state = (uint16_t)NO_VAL;
+	
 }

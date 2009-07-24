@@ -18,7 +18,7 @@ build_unsetenv_src = unsetenv.c unsetenv.h
 extra_unsetenv_src = 
 endif
 
-INCLUDES     = -I$(top_srcdir)
+INCLUDES     = -I$(top_srcdir) $(BG_INCLUDES)
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 
@@ -102,7 +102,8 @@ libcommon_la_SOURCES = 			\
 	stepd_api.c stepd_api.h		\
 	write_labelled_message.c	\
 	write_labelled_message.h	\
-	proc_args.c proc_args.h		
+	proc_args.c proc_args.h		\
+	slurm_strcasestr.c slurm_strcasestr.h		
 
 EXTRA_libcommon_la_SOURCES = 	\
 	$(extra_unsetenv_src)

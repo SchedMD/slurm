@@ -59,58 +59,58 @@
 #include "../block_allocator/block_allocator.h"
 
 typedef struct bg_record {
-	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
-	char *nodes;			/* String of nodes in block */
-	char *ionodes; 		        /* String of ionodes in block
-					 * NULL if not a small block*/
-	char *user_name;		/* user using the block */
-	char *target_name;		/* when a block is freed this 
-					   is the name of the user we 
-					   want on the block */
-	int full_block;                 /* whether or not block is the full
-					   block */
-	int modifying;                  /* flag to say the block is
-					   being modified or not at
-					   job launch usually */
-	uid_t user_uid;   		/* Owner of block uid	*/
-	rm_partition_state_t state;     /* Current state of the block */
-	int start[BA_SYSTEM_DIMENSIONS];/* start node */
-	uint16_t geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
-	rm_connection_type_t conn_type;  /* MESH or Torus or NAV */
-#ifdef HAVE_BGL
-	rm_partition_mode_t node_use;	 /* either COPROCESSOR or VIRTUAL */
-#endif
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */
+	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
 	List bg_block_list;             /* node list of blocks in block */
-	int bp_count;                   /* size */
-	int switch_count;               /* number of switches used. */
+	bitstr_t *bitmap;               /* bitmap to check the name 
+					   of block */
+#ifdef HAVE_BGL
+	char *blrtsimage;               /* BlrtsImage for this block */
+#endif
+	int boot_count;                 /* number of attemts boot attempts */
 	int boot_state;                 /* check to see if boot failed. 
 					   -1 = fail, 
 					   0 = not booting, 
 					   1 = booting */
-	int boot_count;                 /* number of attemts boot attempts */
-	bitstr_t *bitmap;               /* bitmap to check the name 
-					   of block */
-	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
-					   keep track which ionodes we
-					   are on.  NULL if not a small block*/
+	int bp_count;                   /* size */
+	rm_connection_type_t conn_type;  /* MESH or Torus or NAV */
+	uint32_t cpu_cnt;               /* count of cpus per block */
+	int full_block;                 /* whether or not block is the full
+					   block */
+	uint16_t geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
+	char *ionodes; 		        /* String of ionodes in block
+					 * NULL if not a small block*/
 	struct job_record *job_ptr;	/* pointer to job running on
 					 * block or NULL if no job */
 	int job_running;                /* job id of job running of if
 					 * block is in an error state
 					 * BLOCK_ERROR_STATE */
-	uint32_t cpu_cnt;               /* count of cpus per block */
+	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
+					   keep track which ionodes we
+					   are on.  NULL if not a small block*/
+	char *linuximage;               /* LinuxImage/CnloadImage for
+					 * this block */
+	char *mloaderimage;             /* mloaderImage for this block */
+	int modifying;                  /* flag to say the block is
+					   being modified or not at
+					   job launch usually */
+	char *nodes;			/* String of nodes in block */
 	uint32_t node_cnt;              /* count of cnodes per block */
 #ifdef HAVE_BGL
-	char *blrtsimage;              /* BlrtsImage for this block */
+	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 #endif
-	char *linuximage;              /* LinuxImage/CnloadImage for
-					* this block */
-	char *mloaderimage;            /* mloaderImage for this block */
-	char *ramdiskimage;            /* RamDiskImage/IoloadImg for
-					* this block */
-	struct bg_record *original;    /* if this is a copy this is a
-					  pointer to the original */
+	struct bg_record *original;     /* if this is a copy this is a
+					   pointer to the original */
+	char *ramdiskimage;             /* RamDiskImage/IoloadImg for
+					 * this block */
+	rm_partition_state_t state;     /* Current state of the block */
+	int start[BA_SYSTEM_DIMENSIONS];/* start node */
+	int switch_count;               /* number of switches used. */
+	char *target_name;		/* when a block is freed this 
+					   is the name of the user we 
+					   want on the block */
+	char *user_name;		/* user using the block */
+	uid_t user_uid;   		/* Owner of block uid	*/
 } bg_record_t;
 
 /* Log a bg_record's contents */
@@ -142,7 +142,8 @@ extern int handle_small_record_request(List records, blockreq_t *blockreq,
 extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size);
 extern int down_nodecard(char *bp_name, bitoff_t io_start);
 extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap);
-extern int put_block_in_error_state(bg_record_t *bg_record, int state);
+extern int put_block_in_error_state(bg_record_t *bg_record,
+				    int state, char *reason);
 extern int resume_block(bg_record_t *bg_record);
 
 #endif /* _BLUEGENE_BG_RECORD_FUNCTIONS_H_ */

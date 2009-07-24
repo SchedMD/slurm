@@ -58,6 +58,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/slurm_strcasestr.h"
 
 /*
  * Local data
@@ -4938,6 +4939,7 @@ extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
+			pack16(0, buffer);
 			return;
 		}
 
@@ -5088,6 +5090,7 @@ extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 		count = NO_VAL;
 
 		pack16(object->without_steps, buffer);
+		pack16(object->without_usage_truncation, buffer);
 	} else if(rpc_version >= 4) {
 		if(!object) {
 			pack32(NO_VAL, buffer);
@@ -5498,6 +5501,7 @@ extern int unpack_acct_job_cond(void **object, uint16_t rpc_version, Buf buffer)
 		}
 
 		safe_unpack16(&object_ptr->without_steps, buffer);
+		safe_unpack16(&object_ptr->without_usage_truncation, buffer);
 	} else if(rpc_version >= 4) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
@@ -7277,16 +7281,16 @@ extern uint16_t str_2_classification(char *class)
 	if(!class)
 		return type;
 
-	if(strcasestr(class, "capac"))
+	if(slurm_strcasestr(class, "capac"))
 		type = ACCT_CLASS_CAPACITY;
-	else if(strcasestr(class, "capab"))
+	else if(slurm_strcasestr(class, "capab"))
 		type = ACCT_CLASS_CAPABILITY;
-	else if(strcasestr(class, "capap"))
+	else if(slurm_strcasestr(class, "capap"))
 		type = ACCT_CLASS_CAPAPACITY;
 	
-	if(strcasestr(class, "*")) 
+	if(slurm_strcasestr(class, "*")) 
 		type |= ACCT_CLASSIFIED_FLAG; 
-	else if(strcasestr(class, "class")) 
+	else if(slurm_strcasestr(class, "class")) 
 		type |= ACCT_CLASSIFIED_FLAG;
 	
 	return type;
@@ -7810,6 +7814,19 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
+       
+	/* on some systems we need to make sure we don't say something
+	   is completely up if there are cpus in an error state */
+	if(node_ptr->select_nodeinfo) {
+		uint16_t err_cpus = 0;
+		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
+					     SELECT_NODEDATA_SUBCNT,
+					     NODE_STATE_ERROR,
+					     &err_cpus);
+		if(err_cpus) 
+			return SLURM_SUCCESS;
+	}
+
  	return (*(g_acct_storage_context->ops.node_up))
 		(db_conn, cluster, node_ptr, event_time);
 }

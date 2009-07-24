@@ -1140,8 +1140,8 @@ static int _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 	job_cond.partition_list = get_jobs_msg->selected_parts;
 
 	if (get_jobs_msg->user) {
-		uid_t pw_uid = uid_from_string(get_jobs_msg->user);
-		if (pw_uid != (uid_t) -1) {
+		uid_t pw_uid;
+		if (uid_from_string (get_jobs_msg->user, &pw_uid) >= 0) {
 			char *temp = xstrdup_printf("%u", pw_uid);
 			job_cond.userid_list = list_create(slurm_destroy_char);
 			list_append(job_cond.userid_list, temp);
@@ -1533,7 +1533,7 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 
 	if ((rc = slurmdbd_unpack_init_msg(slurmdbd_conn->rpc_version, 
-				     &init_msg, in_buffer, 
+					   &init_msg, in_buffer, 
 					   slurmdbd_conf->auth_info))
 	    != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_INIT message";
@@ -1635,6 +1635,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	job.exit_code = job_comp_msg->exit_code;
 	job.job_id = job_comp_msg->job_id;
 	job.job_state = job_comp_msg->job_state;
+	job.requid = job_comp_msg->req_uid;
 	job.nodes = job_comp_msg->nodes;
 	job.start_time = job_comp_msg->start_time;
 	details.submit_time = job_comp_msg->submit_time;
@@ -2093,9 +2094,11 @@ static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 		if(user_cond && user_cond->assoc_cond 
 		   && user_cond->assoc_cond->user_list
 		   && (list_count(user_cond->assoc_cond->user_list) == 1)) {
-			uid_t pw_uid = uid_from_string(
-				list_peek(user_cond->assoc_cond->user_list));
-			if (pw_uid == *uid) {
+			uid_t pw_uid;
+			char *name;
+			name = list_peek (user_cond->assoc_cond->user_list);
+		        if ((uid_from_string (name, &pw_uid) >= 0)
+			    && pw_uid == *uid) {
 				same_user = 1;
 				goto is_same_user;
 			}
@@ -2303,6 +2306,9 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 	node_ptr.node_state = node_state_msg->state;
 
 	slurmctld_conf.fast_schedule = 0;
+	
+	if(!node_ptr.cpus)
+		node_state_msg->new_state = DBD_NODE_STATE_UP;
 
 	if(node_state_msg->new_state == DBD_NODE_STATE_UP) {
 		debug3("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
@@ -3011,7 +3017,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	step.exit_code = step_comp_msg->exit_code;
 	step.jobacct = step_comp_msg->jobacct;
 	job.job_id = step_comp_msg->job_id;
-	job.requid = step_comp_msg->req_uid;
+	step.requid = step_comp_msg->req_uid;
 	job.start_time = step_comp_msg->start_time;
 	details.submit_time = step_comp_msg->job_submit_time;
 	step.step_id = step_comp_msg->step_id;

@@ -42,37 +42,33 @@
 #include "src/smap/smap.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
-#include "src/api/node_select_info.h"
+#include "src/plugins/select/bluegene/plugin/bluegene.h"
 
 #define _DEBUG 0
 
 typedef struct {
-	char *bg_user_name;
 	char *bg_block_name;
-	char *slurm_part_name;
-	char *nodes;
-	char *ionodes;
 	enum connection_type bg_conn_type;
 #ifdef HAVE_BGL
 	enum node_use_type bg_node_use;
 #endif
-	rm_partition_state_t state;
+	char *bg_user_name;
+	char *ionodes;
+	int job_running;
 	int letter_num;
 	List nodelist;
-	int size;
+	char *nodes;
 	int node_cnt;	
 	bool printed;
-
+	int size;
+	char *slurm_part_name;
+	rm_partition_state_t state;
 } db2_block_info_t;
 
 #ifdef HAVE_BG
 static List block_list = NULL;
 #endif
 
-static char* _convert_conn_type(enum connection_type conn_type);
-#ifdef HAVE_BGL
-static char* _convert_node_use(enum node_use_type node_use);
-#endif
 #ifdef HAVE_BG
 static int _marknodes(db2_block_info_t *block_ptr, int count);
 #endif
@@ -94,6 +90,7 @@ extern void get_slurm_part()
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
 	partition_info_t part;
+	bitstr_t *nodes_req = NULL;
 
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
@@ -135,13 +132,23 @@ extern void get_slurm_part()
 		if((recs - text_line_cnt) < (text_win->_maxy-3))
 			text_line_cnt--;
 
+	if(params.hl)
+		nodes_req = get_requested_node_bitmap();
 	for (i = 0; i < recs; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
 		
 		if (!part.nodes || (part.nodes[0] == '\0'))
 			continue;	/* empty partition */
-		
+		if(nodes_req) {
+			int overlap = 0;
+			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
+			inx2bitstr(loc_bitmap, part.node_inx);
+			overlap = bit_overlap(loc_bitmap, nodes_req);
+			FREE_NULL_BITMAP(loc_bitmap);
+			if(!overlap) 
+				continue;
+		}
 #ifdef HAVE_SUN_CONST
 		set_grid_name(part.nodes, count);
 #else		
@@ -182,14 +189,15 @@ extern void get_bg_part()
 	int error_code, i, j, recs=0, count = 0, last_count = -1;
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
-	static node_select_info_msg_t *bg_info_ptr = NULL;
-	static node_select_info_msg_t *new_bg_ptr = NULL;
+	static block_info_msg_t *bg_info_ptr = NULL;
+	static block_info_msg_t *new_bg_ptr = NULL;
 
 	partition_info_t part;
 	db2_block_info_t *block_ptr = NULL;
 	db2_block_info_t *found_block = NULL;
 	ListIterator itr;
 	List nodelist = NULL;
+	bitstr_t *nodes_req = NULL;
 
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
@@ -221,28 +229,28 @@ extern void get_bg_part()
 		return;
 	}
 	if (bg_info_ptr) {
-		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
+		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&bg_info_ptr);
+			slurm_free_block_info_msg(&bg_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_bg_ptr = bg_info_ptr;
 		}
 	} else {
-		error_code = slurm_load_node_select((time_t) NULL, 
-						    &new_bg_ptr);
+		error_code = slurm_load_block_info((time_t) NULL, 
+						   &new_bg_ptr);
 	}
 	if (error_code) {
 		if (quiet_flag != 1) {
 			if(!params.commandline) {
 				mvwprintw(text_win,
 					  main_ycord, 1,
-					  "slurm_load_node_select: %s",
+					  "slurm_load_block: %s",
 					  slurm_strerror(slurm_get_errno()));
 				main_ycord++;
 			} else {
-				printf("slurm_load_node_select: %s\n",
+				printf("slurm_load_block: %s\n",
 					  slurm_strerror(slurm_get_errno()));
 			}
 		}
@@ -262,31 +270,50 @@ extern void get_bg_part()
 		if((new_bg_ptr->record_count - text_line_cnt) 
 		   < (text_win->_maxy-3))
 			text_line_cnt--;
-	
+	if(params.hl)
+		nodes_req = get_requested_node_bitmap();
 	for (i=0; i<new_bg_ptr->record_count; i++) {
+		if(nodes_req) {
+			int overlap = 0;
+			bitstr_t *loc_bitmap = bit_alloc(bit_size(nodes_req));
+			inx2bitstr(loc_bitmap, 
+				   new_bg_ptr->block_array[i].bp_inx);
+			overlap = bit_overlap(loc_bitmap, nodes_req);
+			FREE_NULL_BITMAP(loc_bitmap);
+			if(!overlap) 
+				continue;
+		}
+		if(params.io_bit && new_bg_ptr->block_array[i].ionodes) {
+			int overlap = 0;
+			bitstr_t *loc_bitmap =
+				bit_alloc(bit_size(params.io_bit));
+			inx2bitstr(loc_bitmap, 
+				   new_bg_ptr->block_array[i].ionode_inx);
+			overlap = bit_overlap(loc_bitmap,
+					      params.io_bit);
+			FREE_NULL_BITMAP(loc_bitmap);
+			if(!overlap) 
+				continue;
+		}
+		
 		block_ptr = xmalloc(sizeof(db2_block_info_t));
 			
 		block_ptr->bg_block_name 
-			= xstrdup(new_bg_ptr->bg_info_array[i].bg_block_id);
-		block_ptr->nodes 
-			= xstrdup(new_bg_ptr->bg_info_array[i].nodes);
+			= xstrdup(new_bg_ptr->block_array[i].bg_block_id);
+		block_ptr->nodes = xstrdup(new_bg_ptr->block_array[i].nodes);
 		block_ptr->nodelist = list_create(_nodelist_del);
 		_make_nodelist(block_ptr->nodes,block_ptr->nodelist);
 		
 		block_ptr->bg_user_name 
-			= xstrdup(new_bg_ptr->bg_info_array[i].owner_name);
-		block_ptr->state 
-			= new_bg_ptr->bg_info_array[i].state;
-		block_ptr->bg_conn_type 
-			= new_bg_ptr->bg_info_array[i].conn_type;
+			= xstrdup(new_bg_ptr->block_array[i].owner_name);
+		block_ptr->state = new_bg_ptr->block_array[i].state;
+		block_ptr->bg_conn_type	= new_bg_ptr->block_array[i].conn_type;
 #ifdef HAVE_BGL
-		block_ptr->bg_node_use 
-			= new_bg_ptr->bg_info_array[i].node_use;
+		block_ptr->bg_node_use = new_bg_ptr->block_array[i].node_use;
 #endif
 		block_ptr->ionodes 
-			= xstrdup(new_bg_ptr->bg_info_array[i].ionodes);
-		block_ptr->node_cnt 
-			= new_bg_ptr->bg_info_array[i].node_cnt;
+			= xstrdup(new_bg_ptr->block_array[i].ionodes);
+		block_ptr->node_cnt = new_bg_ptr->block_array[i].node_cnt;
 	       
 		itr = list_iterator_create(block_list);
 		while ((found_block = (db2_block_info_t*)list_next(itr)) 
@@ -303,8 +330,9 @@ extern void get_bg_part()
 			last_count++;
 			_marknodes(block_ptr, last_count);
 		}
-		
-		if(block_ptr->bg_conn_type == SELECT_SMALL)
+		block_ptr->job_running =
+			new_bg_ptr->block_array[i].job_running;
+		if(block_ptr->bg_conn_type >= SELECT_SMALL)
 			block_ptr->size = 0;
 
 		list_append(block_list, block_ptr);
@@ -471,11 +499,15 @@ static void _print_header_part(void)
 			mvwprintw(text_win, 
 				  main_ycord,
 				  main_xcord, "STATE");
+			main_xcord += 7;
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "JOBID");
 			main_xcord += 8;
 			mvwprintw(text_win, 
 				  main_ycord,
 				  main_xcord, "USER");
-			main_xcord += 12;
+			main_xcord += 9;
 			mvwprintw(text_win, 
 				  main_ycord,
 				  main_xcord, "CONN");
@@ -508,6 +540,7 @@ static void _print_header_part(void)
 		} else {
 			printf("        BG_BLOCK ");
 			printf("STATE ");
+			printf("   JOBID ");
 			printf("    USER ");
 			printf(" CONN ");
 #ifdef HAVE_BGL
@@ -534,6 +567,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 	int width = 0;
 	char *nodes = NULL, time_buf[20];
 	char tmp_cnt[8];
+	char tmp_char[8];
 
 #ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, 
@@ -601,18 +635,32 @@ static int _print_text_part(partition_info_t *part_ptr,
 					  main_xcord, 
 					  bg_block_state_string(
 						  db2_info_ptr->state));
+				main_xcord += 7;
+				
+				if(db2_info_ptr->job_running > NO_JOB_RUNNING)
+					snprintf(tmp_char, sizeof(tmp_char), 
+						 "%d",
+						 db2_info_ptr->job_running);
+				else
+					snprintf(tmp_char, sizeof(tmp_char),
+						 "-");
+
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, 
+					  "%.8s", tmp_char);
 				main_xcord += 8;
 				
 				mvwprintw(text_win, 
 					  main_ycord,
-					  main_xcord, "%.11s", 
+					  main_xcord, "%.8s", 
 					  db2_info_ptr->bg_user_name);
-				main_xcord += 12;
+				main_xcord += 9;
 			
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "%.5s", 
-					  _convert_conn_type(
+					  conn_type_string(
 						  db2_info_ptr->
 						  bg_conn_type));
 				main_xcord += 7;
@@ -620,7 +668,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 				mvwprintw(text_win,
 					  main_ycord,
 					  main_xcord, "%.9s",
-					  _convert_node_use(
+					  node_use_string(
 						  db2_info_ptr->bg_node_use));
 				main_xcord += 10;
 #endif
@@ -628,7 +676,11 @@ static int _print_text_part(partition_info_t *part_ptr,
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
-				main_xcord += 12;
+				main_xcord += 18;
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "?");
+				main_xcord += 7;
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
@@ -636,11 +688,11 @@ static int _print_text_part(partition_info_t *part_ptr,
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
-				main_xcord += 12;
+				main_xcord += 9;
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
-				main_xcord += 6;
+				main_xcord += 7;
 				mvwprintw(text_win, 
 					  main_ycord,
 					  main_xcord, "?");
@@ -731,12 +783,21 @@ static int _print_text_part(partition_info_t *part_ptr,
 				       bg_block_state_string(
 					       db2_info_ptr->state));
 				
+				if(db2_info_ptr->job_running > NO_JOB_RUNNING)
+					snprintf(tmp_char, sizeof(tmp_char), 
+						 "%d",
+						 db2_info_ptr->job_running);
+				else
+					snprintf(tmp_char, sizeof(tmp_char),
+						 "-");
+				
+				printf("%8.8s ", tmp_char);
 				printf("%8.8s ", db2_info_ptr->bg_user_name);
 				
-				printf("%5.5s ", _convert_conn_type(
+				printf("%5.5s ", conn_type_string(
 					       db2_info_ptr->bg_conn_type));
 #ifdef HAVE_BGL
-				printf("%9.9s ",  _convert_node_use(
+				printf("%9.9s ",  node_use_string(
 					       db2_info_ptr->bg_node_use));
 #endif
 			} 
@@ -941,52 +1002,4 @@ static int _make_nodelist(char *nodes, List nodelist)
 	return 1;
 }
 
-#endif
-
-static char* _convert_conn_type(enum connection_type conn_type)
-{
-#ifdef HAVE_BG
-	switch (conn_type) {
-	case (SELECT_MESH):
-		return "MESH";
-	case (SELECT_TORUS):
-		return "TORUS";
-	case (SELECT_SMALL):
-		return "SMALL";
-	case (SELECT_NAV):
-		return "NAV";
-#ifndef HAVE_BGL
-	case SELECT_HTC_S:
-		return "HTC_S";
-		break;
-	case SELECT_HTC_D:
-		return "HTC_D";
-		break;
-	case SELECT_HTC_V:
-		return "HTC_V";
-		break;
-	case SELECT_HTC_L:
-		return "HTC_L";
-		break;
-#endif
-	default:
-		return "?";
-	}
-#endif
-	return "?";
-}
-
-#ifdef HAVE_BGL
-static char* _convert_node_use(enum node_use_type node_use)
-{
-	switch (node_use) {
-	case (SELECT_COPROCESSOR_MODE):
-		return "COPROCESSOR";
-	case (SELECT_VIRTUAL_NODE_MODE):
-		return "VIRTUAL";
-	case (SELECT_NAV_MODE):
-		return "NAV";
-	}
-	return "?";
-}
 #endif

@@ -54,6 +54,7 @@ structure:Laboratories and Other Field Facilities">
 <ul>
 	  <li><a href="platforms.shtml" class="nav">Platforms</a></li>
 	  <li><a href="download.shtml" class="nav">Download</a></li>
+	  <li><a href="download.shtml#related" class="nav">Related Software</a></li>
 	  <li><a href="quickstart_admin.shtml" class="nav">Guide</a></li>
 </ul>
 </div>

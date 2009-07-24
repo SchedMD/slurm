@@ -65,9 +65,10 @@
 /* slurm protocol header defines, based upon config.h, 16 bits */ 
 /* A new SLURM_PROTOCOL_VERSION needs to be made each time the version
  * changes so the slurmdbd can talk all versions for update messages.
- * In slurm_protocol_util.h init_header(), and check_header_version()
+ * In slurm_protocol_util.h check_header_version(), and init_header()
  * need to be updated also when changes are added */
 #define SLURM_PROTOCOL_VERSION ((SLURM_API_MAJOR << 8) | SLURM_API_AGE)
+#define SLURM_2_0_PROTOCOL_VERSION ((20 << 8) | 0)
 #define SLURM_1_3_PROTOCOL_VERSION ((13 << 8) | 0)
 
 /* used to set flags to empty */

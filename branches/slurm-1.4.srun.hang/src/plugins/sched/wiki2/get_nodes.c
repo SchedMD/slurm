@@ -2,7 +2,7 @@
  *  get_nodes.c - Process Wiki get node info request
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -154,13 +154,11 @@ static char *	_dump_all_nodes(int *node_cnt, time_t update_time)
 	char *tmp_buf = NULL, *buf = NULL;
 	struct node_record *uniq_node_ptr = NULL;
 	hostlist_t hl = NULL;
-	uint16_t base_state;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)
 			continue;
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if (base_state == NODE_STATE_FUTURE)
+		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (use_host_exp == 2) {
 			rc = _same_info(uniq_node_ptr, node_ptr, update_time);
@@ -292,8 +290,16 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 	snprintf(tmp, sizeof(tmp), ":STATE=%s;", _get_node_state(node_ptr));
 	xstrcat(buf, tmp);
 	if (node_ptr->reason) {
-		snprintf(tmp, sizeof(tmp), "CAT=\"%s\";", node_ptr->reason);
+		/* Strip out any quotes, they confuse Moab */
+		char *reason, *bad_char;
+		reason = xstrdup(node_ptr->reason);
+		while ((bad_char = strchr(node_ptr->reason, '\'')))
+			bad_char[0] = ' ';
+		while ((bad_char = strchr(node_ptr->reason, '\"')))
+			bad_char[0] = ' ';
+		snprintf(tmp, sizeof(tmp), "CAT=\"%s\";", reason);
 		xstrcat(buf, tmp);
+		xfree(reason);
 	}
 	
 	if (update_time > last_node_update)
@@ -366,8 +372,6 @@ static char *	_get_node_state(struct node_record *node_ptr)
 {
 	static bool got_select_type = false;
 	static bool node_allocations;
-	uint16_t state = node_ptr->node_state;
-	uint16_t base_state = state & NODE_STATE_BASE;
 
 	if (!got_select_type) {
 		char * select_type = slurm_get_select_type();
@@ -380,24 +384,22 @@ static char *	_get_node_state(struct node_record *node_ptr)
 		got_select_type = true;
 	}
 
-	if ((state & NODE_STATE_DRAIN)
-	||  (state & NODE_STATE_FAIL)) {
-		if (base_state == NODE_STATE_IDLE)
+	if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
 			return "Drained";
 		return "Draining";
 	}
-	if (state & NODE_STATE_COMPLETING)
+	if (IS_NODE_COMPLETING(node_ptr))
 		return "Busy";
 
-	if (base_state == NODE_STATE_DOWN)
+	if (IS_NODE_DOWN(node_ptr))
 		return "Down";
-	if (base_state == NODE_STATE_ALLOCATED) {
+	if (IS_NODE_ALLOCATED(node_ptr)) {
 		if (node_allocations)
 			return "Busy";
 		else
 			return "Running";
 	}
-	if (base_state == NODE_STATE_IDLE)
+	if (IS_NODE_IDLE(node_ptr))
 		return "Idle";
 	
 	return "Unknown";

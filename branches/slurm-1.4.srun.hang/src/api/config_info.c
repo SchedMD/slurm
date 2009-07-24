@@ -127,8 +127,14 @@ void slurm_print_ctl_conf ( FILE* out,
 {
 	char time_str[32], tmp_str[128], *xbuf;
 	char *select_title = "";
-#ifdef HAVE_BG
-	select_title = "Bluegene configuration";
+#ifdef HAVE_BGL
+	select_title = "Bluegene/L configuration";
+#endif
+#ifdef HAVE_BGP
+	select_title = "Bluegene/P configuration";
+#endif
+#ifdef HAVE_BGQ
+	select_title = "Bluegene/Q configuration";
 #endif
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
@@ -136,10 +142,12 @@ void slurm_print_ctl_conf ( FILE* out,
 	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, 
 			     time_str, sizeof(time_str));
 	fprintf(out, "Configuration data as of %s\n", time_str);
-	fprintf(out, "AccountingStorageEnforce = %u\n",
-		slurm_ctl_conf_ptr->accounting_storage_enforce);
 	fprintf(out, "AccountingStorageBackupHost = %s\n", 
-		slurm_ctl_conf_ptr->accounting_storage_host);
+		slurm_ctl_conf_ptr->accounting_storage_backup_host);
+	accounting_enforce_string(
+		slurm_ctl_conf_ptr->accounting_storage_enforce,
+		tmp_str, sizeof(tmp_str));
+	fprintf(out, "AccountingStorageEnforce = %s\n", tmp_str);
 	fprintf(out, "AccountingStorageHost   = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_host);
 	fprintf(out, "AccountingStorageLoc    = %s\n", 
@@ -158,7 +166,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->backup_addr);
 	fprintf(out, "BackupController        = %s\n", 
 		slurm_ctl_conf_ptr->backup_controller);
-	fprintf(out, "BatchStartTime          = %u\n", 
+	fprintf(out, "BatchStartTime          = %u sec\n", 
 		slurm_ctl_conf_ptr->batch_start_timeout);
 	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->boot_time,
 			     time_str, sizeof(time_str));
@@ -197,7 +205,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		fprintf(out, "DisableRootJobs         = YES\n");
 	else
 		fprintf(out, "DisableRootJobs         = NO\n");
-
 	if (slurm_ctl_conf_ptr->enforce_part_limits)
 		fprintf(out, "EnforcePartLimits       = YES\n");
 	else
@@ -292,6 +299,17 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "PlugStackConfig         = %s\n",
 		slurm_ctl_conf_ptr->plugstack);
 
+	if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_OFF)
+		fprintf(out, "PreemptMode             = OFF\n");
+	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_CANCEL)
+		fprintf(out, "PreemptMode             = CANCEL\n");
+	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_CHECKPOINT)
+		fprintf(out, "PreemptMode             = CHECKPOINT\n");
+	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_REQUEUE)
+		fprintf(out, "PreemptMode             = REQUEUE\n");
+	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_SUSPEND)
+		fprintf(out, "PreemptMode             = SUSPEND\n");
+
 	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
 		fprintf(out, "PriorityType            = %s\n",
 			slurm_ctl_conf_ptr->priority_type);
@@ -340,6 +358,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->resume_program);
 	fprintf(out, "ResumeRate              = %u nodes/min\n", 
 		slurm_ctl_conf_ptr->resume_rate);
+	fprintf(out, "ResumeTimeout           = %u sec\n", 
+		slurm_ctl_conf_ptr->resume_timeout);
 	if (slurm_ctl_conf_ptr->resv_over_run == (uint16_t) INFINITE)
 		fprintf(out, "ResvOverRun             = UNLIMITED\n");
 	else {
@@ -419,10 +439,16 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->suspend_exc_parts);
 	fprintf(out, "SuspendProgram          = %s\n", 
 		slurm_ctl_conf_ptr->suspend_program);
-	fprintf(out, "SuspendRate             = %u\n", 
+	fprintf(out, "SuspendRate             = %u nodes/min\n", 
 		slurm_ctl_conf_ptr->suspend_rate);
-	fprintf(out, "SuspendTime             = %d\n", 
-		((int)slurm_ctl_conf_ptr->suspend_time - 1));
+	if (slurm_ctl_conf_ptr->suspend_time == 0) {
+		fprintf(out, "SuspendTime             = NONE\n");
+	} else {
+		fprintf(out, "SuspendTime             = %d sec\n", 
+			((int)slurm_ctl_conf_ptr->suspend_time - 1));
+	}
+	fprintf(out, "SuspendTimeout          = %u sec\n", 
+		slurm_ctl_conf_ptr->suspend_timeout);
 	fprintf(out, "SwitchType              = %s\n",
 		slurm_ctl_conf_ptr->switch_type);
 	fprintf(out, "TaskEpilog              = %s\n",

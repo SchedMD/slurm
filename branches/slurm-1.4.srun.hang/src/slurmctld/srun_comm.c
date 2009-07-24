@@ -85,7 +85,7 @@ extern void srun_allocate (uint32_t job_id)
 	    job_ptr->select_job->cpu_array_cnt) {
 		slurm_addr * addr;
 		resource_allocation_response_msg_t *msg_arg;
-		select_job_res_t select_ptr = job_ptr->select_job;
+		select_job_res_t *select_ptr = job_ptr->select_job;
 
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->alloc_resp_port, 
@@ -105,7 +105,7 @@ extern void srun_allocate (uint32_t job_id)
 		       select_ptr->cpu_array_reps,
 		       (sizeof(uint32_t) * select_ptr->cpu_array_cnt));
 		msg_arg->node_cnt	= job_ptr->node_cnt;
-		msg_arg->select_jobinfo = select_g_copy_jobinfo(
+		msg_arg->select_jobinfo = select_g_select_jobinfo_copy(
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
 		_srun_agent_launch(addr, job_ptr->alloc_node, 
@@ -152,7 +152,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 
 	xassert(job_ptr);
 	xassert(node_name);
-	if (!job_ptr || job_ptr->job_state != JOB_RUNNING)
+	if (!job_ptr || !IS_JOB_RUNNING(job_ptr))
 		return;
 
 	if (!node_name || (node_ptr = find_node_record(node_name)) == NULL)
@@ -208,7 +208,7 @@ extern void srun_ping (void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		
-		if (job_ptr->job_state != JOB_RUNNING)
+		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 		
 		if ((job_ptr->time_last_active <= old) && job_ptr->other_port
@@ -239,7 +239,7 @@ extern void srun_timeout (struct job_record *job_ptr)
 	struct step_record *step_ptr;
 	
 	xassert(job_ptr);
-	if (job_ptr->job_state != JOB_RUNNING)
+	if (!IS_JOB_RUNNING(job_ptr))
 		return;
 	
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
@@ -283,8 +283,7 @@ extern void srun_user_message(struct job_record *job_ptr, char *msg)
 	srun_user_msg_t *msg_arg;
 
 	xassert(job_ptr);
-	if ((job_ptr->job_state != JOB_PENDING)
-	&&  (job_ptr->job_state != JOB_RUNNING))
+	if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr))
 		return;
 
 	if (job_ptr->other_port

@@ -74,7 +74,7 @@ For example:
    \-\-begin=16:00
    \-\-begin=now+1hour
    \-\-begin=now+60           (seconds by default)
-   \-\-begin=2010-01-20T12:34:67
+   \-\-begin=2010-01-20T12:34:00
 .fi
 
 .TP
@@ -331,7 +331,7 @@ to each job step unless the \fB\-\-exclusive\fR option is used plus
 task affinity is configured. Since resource management is provided by 
 processor, the \fB\-\-ntasks\fR option must be specified, but the 
 following options should NOT be specified \fB\-\-nodes\fR, 
-\fB\-\-relative\fR, \fB\-\-relative\fR=\fIarbitrary\fR.
+\fB\-\-relative\fR, \fB\-\-distribution\fR=\fIarbitrary\fR.
 See \fBEXAMPLE\fR below.
 
 .TP
@@ -372,10 +372,12 @@ show this help message
 .RE
 
 .TP
-\fB\-I\fR, \fB\-\-immediate\fR
-exit if resources are not immediately available. By default,
-\fB\-\-immediate\fR is off, and
-.B srun
+\fB\-I\fR, \fB\-\-immediate\fR[=<\fIseconds\fR>]
+exit if resources are not available within the 
+time period specified. 
+If no argument is given, resources must be available immediately
+for the request to succeed.
+By default, \fB\-\-immediate\fR is off, and the command
 will block until resources become available.
 
 .TP
@@ -910,28 +912,33 @@ very small memory computers.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
-Set a limit on the total run time of the job step.  If the
-requested time limit exceeds the partition's time limit, the job will
-be left in a PENDING state (possibly indefinitely).  The default time
+Set a limit on the total run time of the job or job step.  If the
+requested time limit for a job exceeds the partition's time limit, 
+the job will be left in a PENDING state (possibly indefinitely).  
+If the requested time limit for a job step exceeds the partition's
+time limit, the job step will not be initiated.  The default time
 limit is the partition's time limit.  When the time limit is reached,
-all of the job's tasks are sent SIGTERM followed by SIGKILL.  The
-interval between signals is specified by the SLURM configuration
-parameter \fBKillWait\fR.  A time limit of zero requests that no time
-limit be imposed.  Acceptable time formats include "minutes",
-"minutes:seconds", "hours:minutes:seconds", "days\-hours",
-"days\-hours:minutes" and "days\-hours:minutes:seconds".
+the job's tasks are sent SIGTERM followed by SIGKILL. If the time
+limit is for the job, all job steps are signaled. If the time limit is
+for a single job step within an existing job allocation, only that job
+step will be affected. A job time limit supercedes all job step time
+limits. The interval between SIGTERM and SIGKILL is specified by the
+SLURM configuration parameter \fBKillWait\fR.  A time limit of zero
+requests that no time limit be imposed.  Acceptable time formats
+include "minutes", "minutes:seconds", "hours:minutes:seconds",
+"days\-hours", "days\-hours:minutes" and "days\-hours:minutes:seconds".
 
 .TP
 \fB\-\-task\-epilog\fR=<\fIexecutable\fR>
-The \fBslurmd\fR daemon will run \fIexecutable\fR just after each task
-terminates. This will be before after any TaskEpilog parameter
-in slurm.conf is executed. This is meant to be a very short\-lived 
-program. If it fails to terminate within a few seconds, it will 
-be killed along with any descendant processes.
+The \fBslurmstepd\fR daemon will run \fIexecutable\fR just after each task
+terminates. This will be executed before any TaskEpilog parameter in
+slurm.conf is executed. This is meant to be a very short\-lived
+program. If it fails to terminate within a few seconds, it will be
+killed along with any descendant processes.
 
 .TP
 \fB\-\-task\-prolog\fR=<\fIexecutable\fR>
-The \fBslurmd\fR daemon will run \fIexecutable\fR just before launching 
+The \fBslurmstepd\fR daemon will run \fIexecutable\fR just before launching 
 each task. This will be executed after any TaskProlog parameter 
 in slurm.conf is executed.
 Besides the normal environment variables, this has SLURM_TASK_PID
@@ -1327,13 +1334,13 @@ Same as \fB\-\-network\fR
 \fBSLURM_NNODES\fR
 Same as \fB\-N, \-\-nodes\fR
 .TP
-\fBSLURN_NTASKS_PER_CORE\fR
+\fBSLURM_NTASKS_PER_CORE\fR
 Same as \fB\-\-ntasks\-per\-core\fR
 .TP
-\fBSLURN_NTASKS_PER_NODE\fR
+\fBSLURM_NTASKS_PER_NODE\fR
 Same as \fB\-\-ntasks\-per\-node\fR
 .TP
-\fBSLURN_NTASKS_PER_SOCKET\fR
+\fBSLURM_NTASKS_PER_SOCKET\fR
 Same as \fB\-\-ntasks\-per\-socket\fR
 .TP
 \fBSLURM_NO_ROTATE\fR

@@ -55,6 +55,7 @@ extern char *default_plugstack;
 #define ACCOUNTING_ENFORCE_LIMITS 0x0002
 #define ACCOUNTING_ENFORCE_WCKEYS 0x0004
 
+#define DEFAULT_ACCOUNTING_DB      "slurm_acct_db"
 #define DEFAULT_ACCOUNTING_ENFORCE  0
 #define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"
 #define DEFAULT_AUTH_TYPE          "auth/munge"
@@ -77,6 +78,7 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_CKPT_DIR        "/var/slurm/checkpoint"
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_JOB_COMP_LOC        "/var/log/slurm_jobcomp.log"
+#define DEFAULT_JOB_COMP_DB         "slurm_jobcomp_db"
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
@@ -99,6 +101,7 @@ extern char *default_plugstack;
 #define DEFAULT_PROPAGATE_PRIO_PROCESS 0
 #define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_RESUME_RATE         300
+#define DEFAULT_RESUME_TIMEOUT      60
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDROOTFILTER     1
 #define DEFAULT_SCHEDULER_PORT      7321
@@ -118,8 +121,11 @@ extern char *default_plugstack;
 #define DEFAULT_STORAGE_LOC         "/var/log/slurm_jobacct.log"
 #define DEFAULT_STORAGE_USER        "root"
 #define DEFAULT_STORAGE_PORT        0
+#define DEFAULT_PGSQL_PORT          5432
+#define DEFAULT_MYSQL_PORT          3306
 #define DEFAULT_SUSPEND_RATE        60
 #define DEFAULT_SUSPEND_TIME        0
+#define DEFAULT_SUSPEND_TIMEOUT     30
 #define DEFAULT_SWITCH_TYPE         "switch/none"
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"

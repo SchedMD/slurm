@@ -109,8 +109,8 @@ and later restarted.
 .TP
 \fBDbdBackupHost\fR
 The name of the machine where the backup Slurm Database Daemon is executed. 
-This host must have access to the same underlying database specified by the 
-'Storage' options mentioned below.
+This host must have access to the same underlying database specified by
+the 'Storage' options mentioned below.
 This should be a node name without the full domain name.  I.e., the hostname
 returned by the \fIgethostname()\fR function cut at the first dot (e.g. use 
 "tux001" rather than "tux001.my.com").
@@ -247,7 +247,10 @@ Ideally this should be the host on which slurmdbd executes.
 .TP
 \fBStorageBackupHost\fR
 Define the name of the backup host the database is running where we are going
-to store the data.
+to store the data.  This can be viewed as a backup solution when the 
+StorageHost is not responding.  It is up to the backup solution to enforce the 
+coherency of the accounting information between the two hosts. With clustered 
+database solutions (acitve/passive HA), you would not need to use this feature.
 Default is none.
 
 .TP

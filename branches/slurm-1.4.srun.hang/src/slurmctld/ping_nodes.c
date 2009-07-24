@@ -125,12 +125,12 @@ void ping_nodes (void)
 	int i;
 	time_t now, still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
-	uint16_t base_state, no_resp_flag;
 	bool restart_flag;
 	hostlist_t down_hostlist = NULL;
 	char host_str[MAX_SLURM_NAME];
 	agent_arg_t *ping_agent_args = NULL;
 	agent_arg_t *reg_agent_args = NULL;
+	struct node_record *node_ptr;
 
 	now = time (NULL);
 	
@@ -171,24 +171,18 @@ void ping_nodes (void)
 	    (offset >= (max_reg_threads * MAX_REG_FREQUENCY)))
 		offset = 0;
 
-	for (i = 0; i < node_record_count; i++) {
-		struct node_record *node_ptr;
-		
-		node_ptr = &node_record_table_ptr[i];
-		base_state   = node_ptr->node_state & NODE_STATE_BASE;
-		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-
-		if ((base_state == NODE_STATE_FUTURE) ||
-		    (node_ptr->node_state & NODE_STATE_POWER_SAVE))
+	for (i=0, node_ptr=node_record_table_ptr; 
+	     i<node_record_count; i++, node_ptr++) {
+		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_POWER_SAVE(node_ptr))
 			continue;
 		if ((slurmctld_conf.slurmd_timeout == 0) &&
-		    (base_state != NODE_STATE_UNKNOWN)   &&
-		    (no_resp_flag == 0))
+		    (!IS_NODE_UNKNOWN(node_ptr))         &&
+		    (!IS_NODE_NO_RESPOND(node_ptr)))
 			continue;
 
 		if ((node_ptr->last_response != (time_t) 0)     &&
 		    (node_ptr->last_response <= node_dead_time) &&
-		    (base_state != NODE_STATE_DOWN)) {
+		    (!IS_NODE_DOWN(node_ptr))) {
 			if (down_hostlist)
 				(void) hostlist_push_host(down_hostlist,
 					node_ptr->name);
@@ -217,7 +211,7 @@ void ping_nodes (void)
 		 * counter and gets updated configuration information 
 		 * once in a while). We limit these requests since they 
 		 * can generate a flood of incomming RPCs. */
-		if ((base_state == NODE_STATE_UNKNOWN) || restart_flag ||
+		if (IS_NODE_UNKNOWN(node_ptr) || restart_flag ||
 		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
 			hostlist_push(reg_agent_args->hostlist, 
 				      node_ptr->name);
@@ -225,13 +219,13 @@ void ping_nodes (void)
 			continue;
 		}
 
-		if ((!no_resp_flag) && 
+		if ((!IS_NODE_NO_RESPOND(node_ptr)) && 
 		    (node_ptr->last_response >= still_live_time))
 			continue;
 
 		/* Do not keep pinging down nodes since this can induce
 		 * huge delays in hierarchical communication fail-over */
-		if ((no_resp_flag) && (base_state == NODE_STATE_DOWN))
+		if (IS_NODE_NO_RESPOND(node_ptr) && IS_NODE_DOWN(node_ptr))
 			continue;
 
 		hostlist_push(ping_agent_args->hostlist, node_ptr->name);
@@ -276,23 +270,18 @@ void ping_nodes (void)
 extern void run_health_check(void)
 {
 	int i;
-	uint16_t base_state;
 	char host_str[MAX_SLURM_NAME];
 	agent_arg_t *check_agent_args = NULL;
-	
+	struct node_record *node_ptr;
+
 	check_agent_args = xmalloc (sizeof (agent_arg_t));
 	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
 	check_agent_args->retry = 0;
 	check_agent_args->hostlist = hostlist_create("");
 
-	for (i = 0; i < node_record_count; i++) {
-		struct node_record *node_ptr;
-		
-		node_ptr   = &node_record_table_ptr[i];
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-
-		if ((base_state == NODE_STATE_DOWN) ||
-		    (base_state == NODE_STATE_FUTURE))
+	for (i=0, node_ptr=node_record_table_ptr; 
+	     i<node_record_count; i++, node_ptr++) {
+		if (IS_NODE_DOWN(node_ptr) || IS_NODE_FUTURE(node_ptr))
 			continue;
 
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */

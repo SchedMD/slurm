@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
 if WITH_GNU_LD
 VERSION_SCRIPT = \
@@ -74,7 +74,7 @@ slurmapi_src =           \
 	job_info.c job_info.h \
 	job_step_info.c  \
 	node_info.c      \
-	node_select_info.c node_select_info.h \
+	block_info.c \
 	partition_info.c \
 	reservation_info.c \
 	signal.c         \

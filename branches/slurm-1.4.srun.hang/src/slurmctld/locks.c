@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  locks.c - semaphore functions for slurmctld
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, Randy Sanchez <rsancez@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -146,8 +147,8 @@ static void _wr_rdunlock(lock_datatype_t datatype)
 {
 	slurm_mutex_lock(&locks_mutex);
 	slurmctld_locks.entity[read_lock(datatype)]--;
-	slurm_mutex_unlock(&locks_mutex);
 	pthread_cond_broadcast(&locks_cond);
+	slurm_mutex_unlock(&locks_mutex);
 }
 
 /* _wr_wrlock - Issue a write lock on the specified data type */
@@ -177,8 +178,8 @@ static void _wr_wrunlock(lock_datatype_t datatype)
 {
 	slurm_mutex_lock(&locks_mutex);
 	slurmctld_locks.entity[write_lock(datatype)]--;
-	slurm_mutex_unlock(&locks_mutex);
 	pthread_cond_broadcast(&locks_cond);
+	slurm_mutex_unlock(&locks_mutex);
 }
 
 /* get_lock_values - Get the current value of all locks

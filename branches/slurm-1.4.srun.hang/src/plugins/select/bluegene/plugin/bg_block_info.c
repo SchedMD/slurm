@@ -137,7 +137,8 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		bg_record->target_name = xstrdup(bg_record->user_name);
 	}
 
-	if(remove_from_bg_list(bg_lists->job_running, bg_record) == SLURM_SUCCESS) 
+	if(remove_from_bg_list(bg_lists->job_running, bg_record)
+	   == SLURM_SUCCESS) 
 		num_unused_cpus += bg_record->cpu_cnt;			       
 	remove_from_bg_list(bg_lists->booted, bg_record);
 
@@ -172,11 +173,11 @@ extern int block_ready(struct job_record *job_ptr)
 	char *block_id = NULL;
 	bg_record_t *bg_record = NULL;
 	
-	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
-				  SELECT_DATA_BLOCK_ID, &block_id);
+	rc = select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					 SELECT_JOBDATA_BLOCK_ID, &block_id);
 	if (rc == SLURM_SUCCESS) {
-		bg_record = find_bg_record_in_list(bg_lists->main, block_id);
 		slurm_mutex_lock(&block_state_mutex);
+		bg_record = find_bg_record_in_list(bg_lists->main, block_id);
 		
 		if(bg_record) {
 			if(bg_record->job_running != job_ptr->job_id) {
@@ -190,7 +191,11 @@ extern int block_ready(struct job_record *job_ptr)
 			else
 				rc = READY_JOB_ERROR;	/* try again */
 		} else {
-			error("block_ready: block %s not in bg_lists->main.",
+			/* This means the block has been removed and
+			   is no longer valid.  This could happen
+			   often during an epilog on a busy system.
+			*/
+			debug2("block_ready: block %s not in bg_lists->main.",
 			      block_id);
 			rc = READY_JOB_FATAL;	/* fatal error */
 		}
@@ -206,24 +211,26 @@ extern int block_ready(struct job_record *job_ptr)
 /* Pack all relevent information about a block */
 extern void pack_block(bg_record_t *bg_record, Buf buffer)
 {
-	packstr(bg_record->nodes, buffer);
-	packstr(bg_record->ionodes, buffer);
-	packstr(bg_record->user_name, buffer);
 	packstr(bg_record->bg_block_id, buffer);
-	pack16((uint16_t)bg_record->state, buffer);
-	pack16((uint16_t)bg_record->conn_type, buffer);
-#ifdef HAVE_BGL
-	pack16((uint16_t)bg_record->node_use, buffer);	
-#endif
-	pack32((uint32_t)bg_record->node_cnt, buffer);
-	pack_bit_fmt(bg_record->bitmap, buffer);
-	pack_bit_fmt(bg_record->ionode_bitmap, buffer);
 #ifdef HAVE_BGL
 	packstr(bg_record->blrtsimage, buffer);
 #endif
+	pack_bit_fmt(bg_record->bitmap, buffer);
+	pack16((uint16_t)bg_record->conn_type, buffer);
+	packstr(bg_record->ionodes, buffer);
+	pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+	pack32((uint32_t)bg_record->job_running, buffer);
 	packstr(bg_record->linuximage, buffer);
 	packstr(bg_record->mloaderimage, buffer);
+	packstr(bg_record->nodes, buffer);
+	pack32((uint32_t)bg_record->node_cnt, buffer);
+#ifdef HAVE_BGL
+	pack16((uint16_t)bg_record->node_use, buffer);	
+#endif
+
+	packstr(bg_record->user_name, buffer);
 	packstr(bg_record->ramdiskimage, buffer);
+	pack16((uint16_t)bg_record->state, buffer);
 }
 
 extern int update_block_list()
@@ -410,7 +417,18 @@ extern int update_block_list()
 				}
 				remove_from_bg_list(bg_lists->booted,
 						    bg_record);
-			} 
+			} else if(bg_record->state == RM_PARTITION_ERROR) {
+				if(bg_record->boot_state == 1)
+					error("Block %s in an error "
+					      "state while booting.",
+					      bg_record->bg_block_id);
+				else					
+					error("Block %s in an error state.",
+					      bg_record->bg_block_id);
+				remove_from_bg_list(bg_lists->booted,
+						    bg_record);
+				trigger_block_error();
+			}
 			updated = 1;
 			
 		}
@@ -428,35 +446,19 @@ extern int update_block_list()
 				
 				if(update_block_user(bg_record, 0) == 1)
 					last_bg_update = time(NULL);
-				
+				if(bg_record->job_ptr)
+					bg_record->job_ptr->job_state |=
+						JOB_CONFIGURING;
 				break;
 			case RM_PARTITION_ERROR:
-				bg_record->boot_state = 0;
-				bg_record->boot_count = 0;
-				if(bg_record->job_running > NO_JOB_RUNNING) {
-					error("Block %s in an error "
-					      "state while booting.  "
-					      "Failing job %u.",
-					      bg_record->bg_block_id,
-					      bg_record->job_running);
-					freeit = xmalloc(
-						sizeof(kill_job_struct_t));
-					freeit->jobid = bg_record->job_running;
-					list_push(kill_job_list, freeit);
-					if(remove_from_bg_list(
-						   bg_lists->job_running, 
-						   bg_record) 
-					   == SLURM_SUCCESS) {
-						num_unused_cpus += 
-							bg_record->cpu_cnt;
-					} 
-				} else 
-					error("block %s in an error "
-					      "state while booting.",
-					      bg_record->bg_block_id);
-				remove_from_bg_list(bg_lists->booted,
-						    bg_record);
-				trigger_block_error();
+				/* If we get an error on boot that
+				 * means it is a transparent L3 error
+				 * and should be trying to fix
+				 * itself.  If this is the case we
+				 * just hang out waiting for the state
+				 * to go to free where we will try to
+				 * boot again below.
+				 */
 				break;
 			case RM_PARTITION_FREE:
 				if(bg_record->boot_count < RETRY_BOOT_COUNT) {
@@ -508,6 +510,9 @@ extern int update_block_list()
 			case RM_PARTITION_READY:
 				debug("block %s is ready.",
 				      bg_record->bg_block_id);
+				if(bg_record->job_ptr)
+					bg_record->job_ptr->job_state &=
+						(~JOB_CONFIGURING);
 				if(set_block_user(bg_record) == SLURM_ERROR) {
 					freeit = xmalloc(
 						sizeof(kill_job_struct_t));

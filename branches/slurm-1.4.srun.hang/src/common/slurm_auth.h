@@ -89,6 +89,7 @@ enum {
     SLURM_AUTH_NOUSER,              /* User not defined on host.         */
     SLURM_AUTH_INVALID,             /* Invalid credential.               */
     SLURM_AUTH_MISMATCH,            /* Credential from another plugin.   */
+    SLURM_AUTH_VERSION,             /* Credential from old plugin.       */
 
     SLURM_AUTH_FIRST_LOCAL_ERROR    /* Always keep me last. */
 };

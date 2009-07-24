@@ -84,7 +84,7 @@ main (int argc, char *argv[])
 		{"oneliner", 0, 0, 'o'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2", 0, 0, 'P'},
-		{"quiet",    0, 0, 'q'},
+		{"quiet",    0, 0, 'Q'},
 		{"readonly", 0, 0, 'r'},
 		{"associations", 0, 0, 's'},
 		{"verbose",  0, 0, 'v'},
@@ -102,7 +102,7 @@ main (int argc, char *argv[])
 	verbosity         = 0;
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "hionpPqrsvV",
+	while((opt_char = getopt_long(argc, argv, "hionpPQrsvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -131,7 +131,7 @@ main (int argc, char *argv[])
 			print_fields_parsable_print =
 			PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
-		case (int)'q':
+		case (int)'Q':
 			quiet_flag = 1;
 			break;
 		case (int)'r':
@@ -193,11 +193,14 @@ main (int argc, char *argv[])
 	errno = 0;
 	db_conn = acct_storage_g_get_connection(false, 0, 1);
 	if(errno != SLURM_SUCCESS) {
+		int tmp_errno = errno;
 		if((input_field_count == 2) &&
 		   (!strncasecmp(argv[2], "Configuration", strlen(argv[1]))) &&
 		   ((!strncasecmp(argv[1], "list", strlen(argv[0]))) || 
 		    (!strncasecmp(argv[1], "show", strlen(argv[0])))))
 			sacctmgr_list_config(false);
+		errno = tmp_errno;
+		fprintf(stderr, "Problem talking to the database: %m\n");
 		exit(1);
 	}
 	my_uid = getuid();
@@ -240,7 +243,9 @@ getline(const char *prompt)
 	int len;
 	printf("%s", prompt);
 
-	fgets(buf, 4096, stdin);
+	/* we only set this here to avoid a warning.  We throw it away
+	   later. */
+	line = fgets(buf, 4096, stdin);
 	len = strlen(buf);
 	if ((len > 0) && (buf[len-1] == '\n'))
 		buf[len-1] = '\0';
@@ -735,7 +740,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
-     -q or --quiet: equivalent to \"quiet\" command                        \n\
+     -Q or --quiet: equivalent to \"quiet\" command                        \n\
      -r or --readonly: equivalent to \"readonly\" command                  \n\
      -s or --associations: equivalent to \"associations\" command          \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
@@ -864,6 +869,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        archive load       - File=, or Insert=                              \n\
                                                                            \n\
   Format options are different for listing each entity pair.               \n\
+                                                                           \n\
+  One can get an number of characters by following the field option with   \n\
+  a %%NUMBER option.  i.e. format=name%%30 will print 30 chars of field name.\n\
                                                                            \n\
        Account            - Account, CoordinatorList, Description,         \n\
                             Organization                                   \n\

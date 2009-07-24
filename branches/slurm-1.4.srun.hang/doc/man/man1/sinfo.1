@@ -1,4 +1,4 @@
-.TH SINFO "1" "February 2008" "sinfo 2.0" "Slurm components"
+.TH SINFO "1" "May 2008" "sinfo 2.0" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -257,8 +257,9 @@ default sort value is "N" (increasing node name).
 List nodes only having the given state(s).  Multiple states
 may be comma separated and the comparison is case insensitive.
 Possible values include (case insensitive): ALLOC, ALLOCATED,
-COMP, COMPLETING, DOWN, DRAIN, DRAINED, DRNG, DRAINING, FAIL, 
-FAILING, IDLE, MAINT, UNK, and UNKNOWN.  
+COMP, COMPLETING, DOWN, DRAIN (for node in DRAINING or DRAINED
+states), DRAINED, DRAINING, FAIL, FAILING, IDLE, MAINT, NO_RESPOND, 
+POWER_SAVE, UNK, and UNKNOWN.  
 By default nodes in the specified state are reported whether 
 they are responding or not.  
 The \fB\-\-dead\fR and \fB\-\-responding\fR options may be 
@@ -369,9 +370,12 @@ any new work.  If the node remains non\-responsive, it will
 be placed in the \fBDOWN\fR state (except in the case of
 \fBCOMPLETING\fR, \fBDRAINED\fR, \fBDRAINING\fR,
 \fBFAIL\fR, \fBFAILING\fR nodes).
+
 If the node state code is followed by "~", this indicates
 the node is presently in a power saving mode (typically
 running at reduced frequency).
+If the node state code is followed by "#", this indicates
+the node is presently being powered up or configured.
 .TP 12
 \fBALLOCATED\fR
 The node has been allocated to one or more jobs.
@@ -522,6 +526,7 @@ Not Responding                      dev8
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

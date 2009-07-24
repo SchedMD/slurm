@@ -163,37 +163,43 @@ extern char * slurm_job2moab_task_list(struct job_record *job_ptr)
 /* Return task list in Moab format 1: tux0:tux0:tux1:tux1:tux2 */
 static char * _task_list(struct job_record *job_ptr)
 {
-	int i, j, task_cnt;
+	int i, j, node_inx = 0, task_cnt;
 	char *buf = NULL, *host;
-	hostlist_t hl = hostlist_create(job_ptr->nodes);
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 
-	xassert(select_ptr && select_ptr->cpus);
-	if (hl == NULL) {
-		error("hostlist_create error for job %u, %s",
-			job_ptr->job_id, job_ptr->nodes);
-		return buf;
-	}
-
+	xassert(select_ptr);
 	for (i=0; i<select_ptr->nhosts; i++) {
-		host = hostlist_shift(hl);
-		if (host == NULL) {
-			error("bad node_cnt for job %u (%s, %d)", 
-				job_ptr->job_id, job_ptr->nodes,
-				job_ptr->node_cnt);
-			break;
+		if (i == 0) {
+			xassert(select_ptr->cpus && select_ptr->node_bitmap);
+			node_inx = bit_ffs(select_ptr->node_bitmap);
+		} else {
+			for (node_inx++; node_inx<node_record_count; 
+			     node_inx++) {
+				if (bit_test(select_ptr->node_bitmap,node_inx))
+					break;
+			}
+			if (node_inx >= node_record_count) {
+				error("Improperly formed select_job for %u",
+				      job_ptr->job_id);
+				break;
+			}
 		}
+		host = node_record_table_ptr[node_inx].name;
+
 		task_cnt = select_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
+		if (task_cnt < 1) {
+			error("Invalid task_cnt for job %u on node %s",
+			      job_ptr->job_id, host);
+			task_cnt = 1;
+		}
 		for (j=0; j<task_cnt; j++) {
 			if (buf)
 				xstrcat(buf, ":");
 			xstrcat(buf, host);
 		}
-		free(host);
 	}
-	hostlist_destroy(hl);
 	return buf;
 }
 
@@ -255,31 +261,38 @@ static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
 /* Return task list in Moab format 2: tux[0-1]*2:tux2 */
 static char * _task_list_exp(struct job_record *job_ptr)
 {
-	int i, reps = -1, task_cnt;
+	int i, node_inx = 0, reps = -1, task_cnt;
 	char *buf = NULL, *host;
-	hostlist_t hl = hostlist_create(job_ptr->nodes);
 	hostlist_t hl_tmp = (hostlist_t) NULL;
-	select_job_res_t select_ptr = job_ptr->select_job;
+	select_job_res_t *select_ptr = job_ptr->select_job;
 
-	xassert(select_ptr && select_ptr->cpus);
-	if (hl == NULL) {
-		error("hostlist_create error for job %u, %s",
-			job_ptr->job_id, job_ptr->nodes);
-		return buf;
-	}
-
+	xassert(select_ptr);
 	for (i=0; i<select_ptr->nhosts; i++) {
-		host = hostlist_shift(hl);
-		if (host == NULL) {
-			error("bad node_cnt for job %u (%s, %d)", 
-				job_ptr->job_id, job_ptr->nodes,
-				job_ptr->node_cnt);
-			break;
+		if (i == 0) {
+			xassert(select_ptr->cpus && select_ptr->node_bitmap);
+			node_inx = bit_ffs(select_ptr->node_bitmap);
+		} else {
+			for (node_inx++; node_inx<node_record_count; 
+			     node_inx++) {
+				if (bit_test(select_ptr->node_bitmap,node_inx))
+					break;
+			}
+			if (node_inx >= node_record_count) {
+				error("Improperly formed select_job for %u",
+				      job_ptr->job_id);
+				break;
+			}
 		}
+		host = node_record_table_ptr[node_inx].name;
 
 		task_cnt = select_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
+		if (task_cnt < 1) {
+			error("Invalid task_cnt for job %u on node %s",
+			      job_ptr->job_id, host);
+			task_cnt = 1;
+		}
 		if (reps == task_cnt) {
 			/* append to existing hostlist record */
 			if (hostlist_push(hl_tmp, host) == 0)
@@ -295,9 +308,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 			else
 				error("hostlist_create failure");
 		}
-		free(host);
 	}
-	hostlist_destroy(hl);
 	if (hl_tmp)
 		_append_hl_buf(&buf, &hl_tmp, &reps);
 	return buf;

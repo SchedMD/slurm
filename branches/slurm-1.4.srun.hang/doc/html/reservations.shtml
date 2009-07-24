@@ -10,8 +10,8 @@ Note that resource reservations are not compatable with SLURM's
 gang scheduler plugin since the termination time of running jobs
 is not possible to accurately predict.</p>
 
-<p>Reservations can be created, updated, or destroyed only by user root 
-using the <i>scontrol</i> command. 
+<p>Reservations can be created, updated, or destroyed only by user root
+or the configured <i>SlurmUser</i> using the <i>scontrol</i> command. 
 The <i>scontrol</i>, <i>smap</i> and <i>sview</i> commands can be used
 to view reservations. 
 The man pages for the various commands contain details.</p>
@@ -27,19 +27,48 @@ an entire computer at a particular time for a system down time.
 The example below shows the creation of a full-system reservation 
 at 16:00 hours on 6 February and lasting for 120 minutes. 
 The "maint" flag is used to identify the reservation for accounting 
-purposes as system maintenance. As the reservation time approaches, 
+purposes as system maintenance. 
+The "ignore_jobs" flag is used to indicate that we can ignore currently 
+running jobs when creating this reservation. 
+By default, only nodes which are not expected to have a running job
+at the start time can be reserved (the time limit of all running 
+jobs will have been reached).
+In this case we can manually cancel the running jobs as needed 
+to perform system maintenance.
+As the reservation time approaches, 
 only jobs that can complete by the reservation time will be 
 initiated.</p>
 <pre>
 $ scontrol create reservation starttime=2009-02-06T16:00:00 \
-   duration=120 user=root flags=maint nodes=ALL
+   duration=120 user=root flags=maint,ignore_jobs nodes=ALL
+Reservation created: root_3
+
+$ scontrol show reservation
+ReservationName=root_3 StartTime=2009-02-06T16:00:00 
+   EndTime=2009-02-06T18:00:00 Duration=120
+   Nodes=ALL NodeCnt=20
+   Features=(null) PartitionName=(null)
+   Flags=MAINT,SPEC_NODES,IGNORE_JOBS Licenses=(null)
+   Users=root Accounts=(null)
+</pre>
+
+<p>A variation of this would be to configure license to 
+represent system resources, such as a global file system.
+One could create a reservation for all of those licenses
+in order to perform maintenance on that resource.</p>
+<pre>
+$ scontrol create reservation starttime=2009-04-06T16:00:00 \
+   duration=120 user=root flags=maint,ignore_jobs \
+   licenses=lustre*1000
 Reservation created: root_4
 
 $ scontrol show reservation
-ReservationName=root_4 StartTime=2009-02-06T16:00:00 
-   EndTime=2009-02-06T18:00:00 Duration=120
-   Nodes=ALL NodeCnt=20 Features=(null) PartitionName=(null)
-   Flags=MAINT,SPEC_NODES Users=root Accounts=(null)
+ReservationName=root_4 StartTime=2009-04-06T16:00:00 
+   EndTime=2009-04-06T18:00:00 Duration=120
+   Nodes=ALL NodeCnt=20
+   Features=(null) PartitionName=(null)
+   Flags=MAINT,SPEC_NODES,IGNORE_JOBS Licenses=lustre*1000
+   Users=root Accounts=(null)
 </pre>
 
 <p>Another mode of operation would be to reserve specific nodes
@@ -55,8 +84,10 @@ Reservation created: root_5
 $ scontrol show res
 ReservationName=root_5 StartTime=2009-02-04T16:22:57 
    EndTime=2009-02-04T16:21:57 Duration=4294967295
-   Nodes=sun000 NodeCnt=1 Features=(null) PartitionName=(null)
-   Flags=MAINT,SPEC_NODES Users=root Accounts=(null)
+   Nodes=sun000 NodeCnt=1 
+   Features=(null) PartitionName=(null)
+   Flags=MAINT,SPEC_NODES Licenses=(null)
+   Users=root Accounts=(null)
 </pre>
 
 <p>Our final example is to reserve ten nodes in the default 
@@ -72,7 +103,8 @@ $ scontrol show res
 ReservationName=alan_6 StartTime=2009-02-05T12:00:00 
    EndTime=2009-02-05T13:00:00 Duration=60
    Nodes=sun[000-003,007,010-013,017] NodeCnt=10 
-   Features=(null) PartitionName=pdebug Flags=DAILY
+   Features=(null) PartitionName=pdebug 
+   Flags=DAILY Licenses=(null)
    Users=alan,brenda Accounts=(null)
 </pre>
 
@@ -83,11 +115,17 @@ reservation. Note that the reservation creation request can also
 identify the partition from which to select the nodes or _one_
 feature that every selected node must contain.</p>
 
-<p>Reservations must not overlap. They must either include 
+<p>Reservations must not overlap, with the exception of 
+maintenance mode as described below. They must either include 
 different nodes or operate at different times. If specific nodes
 are not specified when a reservation is created, SLURM will 
 automatically select nodes to avoid overlap and insure that
-the selected nodes are available when the reservation begins.</p>
+the selected nodes are available when the reservation begins.
+For ease of system maintenance, you can create a reservation
+with the "maint" flag that overlaps existing reservations.
+This permits an administrator to easily create a maintenance 
+reservation for an entire cluster without needing to remove 
+or reschedule pre-existing reservations.</p>
 
 <h2>Reservation Use</h2>
 
@@ -111,15 +149,15 @@ sbatch: Submitted batch job 65540
 For example their duration could be altered or the users
 granted access changed as shown below:</p>
 <pre>
-$ scontrol update ReservationName=root_4 \
+$ scontrol update ReservationName=root_3 \
    duration=150 users=admin
 Reservation updated.
 
-bash-3.00$ scontrol show ReservationName=root_4
-ReservationName=root_4 StartTime=2009-02-06T16:00:00 
+bash-3.00$ scontrol show ReservationName=root_3
+ReservationName=root_3 StartTime=2009-02-06T16:00:00 
    EndTime=2009-02-06T18:30:00 Duration=150
    Nodes=ALL NodeCnt=20 Features=(null) 
-   PartitionName=(null) Flags=MAINT,SPEC_NODES
+   PartitionName=(null) Flags=MAINT,SPEC_NODES Licenses=(null)
    Users=jette Accounts=(null)
 </pre>
 
@@ -147,13 +185,12 @@ to have used half of the reserved resources).</p>
 <p>Several enhancements are anticipated at some point in the future.
 <ol>
 <li>The automatic selection of nodes for a reservation create request may be
-sub-optimal in terms of locality (for optimized application communication).</li>
-<li> The feature specification in the reservation creation request should be 
-made more flexible to accept multiple features with AND or OR operators.</li> 
+sub-optimal in terms of locality (for optimized application 
+communication).</li> 
 </ol>
 
 
-<p style="text-align: center;">Last modified 26 February 2009</p>
+<p style="text-align: center;">Last modified 1 July 2009</p>
 
 <!--#include virtual="footer.txt"-->
 

@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "May 2008" "squeue 2.0" "Slurm components"
+.TH SQUEUE "1" "July 2009" "squeue 2.1" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -41,6 +41,8 @@ By default, prints a time stamp with the header.
 .TP
 \fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
 Requests a comma separated list of job ids to display.  Defaults to all jobs.
+The \fB\-\-jobs=<job_id_list>\fR option may be used in conjunction with the
+\fB\-\-steps\fR option to print step information about specific jobs.
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -98,9 +100,6 @@ Account associated with the job.
 \fB%A\fR
 Number of tasks created by a job step.
 This reports the value of the \fBsrun \-\-ntasks\fR option.
-.TP
-\fB%b\fR 
-Time at which the job began execution
 .TP
 \fB%c\fR 
 Minimum number of CPUs (processors) per node requested by the job.
@@ -160,7 +159,7 @@ Minimum number of threads per core requested by the job.
 This reports the value of the \fBsrun \-\-minthreads\fR option.
 .TP
 \fB%l\fR
-Time limit of the job in days\-hours:minutes:seconds. 
+Time limit of the job or job step in days\-hours:minutes:seconds. 
 The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
 .TP
 \fB%m\fR
@@ -183,9 +182,6 @@ List of nodes allocated to the job or job step. In the case of a
 \fICOMPLETING\fR job, the list of nodes will comprise only those
 nodes that have not yet been returned to service. This may result 
 in the node count being greater than the number of listed nodes.
-.TP
-\fB%o\fR
-Minimum number of nodes requested by the job.
 .TP
 \fB%O\fR
 Are contiguous nodes requested by the job.
@@ -229,14 +225,15 @@ Start time of the job or job step.
 .TP
 \fB%t\fR 
 Job state, compact form:
-PD (pending), R (running), CA (cancelled), CG (completing), CD (completed), 
+PD (pending), R (running), CA (cancelled), CF(configuring), 
+CG (completing), CD (completed), 
 F (failed), TO (timeout), and NF (node failure).
 See the \fBJOB STATE CODES\fR section below for more information.
 .TP
 \fB%T\fR 
 Job state, extended form: 
-PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, FAILED, TIMEOUT, 
-and NODE_FAIL.
+PENDING, RUNNING, SUSPENDED, CANCELLED, COMPLETING, COMPLETED, CONFIGURING, 
+FAILED, TIMEOUT, and NODE_FAIL.
 See the \fBJOB STATE CODES\fR section below for more information.
 .TP
 \fB%u\fR 
@@ -251,24 +248,10 @@ Reservation for the job.
 \fB%x\fR 
 List of node names explicitly excluded by the job.
 .TP
-\fB%X\fR 
-Number of requested sockets per node for the job.
-.TP
-\fB%Y\fR 
-Number of requested cores per socket for the job.
-.TP
-\fB%Z\fR 
-Number of requested threads per core for the job.
-.TP
-\fB%z\fR 
-Extended processor information: number of requested sockets, cores, 
-threads (S:C:T) per node for the job.
+\fB%z\fR
+Number of requested sockets, cores, and threads (S:C:T) per node for
+the job.
 .RE
-
-.TP
-\fB\-U <account_list>\fR, \fB\-\-account=<account_list>\fR
-Specify the accounts of the jobs to view. Accepts a comma separated 
-list of account names. This have no effect when listing job steps.
 
 .TP
 \fB\-p <part_list>\fR, \fB\-\-partition=<part_list>\fR
@@ -304,10 +287,15 @@ state names or "all". If "all" is specified then jobs of all states will be
 reported. If no state is specified then pending, running, and completing
 jobs are reported. Valid states (in both extended and compact form) include:
 PENDING (PD), RUNNING (R), SUSPENDED (S), 
-COMPLETING (CG), COMPLETED (CD), CANCELLED (CA),
+COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
 FAILED (F), TIMEOUT (TO), and NODE_FAIL (NF). Note the \fB<state_list>\fR
 supplied is case insensitve ("pd" and "PD" work the same).
 See the \fBJOB STATE CODES\fR section below for more information.
+
+.TP
+\fB\-U <account_list>\fR, \fB\-\-account=<account_list>\fR
+Specify the accounts of the jobs to view. Accepts a comma separated 
+list of account names. This have no effect when listing job steps.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
@@ -388,6 +376,10 @@ The job may or may not have been initiated.
 .TP
 \fBCD  COMPLETED\fR
 Job has terminated all processes on all nodes.
+.TP
+\fBCF  CONFIGURING\fR
+Job has been allocated resources, but are waiting for them to become ready for use
+(e.g. booting).
 .TP
 \fBCG  COMPLETING\fR
 Job is in the process of completing. Some processes on some nodes may still be active.
@@ -494,6 +486,7 @@ Print information only about job step 65552.1:
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

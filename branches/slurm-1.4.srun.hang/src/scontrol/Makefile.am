@@ -8,6 +8,7 @@ bin_PROGRAMS = scontrol
 
 scontrol_SOURCES =	\
 	create_res.c	\
+	info_block.c	\
 	info_job.c	\
 	info_node.c	\
 	info_part.c	\

@@ -104,6 +104,13 @@ static uint32_t _parse_flags(const char *flagstr, const char *msg)
 				outflags |= RESERVE_FLAG_NO_MAINT;
 			else 
 				outflags |= RESERVE_FLAG_MAINT;
+		} else if (strncasecmp(curr, "Ignore_Jobs", MAX(taglen,1)) 
+			   == 0) {
+			curr += taglen;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_IGN_JOB;
+			else 
+				outflags |= RESERVE_FLAG_IGN_JOBS;
 		} else if (strncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
@@ -137,8 +144,9 @@ static uint32_t _parse_flags(const char *flagstr, const char *msg)
  * IN argv - list of arguments
  * IN msg  - a string to append to any error message
  * OUT resv_msg_ptr - struct holding reservation parameters
- * OUT free_user_str - bool indicating that resv_msg_ptr->users should be freed 
- * OUT free_acct_str - bool indicating that resv_msg_ptr->accounts should be freed 
+ * OUT free_user_str - bool indicating that resv_msg_ptr->users should be freed
+ * OUT free_acct_str - bool indicating that resv_msg_ptr->accounts should be 
+ *		       freed 
  * RET 0 on success, -1 on err and prints message
  */
 extern int
@@ -176,7 +184,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		if (strncasecmp(tag, "ReservationName", MAX(taglen, 1)) == 0) {
 			resv_msg_ptr->name = val;
 
-		} else if (strncasecmp(tag, "StartTime", MAX(taglen, 1)) == 0) {
+		} else if (strncasecmp(tag, "StartTime", MAX(taglen, 1)) == 0){
 			time_t  t = parse_time(val, 0);
 			if (t == 0) {
 				exit_code = 1;
@@ -190,7 +198,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			time_t  t = parse_time(val, 0);
 			if (t == 0) {
 				exit_code = 1;
-				error("Invalid end time %s.  %s", argv[i], msg);
+				error("Invalid end time %s.  %s", argv[i],msg);
 				return -1;
 			}
 			resv_msg_ptr->end_time = t;
@@ -200,7 +208,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			duration = time_str2mins(val);
 			if (duration < 0 && duration != INFINITE) {
 				exit_code = 1;
-				error("Invalid duration %s.  %s", argv[i], msg);
+				error("Invalid duration %s.  %s", argv[i],msg);
 				return -1;
 			}
 			resv_msg_ptr->duration = (uint32_t)duration;
@@ -238,7 +246,11 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		} else if (strncasecmp(tag, "Features", MAX(taglen, 2)) == 0) {
 			resv_msg_ptr->features = val;
 
-		} else if (strncasecmp(tag, "PartitionName", MAX(taglen, 1)) == 0) {
+		} else if (strncasecmp(tag, "Licenses", MAX(taglen, 2)) == 0) {
+			resv_msg_ptr->licenses = val;
+
+		} else if (strncasecmp(tag, "PartitionName", MAX(taglen, 1)) 
+			   == 0) {
 			resv_msg_ptr->partition = val;
 
 		} else if (strncasecmp(tag, "Users", MAX(taglen, 1)) == 0) {
@@ -334,8 +346,9 @@ scontrol_create_res(int argc, char *argv[])
 	int err, ret = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
-	err = scontrol_parse_res_options(argc, argv, "No reservation created.", 
-					 &resv_msg, &free_user_str, &free_acct_str);
+	err = scontrol_parse_res_options(argc, argv, "No reservation created.",
+					 &resv_msg, &free_user_str, 
+					 &free_acct_str);
 	if (err)
 		goto SCONTROL_CREATE_RES_CLEANUP;
 
@@ -367,9 +380,10 @@ scontrol_create_res(int argc, char *argv[])
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.node_cnt == NO_VAL && 
-	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0')) {
+	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
+	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0')) {
 		exit_code = 1;
-		error("Either Nodes or NodeCnt must be specified.  "
+		error("Nodes, NodeCnt or Licenses must be specified.  "
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}

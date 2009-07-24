@@ -62,6 +62,18 @@
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
 
+#ifdef HAVE_BG
+#include "src/api/job_info.h"
+#include "src/common/node_select.h"
+#include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#endif
+
+#ifdef HAVE_CRAY_XT
+#include "src/common/node_select.h"
+#endif
+
+
 #define MAX_ALLOC_WAIT 60	/* seconds */
 #define MIN_ALLOC_WAIT  5	/* seconds */
 #define MAX_RETRIES    10
@@ -84,6 +96,18 @@ static void _set_pending_job_id(uint32_t job_id);
 static void _exit_on_signal(int signo);
 static void _signal_while_allocating(int signo);
 static void  _intr_handler(int signo);
+
+#ifdef HAVE_BG
+#define POLL_SLEEP 3			/* retry interval in seconds  */
+static int _wait_bluegene_block_ready(
+			resource_allocation_response_msg_t *alloc);
+static int _blocks_dealloc(void);
+#endif
+
+#ifdef HAVE_CRAY_XT
+static int  _claim_reservation(resource_allocation_response_msg_t *alloc);
+#endif
+
 
 static sig_atomic_t destroy_job = 0;
 
@@ -152,7 +176,7 @@ static void _node_fail_handler(srun_node_fail_msg_t *msg)
 
 
 
-static bool _retry()
+static bool _retry(void)
 {
 	static int  retries = 0;
 	static char *msg = "Slurm controller not responding, "
@@ -169,10 +193,16 @@ static bool _retry()
 	} else if (errno == EINTR) {
 		/* srun may be interrupted by the BLCR checkpoint signal */
 		/*
-		 * XXX: this will cause the old job cancelled and a new job allocated
+		 * XXX: this will cause the old job cancelled and a new 
+		 * job allocated
 		 */
-		debug("Syscall interrupted while allocating resources, retrying.");
+		debug("Syscall interrupted while allocating resources, "
+		      "retrying.");
 		return true;
+	} else if ((errno == ETIMEDOUT) && opt.immediate) {
+		error("Unable to allocate resources: %s",
+		      slurm_strerror(ESLURM_NODES_BUSY));
+		return false;
 	} else {
 		error("Unable to allocate resources: %m");
 		return false;
@@ -189,6 +219,122 @@ _intr_handler(int signo)
 {
 	destroy_job = 1;
 }
+
+#ifdef HAVE_BG
+/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
+static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
+{
+	int is_ready = 0, i, rc;
+	char *block_id = NULL;
+	int cur_delay = 0;
+	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
+		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
+
+	pending_job_id = alloc->job_id;
+	select_g_select_jobinfo_get(alloc->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_ID,
+				    &block_id);
+
+	for (i=0; (cur_delay < max_delay); i++) {
+		if (i == 1)
+			debug("Waiting for block %s to become ready for job",
+			     block_id);
+		if (i) {
+			sleep(POLL_SLEEP);
+			rc = _blocks_dealloc();
+			if ((rc == 0) || (rc == -1)) 
+				cur_delay += POLL_SLEEP;
+			debug2("still waiting");
+		}
+
+		rc = slurm_job_node_ready(alloc->job_id);
+
+		if (rc == READY_JOB_FATAL)
+			break;				/* fatal error */
+		if (rc == READY_JOB_ERROR)		/* error */
+			continue;			/* retry */
+		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+			break;
+		if (rc & READY_NODE_STATE) {		/* job and node ready */
+			is_ready = 1;
+			break;
+		}
+		if (destroy_job)
+			break;
+	}
+	if (is_ready)
+     		debug("Block %s is ready for job", block_id);
+	else if (!destroy_job)
+		error("Block %s still not ready", block_id);
+	else	/* destroy_job set and slurmctld not responing */
+		is_ready = 0;
+
+	xfree(block_id);
+	pending_job_id = 0;
+
+	return is_ready;
+}
+
+/*
+ * Test if any BG blocks are in deallocating state since they are
+ * probably related to this job we will want to sleep longer
+ * RET	1:  deallocate in progress
+ *	0:  no deallocate in progress
+ *     -1: error occurred
+ */
+static int _blocks_dealloc(void)
+{
+	static block_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
+	int rc = 0, error_code = 0, i;
+	
+	if (bg_info_ptr) {
+		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
+						   &new_bg_ptr);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_block_info_msg(&bg_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_bg_ptr = bg_info_ptr;
+		}
+	} else {
+		error_code = slurm_load_block_info((time_t) NULL, &new_bg_ptr);
+	}
+
+	if (error_code) {
+		error("slurm_load_partitions: %s\n",
+		      slurm_strerror(slurm_get_errno()));
+		return -1;
+	}
+	for (i=0; i<new_bg_ptr->record_count; i++) {
+		if(new_bg_ptr->block_array[i].state 
+		   == RM_PARTITION_DEALLOCATING) {
+			rc = 1;
+			break;
+		}
+	}
+	bg_info_ptr = new_bg_ptr;
+	return rc;
+}
+#endif	/* HAVE_BG */
+
+#ifdef HAVE_CRAY_XT
+/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
+static int _claim_reservation(resource_allocation_response_msg_t *alloc)
+{
+	int rc = 0;
+	char *resv_id = NULL;
+
+	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_RESV_ID,
+			     &resv_id);
+	if (resv_id == NULL)
+		return rc;
+	if (basil_resv_conf(resv_id, alloc->job_id) == SLURM_SUCCESS)
+		rc = 1;
+	xfree(resv_id);
+	return rc;
+}
+#endif
+
 
 int
 allocate_test(void)
@@ -210,14 +356,14 @@ allocate_nodes(void)
 	job_desc_msg_t *j = job_desc_msg_create_from_opts();
 	slurm_allocation_callbacks_t callbacks;
 
-	if(!j)
+	if (!j)
 		return NULL;
 	
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
 	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
 		info("WARNING: Creating SLURM job allocation from within "
-			"another allocation");
+		     "another allocation");
 		info("WARNING: You are attempting to initiate a second job");
 		if (!opt.jobid_set)	/* Let slurmctld set jobid */
 			j->job_id = NO_VAL;
@@ -240,7 +386,7 @@ allocate_nodes(void)
 	xsignal(SIGUSR2, _signal_while_allocating);
 
 	while (!resp) {
-		resp = slurm_allocate_resources_blocking(j, 0,
+		resp = slurm_allocate_resources_blocking(j, opt.immediate,
 							 _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
@@ -250,6 +396,30 @@ allocate_nodes(void)
 		}
 	}
 	
+	if (resp && !destroy_job) {
+		/*
+		 * Allocation granted!
+		 */
+#ifdef HAVE_BG
+		if (!_wait_bluegene_block_ready(resp)) {
+			if(!destroy_job)
+				error("Something is wrong with the "
+				      "boot of the block.");
+			goto relinquish;
+		}
+#endif
+#ifdef HAVE_CRAY_XT
+		if (!_claim_reservation(resp)) {
+			if(!destroy_job)
+				error("Something is wrong with the ALPS "
+				      "resource reservation.");
+			goto relinquish;
+		}
+#endif
+	} else if (destroy_job) {
+		goto relinquish;
+	}
+
 	xsignal(SIGHUP, _exit_on_signal);
 	xsignal(SIGINT, ignore_signal);
 	xsignal(SIGQUIT, ignore_signal);
@@ -261,6 +431,14 @@ allocate_nodes(void)
 	job_desc_msg_destroy(j);
 
 	return resp;
+
+relinquish:
+
+	slurm_free_resource_allocation_response_msg(resp);
+	if(!destroy_job)
+		slurm_complete_job(resp->job_id, 1);
+	exit(1);
+	return NULL;
 }
 
 void
@@ -309,7 +487,7 @@ slurmctld_msg_init(void)
 {
 	slurm_addr slurm_address;
 	uint16_t port;
-	static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
+	static slurm_fd slurmctld_fd   = (slurm_fd) 0;
 
 	if (slurmctld_fd)	/* May set early for queued job allocation */
 		return slurmctld_fd;
@@ -346,7 +524,8 @@ job_desc_msg_create_from_opts ()
 	
 	j->contiguous     = opt.contiguous;
 	j->features       = opt.constraints;
-	j->immediate      = opt.immediate;
+	if (opt.immediate == 1)
+		j->immediate = opt.immediate;
 	if (opt.job_name)
 		j->name   = xstrdup(opt.job_name);
 	else
@@ -357,7 +536,7 @@ job_desc_msg_create_from_opts ()
 	j->req_nodes      = xstrdup(opt.nodelist);
 	
 	/* simplify the job allocation nodelist, 
-	  not laying out tasks until step */
+	 * not laying out tasks until step */
 	if(j->req_nodes) {
 		hl = hostlist_create(j->req_nodes);
 		hostlist_ranged_string(hl, sizeof(buf), buf);
@@ -500,6 +679,11 @@ job_desc_msg_create_from_opts ()
 	j->alloc_resp_port = slurmctld_comm_addr.port;
 	j->other_port = slurmctld_comm_addr.port;
 
+	if (opt.spank_job_env_size) {
+		j->spank_job_env      = opt.spank_job_env;
+		j->spank_job_env_size = opt.spank_job_env_size;
+	}
+
 	return (j);
 }
 
@@ -518,6 +702,8 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 {
 	int i, rc;
 	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
+	unsigned long my_sleep = 0;
+	time_t begin_time;
 
 	slurm_step_ctx_params_t_init(&job->ctx_params);
 	job->ctx_params.job_id = job->jobid;
@@ -543,7 +729,10 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
 	job->ctx_params.ckpt_dir = opt.ckpt_dir;
 	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
-	job->ctx_params.immediate = (uint16_t)opt.immediate;
+	if (opt.immediate == 1)
+		job->ctx_params.immediate = (uint16_t)opt.immediate;
+	if (opt.time_limit != NO_VAL)
+		job->ctx_params.time_limit = (uint32_t)opt.time_limit;
 	job->ctx_params.verbose_level = (uint16_t)_verbose;
 	if (opt.resv_port_cnt != NO_VAL)
 		job->ctx_params.resv_port_cnt = (uint16_t) opt.resv_port_cnt;
@@ -566,6 +755,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		job->ctx_params.task_dist = (job->ctx_params.task_count <= 
 			job->ctx_params.node_count) 
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
+		opt.distribution = job->ctx_params.task_dist;
 		break;
 
 	}
@@ -586,9 +776,10 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	debug("cpus %u, tasks %u, name %s, relative %u", 
 	      job->ctx_params.cpu_count, job->ctx_params.task_count,
 	      job->ctx_params.name, job->ctx_params.relative);
+	begin_time = time(NULL);
 
 	for (i=0; (!destroy_job); i++) {
-		if(opt.no_alloc) {
+		if (opt.no_alloc) {
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
 				&job->ctx_params, job->stepid);
 		} else
@@ -602,7 +793,9 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		}
 		rc = slurm_get_errno();
 
-		if (opt.immediate ||
+		if (((opt.immediate != 0) && 
+		     ((opt.immediate == 1) ||
+		      (difftime(time(NULL), begin_time) > opt.immediate))) ||
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
 		     (rc != ESLURM_PROLOG_RUNNING) && 
 		     (rc != ESLURM_DISABLED))) {
@@ -616,9 +809,13 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 			ointf  = xsignal(SIGINT,  _intr_handler);
 			otermf  = xsignal(SIGTERM, _intr_handler);
 			oquitf  = xsignal(SIGQUIT, _intr_handler);
-		} else
+			my_sleep = (getpid() % 1000) * 100 + 100000;
+		} else {
 			verbose("Job step creation still disabled, retrying");
-		sleep(MIN((i*10+1), 60));
+			my_sleep = MIN((my_sleep * 2), 60000000);
+		}
+		/* sleep 0.1 to 60 secs with exponential back-off */
+		usleep(my_sleep);
 	}
 	if (i > 0) {
 		xsignal(SIGINT,  ointf);
@@ -645,4 +842,5 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 
 	return 0;
 }
+
 

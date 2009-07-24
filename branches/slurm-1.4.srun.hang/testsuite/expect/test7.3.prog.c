@@ -48,7 +48,7 @@ int main (int argc, char *argv[])
 	job_desc_msg_t job_req;
 	resource_allocation_response_msg_t *job_resp;
 	slurm_step_ctx_params_t step_params[1];
-	slurm_step_ctx ctx = NULL;
+	slurm_step_ctx_t *ctx = NULL;
 	slurm_step_launch_params_t launch[1];
 	char *task_argv[3];
 	int *fd_array = NULL;

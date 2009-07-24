@@ -52,30 +52,37 @@ extern void parse_command_line(int argc, char *argv[])
 	int opt_char;
 	int option_index;
 	int tmp = 0;
+
 	static struct option long_options[] = {
+		{"commandline", no_argument, 0, 'c'},
 		{"display", required_argument, 0, 'D'},
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
-		{"version", no_argument, 0, 'V'},
-		{"commandline", no_argument, 0, 'c'},
-		{"parse", no_argument, 0, 'p'},
+		{"ionodes", required_argument, 0, 'I'},
+		{"nodes", required_argument, 0, 'n'},
+		{"quiet", no_argument, 0, 'Q'},
 		{"resolve", required_argument, 0, 'R'},
+		{"verbose", no_argument, 0, 'v'},
+		{"version", no_argument, 0, 'V'},
 		{"help", no_argument, 0, OPT_LONG_HELP},
 		{"usage", no_argument, 0, OPT_LONG_USAGE},
 		{"hide", no_argument, 0, OPT_LONG_HIDE},
 		{NULL, 0, 0, 0}
 	};
-
+	
 	while ((opt_char =
-		getopt_long(argc, argv, "D:hi:VcpR:",
+		getopt_long(argc, argv, "cD:hi:I:n:QR:vV",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
-		case (int) '?':
+		case '?':
 			fprintf(stderr,
 				"Try \"smap --help\" for more information\n");
 			exit(1);
 			break;
-		case (int) 'D':
+		case 'c':
+			params.commandline = TRUE;
+			break;
+		case 'D':
 			if (!strcmp(optarg, "j"))
 				tmp = JOBS;
 			else if (!strcmp(optarg, "s"))
@@ -86,36 +93,61 @@ extern void parse_command_line(int argc, char *argv[])
 				tmp = COMMANDS;
 			else if (!strcmp(optarg, "r"))
 				tmp = RESERVATIONS;
-
+		
 			params.display = tmp;
 			break;
-		case (int) 'h':
+		case 'h':
 			params.no_header = true;
 			break;
-		case (int) 'i':
+		case 'i':
 			params.iterate = atoi(optarg);
 			if (params.iterate <= 0) {
 				error("Error: --iterate=%s");
 				exit(1);
 			}
 			break;
-		case (int) 'V':
+		case 'I':
+			/*
+			 * confirm valid ionodelist entry (The 128 is
+			 * a large number here to avoid having to do a
+			 * lot more querying to figure out the correct
+			 * pset size.  This number should be large enough.
+			 */
+			params.io_bit = bit_alloc(128);
+			if(bit_unfmt(params.io_bit, optarg) == -1) {
+				error("'%s' invalid entry for --ionodes",
+				      optarg);
+				exit(1);
+			}
+			break;
+		case 'n':
+			/*
+			 * confirm valid nodelist entry
+			 */
+			params.hl = hostlist_create(optarg);
+			if (!params.hl) {
+				error("'%s' invalid entry for --nodes",
+				      optarg);
+				exit(1);
+			}
+			break;
+		case 'Q':
+			quiet_flag = 1;
+			break;
+		case 'R':
+			params.commandline = TRUE;
+			params.resolve = xstrdup(optarg);
+			break;
+		case 'v':
+			params.verbose++;
+			break;
+		case 'V':
 			_print_version();
 			exit(0);
-		case (int) 'c':
-			params.commandline = TRUE;
-			break;
-		case (int) 'p':
-			params.parse = TRUE;
-			break;
-		case (int) 'R':
-			params.commandline = TRUE;
-			params.partition = strdup(optarg);
-			break;
-		case (int) OPT_LONG_HELP:
+		case OPT_LONG_HELP:
 			_help();
 			exit(0);
-		case (int) OPT_LONG_USAGE:
+		case OPT_LONG_USAGE:
 			_usage();
 			exit(0);
 		case OPT_LONG_HIDE:
@@ -123,7 +155,6 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		}
 	}
-
 }
 
 extern void print_date()
@@ -159,9 +190,10 @@ static void _print_version(void)
 static void _usage(void)
 {
 #ifdef HAVE_BG
-	printf("Usage: smap [-chVp] [-D bcjrs] [-i seconds]\n");
+	printf("Usage: smap [-chQV] [-D bcjrs] [-i seconds] "
+	       "[-n nodelist] [-i ionodelist]\n");
 #else
-	printf("Usage: smap [-chVp] [-D jrs] [-i seconds]\n");
+	printf("Usage: smap [-chQV] [-D jrs] [-i seconds] [-n nodelist]\n");
 #endif
 }
 
@@ -172,15 +204,22 @@ Usage: smap [OPTIONS]\n\
   -c, --commandline          output written with straight to the\n\
                              commandline.\n\
   -D, --display              set which display mode to use\n\
-                             b=bluegene blocks\n\
-                             c=set bluegene configuration\n\
-                             j=jobs\n\
-                             r=reservations\n\
-                             s=slurm partitions\n\
+                             b = bluegene blocks\n\
+                             c = set bluegene configuration\n\
+                             j = jobs\n\
+                             r = reservations\n\
+                             s = slurm partitions\n\
   -h, --noheader             no headers on output\n\
   -i, --iterate=seconds      specify an interation period\n\
-  -p, --parse                used with -c to not format output, but use\n\
-                             single tab delimitation.\n\
+  -I, --ionodes=[ionodes]    only show objects with these ionodes\n\
+                             This should be used inconjuction with the -n\n\
+                             option.  Only specify the ionode number range \n\
+                             here.  Specify the node name with the -n option.\n\
+                             This option is only valid on Bluegene systems,\n\
+                             and only valid when quering blocks.\n\
+  -n, --nodes=[nodes]        only show objects with these nodes.\n\
+                             If querying to the ionode level use the -I\n\
+                             option in conjunction with this option.\n\
   -R, --resolve              resolve an XYZ coord from a Rack/Midplane id \n\
                              or vice versa.\n\
                              (i.e. -R R101 for R/M input -R 101 for XYZ).\n\

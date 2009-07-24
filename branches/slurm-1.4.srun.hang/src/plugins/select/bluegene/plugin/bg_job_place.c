@@ -97,7 +97,6 @@ static int _check_for_booted_overlapping_blocks(
 	bool test_only);
 static int _dynamically_request(List block_list, int *blocks_added,
 				ba_request_t *request,
-				bitstr_t* slurm_block_bitmap,
 				char *user_req_nodes);
 static int _find_best_block_match(List block_list, int *blocks_added,
 				  struct job_record* job_ptr,
@@ -278,8 +277,8 @@ static int _check_images(struct job_record* job_ptr,
 	int allow = 0;
 
 #ifdef HAVE_BGL
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_BLRTS_IMAGE, blrtsimage);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_BLRTS_IMAGE, blrtsimage);
 	
 	if (*blrtsimage) {
 		allow = _test_image_perms(*blrtsimage, bg_conf->blrts_list, 
@@ -293,8 +292,8 @@ static int _check_images(struct job_record* job_ptr,
 		}
 	}
 #endif
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_LINUX_IMAGE, linuximage);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_LINUX_IMAGE, linuximage);
 	if (*linuximage) {
 		allow = _test_image_perms(*linuximage, bg_conf->linux_list, 
 					  job_ptr);
@@ -305,8 +304,8 @@ static int _check_images(struct job_record* job_ptr,
 		}
 	}
 
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_MLOADER_IMAGE, mloaderimage);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_MLOADER_IMAGE, mloaderimage);
 	if (*mloaderimage) {
 		allow = _test_image_perms(*mloaderimage,
 					  bg_conf->mloader_list, 
@@ -320,8 +319,8 @@ static int _check_images(struct job_record* job_ptr,
 		}
 	}
 
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_RAMDISK_IMAGE, ramdiskimage);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_RAMDISK_IMAGE, ramdiskimage);
 	if (*ramdiskimage) {
 		allow = _test_image_perms(*ramdiskimage,
 					  bg_conf->ramdisk_list, 
@@ -478,13 +477,22 @@ static bg_record_t *_find_matching_block(List block_list,
 					continue;			
 				} 
 				goto good_conn_type;
-			} 
+			} else if(bg_record->conn_type >= SELECT_SMALL) {
+				/* since we already checked to see if
+				   the cpus were good this means we are
+				   looking for a block in a range that
+				   includes small and regular blocks.
+				   So we can just continue on.
+				*/
+				goto good_conn_type;				
+			}
+			
 #endif
 			debug("bg block %s conn-type not usable asking for %s "
 			      "bg_record is %s", 
 			      bg_record->bg_block_id,
-			      convert_conn_type(request->conn_type),
-			      convert_conn_type(bg_record->conn_type));
+			      conn_type_string(request->conn_type),
+			      conn_type_string(bg_record->conn_type));
 			continue;
 		} 
 #ifndef HAVE_BGL
@@ -650,7 +658,8 @@ static int _check_for_booted_overlapping_blocks(
 						found_record =
 							bg_record->original;
 						remove_from_bg_list(
-							bg_lists->main, found_record);
+							bg_lists->main,
+							found_record);
 					} else {
 						debug("looking for original");
 						found_record =
@@ -659,9 +668,14 @@ static int _check_for_booted_overlapping_blocks(
 								bg_record);
 					}
 
+					debug("Removing unusable block %s "
+					      "from the system.",
+					      bg_record->bg_block_id);
+					
 					if(!found_record) {
 						debug("This record %s wasn't "
-						      "found in the bg_lists->main, "
+						      "found in the "
+						      "bg_lists->main, "
 						      "no big deal, it "
 						      "probably wasn't added",
 						      bg_record->bg_block_id);
@@ -669,12 +683,7 @@ static int _check_for_booted_overlapping_blocks(
 					} else
 						destroy_bg_record(bg_record);
 					
-					debug("removing the block %s"
-					      "from the system",
-					      bg_record->bg_block_id);
-					
 					list_push(temp_list, found_record);
-					num_block_to_free++;
 					free_block_list(temp_list);
 					list_destroy(temp_list);
 					
@@ -699,7 +708,6 @@ static int _check_for_booted_overlapping_blocks(
 
 static int _dynamically_request(List block_list, int *blocks_added,
 				ba_request_t *request,
-				bitstr_t* slurm_block_bitmap,
 				char *user_req_nodes)
 {
 	List list_of_lists = NULL;
@@ -858,20 +866,20 @@ static int _find_best_block_match(List block_list,
 		return SLURM_ERROR;
 	}
 	
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_START, &start);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_START, &start);
 		
 	if(start[X] != (uint16_t)NO_VAL)
 		start_req = 1;
 
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_CONN_TYPE, &conn_type);
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_GEOMETRY, &req_geometry);
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_ROTATE, &rotate);
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_MAX_PROCS, &max_procs);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_CONN_TYPE, &conn_type);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_GEOMETRY, &req_geometry);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_ROTATE, &rotate);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_MAX_PROCS, &max_procs);
 
 	
 #ifdef HAVE_BGL
@@ -937,11 +945,11 @@ static int _find_best_block_match(List block_list,
 					start[i] = tmp_record->start[i];
 				}
 				destroy_bg_record(tmp_record);
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_GEOMETRY, 
+				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						     SELECT_JOBDATA_GEOMETRY, 
 						     &req_geometry);
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_START, 
+				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						     SELECT_JOBDATA_START, 
 						     &start);
 				start_req = 1;
 			}  else 
@@ -985,8 +993,8 @@ static int _find_best_block_match(List block_list,
 	else
 		request.avail_node_bitmap = slurm_block_bitmap;
 
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_MAX_PROCS, &max_procs);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_MAX_PROCS, &max_procs);
 	/* since we only look at procs after this and not nodes we
 	 *  need to set a max_procs if given
 	 */
@@ -1040,7 +1048,8 @@ static int _find_best_block_match(List block_list,
 					      "because of bad bps.",
 					      bg_record->bg_block_id);
 					put_block_in_error_state(
-						bg_record, BLOCK_ERROR_STATE);
+						bg_record, BLOCK_ERROR_STATE,
+						"Block had bad BPs");
 					continue;
 				}
 			}
@@ -1082,7 +1091,6 @@ static int _find_best_block_match(List block_list,
 		
 		if((rc = _dynamically_request(block_list, blocks_added,
 					      &request, 
-					      slurm_block_bitmap, 
 					      job_ptr->details->req_nodes))
 		   == SLURM_SUCCESS) {
 			create_try = 1;
@@ -1172,7 +1180,8 @@ static int _find_best_block_match(List block_list,
 					destroy_bg_record(bg_record);
 				}
 					
-				if(job_block_test_list != bg_lists->job_running) {
+				if(job_block_test_list 
+				   != bg_lists->job_running) {
 					list_append(block_list,
 						    (*found_bg_record));
 					while((bg_record = 
@@ -1258,7 +1267,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	int i, j, k;
 	int first_bit, last_bit;
 	uint32_t node_cpus, total_cpus = 0, node_cnt;
-	select_job_res_t select_ptr;
+	select_job_res_t *select_ptr;
 
 	if (job_ptr->select_job) {
 		error("select_p_job_test: already have select_job");
@@ -1300,9 +1309,15 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 		} else
 			select_ptr->cpu_array_reps[k]++;
 		total_cpus += node_cpus;
-
+#if 0
+		/* This function could be used to control allocation of 
+		 * specific c-nodes for multiple job steps per job allocation. 
+		 * Such functionality is not currently support on BlueGene 
+		 * systems. 
+		 * Also see #ifdef HAVE_BG logic in common/select_job_res.c */
 		if (set_select_job_res_node(select_ptr, j))
 			error("select_p_job_test: set_select_job_res_node: %m");
+#endif
 		j++;
 	}
 	if (select_ptr->nprocs != total_cpus) {
@@ -1348,42 +1363,29 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 
 	job_block_test_list = bg_lists->job_running;
 	
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_CONN_TYPE, &conn_type);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if(conn_type == SELECT_NAV) {
-		uint32_t max_procs = (uint32_t)NO_VAL;
 		if(bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
 			conn_type = SELECT_SMALL;
-		else if(min_nodes > 1) {
+		else if(min_nodes > 1) 
 			conn_type = SELECT_TORUS;
-			/* make sure the max procs are set to NO_VAL */
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_MAX_PROCS,
-					     &max_procs);
-
-		} else {
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_MAX_PROCS,
-					     &max_procs);
-			if((max_procs > bg_conf->procs_per_bp)
-			   || (max_procs == NO_VAL))
-				conn_type = SELECT_TORUS;
-			else
-				conn_type = SELECT_SMALL;
-		}
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_CONN_TYPE,
+		else if(job_ptr->num_procs < bg_conf->procs_per_bp)
+			conn_type = SELECT_SMALL;
+		
+		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+				     SELECT_JOBDATA_CONN_TYPE,
 				     &conn_type);
 	}
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
 	      buf, min_nodes, req_nodes, max_nodes);
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_BLRTS_IMAGE);
 #ifdef HAVE_BGL
 	debug2("BlrtsImage=%s", buf);
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_LINUX_IMAGE);
 #endif
 #ifdef HAVE_BGL
@@ -1392,10 +1394,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	debug2("ComputNodeImage=%s", buf);
 #endif
 
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MLOADER_IMAGE);
 	debug2("MloaderImage=%s", buf);
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_RAMDISK_IMAGE);
 #ifdef HAVE_BGL
 	debug2("RamDiskImage=%s", buf);
@@ -1434,11 +1436,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						
 			job_ptr->start_time = starttime;
 			
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_NODES, 
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+					     SELECT_JOBDATA_NODES, 
 					     bg_record->nodes);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_IONODES, 
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+					     SELECT_JOBDATA_IONODES, 
 					     bg_record->ionodes);
 			
 			if(!bg_record->bg_block_id) {
@@ -1448,19 +1450,22 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				       "%u on %s",
 				       test_only, job_ptr->job_id, starttime,
 				       bg_record->nodes);
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLOCK_ID,
-					     "unassigned");
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_BLOCK_ID,
+					"unassigned");
 
 				min_nodes = bg_record->node_cnt;
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_NODE_CNT,
-					     &min_nodes);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_NODE_CNT,
+					&min_nodes);
 				memset(geo, 0, 
 				       sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_GEOMETRY, 
-						     &geo);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_GEOMETRY, 
+					&geo);
 				/* This is a fake record so we need to
 				 * destroy it after we get the info from
 				 * it */
@@ -1476,19 +1481,22 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				       bg_record->bg_block_id,
 				       bg_record->nodes);
 				
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_BLOCK_ID,
-						     bg_record->bg_block_id);
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_NODE_CNT, 
-						     &bg_record->node_cnt);
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_GEOMETRY, 
-						     &bg_record->geo);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_BLOCK_ID,
+					bg_record->bg_block_id);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_NODE_CNT, 
+					&bg_record->node_cnt);
+				select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,
+					SELECT_JOBDATA_GEOMETRY, 
+					&bg_record->geo);
 
 				/* tmp16 = bg_record->conn_type; */
-/* 				select_g_set_jobinfo(job_ptr->select_jobinfo, */
-/* 						     SELECT_DATA_CONN_TYPE,  */
+/* 				select_g_select_jobinfo_set(job_ptr->select_jobinfo, */
+/* 						     SELECT_JOBDATA_CONN_TYPE,  */
 /* 						     &tmp16); */
 			}
 			if (mode == SELECT_MODE_RUN_NOW) {
@@ -1546,36 +1554,26 @@ extern int test_job_list(List req_list)
 			break;
 		}
 		
-		select_g_get_jobinfo(will_run->job_ptr->select_jobinfo,
-				     SELECT_DATA_CONN_TYPE, &conn_type);
+		select_g_select_jobinfo_get(will_run->job_ptr->select_jobinfo,
+				     SELECT_JOBDATA_CONN_TYPE, &conn_type);
 		if(conn_type == SELECT_NAV) {
-			uint32_t max_procs = (uint32_t)NO_VAL;
-			if(will_run->min_nodes > 1) {
+			if(bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
+				conn_type = SELECT_SMALL;
+			else if(will_run->min_nodes > 1) 
 				conn_type = SELECT_TORUS;
-				/* make sure the max procs are set to NO_VAL */
-				select_g_set_jobinfo(
-					will_run->job_ptr->select_jobinfo,
-					SELECT_DATA_MAX_PROCS,
-					&max_procs);
-				
-			} else {
-				select_g_get_jobinfo(
-					will_run->job_ptr->select_jobinfo,
-					SELECT_DATA_MAX_PROCS,
-					&max_procs);
-				if((max_procs > bg_conf->procs_per_bp)
-				   || (max_procs == NO_VAL))
-					conn_type = SELECT_TORUS;
-				else
+			else if(will_run->job_ptr->num_procs 
+				  < bg_conf->procs_per_bp)
 					conn_type = SELECT_SMALL;
-			}
-			select_g_set_jobinfo(will_run->job_ptr->select_jobinfo,
-					     SELECT_DATA_CONN_TYPE,
-					     &conn_type);
+			
+			select_g_select_jobinfo_set(
+				will_run->job_ptr->select_jobinfo,
+				SELECT_JOBDATA_CONN_TYPE,
+				&conn_type);
 		}
-		select_g_sprint_jobinfo(will_run->job_ptr->select_jobinfo,
-					buf, sizeof(buf), 
-					SELECT_PRINT_MIXED);
+		select_g_select_jobinfo_sprint(
+			will_run->job_ptr->select_jobinfo,
+			buf, sizeof(buf), 
+			SELECT_PRINT_MIXED);
 		debug("bluegene:submit_job_list: %s nodes=%u-%u-%u", 
 		      buf, will_run->min_nodes,
 		      will_run->req_nodes, will_run->max_nodes);
@@ -1660,13 +1658,13 @@ extern int test_job_list(List req_list)
 						will_run->job_ptr->start_time +
 						31536000; // + year
 						
-				select_g_set_jobinfo(
+				select_g_select_jobinfo_set(
 					will_run->job_ptr->select_jobinfo,
-					SELECT_DATA_NODES, 
+					SELECT_JOBDATA_NODES, 
 					bg_record->nodes);
-				select_g_set_jobinfo(
+				select_g_select_jobinfo_set(
 					will_run->job_ptr->select_jobinfo,
-					SELECT_DATA_IONODES, 
+					SELECT_JOBDATA_IONODES, 
 					bg_record->ionodes);
 				
 /* 				if(!bg_record->bg_block_id) { */
@@ -1677,10 +1675,10 @@ extern int test_job_list(List req_list)
 /* 					       "%u on %s on unmade block", */
 /* 					       starttime, */
 /* 					       bg_record->nodes); */
-/* 					select_g_set_jobinfo( */
+/* 					select_g_select_jobinfo_set( */
 /* 						will_run->job_ptr-> */
 /* 						select_jobinfo, */
-/* 						SELECT_DATA_BLOCK_ID, */
+/* 						SELECT_JOBDATA_BLOCK_ID, */
 /* 						"unassigned"); */
 /* 					if(will_run->job_ptr->num_procs */
 /* 					   < bg_conf->bp_node_cnt  */
@@ -1694,18 +1692,18 @@ extern int test_job_list(List req_list)
 /* 						i = 1; */
 /* 					will_run->min_nodes *=  */
 /* 						bg_conf->bp_node_cnt/i; */
-/* 					select_g_set_jobinfo( */
+/* 					select_g_select_jobinfo_set( */
 /* 						will_run->job_ptr-> */
 /* 						select_jobinfo, */
-/* 						SELECT_DATA_NODE_CNT, */
+/* 						SELECT_JOBDATA_NODE_CNT, */
 /* 						&will_run->min_nodes); */
 /* 					memset(geo, 0,  */
 /* 					       sizeof(uint16_t)  */
 /* 					       * BA_SYSTEM_DIMENSIONS); */
-/* 					select_g_set_jobinfo( */
+/* 					select_g_select_jobinfo_set( */
 /* 						will_run->job_ptr-> */
 /* 						select_jobinfo, */
-/* 						SELECT_DATA_GEOMETRY,  */
+/* 						SELECT_JOBDATA_GEOMETRY,  */
 /* 						&geo); */
 /* 				} else { */
 /* 					if((bg_record->ionodes) */
@@ -1720,27 +1718,27 @@ extern int test_job_list(List req_list)
 /* 					       starttime, */
 /* 					       bg_record->nodes); */
 					
-/* 					select_g_set_jobinfo( */
+/* 					select_g_select_jobinfo_set( */
 /* 						will_run->job_ptr-> */
 /* 						select_jobinfo, */
-/* 						SELECT_DATA_BLOCK_ID, */
+/* 						SELECT_JOBDATA_BLOCK_ID, */
 /* 						bg_record->bg_block_id); */
-/* 					select_g_set_jobinfo( */
+/* 					select_g_select_jobinfo_set( */
 /* 						will_run->job_ptr-> */
 /* 						select_jobinfo, */
-/* 						SELECT_DATA_NODE_CNT,  */
+/* 						SELECT_JOBDATA_NODE_CNT,  */
 /* 						&bg_record->node_cnt); */
-/* 					select_g_set_jobinfo( */
+/* 					select_g_select_jobinfo_set( */
 /* 						will_run->job_ptr-> */
 /* 						select_jobinfo, */
-/* 						SELECT_DATA_GEOMETRY,  */
+/* 						SELECT_JOBDATA_GEOMETRY,  */
 /* 						&bg_record->geo); */
 					
 /* 					tmp16 = bg_record->conn_type; */
-/* 					select_g_set_jobinfo( */
+/* 					select_g_select_jobinfo_set( */
 /* 						will_run->job_ptr-> */
 /* 						select_jobinfo, */
-/* 						SELECT_DATA_CONN_TYPE,  */
+/* 						SELECT_JOBDATA_CONN_TYPE,  */
 /* 						&tmp16); */
 /* 				} */
 			} else {
@@ -1752,8 +1750,7 @@ extern int test_job_list(List req_list)
 	list_iterator_destroy(itr);
 
 	if(bg_conf->layout_mode == LAYOUT_DYNAMIC) 		
-		slurm_mutex_unlock(&create_dynamic_mutex);
-	
+		slurm_mutex_unlock(&create_dynamic_mutex);	
 
 	list_destroy(block_list);
 	list_destroy(job_block_test_list);

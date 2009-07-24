@@ -266,9 +266,9 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 				(unsigned long) job_ptr->time_limit);
 
 	/* Job will typically be COMPLETING when this is called. 
-	 * We remove this flag to get the eventual completion state:
+	 * We remove the flags to get the eventual completion state:
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
-	job_state = job_ptr->job_state & (~JOB_COMPLETING);
+	job_state = job_ptr->job_state & JOB_STATE_BASE;
 
 	_make_time_str(&(job_ptr->start_time), start_str, sizeof(start_str));
 	_make_time_str(&(job_ptr->end_time), end_str, sizeof(end_str));
@@ -278,7 +278,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	else
 		work_dir = "unknown";
 
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
 
 	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,

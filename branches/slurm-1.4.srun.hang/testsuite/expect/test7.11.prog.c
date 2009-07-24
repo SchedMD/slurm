@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  prog7.11.prog.c - SPANK plugin for testing purposes
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -32,6 +32,8 @@
 #include <sys/types.h>
 
 #include <slurm/spank.h>
+
+#define SPANK_JOB_ENV_TESTS 0
 
 /*
  * All spank plugins must define this macro for the SLURM plugin loader.
@@ -80,6 +82,22 @@ int slurm_spank_init(spank_t sp, int ac, char **av)
 	if ((context != S_CTX_LOCAL) && (context != S_CTX_REMOTE) &&
 	    (context != S_CTX_ALLOCATOR))
 		slurm_error("spank_context error");
+	if (SPANK_JOB_ENV_TESTS && 
+	    ((context == S_CTX_LOCAL) || (context == S_CTX_ALLOCATOR))) {
+		/* Testing logic for spank_job_env options */
+		char *test_value;
+		spank_set_job_env("DUMMY", "DV",   1);
+		spank_set_job_env("NAME", "VALUE", 1);
+		spank_set_job_env("name", "value", 1);
+/*		spank_set_job_env("PATH", "/", 1); */
+		test_value = spank_get_job_env("NAME");
+		if (test_value == NULL)
+			slurm_error("spank_get_job_env error, NULL");
+		else if (strcmp(test_value, "VALUE"))
+			slurm_error("spank_get_job_env error, bad value");
+		spank_unset_job_env("DUMMY");
+	}
+
 	if (spank_option_register(sp, spank_options_reg) != ESPANK_SUCCESS)
 		slurm_error("spank_option_register error");
 	if (spank_remote(sp) && (ac == 1))

@@ -48,6 +48,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
@@ -920,8 +921,10 @@ bit_fmt(char *str, int len, bitstr_t *b)
 		if (bit_test(b, bit)) {
 			count++;
 			start = bit;
-			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1))
+			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1)) {
 				bit++;
+				count++;
+			}
 			if (bit == start)	/* add single bit position */
 				ret = snprintf(str+strlen(str), 
 				               len-strlen(str),
@@ -936,19 +939,19 @@ bit_fmt(char *str, int len, bitstr_t *b)
 	}
 	if (count > 0)
 		str[strlen(str) - 1] = '\0'; 	/* zap trailing comma */
-	if (count > 1) { 			/* add braces */
-		assert(strlen(str) + 3 < len);
-		memmove(str + 1, str, strlen(str));
-		str[0] = '[';
-		strcat(str, "]");
-	} 
+/* 	if (count > 1) { /\* add braces if we have more than one here *\/ */
+/* 		assert(strlen(str) + 3 < len); */
+/* 		memmove(str + 1, str, strlen(str)); */
+/* 		str[0] = '['; */
+/* 		strcat(str, "]"); */
+/* 	}  */
 	return str;
 }
 
 int
 bit_unfmt(bitstr_t *b, char *str)
 {
-	int *intvec, *p, rc = 0; 
+	int *intvec, rc = 0; 
 
 	_assert_bitstr_valid(b);
 	if (str[0] == '\0')	/* no bits set */
@@ -956,17 +959,7 @@ bit_unfmt(bitstr_t *b, char *str)
 	intvec = bitfmt2int(str);
 	if (intvec == NULL) 
 		return -1;
-
-	bit_nclear(b, 0, _bitstr_bits(b) - 1);
-	for (p = intvec; *p != -1; p += 2) {
-		if ((*p < 0) || (*p >= _bitstr_bits(b))
-		||  (*(p + 1) < 0) || (*(p + 1) >= _bitstr_bits(b))) {
-			rc = -1;
-			break;
-		}
-		bit_nset(b, *p, *(p + 1));		
-	}
-
+	rc = inx2bitstr(b, intvec);
 	xfree(intvec);
 	return rc;
 }
@@ -1018,6 +1011,53 @@ bitfmt2int (char *bit_str_ptr)
 	assert(bit_inx < (size*2+1));
 	bit_int_ptr[bit_inx] = -1;
 	return bit_int_ptr;
+}
+
+/*
+ * intbitfmt - convert a array of interger (start/end) pairs
+ *	terminated by -1 (e.g. "0, 30, 45, 45, 50, 60, -1") to a
+ *	string describing bitmap (output from bit_fmt, e.g. "0-30,45,50-60") 
+ * input: int array
+ * output: char *
+ * NOTE: the caller must xfree the returned memory
+ */
+char *
+inx2bitfmt (int *inx) 
+{
+	int j=0;
+	char *bit_char_ptr = NULL;
+
+	if (inx == NULL) 
+		return NULL;
+	
+	while (inx[j] >= 0) {
+		if(bit_char_ptr)
+			xstrfmtcat(bit_char_ptr, ",%d-%d", inx[j], inx[j+1]);
+		else
+			xstrfmtcat(bit_char_ptr, "%d-%d", inx[j], inx[j+1]);
+		j += 2;
+	}
+
+	return bit_char_ptr;
+}
+
+int inx2bitstr(bitstr_t *b, int *inx) 
+{
+	int *p, rc=0;
+	
+	assert(b);
+	assert(inx);
+
+	bit_nclear(b, 0, _bitstr_bits(b) - 1);
+	for (p = inx; *p != -1; p += 2) {
+		if ((*p < 0) || (*p >= _bitstr_bits(b))
+		    ||  (*(p + 1) < 0) || (*(p + 1) >= _bitstr_bits(b))) {
+			rc = -1;
+			break;
+		}
+		bit_nset(b, *p, *(p + 1));		
+	}
+	return rc;
 }
 
 /* bit_fmt_hexmask

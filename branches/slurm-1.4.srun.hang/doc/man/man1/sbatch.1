@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.0" "April 2009" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.0" "May 2009" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -86,7 +86,7 @@ For example:
    \-\-begin=16:00
    \-\-begin=now+1hour
    \-\-begin=now+60           (seconds by default)
-   \-\-begin=2010-01-20T12:34:67
+   \-\-begin=2010-01-20T12:34:00
 .fi
 
 .TP
@@ -295,7 +295,8 @@ The environment variables are retrieved by running something of this sort
 "su \- <username> \-c /usr/bin/env" and parsing the output.
 Be aware that any environment variables already set in sbatch's environment
 will take precedence over any environment variables in the user's
-login environment.
+login environment. Clear any environment variables before calling sbatch
+that you do not want propagated to the spawned program.
 The optional \fItimeout\fR value is in seconds. Default value is 8 seconds.
 The optional \fImode\fR value control the "su" options.
 With a \fImode\fR value of "S", "su" is executed without the "\-" option.
@@ -409,7 +410,9 @@ Multiple license names should be comma separated (e.g.
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
 <\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR>
-Specify an alternate distribution method for remote processes.
+Specify an alternate distribution method for remote processes.  In
+sbatch this only sets environment variables that will be used by
+subsequent srun requests.
 .RS
 .TP
 .B block

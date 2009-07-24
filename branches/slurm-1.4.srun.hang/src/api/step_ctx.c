@@ -103,6 +103,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->no_kill = step_params->no_kill;
 	step_req->overcommit = step_params->overcommit ? 1 : 0;
 	step_req->mem_per_task = step_params->mem_per_task;
+	step_req->time_limit = step_params->time_limit;
 
 	return step_req;
 }
@@ -256,8 +257,8 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 	uint32_t **uint32_array_pptr = (uint32_t **) NULL;
 	char **char_array_pptr = (char **) NULL;
 	job_step_create_response_msg_t ** step_resp_pptr;
-	slurm_cred_t  *cred;     /* Slurm job credential    */
-	switch_jobinfo_t *switch_job;
+	slurm_cred_t  **cred;     /* Slurm job credential    */
+	switch_jobinfo_t **switch_job;
 	int *int_ptr;
 	int **int_array_pptr = (int **) NULL;
 	
@@ -300,11 +301,11 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 		*step_resp_pptr = ctx->step_resp;
 		break;
 	case SLURM_STEP_CTX_CRED:
-		cred = (slurm_cred_t *) va_arg(ap, void *);
+		cred = (slurm_cred_t **) va_arg(ap, void *);
 		*cred = ctx->step_resp->cred;
 		break;
 	case SLURM_STEP_CTX_SWITCH_JOB:
-		switch_job = (switch_jobinfo_t *) va_arg(ap, void *);
+		switch_job = (switch_jobinfo_t **) va_arg(ap, void *);
 		*switch_job = ctx->step_resp->switch_job;
 		break;
 	case SLURM_STEP_CTX_NUM_HOSTS:
@@ -354,7 +355,7 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
  * RET SLURM_SUCCESS or SLURM_ERROR (with slurm_errno set)
  */
 extern int
-slurm_jobinfo_ctx_get(switch_jobinfo_t jobinfo, int data_type, void *data)
+slurm_jobinfo_ctx_get(switch_jobinfo_t *jobinfo, int data_type, void *data)
 {
 	if (jobinfo == NULL) {
 		slurm_seterrno(EINVAL);

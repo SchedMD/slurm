@@ -806,12 +806,15 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_int = job->alloc_nodes;
+				tmp_char = job->nodes;
 				break;
 			case JOBSTEP:
 				tmp_int = step->nnodes;
+				tmp_char = step->nodes;
 				break;
 			case JOBCOMP:
 				tmp_int = job_comp->node_cnt;
+				tmp_char = job_comp->nodelist;
 				break;
 			default:
 				break;
@@ -1053,7 +1056,8 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			
-			if ((tmp_int == JOB_CANCELLED) && (tmp_int2 != NO_VAL)) 
+			if (((tmp_int & JOB_STATE_BASE) == JOB_CANCELLED) && 
+			    (tmp_int2 != NO_VAL)) 
 				snprintf(outbuf, FORMAT_STRING_SIZE,
 					 "%s by %d",
 					 job_state_string(tmp_int),

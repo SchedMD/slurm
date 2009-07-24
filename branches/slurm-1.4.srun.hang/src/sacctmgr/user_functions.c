@@ -531,8 +531,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 static int _check_coord_request(acct_user_cond_t *user_cond, bool check)
 {
 	ListIterator itr = NULL, itr2 = NULL;
-	char *name = NULL, *name2 = NULL;
-
+	char *name = NULL;
+	acct_user_rec_t *user_rec = NULL;
+	acct_account_rec_t *acct_rec = NULL;
 	acct_account_cond_t account_cond;
 	List local_acct_list = NULL;
 	List local_user_list = NULL;
@@ -569,20 +570,20 @@ static int _check_coord_request(acct_user_cond_t *user_cond, bool check)
 		return SLURM_ERROR;
 	}
 
-	if(user_cond->assoc_cond->acct_list && 
-	   (list_count(local_acct_list) != 
+	if(user_cond->assoc_cond->acct_list &&
+	   (list_count(local_acct_list) !=
 	    list_count(user_cond->assoc_cond->acct_list))) {
 		
 		itr = list_iterator_create(user_cond->assoc_cond->acct_list);
 		itr2 = list_iterator_create(local_acct_list);
 		
 		while((name = list_next(itr))) {
-			while((name2 = list_next(itr2))) {
-				if(!strcmp(name, name2)) 
+			while((acct_rec = list_next(itr2))) {
+				if(!strcmp(name, acct_rec->name)) 
 					break;
 			}
 			list_iterator_reset(itr2);
-			if(!name2) {
+			if(!acct_rec) {
 				fprintf(stderr, 
 					" You specified a non-existant "
 					"account '%s'.\n", name); 
@@ -605,19 +606,19 @@ static int _check_coord_request(acct_user_cond_t *user_cond, bool check)
 	}
 
 	if(user_cond->assoc_cond->user_list &&
-	   (list_count(local_user_list) != 
+	   (list_count(local_user_list) !=
 	    list_count(user_cond->assoc_cond->user_list))) {
 		
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		itr2 = list_iterator_create(local_user_list);
 		
 		while((name = list_next(itr))) {
-			while((name2 = list_next(itr2))) {
-				if(!strcmp(name, name2)) 
+			while((user_rec = list_next(itr2))) {
+				if(!strcmp(name, user_rec->name)) 
 					break;
 			}
 			list_iterator_reset(itr2);
-			if(!name2) {
+			if(!user_rec) {
 				fprintf(stderr, 
 					" You specified a non-existant "
 					"user '%s'.\n", name); 
@@ -1068,8 +1069,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				}
 				first = 0;				
 			}
-			pw_uid = uid_from_string(name);
-			if(pw_uid == (uid_t) -1) {
+			if (uid_from_string (name, &pw_uid) < 0) {
 				char *warning = xstrdup_printf(
 					"There is no uid for user '%s'"
 					"\nAre you sure you want to continue?",
@@ -1392,7 +1392,11 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 	ListIterator itr = NULL;
 
 	for (i=0; i<argc; i++) {
-		cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		cond_set += _set_cond(&i, argc, argv, user_cond, NULL);
 	}
 
 	if(exit_code) {
@@ -1500,7 +1504,13 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	user_cond->with_assocs = with_assoc_flag;
 
-	set = _set_cond(&i, argc, argv, user_cond, format_list);
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		set += _set_cond(&i, argc, argv, user_cond, format_list);
+	}
 
 	if(exit_code) {
 		destroy_acct_user_cond(user_cond);
@@ -2067,13 +2077,13 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i++;
-			cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
+			cond_set += _set_cond(&i, argc, argv, user_cond, NULL);
 			      
 		} else if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i++;
-			rec_set = _set_rec(&i, argc, argv, user, assoc);
+			rec_set += _set_rec(&i, argc, argv, user, assoc);
 		} else {
-			cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
+			cond_set += _set_cond(&i, argc, argv, user_cond, NULL);
 		}
 	}
 
@@ -2213,7 +2223,15 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	List ret_list = NULL;
 	int set = 0;
 
-	if(!(set = _set_cond(&i, argc, argv, user_cond, NULL))) {
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		set += _set_cond(&i, argc, argv, user_cond, NULL);
+	}
+
+	if(!set) {
 		exit_code=1;
 		fprintf(stderr, 
 			" No conditions given to remove, not executing.\n");
@@ -2285,7 +2303,11 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 
 
 	for (i=0; i<argc; i++) {
-		cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+			i++;		
+		cond_set += _set_cond(&i, argc, argv, user_cond, NULL);
 	}
 
 	if(exit_code) {

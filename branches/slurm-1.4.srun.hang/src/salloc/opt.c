@@ -46,6 +46,10 @@
 #  include "src/common/getopt.h"
 #endif
 
+#ifdef HAVE_LIMITS_H
+#  include <limits.h>
+#endif
+
 #include <fcntl.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
@@ -94,6 +98,7 @@
 #define OPT_ACCTG_FREQ  0x0f
 #define OPT_CPU_BIND    0x10
 #define OPT_MEM_BIND    0x11
+#define OPT_IMMEDIATE   0x12
 #define OPT_WCKEY       0x15
 
 /* generic getopt_long flags, integers and *not* valid characters */
@@ -268,9 +273,8 @@ static void _opt_default()
 	opt.kill_command_signal = SIGTERM;
 	opt.kill_command_signal_set = false;
 
-	opt.immediate	= false;
+	opt.immediate	= 0;
 	opt.overcommit	= false;
-	opt.max_wait	= 0;
 
 	opt.quiet = 0;
 	opt.verbose = 0;
@@ -327,25 +331,25 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-  {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
-  {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL           },
-  {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
-  {"SALLOC_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
-  {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
-  {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
-  {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
-  {"SALLOC_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL           },
-  {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL           },
-  {"SALLOC_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
-  {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL           },
-  {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL           },
-  {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
-  {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
-  {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-  {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
-  {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL           },
+  {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
+  {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL          },
+  {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
+  {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
+  {"SALLOC_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL          },
+  {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
+  {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
+  {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
+  {"SALLOC_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL          },
+  {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL          },
+  {"SALLOC_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
+  {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
+  {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
+  {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL          },
+  {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
+  {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
+  {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
+  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
   {NULL, 0, NULL, NULL}
 };
 
@@ -386,8 +390,10 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_INT:
 		if (val != NULL) {
 			*((int *) e->arg) = (int) strtol(val, &end, 10);
-			if (!(end && *end == '\0')) 
-				error("%s=%s invalid. ignoring...", e->var, val);
+			if (!(end && *end == '\0')) {
+				error("%s=%s invalid. ignoring...", 
+				      e->var, val);
+			}
 		}
 		break;
 
@@ -440,6 +446,14 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
+
+	case OPT_IMMEDIATE:
+		if (val)
+			opt.immediate = strtol(val, NULL, 10);
+		else
+			opt.immediate = DEFAULT_IMMEDIATE;
+		break;
+
 	case OPT_BELL:
 		opt.bell = BELL_ALWAYS;
 		break;
@@ -514,7 +528,7 @@ void set_options(const int argc, char **argv)
 		{"geometry",      required_argument, 0, 'g'},
 		{"help",          no_argument,       0, 'h'},
 		{"hold",          no_argument,       0, 'H'},
-		{"immediate",     no_argument,       0, 'I'},
+		{"immediate",     optional_argument, 0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
@@ -582,7 +596,7 @@ void set_options(const int argc, char **argv)
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
 		{NULL,            0,                 0, 0}
 	};
-	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:P:qR:st:uU:vVw:W:x:";
+	char *opt_string = "+B:c:C:d:D:F:g:hHIJ:kK::L:m:n:N:Op:P:QRst:uU:vVw:W:x:";
 
 	struct option *optz = spank_option_table_create(long_options);
 
@@ -654,7 +668,10 @@ void set_options(const int argc, char **argv)
 			opt.hold = true;
 			break;
 		case 'I':
-			opt.immediate = true;
+			if (optarg)
+				opt.immediate = _get_int(optarg, "immediate");
+			else
+				opt.immediate = DEFAULT_IMMEDIATE;
 			break;
 		case 'J':
 			xfree(opt.job_name);
@@ -751,7 +768,9 @@ void set_options(const int argc, char **argv)
 #endif
 			break;
 		case 'W':
-			opt.max_wait = _get_int(optarg, "wait");
+			verbose("wait option has been deprecated, use "
+				"immediate option");
+			opt.immediate = _get_int(optarg, "wait");
 			break;
 		case 'x':
 			xfree(opt.exc_nodes);
@@ -821,15 +840,13 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_UID:
 			if (opt.euid != (uid_t) -1)
 				fatal ("duplicate --uid option");
-			opt.euid = uid_from_string (optarg);
-			if (opt.euid == (uid_t) -1)
+			if (uid_from_string (optarg, &opt.euid) < 0)
 				fatal ("--uid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_GID:
 			if (opt.egid != (gid_t) -1)
 				fatal ("duplicate --gid option");
-			opt.egid = gid_from_string (optarg);
-			if (opt.egid == (gid_t) -1)
+			if (gid_from_string (optarg, &opt.euid) < 0)
 				fatal ("--gid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_CONNTYPE:
@@ -1103,21 +1120,51 @@ static bool _opt_verify(void)
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
-		error("%s: invalid number of processes (-n %d)",
-		      opt.progname, opt.nprocs);
+		error("invalid number of processes (-n %d)",
+		      opt.nprocs);
 		verified = false;
 	}
 
 	if (opt.cpus_per_task <= 0) {
-		error("%s: invalid number of cpus per task (-c %d)\n",
-		      opt.progname, opt.cpus_per_task);
+		error("invalid number of cpus per task (-c %d)\n",
+		      opt.cpus_per_task);
 		verified = false;
 	}
 
 	if ((opt.min_nodes < 0) || (opt.max_nodes < 0) || 
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-		error("%s: invalid number of nodes (-N %d-%d)\n",
-		      opt.progname, opt.min_nodes, opt.max_nodes);
+		error("invalid number of nodes (-N %d-%d)\n",
+		      opt.min_nodes, opt.max_nodes);
+		verified = false;
+	}
+
+#ifdef HAVE_BGL
+	if (opt.blrtsimage && strchr(opt.blrtsimage, ' ')) {
+		error("invalid BlrtsImage given '%s'", opt.blrtsimage);
+		verified = false;
+	}
+#endif
+
+	if (opt.linuximage && strchr(opt.linuximage, ' ')) {
+#ifdef HAVE_BGL
+		error("invalid LinuxImage given '%s'", opt.linuximage);
+#else
+		error("invalid CnloadImage given '%s'", opt.linuximage);
+#endif
+		verified = false;
+	}
+
+	if (opt.mloaderimage && strchr(opt.mloaderimage, ' ')) {
+		error("invalid MloaderImage given '%s'", opt.mloaderimage);
+		verified = false;
+	}
+
+	if (opt.ramdiskimage && strchr(opt.ramdiskimage, ' ')) {
+#ifdef HAVE_BGL
+		error("invalid RamDiskImage given '%s'", opt.ramdiskimage);
+#else
+		error("invalid IoloadImage given '%s'", opt.ramdiskimage);
+#endif
 		verified = false;
 	}
 
@@ -1182,7 +1229,9 @@ static bool _opt_verify(void)
 	}
 
 	/* massage the numbers */
-	if (opt.nodes_set && !opt.nprocs_set) {
+	if ((opt.nodes_set || opt.extra_set)				&& 
+	    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))	&& 
+	    !opt.nprocs_set) {
 		/* 1 proc / node default */
 		opt.nprocs = opt.min_nodes;
 
@@ -1229,16 +1278,6 @@ static bool _opt_verify(void)
 			opt.time_limit = INFINITE;
 	}
 
-	if (opt.immediate) {
-		char *sched_name = slurm_get_sched_type();
-		if (strcmp(sched_name, "sched/wiki") == 0) {
-			info("WARNING: Ignoring the -I/--immediate option "
-				"(not supported by Maui)");
-			opt.immediate = false;
-		}
-		xfree(sched_name);
-	}
-
 #ifdef HAVE_AIX
 	if (opt.network == NULL)
 		opt.network = "us,sn_all,bulk_xfer";
@@ -1267,8 +1306,105 @@ static bool _opt_verify(void)
 			setenvf(NULL, "SLURM_MEM_BIND", "%s", tmp);
 		}
 	}
+	if ((opt.ntasks_per_node != NO_VAL) && 
+	    (getenv("SLURM_NTASKS_PER_NODE") == NULL)) {
+		setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d", 
+			opt.ntasks_per_node);
+	}
 
 	return verified;
+}
+
+/* Functions used by SPANK plugins to read and write job environment
+ * variables for use within job's Prolog and/or Epilog */
+extern char *spank_get_job_env(const char *name)
+{
+	int i, len;
+	char *tmp_str = NULL;
+
+	if ((name == NULL) || (name[0] == '\0') ||
+	    (strchr(name, (int)'=') != NULL)) {
+		slurm_seterrno(EINVAL);
+		return NULL;
+	}
+
+	xstrcat(tmp_str, name);
+	xstrcat(tmp_str, "=");
+	len = strlen(tmp_str);
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+			continue;
+		xfree(tmp_str);
+		return (opt.spank_job_env[i] + len);
+	}
+
+	return NULL;
+}
+
+extern int   spank_set_job_env(const char *name, const char *value, 
+			       int overwrite)
+{
+	int i, len;
+	char *tmp_str = NULL;
+
+	if ((name == NULL) || (name[0] == '\0') ||
+	    (strchr(name, (int)'=') != NULL)) {
+		slurm_seterrno(EINVAL);
+		return -1;
+	}
+
+	xstrcat(tmp_str, name);
+	xstrcat(tmp_str, "=");
+	len = strlen(tmp_str);
+	xstrcat(tmp_str, value);
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+			continue;
+		if (overwrite) {
+			xfree(opt.spank_job_env[i]);
+			opt.spank_job_env[i] = tmp_str;
+		} else
+			xfree(tmp_str);
+		return 0;
+	}
+
+	/* Need to add an entry */
+	opt.spank_job_env_size++;
+	xrealloc(opt.spank_job_env, sizeof(char *) * opt.spank_job_env_size);
+	opt.spank_job_env[i] = tmp_str;
+	return 0;
+}
+
+extern int   spank_unset_job_env(const char *name)
+{
+	int i, j, len;
+	char *tmp_str = NULL;
+
+	if ((name == NULL) || (name[0] == '\0') ||
+	    (strchr(name, (int)'=') != NULL)) {
+		slurm_seterrno(EINVAL);
+		return -1;
+	}
+
+	xstrcat(tmp_str, name);
+	xstrcat(tmp_str, "=");
+	len = strlen(tmp_str);
+
+	for (i=0; i<opt.spank_job_env_size; i++) {
+		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+			continue;
+		xfree(opt.spank_job_env[i]);
+		for (j=(i+1); j<opt.spank_job_env_size; i++, j++)
+			opt.spank_job_env[i] = opt.spank_job_env[j];
+		opt.spank_job_env_size--;
+		if (opt.spank_job_env_size == 0)
+			xfree(opt.spank_job_env);
+		return 0;
+	}
+
+	return 0;	/* not found */
 }
 
 /* helper function for printing options
@@ -1403,13 +1539,15 @@ static void _opt_list()
 	if(opt.distribution == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
 	info("verbose        : %d", opt.verbose);
-	info("immediate      : %s", tf_(opt.immediate));
+	if (opt.immediate <= 1)
+		info("immediate      : %s", tf_(opt.immediate));
+	else
+		info("immediate      : %d secs", (opt.immediate - 1));
 	info("overcommit     : %s", tf_(opt.overcommit));
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
 	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
-	info("wait           : %d", opt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
@@ -1477,7 +1615,7 @@ static void _usage(void)
  	printf(
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"              [--immediate] [--no-kill] [--overcommit] [-D path]\n"
+"              [--immediate[=secs]] [--no-kill] [--overcommit] [-D path]\n"
 "              [--share] [-J jobname] [--jobid=id]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--licenses=names]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
@@ -1517,7 +1655,7 @@ static void _help(void)
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "  -H, --hold                  submit job in held state\n"
-"  -I, --immediate             exit if resources are not immediately available\n"
+"  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"
 "      --jobid=id              specify jobid to use\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"
@@ -1542,8 +1680,6 @@ static void _help(void)
 "  -U, --account=name          charge job to specified account\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
-"  -W, --wait=sec              seconds to wait for allocation if not\n"
-"                              immediately available\n"
 "\n"
 "Constraint options:\n"
 "      --contiguous            demand a contiguous range of nodes\n"

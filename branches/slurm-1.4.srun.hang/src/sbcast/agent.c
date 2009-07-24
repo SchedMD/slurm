@@ -2,7 +2,7 @@
  *  agent.c - File transfer agent (handles message traffic)
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -112,14 +112,14 @@ static void *_agent_thread(void *args)
 		list_destroy(ret_list);
 	slurm_mutex_lock(&agent_cnt_mutex);
 	agent_cnt--;
-	slurm_mutex_unlock(&agent_cnt_mutex);
 	pthread_cond_broadcast(&agent_cnt_cond);
+	slurm_mutex_unlock(&agent_cnt_mutex);
 	return NULL;
 }
 
 /* Issue the RPC to transfer the file's data */
 extern void send_rpc(file_bcast_msg_t *bcast_msg,
-		     job_alloc_info_response_msg_t *alloc_resp)
+		     job_sbcast_cred_msg_t *sbcast_cred)
 {
 	/* Preserve some data structures across calls for better performance */
 	static int threads_used = 0;
@@ -141,12 +141,12 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		else
 			fanout = MAX_THREADS;
 
-		span = set_span(alloc_resp->node_cnt, fanout);
+		span = set_span(sbcast_cred->node_cnt, fanout);
 		
-		hl = hostlist_create(alloc_resp->node_list);
+		hl = hostlist_create(sbcast_cred->node_list);
 		
 		i = 0;
-		while (i < alloc_resp->node_cnt) {
+		while (i < sbcast_cred->node_cnt) {
 			int j = 0;
 			name = hostlist_shift(hl);
 			if(!name) {

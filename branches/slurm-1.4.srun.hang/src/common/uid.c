@@ -2,7 +2,8 @@
  * src/common/uid.c - uid/gid lookup utility functions
  * $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -41,48 +42,79 @@
 #include <pwd.h>
 #include <grp.h>
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-uid_t
-uid_from_string (char *name)
+static int _getpwnam_r (const char *name, struct passwd *pwd, char *buf,
+		size_t bufsiz, struct passwd **result)
+{
+	int rc;
+	while (1) {
+		rc = getpwnam_r(name, pwd, buf, bufsiz, result);
+		if (rc == EINTR)
+			continue;
+		if (rc != 0)
+			*result = NULL;
+		break;
+	}
+	return (rc);
+}
+
+static int _getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
+		size_t bufsiz, struct passwd **result)
+{
+	int rc;
+	while (1) {
+		rc = getpwuid_r(uid, pwd, buf, bufsiz, result);
+		if (rc == EINTR)
+			continue;
+		if (rc != 0)
+			*result = NULL;
+		break;
+	}
+	return rc;
+}
+
+int
+uid_from_string (char *name, uid_t *uidp)
 {
 	struct passwd pwd, *result;
 	char buffer[PW_BUF_SIZE], *p = NULL;
-	int rc;
-	uid_t uid = (uid_t) strtoul (name, &p, 10);
+	long l;
 
-	if (*p != '\0') {
-		while (1) {
-			rc = getpwnam_r(name, &pwd, buffer, PW_BUF_SIZE, 
-					&result);
-			if (rc == EINTR)
-				continue;
-			if (rc != 0)
-				result = NULL;
-			break;
-		}
-		if (result == NULL)
-			uid = (uid_t) -1;
-		else
-			uid = result->pw_uid;
-	} else {
-		while (1) {
-			rc = getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, 
-					&result);
-			if (rc == EINTR)
-				continue;
-			if (rc != 0)
-				result = NULL;
-			break;
-		}
-		if (result == NULL)
-			uid = (uid_t) -1;
-		/* else uid is already correct */
+	/*
+	 *  Check to see if name is a valid username first.
+	 */
+	if ((_getpwnam_r (name, &pwd, buffer, PW_BUF_SIZE, &result) == 0)
+	    && result != NULL) {
+		*uidp = result->pw_uid;
+		return 0;
 	}
-	return uid; 
+
+	/*
+	 *  If username was not valid, check for a valid UID.
+	 */
+	errno = 0;
+	l = strtol (name, &p, 10);
+	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX)))
+	   || (name == p)
+	   || (*p != '\0')
+	   || (l < 0)
+	   || (l > INT_MAX))
+		return -1;
+
+	/*
+	 *  Now ensure the supplied uid is in the user database
+	 */
+	if (_getpwuid_r (l, &pwd, buffer, PW_BUF_SIZE, &result) != 0)
+		return -1;
+
+	*uidp = (uid_t) l;
+	return 0;
 }
 
 char *
@@ -96,14 +128,8 @@ uid_to_string (uid_t uid)
 	if (uid == 0)
 		return xstrdup("root");
 
-	while (1) {
-		rc = getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-		if (rc == EINTR)
-			continue;
-		if (rc != 0)
-			result = NULL;
-		break;
-	}
+	rc = getpwuid_r (uid, &pwd, buffer, PW_BUF_SIZE, &result);
+
 	if (result)
 		ustring = xstrdup(result->pw_name);
 	else
@@ -129,43 +155,73 @@ gid_from_uid (uid_t uid)
 	return gid;
 }
 
-gid_t
-gid_from_string (char *name)
+static int _getgrnam_r (const char *name, struct group *grp, char *buf,
+		size_t bufsiz, struct group **result)
+{
+	int rc;
+	while (1) {
+		rc = getgrnam_r (name, grp, buf, bufsiz, result);
+		if (rc == EINTR)
+			continue;
+		if (rc != 0)
+			*result = NULL;
+		break;
+	}
+	return (rc);
+}
+
+static int _getgrgid_r (gid_t gid, struct group *grp, char *buf,
+		size_t bufsiz, struct group **result)
+{
+	int rc;
+	while (1) {
+		rc = getgrgid_r (gid, grp, buf, bufsiz, result);
+		if (rc == EINTR)
+			continue;
+		if (rc != 0)
+			*result = NULL;
+		break;
+	}
+	return rc;
+}
+
+int
+gid_from_string (char *name, gid_t *gidp)
 {
 	struct group grp, *result;
 	char buffer[PW_BUF_SIZE], *p = NULL;
-	int rc;
-	gid_t gid = (gid_t) strtoul (name, &p, 10);
+	long l;
 
-	if (*p != '\0') {
-		while (1) {
-			rc = getgrnam_r(name, &grp, buffer, PW_BUF_SIZE, 
-					&result);
-			if (rc == EINTR)
-				continue;
-			if (rc != 0)
-				result = NULL;
-			break;
-		}
-		if (result == NULL)
-			gid = (gid_t) -1;
-		else
-			gid = result->gr_gid;
-	} else {
-		while (1) {
-			rc = getgrgid_r(gid, &grp, buffer, PW_BUF_SIZE, 
-					&result);
-			if (rc == EINTR)
-				continue;
-			if (rc != 0)
-				result = NULL;
-			break;
-		}
-		if (result == NULL)
-			gid = (gid_t) -1;
-		/* else gid is already correct */
+	/*
+	 *  Check for valid group name first.
+	 */
+	if ((_getgrnam_r (name, &grp, buffer, PW_BUF_SIZE, &result) == 0)
+	    && result != NULL) {
+		*gidp = result->gr_gid;
+		return 0;
 	}
-	return gid; 
+
+	/*
+	 *  If group name was not valid, perhaps it is a  valid GID.
+	 */
+	errno = 0;
+	l = strtol (name, &p, 10);
+	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX)))
+	   || (name == p)
+	   || (*p != '\0')
+	   || (l < 0)
+	   || (l > INT_MAX))
+		return -1;
+
+	/*
+	 *  Now ensure the supplied uid is in the user database
+	 */
+	if ((_getgrgid_r (l, &grp, buffer, PW_BUF_SIZE, &result) != 0)
+	    || result == NULL)
+		return -1;
+
+	*gidp = (gid_t) l;
+	return 0;
 }
 
 char *
@@ -175,15 +231,8 @@ gid_to_string (gid_t gid)
 	char buffer[PW_BUF_SIZE], *gstring;
 	int rc;
 
-	while (1) {
-		rc = getgrgid_r(gid, &grp, buffer, PW_BUF_SIZE, &result);
-		if (rc == EINTR)
-			continue;
-		if (rc != 0)
-			result = NULL;
-		break;
-	}
-	if (result)
+	rc = _getgrgid_r(gid, &grp, buffer, PW_BUF_SIZE, &result);
+	if (rc == 0 && result)
 		gstring = xstrdup(result->gr_name);
 	else
 		gstring = xstrdup("nobody");

@@ -511,6 +511,14 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 #ifdef MYSQL_NOT_THREAD_SAFE
 		slurm_mutex_unlock(&mysql_lock);
 #endif
+		/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
+		to restart the connections, but it appears restarting
+		the calling program is the only way to handle this.
+		If anyone in the future figures out a way to handle
+		this, super.  Until then we will need to restart the
+		calling program if you ever get this error. 
+		*/
+
 		return SLURM_ERROR;
 	}
 

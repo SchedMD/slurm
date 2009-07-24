@@ -35,6 +35,10 @@
 #  include <strings.h>
 #endif
 
+#ifdef HAVE_LIMITS_H
+#  include <limits.h>
+#endif
+
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
 #endif

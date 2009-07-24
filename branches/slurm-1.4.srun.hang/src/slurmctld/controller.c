@@ -165,6 +165,7 @@ static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 static char    *slurm_conf_filename;
+static int      primary = 1 ;
 /*
  * Static list of signals to block in this process
  * *Must be zero-terminated*
@@ -175,10 +176,12 @@ static int controller_sigarray[] = {
 	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
 };
 
-static void         _default_sigaction(int sig);
-inline static void  _free_server_thread(void);
 static int          _accounting_cluster_ready();
 static int          _accounting_mark_all_nodes_down(char *reason);
+static void *       _assoc_cache_mgr(void *no_data);
+static void         _become_slurm_user(void);
+static void         _default_sigaction(int sig);
+inline static void  _free_server_thread(void);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
@@ -192,9 +195,8 @@ static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
 inline static void  _update_cred_key(void);
 inline static void  _usage(char *prog_name);
+static bool         _valid_controller(void);
 static bool         _wait_for_server_thread(void);
-static void *       _assoc_cache_mgr(void *no_data);
-static void         _become_slurm_user(void);
 
 typedef struct connection_arg {
 	int newsockfd;
@@ -356,12 +358,13 @@ int main(int argc, char *argv[])
 	/* This thread is looking for when we get correct data from
 	   the database so we can update the assoc_ptr's in the jobs
 	*/
-	if(running_cache) {
+	if (running_cache) {
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(
-			    &assoc_cache_thread, 
-			    &thread_attr, _assoc_cache_mgr, NULL))
-			fatal("pthread_create error %m");
+		while (pthread_create(&assoc_cache_thread, &thread_attr, 
+				      _assoc_cache_mgr, NULL)) {
+			error("pthread_create error %m");
+			sleep(1);
+		}
 		slurm_attr_destroy(&thread_attr);
 	}
 	
@@ -408,10 +411,9 @@ int main(int argc, char *argv[])
 		    (strcmp(node_name,
 			    slurmctld_conf.backup_controller) == 0)) {
 			slurm_sched_fini();	/* make sure shutdown */
+			primary = 0;
 			run_backup();
-		} else if (slurmctld_conf.control_machine &&
-			 (strcmp(node_name, slurmctld_conf.control_machine) 
-			  == 0)) {
+		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			/* Now recover the remaining state information */
 			if (switch_restore(slurmctld_conf.state_save_location,
@@ -424,9 +426,12 @@ int main(int argc, char *argv[])
 					slurm_strerror(error_code));
 			}
 			unlock_slurmctld(config_write_lock);
-			
+			select_g_select_nodeinfo_set_all(time(NULL));
+
 			if (recover == 0) 
 				_accounting_mark_all_nodes_down("cold-start");
+
+			primary = 1;
 			
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
@@ -435,7 +440,7 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 
-		if(!acct_db_conn) {
+		if (!acct_db_conn) {
 			acct_db_conn = 
 				acct_storage_g_get_connection(true, 0, false);
 			/* We only send in a variable the first time
@@ -474,40 +479,42 @@ int main(int argc, char *argv[])
 		slurmctld_config.server_thread_count++;
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&slurmctld_config.thread_id_rpc, 
-				&thread_attr, _slurmctld_rpc_mgr, NULL))
-			fatal("pthread_create error %m");
+		while (pthread_create(&slurmctld_config.thread_id_rpc, 
+				      &thread_attr, _slurmctld_rpc_mgr, 
+				      NULL)) {
+			error("pthread_create error %m");
+			sleep(1);
+		}
 		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * create attached thread for signal handling
 		 */
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&slurmctld_config.thread_id_sig,
-				 &thread_attr, _slurmctld_signal_hand,
-				 NULL))
-			fatal("pthread_create %m");
+		while (pthread_create(&slurmctld_config.thread_id_sig,
+				      &thread_attr, _slurmctld_signal_hand,
+				      NULL)) {
+			error("pthread_create %m");
+			sleep(1);
+		}
 		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * create attached thread for state save
 		 */
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&slurmctld_config.thread_id_save,
-				&thread_attr, slurmctld_state_save,
-				NULL))
-			fatal("pthread_create %m");
+		while (pthread_create(&slurmctld_config.thread_id_save,
+				      &thread_attr, slurmctld_state_save,
+				      NULL)) {
+			error("pthread_create %m");
+			sleep(1);
+		}
 		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * create attached thread for node power management
 		 */
-		slurm_attr_init(&thread_attr);
-		if (pthread_create(&slurmctld_config.thread_id_power,
-				&thread_attr, init_power_save,
-				NULL))
-			fatal("pthread_create %m");
-		slurm_attr_destroy(&thread_attr);
+		start_power_mgr(&slurmctld_config.thread_id_power);
 
 		/*
 		 * process slurm background activities, could run as pthread
@@ -520,8 +527,8 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
-		pthread_join(slurmctld_config.thread_id_power,NULL);
-		if(running_cache) {
+
+		if (running_cache) {
 			/* break out and end the association cache
 			 * thread since we are shuting down, no reason
 			 * to wait for current info from the database */
@@ -539,17 +546,29 @@ int main(int argc, char *argv[])
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
 
+		/* join the power save thread after saving all state
+		 * since it could wait a while waiting for spawned
+		 * processes to exit */
+		pthread_join(slurmctld_config.thread_id_power, NULL);
+
 		if (slurmctld_config.resume_backup == false)
 			break;
+
+		/* primary controller doesn't resume backup mode */
+		if ((slurmctld_config.resume_backup == true) &&
+		    (primary == 1))
+			break;
+
 		recover = 2;
 	}
 
 	/* Since pidfile is created as user root (its owner is
 	 *   changed to SlurmUser) SlurmUser may not be able to 
 	 *   remove it, so this is not necessarily an error. */
-	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
+	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0) {
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
+	}
 	
 	
 #ifdef MEMORY_LEAK_DEBUG
@@ -611,7 +630,7 @@ int main(int argc, char *argv[])
 	xfree(slurmctld_cluster_name);
 	if (cnt) {
 		info("Slurmctld shutdown completing with %d active agent "
-			"threads\n\n", cnt);
+		     "thread", cnt);
 	}
 	log_fini();
 	
@@ -692,11 +711,17 @@ extern int slurm_reconfigure(void)
 		_update_cred_key();
 		set_slurmctld_state_loc();
 	}
+	select_g_reconfigure();		/* notify select
+					 * plugin too.  This
+					 * needs to happen
+					 * inside the lock. */
 	unlock_slurmctld(config_write_lock);
+	start_power_mgr(&slurmctld_config.thread_id_power);
 	trigger_reconfig();
 	slurm_sched_partition_change();	/* notify sched plugin */
-	select_g_reconfigure();		/* notify select plugin too */
 	priority_g_reconfig();          /* notify priority plugin too */
+	schedule();			/* has its own locks */
+	save_all_state();
 
 	return rc;
 }
@@ -813,9 +838,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		    slurmctld_conf.backup_addr) != 0)) {
 		node_addr = slurmctld_conf.backup_addr ;
 	}
-	else if ((strcmp(node_name,slurmctld_conf.control_machine) == 0) &&
-		 (strcmp(slurmctld_conf.control_machine,
-			 slurmctld_conf.control_addr) != 0)) {
+	else if (_valid_controller() &&
+		 strcmp(slurmctld_conf.control_machine,
+			 slurmctld_conf.control_addr)) {
 		node_addr = slurmctld_conf.control_addr ;
 	}
 
@@ -978,8 +1003,8 @@ static void _free_server_thread(void)
 		slurmctld_config.server_thread_count--;
 	else
 		error("slurmctld_config.server_thread_count underflow");
-	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 	pthread_cond_broadcast(&server_thread_cond);
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 }
 
 static int _accounting_cluster_ready()
@@ -1086,8 +1111,7 @@ static void _remove_assoc(acct_association_rec_t *rec)
 {
 	int cnt = 0;
 
-	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-		cnt = job_cancel_by_assoc_id(rec->id);
+	cnt = job_cancel_by_assoc_id(rec->id);
 
 	if (cnt) {
 		info("Removed association id:%u user:%s, cancelled %u jobs",
@@ -1343,8 +1367,9 @@ void save_all_state(void)
 {
 	/* Each of these functions lock their own databases */
 	schedule_job_save();
-	schedule_part_save();
 	schedule_node_save();
+	schedule_part_save();
+	schedule_resv_save();
 	schedule_trigger_save();
 	select_g_state_save(slurmctld_conf.state_save_location);
 	dump_assoc_mgr_state(slurmctld_conf.state_save_location);
@@ -1771,8 +1796,8 @@ static void _become_slurm_user(void)
 	/* Determine SlurmUser gid */
 	slurm_user_gid = gid_from_uid(slurmctld_conf.slurm_user_id);
 	if (slurm_user_gid == (gid_t) -1) {
-		fatal("Failed to determine gid of SlurmUser(%d)", 
-		      slurm_user_gid);
+		fatal("Failed to determine gid of SlurmUser(%u)", 
+		      slurmctld_conf.slurm_user_id);
 	}
 
 	/* Initialize supplementary groups ID list for SlurmUser */
@@ -1801,9 +1826,35 @@ static void _become_slurm_user(void)
 	/* Set UID to UID of SlurmUser */
 	if ((slurmctld_conf.slurm_user_id != getuid()) &&
 	    (setuid(slurmctld_conf.slurm_user_id))) {
-		fatal("Can not set uid to SlurmUser(%d): %m",
+		fatal("Can not set uid to SlurmUser(%u): %m",
 		      slurmctld_conf.slurm_user_id);
 	}
 }
 
+/* Return true if node_name (a global) is a valid controller host name */
+static bool  _valid_controller(void)
+{
+	bool match = false;
 
+	if (slurmctld_conf.control_machine == NULL)
+		return match;
+
+	if (strcmp(node_name, slurmctld_conf.control_machine) == 0)
+		match = true;
+	else if (strchr(slurmctld_conf.control_machine, ',')) {
+		char *token, *last = NULL;
+		char *tmp_name = xstrdup(slurmctld_conf.control_machine);
+
+		token = strtok_r(tmp_name, ",", &last);
+		while (token) {
+			if (strcmp(node_name, token) == 0) {
+				match = true;
+				break;
+			}
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_name);
+	}
+
+	return match;
+}

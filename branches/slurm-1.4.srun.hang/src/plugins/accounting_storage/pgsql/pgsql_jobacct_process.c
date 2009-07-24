@@ -391,6 +391,7 @@ no_cond:
 
 	for (i = 0; i < PQntuples(result); i++) {
 		char *id = PQgetvalue(result, i, JOB_REQ_ID);
+		bool job_ended = 0;
 
 		curr_id = atoi(PQgetvalue(result, i, JOB_REQ_JOBID));
 
@@ -433,24 +434,25 @@ no_cond:
 		job->submit = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
 		job->start = atoi(PQgetvalue(result, i, JOB_REQ_START));
 		job->end = atoi(PQgetvalue(result, i, JOB_REQ_ENDTIME));
-		job->suspended = atoi(PQgetvalue(result, i, JOB_REQ_SUSPENDED));
-		if(!job->end) {
-			job->elapsed = now - job->start;
-		} else {
-			job->elapsed = job->end - job->start;
-		}
-		job->elapsed -= job->suspended;
 
-		if(job_cond && job_cond->usage_start) {
+		/* since the job->end could be set later end it here */
+		if(job->end) {
+			job_ended = 1;
+			if(!job->start || (job->start > job->end))
+				job->start = job->end;
+		}
+
+		if(job_cond && !job_cond->without_usage_truncation
+		   && job_cond->usage_start) {
 			if(job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
-
-			if(!job->start && job->end)
-				job->start = job->end;
 
 			if(!job->end || job->end > job_cond->usage_end) 
 				job->end = job_cond->usage_end;
 
+			if(!job->start && job->end)
+				job->start = job->end;
+			
 			job->elapsed = job->end - job->start;
 
 			if(atoi(PQgetvalue(result, i, JOB_REQ_SUSPENDED))) {
@@ -502,13 +504,20 @@ no_cond:
 		} else {
 			job->suspended =
 				atoi(PQgetvalue(result, i, JOB_REQ_SUSPENDED));
-			if(!job->end) {
+
+			if(!job->start) {
+				job->elapsed = 0;
+			} else if(!job->end) {
 				job->elapsed = now - job->start;
 			} else {
 				job->elapsed = job->end - job->start;
 			}
+
 			job->elapsed -= job->suspended;
 		}
+
+		if((int)job->elapsed < 0)
+			job->elapsed = 0;
 
 		job->jobid = curr_id;
 		job->jobname = xstrdup(PQgetvalue(result, i, JOB_REQ_NAME));
@@ -603,6 +612,27 @@ no_cond:
 				PQgetvalue(step_result, j, STEP_REQ_START));
 			step->end = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_ENDTIME));
+
+			/* if the job has ended end the step also */
+			if(!step->end && job_ended) {
+				step->end = job->end;
+				step->state = job->state;
+			}
+
+			if(job_cond && !job_cond->without_usage_truncation
+			   && job_cond->usage_start) {
+				if(step->start 
+				   && (step->start < job_cond->usage_start))
+					step->start = job_cond->usage_start;
+				
+				if(!step->start && step->end)
+					step->start = step->end;
+				
+				if(!step->end 
+				   || (step->end > job_cond->usage_end)) 
+					step->end = job_cond->usage_end;
+			}
+
 			/* figure this out by start stop */
 			step->suspended = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_SUSPENDED));
@@ -612,6 +642,10 @@ no_cond:
 				step->elapsed = step->end - step->start;
 			}
 			step->elapsed -= step->suspended;
+
+			if((int)step->elapsed < 0)
+				step->elapsed = 0;
+
 			step->user_cpu_sec = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_USER_SEC));
 			step->user_cpu_usec = atoi(

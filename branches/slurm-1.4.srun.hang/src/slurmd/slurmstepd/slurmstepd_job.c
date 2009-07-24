@@ -277,6 +277,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->pty         = msg->pty;
 	job->open_mode   = msg->open_mode;
 	job->options     = msg->options;
+	job->alloc_cores = format_core_allocs(msg->cred, conf->node_name);
 	
 	list_append(job->sruns, (void *) srun);
 
@@ -382,7 +383,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		/* job script has not yet been written out to disk --
 		 * argv will be filled in later by _make_batch_script()
 		 */
-		job->argv    = (char **) xmalloc(sizeof(char *));
+		job->argv    = (char **) xmalloc(2 * sizeof(char *));
 	}
 
 	job->task = (slurmd_task_info_t **)
@@ -510,6 +511,7 @@ job_destroy(slurmd_job_t *job)
 	xfree(job->node_name);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
+	xfree(job->alloc_cores);
 	xfree(job);
 }
 
@@ -539,10 +541,10 @@ _array_free(char ***array)
 
 
 struct srun_info *
-srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
+srun_info_create(slurm_cred_t *cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 {
 	char             *data = NULL;
-	int               len  = 0;
+	uint32_t          len  = 0;
 	struct srun_info *srun = xmalloc(sizeof(struct srun_info));
 	srun_key_t       *key  = xmalloc(sizeof(srun_key_t));
 

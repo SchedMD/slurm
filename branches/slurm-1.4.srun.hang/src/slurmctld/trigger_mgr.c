@@ -67,11 +67,6 @@
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
 #define TRIGGER_STATE_VERSION      "VER002"
 
-/* TRIG_IS_JOB_FINI differs from IS_JOB_FINISHED by considering 
- * completing jobs as not really finished */
-#define TRIG_IS_JOB_FINI(_X)             \
-        (IS_JOB_FINISHED(_X) && ((_X->job_state & JOB_COMPLETING) == 0))
-
 List trigger_list;
 uint32_t next_trigger_id = 1;
 static pthread_mutex_t trigger_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -492,16 +487,16 @@ static int _load_trigger_state(Buf buffer)
 	if (trig_ptr->res_type == TRIGGER_RES_TYPE_JOB) {
 		trig_ptr->job_id = (uint32_t) atol(trig_ptr->res_id);
 		trig_ptr->job_ptr = find_job_record(trig_ptr->job_id);
-		if ((trig_ptr->job_id == 0)
-		||  (trig_ptr->job_ptr == NULL)
-		||  (TRIG_IS_JOB_FINI(trig_ptr->job_ptr)))
+		if ((trig_ptr->job_id == 0)     ||
+		    (trig_ptr->job_ptr == NULL) ||
+		    (IS_JOB_COMPLETED(trig_ptr->job_ptr)))
 			goto unpack_error;
 	} else {
 		trig_ptr->job_id = 0;
 		trig_ptr->job_ptr = NULL;
-		if ((trig_ptr->res_id != NULL)
-		&&  (trig_ptr->res_id[0] != '*')
-		&&  (node_name2bitmap(trig_ptr->res_id, false,
+		if ((trig_ptr->res_id != NULL)   &&
+		    (trig_ptr->res_id[0] != '*') &&
+		    (node_name2bitmap(trig_ptr->res_id, false,
 				&trig_ptr->nodes_bitmap) != 0))
 			goto unpack_error;
 	}
@@ -588,9 +583,13 @@ extern int trigger_state_save(void)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		(void) link(reg_file, old_file);
+		if(link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
 		(void) unlink(reg_file);
-		(void) link(new_file, reg_file);
+		if(link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
 		(void) unlink(new_file);
 	}
 	xfree(old_file);
@@ -682,7 +681,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 
 	if ((trig_in->trig_type & TRIGGER_TYPE_FINI)
 	&&  ((trig_in->job_ptr == NULL) ||
-	     (TRIG_IS_JOB_FINI(trig_in->job_ptr)))) {
+	     (IS_JOB_COMPLETED(trig_in->job_ptr)))) {
 		trig_in->state = 1;
 		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
@@ -861,15 +860,13 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 		 * nodes have been idle for at least the offset time */
 		time_t min_idle = now - (trig_in->trig_time - 0x8000);
 		int i;
-		uint16_t base_state;
 		struct node_record *node_ptr = node_record_table_ptr;
 		bitstr_t *trigger_idle_node_bitmap;
 
 		trigger_idle_node_bitmap = bit_alloc(node_record_count);
 		for (i = 0; i < node_record_count; i++, node_ptr++) {
-			base_state = node_ptr->node_state & NODE_STATE_BASE;
-			if ((base_state != NODE_STATE_IDLE)
-			||  (node_ptr->last_idle > min_idle))
+			if (!IS_NODE_IDLE(node_ptr) ||
+			    (node_ptr->last_idle > min_idle))
 				continue;
 			bit_set(trigger_idle_node_bitmap, i);
 		}

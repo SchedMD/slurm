@@ -87,7 +87,7 @@ For example:
    \-\-begin=16:00
    \-\-begin=now+1hour
    \-\-begin=now+60           (seconds by default)
-   \-\-begin=2010-01-20T12:34:67
+   \-\-begin=2010-01-20T12:34:00
 .fi
 
 .TP
@@ -326,10 +326,13 @@ show this help message
 .RE
 
 .TP
-\fB\-I\fR, \fB\-\-immediate\fR
-Grab the requested resources immediately, or abort if the resources
-are not currently available.  The \fIcommand\fR parameter will not be
-run if the resources are not available.
+\fB\-I\fR, \fB\-\-immediate\fR[=<\fIseconds\fR>]
+exit if resources are not available within the 
+time period specified. 
+If no argument is given, resources must be available immediately
+for the request to succeed.
+By default, \fB\-\-immediate\fR is off, and the command
+will block until resources become available.
 
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
@@ -377,7 +380,9 @@ Multiple license names should be comma separated (e.g.
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
 <\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR>
-Specify an alternate distribution method for remote processes.
+Specify an alternate distribution method for remote processes.  In
+salloc this only sets environment variables that will be used by
+subsequent srun requests.
 .RS
 .TP
 .B block
@@ -751,12 +756,7 @@ errors will be displayed.
 
 .TP
 \fB\-W\fR, \fB\-\-wait\fR=<\fIseconds\fR>
-If the resources needed to satisy a job allocation are not immediately
-available, the job allocation is enqueued and is said to be PENDING.  This
-option tells salloc how long (in seconds) to wait for the allocation to be
-granted before giving up.  When the wait limit has been reached, salloc
-will exit without running the \fIcommand\fR parameter.  By default, salloc
-will wait indefinitely.  (The \-\-immediate option makes \-\-wait moot.)
+This option has been replaced by \fB\-\-immediate\fR=<\fIseconds\fR>.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fInode name list\fR>
@@ -929,6 +929,9 @@ Total number of nodes in the job allocation.
 .TP
 \fBSLURM_MEM_BIND\fR
 Set to value of the \-\-mem_bind\fR option.
+.TP
+\fBSLURM_NTASKS_PER_NODE\fR
+Set to value of the \-\-ntasks\-per\-node\fR option, if specified.
 .TP
 \fBSLURM_TASKS_PER_NODE\fR
 Number of tasks to be initiated on each node. Values are
