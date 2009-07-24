@@ -121,6 +121,8 @@ documents those changes that are of interest to users and admins.
     the block would appear in slurm tools.
  -- Better responsiveness when starting new allocations when running with the 
     slurmdbd.
+ -- Fixed race condition when reconfiguring the slurmctld and using the 
+    consumable resources plugin which would cause the controller to core.
 
 * Changes in SLURM 2.0.4
 ========================
