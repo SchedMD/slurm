@@ -482,11 +482,11 @@ if {![string compare $layout "Dynamic"]} {
 	set exit_code [change_subbp_state $first_node "0" "error"]
 	#allocate something with that node	
 	set block [allocate_and_quit $smallest $first_node $error_block 1]
+
+	#free the block no matter what for rest of tests
+	set exit_code [change_subbp_state $first_node "0" "free"]
 	if {![string compare $block ""]} {
 		set exit_code 1
-	} else {
-		# make sure sinfo/scontrol has it correct
-		set exit_code [change_subbp_state $first_node "0" "free"]
 	}
 } elseif {![string compare $layout "Overlap"]} {
 } else {
