@@ -759,9 +759,21 @@ preempting it completes.
 \fBPreemptType\fR
 This specifies the plugin used to identify which jobs can be 
 preempted in order to start a pending job. 
-The default value is "preempt/partition_prio". 
-If a database is configured with Quality Of Service (QOS) specifications, 
-then "preempt/qos" may be selected. 
+.RS
+.TP
+\fBpreempt/none\fR
+Job preemption is disabled.
+This is the default.
+.TP
+\fBpreempt/partition_prio\fR
+Job preemption is based upon partition priority.
+Jobs in higher priority partitions (queues) may preempt jobs from lower 
+priority partitions.
+.TP
+\fBpreempt/qos\fR
+Job preemption rules are specified by Quality Of Service (QOS) specifications
+in the SLURM database a database.
+.RE
 
 .TP
 \fBPriorityDecayHalfLife\fR
