@@ -1057,7 +1057,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 
 #ifdef HAVE_BG_FILES
 	for (i=0; i<block_ptr->record_count; i++) {
-		block_info = &(block_ptr->bg_info_array[i]);
+		block_info = &(block_ptr->block_array[i]);
 		
 		/* we only care about the states we need here
 		 * everthing else should have been set up already */
@@ -1077,7 +1077,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		}
 	}
 
-	block_info_msg_free(&block_ptr);
+	slurm_free_block_info_msg(&block_ptr);
 	free_buf(buffer);
 	return SLURM_SUCCESS;
 #endif
