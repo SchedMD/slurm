@@ -609,7 +609,7 @@ proc sprio_args { soption sargs jobid} {
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$number *$number" {	
+			-re "$jobid *$number" {	
 				if {$debug} {send_user "\nmatch25\n"}
 				incr matches
 				exp_continue
