@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     consumable resources plugin which would cause the controller to core.
  -- Fixed race condition that sometimes caused jobs to stay in completing
     state longer than necessary after being terminated.
+ -- Fixed issue where if a parent account has a qos added and then a child
+    account has the qos removed the users still get the qos.
 
 * Changes in SLURM 2.0.4
 ========================

@@ -231,7 +231,6 @@ void * list_peek (List l);
  *  Note: The item is not removed from the list.
  */
 
-
 /****************************
  *  Queue Access Functions  *
  ****************************/
