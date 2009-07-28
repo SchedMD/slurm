@@ -92,7 +92,7 @@ Requires: slurm-plugins
 BuildRequires: python
 %endif
 
-$ifos solaris
+%ifos solaris
 Requires:	SUNWgnome-base-libs
 BuildRequires:	SUNWgnome-base-libs
 
