@@ -45,6 +45,8 @@
 #include "src/plugins/topology/3d_torus/hilbert.h"
 #include "src/slurmctld/slurmctld.h"
 
+#define _DEBUG 1
+
 static int _coord(char coord)
 {
 	if ((coord >= '0') && (coord <= '9'))
@@ -63,24 +65,27 @@ extern void nodes_to_hilbert_curve(void)
 	uint32_t min_val;
 	int *coords;
 	struct node_record *node_ptr, *node_ptr2;
-#ifdef HAVE_3D
 	coord_t hilbert[3];
 	int dims = 3;
-#else
-	coord_t hilbert[2];
-	int dims = 2;
-	fatal("current logic only supports 3-dimensions");
-#endif	/* HAVE_3D */
+#ifdef HAVE_SUN_CONST
+	int offset = 1;
+#else	/* !HAVE_SUN_CONST */
+	int offset = 0;
+#if 	(SYSTEM_DIMENSIONS != 3)
+		fatal("current logic only supports 3-dimensions");
+#endif	/* SYSTEM_DIMENSIONS != 3) */
+#endif	/* !HAVE_SUN_CONST */
 
 	/* Get the coordinates for each node based upon its numeric suffix */
 	coords = xmalloc(sizeof(int) * node_record_count * dims);
 	for (i=0, coord_inx=0, node_ptr=node_record_table_ptr; 
 	     i<node_record_count; i++, node_ptr++) {
 		j = strlen(node_ptr->name);
-		if (j < dims) {
+		if (j < (dims + offset)) {
 			fatal("hostname %s lacks numeric %d dimension suffix",
 			      node_ptr->name, dims);
 		}
+		j -= offset;
 		for (k=dims; k; k--) {
 			coords[coord_inx] = _coord(node_ptr->name[j-k]);
 			if (coords[coord_inx] < 0) {
@@ -102,7 +107,9 @@ extern void nodes_to_hilbert_curve(void)
 		for (j=0; j<dims; j++)
 			hilbert[j] = coords[coord_inx++];
 		AxestoTranspose(hilbert, 5, dims);
-#ifdef HAVE_3D
+
+		/* A variation on the below calculation would be required here
+		 * for other dimension counts */
 		node_ptr->hilbert_integer = 
 			((hilbert[0]>>4 & 1) << 14) + 
 			((hilbert[1]>>4 & 1) << 13) +
@@ -119,10 +126,6 @@ extern void nodes_to_hilbert_curve(void)
 			((hilbert[0]>>0 & 1) <<  2) + 
 			((hilbert[1]>>0 & 1) <<  1) +
 			((hilbert[2]>>0 & 1) <<  0);
-#else
-		/* A variation on the above calculation would be required here
-		 * for other dimension counts */
-#endif
 	}
 
 	/* Now we need to sort the node records. We only need to move a few
@@ -153,12 +156,13 @@ extern void nodes_to_hilbert_curve(void)
 			node_ptr2->comm_name = tmp_name;
 
 			tmp_val = node_ptr->hilbert_integer;
-			node_ptr->hilbert_integer  = node_ptr2->hilbert_integer;
+			node_ptr->hilbert_integer  = node_ptr2->
+						     hilbert_integer;
 			node_ptr2->hilbert_integer = tmp_val;
 		}
 	}
 
-#if 0
+#if _DEBUG
 	/* Log the results */
 	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count; 
 	     i++, node_ptr++) {

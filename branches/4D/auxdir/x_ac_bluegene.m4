@@ -37,6 +37,7 @@ AC_DEFUN([X_AC_BGL],
  	
 	if test "x$bluegene_emulation" = "xyes" -o "x$bgl_emulation" = "xyes"; then
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
+  		AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
 		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene/L system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
