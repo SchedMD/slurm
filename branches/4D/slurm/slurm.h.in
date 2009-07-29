@@ -264,7 +264,8 @@ enum job_acct_types {
 #ifdef HAVE_BG
 #  define SYSTEM_DIMENSIONS 3	/* for job geometry */
 #else
-#  define SYSTEM_DIMENSIONS 0	/* for job geometry */
+#  define SYSTEM_DIMENSIONS 0	/* for job geometry if a system only
+				 * has 1 dimension this should be set */
 #endif
 
 enum connection_type {

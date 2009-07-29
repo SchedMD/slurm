@@ -59,6 +59,7 @@
 #include <ctype.h>
 #include <sys/param.h>
 #include <unistd.h>
+#include <slurm/slurm.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -171,14 +172,23 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-#ifdef HAVE_BG		
+#if (SYSTEM_DIMENSIONS > 1)
+enum {A, B, C, D};
+
 /* logic for block node description */
 /* We allocate space for three digits, 
  * each with values 0 to Z even if they are not all used */
-bool axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
-int axis_min_x, axis_min_y, axis_min_z;
-int axis_max_x, axis_max_y, axis_max_z;
+#if (SYSTEM_DIMENSIONS == 3)
+static bool axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
+#endif
 
+#if (SYSTEM_DIMENSIONS == 4)
+static bool axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
+#endif
+
+static int axis_min[SYSTEM_DIMENSIONS];
+static int axis_max[SYSTEM_DIMENSIONS];
+static int box_length = (SYSTEM_DIMENSIONS * 2) + 2;
 static int _get_boxes(char *buf, int max_len);
 static void _clear_grid(void);
 static void _set_grid(unsigned long start, unsigned long end);
@@ -2466,7 +2476,7 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	return len;
 }
 
-#ifdef HAVE_BG
+#if (SYSTEM_DIMENSIONS > 1)
 
 /* logic for block node description */
 /* write the next bracketed hostlist, i.e. prefix[n-m,k,...]
@@ -2480,53 +2490,61 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 static int
 _get_boxes(char *buf, int max_len)
 {
-	int i, j, k, len = 0;
-	int is_box, start_box=-1, end_box=-1;
+	int i, j, k, len = 0, i2=0;
+	int is_box;
+	int curr_min[SYSTEM_DIMENSIONS], curr_max[SYSTEM_DIMENSIONS];
 
+	memcpy(curr_min, axis_min, sizeof(curr_min));
+	memcpy(curr_max, axis_max, sizeof(curr_max));
+	
+	curr_min[A] = -1;
+	curr_max[A] = -1;
 	/* scan each X-plane for a box then match across X values */
-	for (i=axis_min_x; i<=axis_max_x; i++) {
+	for (i=axis_min[A]; i<=axis_max[A]; i++) {
 		is_box = 1;
-		for (j=axis_min_y; j<=axis_max_y; j++) {
-			for (k=axis_min_z; k<=axis_max_z; k++) {
+		for (j=axis_min[B]; j<=axis_max[B]; j++) {
+			for (k=axis_min[C]; k<=axis_max[C]; k++) {
 				if (!axis[i][j][k]) {
 					is_box = 0;
 					break;
 				}
 			}
 		}
+
 		if (is_box) {
-			if (start_box == -1)
-				start_box = i;
-			end_box = i;
+			if (curr_min[A] == -1) 
+				curr_min[A] = i;
+			
+			curr_max[A] = i;
 		}
 
-
-		if (((len+8) < max_len) && (start_box != -1)
-		    && ((is_box == 0) || (i == axis_max_x))) {
-			if(start_box == end_box
-			   && axis_min_y == axis_max_y
-			   && axis_min_z == axis_max_z) {
-				sprintf(buf+len,"%c%c%c,",
-					alpha_num[start_box],
-					alpha_num[axis_min_y],
-					alpha_num[axis_min_z]);
-				len += 4;
+		if (((len+box_length) < max_len) && (curr_min[A] != -1)
+		    && ((!is_box) || (i == axis_max[A]))) {
+			if(!memcmp(curr_min, curr_max, sizeof(curr_min))) {
+				i2 = 0;
+				while(i2 < SYSTEM_DIMENSIONS) {
+					buf[len++] = alpha_num[curr_min[i2++]];
+				}
+				buf[len++] = ',';
 			} else {
-				sprintf(buf+len,"%c%c%cx%c%c%c,",
-					alpha_num[start_box],
-					alpha_num[axis_min_y],
-					alpha_num[axis_min_z],
-					alpha_num[end_box], 
-					alpha_num[axis_max_y],
-					alpha_num[axis_max_z]);
-				len += 8;
+				i2 = 0;
+				while(i2 < SYSTEM_DIMENSIONS) {
+					buf[len++] = alpha_num[curr_min[i2++]];
+				}
+				buf[len++] = 'x';
+				i2 = 0;
+				while(i2 < SYSTEM_DIMENSIONS) {
+					buf[len++] = alpha_num[curr_max[i2++]];
+				}
+				buf[len++] = ',';
 			}
-			start_box = -1;
-			end_box = -1;
+			curr_min[A] = -1;
+			curr_max[A] = -1;
 		}
-		if (is_box == 0) {
-			for (j=axis_min_y; j<=axis_max_y; j++) {
-				for (k=axis_min_z; k<=axis_max_z; k++) {
+
+		if(!is_box) {
+			for (j=axis_min[B]; j<=axis_max[B]; j++) {
+				for (k=axis_min[C]; k<=axis_max[C]; k++) {
 					if (!axis[i][j][k])
 						continue;
 					if ((len+4) >= max_len)
@@ -2553,13 +2571,8 @@ _clear_grid(void)
 {
 	memset(axis, 0, sizeof(axis));
 
-	axis_min_x = HOSTLIST_BASE;
-	axis_min_y = HOSTLIST_BASE;
-	axis_min_z = HOSTLIST_BASE;
-
-	axis_max_x = -1;
-	axis_max_y = -1;
-	axis_max_z = -1;
+	memset(axis_min, HOSTLIST_BASE, sizeof(axis_min));
+	memset(axis_max, -1, sizeof(axis_max));
 }
 
 static void
@@ -2581,18 +2594,18 @@ _set_grid(unsigned long start, unsigned long end)
 /* 	       alpha_num[x1],alpha_num[y1],alpha_num[z1], */
 /* 	       alpha_num[x2],alpha_num[y2],alpha_num[z2]); */
 			
-	axis_min_x = MIN(axis_min_x, x1);
-	axis_min_y = MIN(axis_min_y, y1);
-	axis_min_z = MIN(axis_min_z, z1);
+	axis_min[A] = MIN(axis_min[A], x1);
+	axis_min[B] = MIN(axis_min[B], y1);
+	axis_min[C] = MIN(axis_min[C], z1);
 
-	axis_max_x = MAX(axis_max_x, x2);
-	axis_max_y = MAX(axis_max_y, y2);
-	axis_max_z = MAX(axis_max_z, z2);
+	axis_max[A] = MAX(axis_max[A], x2);
+	axis_max[B] = MAX(axis_max[B], y2);
+	axis_max[C] = MAX(axis_max[C], z2);
 /* 	printf("max %c%c%c %c%c%c\n", */
-/* 	       alpha_num[axis_min_x],alpha_num[axis_min_y], */
-/* 	       alpha_num[axis_min_z], */
-/* 	       alpha_num[axis_max_x],alpha_num[axis_max_y], */
-/* 	       alpha_num[axis_max_z]); */
+/* 	       alpha_num[axis_min[A]],alpha_num[axis_min[B]], */
+/* 	       alpha_num[axis_min[C]], */
+/* 	       alpha_num[axis_max[A]],alpha_num[axis_max[B]], */
+/* 	       alpha_num[axis_max[C]]); */
 	
 	for (temp=x1; temp<=x2; temp++) {
 		for (temp1=y1; temp1<=y2; temp1++) {
@@ -2608,19 +2621,19 @@ _test_box(void)
 {
 	int temp, temp1, temp2;
 
-	if ((axis_min_x > axis_max_x) 
-	||  (axis_min_y > axis_max_y)
-	||  (axis_min_z > axis_max_z))
+	if ((axis_min[A] > axis_max[A]) 
+	||  (axis_min[B] > axis_max[B])
+	||  (axis_min[C] > axis_max[C]))
 		return false;
 
-	if ((axis_min_x == axis_max_x) 
-	&&  (axis_min_y == axis_max_y)
-	&&  (axis_min_z == axis_max_z))
+	if ((axis_min[A] == axis_max[A]) 
+	&&  (axis_min[B] == axis_max[B])
+	&&  (axis_min[C] == axis_max[C]))
 		return false;	/* single node */
 
-	for (temp = axis_min_x; temp<=axis_max_x; temp++) {
-		for (temp1 = axis_min_y; temp1<=axis_max_y; temp1++) {
-			for (temp2 = axis_min_z; temp2<=axis_max_z; temp2++) {
+	for (temp = axis_min[A]; temp<=axis_max[A]; temp++) {
+		for (temp1 = axis_min[B]; temp1<=axis_max[B]; temp1++) {
+			for (temp2 = axis_min[C]; temp2<=axis_max[C]; temp2++) {
 				if (!axis[temp][temp1][temp2])
 					return false;	/* gap in box */
 			}
@@ -2640,46 +2653,61 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
   
 	LOCK_HOSTLIST(hl);
 
-#ifdef HAVE_BG		/* logic for block node description */
+#if (SYSTEM_DIMENSIONS > 1)	/* logic for block node description */
 	if (hl->nranges < 1)
 		goto notbox;	/* no data */
-	if (hl->hr[0]->width != 3) {
+
+	if (hl->hr[0]->width != SYSTEM_DIMENSIONS) {
 		/* We use this logic to build task list ranges, so
-		 * this does not necessarily contain a BlueGene
+		 * this does not necessarily contain a
+		 * SYSTEM_DIMENSION dimensional
 		 * host list. It could just be numeric values */
 		if (hl->hr[0]->prefix[0]) {
-			debug("This node is not in bluegene format.  "
+			debug("This node is not in %dD format.  "
 		 	      "Prefix is %s and suffix is %d chars long",
-		  	      hl->hr[0]->prefix, hl->hr[0]->width);
+		  	      SYSTEM_DIMENSIONS, 
+			      hl->hr[0]->prefix, hl->hr[0]->width);
 		}
 		goto notbox; 
 	}
 	_clear_grid();
 	for (i=0;i<hl->nranges;i++)
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
-	if ((axis_min_x == axis_max_x) 
-	    && (axis_min_y == axis_max_y)
-	    &&  (axis_min_z == axis_max_z)) {
-		len += snprintf(buf, n, "%s%c%c%c",
-				hl->hr[0]->prefix,
-				alpha_num[axis_min_x], alpha_num[axis_min_y],
-				alpha_num[axis_min_z]);
-		if ((len < 0) || (len > n))
-			len = n;    /* truncated */
+	if (!memcmp(axis_min, axis_max, sizeof(axis_min))) {
+		len += snprintf(buf, n, "%s", hl->hr[0]->prefix);
+		i = 0;
+		while(i < SYSTEM_DIMENSIONS) {
+			if(len > n)
+				goto too_long;
+			buf[len++] = alpha_num[axis_min[i++]];
+		}
 	} else if (!_test_box()) {
 		sprintf(buf, "%s[", hl->hr[0]->prefix);
 		len = strlen(hl->hr[0]->prefix) + 1;
 		len += _get_boxes(buf + len, (n-len));
 	} else {
-		len += snprintf(buf, n, "%s[%c%c%cx%c%c%c]", 
-				hl->hr[0]->prefix,
-				alpha_num[axis_min_x], alpha_num[axis_min_y],
-				alpha_num[axis_min_z],
-				alpha_num[axis_max_x], alpha_num[axis_max_y],
-				alpha_num[axis_max_z]);
-		if ((len < 0) || (len > n))
-			len = n;	/* truncated */
+		len += snprintf(buf, n, "%s[", hl->hr[0]->prefix);
+		i = 0;
+		while(i < SYSTEM_DIMENSIONS) {
+			if(len > n)
+				goto too_long;
+			buf[len++] = alpha_num[axis_min[i++]];
+		}
+		if(len <= n)
+			buf[len++] = 'x';
+
+		i = 0;
+		while(i < SYSTEM_DIMENSIONS) {
+			if(len > n)
+				goto too_long;
+			buf[len++] = alpha_num[axis_max[i++]];
+		}
+		if(len <= n)
+			buf[len++] = ']';
 	}
+	if ((len < 0) || (len > n))
+	too_long:
+		len = n;	/* truncated */
 	box = true;
 	
 notbox:

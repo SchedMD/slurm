@@ -52,7 +52,7 @@
  * prefix records in the hostlist) */
 #define MAX_PREFIX_CNT 1024
 
-#ifdef HAVE_BG
+#if (SYSTEM_DIMENSIONS > 1)
 #define HOSTLIST_BASE 36
 #else
 #define HOSTLIST_BASE 10
