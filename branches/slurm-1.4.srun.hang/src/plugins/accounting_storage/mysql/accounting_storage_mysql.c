@@ -8631,6 +8631,12 @@ empty:
 	return assoc_list;
 }
 
+extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
+					acct_association_cond_t *assoc_cond)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_config(void *db_conn)
 {
 	return NULL;

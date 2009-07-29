@@ -405,6 +405,7 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
+	case DBD_GOT_PROBS:
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
 	case DBD_GOT_RESVS:
@@ -436,6 +437,7 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GET_ASSOCS:
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_JOBS_COND:
+	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
 	case DBD_GET_RESVS:
 	case DBD_GET_WCKEYS:
@@ -571,6 +573,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
+	case DBD_GOT_PROBS:
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
 	case DBD_GOT_RESVS:
@@ -603,6 +606,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_USERS:
+	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
 	case DBD_GET_RESVS:
 	case DBD_GET_WCKEYS:
@@ -761,6 +765,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_CLUSTER_USAGE;
 	} else if(!strcasecmp(msg_type, "Get Jobs")) {
 		return DBD_GET_JOBS;
+	} else if(!strcasecmp(msg_type, "Get Problems")) {
+		return DBD_GET_PROBS;
 	} else if(!strcasecmp(msg_type, "Get Users")) {
 		return DBD_GET_USERS;
 	} else if(!strcasecmp(msg_type, "Got Accounts")) {
@@ -777,6 +783,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GOT_JOBS;
 	} else if(!strcasecmp(msg_type, "Got List")) {
 		return DBD_GOT_LIST;
+	} else if(!strcasecmp(msg_type, "Got Problems")) {
+		return DBD_GOT_PROBS;
 	} else if(!strcasecmp(msg_type, "Got Users")) {
 		return DBD_GOT_USERS;
 	} else if(!strcasecmp(msg_type, "Job Complete")) {
@@ -961,6 +969,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Get Jobs";
 		break;
+	case DBD_GET_PROBS:
+		if(get_enum) {
+			return "DBD_GET_PROBS";
+		} else
+			return "Get Problems";
+		break;
 	case DBD_GET_USERS:
 		if(get_enum) {
 			return "DBD_GET_USERS";
@@ -1008,6 +1022,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GOT_LIST";
 		} else
 			return "Got List";
+		break;
+	case DBD_GOT_PROBS:
+		if(get_enum) {
+			return "DBD_GOT_PROBS";
+		} else
+			return "Got Problems";
 		break;
 	case DBD_GOT_USERS:
 		if(get_enum) {
@@ -2057,6 +2077,7 @@ void inline slurmdbd_free_cond_msg(uint16_t rpc_version,
 			my_destroy = destroy_acct_account_cond;
 			break;
 		case DBD_GET_ASSOCS:
+		case DBD_GET_PROBS:
 		case DBD_REMOVE_ASSOCS:
 			my_destroy = destroy_acct_association_cond;
 			break;
@@ -2463,6 +2484,7 @@ void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
 		my_function = pack_acct_account_cond;
 		break;
 	case DBD_GET_ASSOCS:
+	case DBD_GET_PROBS:
 	case DBD_REMOVE_ASSOCS:
 		my_function = pack_acct_association_cond;
 		break;
@@ -2515,6 +2537,7 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 		my_function = unpack_acct_account_cond;
 		break;
 	case DBD_GET_ASSOCS:
+	case DBD_GET_PROBS:
 	case DBD_REMOVE_ASSOCS:
 		my_function = unpack_acct_association_cond;
 		break;
@@ -3060,6 +3083,7 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 		break;
 	case DBD_ADD_ASSOCS:
 	case DBD_GOT_ASSOCS:
+	case DBD_GOT_PROBS:
 		my_function = pack_acct_association_rec;
 		break;
 	case DBD_ADD_CLUSTERS:
@@ -3132,6 +3156,7 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 		break;
 	case DBD_ADD_ASSOCS:
 	case DBD_GOT_ASSOCS:
+	case DBD_GOT_PROBS:
 		my_function = unpack_acct_association_rec;
 		my_destroy = destroy_acct_association_rec;
 		break;

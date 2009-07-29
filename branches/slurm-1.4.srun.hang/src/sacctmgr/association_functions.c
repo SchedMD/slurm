@@ -38,7 +38,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
-bool tree_display = 0;
+static bool tree_display = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_association_cond_t *assoc_cond,

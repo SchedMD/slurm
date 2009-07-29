@@ -991,6 +991,12 @@ extern List acct_storage_p_get_associations(PGconn *acct_pgsql_db, uid_t uid,
 	return NULL;
 }
 
+extern List acct_storage_p_get_problems(PGconn *acct_pgsql_db, uid_t uid,
+					acct_association_cond_t *assoc_q)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 				   acct_qos_cond_t *qos_cond)
 {

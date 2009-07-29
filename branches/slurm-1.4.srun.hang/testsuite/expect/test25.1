@@ -62,8 +62,12 @@ proc def_node_cnt { } {
 	set node_cnt 1
 	spawn $sinfo -h -o "name=%20P node_cnt=%D"
 	expect {
-		-re "name=($alpha_numeric_under)\\\* *node_cnt=($number)" {
+		-re "name=($alpha_numeric_under)\\\* *node_cnt=($number)(k?)" {
 			set node_cnt $expect_out(2,string) 
+			if {[string compare $expect_out(2,string) ""]} {
+				set node_cnt [expr $node_cnt * 1024]
+			}
+
 			exp_continue
 		}
 		timeout {
@@ -605,7 +609,7 @@ proc sprio_args { soption sargs jobid} {
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$number *$number" {	
+			-re "$jobid *$number" {	
 				if {$debug} {send_user "\nmatch25\n"}
 				incr matches
 				exp_continue
