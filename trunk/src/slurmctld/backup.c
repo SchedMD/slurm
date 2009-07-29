@@ -88,6 +88,7 @@ inline static void  _update_cred_key(void);
 /* Local variables */
 static bool          dump_core = false;
 static VOLATILE bool takeover = false;
+static time_t last_controller_response;
 
 /*
  * Static list of signals to block in this process
@@ -103,13 +104,14 @@ static int backup_sigarray[] = {
  *	mode, assuming control when the primary controller stops responding */
 void run_backup(void)
 {
-	time_t last_controller_response = time(NULL), last_ping = 0;
+	time_t last_ping = 0;
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 	slurmctld_lock_t config_read_lock = { 
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	info("slurmctld running in background mode");
 	takeover = false;
+	last_controller_response = time(NULL);
 
 	/* default: don't resume if shutdown */
 	slurmctld_config.resume_backup = false;
@@ -153,7 +155,7 @@ void run_backup(void)
 		last_ping = time(NULL);
 		if (_ping_controller() == 0)
 			last_controller_response = time(NULL);
-		else if ( takeover == true ) {
+		else if (takeover) {
 			/* in takeover mode, take control as soon as */
 			/* primary no longer respond */
 			break;
@@ -321,7 +323,8 @@ static void *_background_rpc_mgr(void *no_data)
 
 	if ((sockfd =
 	     slurm_init_msg_engine_addrname_port(node_addr,
-						 slurmctld_conf.slurmctld_port))
+						 slurmctld_conf.
+						 slurmctld_port))
 	    == SLURM_SOCKET_ERROR)
 		fatal("slurm_init_msg_engine_addrname_port error %m");
 	unlock_slurmctld(config_read_lock);
@@ -350,13 +353,13 @@ static void *_background_rpc_mgr(void *no_data)
 
 		msg = xmalloc(sizeof(slurm_msg_t));
 		slurm_msg_t_init(msg);
-		if(slurm_receive_msg(newsockfd, msg, 0) != 0)
+		if (slurm_receive_msg(newsockfd, msg, 0) != 0)
 			error("slurm_receive_msg: %m");
 		
 		error_code = _background_process_msg(msg);
-		if ((error_code == SLURM_SUCCESS)
-		    &&  (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
-		    &&  (slurmctld_config.shutdown_time == 0))
+		if ((error_code == SLURM_SUCCESS)			&&
+		    (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)	&&
+		    (slurmctld_config.shutdown_time == 0))
 			slurmctld_config.shutdown_time = time(NULL);
 		
 		slurm_free_msg(msg);
@@ -395,12 +398,13 @@ static int _background_process_msg(slurm_msg_t * msg)
 			   (msg->msg_type == REQUEST_TAKEOVER)) {
 			info("Performing RPC: REQUEST_TAKEOVER");
 			_shutdown_primary_controller(SHUTDOWN_WAIT);
-			takeover = true ;
+			takeover = true;
 			error_code = SLURM_SUCCESS;
 		} else if (super_user && 
 			   (msg->msg_type == REQUEST_CONTROL)) {
 			debug3("Ignoring RPC: REQUEST_CONTROL");
 			error_code = ESLURM_DISABLED;
+			last_controller_response = time(NULL);
 		} else {
 			error("Invalid RPC received %d while in standby mode", 
 			      msg->msg_type);
