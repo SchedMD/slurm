@@ -97,6 +97,8 @@ static void _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg);
 static bool _message_socket_readable(eio_obj_t *obj);
 static int  _message_socket_accept(eio_obj_t *obj, List objs);
 static int  _cr_notify_step_launch(slurm_step_ctx_t *ctx);
+static int  _start_io_timeout_thread(step_launch_state_t *sls);
+static void *_check_io_timeout(void *_sls);
 
 static struct io_operations message_socket_ops = {
 	readable:	&_message_socket_readable,
@@ -110,8 +112,8 @@ static struct io_operations message_socket_ops = {
 
 /* 
  * slurm_step_launch_params_t_init - initialize a user-allocated
- *      slurm_job_step_launch_t structure with default values.
- *	default values.  This function will NOT allocate any new memory.
+ *      slurm_step_launch_params_t structure with default values.
+ *	This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the user.
  *      The structure will be intialized.
  */
@@ -286,6 +288,15 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 			launch.io_port[i] =
 				ctx->launch_state->io.normal->listenport[i];
 		}
+		/* If the io timeout is > 0, create a flag to ping the stepds 
+		   if io_timeout seconds pass without stdio traffic to/from
+		   the node. */
+		ctx->launch_state->io_timeout = params->io_timeout;
+		if (ctx->launch_state->io_timeout > 0) {
+			if (_start_io_timeout_thread(ctx->launch_state)) {
+				return SLURM_ERROR;
+			}
+		}
 	} else { /* user_managed_io is true */
 		/* initialize user_managed_io_t */
 		ctx->launch_state->io.user =
@@ -458,6 +469,16 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 
 	eio_handle_destroy(sls->msg_handle);
 
+	/* Shutdown the io timeout thread, if one exists */
+	if (sls->io_timeout > 0 && !sls->user_managed_io) {
+		sls->halt_io_test = true;
+		pthread_cond_broadcast(&sls->cond);
+
+		pthread_mutex_unlock(&sls->lock);
+		pthread_join(sls->io_timeout_thread, NULL);
+		pthread_mutex_lock(&sls->lock);
+	}
+
 	/* Then wait for the IO thread to finish */
 	if (!sls->user_managed_io) {
 		pthread_mutex_unlock(&sls->lock);
@@ -481,7 +502,7 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 	struct step_launch_state *sls = ctx->launch_state;
 
 	sls->abort = true;
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 }
 
 /* 
@@ -591,7 +612,6 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	struct step_launch_state *sls;
 	slurm_step_layout_t *layout = ctx->step_resp->step_layout;
 	int ii;
-	time_t now;
 
 	sls = xmalloc(sizeof(struct step_launch_state));
 	sls->slurmctld_socket_fd = -1;
@@ -605,6 +625,9 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->node_questionable = bit_alloc(layout->node_cnt);
 	sls->node_io_error = bit_alloc(layout->node_cnt);
 	sls->io_timestamp = (time_t *)xmalloc(sizeof(time_t) * layout->node_cnt);
+	sls->testing_conn = (bool *)xmalloc(sizeof(bool) * layout->node_cnt);
+	sls->io_timeout = 0;
+	sls->halt_io_test = false;
 	sls->layout = layout;
 	sls->resp_port = NULL;
 	sls->abort = false;
@@ -616,10 +639,10 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	pthread_mutex_init(&sls->lock, NULL);
 	pthread_cond_init(&sls->cond, NULL);
 
-	time(&now);
-	for (ii = 0; ii < layout->node_cnt; ii++)
-		sls->io_timestamp[ii] = now;
-
+	for (ii = 0; ii < layout->node_cnt; ii++) {
+		sls->io_timestamp[ii] = (time_t)NO_VAL;
+		sls->testing_conn[ii] = false;
+	}
 	return sls;
 }
 
@@ -636,6 +659,7 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 	bit_free(sls->node_questionable);
 	bit_free(sls->node_io_error);
 	xfree(sls->io_timestamp);
+	xfree(sls->testing_conn);
 
 	/* Now clean up anything created by slurm_step_launch() */
 	if (sls->resp_port != NULL) {
@@ -888,7 +912,7 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 	if (sls->callback.task_start != NULL)
 		(sls->callback.task_start)(msg);
 
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 
 }
@@ -924,7 +948,7 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	if (sls->callback.task_finish != NULL)
 		(sls->callback.task_finish)(msg);
 
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -945,7 +969,7 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 	/* FIXME: does nothing yet */
 
 	pthread_mutex_lock(&sls->lock);
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -954,7 +978,7 @@ _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
 {
 	/* FIXME: does nothing yet */
 	pthread_mutex_lock(&sls->lock);
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -1010,7 +1034,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 		client_io_handler_downnodes(sls->io.normal, node_ids,
 					    num_node_ids);
 	}
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 
 	xfree(node_ids);
@@ -1063,7 +1087,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 		   with the stepd, and the job should abort */
 		if (bit_test(sls->node_io_error, node_id)) {
 			sls->abort = true;
-			pthread_cond_signal(&sls->cond);
+			pthread_cond_broadcast(&sls->cond);
 		} else {
 			/* If a connection has been opened try to write a test
 			   message.  If the connection was already closed 
@@ -1127,7 +1151,7 @@ _task_user_managed_io_handler(struct step_launch_state *sls,
 	/* prevent the caller from closing the user managed IO stream */
 	user_io_msg->conn_fd = -1;
 
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -1467,7 +1491,7 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 	   with the stepd, and the job should abort */
 	if (bit_test(sls->node_questionable, node_id)) {
 		sls->abort = true;
-		pthread_cond_signal(&sls->cond);
+		pthread_cond_broadcast(&sls->cond);
 	}
 
 	pthread_mutex_unlock(&sls->lock);
@@ -1486,15 +1510,82 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 int 
 step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id)
 {
-	time_t now = time(NULL);
 
 	pthread_mutex_lock(&sls->lock);
 
+	time_t now = time(NULL);
 	bit_clear(sls->node_questionable, node_id);
 	sls->io_timestamp[node_id] = now;
+	sls->testing_conn[node_id] = false;
 
 	pthread_mutex_unlock(&sls->lock);
 
 	return SLURM_SUCCESS;
 }
+
+
+static int
+_start_io_timeout_thread(step_launch_state_t *sls)
+{
+	int rc = SLURM_SUCCESS;
+	pthread_attr_t attr;
+	slurm_attr_init(&attr);
+
+	if (pthread_create(&sls->io_timeout_thread, &attr,
+			   _check_io_timeout, (void *)sls) != 0) {
+		error("pthread_create of io timeout thread: %m");
+		rc = SLURM_ERROR;
+	}
+	slurm_attr_destroy(&attr);
+	return rc;
+
+}
+
+
+static void *
+_check_io_timeout(void *_sls)
+{
+	int ii;
+	time_t now;
+	int max_idle_time = 0;
+	client_io_t *cio;
+	struct timespec ts = {0, 0};
+	step_launch_state_t *sls = (step_launch_state_t *)_sls;
+
+	cio = sls->io.normal;
+
+	pthread_mutex_lock(&sls->lock);
+
+	while (1) {
+		if (sls->halt_io_test || sls->abort)
+			break;
+
+		now = time(NULL);
+		max_idle_time = 0;
+		for (ii = 0; ii < sls->layout->node_cnt; ii++) {
+			int idle_time = (int)(now - sls->io_timestamp[ii]);
+
+			if (sls->io_timestamp[ii] == (time_t)NO_VAL)
+				continue;
+
+			if (idle_time >= sls->io_timeout && 
+			    !sls->testing_conn[ii]) {
+				client_io_handler_send_test_message(cio, ii);
+				sls->testing_conn[ii] = true;
+			} else {
+				if (idle_time > max_idle_time)
+					max_idle_time = idle_time;
+			}
+
+		}
+		ts.tv_sec = now + sls->io_timeout - max_idle_time;
+		pthread_cond_timedwait(&sls->cond, &sls->lock, &ts);
+	}
+	pthread_mutex_unlock(&sls->lock);
+	return NULL;
+}
+
+
+
+
 

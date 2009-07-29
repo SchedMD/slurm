@@ -64,9 +64,14 @@ struct step_launch_state {
 	bitstr_t *node_questionable;  /* set after SRUN_STEP_MISSING msg */
 	bitstr_t *node_io_error;      /* set after write or read error */
 
-	time_t *io_timestamp; /* timestamp per node, updated on successful
-				 read or write.  used only with normal io */
-
+	pthread_t io_timeout_thread;
+	time_t   *io_timestamp; /* timestamp per node, updated on successful
+				   read or write.  used only with normal io */
+	bool     *testing_conn; /* bool per node, true if a test message has
+				   been queued but I/O has not yet occurred. */
+	int	 io_timeout;    /* num seconds between I/O tests */
+	bool	 halt_io_test;  /* set to true when I/O test thread should
+				    shut down. */
 	bool abort;
 	bool abort_action_taken;
 
