@@ -6,7 +6,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Aubke <da@llnl.gov>.
+ *  Written by Danny Auble <da@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -132,6 +132,8 @@ typedef struct slurm_acct_storage_ops {
 	List (*get_config)         (void *db_conn);
 	List (*get_associations)   (void *db_conn, uint32_t uid,
 				    acct_association_cond_t *assoc_cond);
+	List (*get_problems)       (void *db_conn, uint32_t uid,
+				    acct_association_cond_t *assoc_cond);
 	List (*get_qos)            (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond);
 	List (*get_wckeys)         (void *db_conn, uint32_t uid,
@@ -250,6 +252,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_get_clusters",
 		"acct_storage_p_get_config",
 		"acct_storage_p_get_associations",
+		"acct_storage_p_get_problems",
 		"acct_storage_p_get_qos",
 		"acct_storage_p_get_wckeys",
 		"acct_storage_p_get_reservations",
@@ -7738,6 +7741,15 @@ extern List acct_storage_g_get_associations(void *db_conn, uint32_t uid,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_associations))
+		(db_conn, uid, assoc_cond);
+}
+
+extern List acct_storage_g_get_problems(void *db_conn, uint32_t uid,
+					acct_association_cond_t *assoc_cond)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(g_acct_storage_context->ops.get_problems))
 		(db_conn, uid, assoc_cond);
 }
 

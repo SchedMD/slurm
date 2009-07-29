@@ -80,6 +80,14 @@ typedef enum {
 				* and capacity */
 } acct_classification_type_t;
 
+typedef enum {
+	ACCT_PROBLEM_NOT_SET,
+	ACCT_PROBLEM_USER_NO_ASSOC,
+	ACCT_PROBLEM_USER_NO_DEFAULT,
+	ACCT_PROBLEM_ACCT_NO_CHILD,
+	ACCT_PROBLEM_CLUS_ONLY_ROOT,
+} acct_problem_type_t;
+
 #define ACCT_CLASSIFIED_FLAG 0x0100
 #define ACCT_CLASS_BASE      0x00ff
 
@@ -963,6 +971,15 @@ extern List acct_storage_g_get_config(void *db_conn);
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_associations(
+	void *db_conn, uint32_t uid, acct_association_cond_t *assoc_cond);
+
+/* 
+ * get info from the storage 
+ * IN:  acct_association_cond_t *
+ * RET: List of acct_association_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_problems(
 	void *db_conn, uint32_t uid, acct_association_cond_t *assoc_cond);
 
 /* 
