@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -358,12 +358,14 @@ extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 		topo_conf = _get_topo_conf();
 
 	conf_hashtbl = s_p_hashtbl_create(switch_options);
-	if(s_p_parse_file(conf_hashtbl, topo_conf) == SLURM_ERROR)
-		fatal("something wrong with opening/reading %s: %m", topo_conf);
+	if (s_p_parse_file(conf_hashtbl, topo_conf) == SLURM_ERROR) {
+		fatal("something wrong with opening/reading %s: %m", 
+		      topo_conf);
+	}
 
-	if (s_p_get_array((void ***)&ptr, &count, "SwitchName", conf_hashtbl)) {
+	if (s_p_get_array((void ***)&ptr, &count, "SwitchName", conf_hashtbl))
 		*ptr_array = ptr;
-	} else {
+	else {
 		*ptr_array = NULL;
 		count = 0;
 	}
