@@ -1250,7 +1250,7 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id)
 	   A problem might go undetected here, if a task appears to get 
 	   launched correctly, but fails before it can make its I/O 
 	   connection.  TODO:  Set a timer, see if the task has checked in
-	   within some timeout, if abort the job if not. */
+	   within some timeout, and abort the job if not. */
 	if (cio->ioserver[node_id] == NULL) {
 		pthread_mutex_unlock(&cio->ioservers_lock);
 		return SLURM_SUCCESS;
