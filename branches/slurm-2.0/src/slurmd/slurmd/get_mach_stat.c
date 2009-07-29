@@ -89,7 +89,7 @@ int chk_cpuinfo_float(char *buffer, char *keyword, float *val);
 
 #if DEBUG_MODULE
 #define DEBUG_DETAIL	1
-#define debug0	printf
+#define debug	printf
 #define debug1	printf
 #define debug2	printf
 #define debug3	printf
