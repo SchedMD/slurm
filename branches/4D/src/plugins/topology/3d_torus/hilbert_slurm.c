@@ -45,7 +45,7 @@
 #include "src/plugins/topology/3d_torus/hilbert.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define _DEBUG 1
+#define _DEBUG 0
 
 static int _coord(char coord)
 {
