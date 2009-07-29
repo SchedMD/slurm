@@ -1,0 +1,73 @@
+.TH SRUN_CR "1" "March 2009" "srun_cr 2.0" "slurm components"
+
+.SH "NAME"
+srun_cr \- run parallel jobs with checkpoint/restart support
+
+.SH SYNOPSIS
+\fBsrun_cr\fR [\fIOPTIONS\fR...]
+
+.SH DESCRIPTION
+The design of \fBsrun_cr\fR is inspired by \fBmpiexec_cr\fR from MVAPICH2 and
+\fBcr_restart\fR form BLCR.
+It is a wrapper around the \fBsrun\fR command to enable batch job 
+checkpoint/restart support when used with SLURM's \fBcheckpoint/blcr\fR plugin.
+
+.SH "OPTIONS"
+
+The \fBsrun_cr\fR execute line options are identical to those of the \fBsrun\fR
+command.
+See "man srun" for details.
+
+.SH "DETAILS"
+After initialization, \fBsrun_cr\fR registers a thread context callback
+function.
+Then it forks a process and executes "cr_run \-\-omit srun" with its arguments.
+\fBcr_run\fR is employed to exclude the \fBsrun\fR process from being dumped 
+upon checkpoint.
+All catchable signals except SIGCHLD sent to \fBsrun_cr\fR will be forwarded 
+to the child \fBsrun\fR process.
+SIGCHLD will be captured to mimic the exit status of \fBsrun\fR when it exits.
+Then \fBsrun_cr\fR loops waiting for termination of tasks being launched 
+from \fBsrun\fR.
+
+The step launch logic of SLURM is augmented to check if \fBsrun\fR is running
+under \fBsrun_cr\fR.
+If true, the environment variable \fBSURN_SRUN_CR_SOCKET\fR should be present,
+the value of which is the address of a Unix domain socket created and listened
+to be \fBsrun_cr\fR.
+After launching the tasks, \fBsrun\fR tires to connect to the socket and sends
+the job ID, step ID and the nodes allocated to the step to \fBsrun_cr\fR.
+
+Upon checkpoint, \fRsrun_cr\fR checks to see if the tasks have been launched.
+If not \fRsrun_cr\fR first forwards the checkpoint request to the tasks by 
+calling the SLURM API \fBslurm_checkpoint_tasks()\fR before dumping its process
+context.
+
+Upon restart, \fBsrun_cr\fR checks to see if the tasks have been previously 
+launched and checkpointed. 
+If true, the environment variable \fRSLURM_RESTART_DIR\fR is set to the directory
+of the checkpoint image files of the tasks.
+Then \fBsrun\fR is forked and executed again. 
+The environment variable will be used by the \fBsrun\fR command to restart 
+execution of the tasks from the previous checkpoint.
+
+.SH "COPYING"
+Copyright (C) 2009 National University of Defense Technology, China.
+Produced at National University of Defense Technology, China (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBsrun\fR(1)
