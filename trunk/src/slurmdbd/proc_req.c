@@ -84,6 +84,8 @@ static int   _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_probs(slurmdbd_conn_t *slurmdbd_conn,
+			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_qos(slurmdbd_conn_t *slurmdbd_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_txn(slurmdbd_conn_t *slurmdbd_conn,
@@ -253,6 +255,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_GET_JOBS_COND:
 			rc = _get_jobs_cond(slurmdbd_conn, 
 					    in_buffer, out_buffer, uid);
+			break;
+		case DBD_GET_PROBS:
+			rc = _get_probs(slurmdbd_conn,
+					in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_QOS:
 			rc = _get_qos(slurmdbd_conn,
@@ -1216,6 +1222,43 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
 	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GOT_JOBS, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+	
+	return SLURM_SUCCESS;
+}
+
+static int _get_probs(slurmdbd_conn_t *slurmdbd_conn, 
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_cond_msg_t *get_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_GET_PROBS: called");
+	if (slurmdbd_unpack_cond_msg(slurmdbd_conn->rpc_version, 
+				     DBD_GET_PROBS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_PROBS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      SLURM_ERROR, comment,
+					      DBD_GET_PROBS);
+		return SLURM_ERROR;
+	}
+	
+	list_msg.my_list = acct_storage_g_get_problems(
+		slurmdbd_conn->db_conn, *uid, get_msg->cond);
+	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
+			       DBD_GET_PROBS, get_msg);
+
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_PROBS, *out_buffer);
+	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
+			       DBD_GOT_PROBS, &list_msg, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
 	
