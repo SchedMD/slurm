@@ -566,7 +566,7 @@ static int host_prefix_end(const char *hostname)
 #if (SYSTEM_DIMENSIONS > 1)
 	if (len <= SYSTEM_DIMENSIONS)
 		return -1;
-	idx = len - 4;
+	idx = len - 1 - SYSTEM_DIMENSIONS;
 #else
 	if (len < 1)
 		return -1;
@@ -1631,13 +1631,15 @@ error:
 static int _parse_box_range(char *str, struct _range *ranges,
 			    int len, int *count)
 {
-	int a[3], b[3], i1, i2, i;
-	char new_str[8];
+	int a[SYSTEM_DIMENSIONS], b[SYSTEM_DIMENSIONS];
+	int i, i1, i2, i3;
+	char new_str[SYSTEM_DIMENSIONS*2+2];
 
-	if((str[3] != 'x') || (str[7] != '\0')) 
+	if ((str[SYSTEM_DIMENSIONS] != 'x') || 
+	    (str[SYSTEM_DIMENSIONS * 2 + 1] != '\0')) 
 		return 0;
 
-	for(i = 0; i<3; i++) {
+	for( i = 0; i<SYSTEM_DIMENSIONS; i++) {
 		if ((str[i] >= '0') && (str[i] <= '9'))
 			a[i] = str[i] - '0';
 		else if ((str[i] >= 'A') && (str[i] <= 'Z'))
@@ -1645,27 +1647,52 @@ static int _parse_box_range(char *str, struct _range *ranges,
 		else
 			return 0;
 
-		if ((str[i+4] >= '0') && (str[i+4] <= '9'))
-			b[i] = str[i+4] - '0';
-		else if ((str[i+4] >= 'A') && (str[i+4] <= 'Z'))
-			b[i] = str[i+4] - 'A' + 10;
+		i2 = i + SYSTEM_DIMENSIONS + 1;
+		if ((str[i2] >= '0') && (str[i2] <= '9'))
+			b[i] = str[i2] - '0';
+		else if ((str[i2] >= 'A') && (str[i2] <= 'Z'))
+			b[i] = str[i2] - 'A' + 10;
 		else
 			return 0;
 	}
 
-	for (i1=a[0]; i1 <= b[0]; i1++) {
-		for (i2=a[1]; i2 <=b[1]; i2++) {
-			if (*count == len)
-				return -1;
-			snprintf(new_str, 8, "%c%c%c-%c%c%c", 
-				 alpha_num[i1], alpha_num[i2], alpha_num[a[2]],
-				 alpha_num[i1], alpha_num[i2], 
-				 alpha_num[b[2]]);
-			if (!_parse_single_range(new_str,&ranges[*count]))
-				return -1;
-			(*count)++;
+	if (SYSTEM_DIMENSIONS == 3) {
+		for (i1=a[0]; i1 <= b[0]; i1++) {
+			for (i2=a[1]; i2 <=b[1]; i2++) {
+				if (*count == len)
+					return -1;
+				snprintf(new_str, sizeof(new_str), 
+					"%c%c%c-%c%c%c", 
+					alpha_num[i1], alpha_num[i2],
+					alpha_num[a[2]],
+					alpha_num[i1], alpha_num[i2], 
+					alpha_num[b[2]]);
+				if (!_parse_single_range(new_str, &ranges[*count]))
+					return -1;
+				(*count)++;
+			}
 		}
-	}
+	} else if (SYSTEM_DIMENSIONS == 4) {
+		for (i1=a[0]; i1 <= b[0]; i1++) {
+			for (i2=a[1]; i2 <=b[1]; i2++) {
+				for (i3=a[2]; i3 <=b[2]; i3++) {
+					if (*count == len)
+						return -1;
+					snprintf(new_str, sizeof(new_str), 
+						"%c%c%c%c-%c%c%c%c", 
+						alpha_num[i1], alpha_num[i2], 
+						alpha_num[i3], alpha_num[a[3]],
+						alpha_num[i1], alpha_num[i2], 
+						alpha_num[i3], alpha_num[b[3]]);
+					if (!_parse_single_range(new_str, &ranges[*count]))
+						return -1;
+					(*count)++;
+				}
+			}
+		}
+	} else
+		fatal("Unsupported dimensions count %d", SYSTEM_DIMENSIONS);
+
 	return 1;
 }
 
@@ -1685,8 +1712,8 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 			return -1;
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
-
-		if ((str[3] == 'x') && (strlen(str) == 7)) {
+		if ((str[SYSTEM_DIMENSIONS] == 'x') && 
+		    (strlen(str) == (SYSTEM_DIMENSIONS * 2 + 1))) {
 			if (!_parse_box_range(str, ranges, len, &count)) 
 				return -1;  
 		} else {
