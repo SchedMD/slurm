@@ -676,7 +676,7 @@ scontrol_encode_hostlist(char *hostlist)
 	} else
 		tmp_list = hostlist;
 
-	buf_size = strlen(tmp_list) + 100;
+	buf_size = strlen(tmp_list);
 	ranged_string = xmalloc(buf_size);
 	hl = hostlist_create(tmp_list);
 	hostlist_ranged_string(hl, buf_size, ranged_string);

@@ -1638,7 +1638,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 #endif
 	char new_str[(SYSTEM_DIMENSIONS*2)+2];
 
-#if (SYSTEM_DIMENSIONS < 3 || SYSTEM_DIMENSIONS > 4)
+#if ((SYSTEM_DIMENSIONS < 3) || (SYSTEM_DIMENSIONS > 4))
 	fatal("Unsupported dimensions count %d", SYSTEM_DIMENSIONS);
 #endif
 
