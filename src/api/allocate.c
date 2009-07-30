@@ -323,8 +323,9 @@ int slurm_job_will_run (job_desc_msg_t *req)
 #endif
 		     " on %s",
 		     will_run_resp->job_id, buf,
-			will_run_resp->proc_cnt,
-			will_run_resp->node_list);
+		     will_run_resp->proc_cnt,
+		     will_run_resp->node_list);
+
 		slurm_free_will_run_response_msg(will_run_resp);
 		break;
 	default:
