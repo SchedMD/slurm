@@ -609,7 +609,7 @@ job_desc_msg_create_from_opts ()
 		j->priority     = 0;
 	if (opt.jobid != NO_VAL)
 		j->job_id	= opt.jobid;
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 	if (opt.geometry[0] > 0) {
 		int i;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)

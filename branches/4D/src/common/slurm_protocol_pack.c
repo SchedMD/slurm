@@ -3412,11 +3412,12 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->reservation, buffer);
 	packstr(job_desc_ptr->wckey, buffer);
 
-	if(job_desc_ptr->select_jobinfo)
-		select_g_select_jobinfo_pack(job_desc_ptr->select_jobinfo, buffer);
-	else {
+	if(job_desc_ptr->select_jobinfo) {
+		select_g_select_jobinfo_pack(job_desc_ptr->select_jobinfo, 
+					     buffer);
+	} else {
 		job_desc_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BL
 		if(job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
 			select_g_select_jobinfo_set(
 				job_desc_ptr->select_jobinfo, 
@@ -3562,16 +3563,18 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->licenses, &uint32_tmp, buffer);
 	safe_unpack16(&job_desc_ptr->mail_type, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->mail_user, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&job_desc_ptr->reservation, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->reservation, &uint32_tmp, 
+			       buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->wckey, &uint32_tmp, buffer);
 
-	if (select_g_select_jobinfo_unpack(&job_desc_ptr->select_jobinfo, buffer))
+	if (select_g_select_jobinfo_unpack(&job_desc_ptr->select_jobinfo, 
+					   buffer))
 		goto unpack_error;
 
 	/* These are set so we don't confuse them later for what is
 	 * set in the select_jobinfo structure.
 	 */
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BL
 	job_desc_ptr->geometry[0] = (uint16_t)NO_VAL;
 #endif
 	job_desc_ptr->conn_type = (uint16_t)NO_VAL;

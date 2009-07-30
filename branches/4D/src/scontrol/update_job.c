@@ -471,7 +471,7 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.dependency = val;
 			update_cnt++;
 		}
-#if (SYSTEM_DIMENSIONS > 1)
+#ifdef HAVE_BG
 		else if (strncasecmp(tag, "Geometry", MAX(taglen, 1)) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
