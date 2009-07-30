@@ -97,7 +97,8 @@ static int _check_for_booted_overlapping_blocks(
 	bool test_only);
 static int _dynamically_request(List block_list, int *blocks_added,
 				ba_request_t *request,
-				char *user_req_nodes);
+				char *user_req_nodes,
+				bool test_only);
 static int _find_best_block_match(List block_list, int *blocks_added,
 				  struct job_record* job_ptr,
 				  bitstr_t* slurm_block_bitmap,
@@ -708,7 +709,8 @@ static int _check_for_booted_overlapping_blocks(
 
 static int _dynamically_request(List block_list, int *blocks_added,
 				ba_request_t *request,
-				char *user_req_nodes)
+				char *user_req_nodes,
+				bool test_only)
 {
 	List list_of_lists = NULL;
 	List temp_list = NULL;
@@ -755,7 +757,10 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			while((bg_record = list_pop(new_blocks))) {
 				if(block_exist_in_list(block_list, bg_record))
 					destroy_bg_record(bg_record);
-				else {
+				else if(test_only) {
+					list_append(block_list, bg_record);
+					(*blocks_added) = 1;
+				} else {
 					if(job_block_test_list 
 					   == bg_lists->job_running) {
 						if(configure_block(bg_record)
@@ -774,18 +779,18 @@ static int _dynamically_request(List block_list, int *blocks_added,
 					list_append(block_list, bg_record);
 					print_bg_record(bg_record);
 					(*blocks_added) = 1;
-				}
+				} 	
 			}
 			list_destroy(new_blocks);
 			if(!*blocks_added) {
-				memcpy(request->geometry, start_geo,      
+				memcpy(request->geometry, start_geo,
 				       sizeof(int)*BA_SYSTEM_DIMENSIONS); 
 				rc = SLURM_ERROR;
 				continue;
 			}
 			list_sort(block_list,
 				  (ListCmpF)_bg_record_sort_aval_dec);
-	
+			
 			rc = SLURM_SUCCESS;
 			break;
 		} else if (errno == ESLURM_INTERCONNECT_FAILURE) {
@@ -1090,7 +1095,8 @@ static int _find_best_block_match(List block_list,
 		
 		if((rc = _dynamically_request(block_list, blocks_added,
 					      &request, 
-					      job_ptr->details->req_nodes))
+					      job_ptr->details->req_nodes,
+					      test_only))
 		   == SLURM_SUCCESS) {
 			create_try = 1;
 			continue;
@@ -1246,10 +1252,9 @@ static int _sync_block_lists(List full_list, List incomp_list)
 		} 
 
 		if(!bg_record) {
-			bg_record = xmalloc(sizeof(bg_record_t));
-			copy_bg_record(new_record, bg_record);
-			debug4("adding %s", bg_record->bg_block_id);
-			list_append(incomp_list, bg_record);
+			list_remove(itr);
+			debug4("adding %s", new_record->bg_block_id);
+			list_append(incomp_list, new_record);
 			count++;
 		} 
 		list_iterator_reset(itr2);
@@ -1385,8 +1390,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	}
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
-	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
-	      buf, min_nodes, req_nodes, max_nodes);
+	debug("bluegene:submit_job: %d %s nodes=%u-%u-%u", 
+	      mode, buf, min_nodes, req_nodes, max_nodes);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_BLRTS_IMAGE);
 #ifdef HAVE_BGL
@@ -1471,8 +1476,15 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						     &geo);
 				/* This is a fake record so we need to
 				 * destroy it after we get the info from
-				 * it */
-				destroy_bg_record(bg_record);
+				 * it.  if it was just testing then
+				 * we added this record to the
+				 * block_list.  If this is the case
+				 * it will be set below, but set
+				 * blocks_added to 0 since we don't
+				 * want to sync this with the list. */
+				if(!blocks_added)
+					destroy_bg_record(bg_record);
+				blocks_added = 0;
 			} else {
 				if((bg_record->ionodes)
 				   && (job_ptr->part_ptr->max_share <= 1))
