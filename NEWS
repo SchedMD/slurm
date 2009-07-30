@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
     account has the qos removed the users still get the qos.
  -- BLUEGENE - New blocks in dynamic mode will only be made in the system
     when the block is actually needed for a job, not when testing.
+ -- BLUEGENE - Don't remove larger block used for small block until job starts.
 
 * Changes in SLURM 2.0.4
 ========================
