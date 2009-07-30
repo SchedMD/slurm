@@ -563,8 +563,8 @@ static int host_prefix_end(const char *hostname)
 	assert(hostname != NULL);
 
 	len = strlen(hostname);
-#ifdef HAVE_3D
-	if (len < 4)
+#if (SYSTEM_DIMENSIONS > 1)
+	if (len <= SYSTEM_DIMENSIONS)
 		return -1;
 	idx = len - 4;
 #else
@@ -901,8 +901,8 @@ static char *hostrange_pop(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;    
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange pop");
-#ifdef HAVE_3D
-		if (hr->width == 3) {
+#if (SYSTEM_DIMENSIONS > 1)
+		if (hr->width == SYSTEM_DIMENSIONS) {
 			int len = 0;
 			int i2=0;
 			int coord[SYSTEM_DIMENSIONS];
@@ -944,8 +944,8 @@ static char *hostrange_shift(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange shift");
-#ifdef HAVE_3D
-		if (hr->width == 3) {
+#if (SYSTEM_DIMENSIONS > 1)
+		if (hr->width == SYSTEM_DIMENSIONS) {
 			int len = 0;
 			int i2=0;
 			int coord[SYSTEM_DIMENSIONS];
@@ -1116,8 +1116,8 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 	for (i = hr->lo; i <= hr->hi; i++) {
 		size_t m = (n - len) <= n ? n - len : 0; /* check for < 0 */
 		int ret = 0;
-#ifdef HAVE_3D
-		if (hr->width == 3) {
+#if (SYSTEM_DIMENSIONS > 1)
+		if (hr->width == SYSTEM_DIMENSIONS) {
 			int i2=0;
 			int coord[SYSTEM_DIMENSIONS];
 
@@ -1168,8 +1168,8 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 	if (hr->singlehost || n == 0)
 		return 0;
 
-#ifdef HAVE_3D
-	if (hr->width == 3) {
+#if (SYSTEM_DIMENSIONS > 1)
+	if (hr->width == SYSTEM_DIMENSIONS) {
 		int i2=0;
 		int coord[SYSTEM_DIMENSIONS];
 		
@@ -1188,8 +1188,8 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 
 	if ((len >= 0) && (len < n) && (hr->lo < hr->hi)) {
 		int len2 = 0;
-#ifdef HAVE_3D
-		if (hr->width == 3) {
+#if (SYSTEM_DIMENSIONS > 1)
+		if (hr->width == SYSTEM_DIMENSIONS) {
 			int i2=0;
 			int coord[SYSTEM_DIMENSIONS];
 			
@@ -1430,7 +1430,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	if (hostlist == NULL)
 		return new;
-#ifdef HAVE_3D
+#if (SYSTEM_DIMENSIONS > 1)
 	fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not work on "
 	      "Bluegene or Sun Constellation systems!!!!");
 #endif
@@ -2123,8 +2123,8 @@ _hostrange_string(hostrange_t hr, int depth)
 	int  len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", hr->prefix);
 
 	if (!hr->singlehost) {
-#ifdef HAVE_3D
-		if (hr->width == 3) {
+#if (SYSTEM_DIMENSIONS > 1)
+		if (hr->width == SYSTEM_DIMENSIONS) {
 			int i2=0;
 			int coord[SYSTEM_DIMENSIONS];
 			
@@ -3186,8 +3186,8 @@ char *hostlist_next(hostlist_iterator_t i)
 
 	len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", i->hr->prefix);
 	if (!i->hr->singlehost) {
-#ifdef HAVE_3D
-		if (i->hr->width == 3) {
+#if (SYSTEM_DIMENSIONS > 1)
+		if (i->hr->width == SYSTEM_DIMENSIONS) {
 			int i2=0;
 			int coord[SYSTEM_DIMENSIONS];
 			_parse_int_to_array((i->hr->lo + i->depth), coord);
