@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
  -- Applied patch from Doug Parisek (Doug.Parisek@bull.com) for speeding up 
     start of sview by delaying to creation of tooltips until requested.
  -- Changed GtkToolTips to GtkToolTip for newer versions of GTK.
+ -- improve hostlist calls for multidimensional systems.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
