@@ -2058,7 +2058,7 @@ extern int validate_nodes_via_front_end(
 	if (reg_hostlist) {
 		hostlist_uniq(reg_hostlist);
 		hostlist_ranged_string(reg_hostlist, sizeof(host_str),
-			host_str);
+				       host_str);
 		debug("Nodes %s have registered", host_str);
 		hostlist_destroy(reg_hostlist);
 	}
