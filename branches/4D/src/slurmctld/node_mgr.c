@@ -639,8 +639,7 @@ find_node_record (char *name)
 {
 	int i;
 	
-	if ((name == NULL)
-	||  (name[0] == '\0')) {
+	if ((name == NULL) || (name[0] == '\0')) {
 		info("find_node_record passed NULL name");
 		return NULL;
 	}
@@ -659,8 +658,8 @@ find_node_record (char *name)
 			node_ptr = node_ptr->node_next;
 		}
 
-		if ((node_record_count == 1)
-		&&  (strcmp(node_record_table_ptr[0].name, "localhost") == 0))
+		if ((node_record_count == 1) &&
+		    (strcmp(node_record_table_ptr[0].name, "localhost") == 0))
 			return (&node_record_table_ptr[0]);
 	       
 		error ("find_node_record: lookup failure for %s", name);
@@ -1007,7 +1006,7 @@ void rehash_node (void)
 
 	xfree (node_hash_table);
 	node_hash_table = xmalloc (sizeof (struct node_record *) * 
-				node_record_count);
+				   node_record_count);
 
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if ((node_ptr->name == NULL) ||
@@ -2382,6 +2381,7 @@ static void _dump_hash (void)
 
 	if (node_hash_table == NULL)
 		return;
+
 	for (i = 0; i < node_record_count; i++) {
 		node_ptr = node_hash_table[i];
 		while (node_ptr) {
