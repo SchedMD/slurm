@@ -910,9 +910,9 @@ static char *hostrange_pop(hostrange_t hr)
 			_parse_int_to_array(hr->hi, coord);
 
 			len = snprintf(host, size, "%s", hr->prefix);
-			while(i2 < SYSTEM_DIMENSIONS) {
+			for(i2 = 0; i2<SYSTEM_DIMENSIONS; i2++) {
 				if(len <= size)
-					host[len++] = alpha_num[coord[i2++]];
+					host[len++] = alpha_num[coord[i2]];
 			}
 			hr->hi--;
 		} else {
@@ -953,9 +953,9 @@ static char *hostrange_shift(hostrange_t hr)
 			_parse_int_to_array(hr->lo, coord);
 
 			len = snprintf(host, size, "%s", hr->prefix);
-			while(i2 < SYSTEM_DIMENSIONS) {
+			for(i2 = 0; i2<SYSTEM_DIMENSIONS; i2++) {
 				if(len <= size)
-					host[len++] = alpha_num[coord[i2++]];
+					host[len++] = alpha_num[coord[i2]];
 			}
 			hr->lo++;
 		} else {
@@ -1124,9 +1124,9 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 			_parse_int_to_array(i, coord);
 
 			len += snprintf(buf+len, m, "%s", hr->prefix);
-			while(i2 < SYSTEM_DIMENSIONS) {
+			for(i2 = 0; i2<SYSTEM_DIMENSIONS; i2++) {
 				if(len <= n)
-					buf[len++] = alpha_num[coord[i2++]];
+					buf[len++] = alpha_num[coord[i2]];
 			}
 			ret = len;
 		} else {
@@ -1175,9 +1175,9 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 		
 		_parse_int_to_array(hr->lo, coord);
 		
-		while(i2 < SYSTEM_DIMENSIONS) {
+		for(i2 = 0; i2<SYSTEM_DIMENSIONS; i2++) {
 			if(len <= n)
-				buf[len++] = alpha_num[coord[i2++]];
+				buf[len++] = alpha_num[coord[i2]];
 		}
 	} else {
 		len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
@@ -1196,9 +1196,9 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 			_parse_int_to_array(hr->hi, coord);
 
 			buf[len++] = '-';
-			while(i2 < SYSTEM_DIMENSIONS) {
+			for(i2 = 0; i2<SYSTEM_DIMENSIONS; i2++) {
 				if(len <= n)
-					buf[len++] = alpha_num[coord[i2++]];
+					buf[len++] = alpha_num[coord[i2]];
 			}
 			len2 = len;
 		} else {
@@ -1631,67 +1631,76 @@ error:
 static int _parse_box_range(char *str, struct _range *ranges,
 			    int len, int *count)
 {
-	int a[SYSTEM_DIMENSIONS], b[SYSTEM_DIMENSIONS];
-	int i, i1, i2, i3;
-	char new_str[SYSTEM_DIMENSIONS*2+2];
+	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
+	int i, a, b;
+#if (SYSTEM_DIMENSIONS == 4)
+	int c;
+#endif
+	char new_str[(SYSTEM_DIMENSIONS*2)+2];
+
+#if (SYSTEM_DIMENSIONS < 3 || SYSTEM_DIMENSIONS > 4)
+	fatal("Unsupported dimensions count %d", SYSTEM_DIMENSIONS);
+#endif
 
 	if ((str[SYSTEM_DIMENSIONS] != 'x') || 
-	    (str[SYSTEM_DIMENSIONS * 2 + 1] != '\0')) 
+	    (str[(SYSTEM_DIMENSIONS * 2) + 1] != '\0')) 
 		return 0;
 
-	for( i = 0; i<SYSTEM_DIMENSIONS; i++) {
+	for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 		if ((str[i] >= '0') && (str[i] <= '9'))
-			a[i] = str[i] - '0';
+			start[i] = str[i] - '0';
 		else if ((str[i] >= 'A') && (str[i] <= 'Z'))
-			a[i] = str[i] - 'A' + 10;
+			start[i] = str[i] - 'A' + 10;
 		else
 			return 0;
 
-		i2 = i + SYSTEM_DIMENSIONS + 1;
-		if ((str[i2] >= '0') && (str[i2] <= '9'))
-			b[i] = str[i2] - '0';
-		else if ((str[i2] >= 'A') && (str[i2] <= 'Z'))
-			b[i] = str[i2] - 'A' + 10;
+		a = i + SYSTEM_DIMENSIONS + 1;
+		if ((str[a] >= '0') && (str[a] <= '9'))
+			end[i] = str[a] - '0';
+		else if ((str[a] >= 'A') && (str[a] <= 'Z'))
+			end[i] = str[a] - 'A' + 10;
 		else
 			return 0;
 	}
 
-	if (SYSTEM_DIMENSIONS == 3) {
-		for (i1=a[0]; i1 <= b[0]; i1++) {
-			for (i2=a[1]; i2 <=b[1]; i2++) {
+	for (a=start[A]; a <= end[A]; a++) {
+		for (b=start[B]; b <=end[B]; b++) {
+#if (SYSTEM_DIMENSIONS == 4)
+			for (c=start[C]; c <=end[C]; c++) {
 				if (*count == len)
 					return -1;
 				snprintf(new_str, sizeof(new_str), 
-					"%c%c%c-%c%c%c", 
-					alpha_num[i1], alpha_num[i2],
-					alpha_num[a[2]],
-					alpha_num[i1], alpha_num[i2], 
-					alpha_num[b[2]]);
-				if (!_parse_single_range(new_str, &ranges[*count]))
+					 "%c%c%c%c-%c%c%c%c", 
+					 alpha_num[a], 
+					 alpha_num[b], 
+					 alpha_num[c],
+					 alpha_num[start[D]],
+					 alpha_num[a],
+					 alpha_num[b], 
+					 alpha_num[c],
+					 alpha_num[end[D]]);
+				if (!_parse_single_range(new_str,
+							 &ranges[*count]))
 					return -1;
 				(*count)++;
 			}
+#else
+			if (*count == len)
+				return -1;
+			snprintf(new_str, sizeof(new_str), 
+				 "%c%c%c-%c%c%c", 
+				 alpha_num[a],
+				 alpha_num[b],
+				 alpha_num[start[C]],
+				 alpha_num[a],
+				 alpha_num[b], 
+				 alpha_num[end[C]]);
+			if (!_parse_single_range(new_str, &ranges[*count]))
+				return -1;
+			(*count)++;
+#endif
 		}
-	} else if (SYSTEM_DIMENSIONS == 4) {
-		for (i1=a[0]; i1 <= b[0]; i1++) {
-			for (i2=a[1]; i2 <=b[1]; i2++) {
-				for (i3=a[2]; i3 <=b[2]; i3++) {
-					if (*count == len)
-						return -1;
-					snprintf(new_str, sizeof(new_str), 
-						"%c%c%c%c-%c%c%c%c", 
-						alpha_num[i1], alpha_num[i2], 
-						alpha_num[i3], alpha_num[a[3]],
-						alpha_num[i1], alpha_num[i2], 
-						alpha_num[i3], alpha_num[b[3]]);
-					if (!_parse_single_range(new_str, &ranges[*count]))
-						return -1;
-					(*count)++;
-				}
-			}
-		}
-	} else
-		fatal("Unsupported dimensions count %d", SYSTEM_DIMENSIONS);
+	}
 
 	return 1;
 }
@@ -2157,9 +2166,9 @@ _hostrange_string(hostrange_t hr, int depth)
 			
 			_parse_int_to_array((hr->lo+depth), coord);
 
-			while(i2 < SYSTEM_DIMENSIONS) {
+			for(i2 = 0; i2<SYSTEM_DIMENSIONS; i2++) {
 				if(len <= (MAXHOSTNAMELEN + 15))
-					buf[len++] = alpha_num[coord[i2++]];
+					buf[len++] = alpha_num[coord[i2]];
 			}
 			buf[len++] = '\0';
 		} else {
@@ -2533,19 +2542,18 @@ static void _parse_int_to_array(int in, int out[SYSTEM_DIMENSIONS])
 	if(!my_start_pow) {
 		/* this will never change so just calculate it once */
 		my_start_pow = 1;
-		a=0;
+		
 		/* To avoid having to use the pow function and include
 		   the math lib everywhere just do this. */
-		while(a < SYSTEM_DIMENSIONS) {
+		for(a = 0; a<SYSTEM_DIMENSIONS; a++) 
 			my_start_pow *= HOSTLIST_BASE;
-			a++;
-		}
+		
 		my_pow = my_start_pow;
 		my_pow_minus = my_start_pow_minus =
 			my_start_pow / HOSTLIST_BASE;
 	}
-	a=0;
-	while(a < SYSTEM_DIMENSIONS) {
+       
+	for(a = 0; a<SYSTEM_DIMENSIONS; a++) {
 		out[a] = (int)in % my_pow;
 
 		/* This only needs to be done until we get a 0 here
@@ -2558,7 +2566,6 @@ static void _parse_int_to_array(int in, int out[SYSTEM_DIMENSIONS])
 			my_pow = my_pow_minus;
 			my_pow_minus /= HOSTLIST_BASE;
 		} 
-		a++;
 	}
 }
 
@@ -2757,10 +2764,10 @@ _get_boxes(char *buf, int max_len)
 /* 			     alpha_num[curr_min[A]],  */
 /* 			     alpha_num[curr_min[B]], */
 /* 			     alpha_num[curr_min[C]]); */
-			i = 0;
-			while(i < SYSTEM_DIMENSIONS) {
-				buf[len++] = alpha_num[curr_min[i++]];
-			}
+			
+			for(i = 0; i<SYSTEM_DIMENSIONS; i++) 
+				buf[len++] = alpha_num[curr_min[i]];
+			
 			buf[len++] = ',';
 		} else {
 /* 			info("here 2 with %c%c%cx%c%c%c",  */
@@ -2770,15 +2777,11 @@ _get_boxes(char *buf, int max_len)
 /* 			     alpha_num[curr_max[A]],  */
 /* 			     alpha_num[curr_max[B]], */
 /* 			     alpha_num[curr_max[C]]); */
-			i = 0;
-			while(i < SYSTEM_DIMENSIONS) {
-				buf[len++] = alpha_num[curr_min[i++]];
-			}
+			for(i = 0; i<SYSTEM_DIMENSIONS; i++) 
+				buf[len++] = alpha_num[curr_min[i]];
 			buf[len++] = 'x';
-			i = 0;
-			while(i < SYSTEM_DIMENSIONS) {
-				buf[len++] = alpha_num[curr_max[i++]];
-			}
+			for(i = 0; i<SYSTEM_DIMENSIONS; i++) 
+				buf[len++] = alpha_num[curr_max[i]];
 			buf[len++] = ',';
 		}
 	}
@@ -2944,11 +2947,9 @@ _set_grid(unsigned long start, unsigned long end)
 	_parse_int_to_array(start, sent_start);
 	_parse_int_to_array(end, sent_end);
 
-	a=0;
-	while(a < SYSTEM_DIMENSIONS) {
+	for(a = 0; a<SYSTEM_DIMENSIONS; a++) {
 		axis_min[a] = MIN(axis_min[a], sent_start[a]);
 		axis_max[a] = MAX(axis_max[a], sent_end[a]);
-		a++;
 	}
 
 	for (a=sent_start[A]; a<=sent_end[A]; a++) {
@@ -2978,12 +2979,10 @@ _test_box(int start[SYSTEM_DIMENSIONS], int end[SYSTEM_DIMENSIONS])
 #endif
 	if(!memcmp(start, end, axis_size)) /* single node */
 		return false;
-	a=0;
-	while(a < SYSTEM_DIMENSIONS) {
+
+	for(a = 0; a<SYSTEM_DIMENSIONS; a++) 
 		if (start[a] > end[a])
 			return false;
-		a++;
-	}
 
 	for (a = start[A]; a<=end[A]; a++) {
 		for (b = start[B]; b<=end[B]; b++) {
@@ -3036,11 +3035,10 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
 	if (!memcmp(axis_min, axis_max, axis_size)) {
 		len += snprintf(buf, n, "%s", hl->hr[0]->prefix);
-		i = 0;
-		while(i < SYSTEM_DIMENSIONS) {
+		for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 			if(len > n)
 				goto too_long;
-			buf[len++] = alpha_num[axis_min[i++]];
+			buf[len++] = alpha_num[axis_min[i]];
 		}
 	} else if (!_test_box(axis_min, axis_max)) {
 		sprintf(buf, "%s[", hl->hr[0]->prefix);
@@ -3048,20 +3046,18 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 		len += _get_boxes(buf + len, (n-len));
 	} else {
 		len += snprintf(buf, n, "%s[", hl->hr[0]->prefix);
-		i = 0;
-		while(i < SYSTEM_DIMENSIONS) {
+		for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 			if(len > n)
 				goto too_long;
-			buf[len++] = alpha_num[axis_min[i++]];
+			buf[len++] = alpha_num[axis_min[i]];
 		}
 		if(len <= n)
 			buf[len++] = 'x';
 
-		i = 0;
-		while(i < SYSTEM_DIMENSIONS) {
+		for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 			if(len > n)
 				goto too_long;
-			buf[len++] = alpha_num[axis_max[i++]];
+			buf[len++] = alpha_num[axis_max[i]];
 		}
 		if(len <= n)
 			buf[len++] = ']';
@@ -3218,9 +3214,9 @@ char *hostlist_next(hostlist_iterator_t i)
 			int i2=0;
 			int coord[SYSTEM_DIMENSIONS];
 			_parse_int_to_array((i->hr->lo + i->depth), coord);
-			while(i2 < SYSTEM_DIMENSIONS) {
+			for(i2 = 0; i2<SYSTEM_DIMENSIONS; i2++) {
 				if(len <= (MAXHOSTNAMELEN + 15))
-					buf[len++] = alpha_num[coord[i2++]];
+					buf[len++] = alpha_num[coord[i2]];
 			}
 		} else {
 			snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%0*lu",
