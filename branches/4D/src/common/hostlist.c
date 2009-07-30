@@ -1632,9 +1632,6 @@ static int _parse_box_range(char *str, struct _range *ranges,
 {
 	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
 	int i, a, b;
-#if (SYSTEM_DIMENSIONS == 4)
-	int c;
-#endif
 	char new_str[(SYSTEM_DIMENSIONS*2)+2];
 
 #if ((SYSTEM_DIMENSIONS < 3) || (SYSTEM_DIMENSIONS > 4))
@@ -1665,6 +1662,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 	for (a=start[A]; a <= end[A]; a++) {
 		for (b=start[B]; b <=end[B]; b++) {
 #if (SYSTEM_DIMENSIONS == 4)
+			int c;
 			for (c=start[C]; c <=end[C]; c++) {
 				if (*count == len)
 					return -1;
@@ -1678,7 +1676,6 @@ static int _parse_box_range(char *str, struct _range *ranges,
 					 alpha_num[b], 
 					 alpha_num[c],
 					 alpha_num[end[D]]);
-				info("got %s", new_str);
 				if (!_parse_single_range(new_str,
 							 &ranges[*count]))
 					return -1;
