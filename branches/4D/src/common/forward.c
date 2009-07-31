@@ -329,11 +329,15 @@ void *_fwd_tree_thread(void *arg)
 			continue;
 		}
 		
-		hostlist_ranged_string(fwd_tree->tree_hl, sizeof(buf), buf);
-		send_msg.forward.nodelist = xstrdup(buf);
 		send_msg.forward.timeout = fwd_tree->timeout;
-		send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl);
-		if (send_msg.forward.nodelist[0]) {
+		if((send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl))) {
+			hostlist_ranged_string(fwd_tree->tree_hl, 
+					       sizeof(buf), buf);
+			send_msg.forward.nodelist = xstrdup(buf);
+		} else
+			send_msg.forward.nodelist = NULL;
+
+		if (send_msg.forward.nodelist && send_msg.forward.nodelist[0]) {
 			debug3("Tree sending to %s along with %s", 
 			       name, send_msg.forward.nodelist);
 		} else

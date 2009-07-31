@@ -66,6 +66,7 @@
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/timers.h"
+#include "src/common/xassert.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
@@ -2859,6 +2860,11 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 							continue;
 						goto end_it;
 					}
+/* 						info("%c%c%c%c used", */
+/* 						     alpha_num[last[A]], */
+/* 						     alpha_num[last[B]], */
+/* 						     alpha_num[last[C]], */
+/* 						     alpha_num[last[D]]); */
 					if(found == -1) {
 						found = SYSTEM_DIMENSIONS;
 /* 						info("box starts at %c%c%c%c", */
@@ -3061,8 +3067,82 @@ end_it:
 /* 			     alpha_num[last[A]], */
 /* 			     alpha_num[last[B]], */
 /* 			     alpha_num[last[C]]); */
-		} else 
-			memset(last, 0, axis_size);
+		} else {
+			int new_min[SYSTEM_DIMENSIONS];
+			int new_max[SYSTEM_DIMENSIONS];
+			memset(new_min, HOSTLIST_BASE, axis_size);
+			memset(new_max, -1, axis_size);
+/* 			info("current axis is %c%c%c%cx%c%c%c%c", */
+/* 			     alpha_num[axis_min[A]], */
+/* 			     alpha_num[axis_min[B]], */
+/* 			     alpha_num[axis_min[C]], */
+/* 			     alpha_num[axis_min[D]], */
+/* 			     alpha_num[axis_max[A]], */
+/* 			     alpha_num[axis_max[B]], */
+/* 			     alpha_num[axis_max[C]], */
+/* 			     alpha_num[axis_max[D]]); */
+			
+			for (clear[A]=axis_min[A]; clear[A]<=axis_max[A]; clear[A]++) {
+				for (clear[B]=axis_min[B]; clear[B]<=axis_max[B]; clear[B]++) {
+					for (clear[C]=axis_min[C];
+					     clear[C]<=axis_max[C];
+					     clear[C]++) {
+#if (SYSTEM_DIMENSIONS == 4)
+						for (clear[D]=axis_min[D];
+						     clear[D]<=axis_max[D];
+						     clear[D]++) {
+/* 							info("got here %c%c%c%c %d", */
+/* 							     alpha_num[clear[A]], */
+/* 							     alpha_num[clear[B]], */
+/* 							     alpha_num[clear[C]], */
+/* 							     alpha_num[clear[D]], */
+/* 								axis[clear[A]][clear[B]] */
+/* 							    [clear[C]][clear[D]]); */
+							if (!axis[clear[A]][clear[B]]
+							    [clear[C]][clear[D]])
+								continue;
+							for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
+								new_min[i] = MIN(new_min[i], clear[i]);
+								new_max[i] = MAX(new_max[i], clear[i]);
+							}
+						}
+#else
+						if (!axis[clear[A]][clear[B]][clear[C]])
+							continue;
+						for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
+							new_min[i] = MIN(new_min[i], clear[i]);
+							new_max[i] = MAX(new_max[i], clear[i]);
+						}
+#endif
+					}
+				}
+			}
+			
+			if(new_max[A] != -1) {
+/* 				info("here with %d %d %d %d x %d %d %d %d", */
+/* 				     new_min[A], */
+/* 				     new_min[B], */
+/* 				     new_min[C], */
+/* 				     new_min[D], */
+/* 				     new_max[A], */
+/* 				     new_max[B], */
+/* 				     new_max[C], */
+/* 				     new_max[D]); */
+/* 				info("here with %c%c%c%cx%c%c%c%c", */
+/* 				     alpha_num[new_min[A]], */
+/* 				     alpha_num[new_min[B]], */
+/* 				     alpha_num[new_min[C]], */
+/* 				     alpha_num[new_min[D]], */
+/* 				     alpha_num[new_max[A]], */
+/* 				     alpha_num[new_max[B]], */
+/* 				     alpha_num[new_max[C]], */
+/* 				     alpha_num[new_max[D]]); */
+				memcpy(axis_min, new_min, axis_size);
+				memcpy(axis_max, new_max, axis_size);
+				memcpy(last, axis_min, axis_size);
+/* 				memset(last, 0, axis_size); */
+			}
+		}
 	} else if(last[A] <= axis_max[A]) {
 		i=SYSTEM_DIMENSIONS-1;
 		while(i >= 0) {
@@ -3291,6 +3371,7 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 				      SYSTEM_DIMENSIONS, i,
 				      hl->hr[i]->prefix, hl->hr[i]->width);
 			}
+			printf("%s\n",13);
 			goto notbox; 
 		}
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
@@ -3349,7 +3430,7 @@ notbox:
 			buf[n-1] = '\0';
 	} else
 		buf[len > 0 ? len : 0] = '\0';
-	info("got list of %s %d", buf, len);
+
 	return truncated ? -1 : len;
 }
 /* ----[ hostlist iterator functions ]---- */
