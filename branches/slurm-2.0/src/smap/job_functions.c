@@ -235,7 +235,7 @@ static void _print_header_job(void)
 		main_xcord = 1;
 		main_ycord++;
 	} else {
-		printf("JOBID ");
+		printf("   JOBID ");
 		printf("PARTITION ");
 #ifdef HAVE_BG
 		printf("        BG_BLOCK ");
