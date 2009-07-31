@@ -569,8 +569,8 @@ static int host_prefix_end(const char *hostname)
 	idx = len - 1;
 
 	while (idx >= 0) {
-		if ((hostname[idx] >= '0') && (hostname[idx] <= '9')
-		    || ((hostname[idx] >= 'A') && (hostname[idx] <= 'Z')))
+		if (((hostname[idx] >= '0') && (hostname[idx] <= '9')) ||
+		    ((hostname[idx] >= 'A') && (hostname[idx] <= 'Z')))
 			idx--;
 		else
 			break;
