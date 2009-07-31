@@ -180,11 +180,11 @@ enum {A, B, C, D};
 /* We allocate space for three digits, 
  * each with values 0 to Z even if they are not all used */
 #if (SYSTEM_DIMENSIONS == 3)
-static bool axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
+static int axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
 #endif
 
 #if (SYSTEM_DIMENSIONS == 4)
-static bool axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
+static int axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
 #endif
 
 static int axis_min[SYSTEM_DIMENSIONS];
@@ -2572,7 +2572,7 @@ static void _parse_int_to_array(int in, int out[SYSTEM_DIMENSIONS])
 	}
 }
 
-static int _get_next_box(int start[SYSTEM_DIMENSIONS],
+static int _get_next_box2(int start[SYSTEM_DIMENSIONS],
 			 int end[SYSTEM_DIMENSIONS])
 {
 	//int begin[SYSTEM_DIMENSIONS];
@@ -2583,6 +2583,248 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 	if(start[A] == -1) 
 		memcpy(start, axis_min, axis_size);
 	else 
+		memcpy(start, last, axis_size);
+
+	memcpy(end, start, axis_size);
+
+	info("beginning with '%c' '%c' '%c' '%c'",
+	     alpha_num[start[A]],
+	     alpha_num[start[B]],
+	     alpha_num[start[C]],
+	     alpha_num[start[D]]);
+/* 	info("beginning with '%c' '%c' '%c'",  */
+/* 	     alpha_num[start[A]],  */
+/* 	     alpha_num[start[B]], */
+/* 	     alpha_num[start[C]]); */
+	
+	for (last[A]=start[A]; last[A]<=axis_max[A]; last[A]++) {
+		for (last[B]=start[B]; last[B]<=axis_max[B]; last[B]++) {
+			for (last[C]=start[C]; 
+			     last[C]<=axis_max[C];
+			     last[C]++) {
+#if (SYSTEM_DIMENSIONS == 4)
+				for (last[D]=start[D];
+				     last[D]<=axis_max[D];
+				     last[D]++) {
+					if (!axis[last[A]][last[B]]
+					    [last[C]][last[D]]) {
+						info("%c%c%c%c not used",
+						     alpha_num[last[A]],
+						     alpha_num[last[B]],
+						     alpha_num[last[C]],
+						     alpha_num[last[D]]);
+						if(found == -1)
+							continue;
+						goto end_it;
+					}
+					if(found == -1) {
+						found = SYSTEM_DIMENSIONS;
+						info("box starts at %c%c%c%c",
+						     alpha_num[last[A]],
+						     alpha_num[last[B]],
+						     alpha_num[last[C]],
+						     alpha_num[last[D]]);
+						memcpy(start, last, axis_size);
+						memcpy(end, last, axis_size);
+					} else if(found >= D) {
+/* 						info("1 D here %c%c%c%c", */
+/* 						     alpha_num[last[A]], */
+/* 						     alpha_num[last[B]], */
+/* 						     alpha_num[last[C]], */
+/* 						     alpha_num[last[D]]); */
+						memcpy(end, last, axis_size);
+						found = D;
+					}
+				}
+				last[D]--;
+				if(found >= D) {
+/* 					info("D here %c%c%c%c", */
+/* 					     alpha_num[last[A]], */
+/* 					     alpha_num[last[B]], */
+/* 					     alpha_num[last[C]], */
+/* 					     alpha_num[last[D]]); */
+					memcpy(end, last, axis_size);
+					found = D;
+				} else if(found == -1)
+					start[D] = axis_min[D];
+#else
+				if (!axis[last[A]][last[B]][last[C]]) {
+					if(found == -1)
+						continue;
+					goto end_it;
+				}
+				if(found == -1) {
+					found = SYSTEM_DIMENSIONS;
+					memcpy(start, last, axis_size);
+					memcpy(end, last, axis_size);
+				} else if(found >= C) {
+/* 					info("1 C here %c%c%c%c", */
+/* 					     alpha_num[last[A]], */
+/* 					     alpha_num[last[B]], */
+/* 					     alpha_num[last[C]]); */
+					memcpy(end, last, axis_size);
+					found = C;
+				}
+#endif				
+			}
+			last[C]--;
+			if(found >= C) {
+/* 				info("C here %c%c%c%c", */
+/* 				     alpha_num[last[A]], */
+/* 				     alpha_num[last[B]], */
+/* 				     alpha_num[last[C]], */
+/* 				     alpha_num[last[D]]); */
+/* 				info("C here %c%c%c",  */
+/* 				     alpha_num[last[A]],  */
+/* 				     alpha_num[last[B]], */
+/* 				     alpha_num[last[C]]); */
+				memcpy(end, last, axis_size);
+				found = C;
+			} else if(found == -1)
+				start[C] = axis_min[C];
+		}
+		last[B]--;			
+		if(found >= B) {
+/* 			info("B here %c%c%c%c", */
+/* 			     alpha_num[last[A]], */
+/* 			     alpha_num[last[B]], */
+/* 			     alpha_num[last[C]], */
+/* 			     alpha_num[last[D]]); */
+/* 			info("B here %c%c%c",  */
+/* 			     alpha_num[last[A]],  */
+/* 			     alpha_num[last[B]], */
+/* 			     alpha_num[last[C]]); */
+			memcpy(end, last, axis_size);
+			found = B;
+		} else if(found == -1)
+			start[B] = axis_min[B];
+	}
+	if(found >= A) {
+		last[A]--;			
+/* 		info("A here %c%c%c%c", */
+/* 		     alpha_num[last[A]], */
+/* 		     alpha_num[last[B]], */
+/* 		     alpha_num[last[C]], */
+/* 		     alpha_num[last[D]]); */
+/* 		info("A here %c%c%c",  */
+/* 		     alpha_num[last[A]],  */
+/* 		     alpha_num[last[B]], */
+/* 		     alpha_num[last[C]]); */
+		memcpy(end, last, axis_size);
+		found = A;
+		last[A]++;			
+	}
+	/* if(found) { */
+/* 		last[A]--; */
+/* 		memcpy(end, last, axis_size); */
+/* 	} */
+end_it:
+	info("finished at %d %d %d %d %c%c%c%c",
+	     last[A],
+	     last[B],
+	     last[C],
+	     last[D],
+	     alpha_num[last[A]],
+	     alpha_num[last[B]],
+	     alpha_num[last[C]],
+	     alpha_num[last[D]]);
+/* 	info("finished at %d %d %d %c%c%c",  */
+/* 	     last[A], */
+/* 	     last[B], */
+/* 	     last[C], */
+/* 	     alpha_num[last[A]],  */
+/* 	     alpha_num[last[B]], */
+/* 	     alpha_num[last[C]]); */
+	
+	if(found != -1) {
+		rc = 1;
+		
+		info("ending with %d %d %d %d %c%c%c%c",
+		     end[A],
+		     end[B],
+		     end[C],
+		     end[D],
+		     alpha_num[end[A]],
+		     alpha_num[end[B]],
+		     alpha_num[end[C]],
+		     alpha_num[end[D]]);
+/* 		info("ending with %d %d %d %c%c%c",  */
+/* 		     end[A], */
+/* 		     end[B], */
+/* 		     end[C], */
+/* 		     alpha_num[end[A]],  */
+/* 		     alpha_num[end[B]], */
+/* 		     alpha_num[end[C]]); */
+		/* only run through this code if we haven't exhasted
+		   the A space yet. */
+		if(last[A] <= axis_max[A]) {
+			memcpy(last, end, axis_size);
+			/* if this is the same node we started on we
+			   need to go to the next one for the next shot.
+			*/
+			i=SYSTEM_DIMENSIONS-1;
+			last[i]++;
+			while(i >= 0) {
+				if(last[i] > axis_max[i]) {
+					last[i] = 0;
+					if(i)
+						last[i-1]++;
+				}
+				i--;
+			}
+			info("next start %d %d %d %d %c%c%c%c",
+			     last[A],
+			     last[B],
+			     last[C],
+			     last[D],
+			     alpha_num[last[A]],
+			     alpha_num[last[B]],
+			     alpha_num[last[C]],
+			     alpha_num[last[D]]);
+/* 			info("next start %d %d %d %c%c%c", */
+/* 			     last[A], */
+/* 			     last[B], */
+/* 			     last[C], */
+/* 			     alpha_num[last[A]], */
+/* 			     alpha_num[last[B]], */
+/* 			     alpha_num[last[C]]); */
+		} 		
+	} else if(last[A] <= axis_max[A]) {
+		i=SYSTEM_DIMENSIONS-1;
+		while(i >= 0) {
+			if(last[i] < 0) {
+				last[i] = axis_max[i];
+				if(i)
+					last[i-1]--;
+			}
+			i--;
+		}
+		if(last[0] < 0)
+			last[0]=axis_max[0];
+/* 		info("failed... next start %d %d %d %c%c%c",  */
+/* 		     last[A], */
+/* 		     last[B], */
+/* 		     last[C], */
+/* 		     alpha_num[last[A]],  */
+/* 		     alpha_num[last[B]], */
+/* 		     alpha_num[last[C]]); */
+	}
+
+	return rc;
+}
+
+static int _get_next_box(int start[SYSTEM_DIMENSIONS],
+			 int end[SYSTEM_DIMENSIONS])
+{
+	//int begin[SYSTEM_DIMENSIONS];
+	static int last[SYSTEM_DIMENSIONS];
+	int clear[SYSTEM_DIMENSIONS];
+	int found = -1;
+	int i, rc = 0;
+
+	if(start[A] == -1) 
+		memcpy(start, axis_min, axis_size);
+	 else 
 		memcpy(start, last, axis_size);
 
 	memcpy(end, start, axis_size);
@@ -2612,14 +2854,14 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 /* 						     alpha_num[last[A]], */
 /* 						     alpha_num[last[B]], */
 /* 						     alpha_num[last[C]], */
-/* 						     alpha_num[last[D]]);  */
+/* 						     alpha_num[last[D]]); */
 						if(found == -1)
 							continue;
 						goto end_it;
 					}
 					if(found == -1) {
 						found = SYSTEM_DIMENSIONS;
-/* 						info("box starts at %c%c%c%c",*/
+/* 						info("box starts at %c%c%c%c", */
 /* 						     alpha_num[last[A]], */
 /* 						     alpha_num[last[B]], */
 /* 						     alpha_num[last[C]], */
@@ -2739,7 +2981,8 @@ end_it:
 	if(found != -1) {
 		rc = 1;
 		
-/* 		info("ending with %d %d %d %d %c%c%c%c", */
+/* 		info("found=%d ending with %d %d %d %d %c%c%c%c", */
+/* 		     found, */
 /* 		     end[A], */
 /* 		     end[B], */
 /* 		     end[C], */
@@ -2757,6 +3000,36 @@ end_it:
 /* 		     alpha_num[end[C]]); */
 		/* only run through this code if we haven't exhasted
 		   the A space yet. */
+		for (clear[A]=start[A]; clear[A]<=end[A]; clear[A]++) {
+			for (clear[B]=start[B]; clear[B]<=end[B]; clear[B]++) {
+				for (clear[C]=start[C]; 
+				     clear[C]<=end[C];
+				     clear[C]++) {
+#if (SYSTEM_DIMENSIONS == 4)
+					for (clear[D]=start[D];
+					     clear[D]<=end[D];
+					     clear[D]++) {
+/* 						info("clearing %c%c%c%c", */
+/* 						     alpha_num[clear[A]], */
+/* 						     alpha_num[clear[B]], */
+/* 						     alpha_num[clear[C]], */
+/* 						     alpha_num[clear[D]]); */
+						axis[clear[A]]
+							[clear[B]]
+							[clear[C]]
+							[clear[D]]
+							= false;
+						
+					}
+#else
+					axis[clear[A]][clear[B]]
+						[clear[C]] = false;
+#endif
+				}
+			}
+		}
+		
+		
 		if(last[A] <= axis_max[A]) {
 			memcpy(last, end, axis_size);
 			/* if this is the same node we started on we
@@ -2788,7 +3061,8 @@ end_it:
 /* 			     alpha_num[last[A]], */
 /* 			     alpha_num[last[B]], */
 /* 			     alpha_num[last[C]]); */
-		} 		
+		} else 
+			memset(last, 0, axis_size);
 	} else if(last[A] <= axis_max[A]) {
 		i=SYSTEM_DIMENSIONS-1;
 		while(i >= 0) {
@@ -3075,7 +3349,7 @@ notbox:
 			buf[n-1] = '\0';
 	} else
 		buf[len > 0 ? len : 0] = '\0';
-
+	info("got list of %s %d", buf, len);
 	return truncated ? -1 : len;
 }
 /* ----[ hostlist iterator functions ]---- */
