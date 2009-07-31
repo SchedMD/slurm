@@ -173,10 +173,9 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 
 
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-#if (SYSTEM_DIMENSIONS > 1)
 enum {A, B, C, D};
 
+#if (SYSTEM_DIMENSIONS > 1)
 /* logic for block node description */
 /* We allocate space for three digits, 
  * each with values 0 to Z even if they are not all used */
@@ -1643,9 +1642,6 @@ static int _parse_box_range(char *str, struct _range *ranges,
 {
 	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
 	int i, a, b;
-#if (SYSTEM_DIMENSIONS == 4)
-	int c;
-#endif
 	char new_str[(SYSTEM_DIMENSIONS*2)+2];
 
 #if ((SYSTEM_DIMENSIONS < 3) || (SYSTEM_DIMENSIONS > 4))
@@ -1676,6 +1672,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 	for (a=start[A]; a <= end[A]; a++) {
 		for (b=start[B]; b <=end[B]; b++) {
 #if (SYSTEM_DIMENSIONS == 4)
+			int c;
 			for (c=start[C]; c <=end[C]; c++) {
 				if (*count == len)
 					return -1;
@@ -1732,7 +1729,8 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 			return -1;
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
-		if ((str[SYSTEM_DIMENSIONS] == 'x') && 
+		if ((SYSTEM_DIMENSIONS > 1) &&
+		    (str[SYSTEM_DIMENSIONS] == 'x') && 
 		    (strlen(str) == (SYSTEM_DIMENSIONS * 2 + 1))) {
 			if (!_parse_box_range(str, ranges, len, &count)) 
 				return -1;  
