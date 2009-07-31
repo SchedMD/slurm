@@ -296,7 +296,8 @@ to -m block:cyclic with --cpu_bind=thread.</p>
 
 <p>To complement the existing SLURM job minimum constraints (CPUs,
 memory, temp disk), constraint flags have also been added to allow a
-user to request nodes with a minimum set of resources:</p>
+user to request nodes with a minimum number of sockets, cores, or
+threads:</p>
 
 <PRE>
 --mincpus=<i>n</i>             minimum number of logical processors (threads) per node
