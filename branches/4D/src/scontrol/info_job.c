@@ -646,7 +646,7 @@ extern int
 scontrol_encode_hostlist(char *hostlist)
 {
 	char *io_buf = NULL, *tmp_list, *ranged_string;
-	int buf_size = 0;
+	int buf_size = 1024 * 1024;
 	hostlist_t hl;
 
 	if (!hostlist) {
@@ -661,7 +661,6 @@ scontrol_encode_hostlist(char *hostlist)
 			fprintf(stderr, "Can not open %s\n", hostlist);
 			return SLURM_ERROR;
 		}
-		buf_size = 1024 * 1024;
 		io_buf = xmalloc(buf_size);
 		buf_read = read(fd, io_buf, buf_size);
 		close(fd);
@@ -676,7 +675,6 @@ scontrol_encode_hostlist(char *hostlist)
 	} else
 		tmp_list = hostlist;
 
-	buf_size = strlen(tmp_list) + 10;
 	ranged_string = xmalloc(buf_size);
 	hl = hostlist_create(tmp_list);
 	hostlist_ranged_string(hl, buf_size, ranged_string);
