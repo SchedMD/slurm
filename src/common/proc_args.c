@@ -353,10 +353,8 @@ get_resource_arg_range(const char *arg, const char *what, int* min, int *max,
 	char *p;
 	long int result;
 
-	if (*arg == '\0') return true;
-
 	/* wildcard meaning every possible value in range */
-	if (*arg == '*' ) {
+	if ((*arg == '\0') || (*arg == '*' )) {
 		*min = 1;
 		*max = INT_MAX;
 		return true;
