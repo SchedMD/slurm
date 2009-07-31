@@ -132,11 +132,20 @@ PartitionName=DEFAULT Default=Yes State=UP
 PartitionName=debug Nodes=tux[0000-0007,0010-001B,0100-0107,0110-0115]
 </pre>
 
-<p>In both of the examples above, the node names output by the
-<i>scontrol show nodes</i> will be ordered as defined (sequentially 
-along the Hilbert curve or per the ordering in the <i>slurm.conf</i> file)
+<h2>Tools</h2>
+
+<p>The node names output by the <i>scontrol show nodes</i> command 
+will be ordered as defined (sequentially along the Hilbert curve)
 rather than in numeric order (e.g. "tux0010" may follow "tux1010" rather 
 than "tux0000"). 
+The output of the <i>smap</i> and <i>sview</i> commands will also display 
+nodes ordered by the Hilbert curve so that nodes appearing adjacent in the 
+display will be physically adjacent. 
+This permits the locality of a job, partition or reservation to be easily 
+determined.
+In order to locate specific nodes with the <i>sview</i> command, select 
+<i>Actions</i>, <i>Search</i> and <i>Node(s) Name</i> then enter the desired 
+node names.
 The output of other SLURM commands (e.g. <i>sinfo</i> and <i>squeue</i>) 
 will use a SLURM hostlist expression with the node names numerically ordered).
 SLURM partitions should contain nodes which are defined sequentially
@@ -144,6 +153,6 @@ by that ordering for optimal performance.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 30 July 2009</p></td>
+<p style="text-align:center;">Last modified 31 July 2009</p></td>
 
 <!--#include virtual="footer.txt"-->
