@@ -1510,7 +1510,9 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 				tok += pos;
 
 			/* make sure we have digits to the end */
-			for (pos = 0; tok[pos] && isdigit((char) tok[pos]); ++pos) {;}
+			for (pos = 0;
+			     tok[pos] && isdigit((char) tok[pos]);
+			     ++pos) {;}
 
 			if (pos > 0) {    /* we have digits to process */
 				high = strtoul(tok, (char **) &tok,
@@ -2786,7 +2788,6 @@ static bool
 _test_box(int start[SYSTEM_DIMENSIONS], int end[SYSTEM_DIMENSIONS])
 {
 	int a, b, c;
-
 	if(!memcmp(start, end, axis_size)) /* single node */
 		return false;
 
@@ -2828,22 +2829,24 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	if (hl->nranges < 1)
 		goto notbox;	/* no data */
 
-	if (hl->hr[0]->width != SYSTEM_DIMENSIONS) {
-		/* We use this logic to build task list ranges, so
-		 * this does not necessarily contain a
-		 * SYSTEM_DIMENSION dimensional
-		 * host list. It could just be numeric values */
-		if (hl->hr[0]->prefix[0]) {
-			debug("This node is not in %dD format.  "
-		 	      "Prefix is %s and suffix is %d chars long",
-		  	      SYSTEM_DIMENSIONS, 
-			      hl->hr[0]->prefix, hl->hr[0]->width);
-		}
-		goto notbox; 
-	}
 	_clear_grid();
-	for (i=0;i<hl->nranges;i++)
+	for (i=0;i<hl->nranges;i++) {
+		if (hl->hr[i]->width != SYSTEM_DIMENSIONS) {
+			/* We use this logic to build task list ranges, so
+			 * this does not necessarily contain a
+			 * SYSTEM_DIMENSION dimensional
+			 * host list. It could just be numeric values */
+			if (hl->hr[i]->prefix[0]) {
+				debug("This node is not in %dD format.  "
+				      "Prefix is %s and suffix is "
+				      "%d chars long",
+				      SYSTEM_DIMENSIONS, 
+				      hl->hr[i]->prefix, hl->hr[i]->width);
+			}
+			goto notbox; 
+		}
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
+	}
 	if (!memcmp(axis_min, axis_max, axis_size)) {
 		len += snprintf(buf, n, "%s", hl->hr[0]->prefix);
 		for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
