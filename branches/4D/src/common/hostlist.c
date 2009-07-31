@@ -3012,9 +3012,9 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 			 * host list. It could just be numeric values */
 			if (hl->hr[i]->prefix[0]) {
 				debug("This node is not in %dD format.  "
-				      "Prefix is %s and suffix is "
+				      "Prefix of range %d is %s and suffix is "
 				      "%d chars long",
-				      SYSTEM_DIMENSIONS, 
+				      SYSTEM_DIMENSIONS, i,
 				      hl->hr[i]->prefix, hl->hr[i]->width);
 			}
 			goto notbox; 
