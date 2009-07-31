@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
  -- Changed GtkToolTips to GtkToolTip for newer versions of GTK.
  -- Applied patch from Rod Schultz (Rod.Schultz@Bull.com) that eliminates
     ambiguity in the documentation over use of the terms "CPU" and "socket".
+ -- Modified get_resource_arg_range() to return full min/max values when input
+    string is null.  This fixes the srun -B option to function as documented.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
