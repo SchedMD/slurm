@@ -116,9 +116,6 @@ extern void get_reservation(void)
 			active = 0;
 
 		if (active && (resv.node_inx[0] != -1)) {
-#ifdef HAVE_SUN_CONST
-			set_grid_name(resv.node_list, count);
-#else
 			int j = 0;
 			resv.node_cnt = 0;
 			while (resv.node_inx[j] >= 0) {
@@ -129,7 +126,6 @@ extern void get_reservation(void)
 					     resv.node_inx[j + 1], count);
 				j += 2;
 			}
-#endif
 		}
 
 		if (resv.node_inx[0] != -1) {
