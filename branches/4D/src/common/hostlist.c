@@ -567,7 +567,15 @@ static int host_prefix_end(const char *hostname)
 #if (SYSTEM_DIMENSIONS > 1)
 	if (len <= SYSTEM_DIMENSIONS)
 		return -1;
-	idx = len - 1 - SYSTEM_DIMENSIONS;
+	idx = len - 1;
+
+	while (idx >= 0) {
+		if ((hostname[idx] >= '0') && (hostname[idx] <= '9')
+		    || ((hostname[idx] >= 'A') && (hostname[idx] <= 'Z')))
+			idx--;
+		else
+			break;
+	}
 #else
 	if (len < 1)
 		return -1;
@@ -603,7 +611,6 @@ static hostname_t hostname_create(const char *hostname)
 	hn->num = 0;
 	hn->prefix = NULL;
 	hn->suffix = NULL;
-
 	if (idx == (strlen(hostname) - 1)) {
 		if ((hn->prefix = strdup(hostname)) == NULL) {
 			hostname_destroy(hn);
@@ -3371,7 +3378,6 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 				      SYSTEM_DIMENSIONS, i,
 				      hl->hr[i]->prefix, hl->hr[i]->width);
 			}
-			printf("%s\n",13);
 			goto notbox; 
 		}
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
