@@ -1642,6 +1642,47 @@ error:
 	return 0;
 }
 
+static int _add_box_ranges(int dim,  int curr,
+			    int start[SYSTEM_DIMENSIONS],
+			    int end[SYSTEM_DIMENSIONS], 
+			    int pos[SYSTEM_DIMENSIONS],
+			    struct _range *ranges,
+			    int len, int *count)
+{
+	int i;
+	int start_curr = curr;
+
+	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
+		curr = start_curr + (pos[dim] * offset[dim]);
+		if(dim == (SYSTEM_DIMENSIONS-2)) {
+			char new_str[(SYSTEM_DIMENSIONS*2)+2];
+			memset(new_str, 0, sizeof(new_str));
+
+			if (*count == len)
+				return -1;
+			new_str[SYSTEM_DIMENSIONS] = '-';
+			for(i = 0; i<(SYSTEM_DIMENSIONS-1); i++) {
+				new_str[i] = alpha_num[pos[i]];
+				new_str[SYSTEM_DIMENSIONS+i+1] =
+					alpha_num[pos[i]];
+			}
+			new_str[i] = alpha_num[start[i]];
+			new_str[SYSTEM_DIMENSIONS+i+1] = alpha_num[end[i]];
+
+/* 			info("got %s", new_str); */
+			if (!_parse_single_range(new_str,
+						 &ranges[*count]))
+				return -1;
+			(*count)++;
+		} else 
+			if(_add_box_ranges(dim+1, curr, start, end, pos,
+					   ranges, len, count) == -1)
+				return -1;
+	}
+	return 1;
+}
+
+
 /*
  * Convert description of a rectangular prism in 3-D node space into a set of 
  * sequential node ranges.
@@ -1656,9 +1697,9 @@ error:
 static int _parse_box_range(char *str, struct _range *ranges,
 			    int len, int *count)
 {
-	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
-	int i, a, b;
-	char new_str[(SYSTEM_DIMENSIONS*2)+2];
+	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS],
+		pos[SYSTEM_DIMENSIONS];
+	int i, a;
 
 #if ((SYSTEM_DIMENSIONS < 3) || (SYSTEM_DIMENSIONS > 4))
 	fatal("Unsupported dimensions count %d", SYSTEM_DIMENSIONS);
@@ -1684,49 +1725,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 		else
 			return 0;
 	}
-
-	for (a=start[A]; a <= end[A]; a++) {
-		for (b=start[B]; b <=end[B]; b++) {
-#if (SYSTEM_DIMENSIONS == 4)
-			int c;
-			for (c=start[C]; c <=end[C]; c++) {
-				if (*count == len)
-					return -1;
-				snprintf(new_str, sizeof(new_str), 
-					 "%c%c%c%c-%c%c%c%c", 
-					 alpha_num[a], 
-					 alpha_num[b], 
-					 alpha_num[c],
-					 alpha_num[start[D]],
-					 alpha_num[a],
-					 alpha_num[b], 
-					 alpha_num[c],
-					 alpha_num[end[D]]);
-				/*info("got %s", new_str);*/
-				if (!_parse_single_range(new_str,
-							 &ranges[*count]))
-					return -1;
-				(*count)++;
-			}
-#else
-			if (*count == len)
-				return -1;
-			snprintf(new_str, sizeof(new_str), 
-				 "%c%c%c-%c%c%c", 
-				 alpha_num[a],
-				 alpha_num[b],
-				 alpha_num[start[C]],
-				 alpha_num[a],
-				 alpha_num[b], 
-				 alpha_num[end[C]]);
-			if (!_parse_single_range(new_str, &ranges[*count]))
-				return -1;
-			(*count)++;
-#endif
-		}
-	}
-
-	return 1;
+	return _add_box_ranges(A, 0, start, end, pos, ranges, len, count);
 }
 
 /*
