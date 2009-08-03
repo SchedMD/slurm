@@ -177,24 +177,41 @@ enum {A, B, C, D};
 
 #if (SYSTEM_DIMENSIONS > 1)
 /* logic for block node description */
-/* We allocate space for three digits, 
- * each with values 0 to Z even if they are not all used */
+
+/* to speed things up we will do some calculations once to avoid
+ * having to do it multiple times.  We need to calculate the size of
+ * the maximum sized array for each dimension.  This way we can be
+ * prepared for any size coming in.
+ */
 #if (SYSTEM_DIMENSIONS == 3)
-static bool axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
+static int grid_size = HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE;
 #endif
 
 #if (SYSTEM_DIMENSIONS == 4)
-static bool axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
+static int grid_size = HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE;
 #endif
 
-static int offset[SYSTEM_DIMENSIONS] = {-1};
-static int axis_min[SYSTEM_DIMENSIONS];
-static int axis_max[SYSTEM_DIMENSIONS];
-static int axis_size  = sizeof(axis_min);
-//static int box_length = (SYSTEM_DIMENSIONS * 2) + 2;
+static int offset[SYSTEM_DIMENSIONS];
+static int dim_grid_size  = -1;
+
+
 static void _parse_int_to_array(int in, int out[SYSTEM_DIMENSIONS]);
-static int _get_boxes(char *buf, int max_len);
-static void _clear_grid(void);
+static int _tell_if_used(int dim, int curr,
+			 int start[SYSTEM_DIMENSIONS],
+			 int end[SYSTEM_DIMENSIONS], 
+			 int last[SYSTEM_DIMENSIONS],
+			 int grid_start[SYSTEM_DIMENSIONS],
+			 int grid_end[SYSTEM_DIMENSIONS],
+			 bool *grid, int *found);
+static int _get_next_box(int start[SYSTEM_DIMENSIONS],
+			 int end[SYSTEM_DIMENSIONS],
+			 int grid_start[SYSTEM_DIMENSIONS],
+			 int grid_end[SYSTEM_DIMENSIONS],
+			 bool *grid);
+static int _get_boxes(char *buf, int max_len,
+		      int grid_start[SYSTEM_DIMENSIONS],
+		      int grid_end[SYSTEM_DIMENSIONS],
+		      bool *grid);
 static void _set_box_in_grid(int dim, int curr,
 			     int start[SYSTEM_DIMENSIONS],
 			     int end[SYSTEM_DIMENSIONS],
@@ -206,12 +223,16 @@ static void _set_min_max_of_grid(int dim, int curr,
 				 int max[SYSTEM_DIMENSIONS],
 				 int pos[SYSTEM_DIMENSIONS],
 				 bool *grid);
-static void _set_grid(unsigned long start, unsigned long end);
+static void _set_grid(unsigned long start, unsigned long end,
+		      int grid_star[SYSTEM_DIMENSIONS], 
+		      int grid_end[SYSTEM_DIMENSIONS],
+		      bool *grid);
 static bool _test_box_in_grid(int dim, int curr, 
 			      int start[SYSTEM_DIMENSIONS], 
 			      int end[SYSTEM_DIMENSIONS],
 			      bool *grid);
-static bool _test_box(int start[SYSTEM_DIMENSIONS], int end[SYSTEM_DIMENSIONS]);
+static bool _test_box(int start[SYSTEM_DIMENSIONS], int end[SYSTEM_DIMENSIONS],
+		      bool *grid);
 #endif
 
 /* hostname type: A convenience structure used in parsing single hostnames */
@@ -2597,6 +2618,8 @@ static int _tell_if_used(int dim, int curr,
 			 int start[SYSTEM_DIMENSIONS],
 			 int end[SYSTEM_DIMENSIONS], 
 			 int last[SYSTEM_DIMENSIONS],
+			 int grid_start[SYSTEM_DIMENSIONS],
+			 int grid_end[SYSTEM_DIMENSIONS],
 			 bool *grid, int *found)
 {
 	int rc = 1;
@@ -2605,7 +2628,7 @@ static int _tell_if_used(int dim, int curr,
 /* 	char coord[SYSTEM_DIMENSIONS+1]; */
 /* 	memset(coord, 0, sizeof(coord)); */
 
-	for (last[dim]=start[dim]; last[dim]<=axis_max[dim]; last[dim]++) {
+	for (last[dim]=start[dim]; last[dim]<=grid_end[dim]; last[dim]++) {
 		curr = start_curr + (last[dim] * offset[dim]);
 		if(dim == (SYSTEM_DIMENSIONS-1)) {
 			if (!grid[curr]) {
@@ -2626,31 +2649,32 @@ static int _tell_if_used(int dim, int curr,
 /* 					coord[i] = alpha_num[last[i]]; */
 /* 				} */
 /* 				info("box starts at %s", coord); */
-				memcpy(start, last, axis_size);
-				memcpy(end, last, axis_size);
+				memcpy(start, last, dim_grid_size);
+				memcpy(end, last, dim_grid_size);
 				(*found) = SYSTEM_DIMENSIONS;
 			} else if((*found) >= dim) {
 /* 				for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
 /* 					coord[i] = alpha_num[last[i]]; */
 /* 				} */
 /* 				info("first end %d here %s", dim, coord); */
-				memcpy(end, last, axis_size);
+				memcpy(end, last, dim_grid_size);
 				(*found) = dim;
 			}
 		} else {
 			if((rc = _tell_if_used(dim+1, curr, 
 					       start, end,
-					       last, grid, found)) != 1)
+					       last, grid_start, grid_end, 
+					       grid, found)) != 1)
 				return rc;
 			if((*found) >= dim) {
 /* 				for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
 /* 					coord[i] = alpha_num[last[i]]; */
 /* 				} */
 /* 				info("%d here %s", dim, coord); */
-				memcpy(end, last, axis_size);
+				memcpy(end, last, dim_grid_size);
 				(*found) = dim;
 			} else if((*found) == -1)
-				start[dim] = axis_min[dim];
+				start[dim] = grid_start[dim];
 		}
 	}
 	last[dim]--;
@@ -2659,7 +2683,10 @@ static int _tell_if_used(int dim, int curr,
 }
 
 static int _get_next_box(int start[SYSTEM_DIMENSIONS],
-			 int end[SYSTEM_DIMENSIONS])
+			 int end[SYSTEM_DIMENSIONS],
+			 int grid_start[SYSTEM_DIMENSIONS],
+			 int grid_end[SYSTEM_DIMENSIONS],
+			 bool *grid)
 {
 	static int last[SYSTEM_DIMENSIONS];
 	int pos[SYSTEM_DIMENSIONS];
@@ -2677,11 +2704,11 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 
 again:
 	if(start[A] == -1) 
-		memcpy(start, axis_min, axis_size);
+		memcpy(start, grid_start, dim_grid_size);
 	else 
-		memcpy(start, last, axis_size);
+		memcpy(start, last, dim_grid_size);
 
-	memcpy(end, start, axis_size);
+	memcpy(end, start, dim_grid_size);
 
 	
 /* 	for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
@@ -2689,22 +2716,23 @@ again:
 /* 	}	 */
 /* 	info("beginning with %s", coord); */
 
-	_tell_if_used(A, 0, start, end, last, ((bool *)axis), &found);
+	_tell_if_used(A, 0, start, end, last,
+		      grid_start, grid_end, grid, &found);
 
 /* 	for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
-/* 		coord[i] = alpha_num[axis_min[i]]; */
-/* 		coord2[i] = alpha_num[axis_max[i]]; */
+/* 		coord[i] = alpha_num[grid_start[i]]; */
+/* 		coord2[i] = alpha_num[grid_end[i]]; */
 /* 	}	 */
-/* 	info("current axis is %sx%s", coord, coord2); */
+/* 	info("current grid is %sx%s", coord, coord2); */
 	
 	/* remove what we just did */
-	_set_box_in_grid(A, 0, start, end, ((bool *)axis), false);
+	_set_box_in_grid(A, 0, start, end, grid, false);
 
 	/* set the new min max of the grid */
-	memset(new_min, HOSTLIST_BASE, axis_size);
-	memset(new_max, -1, axis_size);
-	_set_min_max_of_grid(A, 0, axis_min, axis_max,
-			     new_min, new_max, pos, ((bool *)axis));
+	memset(new_min, HOSTLIST_BASE, dim_grid_size);
+	memset(new_max, -1, dim_grid_size);
+	_set_min_max_of_grid(A, 0, grid_start, grid_end,
+			     new_min, new_max, pos, grid);
 	
 	if(new_max[A] != -1) {
 /* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
@@ -2712,8 +2740,8 @@ again:
 /* 			coord2[i] = alpha_num[new_max[i]]; */
 /* 		}	 */
 /* 		info("here with %sx%s", coord, coord2); */
-		memcpy(axis_min, new_min, axis_size);
-		memcpy(axis_max, new_max, axis_size);
+		memcpy(grid_start, new_min, dim_grid_size);
+		memcpy(grid_end, new_max, dim_grid_size);
 	}
 	
 	if(found != -1) {
@@ -2731,15 +2759,15 @@ again:
 
 		/* only run through this code if we haven't exhasted
 		   the A space yet. */
-/* 		if(last[A] <= axis_max[A]) { */
-/* 			memcpy(last, end, axis_size); */
+/* 		if(last[A] <= grid_end[A]) { */
+/* 			memcpy(last, end, dim_grid_size); */
 /* 			/\* if this is the same node we started on we */
 /* 			   need to go to the next one for the next shot. */
 /* 			*\/ */
 /* 			i=SYSTEM_DIMENSIONS-1; */
 /* 			last[i]++; */
 /* 			while(i >= 0) { */
-/* 				if(last[i] > axis_max[i]) { */
+/* 				if(last[i] > grid_end[i]) { */
 /* 					last[i] = 0; */
 /* 					if(i) */
 /* 						last[i-1]++; */
@@ -2747,7 +2775,7 @@ again:
 /* 				i--; */
 /* 			} */
 /* 		} else */
-			memcpy(last, axis_min, axis_size);
+			memcpy(last, grid_start, dim_grid_size);
 /* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++)  */
 /* 			coord[i] = alpha_num[last[i]]; */
 /* 		info("next start %s", coord); */
@@ -2755,7 +2783,7 @@ again:
 		/* go through from the min to the max 1 more time to
 		   make sure we got all the boxes that weren't
 		   included in the boxes of previous runs. */
-		memcpy(last, axis_min, axis_size);
+		memcpy(last, grid_start, dim_grid_size);
 		
 /* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++)  */
 /* 			coord[i] = alpha_num[last[i]]; */
@@ -2777,7 +2805,10 @@ again:
  * Assumes hostlist is locked.
  */
 static int
-_get_boxes(char *buf, int max_len)
+_get_boxes(char *buf, int max_len,
+	   int grid_start[SYSTEM_DIMENSIONS],
+	   int grid_end[SYSTEM_DIMENSIONS],
+	   bool *grid)
 {
 	int len, i;
 	int curr_min[SYSTEM_DIMENSIONS], curr_max[SYSTEM_DIMENSIONS];
@@ -2790,17 +2821,17 @@ _get_boxes(char *buf, int max_len)
 	curr_min[A] = -1;
 
 /* 	for(i=0; i<HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE; i++) { */
-/* 		if(((bool *)axis)[i]) */
+/* 		if(grid[i]) */
 /* 			info("got one at %d", i); */
 /* 	} */
 
-	while(_get_next_box(curr_min, curr_max)) {
+	while(_get_next_box(curr_min, curr_max, grid_start, grid_end, grid)) {
 /* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
 /* 			coord[i] = alpha_num[curr_min[i]]; */
 /* 			coord2[i] = alpha_num[curr_max[i]]; */
 /* 		} */
 /* 		info("%sx%s is a box", coord, coord2); */
-		if(!memcmp(curr_min, curr_max, axis_size)) {
+		if(!memcmp(curr_min, curr_max, dim_grid_size)) {
 			for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 				if(len >= max_len)
 					goto end_it;
@@ -2837,16 +2868,6 @@ end_it:
 
 	return len;
 }
-
-static void
-_clear_grid(void)
-{
-	memset(axis, 0, sizeof(axis));
-
-	memset(axis_min, HOSTLIST_BASE, axis_size);
-	memset(axis_max, -1, axis_size);
-}
-
 
 static void
 _set_box_in_grid(int dim, int curr, int start[SYSTEM_DIMENSIONS],
@@ -2892,7 +2913,9 @@ static void _set_min_max_of_grid(int dim, int curr,
 }
 
 static void
-_set_grid(unsigned long start, unsigned long end)
+_set_grid(unsigned long start, unsigned long end,
+	  int grid_start[SYSTEM_DIMENSIONS], int grid_end[SYSTEM_DIMENSIONS], 
+	  bool *grid)
 {
 	int sent_start[SYSTEM_DIMENSIONS], sent_end[SYSTEM_DIMENSIONS];
 	int i;
@@ -2905,14 +2928,14 @@ _set_grid(unsigned long start, unsigned long end)
 	_parse_int_to_array(end, sent_end);
 
 	for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
-		axis_min[i] = MIN(axis_min[i], sent_start[i]);
-		axis_max[i] = MAX(axis_max[i], sent_end[i]);
+		grid_start[i] = MIN(grid_start[i], sent_start[i]);
+		grid_end[i] = MAX(grid_end[i], sent_end[i]);
 /* 		coord[i] = alpha_num[sent_start[i]]; */
 /* 		coord2[i] = alpha_num[sent_end[i]]; */
 	}
 /* 	info("going to set %sx%s", coord, coord2); */
 
-	_set_box_in_grid(A, 0, sent_start, sent_end, ((bool *)axis), true);
+	_set_box_in_grid(A, 0, sent_start, sent_end, grid, true);
 }  
 
 static bool
@@ -2938,18 +2961,18 @@ _test_box_in_grid(int dim, int curr,
 }
 
 static bool
-_test_box(int start[SYSTEM_DIMENSIONS], int end[SYSTEM_DIMENSIONS])
+_test_box(int start[SYSTEM_DIMENSIONS], int end[SYSTEM_DIMENSIONS], bool *grid)
 {
 	int i;
 
-	if(!memcmp(start, end, axis_size)) /* single node */
+	if(!memcmp(start, end, dim_grid_size)) /* single node */
 		return false;
 
 	for(i = 0; i<SYSTEM_DIMENSIONS; i++) 
 		if (start[i] > end[i])
 			return false;
 
-	return _test_box_in_grid(A, 0, start, end, ((bool *)axis));
+	return _test_box_in_grid(A, 0, start, end, grid);
 }
 #endif
 
@@ -2959,14 +2982,22 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	int len = 0;
 	int truncated = 0;
 	bool box = false;
+#if (SYSTEM_DIMENSIONS > 1)
+//	bool grid[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
+	bool grid[grid_size];
+	int grid_start[SYSTEM_DIMENSIONS];
+	int grid_end[SYSTEM_DIMENSIONS];
+#endif
 	DEF_TIMERS;
 
 	START_TIMER;
 	LOCK_HOSTLIST(hl);
 
 #if (SYSTEM_DIMENSIONS > 1)	/* logic for block node description */
-	if(offset[0] == -1) {
+	if(dim_grid_size == -1) {
 		int i;
+		
+		dim_grid_size = sizeof(grid_start);
 		/* the last one is always 1 */
 		offset[SYSTEM_DIMENSIONS-1] = 1;
 		for(i=(SYSTEM_DIMENSIONS-2); i>=0; i--) 
@@ -2976,7 +3007,10 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	if (hl->nranges < 1)
 		goto notbox;	/* no data */
 
-	_clear_grid();
+	memset(grid, 0, sizeof(grid));
+	memset(grid_start, HOSTLIST_BASE, dim_grid_size);
+	memset(grid_end, -1, dim_grid_size);
+
 	for (i=0;i<hl->nranges;i++) {
 		if (hl->hr[i]->width != SYSTEM_DIMENSIONS) {
 			/* We use this logic to build task list ranges, so
@@ -2992,25 +3026,27 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 			}
 			goto notbox; 
 		}
-		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
+		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi,
+			  grid_start, grid_end, grid);
 	}
-	if (!memcmp(axis_min, axis_max, axis_size)) {
+	if (!memcmp(grid_start, grid_end, dim_grid_size)) {
 		len += snprintf(buf, n, "%s", hl->hr[0]->prefix);
 		for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 			if(len > n)
 				goto too_long;
-			buf[len++] = alpha_num[axis_min[i]];
+			buf[len++] = alpha_num[grid_start[i]];
 		}
-	} else if (!_test_box(axis_min, axis_max)) {
+	} else if (!_test_box(grid_start, grid_end, grid)) {
 		sprintf(buf, "%s[", hl->hr[0]->prefix);
 		len = strlen(hl->hr[0]->prefix) + 1;
-		len += _get_boxes(buf + len, (n-len));
+		len += _get_boxes(buf + len, (n-len),
+				  grid_start, grid_end, grid);
 	} else {
 		len += snprintf(buf, n, "%s[", hl->hr[0]->prefix);
 		for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 			if(len > n)
 				goto too_long;
-			buf[len++] = alpha_num[axis_min[i]];
+			buf[len++] = alpha_num[grid_start[i]];
 		}
 		if(len <= n)
 			buf[len++] = 'x';
@@ -3018,7 +3054,7 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 		for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 			if(len > n)
 				goto too_long;
-			buf[len++] = alpha_num[axis_max[i]];
+			buf[len++] = alpha_num[grid_end[i]];
 		}
 		if(len <= n)
 			buf[len++] = ']';
