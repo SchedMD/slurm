@@ -1882,14 +1882,12 @@ int hostlist_push_host(hostlist_t hl, const char *str)
 
 	hn = hostname_create(str);
 
-	if (hostname_suffix_is_valid(hn)) {
-		info("here with %s %d", hn->prefix, hn->num);
+	if (hostname_suffix_is_valid(hn)) 
 		hr = hostrange_create(hn->prefix, hn->num, hn->num,
 				      hostname_suffix_width(hn));
-	} else {
-		info("no prefix %s", str);
+	else 
 		hr = hostrange_create_single(str);
-	}
+	
 
 	hostlist_push_range(hl, hr);
 
