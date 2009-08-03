@@ -302,12 +302,6 @@ static void _set_box_in_grid(int dim, int curr,
 			     int start[SYSTEM_DIMENSIONS],
 			     int end[SYSTEM_DIMENSIONS],
 			     bool value);
-static int _add_box_ranges(int dim,  int curr,
-			   int start[SYSTEM_DIMENSIONS],
-			   int end[SYSTEM_DIMENSIONS], 
-			   int pos[SYSTEM_DIMENSIONS],
-			   struct _range *ranges,
-			   int len, int *count);
 static void _set_min_max_of_grid(int dim, int curr,
 				 int start[SYSTEM_DIMENSIONS],
 				 int end[SYSTEM_DIMENSIONS],
@@ -506,6 +500,7 @@ static char * _next_tok(char *sep, char **str)
 	if ((memchr(tok, '[', *str - tok) != NULL) &&
 	    (memchr(tok, ']', *str - tok) == NULL)) {
 		char *q = strchr(*str, ']');
+		
 		if (q && (memchr(*str, '[', q - *str) == NULL))
 			*str = ++q;
 
@@ -515,7 +510,7 @@ static char * _next_tok(char *sep, char **str)
 
 		/* if _second_ opening bracket exists b/w tok and str,
 		 * push str past second closing bracket */
-		if ((**str != '\0') &&
+		if ((**str != '\0') && q &&
 		    (memchr(tok, '[', *str - q) != NULL) &&
 		    (memchr(tok, ']', *str - q) == NULL)) {
 			q = strchr(*str, ']');
@@ -1618,15 +1613,15 @@ static int _parse_single_range(const char *str, struct _range *range)
 	if (!orig) 
 		seterrno_ret(ENOMEM, 0);
 	
-	if ((p = strchr(str, 'x'))) {
-		goto error; /* do NOT allow boxes in here */
-	}
-
 	if ((p = strchr(str, '-'))) {
 		*p++ = '\0';
 		if (*p == '-')     /* do NOT allow negative numbers */
 			goto error;
-	}
+	} else if ((p = strchr(str, 'x'))) {
+		*p++ = '\0';
+		if (*p == '-')     /* do NOT allow negative numbers */
+			goto error;
+	} 
 
 	range->lo = strtoul(str, &q, HOSTLIST_BASE);
 
@@ -1640,13 +1635,14 @@ static int _parse_single_range(const char *str, struct _range *range)
 	
 	if (range->lo > range->hi) 
 		goto error;
-	
+#if (SYSTEM_DIMENSIONS < 2)	
 	if (range->hi - range->lo + 1 > MAX_RANGE ) {
 		_error(__FILE__, __LINE__, "Too many hosts in range `%s'\n", orig);
 		free(orig);
 		seterrno_ret(ERANGE, 0);
 	}
-	
+#endif
+
 	free(orig);
 	range->width = strlen(str);
 	return 1;
@@ -1656,65 +1652,6 @@ error:
 	_error(__FILE__, __LINE__, "Invalid range: `%s'", orig);
 	free(orig);
 	return 0;
-}
-
-/*
- * Convert description of a rectangular prism in 3-D node space into a set of 
- * sequential node ranges.
- * str IN - contains "<number>x<number>" in which the two number describe the
- *		XYZ boundaries of the nodes, each must contain three-digits
- * ranges IN/OUT - set of high/low numeric ranges based upon sequential ordering
- * len IN - number of entries in ranges structure
- * count OUT - location in ranges of first unused entry
- * RET 1 if str contained a valid number or range,
- *	0 if conversion of str to a range failed.
- */
-static int _parse_box_range(char *str, struct _range *ranges,
-			    int len, int *count)
-{
-
-#if (SYSTEM_DIMENSIONS > 1)
-	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS],
-		pos[SYSTEM_DIMENSIONS];
-	int i, a;
-
-	if ((str[SYSTEM_DIMENSIONS] != 'x') || 
-	    (str[(SYSTEM_DIMENSIONS * 2) + 1] != '\0')) 
-		return 0;
-
-	for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
-		if ((str[i] >= '0') && (str[i] <= '9'))
-			start[i] = str[i] - '0';
-		else if ((str[i] >= 'A') && (str[i] <= 'Z'))
-			start[i] = str[i] - 'A' + 10;
-		else
-			return 0;
-
-		a = i + SYSTEM_DIMENSIONS + 1;
-		if ((str[a] >= '0') && (str[a] <= '9'))
-			end[i] = str[a] - '0';
-		else if ((str[a] >= 'A') && (str[a] <= 'Z'))
-			end[i] = str[a] - 'A' + 10;
-		else
-			return 0;
-	}
-
-	char coord[SYSTEM_DIMENSIONS+1];
-	char coord2[SYSTEM_DIMENSIONS+1];
-	memset(coord, 0, sizeof(coord));
-	memset(coord2, 0, sizeof(coord2));
-
-	for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
-		coord[i] = alpha_num[start[i]];
-		coord2[i] = alpha_num[end[i]];
-	}
-/* 	info("adding ranges in %sx%s", coord, coord2); */
-
-	return _add_box_ranges(A, 0, start, end, pos, ranges, len, count);
-#else
-	fatal("Unsupported dimensions count %d", SYSTEM_DIMENSIONS);
-	return -1;
-#endif
 }
 
 /*
@@ -1733,15 +1670,10 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 			return -1;
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
-		if ((SYSTEM_DIMENSIONS > 1) &&
-		    (str[SYSTEM_DIMENSIONS] == 'x') && 
-		    (strlen(str) == (SYSTEM_DIMENSIONS * 2 + 1))) {
-			if (!_parse_box_range(str, ranges, len, &count)) 
-				return -1;  
-		} else {
-			if (!_parse_single_range(str, &ranges[count++])) 
-				return -1;  
-		}
+		
+		if (!_parse_single_range(str, &ranges[count++])) 
+			return -1;  
+		
 		str = p;
 	}
 	return count;
@@ -1823,7 +1755,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 		hostlist_destroy(new);
 		return NULL;
 	}
-
+	
 	while ((tok = _next_tok(sep, &str)) != NULL) {
 		strncpy(cur_tok, tok, 1024);
 
@@ -1840,16 +1772,22 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 					goto error;
 				if (_push_range_list(new, prefix, ranges, nr))
 					goto error;
-                
 			} else {
 				/* The hostname itself contains a '['
 				 * (no ']' found). 
-				 * Not likely what the user wanted. */
-				hostlist_push_host(new, cur_tok);
+				 * Not likely what the user
+				 * wanted. We will just tack one on
+				 * the end. */
+				strcat(cur_tok, "]");
+				if(prefix && prefix[0])
+					hostlist_push_host(new, cur_tok);
+				else
+					hostlist_push_host(new, p);
+
 			}
 
-		} else
-			hostlist_push_host(new, cur_tok);
+		} else 
+				hostlist_push_host(new, cur_tok);
 	}
 
 	free(orig);
@@ -1944,12 +1882,15 @@ int hostlist_push_host(hostlist_t hl, const char *str)
 
 	hn = hostname_create(str);
 
-	if (hostname_suffix_is_valid(hn)) 
+	if (hostname_suffix_is_valid(hn)) {
+		info("here with %s %d", hn->prefix, hn->num);
 		hr = hostrange_create(hn->prefix, hn->num, hn->num,
 				      hostname_suffix_width(hn));
-	else 
+	} else {
+		info("no prefix %s", str);
 		hr = hostrange_create_single(str);
-	
+	}
+
 	hostlist_push_range(hl, hr);
 
 	hostrange_destroy(hr);
@@ -2826,47 +2767,6 @@ end_it:
 	return len;
 }
 
-static int _add_box_ranges(int dim,  int curr,
-			   int start[SYSTEM_DIMENSIONS],
-			   int end[SYSTEM_DIMENSIONS], 
-			   int pos[SYSTEM_DIMENSIONS],
-			   struct _range *ranges,
-			   int len, int *count)
-{
-	int i;
-	int start_curr = curr;
-
-	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
-		curr = start_curr + (pos[dim] * offset[dim]);
-		if(dim == (SYSTEM_DIMENSIONS-2)) {
-			char new_str[(SYSTEM_DIMENSIONS*2)+2];
-			memset(new_str, 0, sizeof(new_str));
-
-			if (*count == len) 
-				return -1;
-			
-			new_str[SYSTEM_DIMENSIONS] = '-';
-			for(i = 0; i<(SYSTEM_DIMENSIONS-1); i++) {
-				new_str[i] = alpha_num[pos[i]];
-				new_str[SYSTEM_DIMENSIONS+i+1] =
-					alpha_num[pos[i]];
-			}
-			new_str[i] = alpha_num[start[i]];
-			new_str[SYSTEM_DIMENSIONS+i+1] = alpha_num[end[i]];
-
-/* 			info("got %s", new_str); */
-			if (!_parse_single_range(new_str, &ranges[*count])) {
-				return -1;
-			}
-			(*count)++;
-		} else 
-			if(_add_box_ranges(dim+1, curr, start, end, pos,
-					   ranges, len, count) == -1)
-				return -1;
-	}
-	return 1;
-}
-
 static void
 _set_box_in_grid(int dim, int curr, int start[SYSTEM_DIMENSIONS],
 		 int end[SYSTEM_DIMENSIONS], bool value)
@@ -2976,9 +2876,6 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	int len = 0;
 	int truncated = 0;
 	bool box = false;
-#if (SYSTEM_DIMENSIONS > 1)
-//	bool grid[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
-#endif
 	DEF_TIMERS;
 
 	START_TIMER;
