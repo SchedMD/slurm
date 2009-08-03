@@ -1708,7 +1708,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 		coord[i] = alpha_num[start[i]];
 		coord2[i] = alpha_num[end[i]];
 	}
-	info("adding ranges in %sx%s", coord, coord2);
+/* 	info("adding ranges in %sx%s", coord, coord2); */
 
 	return _add_box_ranges(A, 0, start, end, pos, ranges, len, count);
 #else
