@@ -2671,7 +2671,8 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 	int i, rc = 0;
 	int new_min[SYSTEM_DIMENSIONS];
 	int new_max[SYSTEM_DIMENSIONS];
-
+	int looped = 0;
+again:
 	if(start[A] == -1) 
 		memcpy(start, axis_min, axis_size);
 	else 
@@ -2689,6 +2690,78 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 /* 	     alpha_num[start[B]], */
 /* 	     alpha_num[start[C]]); */
 	_tell_if_used(A, 0, start, end, last, &found);
+
+	memset(new_min, HOSTLIST_BASE, axis_size);
+	memset(new_max, -1, axis_size);
+/* 		info("current axis is %c%c%c%cx%c%c%c%c", */
+/* 		     alpha_num[axis_min[A]], */
+/* 		     alpha_num[axis_min[B]], */
+/* 		     alpha_num[axis_min[C]], */
+/* 		     alpha_num[axis_min[D]], */
+/* 		     alpha_num[axis_max[A]], */
+/* 		     alpha_num[axis_max[B]], */
+/* 		     alpha_num[axis_max[C]], */
+/* 		     alpha_num[axis_max[D]]); */
+	
+	for (clear[A]=axis_min[A]; clear[A]<=axis_max[A]; clear[A]++) {
+		for (clear[B]=axis_min[B]; clear[B]<=axis_max[B]; clear[B]++) {
+			for (clear[C]=axis_min[C];
+			     clear[C]<=axis_max[C];
+			     clear[C]++) {
+#if (SYSTEM_DIMENSIONS == 4)
+				for (clear[D]=axis_min[D];
+				     clear[D]<=axis_max[D];
+				     clear[D]++) {
+/* 						info("got here %c%c%c%c %d", */
+/* 						     alpha_num[clear[A]], */
+/* 						     alpha_num[clear[B]], */
+/* 						     alpha_num[clear[C]], */
+/* 						     alpha_num[clear[D]], */
+/* 						     axis[clear[A]][clear[B]] */
+/* 						     [clear[C]][clear[D]]); */
+					if (!axis[clear[A]][clear[B]]
+					    [clear[C]][clear[D]])
+						continue;
+					for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
+						new_min[i] = MIN(new_min[i], clear[i]);
+						new_max[i] = MAX(new_max[i], clear[i]);
+					}
+				}
+#else
+				if (!axis[clear[A]][clear[B]][clear[C]])
+					continue;
+				for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
+					new_min[i] = MIN(new_min[i], clear[i]);
+					new_max[i] = MAX(new_max[i], clear[i]);
+				}
+#endif
+			}
+		}
+	}
+	
+	if(new_max[A] != -1) {
+/* 				info("here with %d %d %d %d x %d %d %d %d", */
+/* 				     new_min[A], */
+/* 				     new_min[B], */
+/* 				     new_min[C], */
+/* 				     new_min[D], */
+/* 				     new_max[A], */
+/* 				     new_max[B], */
+/* 				     new_max[C], */
+/* 				     new_max[D]); */
+/* 				info("here with %c%c%c%cx%c%c%c%c", */
+/* 				     alpha_num[new_min[A]], */
+/* 				     alpha_num[new_min[B]], */
+/* 				     alpha_num[new_min[C]], */
+/* 				     alpha_num[new_min[D]], */
+/* 				     alpha_num[new_max[A]], */
+/* 				     alpha_num[new_max[B]], */
+/* 				     alpha_num[new_max[C]], */
+/* 				     alpha_num[new_max[D]]); */
+		memcpy(axis_min, new_min, axis_size);
+		memcpy(axis_max, new_max, axis_size);
+/* 				memset(last, 0, axis_size); */
+	}
 
 	if(found != -1) {
 		rc = 1;
@@ -2742,77 +2815,6 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 		}
 		
 		
-		memset(new_min, HOSTLIST_BASE, axis_size);
-		memset(new_max, -1, axis_size);
-/* 		info("current axis is %c%c%c%cx%c%c%c%c", */
-/* 		     alpha_num[axis_min[A]], */
-/* 		     alpha_num[axis_min[B]], */
-/* 		     alpha_num[axis_min[C]], */
-/* 		     alpha_num[axis_min[D]], */
-/* 		     alpha_num[axis_max[A]], */
-/* 		     alpha_num[axis_max[B]], */
-/* 		     alpha_num[axis_max[C]], */
-/* 		     alpha_num[axis_max[D]]); */
-		
-		for (clear[A]=axis_min[A]; clear[A]<=axis_max[A]; clear[A]++) {
-			for (clear[B]=axis_min[B]; clear[B]<=axis_max[B]; clear[B]++) {
-				for (clear[C]=axis_min[C];
-				     clear[C]<=axis_max[C];
-				     clear[C]++) {
-#if (SYSTEM_DIMENSIONS == 4)
-					for (clear[D]=axis_min[D];
-					     clear[D]<=axis_max[D];
-					     clear[D]++) {
-/* 						info("got here %c%c%c%c %d", */
-/* 						     alpha_num[clear[A]], */
-/* 						     alpha_num[clear[B]], */
-/* 						     alpha_num[clear[C]], */
-/* 						     alpha_num[clear[D]], */
-/* 						     axis[clear[A]][clear[B]] */
-/* 						     [clear[C]][clear[D]]); */
-						if (!axis[clear[A]][clear[B]]
-						    [clear[C]][clear[D]])
-							continue;
-						for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
-							new_min[i] = MIN(new_min[i], clear[i]);
-							new_max[i] = MAX(new_max[i], clear[i]);
-						}
-					}
-#else
-					if (!axis[clear[A]][clear[B]][clear[C]])
-						continue;
-					for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
-						new_min[i] = MIN(new_min[i], clear[i]);
-						new_max[i] = MAX(new_max[i], clear[i]);
-					}
-#endif
-				}
-			}
-		}
-		
-		if(new_max[A] != -1) {
-/* 				info("here with %d %d %d %d x %d %d %d %d", */
-/* 				     new_min[A], */
-/* 				     new_min[B], */
-/* 				     new_min[C], */
-/* 				     new_min[D], */
-/* 				     new_max[A], */
-/* 				     new_max[B], */
-/* 				     new_max[C], */
-/* 				     new_max[D]); */
-/* 				info("here with %c%c%c%cx%c%c%c%c", */
-/* 				     alpha_num[new_min[A]], */
-/* 				     alpha_num[new_min[B]], */
-/* 				     alpha_num[new_min[C]], */
-/* 				     alpha_num[new_min[D]], */
-/* 				     alpha_num[new_max[A]], */
-/* 				     alpha_num[new_max[B]], */
-/* 				     alpha_num[new_max[C]], */
-/* 				     alpha_num[new_max[D]]); */
-			memcpy(axis_min, new_min, axis_size);
-			memcpy(axis_max, new_max, axis_size);
-/* 				memset(last, 0, axis_size); */
-		}
 
 		if(last[A] <= axis_max[A]) {
 			memcpy(last, end, axis_size);
@@ -2848,18 +2850,17 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 		} else
 			memcpy(last, axis_min, axis_size);
 
-	} else if(last[A] <= axis_max[A]) {
-		i=SYSTEM_DIMENSIONS-1;
-		while(i >= 0) {
-			if(last[i] < 0) {
-				last[i] = axis_max[i];
-				if(i)
-					last[i-1]--;
-			}
-			i--;
-		}
-		if(last[0] < 0)
-			last[0]=axis_max[0];
+	} else if(!looped) {
+		memcpy(last, axis_min, axis_size);
+/* 		info("failed... next start %d %d %d %d %c%c%c%c", */
+/* 		     last[A], */
+/* 		     last[B], */
+/* 		     last[C], */
+/* 		     last[D], */
+/* 		     alpha_num[last[A]], */
+/* 			     alpha_num[last[B]], */
+/* 			     alpha_num[last[C]], */
+/* 			     alpha_num[last[D]]); */
 /* 		info("failed... next start %d %d %d %c%c%c",  */
 /* 		     last[A], */
 /* 		     last[B], */
@@ -2867,6 +2868,8 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 /* 		     alpha_num[last[A]],  */
 /* 		     alpha_num[last[B]], */
 /* 		     alpha_num[last[C]]); */
+		looped = 1;
+		goto again;
 	}
 
 	return rc;
