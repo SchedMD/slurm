@@ -2602,7 +2602,6 @@ static int _tell_if_used(int dim, int curr,
 {
 	int rc = 1;
 	int start_curr = curr;
-	int loc=1;
 /* 	int i; */
 /* 	char coord[SYSTEM_DIMENSIONS+1]; */
 /* 	memset(coord, 0, sizeof(coord)); */
@@ -2665,10 +2664,11 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 {
 	static int last[SYSTEM_DIMENSIONS];
 	int pos[SYSTEM_DIMENSIONS];
+/* 	int i; */
 /* 	char coord[SYSTEM_DIMENSIONS+1]; */
 /* 	char coord2[SYSTEM_DIMENSIONS+1]; */
 	int found = -1;
-	int i, rc = 0;
+	int rc = 0;
 	int new_min[SYSTEM_DIMENSIONS];
 	int new_max[SYSTEM_DIMENSIONS];
 	int looped = 0;
@@ -2780,14 +2780,14 @@ again:
 static int
 _get_boxes(char *buf, int max_len)
 {
-/* 	int a, b, c, len = 0, i=0; */
-/* #if (SYSTEM_DIMENSIONS == 4) */
-/* 	int d; */
-/* #endif */
-/* 	bool is_box, found = 0; */
 	int len, i;
 	int curr_min[SYSTEM_DIMENSIONS], curr_max[SYSTEM_DIMENSIONS];
+/* 	char coord[SYSTEM_DIMENSIONS+1]; */
+/* 	char coord2[SYSTEM_DIMENSIONS+1]; */
+/* 	memset(coord, 0, sizeof(coord)); */
+/* 	memset(coord2, 0, sizeof(coord2)); */
 
+	/* this means we are at the beginning */
 	curr_min[A] = -1;
 
 /* 	for(i=0; i<HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE*HOSTLIST_BASE; i++) { */
@@ -2796,21 +2796,12 @@ _get_boxes(char *buf, int max_len)
 /* 	} */
 
 	while(_get_next_box(curr_min, curr_max)) {
-/* 		info("1 %c%c%c%cx%c%c%c%c is a box", */
-/* 		     alpha_num[curr_min[A]], */
-/* 		     alpha_num[curr_min[B]], */
-/* 		     alpha_num[curr_min[C]], */
-/* 		     alpha_num[curr_min[D]], */
-/* 		     alpha_num[curr_max[A]], */
-/* 		     alpha_num[curr_max[B]], */
-/* 		     alpha_num[curr_max[C]], */
-/* 		     alpha_num[curr_max[D]]); */
+/* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
+/* 			coord[i] = alpha_num[curr_min[i]]; */
+/* 			coord2[i] = alpha_num[curr_max[i]]; */
+/* 		} */
+/* 		info("%sx%s is a box", coord, coord2); */
 		if(!memcmp(curr_min, curr_max, axis_size)) {
-/* 			info("here 1 with %c%c%c",  */
-/* 			     alpha_num[curr_min[A]],  */
-/* 			     alpha_num[curr_min[B]], */
-/* 			     alpha_num[curr_min[C]]); */
-			
 			for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 				if(len >= max_len)
 					goto end_it;
@@ -2820,13 +2811,6 @@ _get_boxes(char *buf, int max_len)
 				goto end_it;
 			buf[len++] = ',';
 		} else {
-/* 			info("here 2 with %c%c%cx%c%c%c",  */
-/* 			     alpha_num[curr_min[A]],  */
-/* 			     alpha_num[curr_min[B]], */
-/* 			     alpha_num[curr_min[C]], */
-/* 			     alpha_num[curr_max[A]],  */
-/* 			     alpha_num[curr_max[B]], */
-/* 			     alpha_num[curr_max[C]]); */
 			for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 				if(len >= max_len)
 					goto end_it;
@@ -2890,7 +2874,7 @@ static void _set_min_max_of_grid(int dim, int curr,
 				 int pos[SYSTEM_DIMENSIONS],
 				 bool *grid)
 {
-	int i, j;
+	int i;
 	int start_curr = curr;
 
 	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
@@ -2898,9 +2882,9 @@ static void _set_min_max_of_grid(int dim, int curr,
 		if(dim == (SYSTEM_DIMENSIONS-1)) {
 			if(!grid[curr])
 				continue;
-			for(j = 0; j<SYSTEM_DIMENSIONS; j++) {
-				min[j] = MIN(min[j], pos[j]);
-				max[j] = MAX(max[j], pos[j]);
+			for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
+				min[i] = MIN(min[i], pos[i]);
+				max[i] = MAX(max[i], pos[i]);
 			}
 		} else 
 			_set_min_max_of_grid(dim+1, curr, start, end,
@@ -2912,32 +2896,23 @@ static void
 _set_grid(unsigned long start, unsigned long end)
 {
 	int sent_start[SYSTEM_DIMENSIONS], sent_end[SYSTEM_DIMENSIONS];
-	int a, b, c;
+	int i;
+/* 	char coord[SYSTEM_DIMENSIONS+1]; */
+/* 	char coord2[SYSTEM_DIMENSIONS+1]; */
+/* 	memset(coord, 0, sizeof(coord)); */
+/* 	memset(coord2, 0, sizeof(coord2)); */
 
 	_parse_int_to_array(start, sent_start);
 	_parse_int_to_array(end, sent_end);
 
-	for(a = 0; a<SYSTEM_DIMENSIONS; a++) {
-		axis_min[a] = MIN(axis_min[a], sent_start[a]);
-		axis_max[a] = MAX(axis_max[a], sent_end[a]);
+	for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
+		axis_min[i] = MIN(axis_min[i], sent_start[i]);
+		axis_max[i] = MAX(axis_max[i], sent_end[i]);
+/* 		coord[i] = alpha_num[sent_start[i]]; */
+/* 		coord2[i] = alpha_num[sent_end[i]]; */
 	}
-/* 	info("going to set %c%c%c%cx%c%c%c%c axis is now %c%c%c%cx%c%c%c%c", */
-/* 	     alpha_num[sent_start[A]], */
-/* 	     alpha_num[sent_start[B]], */
-/* 	     alpha_num[sent_start[C]], */
-/* 	     alpha_num[sent_start[D]], */
-/* 	     alpha_num[sent_end[A]], */
-/* 	     alpha_num[sent_end[B]], */
-/* 	     alpha_num[sent_end[C]], */
-/* 	     alpha_num[sent_end[D]], */
-/* 	     alpha_num[axis_min[A]], */
-/* 	     alpha_num[axis_min[B]], */
-/* 	     alpha_num[axis_min[C]], */
-/* 	     alpha_num[axis_min[D]], */
-/* 	     alpha_num[axis_max[A]], */
-/* 	     alpha_num[axis_max[B]], */
-/* 	     alpha_num[axis_max[C]], */
-/* 	     alpha_num[axis_max[D]]); */
+/* 	info("going to set %sx%s", coord, coord2); */
+
 	_set_box_in_grid(A, 0, sent_start, sent_end, ((bool *)axis), true);
 }  
 
