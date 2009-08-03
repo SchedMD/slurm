@@ -1,0 +1,36 @@
+LLNL-SPECIFIC RELEASE NOTES FOR SLURM VERSION 2.0
+19 February 2009
+
+For processor-scheduled clusters (*not* allocating whole nodes to jobs):
+Set "DefMemPerCPU" and "MaxMemPerCPU" as appropriate to restrict memory 
+available to a job. Also set "JobAcctGatherType=jobacct_gather/linux"
+for enforcement (periodic sampling of memory use by the job).  You can change 
+said sampling rate from the default (every 30 seconds) by setting the 
+"JobAcctGatherFrequency" option to a different number of seconds in 
+the slurm.conf.
+
+For InfiniBand switch systems, set TopologyType=topology/tree in slurm.conf
+and add switch topology information to a new file called topology.conf. 
+Options used are SwitchName, Switches, and Nodes. The SwitchName is any 
+convenient name for bookkeeping purposes only. For example:
+# Switch Topology Information
+SwitchName=s0 Nodes=tux[0-11]
+SwitchName=s1 Nodes=tux[12-23]
+SwitchName=s2 Nodes=tux[24-35]
+SwitchName=s3 Switches=s[0-2]
+
+Remove the "preserve-env.so" SPANK plugin. The functionality is now
+directly in SLURM.
+
+SLURM version 2.0 must use a database daemon (slurmdbd) at version 2.0
+or higher. While we are testing version 2.0, set "AccountingStoragePort=????".
+Once we upgrade the production slurmdbd to version 2.0, this change will
+not be required.  You can likewise test 1.3.7+ clusters with the same port 
+since 2.0 slurmdbd will talk to 1.3.7+ SLURM.
+
+SLURM state files in version 2.0 are different from those of version 1.3.
+After installing SLURM version 2.0, plan to restart without preserving 
+jobs or other state information. While SLURM version 1.3 is still running, 
+cancel all pending and running jobs (e.g.
+"scancel --state=pending; scancel --state=running"). Then stop and restart 
+daemons with the "-c" option or use "/etc/init.d/slurm startclean".
