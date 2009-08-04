@@ -1115,7 +1115,6 @@ extern void sview_reset_grid()
 extern void setup_popup_grid_list(popup_info_t *popup_win)
 {
 	int def_color = MAKE_BLACK;
-	GtkTreeIter iter;
 
 	if(!popup_win->model) 
 		def_color = MAKE_WHITE;
@@ -1134,19 +1133,19 @@ extern void setup_popup_grid_list(popup_info_t *popup_win)
 
 	/* refresh the pointer */
 	if(popup_win->model 
-	   && gtk_tree_model_get_iter_first(popup_win->model, &iter)) {
+	   && gtk_tree_store_iter_is_valid(GTK_TREE_STORE(popup_win->model),
+					   &popup_win->iter)) {
 		gtk_tree_model_get(popup_win->model, &popup_win->iter,
 				   popup_win->node_inx_id,
 				   &popup_win->node_inx, -1);
 	} else {
-		popup_win->model = NULL;
 		popup_win->node_inx = NULL;
 	}
 
 	if(popup_win->node_inx) {
 		int j=0;
 	       
-		while(popup_win->node_inx[j] >= 0) {
+		while(popup_win->node_inx[j] >= 0) {			
 			set_grid_used(popup_win->grid_button_list,
 				      popup_win->node_inx[j],
 				      popup_win->node_inx[j+1], true);
