@@ -163,6 +163,12 @@ This reports the value of the \fBsrun \-\-minthreads\fR option.
 Time limit of the job in days\-hours:minutes:seconds. 
 The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
 .TP
+\fB%L\fR
+Time left for the job to execute in days\-hours:minutes:seconds. 
+This value is calculated by subtracting the job's time used from its time 
+limit.
+The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
+.TP
 \fB%m\fR
 Minimum size of memory (in MB) requested by the job
 .TP
