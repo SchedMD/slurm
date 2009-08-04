@@ -1487,9 +1487,11 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 
 	bit_set(sls->node_io_error, node_id);
 
-	/* If this is true, a node has already encountered an I/O error
-	   with the stepd, and the job should abort */
-	if (bit_test(sls->node_questionable, node_id)) {
+	/* If this is true, either a node has already encountered an I/O error
+	   with the stepd, and the job should abort, or nodes are getting
+	   pinged to see if they are still alive, and a lost I/O connection
+	   triggers an abort. */
+	if (bit_test(sls->node_questionable, node_id) || sls->io_timeout > 0) {
 		sls->abort = true;
 		pthread_cond_broadcast(&sls->cond);
 	}
@@ -1507,6 +1509,7 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
  * job step setup, clear this flag if/when the node makes its initial 
  * connection.
  */
+
 int 
 step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id)
 {
@@ -1545,7 +1548,7 @@ _start_io_timeout_thread(step_launch_state_t *sls)
 static void *
 _check_io_timeout(void *_sls)
 {
-	int ii;
+	int ii, jj;
 	time_t now;
 	int max_idle_time = 0;
 	client_io_t *cio;
@@ -1561,12 +1564,38 @@ _check_io_timeout(void *_sls)
 			break;
 
 		now = time(NULL);
+
 		max_idle_time = 0;
 		for (ii = 0; ii < sls->layout->node_cnt; ii++) {
 			int idle_time = (int)(now - sls->io_timestamp[ii]);
 
-			if (sls->io_timestamp[ii] == (time_t)NO_VAL)
+			/*
+			 * Don't test a node until it makes its initial 
+			 * connection.
+			 */
+			if (sls->io_timestamp[ii] == (time_t)NO_VAL) {
 				continue;
+			}
+			/*
+			 * Don't test a node if none of its tasks are 
+			 * currently running.
+			 */
+			if (sls->layout->tasks && sls->layout->tids && 
+			    sls->layout->tids[ii]) {
+				int num_running_tasks_on_node = 0;
+				for (jj=0; jj < sls->layout->tasks[ii]; jj++) {
+					int taskid = sls->layout->tids[ii][jj];
+					if ( bit_test(sls->tasks_started, 
+						      taskid) &&
+					    !bit_test(sls->tasks_exited,  
+						      taskid) ) {
+						num_running_tasks_on_node++;
+					}
+				}
+				if (num_running_tasks_on_node == 0) {
+					continue;
+				}
+			}
 
 			if (idle_time >= sls->io_timeout && 
 			    !sls->testing_conn[ii]) {
