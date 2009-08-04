@@ -136,6 +136,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Don't remove larger block used for small block until job starts.
  -- Add new squeue output format and sort option of "%L" to print a job's time 
     left (time limit minus time used).
+ -- BLUEGENE - Fixed draining state count for sinfo/sview.
 
 * Changes in SLURM 2.0.4
 ========================
