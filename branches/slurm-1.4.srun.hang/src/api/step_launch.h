@@ -71,7 +71,7 @@ struct step_launch_state {
 				   been queued but I/O has not yet occurred. */
 	int	 io_timeout;    /* num seconds between I/O tests */
 	bool	 halt_io_test;  /* set to true when I/O test thread should
-				    shut down. */
+				   shut down. */
 	bool abort;
 	bool abort_action_taken;
 
