@@ -323,6 +323,12 @@ void hostlist_uniq(hostlist_t hl);
  * writing at most n chars. Returns the number of bytes written,
  * or -1 if truncation occurred.
  *
+ * On multi-dimension systems like bluegene this function can only
+ * return a unique list back.  For instance if your hostlist contains
+ * bgl[000,000] bgl000 will be returned.  On other systems this is not
+ * the case, and duplicate entries will be returned in the order of
+ * the list.
+ *
  * The result will be NULL terminated.
  * 
  * hostlist_ranged_string() will write a bracketed hostlist representation
