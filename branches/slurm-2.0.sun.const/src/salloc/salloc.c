@@ -429,7 +429,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (opt.hold)
 		desc->priority     = 0;
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 	if (opt.geometry[0] > 0) {
 		int i;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)

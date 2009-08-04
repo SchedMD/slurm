@@ -12,15 +12,16 @@ operation described in this document.</p>
 
 <p>SLURM's primary mode of operation is designed for use on clusters with
 nodes configured in a one-dimensional space. 
-Minor changes were required for the <i>smap</i> and <i>sview</i> tools 
-to map nodes in a three-dimensional space. 
-Some changes are also desirable to optimize job placement in three-dimensional 
-space.</p>
+A topology plugin was developed to optimize resource allocations in 
+three dimensions.
+Changes were also made for hostlist parsing to support hostnames 
+of an appropriate format.</p>
 
 <h2>Configuration</h2>
 
 <p>Two variables must be defined in the <i>config.h</i> file: 
-<i>HAVE_SUN_CONST</i> and <i>HAVE_3D</i>.
+<i>HAVE_SUN_CONST</i> and <i>SYSTEM_DIMENSIONS=4</i> 
+(more on that value later).
 This can be accomplished in several different ways depending upon how 
 SLURM is being built.
 <ol>
@@ -31,15 +32,30 @@ SLURM is being built.
 <li>Add <i>%with_sun_const 1</i> to your <i>~/.rpmmacros</i> file.</li>
 </ol></p>
 
-<p>Node names must have a three-digit suffix describing their 
-zero-origin position in the X-, Y- and Z-dimension respectively (e.g. 
-"tux000" for X=0, Y=0, Z=0; "tux123" for X=1, Y=2, Z=3). 
-Rectangular prisms of nodes can be specified in SLURM commands and
-configuration files using the system name prefix with the end-points 
-enclosed in square brackets and separated by an "x". 
-For example "tux[620x731]" is used to represent the eight nodes in a 
-block with endpoints at "tux620" and "tux731" (tux620, tux621, tux630, 
-tux631, tux720, tux721, tux730, tux731).
+<p>Node names must have a four-digit suffix describing identifying their 
+location (this is why SYSTEM_DIMENSIONS is configured to be 4).
+The first three digits specify the node's zero-origin position in the 
+X-, Y- and Z-dimension respectively.
+This is followed by one digit specifying the node's sequence number
+at that coordinate (e.g. "tux0123" for X=0, Y=1, Z=2, sequence_number=3; 
+"tux1234" for X=1, Y=2, Z=3, sequence_number=4). 
+The coordinate location should be zero-origin (starting at X=0, Y=0, Z=0).
+The sequence number should also start at zero and can include letters
+for higher values, for up to 36 nodes at a specific coordinate 
+(e.g. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, ... Z).
+Numerically sequential node names may specified by in SLURM 
+commands and configuration files using the system name prefix with the 
+end-points enclosed in square brackets and separated by an "-". 
+For example "tux[0000-000B]" is used to represent the twelve nodes 
+with sequence numbers from 0 to B, all at coordinate X=0, Y=0 and Z=0.
+Alternately, rectangular prisms of node names can be specified using the 
+system name prefix with the end-points enclosed in square brackets and 
+separated by an "x". 
+For example "tux[0000x0111]" is used to represent the eight nodes in a 
+block with endpoints at "tux0000" and "tux0111" (tux0000, tux0001, tux0010, 
+tux0011, tux0100, tux0101, tux0110 and tux0111).
+Viewed another way, these eight nodes have sequence numbers 0 or 1 
+and have four distinct coordinates (000, 001, 010 and 011).
 While node names of this form are required for SLURM's internal use,
 it need not be the name returned by the <i>hostlist -s</i> command. 
 See <i>man slurm.conf</i> for details on how to use the <i>NodeName</i>,
@@ -58,62 +74,78 @@ one-dimensional space to allocate whole nodes to jobs.</li>
 </ol>
 
 <p>In order for <i>select/cons_res</i> or <i>select/linear</i> to 
-allocate resources physically nearby in three-dimensional space, the 
+allocate resources physically nearby in four-dimensional space, the 
 nodes be specified in SLURM's <i>slurm.conf</i> configuration file in 
 such a fashion that those nearby in <i>slurm.conf</i> (managed
 internal to SLURM as a one-dimensional space) are also nearby in 
-the physical three-dimensional space. 
-If the definition of the nodes in SLURM's <i>slurm.conf</i> configuration 
-file are listed on one line (e.g. <i>NodeName=tux[000x333]</i>),
-SLURM will automatically perform that conversion using a 
+the physical four-dimensional space.</p>
+
+<p>SLURM can automatically perform that conversion using a 
 <a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>.
-Otherwise you may construct your own node ordering sequence and 
-list them one node per line in <i>slurm.conf</i>.
+Set <i>TopologyPlugin=topology/3d_torus</i> in SLURM's <i>slurm.conf</i> 
+configuration file for nodes to be reordered appropriately. 
+First a three-dimensional Hilbert curve is constructed through all
+coordinates in the system such that every coordinate in the order list
+physically adjacent. 
+The node list are then re-ordered following that Hilbert curve while
+maintaining the node's sequence number (i.e. not building a Hilbert 
+curve through that fourth dimension).
+If the number of nodes at each coordinate varies, it may be necessary to 
+put a separate node definition line in the <i>slurm.conf</i> file.
+If that is the case, put them in numeric order for the <i>topology/3d_torus</i>
+plugin to function properly.<p>
+
+<p>Alternately configure <i>TopologyPlugin=topology/none</i> and 
+construct your own node ordering sequence as desired in <i>slurm.conf</i>.
 Note that each node must be listed exactly once and consecutive
 nodes should be nearby in three-dimensional space. 
-Also note that each node must be defined individually rather than using 
-a hostlist expression in order to preserve the ordering (there is no 
-problem using a hostlist expression in the partition specification after
-the nodes have already been defined).
 The open source code used by SLURM to generate the Hilbert curve is 
 included in the distribution at <i>contribs/skilling.c</i> in the event
 that you wish to experiment with it to generate your own node ordering.
 Two examples of SLURM configuration files are shown below:</p>
 
 <pre>
-# slurm.conf for Sun Constellation system of size 4x4x4
+# slurm.conf for Sun Constellation system of size 4x4x4 
+# with eight nodes at each coordinate (512 nodes total)
 
 # Configuration parameters removed here
 
 # Automatic orders nodes following a Hilbert curve
 NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
-NodeName=tux[000x333]
-PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
+NodeName=tux[0000x3337]
+PartitionName=debug Nodes=tux[0000x3337] Default=Yes State=UP
 </pre>
 
 <pre>
-# slurm.conf for Sun Constellation system of size 2x2x2
+# slurm.conf for Sun Constellation system of size 1x2x2
+# with a different count of nodes at each coordinate
 
 # Configuration parameters removed here
 
 # Manual ordering of nodes following a space-filling curve
 NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
-NodeName=tux000
-NodeName=tux100
-NodeName=tux110
-NodeName=tux010
-NodeName=tux011
-NodeName=tux111
-NodeName=tux101
-NodeName=tux001
-PartitionName=debug Nodes=tux[000x111] Default=Yes State=UP
+NodeName=tux[0000-0007]  #  8 nodes at 0,0,0
+NodeName=tux[0010-001B]  # 12 nodes at 0,0,1
+NodeName=tux[0100-0107]  #  8 nodes at 0,1,0
+NodeName=tux[0110-0115]  #  6 nodes at 0,1,1
+PartitionName=DEFAULT Default=Yes State=UP
+PartitionName=debug Nodes=tux[0000-0007,0010-001B,0100-0107,0110-0115]
 </pre>
 
-<p>In both of the examples above, the node names output by the
-<i>scontrol show nodes</i> will be ordered as defined (sequentially 
-along the Hilbert curve or per the ordering in the <i>slurm.conf</i> file)
-rather than in numeric order (e.g. "tux001" follows "tux101" rather 
-than "tux000"). 
+<h2>Tools</h2>
+
+<p>The node names output by the <i>scontrol show nodes</i> command 
+will be ordered as defined (sequentially along the Hilbert curve)
+rather than in numeric order (e.g. "tux0010" may follow "tux1010" rather 
+than "tux0000"). 
+The output of the <i>smap</i> and <i>sview</i> commands will also display 
+nodes ordered by the Hilbert curve so that nodes appearing adjacent in the 
+display will be physically adjacent. 
+This permits the locality of a job, partition or reservation to be easily 
+determined.
+In order to locate specific nodes with the <i>sview</i> command, select 
+<i>Actions</i>, <i>Search</i> and <i>Node(s) Name</i> then enter the desired 
+node names.
 The output of other SLURM commands (e.g. <i>sinfo</i> and <i>squeue</i>) 
 will use a SLURM hostlist expression with the node names numerically ordered).
 SLURM partitions should contain nodes which are defined sequentially
@@ -121,6 +153,6 @@ by that ordering for optimal performance.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 January 2009</p></td>
+<p style="text-align:center;">Last modified 31 July 2009</p></td>
 
 <!--#include virtual="footer.txt"-->

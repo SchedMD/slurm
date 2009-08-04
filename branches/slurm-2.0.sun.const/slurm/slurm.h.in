@@ -69,6 +69,16 @@
 /* Define to 1 if you have Blue Gene system support. */
 #undef HAVE_BG
 
+/* Define to 1 if emulating or running on Blue Gene/L system */
+#undef HAVE_BGL
+
+/* Define to 1 if emulating or running on Blue Gene/P system */
+#undef HAVE_BGP
+
+/* 4-dimensional architecture counting the nodes under a switch as additional
+   dimension */
+#undef SYSTEM_DIMENSIONS
+
 /* Define to 1 if you have the `elan3' library (-lelan3). */
 #undef HAVE_ELAN
 
@@ -247,12 +257,6 @@ enum job_acct_types {
 	JOB_SUSPEND,
 	JOB_TERMINATED
 };
-
-#ifdef HAVE_BG
-#  define SYSTEM_DIMENSIONS 3	/* for job geometry */
-#else
-#  define SYSTEM_DIMENSIONS 0	/* for job geometry */
-#endif
 
 enum connection_type {
 	SELECT_MESH, 		/* nodes wired in mesh */
@@ -603,7 +607,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
  * they are needed for LCRM and others that can't talk to the opaque data type
  * select_jobinfo.
  */
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
 				 * dimensions, e.g. X, Y, and Z */
 #endif

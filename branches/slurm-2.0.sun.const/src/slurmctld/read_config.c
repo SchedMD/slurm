@@ -560,14 +560,12 @@ static int _build_all_nodeline_info(void)
 	if (node_rec == NULL)
 		fatal("No node %s configured", node_000);
 	xfree(node_000);
-#ifndef HAVE_BG
-	if (count == 1)
-		slurm_topo_build_config();
-#endif	/* ! HAVE_BG */
 }
-#else
-	slurm_topo_build_config();
 #endif	/* HAVE_3D */
+
+#ifndef HAVE_BG
+	slurm_topo_build_config();
+#endif	/* ! HAVE_BG */
 
 	return SLURM_SUCCESS;
 }

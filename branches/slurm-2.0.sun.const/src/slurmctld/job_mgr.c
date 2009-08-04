@@ -2241,7 +2241,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	List license_list = NULL;
 	bool valid;
 
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	uint16_t reboot;
 	uint16_t rotate;
@@ -2453,7 +2453,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = 1;
 
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 	select_g_get_jobinfo(job_desc->select_jobinfo,
 			     SELECT_DATA_GEOMETRY, &geo);
 	if (geo[0] == (uint16_t) NO_VAL) {

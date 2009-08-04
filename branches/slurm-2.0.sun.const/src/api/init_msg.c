@@ -79,7 +79,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->err		= NULL;
 	job_desc_msg->exc_nodes		= NULL;
 	job_desc_msg->features		= NULL;
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
