@@ -961,6 +961,7 @@ static char *hostrange_pop(hostrange_t hr)
 					host[len++] = alpha_num[coord[i2]];
 			}
 			hr->hi--;
+			host[len] = '\0';
 		} else {
 			snprintf(host, size, "%s%0*lu", hr->prefix, 
 				 hr->width, hr->hi--);
@@ -1004,6 +1005,7 @@ static char *hostrange_shift(hostrange_t hr)
 					host[len++] = alpha_num[coord[i2]];
 			}
 			hr->lo++;
+			host[len] = '\0';
 		} else {
 			snprintf(host, size, "%s%0*lu", hr->prefix,
 				 hr->width, hr->lo++);
@@ -1225,6 +1227,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 			if(len <= n)
 				buf[len++] = alpha_num[coord[i2]];
 		}
+		buf[len] = '0';			
 	} else {
 		len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
 	}
@@ -1246,6 +1249,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 				if(len <= n)
 					buf[len++] = alpha_num[coord[i2]];
 			}
+			buf[len] = '0';			
 		} else {
 			len2 = snprintf(buf+len, n-len, "-%0*lu", 
 					hr->width, hr->hi);
@@ -1353,9 +1357,9 @@ static int hostlist_push_range(hostlist_t hl, hostrange_t hr)
 		goto error;
 
 	if (hl->nranges > 0
-	&& hostrange_prefix_cmp(tail, hr) == 0
-	&& tail->hi == hr->lo - 1
-	&& hostrange_width_combine(tail, hr)) {
+	    && hostrange_prefix_cmp(tail, hr) == 0
+	    && tail->hi == hr->lo - 1
+	    && hostrange_width_combine(tail, hr)) {
 		tail->hi = hr->hi;
 	} else {
 		hostrange_t new = hostrange_copy(hr);
@@ -1750,7 +1754,7 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 		}
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
-
+/* 		info("looking at %s", str); */
 		if ((SYSTEM_DIMENSIONS > 1) &&
 		    (str[SYSTEM_DIMENSIONS] == 'x') && 
 		    (strlen(str) == (SYSTEM_DIMENSIONS * 2 + 1))) {
@@ -2207,7 +2211,7 @@ _hostrange_string(hostrange_t hr, int depth)
 				if(len <= (MAXHOSTNAMELEN + 15))
 					buf[len++] = alpha_num[coord[i2]];
 			}
-			buf[len++] = '\0';
+			buf[len] = '\0';
 		} else {
 			snprintf(buf+len, MAXHOSTNAMELEN+15 - len, "%0*lu", 
 				 hr->width, hr->lo + depth);
@@ -3027,7 +3031,7 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	memset(grid_end, -1, dim_grid_size);
 
 	for (i=0;i<hl->nranges;i++) {
-/* 		info("got %d %d-%d", hl->hr[i]->width, */
+/* 		info("got %s %d %d-%d", hl->hr[i]->prefix, hl->hr[i]->width, */
 /* 		     hl->hr[i]->lo, hl->hr[i]->hi); */
 		if (hl->hr[i]->width != SYSTEM_DIMENSIONS) {
 			/* We use this logic to build task list ranges, so
@@ -3240,6 +3244,7 @@ char *hostlist_next(hostlist_iterator_t i)
 				if(len <= (MAXHOSTNAMELEN + 15))
 					buf[len++] = alpha_num[coord[i2]];
 			}
+			buf[len] = '0';			
 		} else {
 			snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%0*lu",
 				 i->hr->width, i->hr->lo + i->depth);
