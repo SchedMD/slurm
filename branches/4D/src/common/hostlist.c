@@ -632,7 +632,7 @@ static hostname_t hostname_create(const char *hostname)
 	hostname_t hn = NULL;
 	char *p = '\0';
 	int idx = 0;
-
+	int hostlist_base = HOSTLIST_BASE;
 	assert(hostname != NULL);
 
 	if (!(hn = (hostname_t) malloc(sizeof(*hn))))
@@ -657,8 +657,11 @@ static hostname_t hostname_create(const char *hostname)
 	}
 
 	hn->suffix = hn->hostname + idx + 1;
-
-	hn->num = strtoul(hn->suffix, &p, HOSTLIST_BASE);
+#if (SYSTEM_DIMENSIONS > 1) 
+	if(strlen(hn->suffix) != SYSTEM_DIMENSIONS)
+		hostlist_base = 10;
+#endif
+	hn->num = strtoul(hn->suffix, &p, hostlist_base);
 
 	if (*p == '\0') {
 		if (!(hn->prefix = malloc((idx + 2) * sizeof(char)))) {
@@ -1469,6 +1472,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 	char prefix[256] = "";
 	int pos = 0;
 	int error = 0;
+	int hostlist_base = HOSTLIST_BASE;
 	char range_op = r_op[0];/* XXX support > 1 char range ops in future? */
 
 	hostlist_t new = hostlist_new();
@@ -1532,8 +1536,14 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 		} else
 			tok += pos;
 
+#if (SYSTEM_DIMENSIONS > 1) 
+		if(strlen(tok) != SYSTEM_DIMENSIONS)
+			hostlist_base = 10;
+		else
+			hostlist_base = HOSTLIST_BASE;
+#endif
 		/* get lower bound */
-		low = strtoul(tok, (char **) &tok, HOSTLIST_BASE);
+		low = strtoul(tok, (char **) &tok, hostlist_base);
 
 		if (*tok == range_op) {    /* now get range upper bound */
 			/* push pointer past range op */
@@ -1562,7 +1572,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 			if (pos > 0) {    /* we have digits to process */
 				high = strtoul(tok, (char **) &tok,
-					       HOSTLIST_BASE);
+					       hostlist_base);
 			} else {    /* bad boy, no digits */
 				error = 1;
 			}
@@ -1967,7 +1977,6 @@ int hostlist_push_host(hostlist_t hl, const char *str)
 	else 
 		hr = hostrange_create_single(str);
 	
-
 	hostlist_push_range(hl, hr);
 
 	hostrange_destroy(hr);
