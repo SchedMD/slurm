@@ -450,6 +450,24 @@ int _print_job_job_state_compact(job_info_t * job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_time_left(job_info_t * job, int width, bool right, 
+			  char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("TIME_LEFT", width, right, true);
+	else if (job->time_limit == INFINITE)
+		_print_str("UNLIMITED", width, right, true);
+	else if (job->time_limit == NO_VAL)
+		_print_str("NOT_SET", width, right, true);
+	else {
+		time_t time_left = job->time_limit * 60 - job_time_used(job);
+		_print_secs(time_left, width, right, false);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_time_limit(job_info_t * job, int width, bool right, 
 			  char* suffix)
 {

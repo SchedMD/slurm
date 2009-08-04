@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  print.h - squeue print job definitions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -107,6 +108,9 @@ int job_format_add_function(List list, int width, bool right_justify,
 #define job_format_add_job_state_compact(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,  \
 	                        _print_job_job_state_compact)
+#define job_format_add_time_left(list,wid,right,suffix)	\
+	job_format_add_function(list,wid,right,suffix,	\
+	                        _print_job_time_left)
 #define job_format_add_time_limit(list,wid,right,suffix)	\
 	job_format_add_function(list,wid,right,suffix,	\
 	                        _print_job_time_limit)
@@ -196,6 +200,8 @@ int _print_job_job_state(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_job_state_compact(job_info_t * job, int width,
 			bool right_justify, char* suffix);
+int _print_job_time_left(job_info_t * job, int width, bool right_justify, 
+			char* suffix);
 int _print_job_time_limit(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
 int _print_job_time_used(job_info_t * job, int width, bool right_justify, 
