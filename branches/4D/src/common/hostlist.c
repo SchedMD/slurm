@@ -1654,7 +1654,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 	return _add_box_ranges(A, 0, start, end, pos, ranges, len, count);
 #else
 	fatal("Unsupported dimensions count %d", SYSTEM_DIMENSIONS);
-	return -1;
+	return 0;
 #endif
  }
 
@@ -1722,8 +1722,13 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 	int count = 0;
 
 	while (str) {
-		if (count == len)
+		if (count == len) {
+			errno = EINVAL;
+			_error(__FILE__, __LINE__,
+			       "Too many ranges, can't process "
+			       "entire list");
 			return -1;
+		}
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
 		
@@ -2859,9 +2864,14 @@ static int _add_box_ranges(int dim,  int curr,
 		if(dim == (SYSTEM_DIMENSIONS-2)) {
 			char new_str[(SYSTEM_DIMENSIONS*2)+2];
 			memset(new_str, 0, sizeof(new_str));
-
-			if (*count == len)
-				return -1;
+			
+			if (*count == len) {
+				errno = EINVAL;
+				_error(__FILE__, __LINE__,
+				       "Too many ranges, can't process "
+				       "entire list");
+				return 0;
+			}
 			new_str[SYSTEM_DIMENSIONS] = '-';
 			for(i = 0; i<(SYSTEM_DIMENSIONS-1); i++) {
 				new_str[i] = alpha_num[pos[i]];
@@ -2874,12 +2884,12 @@ static int _add_box_ranges(int dim,  int curr,
 /* 			info("got %s", new_str); */
 			if (!_parse_single_range(new_str,
 						 &ranges[*count]))
-				return -1;
+				return 0;
 			(*count)++;
 		} else 
-			if(_add_box_ranges(dim+1, curr, start, end, pos,
-					   ranges, len, count) == -1)
-				return -1;
+			if(!_add_box_ranges(dim+1, curr, start, end, pos,
+					    ranges, len, count))
+				return 0;
 	}
 	return 1;
 }
