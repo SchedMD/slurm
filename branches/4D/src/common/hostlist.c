@@ -1624,7 +1624,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 	if ((str[SYSTEM_DIMENSIONS] != 'x') || 
 	    (str[(SYSTEM_DIMENSIONS * 2) + 1] != '\0')) 
 		return 0;
-
+	
 	for(i = 0; i<SYSTEM_DIMENSIONS; i++) {
 		if ((str[i] >= '0') && (str[i] <= '9'))
 			start[i] = str[i] - '0';
@@ -1666,41 +1666,53 @@ static int _parse_single_range(const char *str, struct _range *range)
 {
 	char *p, *q;
 	char *orig = strdup(str);
+	uint64_t temp;
+	int hostlist_base = HOSTLIST_BASE;
+
 	if (!orig) 
 		seterrno_ret(ENOMEM, 0);
+	
+	if ((p = strchr(str, 'x'))) 
+		goto error; /* do NOT allow boxes here */
 	
 	if ((p = strchr(str, '-'))) {
 		*p++ = '\0';
 		if (*p == '-')     /* do NOT allow negative numbers */
 			goto error;
-	} else if ((p = strchr(str, 'x'))) {
-		*p++ = '\0';
-		if (*p == '-')     /* do NOT allow negative numbers */
-			goto error;
-	} 
-
-	range->lo = strtoul(str, &q, HOSTLIST_BASE);
+	}
+		
+	range->width = strlen(str);
+	
+#if (SYSTEM_DIMENSIONS > 1)
+	/* If we get something here where the width is not
+	   SYSTEM_DIMENSIONS we need to treat it as a regular number
+	   since that is how it will be treated in the future.
+	*/
+	if(range->width != SYSTEM_DIMENSIONS) 
+		hostlist_base = 10;	
+#endif
+	range->lo = strtoul(str, &q, hostlist_base);
+	temp = strtoul(str, &q, hostlist_base);
 
 	if (q == str) 
 		goto error;
 	
-	range->hi = (p && *p) ? strtoul(p, &q, HOSTLIST_BASE) : range->lo;
+	range->hi = (p && *p) ? strtoul(p, &q, hostlist_base) : range->lo;
 
 	if (q == p || *q != '\0') 
 		goto error;
 	
 	if (range->lo > range->hi) 
 		goto error;
-#if (SYSTEM_DIMENSIONS < 2)	
+
 	if (range->hi - range->lo + 1 > MAX_RANGE ) {
-		_error(__FILE__, __LINE__, "Too many hosts in range `%s'\n", orig);
+		_error(__FILE__, __LINE__, "Too many hosts in range `%s'\n",
+		       orig);
 		free(orig);
 		seterrno_ret(ERANGE, 0);
 	}
-#endif
 
 	free(orig);
-	range->width = strlen(str);
 	return 1;
 	
 error:
@@ -1731,7 +1743,7 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 		}
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
-		
+
 		if ((SYSTEM_DIMENSIONS > 1) &&
 		    (str[SYSTEM_DIMENSIONS] == 'x') && 
 		    (strlen(str) == (SYSTEM_DIMENSIONS * 2 + 1))) {
@@ -2560,21 +2572,12 @@ static void _parse_int_to_array(int in, int out[SYSTEM_DIMENSIONS])
 	
 	if(!my_start_pow) {
 		/* this will never change so just calculate it once */
-		my_start_pow = 1;
-		
-		/* To avoid having to use the pow function and include
-		   the math lib everywhere just do this. */
-		for(a = 0; a<SYSTEM_DIMENSIONS; a++) 
-			my_start_pow *= HOSTLIST_BASE;
-		
-		my_pow = my_start_pow;
-		my_pow_minus = my_start_pow_minus =
-			my_start_pow / HOSTLIST_BASE;
+		my_pow = my_start_pow = offset[0] * HOSTLIST_BASE;
+		my_pow_minus = my_start_pow_minus = offset[0];
 	}
        
 	for(a = 0; a<SYSTEM_DIMENSIONS; a++) {
 		out[a] = (int)in % my_pow;
-
 		/* This only needs to be done until we get a 0 here
 		   meaning we are on the last dimension. This avoids
 		   dividing by 0. */
@@ -2993,9 +2996,10 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 
 #if (SYSTEM_DIMENSIONS > 1)	/* logic for block node description */
 	slurm_mutex_lock(&multi_dim_lock);
+
+	/* compute things that only need to be calculated once */
 	if(dim_grid_size == -1) {
-		int i;
-		
+		int i;		
 		dim_grid_size = sizeof(grid_start);
 		/* the last one is always 1 */
 		offset[SYSTEM_DIMENSIONS-1] = 1;
@@ -3022,6 +3026,11 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 				      "%d chars long",
 				      SYSTEM_DIMENSIONS, i,
 				      hl->hr[i]->prefix, hl->hr[i]->width);
+			} else {
+				debug3("This node is not in %dD format.  "
+				       "No prefix for range %d but suffix is "
+				       "%d chars long",
+				       SYSTEM_DIMENSIONS, i, hl->hr[i]->width);
 			}
 			goto notbox; 
 		}
