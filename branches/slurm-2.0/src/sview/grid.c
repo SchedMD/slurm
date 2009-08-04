@@ -939,16 +939,18 @@ get_bg:
 	/* Here we need to reset the nodes off of what the blocks say */
 	for (i=0; i<node_info_ptr->record_count; i++) {
 		node_ptr = &(node_info_ptr->node_array[i]);
-		/* in each node_ptr we overload the threads var
-		 * with the number of cnodes in the used_cpus var
-		 * will be used to tell how many cnodes are
-		 * allocated and the cores will represent the cnodes
+		/* In each node_ptr we overload the threads var
+		 * with the number of cnodes in drained state, the
+		 * sockets var with the nodes in draining state, and
+		 * the used_cpus var will be used to tell how many cnodes are
+		 * allocated.  The cores will also represent the cnodes
 		 * in an error state. So we can get an idle count by
-		 * subtracting those 2 numbers from the total possible
+		 * subtracting those 3 numbers from the total possible
 		 * cnodes (which are the idle cnodes).
 		 */
 		node_ptr->threads = node_scaling;
 		node_ptr->cores = 0;
+		node_ptr->sockets = 0;
 		node_ptr->used_cpus = 0;
 		if((node_ptr->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN) 
 			continue;
@@ -1000,9 +1002,16 @@ get_bg:
 				 */
 				if(((node_ptr->node_state & NODE_STATE_BASE) 
 				    == NODE_STATE_DOWN)
-				   || (node_ptr->node_state & NODE_STATE_DRAIN))
+				   || (node_ptr->node_state
+				       & NODE_STATE_DRAIN)) {
+					if(bg_info_record->job_running 
+					   > NO_JOB_RUNNING) {
+						node_ptr->sockets += alter;
+						node_ptr->cores -= alter;
+					}
+
 					continue;
-				
+				}				
 				if(bg_info_record->state
 				   == RM_PARTITION_ERROR) {
 					node_ptr->cores += alter;
