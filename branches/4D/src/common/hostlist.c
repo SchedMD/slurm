@@ -1248,7 +1248,6 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 				if(len <= n)
 					buf[len++] = alpha_num[coord[i2]];
 			}
-			len2 = len;
 		} else {
 			len2 = snprintf(buf+len, n-len, "-%0*lu", 
 					hr->width, hr->hi);
@@ -2547,7 +2546,6 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 		if (bracket_needed) /* Only need commas inside brackets */
 			buf[len++] = ',';
 	} while (++i < hl->nranges && hostrange_within_range(hr[i], hr[i-1]));
-
 	if (bracket_needed && len < n && len > 0) {
 
 		/* Add trailing bracket (change trailing "," from above to "]" */
@@ -2555,7 +2553,6 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 
 		/* NUL terminate for safety, but do not add terminator to len */
 		buf[len]   = '\0';
-
 	} else if (len >= n) {
 		if (n > 0)
 			buf[n-1] = '\0';
