@@ -458,7 +458,7 @@ extern int parse_format( char* format )
 				                           right_justify, 
 				                           suffix );
 			else if (field[0] == 'S')
-				step_format_add_time_start( params.format_list, 
+				step_format_add_time_start( params.format_list,
 				                            field_size, 
 				                            right_justify, 
 				                            suffix );
@@ -473,8 +473,9 @@ extern int parse_format( char* format )
 				                           right_justify, 
 				                           suffix );
 			else
-				error ("Invalid job step format specification: %c",
-				       field[0] );
+				error ( "Invalid job step format "
+					"specification: %c",
+					field[0] );
 		} else {
 			if (field[0] == 'a')
 				job_format_add_account( params.format_list,
@@ -533,7 +534,7 @@ extern int parse_format( char* format )
 				                       right_justify, 
 				                       suffix );
 			else if (field[0] == 'H')
-				job_format_add_min_sockets( params.format_list, 
+				job_format_add_min_sockets( params.format_list,
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
@@ -552,7 +553,7 @@ extern int parse_format( char* format )
 				                     field_size, 
 				                     right_justify, suffix );
 			else if (field[0] == 'J')
-				job_format_add_min_threads( params.format_list, 
+				job_format_add_min_threads( params.format_list,
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
@@ -561,6 +562,11 @@ extern int parse_format( char* format )
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
+			else if (field[0] == 'L')
+				job_format_add_time_left( params.format_list, 
+				                          field_size, 
+				                          right_justify, 
+				                          suffix );
 			else if (field[0] == 'm')
 				job_format_add_min_memory( params.format_list, 
 				                           field_size, 
@@ -601,7 +607,8 @@ extern int parse_format( char* format )
 				                        right_justify, 
 				                        suffix );
 			else if (field[0] == 'Q')
-				 job_format_add_priority_long( params.format_list,
+				 job_format_add_priority_long( 
+							params.format_list,
 							field_size,
 							right_justify,
 							suffix );
@@ -611,12 +618,13 @@ extern int parse_format( char* format )
 							right_justify,
 							suffix );
 			else if (field[0] == 'R')
-				job_format_add_reason_list(  params.format_list,
+				job_format_add_reason_list( params.format_list,
 							field_size,
 							right_justify,
 							suffix );
 			else if (field[0] == 's')
-				job_format_add_select_jobinfo( params.format_list, 
+				job_format_add_select_jobinfo( 
+							 params.format_list, 
 				                         field_size, 
 				                         right_justify, 
 				                         suffix );
@@ -647,7 +655,7 @@ extern int parse_format( char* format )
 				                          right_justify, 
 				                          suffix );
 			else if (field[0] == 'v')
-				job_format_add_reservation( params.format_list, 
+				job_format_add_reservation( params.format_list,
 				                        field_size, 
 				                        right_justify, 
 				                        suffix );

@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  sort.c - squeue sorting functions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -57,6 +58,7 @@ static int _sort_job_by_name(void *void1, void *void2);
 static int _sort_job_by_state(void *void1, void *void2);
 static int _sort_job_by_state_compact(void *void1, void *void2);
 static int _sort_job_by_time_end(void *void1, void *void2);
+static int _sort_job_by_time_left(void *void1, void *void2);
 static int _sort_job_by_time_limit(void *void1, void *void2);
 static int _sort_job_by_time_start(void *void1, void *void2);
 static int _sort_job_by_time_used(void *void1, void *void2);
@@ -133,6 +135,8 @@ void sort_job_list(List job_list)
 			list_sort(job_list, _sort_job_by_min_threads);
 		else if (params.sort[i] == 'l')
 			list_sort(job_list, _sort_job_by_time_limit);
+		else if (params.sort[i] == 'L')
+			list_sort(job_list, _sort_job_by_time_left);
 		else if (params.sort[i] == 'm')
 			list_sort(job_list, _sort_job_by_min_memory);
 		else if (params.sort[i] == 'M')
@@ -482,13 +486,45 @@ static int _sort_job_by_time_end(void *void1, void *void2)
 	return diff;
 }
 
+static int _sort_job_by_time_left(void *void1, void *void2)
+{
+	int diff;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
+	time_t time1, time2;
+
+	if ((job1->time_limit == INFINITE) || (job1->time_limit == NO_VAL))
+		time1 = INFINITE;
+	else
+		time1 = job1->time_limit - job_time_used(job1);
+	if ((job2->time_limit == INFINITE) || (job2->time_limit == NO_VAL))
+		time2 = INFINITE;
+	else
+		time2 = job2->time_limit - job_time_used(job2);
+	if (time1 > time2)
+		diff = 1;
+	else if (time1 == time2)
+		diff = 0;
+	else
+		diff = -1;
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
 static int _sort_job_by_time_limit(void *void1, void *void2)
 {
 	int diff;
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	diff = job1->time_limit - job2->time_limit;
+	if (job1->time_limit > job2->time_limit)
+		diff = 1;
+	else if (job1->time_limit == job2->time_limit)
+		diff = 0;
+	else
+		diff = -1;
 
 	if (reverse_order)
 		diff = -diff;
