@@ -137,6 +137,8 @@ documents those changes that are of interest to users and admins.
  -- Add new squeue output format and sort option of "%L" to print a job's time 
     left (time limit minus time used).
  -- BLUEGENE - Fixed draining state count for sinfo/sview.
+ -- Fix for sview to not core when viewing nodes allocated to a partition 
+    and the all jobs finish.
 
 * Changes in SLURM 2.0.4
 ========================
