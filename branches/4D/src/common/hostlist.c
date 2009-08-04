@@ -2572,8 +2572,16 @@ static void _parse_int_to_array(int in, int out[SYSTEM_DIMENSIONS])
 	
 	if(!my_start_pow) {
 		/* this will never change so just calculate it once */
-		my_pow = my_start_pow = offset[0] * HOSTLIST_BASE;
-		my_pow_minus = my_start_pow_minus = offset[0];
+		my_start_pow = 1;
+		
+		/* To avoid having to use the pow function and include
+		   the math lib everywhere just do this. */
+		for(a = 0; a<SYSTEM_DIMENSIONS; a++) 
+			my_start_pow *= HOSTLIST_BASE;
+		
+		my_pow = my_start_pow;
+		my_pow_minus = my_start_pow_minus =
+			my_start_pow / HOSTLIST_BASE;
 	}
        
 	for(a = 0; a<SYSTEM_DIMENSIONS; a++) {
