@@ -92,6 +92,7 @@ static void _update_nodes_for_bg(int node_scaling,
 enum {
 	SINFO_BG_IDLE_STATE,
 	SINFO_BG_ALLOC_STATE,
+	SINFO_BG_DRAINING_STATE,
 	SINFO_BG_ERROR_STATE	
 };
 #endif
@@ -347,16 +348,18 @@ static int _build_sinfo_data(List sinfo_list,
 
 	for (i=0; i<node_msg->record_count; i++) {
 		node_ptr = &(node_msg->node_array[i]);
-		/* in each node_ptr we overload the threads var
-		 * with the number of cnodes in the used_cpus var
-		 * will be used to tell how many cnodes are
-		 * allocated and the cores will represent the cnodes
+		/* In each node_ptr we overload the threads var
+		 * with the number of cnodes in drained state, the
+		 * sockets var with the nodes in draining state, and
+		 * the used_cpus var will be used to tell how many cnodes are
+		 * allocated.  The cores will also represent the cnodes
 		 * in an error state. So we can get an idle count by
-		 * subtracting those 2 numbers from the total possible
+		 * subtracting those 3 numbers from the total possible
 		 * cnodes (which are the idle cnodes).
 		 */
 		node_ptr->threads = node_scaling;
 		node_ptr->cores = 0;
+		node_ptr->sockets = 0;
 		node_ptr->used_cpus = 0;
 		if((node_ptr->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN) 
 			continue;
@@ -423,7 +426,7 @@ static int _build_sinfo_data(List sinfo_list,
 			} else
 				block_error = 0;
 			node_ptr->threads = node_scaling;
-			for(i=0; i<3; i++) {
+			for(i=0; i<4; i++) {
 				int norm = 0;
 				switch(i) {
 				case SINFO_BG_IDLE_STATE:
@@ -446,9 +449,11 @@ static int _build_sinfo_data(List sinfo_list,
 					 * as it's current state 
 					 */
 					node_ptr->threads -=
-						(node_ptr->cores
+						(node_ptr->cores 
+						 + node_ptr->sockets
 						 + node_ptr->used_cpus);
-					
+					if((int)node_ptr->threads < 0)
+						node_ptr->threads = 0;
 					if(node_ptr->threads == node_scaling)
 						norm = 1;
 					else {
@@ -470,10 +475,21 @@ static int _build_sinfo_data(List sinfo_list,
 					node_ptr->threads =
 						node_ptr->used_cpus;
 					break;
+				case SINFO_BG_DRAINING_STATE:
+					/* get the drained node count */
+					if(!node_ptr->sockets) 
+						continue;
+					node_ptr->node_state =
+						NODE_STATE_ALLOCATED;
+					node_ptr->node_state |= 
+						NODE_STATE_DRAIN;
+					node_ptr->threads = node_ptr->sockets;
+					break;
 				case SINFO_BG_ERROR_STATE:
 					/* get the error node count */
 					if(!node_ptr->cores) 
 						continue;
+					
 					node_ptr->node_state &=
 						NODE_STATE_FLAGS;
 					node_ptr->node_state |= 
@@ -861,18 +877,23 @@ static void _update_nodes_for_bg(int node_scaling,
 			 */
 			if(((node_ptr->node_state & NODE_STATE_BASE) 
 			    == NODE_STATE_DOWN)
-			   || (node_ptr->node_state & NODE_STATE_DRAIN))
+			   || (node_ptr->node_state & NODE_STATE_DRAIN)) {
+				if(bg_info_record->job_running 
+				   > NO_JOB_RUNNING) {
+					node_ptr->sockets += node_scaling;
+					node_ptr->cores -= node_scaling;
+				}
 				continue;
+			}
 			
-			if(bg_info_record->state
-			   == RM_PARTITION_ERROR) {
+			if(bg_info_record->state == RM_PARTITION_ERROR) {
 				node_ptr->cores += node_scaling;
 				node_ptr->node_state 
 					|= NODE_STATE_DRAIN;
 				node_ptr->node_state
 					|= NODE_STATE_FAIL;
-			} else if(bg_info_record->job_running
-				  > NO_JOB_RUNNING)  
+			} else if(bg_info_record->job_running 
+				  > NO_JOB_RUNNING)
 				node_ptr->used_cpus += node_scaling;
 			else 
 				error("Hey we didn't get anything here");

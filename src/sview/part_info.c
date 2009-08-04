@@ -1443,7 +1443,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 			} else
 				block_error = 0;
 			node_ptr->threads = node_scaling;
-			for(j=0; j<3; j++) {
+			for(j=0; j<4; j++) {
 				int norm = 0;
 				switch(j) {
 				case SVIEW_BG_IDLE_STATE:
@@ -1467,7 +1467,10 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 					 */
 					node_ptr->threads -=
 						(node_ptr->cores
+						 + node_ptr->sockets
 						 + node_ptr->used_cpus);
+					if((int)node_ptr->threads < 0)
+						node_ptr->threads = 0;
 					if(node_ptr->threads == node_scaling)
 						norm = 1;
 					else {
@@ -1488,6 +1491,16 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 					
 					node_ptr->threads =
 						node_ptr->used_cpus;
+					break;
+				case SVIEW_BG_DRAINING_STATE:
+					/* get the draining node count */
+					if(!node_ptr->sockets) 
+						continue;
+					node_ptr->node_state =
+						NODE_STATE_ALLOCATED;
+					node_ptr->node_state |= 
+						NODE_STATE_DRAIN;
+					node_ptr->threads = node_ptr->sockets;
 					break;
 				case SVIEW_BG_ERROR_STATE:
 					/* get the error node count */
