@@ -2,7 +2,7 @@
  *  print.c - squeue print job functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -445,6 +445,24 @@ int _print_job_job_state_compact(job_info_t * job, int width, bool right,
 	else
 		_print_str(job_state_string_compact(job->job_state), width,
 			   right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_time_left(job_info_t * job, int width, bool right, 
+			  char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("TIME_LEFT", width, right, true);
+	else if (job->time_limit == INFINITE)
+		_print_str("UNLIMITED", width, right, true);
+	else if (job->time_limit == NO_VAL)
+		_print_str("NOT_SET", width, right, true);
+	else {
+		time_t time_left = job->time_limit * 60 - job_time_used(job);
+		_print_secs(time_left, width, right, false);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

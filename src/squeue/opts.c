@@ -3,7 +3,8 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -18,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -124,8 +125,9 @@ parse_command_line( int argc, char* argv[] )
 	if ( ( env_val = getenv("SQUEUE_SORT") ) )
 		params.sort = xstrdup(env_val);
 
-	while((opt_char = getopt_long(argc, argv, "ahi:j::ln:o:p:s::S:t:u:U:vV",
-			long_options, &option_index)) != -1) {
+	while((opt_char = getopt_long(argc, argv, 
+				      "ahi:j::ln:o:p:s::S:t:u:U:vV",
+				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
 				fprintf(stderr, "Try \"squeue --help\" "
@@ -186,7 +188,7 @@ parse_command_line( int argc, char* argv[] )
 				if (optarg) {
 					params.steps = xstrdup(optarg);
 					params.step_list = 
-						_build_step_list( params.steps );
+						_build_step_list(params.steps);
 				}
 				params.step_flag = true;
 				break;
@@ -438,7 +440,7 @@ extern int parse_format( char* format )
 				                           right_justify, 
 				                           suffix );
 			else if (field[0] == 'S')
-				step_format_add_time_start( params.format_list, 
+				step_format_add_time_start( params.format_list,
 				                            field_size, 
 				                            right_justify, 
 				                            suffix );
@@ -453,8 +455,9 @@ extern int parse_format( char* format )
 				                           right_justify, 
 				                           suffix );
 			else
-				error ("Invalid job step format specification: %c",
-				       field[0] );
+				error ( "Invalid job step format "
+					"specification: %c",
+					field[0] );
 		} else {
 			if (field[0] == 'a')
 				job_format_add_account( params.format_list,
@@ -518,7 +521,7 @@ extern int parse_format( char* format )
 				                       right_justify, 
 				                       suffix );
 			else if (field[0] == 'H')
-				job_format_add_min_sockets( params.format_list, 
+				job_format_add_min_sockets( params.format_list,
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
@@ -537,7 +540,7 @@ extern int parse_format( char* format )
 				                     field_size, 
 				                     right_justify, suffix );
 			else if (field[0] == 'J')
-				job_format_add_min_threads( params.format_list, 
+				job_format_add_min_threads( params.format_list,
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
@@ -546,6 +549,11 @@ extern int parse_format( char* format )
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
+			else if (field[0] == 'L')
+				job_format_add_time_left( params.format_list, 
+				                          field_size, 
+				                          right_justify, 
+				                          suffix );
 			else if (field[0] == 'm')
 				job_format_add_min_memory( params.format_list, 
 				                           field_size, 
@@ -591,7 +599,8 @@ extern int parse_format( char* format )
 				                        right_justify, 
 				                        suffix );
 			else if (field[0] == 'Q')
-				 job_format_add_priority_long( params.format_list,
+				 job_format_add_priority_long( 
+							params.format_list,
 							field_size,
 							right_justify,
 							suffix );
@@ -601,12 +610,13 @@ extern int parse_format( char* format )
 							right_justify,
 							suffix );
 			else if (field[0] == 'R')
-				job_format_add_reason_list(  params.format_list,
+				job_format_add_reason_list( params.format_list,
 							field_size,
 							right_justify,
 							suffix );
 			else if (field[0] == 's')
-				job_format_add_select_jobinfo( params.format_list, 
+				job_format_add_select_jobinfo( 
+							 params.format_list, 
 				                         field_size, 
 				                         right_justify, 
 				                         suffix );
@@ -637,7 +647,7 @@ extern int parse_format( char* format )
 				                          right_justify, 
 				                          suffix );
 			else if (field[0] == 'v')
-				job_format_add_reservation( params.format_list, 
+				job_format_add_reservation( params.format_list,
 				                        field_size, 
 				                        right_justify, 
 				                        suffix );
@@ -652,7 +662,7 @@ extern int parse_format( char* format )
 				                          right_justify, 
 				                          suffix );
 			else if (field[0] == 'X')
-				job_format_add_num_sockets( params.format_list, 
+				job_format_add_num_sockets( params.format_list,
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
@@ -662,7 +672,7 @@ extern int parse_format( char* format )
 				                           right_justify, 
 				                           suffix );
 			else if (field[0] == 'Z')
-				job_format_add_num_threads( params.format_list, 
+				job_format_add_num_threads( params.format_list,
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
