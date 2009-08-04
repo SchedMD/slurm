@@ -40,9 +40,11 @@ This is followed by one digit specifying the node's sequence number
 at that coordinate (e.g. "tux0123" for X=0, Y=1, Z=2, sequence_number=3; 
 "tux1234" for X=1, Y=2, Z=3, sequence_number=4). 
 The coordinate location should be zero-origin (starting at X=0, Y=0, Z=0).
-The sequence number should also start at zero and can include letters
-for higher values, for up to 36 nodes at a specific coordinate 
+The sequence number should also start at zero and can include upper
+case letters for higher values, for up to 36 nodes at a specific coordinate 
 (e.g. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, ... Z).
+To avoid confusion, we recommend that the node name prefix consist of 
+lower case letters.
 Numerically sequential node names may specified by in SLURM 
 commands and configuration files using the system name prefix with the 
 end-points enclosed in square brackets and separated by an "-". 
@@ -153,6 +155,6 @@ by that ordering for optimal performance.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 July 2009</p></td>
+<p style="text-align:center;">Last modified 4 August 2009</p></td>
 
 <!--#include virtual="footer.txt"-->
