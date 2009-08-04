@@ -602,8 +602,6 @@ static int host_prefix_end(const char *hostname)
 
 	len = strlen(hostname);
 #if (SYSTEM_DIMENSIONS > 1)
-	if (len <= SYSTEM_DIMENSIONS)
-		return -1;
 	idx = len - 1;
 
 	while (idx >= 0) {
@@ -3029,6 +3027,8 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	memset(grid_end, -1, dim_grid_size);
 
 	for (i=0;i<hl->nranges;i++) {
+/* 		info("got %d %d-%d", hl->hr[i]->width, */
+/* 		     hl->hr[i]->lo, hl->hr[i]->hi); */
 		if (hl->hr[i]->width != SYSTEM_DIMENSIONS) {
 			/* We use this logic to build task list ranges, so
 			 * this does not necessarily contain a
