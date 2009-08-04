@@ -1014,23 +1014,20 @@ extern void setup_popup_grid_list(popup_info_t *popup_win)
 /* clear extra buttons to N/A and if model then set those as white */
 extern void post_setup_popup_grid_list(popup_info_t *popup_win)
 {
-	GtkTreeIter iter;
-
 	/* refresh the pointer */
 	if(popup_win->model 
-	   && gtk_tree_model_get_iter_first(popup_win->model, &iter)) {
+	   && gtk_tree_store_iter_is_valid(GTK_TREE_STORE(popup_win->model),
+					   &popup_win->iter)) {
 		gtk_tree_model_get(popup_win->model, &popup_win->iter,
 				   popup_win->node_inx_id,
 				   &popup_win->node_inx, -1);
 	} else {
-		popup_win->model = NULL;
 		popup_win->node_inx = NULL;
 	}
 
 	if(popup_win->node_inx) {
-		int j=0;
-	       
-		while(popup_win->node_inx[j] >= 0) {
+		int j=0;	       
+		while(popup_win->node_inx[j] >= 0) {			
 			change_grid_color(
 				popup_win->grid_button_list,
 				popup_win->node_inx[j],
