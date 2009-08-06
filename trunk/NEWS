@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
  -- If the job, node, partition, reservation or trigger state file is missing 
     or too small, automatically try using the previously saved state (file 
     name with ".old" suffix).
+ -- Set a node's power_up/configuring state flag while PrologSlurmctld is
+    running for a job allocated to that node.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
