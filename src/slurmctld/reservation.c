@@ -102,6 +102,7 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint16_t flags, 
 			 bitstr_t *node_bitmap);
 static List _list_dup(List license_list);
+static int  _open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal);
 static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
@@ -1983,6 +1984,37 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	}
 }
 
+/* Open the reservation state save file, or backup if necessary.
+ * state_file IN - the name of the state save file used
+ * RET the file description to read from or error code
+ */
+static int _open_resv_state_file(char **state_file)
+{
+	int state_fd;
+	struct stat stat_buf;
+
+	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(*state_file, "/resv_state");
+	state_fd = open(*state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("Could not open reservation state file %s: %m", 
+		      *state_file);
+	} else if (fstat(state_fd, &stat_buf) < 0) {
+		error("Could not stat reservation state file %s: %m", 
+		      *state_file);
+		(void) close(state_fd);
+	} else if (stat_buf.st_size < 10) {
+		error("Reservation state file %s too small", *state_file);
+		(void) close(state_fd);
+	} else 	/* Success */
+		return state_fd;
+
+	error("NOTE: Trying backup state save file. Reservations may be lost");
+	xstrcat(*state_file, ".old");
+	state_fd = open(*state_file, O_RDONLY);
+	return state_fd;
+}
+
 /*
  * Load the reservation state from file, recover on slurmctld restart. 
  *	Reset reservation pointers for all jobs.
@@ -2015,10 +2047,8 @@ extern int load_all_resv_state(int recover)
 		resv_list = list_create(_del_resv_rec);
 
 	/* read the file */
-	state_file = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(state_file, "/resv_state");
 	lock_state_files();
-	state_fd = open(state_file, O_RDONLY);
+	state_fd = _open_resv_state_file(&state_file);
 	if (state_fd < 0) {
 		info("No reservation state file (%s) to recover",
 		     state_file);
