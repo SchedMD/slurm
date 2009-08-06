@@ -2071,7 +2071,6 @@ static void _help(void)
 "Usage: srun [OPTIONS...] executable [args...]\n"
 "\n"
 "Parallel run options:\n"
-"  -b, --batch                 submit as batch job for later execution\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --checkpoint=time       job step checkpoint interval\n"
