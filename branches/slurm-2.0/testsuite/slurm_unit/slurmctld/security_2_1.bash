@@ -4,7 +4,7 @@
 
 # Create private config file
 # Set AuthType=auth/dummy
-file_orig=`${slurm_bin}scontrol show config | awk '{ if ( $1 ~ /SLURM_CONFIG_FILE/ ) { print $3 } }'`
+file_orig=`${slurm_bin}scontrol show config | awk '{ if ( $1 ~ /SLURM_CONF/ ) { print $3 } }'`
 grep -iv AuthType <$file_orig >tmp.$$
 echo "AuthType=auth/dummy" >>tmp.$$
 
