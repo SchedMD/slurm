@@ -2175,7 +2175,11 @@ The four options most likely to be used are:
 \fBProlog\fR and \fBEpilog\fR (executed once on each compute node
 for each job) plus \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR
 (executed once on the \fBControlMachine\fR for each job).
- 
+
+NOTE:  Standard output and error messages are normally not preserved. 
+Explicitly write output and error messages to an appropriate location 
+if you which to preserve that information.
+
 NOTE:  The Prolog script is ONLY run on any individual
 node when it first sees a job step from a new allocation; it does not
 run the Prolog immediately when an allocation is granted.  If no job steps
