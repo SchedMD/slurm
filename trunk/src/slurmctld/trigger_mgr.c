@@ -2,7 +2,7 @@
  *  trigger_mgr.c - Event trigger management
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -601,6 +601,37 @@ extern int trigger_state_save(void)
 	return error_code;
 }
 
+/* Open the trigger state save file, or backup if necessary.
+ * state_file IN - the name of the state save file used
+ * RET the file description to read from or error code
+ */
+static int _open_resv_state_file(char **state_file)
+{
+	int state_fd;
+	struct stat stat_buf;
+
+	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(*state_file, "/trigger_state");
+	state_fd = open(*state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("Could not open trigger state file %s: %m", 
+		      *state_file);
+	} else if (fstat(state_fd, &stat_buf) < 0) {
+		error("Could not stat trigger state file %s: %m", 
+		      *state_file);
+		(void) close(state_fd);
+	} else if (stat_buf.st_size < 10) {
+		error("Trigger state file %s too small", *state_file);
+		(void) close(state_fd);
+	} else 	/* Success */
+		return state_fd;
+
+	error("NOTE: Trying backup state save file. Triggers may be lost!");
+	xstrcat(*state_file, ".old");
+	state_fd = open(*state_file, O_RDONLY);
+	return state_fd;
+}
+
 extern int trigger_state_restore(void)
 {
 	int data_allocated, data_read = 0, error_code = 0;
@@ -613,10 +644,8 @@ extern int trigger_state_restore(void)
 	uint32_t ver_str_len;
 
 	/* read the file */
-	state_file = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(state_file, "/trigger_state");
 	lock_state_files();
-	state_fd = open(state_file, O_RDONLY);
+	state_fd = _open_resv_state_file(&state_file);
 	if (state_fd < 0) {
 		info("No trigger state file (%s) to recover", state_file);
 		error_code = ENOENT;

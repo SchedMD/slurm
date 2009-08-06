@@ -417,7 +417,6 @@ static int _open_job_state_file(char **state_file)
 	int state_fd;
 	struct stat stat_buf;
 
-
 	*state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(*state_file, "/job_state");
 	state_fd = open(*state_file, O_RDONLY);

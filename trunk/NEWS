@@ -35,8 +35,9 @@ documents those changes that are of interest to users and admins.
     ambiguity in the documentation over use of the terms "CPU" and "socket".
  -- Modified get_resource_arg_range() to return full min/max values when input
     string is null.  This fixes the srun -B option to function as documented.
- -- If the job state file is missing or too small, automatically try using the
-    previously saved state.
+ -- If the job, node, partition, reservation or trigger state file is missing 
+    or too small, automatically try using the previously saved state (file 
+    name with ".old" suffix).
 
 * Changes in SLURM 2.1.0-pre2
 =============================
