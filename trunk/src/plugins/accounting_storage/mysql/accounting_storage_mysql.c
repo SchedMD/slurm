@@ -9964,7 +9964,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 		if((rc = mysql_hourly_rollup(mysql_conn, start_time, end_time)) 
 		   != SLURM_SUCCESS)
 			return rc;
-		END_TIMER2("hourly_rollup");
+		END_TIMER3("hourly_rollup", 5000000);
 		/* If we have a sent_end do not update the last_run_table */
 		if(!sent_end)
 			query = xstrdup_printf("update %s set hourly_rollup=%d",

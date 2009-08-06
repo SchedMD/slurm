@@ -49,15 +49,22 @@
  * IN from - where the function was called form
  */
 inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
-		char *tv_str, int len_tv_str, char *from)
+			char *tv_str, int len_tv_str, char *from,
+			long limit)
 {
 	long delta_t;
+
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
-	if ((delta_t > 1000000) && from) {
-		verbose("Warning: Note very large processing time from %s: %s",
-			from, tv_str);
+	if(from) {
+		if(!limit)
+			limit = 1000000;
+		if(delta_t > limit) {
+			verbose("Warning: Note very large processing "
+				"time from %s: %s",
+				from, tv_str);
+		}
 	}
 }
 
