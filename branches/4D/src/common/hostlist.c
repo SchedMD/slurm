@@ -2660,7 +2660,17 @@ static int _tell_if_used(int dim, int curr,
 			if((rc = _tell_if_used(dim+1, curr, 
 					       start, end,
 					       last, found)) != 1) {
-				return rc;
+				if((*found != -1) 
+				   && (end[dim+1] < grid_end[dim+1])) {
+/* 					info("got here for %d %d %d %d", *found, dim+1, end[dim+1], grid_end[dim+1]); */
+					rc = 0;
+					grid_end[dim+1] = end[dim+1];
+/* 					for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
+/* 						coord[i] = alpha_num[grid_end[i]]; */
+/* 					} */
+/* 					info("grid end is now %s", coord); */
+				} else 
+					return rc;
 			}
 			if((*found) >= dim) {
 /* 				for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
@@ -2749,7 +2759,7 @@ again:
 	if(found != -1) {
 		rc = 1;
 		
-/* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++)  */
+/* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++) */
 /* 			coord[i] = alpha_num[end[i]]; */
 /* 		info("found=%d ending with %s", found, coord); */
 
