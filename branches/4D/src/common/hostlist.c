@@ -2660,15 +2660,15 @@ static int _tell_if_used(int dim, int curr,
 			if((rc = _tell_if_used(dim+1, curr, 
 					       start, end,
 					       last, found)) != 1) {
+				/* try to get a slice out of the nodes
+				   with this end[dim+1] as the 
+				   new grid_end[dim+1] */
 				if((*found != -1) 
 				   && (end[dim+1] < grid_end[dim+1])) {
-/* 					info("got here for %d %d %d %d", *found, dim+1, end[dim+1], grid_end[dim+1]); */
-					rc = 0;
+					/* need to reset the rc = 0 so
+					   we continue. */
+					rc = 1;
 					grid_end[dim+1] = end[dim+1];
-/* 					for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
-/* 						coord[i] = alpha_num[grid_end[i]]; */
-/* 					} */
-/* 					info("grid end is now %s", coord); */
 				} else 
 					return rc;
 			}
