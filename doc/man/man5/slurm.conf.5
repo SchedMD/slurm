@@ -972,6 +972,11 @@ The program executes as SlurmUser, which gives it permission to drain
 nodes and requeue the job if a failure occurs or cancel the job if appropriate.
 The program can be used to reboot nodes or perform other work to prepare 
 resources for use. 
+While this program is running, the nodes associated with the job will be 
+have a POWER_UP/CONFIGURING flag set in their state, which can be readily
+viewed.
+A non\-zero exit code will result in the job being requeued (where possible)
+or killed.
 See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP

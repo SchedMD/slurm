@@ -1265,7 +1265,8 @@ static void *_run_prolog(void *arg)
 	if (status != 0) {
 		error("prolog_slurmctld job %u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
-//REQUEUE JOB
+		if (job_requeue(0, job_id, -1))
+			(void) job_signal(job_id, SIGKILL, 0, 0);
 	} else
 		debug2("prolog_slurmctld job %u prolog completed", job_id);
 
