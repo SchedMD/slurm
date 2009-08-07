@@ -98,7 +98,6 @@ pam_slurm_la_OBJECTS = $(am_pam_slurm_la_OBJECTS)
 pam_slurm_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(pam_slurm_la_LDFLAGS) $(LDFLAGS) -o $@
-@HAVE_PAM_TRUE@am_pam_slurm_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -300,7 +299,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/..
 # Without "-module", we get error: `pam_slurm.la' is not a standard libtool library name
-PLUGIN_FLAGS = -nostdlib -shared -module
+PLUGIN_FLAGS = -lgcc -module -avoid-version --export-dynamic -nostdlib -shared
 @HAVE_PAM_FALSE@pam_lib = 
 @HAVE_PAM_TRUE@pam_lib = pam_slurm.la
 pkglib_LTLIBRARIES = $(pam_lib)
@@ -310,6 +309,7 @@ pkglib_LTLIBRARIES = $(pam_lib)
 @HAVE_PAM_TRUE@	$(top_builddir)/src/common/hostlist.h
 
 @HAVE_PAM_TRUE@pam_slurm_la_LDFLAGS = $(PLUGIN_FLAGS)
+@HAVE_PAM_TRUE@am_pam_slurm_la_rpath = 
 @HAVE_PAM_FALSE@EXTRA_pam_slurm_la_SOURCES = pam_slurm.c
 all: all-am
 
