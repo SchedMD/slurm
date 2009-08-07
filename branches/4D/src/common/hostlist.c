@@ -2692,7 +2692,6 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 	int rc = 0;
 	int new_min[SYSTEM_DIMENSIONS];
 	int new_max[SYSTEM_DIMENSIONS];
-	int looped = 0;
 
 /* 	memset(coord, 0, sizeof(coord)); */
 /* 	memset(coord2, 0, sizeof(coord2)); */
@@ -2743,30 +2742,22 @@ again:
 /* 		info("here with %sx%s", coord, coord2); */
 		memcpy(grid_start, new_min, dim_grid_size);
 		memcpy(grid_end, new_max, dim_grid_size);
-	}
-	
-	memcpy(last, grid_start, dim_grid_size);
-	if(found != -1) {
-		rc = 1;
-		
-/* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++) */
-/* 			coord[i] = alpha_num[end[i]]; */
-/* 		info("found=%d ending with %s", found, coord); */
+		memcpy(last, grid_start, dim_grid_size);
 
 /* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++)  */
 /* 			coord[i] = alpha_num[last[i]]; */
 /* 		info("next start %s", coord); */
-	} else if(!looped) {
-		/* go through from the min to the max 1 more time to
-		   make sure we got all the boxes that weren't
-		   included in the boxes of previous runs. */
-		
-/* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++)  */
-/* 			coord[i] = alpha_num[last[i]]; */
-/* 		info("failed... next start %s", coord); */
-		looped = 1;
-		goto again;
+		if(found == -1) {
+			/* There are still nodes set in the grid, so we need
+			   to go through them again to make sure we got all
+			   the nodes that weren't included in the boxes of
+			   previous runs. */
+			goto again;
+		}
 	}
+	
+	if(found != -1) 
+		rc = 1;
 
 	return rc;
 }
