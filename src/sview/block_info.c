@@ -482,9 +482,9 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			block_ptr->color_inx = 
 				atoi(block_ptr->bg_block_name+3);
 #endif
-		}
-		block_ptr->color_inx %= sview_colors_cnt;
-		
+			block_ptr->color_inx %= sview_colors_cnt;
+		}		
+
 		block_ptr->nodes 
 			= xstrdup(block_info_ptr->block_array[i].nodes);
 		if(block_info_ptr->block_array[i].ionodes) {
