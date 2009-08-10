@@ -474,13 +474,15 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->bg_block_name 
 			= xstrdup(block_info_ptr->
 				  block_array[i].bg_block_id);
+		if(block_ptr->bg_block_name) {
 #ifdef HAVE_BG_FILES
-		block_ptr->color_inx = 
-			atoi(block_ptr->bg_block_name+7);
+			block_ptr->color_inx = 
+				atoi(block_ptr->bg_block_name+7);
 #else
-		block_ptr->color_inx = 
-			atoi(block_ptr->bg_block_name+3);
+			block_ptr->color_inx = 
+				atoi(block_ptr->bg_block_name+3);
 #endif
+		}
 		block_ptr->color_inx %= sview_colors_cnt;
 		
 		block_ptr->nodes 
