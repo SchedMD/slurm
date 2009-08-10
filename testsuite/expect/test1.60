@@ -163,7 +163,10 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: job initiation failed\n"
 	exit 1
 }
-
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: Additional tests are incompatable with front-end systems\n"
+	exit $exit_code
+}
 
 for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 	set file_out_n_glob  "test$test_id.n.$node_id.output"

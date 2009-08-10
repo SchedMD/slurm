@@ -26,7 +26,8 @@ AC_DEFUN([X_AC_SUN_CONST], [
 
   if test "$x_ac_sun_const" = yes; then
     AC_MSG_RESULT([yes])
-    AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
+    AC_DEFINE(SYSTEM_DIMENSIONS, 4, 
+	      [4-dimensional architecture counting the nodes under a switch as additional dimension])
     AC_DEFINE(HAVE_SUN_CONST,1,[define if Sun Constellation system])
   else
     AC_MSG_RESULT([no])

@@ -148,16 +148,12 @@ extern void get_slurm_part()
 			FREE_NULL_BITMAP(loc_bitmap);
 			if(!overlap) 
 				continue;
-		}
-#ifdef HAVE_SUN_CONST
-		set_grid_name(part.nodes, count);
-#else		
+		}	
 		while (part.node_inx[j] >= 0) {
 			set_grid_inx(part.node_inx[j],
 				     part.node_inx[j + 1], count);
 			j += 2;
 		}
-#endif
 		if(!params.commandline) {
 			if(i>=text_line_cnt) {
 				part.root_only = (int) letters[count%62];

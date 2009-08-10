@@ -52,7 +52,7 @@
  * prefix records in the hostlist) */
 #define MAX_PREFIX_CNT 1024
 
-#ifdef HAVE_BG
+#if (SYSTEM_DIMENSIONS > 1)
 #define HOSTLIST_BASE 36
 #else
 #define HOSTLIST_BASE 10
@@ -322,6 +322,12 @@ void hostlist_uniq(hostlist_t hl);
  * Write the string representation of the hostlist hl into buf,
  * writing at most n chars. Returns the number of bytes written,
  * or -1 if truncation occurred.
+ *
+ * On multi-dimension systems like bluegene this function can only
+ * return a unique list back.  For instance if your hostlist contains
+ * bgl[000,000] bgl000 will be returned.  On other systems this is not
+ * the case, and duplicate entries will be returned in the order of
+ * the list.
  *
  * The result will be NULL terminated.
  * 

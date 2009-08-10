@@ -63,7 +63,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->contiguous	= (uint16_t) NO_VAL;
 	job_desc_msg->cpu_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
