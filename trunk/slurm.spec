@@ -571,7 +571,7 @@ rm -rf $RPM_BUILD_ROOT
 %if %{slurm_with pam}
 %files pam_slurm
 %defattr(-,root,root)
-%{_libdir}/security/pam_slurm.*
+%{_libdir}/security/pam_slurm.so
 %endif
 #############################################################################
 
