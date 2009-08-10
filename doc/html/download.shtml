@@ -15,8 +15,9 @@ SLURM has also been packaged for
 <li><b>PAM Modules (pam_slurm)</b><br>
 Pluggable Authentication Module (PAM) for restricting access to compute nodes 
 where SLURM performs resource management. Access to the node is restricted to 
-user root and users who have been allocated resources on that node. <br>
-pam_slurm is available for download from 
+user root and users who have been allocated resources on that node.
+pam_slurm is included within the SLURM distribution for version 2.1 or later.
+For earlier SLURM versions, pam_slurm is available for download from<br> 
 <a href="https://sourceforge.net/projects/slurm/"> 
 https://sourceforge.net/projects/slurm/</a><br> 
 SLURM's PAM module has also been packaged for 
@@ -153,6 +154,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 12 June 2009</p>
+<p style="text-align:center;">Last modified 10 August 2009</p>
 
 <!--#include virtual="footer.txt"-->

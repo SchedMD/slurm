@@ -43,6 +43,9 @@ documents those changes that are of interest to users and admins.
  -- If PrologSlurmctld has a non-zero exit code, requeue the job or kill it.
  -- Added sacct ability to use --format NAME%LENGTH similar to sacctmgr.
  -- Improve hostlist logic for multidimensional systems.
+ -- The pam_slurm Pluggable Authentication Module for SLURM previously
+    distributed separately has been moved within the main SLURM distribution
+    and is packaged as a separate RPM.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
