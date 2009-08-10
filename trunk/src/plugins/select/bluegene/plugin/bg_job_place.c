@@ -1382,16 +1382,29 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				     SELECT_JOBDATA_CONN_TYPE,
 				     &conn_type);
 	}
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
-				SELECT_PRINT_MIXED);
+
+	if(slurm_block_bitmap && !bit_set_count(slurm_block_bitmap)) {
+		error("no nodes given to place job %u.", job_ptr->job_id);
+		
+		if(bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			slurm_mutex_unlock(&create_dynamic_mutex);
+		
+		return SLURM_ERROR;
+	}
+
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, 
+				       buf, sizeof(buf), 
+				       SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %d %s nodes=%u-%u-%u", 
 	      mode, buf, min_nodes, req_nodes, max_nodes);
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
-				SELECT_PRINT_BLRTS_IMAGE);
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+				       buf, sizeof(buf), 
+				       SELECT_PRINT_BLRTS_IMAGE);
 #ifdef HAVE_BGL
 	debug2("BlrtsImage=%s", buf);
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
-				SELECT_PRINT_LINUX_IMAGE);
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+				       buf, sizeof(buf), 
+				       SELECT_PRINT_LINUX_IMAGE);
 #endif
 #ifdef HAVE_BGL
 	debug2("LinuxImage=%s", buf);
@@ -1399,11 +1412,13 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	debug2("ComputNodeImage=%s", buf);
 #endif
 
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
-				SELECT_PRINT_MLOADER_IMAGE);
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+				       buf, sizeof(buf), 
+				       SELECT_PRINT_MLOADER_IMAGE);
 	debug2("MloaderImage=%s", buf);
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, buf, sizeof(buf), 
-				SELECT_PRINT_RAMDISK_IMAGE);
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+				       buf, sizeof(buf), 
+				       SELECT_PRINT_RAMDISK_IMAGE);
 #ifdef HAVE_BGL
 	debug2("RamDiskImage=%s", buf);
 #else
