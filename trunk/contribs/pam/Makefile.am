@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = foreign
 
 CPPFLAGS = -fPIC
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+PLUGIN_FLAGS = -module --export-dynamic
 
 pkglibdir = $(libdir)/security
 
@@ -29,7 +29,8 @@ pam_slurm_la_SOURCES = 				\
 	$(top_builddir)/src/common/hostlist.c	\
 	$(top_builddir)/src/common/hostlist.h
 
-pam_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
+pam_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(LIB_LDFLAGS) \
+	-version-info $(current):$(rev):$(age)
 else
 EXTRA_pam_slurm_la_SOURCES = pam_slurm.c
 endif
