@@ -112,10 +112,6 @@ BuildRequires: ncurses-devel
 BuildRequires: pkgconfig
 %endif
 
-%if %{slurm_with pam}
-BuildRequires: pam-devel
-%endif
-
 %if %{slurm_with readline}
 BuildRequires: readline-devel
 %endif
@@ -286,6 +282,19 @@ Group: Development/System
 Requires: slurm
 %description sjstat
 Perl tool to print SLURM job state information.
+
+%if %{slurm_with pam}
+%package pam_slurm
+Summary: PAM module for restricting access to compute nodes via SLURM.
+Group: System Environment/Base
+Requires: slurm
+BuildRequires: slurm-devel pam-devel
+%description pam_slurm
+This module restricts access to compute nodes in a cluster where the Simple
+Linux Utility for Resource Managment (SLURM) is in use.  Access is granted
+to root, any user with an SLURM-launched job currently running on the node,
+or any user who has allocated resources on the node according to the SLURM
+%endif
 
 #############################################################################
 
@@ -557,6 +566,13 @@ rm -rf $RPM_BUILD_ROOT
 %files sjstat
 %defattr(-,root,root)
 %{_bindir}/sjstat
+#############################################################################
+
+%if %{slurm_with pam}
+%files slurm_pam
+%defattr(-,root,root)
+%{_libdir}/security/pam_slurm.so
+%endif
 #############################################################################
 
 %pre
