@@ -41,6 +41,7 @@ documents those changes that are of interest to users and admins.
  -- Set a node's power_up/configuring state flag while PrologSlurmctld is
     running for a job allocated to that node.
  -- If PrologSlurmctld has a non-zero exit code, requeue the job or kill it.
+ -- Added sacct ability to use --format NAME%LENGTH similar to sacctmgr.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
