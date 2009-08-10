@@ -1034,18 +1034,32 @@ void parse_command_line(int argc, char **argv)
 
 	start = params.opt_field_list;
 	while ((end = strstr(start, ","))) {
+		char *tmp_char = NULL;
+		int command_len = 0;
+		int newlen = 0;
+
 		*end = 0;
 		while (isspace(*start))
 			start++;	/* discard whitespace */
 		if(!(int)*start)
 			continue;
+
+		if((tmp_char = strstr(start, "\%"))) {
+			newlen = atoi(tmp_char+1);
+			tmp_char[0] = '\0';
+		} 
+		
+		command_len = strlen(start);
+
 		for (i = 0; fields[i].name; i++) {
-			if (!strcasecmp(fields[i].name, start))
+			if (!strncasecmp(fields[i].name, start, command_len))
 				goto foundfield;
 		}
 		error("Invalid field requested: \"%s\"", start);
 		exit(1);
 	foundfield:
+		if(newlen)
+			fields[i].len = newlen;
 		list_append(print_fields_list, &fields[i]);
 		start = end + 1;
 	}
