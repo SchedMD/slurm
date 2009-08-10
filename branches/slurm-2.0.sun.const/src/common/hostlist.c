@@ -2628,7 +2628,13 @@ static int _tell_if_used(int dim, int curr,
 /* 				info("%s not used", coord); */
 				if((*found) == -1)
 					continue;
-				return 0;
+				else if(end[dim] < grid_end[dim]) {
+					/* try to get a box out of
+					   this slice. */
+					grid_end[dim] = end[dim];
+					goto end_it;
+				} else
+					return 0;
 			}
 /* 			for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
 /* 				coord[i] = alpha_num[last[i]]; */
@@ -2653,8 +2659,9 @@ static int _tell_if_used(int dim, int curr,
 		} else {
 			if((rc = _tell_if_used(dim+1, curr, 
 					       start, end,
-					       last, found)) != 1)
+					       last, found)) != 1) {
 				return rc;
+			}
 			if((*found) >= dim) {
 /* 				for(i = 0; i<SYSTEM_DIMENSIONS; i++) { */
 /* 					coord[i] = alpha_num[last[i]]; */
@@ -2666,6 +2673,7 @@ static int _tell_if_used(int dim, int curr,
 				start[dim] = grid_start[dim];
 		}
 	}
+end_it:
 	last[dim]--;
 
 	return rc;
@@ -2674,6 +2682,7 @@ static int _tell_if_used(int dim, int curr,
 static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 			 int end[SYSTEM_DIMENSIONS])
 {
+	static int orig_grid_end[SYSTEM_DIMENSIONS];
 	static int last[SYSTEM_DIMENSIONS];
 	int pos[SYSTEM_DIMENSIONS];
 /* 	int i; */
@@ -2683,15 +2692,19 @@ static int _get_next_box(int start[SYSTEM_DIMENSIONS],
 	int rc = 0;
 	int new_min[SYSTEM_DIMENSIONS];
 	int new_max[SYSTEM_DIMENSIONS];
-	int looped = 0;
 
 /* 	memset(coord, 0, sizeof(coord)); */
 /* 	memset(coord2, 0, sizeof(coord2)); */
 
 again:
-	if(start[A] == -1) 
+	if(start[A] == -1) {
 		memcpy(start, grid_start, dim_grid_size);
-	else 
+		/* We need to keep track of this to make sure we get
+		   all the nodes marked since this could change based
+		   on the boxes we are able to make.
+		*/
+		memcpy(orig_grid_end, grid_end, dim_grid_size);
+	} else 
 		memcpy(start, last, dim_grid_size);
 
 	memcpy(end, start, dim_grid_size);
@@ -2716,7 +2729,9 @@ again:
 	/* set the new min max of the grid */
 	memset(new_min, HOSTLIST_BASE, dim_grid_size);
 	memset(new_max, -1, dim_grid_size);
-	_set_min_max_of_grid(A, 0, grid_start, grid_end,
+
+	/* send the orid_grid_end so we don't miss anything that was set. */
+	_set_min_max_of_grid(A, 0, grid_start, orig_grid_end,
 			     new_min, new_max, pos);
 	
 	if(new_max[A] != -1) {
@@ -2727,55 +2742,22 @@ again:
 /* 		info("here with %sx%s", coord, coord2); */
 		memcpy(grid_start, new_min, dim_grid_size);
 		memcpy(grid_end, new_max, dim_grid_size);
-	}
-	
-	if(found != -1) {
-		rc = 1;
-		
-/* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++)  */
-/* 			coord[i] = alpha_num[end[i]]; */
-/* 		info("found=%d ending with %s", found, coord); */
+		memcpy(last, grid_start, dim_grid_size);
 
-/* THE BELOW CODE WAS THOUGHT AT ONE TIME TO GIVE BETTER BOXES, BUT
- * THEY MAY BE OUT OF ORDER.  IT IS NOW THOUGHT WITHOUT THE CODE WE
- * GET BETTER (EASIER TO READ) LISTS.  IF THIS IS NOT THE CASE AFTER
- * FURTHER TESTING WE SHOULD ADD IT BACK IN.
- */
-
-		/* only run through this code if we haven't exhasted
-		   the A space yet. */
-/* 		if(last[A] <= grid_end[A]) { */
-/* 			memcpy(last, end, dim_grid_size); */
-/* 			/\* if this is the same node we started on we */
-/* 			   need to go to the next one for the next shot. */
-/* 			*\/ */
-/* 			i=SYSTEM_DIMENSIONS-1; */
-/* 			last[i]++; */
-/* 			while(i >= 0) { */
-/* 				if(last[i] > grid_end[i]) { */
-/* 					last[i] = 0; */
-/* 					if(i) */
-/* 						last[i-1]++; */
-/* 				} */
-/* 				i--; */
-/* 			} */
-/* 		} else */
-			memcpy(last, grid_start, dim_grid_size);
 /* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++)  */
 /* 			coord[i] = alpha_num[last[i]]; */
 /* 		info("next start %s", coord); */
-	} else if(!looped) {
-		/* go through from the min to the max 1 more time to
-		   make sure we got all the boxes that weren't
-		   included in the boxes of previous runs. */
-		memcpy(last, grid_start, dim_grid_size);
-		
-/* 		for(i = 0; i<SYSTEM_DIMENSIONS; i++)  */
-/* 			coord[i] = alpha_num[last[i]]; */
-/* 		info("failed... next start %s", coord); */
-		looped = 1;
-		goto again;
+		if(found == -1) {
+			/* There are still nodes set in the grid, so we need
+			   to go through them again to make sure we got all
+			   the nodes that weren't included in the boxes of
+			   previous runs. */
+			goto again;
+		}
 	}
+	
+	if(found != -1) 
+		rc = 1;
 
 	return rc;
 }
