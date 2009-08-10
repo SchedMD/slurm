@@ -20,7 +20,6 @@
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
-pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
@@ -98,6 +97,7 @@ pam_slurm_la_OBJECTS = $(am_pam_slurm_la_OBJECTS)
 pam_slurm_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(pam_slurm_la_LDFLAGS) $(LDFLAGS) -o $@
+@HAVE_PAM_TRUE@am_pam_slurm_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -116,6 +116,7 @@ DIST_SOURCES = $(am__pam_slurm_la_SOURCES_DIST) \
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+pkglibdir = $(libdir)/security
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
@@ -133,10 +134,10 @@ BLCR_LIBS = @BLCR_LIBS@
 BLUEGENE_LOADED = @BLUEGENE_LOADED@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = -fPIC
+CFLAGS = @CFLAGS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
-CPPFLAGS = @CPPFLAGS@
+CPPFLAGS = -fPIC
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -173,7 +174,7 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
-LIBS = 
+LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
@@ -297,19 +298,20 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/..
-# Without "-module", we get error: `pam_slurm.la' is not a standard libtool library name
-PLUGIN_FLAGS = -lgcc -module -avoid-version --export-dynamic -nostdlib -shared
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 @HAVE_PAM_FALSE@pam_lib = 
 @HAVE_PAM_TRUE@pam_lib = pam_slurm.la
 pkglib_LTLIBRARIES = $(pam_lib)
+@HAVE_PAM_TRUE@current = $(SLURM_API_CURRENT)
+@HAVE_PAM_TRUE@age = $(SLURM_API_AGE)
+@HAVE_PAM_TRUE@rev = $(SLURM_API_REVISION)
 @HAVE_PAM_TRUE@pam_slurm_la_SOURCES = \
 @HAVE_PAM_TRUE@	pam_slurm.c				\
 @HAVE_PAM_TRUE@	$(top_builddir)/src/common/hostlist.c	\
 @HAVE_PAM_TRUE@	$(top_builddir)/src/common/hostlist.h
 
-@HAVE_PAM_TRUE@pam_slurm_la_LDFLAGS = $(PLUGIN_FLAGS)
-@HAVE_PAM_TRUE@am_pam_slurm_la_rpath = 
+@HAVE_PAM_TRUE@pam_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
 @HAVE_PAM_FALSE@EXTRA_pam_slurm_la_SOURCES = pam_slurm.c
 all: all-am
 
@@ -596,20 +598,6 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
-
-# Compiles fine
-# Link line bad:
-# gcc -shared  .libs/pam_slurm.o .libs/hostlist.o      -Wl,-soname -Wl,pam_slurm.so.0 -o .libs/pam_slurm.so.0.0.0
-#.libs/pam_slurm.o: In function `_init':
-# pam_slurm.c:(.text+0xa33): multiple definition of `_init'
-# /usr/lib/gcc/x86_64-linux-gnu/4.3.3/../../../../lib/crti.o:/build/buildd/glibc-2.9/build-tree/amd64-libc/csu/crti.S:25: first defined here
-# .libs/pam_slurm.o: In function `_fini':
-# pam_slurm.c:(.text+0xa87): multiple definition of `_fini'
-# /usr/lib/gcc/x86_64-linux-gnu/4.3.3/../../../../lib/crti.o:/build/buildd/glibc-2.9/build-tree/amd64-libc/csu/crti.S:37: first defined here
-# collect2: ld returned 1 exit status
-
-# Simple link is fine
-# gcc -shared -nostdlib .libs/pam_slurm.o .libs/hostlist.o      -Wl,-soname -Wl,pam_slurm.so.0 -o .libs/pam_slurm.so.0.0.0
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
