@@ -123,6 +123,7 @@ libslurm_la_LDFLAGS        = \
 libpmi_la_SOURCES = pmi.c
 libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
+        -version-info $(current):$(rev):$(age) \
         $(PMI_OTHER_FLAGS)
 
 # This was made so we chould export all symbols from libcommon 

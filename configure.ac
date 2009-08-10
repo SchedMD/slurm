@@ -299,6 +299,7 @@ AC_CONFIG_FILES([Makefile
 		 config.xml 
 		 auxdir/Makefile
 		 contribs/Makefile
+		 contribs/pam/Makefile
 		 contribs/perlapi/Makefile
 		 contribs/perlapi/libslurm-perl/Makefile.PL
 		 contribs/torque/Makefile
