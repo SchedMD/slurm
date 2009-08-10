@@ -66,6 +66,7 @@ extern List create_dynamic_block(List block_list,
 	int i;
 	blockreq_t blockreq;
 	int cnodes = request->procs / bg_conf->proc_ratio;
+	char *unusable_nodes = NULL;
 
 	if(cnodes < bg_conf->smallest_block) {
 		error("Can't create this size %d "
@@ -120,7 +121,6 @@ extern List create_dynamic_block(List block_list,
 	}
 
 	if(request->avail_node_bitmap) {
- 		char *nodes = NULL;
 		bitstr_t *bitmap = bit_alloc(node_record_count);
 		
 		/* we want the bps that aren't in this partition to
@@ -128,12 +128,11 @@ extern List create_dynamic_block(List block_list,
 		 */
 		bit_or(bitmap, request->avail_node_bitmap);
 		bit_not(bitmap);
-		nodes = bitmap2node_name(bitmap);
+		unusable_nodes = bitmap2node_name(bitmap);
 		
 		//info("not using %s", nodes);
-		removable_set_bps(nodes);
+		removable_set_bps(unusable_nodes);
 
-		xfree(nodes);
 		FREE_NULL_BITMAP(bitmap);
 	}
 
@@ -254,17 +253,20 @@ extern List create_dynamic_block(List block_list,
 		   && (bit_ffs(bg_record->ionode_bitmap) != 0))
 			continue;
 		
-		debug2("removing %s for request %d",
+		debug3("removing %s for request %d",
 		       bg_record->nodes, request->size);
 		remove_block(bg_record->bg_block_list, (int)NO_VAL);
+		/* need to set any unusable nodes that this last block
+		   used */
+		removable_set_bps(unusable_nodes);
 		rc = SLURM_SUCCESS;
 		if(results)
 			list_flush(results);
 		else
 			results = list_create(NULL);
-		if (allocate_block(request, results)) 
+		if (allocate_block(request, results))
 			break;
-
+		
 		debug2("allocate failure for size %d base partitions", 
 		       request->size);
 		rc = SLURM_ERROR;
@@ -291,6 +293,7 @@ setup_records:
 finished:
 	reset_all_removed_bps();
 	
+	xfree(unusable_nodes);
 	xfree(request->save_name);
 	
 	if(request->elongate_geos) {
