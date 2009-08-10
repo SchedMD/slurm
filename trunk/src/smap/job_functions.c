@@ -121,9 +121,6 @@ extern void get_job(void)
 		}
 
 		if (job_ptr->node_inx[0] != -1) {
-#ifdef HAVE_SUN_CONST
-			set_grid_name(job_ptr->nodes, count);
-#else
 			int j = 0;
 			job_ptr->num_nodes = 0;
 			while (job_ptr->node_inx[j] >= 0) {
@@ -134,7 +131,6 @@ extern void get_job(void)
 					     job_ptr->node_inx[j + 1], count);
 				j += 2;
 			}
-#endif
 
 			if(!params.commandline) {
 				if((count>=text_line_cnt)

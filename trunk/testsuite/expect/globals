@@ -96,9 +96,12 @@ cset use_pmi	0
 # If using XCPU job launch, specify directory location as needed
 cset xcpu_dir	"/mnt/xcpu"
 
-cset poe		"/usr/bin/poe"
+cset poe	"/usr/bin/poe"
 cset mpirun	"mpirun"
 cset totalviewcli	"/usr/local/bin/totalviewcli"
+
+# Set if using "--enable_front_end" configuration option
+cset enable_front_end 0
 
 # Pattern to match your shell prompt
 #cset prompt {(%|#|\$|\]) *$}
@@ -903,7 +906,11 @@ proc get_default_acct { user } {
 ################################################################
 
 proc test_front_end { } {
-	global scontrol
+	global enable_front_end scontrol
+
+	if {$enable_front_end != 0} {
+		return 1
+	}
 
 	log_user 0
 	set front_end 0
