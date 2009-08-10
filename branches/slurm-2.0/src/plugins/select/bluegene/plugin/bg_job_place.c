@@ -1244,6 +1244,11 @@ static int _sync_block_lists(List full_list, List incomp_list)
 	itr = list_iterator_create(full_list);
 	itr2 = list_iterator_create(incomp_list);
 	while((new_record = list_next(itr))) {
+		/* Make sure we aren't adding any block that doesn't
+		   have a block_id.
+		*/
+		if(!new_record->bg_block_id)
+			continue;
 		while((bg_record = list_next(itr2))) {
 			if(bit_equal(bg_record->bitmap, new_record->bitmap)
 			   && bit_equal(bg_record->ionode_bitmap,
