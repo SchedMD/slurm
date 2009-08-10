@@ -299,7 +299,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+PLUGIN_FLAGS = -module --export-dynamic
 @HAVE_PAM_FALSE@pam_lib = 
 @HAVE_PAM_TRUE@pam_lib = pam_slurm.la
 pkglib_LTLIBRARIES = $(pam_lib)
@@ -311,7 +311,9 @@ pkglib_LTLIBRARIES = $(pam_lib)
 @HAVE_PAM_TRUE@	$(top_builddir)/src/common/hostlist.c	\
 @HAVE_PAM_TRUE@	$(top_builddir)/src/common/hostlist.h
 
-@HAVE_PAM_TRUE@pam_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
+@HAVE_PAM_TRUE@pam_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(LIB_LDFLAGS) \
+@HAVE_PAM_TRUE@	-version-info $(current):$(rev):$(age)
+
 @HAVE_PAM_FALSE@EXTRA_pam_slurm_la_SOURCES = pam_slurm.c
 all: all-am
 
