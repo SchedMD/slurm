@@ -107,9 +107,9 @@ BEGIN_C_DECLS
    * <stdbool.h> may declare 'bool' to be a different type, such as 
    * an enum which is not necessarily compatible with C++.
    *
-   * If your compiler can't resolve 'bool', just add 
-   * "#define CRAPPY_COMPILER" before "#include <slurm/slurm.h> 
-   * in order for Slurm to define it's own version of bool.
+   * If your compiler can't resolve 'bool', just define 
+   * CRAPPY_COMPILER at build time in order for SLURM to 
+   * define it's own version of bool.
    */
 
    #undef  TRUE
