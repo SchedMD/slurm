@@ -605,7 +605,8 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 					total_jobs += part_cr_ptr->tot_job_cnt;
 					continue;
 				}
-				if (part_cr_ptr->part_ptr == job_ptr->part_ptr){
+				if (part_cr_ptr->part_ptr == 
+				    job_ptr->part_ptr) {
 					total_run_jobs +=
 						      part_cr_ptr->run_job_cnt;
 					total_jobs += part_cr_ptr->tot_job_cnt;
@@ -1329,7 +1330,7 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 				part_cr_ptr->run_job_cnt--;
 			else {
 				error("%s: run_job_cnt underflow for node %s",
-					pre_err, node_record_table_ptr[i].name);
+				       pre_err, node_record_table_ptr[i].name);
 			}
 			if (remove_all) {
 				if (part_cr_ptr->tot_job_cnt > 0)
@@ -1614,7 +1615,8 @@ static void _init_node_cr(void)
 				 	      node_cr_ptr[i].exclusive_jobid,
 				 	      node_record_table_ptr[i].name);
 				}
-				node_cr_ptr[i].exclusive_jobid = job_ptr->job_id;
+				node_cr_ptr[i].exclusive_jobid = job_ptr->
+								 job_id;
 			}
 			if (job_memory_cpu == 0)
 				node_cr_ptr[i].alloc_memory += job_memory_node;
@@ -1630,7 +1632,8 @@ static void _init_node_cr(void)
 			}
 			part_cr_ptr = node_cr_ptr[i].parts;
 			while (part_cr_ptr) {
-				if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
+				if (part_cr_ptr->part_ptr != 
+				    job_ptr->part_ptr) {
 					part_cr_ptr = part_cr_ptr->next;
 					continue;
 				}
@@ -1654,7 +1657,7 @@ static void _init_node_cr(void)
 
 /* Determine where and when the job at job_ptr can begin execution by updating 
  * a scratch node_cr_record structure to reflect each job terminating at the 
- * end of its time limit and use this to show where and when the job at job_ptr 
+ * end of its time limit and use this to show where and when the job at job_ptr
  * will begin execution. Used by Moab for backfill scheduling. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
@@ -1714,7 +1717,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Remove the running jobs one at a time from exp_node_cr and try
 	 * scheduling the pending job after each one */
 	job_iterator = list_iterator_create(cr_job_list);
-	while ((tmp_job_pptr = (struct job_record **) list_next(job_iterator))) {
+	while ((tmp_job_pptr = (struct job_record **) 
+			       list_next(job_iterator))) {
 		tmp_job_ptr = *tmp_job_pptr;
 		_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 				   "_will_run_test", 1);
@@ -1886,7 +1890,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		_init_node_cr();
 		if (node_cr_ptr == NULL) {
 			slurm_mutex_unlock(&cr_mutex);
-			error("select_p_job_test: node_cr_ptr not initialized");
+			error("select_p_job_test: node_cr_ptr not "
+			      "initialized");
 			return SLURM_ERROR;
 		}
 	}
@@ -1929,8 +1934,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					      orig_map, bitmap, 
 					      max_run_job, 
 					      max_run_job + sus_jobs);
-			debug3("select/linear: job_test: found %d nodes for %u",
-				j, job_ptr->job_id);
+			debug3("select/linear: job_test: found %d nodes for "
+			       "job %u", j, job_ptr->job_id);
 			if ((j == prev_cnt) || (j < min_nodes))
 				continue;
 			prev_cnt = j;
