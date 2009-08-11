@@ -1042,28 +1042,26 @@ static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr,
 }
 
 /* Start or stop the gang scheduler module as needed based upon changes in 
- *	job preemption support */
+ *	configuration */
 static int _update_preempt(uint16_t old_preempt_mode)
 {
 	uint16_t new_preempt_mode = slurm_get_preempt_mode();
 
-	if ((old_preempt_mode == PREEMPT_MODE_OFF) == 
-	    (new_preempt_mode == PREEMPT_MODE_OFF))
+	if ((old_preempt_mode & PREEMPT_MODE_GANG) == 
+	    (new_preempt_mode & PREEMPT_MODE_GANG))
 		return SLURM_SUCCESS;
 
-	if (old_preempt_mode == PREEMPT_MODE_OFF) {
-		info("Enabling job preemption and gang scheduling");
+	if (new_preempt_mode & PREEMPT_MODE_GANG) {
+		info("Enabling gang scheduling");
 		return gs_init();
 	}
 
-	if (new_preempt_mode == PREEMPT_MODE_OFF) {
-		info("Disabling job preemption and gang scheduling");
+	if (old_preempt_mode == PREEMPT_MODE_GANG) {
+		info("Disabling gang scheduling");
 		gs_wake_jobs();
 		return gs_fini();
 	}
 
-	error("Invalid value for EnablePreemption (old:%u new:%u)",
-	      old_preempt_mode, new_preempt_mode);
 	return EINVAL;
 }
 

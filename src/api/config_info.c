@@ -116,6 +116,37 @@ _reset_period_str(uint16_t reset_period)
 	}
 }
 
+static char *
+_preempt_str(uint16_t preempt_mode)
+{
+	char *gang_str;
+	static char preempt_str[64];
+
+	if (preempt_mode == PREEMPT_MODE_OFF)
+		return "OFF";
+	if (preempt_mode == PREEMPT_MODE_GANG)
+		return "GANG";
+
+	if (preempt_mode & PREEMPT_MODE_GANG) {
+		gang_str = "GANG,";
+		preempt_mode &= (~PREEMPT_MODE_GANG);
+	} else
+		gang_str = "";
+
+	if      (preempt_mode == PREEMPT_MODE_CANCEL)
+		sprintf(preempt_str, "%sCANCEL", gang_str);
+	else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
+		sprintf(preempt_str, "%sCHECKPOINT", gang_str);
+	else if (preempt_mode == PREEMPT_MODE_REQUEUE)
+		sprintf(preempt_str, "%sREQUEUE", gang_str);
+	else if (preempt_mode == PREEMPT_MODE_SUSPEND)
+		sprintf(preempt_str, "%sSUSPEND", gang_str);
+	else
+		sprintf(preempt_str, "%sUNKNOWN", gang_str);
+
+	return preempt_str;
+}
+
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration 
  *	message as loaded using slurm_load_ctl_conf
@@ -299,16 +330,8 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "PlugStackConfig         = %s\n",
 		slurm_ctl_conf_ptr->plugstack);
 
-	if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_OFF)
-		fprintf(out, "PreemptMode             = OFF\n");
-	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_CANCEL)
-		fprintf(out, "PreemptMode             = CANCEL\n");
-	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_CHECKPOINT)
-		fprintf(out, "PreemptMode             = CHECKPOINT\n");
-	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_REQUEUE)
-		fprintf(out, "PreemptMode             = REQUEUE\n");
-	else if (slurm_ctl_conf_ptr->preempt_mode == PREEMPT_MODE_SUSPEND)
-		fprintf(out, "PreemptMode             = SUSPEND\n");
+	fprintf(out, "PreemptMode             = %s\n",
+		_preempt_str(slurm_ctl_conf_ptr->preempt_mode));
 
 	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
 		fprintf(out, "PriorityType            = %s\n",

@@ -2119,20 +2119,36 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->plugstack = xstrdup(default_plugstack);
 
 	if (s_p_get_string(&temp_str, "PreemptMode", hashtbl)) {
-		if (strcasecmp(temp_str, "off") == 0)
-			conf->preempt_mode = PREEMPT_MODE_OFF;
-		else if (strcasecmp(temp_str, "cancel") == 0)
-			conf->preempt_mode = PREEMPT_MODE_CANCEL;
-		else if (strcasecmp(temp_str, "checkpoint") == 0)
-			conf->preempt_mode = PREEMPT_MODE_CHECKPOINT;
-		else if (strcasecmp(temp_str, "requeue") == 0)
-			conf->preempt_mode = PREEMPT_MODE_REQUEUE;
-		else if ((strcasecmp(temp_str, "on") == 0) ||
-			 (strcasecmp(temp_str, "suspend") == 0))
-			conf->preempt_mode = PREEMPT_MODE_SUSPEND;
-
-		else
-			fatal("Invalid PreemptMode: %s", temp_str);
+		int preempt_modes = 0;
+		char *last = NULL, *tok;
+		conf->preempt_mode = 0;
+		tok = strtok_r(temp_str, ",", &last);
+		while (tok) {
+			if (strcasecmp(tok, "gang") == 0) {
+				conf->preempt_mode |= PREEMPT_MODE_GANG;
+			} else if (strcasecmp(tok, "off") == 0) {
+				conf->preempt_mode += PREEMPT_MODE_OFF;
+				preempt_modes++;
+			} else if (strcasecmp(tok, "cancel") == 0) {
+				conf->preempt_mode += PREEMPT_MODE_CANCEL;
+				preempt_modes++;
+			} else if (strcasecmp(tok, "checkpoint") == 0) {
+				conf->preempt_mode += PREEMPT_MODE_CHECKPOINT;
+				preempt_modes++;
+			} else if (strcasecmp(tok, "requeue") == 0) {
+				conf->preempt_mode += PREEMPT_MODE_REQUEUE;
+				preempt_modes++;
+			} else if ((strcasecmp(tok, "on") == 0) ||
+				 (strcasecmp(tok, "suspend") == 0)) {
+				conf->preempt_mode += PREEMPT_MODE_SUSPEND;
+				preempt_modes++;
+			} else
+				fatal("Invalid PreemptMode: %s", tok);
+			tok = strtok_r(NULL, ",", &last);
+		}
+		xfree(temp_str);
+		if (preempt_modes > 1)
+			fatal("More than one PreemptMode specified");
 	}
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {

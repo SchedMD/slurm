@@ -733,6 +733,7 @@ static void _preempt_job_dequeue(void)
 	uint32_t job_id, *tmp_id;
 	uint16_t preempt_mode = slurm_get_preempt_mode();
 
+	preempt_mode &= (~PREEMPT_MODE_GANG);
 	while ((tmp_id = list_pop(preempt_job_list))) {
 		job_id = *tmp_id;
 		xfree(tmp_id);

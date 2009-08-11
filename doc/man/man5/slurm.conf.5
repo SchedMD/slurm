@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2009" "slurm.conf 2.1" "Slurm configuration file"
+.TH "slurm.conf" "5" "August 2009" "slurm.conf 2.1" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -733,21 +733,19 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 
 .TP
 \fBPreemptMode\fR
-Controls the mechanism used to preempt lower priority jobs in order to 
-execute higher priority jobs.
-For gang scheduling of jobs having the same priority, job suspend will
-always be used and \fBPreemptMode\fR must be set to \fICANCEL\fR, 
-\fIREQUEUE\fR or \fISUSPEND\fR (anything other than \fIOFF\fR).
-Two different mechanisms can be used to determine when preeption can 
-take place. 
+Enables gang scheduling and/or controls the mechanism used to preempt lower 
+priority jobs in order to execute higher priority jobs.
+For gang scheduling (time slicing) of jobs in the same partition, 
+job suspend will always be used.
 SLURM partitions can have different \fBPriority\fR values and contain 
 the same nodes, in which case jobs from the higher priority 
-partition will preempt jobs from the lower priority partition.
-Alternately when SLURM is used with an accounting database, the jobs can be
-submitted to the same partition but have different Quality Of Service (QOS) 
-values. 
-Jobs from a QOS with a descriptor containing \fIPREEMPTOR\fR are capable
-of preempting jobs from a QOS with a descriptor containing \fIPREEMPTEE\fR.
+partition can preempt jobs from the lower priority partition.
+The \fBGANG\fR option can be specified in addition to a preemption 
+method specification with the two options comma separated.
+NOTE: \fBGANG\fR must be specified for job preemption to occur.
+Changes are underway to permit job preemption without gang scheduling
+and job preemption based upon QOS (Quality Of Service) rather than 
+partition priority.
 .RS
 .TP 12
 \fBOFF\fR
@@ -761,6 +759,9 @@ always cancel the job.
 .TP
 \fBCHECKPOINT\fR
 preempts jobs by checkpointing them (if possible) or cancelling them.
+.TP
+\fBGANG\fR
+enables gang scheduling (time slicing) of jobs in the same partition.
 .TP
 \fBREQUEUE\fR
 preempts jobs by requeuing them (if possible) or cancelling them.

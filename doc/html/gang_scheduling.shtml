@@ -79,8 +79,9 @@ memory limits, it will be canceled in order to prevent it from
 adversely effecting other jobs sharing the same resources.
 </LI>
 <LI>
-<B>PreemptMode</B>: Configure to <I>SUSPEND</I> or <I>KILL</I> (any value
-other than <I>OFF</I> enables gang scheduling).
+<B>PreemptMode</B>: set the <I>GANG</I> option.
+Additional options may be specified to enable job preemption in addition
+to gang scheduling.
 </LI>
 <LI>
 <B>SchedulerTimeSlice</B>: The default timeslice interval is 30 seconds. 
@@ -163,16 +164,16 @@ PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
 active*      up   infinite     5   idle n[12-16]
 </PRE>
 <P>
-Here are the Scheduler settings (the last two settings are the relevant ones):
+Here are the Scheduler settings (excerpt of output):
 </P>
 <PRE>
-[user@n16 load]$ <B>scontrol show config | grep Sched</B>
-FastSchedule            = 1
-PreemptMode             = SUSPEND
-SchedulerPort           = 7321
-SchedulerRootFilter     = 1
+[user@n16 load]$ <B>scontrol show config</B>
+...
+PreemptMode             = GANG
+...
 SchedulerTimeSlice      = 30
 SchedulerType           = sched/builtin
+...
 </PRE>
 <P>
 The <I>myload</I> script launches a simple load-generating app that runs
@@ -520,6 +521,6 @@ For now this idea could be experimented with by disabling memory support in
 the selector and submitting appropriately sized jobs.
 </P>
 
-<p style="text-align:center;">Last modified 9 July 2009</p>
+<p style="text-align:center;">Last modified 11 August 2009</p>
 
 <!--#include virtual="footer.txt"-->
