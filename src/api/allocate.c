@@ -315,7 +315,7 @@ int slurm_job_will_run (job_desc_msg_t *req)
 		will_run_resp = (will_run_response_msg_t *) resp_msg.data;
 		slurm_make_time_str(&will_run_resp->start_time,
 				    buf, sizeof(buf));
-		info("Job %u to start at %s using %u ",
+		info("Job %u to start at %s using %u "
 #ifdef HAVE_BG
 		     "cnodes" 
 #else
