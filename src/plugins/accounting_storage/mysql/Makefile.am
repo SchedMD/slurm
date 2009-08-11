@@ -12,6 +12,7 @@ pkglib_LTLIBRARIES = accounting_storage_mysql.la
 # Mysql storage plugin.
 accounting_storage_mysql_la_SOURCES = accounting_storage_mysql.c \
 		mysql_jobacct_process.c mysql_jobacct_process.h \
+		mysql_problems.c mysql_problems.h \
 		mysql_rollup.c mysql_rollup.h
 accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
@@ -24,5 +25,6 @@ $(accounting_storage_mysql_la_LIBADD) : force
 else
 EXTRA_accounting_storage_mysql_la_SOURCES = accounting_storage_mysql.c \
 		mysql_jobacct_process.c mysql_jobacct_process.h \
+		mysql_problems.c mysql_problems.h \
 		mysql_rollup.c mysql_rollup.h
 endif
