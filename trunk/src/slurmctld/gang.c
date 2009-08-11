@@ -1430,6 +1430,8 @@ extern int gs_reconfig(void)
 			for (i = 0; i < p_ptr->num_jobs; i++) {
 				if (p_ptr->job_list[i]->sig_state == 
 				    GS_SUSPEND) {
+					info("resuming job in missing part %s",
+					     p_ptr->part_name);
 					_resume_job(p_ptr->job_list[i]->
 						   job_id);
 					p_ptr->job_list[i]->sig_state = 
@@ -1447,8 +1449,8 @@ extern int gs_reconfig(void)
 		 * necessary). NOTE: there could be jobs that only overlap
 		 * on nodes that are no longer in the partition, but we're
 		 * not going to worry about those cases.
-		 */
-		/* add the jobs from p_ptr into new_ptr in their current order
+		 *
+		 * add the jobs from p_ptr into new_ptr in their current order
 		 * to preserve the state of timeslicing.
 		 */
 		for (i = 0; i < p_ptr->num_jobs; i++) {
@@ -1457,9 +1459,13 @@ extern int gs_reconfig(void)
 				/* job no longer exists in SLURM, so drop it */
 				continue;
 			}
-			/* resume any job that is suspended */
-			if (IS_JOB_SUSPENDED(job_ptr))
+			/* resume any job that is suspended by us */
+			if (IS_JOB_SUSPENDED(job_ptr) && 
+			    (job_ptr->priority != 0)) {
+				debug3("resuming job %u apparently suspended "
+				       " by gang", job_ptr->job_id);
 				_resume_job(job_ptr->job_id);
+			}
 
 			/* transfer the job as long as it is still active */
 			if (IS_JOB_SUSPENDED(job_ptr) ||
