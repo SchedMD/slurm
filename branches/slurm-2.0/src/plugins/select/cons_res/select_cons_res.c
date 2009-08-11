@@ -933,6 +933,13 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		/* reconstruct rows with remaining jobs */
 		struct part_res_record *p_ptr;
 		
+		if(!job_ptr->part_ptr) {
+			error("error: 'rm' job %u does not have a "
+			      "partition assigned",
+			      job_ptr->job_id);
+			return SLURM_ERROR;			
+		}
+
 		for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
 			if (strcmp(p_ptr->name, job_ptr->part_ptr->name) == 0)
 				break;
