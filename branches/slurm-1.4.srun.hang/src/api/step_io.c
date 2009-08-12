@@ -311,7 +311,15 @@ _server_read(eio_obj_t *obj, List objs)
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
-		if (s->header.length == 0) { /* eof message */
+		if (s->header.type == SLURM_IO_CONNECTION_TEST) {
+			if (s->cio->sls && s->cio->test_io_activity)
+				step_launch_clear_questionable_state(
+					s->cio->sls, s->node_id);
+			list_enqueue(s->cio->free_outgoing, s->in_msg);
+			s->in_msg = NULL;
+			return SLURM_SUCCESS;
+
+		} else if (s->header.length == 0) { /* eof message */
 			if (s->header.type == SLURM_IO_STDOUT) {
 				s->remote_stdout_objs--;
 				debug3(  "got eof-stdout msg on _server_read header");
@@ -356,15 +364,7 @@ _server_read(eio_obj_t *obj, List objs)
 			s->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
-		/* This updates a timestamp every time we successfully read 
-		   or write to a node, so we can test connections periodically
-		   that have no activity. */
-		if (s->cio->sls && s->cio->test_io_activity)
-			step_launch_clear_questionable_state(s->cio->sls, 
-							     s->node_id);
 
-/* 		*(char *)(buf + n) = '\0'; */
-/* 		debug3("\"%s\"", buf); */
 		s->in_remaining -= n;
 		if (s->in_remaining > 0)
 			return SLURM_SUCCESS;
@@ -471,12 +471,6 @@ again:
 			return SLURM_ERROR;
 		}
 	}
-
-	/* This updates a timestamp every time we successfully read or write
-	   to a node, so we can test connections periodically that have no 
-	   activity. */
-	if (s->cio->sls && s->cio->test_io_activity)
-		step_launch_clear_questionable_state(s->cio->sls, s->node_id);
 
 	debug3("Wrote %d bytes to socket", n);
 	s->out_remaining -= n;
@@ -1211,6 +1205,7 @@ client_io_handler_downnodes(client_io_t *cio,
 	eio_signal_wakeup(cio->eio);
 }
 
+
 void
 client_io_handler_abort(client_io_t *cio)
 {
@@ -1235,16 +1230,20 @@ client_io_handler_abort(client_io_t *cio)
 	pthread_mutex_unlock(&cio->ioservers_lock);
 }
 
-int client_io_handler_send_test_message(client_io_t *cio, int node_id)
+
+int client_io_handler_send_test_message(client_io_t *cio, int node_id, 
+					bool *sent_message)
 {
 	struct io_buf *msg;
 	io_hdr_t header;
 	Buf packbuf;
 	struct server_io_info *server;
-
+	int rc = SLURM_SUCCESS;
 	pthread_mutex_lock(&cio->ioservers_lock);
 
 	server = (struct server_io_info *)cio->ioserver[node_id]->arg;
+	if (sent_message)
+		*sent_message = false;
 
 	/* In this case, the I/O connection has not yet been established.
 	   A problem might go undetected here, if a task appears to get 
@@ -1252,17 +1251,19 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id)
 	   connection.  TODO:  Set a timer, see if the task has checked in
 	   within some timeout, and abort the job if not. */
 	if (cio->ioserver[node_id] == NULL) {
-		pthread_mutex_unlock(&cio->ioservers_lock);
-		return SLURM_SUCCESS;
+		goto done;
 	}
 
 	/* In this case, the I/O connection has closed and the task exited, 
 	   so there's no need to send this test message. */
 	if (server->out_eof || 
 	    (server->remote_stdout_objs <= 0 && server->remote_stderr_objs <= 0)) {
-		pthread_mutex_unlock(&cio->ioservers_lock);
-		return SLURM_SUCCESS;
+		goto done;
 	}
+
+	/* 
+	 * enqueue a test message, which would be ignored by the slurmstepd
+	 */
 	header.type = SLURM_IO_CONNECTION_TEST;
 	header.gtaskid = 0;  /* Unused */
 	header.ltaskid = 0;  /* Unused */
@@ -1284,16 +1285,18 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id)
 		list_enqueue( server->msg_queue, msg );
 
 		if (eio_signal_wakeup(cio->eio) != SLURM_SUCCESS) {
-			pthread_mutex_unlock(&cio->ioservers_lock);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto done;
 		}
+		if (sent_message)
+			*sent_message = true;
 	} else {
-		pthread_mutex_unlock(&cio->ioservers_lock);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto done;
 	}
-
+done:
 	pthread_mutex_unlock(&cio->ioservers_lock);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 

@@ -133,7 +133,8 @@ void client_io_handler_downnodes(client_io_t *cio,
  * ignored by the slurmstepd.  If the write fails the step_launch_state
  * will be notified.
  */
-int client_io_handler_send_test_message(client_io_t *cio, int node_id);
+int client_io_handler_send_test_message(client_io_t *cio, int node_id, 
+					bool *sent_message);
 
 /*
  * Tell the client IO handler that the step has been aborted, and if

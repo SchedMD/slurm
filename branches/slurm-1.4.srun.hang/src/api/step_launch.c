@@ -622,10 +622,8 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 		sls->tasks_requested = layout->task_cnt;
 	sls->tasks_started = bit_alloc(layout->task_cnt);
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
-	sls->node_questionable = bit_alloc(layout->node_cnt);
 	sls->node_io_error = bit_alloc(layout->node_cnt);
-	sls->io_timestamp = (time_t *)xmalloc(sizeof(time_t) * layout->node_cnt);
-	sls->testing_conn = (bool *)xmalloc(sizeof(bool) * layout->node_cnt);
+	sls->io_deadline = (time_t *)xmalloc(sizeof(time_t) * layout->node_cnt);
 	sls->io_timeout = 0;
 	sls->halt_io_test = false;
 	sls->layout = layout;
@@ -640,8 +638,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	pthread_cond_init(&sls->cond, NULL);
 
 	for (ii = 0; ii < layout->node_cnt; ii++) {
-		sls->io_timestamp[ii] = (time_t)NO_VAL;
-		sls->testing_conn[ii] = false;
+		sls->io_deadline[ii] = (time_t)NO_VAL;
 	}
 	return sls;
 }
@@ -656,10 +653,8 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 	pthread_cond_destroy(&sls->cond);
 	bit_free(sls->tasks_started);
 	bit_free(sls->tasks_exited);
-	bit_free(sls->node_questionable);
 	bit_free(sls->node_io_error);
-	xfree(sls->io_timestamp);
-	xfree(sls->testing_conn);
+	xfree(sls->io_deadline);
 
 	/* Now clean up anything created by slurm_step_launch() */
 	if (sls->resp_port != NULL) {
@@ -1061,6 +1056,11 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	int i;
 	int node_id;
 	client_io_t *cio = sls->io.normal;
+	bool  test_message_sent;
+
+	debug("Step %u.%u missing from node(s) %s", 
+	      step_missing->job_id, step_missing->step_id,
+	      step_missing->nodelist);
 
 	/* Ignore this message in the unusual "user_managed_io" case.  No way 
 	   to confirm a bad connection, since a test message goes straight to 
@@ -1081,27 +1081,48 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 		node = hostlist_next(fail_itr);
 		node_id = hostset_find(all_nodes, node);
 		free(node);
-		bit_set(sls->node_questionable, node_id);
 
-		/* If this is true, a node has already encountered an I/O error
-		   with the stepd, and the job should abort */
+		/* If this is true, an I/O error has already occurred on the
+		   stepd for the current node, and the job should abort */
 		if (bit_test(sls->node_io_error, node_id)) {
+			error("Aborting, step missing and io error on node %d",
+			      node_id);
 			sls->abort = true;
 			pthread_cond_broadcast(&sls->cond);
+			break;
+		}
+
+		/* 
+		 * A test is already is progress. Ignore message for this node.
+		 */
+		if (sls->io_deadline[node_id] != NO_VAL) {
+			debug("Test in progress for node %d, ignoring message",
+			      node_id);
+			continue;
+		}
+
+		sls->io_deadline[node_id] = time(NULL) + sls->io_timeout;
+		debug("Testing connection to node %d", node_id);
+		if (client_io_handler_send_test_message(cio, node_id, 
+							&test_message_sent)) {
+			/* TODO  Find a way to retry.  For now, 
+			    this effectively ignores the message 
+			    about a missing step. */
+			error("Could not test connection to node %d.", node_id);
+			sls->io_deadline[node_id] = (time_t)NO_VAL;
+			continue;
+		}
+
+		/*
+		 * test_message_sent should be true unless this node either
+		 * hasn't started or already finished.  Poke the io_timeout
+		 * thread to make sure it will abort the job if the deadline
+		 * for receiving a response passes.
+		 */
+		if (test_message_sent) {
+			pthread_cond_broadcast(&sls->cond);
 		} else {
-			/* If a connection has been opened try to write a test
-			   message.  If the connection was already closed 
-			   nicely, client_io_handler_send_test_message will 
-			   just return success, because the step has already 
-			   finished on that node.  If the write fails, the I/O 
-			   thread will note a problem and request an abort. */
-			if (client_io_handler_send_test_message(cio, node_id)) {
-				/* TODO  Find a way to retry.  For now, 
-				    this effectively ignores the message 
-				    about a missing step. */
-				error("Could not attempt to make "
-				      "remote connection.");
-			}
+			sls->io_deadline[node_id] = (time_t)NO_VAL;
 		}
 	}
 	pthread_mutex_unlock(&sls->lock);
@@ -1109,10 +1130,6 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	hostlist_iterator_destroy(fail_itr);
 	hostset_destroy(fail_nodes);
 	hostset_destroy(all_nodes);
-
-	debug("Step %u.%u missing from node(s) %s", 
-	      step_missing->job_id, step_missing->step_id,
-	      step_missing->nodelist);
 }
 
 /*
@@ -1486,12 +1503,16 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 	pthread_mutex_lock(&sls->lock);
 
 	bit_set(sls->node_io_error, node_id);
+	debug("IO error on node %d", node_id);
 
 	/* If this is true, either a node has already encountered an I/O error
 	   with the stepd, and the job should abort, or nodes are getting
 	   pinged to see if they are still alive, and a lost I/O connection
 	   triggers an abort. */
-	if (bit_test(sls->node_questionable, node_id) || sls->io_timeout > 0) {
+	//if (bit_test(sls->node_questionable, node_id) || sls->io_timeout > 0) {
+	if (sls->io_deadline[node_id] != (time_t)NO_VAL) {
+		error("Aborting, io error and missing step on node %d", 
+		      node_id);
 		sls->abort = true;
 		pthread_cond_broadcast(&sls->cond);
 	}
@@ -1503,8 +1524,8 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 
 
 /*
- * This is called after a node connects for the first time, and possibly
- * on successful io to/from a node if the io_timeout is set.
+ * This is called after a node connects for the first time and when
+ * a message comes in confirming that a connection is okay.
  * Just in case the node was marked questionable very early in the 
  * job step setup, clear this flag if/when the node makes its initial 
  * connection.
@@ -1513,16 +1534,9 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 int 
 step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id)
 {
-
 	pthread_mutex_lock(&sls->lock);
-
-	time_t now = time(NULL);
-	bit_clear(sls->node_questionable, node_id);
-	sls->io_timestamp[node_id] = now;
-	sls->testing_conn[node_id] = false;
-
+	sls->io_deadline[node_id] = (time_t)NO_VAL;
 	pthread_mutex_unlock(&sls->lock);
-
 	return SLURM_SUCCESS;
 }
 
@@ -1548,9 +1562,8 @@ _start_io_timeout_thread(step_launch_state_t *sls)
 static void *
 _check_io_timeout(void *_sls)
 {
-	int ii, jj;
-	time_t now;
-	int max_idle_time = 0;
+	int ii;
+	time_t now, next_deadline;
 	client_io_t *cio;
 	struct timespec ts = {0, 0};
 	step_launch_state_t *sls = (step_launch_state_t *)_sls;
@@ -1564,56 +1577,40 @@ _check_io_timeout(void *_sls)
 			break;
 
 		now = time(NULL);
+		next_deadline = (time_t)NO_VAL;
 
-		max_idle_time = 0;
 		for (ii = 0; ii < sls->layout->node_cnt; ii++) {
-			int idle_time = (int)(now - sls->io_timestamp[ii]);
-
-			/*
-			 * Don't test a node until it makes its initial 
-			 * connection.
-			 */
-			if (sls->io_timestamp[ii] == (time_t)NO_VAL) {
+			if (sls->io_deadline[ii] == (time_t)NO_VAL)
 				continue;
-			}
-			/*
-			 * Don't test a node if none of its tasks are 
-			 * currently running.
-			 */
-			if (sls->layout->tasks && sls->layout->tids && 
-			    sls->layout->tids[ii]) {
-				int num_running_tasks_on_node = 0;
-				for (jj=0; jj < sls->layout->tasks[ii]; jj++) {
-					int taskid = sls->layout->tids[ii][jj];
-					if ( bit_test(sls->tasks_started, 
-						      taskid) &&
-					    !bit_test(sls->tasks_exited,  
-						      taskid) ) {
-						num_running_tasks_on_node++;
-					}
-				}
-				if (num_running_tasks_on_node == 0) {
-					continue;
-				}
-			}
 
-			if (idle_time >= sls->io_timeout && 
-			    !sls->testing_conn[ii]) {
-				client_io_handler_send_test_message(cio, ii);
-				sls->testing_conn[ii] = true;
-			} else {
-				if (idle_time > max_idle_time)
-					max_idle_time = idle_time;
+			if (sls->io_deadline[ii] <= now) {
+				sls->abort = true;
+				pthread_cond_broadcast(&sls->cond);
+				error(  "Cannot communicate with node %d.  "
+					"Aborting job.", ii);
+				break;
+			} else if (next_deadline == (time_t)NO_VAL || 
+				   sls->io_deadline[ii] < next_deadline) {
+				next_deadline = sls->io_deadline[ii];
 			}
-
 		}
-		ts.tv_sec = now + sls->io_timeout - max_idle_time;
-		pthread_cond_timedwait(&sls->cond, &sls->lock, &ts);
+		if (sls->abort)
+			break;
+
+		if (next_deadline == (time_t)NO_VAL) {
+			debug("io timeout thread: no pending deadlines, "
+			      "sleeping indefinitely");
+			pthread_cond_wait(&sls->cond, &sls->lock);
+		} else {
+			debug("io timeout thread: sleeping %ds until deadline",
+			       next_deadline - time(NULL));
+			ts.tv_sec = next_deadline;
+			pthread_cond_timedwait(&sls->cond, &sls->lock, &ts);
+		}
 	}
 	pthread_mutex_unlock(&sls->lock);
 	return NULL;
 }
-
 
 
 
