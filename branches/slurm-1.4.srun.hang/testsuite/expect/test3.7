@@ -241,5 +241,7 @@ if {$not_supported == 0} {
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE: May be due to use of gang scheduler and race conditions\n"
 }
 exit $exit_code

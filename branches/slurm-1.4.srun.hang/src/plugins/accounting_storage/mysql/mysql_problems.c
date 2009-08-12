@@ -1,9 +1,11 @@
 /*****************************************************************************\
- *  timers.c - Timer functions
+ *  mysql_problems.c - functions for finding out problems in the
+ *                     associations and other places in the database.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *
+ *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov>
+ *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -36,48 +38,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <stdio.h>
-#include <sys/time.h>
-#include <src/common/log.h>
+#include "mysql_problems.h"
 
-/*
- * diff_tv_str - build a string showing the time difference between two times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * OUT tv_str - place to put delta time in format "usec=%ld"
- * IN len_tv_str - size of tv_str in bytes
- * IN from - where the function was called form
- */
-inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
-			char *tv_str, int len_tv_str, char *from,
-			long limit)
+extern List mysql_acct_no_assocs(mysql_conn_t *mysql_conn)
 {
-	long delta_t;
-
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
-	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
-	if(from) {
-		if(!limit)
-			limit = 1000000;
-		if(delta_t > limit) {
-			verbose("Warning: Note very large processing "
-				"time from %s: %s",
-				from, tv_str);
-		}
-	}
+	return NULL;
 }
 
-/*
- * diff_tv - return the difference between two times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * RET time in micro-seconds
- */
-inline long diff_tv(struct timeval *tv1, struct timeval *tv2)
+extern List mysql_cluster_no_assocs(mysql_conn_t *mysql_conn)
 {
-	long delta_t;
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
-	return delta_t;
+	return NULL;
+}
+
+extern List mysql_user_no_assocs_or_default(mysql_conn_t *mysql_conn)
+{
+	return NULL;
 }

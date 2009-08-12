@@ -68,6 +68,16 @@
 /* Define to 1 if you have Blue Gene system support. */
 #undef HAVE_BG
 
+/* Define to 1 if emulating or running on Blue Gene/L system */
+#undef HAVE_BGL
+
+/* Define to 1 if emulating or running on Blue Gene/P system */
+#undef HAVE_BGP
+
+/* 4-dimensional architecture counting the nodes under a switch as additional
+   dimension */
+#undef SYSTEM_DIMENSIONS
+
 /* Define to 1 if you have the `elan3' library (-lelan3). */
 #undef HAVE_ELAN
 
@@ -97,9 +107,9 @@ BEGIN_C_DECLS
    * <stdbool.h> may declare 'bool' to be a different type, such as 
    * an enum which is not necessarily compatible with C++.
    *
-   * If your compiler can't resolve 'bool', just add 
-   * "#define CRAPPY_COMPILER" before "#include <slurm/slurm.h> 
-   * in order for Slurm to define it's own version of bool.
+   * If your compiler can't resolve 'bool', just define 
+   * CRAPPY_COMPILER at build time in order for SLURM to 
+   * define it's own version of bool.
    */
 
    #undef  TRUE
@@ -260,12 +270,6 @@ enum job_acct_types {
 	JOB_SUSPEND,
 	JOB_TERMINATED
 };
-
-#ifdef HAVE_BG
-#  define SYSTEM_DIMENSIONS 3	/* for job geometry */
-#else
-#  define SYSTEM_DIMENSIONS 0	/* for job geometry */
-#endif
 
 enum connection_type {
 	SELECT_MESH, 		/* nodes wired in mesh */
@@ -633,7 +637,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
  * they are needed for LCRM and others that can't talk to the opaque data type
  * select_jobinfo.
  */
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
 				 * dimensions, e.g. X, Y, and Z */
 #endif
@@ -1206,6 +1210,7 @@ typedef struct reservation_name_msg {
 #define PREEMPT_MODE_CHECKPOINT	0x0003	/* checkpoint job to preempt, 
 					 * no automatic restart */
 #define PREEMPT_MODE_CANCEL	0x0004	/* always cancel the job */
+#define PREEMPT_MODE_GANG	0x8000	/* enable gang scheduling */
 
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */

@@ -3153,7 +3153,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"end if; "
 		"if @qos = '' then set @s = CONCAT("
 		"@s, '@qos := qos, "
-		"@delta_qos := CONCAT(@delta_qos, delta_qos), '); "
+		"@delta_qos := CONCAT(delta_qos, @delta_qos), '); "
 		"end if; "
 		"set @s = concat(@s, ' @my_acct := parent_acct from ', "
 		"my_table, ' where acct = \"', @my_acct, '\" && "
@@ -5644,9 +5644,11 @@ extern List acct_storage_p_modify_associations(
 						   ", qos=if(qos='', '', "
 						   "replace(qos, ',%s', ''))"
 						   ", delta_qos=if(qos='', "
-						   "concat(replace(delta_qos, "
-						   "',%s', ''), ',%s'), '')",
-						   new_qos+1, new_qos, new_qos);
+						   "concat(replace(replace("
+						   "delta_qos, ',+%s', ''), "
+						   "',-%s', ''), ',%s'), '')",
+						   new_qos+1, new_qos+1, 
+						   new_qos+1, new_qos);
 				} else if(new_qos[0] == '+') {
 					xstrfmtcat(vals,
 						   ", qos=if(qos='', '', "
@@ -5654,10 +5656,12 @@ extern List acct_storage_p_modify_associations(
 						   "replace(qos, ',%s', ''), "
 						   "\"%s\")), delta_qos=if("
 						   "qos='', concat("
-						   "replace(delta_qos, "
-						   "',%s', ''), ',%s'), '')",
+						   "replace(replace("
+						   "delta_qos, ',+%s', ''), "
+						   "',-%s', ''), ',%s'), '')",
 						   new_qos+1, new_qos+1,
-						   new_qos, new_qos);
+						   new_qos+1, new_qos+1, 
+						   new_qos);
 				} else if(new_qos[0]) 
 					xstrfmtcat(tmp_qos, ",%s", new_qos);
 				else
@@ -8634,6 +8638,7 @@ empty:
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 					acct_association_cond_t *assoc_cond)
 {
+	
 	return NULL;
 }
 
@@ -9960,7 +9965,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 		if((rc = mysql_hourly_rollup(mysql_conn, start_time, end_time)) 
 		   != SLURM_SUCCESS)
 			return rc;
-		END_TIMER2("hourly_rollup");
+		END_TIMER3("hourly_rollup", 5000000);
 		/* If we have a sent_end do not update the last_run_table */
 		if(!sent_end)
 			query = xstrdup_printf("update %s set hourly_rollup=%d",

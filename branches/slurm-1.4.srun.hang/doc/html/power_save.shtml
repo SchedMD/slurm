@@ -142,7 +142,7 @@ done
 <p>Subject to the various rates, limits and exclusions, the power save 
 code follows this logic:
 <ol>
-<li>Identifiy nodes which have been idle for at least <b>SuspendTime</b>.</li>
+<li>Identify nodes which have been idle for at least <b>SuspendTime</b>.</li>
 <li>Execute <b>SuspendProgram</b> with an argument of the idle node names.</li>
 <li>Identify the nodes which are in power save mode (a flag in the node's 
 state field), but have been allocated to jobs.</li>
@@ -167,7 +167,7 @@ nodes are in power save mode using messages of this sort:
 
 <p>Using these logs you can easily see the effect of SLURM's power saving 
 support.
-You can also configure SLURM with programs that perform no aciton as <b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential 
+You can also configure SLURM with programs that perform no action as <b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential 
 impact of power saving mode before enabling it.</p>
 
 <h2>Use of Allocations</h2>
@@ -203,7 +203,7 @@ is larger) for any spawned <b>SuspendProgram</b> or
 If the spawned program does not terminate within that time period, 
 the event will be logged and <i>slurmctld</i> will exit in order to 
 permit another <i>slurmctld</i> daemon to be initiated.
-Syncrhonization problems could also occur when the <i>slurmctld</i> 
+Synchronization problems could also occur when the <i>slurmctld</i> 
 daemon crashes (a rare event) and is restarted. </p>
 
 <p>In either event, the newly initiated <i>slurmctld</i> daemon (or 
@@ -219,6 +219,20 @@ In order to minimize this risk, when the <i>slurmctld</i> daemon is
 started and node which should be allocated to a job fails to respond, 
 the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
 
-<p style="text-align:center;">Last modified 2 June 2009</p>
+<h2>Booting Different Images</h2>
+
+<p>SLURM's <b>PrologSlurmctld</b> configuration parameter can identify a 
+program to boot different operating system images for each job based upon it's 
+constraint field (or possibly comment).
+If you want <b>ResumeProgram</b> to boot a various images according to 
+job specifications, it will need to be a fairly sophisticated program
+and perform the following actions:
+<ol>
+<li>Determine which jobs are associated with the nodes to be booted</li>
+<li>Determine which image is required for each job and</li>
+<li>Boot the appropriate image for each node</li>
+</ol>
+
+<p style="text-align:center;">Last modified 6 August 2009</p>
 
 <!--#include virtual="footer.txt"-->

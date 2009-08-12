@@ -1096,7 +1096,7 @@ display_it:
 				break;
 			else if(no_resp_flag1 && no_resp_flag2)
 				break;
-			
+
 			if(node_ptr->node_state != search_info->int_data) {
 				if((search_info->int_data & NODE_STATE_BASE) 
 				   == NODE_STATE_ALLOCATED) {
@@ -1142,7 +1142,6 @@ display_it:
 		
 		if(!found)
 			continue;
-		
 		list_push(send_info_list, sview_node_info_ptr);
 		change_grid_color(popup_win->grid_button_list,
 				  i, i, 0, true, 0);

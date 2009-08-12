@@ -70,7 +70,7 @@ by their application.  Table 1 summarizes the new multi-core flags.
 </td></tr>
 <tr>
     <td> --cores-per-socket=<i>C</i></td>
-    <td> Number of cores in a CPU to dedicate to a job (minimum or range)
+    <td> Number of cores in a socket to dedicate to a job (minimum or range)
 </td></tr>
 <tr>
     <td> --threads-per-core=<i>T</i></td>
@@ -130,10 +130,10 @@ to dedicate to a job (minimum or range)
 </td></tr>
 <tr>
     <td> --hint=compute_bound</td>
-    <td> use all cores in each physical CPU
+    <td> use all cores in each socket
 </td></tr>
     <td> --hint=memory_bound</td>
-    <td> use only one core in each physical CPU
+    <td> use only one core in each socket
 </td></tr>
     <td> --hint=[no]multithread</td>
     <td> [don't] use extra threads with in-core multi-threading
@@ -294,15 +294,15 @@ to -m block:cyclic with --cpu_bind=thread.</p>
 <a name="srun_constraints">
 <h3>New Constraints</h3></a>
 
-<p>To compliment the existing SLURM job minimum constraints
-(CPUs, memory, temp disk),
-constraint flags have also been added to allow a user to 
-specify a minimum number of sockets, cores, or threads:</p>
+<p>To complement the existing SLURM job minimum constraints (CPUs,
+memory, temp disk), constraint flags have also been added to allow a
+user to request nodes with a minimum number of sockets, cores, or
+threads:</p>
 
 <PRE>
---mincpus=<i>n</i>             minimum number of logical cpus per node
+--mincpus=<i>n</i>             minimum number of logical processors (threads) per node
 <u>--minsockets=<i>n</i></u>          minimum number of sockets per node
-<u>--mincores=<i>n</i></u>            minimum number of cores per cpu
+<u>--mincores=<i>n</i></u>            minimum number of cores per socket
 <u>--minthreads=<i>n</i></u>          minimum number of threads per core
 --mem=<i>MB</i>                minimum amount of real memory
 --tmp=<i>MB</i>                minimum amount of temporary disk
@@ -422,7 +422,7 @@ the right mappings.</p>
 
 <p>For computationally intensive applications, all cores in a multi-core
 system would normally be used. For memory bound applications, only
-using a single core on each CPU will result in the highest per
+using a single core on each socket will result in the highest per
 core memory bandwidth. For communication intensive applications,
 using in-core multi-threading (e.g. hyperthreading, SMT, or TMT)
 may also improve performance.
@@ -431,8 +431,8 @@ types of application hints to the SLURM multi-core support:</p>
 
 <PRE>
 --hint=             Bind tasks according to application hints
-    compute_bound   use all cores in each physical CPU
-    memory_bound    use only one core in each physical CPU
+    compute_bound   use all cores in each socket
+    memory_bound    use only one core in each socket
     [no]multithread [don't] use extra threads with in-core multi-threading
     help            show this help message
 </PRE>
@@ -476,7 +476,7 @@ a different layout using the high-level flags since users do not have to
 recalculate mask or CPU IDs. The new approach is very effortless compared to
 rearranging the mask or map.</p>
 
-<p>Given a 32-process MPI job and a four dual-CPU dual-core node
+<p>Given a 32-process MPI job and a four dual-socket dual-core node
 cluster, we want to use a block distribution across the four nodes and then a
 cyclic distribution within the node across the physical processors. We have had
 several requests from users that they would like this distribution to be the
@@ -537,7 +537,7 @@ nodes. The --cpu_bind option only allows users to specify a single
 mask for all the nodes. Using SLURM high-level flags remove this limitation
 since SLURM will correctly generate the appropriate masks for each requested nodes.</p>
 
-<h3>On a four dual-CPU dual-core node cluster with core block numbering </h3>
+<h3>On a four dual-socket dual-core node cluster with core block numbering </h3>
 
 <p>The cores are shown as c0 and c1 and the processors are shown
 as p0 through p3. The CPU IDs within a node in the block numbering are:

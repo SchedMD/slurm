@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2009" "slurm.conf 2.1" "Slurm configuration file"
+.TH "slurm.conf" "5" "August 2009" "slurm.conf 2.1" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -184,12 +184,24 @@ The default value is 0 to disable caching group data.
 The system\-initiated checkpoint method to be used for user jobs. 
 The slurmctld daemon must be restarted for a change in \fBCheckpointType\fR 
 to take effect. 
-Acceptable values at present include
-"checkpoint/aix" (only on AIX systems),
-"checkpoint/ompi" (requires OpenMPI version 1.3 or higher),
-"checkpoint/xlch" (for XLCH, requires that SlurmUser be root), and
-"checkpoint/none".
-The default value is "checkpoint/none".
+Supported values presently include:
+.RS
+.TP 18
+\fBcheckpoint/aix\fR
+for AIX systems only
+.TP
+\fBcheckpoint/blcr\fR
+Berkeley Lab Checkpoint Restart (BLCR)
+.TP
+\fBcheckpoint/none\fR
+no checkpoint support (default)
+.TP
+\fBcheckpoint/ompi\fR
+OpenMPI (version 1.3 or higher)
+.TP
+\fBcheckpoint/xlch\fR
+XLCH (requires that SlurmUser be root)
+.RE
 
 .TP
 \fBClusterName\fR
@@ -721,21 +733,19 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 
 .TP
 \fBPreemptMode\fR
-Controls the mechanism used to preempt lower priority jobs in order to 
-execute higher priority jobs.
-For gang scheduling of jobs having the same priority, job suspend will
-always be used and \fBPreemptMode\fR must be set to \fICANCEL\fR, 
-\fIREQUEUE\fR or \fISUSPEND\fR (anything other than \fIOFF\fR).
-Two different mechanisms can be used to determine when preeption can 
-take place. 
+Enables gang scheduling and/or controls the mechanism used to preempt lower 
+priority jobs in order to execute higher priority jobs.
+For gang scheduling (time slicing) of jobs in the same partition, 
+job suspend will always be used.
 SLURM partitions can have different \fBPriority\fR values and contain 
 the same nodes, in which case jobs from the higher priority 
-partition will preempt jobs from the lower priority partition.
-Alternately when SLURM is used with an accounting database, the jobs can be
-submitted to the same partition but have different Quality Of Service (QOS) 
-values. 
-Jobs from a QOS with a descriptor containing \fIPREEMPTOR\fR are capable
-of preempting jobs from a QOS with a descriptor containing \fIPREEMPTEE\fR.
+partition can preempt jobs from the lower priority partition.
+The \fBGANG\fR option can be specified in addition to a preemption 
+method specification with the two options comma separated.
+NOTE: \fBGANG\fR must be specified for job preemption to occur.
+Changes are underway to permit job preemption without gang scheduling
+and job preemption based upon QOS (Quality Of Service) rather than 
+partition priority.
 .RS
 .TP 12
 \fBOFF\fR
@@ -749,6 +759,9 @@ always cancel the job.
 .TP
 \fBCHECKPOINT\fR
 preempts jobs by checkpointing them (if possible) or cancelling them.
+.TP
+\fBGANG\fR
+enables gang scheduling (time slicing) of jobs in the same partition.
 .TP
 \fBREQUEUE\fR
 preempts jobs by requeuing them (if possible) or cancelling them.
@@ -960,6 +973,11 @@ The program executes as SlurmUser, which gives it permission to drain
 nodes and requeue the job if a failure occurs or cancel the job if appropriate.
 The program can be used to reboot nodes or perform other work to prepare 
 resources for use. 
+While this program is running, the nodes associated with the job will be 
+have a POWER_UP/CONFIGURING flag set in their state, which can be readily
+viewed.
+A non\-zero exit code will result in the job being requeued (where possible)
+or killed.
 See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP

@@ -353,10 +353,8 @@ get_resource_arg_range(const char *arg, const char *what, int* min, int *max,
 	char *p;
 	long int result;
 
-	if (*arg == '\0') return true;
-
 	/* wildcard meaning every possible value in range */
-	if (*arg == '*' ) {
+	if ((*arg == '\0') || (*arg == '*' )) {
 		*min = 1;
 		*max = INT_MAX;
 		return true;
@@ -494,8 +492,8 @@ bool verify_hint(const char *arg, int *min_sockets, int *max_sockets,
 			printf(
 "Application hint options:\n"
 "    --hint=             Bind tasks according to application hints\n"
-"        compute_bound   use all cores in each physical CPU\n"
-"        memory_bound    use only one core in each physical CPU\n"
+"        compute_bound   use all cores in each socket\n"
+"        memory_bound    use only one core in each socket\n"
 "        [no]multithread [don't] use extra threads with in-core multi-threading\n"
 "        help            show this help message\n");
 			return 1;

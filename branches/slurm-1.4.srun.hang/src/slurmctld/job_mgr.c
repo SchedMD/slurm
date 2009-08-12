@@ -140,6 +140,7 @@ static int  _load_job_details(struct job_record *job_ptr, Buf buffer);
 static int  _load_job_state(Buf buffer);
 static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
+static int  _open_job_state_file(char **state_file);
 static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer);
 static void _pack_default_job_details(struct job_details *detail_ptr,
 				      Buf buffer);
@@ -155,13 +156,13 @@ static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
 static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
-static int  _resume_job_nodes(struct job_record *job_ptr);
+static int  _resume_job_nodes(struct job_record *job_ptr, bool clear_prio);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op);
-static int  _suspend_job_nodes(struct job_record *job_ptr);
+static int  _suspend_job_nodes(struct job_record *job_ptr, bool clear_prio);
 static bool _top_priority(struct job_record *job_ptr);
 static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				  struct part_record *part_ptr,
@@ -407,6 +408,35 @@ int dump_all_job_state(void)
 	return error_code;
 }
 
+/* Open the job state save file, or backup if necessary.
+ * state_file IN - the name of the state save file used
+ * RET the file description to read from or error code
+ */
+static int _open_job_state_file(char **state_file)
+{
+	int state_fd;
+	struct stat stat_buf;
+
+	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(*state_file, "/job_state");
+	state_fd = open(*state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("Could not open job state file %s: %m", *state_file);
+	} else if (fstat(state_fd, &stat_buf) < 0) {
+		error("Could not stat job state file %s: %m", *state_file);
+		(void) close(state_fd);
+	} else if (stat_buf.st_size < 10) {
+		error("Job state file %s too small", *state_file);
+		(void) close(state_fd);
+	} else 	/* Success */
+		return state_fd;
+
+	error("NOTE: Trying backup state save file. Jobs may be lost!");
+	xstrcat(*state_file, ".old");
+	state_fd = open(*state_file, O_RDONLY);
+	return state_fd;
+}
+
 /*
  * load_all_job_state - load the job state from file, recover from last 
  *	checkpoint. Execute this after loading the configuration file data.
@@ -426,10 +456,8 @@ extern int load_all_job_state(void)
 	uint32_t ver_str_len;
 
 	/* read the file */
-	state_file = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(state_file, "/job_state");
 	lock_state_files();
-	state_fd = open(state_file, O_RDONLY);
+	state_fd = _open_job_state_file(&state_file);
 	if (state_fd < 0) {
 		info("No job state file (%s) to recover", state_file);
 		error_code = ENOENT;
@@ -2276,7 +2304,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	List license_list = NULL;
 	bool valid;
 
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	uint16_t reboot;
 	uint16_t rotate;
@@ -2488,7 +2516,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = 1;
 
-#if SYSTEM_DIMENSIONS
+#ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_desc->select_jobinfo,
 			     SELECT_JOBDATA_GEOMETRY, &geo);
 	if (geo[0] == (uint16_t) NO_VAL) {
@@ -6295,14 +6323,14 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 	return;
 }
 /* Specified job is being suspended, release allocated nodes */
-static int _suspend_job_nodes(struct job_record *job_ptr)
+static int _suspend_job_nodes(struct job_record *job_ptr, bool clear_prio)
 {
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t node_flags;
 
-	if ((slurm_get_preempt_mode() == PREEMPT_MODE_OFF) &&
-	    ((rc = select_g_job_suspend(job_ptr)) != SLURM_SUCCESS))
+	if (clear_prio &&
+	    (rc = select_g_job_suspend(job_ptr)) != SLURM_SUCCESS)
 		return rc;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
@@ -6347,14 +6375,14 @@ static int _suspend_job_nodes(struct job_record *job_ptr)
 }
 
 /* Specified job is being resumed, re-allocate the nodes */
-static int _resume_job_nodes(struct job_record *job_ptr)
+static int _resume_job_nodes(struct job_record *job_ptr, bool clear_prio)
 {
 	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t node_flags;
 
-	if ((slurm_get_preempt_mode() == PREEMPT_MODE_OFF) &&
-	    ((rc = select_g_job_resume(job_ptr)) != SLURM_SUCCESS))
+	if (clear_prio &&
+	    (rc = select_g_job_resume(job_ptr)) != SLURM_SUCCESS)
 		return rc;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
@@ -6396,6 +6424,7 @@ static int _resume_job_nodes(struct job_record *job_ptr)
  *		   suspending it, this is used to distinguish
  *		   jobs explicitly suspended by admins/users from
  *		   jobs suspended though automatic preemption
+ *		   (the gang scheduler)
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid, 
@@ -6449,7 +6478,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			rc = ESLURM_DISABLED;
 			goto reply;
 		}
-		rc = _suspend_job_nodes(job_ptr);
+		rc = _suspend_job_nodes(job_ptr, clear_prio);
 		if (rc != SLURM_SUCCESS)
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);
@@ -6471,7 +6500,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			rc = ESLURM_DISABLED;
 			goto reply;
 		}
-		rc = _resume_job_nodes(job_ptr);
+		rc = _resume_job_nodes(job_ptr, clear_prio);
 		if (rc != SLURM_SUCCESS)
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);

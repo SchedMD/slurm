@@ -474,6 +474,12 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->bg_block_name 
 			= xstrdup(block_info_ptr->
 				  block_array[i].bg_block_id);
+
+		/* If we don't have a block name just continue since
+		   ths block hasn't been made in the system yet. */
+		if(!block_ptr->bg_block_name)
+			continue;
+
 #ifdef HAVE_BG_FILES
 		block_ptr->color_inx = 
 			atoi(block_ptr->bg_block_name+7);

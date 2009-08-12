@@ -1029,7 +1029,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 }
 
 /*
- * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
+ * epilog_slurmctld - execute the epilog_slurmctld for a job that has just
  *	terminated.
  * IN job_ptr - pointer to job that has been terminated
  * RET SLURM_SUCCESS(0) or error code
@@ -1215,15 +1215,25 @@ static void *_run_prolog(void *arg)
 	pid_t cpid;
 	int i, status, wait_rc;
 	char *argv[2], **my_env;
-	/* Locks: Read config, job */
+	/* Locks: Read config, job; Write nodes */
 	slurmctld_lock_t config_read_lock = { 
-		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
+	bitstr_t *node_bitmap = NULL;
 
 	lock_slurmctld(config_read_lock);
 	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
 	argv[1] = NULL;
 	my_env = _build_env(job_ptr);
 	job_id = job_ptr->job_id;
+	if (job_ptr->node_bitmap) {
+		node_bitmap = bit_copy(job_ptr->node_bitmap);
+		for (i=0; i<node_record_count; i++) {
+			if (bit_test(node_bitmap, i) == 0)
+				continue;
+			node_record_table_ptr[i].node_state |= 
+				NODE_STATE_POWER_UP;
+		}
+	}
 	unlock_slurmctld(config_read_lock);
 
 	if ((cpid = fork()) < 0) {
@@ -1255,6 +1265,8 @@ static void *_run_prolog(void *arg)
 	if (status != 0) {
 		error("prolog_slurmctld job %u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
+		if (job_requeue(0, job_id, -1))
+			(void) job_signal(job_id, SIGKILL, 0, 0);
 	} else
 		debug2("prolog_slurmctld job %u prolog completed", job_id);
 
@@ -1275,8 +1287,22 @@ static void *_run_prolog(void *arg)
 		if (job_ptr->batch_flag &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)))
 			launch_job(job_ptr);
+		for (i=0; i<node_record_count; i++) {
+			if (bit_test(job_ptr->node_bitmap, i) == 0)
+				continue;
+			node_record_table_ptr[i].node_state &= 
+				(~NODE_STATE_POWER_UP);
+		}
+	} else if (node_bitmap) {
+		for (i=0; i<node_record_count; i++) {
+			if (bit_test(node_bitmap, i) == 0)
+				continue;
+			node_record_table_ptr[i].node_state &= 
+				(~NODE_STATE_POWER_UP);
+		}
 	}
 	unlock_slurmctld(config_read_lock);
+	FREE_NULL_BITMAP(node_bitmap);
 
 	return NULL;
 }

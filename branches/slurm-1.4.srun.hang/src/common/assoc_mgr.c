@@ -2,7 +2,7 @@
  *  accounting_storage_slurmdbd.c - accounting interface to slurmdbd.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
@@ -2340,7 +2340,7 @@ extern int load_assoc_usage(char *state_save_location)
 
 	/* read the file */
 	state_file = xstrdup(state_save_location);
-	xstrcat(state_file, "/assoc_usage");
+	xstrcat(state_file, "/assoc_usage");	/* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	slurm_mutex_lock(&assoc_mgr_file_lock);
 	state_fd = open(state_file, O_RDONLY);
@@ -2442,7 +2442,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	
 	/* read the file */
 	state_file = xstrdup(state_save_location);
-	xstrcat(state_file, "/assoc_mgr_state");
+	xstrcat(state_file, "/assoc_mgr_state"); /* Always ignore .old file */
 	//info("looking at the %s file", state_file);
 	slurm_mutex_lock(&assoc_mgr_file_lock);
 	state_fd = open(state_file, O_RDONLY);

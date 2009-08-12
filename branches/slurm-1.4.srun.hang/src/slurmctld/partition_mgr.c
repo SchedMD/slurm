@@ -5,6 +5,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -86,6 +87,7 @@ static uid_t *_get_groups_members(char *group_names);
 static uid_t *_get_group_members(char *group_name);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
+static int    _open_part_state_file(char **state_file);
 static int    _uid_list_size(uid_t * uid_list_ptr);
 static void   _unlink_free_nodes(bitstr_t *old_bitmap, 
 			struct part_record *part_ptr);
@@ -407,6 +409,37 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	packstr(part_ptr->nodes,         buffer);
 }
 
+/* Open the partition state save file, or backup if necessary.
+ * state_file IN - the name of the state save file used
+ * RET the file description to read from or error code
+ */
+static int _open_part_state_file(char **state_file)
+{
+	int state_fd;
+	struct stat stat_buf;
+
+	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(*state_file, "/part_state");
+	state_fd = open(*state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("Could not open partition state file %s: %m", 
+		      *state_file);
+	} else if (fstat(state_fd, &stat_buf) < 0) {
+		error("Could not stat partition state file %s: %m", 
+		      *state_file);
+		(void) close(state_fd);
+	} else if (stat_buf.st_size < 10) {
+		error("Partition state file %s too small", *state_file);
+		(void) close(state_fd);
+	} else 	/* Success */
+		return state_fd;
+
+	error("NOTE: Trying backup state save file. Information may be lost!");
+	xstrcat(*state_file, ".old");
+	state_fd = open(*state_file, O_RDONLY);
+	return state_fd;
+}
+
 /*
  * load_all_part_state - load the partition state from file, recover on 
  *	slurmctld restart. execute this after loading the configuration 
@@ -429,10 +462,8 @@ int load_all_part_state(void)
 	char* allow_alloc_nodes = NULL;
 
 	/* read the file */
-	state_file = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(state_file, "/part_state");
 	lock_state_files();
-	state_fd = open(state_file, O_RDONLY);
+	state_fd = _open_part_state_file(&state_file);
 	if (state_fd < 0) {
 		info("No partition state file (%s) to recover",
 		     state_file);

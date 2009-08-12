@@ -909,7 +909,8 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 	if (response == GTK_RESPONSE_OK)
 	{
 		global_sleep_time = 
-			gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(spin_button));
+			gtk_spin_button_get_value_as_int(
+				GTK_SPIN_BUTTON(spin_button));
 		temp = g_strdup_printf("Refresh Interval set to %d seconds.",
 				       global_sleep_time);
 		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar), 

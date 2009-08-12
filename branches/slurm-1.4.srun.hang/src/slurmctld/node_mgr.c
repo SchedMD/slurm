@@ -107,6 +107,7 @@ static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
 static void	_node_did_resp(struct node_record *node_ptr);
 static bool	_node_is_hidden(struct node_record *node_ptr);
+static int	_open_node_state_file(char **state_file);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
@@ -423,6 +424,35 @@ _find_alias_node_record (char *name)
 	return (struct node_record *) NULL;
 }
 
+/* Open the node state save file, or backup if necessary.
+ * state_file IN - the name of the state save file used
+ * RET the file description to read from or error code
+ */
+static int _open_node_state_file(char **state_file)
+{
+	int state_fd;
+	struct stat stat_buf;
+
+	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(*state_file, "/node_state");
+	state_fd = open(*state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("Could not open node state file %s: %m", *state_file);
+	} else if (fstat(state_fd, &stat_buf) < 0) {
+		error("Could not stat node state file %s: %m", *state_file);
+		(void) close(state_fd);
+	} else if (stat_buf.st_size < 10) {
+		error("Node state file %s too small", *state_file);
+		(void) close(state_fd);
+	} else 	/* Success */
+		return state_fd;
+
+	error("NOTE: Trying backup state save file. Information may be lost!");
+	xstrcat(*state_file, ".old");
+	state_fd = open(*state_file, O_RDONLY);
+	return state_fd;
+}
+
 /*
  * load_all_node_state - Load the node state from file, recover on slurmctld 
  *	restart. Execute this after loading the configuration file data.
@@ -456,7 +486,7 @@ extern int load_all_node_state ( bool state_only )
 	state_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (state_file, "/node_state");
 	lock_state_files ();
-	state_fd = open (state_file, O_RDONLY);
+	state_fd = _open_node_state_file(&state_file);
 	if (state_fd < 0) {
 		info ("No node state file (%s) to recover", state_file);
 		error_code = ENOENT;
@@ -639,8 +669,7 @@ find_node_record (char *name)
 {
 	int i;
 	
-	if ((name == NULL)
-	||  (name[0] == '\0')) {
+	if ((name == NULL) || (name[0] == '\0')) {
 		info("find_node_record passed NULL name");
 		return NULL;
 	}
@@ -659,8 +688,8 @@ find_node_record (char *name)
 			node_ptr = node_ptr->node_next;
 		}
 
-		if ((node_record_count == 1)
-		&&  (strcmp(node_record_table_ptr[0].name, "localhost") == 0))
+		if ((node_record_count == 1) &&
+		    (strcmp(node_record_table_ptr[0].name, "localhost") == 0))
 			return (&node_record_table_ptr[0]);
 	       
 		error ("find_node_record: lookup failure for %s", name);
@@ -1007,7 +1036,7 @@ void rehash_node (void)
 
 	xfree (node_hash_table);
 	node_hash_table = xmalloc (sizeof (struct node_record *) * 
-				node_record_count);
+				   node_record_count);
 
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if ((node_ptr->name == NULL) ||
@@ -2059,7 +2088,7 @@ extern int validate_nodes_via_front_end(
 	if (reg_hostlist) {
 		hostlist_uniq(reg_hostlist);
 		hostlist_ranged_string(reg_hostlist, sizeof(host_str),
-			host_str);
+				       host_str);
 		debug("Nodes %s have registered", host_str);
 		hostlist_destroy(reg_hostlist);
 	}
@@ -2382,6 +2411,7 @@ static void _dump_hash (void)
 
 	if (node_hash_table == NULL)
 		return;
+
 	for (i = 0; i < node_record_count; i++) {
 		node_ptr = node_hash_table[i];
 		while (node_ptr) {

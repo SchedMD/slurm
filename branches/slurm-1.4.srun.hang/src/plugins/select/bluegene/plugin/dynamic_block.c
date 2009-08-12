@@ -66,6 +66,7 @@ extern List create_dynamic_block(List block_list,
 	int i;
 	blockreq_t blockreq;
 	int cnodes = request->procs / bg_conf->proc_ratio;
+	char *unusable_nodes = NULL;
 
 	if(cnodes < bg_conf->smallest_block) {
 		error("Can't create this size %d "
@@ -120,7 +121,6 @@ extern List create_dynamic_block(List block_list,
 	}
 
 	if(request->avail_node_bitmap) {
- 		char *nodes = NULL;
 		bitstr_t *bitmap = bit_alloc(node_record_count);
 		
 		/* we want the bps that aren't in this partition to
@@ -128,12 +128,11 @@ extern List create_dynamic_block(List block_list,
 		 */
 		bit_or(bitmap, request->avail_node_bitmap);
 		bit_not(bitmap);
-		nodes = bitmap2node_name(bitmap);
+		unusable_nodes = bitmap2node_name(bitmap);
 		
 		//info("not using %s", nodes);
-		removable_set_bps(nodes);
+		removable_set_bps(unusable_nodes);
 
-		xfree(nodes);
 		FREE_NULL_BITMAP(bitmap);
 	}
 
@@ -254,17 +253,20 @@ extern List create_dynamic_block(List block_list,
 		   && (bit_ffs(bg_record->ionode_bitmap) != 0))
 			continue;
 		
-		debug2("removing %s for request %d",
+		debug3("removing %s for request %d",
 		       bg_record->nodes, request->size);
 		remove_block(bg_record->bg_block_list, (int)NO_VAL);
+		/* need to set any unusable nodes that this last block
+		   used */
+		removable_set_bps(unusable_nodes);
 		rc = SLURM_SUCCESS;
 		if(results)
 			list_flush(results);
 		else
 			results = list_create(NULL);
-		if (allocate_block(request, results)) 
+		if (allocate_block(request, results))
 			break;
-
+		
 		debug2("allocate failure for size %d base partitions", 
 		       request->size);
 		rc = SLURM_ERROR;
@@ -291,6 +293,7 @@ setup_records:
 finished:
 	reset_all_removed_bps();
 	
+	xfree(unusable_nodes);
 	xfree(request->save_name);
 	
 	if(request->elongate_geos) {
@@ -319,15 +322,28 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->user_name = xstrdup(bg_record->user_name);
 	found_record->user_uid = bg_record->user_uid;
 	found_record->bg_block_list = list_create(destroy_ba_node);
-	ba_node = list_peek(bg_record->bg_block_list);
+	if(bg_record->bg_block_list)
+		ba_node = list_peek(bg_record->bg_block_list);
 	if(!ba_node) {
-		hostlist_t hl = hostlist_create(bg_record->nodes);
-		char *host = hostlist_shift(hl);
-		hostlist_destroy(hl);
-		found_record->nodes = xstrdup(host);
-		free(host);
-		error("you gave me a list with no ba_nodes using %s", 
-		      found_record->nodes);
+		if(bg_record->nodes) {
+			hostlist_t hl = hostlist_create(bg_record->nodes);
+			char *host = hostlist_shift(hl);
+			hostlist_destroy(hl);
+			found_record->nodes = xstrdup(host);
+			free(host);
+			error("you gave me a list with no ba_nodes using %s", 
+			      found_record->nodes);
+		} else {
+			found_record->nodes = xstrdup_printf(
+				"%s%c%c%c",
+				bg_conf->slurm_node_prefix, 
+				alpha_num[found_record->start[X]],
+				alpha_num[found_record->start[Y]],
+				alpha_num[found_record->start[Z]]);
+			error("you gave me a record with no ba_nodes "
+			      "and no nodes either using %s", 
+			      found_record->nodes);
+		}
 	} else {
 		int i=0,j=0;
 		new_ba_node = ba_copy_node(ba_node);
@@ -716,7 +732,6 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	}
 	
 	if(bg_record) {
-		List temp_list = NULL;
 		bg_record_t *found_record = NULL;
 
 		if(bg_record->original) {
@@ -748,13 +763,6 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			goto finished;	
 		}
 		_split_block(block_list, new_blocks, found_record, cnodes);
-		remove_from_bg_list(block_list, bg_record);
-		destroy_bg_record(bg_record);
-		remove_from_bg_list(bg_lists->main, found_record);
-		temp_list = list_create(NULL);
-		list_push(temp_list, found_record);
-		free_block_list(temp_list);
-		list_destroy(temp_list);
 		rc = SLURM_SUCCESS;
 		goto finished;
 	}

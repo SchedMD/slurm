@@ -6,8 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Removed sched/gang plugin and moved the logic directly into the slurmctld
     daemon so that job preemption and gang scheduling can be used with the
     sched/backfill plugin. Added configuration parameter:
-    PreemptMode=off|suspend|cancel|requeue|checkpoint 
-    to enable/disable the job preemption logic (disabled by default).
+    PreemptMode=gang|off|suspend|cancel|requeue|checkpoint 
+    to enable/disable gang scheduling and job preemption logic (both are 
+    disabled by default).
     (NOTE: There are some problems with memory management which could prevent a
     job from starting when memory would be freed by a job being requeued or 
     otherwise removed, these are being worked on)
@@ -31,6 +32,21 @@ documents those changes that are of interest to users and admins.
  -- Applied patch from Doug Parisek (Doug.Parisek@bull.com) for speeding up 
     start of sview by delaying to creation of tooltips until requested.
  -- Changed GtkToolTips to GtkToolTip for newer versions of GTK.
+ -- Applied patch from Rod Schultz (Rod.Schultz@Bull.com) that eliminates
+    ambiguity in the documentation over use of the terms "CPU" and "socket".
+ -- Modified get_resource_arg_range() to return full min/max values when input
+    string is null.  This fixes the srun -B option to function as documented.
+ -- If the job, node, partition, reservation or trigger state file is missing 
+    or too small, automatically try using the previously saved state (file 
+    name with ".old" suffix).
+ -- Set a node's power_up/configuring state flag while PrologSlurmctld is
+    running for a job allocated to that node.
+ -- If PrologSlurmctld has a non-zero exit code, requeue the job or kill it.
+ -- Added sacct ability to use --format NAME%LENGTH similar to sacctmgr.
+ -- Improve hostlist logic for multidimensional systems.
+ -- The pam_slurm Pluggable Authentication Module for SLURM previously
+    distributed separately has been moved within the main SLURM distribution
+    and is packaged as a separate RPM.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
@@ -125,6 +141,16 @@ documents those changes that are of interest to users and admins.
     consumable resources plugin which would cause the controller to core.
  -- Fixed race condition that sometimes caused jobs to stay in completing
     state longer than necessary after being terminated.
+ -- Fixed issue where if a parent account has a qos added and then a child
+    account has the qos removed the users still get the qos.
+ -- BLUEGENE - New blocks in dynamic mode will only be made in the system
+    when the block is actually needed for a job, not when testing.
+ -- BLUEGENE - Don't remove larger block used for small block until job starts.
+ -- Add new squeue output format and sort option of "%L" to print a job's time 
+    left (time limit minus time used).
+ -- BLUEGENE - Fixed draining state count for sinfo/sview.
+ -- Fix for sview to not core when viewing nodes allocated to a partition 
+    and the all jobs finish.
 
 * Changes in SLURM 2.0.4
 ========================

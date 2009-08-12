@@ -2239,7 +2239,8 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
-				
+	GtkTreeIter par_iter;
+			
 	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 	
 	switch(id) {
@@ -2327,7 +2328,14 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case RESV_PAGE:
 	case NODE_PAGE:
 		g_free(name);
-		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
+		/* we want to include the parent's nodes here not just
+		   the subset */
+		if(gtk_tree_model_iter_parent(model, &par_iter, iter)) 
+			gtk_tree_model_get(model, &par_iter,
+					   SORTID_NODELIST, &name, -1);
+		else
+			gtk_tree_model_get(model, iter, 
+					   SORTID_NODELIST, &name, -1);
 		popup_win->spec_info->search_info->gchar_data = name;
 		if(state && strlen(state)) {
 			popup_win->spec_info->search_info->search_type =

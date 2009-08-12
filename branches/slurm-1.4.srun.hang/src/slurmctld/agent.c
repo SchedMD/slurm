@@ -751,7 +751,7 @@ static inline int _comm_err(char *node_name)
 #if AGENT_IS_THREAD
 	if ((rc = is_node_resp (node_name)))
 #endif
-		verbose("agent/send_recv_msg: %s: %m", node_name);
+		verbose("agent/is_node_resp: %s: %m", node_name);
 	return rc;
 }
 
@@ -1513,7 +1513,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	node_ptr = find_node_record(hostname);
 	if (node_ptr == NULL) {
 		error("agent(batch_launch) removed pending request for job "
-		      "%s, missing node %s",
+		      "%u, missing node %s",
 		      launch_msg_ptr->job_id, agent_arg_ptr->hostlist);
 		return -1;	/* invalid request?? */
 	}
