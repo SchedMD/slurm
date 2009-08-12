@@ -151,6 +151,10 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fixed draining state count for sinfo/sview.
  -- Fix for sview to not core when viewing nodes allocated to a partition 
     and the all jobs finish.
+ -- Fix cons_res to not core dump when finishing a job running on a 
+    defunct partition.
+ -- Don't require a node to have --ntasks-per-node CPUs for use when the 
+    --overcommit option is also used.
 
 * Changes in SLURM 2.0.4
 ========================
