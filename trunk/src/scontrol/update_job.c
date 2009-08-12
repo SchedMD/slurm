@@ -69,7 +69,8 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
 		if (next_str[0] == '.') {
-			step_id = (uint32_t) strtol (&next_str[1], &next_str, 10);
+			step_id = (uint32_t) strtol (&next_str[1], &next_str, 
+						     10);
 			step_id_set = 1;
 		} else
 			step_id = NO_VAL;
@@ -111,22 +112,25 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 	else if (strncasecmp(op, "enable", MAX(oplen, 2)) == 0)
 		rc = slurm_checkpoint_enable (job_id, step_id);
 	else if (strncasecmp(op, "create", MAX(oplen, 2)) == 0) {
-		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)) {
+		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)){
 			return 0;
 		}
-		rc = slurm_checkpoint_create (job_id, step_id, max_wait, image_dir);
+		rc = slurm_checkpoint_create (job_id, step_id, max_wait, 
+					      image_dir);
 
 	} else if (strncasecmp(op, "vacate", MAX(oplen, 2)) == 0) {
-		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)) {
+		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)){
 			return 0;
 		}
-		rc = slurm_checkpoint_vacate (job_id, step_id, max_wait, image_dir);
+		rc = slurm_checkpoint_vacate (job_id, step_id, max_wait, 
+					      image_dir);
 
 	} else if (strncasecmp(op, "restart", MAX(oplen, 2)) == 0) {
 		if (_parse_restart_args(argc, argv, &stick, &image_dir)) {
 			return 0;
 		}
-		rc = slurm_checkpoint_restart (job_id, step_id, stick, image_dir);
+		rc = slurm_checkpoint_restart (job_id, step_id, stick, 
+					       image_dir);
 
 	} else if (strncasecmp(op, "error", MAX(oplen, 2)) == 0) {
 		rc = slurm_checkpoint_error (job_id, step_id, 
@@ -276,7 +280,7 @@ scontrol_update_job (int argc, char *argv[])
 			taglen = val - argv[i];
 			val++;
 			vallen = strlen(val);
-		} else if (strncasecmp(tag, "Nice", MAX(strlen(tag), 2)) == 0) {
+		} else if (strncasecmp(tag, "Nice", MAX(strlen(tag), 2)) == 0){
 			/* "Nice" is the only tag that might not have an 
 			   equal sign, so it is handled specially. */
 			job_msg.nice = NICE_OFFSET + 100;
@@ -317,7 +321,8 @@ scontrol_update_job (int argc, char *argv[])
 			nice = strtoll(val, (char **) NULL, 10);
 			if (abs(nice) > NICE_OFFSET) {
 				error("Invalid nice value, must be between "
-					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
+					"-%d and %d", NICE_OFFSET, 
+					NICE_OFFSET);
 				exit_code = 1;
 				return 0;
 			}
@@ -451,11 +456,11 @@ scontrol_update_job (int argc, char *argv[])
 							(char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "ExcNodeList", MAX(taglen, 1)) == 0) {
+		else if (strncasecmp(tag, "ExcNodeList", MAX(taglen, 1)) == 0){
 			job_msg.exc_nodes = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "ReqNodeList", MAX(taglen, 8)) == 0) {
+		else if (strncasecmp(tag, "ReqNodeList", MAX(taglen, 8)) == 0){
 			job_msg.req_nodes = val;
 			update_cnt++;
 		}
@@ -536,7 +541,8 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else {
 			exit_code = 1;
-			fprintf (stderr, "Invalid input: %s\n", argv[i]);
+			fprintf (stderr, "Update of this parameter is not "
+				 "supported: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
 			return 0;
 		}

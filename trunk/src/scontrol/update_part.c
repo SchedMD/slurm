@@ -86,7 +86,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->max_time = max_time;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "DefaultTime", MAX(taglen, 8)) == 0) {
+		else if (strncasecmp(tag, "DefaultTime", MAX(taglen, 8)) == 0){
 			int default_time = time_str2mins(val);
 			if ((default_time < 0) && (default_time != INFINITE)) {
 				exit_code = 1;
@@ -166,23 +166,29 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0) {
 				part_msg_ptr->max_share = 1;
 
-			} else if (strncasecmp(val, "EXCLUSIVE", MAX(vallen, 1)) == 0) {
+			} else if (strncasecmp(val, "EXCLUSIVE", 
+				   MAX(vallen, 1)) == 0) {
 				part_msg_ptr->max_share = 0;
 
-			} else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0) {
+			} else if (strncasecmp(val, "YES", MAX(vallen, 1)) 
+				   == 0) {
 				if (colon_pos) {
-					part_msg_ptr->max_share = (uint16_t) strtol(colon_pos+1, 
-						(char **) NULL, 10);
+					part_msg_ptr->max_share = 
+						(uint16_t) strtol(colon_pos+1, 
+							(char **) NULL, 10);
 				} else {
 					part_msg_ptr->max_share = (uint16_t) 4;
 				}
-			} else if (strncasecmp(val, "FORCE", MAX(vallen, 1)) == 0) {
+			} else if (strncasecmp(val, "FORCE", MAX(vallen, 1)) 
+				   == 0) {
 				if (colon_pos) {
-					part_msg_ptr->max_share = (uint16_t) strtol(colon_pos+1,
-						(char **) NULL, 10) | SHARED_FORCE;
+					part_msg_ptr->max_share = 
+						(uint16_t) strtol(colon_pos+1,
+							(char **) NULL, 10) | 
+							SHARED_FORCE;
 				} else {
-					part_msg_ptr->max_share = (uint16_t) 4 |
-						SHARED_FORCE;
+					part_msg_ptr->max_share = 
+						(uint16_t) 4 |SHARED_FORCE;
 				}
 			} else {
 				exit_code = 1;
@@ -216,7 +222,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->nodes = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "AllowGroups", MAX(taglen, 1)) == 0) {
+		else if (strncasecmp(tag, "AllowGroups", MAX(taglen, 1)) == 0){
 			part_msg_ptr->allow_groups = val;
 			(*update_cnt_ptr)++;
 		}
@@ -226,7 +232,8 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 		}
 		else {
 			exit_code = 1;
-			error("Invalid input: %s", argv[i]);
+			error("Update of this parameter is not "
+			      "supported: %s\n", argv[i]);
 			error("Request aborted");
 			return -1;
 		}
