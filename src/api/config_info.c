@@ -306,6 +306,8 @@ void slurm_print_ctl_conf ( FILE* out,
 			slurm_ctl_conf_ptr->max_mem_per_task);
 	} else
 		fprintf(out, "MaxMemPerCPU            = UNLIMITED\n");
+	fprintf(out, "MaxTasksPerNode         = %u\n",
+		slurm_ctl_conf_ptr->max_tasks_per_node);
 	fprintf(out, "MessageTimeout          = %u sec\n",
 		slurm_ctl_conf_ptr->msg_timeout);
 	fprintf(out, "MinJobAge               = %u sec\n", 
