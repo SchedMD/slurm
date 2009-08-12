@@ -178,7 +178,6 @@
 #define LONG_OPT_WCKEY           0x14b
 #define LONG_OPT_RESERVATION     0x14c
 #define LONG_OPT_RESTART_DIR     0x14d
-#define LONG_OPT_IO_TIMEOUT      0x14e
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -2066,7 +2065,7 @@ static void _opt_list()
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("preserve_env   : %s", tf_(opt.preserve_env));
-
+	
 #ifdef HAVE_BGL
 	if (opt.blrtsimage)
 		info("BlrtsImage     : %s", opt.blrtsimage);
