@@ -3415,11 +3415,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->cpus_per_task = 1;
 	if (job_desc->job_min_procs != (uint16_t) NO_VAL)
 		detail_ptr->job_min_procs = job_desc->job_min_procs;
+	if (job_desc->overcommit != (uint8_t) NO_VAL)
+		detail_ptr->overcommit = job_desc->overcommit;
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL) {
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
-		detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
-						(detail_ptr->cpus_per_task *
-						 detail_ptr->ntasks_per_node));
+		if (detail_ptr->overcommit == 0) {
+			detail_ptr->job_min_procs = 
+					MAX(detail_ptr->job_min_procs,
+					    (detail_ptr->cpus_per_task *
+					     detail_ptr->ntasks_per_node));
+		}
 	} else {
 		detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
 						detail_ptr->cpus_per_task);
@@ -3442,8 +3447,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->out = xstrdup(job_desc->out);
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
-	if (job_desc->overcommit != (uint8_t) NO_VAL)
-		detail_ptr->overcommit = job_desc->overcommit;
 	if (job_desc->begin_time > time(NULL))
 		detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = 

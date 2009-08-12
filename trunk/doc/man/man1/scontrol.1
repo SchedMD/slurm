@@ -374,8 +374,14 @@ Identify the job to be updated. This specification is required.
 \fIMinCores\fP=<count>
 Set the job's minimum number of cores per socket to the specified value.
 .TP
-\fIMinMemory\fP=<megabytes>
+\fIMinMemoryCPU\fP=<megabytes>
+Set the job's minimum real memory required per allocated CPU to the specified 
+value.
+Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
+.TP
+\fIMinMemoryNode\fP=<megabytes>
 Set the job's minimum real memory required per node to the specified value.
+Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 .TP
 \fIMinProcs\fP=<count>
 Set the job's minimum number of processors per node to the specified value.
@@ -753,7 +759,7 @@ JobId=65539 UserId=1500 JobState=PENDING TimeLimit=0:20:00
 .br 
    StartTime=0 EndTime=0 Shared=0 ReqProcs=1000
 .br
-   ReqNodes=400 Contiguous=1 MinProcs=4 MinMemory=1024
+   ReqNodes=400 Contiguous=1 MinProcs=4 MinMemoryNode=1024
 .br 
    MinTmpDisk=2034 ReqNodeList=lx[3000-3003] 
 .br
