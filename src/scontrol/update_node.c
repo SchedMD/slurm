@@ -172,7 +172,7 @@ scontrol_update_node (int argc, char *argv[])
 				for (j = 0; j < NODE_STATE_END; j++) {
 					if (strncasecmp (node_state_string(j), 
 							 val, 
-							 MAX(vallen, 3)) == 0) {
+							 MAX(vallen, 3)) == 0){
 						state_val = (uint16_t) j;
 						break;
 					}
@@ -202,7 +202,8 @@ scontrol_update_node (int argc, char *argv[])
 			}
 		} else {
 			exit_code = 1;
-			fprintf (stderr, "Invalid input: %s\n", argv[i]);
+			fprintf (stderr, "Update of this parameter is not "
+				 "supported: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
 			goto done;
 		}
