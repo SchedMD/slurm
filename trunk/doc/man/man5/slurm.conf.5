@@ -670,6 +670,11 @@ accounting, which samples memory use on a periodic basis (data need
 not be stored, just collected).
 
 .TP
+\fBMaxTasksPerNode\fR
+Maximum number of tasks SLURM will allow a job step to spawn
+on a single node. The default \fBMaxTasksPerNode\fR is 128.
+
+.TP
 \fBMessageTimeout\fR
 Time permitted for a round\-trip communication to complete
 in seconds. Default value is 10 seconds. For systems with 

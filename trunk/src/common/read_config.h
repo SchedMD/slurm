@@ -137,6 +137,7 @@ extern char *default_plugstack;
 #define DEFAULT_WAIT_TIME           0
 #define DEFAULT_TREE_WIDTH          50
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
+#define DEFAULT_MAX_TASKS_PER_NODE  128
 
 typedef struct slurm_conf_node {
 	char *nodenames;

@@ -201,6 +201,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxMemPerCPU", S_P_UINT32},
 	{"MaxMemPerNode", S_P_UINT32},
 	{"MaxMemPerTask", S_P_UINT32},	/* defunct */
+	{"MaxTasksPerNode", S_P_UINT16},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
 	{"MpichGmDirectSupport", S_P_LONG, _defunct_option},
@@ -1975,6 +1976,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else if (!s_p_get_uint32(&conf->max_mem_per_task, 
 				 "MaxMemPerNode", hashtbl)) {
 		conf->max_mem_per_task = DEFAULT_MAX_MEM_PER_CPU;
+	}
+
+	if (!s_p_get_uint16(&conf->max_tasks_per_node, "MaxTasksPerNode", 
+			    hashtbl)) {
+		conf->max_tasks_per_node = DEFAULT_MAX_TASKS_PER_NODE;
 	}
 
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))

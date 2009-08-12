@@ -202,7 +202,6 @@ BEGIN_C_DECLS
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
 #define NO_VAL	 (0xfffffffe)
-#define MAX_TASKS_PER_NODE 64
 
 /* Job step ID of batch scripts */
 #define SLURM_BATCH_SCRIPT (0xfffffffe)
@@ -1278,6 +1277,7 @@ typedef struct slurm_ctl_conf {
 	char *mail_prog;	/* pathname of mail program */
 	uint16_t max_job_cnt;	/* maximum number of active jobs */
 	uint32_t max_mem_per_task; /* maximum MB memory per spawned task */
+	uint16_t max_tasks_per_node; /* maximum tasks per node */
 	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs) 
 	                         * purged from in memory records */
 	char *mpi_default;	/* Default version of MPI in use */
