@@ -409,7 +409,6 @@ int srun(int ac, char **av)
 	launch_params.preserve_env      = opt.preserve_env;
 	launch_params.spank_job_env     = opt.spank_job_env;
 	launch_params.spank_job_env_size = opt.spank_job_env_size;
-	launch_params.io_timeout	= opt.io_timeout;
 	/* job structure should now be filled in */
 	_setup_signals();
 

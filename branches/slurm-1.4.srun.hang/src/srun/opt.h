@@ -171,7 +171,6 @@ typedef struct srun_options {
 	char *task_prolog;	/* --task-prolog=		*/
 	char *licenses;		/* --licenses, -L		*/
 	bool preserve_env;	/* --preserve-env		*/
-	uint16_t io_timeout;	/* --io-timeout */
 
 	/* constraint options */
 	int32_t job_min_cpus;	/* --mincpus=n			*/

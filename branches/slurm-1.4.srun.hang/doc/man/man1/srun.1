@@ -390,13 +390,6 @@ For OS X, the poll() function does not support stdin, so input from
 a terminal is not possible.
 
 .TP
-\fB\-\-io\-timeout\fR=<\fIseconds\fR>
-Test the I/O connection between \fBsrun\fR and the compute nodes after t
-seconds of inactivity to make sure the nodes are running.  Use 
-\fB\-\-io\-timeout=0\fR to disable.  By default the value comes from 
-SrunIOTimeout in slurm.conf, or is disabled if not specified.
-
-.TP
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
 Specify a name for the job. The specified name will appear along with
 the job id number when querying running jobs on the system. The default

@@ -391,7 +391,6 @@ static void _opt_default()
 	opt.disable_status = false;
 	opt.test_only   = false;
 	opt.preserve_env = false;
-	opt.io_timeout = slurm_get_srun_io_timeout();
 
 	opt.quiet = 0;
 	_verbose = 0;
@@ -704,7 +703,7 @@ _get_int(const char *arg, const char *what, bool positive)
 
 static void set_options(const int argc, char **argv)
 {
-	int opt_char, option_index = 0, tmp;
+	int opt_char, option_index = 0;
 	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        no_argument,       0, 'a'},
@@ -812,7 +811,6 @@ static void set_options(const int argc, char **argv)
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
 		{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
-		{"io-timeout",       required_argument, 0, LONG_OPT_IO_TIMEOUT},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
@@ -1362,14 +1360,6 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_RESTART_DIR:
 			xfree(opt.restart_dir);
 			opt.restart_dir = xstrdup(optarg);
-			break;
-		case LONG_OPT_IO_TIMEOUT:
-			tmp = _get_int(optarg, "io-timeout", true);
-			if (tmp < 0 || tmp > 65535)
-				error("Invalid --io-timeout argument: %d.  "
-				      "Ignored", tmp);
-			else
-				opt.io_timeout = (uint16_t)tmp;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2076,7 +2066,6 @@ static void _opt_list()
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("preserve_env   : %s", tf_(opt.preserve_env));
-	info("io_timeout     : %d", opt.io_timeout);
 
 #ifdef HAVE_BGL
 	if (opt.blrtsimage)
@@ -2154,7 +2143,6 @@ static void _usage(void)
 "            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
-"            [--io-timeout=secs]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [--reboot]\n"
 #ifdef HAVE_BGL
@@ -2198,7 +2186,6 @@ static void _help(void)
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "  -H, --hold                  submit job in held state\n"
 "  -i, --input=in              location of stdin redirection\n"
-"      --io-timeout=t          ping each node after t seconds of inactivity\n"
 "  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"
 "      --jobid=id              run under already allocated job\n"
 "  -J, --job-name=jobname      name of job\n"

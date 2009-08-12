@@ -891,7 +891,6 @@ typedef struct {
 	char **spank_job_env;	/* environment variables for job prolog/epilog
 				 * scripts as set by SPANK plugins */
 	uint32_t spank_job_env_size;	/* element count in spank_env */
-	uint16_t io_timeout;
 } slurm_step_launch_params_t;
 
 typedef struct {
