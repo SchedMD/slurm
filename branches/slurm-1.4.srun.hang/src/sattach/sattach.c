@@ -154,7 +154,7 @@ int sattach(int argc, char *argv[])
 
 	io = client_io_handler_create(opt.fds, layout->task_cnt,
 				      layout->node_cnt, fake_cred,
-				      opt.labelio, false);
+				      opt.labelio);
 	client_io_handler_start(io);
 
 	_attach_to_tasks(opt.jobid, opt.stepid, layout, fake_cred,

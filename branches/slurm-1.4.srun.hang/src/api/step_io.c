@@ -312,7 +312,7 @@ _server_read(eio_obj_t *obj, List objs)
 			return SLURM_SUCCESS;
 		}
 		if (s->header.type == SLURM_IO_CONNECTION_TEST) {
-			if (s->cio->sls && s->cio->test_io_activity)
+			if (s->cio->sls)
 				step_launch_clear_questionable_state(
 					s->cio->sls, s->node_id);
 			list_enqueue(s->cio->free_outgoing, s->in_msg);
@@ -1044,7 +1044,7 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 			 int num_tasks,
 			 int num_nodes,
 			 slurm_cred_t *cred,
-			 bool label, bool test_io)
+			 bool label)
 {
 	client_io_t *cio;
 	int len;
@@ -1064,8 +1064,6 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 		cio->label_width = _wid(cio->num_tasks);
 	else
 		cio->label_width = 0;
-
-	cio->test_io_activity = test_io;
 
 	len = sizeof(uint32_t) * num_tasks;
 
