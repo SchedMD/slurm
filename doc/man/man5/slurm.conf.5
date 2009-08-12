@@ -1434,21 +1434,6 @@ be the command and arguments of the job step.  This configuration parameter
 may be overridden by srun's \fB\-\-epilog\fR parameter.
 
 .TP
-\fBSrunIOTimeout\fR
-While the \fBsrun\fR detects the termination of tasks under almost all 
-circumstances, there are abnormal deamon failures which may not be 
-detected immediately. 
-Such abnormal failures can be detected by \fBsrun\fR using a more active
-polling mechanism. 
-Note that polling does have an impact upon application performance.
-The interval of polling is specified by the \fBSrunIOTimeout\fR 
-parameter and its units are seconds. 
-\fBsrun\fR's \fB\-\-io\-timeout\fR option takes precedence over
-this configuration parameter.
-The default value is 0 (no polling).
-The value may not exceed 65533 seconds.
-
-.TP
 \fBSrunProlog\fR
 Fully qualified pathname of an executable to be run by srun prior to the
 launch of a job step.  The command line arguments for the executable will

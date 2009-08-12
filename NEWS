@@ -48,6 +48,7 @@ documents those changes that are of interest to users and admins.
     distributed separately has been moved within the main SLURM distribution
     and is packaged as a separate RPM.
  -- Added configuration parameter MaxTasksPerNode.
+ -- Remove configuration parameter SrunIOTimeout.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
