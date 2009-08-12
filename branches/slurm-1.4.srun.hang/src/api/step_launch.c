@@ -267,8 +267,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 						 ctx->step_req->num_tasks,
 						 launch.nnodes,
 						 ctx->step_resp->cred,
-						 params->labelio, 
-						 params->io_timeout != 0);
+						 params->labelio);
 		if (ctx->launch_state->io.normal == NULL) {
 			rc = SLURM_ERROR;
 			goto fail1;
@@ -291,12 +290,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 		/* If the io timeout is > 0, create a flag to ping the stepds 
 		   if io_timeout seconds pass without stdio traffic to/from
 		   the node. */
-		ctx->launch_state->io_timeout = params->io_timeout;
-		if (ctx->launch_state->io_timeout > 0) {
-			if (_start_io_timeout_thread(ctx->launch_state)) {
-				return SLURM_ERROR;
-			}
-		}
+		ctx->launch_state->io_timeout = slurm_get_msg_timeout();
 	} else { /* user_managed_io is true */
 		/* initialize user_managed_io_t */
 		ctx->launch_state->io.user =
@@ -470,7 +464,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	eio_handle_destroy(sls->msg_handle);
 
 	/* Shutdown the io timeout thread, if one exists */
-	if (sls->io_timeout > 0 && !sls->user_managed_io) {
+	if (sls->io_timeout_thread_created) {
 		sls->halt_io_test = true;
 		pthread_cond_broadcast(&sls->cond);
 
@@ -624,6 +618,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
 	sls->node_io_error = bit_alloc(layout->node_cnt);
 	sls->io_deadline = (time_t *)xmalloc(sizeof(time_t) * layout->node_cnt);
+	sls->io_timeout_thread_created = false;
 	sls->io_timeout = 0;
 	sls->halt_io_test = false;
 	sls->layout = layout;
@@ -1070,11 +1065,28 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	if (sls->user_managed_io)
 		return;
 
+	pthread_mutex_lock(&sls->lock);
+
+	if (!sls->io_timeout_thread_created) {
+		if (_start_io_timeout_thread(sls)) {
+			/* 
+			 * Should I abort here, because of the inability to
+			 * make a thread to verify the connection?
+			 */
+			error("Cannot create thread to verify I/O "
+			      "connections.");
+			
+			sls->abort = true;
+			pthread_cond_broadcast(&sls->cond);
+			pthread_mutex_unlock(&sls->lock);
+			return;
+		}
+	}
+
 	fail_nodes = hostset_create(step_missing->nodelist);
 	fail_itr = hostset_iterator_create(fail_nodes);
 	num_node_ids = hostset_count(fail_nodes);
 
-	pthread_mutex_lock(&sls->lock);
 	all_nodes = hostset_create(sls->layout->node_list);
 
 	for (i = 0; i < num_node_ids; i++) {
@@ -1552,10 +1564,11 @@ _start_io_timeout_thread(step_launch_state_t *sls)
 			   _check_io_timeout, (void *)sls) != 0) {
 		error("pthread_create of io timeout thread: %m");
 		rc = SLURM_ERROR;
+	} else {
+		sls->io_timeout_thread_created = true;
 	}
 	slurm_attr_destroy(&attr);
 	return rc;
-
 }
 
 

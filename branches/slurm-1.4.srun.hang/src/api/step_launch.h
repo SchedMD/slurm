@@ -52,8 +52,8 @@ typedef struct {
 } user_managed_io_t;
 
 struct step_launch_state {
-	/* This lock protects tasks_started, tasks_exited, node_questionable,
-	   node_io_error, abort, and abort_action_taken.  The main thread 
+	/* This lock protects tasks_started, tasks_exited, node_io_error,
+	   io_deadline, abort, and abort_action_taken.  The main thread 
 	   blocks on cond, waking when a tast starts or exits, or the abort 
 	   flag is set. */
 	pthread_mutex_t lock;
@@ -63,6 +63,7 @@ struct step_launch_state {
 	bitstr_t *tasks_exited;  /* or never started correctly */
 	bitstr_t *node_io_error;      /* set after write or read error */
 	pthread_t io_timeout_thread;
+	bool	  io_timeout_thread_created;
 	time_t   *io_deadline;  /* Holds the time by which a "connection okay"
 				   message must be received.  Each entry holds
 				   NO_VAL unless the node is suspected to be
