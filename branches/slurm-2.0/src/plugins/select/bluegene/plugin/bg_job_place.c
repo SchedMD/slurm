@@ -1153,8 +1153,9 @@ static int _find_best_block_match(List block_list,
 					destroy_bg_record(bg_record);
 					if(errno == ESLURM_INTERCONNECT_FAILURE
 					   || !list_count(job_list)) {
-						error("this job will never "
-						      "run on this system");
+						error("job %u will never "
+						      "run on this system",
+						      job_ptr->job_id);
 						break;
 					}
 					continue;
