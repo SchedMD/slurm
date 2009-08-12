@@ -367,7 +367,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	if (strcasecmp(value, "DEFAULT") == 0) {
 		char *tmp;
 		if (s_p_get_string(&tmp, "NodeHostname", tbl)) {
-			error("NodeHostname not allowed with NodeName=DEFAULT");
+			error("NodeHostname not allowed with "
+			      "NodeName=DEFAULT");
 			xfree(tmp);
 			s_p_hashtbl_destroy(tbl);
 			return -1;
@@ -460,21 +461,29 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		s_p_hashtbl_destroy(tbl);
 
-		if (n->cores == 0)	/* make sure cores is non-zero */
+		if (n->cores == 0) {	/* make sure cores is non-zero */
+			error("NodeNames=%s CoresPerSocket=0 is invalid, "
+			      "reset to 1", n->nodenames);
 			n->cores = 1;
-		if (n->threads == 0)	/* make sure threads is non-zero */
+		}
+		if (n->threads == 0) {	/* make sure threads is non-zero */
+			error("NodeNames=%s ThreadsPerCore=0 is invalid, "
+			      "reset to 1", n->nodenames);
 			n->threads = 1;
+		}
 		 
 		if (!no_cpus    &&	/* infer missing Sockets= */
 		    no_sockets) {
 			n->sockets = n->cpus / (n->cores * n->threads);
 		}
 
-		if (n->sockets == 0)	/* make sure sockets is non-zero */
+		if (n->sockets == 0) {	/* make sure sockets is non-zero */
+			error("NodeNames=%s Sockets=0 is invalid, "
+			      "reset to 1", n->nodenames);
 			n->sockets = 1;
+		}
 
-		if (no_cpus     &&	/* infer missing Procs= */
-		    !no_sockets) {
+		if (no_cpus) {		/* infer missing Procs= */
 			n->cpus = n->sockets * n->cores * n->threads;
 		}
 
@@ -485,9 +494,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		    no_threads) {
 			if (n->cpus != n->sockets) {
 				n->sockets = n->cpus;
-				error("Procs doesn't match Sockets, "
-				      "setting Sockets to %d",
-				      n->sockets);
+				error("NodeNames=%s Procs doesn't match "
+				      "Sockets, setting Sockets to %d",
+				      n->nodenames, n->sockets);
 			}
 		}
 
@@ -495,10 +504,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if ((n->cpus != n->sockets) &&
 		    (n->cpus != n->sockets * n->cores) &&
 		    (n->cpus != computed_procs)) {
-			error("Procs (%d) doesn't match "
-			      "Sockets*CoresPerSocket*ThreadsPerCore (%u), "
+			error("NodeNames=%s Procs=%d doesn't match "
+			      "Sockets*CoresPerSocket*ThreadsPerCore (%d), "
 			      "resetting Procs",
-			      n->cpus, computed_procs);
+			      n->nodenames, n->cpus, computed_procs);
 			n->cpus = computed_procs;
 		}
 
