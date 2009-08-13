@@ -82,10 +82,10 @@ typedef enum {
 
 typedef enum {
 	ACCT_PROBLEM_NOT_SET,
+	ACCT_PROBLEM_ACCT_NO_ASSOC,
+	ACCT_PROBLEM_ACCT_NO_USERS,
 	ACCT_PROBLEM_USER_NO_ASSOC,
-	ACCT_PROBLEM_USER_NO_DEFAULT,
-	ACCT_PROBLEM_ACCT_NO_CHILD,
-	ACCT_PROBLEM_CLUS_ONLY_ROOT,
+	ACCT_PROBLEM_USER_NO_UID,
 } acct_problem_type_t;
 
 #define ACCT_CLASSIFIED_FLAG 0x0100
@@ -693,6 +693,9 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 
 extern char *get_classification_str(uint16_t class);
 extern uint16_t str_2_classification(char *class);
+
+extern char *get_acct_problem_str(uint16_t problem);
+extern uint16_t str_2_acct_problem(char *problem);
 
 extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list);
 

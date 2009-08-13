@@ -49,6 +49,15 @@ documents those changes that are of interest to users and admins.
     and is packaged as a separate RPM.
  -- Added configuration parameter MaxTasksPerNode.
  -- Remove configuration parameter SrunIOTimeout.
+ -- Added functionality for sacctmgr show problems.  Current problems include
+    Accounts/Users with no associations, Accounts with no users or subaccounts
+    attached in a cluster, and Users with No UID on the system.
+ -- Added new option for sacctmgr list assoc and list cluster WOLimits.  This 
+    gives a smaller default format without the limit information.  This may 
+    be the new default for list assocations and list clusters.
+ -- Users are now required to have an association with there default account.
+    Sacctmgr will now complain when you try to modify a users default account
+    which they are not associated anywhere.
 
 * Changes in SLURM 2.1.0-pre2
 =============================

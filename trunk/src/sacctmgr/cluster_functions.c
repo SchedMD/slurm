@@ -40,6 +40,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/uid.h"
+static bool without_limits = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     List cluster_list,
@@ -79,6 +80,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 							 argv[i]+end))
 					set = 1;
 			}
+		} else if (!end && !strncasecmp (argv[i], "WOLimits",
+						 MAX(command_len, 3))) {
+			without_limits = 1;
 		} else if (!strncasecmp (argv[i], "Classification", 
 					 MAX(command_len, 3))) {
 			if(classification) {
@@ -473,8 +477,11 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, 
-				      "Cl,Controlh,Controlp,RPC,F,"
-				      "GrpJ,GrpN,GrpS,MaxJ,MaxN,MaxS,MaxW,QOS");
+				      "Cl,Controlh,Controlp,RPC");
+		if(!without_limits) 
+			slurm_addto_char_list(format_list, 
+					      "F,GrpJ,GrpN,GrpS,MaxJ,MaxN,"
+					      "MaxS,MaxW,QOS");
 	}
 
 	itr = list_iterator_create(format_list);

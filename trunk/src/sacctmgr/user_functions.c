@@ -638,6 +638,25 @@ static int _check_coord_request(acct_user_cond_t *user_cond, bool check)
 	return rc;
 }
 
+static int _check_user_has_acct(char *user, char *acct)
+{
+	acct_association_cond_t assoc_cond;
+	List ret_list = NULL;
+	
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	assoc_cond.acct_list = list_create(NULL);
+	list_push(assoc_cond.acct_list, acct);
+	assoc_cond.user_list = list_create(NULL);
+	list_push(assoc_cond.user_list, user);
+	ret_list = acct_storage_g_get_associations(db_conn, my_uid,
+						   &assoc_cond);
+				
+	if(ret_list && (list_count(ret_list)))
+		return 1;
+
+	return 0;
+}
+
 extern int sacctmgr_add_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -735,7 +754,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			}
 			default_acct = strip_quotes(argv[i]+end, NULL, 1);
 			slurm_addto_char_list(assoc_cond->acct_list,
-					default_acct);
+					      default_acct);
 		} else if (!strncasecmp (argv[i], "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			if(default_wckey) {
@@ -2109,7 +2128,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 			return SLURM_SUCCESS;
 		}		
 	}
-
+	
 	notice_thread_init();
 	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
@@ -2137,18 +2156,57 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 			}
 			notice_thread_init();
 		}
-			
+		
 		ret_list = acct_storage_g_modify_users(
 			db_conn, my_uid, user_cond, user);
 		if(ret_list && list_count(ret_list)) {
 			char *object = NULL;
+			List regret_list = NULL;
 			ListIterator itr = list_iterator_create(ret_list);
-			printf(" Modified users...\n");
+
 			while((object = list_next(itr))) {
-				printf("  %s\n", object);
+				/* We have to check here for the user names to
+				 * make sure the user has an association with
+				 * the new default account.  We have to wait
+				 * until we get the ret_list of names since
+				 * names are required to change a user since
+				 * you can specfy a user by something else
+				 * like default_account or something.  If the
+				 * user doesn't have the account make
+				 * note of it. 
+				 */
+				if(user->default_acct &&
+				   !_check_user_has_acct(
+					   object, user->default_acct)) {
+					if(!regret_list)
+						regret_list = list_create(NULL);
+					list_append(regret_list, object);
+					continue;
+				} 
 			}
-			list_iterator_destroy(itr);
-			set = 1;
+			if(regret_list) {
+				list_iterator_destroy(itr);
+				itr = list_iterator_create(regret_list);
+				printf(" Can modify because these users "
+				       "aren't associated with new "
+				       "default account '%s'...\n",
+				       user->default_acct);
+				while((object = list_next(itr))) {
+					printf("  %s\n", object);
+				}
+				list_iterator_destroy(itr);
+				exit_code=1;
+				rc = SLURM_ERROR;
+				list_destroy(regret_list);
+			} else {
+				list_iterator_reset(itr);
+				printf(" Modified users...\n");
+				while((object = list_next(itr))) {
+					printf("  %s\n", object);
+				}
+				list_iterator_destroy(itr);
+				set = 1;
+			}
 		} else if(ret_list) {
 			printf(" Nothing modified\n");
 		} else {
