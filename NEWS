@@ -157,6 +157,8 @@ documents those changes that are of interest to users and admins.
     defunct partition.
  -- Don't require a node to have --ntasks-per-node CPUs for use when the 
     --overcommit option is also used.
+ -- Increase the maximum number of tasks which can be launched by a job step
+    per node from 64 to 128. 
 
 * Changes in SLURM 2.0.4
 ========================
