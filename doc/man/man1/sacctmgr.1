@@ -444,6 +444,11 @@ with the account= option.  This will display all the subaccount
 associations along with the accounts listed in the option.
               
 .TP
+\fIWOLimits\fP
+Display information without limit information. This is for a smaller
+default format of Cluster,Account,User,Partition
+
+.TP
 \fIWOPInfo\fP
 Display information without parent information. (i.e. parent id, and
 parent account name.) This option also invokes WOPLIMITS.
@@ -464,6 +469,11 @@ from the parent.)
 The name of a cluster.
 This should be equal to the \fIClusterName\fR parameter in the \fIslurm.conf\fR 
 configuration file for some Slurm\-managed cluster. 
+
+.TP
+\fIWOLimits\fP
+Display information without limit information. This is for a smaller
+default format of Cluster,ControlHost,ControlPort,RPC
 
 .SH ""
 NOTE: You can also use the general specifications list above in the

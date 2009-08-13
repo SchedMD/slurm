@@ -108,15 +108,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 			slurm_addto_char_list(assoc_cond->partition_list,
 					argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Parent",
-					 MAX(command_len, 4))) {
-			if(!assoc_cond->parent_acct_list) {
-				assoc_cond->parent_acct_list = 
-					list_create(slurm_destroy_char);
-			}
-			if(slurm_addto_char_list(assoc_cond->parent_acct_list,
-						 argv[i]+end))
-			set = 1;
 		} else if (!strncasecmp (argv[i], "Users",
 					 MAX(command_len, 1))) {
 			if(!assoc_cond->user_list)
@@ -149,7 +140,6 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	char *object = NULL;
-	char *print_acct = NULL, *last_cluster = NULL;
 	List tree_list = NULL;
 	List qos_list = NULL;
 
@@ -265,41 +255,12 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 
 	while((assoc = list_next(itr))) {
 		int curr_inx = 1;
-		if(!last_cluster || strcmp(last_cluster, assoc->cluster)) {
-			if(tree_list) {
-				list_flush(tree_list);
-			} else {
-				tree_list = 
-					list_create(destroy_acct_print_tree);
-			}
-			last_cluster = assoc->cluster;
-		} 
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_ACCOUNT:
-				if(tree_display) {
-					char *local_acct = NULL;
-					char *parent_acct = NULL;
-					if(assoc->user) {
-						local_acct = xstrdup_printf(
-							"|%s", assoc->acct);
-						parent_acct = assoc->acct;
-					} else {
-						local_acct =
-							xstrdup(assoc->acct);
-						parent_acct = 
-							assoc->parent_acct;
-					}
-					print_acct = get_tree_acct_name(
-						local_acct,
-						parent_acct, tree_list);
-					xfree(local_acct);
-				} else {
-					print_acct = assoc->acct;
-				}
 				field->print_routine(
 					field, 
-					print_acct,
+					assoc->acct,
 					(curr_inx == field_count));
 				break;
 			case PRINT_CLUSTER:
@@ -316,7 +277,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 				*/
 				field->print_routine(
 					field,
-					NULL,
+					get_acct_problem_str(assoc->id),
 					(curr_inx == field_count));
 				break;
 			case PRINT_USER:

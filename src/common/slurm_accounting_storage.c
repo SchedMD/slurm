@@ -7299,6 +7299,51 @@ extern uint16_t str_2_classification(char *class)
 	return type;
 }
 
+extern char *get_acct_problem_str(uint16_t problem)
+{
+	acct_problem_type_t type = problem;
+
+	switch(type) {
+	case ACCT_PROBLEM_NOT_SET:
+		return NULL;
+		break;
+	case ACCT_PROBLEM_ACCT_NO_ASSOC:
+		return "Account has no Associations";
+		break;
+	case ACCT_PROBLEM_ACCT_NO_USERS:
+		return "Account has no users";
+		break;
+	case ACCT_PROBLEM_USER_NO_ASSOC:
+		return "User has no Associations";
+		break;
+	case ACCT_PROBLEM_USER_NO_UID:
+		return "User does not have a uid";
+		break;
+	default:
+		return "Unknown";
+		break;
+	}
+}
+
+extern uint16_t str_2_acct_problem(char *problem)
+{
+	uint16_t type = 0;
+
+	if(!problem)
+		return type;
+
+	if(slurm_strcasestr(problem, "account no associations"))
+		type = ACCT_PROBLEM_USER_NO_ASSOC;
+	else if(slurm_strcasestr(problem, "account no users"))
+		type = ACCT_PROBLEM_ACCT_NO_USERS;
+	else if(slurm_strcasestr(problem, "user no associations"))
+		type = ACCT_PROBLEM_USER_NO_ASSOC;
+	else if(slurm_strcasestr(problem, "user no uid"))
+		type = ACCT_PROBLEM_USER_NO_UID;
+       
+	return type;
+}
+
 extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 {
 	xassert(assoc_ptr);

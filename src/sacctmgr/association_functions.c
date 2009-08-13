@@ -39,6 +39,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 static bool tree_display = 0;
+static bool without_limits = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_association_cond_t *assoc_cond,
@@ -80,6 +81,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 			assoc_cond->without_parent_info = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOPLimits",
 						 MAX(command_len, 4))) {
+			assoc_cond->without_parent_limits = 1;
+		} else if (!end && !strncasecmp (argv[i], "WOLimits",
+						 MAX(command_len, 3))) {
+			without_limits = 1;
 			assoc_cond->without_parent_limits = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 
 					       MAX(command_len, 5))) {
@@ -362,12 +367,14 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		destroy_acct_association_cond(assoc_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
-	} else if(!list_count(format_list)) 
-		slurm_addto_char_list(format_list,
-				      "C,A,U,Part,F,"
-				      "GrpCPUMins,GrpJ,GrpN,GrpS,GrpWall,"
-				      "MaxJ,MaxN,MaxS,MaxW,QOS");
-
+	} else if(!list_count(format_list)) {
+		slurm_addto_char_list(format_list, "C,A,U,Part");
+		if(!without_limits) 
+			slurm_addto_char_list(format_list,
+					      "F,GrpCPUMins,GrpJ,GrpN,"
+					      "GrpS,GrpWall,"
+					      "MaxJ,MaxN,MaxS,MaxW,QOS");
+	}
 	print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(format_list);

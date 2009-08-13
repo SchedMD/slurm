@@ -50,6 +50,7 @@
 #include <strings.h>
 #include "mysql_jobacct_process.h"
 #include "mysql_rollup.h"
+#include "mysql_problems.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/uid.h"
@@ -8280,7 +8281,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	set = _setup_association_cond_limits(assoc_cond, &extra);
 
 	with_raw_qos = assoc_cond->with_raw_qos;
-	with_usage = assoc_cond->with_usage;
+	with_usage = assoc_cond->with_usage;	
 	without_parent_limits = assoc_cond->without_parent_limits;
 	without_parent_info = assoc_cond->without_parent_info;
 
@@ -8638,8 +8639,27 @@ empty:
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 					acct_association_cond_t *assoc_cond)
 {
+	List ret_list = NULL;
 	
-	return NULL;
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	ret_list = list_create(destroy_acct_association_rec);
+
+	if(mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)
+	   != SLURM_SUCCESS)
+		goto end_it;
+	if(mysql_acct_no_users(mysql_conn, assoc_cond, ret_list)
+	   != SLURM_SUCCESS)
+		goto end_it;
+
+	if(mysql_user_no_assocs_or_default(mysql_conn, assoc_cond, ret_list)
+	   != SLURM_SUCCESS)
+		goto end_it;
+
+end_it:
+
+	return ret_list;
 }
 
 extern List acct_storage_p_get_config(void *db_conn)
