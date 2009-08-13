@@ -202,6 +202,7 @@ BEGIN_C_DECLS
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
 #define NO_VAL	 (0xfffffffe)
+#define MAX_TASKS_PER_NODE 128
 
 /* Job step ID of batch scripts */
 #define SLURM_BATCH_SCRIPT (0xfffffffe)
