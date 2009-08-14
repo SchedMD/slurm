@@ -405,9 +405,8 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 extern int find_col(display_data_t *display_data, int type);
 extern const char *find_col_name(display_data_t *display_data, int type);
 extern void load_header(GtkTreeView *tree_view, display_data_t *display_data);
-extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data,
-			     int count);
-extern void make_popup_fields_menu(popup_info_t *popup_win, GtkMenu *men);
+extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
+			     display_data_t *display_data, int count);
 extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path, 
 			      GtkMenu *menu, display_data_t *display_data);
 extern GtkScrolledWindow *create_scrolled_window();
