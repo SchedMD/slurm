@@ -347,6 +347,7 @@ _client_read(eio_obj_t *obj, List objs)
 	if (client->header.type == SLURM_IO_CONNECTION_TEST) {
 		if (client->header.length != 0) {
 			debug5("  error in _client_read: bad connection test");
+			list_enqueue(client->job->free_incoming, client->in_msg);
 			client->in_msg = NULL;
 			return SLURM_ERROR;
 		}
