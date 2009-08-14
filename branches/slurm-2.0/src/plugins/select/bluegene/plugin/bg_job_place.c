@@ -1153,9 +1153,17 @@ static int _find_best_block_match(List block_list,
 					destroy_bg_record(bg_record);
 					if(errno == ESLURM_INTERCONNECT_FAILURE
 					   || !list_count(job_list)) {
-						error("job %u will never "
-						      "run on this system",
-						      job_ptr->job_id);
+						if (slurmctld_conf.
+						    slurmctld_debug >= 5) {
+							char *nodes;
+							nodes = bitmap2node_name(
+								slurm_block_bitmap);
+							debug("job %u not "
+							      "runable on %s",
+							      job_ptr->job_id,
+							      nodes);
+							xfree(nodes);
+						}
 						break;
 					}
 					continue;
