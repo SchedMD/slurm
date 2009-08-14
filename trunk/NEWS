@@ -58,6 +58,8 @@ documents those changes that are of interest to users and admins.
  -- Users are now required to have an association with there default account.
     Sacctmgr will now complain when you try to modify a users default account
     which they are not associated anywhere.
+ -- Fix select/linear bug resulting in run_job_cnt underflow message if a 
+    suspended job is cancelled.
 
 * Changes in SLURM 2.1.0-pre2
 =============================

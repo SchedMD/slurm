@@ -71,10 +71,10 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/linear/select_linear.h"
 
-#define SELECT_DEBUG	0
 #define NO_SHARE_LIMIT	0xfffe
-
-#define NODEINFO_MAGIC 0x82ad
+#define NODEINFO_MAGIC	0x82ad
+#define RUN_JOB_INCR	16
+#define SELECT_DEBUG	0
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -97,6 +97,7 @@ struct select_nodeinfo {
 static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int suspended);
+static void _add_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id);
 static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap);
 static void _cr_job_list_del(void *x);
 static int  _cr_job_list_sort(void *x, void *y);
@@ -119,6 +120,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
 			  uint32_t req_nodes);
+static bool _rem_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id);
 static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int remove_all);
@@ -272,6 +274,53 @@ static int _fini_status_pthread(void)
 	return rc;
 }
 #endif
+
+/* Add job id to record of jobs running on this node */
+static void _add_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id)
+{
+	int i;
+
+	if (part_cr_ptr->run_job_ids == NULL) {	/* create new array */
+		part_cr_ptr->run_job_len = RUN_JOB_INCR;
+		part_cr_ptr->run_job_ids = xmalloc(sizeof(uint32_t) * 
+						   part_cr_ptr->run_job_len);
+		part_cr_ptr->run_job_ids[0] = job_id;
+		return;
+	}
+
+	for (i=0; i<part_cr_ptr->run_job_len; i++) {
+		if (part_cr_ptr->run_job_ids[i])
+			continue;
+		/* fill in hole */
+		part_cr_ptr->run_job_ids[i] = job_id;
+		return;
+	}
+
+	/* expand array and add to end */
+	part_cr_ptr->run_job_len += RUN_JOB_INCR;
+	xrealloc(part_cr_ptr->run_job_ids, 
+		 sizeof(uint32_t) * part_cr_ptr->run_job_len);
+	part_cr_ptr->run_job_ids[i] = job_id;
+}
+
+/* Remove job id from record of jobs running on this node, 
+ * RET true if successful, false if the job was not running */
+static bool _rem_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id)
+{
+	int i;
+
+	if ((part_cr_ptr->run_job_ids == NULL) ||
+	    (part_cr_ptr->run_job_len == 0))
+		return false;
+
+	for (i=0; i<part_cr_ptr->run_job_len; i++) {
+		if (part_cr_ptr->run_job_ids[i] != job_id)
+			continue;
+		part_cr_ptr->run_job_ids[i] = 0;
+		return true;
+	}
+	return false;
+}
 
 static inline bool _job_preemption_enabled(void)
 {
@@ -1326,7 +1375,9 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 				part_cr_ptr = part_cr_ptr->next;
 				continue;
 			}
-			if (part_cr_ptr->run_job_cnt > 0)
+			if (!_rem_run_job(part_cr_ptr, job_ptr->job_id))
+				/* cancelled job already suspended */;
+			else if (part_cr_ptr->run_job_cnt > 0)
 				part_cr_ptr->run_job_cnt--;
 			else {
 				error("%s: run_job_cnt underflow for node %s",
@@ -1443,6 +1494,7 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			}
 			if (alloc_all)
 				part_cr_ptr->tot_job_cnt++;
+			_add_run_job(part_cr_ptr, job_ptr->job_id);
 			part_cr_ptr->run_job_cnt++;
 			break;
 		}
@@ -1469,6 +1521,7 @@ static void _free_node_cr(struct node_cr_record *node_cr_ptr)
 		part_cr_ptr1 = node_cr_ptr[i].parts;
 		while (part_cr_ptr1) {
 			part_cr_ptr2 = part_cr_ptr1->next;
+			xfree(part_cr_ptr1->run_job_ids);
 			xfree(part_cr_ptr1);
 			part_cr_ptr1 = part_cr_ptr2;
 		}
@@ -1521,11 +1574,26 @@ static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
 				node_cr_ptr[i].exclusive_jobid;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			new_part_cr_ptr = xmalloc(sizeof(struct part_cr_record));
+			new_part_cr_ptr = xmalloc(sizeof(struct 
+							 part_cr_record));
 			new_part_cr_ptr->part_ptr    = part_cr_ptr->part_ptr;
-			new_part_cr_ptr->run_job_cnt = part_cr_ptr->run_job_cnt;
-			new_part_cr_ptr->tot_job_cnt = part_cr_ptr->tot_job_cnt;
-			new_part_cr_ptr->next 	     = new_node_cr_ptr[i].parts;
+			if (part_cr_ptr->run_job_cnt) {
+				new_part_cr_ptr->run_job_cnt = part_cr_ptr->
+							       run_job_cnt;
+				new_part_cr_ptr->run_job_len = part_cr_ptr->
+							       run_job_len;
+				new_part_cr_ptr->run_job_ids = 
+					xmalloc(sizeof(uint32_t) *
+						part_cr_ptr->run_job_len);
+				memcpy(new_part_cr_ptr->run_job_ids,
+				       part_cr_ptr->run_job_ids,
+				       (sizeof(uint32_t) *
+					part_cr_ptr->run_job_len));
+			}
+			new_part_cr_ptr->tot_job_cnt = part_cr_ptr->
+						       tot_job_cnt;
+			new_part_cr_ptr->next 	     = new_node_cr_ptr[i].
+						       parts;
 			new_node_cr_ptr[i].parts     = new_part_cr_ptr;
 			part_cr_ptr = part_cr_ptr->next;
 		}
