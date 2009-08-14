@@ -114,6 +114,7 @@ struct io_operations server_ops = {
 struct server_io_info {
 	client_io_t *cio;
 	int node_id;
+	bool testing_connection;
 
 	/* incoming variables */
 	struct slurm_io_header header;
@@ -227,6 +228,7 @@ _create_server_eio_obj(int fd, client_io_t *cio, int nodeid,
 	info = (struct server_io_info *)xmalloc(sizeof(struct server_io_info));
 	info->cio = cio;
 	info->node_id = nodeid;
+	info->testing_connection = false;
 	info->in_msg = NULL;
 	info->in_remaining = 0;
 	info->in_eof = false;
@@ -259,7 +261,8 @@ _server_readable(eio_obj_t *obj)
 		return false;
 	}
 
-	if (s->remote_stdout_objs > 0 || s->remote_stderr_objs > 0) {
+	if (s->remote_stdout_objs > 0 || s->remote_stderr_objs > 0 ||
+	    s->testing_connection) {
 		debug4("remote_stdout_objs = %d", s->remote_stdout_objs);
 		debug4("remote_stderr_objs = %d", s->remote_stderr_objs);
 		return true;	
@@ -317,15 +320,18 @@ _server_read(eio_obj_t *obj, List objs)
 					s->cio->sls, s->node_id);
 			list_enqueue(s->cio->free_outgoing, s->in_msg);
 			s->in_msg = NULL;
+			s->testing_connection = false;
 			return SLURM_SUCCESS;
 
 		} else if (s->header.length == 0) { /* eof message */
 			if (s->header.type == SLURM_IO_STDOUT) {
 				s->remote_stdout_objs--;
-				debug3(  "got eof-stdout msg on _server_read header");
+				debug3( "got eof-stdout msg on _server_read "
+					"header");
 			} else if (s->header.type == SLURM_IO_STDERR) {
 				s->remote_stderr_objs--;
-				debug3(  "got eof-stderr msg on _server_read header");
+				debug3( "got eof-stderr msg on _server_read "
+					"header");
 			} else
 				error("Unrecognized output message type");
 			list_enqueue(s->cio->free_outgoing, s->in_msg);
@@ -1181,6 +1187,8 @@ client_io_handler_downnodes(client_io_t *cio,
 {
 	int i;
 	int node_id;
+	struct server_io_info *info;
+	void *tmp;
 
 	if (cio == NULL)
 		return;
@@ -1191,6 +1199,11 @@ client_io_handler_downnodes(client_io_t *cio,
 			continue;
 		if (bit_test(cio->ioservers_ready_bits, node_id)
 		    && cio->ioserver[node_id] != NULL) {
+			tmp = cio->ioserver[node_id]->arg;
+			info = (struct server_io_info *)tmp;
+			info->remote_stdout_objs = 0;
+			info->remote_stderr_objs = 0;
+			info->testing_connection = false;
 			cio->ioserver[node_id]->shutdown = true;
 		} else {
 			bit_set(cio->ioservers_ready_bits, node_id);
@@ -1222,6 +1235,7 @@ client_io_handler_abort(client_io_t *cio)
 			 * connection. */
 			info->remote_stdout_objs = 0;
 			info->remote_stderr_objs = 0;
+			info->testing_connection = false;
 			cio->ioserver[i]->shutdown = true;
 		}
 	}
@@ -1252,10 +1266,9 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 		goto done;
 	}
 
-	/* In this case, the I/O connection has closed and the task exited, 
-	   so there's no need to send this test message. */
-	if (server->out_eof || 
-	    (server->remote_stdout_objs <= 0 && server->remote_stderr_objs <= 0)) {
+	/* In this case, the I/O connection has closed so can't send a test
+	   message.  This error case is handled elsewhere. */
+	if (server->out_eof) {
 		goto done;
 	}
 
@@ -1286,6 +1299,7 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 			rc = SLURM_ERROR;
 			goto done;
 		}
+		server->testing_connection = true;
 		if (sent_message)
 			*sent_message = true;
 	} else {

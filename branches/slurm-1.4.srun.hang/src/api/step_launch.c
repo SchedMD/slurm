@@ -1048,10 +1048,12 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	hostlist_iterator_t fail_itr;
 	char *node;
 	int num_node_ids;
-	int i;
+	int i, j;
 	int node_id;
 	client_io_t *cio = sls->io.normal;
 	bool  test_message_sent;
+	int   num_tasks;
+	bool  active;
 
 	debug("Step %u.%u missing from node(s) %s", 
 	      step_missing->job_id, step_missing->step_id,
@@ -1104,7 +1106,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 			break;
 		}
 
-		/* 
+		/*
 		 * A test is already is progress. Ignore message for this node.
 		 */
 		if (sls->io_deadline[node_id] != NO_VAL) {
@@ -1113,16 +1115,41 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 			continue;
 		}
 
+		/*
+		 * If all tasks for this node have either not started or already
+		 * exited, ignore the missing step message for this node.
+		 */
+		num_tasks = sls->layout->tasks[node_id];
+		active = false;
+		for (j = 0; j < num_tasks; j++) {
+			if (bit_test(sls->tasks_started,
+				     sls->layout->tids[node_id][j]) &&
+			    !bit_test(sls->tasks_exited,
+				      sls->layout->tids[node_id][j])) {
+				active = true;
+				break;
+			}
+		}
+		if (!active)
+			continue;
+
+
 		sls->io_deadline[node_id] = time(NULL) + sls->io_timeout;
+
 		debug("Testing connection to node %d", node_id);
 		if (client_io_handler_send_test_message(cio, node_id, 
 							&test_message_sent)) {
-			/* TODO  Find a way to retry.  For now, 
-			    this effectively ignores the message 
-			    about a missing step. */
-			error("Could not test connection to node %d.", node_id);
-			sls->io_deadline[node_id] = (time_t)NO_VAL;
-			continue;
+			/*
+			 * If unable to test a connection, assume the step 
+			 * is having problems and abort.  If unable to test,
+			 * the system is probably having serious problems, so
+			 * aborting the step seems reasonable.
+			 */
+			error("Aborting, can not test connection to node %d.",
+			      node_id);
+			sls->abort = true;
+			pthread_cond_broadcast(&sls->cond);
+			break;
 		}
 
 		/*
@@ -1517,11 +1544,10 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 	bit_set(sls->node_io_error, node_id);
 	debug("IO error on node %d", node_id);
 
-	/* If this is true, either a node has already encountered an I/O error
-	   with the stepd, and the job should abort, or nodes are getting
-	   pinged to see if they are still alive, and a lost I/O connection
-	   triggers an abort. */
-	//if (bit_test(sls->node_questionable, node_id) || sls->io_timeout > 0) {
+	/*
+	 * sls->io_deadline[node_id] != (time_t)NO_VAL  means that
+	 * the _step_missing_handler was called on this node.
+	 */
 	if (sls->io_deadline[node_id] != (time_t)NO_VAL) {
 		error("Aborting, io error and missing step on node %d", 
 		      node_id);
@@ -1536,13 +1562,13 @@ step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
 
 
 /*
- * This is called after a node connects for the first time and when
- * a message comes in confirming that a connection is okay.
+ * This is called 1) after a node connects for the first time and 2) when
+ * a message comes in confirming that a connection is okay. 
+ *
  * Just in case the node was marked questionable very early in the 
  * job step setup, clear this flag if/when the node makes its initial 
  * connection.
  */
-
 int 
 step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id)
 {
