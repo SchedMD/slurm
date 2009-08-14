@@ -3036,13 +3036,14 @@ extern void set_menus_job(void *arg, GtkTreePath *path,
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	switch(type) {
 	case TAB_CLICKED:
-		make_fields_menu(menu, display_data_job, SORTID_CNT);
+		make_fields_menu(NULL, menu, display_data_job, SORTID_CNT);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_job);
 		break;
 	case POPUP_CLICKED:
-		make_popup_fields_menu(popup_win, menu);
+		make_fields_menu(popup_win, menu,
+				 popup_win->display_data, SORTID_CNT);
 		break;
 	default:
 		g_error("UNKNOWN type %d given to set_fields\n", type);

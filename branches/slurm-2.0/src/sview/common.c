@@ -455,12 +455,17 @@ extern void *get_pointer(GtkTreeView *tree_view, GtkTreePath *path, int loc)
 	return ptr;
 }
 
-extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data,
-			     int count)
+extern void make_fields_menu(popup_info_t *popup_win, GtkMenu *menu,
+			     display_data_t *display_data, int count)
 {
 	GtkWidget *menuitem = NULL;
 	display_data_t *first_display_data = display_data;
 	int i = 0;
+
+	/* we don't want to display anything on the full info page */
+	if(popup_win && popup_win->spec_info->type == INFO_PAGE)
+		return;
+
 	for(i=0; i<count; i++) {
 		while(display_data++) {
 			if(display_data->id == -1)
@@ -469,15 +474,25 @@ extern void make_fields_menu(GtkMenu *menu, display_data_t *display_data,
 				continue;
 			if(display_data->id != i)
 				continue;
+		
 			menuitem = gtk_check_menu_item_new_with_label(
 				display_data->name); 
 			
 			gtk_check_menu_item_set_active(
 				GTK_CHECK_MENU_ITEM(menuitem),
 				display_data->show);
-			g_signal_connect(menuitem, "toggled",
-					 G_CALLBACK(_toggle_state_changed), 
-					 display_data);
+			if(popup_win) {
+				display_data->user_data = popup_win;
+				g_signal_connect(
+					menuitem, "toggled",
+					G_CALLBACK(_popup_state_changed), 
+					display_data);
+			} else {
+				g_signal_connect(
+					menuitem, "toggled",
+					G_CALLBACK(_toggle_state_changed), 
+					display_data);
+			}
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 			break;
 		}
@@ -512,33 +527,6 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 	}
 }
-
-extern void make_popup_fields_menu(popup_info_t *popup_win, GtkMenu *menu)
-{
-	GtkWidget *menuitem = NULL;
-	display_data_t *display_data = popup_win->display_data;
-
-	/* we don't want to display anything on the full info page */
-	if(popup_win->spec_info->type == INFO_PAGE)
-		return;
-
-	while(display_data++) {
-		if(display_data->id == -1)
-			break;
-		if(!display_data->name)
-			continue;
-		display_data->user_data = popup_win;
-		menuitem = 
-			gtk_check_menu_item_new_with_label(display_data->name);
-		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem),
-					       display_data->show);
-		g_signal_connect(menuitem, "toggled",
-				 G_CALLBACK(_popup_state_changed), 
-				 display_data);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
-	}
-}
-
 
 extern GtkScrolledWindow *create_scrolled_window()
 {
