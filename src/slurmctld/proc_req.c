@@ -1154,13 +1154,20 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 
 		/* return result */
 		if (error_code) {
-			info("_slurm_rpc_job_step_kill JobId=%u: %s", 
-				job_step_kill_msg->job_id, 
-				slurm_strerror(error_code));
+			info("Signal %u JobId=%u by UID=%u: %s", 
+			     job_step_kill_msg->signal,
+			     job_step_kill_msg->job_id, uid,
+			     slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			info("_slurm_rpc_job_step_kill JobId=%u %s",
-				job_step_kill_msg->job_id, TIME_STR);
+			if (job_step_kill_msg->signal == SIGKILL) {
+				info("Cancel of JobId=%u by UID=%u, %s",
+				     job_step_kill_msg->job_id, uid, TIME_STR);
+			} else {
+				info("Signal %u of JobId=%u by UID=%u, %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id, uid, TIME_STR);
+			}
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 			/* Below function provides its own locking */
@@ -1176,15 +1183,25 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 
 		/* return result */
 		if (error_code) {
-			info("_slurm_rpc_job_step_kill StepId=%u.%u: %s",
-				job_step_kill_msg->job_id, 
-				job_step_kill_msg->job_step_id, 
-				slurm_strerror(error_code));
+			info("Signal %u of StepId=%u.%u by UID=%u: %s",
+			     job_step_kill_msg->signal,
+			     job_step_kill_msg->job_id, 
+			     job_step_kill_msg->job_step_id, uid,
+			     slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			info("_slurm_rpc_job_step_kill StepId=%u.%u %s",
-				job_step_kill_msg->job_id, 
-				job_step_kill_msg->job_step_id, TIME_STR);
+			if (job_step_kill_msg->signal == SIGKILL) {
+				info("Cancel of StepId=%u.%u by UID=%u %s",
+				     job_step_kill_msg->job_id, 
+				     job_step_kill_msg->job_step_id, uid, 
+				     TIME_STR);
+			} else {
+				info("Signal %u of StepId=%u.%u by UID=%u %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id, 
+				     job_step_kill_msg->job_step_id, uid,
+				     TIME_STR);
+			}
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 			/* Below function provides its own locking */
