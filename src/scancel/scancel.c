@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -445,9 +445,12 @@ _cancel_step_id (void *ci)
 	uint32_t job_id  = cancel_info->job_id;
 	uint32_t step_id = cancel_info->step_id;
 	uint16_t sig     = cancel_info->sig;
+	bool sig_set = true;
 
-	if (sig == (uint16_t)-1)
+	if (sig == (uint16_t)-1) {
 		sig = SIGKILL;
+		sig_set = false;
+	}
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
 		if (sig == SIGKILL)
@@ -457,7 +460,7 @@ _cancel_step_id (void *ci)
 				sig, job_id, step_id);
 		}
 
-		if (opt.ctld)
+		if ((!sig_set) || opt.ctld)
 			error_code = slurm_kill_job_step(job_id, step_id, sig);
 		else if (sig == SIGKILL)
 			error_code = slurm_terminate_job_step(job_id, step_id);
