@@ -46,6 +46,9 @@
 extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 				acct_association_cond_t *assoc_cond, 
 				List ret_list);
+extern int mysql_user_no_assocs_or_default(mysql_conn_t *mysql_conn,
+					   acct_association_cond_t *assoc_cond,
+					   List ret_list);
 extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 			       acct_association_cond_t *assoc_cond, 
 			       List ret_list);
