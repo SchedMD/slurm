@@ -1707,8 +1707,11 @@ static void _init_node_cr(void)
 				}
 				part_cr_ptr->tot_job_cnt++;
 				if (IS_JOB_RUNNING(job_ptr) || 
-				    IS_JOB_COMPLETING(job_ptr))
+				    IS_JOB_COMPLETING(job_ptr)) {
+					_add_run_job(part_cr_ptr, 
+						     job_ptr->job_id);
 					part_cr_ptr->run_job_cnt++;
+				}
 				break;
 			}
 			if (part_cr_ptr == NULL) {
