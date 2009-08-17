@@ -61,23 +61,27 @@ static bool run_save_thread = true;
  * RET 0 on success or -1 on error */
 extern int fsync_and_close(int fd, char *file_type)
 {
-	int rc = 0;
-	int retval;
+	int rc = 0, retval, pos;
 
-	while ((retval = fsync(fd)) && (errno == EINTR))
-		;
-	if (retval != 0) {
-		rc = retval;
-		error("fsync() error writing %s state save file: %m", 
-		      file_type);
+	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
+		retval = fsync(fd);
+		if (retval && (errno != EINTR)) {
+			error("fsync() error writing %s state save file: %m", 
+			      file_type);
+		}
 	}
+	if (retval)
+		rc = retval;
 
-	while ((retval = close(fd)) && (errno == EINTR))
-		;
-	if (retval != 0) {
-		rc = retval;
-		error("close () error on %s state save file: %m", file_type);
+	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
+		retval = close(fd);
+		if (retval && (errno != EINTR)) {
+			error("close () error on %s state save file: %m", 
+			      file_type);
+		}
 	}
+	if (retval)
+		rc = retval;
 
 	return rc;
 }
