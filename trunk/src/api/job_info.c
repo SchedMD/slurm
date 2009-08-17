@@ -508,9 +508,9 @@ line7:	/****** Line 7 ******/
 	} else
 		tmp3_ptr = "Node";
 	convert_num_unit((float)job_ptr->job_min_memory, tmp1, sizeof(tmp1),
-			 UNIT_NONE);
+			 UNIT_MEGA);
 	convert_num_unit((float)job_ptr->job_min_tmp_disk, tmp2, sizeof(tmp2),
-			 UNIT_NONE);
+			 UNIT_MEGA);
 	snprintf(tmp_line, sizeof(tmp_line), 
 		"MinMemory%s=%s MinTmpDisk=%s Features=%s",
 		tmp3_ptr, tmp1, tmp2, job_ptr->features);

@@ -915,6 +915,7 @@ prevents regular users from viewing reservations.
 \fBusage\fR 
 (NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
 usage of any other user.  This applys to sreport.
+.TP
 \fBusers\fR 
 (NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
 information of any user other than themselves, this also makes it so users can 
@@ -1077,7 +1078,7 @@ be removed from power savings mode (using SLURM's hostlist
 expression format).
 By default no program is run.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeRate\fR, 
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR, 
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 More information is available at the SLURM web site
 (https://computing.llnl.gov/linux/slurm/power_save.html).
@@ -1092,7 +1093,7 @@ assigned work at the same time (e.g. a large job starts).
 A value of zero results in no limits being imposed. 
 The default value is 300 nodes per minute.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR, 
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
@@ -1462,7 +1463,7 @@ Use SLURM's hostlist expression to identify nodes.
 By default no nodes are excluded.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
 \fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, 
-\fBResumeTimeout\fR, and \fBSuspendExcParts\fR.
+\fBSuspendTimeout\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendExcParts\fR
@@ -1472,7 +1473,7 @@ Multiple partitions can be identified and separated by commas.
 By default no nodes are excluded.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
 \fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR 
-\fBResumeTimeout\fR, and \fBSuspendExcNodes\fR.
+\fBSuspendTimeout\fR, and \fBSuspendExcNodes\fR.
 
 .TP
 \fBSuspendProgram\fR
@@ -1487,7 +1488,7 @@ be placed into power savings mode (using SLURM's hostlist
 expression format).
 By default, no program is run.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
-\fBResumeRate\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, 
+\fBResumeRate\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, 
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
