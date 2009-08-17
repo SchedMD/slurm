@@ -8649,11 +8649,12 @@ extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)
 	   != SLURM_SUCCESS)
 		goto end_it;
+
 	if(mysql_acct_no_users(mysql_conn, assoc_cond, ret_list)
 	   != SLURM_SUCCESS)
 		goto end_it;
 
-	if(mysql_user_no_assocs_or_default(mysql_conn, assoc_cond, ret_list)
+	if(mysql_user_no_assocs_or_no_uid(mysql_conn, assoc_cond, ret_list)
 	   != SLURM_SUCCESS)
 		goto end_it;
 
