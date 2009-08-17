@@ -63,6 +63,8 @@ extern int fsync_and_close(int fd, char *file_type)
 {
 	int rc = 0, retval, pos;
 
+	/* SLURM state save files are typically stored on shared filesystems, 
+	 * so lets give fysync() three tries to sync the data to disk. */
 	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
 		retval = fsync(fd);
 		if (retval && (errno != EINTR)) {
