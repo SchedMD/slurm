@@ -67,6 +67,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 
 /* Change PART_STATE_VERSION value when changing the state save format */
 #define PART_STATE_VERSION      "VER002"
@@ -336,7 +337,7 @@ int dump_all_part_state(void)
 		      new_file);
 		error_code = errno;
 	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
 		char *data = (char *)get_buf_data(buffer);
 		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
@@ -349,8 +350,10 @@ int dump_all_part_state(void)
 			nwrite -= amount;
 			pos    += amount;
 		}
-		fsync(log_fd);
-		close(log_fd);
+
+		rc = fsync_and_close(log_fd, "partition");
+		if (rc && !error_code)
+			error_code = rc;
 	}
 	if (error_code)
 		(void) unlink(new_file);
