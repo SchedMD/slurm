@@ -60,6 +60,7 @@ documents those changes that are of interest to users and admins.
     which they are not associated anywhere.
  -- Fix select/linear bug resulting in run_job_cnt underflow message if a 
     suspended job is cancelled.
+ -- Add test for fsync() error for state save files. Log and retry as needed.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
