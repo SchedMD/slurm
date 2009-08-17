@@ -40,6 +40,7 @@ documents those changes that are of interest to users and admins.
  -- Increase the maximum number of tasks which can be launched by a job step
     per node from 64 to 128. 
  -- sview - make right click on popup window title show sorted list.
+ -- scontrol now displays correct units for job min memory and min tmp disk.
 
 * Changes in SLURM 2.0.4
 ========================
