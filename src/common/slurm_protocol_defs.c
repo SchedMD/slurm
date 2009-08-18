@@ -1414,6 +1414,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->node_prefix);
 		xfree(config_ptr->plugindir);
 		xfree(config_ptr->plugstack);
+		xfree(config_ptr->preempt_type);
 		xfree(config_ptr->proctrack_type);
 		xfree(config_ptr->prolog);
 		xfree(config_ptr->prolog_slurmctld);

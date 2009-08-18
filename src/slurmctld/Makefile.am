@@ -40,6 +40,8 @@ slurmctld_SOURCES = 	\
 	port_mgr.c	\
 	port_mgr.h	\
 	power_save.c	\
+	preempt.c	\
+	preempt.h	\
 	proc_req.c	\
 	proc_req.h	\
 	read_config.c	\

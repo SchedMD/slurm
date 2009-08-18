@@ -334,6 +334,8 @@ void slurm_print_ctl_conf ( FILE* out,
 
 	fprintf(out, "PreemptMode             = %s\n",
 		_preempt_str(slurm_ctl_conf_ptr->preempt_mode));
+	fprintf(out, "PreemptType             = %s\n", 
+		slurm_ctl_conf_ptr->preempt_type);
 
 	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
 		fprintf(out, "PriorityType            = %s\n",

@@ -88,8 +88,8 @@ am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	job_scheduler.$(OBJEXT) licenses.$(OBJEXT) locks.$(OBJEXT) \
 	node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
 	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
-	port_mgr.$(OBJEXT) power_save.$(OBJEXT) proc_req.$(OBJEXT) \
-	read_config.$(OBJEXT) reservation.$(OBJEXT) \
+	port_mgr.$(OBJEXT) power_save.$(OBJEXT) preempt.$(OBJEXT) \
+	proc_req.$(OBJEXT) read_config.$(OBJEXT) reservation.$(OBJEXT) \
 	sched_plugin.$(OBJEXT) srun_comm.$(OBJEXT) \
 	state_save.$(OBJEXT) step_mgr.$(OBJEXT) topo_plugin.$(OBJEXT) \
 	trigger_mgr.$(OBJEXT)
@@ -330,6 +330,8 @@ slurmctld_SOURCES = \
 	port_mgr.c	\
 	port_mgr.h	\
 	power_save.c	\
+	preempt.c	\
+	preempt.h	\
 	proc_req.c	\
 	proc_req.h	\
 	read_config.c	\
@@ -437,6 +439,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ping_nodes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/port_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power_save.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/preempt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_req.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation.Po@am__quote@
