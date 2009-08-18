@@ -41,6 +41,10 @@
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
 
+#ifndef SYSTEM_DIMENSIONS
+#  define SYSTEM_DIMENSIONS 1
+#endif
+
 #define MAX_USERNAME	9
 
 
