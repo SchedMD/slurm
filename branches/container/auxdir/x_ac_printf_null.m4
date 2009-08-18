@@ -39,6 +39,7 @@ AC_DEFUN([X_AC_PRINTF_NULL], [
 	#include <stdlib.h>
 	int main() { char tmp[8]; snprintf(tmp,8,"%s",NULL); exit(0); } ],
     printf_null_ok=yes,
+    printf_null_ok=no,
     printf_null_ok=no)
 
   case "$host" in
@@ -54,6 +55,8 @@ AC_DEFUN([X_AC_PRINTF_NULL], [
     AC_MSG_ERROR([printf("%s", NULL) results in abort, upgrade to OpenSolaris release 119])
   elif test "$printf_null_ok" == "no"; then
     AC_MSG_ERROR([printf("%s", NULL) results in abort])
+  else
+    AC_MSG_RESULT([yes])
   fi
 ])
 

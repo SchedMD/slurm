@@ -211,6 +211,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
 	{"PreemptMode", S_P_STRING},
+	{"PreemptType", S_P_STRING},
 	{"PriorityDecayHalfLife", S_P_STRING},
 	{"PriorityFavorSmall", S_P_BOOLEAN},
 	{"PriorityMaxAge", S_P_STRING},
@@ -1358,6 +1359,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
+	xfree (ctl_conf_ptr->preempt_type);
 	xfree (ctl_conf_ptr->priority_type);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
@@ -1462,6 +1464,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
 	ctl_conf_ptr->preempt_mode              = 0;
+	xfree (ctl_conf_ptr->preempt_type);
 	ctl_conf_ptr->private_data              = 0;
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
@@ -2163,6 +2166,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (preempt_modes > 1)
 			fatal("More than one PreemptMode specified");
 	}
+	if (!s_p_get_string(&conf->preempt_type, "PreemptType", hashtbl))
+		conf->preempt_type = xstrdup(DEFAULT_PREEMPT_TYPE);
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
 		int max_time = time_str2mins(temp_str);

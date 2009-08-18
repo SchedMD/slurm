@@ -41,6 +41,10 @@
 #include "src/common/env.h"
 #include "src/common/macros.h" /* true and false */
 
+#ifndef SYSTEM_DIMENSIONS
+#  define SYSTEM_DIMENSIONS 1
+#endif
+
 #define DEFAULT_IMMEDIATE	1
 #define MAX_USERNAME		9
 #define DEFAULT_BELL_DELAY	10

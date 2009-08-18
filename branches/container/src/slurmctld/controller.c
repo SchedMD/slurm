@@ -88,6 +88,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/port_mgr.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
@@ -394,6 +395,8 @@ int main(int argc, char *argv[])
 	 */
 	if (slurm_select_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
+	if (slurm_preempt_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize preempt plugin" );
 	if (checkpoint_init(slurmctld_conf.checkpoint_type) != SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
@@ -600,6 +603,7 @@ int main(int argc, char *argv[])
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
+	slurm_preempt_fini();
 	g_slurm_jobcomp_fini();
 	slurm_acct_storage_fini();
 	slurm_jobacct_gather_fini();

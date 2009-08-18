@@ -350,7 +350,7 @@ The manner in which these jobs are timesliced depends upon the configured
 In the first example <I>CR_Core_Memory</I> is configured. Note that jobs 46 
 and 47 don't <U>ever</U> get suspended. This is because they are not sharing 
 their cores with any other job. 
-Jobs 48 and 49 were allocated to the same cores as jobs 45 and 46. 
+Jobs 48 and 49 were allocated to the same cores as jobs 44 and 45.
 The timeslicer recognizes this and timeslices only those jobs: 
 </P>
 <PRE>
@@ -413,7 +413,7 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
 </PRE>
 <P>
 Note the runtime of all 6 jobs in the output of the last <I>squeue</I> command.
-Jobs 46 and 47 have been running continuously, while jobs 45 and 46 are
+Jobs 46 and 47 have been running continuously, while jobs 44 and 45 are
 splitting their runtime with jobs 48 and 49.
 </P>
 <P>
