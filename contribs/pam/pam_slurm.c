@@ -427,6 +427,3 @@ struct pam_module _pam_rms_modstruct = {
 };
 #endif /* PAM_STATIC */
 
-/*
- * vi: sw=4 ts=4 expandtab
- */
