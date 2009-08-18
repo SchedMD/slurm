@@ -81,6 +81,9 @@
 #ifdef lines
 #  undef lines
 #endif
+#ifndef SYSTEM_DIMENSIONS
+#  define SYSTEM_DIMENSIONS 1
+#endif
 
 #include <stdlib.h>
 #include <pwd.h>
