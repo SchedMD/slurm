@@ -123,7 +123,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 static bool _rem_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id);
 static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
-			      int remove_all);
+			      bool remove_all);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
 			  int max_share, uint32_t req_nodes);
@@ -676,7 +676,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 		total_run_jobs = 0;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			if (exclusive) {      /* count jobs in all partitions */
+			if (exclusive) {     /* count jobs in all partitions */
 				total_run_jobs += part_cr_ptr->run_job_cnt;
 				total_jobs     += part_cr_ptr->tot_job_cnt;
 			} else if (part_cr_ptr->part_ptr == job_ptr->part_ptr) {
@@ -1309,12 +1309,12 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 /*
  * deallocate resources that were assigned to this job 
  *
- * if remove_all = 0: the job has been suspended, so just deallocate CPUs
- * if remove_all = 1: deallocate all resources
+ * if remove_all = false: the job has been suspended, so just deallocate CPUs
+ * if remove_all = true: deallocate all resources
  */
 static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
-			      int remove_all)
+			      bool remove_all)
 {
 	int i, i_first, i_last, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
@@ -1792,7 +1792,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			       list_next(job_iterator))) {
 		tmp_job_ptr = *tmp_job_pptr;
 		_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
-				   "_will_run_test", 1);
+				   "_will_run_test", true);
 		i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, bitmap, 
 				      max_run_jobs, NO_SHARE_LIMIT);
 		if (i < min_nodes)
@@ -2014,7 +2014,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			    && (max_run_job > 0)) {
 				/* We need to share. Try to find 
 				 * suitable job to share nodes with */
-				rc = _find_job_mate(job_ptr, bitmap, min_nodes, 
+				rc = _find_job_mate(job_ptr, bitmap, 
+						    min_nodes, 
 						    max_nodes, req_nodes);
 				if (rc == SLURM_SUCCESS)
 					break;
@@ -2119,7 +2120,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	slurm_mutex_lock(&cr_mutex);
 	if (node_cr_ptr == NULL)
 		_init_node_cr();
-	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_fini", 1);
+	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_fini", true);
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
@@ -2129,7 +2130,8 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 	slurm_mutex_lock(&cr_mutex);
 	if (node_cr_ptr == NULL)
 		_init_node_cr();
-	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_suspend", 0);
+	_rm_job_from_nodes(node_cr_ptr, job_ptr, "select_p_job_suspend", 
+			   false);
 	slurm_mutex_unlock(&cr_mutex);
 	return SLURM_SUCCESS;
 }
