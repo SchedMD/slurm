@@ -746,7 +746,11 @@ static void _preempt_job_dequeue(void)
 			rc = _cancel_job(job_id);
 		else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
 			rc = _checkpoint_job(job_id);
-		else
+		else if (preempt_mode == PREEMPT_MODE_OFF) {
+			/* FIXME: Remove this once preemption is moved out of
+			 * gang scheduling module. */
+			(void) _suspend_job(job_id);
+		} else
 			fatal("Invalid preempt_mode: %u", preempt_mode);
 
 		if (rc != SLURM_SUCCESS) {
