@@ -1293,6 +1293,7 @@ typedef struct slurm_ctl_conf {
 	char *plugstack;        /* pathname to plugin stack config
 				 * file */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* above */
+	char *preempt_type;	/* job preemption selection plugin */
 	uint32_t priority_decay_hl; /* priority decay half life in
 				     * seconds */
 	uint16_t priority_favor_small; /* favor small jobs over large */

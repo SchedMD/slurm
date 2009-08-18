@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  topo_plugin.c - Topology plugin function setup.
+ *  preempt.c - Job preemption plugin function setup.
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -43,57 +43,55 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#if 0
 #include "src/slurmctld/slurmctld.h"
-#endif
 
 
 /* ************************************************************************ */
-/*  TAG(                        slurm_topo_ops_t                         )  */
+/*  TAG(                     slurm_preempt_ops_t                         )  */
 /* ************************************************************************ */
-typedef struct slurm_topo_ops {
-	int		(*build_config)		( void );
-} slurm_topo_ops_t;
+typedef struct slurm_preempt_ops {
+	struct job_record ** (*find_jobs)	( struct job_record *job_ptr );
+} slurm_preempt_ops_t;
 
 
 /* ************************************************************************ */
-/*  TAG(                        slurm_topo_contex_t                      )  */
+/*  TAG(                     slurm_preempt_contex_t                      )  */
 /* ************************************************************************ */
-typedef struct slurm_topo_context {
-	char	       	*topo_type;
+typedef struct slurm_preempt_context {
+	char	       	*preempt_type;
 	plugrack_t     	plugin_list;
 	plugin_handle_t	cur_plugin;
-	int		topo_errno;
-	slurm_topo_ops_t ops;
-} slurm_topo_context_t;
+	int		preempt_errno;
+	slurm_preempt_ops_t ops;
+} slurm_preempt_context_t;
 
-static slurm_topo_context_t	*g_topo_context = NULL;
-static pthread_mutex_t		g_topo_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static slurm_preempt_context_t *g_preempt_context = NULL;
+static pthread_mutex_t	    g_preempt_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /* ************************************************************************ */
-/*  TAG(                       slurm_topo_get_ops                        )  */
+/*  TAG(                    _slurm_preempt_get_ops                       )  */
 /* ************************************************************************ */
-static slurm_topo_ops_t *
-slurm_topo_get_ops( slurm_topo_context_t *c )
+static slurm_preempt_ops_t *
+		_slurm_preempt_get_ops( slurm_preempt_context_t *c )
 {
 	/*
-	 * Must be synchronized with slurm_topo_ops_t above.
+	 * Must be synchronized with slurm_preempt_ops_t above.
 	 */
 	static const char *syms[] = {
-		"topo_build_config",
+		"find_preemptable_jobs",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
 	/* Find the correct plugin. */
-        c->cur_plugin = plugin_load_and_link(c->topo_type, n_syms, syms,
+        c->cur_plugin = plugin_load_and_link(c->preempt_type, n_syms, syms,
 					     (void **) &c->ops);
         if ( c->cur_plugin != PLUGIN_INVALID_HANDLE ) 
         	return &c->ops;
 
 	error("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
-	      c->topo_type);
+	      c->preempt_type);
 	
 	/* Get plugin list. */
 	if ( c->plugin_list == NULL ) {
@@ -103,18 +101,17 @@ slurm_topo_get_ops( slurm_topo_context_t *c )
 			error( "cannot create plugin manager" );
 			return NULL;
 		}
-		plugrack_set_major_type( c->plugin_list, "topo" );
+		plugrack_set_major_type( c->plugin_list, "preempt" );
 		plugrack_set_paranoia( c->plugin_list,
-				       PLUGRACK_PARANOIA_NONE,
-				       0 );
+				       PLUGRACK_PARANOIA_NONE, 0 );
 		plugin_dir = slurm_get_plugin_dir();
 		plugrack_read_dir( c->plugin_list, plugin_dir );
 		xfree(plugin_dir);
 	}
 
-	c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->topo_type );
+	c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->preempt_type);
 	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		error( "cannot find topology plugin for %s", c->topo_type );
+		error( "cannot find preempt plugin for %s", c->preempt_type );
 		return NULL;
 	}
 
@@ -123,7 +120,7 @@ slurm_topo_get_ops( slurm_topo_context_t *c )
 			      n_syms,
 			      syms,
 			      (void **) &c->ops ) < n_syms ) {
-		error( "incomplete topology plugin detected" );
+		error( "incomplete preempt plugin detected" );
 		return NULL;
 	}
 
@@ -132,33 +129,32 @@ slurm_topo_get_ops( slurm_topo_context_t *c )
 
 
 /* ************************************************************************ */
-/*  TAG(                  slurm_topo_context_create                      )  */
+/*  TAG(               _slurm_preempt_context_create                     )  */
 /* ************************************************************************ */
-static slurm_topo_context_t *
-slurm_topo_context_create( const char *topo_type )
+static slurm_preempt_context_t *
+		_slurm_preempt_context_create( const char *preempt_type )
 {
-	slurm_topo_context_t *c;
+	slurm_preempt_context_t *c;
 
-	if ( topo_type == NULL ) {
-		debug3( "slurm_topo_context:  no topology type" );
+	if ( preempt_type == NULL ) {
+		debug3( "slurm_preempt_context:  no preempt type" );
 		return NULL;
 	}
 
-	c = xmalloc( sizeof( slurm_topo_context_t ) );
-	c->topo_type	= xstrdup( topo_type );
-	c->plugin_list	= NULL;
-	c->cur_plugin	= PLUGIN_INVALID_HANDLE;
-	c->topo_errno 	= SLURM_SUCCESS;
+	c = xmalloc( sizeof( slurm_preempt_context_t ) );
+	c->preempt_type   = xstrdup( preempt_type );
+	c->plugin_list    = NULL;
+	c->cur_plugin     = PLUGIN_INVALID_HANDLE;
+	c->preempt_errno  = SLURM_SUCCESS;
 
 	return c;
 }
 
 
 /* ************************************************************************ */
-/*  TAG(                  slurm_topo_context_destroy                     )  */
+/*  TAG(               _slurm_preempt_context_destroy                    )  */
 /* ************************************************************************ */
-static int
-slurm_topo_context_destroy( slurm_topo_context_t *c )
+static int _slurm_preempt_context_destroy( slurm_preempt_context_t *c )
 {
 	/*
 	 * Must check return code here because plugins might still
@@ -172,7 +168,7 @@ slurm_topo_context_destroy( slurm_topo_context_t *c )
 		plugin_unload(c->cur_plugin);
 	}
 
-	xfree( c->topo_type );
+	xfree( c->preempt_type );
 	xfree( c );
 
 	return SLURM_SUCCESS;
@@ -180,72 +176,65 @@ slurm_topo_context_destroy( slurm_topo_context_t *c )
 
 
 /* *********************************************************************** */
-/*  TAG(                        slurm_topo_init                         )  */
-/*                                                                         */
-/*  NOTE: The topology plugin can not be changed via reconfiguration       */
-/*        due to background threads, job priorities, etc. Slurmctld must   */
-/*        be restarted  and job priority changes may be required to change */
-/*        the topology type.                                               */
+/*  TAG(                     slurm_preempt_init                         )  */
 /* *********************************************************************** */
-extern int
-slurm_topo_init( void )
+extern int slurm_preempt_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	char *topo_type = NULL;
+	char *preempt_type = NULL;
 	
-	slurm_mutex_lock( &g_topo_context_lock );
+	slurm_mutex_lock( &g_preempt_context_lock );
 
-	if ( g_topo_context )
+	if ( g_preempt_context )
 		goto done;
 
-	topo_type = slurm_get_topology_plugin();
-	g_topo_context = slurm_topo_context_create( topo_type );
-	if ( g_topo_context == NULL ) {
-		error( "cannot create topology context for %s",
-			 topo_type );
+	preempt_type = slurm_get_preempt_type();
+	g_preempt_context = _slurm_preempt_context_create( preempt_type );
+	if ( g_preempt_context == NULL ) {
+		error( "cannot create preempt context for %s",
+			 preempt_type );
 		retval = SLURM_ERROR;
 		goto done;
 	}
 
-	if ( slurm_topo_get_ops( g_topo_context ) == NULL ) {
-		error( "cannot resolve topology plugin operations" );
-		slurm_topo_context_destroy( g_topo_context );
-		g_topo_context = NULL;
+	if ( _slurm_preempt_get_ops( g_preempt_context ) == NULL ) {
+		error( "cannot resolve preempt plugin operations" );
+		_slurm_preempt_context_destroy( g_preempt_context );
+		g_preempt_context = NULL;
 		retval = SLURM_ERROR;
 	}
 
  done:
-	slurm_mutex_unlock( &g_topo_context_lock );
-	xfree(topo_type);
+	slurm_mutex_unlock( &g_preempt_context_lock );
+	xfree(preempt_type);
 	return retval;
 }
 
 /* *********************************************************************** */
-/*  TAG(                        slurm_topo_fini                         )  */
+/*  TAG(                     slurm_preempt_fini                         )  */
 /* *********************************************************************** */
-extern int
-slurm_topo_fini( void )
+extern int slurm_preempt_fini(void)
 {
 	int rc;
 
-	if (!g_topo_context)
+	if (!g_preempt_context)
 		return SLURM_SUCCESS;
 
-	rc = slurm_topo_context_destroy(g_topo_context);
-	g_topo_context = NULL;
+	rc = _slurm_preempt_context_destroy(g_preempt_context);
+	g_preempt_context = NULL;
 	return rc;
 }
 
 
 /* *********************************************************************** */
-/*  TAG(                      slurm_topo_build_config                   )  */
+/*  TAG(                   slurm_find_preemptable_jobs                  )  */
 /* *********************************************************************** */
-extern int
-slurm_topo_build_config( void )
+extern struct job_record **
+		slurm_find_preemptable_jobs(struct job_record *job_ptr)
 {
-	if ( slurm_topo_init() < 0 )
-		return SLURM_ERROR;
+	if ( slurm_preempt_init() < 0 )
+		return NULL;
 
-	return (*(g_topo_context->ops.build_config))();
+	return (*(g_preempt_context->ops.find_jobs))(job_ptr);
 }
 

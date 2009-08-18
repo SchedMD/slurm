@@ -778,6 +778,26 @@ preempting it completes.
 .RE
 
 .TP
+\fBPreemptType\fR
+This specifies the plugin used to identify which jobs can be 
+preempted in order to start a pending job. 
+.RS
+.TP
+\fBpreempt/none\fR
+Job preemption is disabled.
+This is the default.
+.TP
+\fBpreempt/partition_prio\fR
+Job preemption is based upon partition priority.
+Jobs in higher priority partitions (queues) may preempt jobs from lower 
+priority partitions.
+.TP
+\fBpreempt/qos\fR
+Job preemption rules are specified by Quality Of Service (QOS) specifications
+in the SLURM database a database.
+.RE
+
+.TP
 \fBPriorityDecayHalfLife\fR
 This controls how long prior resource use is considered in determining
 how over\- or under\-serviced an association is (user, bank account and 
