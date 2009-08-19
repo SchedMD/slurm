@@ -47,6 +47,8 @@ documents those changes that are of interest to users and admins.
  -- The pam_slurm Pluggable Authentication Module for SLURM previously
     distributed separately has been moved within the main SLURM distribution
     and is packaged as a separate RPM.
+ -- Added error detection and cleanup for the case in which a compute node is 
+    rebooted and restarts its slurmd before its "down" state is noticed.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
