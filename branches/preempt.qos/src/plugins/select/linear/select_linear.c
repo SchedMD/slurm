@@ -373,8 +373,10 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	uint16_t avail_cpus;
 	uint16_t cpus, sockets, cores, threads;
 	uint16_t cpus_per_task = 1;
-	uint16_t ntasks_per_node = 0, ntasks_per_socket = 0, ntasks_per_core = 0;
-	uint16_t max_sockets = 0xffff, max_cores = 0xffff, max_threads = 0xffff;
+	uint16_t ntasks_per_node = 0, ntasks_per_socket = 0;
+	uint16_t ntasks_per_core = 0;
+	uint16_t max_sockets = 0xffff, max_cores = 0xffff;
+	uint16_t max_threads = 0xffff;
 	multi_core_data_t *mc_ptr = NULL;
 	int min_sockets = 0, min_cores = 0;
 
@@ -679,7 +681,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			if (exclusive) {     /* count jobs in all partitions */
 				total_run_jobs += part_cr_ptr->run_job_cnt;
 				total_jobs     += part_cr_ptr->tot_job_cnt;
-			} else if (part_cr_ptr->part_ptr == job_ptr->part_ptr) {
+			} else if (part_cr_ptr->part_ptr == job_ptr->part_ptr){
 				total_run_jobs += part_cr_ptr->run_job_cnt;
 				total_jobs     += part_cr_ptr->tot_job_cnt; 
 				break;
@@ -1975,7 +1977,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (mode != SELECT_MODE_TEST_ONLY) {
 		if (job_ptr->details->shared) {
 			max_share = job_ptr->part_ptr->max_share & 
-					~SHARED_FORCE;
+				    ~SHARED_FORCE;
 		} else	/* ((shared == 0) || (shared == (uint16_t) NO_VAL)) */
 			max_share = 1;
 	}
@@ -2010,8 +2012,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			if ((j == prev_cnt) || (j < min_nodes))
 				continue;
 			prev_cnt = j;
-			if ((mode == SELECT_MODE_RUN_NOW)
-			    && (max_run_job > 0)) {
+			if ((mode == SELECT_MODE_RUN_NOW) &&
+			    (max_run_job > 0)) {
 				/* We need to share. Try to find 
 				 * suitable job to share nodes with */
 				rc = _find_job_mate(job_ptr, bitmap, 
@@ -2210,7 +2212,7 @@ extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 	static time_t last_set_all = 0;
 
 	/* only set this once when the last_node_update is newer than
-	   the last time we set things up. */
+	 * the last time we set things up. */
 	if(last_set_all && (last_node_update < last_set_all)) {
 		debug2("Node select info for set all hasn't "
 		       "changed since %d", 
@@ -2295,12 +2297,14 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 }
 
 extern int select_p_select_jobinfo_get (select_jobinfo_t *jobinfo,
-				 enum select_jobdata_type data_type, void *data)
+					enum select_jobdata_type data_type, 
+					void *data)
 {
 	return SLURM_SUCCESS;
 }
 
-extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
+extern select_jobinfo_t *select_p_select_jobinfo_copy(
+				select_jobinfo_t *jobinfo)
 {
 	return NULL;
 }
