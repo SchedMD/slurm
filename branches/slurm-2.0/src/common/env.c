@@ -890,7 +890,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_NODELIST
  *	SLURM_TASKS_PER_NODE 
  */
-void
+int
 env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		  const job_desc_msg_t *desc)
 {
@@ -901,7 +901,8 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	char *dist = NULL, *lllp_dist = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	uint32_t num_tasks = desc->num_tasks;
-
+	int rc = SLURM_SUCCESS;
+	
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",
 				alloc->node_cnt);
@@ -986,21 +987,30 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		   && desc->cpus_per_task != (uint16_t)NO_VAL)
 			num_tasks /= desc->cpus_per_task;
 		//num_tasks = desc->num_procs;
-	}
+	} 
+
+	if(desc->task_dist == SLURM_DIST_ARBITRARY)
+		tmp = desc->req_nodes;
+	else
+		tmp = alloc->node_list;
 	//info("got %d and %d", num_tasks,  desc->cpus_per_task);
-	step_layout = slurm_step_layout_create(alloc->node_list,
-					       alloc->cpus_per_node,
-					       alloc->cpu_count_reps,
-					       alloc->node_cnt,
-					       num_tasks,
-					       desc->cpus_per_task,
-					       desc->task_dist,
-					       desc->plane_size);
+	if(!(step_layout = slurm_step_layout_create(tmp,
+						    alloc->cpus_per_node,
+						    alloc->cpu_count_reps,
+						    alloc->node_cnt,
+						    num_tasks,
+						    desc->cpus_per_task,
+						    desc->task_dist,
+						    desc->plane_size))) 
+		return SLURM_ERROR;
+	
+
 	tmp = _uint16_array_to_str(step_layout->node_cnt,
 				   step_layout->tasks);
 	slurm_step_layout_destroy(step_layout);
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	xfree(tmp);
+	return rc;
 }
 
 /*

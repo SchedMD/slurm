@@ -41,6 +41,8 @@ documents those changes that are of interest to users and admins.
     per node from 64 to 128. 
  -- sview - make right click on popup window title show sorted list.
  -- scontrol now displays correct units for job min memory and min tmp disk.
+ -- better support for salloc --arbitrary layout for setting correct 
+    SLURM_TASKS_PER_NODE
 
 * Changes in SLURM 2.0.4
 ========================
