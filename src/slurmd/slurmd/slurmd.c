@@ -1353,7 +1353,7 @@ static void _update_logging(void)
 	if (conf->daemonize) {
 		o->stderr_level = LOG_LEVEL_QUIET;
 		if (conf->logfile)
-			o->syslog_level = LOG_LEVEL_QUIET;
+			o->syslog_level = LOG_LEVEL_FATAL;
 	} else 
 		o->syslog_level  = LOG_LEVEL_QUIET;
 
