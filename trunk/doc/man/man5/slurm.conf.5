@@ -738,19 +738,14 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 
 .TP
 \fBPreemptMode\fR
-Enables gang scheduling and/or controls the mechanism used to preempt lower 
-priority jobs in order to execute higher priority jobs.
-For gang scheduling (time slicing) of jobs in the same partition, 
-job suspend will always be used.
-SLURM partitions can have different \fBPriority\fR values and contain 
-the same nodes, in which case jobs from the higher priority 
-partition can preempt jobs from the lower priority partition.
+Enables gang scheduling and/or controls the mechanism used to preempt jobs.
+The \fBPreemptType\fR parameter controls the mechanism used to determine
+which jobs are capable of preempting other jobs while \fBPreemptMode\fR
+controls the mechanism used to preempt the lower priority jobs.
+Jobs which are being gang scheduled (time sliced) rather than being preempted
+will always make use of a suspend/resume mechanism.
 The \fBGANG\fR option can be specified in addition to a preemption 
 method specification with the two options comma separated.
-NOTE: \fBGANG\fR must be specified for job preemption to occur.
-Changes are underway to permit job preemption without gang scheduling
-and job preemption based upon QOS (Quality Of Service) rather than 
-partition priority.
 .RS
 .TP 12
 \fBOFF\fR
@@ -775,6 +770,8 @@ preempts jobs by requeuing them (if possible) or cancelling them.
 preempts jobs by suspending them.
 A suspended job will resume execution once the high priority job 
 preempting it completes.
+The \fBSUSPEND\fR may only be used with the \fBGANG\fR option
+(the gang scheduler module performs the job resume operation). 
 .RE
 
 .TP
@@ -795,6 +792,8 @@ priority partitions.
 \fBpreempt/qos\fR
 Job preemption rules are specified by Quality Of Service (QOS) specifications
 in the SLURM database a database.
+This is not compatible with \fBPreemptMode=OFF\fR or \fBPreemptMode=SUSPEND\fR
+(i.e. preempted jobs must be removed from the resources).
 .RE
 
 .TP

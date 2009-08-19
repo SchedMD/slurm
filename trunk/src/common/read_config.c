@@ -2165,9 +2165,25 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 		if (preempt_modes > 1)
 			fatal("More than one PreemptMode specified");
+		if (conf->preempt_mode == PREEMPT_MODE_SUSPEND)
+			fatal("PreemptMode=SUSPEND requires GANG too");
 	}
 	if (!s_p_get_string(&conf->preempt_type, "PreemptType", hashtbl))
 		conf->preempt_type = xstrdup(DEFAULT_PREEMPT_TYPE);
+	if (strcmp(conf->preempt_type, "preempt/qos") == 0) {
+		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
+		if ((preempt_mode == PREEMPT_MODE_OFF) ||
+		    (preempt_mode == PREEMPT_MODE_SUSPEND)) {
+			fatal("PreemptType and PreemptMode values "
+			      "incompatible");
+		}
+	} else if (strcmp(conf->preempt_type, "preempt/none") == 0) {
+		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
+		if (preempt_mode != PREEMPT_MODE_OFF) {
+			fatal("PreemptType and PreemptMode values "
+			      "incompatible");
+		}
+	}
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
