@@ -7646,3 +7646,49 @@ _read_job_ckpt_file(char *ckpt_file, int *size_ptr)
 	*size_ptr = data_size;
 	return data;
 }
+
+/*
+ * Preempt a job using the proper job removal mechanism (checkpoint, requeue).
+ * Do not use this function for job suspend/resume. This is handled by the
+ * gang module.
+ */
+extern void job_preempt_remove(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	uint16_t preempt_mode = slurm_get_preempt_mode();
+	checkpoint_msg_t ckpt_msg;
+
+	if (preempt_mode == PREEMPT_MODE_REQUEUE) {
+		rc = job_requeue(0, job_ptr->job_id, -1);
+		if (rc == SLURM_SUCCESS) {
+			info("preempted job %u has been requeued", 
+			     job_ptr->job_id);
+		}
+	} else if (preempt_mode == PREEMPT_MODE_CANCEL) {
+		(void) job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+	} else if (preempt_mode == PREEMPT_MODE_CHECKPOINT) {
+		memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
+		ckpt_msg.op        = CHECK_VACATE;
+		ckpt_msg.job_id    = job_ptr->job_id;
+		rc = job_checkpoint(&ckpt_msg, 0, -1);
+		if (rc == SLURM_SUCCESS) {
+			info("preempted job %u has been checkpointed", 
+			     job_ptr->job_id);
+		}
+	} else {
+		fatal("Invalid preempt_mode: %u", preempt_mode);
+		return;
+	}
+
+	if (rc != SLURM_SUCCESS) {
+		rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+		if (rc == SLURM_SUCCESS) {
+			info("preempted job %u had to be killed", 
+			     job_ptr->job_id);
+		} else {
+			info("preempted job %u kill failure %s", 
+			     job_ptr->job_id, slurm_strerror(rc));
+		}
+	}
+}
+
