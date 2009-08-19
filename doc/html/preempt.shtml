@@ -18,21 +18,21 @@ resources if so configured in newer versions of SLURM.
 In SLURM version 2.0 and earlier, high priority work is identified by the 
 priority of the job's partition and low priority jobs are always suspended.
 The job preemption logic is within the <I>sched/gang</I> plugin.
+In SLURM version 2.1 and higher, the job's partition priority or its 
+Quality Of Service (QOS) can be used to identify the which jobs can preempt 
+or be preempted by other jobs.
 </P>
 <P>
-<!--In SLURM version 2.1 and higher, the job's partition priority or its 
-Quality Of Service (QOS) can be used to identify the which jobs can preempt 
-or be preempted by other jobs.-->
-SLURM version 2.1 offers the option of requeuing low priority jobs
-rather than suspending them, which may permit the preempted jobs to restart 
-faster by using different resources.
-SLURM version 2.1 also offers the option of checkpointing low priority jobs
-rather than suspending them
+SLURM version 2.1 offers several options for the job preemption mechanism
+including checkpoint, requeue, or cancel.
+the option of requeuing low priority jobs 
 Checkpointed jobs are not automatically requeued or restarted.
-Requeuing jobs also releases their memory space for use by other jobs.
-In SLURM version 2.1, the job preemption logic was moved directly into the
-main code bases to permit use of both job preemption plus the backfill 
-scheduler plugin, <i>sched/backfill</I>.
+Requeued jobs may restart faster by using different resources.
+All of these new job preemption mechanisms release a job's memory space for 
+use by other jobs.
+In SLURM version 2.1, some job preemption logic was moved into the
+<I>select</I> plugin and main code base to permit use of both job preemption 
+plus the backfill scheduler plugin, <i>sched/backfill</I>.
 </P>
 
 <H2>Configuration</H2>
@@ -46,13 +46,15 @@ There are several important configuration parameters relating to preemption:
 <I>select/cons_res</I> plugin.
 </LI>
 <LI>
-<B>SelectTypeParameter</B>: Since resources may be getting overallocated 
+<B>SelectTypeParameter</B>: Since resources may be getting over-allocated 
 with jobs (suspended jobs remain in memory), the resource selection
 plugin should be configured to track the amount of memory used by each job to
 ensure that memory page swapping does not occur. When <I>select/linear</I> is
 chosen, we recommend setting <I>SelectTypeParameter=CR_Memory</I>. When
 <I>select/cons_res</I> is chosen, we recommend including Memory as a resource
-(ex. <I>SelectTypeParameter=CR_Core_Memory</I>).
+(ex. <I>SelectTypeParameter=CR_Core_Memory</I>). 
+<BR><B>NOTE:</B> Unless <I>PreemptMode=SUSPEND,GANG</I> these memory management
+parameters are not critical.
 </LI>
 <LI>
 <B>DefMemPerCPU</B>: Since job requests may not explicitly specify 
@@ -64,6 +66,8 @@ It may also be desirable to configure
 <I>MaxMemPerNode</I> (maximum memory per allocated node) in <I>slurm.conf</I>.
 Users can use the <I>--mem</I> or <I>--mem-per-cpu</I> option
 at job submission time to specify their memory requirements.
+<BR><B>NOTE:</B> Unless <I>PreemptMode=SUSPEND,GANG</I> these memory management
+parameters are not critical.
 </LI>
 <LI>
 <B>JobAcctGatherType and JobAcctGatherFrequency</B>: The "maximum data segment
@@ -74,6 +78,8 @@ accounting with the <I>JobAcctGatherType</I> and <I>JobAcctGatherFrequency</I>
 parameters. When accounting is enabled and a job exceeds its configured memory
 limits, it will be canceled in order to prevent it from adversely effecting
 other jobs sharing the same resources.
+<BR><B>NOTE:</B> Unless <I>PreemptMode=SUSPEND,GANG</I> these memory management
+parameters are not critical.
 </LI>
 <LI>
 <B>PreemptMode</B>: Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>, 
@@ -87,17 +93,38 @@ Checkpointed jobs are not automatically restarted.
 <LI>A value of <I>REQUEUE</I> will requeue (if possible) or kill low priority 
 jobs. Requeued jobs are permitted to be restarted on different resources.</LI>
 <LI>A value of <I>SUSPEND</I> will suspend and automatically resume the low 
-priority jobs. </LI>
+priority jobs. The <I>SUSPEND</I> option must be used with the <I>GANG</I>
+option (e.g. "PreemptMode=SUSPEND,GANG").</LI>
+</UL>
+</LI>
+<LI>
+<B>PreemptType</B>: Configure to the desired mechanism used to identify
+which jobs can preempt other jobs.
+<UL>
+<LI><I>preempt/none</I> indicates that jobs will not preempt each other
+(default).</LI>
+<LI><I>preempt/partition_prio</I> indicates that jobs from one partition 
+can preempt jobs from lower priority partitions.</LI>
+<LI><I>preempt/qos</I> indicates that jobs from one Quality Of Service (QOS) 
+can preempt jobs from a lower QOS. These jobs can be in the same partition 
+or different partitions. PreemptMode must be set to CANCEL, CHECKPOINT, 
+SUSPEND or REQUEUE. This option requires the use of a database identifying
+available QOS and their preemption rules. </LI>
 </UL>
 </LI>
 <LI>
 <B>Priority</B>: Configure the partition's <I>Priority</I> setting relative to
-other partitions to control the preemptive behavior. If two jobs from two
+other partitions to control the preemptive behavior when 
+<I>PreemptType=preempt/partition_prio</I>. 
+This option is not relevant if <I>PreemptType=preempt/qos</I>. 
+If two jobs from two
 different partitions are allocated to the same resources, the job in the
 partition with the greater <I>Priority</I> value will preempt the job in the
 partition with the lesser <I>Priority</I> value. If the <I>Priority</I> values
 of the two partitions are equal then no preemption will occur. The default
 <I>Priority</I> value is 1.
+<BR><B>NOTE:</B> Unless <I>PreemptType=preempt/partition_prio</I> the
+partition <I>Priority</I> is not critical.
 </LI>
 <LI>
 <B>Shared</B>: Configure the partition's <I>Shared</I> setting to 
@@ -120,6 +147,16 @@ SLURM requires a full restart of the daemons. If you just change the partition
 
 <H2>Preemption Design and Operation</H2>
 
+<P>
+The select plugin will identify resources where a pending job can begin 
+execution.
+When <I>PreemptMode</I> is configured to CANCEL, CHECKPOINT, SUSPEND or 
+REQUEUE, the select plugin will also preempt running jobs as needed to 
+initiate the pending job. 
+When <I>PreemptMode=SUSPEND,GANG</I> the select plugin will initiate the 
+pending job and rely upon the gang scheduling logic to perform job suspend 
+and resume as described below.
+</P>
 <P>
 When enabled, the gang scheduling logic (which is also supports job 
 preemption) keeps track of the resources allocated to all jobs. 
@@ -166,7 +203,8 @@ A good way to observe the operation of the gang scheduler is by running
 
 <P>
 The following example is configured with <I>select/linear</I> and
-<I>PreemptMode=SUSPEND</I>. This example takes place on a cluster of 5 nodes:
+<I>PreemptMode=SUSPEND,GANG</I>. 
+This example takes place on a cluster of 5 nodes:
 </P>
 <PRE>
 [user@n16 ~]$ <B>sinfo</B>
@@ -291,28 +329,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<P>
-<B>Better memory management</B>: Some additional work is required to 
-better track memory when preempted jobs are checkpointed, requeued or
-killed. 
-In those cases, the memory originally assigned to the job is freed.
-Some addition logic is required to properly track memory being freed
-by these preempted jobs, especially for the select/cons_res plugin,
-which typically runs multiple jobs per node.
-</P>
-
-<P>
-<B>Job preemption based upon Quality of Service (QOS) rather than 
-partition priority</B>: Granting user's a QOS with preemption capabilities
-could be used as an alternative to prartition priorities. 
-Granting some user access to a QOS with a descriptor of <I>PREEMPTOR</I> 
-could be used to grant him the ability to preempt any job from any partition
-without creating various partitions with different priorities.
-However this mechanism lacks the ability to support many priority levels.
-It would also necessitate major changes to the shadow bitmap data structures
-which are currently used.
-</P>
-
-<p style="text-align:center;">Last modified 20 July 2009</p>
+<p style="text-align:center;">Last modified 19 August 2009</p>
 
 <!--#include virtual="footer.txt"-->
