@@ -150,6 +150,8 @@ extern void sacctmgr_print_coord_list(
 	print_field_t *field, List value, int last);
 extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 				    List value, int last);
+extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
+				      bitstr_t *value, int last);
 
 extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc);
 extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos);

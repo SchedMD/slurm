@@ -244,6 +244,8 @@ typedef struct acct_association_rec {
 				    * (DON'T PACK) */
 	
 	char *user;		/* user associated to association */
+	bitstr_t *valid_qos;    /* qos available for this association
+				 * (DON'T PACK) */	
 } acct_association_rec_t;
 
 typedef struct {
@@ -340,10 +342,8 @@ typedef struct {
 
 	char *name;
 	double norm_priority;/* normalized priority (DON'T PACK) */
-	List preemptee_list; /* list of char * list of qos's that this
-				qos can preempt */
-	List preemptor_list; /* list of char * list of qos's that this
-			      * qos is preempted by */
+	bitstr_t *preempt_bitstr; /* other qos' this qos can preempt */
+	List preempt_list; /* list of char *'s */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
 	double usage_factor; /* factor to apply to usage in this qos */
@@ -553,7 +553,8 @@ typedef struct {
 			     insert of jobs since past */
 } acct_archive_rec_t;
 
-extern uint32_t qos_max_priority; /* max priority in all qos's */
+extern uint32_t g_qos_max_priority; /* max priority in all qos's */
+extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
 
 extern void destroy_acct_user_rec(void *object);
 extern void destroy_acct_account_rec(void *object);
@@ -689,6 +690,8 @@ extern List get_acct_hierarchical_rec_list(List assoc_list);
 /* IN/OUT: tree_list a list of acct_print_tree_t's */ 
 extern char *get_tree_acct_name(char *name, char *parent, List tree_list);
 
+extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list);
+extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos);
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 
 extern char *get_classification_str(uint16_t class);

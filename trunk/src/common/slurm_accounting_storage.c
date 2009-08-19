@@ -553,6 +553,7 @@ extern void destroy_acct_association_rec(void *object)
 		if(acct_association->qos_list)
 			list_destroy(acct_association->qos_list);
 		xfree(acct_association->user);
+		FREE_NULL_BITMAP(acct_association->valid_qos);
 		xfree(acct_association);
 	}
 }
@@ -566,10 +567,9 @@ extern void destroy_acct_qos_rec(void *object)
 		if(acct_qos->job_list)
 			list_destroy(acct_qos->job_list);
 		xfree(acct_qos->name);
-		if(acct_qos->preemptee_list)
-			list_destroy(acct_qos->preemptee_list);
-		if(acct_qos->preemptor_list)
-			list_destroy(acct_qos->preemptor_list);
+		FREE_NULL_BITMAP(acct_qos->preempt_bitstr);
+		if(acct_qos->preempt_list)
+			list_destroy(acct_qos->preempt_list);
 		if(acct_qos->user_limit_list)
 			list_destroy(acct_qos->user_limit_list);
 		xfree(acct_qos);
@@ -2362,8 +2362,94 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 	acct_qos_rec_t *object = (acct_qos_rec_t *)in;	
 	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
+		
+	if(rpc_version >= 6) {
+		if(!object) {
+			packnull(buffer);
+			pack32(0, buffer);
+			packnull(buffer);
 
-	if(rpc_version >= 5) {
+			pack64(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack64(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+
+			pack_bit_str(NULL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack32(0, buffer);
+
+			packdouble(NO_VAL, buffer);
+
+			pack32(NO_VAL, buffer);
+			return;
+		}
+		packstr(object->description, buffer);	
+		pack32(object->id, buffer);
+
+		pack64(object->grp_cpu_mins, buffer);
+		pack32(object->grp_cpus, buffer);
+		pack32(object->grp_jobs, buffer);
+		pack32(object->grp_nodes, buffer);
+		pack32(object->grp_submit_jobs, buffer);
+		pack32(object->grp_wall, buffer);
+
+		pack64(object->max_cpu_mins_pu, buffer);
+		pack32(object->max_cpus_pu, buffer);
+		pack32(object->max_jobs_pu, buffer);
+		pack32(object->max_nodes_pu, buffer);
+		pack32(object->max_submit_jobs_pu, buffer);
+		pack32(object->max_wall_pu, buffer);
+
+		packstr(object->name, buffer);	
+
+		pack_bit_str(object->preempt_bitstr, buffer);
+		
+		if(object->preempt_list)
+			count = list_count(object->preempt_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->preempt_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32(object->priority, buffer);
+		
+		packdouble(object->usage_factor, buffer);
+
+		if(object->user_limit_list)
+			count = list_count(object->user_limit_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			acct_used_limits_t *used_limits = NULL;
+			itr = list_iterator_create(object->user_limit_list);
+			while((used_limits = list_next(itr))) {
+				pack_acct_used_limits(used_limits,
+						      rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+	} else if(rpc_version >= 5) {
 		if(!object) {
 			packnull(buffer);
 			pack32(0, buffer);
@@ -2414,33 +2500,12 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 		packstr(object->name, buffer);	
 
-		if(object->preemptee_list)
-			count = list_count(object->preemptee_list);
-
-		pack32(count, buffer);
-
-		if(count && count != NO_VAL) {
-			itr = list_iterator_create(object->preemptee_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		
-		if(object->preemptor_list)
-			count = list_count(object->preemptor_list);
-
-		pack32(count, buffer);
-
-		if(count && count != NO_VAL) {
-			itr = list_iterator_create(object->preemptor_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		/* These are here for the old preemptee preemptor
+		   lists we could figure this out from the
+		   preempt_bitstr, but qos wasn't used for anything
+		   before rpc_version 6 so just send NO_VALS */
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		
 		pack32(object->priority, buffer);
 		
@@ -2510,33 +2575,12 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 		packstr(object->name, buffer);	
 
-		if(object->preemptee_list)
-			count = list_count(object->preemptee_list);
-
-		pack32(count, buffer);
-
-		if(count && count != NO_VAL) {
-			itr = list_iterator_create(object->preemptee_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-		
-		if(object->preemptor_list)
-			count = list_count(object->preemptor_list);
-
-		pack32(count, buffer);
-
-		if(count && count != NO_VAL) {
-			itr = list_iterator_create(object->preemptor_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		/* These are here for the old preemptee preemptor
+		   lists we could figure this out from the
+		   preempt_bitstr, but qos wasn't used for anything
+		   before rpc_version 6 so just send NO_VALS */
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		
 		pack32(object->priority, buffer);
 		
@@ -2580,7 +2624,60 @@ extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer)
 	
 	init_acct_qos_rec(object_ptr);
 
-	if(rpc_version >= 5) {
+	if(rpc_version >= 6) {
+		safe_unpackstr_xmalloc(&object_ptr->description,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+
+		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
+		safe_unpack32(&object_ptr->grp_cpus, buffer);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_nodes, buffer);
+		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_wall, buffer);
+
+		safe_unpack64(&object_ptr->max_cpu_mins_pu, buffer);
+		safe_unpack32(&object_ptr->max_cpus_pu, buffer);
+		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
+		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
+		safe_unpack32(&object_ptr->max_wall_pu, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
+		unpack_bit_str(&object_ptr->preempt_bitstr, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->preempt_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->preempt_list,
+					    tmp_info);
+			}
+		}
+		
+		safe_unpack32(&object_ptr->priority, buffer);
+
+		safe_unpackdouble(&object_ptr->usage_factor, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			void *used_limits = NULL;
+
+			object_ptr->user_limit_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				unpack_acct_used_limits(&used_limits,
+							rpc_version, buffer);
+				list_append(object_ptr->user_limit_list,
+					    used_limits);
+			}
+		}
+
+	} else if(rpc_version >= 5) {
 		safe_unpackstr_xmalloc(&object_ptr->description,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
@@ -2603,25 +2700,25 @@ extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer)
 
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->preemptee_list = 
+			object_ptr->preempt_list = 
 				list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->preemptee_list,
+				list_append(object_ptr->preempt_list,
 					    tmp_info);
 			}
 		}
 
+		/* this is here for the old preemptor list.  which was
+		   never used so just throw anything here away.
+		*/
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->preemptor_list = 
-				list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->preemptor_list,
-					    tmp_info);
+				xfree(tmp_info);
 			}
 		}
 
@@ -2666,25 +2763,25 @@ extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer)
 
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->preemptee_list = 
+			object_ptr->preempt_list = 
 				list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->preemptee_list,
+				list_append(object_ptr->preempt_list,
 					    tmp_info);
 			}
 		}
 
+		/* this is here for the old preemptor list.  which was
+		   never used so just throw anything here away.
+		*/
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->preemptor_list = 
-				list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->preemptor_list,
-					    tmp_info);
+				xfree(tmp_info);
 			}
 		}
 
@@ -7192,6 +7289,78 @@ extern char *get_tree_acct_name(char *name, char *parent, List tree_list)
 	list_append(tree_list, acct_print_tree);
 	
 	return acct_print_tree->print_name;
+}
+
+extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list)
+{
+	ListIterator itr = NULL;
+	bitoff_t bit = 0;
+	int rc = SLURM_SUCCESS;
+	char *temp_char = NULL;
+	void (*my_function) (bitstr_t *b, bitoff_t bit);
+
+	xassert(valid_qos);
+
+	if(!qos_list)
+		return SLURM_ERROR;
+
+	itr = list_iterator_create(qos_list);
+	while((temp_char = list_next(itr))) {
+		if(temp_char[0] == '-') {
+			temp_char++;
+			my_function = bit_clear;
+		} else if(temp_char[0] == '+') {
+			temp_char++;
+			my_function = bit_set;
+		} else
+			my_function = bit_set;
+		bit = atoi(temp_char);
+		if(bit >= bit_size(valid_qos)) {
+			rc = SLURM_ERROR;
+			break;
+		}
+		(*(my_function))(valid_qos, bit);
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
+}
+
+extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos)
+{
+	List temp_list = NULL;
+	char *temp_char = NULL;
+	char *print_this = NULL;
+	ListIterator itr = NULL;
+	int i = 0;
+
+	if(!qos_list || !list_count(qos_list)
+	   || !valid_qos || (bit_ffs(valid_qos) == -1))
+		return xstrdup("");
+
+	temp_list = list_create(NULL);
+
+	for(i=0; i<bit_size(valid_qos); i++) {
+		if(!bit_test(valid_qos, i))
+			continue;
+		if((temp_char = acct_qos_str(qos_list, i)))
+			list_append(temp_list, temp_char);
+	}
+	list_sort(temp_list, (ListCmpF)slurm_sort_char_list_asc);
+	itr = list_iterator_create(temp_list);
+	while((temp_char = list_next(itr))) {
+		if(print_this) 
+			xstrfmtcat(print_this, ",%s", temp_char);
+		else 
+			print_this = xstrdup(temp_char);
+	}
+	list_iterator_destroy(itr);
+	list_destroy(temp_list);
+
+	if(!print_this)
+		return xstrdup("");
+
+	return print_this;
 }
 
 extern char *get_qos_complete_str(List qos_list, List num_qos_list)
