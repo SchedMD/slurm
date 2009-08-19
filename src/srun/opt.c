@@ -242,34 +242,20 @@ int initialize_and_process_args(int argc, char *argv[])
  */
 static bool _valid_node_list(char **node_list_pptr)
 {
-	char *nodelist = NULL;
-	
-	if (strchr(*node_list_pptr, '/') == NULL)
-		return true;	/* not a file name */
+	int count = 0;
 
 	/* If we are using Arbitrary and we specified the number of
 	   procs to use then we need exactly this many since we are
 	   saying, lay it out this way!  Same for max and min nodes.  
 	   Other than that just read in as many in the hostfile */
-	if(opt.distribution == SLURM_DIST_ARBITRARY) {
-		if(opt.nprocs_set) 
-			nodelist = slurm_read_hostfile(*node_list_pptr,
-						       opt.nprocs);
-		else if(opt.max_nodes)
-			nodelist = slurm_read_hostfile(*node_list_pptr,
-						       opt.max_nodes);
-		else if(opt.min_nodes)
-			nodelist = slurm_read_hostfile(*node_list_pptr,
-						       opt.min_nodes);
-	 } else
-		nodelist = slurm_read_hostfile(*node_list_pptr, NO_VAL);
-		
-	if (nodelist == NULL) 
-		return false;
-	xfree(*node_list_pptr);
-	*node_list_pptr = xstrdup(nodelist);
-	free(nodelist);
-	return true;
+	if(opt.nprocs_set) 
+		count = opt.nprocs;
+	else if(opt.max_nodes)
+		count = opt.max_nodes;
+	else if(opt.min_nodes)
+		count = opt.min_nodes;
+
+	return verify_node_list(node_list_pptr, opt.distribution, count);
 }
 
 /*

@@ -72,6 +72,9 @@ long str_to_bytes(const char *arg);
 /* verify that a node count in arg is of a known form (count or min-max) */
 bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes);
 
+/* verify a node list is valid based on the dist and task count given */
+bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
+		      int task_count);
 /* parse a possible range of values from the form: count, min-max, or '*' */
 bool get_resource_arg_range(const char *arg, const char *what,
 				   int* min, int *max, bool isFatal);
