@@ -198,7 +198,7 @@ int initialize_and_process_args(int argc, char *argv[])
  */
 static bool _valid_node_list(char **node_list_pptr)
 {
-	int count = 0;
+	int count = NO_VAL;
 
 	/* If we are using Arbitrary and we specified the number of
 	   procs to use then we need exactly this many since we are
@@ -206,10 +206,12 @@ static bool _valid_node_list(char **node_list_pptr)
 	   Other than that just read in as many in the hostfile */
 	if(opt.nprocs_set) 
 		count = opt.nprocs;
-	else if(opt.max_nodes)
-		count = opt.max_nodes;
-	else if(opt.min_nodes)
-		count = opt.min_nodes;
+	else if(opt.nodes_set) {
+		if(opt.max_nodes)
+			count = opt.max_nodes;
+		else if(opt.min_nodes)
+			count = opt.min_nodes;
+	}
 
 	return verify_node_list(node_list_pptr, opt.distribution, count);
 }
@@ -1314,6 +1316,23 @@ static bool _opt_verify(void)
 			exit(1);
 	}
 
+	/* set up the proc and node counts based on the arbitrary list
+	   of nodes */
+	if((opt.distribution == SLURM_DIST_ARBITRARY)
+	   && (!opt.nodes_set || !opt.nprocs_set)) {		
+		hostlist_t hl = hostlist_create(opt.nodelist);
+		if(!opt.nprocs_set) {
+			opt.nprocs_set = 1;
+			opt.nprocs = hostlist_count(hl);
+		} 
+		if(!opt.nodes_set) {
+			opt.nodes_set = 1;
+			hostlist_uniq(hl);
+			opt.min_nodes = opt.max_nodes = hostlist_count(hl);
+		}
+		hostlist_destroy(hl);
+	}		
+	
 	if (opt.time_limit_str) {
 		opt.time_limit = time_str2mins(opt.time_limit_str);
 		if ((opt.time_limit < 0) && (opt.time_limit != INFINITE)) {

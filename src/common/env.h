@@ -133,9 +133,9 @@ int env_array_for_job(char ***dest,
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
-extern void env_array_for_batch_job(char ***dest, 
-				    const batch_job_launch_msg_t *batch,
-				    const char* node_name);
+extern int env_array_for_batch_job(char ***dest, 
+				   const batch_job_launch_msg_t *batch,
+				   const char* node_name);
 
 /*
  * Set in "dest" the environment variables relevant to a SLURM job step,
