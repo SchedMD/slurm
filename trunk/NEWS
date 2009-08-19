@@ -65,6 +65,7 @@ documents those changes that are of interest to users and admins.
  -- Fix select/linear bug resulting in run_job_cnt underflow message if a 
     suspended job is cancelled.
  -- Add test for fsync() error for state save files. Log and retry as needed.
+ -- Log fatal errors from slurmd and slurmctld to syslog.
 
 * Changes in SLURM 2.1.0-pre2
 =============================

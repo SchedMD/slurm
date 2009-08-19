@@ -1634,7 +1634,7 @@ void update_logging(void)
 	if (daemonize) {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
 		if (slurmctld_conf.slurmctld_logfile)
-			log_opts.syslog_level = LOG_LEVEL_QUIET;
+			log_opts.syslog_level = LOG_LEVEL_FATAL;
 	} else
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
 
