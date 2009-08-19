@@ -452,7 +452,7 @@ static int _build_sinfo_data(List sinfo_list,
 						(node_ptr->cores 
 						 + node_ptr->sockets
 						 + node_ptr->used_cpus);
-					if((int)node_ptr->threads < 0)
+					if((int16_t)node_ptr->threads < 0)
 						node_ptr->threads = 0;
 					if(node_ptr->threads == node_scaling)
 						norm = 1;
