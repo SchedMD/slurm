@@ -292,6 +292,12 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 				    "SLURM_GET_USER_ENV", "1");
 	}
 	env_array_merge(&desc->environment, (const char **)environ);
+	if(opt.distribution == SLURM_DIST_ARBITRARY) {
+		env_array_overwrite_fmt(&desc->environment,
+					"SLURM_ARBITRARY_NODELIST",
+					"%s", desc->req_nodes);
+	}
+
 	desc->env_size = envcount (desc->environment);
 	desc->argv = opt.script_argv;
 	desc->argc = opt.script_argc;
