@@ -168,6 +168,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	int best_start[BA_SYSTEM_DIMENSIONS];
 	int start[BA_SYSTEM_DIMENSIONS];
 	int end[BA_SYSTEM_DIMENSIONS];
+	bool start_set=0;
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
 	
@@ -273,6 +274,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		bg_record->start[X] = best_start[X];
 		bg_record->start[Y] = best_start[Y];
 		bg_record->start[Z] = best_start[Z];
+		start_set = 1;
 		debug2("process_nodes: "
 		       "start is %dx%dx%d",
 		       bg_record->start[X],
@@ -286,6 +288,11 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	end[X] = -1;
 	end[Y] = -1;
 	end[Z] = -1;
+	if(!start_set) {
+		bg_record->start[X] = HOSTLIST_BASE;
+		bg_record->start[Y] = HOSTLIST_BASE;
+		bg_record->start[Z] = HOSTLIST_BASE;
+	}
 
 	list_sort(bg_record->bg_block_list, (ListCmpF) _ba_node_cmpf_inc);
 
@@ -311,14 +318,28 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 			bg_record->geo[Z]++;
 			end[Z] = ba_node->coord[Z];
 		}
+		if(!start_set) {
+			if(ba_node->coord[X]<bg_record->start[X]) {
+				bg_record->start[X] = ba_node->coord[X];
+			}
+			if(ba_node->coord[Y]<bg_record->start[Y]) {
+				bg_record->start[Y] = ba_node->coord[Y];
+			}
+			if(ba_node->coord[Z]<bg_record->start[Z]) {
+				bg_record->start[Z] = ba_node->coord[Z];
+			}
+		}
 	}
 	list_iterator_destroy(itr);
 	debug3("process_nodes: "
-	       "geo = %c%c%c bp count is %d\n",
+	       "geo = %c%c%c bp count is %d start is %c%c%c\n",
 	       alpha_num[bg_record->geo[X]],
 	       alpha_num[bg_record->geo[Y]],
 	       alpha_num[bg_record->geo[Z]],
-	       bg_record->bp_count);
+	       bg_record->bp_count,
+	       alpha_num[bg_record->start[X]],
+	       alpha_num[bg_record->start[Y]],
+	       alpha_num[bg_record->start[Z]]);
 	/* This check is for sub midplane systems to figure out what
 	   the largest block can be.
 	*/
