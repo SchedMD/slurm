@@ -2184,6 +2184,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			      "incompatible");
 		}
 	}
+#ifdef HAVE_BG
+	if (strcmp(conf->preempt_type, "preempt/none") != 0)
+		fatal("PreemptType incompatable with BlueGene systems");
+	if (conf->preempt_mode != PREEMPT_MODE_OFF)
+		fatal("PreemptMode incompatable with BlueGene systems");
+#endif
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
