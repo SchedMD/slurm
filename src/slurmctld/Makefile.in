@@ -93,7 +93,7 @@ am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 slurmctld_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libcommon.o
+	$(top_builddir)/src/api/libslurm.o
 slurmctld_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurmctld_LDFLAGS) $(LDFLAGS) -o $@
@@ -299,7 +299,7 @@ CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
 slurmctld_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la  \
-	$(top_builddir)/src/common/libcommon.o -ldl
+	$(top_builddir)/src/api/libslurm.o -ldl
 
 slurmctld_SOURCES = \
 	acct_policy.c	\
