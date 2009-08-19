@@ -1469,7 +1469,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 						(node_ptr->cores
 						 + node_ptr->sockets
 						 + node_ptr->used_cpus);
-					if((int)node_ptr->threads < 0)
+					if((int16_t)node_ptr->threads < 0)
 						node_ptr->threads = 0;
 					if(node_ptr->threads == node_scaling)
 						norm = 1;
