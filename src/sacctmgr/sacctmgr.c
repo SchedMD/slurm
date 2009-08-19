@@ -838,7 +838,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
                             GrpNodes=, GrpSubmitJob=, GrpWall=, JobFlags=, \n\
                             MaxCPUMins=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
-                            Preemptee=, Preemptor=, Priority=, and Names=  \n\
+                            Preempt=, Priority=, and Names=                \n\
        delete qos         - Descriptions=, IDs=, and Names=                \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\

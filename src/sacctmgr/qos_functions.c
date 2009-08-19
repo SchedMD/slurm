@@ -281,38 +281,20 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (!strncasecmp (argv[i], "Preemptee", 
+		} else if (!strncasecmp (argv[i], "Preempt", 
 					 MAX(command_len, 9))) {
 			if(!qos)
 				continue;
 
-			if(!qos->preemptee_list) 
-				qos->preemptee_list = 
+			if(!qos->preempt_list) 
+				qos->preempt_list = 
 					list_create(slurm_destroy_char);
 						
 			if(!qos_list) 
 				qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 						
-			if(addto_qos_char_list(qos->preemptee_list,
-					       qos_list, argv[i]+end, option))
-				set = 1;
-			else
-				exit_code = 1;
-		} else if (!strncasecmp (argv[i], "Preemptor",
-					 MAX(command_len, 9))) {
-			if(!qos)
-				continue;
-
-			if(!qos->preemptor_list) 
-				qos->preemptor_list = 
-					list_create(slurm_destroy_char);
-						
-			if(!qos_list) 
-				qos_list = acct_storage_g_get_qos(
-					db_conn, my_uid, NULL);
-						
-			if(addto_qos_char_list(qos->preemptor_list,
+			if(addto_qos_char_list(qos->preempt_list,
 					       qos_list, argv[i]+end, option))
 				set = 1;
 			else

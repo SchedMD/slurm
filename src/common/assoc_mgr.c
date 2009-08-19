@@ -50,8 +50,8 @@
 #define ASSOC_USAGE_VERSION 1
 
 acct_association_rec_t *assoc_mgr_root_assoc = NULL;
-uint32_t qos_max_priority = 0;
-
+uint32_t g_qos_max_priority = 0;
+uint32_t g_qos_count = 0;
 List assoc_mgr_association_list = NULL;
 List assoc_mgr_qos_list = NULL;
 List assoc_mgr_user_list = NULL;
@@ -287,6 +287,19 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 			assoc->uid = (uint32_t)NO_VAL;
 		else
 			assoc->uid = pw_uid;	
+
+		/* get the qos bitmap here */
+		if(g_qos_count > 0) {
+			if(!assoc->valid_qos 
+			   || (bit_size(assoc->valid_qos) != g_qos_count)) {
+				FREE_NULL_BITMAP(assoc->valid_qos);
+				assoc->valid_qos = bit_alloc(g_qos_count);
+			} else
+				bit_nclear(assoc->valid_qos, 0,
+					   (bit_size(assoc->valid_qos) - 1));
+			set_qos_bitstr_from_list(assoc->valid_qos,
+						 assoc->qos_list);
+		}
 	} else {
 		assoc->uid = (uint32_t)NO_VAL;	
 	}
@@ -304,7 +317,7 @@ static int _post_association_list(List assoc_list)
 
 	if(!assoc_list)
 		return SLURM_ERROR;
-
+	
 	itr = list_iterator_create(assoc_list);
 	//START_TIMER;
 	while((assoc = list_next(itr))) {
@@ -452,16 +465,27 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 		ListIterator itr = list_iterator_create(assoc_mgr_qos_list);
 		acct_qos_rec_t *qos = NULL;
 		while((qos = list_next(itr))) {
-			if(qos->priority > qos_max_priority) 
-				qos_max_priority = qos->priority;
-		}
+			/* get the highest qos value to create bitmaps
+			   from */
+			if(qos->id > g_qos_count)
+				g_qos_count = qos->id;
 
-		if(qos_max_priority) {
+			if(qos->priority > g_qos_max_priority) 
+				g_qos_max_priority = qos->priority;
+		}
+		/* Since in the database id's don't start at 1
+		   instead of 0 we need to ignore the 0 bit and start
+		   with 1 so increase the count by 1.
+		*/
+		if(g_qos_count > 0)
+			g_qos_count++;
+
+		if(g_qos_max_priority) {
 			list_iterator_reset(itr);
 			
 			while((qos = list_next(itr))) {
 				qos->norm_priority = (double)qos->priority 
-					/ (double)qos_max_priority;
+					/ (double)g_qos_max_priority;
 			}
 		}
 		list_iterator_destroy(itr);
@@ -772,16 +796,17 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 	if(errno == ESLURM_ACCESS_DENIED)
 		return SLURM_ERROR;
 	
+	/* get qos before association since it is used there */
+	if((!assoc_mgr_qos_list) && (cache_level & ASSOC_MGR_CACHE_QOS))
+		if(_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
+			return SLURM_ERROR;
+
 	if((!assoc_mgr_association_list)
 	   && (cache_level & ASSOC_MGR_CACHE_ASSOC)) 
 		if(_get_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 		
-	if((!assoc_mgr_qos_list) && (cache_level & ASSOC_MGR_CACHE_QOS))
-		if(_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
-
 	if((!assoc_mgr_user_list) && (cache_level & ASSOC_MGR_CACHE_USER))
 		if(_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -1158,10 +1183,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 
 	qos->norm_priority = found_qos->norm_priority;
 
-	if(!qos->preemptee_list)
-		qos->preemptee_list = found_qos->preemptee_list;
-	if(!qos->preemptor_list)
-		qos->preemptor_list = found_qos->preemptor_list;
+	if(!qos->preempt_bitstr)
+		qos->preempt_bitstr = found_qos->preempt_bitstr;
 
 	qos->priority = found_qos->priority;
 
@@ -2025,10 +2048,11 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 
 	acct_association_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
+	bool resize_qos_bitstr = 0;
 
-	if(!assoc_mgr_qos_list)
+	if(!assoc_mgr_qos_list) 
 		return SLURM_SUCCESS;
-
+	
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((object = list_pop(update->objects))) {
@@ -2047,7 +2071,12 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 				break;
 			}
 			list_append(assoc_mgr_qos_list, object);
-			object = NULL;			
+			if(object->id+1 > g_qos_count) {
+				resize_qos_bitstr = 1;
+				g_qos_count = object->id+1;
+			}
+			object = NULL;	
+	
 			break;
 		case ACCT_MODIFY_QOS:
 			/* FIX ME: fill in here the qos changes stuff */
@@ -2087,6 +2116,18 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 			break;
 		}
 		destroy_acct_qos_rec(object);			
+	}
+
+	if(resize_qos_bitstr) {
+		list_iterator_reset(itr);
+		while((rec = list_next(itr))) {
+			if(!object->preempt_bitstr) 
+				continue;
+
+			object->preempt_bitstr = 
+				bit_realloc(object->preempt_bitstr,
+					    g_qos_count);
+		}
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
