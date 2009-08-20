@@ -1005,7 +1005,13 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 		node_id = node_ids[i] = hostset_find(all_nodes, node);
 		free(node);
 
-		/* find all of the task that should run on this node and
+		if (node_id < 0) {
+			error(  "Internal error: bad SRUN_NODE_FAIL message. "
+				"Node %s not part of this job step", node);
+			continue;
+		}
+
+		/* find all of the tasks that should run on this node and
 		 * mark them as having started and exited.  If they haven't
 		 * started yet, they never will, and likewise for exiting.
 		 */
@@ -1095,6 +1101,12 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 		node = hostlist_next(fail_itr);
 		node_id = hostset_find(all_nodes, node);
 		free(node);
+
+		if (node_id < 0) {
+			error(  "Internal error: bad SRUN_STEP_MISSING message. "
+				"Node %s not part of this job step", node);
+			continue;
+		}
 
 		/* If this is true, an I/O error has already occurred on the
 		   stepd for the current node, and the job should abort */
