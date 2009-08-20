@@ -281,6 +281,9 @@ _client_writable(eio_obj_t *obj)
 		struct io_buf *msg;
 		client->msg_queue = list_create(NULL); /* need destructor */
 		msgs = list_iterator_create(client->job->outgoing_cache);
+		if (!msgs)
+			fatal("Could not allocate iterator");
+
 		while ((msg = list_next(msgs))) {
 			msg->ref_count++;
 			list_enqueue(client->msg_queue, msg);
@@ -543,6 +546,8 @@ _local_file_write(eio_obj_t *obj, List objs)
 	   it is just used to read the header to get the global task id. */
 	header_tmp_buf = create_buf(client->out_msg->data, 
 				    client->out_msg->length);
+	if (!header_tmp_buf)
+		fatal("Failure to allocate memory for a message header");
 	io_hdr_unpack(&header, header_tmp_buf);
 	header_tmp_buf->head = NULL;
 	free_buf(header_tmp_buf);
@@ -1184,6 +1189,9 @@ _send_connection_okay_response(slurmd_job_t *job)
 	}
 
 	clients = list_iterator_create(job->clients);
+	if (!clients)
+		fatal("Could not allocate memory");
+
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		if (client->out_eof || client->is_local_file)
@@ -1220,6 +1228,8 @@ _build_connection_okay_message(slurmd_job_t *job)
 	header.length = 0;
 
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	if (!packbuf)
+		fatal("Failure to allocate memory for a message header");
 	io_hdr_pack(&header, packbuf);
 	msg->length = io_hdr_packed_size();
 	msg->ref_count = 0; /* make certain it is initialized */
@@ -1252,6 +1262,9 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 		/* Add message to the msg_queue of all clients */
 		clients = list_iterator_create(out->job->clients);
+		if (!clients)
+			fatal("Could not allocate iterator");
+
 		while((eio = list_next(clients))) {
 			client = (struct client_io_info *)eio->arg;
 			if (client->out_eof == true)
@@ -1334,6 +1347,8 @@ _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job)
 	struct io_buf *msg;
 
 	msgs = list_iterator_create(msg_queue);
+	if (!msgs)
+		fatal("Could not allocate iterator");
 	while((msg = list_next(msgs))) {
 		_free_outgoing_msg(msg, job);
 	}
@@ -1395,6 +1410,8 @@ io_close_local_fds(slurmd_job_t *job)
 		return;
 
 	clients = list_iterator_create(job->clients);
+	if (!clients)
+		fatal("Could not allocate iterator");
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		if (client->is_local_file) {
@@ -1698,12 +1715,17 @@ _send_eof_msg(struct task_read_info *out)
 	header.length = 0; /* eof */
 
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	if (!packbuf)
+		fatal("Failure to allocate memory for a message header");
+
 	io_hdr_pack(&header, packbuf);
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->job->clients);
+	if (!clients)
+		fatal("Could not allocate iterator");
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		debug5("======================== Enqueued eof message");
@@ -1785,6 +1807,8 @@ _task_build_message(struct task_read_info *out, slurmd_job_t *job, cbuf_t cbuf)
 
 	debug5("  header.length = %d", n);
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	if (!packbuf)
+		fatal("Failure to allocate memory for a message header");
 	io_hdr_pack(&header, packbuf);
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
