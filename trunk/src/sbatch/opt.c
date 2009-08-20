@@ -214,6 +214,31 @@ static void argerror(const char *msg, ...)
 #endif				/* USE_ARGERROR */
 
 /*
+ * If the node list supplied is a file name, translate that into 
+ *	a list of nodes, we orphan the data pointed to
+ * RET true if the node list is a valid one
+ */
+static bool _valid_node_list(char **node_list_pptr)
+{
+	int count = NO_VAL;
+
+	/* If we are using Arbitrary and we specified the number of
+	   procs to use then we need exactly this many since we are
+	   saying, lay it out this way!  Same for max and min nodes.  
+	   Other than that just read in as many in the hostfile */
+	if(opt.nprocs_set) 
+		count = opt.nprocs;
+	else if(opt.nodes_set) {
+		if(opt.max_nodes)
+			count = opt.max_nodes;
+		else if(opt.min_nodes)
+			count = opt.min_nodes;
+	}
+
+	return verify_node_list(node_list_pptr, opt.distribution, count);
+}
+
+/*
  * _opt_default(): used by initialize_and_process_args to set defaults
  */
 static void _opt_default()
@@ -1194,6 +1219,8 @@ static void _set_options(int argc, char **argv)
 		case 'x':
 			xfree(opt.exc_nodes);
 			opt.exc_nodes = xstrdup(optarg);
+			if (!_valid_node_list(&opt.exc_nodes))
+				exit(1);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
@@ -2037,6 +2064,50 @@ static bool _opt_verify(void)
 
 	} /* else if (opt.nprocs_set && !opt.nodes_set) */
 
+	if(!opt.nodelist) {
+		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
+			/* make sure the file being read in has a / in
+			   it to make sure it is a file in the
+			   valid_node_list function */
+			if(!strstr(opt.nodelist, "/")) {
+				char *add_slash = xstrdup("./");
+				xstrcat(add_slash, opt.nodelist);
+				xfree(opt.nodelist);
+				opt.nodelist = add_slash;
+			}
+			opt.distribution = SLURM_DIST_ARBITRARY;
+			if (!_valid_node_list(&opt.nodelist)) {
+				error("Failure getting NodeNames from "
+				      "hostfile");
+				exit(1);
+			} else {
+				debug("loaded nodes (%s) from hostfile",
+				      opt.nodelist);
+			}
+		}
+	} else {
+		if (!_valid_node_list(&opt.nodelist))
+			exit(1);
+	}
+
+	/* set up the proc and node counts based on the arbitrary list
+	   of nodes */
+	if((opt.distribution == SLURM_DIST_ARBITRARY)
+	   && (!opt.nodes_set || !opt.nprocs_set)) {		
+		hostlist_t hl = hostlist_create(opt.nodelist);
+		if(!opt.nprocs_set) {
+			opt.nprocs_set = 1;
+			opt.nprocs = hostlist_count(hl);
+		} 
+		if(!opt.nodes_set) {
+			opt.nodes_set = 1;
+			hostlist_uniq(hl);
+			opt.min_nodes = opt.max_nodes 
+				= hostlist_count(hl);
+		}
+		hostlist_destroy(hl);
+	}		
+	
 	if (opt.time_limit_str) {
 		opt.time_limit = time_str2mins(opt.time_limit_str);
 		if ((opt.time_limit < 0) && (opt.time_limit != INFINITE)) {

@@ -110,7 +110,7 @@ if {$matches == 0} {
 # Test of --quiet option
 spawn $scancel --quiet $job_id
 expect {
-	re "error" {
+	-re "error" {
 		set exit_code 1
 		exp_continue
 	}

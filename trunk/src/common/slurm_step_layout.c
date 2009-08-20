@@ -117,7 +117,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	} else {
 		step_layout->node_list = xstrdup(tlist);
 	}
-			
+
 	step_layout->task_cnt  = num_tasks;
 	
 #ifdef HAVE_FRONT_END	/* Limited job step support */
@@ -499,9 +499,10 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	debug2("list is %s", arbitrary_nodes);
 	step_alloc_hosts = hostlist_create(arbitrary_nodes);
 	if(hostlist_count(step_alloc_hosts) != step_layout->task_cnt) {
-		error("Asked for %u tasks have %d in the nodelist."
-		      "Check your nodelist",
+		error("Asked for %u tasks have %d in the nodelist.  "
+		      "Check your nodelist, or set the -n option to be %d",
 		      step_layout->task_cnt, 
+		      hostlist_count(step_alloc_hosts), 
 		      hostlist_count(step_alloc_hosts));
 		return SLURM_ERROR;
 	}

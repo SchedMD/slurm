@@ -344,6 +344,41 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 	return true;
 }
 
+/*
+ * If the node list supplied is a file name, translate that into 
+ *	a list of nodes, we orphan the data pointed to
+ * RET true if the node list is a valid one
+ */
+bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
+		      int task_count)
+{
+	char *nodelist = NULL;
+	
+	xassert (node_list_pptr);
+	xassert (*node_list_pptr);
+
+	if (strchr(*node_list_pptr, '/') == NULL)
+		return true;	/* not a file name */
+
+	/* If we are using Arbitrary grab count out of the hostfile
+	   using them exactly the way we read it in since we are
+	   saying, lay it out this way! */
+	if(dist == SLURM_DIST_ARBITRARY) 
+		nodelist = slurm_read_hostfile(*node_list_pptr, task_count);
+        else
+		nodelist = slurm_read_hostfile(*node_list_pptr, NO_VAL);
+		
+	if (!nodelist) 
+		return false;
+
+	xfree(*node_list_pptr);
+	*node_list_pptr = xstrdup(nodelist);
+	free(nodelist);
+
+	return true;
+}
+
+
 /* 
  * get either 1 or 2 integers for a resource count in the form of either
  * (count, min-max, or '*')

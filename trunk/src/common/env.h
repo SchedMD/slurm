@@ -106,9 +106,9 @@ int     setup_env(env_t *env);
  * Sets OBSOLETE variables:
  *	? probably only needed for users...
  */
-void env_array_for_job(char ***dest,
-		       const resource_allocation_response_msg_t *alloc,
-		       const job_desc_msg_t *desc);
+int env_array_for_job(char ***dest,
+		      const resource_allocation_response_msg_t *alloc,
+		      const job_desc_msg_t *desc);
 
 /*
  * Set in "dest" the environment variables relevant to a SLURM batch
@@ -133,9 +133,9 @@ void env_array_for_job(char ***dest,
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
-extern void env_array_for_batch_job(char ***dest, 
-				    const batch_job_launch_msg_t *batch,
-				    const char* node_name);
+extern int env_array_for_batch_job(char ***dest, 
+				   const batch_job_launch_msg_t *batch,
+				   const char* node_name);
 
 /*
  * Set in "dest" the environment variables relevant to a SLURM job step,
