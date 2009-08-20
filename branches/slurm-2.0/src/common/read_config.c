@@ -1227,8 +1227,8 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address)
  * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
  */
 extern int slurm_conf_get_cpus_sct(const char *node_name,
-			uint16_t *cpus, uint16_t *sockets,
-			uint16_t *cores, uint16_t *threads)
+				   uint16_t *cpus, uint16_t *sockets,
+				   uint16_t *cores, uint16_t *threads)
 {
 	int idx;
 	names_ll_t *p;
