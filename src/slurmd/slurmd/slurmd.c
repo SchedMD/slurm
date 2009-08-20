@@ -674,11 +674,17 @@ _read_config()
 		    &conf->block_map_size,
 		    &conf->block_map, &conf->block_map_inv);
 
-	conf->cpus    = conf->actual_cpus;
-	conf->sockets = conf->actual_sockets;
-	conf->cores   = conf->actual_cores;
-	conf->threads = conf->actual_threads;
-
+	if(!cf->fast_schedule) {
+		conf->cpus    = conf->actual_cpus;
+		conf->sockets = conf->actual_sockets;
+		conf->cores   = conf->actual_cores;
+		conf->threads = conf->actual_threads;
+	} else {
+		conf->cpus    = conf->conf_cpus;
+		conf->sockets = conf->conf_sockets;
+		conf->cores   = conf->conf_cores;
+		conf->threads = conf->conf_threads;
+	}
 	get_memory(&conf->real_memory_size);
 
 	cf = slurm_conf_lock();
