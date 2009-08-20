@@ -126,6 +126,9 @@ static bool _rem_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id);
 static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      bool remove_all);
+static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
+			  uint32_t min_nodes, uint32_t max_nodes, 
+			  uint32_t req_nodes);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
 			  int max_share, uint32_t req_nodes);
@@ -598,13 +601,13 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 		}
 
 		if ((run_job_cnt != NO_SHARE_LIMIT) &&
-		    (!_job_preemption_enabled()) &&
 		    (node_cr_ptr[i].exclusive_jobid != 0)) {
 			/* already reserved by some exclusive job */
 			bit_clear(jobmap, i);
 			continue;
 		}
 
+/* FIXME */
 		if (_job_preemption_enabled()) {
 			/* clear this node if any higher-priority
 			 * partitions have existing allocations */
@@ -612,7 +615,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			same_prio_jobs = 0;
 			higher_prio_jobs = 0;
 			part_cr_ptr = node_cr_ptr[i].parts;
-			for ( ;part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
+			for ( ; part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
 				if (part_cr_ptr->part_ptr->priority <
 				    job_ptr->part_ptr->priority) {
 					lower_prio_jobs += part_cr_ptr->
@@ -1745,10 +1748,26 @@ static bool _is_preemptable(struct job_record *job_ptr,
 	return false;
 }
 
+/* Determine if a job can ever run */
+static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
+			  uint32_t min_nodes, uint32_t max_nodes, 
+			  uint32_t req_nodes)
+{
+	int rc;
+	uint32_t save_mem;
+
+	save_mem = job_ptr->details->job_min_memory;
+	job_ptr->details->job_min_memory = 0;
+	rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes);
+	job_ptr->details->job_min_memory = save_mem;
+
+	return rc;
+}
+
 /* Determine where and when the job at job_ptr can begin execution by updating 
  * a scratch node_cr_record structure to reflect each job terminating at the 
  * end of its time limit and use this to show where and when the job at job_ptr
- * will begin execution. Used by Moab for backfill scheduling. */
+ * will begin execution. Used by SLURM's sched/backfill plugin and Moab. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
 			  int max_share, uint32_t req_nodes)
@@ -1996,7 +2015,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *orig_map;
 	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
 	int min_share = 0, max_share = 0;
-	uint32_t save_mem = 0;
 
 	xassert(bitmap);
 	if (job_ptr->details == NULL)
@@ -2032,10 +2050,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		slurm_mutex_unlock(&cr_mutex);
 		return rc;
 	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		min_share = NO_SHARE_LIMIT;
-		max_share = min_share + 1;
-		save_mem = job_ptr->details->job_min_memory;
-		job_ptr->details->job_min_memory = 0;
+		rc = _test_only(job_ptr, bitmap, min_nodes, max_nodes,
+				req_nodes);
+		slurm_mutex_unlock(&cr_mutex);
+		return rc;
 	}
 
 	debug3("select/linear: job_test: job %u max_share %d avail nodes %u",
@@ -2056,8 +2074,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			if ((j == prev_cnt) || (j < min_nodes))
 				continue;
 			prev_cnt = j;
-			if ((mode == SELECT_MODE_RUN_NOW) &&
-			    (max_run_job > 0)) {
+			if (max_run_job > 0) {
 				/* We need to share. Try to find 
 				 * suitable job to share nodes with */
 				rc = _find_job_mate(job_ptr, bitmap, 
@@ -2075,10 +2092,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	bit_free(orig_map);
 	slurm_mutex_unlock(&cr_mutex);
-	if ((rc == SLURM_SUCCESS) && (mode == SELECT_MODE_RUN_NOW))
+	if (rc == SLURM_SUCCESS)
 		_build_select_struct(job_ptr, bitmap);
-	if (save_mem)
-		job_ptr->details->job_min_memory = save_mem;
+
 	return rc;
 }
 
