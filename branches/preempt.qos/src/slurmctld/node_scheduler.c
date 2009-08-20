@@ -70,6 +70,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
@@ -594,7 +595,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_avail = false;	/* Job can run with available nodes */
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
-	bool sched_gang = false;
+	bool preempt_flag = false;
 	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE; 
 	int shared = 0, select_mode;
 
@@ -626,7 +627,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	/* If job preemption is enabled, then do NOT limit the set of available
 	 * nodes by their current 'sharable' or 'idle' setting */
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
-		sched_gang = true;		
+		preempt_flag = true;		
 
 	if (cr_enabled) {
 		/* Determine which nodes might be used by this job based upon
@@ -679,7 +680,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 		}
 
-		if (!sched_gang) {
+		if (!preempt_flag) {
 			if (shared) {
 				if (!bit_super_set(job_ptr->details->
 						   req_node_bitmap, 
@@ -743,7 +744,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					partially_idle_node_bitmap);
 			}
 
-			if (!sched_gang) {
+			if (!preempt_flag) {
 				if (shared) {
 					bit_and(node_set_ptr[i].my_bitmap,
 						share_node_bitmap);
@@ -764,10 +765,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			avail_nodes = bit_set_count(avail_bitmap);
 			tried_sched = false;	/* need to test these nodes */
 
-			if (shared && ((i+1) < node_set_size)	&& 
+			if ((shared || preempt_flag)	&& 
+			    ((i+1) < node_set_size)	&& 
 			    (node_set_ptr[i].weight == 
-			     node_set_ptr[i+1].weight)		&&
-			    ((i+1) < node_set_size)) {
+			     node_set_ptr[i+1].weight)) {
 				/* Keep accumulating so we can pick the
 				 * most lightly loaded nodes */
 				continue;
@@ -1468,7 +1469,7 @@ static int _build_node_list(struct job_record *job_ptr,
 
 		if (has_xor) {
 			tmp_feature = _valid_features(job_ptr->details, 
-						config_ptr);
+						      config_ptr);
 			if (tmp_feature == NULL) {
 				FREE_NULL_BITMAP(node_set_ptr[node_set_inx].
 						 my_bitmap);
