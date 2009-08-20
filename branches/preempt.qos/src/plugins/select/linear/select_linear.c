@@ -1775,7 +1775,8 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	bitstr_t *orig_map = bit_copy(bitmap);
 	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
-	struct job_record **preempt_job_ptr = NULL;
+	struct job_record **preempt_job_ptr = NULL, *tmp_job_ptr;
+	ListIterator job_iterator;
 
 	for (max_run_job=0; max_run_job<max_share; max_run_job++) {
 		bool last_iteration = (max_run_job == (max_share - 1));
@@ -1809,23 +1810,55 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 
-	/* Can't start job yet, simulate job preemption and try again */
 	if ((rc != SLURM_SUCCESS) && _job_preemption_killing() &&
 	    (preempt_job_ptr = slurm_find_preemptable_jobs(job_ptr))) {
-		for (j=0; preempt_job_ptr[j]; j++) {
-			/* For now, just preempt all jobs */
-			uint32_t *job_id;
-			job_id = xmalloc(sizeof(uint32_t));
-			job_id[0] = preempt_job_ptr[j]->job_id;
-			list_append(preempt_job_list, job_id);
-			
+		/* Can't start job yet, simulate job preemption and try again */
+		struct node_cr_record *exp_node_cr = _dup_node_cr(node_cr_ptr);
+		if (!exp_node_cr)
+			goto fini;
+
+		/* Remove all preemptable jobs from simulated environment */
+		job_iterator = list_iterator_create(job_list);
+		while ((tmp_job_ptr = (struct job_record *) 
+				list_next(job_iterator))) {
+			if (!IS_JOB_RUNNING(tmp_job_ptr) && 
+			    !IS_JOB_SUSPENDED(tmp_job_ptr))
+				continue;
+			if (_is_preemptable(tmp_job_ptr, preempt_job_ptr)) {
+				/* Remove preemptable job now */
+				_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
+						   "_will_run_test", 
+						   _job_preemption_killing());
+			}
 		}
+		list_iterator_destroy(job_iterator);
+
+		/* Try to schedule now */
+		j = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, bitmap, 
+				      (max_share - 1), NO_SHARE_LIMIT);
+		if (j < min_nodes)
+			goto fini;
+		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes);
+		if (rc == SLURM_SUCCESS) {
+			/* Preempt jobs whose resources actually used */
+			for (j=0; preempt_job_ptr[j]; j++) {
+				uint32_t *job_id;
+				if (bit_overlap(bitmap, 
+						preempt_job_ptr[j]->node_bitmap) == 0)
+					continue;
+
+				job_id = xmalloc(sizeof(uint32_t));
+				job_id[0] = preempt_job_ptr[j]->job_id;
+				list_append(preempt_job_list, job_id);
+			}
+			rc = EINVAL;	/* Can't schedule until after preemptions */
+		}
+fini:		_free_node_cr(exp_node_cr);
+	} else if (rc == SLURM_SUCCESS) {
+		_build_select_struct(job_ptr, bitmap);
 	}
 	xfree(preempt_job_ptr);
-
 	bit_free(orig_map);
-	if (rc == SLURM_SUCCESS)
-		_build_select_struct(job_ptr, bitmap);
 
 	return rc;
 }
