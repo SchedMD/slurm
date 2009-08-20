@@ -98,7 +98,8 @@ static void _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
-static bool _job_overlap(time_t start_time, uint16_t flags, bitstr_t *node_bitmap);
+static bool _job_overlap(time_t start_time, uint16_t flags, 
+			 bitstr_t *node_bitmap);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal);
 static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
@@ -978,7 +979,8 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
  * Test if a new/updated reservation request will overlap running jobs
  * RET true if overlap
  */
-static bool _job_overlap(time_t start_time, uint16_t flags, bitstr_t *node_bitmap)
+static bool _job_overlap(time_t start_time, uint16_t flags, 
+			 bitstr_t *node_bitmap)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
