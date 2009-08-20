@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -295,9 +295,9 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 		/* Strip out any quotes, they confuse Moab */
 		char *reason, *bad_char;
 		reason = xstrdup(node_ptr->reason);
-		while ((bad_char = strchr(node_ptr->reason, '\'')))
+		while ((bad_char = strchr(reason, '\'')))
 			bad_char[0] = ' ';
-		while ((bad_char = strchr(node_ptr->reason, '\"')))
+		while ((bad_char = strchr(reason, '\"')))
 			bad_char[0] = ' ';
 		snprintf(tmp, sizeof(tmp), "CAT=\"%s\";", reason);
 		xstrcat(buf, tmp);
