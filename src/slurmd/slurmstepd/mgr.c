@@ -290,7 +290,7 @@ slurmd_job_t *
 mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 {
 	slurmd_job_t *job = NULL;
-	
+
 	if (!(job = job_batch_job_create(msg))) {
 		error("job_batch_job_create() failed: %m");
 		return NULL;
@@ -332,8 +332,8 @@ cleanup1:
 	if (job->aborted)
 		verbose("job %u abort complete", job->jobid);
 	else if (msg->step_id == SLURM_BATCH_SCRIPT) {
-		_send_complete_batch_script_msg(job, 
-			ESLURMD_CREATE_BATCH_DIR_ERROR, -1);
+		_send_complete_batch_script_msg(
+			job, ESLURMD_CREATE_BATCH_DIR_ERROR, -1);
 	} else
 		_send_step_complete_msgs(job);
 

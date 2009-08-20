@@ -695,7 +695,7 @@ static void  _init_config(void)
  * _slurm_rpc_reconfigure_controller function inside proc_req.c try
  * to keep these in sync.  
  */
-extern int slurm_reconfigure(void)
+static int _reconfigure_slurm(void)
 {
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = { 
@@ -773,7 +773,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 			break;
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
-			slurm_reconfigure();
+			_reconfigure_slurm();
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");

@@ -912,57 +912,8 @@ static int _find_best_block_match(List block_list,
 		}
 		if(!req_nodes)
 			req_nodes = min_nodes;
-	}
-	if (target_size == 0) {	/* no geometry specified */
-		if(job_ptr->details->req_nodes 
-		   && !start_req) {
-			bg_record_t *tmp_record = NULL;
-			char *tmp_nodes= job_ptr->details->req_nodes;
-			int len = strlen(tmp_nodes);
-			
-			i = 0;
-			while(i<len 
-			      && tmp_nodes[i] != '[' 
-			      && (tmp_nodes[i] < '0' || tmp_nodes[i] > 'Z'
-				  || (tmp_nodes[i] > '9'
-				      && tmp_nodes[i] < 'A')))
-				i++;
-			
-			if(i<len) {
-				len -= i;
-				tmp_record = xmalloc(sizeof(bg_record_t));
-				tmp_record->bg_block_list =
-					list_create(destroy_ba_node);
-				
-				len += strlen(bg_conf->slurm_node_prefix)+1;
-				tmp_record->nodes = xmalloc(len);
-				
-				snprintf(tmp_record->nodes,
-					 len,
-					 "%s%s", 
-					 bg_conf->slurm_node_prefix, 
-					 tmp_nodes+i);
-				
-			
-				process_nodes(tmp_record, false);
-				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
-					req_geometry[i] = tmp_record->geo[i];
-					start[i] = tmp_record->start[i];
-				}
-				destroy_bg_record(tmp_record);
-				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_GEOMETRY, 
-						     &req_geometry);
-				select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_START, 
-						     &start);
-				start_req = 1;
-			}  else 
-				error("BPs=%s is in a weird format", 
-				      tmp_nodes); 
-		} else {
-			req_geometry[X] = (uint16_t)NO_VAL;
-		}
+	} else {
+		req_geometry[X] = (uint16_t)NO_VAL;
 		target_size = min_nodes;
 	}
 	
@@ -1154,17 +1105,17 @@ static int _find_best_block_match(List block_list,
 					destroy_bg_record(bg_record);
 					if(errno == ESLURM_INTERCONNECT_FAILURE
 					   || !list_count(job_list)) {
+						char *nodes;
 						if (slurmctld_conf.
-						    slurmctld_debug >= 5) {
-							char *nodes;
-							nodes = bitmap2node_name(
-								slurm_block_bitmap);
-							debug("job %u not "
-							      "runable on %s",
-							      job_ptr->job_id,
-							      nodes);
-							xfree(nodes);
-						}
+						    slurmctld_debug < 5)
+							break;
+						nodes = bitmap2node_name(
+							slurm_block_bitmap);
+						debug("job %u not "
+						      "runable on %s",
+						      job_ptr->job_id,
+						      nodes);
+						xfree(nodes);
 						break;
 					}
 					continue;
@@ -1478,28 +1429,23 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					     bg_record->ionodes);
 			
 			if(!bg_record->bg_block_id) {
-				uint16_t geo[BA_SYSTEM_DIMENSIONS];
-				
 				debug2("%d can start unassigned job %u at "
 				       "%u on %s",
 				       test_only, job_ptr->job_id, starttime,
 				       bg_record->nodes);
+
 				select_g_select_jobinfo_set(
 					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_BLOCK_ID,
 					"unassigned");
 
 				min_nodes = bg_record->node_cnt;
+
 				select_g_select_jobinfo_set(
 					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_NODE_CNT,
 					&min_nodes);
-				memset(geo, 0, 
-				       sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
-				select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,
-					SELECT_JOBDATA_GEOMETRY, 
-					&geo);
+
 				/* This is a fake record so we need to
 				 * destroy it after we get the info from
 				 * it.  if it was just testing then
@@ -1530,10 +1476,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_NODE_CNT, 
 					&bg_record->node_cnt);
-				select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,
-					SELECT_JOBDATA_GEOMETRY, 
-					&bg_record->geo);
 
 				/* tmp16 = bg_record->conn_type; */
 /* 				select_g_select_jobinfo_set(job_ptr->select_jobinfo, */
