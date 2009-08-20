@@ -7658,6 +7658,7 @@ extern void job_preempt_remove(uint32_t job_id)
 	uint16_t preempt_mode = slurm_get_preempt_mode();
 	checkpoint_msg_t ckpt_msg;
 
+	preempt_mode = &= PREEMPT_MODE_GANG;
 	if (preempt_mode == PREEMPT_MODE_REQUEUE) {
 		rc = job_requeue(0, job_id, -1);
 		if (rc == SLURM_SUCCESS) {
