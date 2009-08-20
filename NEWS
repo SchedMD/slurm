@@ -45,6 +45,8 @@ documents those changes that are of interest to users and admins.
     SLURM_TASKS_PER_NODE
  -- env var SLURM_CPUS_ON_NODE is now set correctly depending on the 
     fastschedule parameter.
+ -- Correction to topology/3d_torus plugin calculation when coordinate value 
+    exceeds "9" (i.e. a hex value).
 
 * Changes in SLURM 2.0.4
 ========================
