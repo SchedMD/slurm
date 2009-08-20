@@ -993,7 +993,7 @@ extern int job_node_ready(uint32_t job_id, int *ready);
  * Do not use this function for job suspend/resume. This is handled by the
  * gang module.
  */
-extern void job_preempt_remove(struct job_record *job_ptr);
+extern void job_preempt_remove(uint32_t job_id);
 
 /*
  * job_restart - Restart a batch job from checkpointed state
