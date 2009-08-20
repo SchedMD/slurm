@@ -4,7 +4,7 @@
  *  NOTE: when you see the prefix "s_p_", think "slurm parser".
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -19,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -377,7 +377,8 @@ static int _handle_string(s_p_values_t *v,
 			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		debug("%s specified more than once", v->key);
+		error("%s specified more than once, latest value used", 
+		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
 	}
@@ -401,7 +402,8 @@ static int _handle_long(s_p_values_t *v,
 			const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		debug("%s specified more than once", v->key);
+		error("%s specified more than once, latest value used", 
+		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
 	}
@@ -443,7 +445,8 @@ static int _handle_uint16(s_p_values_t *v,
 			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		debug("%s specified more than once", v->key);
+		error("%s specified more than once, latest value used", 
+		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
 	}
@@ -475,7 +478,8 @@ static int _handle_uint16(s_p_values_t *v,
 			error("%s value (%s) is out of range", v->key, value);
 			return -1;
 		} else if (value[0] == '-') {
-			error("%s value (%s) is less than zero", v->key, value);
+			error("%s value (%s) is less than zero", v->key, 
+			      value);
 			return -1;
 		} else if (num > 0xffff) {
 			error("%s value (%s) is greater than 65535", v->key,
@@ -494,7 +498,8 @@ static int _handle_uint32(s_p_values_t *v,
 			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		debug("%s specified more than once", v->key);
+		error("%s specified more than once, latest value used", 
+		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
 	}
@@ -530,7 +535,8 @@ static int _handle_uint32(s_p_values_t *v,
 			error("%s value (%s) is out of range", v->key, value);
 			return -1;
 		} else if (value[0] == '-') {
-			error("%s value (%s) is less than zero", v->key, value);
+			error("%s value (%s) is less than zero", v->key, 
+			      value);
 			return -1;
 		} else if (num > 0xffffffff) {
 			error("%s value (%s) is greater than 4294967295", 
@@ -546,7 +552,8 @@ static int _handle_uint32(s_p_values_t *v,
 }
 
 static int _handle_pointer(s_p_values_t *v,
-			   const char *value, const char *line, char **leftover)
+			   const char *value, const char *line, 
+			   char **leftover)
 {
 	if (v->handler != NULL) {
 		/* call the handler function */
@@ -557,7 +564,8 @@ static int _handle_pointer(s_p_values_t *v,
 			return rc == 0 ? 0 : -1;
 	} else {
 		if (v->data_count != 0) {
-			debug("%s specified more than once", v->key);
+			error("%s specified more than once, "
+			      "latest value used", v->key);
 			xfree(v->data);
 			v->data_count = 0;
 		}
@@ -593,10 +601,12 @@ static int _handle_array(s_p_values_t *v,
 }
 
 static int _handle_boolean(s_p_values_t *v,
-			   const char *value, const char *line, char **leftover)
+			   const char *value, const char *line, 
+			   char **leftover)
 {
 	if (v->data_count != 0) {
-		debug("%s specified more than once", v->key);
+		error("%s specified more than once, latest value used", 
+		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
 	}
@@ -809,7 +819,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 	int merged_lines;
 	int inc_rc;
 
-	if(!filename) {
+	if (!filename) {
 		error("s_p_parse_file: No filename given.");
 		return SLURM_ERROR;
 	}
@@ -824,7 +834,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 	}
 
 	line_number = 1;
-	while((merged_lines = _get_next_line(line, BUFFER_SIZE, f)) > 0) {
+	while ((merged_lines = _get_next_line(line, BUFFER_SIZE, f)) > 0) {
 		/* skip empty lines */
 		if (line[0] == '\0') {
 			line_number += merged_lines;
@@ -1065,7 +1075,7 @@ int s_p_get_pointer(void **ptr, const char *key, const s_p_hashtbl_t *hashtbl)
  * that element contains a pointer to the newly parsed value.  You can
  * think of this as being an array of S_P_POINTER types.
  *
- * OUT ptr_array - pointer to a void pointer-pointer where the value is returned
+ * OUT ptr_array - pointer to void pointer-pointer where the value is returned
  * OUT count - length of ptr_array
  * IN key - hash table key
  * IN hashtbl - hash table created by s_p_hashtbl_create()

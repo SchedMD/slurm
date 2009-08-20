@@ -989,6 +989,13 @@ extern int job_fail(uint32_t job_id);
 extern int job_node_ready(uint32_t job_id, int *ready);
 
 /*
+ * Preempt a job using the proper job removal mechanism (checkpoint, requeue).
+ * Do not use this function for job suspend/resume. This is handled by the
+ * gang module.
+ */
+extern void job_preempt_remove(struct job_record *job_ptr);
+
+/*
  * job_restart - Restart a batch job from checkpointed state
  *
  * Restart a job is similar to submit a new job, except that

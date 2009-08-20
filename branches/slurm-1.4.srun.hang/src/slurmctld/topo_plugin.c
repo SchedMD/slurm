@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  topo_plugin.c - Topology plugin function stup.
+ *  topo_plugin.c - Topology plugin function setup.
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

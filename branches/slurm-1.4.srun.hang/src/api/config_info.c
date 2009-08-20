@@ -306,6 +306,8 @@ void slurm_print_ctl_conf ( FILE* out,
 			slurm_ctl_conf_ptr->max_mem_per_task);
 	} else
 		fprintf(out, "MaxMemPerCPU            = UNLIMITED\n");
+	fprintf(out, "MaxTasksPerNode         = %u\n",
+		slurm_ctl_conf_ptr->max_tasks_per_node);
 	fprintf(out, "MessageTimeout          = %u sec\n",
 		slurm_ctl_conf_ptr->msg_timeout);
 	fprintf(out, "MinJobAge               = %u sec\n", 
@@ -332,6 +334,8 @@ void slurm_print_ctl_conf ( FILE* out,
 
 	fprintf(out, "PreemptMode             = %s\n",
 		_preempt_str(slurm_ctl_conf_ptr->preempt_mode));
+	fprintf(out, "PreemptType             = %s\n", 
+		slurm_ctl_conf_ptr->preempt_type);
 
 	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
 		fprintf(out, "PriorityType            = %s\n",
@@ -450,8 +454,6 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "SLURM_VERSION           = %s\n", SLURM_VERSION);
 	fprintf(out, "SrunEpilog              = %s\n",
 		slurm_ctl_conf_ptr->srun_epilog);
-	fprintf(out, "SrunIOTimeout           = %u sec\n", 
-		slurm_ctl_conf_ptr->srun_io_timeout);
 	fprintf(out, "SrunProlog              = %s\n",
 		slurm_ctl_conf_ptr->srun_prolog);
 	fprintf(out, "StateSaveLocation       = %s\n", 

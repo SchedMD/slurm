@@ -201,6 +201,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxMemPerCPU", S_P_UINT32},
 	{"MaxMemPerNode", S_P_UINT32},
 	{"MaxMemPerTask", S_P_UINT32},	/* defunct */
+	{"MaxTasksPerNode", S_P_UINT16},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
 	{"MpichGmDirectSupport", S_P_LONG, _defunct_option},
@@ -210,6 +211,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
 	{"PreemptMode", S_P_STRING},
+	{"PreemptType", S_P_STRING},
 	{"PriorityDecayHalfLife", S_P_STRING},
 	{"PriorityFavorSmall", S_P_BOOLEAN},
 	{"PriorityMaxAge", S_P_STRING},
@@ -255,7 +257,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
-	{"SrunIOTimeout", S_P_UINT16},
 	{"SrunProlog", S_P_STRING},
 	{"StateSaveLocation", S_P_STRING},
 	{"SuspendExcNodes", S_P_STRING},
@@ -367,7 +368,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	if (strcasecmp(value, "DEFAULT") == 0) {
 		char *tmp;
 		if (s_p_get_string(&tmp, "NodeHostname", tbl)) {
-			error("NodeHostname not allowed with NodeName=DEFAULT");
+			error("NodeHostname not allowed with "
+			      "NodeName=DEFAULT");
 			xfree(tmp);
 			s_p_hashtbl_destroy(tbl);
 			return -1;
@@ -460,21 +462,29 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		s_p_hashtbl_destroy(tbl);
 
-		if (n->cores == 0)	/* make sure cores is non-zero */
+		if (n->cores == 0) {	/* make sure cores is non-zero */
+			error("NodeNames=%s CoresPerSocket=0 is invalid, "
+			      "reset to 1", n->nodenames);
 			n->cores = 1;
-		if (n->threads == 0)	/* make sure threads is non-zero */
+		}
+		if (n->threads == 0) {	/* make sure threads is non-zero */
+			error("NodeNames=%s ThreadsPerCore=0 is invalid, "
+			      "reset to 1", n->nodenames);
 			n->threads = 1;
+		}
 		 
 		if (!no_cpus    &&	/* infer missing Sockets= */
 		    no_sockets) {
 			n->sockets = n->cpus / (n->cores * n->threads);
 		}
 
-		if (n->sockets == 0)	/* make sure sockets is non-zero */
+		if (n->sockets == 0) {	/* make sure sockets is non-zero */
+			error("NodeNames=%s Sockets=0 is invalid, "
+			      "reset to 1", n->nodenames);
 			n->sockets = 1;
+		}
 
-		if (no_cpus     &&	/* infer missing Procs= */
-		    !no_sockets) {
+		if (no_cpus) {		/* infer missing Procs= */
 			n->cpus = n->sockets * n->cores * n->threads;
 		}
 
@@ -485,9 +495,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		    no_threads) {
 			if (n->cpus != n->sockets) {
 				n->sockets = n->cpus;
-				error("Procs doesn't match Sockets, "
-				      "setting Sockets to %d",
-				      n->sockets);
+				error("NodeNames=%s Procs doesn't match "
+				      "Sockets, setting Sockets to %d",
+				      n->nodenames, n->sockets);
 			}
 		}
 
@@ -495,10 +505,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if ((n->cpus != n->sockets) &&
 		    (n->cpus != n->sockets * n->cores) &&
 		    (n->cpus != computed_procs)) {
-			error("Procs (%d) doesn't match "
-			      "Sockets*CoresPerSocket*ThreadsPerCore (%u), "
+			error("NodeNames=%s Procs=%d doesn't match "
+			      "Sockets*CoresPerSocket*ThreadsPerCore (%d), "
 			      "resetting Procs",
-			      n->cpus, computed_procs);
+			      n->nodenames, n->cpus, computed_procs);
 			n->cpus = computed_procs;
 		}
 
@@ -1349,6 +1359,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
+	xfree (ctl_conf_ptr->preempt_type);
 	xfree (ctl_conf_ptr->priority_type);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
@@ -1453,6 +1464,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
 	ctl_conf_ptr->preempt_mode              = 0;
+	xfree (ctl_conf_ptr->preempt_type);
 	ctl_conf_ptr->private_data              = 0;
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
@@ -1488,7 +1500,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->srun_prolog);
-	ctl_conf_ptr->srun_io_timeout		= 0;
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
@@ -1977,6 +1988,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->max_mem_per_task = DEFAULT_MAX_MEM_PER_CPU;
 	}
 
+	if (!s_p_get_uint16(&conf->max_tasks_per_node, "MaxTasksPerNode", 
+			    hashtbl)) {
+		conf->max_tasks_per_node = DEFAULT_MAX_TASKS_PER_NODE;
+	}
+
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
 		conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
 	else if (conf->msg_timeout > 100) {
@@ -2149,7 +2165,31 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 		if (preempt_modes > 1)
 			fatal("More than one PreemptMode specified");
+		if (conf->preempt_mode == PREEMPT_MODE_SUSPEND)
+			fatal("PreemptMode=SUSPEND requires GANG too");
 	}
+	if (!s_p_get_string(&conf->preempt_type, "PreemptType", hashtbl))
+		conf->preempt_type = xstrdup(DEFAULT_PREEMPT_TYPE);
+	if (strcmp(conf->preempt_type, "preempt/qos") == 0) {
+		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
+		if ((preempt_mode == PREEMPT_MODE_OFF) ||
+		    (preempt_mode == PREEMPT_MODE_SUSPEND)) {
+			fatal("PreemptType and PreemptMode values "
+			      "incompatible");
+		}
+	} else if (strcmp(conf->preempt_type, "preempt/none") == 0) {
+		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
+		if (preempt_mode != PREEMPT_MODE_OFF) {
+			fatal("PreemptType and PreemptMode values "
+			      "incompatible");
+		}
+	}
+#ifdef HAVE_BG
+	if (strcmp(conf->preempt_type, "preempt/none") != 0)
+		fatal("PreemptType incompatable with BlueGene systems");
+	if (conf->preempt_mode != PREEMPT_MODE_OFF)
+		fatal("PreemptMode incompatable with BlueGene systems");
+#endif
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
@@ -2429,7 +2469,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
 	s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
-	s_p_get_uint16(&conf->srun_io_timeout, "SrunIOTimeout", hashtbl);
 	s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);
 
 	if (!s_p_get_string(&conf->state_save_location,

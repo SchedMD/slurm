@@ -96,6 +96,7 @@ extern char *default_plugstack;
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/none"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
 #endif
+#define DEFAULT_PREEMPT_TYPE        "preempt/none"
 #define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
 #define DEFAULT_PRIORITY_TYPE       "priority/basic"
 #define DEFAULT_PROPAGATE_PRIO_PROCESS 0
@@ -137,6 +138,7 @@ extern char *default_plugstack;
 #define DEFAULT_WAIT_TIME           0
 #define DEFAULT_TREE_WIDTH          50
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
+#define DEFAULT_MAX_TASKS_PER_NODE  128
 
 typedef struct slurm_conf_node {
 	char *nodenames;

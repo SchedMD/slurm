@@ -69,6 +69,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
 
@@ -306,7 +307,7 @@ int dump_all_node_state ( void )
 		       new_file);
 		error_code = errno;
 	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
 		char *data = (char *)get_buf_data(buffer);
 		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
@@ -319,8 +320,10 @@ int dump_all_node_state ( void )
 			nwrite -= amount;
 			pos    += amount;
 		}
-		fsync(log_fd);
-		close(log_fd);
+
+		rc = fsync_and_close(log_fd, "node");
+		if (rc && !error_code)
+			error_code = rc;
 	}
 	if (error_code) 
 		(void) unlink (new_file);

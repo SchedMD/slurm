@@ -753,10 +753,11 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		}
 		
 		if(!job_msg->select_jobinfo)
-			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+			job_msg->select_jobinfo 
+				= select_g_select_jobinfo_alloc();
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-				     SELECT_JOBDATA_GEOMETRY,
-				     (void *) &geo);
+					    SELECT_JOBDATA_GEOMETRY,
+					    (void *) &geo);
 		
 		break;
 	case SORTID_START:
@@ -788,10 +789,11 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		}
 		
 		if(!job_msg->select_jobinfo)
-			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+			job_msg->select_jobinfo 
+				= select_g_select_jobinfo_alloc();
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-				     SELECT_JOBDATA_START,
-				     (void *) &geo);
+					    SELECT_JOBDATA_START,
+					    (void *) &geo);
 		
 		break;
 	case SORTID_ROTATE:
@@ -804,10 +806,11 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			
 		}
 		if(!job_msg->select_jobinfo)
-			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+			job_msg->select_jobinfo 
+				= select_g_select_jobinfo_alloc();
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-				     SELECT_JOBDATA_ROTATE,
-				     (void *) &rotate);
+					    SELECT_JOBDATA_ROTATE,
+					    (void *) &rotate);
 		break;
 	case SORTID_CONNECTION:
 		type = "connection";
@@ -819,43 +822,48 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			conn_type = SELECT_NAV;
 		}
 		if(!job_msg->select_jobinfo)
-			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+			job_msg->select_jobinfo 
+				= select_g_select_jobinfo_alloc();
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-				     SELECT_JOBDATA_CONN_TYPE,
-				     (void *) &conn_type);
+					    SELECT_JOBDATA_CONN_TYPE,
+					    (void *) &conn_type);
 		
 		break;
 	case SORTID_BLRTSIMAGE:
 		type = "BlrtsImage";
 		if(!job_msg->select_jobinfo)
-			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+			job_msg->select_jobinfo 
+				= select_g_select_jobinfo_alloc();
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-				     SELECT_JOBDATA_BLRTS_IMAGE,
-				     (void *) new_text);
+					    SELECT_JOBDATA_BLRTS_IMAGE,
+					    (void *) new_text);
 		break;
 	case SORTID_LINUXIMAGE:		
 		type = "LinuxImage";
 		if(!job_msg->select_jobinfo)
-			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+			job_msg->select_jobinfo 
+				= select_g_select_jobinfo_alloc();
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-				     SELECT_JOBDATA_LINUX_IMAGE,
-				     (void *) new_text);
+					    SELECT_JOBDATA_LINUX_IMAGE,
+					    (void *) new_text);
 		break;
 	case SORTID_MLOADERIMAGE:		
 		type = "MloaderImage";
 		if(!job_msg->select_jobinfo)
-			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+			job_msg->select_jobinfo 
+				= select_g_select_jobinfo_alloc();
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-				     SELECT_JOBDATA_MLOADER_IMAGE,
-				     (void *) new_text);
+					    SELECT_JOBDATA_MLOADER_IMAGE,
+					    (void *) new_text);
 		break;
-	 case SORTID_RAMDISKIMAGE:		
+	case SORTID_RAMDISKIMAGE:		
 		type = "RamdiskImage";
 		if(!job_msg->select_jobinfo)
-			select_g_select_jobinfo_alloc(&job_msg->select_jobinfo);
+			job_msg->select_jobinfo 
+				= select_g_select_jobinfo_alloc();
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-				     SELECT_JOBDATA_RAMDISK_IMAGE,
-				     (void *) new_text);
+					    SELECT_JOBDATA_RAMDISK_IMAGE,
+					    (void *) new_text);
 		break;
 #endif
 	case SORTID_START_TIME:
@@ -3047,13 +3055,14 @@ extern void set_menus_job(void *arg, GtkTreePath *path,
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	switch(type) {
 	case TAB_CLICKED:
-		make_fields_menu(menu, display_data_job, SORTID_CNT);
+		make_fields_menu(NULL, menu, display_data_job, SORTID_CNT);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_job);
 		break;
 	case POPUP_CLICKED:
-		make_popup_fields_menu(popup_win, menu);
+		make_fields_menu(popup_win, menu,
+				 popup_win->display_data, SORTID_CNT);
 		break;
 	default:
 		g_error("UNKNOWN type %d given to set_fields\n", type);

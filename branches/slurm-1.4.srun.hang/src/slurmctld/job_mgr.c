@@ -84,6 +84,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
+#include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 #define DETAILS_FLAG 0xdddd
@@ -369,7 +370,7 @@ int dump_all_job_state(void)
 		      new_file);
 		error_code = errno;
 	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
 		char *data = (char *)get_buf_data(buffer);
 		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
@@ -382,8 +383,10 @@ int dump_all_job_state(void)
 			nwrite -= amount;
 			pos    += amount;
 		}
-		fsync(log_fd);
-		close(log_fd);
+
+		rc = fsync_and_close(log_fd, "job");
+		if (rc && !error_code)
+			error_code = rc;
 	}
 	if (error_code)
 		(void) unlink(new_file);
@@ -3415,11 +3418,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->cpus_per_task = 1;
 	if (job_desc->job_min_procs != (uint16_t) NO_VAL)
 		detail_ptr->job_min_procs = job_desc->job_min_procs;
+	if (job_desc->overcommit != (uint8_t) NO_VAL)
+		detail_ptr->overcommit = job_desc->overcommit;
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL) {
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
-		detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
-						(detail_ptr->cpus_per_task *
-						 detail_ptr->ntasks_per_node));
+		if (detail_ptr->overcommit == 0) {
+			detail_ptr->job_min_procs = 
+					MAX(detail_ptr->job_min_procs,
+					    (detail_ptr->cpus_per_task *
+					     detail_ptr->ntasks_per_node));
+		}
 	} else {
 		detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
 						detail_ptr->cpus_per_task);
@@ -3442,8 +3450,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->out = xstrdup(job_desc->out);
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
-	if (job_desc->overcommit != (uint8_t) NO_VAL)
-		detail_ptr->overcommit = job_desc->overcommit;
 	if (job_desc->begin_time > time(NULL))
 		detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = 
@@ -7255,7 +7261,7 @@ static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir)
 		      new_file);
 		error_code = errno;
 	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
 		char *data = (char *)get_buf_data(buffer);
 		while (nwrite > 0) {
 			amount = write(ckpt_fd, &data[pos], nwrite);
@@ -7268,8 +7274,10 @@ static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir)
 				pos    += amount;
 			}
 		}
-		fsync(ckpt_fd);
-		close(ckpt_fd);
+
+		rc = fsync_and_close(ckpt_fd, "checkpoint");
+		if (rc && !error_code)
+			error_code = rc;
 	}
 	if (error_code)
 		(void) unlink(new_file);
@@ -7638,3 +7646,49 @@ _read_job_ckpt_file(char *ckpt_file, int *size_ptr)
 	*size_ptr = data_size;
 	return data;
 }
+
+/*
+ * Preempt a job using the proper job removal mechanism (checkpoint, requeue).
+ * Do not use this function for job suspend/resume. This is handled by the
+ * gang module.
+ */
+extern void job_preempt_remove(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	uint16_t preempt_mode = slurm_get_preempt_mode();
+	checkpoint_msg_t ckpt_msg;
+
+	if (preempt_mode == PREEMPT_MODE_REQUEUE) {
+		rc = job_requeue(0, job_ptr->job_id, -1);
+		if (rc == SLURM_SUCCESS) {
+			info("preempted job %u has been requeued", 
+			     job_ptr->job_id);
+		}
+	} else if (preempt_mode == PREEMPT_MODE_CANCEL) {
+		(void) job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+	} else if (preempt_mode == PREEMPT_MODE_CHECKPOINT) {
+		memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
+		ckpt_msg.op        = CHECK_VACATE;
+		ckpt_msg.job_id    = job_ptr->job_id;
+		rc = job_checkpoint(&ckpt_msg, 0, -1);
+		if (rc == SLURM_SUCCESS) {
+			info("preempted job %u has been checkpointed", 
+			     job_ptr->job_id);
+		}
+	} else {
+		fatal("Invalid preempt_mode: %u", preempt_mode);
+		return;
+	}
+
+	if (rc != SLURM_SUCCESS) {
+		rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+		if (rc == SLURM_SUCCESS) {
+			info("preempted job %u had to be killed", 
+			     job_ptr->job_id);
+		} else {
+			info("preempted job %u kill failure %s", 
+			     job_ptr->job_id, slurm_strerror(rc));
+		}
+	}
+}
+

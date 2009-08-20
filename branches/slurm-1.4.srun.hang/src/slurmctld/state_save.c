@@ -56,6 +56,38 @@ static int save_jobs = 0, save_nodes = 0, save_parts = 0;
 static int save_triggers = 0, save_resv = 0;
 static bool run_save_thread = true;
 
+/* fsync() and close() a file, 
+ * Execute fsync() and close() multiple times if necessary and log failures
+ * RET 0 on success or -1 on error */
+extern int fsync_and_close(int fd, char *file_type)
+{
+	int rc = 0, retval, pos;
+
+	/* SLURM state save files are typically stored on shared filesystems, 
+	 * so lets give fysync() three tries to sync the data to disk. */
+	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
+		retval = fsync(fd);
+		if (retval && (errno != EINTR)) {
+			error("fsync() error writing %s state save file: %m", 
+			      file_type);
+		}
+	}
+	if (retval)
+		rc = retval;
+
+	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
+		retval = close(fd);
+		if (retval && (errno != EINTR)) {
+			error("close () error on %s state save file: %m", 
+			      file_type);
+		}
+	}
+	if (retval)
+		rc = retval;
+
+	return rc;
+}
+
 /* Queue saving of job state information */
 extern void schedule_job_save(void)
 {

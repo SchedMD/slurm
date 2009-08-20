@@ -817,10 +817,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list associations  - Accounts=, Clusters=, Format=, IDs=,           \n\
                             Partitions=, Parent=, Tree, Users=,            \n\
-                            WithSubAccounts, WithDeleted, WOPInfo,         \n\
-                            and WOPLimits                                  \n\
+                            WithSubAccounts, WithDeleted, WOLimits,        \n\
+                            WOPInfo, and WOPLimits                         \n\
                                                                            \n\
-       list cluster       - Format=, Names=                                \n\
+       list cluster       - Format=, Names=, WOLimits                      \n\
        add cluster        - Fairshare=, GrpCPUs=, GrpJobs=,                \n\
                             GrpNodes=, GrpSubmitJob=, MaxCPUMins=          \n\
                             MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
@@ -838,7 +838,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
                             GrpNodes=, GrpSubmitJob=, GrpWall=, JobFlags=, \n\
                             MaxCPUMins=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
-                            Preemptee=, Preemptor=, Priority=, and Names=  \n\
+                            Preempt=, Priority=, and Names=                \n\
        delete qos         - Descriptions=, IDs=, and Names=                \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\

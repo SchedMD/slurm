@@ -670,6 +670,11 @@ accounting, which samples memory use on a periodic basis (data need
 not be stored, just collected).
 
 .TP
+\fBMaxTasksPerNode\fR
+Maximum number of tasks SLURM will allow a job step to spawn
+on a single node. The default \fBMaxTasksPerNode\fR is 128.
+
+.TP
 \fBMessageTimeout\fR
 Time permitted for a round\-trip communication to complete
 in seconds. Default value is 10 seconds. For systems with 
@@ -733,19 +738,14 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 
 .TP
 \fBPreemptMode\fR
-Enables gang scheduling and/or controls the mechanism used to preempt lower 
-priority jobs in order to execute higher priority jobs.
-For gang scheduling (time slicing) of jobs in the same partition, 
-job suspend will always be used.
-SLURM partitions can have different \fBPriority\fR values and contain 
-the same nodes, in which case jobs from the higher priority 
-partition can preempt jobs from the lower priority partition.
+Enables gang scheduling and/or controls the mechanism used to preempt jobs.
+The \fBPreemptType\fR parameter controls the mechanism used to determine
+which jobs are capable of preempting other jobs while \fBPreemptMode\fR
+controls the mechanism used to preempt the lower priority jobs.
+Jobs which are being gang scheduled (time sliced) rather than being preempted
+will always make use of a suspend/resume mechanism.
 The \fBGANG\fR option can be specified in addition to a preemption 
 method specification with the two options comma separated.
-NOTE: \fBGANG\fR must be specified for job preemption to occur.
-Changes are underway to permit job preemption without gang scheduling
-and job preemption based upon QOS (Quality Of Service) rather than 
-partition priority.
 .RS
 .TP 12
 \fBOFF\fR
@@ -770,6 +770,30 @@ preempts jobs by requeuing them (if possible) or cancelling them.
 preempts jobs by suspending them.
 A suspended job will resume execution once the high priority job 
 preempting it completes.
+The \fBSUSPEND\fR may only be used with the \fBGANG\fR option
+(the gang scheduler module performs the job resume operation). 
+.RE
+
+.TP
+\fBPreemptType\fR
+This specifies the plugin used to identify which jobs can be 
+preempted in order to start a pending job. 
+.RS
+.TP
+\fBpreempt/none\fR
+Job preemption is disabled.
+This is the default.
+.TP
+\fBpreempt/partition_prio\fR
+Job preemption is based upon partition priority.
+Jobs in higher priority partitions (queues) may preempt jobs from lower 
+priority partitions.
+.TP
+\fBpreempt/qos\fR
+Job preemption rules are specified by Quality Of Service (QOS) specifications
+in the SLURM database a database.
+This is not compatible with \fBPreemptMode=OFF\fR or \fBPreemptMode=SUSPEND\fR
+(i.e. preempted jobs must be removed from the resources).
 .RE
 
 .TP
@@ -910,6 +934,7 @@ prevents regular users from viewing reservations.
 \fBusage\fR 
 (NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
 usage of any other user.  This applys to sreport.
+.TP
 \fBusers\fR 
 (NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
 information of any user other than themselves, this also makes it so users can 
@@ -1072,7 +1097,7 @@ be removed from power savings mode (using SLURM's hostlist
 expression format).
 By default no program is run.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeRate\fR, 
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR, 
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 More information is available at the SLURM web site
 (https://computing.llnl.gov/linux/slurm/power_save.html).
@@ -1087,7 +1112,7 @@ assigned work at the same time (e.g. a large job starts).
 A value of zero results in no limits being imposed. 
 The default value is 300 nodes per minute.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, \fBSuspendProgram\fR, 
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR, 
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
@@ -1429,21 +1454,6 @@ be the command and arguments of the job step.  This configuration parameter
 may be overridden by srun's \fB\-\-epilog\fR parameter.
 
 .TP
-\fBSrunIOTimeout\fR
-While the \fBsrun\fR detects the termination of tasks under almost all 
-circumstances, there are abnormal deamon failures which may not be 
-detected immediately. 
-Such abnormal failures can be detected by \fBsrun\fR using a more active
-polling mechanism. 
-Note that polling does have an impact upon application performance.
-The interval of polling is specified by the \fBSrunIOTimeout\fR 
-parameter and its units are seconds. 
-\fBsrun\fR's \fB\-\-io\-timeout\fR option takes precedence over
-this configuration parameter.
-The default value is 0 (no polling).
-The value may not exceed 65533 seconds.
-
-.TP
 \fBSrunProlog\fR
 Fully qualified pathname of an executable to be run by srun prior to the
 launch of a job step.  The command line arguments for the executable will
@@ -1472,7 +1482,7 @@ Use SLURM's hostlist expression to identify nodes.
 By default no nodes are excluded.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
 \fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, 
-\fBResumeTimeout\fR, and \fBSuspendExcParts\fR.
+\fBSuspendTimeout\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendExcParts\fR
@@ -1482,7 +1492,7 @@ Multiple partitions can be identified and separated by commas.
 By default no nodes are excluded.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
 \fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR 
-\fBResumeTimeout\fR, and \fBSuspendExcNodes\fR.
+\fBSuspendTimeout\fR, and \fBSuspendExcNodes\fR.
 
 .TP
 \fBSuspendProgram\fR
@@ -1497,7 +1507,7 @@ be placed into power savings mode (using SLURM's hostlist
 expression format).
 By default, no program is run.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR, 
-\fBResumeRate\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBResumeTimeout\fR, 
+\fBResumeRate\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, 
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
@@ -2225,7 +2235,11 @@ The four options most likely to be used are:
 \fBProlog\fR and \fBEpilog\fR (executed once on each compute node
 for each job) plus \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR
 (executed once on the \fBControlMachine\fR for each job).
- 
+
+NOTE:  Standard output and error messages are normally not preserved. 
+Explicitly write output and error messages to an appropriate location 
+if you which to preserve that information.
+
 NOTE:  The Prolog script is ONLY run on any individual
 node when it first sees a job step from a new allocation; it does not
 run the Prolog immediately when an allocation is granted.  If no job steps

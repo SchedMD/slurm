@@ -471,6 +471,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->mail_prog           = xstrdup(conf->mail_prog);
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;
 	conf_ptr->max_mem_per_task    = conf->max_mem_per_task;
+	conf_ptr->max_tasks_per_node  = conf->max_tasks_per_node;
 	conf_ptr->min_job_age         = conf->min_job_age;
 	conf_ptr->mpi_default         = xstrdup(conf->mpi_default);
 	conf_ptr->mpi_params          = xstrdup(conf->mpi_params);
@@ -485,6 +486,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->plugstack           = xstrdup(conf->plugstack);
 
 	conf_ptr->preempt_mode        = conf->preempt_mode;
+	conf_ptr->preempt_type        = xstrdup(conf->preempt_type);
 	conf_ptr->priority_decay_hl   = conf->priority_decay_hl;
 	conf_ptr->priority_favor_small= conf->priority_favor_small;
 	conf_ptr->priority_max_age    = conf->priority_max_age;
@@ -544,7 +546,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_user_name    = xstrdup(conf->slurmd_user_name);
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);
 	conf_ptr->srun_prolog         = xstrdup(conf->srun_prolog);
-	conf_ptr->srun_io_timeout     = conf->srun_io_timeout;
 	conf_ptr->srun_epilog         = xstrdup(conf->srun_epilog);
 	conf_ptr->state_save_location = xstrdup(conf->state_save_location);
 	conf_ptr->suspend_exc_nodes   = xstrdup(conf->suspend_exc_nodes);
@@ -1154,13 +1155,20 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 
 		/* return result */
 		if (error_code) {
-			info("_slurm_rpc_job_step_kill JobId=%u: %s", 
-				job_step_kill_msg->job_id, 
-				slurm_strerror(error_code));
+			info("Signal %u JobId=%u by UID=%u: %s", 
+			     job_step_kill_msg->signal,
+			     job_step_kill_msg->job_id, uid,
+			     slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			info("_slurm_rpc_job_step_kill JobId=%u %s",
-				job_step_kill_msg->job_id, TIME_STR);
+			if (job_step_kill_msg->signal == SIGKILL) {
+				info("Cancel of JobId=%u by UID=%u, %s",
+				     job_step_kill_msg->job_id, uid, TIME_STR);
+			} else {
+				info("Signal %u of JobId=%u by UID=%u, %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id, uid, TIME_STR);
+			}
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 			/* Below function provides its own locking */
@@ -1176,15 +1184,25 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 
 		/* return result */
 		if (error_code) {
-			info("_slurm_rpc_job_step_kill StepId=%u.%u: %s",
-				job_step_kill_msg->job_id, 
-				job_step_kill_msg->job_step_id, 
-				slurm_strerror(error_code));
+			info("Signal %u of StepId=%u.%u by UID=%u: %s",
+			     job_step_kill_msg->signal,
+			     job_step_kill_msg->job_id, 
+			     job_step_kill_msg->job_step_id, uid,
+			     slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			info("_slurm_rpc_job_step_kill StepId=%u.%u %s",
-				job_step_kill_msg->job_id, 
-				job_step_kill_msg->job_step_id, TIME_STR);
+			if (job_step_kill_msg->signal == SIGKILL) {
+				info("Cancel of StepId=%u.%u by UID=%u %s",
+				     job_step_kill_msg->job_id, 
+				     job_step_kill_msg->job_step_id, uid, 
+				     TIME_STR);
+			} else {
+				info("Signal %u of StepId=%u.%u by UID=%u %s",
+				     job_step_kill_msg->signal,
+				     job_step_kill_msg->job_id, 
+				     job_step_kill_msg->job_step_id, uid,
+				     TIME_STR);
+			}
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 			/* Below function provides its own locking */

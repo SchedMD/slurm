@@ -1060,6 +1060,31 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 	xfree(print_this);
 }
 
+extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
+				      bitstr_t *value, int last)
+{
+	int abs_len = abs(field->len);
+	char *print_this = NULL;
+
+	print_this = get_qos_complete_str_bitstr(qos_list, value);
+	
+	if(print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
+	   && last)
+		printf("%s", print_this);
+	else if(print_fields_parsable_print)
+		printf("%s|", print_this);
+	else {
+		if(strlen(print_this) > abs_len) 
+			print_this[abs_len-1] = '+';
+		
+		if(field->len == abs_len)
+			printf("%*.*s ", abs_len, abs_len, print_this);
+		else
+			printf("%-*.*s ", abs_len, abs_len, print_this);
+	}
+	xfree(print_this);
+}
+
 extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 {
 	if(!assoc)
@@ -1161,7 +1186,7 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 	if(!qos)
 		return;
 
-	if(qos->preemptee_list || qos->preemptor_list)
+	if(qos->preempt_list)
 		qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
 
 	if(qos->job_flags)
@@ -1239,19 +1264,11 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 		printf("  MaxWall        = %s\n", time_buf);
 	}
 
-	if(qos->preemptee_list) {
+	if(qos->preempt_list) {
 		char *temp_char = get_qos_complete_str(qos_list,
-						       qos->preemptee_list);
+						       qos->preempt_list);
 		if(temp_char) {		
-			printf("  Preemptable by = %s\n", temp_char);
-			xfree(temp_char);
-		}
-	}
-	if(qos->preemptor_list) {
-		char *temp_char = get_qos_complete_str(qos_list,
-						       qos->preemptee_list);
-		if(temp_char) {		
-			printf("  Can Preempt    = %s\n", temp_char);
+			printf("  Preempt        = %s\n", temp_char);
 			xfree(temp_char);
 		}
 	} 

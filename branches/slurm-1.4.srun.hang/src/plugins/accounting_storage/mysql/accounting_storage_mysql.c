@@ -50,6 +50,7 @@
 #include <strings.h>
 #include "mysql_jobacct_process.h"
 #include "mysql_rollup.h"
+#include "mysql_problems.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/uid.h"
@@ -159,6 +160,34 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
 					 uint32_t uid, 
 					 acct_wckey_cond_t *wckey_cond);
+
+static int _set_qos_cnt(MYSQL *db_conn)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = xstrdup_printf("select MAX(id) from %s", qos_table);
+
+	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	
+	if(!(row = mysql_fetch_row(result))) {
+		mysql_free_result(result);
+		return SLURM_ERROR;
+	}
+			
+	/* Set the current qos_count on the system for
+	   generating bitstr of that length.  Since 0 isn't
+	   possible as an id we add 1 to the total to burn 0 and
+	   start at the 1 bit.
+	*/
+	g_qos_count = atoi(row[0]) + 1;
+	mysql_free_result(result);
+
+	return SLURM_SUCCESS;
+}
 
 static char *_get_cluster_from_associd(mysql_conn_t *mysql_conn,
 				       uint32_t associd)
@@ -669,7 +698,7 @@ end_qos:
 
 static int _setup_qos_limits(acct_qos_rec_t *qos,
 			     char **cols, char **vals,
-			     char **extra, qos_level_t qos_level)
+			     char **extra)
 {	
 	if(!qos)
 		return SLURM_ERROR;
@@ -821,44 +850,43 @@ static int _setup_qos_limits(acct_qos_rec_t *qos,
 		xstrcat(*extra, ", max_wall_duration_per_user=NULL");
 	}
 
-	if((qos_level != QOS_LEVEL_MODIFY)
-	   && qos->preemptee_list && list_count(qos->preemptee_list)) {
-		char *qos_val = NULL;
-		char *tmp_char = NULL;
-		ListIterator qos_itr = 
-			list_iterator_create(qos->preemptee_list);
+	if(qos->preempt_list && list_count(qos->preempt_list)) {
+		char *preempt_val = NULL;
+		char *tmp_char = NULL, *begin_preempt = NULL;
+		ListIterator preempt_itr = 
+			list_iterator_create(qos->preempt_list);
 		
-		xstrcat(*cols, ", qos");
-		
-		while((tmp_char = list_next(qos_itr))) 
-			xstrfmtcat(qos_val, ",%s", tmp_char);
-		
-		list_iterator_destroy(qos_itr);
-		
-		xstrfmtcat(*vals, ", \"%s\"", qos_val); 		
-		xstrfmtcat(*extra, ", preemptees=\"%s\"", qos_val); 
-		xfree(qos_val);
+		xstrcat(*cols, ", preempt");
+
+		begin_preempt = xstrdup("preempt");
+
+		while((tmp_char = list_next(preempt_itr))) {
+			if(tmp_char[0] == '-') {				
+				xstrfmtcat(preempt_val,
+					   "replace(%s, ',%s', '')",
+					   begin_preempt, tmp_char+1);
+				xfree(begin_preempt);
+				begin_preempt = preempt_val;
+			} else if(tmp_char[0] == '+') {
+				xstrfmtcat(preempt_val,
+					   "concat("
+					   "replace(%s, ',%s', ''), ',%s')",
+					   begin_preempt, 
+					   tmp_char+1, tmp_char+1);
+				xfree(begin_preempt);
+				begin_preempt = preempt_val;
+			} else if(tmp_char[0]) 
+				xstrfmtcat(preempt_val, ",%s", tmp_char);
+			else
+				xstrcat(preempt_val, "");
+		}
+		list_iterator_destroy(preempt_itr);
+
+		xstrfmtcat(*vals, ", \"%s\"", preempt_val); 		
+		xstrfmtcat(*extra, ", preempt=\"%s\"", preempt_val); 
+		xfree(preempt_val);
 	} 
 
-	if((qos_level != QOS_LEVEL_MODIFY)
-	   && qos->preemptor_list && list_count(qos->preemptor_list)) {
-		char *qos_val = NULL;
-		char *tmp_char = NULL;
-		ListIterator qos_itr = 
-			list_iterator_create(qos->preemptor_list);
-		
-		xstrcat(*cols, ", qos");
-		
-		while((tmp_char = list_next(qos_itr))) 
-			xstrfmtcat(qos_val, ",%s", tmp_char);
-		
-		list_iterator_destroy(qos_itr);
-		
-		xstrfmtcat(*vals, ", \"%s\"", qos_val); 		
-		xstrfmtcat(*extra, ", preemptors=\"%s\"", qos_val); 
-		xfree(qos_val);
-	} 
-	
 	if(qos->job_flags) {
 		xstrcat(*cols, ", job_flags");
 		xstrfmtcat(*vals, ", \"%s\"", qos->job_flags);
@@ -2989,8 +3017,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "grp_wall", "int default NULL" },
 		{ "grp_cpu_mins", "bigint default NULL" },
 		{ "job_flags", "text" },
-		{ "preemptees", "text not null default ''" },
-		{ "preemptors", "text not null default ''" },
+		{ "preempt", "text not null default ''" },
 		{ "priority", "int default 0" },
 		{ "usage_factor", "double default 1.0 not null" },
 		{ NULL, NULL}		
@@ -3295,10 +3322,15 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 			qos_id = mysql_insert_ret_id(db_conn, query);
 			if(!qos_id)
 				fatal("problem added qos 'normal");
+			
 			xstrfmtcat(default_qos_str, ",%d", qos_id);
 			xfree(query);		
 		}
+
+		if(_set_qos_cnt(db_conn) != SLURM_SUCCESS)
+			return SLURM_ERROR;
 	}
+
 	if(mysql_db_create_table(db_conn, step_table,
 				 step_table_fields, 
 				 ", primary key (id, stepid))") == SLURM_ERROR)
@@ -3516,7 +3548,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		slurm_msg_t resp;
 		ListIterator itr = NULL;
 		acct_update_object_t *object = NULL;
-		
+		bool get_qos_count = 0;
+
 		memset(&msg, 0, sizeof(accounting_update_msg_t));
 		msg.update_list = mysql_conn->update_list;
 		
@@ -3598,6 +3631,9 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 				rc = assoc_mgr_update_assocs(object);
 				break;
 			case ACCT_ADD_QOS:
+				/* we need to check the qos's here to
+				 * get the correct count */
+				get_qos_count = 1;
 			case ACCT_MODIFY_QOS:
 			case ACCT_REMOVE_QOS:
 				rc = assoc_mgr_update_qos(object);
@@ -3617,7 +3653,11 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			list_delete_item(itr);
 		}
 		list_iterator_destroy(itr);
+
+		if(get_qos_count) 
+			_set_qos_cnt(mysql_conn->db_conn);
 	}
+
 	list_flush(mysql_conn->update_list);
 
 	return SLURM_SUCCESS;
@@ -4616,8 +4656,7 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			   now, now, object->name); 
 		xstrfmtcat(extra, ", mod_time=%d", now);
 
-		_setup_qos_limits(object, &cols, &vals, &extra, 
-				  QOS_LEVEL_NONE);
+		_setup_qos_limits(object, &cols, &vals, &extra);
 		xstrfmtcat(query, 
 			   "insert into %s (%s) values (%s) "
 			   "on duplicate key update deleted=0, "
@@ -5784,8 +5823,8 @@ end_it:
 }
 
 extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid, 
-					acct_qos_cond_t *qos_cond,
-					acct_qos_rec_t *qos)
+				      acct_qos_cond_t *qos_cond,
+				      acct_qos_rec_t *qos)
 {
 	ListIterator itr = NULL;
 	List ret_list = NULL;
@@ -5798,7 +5837,6 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *tmp_char1=NULL, *tmp_char2=NULL;
-	int replace_preemptor = 0, replace_preemptee = 0;
 
 	if(!qos_cond || !qos) {
 		error("we need something to change");
@@ -5855,85 +5893,19 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 	
-	_setup_qos_limits(qos, &tmp_char1, &tmp_char2,
-			  &vals, QOS_LEVEL_MODIFY);
+	_setup_qos_limits(qos, &tmp_char1, &tmp_char2, &vals);
 	xfree(tmp_char1);
 	xfree(tmp_char2);
-
-	if(qos->preemptee_list && list_count(qos->preemptee_list)) {
-		char *tmp_qos = NULL;
-		set = 0;
-		itr = list_iterator_create(qos->preemptee_list);
-		while((object = list_next(itr))) {
-			/* when adding we need to make sure we don't
-			 * already have it so we remove it and then add
-			 * it.
-			 */
-			if(object[0] == '-') {
-				xstrfmtcat(vals,
-					   ", preemptees="
-					   "replace(qos, ',%s', '')",
-					   object+1);
-			} else if(object[0] == '+') {
-				xstrfmtcat(vals,
-					   ", preemptees=concat_ws(',', "
-					   "replace(preemptees, ',%s', ''), "
-					   "\"%s\")",
-					   object+1, object+1);
-			} else {
-				xstrfmtcat(tmp_qos, ",%s", object);
-			}
-		}
-		list_iterator_destroy(itr);
-		if(tmp_qos) {
-			xstrfmtcat(vals, ", preemptees='%s'", tmp_qos);
-			xfree(tmp_qos);
-			replace_preemptee = 1;
-		}
-	}
-
-	if(qos->preemptor_list && list_count(qos->preemptor_list)) {
-		char *tmp_qos = NULL;
-		set = 0;
-		itr = list_iterator_create(qos->preemptor_list);
-		while((object = list_next(itr))) {
-			/* when adding we need to make sure we don't
-			 * already have it so we remove it and then add
-			 * it.
-			 */
-			if(object[0] == '-') {
-				xstrfmtcat(vals,
-					   ", preemptors="
-					   "replace(qos, ',%s', '')",
-					   object+1);
-			} else if(object[0] == '+') {
-				xstrfmtcat(vals,
-					   ", preemptors=concat_ws(',', "
-					   "replace(preemptors, ',%s', ''), "
-					   "\"%s\")",
-					   object+1, object+1);
-			} else {
-				xstrfmtcat(tmp_qos, ",%s", object);
-			}
-		}
-		list_iterator_destroy(itr);
-		if(tmp_qos) {
-			xstrfmtcat(vals, ", preemptors='%s'", tmp_qos);
-			xfree(tmp_qos);
-			replace_preemptor = 1;
-		}
-	}
 
 	if(!extra || !vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
 	}
-	query = xstrdup_printf("select name, preemptees, preemptors "
-			       "from %s %s;", qos_table, extra);
+	query = xstrdup_printf("select name, preempt from %s %s;",
+			       qos_table, extra);
 	xfree(extra);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return NULL;
 	}
@@ -5970,112 +5942,36 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		qos_rec->priority = qos->priority;
 
-		if(qos->preemptee_list) {
-			ListIterator new_qos_itr = 
-				list_iterator_create(qos->preemptee_list);
-			ListIterator curr_qos_itr = NULL;
-			char *new_qos = NULL, *curr_qos = NULL;
+		if(qos->preempt_list) {
+			ListIterator new_preempt_itr = 
+				list_iterator_create(qos->preempt_list);
+			char *new_preempt = NULL;
 
-			qos_rec->preemptee_list = 
-				list_create(slurm_destroy_char);
-			if(!replace_preemptee)
-				slurm_addto_char_list(qos_rec->preemptee_list,
-						      row[1]);
-			curr_qos_itr = 
-				list_iterator_create(qos_rec->preemptee_list);
-			
-			while((new_qos = list_next(new_qos_itr))) {
-				char *tmp_char = NULL;
-				if(new_qos[0] == '-') {
-					tmp_char = xstrdup(new_qos+1);
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   tmp_char)) {
-							list_delete_item(
-								curr_qos_itr);
-							break;
-						}
-					}
-					xfree(tmp_char);
-					list_iterator_reset(curr_qos_itr);
-				} else if(new_qos[0] == '+') {
-					tmp_char = xstrdup(new_qos+1);
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   tmp_char)) {
-							break;
-						}
-					}
-					if(!curr_qos)
-						list_append(
-							qos_rec->preemptee_list,
-							tmp_char);
-					else
-						xfree(tmp_char);
-					list_iterator_reset(curr_qos_itr);
+			qos->preempt_bitstr = bit_alloc(g_qos_count);
+			if(row[1] && row[1][0])
+				bit_unfmt(qos->preempt_bitstr, row[1]+1);
+
+			while((new_preempt = list_next(new_preempt_itr))) {
+				bool cleared = 0;
+				if(new_preempt[0] == '-') {
+					bit_clear(qos->preempt_bitstr,
+						  atoi(new_preempt+1));
+				} else if(new_preempt[0] == '+') {
+					bit_set(qos->preempt_bitstr,
+						atoi(new_preempt+1));
 				} else {
-					list_append(qos_rec->preemptee_list,
-						    xstrdup(new_qos));
+					if(!cleared) {
+						cleared = 1;
+						bit_nclear(qos->preempt_bitstr,
+							   0,
+							   bit_size(qos->preempt_bitstr)-1);
+					}
+
+					bit_set(qos->preempt_bitstr,
+						atoi(new_preempt));
 				}
 			}
-			list_iterator_destroy(curr_qos_itr);
-			list_iterator_destroy(new_qos_itr);			
-		}
-
-		if(qos->preemptor_list) {
-			ListIterator new_qos_itr = 
-				list_iterator_create(qos->preemptor_list);
-			ListIterator curr_qos_itr = NULL;
-			char *new_qos = NULL, *curr_qos = NULL;
-
-			qos_rec->preemptor_list = 
-				list_create(slurm_destroy_char);
-			if(!replace_preemptor)
-				slurm_addto_char_list(qos_rec->preemptor_list,
-						      row[2]);
-			curr_qos_itr = 
-				list_iterator_create(qos_rec->preemptor_list);
-			
-			while((new_qos = list_next(new_qos_itr))) {
-				char *tmp_char = NULL;
-				if(new_qos[0] == '-') {
-					tmp_char = xstrdup(new_qos+1);
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   tmp_char)) {
-							list_delete_item(
-								curr_qos_itr);
-							break;
-						}
-					}
-					xfree(tmp_char);
-					list_iterator_reset(curr_qos_itr);
-				} else if(new_qos[0] == '+') {
-					tmp_char = xstrdup(new_qos+1);
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   tmp_char)) {
-							break;
-						}
-					}
-					if(!curr_qos)
-						list_append(
-							qos_rec->preemptor_list,
-							tmp_char);
-					else
-						xfree(tmp_char);
-					list_iterator_reset(curr_qos_itr);
-				} else {
-					list_append(qos_rec->preemptor_list,
-						    xstrdup(new_qos));
-				}
-			}
-			list_iterator_destroy(curr_qos_itr);
-			list_iterator_destroy(new_qos_itr);			
+			list_iterator_destroy(new_preempt_itr);			
 		}
 
 		_addto_update_list(mysql_conn->update_list, ACCT_MODIFY_QOS,
@@ -8280,7 +8176,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	set = _setup_association_cond_limits(assoc_cond, &extra);
 
 	with_raw_qos = assoc_cond->with_raw_qos;
-	with_usage = assoc_cond->with_usage;
+	with_usage = assoc_cond->with_usage;	
 	without_parent_limits = assoc_cond->without_parent_limits;
 	without_parent_info = assoc_cond->without_parent_info;
 
@@ -8613,9 +8509,9 @@ empty:
 			list_iterator_destroy(curr_qos_itr);
 			list_flush(delta_qos_list);
 		}
-
+		
 		assoc->parent_id = parent_id;
-
+		
 		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
 	}
@@ -8638,8 +8534,28 @@ empty:
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 					acct_association_cond_t *assoc_cond)
 {
+	List ret_list = NULL;
 	
-	return NULL;
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	ret_list = list_create(destroy_acct_association_rec);
+
+	if(mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)
+	   != SLURM_SUCCESS)
+		goto end_it;
+
+	if(mysql_acct_no_users(mysql_conn, assoc_cond, ret_list)
+	   != SLURM_SUCCESS)
+		goto end_it;
+
+	if(mysql_user_no_assocs_or_no_uid(mysql_conn, assoc_cond, ret_list)
+	   != SLURM_SUCCESS)
+		goto end_it;
+
+end_it:
+
+	return ret_list;
 }
 
 extern List acct_storage_p_get_config(void *db_conn)
@@ -8679,8 +8595,7 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"max_submit_jobs_per_user",
 		"max_wall_duration_per_user",
 		"job_flags",
-		"preemptees",
-		"preemptors",
+		"preempt",
 		"priority",
 		"usage_factor",
 	};
@@ -8702,7 +8617,6 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_MWPU,
 		QOS_REQ_JOBF,
 		QOS_REQ_PREE,
-		QOS_REQ_PREO,
 		QOS_REQ_PRIO,
 		QOS_REQ_UF,
 		QOS_REQ_COUNT
@@ -8799,7 +8713,7 @@ empty:
 			qos->description = xstrdup(row[QOS_REQ_DESC]);
 
 		qos->id = atoi(row[QOS_REQ_ID]);
-
+		
 		if(row[QOS_REQ_NAME] && row[QOS_REQ_NAME][0])
 			qos->name =  xstrdup(row[QOS_REQ_NAME]);
 
@@ -8856,18 +8770,9 @@ empty:
 		else
 			qos->max_wall_pu = INFINITE;
 
-		if(row[QOS_REQ_PREE] && row[QOS_REQ_PREE][0]) {
-			qos->preemptee_list = list_create(slurm_destroy_char);
-			slurm_addto_char_list(qos->preemptee_list,
-					      row[QOS_REQ_PREE]+1);
-		} 
-
-		if(row[QOS_REQ_PREE] && row[QOS_REQ_PREE][0]) {
-			qos->preemptee_list = list_create(slurm_destroy_char);
-			slurm_addto_char_list(qos->preemptee_list,
-					      row[QOS_REQ_PREE]+1);
-		} 
-
+		if(row[QOS_REQ_PREE] && row[QOS_REQ_PREE][0]) 
+			bit_unfmt(qos->preempt_bitstr, row[QOS_REQ_PREE]+1);
+		
 		if(row[QOS_REQ_PRIO])
 			qos->priority = atoi(row[QOS_REQ_PRIO]);
 

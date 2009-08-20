@@ -1154,8 +1154,17 @@ static int _find_best_block_match(List block_list,
 					destroy_bg_record(bg_record);
 					if(errno == ESLURM_INTERCONNECT_FAILURE
 					   || !list_count(job_list)) {
-						error("this job will never "
-						      "run on this system");
+						if (slurmctld_conf.
+						    slurmctld_debug >= 5) {
+							char *nodes;
+							nodes = bitmap2node_name(
+								slurm_block_bitmap);
+							debug("job %u not "
+							      "runable on %s",
+							      job_ptr->job_id,
+							      nodes);
+							xfree(nodes);
+						}
 						break;
 					}
 					continue;
@@ -1245,6 +1254,11 @@ static int _sync_block_lists(List full_list, List incomp_list)
 	itr = list_iterator_create(full_list);
 	itr2 = list_iterator_create(incomp_list);
 	while((new_record = list_next(itr))) {
+		/* Make sure we aren't adding any block that doesn't
+		   have a block_id.
+		*/
+		if(!new_record->bg_block_id)
+			continue;
 		while((bg_record = list_next(itr2))) {
 			if(bit_equal(bg_record->bitmap, new_record->bitmap)
 			   && bit_equal(bg_record->ionode_bitmap,

@@ -45,6 +45,10 @@
 #  include "config.h"
 #endif
 
+#ifndef SYSTEM_DIMENSIONS
+#  define SYSTEM_DIMENSIONS 1
+#endif
+
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
