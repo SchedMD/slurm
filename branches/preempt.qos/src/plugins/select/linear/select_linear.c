@@ -68,6 +68,7 @@
 #include "src/common/xmalloc.h"
 
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/linear/select_linear.h"
 
@@ -88,6 +89,7 @@ int node_record_count;
 time_t last_node_update;
 struct switch_record *switch_record_table; 
 int switch_record_cnt;
+bool preempt_within_partition(void);
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
@@ -1728,6 +1730,21 @@ static void _init_node_cr(void)
 	_dump_node_cr(node_cr_ptr);
 }
 
+static bool _is_preemptable(struct job_record *job_ptr, 
+			    struct job_record **preempt_job_ptr)
+{
+	int i;
+
+	if (!preempt_job_ptr)
+		return false;
+
+	for (i=0; preempt_job_ptr[i]; i++) {
+		if (preempt_job_ptr[i]->job_id == job_ptr->job_id)
+			return true;
+	}
+	return false;
+}
+
 /* Determine where and when the job at job_ptr can begin execution by updating 
  * a scratch node_cr_record structure to reflect each job terminating at the 
  * end of its time limit and use this to show where and when the job at job_ptr
@@ -1738,6 +1755,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	struct node_cr_record *exp_node_cr;
 	struct job_record *tmp_job_ptr, **tmp_job_pptr;
+	struct job_record **preempt_job_ptr = NULL;
 	List cr_job_list;
 	ListIterator job_iterator;
 	bitstr_t *orig_map;
@@ -1768,48 +1786,74 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		return SLURM_ERROR;
 	}
 
-	/* Build list of running jobs */
+	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(_cr_job_list_del);
 	if (!cr_job_list)
 		fatal("list_create: memory allocation failure");
+	preempt_job_ptr = slurm_find_preemptable_jobs(job_ptr);
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(tmp_job_ptr))
+		if (!IS_JOB_RUNNING(tmp_job_ptr) && 
+		    !IS_JOB_SUSPENDED(tmp_job_ptr))
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
 			error("Job %u has zero end_time", tmp_job_ptr->job_id);
 			continue;
 		}
-		tmp_job_pptr = xmalloc(sizeof(struct job_record *));
-		*tmp_job_pptr = tmp_job_ptr;
-		list_append(cr_job_list, tmp_job_pptr);
+		if (_is_preemptable(tmp_job_ptr, preempt_job_ptr)) {
+			/* Remove preemptable job now */
+			_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
+					   "_will_run_test", 
+					   job_preemption_killing);
+		} else {
+			tmp_job_pptr = xmalloc(sizeof(struct job_record *));
+			*tmp_job_pptr = tmp_job_ptr;
+			list_append(cr_job_list, tmp_job_pptr);
+		}
 	}
 	list_iterator_destroy(job_iterator);
-	list_sort(cr_job_list, _cr_job_list_sort);
+
+	/* Test with all preemptable jobs gone */
+	if (preempt_job_ptr) {
+		i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, bitmap, 
+				      max_run_jobs, NO_SHARE_LIMIT);
+		if (i >= min_nodes) {
+			rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
+				       req_nodes);
+			if (rc == SLURM_SUCCESS)
+				job_ptr->start_time = now + 1;
+		}
+		xfree(preempt_job_ptr);
+	}
 
 	/* Remove the running jobs one at a time from exp_node_cr and try
 	 * scheduling the pending job after each one */
-	job_iterator = list_iterator_create(cr_job_list);
-	while ((tmp_job_pptr = (struct job_record **) 
-			       list_next(job_iterator))) {
-		tmp_job_ptr = *tmp_job_pptr;
-		_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
-				   "_will_run_test", true);
-		i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, bitmap, 
-				      max_run_jobs, NO_SHARE_LIMIT);
-		if (i < min_nodes)
-			continue;
-		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
-			       req_nodes);
-		if (rc != SLURM_SUCCESS)
-			continue;
-		if (tmp_job_ptr->end_time <= now)
-			job_ptr->start_time = now + 1;
-		else
-			job_ptr->start_time = tmp_job_ptr->end_time;
-		break;
+	if (rc != SLURM_SUCCESS) {
+		list_sort(cr_job_list, _cr_job_list_sort);
+		job_iterator = list_iterator_create(cr_job_list);
+		while ((tmp_job_pptr = (struct job_record **) 
+				       list_next(job_iterator))) {
+			tmp_job_ptr = *tmp_job_pptr;
+			_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
+					   "_will_run_test", true);
+			i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, 
+					      bitmap, max_run_jobs, 
+					      NO_SHARE_LIMIT);
+			if (i < min_nodes)
+				continue;
+			rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
+				       req_nodes);
+			if (rc != SLURM_SUCCESS)
+				continue;
+			if (tmp_job_ptr->end_time <= now)
+				job_ptr->start_time = now + 1;
+			else
+				job_ptr->start_time = tmp_job_ptr->end_time;
+			break;
+		}
+		list_iterator_destroy(job_iterator);
 	}
-	list_iterator_destroy(job_iterator);
+
 	list_destroy(cr_job_list);
 	_free_node_cr(exp_node_cr);
 	bit_free(orig_map);
