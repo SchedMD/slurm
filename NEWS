@@ -66,6 +66,8 @@ documents those changes that are of interest to users and admins.
     suspended job is cancelled.
  -- Add test for fsync() error for state save files. Log and retry as needed.
  -- Log fatal errors from slurmd and slurmctld to syslog.
+ -- Added error detection and cleanup for the case in which a compute node is 
+    rebooted and restarts its slurmd before its "down" state is noticed.
 
 * Changes in SLURM 2.1.0-pre2
 =============================

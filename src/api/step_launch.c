@@ -97,6 +97,8 @@ static void _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg);
 static bool _message_socket_readable(eio_obj_t *obj);
 static int  _message_socket_accept(eio_obj_t *obj, List objs);
 static int  _cr_notify_step_launch(slurm_step_ctx_t *ctx);
+static int  _start_io_timeout_thread(step_launch_state_t *sls);
+static void *_check_io_timeout(void *_sls);
 
 static struct io_operations message_socket_ops = {
 	readable:	&_message_socket_readable,
@@ -110,8 +112,8 @@ static struct io_operations message_socket_ops = {
 
 /* 
  * slurm_step_launch_params_t_init - initialize a user-allocated
- *      slurm_job_step_launch_t structure with default values.
- *	default values.  This function will NOT allocate any new memory.
+ *      slurm_step_launch_params_t structure with default values.
+ *	This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the user.
  *      The structure will be intialized.
  */
@@ -270,6 +272,10 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 			rc = SLURM_ERROR;
 			goto fail1;
 		}
+		/* The client_io_t gets a pointer back to the slurm_launch_state
+		   to notify it of I/O errors. */
+		ctx->launch_state->io.normal->sls = ctx->launch_state;
+
 		if (client_io_handler_start(ctx->launch_state->io.normal) 
 		    != SLURM_SUCCESS) {
 			rc = SLURM_ERROR;
@@ -281,6 +287,10 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 			launch.io_port[i] =
 				ctx->launch_state->io.normal->listenport[i];
 		}
+		/* If the io timeout is > 0, create a flag to ping the stepds 
+		   if io_timeout seconds pass without stdio traffic to/from
+		   the node. */
+		ctx->launch_state->io_timeout = slurm_get_msg_timeout();
 	} else { /* user_managed_io is true */
 		/* initialize user_managed_io_t */
 		ctx->launch_state->io.user =
@@ -446,14 +456,29 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 
 	/* Then shutdown the message handler thread */
 	eio_signal_shutdown(sls->msg_handle);
+
 	pthread_mutex_unlock(&sls->lock);
 	pthread_join(sls->msg_thread, NULL);
 	pthread_mutex_lock(&sls->lock);
+
 	eio_handle_destroy(sls->msg_handle);
+
+	/* Shutdown the io timeout thread, if one exists */
+	if (sls->io_timeout_thread_created) {
+		sls->halt_io_test = true;
+		pthread_cond_broadcast(&sls->cond);
+
+		pthread_mutex_unlock(&sls->lock);
+		pthread_join(sls->io_timeout_thread, NULL);
+		pthread_mutex_lock(&sls->lock);
+	}
 
 	/* Then wait for the IO thread to finish */
 	if (!sls->user_managed_io) {
+		pthread_mutex_unlock(&sls->lock);
 		client_io_handler_finish(sls->io.normal);
+		pthread_mutex_lock(&sls->lock);
+
 		client_io_handler_destroy(sls->io.normal);
 	}
 
@@ -471,7 +496,7 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 	struct step_launch_state *sls = ctx->launch_state;
 
 	sls->abort = true;
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 }
 
 /* 
@@ -580,6 +605,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 {
 	struct step_launch_state *sls;
 	slurm_step_layout_t *layout = ctx->step_resp->step_layout;
+	int ii;
 
 	sls = xmalloc(sizeof(struct step_launch_state));
 	sls->slurmctld_socket_fd = -1;
@@ -590,6 +616,11 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 		sls->tasks_requested = layout->task_cnt;
 	sls->tasks_started = bit_alloc(layout->task_cnt);
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
+	sls->node_io_error = bit_alloc(layout->node_cnt);
+	sls->io_deadline = (time_t *)xmalloc(sizeof(time_t) * layout->node_cnt);
+	sls->io_timeout_thread_created = false;
+	sls->io_timeout = 0;
+	sls->halt_io_test = false;
 	sls->layout = layout;
 	sls->resp_port = NULL;
 	sls->abort = false;
@@ -600,6 +631,10 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->mpi_state = NULL;
 	pthread_mutex_init(&sls->lock, NULL);
 	pthread_cond_init(&sls->cond, NULL);
+
+	for (ii = 0; ii < layout->node_cnt; ii++) {
+		sls->io_deadline[ii] = (time_t)NO_VAL;
+	}
 	return sls;
 }
 
@@ -613,6 +648,8 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 	pthread_cond_destroy(&sls->cond);
 	bit_free(sls->tasks_started);
 	bit_free(sls->tasks_exited);
+	bit_free(sls->node_io_error);
+	xfree(sls->io_deadline);
 
 	/* Now clean up anything created by slurm_step_launch() */
 	if (sls->resp_port != NULL) {
@@ -865,7 +902,7 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 	if (sls->callback.task_start != NULL)
 		(sls->callback.task_start)(msg);
 
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 
 }
@@ -901,7 +938,7 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	if (sls->callback.task_finish != NULL)
 		(sls->callback.task_finish)(msg);
 
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -922,7 +959,7 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 	/* FIXME: does nothing yet */
 
 	pthread_mutex_lock(&sls->lock);
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -931,7 +968,7 @@ _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
 {
 	/* FIXME: does nothing yet */
 	pthread_mutex_lock(&sls->lock);
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -968,7 +1005,13 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 		node_id = node_ids[i] = hostset_find(all_nodes, node);
 		free(node);
 
-		/* find all of the task that should run on this node and
+		if (node_id < 0) {
+			error(  "Internal error: bad SRUN_NODE_FAIL message. "
+				"Node %s not part of this job step", node);
+			continue;
+		}
+
+		/* find all of the tasks that should run on this node and
 		 * mark them as having started and exited.  If they haven't
 		 * started yet, they never will, and likewise for exiting.
 		 */
@@ -987,7 +1030,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 		client_io_handler_downnodes(sls->io.normal, node_ids,
 					    num_node_ids);
 	}
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 
 	xfree(node_ids);
@@ -997,7 +1040,9 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 }
 
 /*
- * FIXME: Verify that tasks on these nodes(s) are still alive.
+ * Receive a message when a slurmd cold starts, that the step on that node
+ * may have died.  Verify that tasks on these nodes(s) are still alive, 
+ * and abort the job step if they are not.
  * This message could be the result of the slurmd daemon cold-starting
  * or a race condition when tasks are starting or terminating.
  */
@@ -1005,10 +1050,137 @@ static void
 _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 {
 	srun_step_missing_msg_t *step_missing = missing_msg->data;
+	hostset_t fail_nodes, all_nodes;
+	hostlist_iterator_t fail_itr;
+	char *node;
+	int num_node_ids;
+	int i, j;
+	int node_id;
+	client_io_t *cio = sls->io.normal;
+	bool  test_message_sent;
+	int   num_tasks;
+	bool  active;
 
 	debug("Step %u.%u missing from node(s) %s", 
 	      step_missing->job_id, step_missing->step_id,
 	      step_missing->nodelist);
+
+	/* Ignore this message in the unusual "user_managed_io" case.  No way 
+	   to confirm a bad connection, since a test message goes straight to 
+	   the task.  Aborting without checking may be too dangerous.  This 
+	   choice may cause srun to not exit even though the job step has 
+	   ended. */
+	if (sls->user_managed_io)
+		return;
+
+	pthread_mutex_lock(&sls->lock);
+
+	if (!sls->io_timeout_thread_created) {
+		if (_start_io_timeout_thread(sls)) {
+			/* 
+			 * Should I abort here, because of the inability to
+			 * make a thread to verify the connection?
+			 */
+			error("Cannot create thread to verify I/O "
+			      "connections.");
+			
+			sls->abort = true;
+			pthread_cond_broadcast(&sls->cond);
+			pthread_mutex_unlock(&sls->lock);
+			return;
+		}
+	}
+
+	fail_nodes = hostset_create(step_missing->nodelist);
+	fail_itr = hostset_iterator_create(fail_nodes);
+	num_node_ids = hostset_count(fail_nodes);
+
+	all_nodes = hostset_create(sls->layout->node_list);
+
+	for (i = 0; i < num_node_ids; i++) {
+		node = hostlist_next(fail_itr);
+		node_id = hostset_find(all_nodes, node);
+		free(node);
+
+		if (node_id < 0) {
+			error(  "Internal error: bad SRUN_STEP_MISSING message. "
+				"Node %s not part of this job step", node);
+			continue;
+		}
+
+		/* If this is true, an I/O error has already occurred on the
+		   stepd for the current node, and the job should abort */
+		if (bit_test(sls->node_io_error, node_id)) {
+			error("Aborting, step missing and io error on node %d",
+			      node_id);
+			sls->abort = true;
+			pthread_cond_broadcast(&sls->cond);
+			break;
+		}
+
+		/*
+		 * A test is already is progress. Ignore message for this node.
+		 */
+		if (sls->io_deadline[node_id] != NO_VAL) {
+			debug("Test in progress for node %d, ignoring message",
+			      node_id);
+			continue;
+		}
+
+		/*
+		 * If all tasks for this node have either not started or already
+		 * exited, ignore the missing step message for this node.
+		 */
+		num_tasks = sls->layout->tasks[node_id];
+		active = false;
+		for (j = 0; j < num_tasks; j++) {
+			if (bit_test(sls->tasks_started,
+				     sls->layout->tids[node_id][j]) &&
+			    !bit_test(sls->tasks_exited,
+				      sls->layout->tids[node_id][j])) {
+				active = true;
+				break;
+			}
+		}
+		if (!active)
+			continue;
+
+
+		sls->io_deadline[node_id] = time(NULL) + sls->io_timeout;
+
+		debug("Testing connection to node %d", node_id);
+		if (client_io_handler_send_test_message(cio, node_id, 
+							&test_message_sent)) {
+			/*
+			 * If unable to test a connection, assume the step 
+			 * is having problems and abort.  If unable to test,
+			 * the system is probably having serious problems, so
+			 * aborting the step seems reasonable.
+			 */
+			error("Aborting, can not test connection to node %d.",
+			      node_id);
+			sls->abort = true;
+			pthread_cond_broadcast(&sls->cond);
+			break;
+		}
+
+		/*
+		 * test_message_sent should be true unless this node either
+		 * hasn't started or already finished.  Poke the io_timeout
+		 * thread to make sure it will abort the job if the deadline
+		 * for receiving a response passes.
+		 */
+		if (test_message_sent) {
+			pthread_cond_broadcast(&sls->cond);
+		} else {
+			sls->io_deadline[node_id] = (time_t)NO_VAL;
+		}
+	}
+	pthread_mutex_unlock(&sls->lock);
+
+	hostlist_iterator_destroy(fail_itr);
+	hostset_destroy(fail_nodes);
+	hostset_destroy(all_nodes);
 }
 
 /*
@@ -1047,7 +1219,7 @@ _task_user_managed_io_handler(struct step_launch_state *sls,
 	/* prevent the caller from closing the user managed IO stream */
 	user_io_msg->conn_fd = -1;
 
-	pthread_cond_signal(&sls->cond);
+	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
 
@@ -1370,4 +1542,127 @@ fini:	if (checkpoint) {
 			time(NULL), (uint32_t) exit_code, buf);
 	}
 }
+
+
+/*
+ * Notify the step_launch_state that an I/O connection went bad.
+ * If the node is suspected to be down, abort the job.
+ */
+int 
+step_launch_notify_io_failure(step_launch_state_t *sls, int node_id)
+{
+	pthread_mutex_lock(&sls->lock);
+
+	bit_set(sls->node_io_error, node_id);
+	debug("IO error on node %d", node_id);
+
+	/*
+	 * sls->io_deadline[node_id] != (time_t)NO_VAL  means that
+	 * the _step_missing_handler was called on this node.
+	 */
+	if (sls->io_deadline[node_id] != (time_t)NO_VAL) {
+		error("Aborting, io error and missing step on node %d", 
+		      node_id);
+		sls->abort = true;
+		pthread_cond_broadcast(&sls->cond);
+	}
+
+	pthread_mutex_unlock(&sls->lock);
+
+	return SLURM_SUCCESS;
+}
+
+
+/*
+ * This is called 1) after a node connects for the first time and 2) when
+ * a message comes in confirming that a connection is okay. 
+ *
+ * Just in case the node was marked questionable very early in the 
+ * job step setup, clear this flag if/when the node makes its initial 
+ * connection.
+ */
+int 
+step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id)
+{
+	pthread_mutex_lock(&sls->lock);
+	sls->io_deadline[node_id] = (time_t)NO_VAL;
+	pthread_mutex_unlock(&sls->lock);
+	return SLURM_SUCCESS;
+}
+
+
+static int
+_start_io_timeout_thread(step_launch_state_t *sls)
+{
+	int rc = SLURM_SUCCESS;
+	pthread_attr_t attr;
+	slurm_attr_init(&attr);
+
+	if (pthread_create(&sls->io_timeout_thread, &attr,
+			   _check_io_timeout, (void *)sls) != 0) {
+		error("pthread_create of io timeout thread: %m");
+		rc = SLURM_ERROR;
+	} else {
+		sls->io_timeout_thread_created = true;
+	}
+	slurm_attr_destroy(&attr);
+	return rc;
+}
+
+
+static void *
+_check_io_timeout(void *_sls)
+{
+	int ii;
+	time_t now, next_deadline;
+	client_io_t *cio;
+	struct timespec ts = {0, 0};
+	step_launch_state_t *sls = (step_launch_state_t *)_sls;
+
+	cio = sls->io.normal;
+
+	pthread_mutex_lock(&sls->lock);
+
+	while (1) {
+		if (sls->halt_io_test || sls->abort)
+			break;
+
+		now = time(NULL);
+		next_deadline = (time_t)NO_VAL;
+
+		for (ii = 0; ii < sls->layout->node_cnt; ii++) {
+			if (sls->io_deadline[ii] == (time_t)NO_VAL)
+				continue;
+
+			if (sls->io_deadline[ii] <= now) {
+				sls->abort = true;
+				pthread_cond_broadcast(&sls->cond);
+				error(  "Cannot communicate with node %d.  "
+					"Aborting job.", ii);
+				break;
+			} else if (next_deadline == (time_t)NO_VAL || 
+				   sls->io_deadline[ii] < next_deadline) {
+				next_deadline = sls->io_deadline[ii];
+			}
+		}
+		if (sls->abort)
+			break;
+
+		if (next_deadline == (time_t)NO_VAL) {
+			debug("io timeout thread: no pending deadlines, "
+			      "sleeping indefinitely");
+			pthread_cond_wait(&sls->cond, &sls->lock);
+		} else {
+			debug("io timeout thread: sleeping %ds until deadline",
+			       next_deadline - time(NULL));
+			ts.tv_sec = next_deadline;
+			pthread_cond_timedwait(&sls->cond, &sls->lock, &ts);
+		}
+	}
+	pthread_mutex_unlock(&sls->lock);
+	return NULL;
+}
+
+
+
 

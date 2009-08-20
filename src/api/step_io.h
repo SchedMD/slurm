@@ -37,6 +37,8 @@
 #include "src/common/list.h"
 #include "src/common/bitstring.h"
 #include "src/common/slurm_step_layout.h"
+struct step_launch_state;
+
 
 struct client_io {
 	/* input parameters - set (indirectly) by user */
@@ -53,7 +55,14 @@ struct client_io {
 	uint16_t *listenport;	/* Array of stdio listen port numbers */
 
 	eio_handle_t *eio;      /* Event IO handle for stdio traffic */
-	pthread_mutex_t ioservers_lock;
+	pthread_mutex_t ioservers_lock; /* This lock protects 
+				   ioservers_ready_bits, ioservers_ready, 
+				   pointers in ioserver, all the msg_queues
+				   in each ioserver's server_io_info, and 
+				   the free_incoming list.  The queues
+				   are used both for normal writes
+				   and writes that verify a connection to
+				   a remote host. */
 	bitstr_t *ioservers_ready_bits; /* length "num_nodes" */
 	int ioservers_ready;    /* Number of servers that established contact */
 	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
@@ -76,9 +85,13 @@ struct client_io {
 			         * including free_incoming buffers and
 			         * buffers in use.
 			         */
+
+	struct step_launch_state *sls; /* Used to notify the main thread of an
+				       I/O problem.  */
 };
 
 typedef struct client_io client_io_t;
+
 
 /*
  * IN cred - cred need not be a real job credential, it may be a "fake"
@@ -109,6 +122,15 @@ int client_io_handler_start(client_io_t *cio);
  */
 void client_io_handler_downnodes(client_io_t *cio,
 				 const int *node_ids, int num_node_ids);
+
+/*
+ * Tell the client IO handler to test the communication path to a 
+ * node suspected to be down by sending a message, which will be
+ * ignored by the slurmstepd.  If the write fails the step_launch_state
+ * will be notified.
+ */
+int client_io_handler_send_test_message(client_io_t *cio, int node_id, 
+					bool *sent_message);
 
 /*
  * Tell the client IO handler that the step has been aborted, and if

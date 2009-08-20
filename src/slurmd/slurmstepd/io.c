@@ -219,6 +219,8 @@ static void _free_incoming_msg(struct io_buf *msg, slurmd_job_t *job);
 static void _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job);
 static bool _incoming_buf_free(slurmd_job_t *job);
 static bool _outgoing_buf_free(slurmd_job_t *job);
+static int  _send_connection_okay_response(slurmd_job_t *job);
+static struct io_buf *_build_connection_okay_message(slurmd_job_t *job);
 
 /**********************************************************************
  * IO client socket functions
@@ -279,6 +281,9 @@ _client_writable(eio_obj_t *obj)
 		struct io_buf *msg;
 		client->msg_queue = list_create(NULL); /* need destructor */
 		msgs = list_iterator_create(client->job->outgoing_cache);
+		if (!msgs)
+			fatal("Could not allocate iterator");
+
 		while ((msg = list_next(msgs))) {
 			msg->ref_count++;
 			list_enqueue(client->msg_queue, msg);
@@ -342,7 +347,27 @@ _client_read(eio_obj_t *obj, List objs)
 	/*
 	 * Read the body
 	 */
-	if (client->header.length == 0) { /* zero length is an eof message */
+	if (client->header.type == SLURM_IO_CONNECTION_TEST) {
+		if (client->header.length != 0) {
+			debug5("  error in _client_read: bad connection test");
+			list_enqueue(client->job->free_incoming, client->in_msg);
+			client->in_msg = NULL;
+			return SLURM_ERROR;
+		}
+		if (_send_connection_okay_response(client->job)) {
+			/* 
+			 * If we get here because of a failed 
+			 * _send_connection_okay_response, it's because of a
+			 * lack of buffer space in the output queue.  Just 
+			 * keep the current input message client->in_msg in 
+			 * place, and resend on the next call.
+			 */
+			return SLURM_SUCCESS;
+		}
+		list_enqueue(client->job->free_incoming, client->in_msg);
+		client->in_msg = NULL;
+		return SLURM_SUCCESS;
+	} else if (client->header.length == 0) { /* zero length is an eof message */
 		debug5("  got stdin eof message!");
 	} else {
 		buf = client->in_msg->data + 
@@ -521,6 +546,8 @@ _local_file_write(eio_obj_t *obj, List objs)
 	   it is just used to read the header to get the global task id. */
 	header_tmp_buf = create_buf(client->out_msg->data, 
 				    client->out_msg->length);
+	if (!header_tmp_buf)
+		fatal("Failure to allocate memory for a message header");
 	io_hdr_unpack(&header, header_tmp_buf);
 	header_tmp_buf->head = NULL;
 	free_buf(header_tmp_buf);
@@ -1144,6 +1171,78 @@ _shrink_msg_cache(List cache, slurmd_job_t *job)
 	}
 }
 
+
+
+static int
+_send_connection_okay_response(slurmd_job_t *job)
+{
+	eio_obj_t *eio;
+	ListIterator clients;
+	struct io_buf *msg;
+	struct client_io_info *client;
+
+	msg = _build_connection_okay_message(job);
+	if (!msg) {
+		error(  "Could not send connection okay message because of "
+			"lack of buffer space.");
+		return SLURM_ERROR;
+	}
+
+	clients = list_iterator_create(job->clients);
+	if (!clients)
+		fatal("Could not allocate memory");
+
+	while((eio = list_next(clients))) {
+		client = (struct client_io_info *)eio->arg;
+		if (client->out_eof || client->is_local_file)
+			continue;
+
+		debug5("Sent connection okay message");
+		xassert(client->magic == CLIENT_IO_MAGIC);
+		if (list_enqueue(client->msg_queue, msg))
+			msg->ref_count++;
+	}
+	list_iterator_destroy(clients);
+
+	return SLURM_SUCCESS;
+}
+
+
+
+static struct io_buf *
+_build_connection_okay_message(slurmd_job_t *job)
+{
+	struct io_buf *msg;
+	Buf packbuf;
+	struct slurm_io_header header;
+
+	if (_outgoing_buf_free(job)) {
+		msg = list_dequeue(job->free_outgoing);
+	} else {
+		return NULL;
+	}
+
+	header.type = SLURM_IO_CONNECTION_TEST;
+	header.ltaskid = 0;  /* Unused */
+	header.gtaskid = 0;  /* Unused */
+	header.length = 0;
+
+	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	if (!packbuf)
+		fatal("Failure to allocate memory for a message header");
+	io_hdr_pack(&header, packbuf);
+	msg->length = io_hdr_packed_size();
+	msg->ref_count = 0; /* make certain it is initialized */
+
+	/* free the Buf packbuf, but not the memory to which it points */
+	packbuf->head = NULL;
+	free_buf(packbuf);
+	
+	return msg;
+}
+
+
+
 static void
 _route_msg_task_to_client(eio_obj_t *obj)
 {
@@ -1163,6 +1262,9 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 		/* Add message to the msg_queue of all clients */
 		clients = list_iterator_create(out->job->clients);
+		if (!clients)
+			fatal("Could not allocate iterator");
+
 		while((eio = list_next(clients))) {
 			client = (struct client_io_info *)eio->arg;
 			if (client->out_eof == true)
@@ -1245,6 +1347,8 @@ _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job)
 	struct io_buf *msg;
 
 	msgs = list_iterator_create(msg_queue);
+	if (!msgs)
+		fatal("Could not allocate iterator");
 	while((msg = list_next(msgs))) {
 		_free_outgoing_msg(msg, job);
 	}
@@ -1306,6 +1410,8 @@ io_close_local_fds(slurmd_job_t *job)
 		return;
 
 	clients = list_iterator_create(job->clients);
+	if (!clients)
+		fatal("Could not allocate iterator");
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		if (client->is_local_file) {
@@ -1609,12 +1715,17 @@ _send_eof_msg(struct task_read_info *out)
 	header.length = 0; /* eof */
 
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	if (!packbuf)
+		fatal("Failure to allocate memory for a message header");
+
 	io_hdr_pack(&header, packbuf);
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->job->clients);
+	if (!clients)
+		fatal("Could not allocate iterator");
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		debug5("======================== Enqueued eof message");
@@ -1639,6 +1750,7 @@ _send_eof_msg(struct task_read_info *out)
 
 	debug4("Leaving  _send_eof_msg");
 }
+
 
 
 static struct io_buf *
@@ -1695,6 +1807,8 @@ _task_build_message(struct task_read_info *out, slurmd_job_t *job, cbuf_t cbuf)
 
 	debug5("  header.length = %d", n);
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
+	if (!packbuf)
+		fatal("Failure to allocate memory for a message header");
 	io_hdr_pack(&header, packbuf);
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
@@ -1738,6 +1852,7 @@ free_io_buf(struct io_buf *buf)
 	}
 }
 
+/* This just determines if there's space to hold more of the stdin stream */
 static bool
 _incoming_buf_free(slurmd_job_t *job)
 {
