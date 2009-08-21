@@ -602,8 +602,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			}
 		}
 
-		if ((run_job_cnt != NO_SHARE_LIMIT) &&
-		    (node_cr_ptr[i].exclusive_jobid != 0)) {
+		if (node_cr_ptr[i].exclusive_jobid != 0) {
 			/* already reserved by some exclusive job */
 			bit_clear(jobmap, i);
 			continue;
@@ -1377,6 +1376,7 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 		}
 		if (node_cr_ptr[i].exclusive_jobid == job_ptr->job_id)
 			node_cr_ptr[i].exclusive_jobid = 0;
+
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
 			if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
@@ -1483,8 +1483,7 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 					node_record_table_ptr[i].cpus;
 		}
 		if (exclusive) {
-			if (node_cr_ptr[i].exclusive_jobid &&
-			    !_job_preemption_killing()) {
+			if (node_cr_ptr[i].exclusive_jobid) {
 				error("select/linear: conflicting exclusive "
 				      "jobs %u and %u on %s",
 				      job_ptr->job_id, 
@@ -1683,8 +1682,7 @@ static void _init_node_cr(void)
 			if (!bit_test(select_ptr->node_bitmap, i))
 				continue;
 			if (exclusive) {
-				if (node_cr_ptr[i].exclusive_jobid &&
-				    !_job_preemption_killing()) {
+				if (node_cr_ptr[i].exclusive_jobid) {
 					error("select/linear: conflicting "
 				 	      "exclusive jobs %u and %u on %s",
 				 	      job_ptr->job_id, 
