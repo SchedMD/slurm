@@ -292,8 +292,9 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line_with_font(
 		update, treestore, &iter, 
 		"Configuration data as of", temp_str, "bold");
-	snprintf(temp_str, sizeof(temp_str), "%u", 
-		 slurm_ctl_conf_ptr->accounting_storage_enforce);
+	accounting_enforce_string(
+		slurm_ctl_conf_ptr->accounting_storage_enforce,
+		temp_str, sizeof(temp_str));
 	add_display_treestore_line(update, treestore, &iter, 
 				   "AccountingStorageEnforce", 
 				   temp_str);
