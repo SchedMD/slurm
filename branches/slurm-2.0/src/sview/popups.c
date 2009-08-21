@@ -40,6 +40,53 @@
 #include "sview.h"
 #include "src/common/parse_time.h"
 
+static char *_select_info(uint16_t select_type_param)
+{
+	switch (select_type_param) {
+		case SELECT_TYPE_INFO_NONE:
+			return "NONE";
+		case CR_CPU:
+			return "CR_CPU";
+		case CR_SOCKET:
+			return "CR_SOCKET";
+		case CR_CORE:
+			return "CR_CORE";
+		case CR_MEMORY:
+			return "CR_MEMORY";
+		case CR_SOCKET_MEMORY:
+			return "CR_SOCKET_MEMORY";
+		case CR_CORE_MEMORY:
+			return "CR_CORE_MEMORY";
+		case CR_CPU_MEMORY:
+			return "CR_CPU_MEMORY";
+		default:
+			return "unknown";
+	}
+}
+
+static char *_reset_period_str(uint16_t reset_period)
+{
+	switch (reset_period) {
+		case PRIORITY_RESET_NONE:
+			return "NONE";
+		case PRIORITY_RESET_NOW:
+			return "NOW";
+		case PRIORITY_RESET_DAILY:
+			return "DAILY";
+		case PRIORITY_RESET_WEEKLY:
+			return "WEEKLY";
+		case PRIORITY_RESET_MONTHLY:
+			return "MONTHLY";
+		case PRIORITY_RESET_QUARTERLY:
+			return "QUARTERLY";
+		case PRIORITY_RESET_YEARLY:
+			return "YEARLY";
+		default:
+			return "UNKNOWN";
+	}
+}
+
+
 void *_refresh_thr(gpointer arg)
 {
 	int msg_id = GPOINTER_TO_INT(arg);
@@ -220,10 +267,23 @@ static GtkTreeStore *_local_create_treestore_2cols(GtkWidget *popup,
 static void _layout_ctl_conf(GtkTreeStore *treestore,
 			     slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr)
 {
-	char temp_str[32], temp_str2[128];
+	char temp_str[128];
 	int update = 0;
 	GtkTreeIter iter;
-	
+	char *xbuf = NULL;
+	ListIterator itr = NULL;
+	config_key_pair_t *key_pair;
+	char *select_title = "";
+#ifdef HAVE_BGL
+	select_title = "Bluegene/L configuration";
+#endif
+#ifdef HAVE_BGP
+	select_title = "Bluegene/P configuration";
+#endif
+#ifdef HAVE_BGQ
+	select_title = "Bluegene/Q configuration";
+#endif
+
 	if(!slurm_ctl_conf_ptr)
 		return;
 
@@ -231,17 +291,32 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 			    temp_str, sizeof(temp_str));
 	add_display_treestore_line(update, treestore, &iter, 
 				   "Configuration data as of", temp_str);
+	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->accounting_storage_enforce);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "AccountingStorageEnforce", 
+				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "AccountingStorageBackupHost", 
+				   slurm_ctl_conf_ptr->
+				   accounting_storage_backup_host);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "AccountingStorageHost", 
 				   slurm_ctl_conf_ptr->accounting_storage_host);
 	add_display_treestore_line(update, treestore, &iter, 
-				   "AccountingStorageType", 
-				   slurm_ctl_conf_ptr->accounting_storage_type);
+				   "AccountingStorageLoc", 
+				   slurm_ctl_conf_ptr->accounting_storage_loc);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "AccountingStoragePass", 
+				   slurm_ctl_conf_ptr->accounting_storage_pass);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->accounting_storage_port);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "AccountingStoragePort", 
 				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "AccountingStorageType", 
+				   slurm_ctl_conf_ptr->accounting_storage_type);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "AccountingStorageUser", 
 				   slurm_ctl_conf_ptr->accounting_storage_user);
@@ -253,6 +328,11 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "BackupController", 
 				   slurm_ctl_conf_ptr->backup_controller);
+	snprintf(temp_str, sizeof(temp_str), "%u sec", 
+		 slurm_ctl_conf_ptr->batch_start_timeout);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "BatchStartTimeout", 
+				   temp_str);
 	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->boot_time,
 			     temp_str, sizeof(temp_str));
 	add_display_treestore_line(update, treestore, &iter, 
@@ -264,6 +344,9 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "CheckpointType",
 				   slurm_ctl_conf_ptr->checkpoint_type);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "ClusterName",
+				   slurm_ctl_conf_ptr->cluster_name);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->complete_wait);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -278,20 +361,54 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "CryptoType", 
 				   slurm_ctl_conf_ptr->crypto_type);
+	
+	xbuf = debug_flags2str(slurm_ctl_conf_ptr->debug_flags);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "DebugFlags", 
+				   xbuf);
+	xfree(xbuf);
 	if (slurm_ctl_conf_ptr->def_mem_per_task & MEM_PER_CPU) {
 		snprintf(temp_str, sizeof(temp_str), "%u", 
 			 slurm_ctl_conf_ptr->def_mem_per_task & (~MEM_PER_CPU));
 		add_display_treestore_line(update, treestore, &iter, 
 					   "DefMemPerCPU", temp_str);
-	} else {
+	} else if (slurm_ctl_conf_ptr->def_mem_per_task) {
 		snprintf(temp_str, sizeof(temp_str), "%u", 
 			 slurm_ctl_conf_ptr->def_mem_per_task);
 		add_display_treestore_line(update, treestore, &iter, 
 					   "DefMemPerNode", temp_str);
+	} else {
+		add_display_treestore_line(update, treestore, &iter, 
+					   "DefMemPerCPU", "UNLIMITED");
 	}
+
+	if(slurm_ctl_conf_ptr->disable_root_jobs)
+		xbuf = "YES";
+	else
+		xbuf = "NO";
+	add_display_treestore_line(update, treestore, &iter, 
+				   "DisableRootJobs", 
+				   xbuf);
+
+	if(slurm_ctl_conf_ptr->enforce_part_limits)
+		xbuf = "YES";
+	else
+		xbuf = "NO";
+	add_display_treestore_line(update, treestore, &iter, 
+				   "EnforcePartLimits", 
+				   xbuf);
+
 	add_display_treestore_line(update, treestore, &iter, 
 				   "Epilog", 
 				   slurm_ctl_conf_ptr->epilog);
+	snprintf(temp_str, sizeof(temp_str), "%u usec", 
+		 slurm_ctl_conf_ptr->epilog_msg_time);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "EpilogMsgTime", 
+				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "EpilogSlurmctld", 
+				   slurm_ctl_conf_ptr->epilog_slurmctld);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->fast_schedule);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -302,6 +419,19 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "FirstJobId", 
 				   temp_str);
+	snprintf(temp_str, sizeof(temp_str), "%u sec", 
+		 slurm_ctl_conf_ptr->get_env_timeout);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "GetEnvTimeout", 
+				   temp_str);
+	snprintf(temp_str, sizeof(temp_str), "%u sec", 
+		 slurm_ctl_conf_ptr->health_check_interval);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "HealthCheckInterval", 
+				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "HealthCheckProgram", 
+				   slurm_ctl_conf_ptr->health_check_program);
 #ifdef HAVE_XCPU
 	add_display_treestore_line(update, treestore, &iter, 
 				   "HAVE_XCPU", "1");
@@ -312,14 +442,18 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 				   "InactiveLimit", 
 				   temp_str);
 
-	add_display_treestore_line(update, treestore, &iter, 
-				   "JobAcctGatherType", 
-				   slurm_ctl_conf_ptr->job_acct_gather_type);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->job_acct_gather_freq);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobAcctGatherFrequency",
 				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobAcctGatherType", 
+				   slurm_ctl_conf_ptr->job_acct_gather_type);
+
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobCheckpointDir", 
+				   slurm_ctl_conf_ptr->job_ckpt_dir);
 
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobCompHost", 
@@ -327,6 +461,9 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobCompLoc", 
 				   slurm_ctl_conf_ptr->job_comp_loc);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobCompPass", 
+				   slurm_ctl_conf_ptr->job_comp_pass);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->job_comp_port);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -351,11 +488,23 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 		 slurm_ctl_conf_ptr->job_file_append);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobFileAppend", temp_str);
+	snprintf(temp_str, sizeof(temp_str), "%u",
+		 slurm_ctl_conf_ptr->job_requeue);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobRequeue", temp_str);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->kill_on_bad_exit);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "KillOnBadExit", 
+				   temp_str);
+	snprintf(temp_str, sizeof(temp_str), "%u sec", 
 		 slurm_ctl_conf_ptr->kill_wait);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "KillWait", 
 				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "Licenses",
+				   slurm_ctl_conf_ptr->licenses);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "MailProg",
 				   slurm_ctl_conf_ptr->mail_prog);
@@ -369,11 +518,14 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 			 slurm_ctl_conf_ptr->max_mem_per_task & (~MEM_PER_CPU));
 		add_display_treestore_line(update, treestore, &iter, 
 					   "MaxMemPerCPU", temp_str);
-	} else {
+	} else if (slurm_ctl_conf_ptr->max_mem_per_task) {
 		snprintf(temp_str, sizeof(temp_str), "%u", 
 			 slurm_ctl_conf_ptr->max_mem_per_task);
 		add_display_treestore_line(update, treestore, &iter, 
 					   "MaxMemPerNode", temp_str);
+	} else {
+		add_display_treestore_line(update, treestore, &iter, 
+					   "MaxMemPerCPU", "UNLIMITED");
 	}
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->msg_timeout);
@@ -400,15 +552,79 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "NEXT_JOB_ID",
 				   temp_str);
+	if (slurm_ctl_conf_ptr->over_time_limit == (uint16_t) INFINITE)
+		snprintf(temp_str, sizeof(temp_str), "UNLIMITED");
+	else
+		snprintf(temp_str, sizeof(temp_str), "%u min", 
+			 slurm_ctl_conf_ptr->over_time_limit);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "OverTimeLimit", 
+				   temp_str);
+		
 	add_display_treestore_line(update, treestore, &iter, 
 				   "PluginDir", 
 				   slurm_ctl_conf_ptr->plugindir);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "PlugStackConfig",
 				   slurm_ctl_conf_ptr->plugstack);
+
+	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityType",
+					   slurm_ctl_conf_ptr->priority_type);
+	} else {
+		secs2time_str((time_t) slurm_ctl_conf_ptr->priority_decay_hl,
+			      temp_str, sizeof(temp_str));
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityDecayHalfLife", temp_str);
+
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->priority_favor_small);
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityFavorSmall",
+					   temp_str);
+		secs2time_str((time_t) slurm_ctl_conf_ptr->priority_max_age,
+			      temp_str, sizeof(temp_str));
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityMaxAge", temp_str);
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityUsageResetPeriod", 
+					   _reset_period_str(
+						   slurm_ctl_conf_ptr->
+						   priority_reset_period));
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityType",
+					   slurm_ctl_conf_ptr->priority_type);
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->priority_weight_age);
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityWeightAge",
+					   temp_str);
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->priority_weight_fs);
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityWeightFairShare",
+					   temp_str);
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->priority_weight_js);
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityWeightJobSize",
+					   temp_str);
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->priority_weight_part);
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityWeightPartition",
+					   temp_str);
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->priority_weight_qos);
+		add_display_treestore_line(update, treestore, &iter, 
+					   "PriorityWeightQOS",
+					   temp_str);
+	}
+
+
 	private_data_string(slurm_ctl_conf_ptr->private_data, 
-			    temp_str2, sizeof(temp_str2));
-	snprintf(temp_str, sizeof(temp_str), "%s", temp_str2);
+			    temp_str, sizeof(temp_str));
 	add_display_treestore_line(update, treestore, &iter, 
 				   "PrivateData",
 				   temp_str);
@@ -418,6 +634,9 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "Prolog", 
 				   slurm_ctl_conf_ptr->prolog);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "PrologSlurmctld", 
+				   slurm_ctl_conf_ptr->prolog_slurmctld);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->propagate_prio_process);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -431,14 +650,31 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 				   propagate_rlimits_except);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "ResumeProgram", temp_str);
-	snprintf(temp_str, sizeof(temp_str), "%u", 
+	snprintf(temp_str, sizeof(temp_str), "%u nodes/min", 
 		 slurm_ctl_conf_ptr->resume_rate);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "ResumeRate", temp_str);
+	snprintf(temp_str, sizeof(temp_str), "%u sec", 
+		 slurm_ctl_conf_ptr->resume_timeout);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "ResumeTimeout", temp_str);
+	if (slurm_ctl_conf_ptr->resv_over_run == (uint16_t) INFINITE)
+		snprintf(temp_str, sizeof(temp_str), "UNLIMITED");
+	else
+		snprintf(temp_str, sizeof(temp_str), "%u min",
+			slurm_ctl_conf_ptr->resv_over_run);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "ResvOverRun", temp_str);		
+
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->ret2service);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "ReturnToService", temp_str);
+	
+	add_display_treestore_line(update, treestore, &iter, 
+				   "SallocDefaultCommand",
+				   slurm_ctl_conf_ptr->salloc_default_command);
+
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->schedport);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -457,6 +693,13 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "SelectType",
 				   slurm_ctl_conf_ptr->select_type);
+	if (slurm_ctl_conf_ptr->select_type_param) {
+		add_display_treestore_line(update, treestore, &iter, 
+					   "SelectTypeParameters",
+					   _select_info(slurm_ctl_conf_ptr->
+							select_type_param));
+	}
+
 	snprintf(temp_str, sizeof(temp_str), "%s(%u)", 
 		 slurm_ctl_conf_ptr->slurm_user_name,
 		 slurm_ctl_conf_ptr->slurm_user_id);
@@ -503,14 +746,25 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 		 slurm_ctl_conf_ptr->slurmd_timeout);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "SlurmdTimeout", temp_str);
+	snprintf(temp_str, sizeof(temp_str), "%s(%u)", 
+		 slurm_ctl_conf_ptr->slurmd_user_name, 
+		 slurm_ctl_conf_ptr->slurmd_user_id);
 	add_display_treestore_line(update, treestore, &iter, 
-				   "SLURM_CONFIG_FILE", 
+				   "SlurmdUser", 
+				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "SLURM_CONF", 
 				   slurm_ctl_conf_ptr->slurm_conf);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "SLURM_VERSION", SLURM_VERSION);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "SrunEpilog",
 				   slurm_ctl_conf_ptr->srun_epilog);
+	snprintf(temp_str, sizeof(temp_str), "%u sec", 
+		 slurm_ctl_conf_ptr->srun_io_timeout);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "SrunIOTimeout", 
+				   temp_str);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "SrunProlog",
 				   slurm_ctl_conf_ptr->srun_prolog);
@@ -526,14 +780,22 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "SuspendProgram", 
 				   slurm_ctl_conf_ptr->suspend_program);
-	snprintf(temp_str, sizeof(temp_str), "%u", 
+	snprintf(temp_str, sizeof(temp_str), "%u nodes/min", 
 		 slurm_ctl_conf_ptr->suspend_rate);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "SuspendRate", temp_str);
-	snprintf(temp_str, sizeof(temp_str), "%d", 
-		 ((int)slurm_ctl_conf_ptr->suspend_time - 1));
+	if (!slurm_ctl_conf_ptr->suspend_time) 
+		snprintf(temp_str, sizeof(temp_str), "NONE");
+	else
+		snprintf(temp_str, sizeof(temp_str), "%d sec", 
+			 ((int)slurm_ctl_conf_ptr->suspend_time - 1));
 	add_display_treestore_line(update, treestore, &iter, 
 				   "SuspendTime", temp_str);
+
+	snprintf(temp_str, sizeof(temp_str), "%u sec", 
+		 slurm_ctl_conf_ptr->suspend_timeout);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "SuspendTimeOut", temp_str);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "SwitchType",
 				   slurm_ctl_conf_ptr->switch_type);
@@ -553,6 +815,13 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "TmpFS", 
 				   slurm_ctl_conf_ptr->tmp_fs);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "TopologyPlugin", 
+				   slurm_ctl_conf_ptr->topology_plugin);
+	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->track_wckey);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "TrackWCKey", temp_str);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->tree_width);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -572,6 +841,19 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 		 slurm_ctl_conf_ptr->wait_time);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "WaitTime", temp_str);
+
+	if (!slurm_ctl_conf_ptr->select_conf_key_pairs)
+		return;
+
+	add_display_treestore_line(update, treestore, &iter, 
+				   select_title, NULL);
+	itr = list_iterator_create(
+		(List)slurm_ctl_conf_ptr->select_conf_key_pairs);
+	while((key_pair = list_next(itr))) {
+		add_display_treestore_line(update, treestore, &iter, 
+					   key_pair->name, key_pair->value);
+	}
+	list_iterator_destroy(itr);
 }
 
 extern void create_config_popup(GtkAction *action, gpointer user_data)
