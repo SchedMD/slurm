@@ -292,16 +292,16 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line_with_font(
 		update, treestore, &iter, 
 		"Configuration data as of", temp_str, "bold");
+	add_display_treestore_line(update, treestore, &iter, 
+				   "AccountingStorageBackupHost", 
+				   slurm_ctl_conf_ptr->
+				   accounting_storage_backup_host);
 	accounting_enforce_string(
 		slurm_ctl_conf_ptr->accounting_storage_enforce,
 		temp_str, sizeof(temp_str));
 	add_display_treestore_line(update, treestore, &iter, 
 				   "AccountingStorageEnforce", 
 				   temp_str);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "AccountingStorageBackupHost", 
-				   slurm_ctl_conf_ptr->
-				   accounting_storage_backup_host);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "AccountingStorageHost", 
 				   slurm_ctl_conf_ptr->accounting_storage_host);
@@ -530,6 +530,11 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 		add_display_treestore_line(update, treestore, &iter, 
 					   "MaxMemPerCPU", "UNLIMITED"); 
 	}
+	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->max_tasks_per_node);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "MaxTasksPerNode",
+				   temp_str);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->msg_timeout);
 	add_display_treestore_line(update, treestore, &iter, 
