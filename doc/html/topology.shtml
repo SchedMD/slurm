@@ -65,7 +65,7 @@ Higher-level switch descriptions contain a <i>SwitchName</i> field
 plus a <i>Switches</i> field to identify the child switches.
 SLURM's hostlist expression parser is used, so the node and switch
 names need not be consecutive (e.g. "Nodes=tux[0-3,12,18-20]"
-and "Swithces=s[0-2,4-8,12]" will parse fine).
+and "Switches=s[0-2,4-8,12]" will parse fine).
 </p>
 
 <p>An optional LinkSpeed option can be used to indicate the 
@@ -107,6 +107,23 @@ SwitchName=s7 Switches=s[0-3]  LinkSpeed=1800
 </pre>
 <img src=topo_ex2.gif width=600>
 
-<p style="text-align:center;">Last modified 24 March 2009</p>
+<p>As a practical matter, listing every switch connection 
+definitely results in a slower scheduling algorithm for SLURM 
+to optimize job placement.
+The application performance may achieve little benefit from such optimization.
+Listing the leaf switches with their nodes plus one top level switch
+should result in good performance for both applications and SLURM.
+The previous example might be configured as follows:
+<pre>
+# topology.conf
+# Switch Configuration
+SwitchName=s0 Nodes=tux[0-3]
+SwitchName=s1 Nodes=tux[4-7]
+SwitchName=s2 Nodes=tux[8-11]
+SwitchName=s3 Nodes=tux[12-15]
+SwitchName=s4 Switches=s[0-3]
+</pre>
+
+<p style="text-align:center;">Last modified 20 August 2009</p>
 
 <!--#include virtual="footer.txt"-->
