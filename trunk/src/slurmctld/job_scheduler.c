@@ -298,8 +298,8 @@ extern int schedule(void)
 		if (strcmp(sched_type, "sched/backfill") == 0)
 			backfill_sched = true;
 		/* Disable avoiding of fragmentation with sched/wiki */
-		if ((strcmp(sched_type, "sched/wiki") == 0)
-		||  (strcmp(sched_type, "sched/wiki2") == 0))
+		if ((strcmp(sched_type, "sched/wiki") == 0) ||
+		    (strcmp(sched_type, "sched/wiki2") == 0))
 			wiki_sched = true;
 		xfree(sched_type);
 		sched_test = true;

@@ -2177,6 +2177,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			fatal("PreemptType and PreemptMode values "
 			      "incompatible");
 		}
+	} else if (strcmp(conf->preempt_type, "preempt/partition_prio") == 0) {
+		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
+		if (preempt_mode == PREEMPT_MODE_OFF) {
+			fatal("PreemptType and PreemptMode values "
+			      "incompatible");
+		}
 	} else if (strcmp(conf->preempt_type, "preempt/none") == 0) {
 		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
 		if (preempt_mode != PREEMPT_MODE_OFF) {
