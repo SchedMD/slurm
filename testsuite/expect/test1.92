@@ -61,11 +61,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "More processors requested than permitted" {
-		send_user "\nWARNING: can't test srun task distribution\n"
-		exit 0
-	}
-	-re "Node count specification invalid" {
+	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid)" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
 	}
