@@ -105,7 +105,8 @@ extern struct job_record **find_preemptable_jobs(struct job_record *job_ptr)
 		if (!IS_JOB_RUNNING(job_p) && !IS_JOB_SUSPENDED(job_p))
 			continue;
 /* FIXME: Change to some QOS comparison */
-		if (job_p->account && job_ptr->account &&
+		if ((job_p->account == NULL)	|| 
+		    (job_ptr->account == NULL)	||
 		    (job_p->account[0] >= job_ptr->account[0]))
 			continue;
 		if ((job_p->node_bitmap == NULL) ||
