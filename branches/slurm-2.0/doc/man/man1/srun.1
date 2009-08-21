@@ -1010,9 +1010,9 @@ slurm.conf this value is ignored.
 \fB\-X\fR, \fB\-\-disable\-status\fR
 Disable the display of task status when srun receives a single SIGINT
 (Ctrl\-C). Instead immediately forward the SIGINT to the running job.
-A second Ctrl\-C in one second will forcibly terminate the job and
-\fBsrun\fR will immediately exit. May also be set via the environment
-variable SLURM_DISABLE_STATUS.
+Without this option a second Ctrl\-C in one second is required to forcibly
+terminate the job and \fBsrun\fR will immediately exit. May also be
+set via the environment variable SLURM_DISABLE_STATUS.
 
 .TP
 \fB\-x\fR, \fB\-\-exclude\fR=<\fIhost1,host2,...\fR or \fIfilename\fR>
