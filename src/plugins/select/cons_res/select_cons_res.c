@@ -184,6 +184,8 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Procedure Declarations */
+static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
+		      uint32_t min_nodes, uint32_t max_nodes,   		      uint32_t req_nodes, uint16_t job_node_req);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, uint16_t job_node_req);
@@ -1103,6 +1105,19 @@ static bool _is_preemptable(struct job_record *job_ptr,
 	return false;
 }
 
+/* Determine if a job can ever run */
+static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
+		      uint32_t min_nodes, uint32_t max_nodes,   		      uint32_t req_nodes, uint16_t job_node_req)
+{
+	int rc;
+
+	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes, 
+			 SELECT_MODE_TEST_ONLY, cr_type, job_node_req,
+			 select_node_cnt, select_part_record, 
+			 select_node_usage);
+	return rc;
+}
+
 /* _will_run_test - determine when and where a pending job can start, removes 
  *	jobs from node table at termination time and run _test_job() after 
  *	each one. Used by SLURM's sched/backfill plugin and Moab. */
@@ -1498,7 +1513,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes, 
 			     uint32_t req_nodes, int mode)
 {
-	int rc;
+	int rc = EINVAL;
 	uint16_t job_node_req;
 	bool debug_cpu_bind = false, debug_check = false;
 
@@ -1528,12 +1543,16 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	if (mode == SELECT_MODE_WILL_RUN) {
 		rc = _will_run_test(job_ptr, bitmap, min_nodes, max_nodes,
 				    req_nodes, job_node_req);
-	} else {
+	} else if (mode == SELECT_MODE_TEST_ONLY) {
+		rc = _test_only(job_ptr, bitmap, min_nodes, max_nodes,
+				req_nodes, job_node_req);
+	} else if (mode == SELECT_MODE_RUN_NOW) {
 		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
 				 req_nodes, mode, cr_type, job_node_req,
 				 select_node_cnt, select_part_record,
 				 select_node_usage);
-	}
+	} else
+		fatal("select_p_job_test: Mode %d is invalid", mode);
 
 #if (CR_DEBUG)
 	if (job_ptr->select_job)
