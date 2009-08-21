@@ -1676,11 +1676,15 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    int max_share, uint32_t req_nodes)
 {
 
-	bitstr_t *orig_map = bit_copy(bitmap);
+	bitstr_t *orig_map;
 	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
 	struct job_record **preempt_job_ptr = NULL, *tmp_job_ptr;
 	ListIterator job_iterator;
 	struct node_cr_record *exp_node_cr;
+
+	orig_map = bit_copy(bitmap);
+	if (!orig_map)
+		fatal("bit_copy: malloc failure");
 
 	for (max_run_job=0; max_run_job<max_share; max_run_job++) {
 		bool last_iteration = (max_run_job == (max_share - 1));
@@ -1720,7 +1724,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	if ((rc != SLURM_SUCCESS) &&
-	    (preempt_job_ptr = slurm_find_preemptable_jobs(job_ptr))&&
+	    (preempt_job_ptr = slurm_find_preemptable_jobs(job_ptr)) &&
 	    (exp_node_cr = _dup_node_cr(node_cr_ptr))) {
 		/* Remove all preemptable jobs from simulated environment */
 		job_iterator = list_iterator_create(job_list);
@@ -1793,6 +1797,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	time_t now = time(NULL);
 
 	orig_map = bit_copy(bitmap);
+	if (!orig_map)
+		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
 	i = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, 
