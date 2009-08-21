@@ -89,7 +89,7 @@ int node_record_count;
 time_t last_node_update;
 struct switch_record *switch_record_table; 
 int switch_record_cnt;
-bool preempt_within_partition(void);
+struct job_record **slurm_find_preemptable_jobs(struct job_record *job_ptr);
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
