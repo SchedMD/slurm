@@ -608,77 +608,6 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			continue;
 		}
 
-#if 0
-		if (_job_preemption_enabled()) {
-			/* clear this node if any higher-priority
-			 * partitions have existing allocations */
-			int lower_prio_jobs=0, same_prio_jobs=0, higher_prio_jobs=0;
-			part_cr_ptr = node_cr_ptr[i].parts;
-			for ( ; part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
-				if (part_cr_ptr->part_ptr->priority <
-				    job_ptr->part_ptr->priority) {
-					lower_prio_jobs += part_cr_ptr->
-							   tot_job_cnt;
-				} else if (part_cr_ptr->part_ptr->priority ==
-					   job_ptr->part_ptr->priority) {
-					same_prio_jobs += part_cr_ptr->
-							  tot_job_cnt;
-				} else {
-					higher_prio_jobs += part_cr_ptr->
-							    tot_job_cnt;
-				}
-			}
-			if ((run_job_cnt != NO_SHARE_LIMIT) &&
-			    (higher_prio_jobs > 0)) {
-				bit_clear(jobmap, i);
-				continue;
-			}
-			/* We're not currently tracking memory allocation 
-			 * by partition, so we avoid nodes where the total 
-			 * allocated memory would exceed that available
-			 * and there are *any* jobs left on the node after
-			 * this one is started. */
-			if (((alloc_mem + job_mem) > avail_mem)		&&
-			    ((!_job_preemption_killing())		||
-			     ((same_prio_jobs + higher_prio_jobs) > 0))) {
-				bit_clear(jobmap, i);
-				continue;
-			}
-			/* if not sharing, then check with other partitions
-			 * of equal priority. Otherwise, load-balance within
-			 * the local partition */
-			total_jobs = 0;
-			total_run_jobs = 0;
-			part_cr_ptr = node_cr_ptr[i].parts;
-			for ( ; part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
-				if (part_cr_ptr->part_ptr->priority !=
-				    job_ptr->part_ptr->priority)
-					continue;
-				if (!job_ptr->details->shared) {
-					total_run_jobs +=
-						      part_cr_ptr->run_job_cnt;
-					total_jobs += part_cr_ptr->tot_job_cnt;
-					continue;
-				}
-				if (part_cr_ptr->part_ptr == 
-				    job_ptr->part_ptr) {
-					total_run_jobs +=
-						      part_cr_ptr->run_job_cnt;
-					total_jobs += part_cr_ptr->tot_job_cnt;
-					break;
-				}
-			}
-			if ((total_run_jobs <= run_job_cnt) &&
-			    (total_jobs     <= tot_job_cnt)) {
-				bit_set(jobmap, i);
-				count++;
-			} else {
-				bit_clear(jobmap, i);
-			}
-			continue;
-		}
-#endif
-
 		total_jobs = 0;
 		total_run_jobs = 0;
 		part_cr_ptr = node_cr_ptr[i].parts;
@@ -998,8 +927,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		consec_nodes[best_fit_location] = 0;
 	}
 
-	if (error_code && (rem_cpus <= 0)
-	&&  _enough_nodes(0, rem_nodes, min_nodes, req_nodes)) {
+	if (error_code && (rem_cpus <= 0) &&
+	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes)) {
 		error_code = SLURM_SUCCESS;
 	}
 	if (error_code == SLURM_SUCCESS) {
