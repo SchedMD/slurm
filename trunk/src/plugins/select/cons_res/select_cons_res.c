@@ -174,6 +174,7 @@ static int select_node_cnt = 0;
 static bool job_preemption_enabled = false;
 static bool job_preemption_killing = false;
 static bool job_preemption_tested  = false;
+static List preempt_job_list = NULL;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
@@ -184,8 +185,12 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Procedure Declarations */
+static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
+		    uint32_t min_nodes, uint32_t max_nodes,
+		    uint32_t req_nodes, uint16_t job_node_req);
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
-		      uint32_t min_nodes, uint32_t max_nodes,   		      uint32_t req_nodes, uint16_t job_node_req);
+		      uint32_t min_nodes, uint32_t max_nodes,
+ 		      uint32_t req_nodes, uint16_t job_node_req);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, uint16_t job_node_req);
@@ -368,7 +373,8 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
 		new_row[i].num_jobs = orig_row[i].num_jobs;
 		new_row[i].job_list_size = orig_row[i].job_list_size;
 		if (orig_row[i].row_bitmap) 
-			new_row[i].row_bitmap= bit_copy(orig_row[i].row_bitmap);
+			new_row[i].row_bitmap= bit_copy(orig_row[i].
+							row_bitmap);
 		if (new_row[i].job_list_size == 0)
 			continue;
 		/* copy the job list */
@@ -396,7 +402,8 @@ static struct part_res_record *_dup_part_data(struct part_res_record *orig_ptr)
 	while (orig_ptr) {
 		new_ptr->part_ptr = orig_ptr->part_ptr;
 		new_ptr->num_rows = orig_ptr->num_rows;
-		new_ptr->row = _dup_row_data(orig_ptr->row, orig_ptr->num_rows);
+		new_ptr->row = _dup_row_data(orig_ptr->row, 
+					     orig_ptr->num_rows);
 		if (orig_ptr->next) {
 			new_ptr->next = xmalloc(sizeof(struct part_res_record));
 			new_ptr = new_ptr->next;
@@ -416,7 +423,8 @@ static struct node_use_record *_dup_node_usage(struct node_use_record *orig_ptr)
 	if (orig_ptr == NULL)
 		return NULL;
 
-	new_use_ptr = xmalloc(select_node_cnt * sizeof(struct node_use_record));
+	new_use_ptr = xmalloc(select_node_cnt * 
+			      sizeof(struct node_use_record));
 	new_ptr = new_use_ptr;
 
 	for (i = 0; i < select_node_cnt; i++) {
@@ -543,7 +551,7 @@ static void _add_job_to_row(struct select_job_res *job,
 
 /* test for conflicting core_bitmap bits */
 static int _can_job_fit_in_row(struct select_job_res *job,
-				struct part_row_data *r_ptr)
+			       struct part_row_data *r_ptr)
 {
 	if (r_ptr->num_jobs == 0 || !r_ptr->row_bitmap)
 		return 1;
@@ -632,7 +640,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		
 		/* rebuild the row bitmap */
 		num_jobs = this_row->num_jobs;
-		tmpjobs = xmalloc(num_jobs * sizeof(struct select_job_res *));	
+		tmpjobs = xmalloc(num_jobs * sizeof(struct select_job_res *));
 		for (i = 0; i < num_jobs; i++) {
 			tmpjobs[i] = this_row->job_list[i];
 			this_row->job_list[i] = NULL;
@@ -656,7 +664,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		size = bit_size(p_ptr->row[0].row_bitmap);
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (p_ptr->row[i].row_bitmap) {
-				bit_nclear(p_ptr->row[i].row_bitmap, 0, size-1);
+				bit_nclear(p_ptr->row[i].row_bitmap, 0, 
+					   size-1);
 			}
 		}
 		return;
@@ -722,13 +731,15 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 #if (CR_DEBUG)
 	for (i = 0; i < num_jobs; i++) {
 		char cstr[64], nstr[64];
-		if (tmpjobs[i]->core_bitmap)
-			bit_fmt(cstr, (sizeof(cstr)-1) , tmpjobs[i]->core_bitmap);
-		else
+		if (tmpjobs[i]->core_bitmap) {
+			bit_fmt(cstr, (sizeof(cstr)-1) , 
+				tmpjobs[i]->core_bitmap);
+		} else
 			sprintf(cstr, "[no core_bitmap]");
-		if (tmpjobs[i]->node_bitmap)
-			bit_fmt(nstr, (sizeof(nstr)-1), tmpjobs[i]->node_bitmap);
-		else
+		if (tmpjobs[i]->node_bitmap) {
+			bit_fmt(nstr, (sizeof(nstr)-1), 
+				tmpjobs[i]->node_bitmap);
+		} else
 			sprintf(nstr, "[no node_bitmap]");
 		info ("DEBUG:  jstart %d job nb %s cb %s", jstart[i], nstr,
 			cstr);
@@ -1118,6 +1129,96 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 	return rc;
 }
 
+/* Allocate resources for a job now, if possible */
+static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
+		    uint32_t min_nodes, uint32_t max_nodes,
+		    uint32_t req_nodes, uint16_t job_node_req)
+{
+	int j, rc;
+	bitstr_t *orig_map;
+	struct job_record *tmp_job_ptr;
+	ListIterator job_iterator;
+	struct job_record **preempt_job_ptr = NULL;
+	struct part_res_record *future_part;
+	struct node_use_record *future_usage;
+
+	orig_map = bit_copy(bitmap);
+	if (!orig_map)
+		fatal("bit_copy: malloc failure");
+
+	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes, 
+			 SELECT_MODE_RUN_NOW, cr_type, job_node_req,
+			 select_node_cnt, select_part_record, 
+			 select_node_usage);
+
+	if ((rc != SLURM_SUCCESS) && cr_preemption_killing() &&
+	    (preempt_job_ptr = slurm_find_preemptable_jobs(job_ptr))) {
+		/* Remove preemptable jobs from simulated environment */
+		future_part = _dup_part_data(select_part_record);
+		if (future_part == NULL) {
+			xfree(preempt_job_ptr);
+			bit_free(orig_map);
+			return SLURM_ERROR;
+		}
+		future_usage = _dup_node_usage(select_node_usage);
+		if (future_usage == NULL) {
+			_destroy_part_data(future_part);
+			xfree(preempt_job_ptr);
+			bit_free(orig_map);
+			return SLURM_ERROR;
+		}
+
+		job_iterator = list_iterator_create(job_list);
+		while ((tmp_job_ptr = (struct job_record *) 
+				list_next(job_iterator))) {
+			if (!IS_JOB_RUNNING(tmp_job_ptr) && 
+			    !IS_JOB_SUSPENDED(tmp_job_ptr))
+				continue;
+			if (_is_preemptable(tmp_job_ptr, preempt_job_ptr)) {
+				/* Remove preemptable job now */
+				_rm_job_from_res(future_part, future_usage,
+						 tmp_job_ptr, 2);
+				bit_or(bitmap, orig_map);
+				rc = cr_job_test(job_ptr, bitmap, min_nodes, 
+						 max_nodes, req_nodes, 
+						 SELECT_MODE_WILL_RUN, 
+						 cr_type, job_node_req, 
+						 select_node_cnt,
+						 future_part, future_usage);
+				if (rc == SLURM_SUCCESS)
+					break;
+			}
+		}
+		list_iterator_destroy(job_iterator);
+
+		if (rc == SLURM_SUCCESS) {
+			/* Queue preemption of jobs whose resources are 
+			 * actually used. Ideally we track memory and 
+			 * cores associated with each job, but for now
+			 * just kill all jobs on the allocated nodes. */
+			for (j=0; preempt_job_ptr[j]; j++) {
+				uint32_t *job_id;
+				if (bit_overlap(bitmap, 
+						preempt_job_ptr[j]->
+						node_bitmap) == 0)
+					continue;
+
+				job_id = xmalloc(sizeof(uint32_t));
+				job_id[0] = preempt_job_ptr[j]->job_id;
+				list_append(preempt_job_list, job_id);
+			}
+			rc = EINVAL;	/* Wait until after preemptions */
+		}
+
+		_destroy_part_data(future_part);
+		_destroy_node_data(future_usage, NULL);
+		xfree(preempt_job_ptr);
+	}
+	bit_free(orig_map);
+
+	return rc;
+}
+
 /* _will_run_test - determine when and where a pending job can start, removes 
  *	jobs from node table at termination time and run _test_job() after 
  *	each one. Used by SLURM's sched/backfill plugin and Moab. */
@@ -1136,6 +1237,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	struct job_record **preempt_job_ptr = NULL;
 
 	orig_map = bit_copy(bitmap);
+	if (!orig_map)
+		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes, 
@@ -1347,6 +1450,11 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 	return SLURM_SUCCESS;
 }
 
+static void _preempt_list_del(void *x)
+{
+	xfree(x);
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -1362,7 +1470,8 @@ extern int init(void)
 	fatal("Use SelectType=select/bluegene");
 #endif
 	cr_type = (select_type_plugin_info_t)slurmctld_conf.select_type_param;
-
+	if (!preempt_job_list)
+		preempt_job_list = list_create(_preempt_list_del);
 	verbose("%s loaded with argument %d ", plugin_name, cr_type);
 
 	return SLURM_SUCCESS;
@@ -1379,6 +1488,9 @@ extern int fini(void)
 	xfree(cr_num_core_count);
 	cr_node_num_cores = NULL;
 	cr_num_core_count = NULL;
+	if (preempt_job_list)
+		list_destroy(preempt_job_list);
+	preempt_job_list = NULL;
 
 	verbose("%s shutting down ...", plugin_name);
 
@@ -1515,6 +1627,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 {
 	int rc = EINVAL;
 	uint16_t job_node_req;
+	uint32_t *job_id;
 	bool debug_cpu_bind = false, debug_check = false;
 
 	xassert(bitmap);
@@ -1547,12 +1660,19 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		rc = _test_only(job_ptr, bitmap, min_nodes, max_nodes,
 				req_nodes, job_node_req);
 	} else if (mode == SELECT_MODE_RUN_NOW) {
-		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
-				 req_nodes, mode, cr_type, job_node_req,
-				 select_node_cnt, select_part_record,
-				 select_node_usage);
+		rc = _run_now(job_ptr, bitmap, min_nodes, max_nodes,
+			      req_nodes, job_node_req);
 	} else
 		fatal("select_p_job_test: Mode %d is invalid", mode);
+
+	/* Preempt any needed jobs. Preempting job will start later. */
+	while (preempt_job_list &&
+	       (job_id = list_pop(preempt_job_list))) {
+		/* job preemption must happen outside of cr_mutex so that 
+		 * the resource deallocation can take place */
+		job_preempt_remove(job_id[0]);
+		xfree(job_id);
+	}
 
 #if (CR_DEBUG)
 	if (job_ptr->select_job)
