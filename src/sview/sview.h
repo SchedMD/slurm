@@ -112,7 +112,8 @@ enum { STATUS_ADMIN_MODE,
 };
 
 enum { DISPLAY_NAME,
-       DISPLAY_VALUE 
+       DISPLAY_VALUE, 
+       DISPLAY_FONT 
 };
 
 enum { EDIT_NONE,
@@ -444,4 +445,10 @@ extern void add_display_treestore_line(int update,
 				       GtkTreeStore *treestore,
 				       GtkTreeIter *iter,
 				       const char *name, char *value);
+extern void add_display_treestore_line_with_font(
+	int update,
+	GtkTreeStore *treestore,
+	GtkTreeIter *iter,
+	const char *name, char *value,
+	char *font);
 #endif

@@ -603,7 +603,8 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 {
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 	GtkTreeStore *treestore = 
-		gtk_tree_store_new(2, GTK_TYPE_STRING, GTK_TYPE_STRING);
+		gtk_tree_store_new(3, GTK_TYPE_STRING, 
+				   GTK_TYPE_STRING, GTK_TYPE_STRING);
 	GtkTreeViewColumn *col = gtk_tree_view_column_new();
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
 
@@ -616,6 +617,8 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, 
 					   "text", DISPLAY_NAME);
+	gtk_tree_view_column_add_attribute(col, renderer, 
+					   "font", DISPLAY_FONT);
 	gtk_tree_view_column_set_title(col, "Name");
 	gtk_tree_view_column_set_resizable(col, true);
 	gtk_tree_view_column_set_expand(col, true);
@@ -626,9 +629,19 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, 
 					   "text", DISPLAY_VALUE);
+	gtk_tree_view_column_add_attribute(col, renderer, 
+					   "font", DISPLAY_FONT);
 	gtk_tree_view_column_set_title(col, "Value");
 	gtk_tree_view_column_set_resizable(col, true);
 	gtk_tree_view_column_set_expand(col, true);
+	gtk_tree_view_append_column(tree_view, col);
+
+	col = gtk_tree_view_column_new();
+	renderer = gtk_cell_renderer_text_new();
+	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_set_visible(col, false);
+	gtk_tree_view_column_add_attribute(col, renderer, 
+					   "text", DISPLAY_FONT);
 	gtk_tree_view_append_column(tree_view, col);
 
        	g_object_unref(treestore);
@@ -1214,6 +1227,55 @@ found:
 			   DISPLAY_NAME, name, 
 			   DISPLAY_VALUE, value,
 			   -1);
+
+	return;
+}
+
+extern void add_display_treestore_line_with_font(
+	int update,
+	GtkTreeStore *treestore,
+	GtkTreeIter *iter,
+	const char *name, char *value,
+	char *font)
+{
+	if(!name) {
+		g_print("error, name = %s and value = %s\n",
+			name, value);
+		return;
+	}
+	if(update) {
+		char *display_name = NULL;
+		GtkTreePath *path = gtk_tree_path_new_first();
+		gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), iter, path);
 	
+		while(1) {
+			/* search for the jobid and check to see if 
+			   it is in the list */
+			gtk_tree_model_get(GTK_TREE_MODEL(treestore), iter,
+					   DISPLAY_NAME, 
+					   &display_name, -1);
+			if(!strcmp(display_name, name)) {
+				/* update with new info */
+				g_free(display_name);
+				goto found;
+			}
+			g_free(display_name);
+				
+			if(!gtk_tree_model_iter_next(GTK_TREE_MODEL(treestore),
+						     iter)) {
+				return;
+			}
+		}
+		
+	} else {
+		gtk_tree_store_append(treestore, iter, NULL);
+	}
+found:
+	gtk_tree_store_set(treestore, iter,
+			   DISPLAY_NAME, name, 
+			   DISPLAY_VALUE, value,
+			   DISPLAY_FONT, font,
+			   -1);
+
 	return;
 }
