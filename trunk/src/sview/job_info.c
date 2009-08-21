@@ -132,9 +132,6 @@ enum {
 	SORTID_ROTATE,
 #endif
 	SORTID_SHARED,
-#ifdef HAVE_BG
-	SORTID_START,
-#endif
 	SORTID_START_TIME,
 	SORTID_STATE,
 	SORTID_STATE_NUM,
@@ -173,8 +170,6 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_BLOCK, "BG Block", TRUE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GEOMETRY, "Geometry", 
-	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_START, "Start", 
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_ROTATE, "Rotate", 
 	 FALSE, EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
@@ -760,42 +755,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 					    (void *) &geo);
 		
 		break;
-	case SORTID_START:
-		type = "start";
-		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
-		for (j=0; j<SYSTEM_DIMENSIONS; j++)
-			geo[j] = (uint16_t) NO_VAL;
-		for (j=0; j<SYSTEM_DIMENSIONS; j++) {
-			if (token == NULL) {
-				//error("insufficient dimensions in "
-				//      "Geometry");
-				goto return_error;
-			}
-			geo[j] = (uint16_t) atoi(token);
-			if (geo[j] <= 0) {
-				//error("invalid --geometry argument");
-				xfree(original_ptr);
-				goto return_error;
-				break;
-			}
-			geometry_tmp = next_ptr;
-			token = strtok_r(geometry_tmp, delimiter, 
-					 &next_ptr);
-		}
-		if (token != NULL) {
-			//error("too many dimensions in Geometry");
-			xfree(original_ptr);
-			goto return_error;
-		}
-		
-		if(!job_msg->select_jobinfo)
-			job_msg->select_jobinfo 
-				= select_g_select_jobinfo_alloc();
-		select_g_select_jobinfo_set(job_msg->select_jobinfo,
-					    SELECT_JOBDATA_START,
-					    (void *) &geo);
-		
-		break;
 	case SORTID_ROTATE:
 		type = "rotate";	
 		if (!strcasecmp(new_text, "yes")) {
@@ -1301,14 +1260,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 					   SELECT_PRINT_GEOMETRY));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_START), 
-				   select_g_select_jobinfo_sprint(
-					   job_ptr->select_jobinfo, 
-					   tmp_char, 
-					   sizeof(tmp_char), 
-					   SELECT_PRINT_START));
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_job,
 						 SORTID_MAX_PROCS), 
 				   select_g_select_jobinfo_sprint(
 					   job_ptr->select_jobinfo, 
@@ -1575,13 +1526,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   tmp_char, 
 				   sizeof(tmp_char), 
 				   SELECT_PRINT_GEOMETRY), -1);
-	gtk_tree_store_set(treestore, iter, 
-			   SORTID_START, 
-			   select_g_select_jobinfo_sprint(
-				   job_ptr->select_jobinfo, 
-				   tmp_char, 
-				   sizeof(tmp_char), 
-				   SELECT_PRINT_START), -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_MAX_PROCS, 
 			   select_g_select_jobinfo_sprint(

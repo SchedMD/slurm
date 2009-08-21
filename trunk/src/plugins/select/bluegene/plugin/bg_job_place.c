@@ -828,7 +828,6 @@ static int _find_best_block_match(List block_list,
 {
 	bg_record_t *bg_record = NULL;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
-	uint16_t start[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 0;
 	uint32_t req_procs = job_ptr->num_procs;
 	ba_request_t request; 
@@ -838,7 +837,6 @@ static int _find_best_block_match(List block_list,
 	int check_image = 1;
 	uint32_t max_procs = (uint32_t)NO_VAL;
 	char tmp_char[256];
-	int start_req = 0;
 	static int total_cpus = 0;
 #ifdef HAVE_BGL
 	char *blrtsimage = NULL;        /* BlrtsImage for this request */
@@ -871,12 +869,6 @@ static int _find_best_block_match(List block_list,
 		return SLURM_ERROR;
 	}
 	
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_START, &start);
-		
-	if(start[X] != (uint16_t)NO_VAL)
-		start_req = 1;
-
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
@@ -923,9 +915,6 @@ static int _find_best_block_match(List block_list,
 	memset(&request, 0, sizeof(ba_request_t));
 
 	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-		request.start[i] = start[i];
-	
-	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 		request.geometry[i] = req_geometry[i];
 
 	request.deny_pass = (uint16_t)NO_VAL;
@@ -936,7 +925,7 @@ static int _find_best_block_match(List block_list,
 	request.conn_type = conn_type;
 	request.rotate = rotate;
 	request.elongate = true;
-	request.start_req = start_req;
+
 #ifdef HAVE_BGL
 	request.blrtsimage = blrtsimage;
 #endif

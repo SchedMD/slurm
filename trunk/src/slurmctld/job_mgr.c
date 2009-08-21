@@ -5359,33 +5359,35 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	 char *image = NULL;
 
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-			      SELECT_JOBDATA_ROTATE, &rotate);
+				     SELECT_JOBDATA_ROTATE, &rotate);
 	 if (rotate != (uint16_t) NO_VAL) {
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
 		 else {
 			 info("update_job: setting rotate to %u for "
 			      "jobid %u", rotate, job_ptr->job_id);
-			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					      SELECT_JOBDATA_ROTATE, &rotate);
+			 select_g_select_jobinfo_set(
+				 job_ptr->select_jobinfo,
+				 SELECT_JOBDATA_ROTATE, &rotate);
 		 }
 	 }
 
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-			      SELECT_JOBDATA_REBOOT, &reboot);
+				     SELECT_JOBDATA_REBOOT, &reboot);
 	 if (reboot != (uint16_t) NO_VAL) {
-		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
-		else {
-			info("update_job: setting reboot to %u for "
-			     "jobid %u", reboot, job_ptr->job_id);
-			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					     SELECT_JOBDATA_REBOOT, &reboot);
-		}
-	}
+		 if (!IS_JOB_PENDING(job_ptr))
+			 error_code = ESLURM_DISABLED;
+		 else {
+			 info("update_job: setting reboot to %u for "
+			      "jobid %u", reboot, job_ptr->job_id);
+			 select_g_select_jobinfo_set(
+				 job_ptr->select_jobinfo,
+				 SELECT_JOBDATA_REBOOT, &reboot);
+		 }
+	 }
 	
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-			      SELECT_JOBDATA_GEOMETRY, geometry);
+				     SELECT_JOBDATA_GEOMETRY, geometry);
 	 if (geometry[0] != (uint16_t) NO_VAL) {
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
@@ -5407,45 +5409,23 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 error_code = ESLURM_ACCESS_DENIED;
 		 }
 	 }
-	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-			      SELECT_JOBDATA_START, geometry);
-	 if (geometry[0] != (uint16_t) NO_VAL) {
-		 if (!IS_JOB_PENDING(job_ptr))
-			 error_code = ESLURM_DISABLED;
-		 else if (super_user) {
-			 uint32_t i, tot = 1;
-			 for (i=0; i<SYSTEM_DIMENSIONS; i++)
-				 tot *= geometry[i];
-			 info("update_job: setting start to %ux%ux%u "
-			      "for job %u", 
-			      geometry[0], geometry[1], 
-			      geometry[2], job_ptr->job_id);
-			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_GEOMETRY,
-						     geometry);
-			 detail_ptr->min_nodes = tot;
-		 } else {
-			 error("Attempt to change geometry for job %u",
-			       job_specs->job_id);
-			 error_code = ESLURM_ACCESS_DENIED;
-		 }
-	 }
 
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-			      SELECT_JOBDATA_BLRTS_IMAGE, &image);
+				     SELECT_JOBDATA_BLRTS_IMAGE, &image);
 	 if (image) {
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
 		 else {
 			 info("update_job: setting BlrtsImage to %s for "
 			      "jobid %u", image, job_ptr->job_id);
-			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						SELECT_JOBDATA_BLRTS_IMAGE, 
-						image);
+			 select_g_select_jobinfo_set(
+				 job_ptr->select_jobinfo,
+				 SELECT_JOBDATA_BLRTS_IMAGE, 
+				 image);
 		 }
 	 }
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-			      SELECT_JOBDATA_LINUX_IMAGE, &image);
+				     SELECT_JOBDATA_LINUX_IMAGE, &image);
 	 if (image) {
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
@@ -5453,8 +5433,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			 info("update_job: setting LinuxImage to %s for "
 			      "jobid %u", image, job_ptr->job_id);
 			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						SELECT_JOBDATA_LINUX_IMAGE,
-						image);
+						     SELECT_JOBDATA_LINUX_IMAGE,
+						     image);
 		 }
 	 }
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
@@ -5465,22 +5445,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		 else {
 			 info("update_job: setting MloaderImage to %s for "
 			      "jobid %u", image, job_ptr->job_id);
-			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					      SELECT_JOBDATA_MLOADER_IMAGE,
-					      image);
+			 select_g_select_jobinfo_set(
+				 job_ptr->select_jobinfo,
+				 SELECT_JOBDATA_MLOADER_IMAGE,
+				 image);
 		 }
 	 }
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
-			      SELECT_JOBDATA_RAMDISK_IMAGE, &image);
+				     SELECT_JOBDATA_RAMDISK_IMAGE, &image);
 	 if (image) {
 		 if (!IS_JOB_PENDING(job_ptr))
 			 error_code = ESLURM_DISABLED;
 		 else {
 			 info("update_job: setting RamdiskImage to %s for "
 			      "jobid %u", image, job_ptr->job_id);
-			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					      SELECT_JOBDATA_RAMDISK_IMAGE,
-					      image);
+			 select_g_select_jobinfo_set(
+				 job_ptr->select_jobinfo,
+				 SELECT_JOBDATA_RAMDISK_IMAGE,
+				 image);
 		 }
 	 }
  }

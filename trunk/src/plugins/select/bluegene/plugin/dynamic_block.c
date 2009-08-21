@@ -644,28 +644,6 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			continue;
 		}
 
-		if(request->start_req) {
-			if ((request->start[X] != bg_record->start[X])
-			    || (request->start[Y] != bg_record->start[Y])
-			    || (request->start[Z] != bg_record->start[Z])) {
-				debug4("small got %c%c%c looking for %c%c%c",
-				       alpha_num[bg_record->start[X]],
-				       alpha_num[bg_record->start[Y]],
-				       alpha_num[bg_record->start[Z]],
-				       alpha_num[request->start[X]],
-				       alpha_num[request->start[Y]],
-				       alpha_num[request->start[Z]]);
-				continue;
-			}
-			debug3("small found %c%c%c looking for %c%c%c",
-			       alpha_num[bg_record->start[X]],
-			       alpha_num[bg_record->start[Y]],
-			       alpha_num[bg_record->start[Z]],
-			       alpha_num[request->start[X]],
-			       alpha_num[request->start[Y]],
-			       alpha_num[request->start[Z]]);
-		}
-
 		if(bg_record->node_cnt == cnodes) {
 			debug2("found it here %s, %s",
 			       bg_record->bg_block_id,

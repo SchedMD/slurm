@@ -289,7 +289,6 @@ enum node_use_type {
 };
 
 enum select_jobdata_type {
-	SELECT_JOBDATA_START,	/* data-> uint16_t start[SYSTEM_DIMENSIONS] */
 	SELECT_JOBDATA_GEOMETRY,/* data-> uint16_t geometry[SYSTEM_DIMENSIONS] */
 	SELECT_JOBDATA_ROTATE,	/* data-> uint16_t rotate */
 	SELECT_JOBDATA_CONN_TYPE,	/* data-> uint16_t connection_type */
