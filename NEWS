@@ -186,6 +186,12 @@ documents those changes that are of interest to users and admins.
     SLURM_TASKS_PER_NODE
  -- env var SLURM_CPUS_ON_NODE is now set correctly depending on the 
     fastschedule parameter.
+ -- Correction to topology/3d_torus plugin calculation when coordinate value 
+    exceeds "9" (i.e. a hex value).
+ -- In sched/wiki2 - Strip single and double quotes out of a node's reason 
+    string to avoid confusing Moab's parser.
+ -- Modified scancel to cancel any pending jobs before cancelling any other
+ -- updated sview config info
 
 * Changes in SLURM 2.0.4
 ========================
@@ -215,8 +221,6 @@ documents those changes that are of interest to users and admins.
     association.
  -- Do not set a job's virtual memory limit based upon the job's specified
     memory limit (which should be a real memory limit, not virtual).
- -- In sched/wiki2 - Strip single and double quotes out of a node's reason 
-    string to avoid confusing Moab's parser.
  -- BLUEGENE - fix for sinfo/sview for displaying proper node count for nodes 
     in draining state.
  -- Fix for sview when viewing a certain part of a group (like 1 job) so it 
