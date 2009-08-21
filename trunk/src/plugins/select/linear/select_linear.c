@@ -416,7 +416,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 		threads = node_ptr->threads;
 	}
 
-#if 0
+#if SELECT_DEBUG
 	info("host %s User_ sockets %u cores %u threads %u ", 
 	     node_ptr->name, max_sockets, max_cores, max_threads);
 
@@ -432,7 +432,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 			SELECT_TYPE_INFO_NONE,
 			job_ptr->job_id, node_ptr->name);
 
-#if 0
+#if SELECT_DEBUG
 	debug3("avail_cpus index %d = %d (out of %d %d %d %d)",
 				index, avail_cpus,
 				cpus, sockets, cores, threads);
@@ -809,9 +809,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* tightest fit (less resource waste) OR */
 			/* nothing yet large enough, but this is biggest */
 			if ((best_fit_nodes == 0) ||	
-			    ((best_fit_req == -1) && (consec_req[i] != -1)) ||
-			    (sufficient && (best_fit_sufficient == 0)) ||
-			    (sufficient && (consec_cpus[i] < best_fit_cpus)) ||	
+			    ((best_fit_req == -1) && (consec_req[i] != -1))  ||
+			    (sufficient && (best_fit_sufficient == 0))       ||
+			    (sufficient && (consec_cpus[i] < best_fit_cpus)) ||
 			    ((sufficient == 0) && 
 			     (consec_cpus[i] > best_fit_cpus))) {
 				best_fit_cpus = consec_cpus[i];
@@ -1692,7 +1692,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 					      orig_map, bitmap, 
 					      max_run_job, 
 					      max_run_job + sus_jobs);
-#if 0
+#if SELECT_DEBUG
 {			char *node_list = bitmap2node_name(bitmap);
 			info("_run_job %u iter:%d cnt:%d nodes:%s", 
 			     job_ptr->job_id, max_run_job, j, node_list);
@@ -1734,13 +1734,14 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 				_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 						   "_will_run_test", 
 						   _job_preemption_killing());
-				j = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, 
-						      bitmap, (max_share - 1), 
+				j = _job_count_bitmap(exp_node_cr, job_ptr, 
+						      orig_map, bitmap, 
+						      (max_share - 1), 
 						      NO_SHARE_LIMIT);
 				if (j < min_nodes)
 					continue;
-				rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
-					       req_nodes);
+				rc = _job_test(job_ptr, bitmap, min_nodes, 
+					       max_nodes, req_nodes);
 				if (rc == SLURM_SUCCESS)
 					break;
 			}
@@ -1748,18 +1749,20 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		list_iterator_destroy(job_iterator);
 
 		if ((rc == SLURM_SUCCESS) && _job_preemption_killing()) {
-			/* Queue preemption of jobs whose resources actually used */
+			/* Queue preemption of jobs whose resources are 
+			 * actually used */
 			for (j=0; preempt_job_ptr[j]; j++) {
 				uint32_t *job_id;
 				if (bit_overlap(bitmap, 
-						preempt_job_ptr[j]->node_bitmap) == 0)
+						preempt_job_ptr[j]->
+						node_bitmap) == 0)
 					continue;
 
 				job_id = xmalloc(sizeof(uint32_t));
 				job_id[0] = preempt_job_ptr[j]->job_id;
 				list_append(preempt_job_list, job_id);
 			}
-			rc = EINVAL;	/* Can't schedule until after preemptions */
+			rc = EINVAL;	/* Wait until after preemptions */
 		}
 		_free_node_cr(exp_node_cr);
 	}
