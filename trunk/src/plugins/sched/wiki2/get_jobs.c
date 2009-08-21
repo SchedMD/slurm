@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -414,7 +414,7 @@ static void	_get_job_comment(struct job_record *job_ptr,
 	/* SHARED NODES */
 	if (cr_enabled)	{			/* consumable resources */
 		if (job_ptr->part_ptr &&
-		    (job_ptr->part_ptr->max_share == 0))	/* Exclusive use */
+		    (job_ptr->part_ptr->max_share == 0))  /* Exclusive use */
 			sharing = 0;
 		else if (job_ptr->details && job_ptr->details->shared)
 			sharing = 1;

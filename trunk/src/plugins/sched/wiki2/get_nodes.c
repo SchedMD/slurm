@@ -293,9 +293,9 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 		/* Strip out any quotes, they confuse Moab */
 		char *reason, *bad_char;
 		reason = xstrdup(node_ptr->reason);
-		while ((bad_char = strchr(node_ptr->reason, '\'')))
+		while ((bad_char = strchr(reason, '\'')))
 			bad_char[0] = ' ';
-		while ((bad_char = strchr(node_ptr->reason, '\"')))
+		while ((bad_char = strchr(reason, '\"')))
 			bad_char[0] = ' ';
 		snprintf(tmp, sizeof(tmp), "CAT=\"%s\";", reason);
 		xstrcat(buf, tmp);

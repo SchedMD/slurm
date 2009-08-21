@@ -52,7 +52,7 @@ static int _coord(char coord)
 	if ((coord >= '0') && (coord <= '9'))
 		return (coord - '0');
 	if ((coord >= 'A') && (coord <= 'Z'))
-		return (coord - 'A');
+		return (coord - 'A' + 10);
 	return -1;
 }
 
