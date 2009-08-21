@@ -43,12 +43,15 @@
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/plugin.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/slurmctld.h"
 
 const char	plugin_name[]	= "Preempt by Quality Of Service (QOS)";
 const char	plugin_type[]	= "preempt/qos";
 const uint32_t	plugin_version	= 100;
 
+static bool _qos_preemptable(struct job_record *preemptee, 
+			     struct job_record *preemptor);
 static void _sort_pre_job_list(struct job_record **pre_job_p, 
 			       int pre_job_inx);
 
@@ -104,10 +107,7 @@ extern struct job_record **find_preemptable_jobs(struct job_record *job_ptr)
 	while ((job_p = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_p) && !IS_JOB_SUSPENDED(job_p))
 			continue;
-/* FIXME: Change to some QOS comparison */
-		if ((job_p->account == NULL)	|| 
-		    (job_ptr->account == NULL)	||
-		    (job_p->account[0] >= job_ptr->account[0]))
+		if (!_qos_preemptable(job_p, job_ptr))
 			continue;
 		if ((job_p->node_bitmap == NULL) ||
 		    (bit_overlap(job_p->node_bitmap, 
@@ -134,6 +134,20 @@ extern struct job_record **find_preemptable_jobs(struct job_record *job_ptr)
 	return pre_job_p;
 }
 
+static bool _qos_preemptable(struct job_record *preemptee, 
+			     struct job_record *preemptor)
+{
+	acct_qos_rec_t *qos_ee = preemptee->qos_ptr;
+	acct_qos_rec_t *qos_or = preemptee->qos_ptr;
+
+	if ((qos_ee == NULL) || (qos_or == NULL) ||
+	    (qos_or->preempt_bitstr == NULL)     ||
+	    (!bit_test(qos_or->preempt_bitstr, qos_ee->id)))
+		return false;
+	return true;
+
+}
+
 /* Sort a list of jobs, lowest priority jobs are first */
 static void _sort_pre_job_list(struct job_record **pre_job_p, 
 			       int pre_job_inx)
@@ -149,9 +163,9 @@ static void _sort_pre_job_list(struct job_record **pre_job_p,
 	 * alternate algorithms could base job priority upon run time
 	 * or other factors */
 	for (i=0; i<pre_job_inx; i++) {
-/* FIXME: Change to some numeric QOS value */
-		if (pre_job_p[i]->account)
-			job_prio[i] = pre_job_p[i]->account[0] << 16;
+		acct_qos_rec_t *qos_ee = pre_job_p[i]->qos_ptr;
+		if (qos_ee)
+			job_prio[i] = (qos_ee->priority & 0xffff) << 16;
 		else
 			job_prio[i] = 0;
 

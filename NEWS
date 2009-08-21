@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
     Former users of SchedType=sched/gang should set SchedType=sched/backfill,
     PreemptType=preempt/partition_prio and PreemptMode=gang,suspend. See
     web and slurm.conf man page for other options.
+    PreemptType=preempt/qos uses Quality Of Service information in database.
  -- In select/linear, optimize job placement across partitions.
  -- If the --partition option is used with the sinfo or squeue command then
     print information about even hidden partitions.
