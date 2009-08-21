@@ -3419,7 +3419,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 					     buffer);
 	} else {
 		job_desc_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
-#ifdef HAVE_BL
+#ifdef HAVE_BG
 		if(job_desc_ptr->geometry[0] != (uint16_t) NO_VAL)
 			select_g_select_jobinfo_set(
 				job_desc_ptr->select_jobinfo, 
@@ -3576,7 +3576,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	/* These are set so we don't confuse them later for what is
 	 * set in the select_jobinfo structure.
 	 */
-#ifdef HAVE_BL
+#ifdef HAVE_BG
 	job_desc_ptr->geometry[0] = (uint16_t)NO_VAL;
 #endif
 	job_desc_ptr->conn_type = (uint16_t)NO_VAL;
