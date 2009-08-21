@@ -289,8 +289,9 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 
 	slurm_make_time_str((time_t *)&slurm_ctl_conf_ptr->last_update, 
 			    temp_str, sizeof(temp_str));
-	add_display_treestore_line(update, treestore, &iter, 
-				   "Configuration data as of", temp_str);
+	add_display_treestore_line_with_font(
+		update, treestore, &iter, 
+		"Configuration data as of", temp_str, "bold");
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->accounting_storage_enforce);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -525,7 +526,7 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 					   "MaxMemPerNode", temp_str);
 	} else {
 		add_display_treestore_line(update, treestore, &iter, 
-					   "MaxMemPerCPU", "UNLIMITED");
+					   "MaxMemPerCPU", "UNLIMITED"); 
 	}
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->msg_timeout);
@@ -845,8 +846,8 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	if (!slurm_ctl_conf_ptr->select_conf_key_pairs)
 		return;
 
-	add_display_treestore_line(update, treestore, &iter, 
-				   select_title, NULL);
+	add_display_treestore_line_with_font(update, treestore, &iter, 
+				   select_title, NULL, "bold");
 	itr = list_iterator_create(
 		(List)slurm_ctl_conf_ptr->select_conf_key_pairs);
 	while((key_pair = list_next(itr))) {
