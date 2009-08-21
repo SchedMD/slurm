@@ -728,13 +728,6 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 				goto clear_bit;
 			}
 		}
-		
-		/* if priority_selection (gang scheduling) has been configured,
-		 * then we cannot rule out nodes just because Shared=NO
-		 * (NODE_CR_ONE_ROW) or Shared=EXCLUSIVE(NODE_CR_RESERVED)
-		 */
-		if (cr_preemption_enabled())
-			continue;
 
 		/* exclusive node check */
 		if (node_usage[i].node_state >= NODE_CR_RESERVED) {

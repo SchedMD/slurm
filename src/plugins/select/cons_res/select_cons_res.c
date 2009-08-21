@@ -869,8 +869,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			select_node_usage[i].alloc_memory +=
 						job->memory_allocated[n];
 			if ((select_node_usage[i].alloc_memory >
-			     select_node_record[i].real_memory)	&&
-			     !cr_preemption_killing()) {
+			     select_node_record[i].real_memory)) {
 				error("error: node %s mem is overallocated "
 				      "(%u) for job %u",
 				      select_node_record[i].node_ptr->name,
@@ -1349,30 +1348,9 @@ static bool _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 	cpu_begin = cr_get_coremap_offset(node_i);
 	cpu_end   = cr_get_coremap_offset(node_i+1);
 	
-	if (select_node_usage[node_i].node_state >= NODE_CR_RESERVED) {
-		if (!cr_preemption_enabled())
-			return false;
-		/* job_preemption has been enabled:
-		 * check to see if the existing job that reserved
-		 * this node is in a partition with a priority that
-		 * is equal-to or greater-than this partition. If it
-		 * is, then this node is NOT available. Otherwise
-		 * this node is available.
-		 */
-		struct part_res_record *s_ptr;
-		for (s_ptr = select_part_record; s_ptr; s_ptr = s_ptr->next) {
-			if (s_ptr->part_ptr->priority 
-			    < p_ptr->part_ptr->priority)
-				continue;
-			if (!s_ptr->row || !s_ptr->row[0].row_bitmap)
-				continue;
-			for (i = cpu_begin; i < cpu_end; i++) {
-				if (bit_test(s_ptr->row[0].row_bitmap, i))
-					return false;
-			}
-		}
-		return true;
-	}
+	if (select_node_usage[node_i].node_state >= NODE_CR_RESERVED)
+		return false;
+
 	if (select_node_usage[node_i].node_state >= NODE_CR_ONE_ROW) {
 		/* An existing job has requested that it's CPUs
 		 * NOT be shared, but any other CPUs on the same
