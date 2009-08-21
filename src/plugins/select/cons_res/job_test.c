@@ -715,8 +715,10 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 
 		/* node-level memory check */
 		if ((job_ptr->details->job_min_memory) &&
-		    ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) ||
-		     (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
+		    ((cr_type == CR_CORE_MEMORY) || 
+		     (cr_type == CR_CPU_MEMORY)  ||
+		     (cr_type == CR_MEMORY)      || 
+		     (cr_type == CR_SOCKET_MEMORY))) {
 			free_mem  = select_node_record[i].real_memory;
 			free_mem -= node_usage[i].alloc_memory;
 			if (free_mem < min_mem) {
@@ -737,7 +739,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		/* exclusive node check */
 		if (node_usage[i].node_state >= NODE_CR_RESERVED) {
 			debug3("cons_res: _vns: node %s in exclusive use",
-				select_node_record[i].node_ptr->name);
+			       select_node_record[i].node_ptr->name);
 			goto clear_bit;
 		
 		/* non-resource-sharing node check */
@@ -761,7 +763,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			if (job_node_req == NODE_CR_RESERVED) {
 				if ( _is_node_busy(cr_part_ptr, i, 0) ) {
 					debug3("cons_res: _vns: node %s busy",
-					  select_node_record[i].node_ptr->name);
+					       select_node_record[i].
+					       node_ptr->name);
 					goto clear_bit;
 				}
 			} else if (job_node_req == NODE_CR_ONE_ROW) {
@@ -769,7 +772,8 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 				 * in sharing partitions */
 				if ( _is_node_busy(cr_part_ptr, i, 1) ) {
 					debug3("cons_res: _vns: node %s vbusy",
-					  select_node_record[i].node_ptr->name);
+					       select_node_record[i].
+					       node_ptr->name);
 					goto clear_bit;
 				}
 			}
@@ -881,7 +885,8 @@ uint32_t _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 			size++;
 			if (size >= array_size) {
 				array_size += CR_FREQ_ARRAY_INCREMENT;
-				xrealloc(cpu_cnt, array_size *sizeof(uint16_t));
+				xrealloc(cpu_cnt, 
+					 array_size * sizeof(uint16_t));
 				xrealloc(freq, array_size * sizeof(uint32_t));
 			}
 			cpu_cnt[size] = cpu_count;
@@ -894,7 +899,8 @@ uint32_t _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 			size++;
 			if (size >= array_size) {
 				array_size += CR_FREQ_ARRAY_INCREMENT;
-				xrealloc(cpu_cnt, array_size *sizeof(uint16_t));
+				xrealloc(cpu_cnt, 
+					 array_size *sizeof(uint16_t));
 				xrealloc(freq, array_size * sizeof(uint32_t));
 			}
 			freq[size]++;
@@ -1742,8 +1748,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 */
 	free_cores = bit_copy(avail_cores);
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
-				   bitmap, cr_node_cnt, free_cores,
-				   node_usage, cr_type, test_only);
+				  bitmap, cr_node_cnt, free_cores,
+				  node_usage, cr_type, test_only);
 	if (cpu_count == NULL) {
 		/* job cannot fit */
 		FREE_NULL_BITMAP(orig_map);
@@ -1753,8 +1759,6 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		       "insufficient resources");
 		return SLURM_ERROR;
 	} else if (test_only) {
-		/* FIXME: does "test_only" expect struct_job_res
-		 * to be filled out? For now we assume NO */
 		FREE_NULL_BITMAP(orig_map);
 		FREE_NULL_BITMAP(free_cores);
 		FREE_NULL_BITMAP(avail_cores);
