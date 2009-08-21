@@ -1250,8 +1250,8 @@ extern void add_display_treestore_line_with_font(
 	char *font)
 {
 	if(!name) {
-		g_print("error, name = %s and value = %s\n",
-			name, value);
+/* 		g_print("error, name = %s and value = %s\n", */
+/* 			name, value); */
 		return;
 	}
 	if(update) {

@@ -848,6 +848,8 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	if (!slurm_ctl_conf_ptr->select_conf_key_pairs)
 		return;
 
+	add_display_treestore_line(update, treestore, &iter, 
+				   "", NULL);
 	add_display_treestore_line_with_font(update, treestore, &iter, 
 				   select_title, NULL, "bold");
 	itr = list_iterator_create(
