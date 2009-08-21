@@ -554,18 +554,8 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 	struct part_cr_record *part_cr_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	uint32_t alloc_mem = 0, job_mem = 0, avail_mem = 0;
-	bool exclusive;
 
 	xassert(node_cr_ptr);
-
-	/* Jobs submitted to a partition with 
-	 * Shared=FORCE:1 may share resources with jobs in other partitions
-	 * Shared=NO  may not share resources with jobs in other partitions */
-	if (run_job_cnt || (job_ptr->part_ptr->max_share & SHARED_FORCE))
-		exclusive = false;
-	else
-		exclusive = true;
-
 	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY)) {
 		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->job_min_memory &
@@ -612,21 +602,9 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 		total_run_jobs = 0;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			if (exclusive) {     /* count jobs in all partitions */
-				total_run_jobs += part_cr_ptr->run_job_cnt;
-				total_jobs     += part_cr_ptr->tot_job_cnt;
-			} else if (part_cr_ptr->part_ptr == job_ptr->part_ptr){
-				total_run_jobs += part_cr_ptr->run_job_cnt;
-				total_jobs     += part_cr_ptr->tot_job_cnt; 
-				break;
-			}
+			total_run_jobs += part_cr_ptr->run_job_cnt;
+			total_jobs     += part_cr_ptr->tot_job_cnt;
 			part_cr_ptr = part_cr_ptr->next;
-		}
-		if ((run_job_cnt != 0) && (part_cr_ptr == NULL)) {
-			error("_job_count_bitmap: could not find "
-				"partition %s for node %s",
-				job_ptr->part_ptr->name,
-				node_record_table_ptr[i].name);
 		}
 		if ((total_run_jobs <= run_job_cnt) &&
 		    (total_jobs     <= tot_job_cnt)) {
@@ -1714,8 +1692,13 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 					      orig_map, bitmap, 
 					      max_run_job, 
 					      max_run_job + sus_jobs);
-			debug3("select/linear: job_test: found %d nodes for "
-			       "job %u", j, job_ptr->job_id);
+#if 0
+{			char *node_list = bitmap2node_name(bitmap);
+			info("_run_job %u iter:%d cnt:%d nodes:%s", 
+			     job_ptr->job_id, max_run_job, j, node_list);
+			xfree(node_list);
+}
+#endif
 			if ((j == prev_cnt) || (j < min_nodes))
 				continue;
 			prev_cnt = j;
