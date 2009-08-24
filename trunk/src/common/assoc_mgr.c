@@ -2071,6 +2071,11 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 				break;
 			}
 			list_append(assoc_mgr_qos_list, object);
+
+			/* Since in the database id's don't start at 1
+			   instead of 0 we need to ignore the 0 bit and start
+			   with 1 so increase the count by 1.
+			*/
 			if(object->id+1 > g_qos_count) {
 				resize_qos_bitstr = 1;
 				g_qos_count = object->id+1;
