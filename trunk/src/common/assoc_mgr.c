@@ -2120,7 +2120,7 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 
 	if(resize_qos_bitstr) {
 		list_iterator_reset(itr);
-		while((rec = list_next(itr))) {
+		while((object = list_next(itr))) {
 			if(!object->preempt_bitstr) 
 				continue;
 
