@@ -1055,7 +1055,9 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	uint32_t delta_t, i, j;
 	time_t s_time1, s_time2, e_time1, e_time2;
 
-	if ((!node_bitmap) || (flags & RESERVE_FLAG_MAINT))
+	if ((flags & RESERVE_FLAG_MAINT)   || 
+	    (flags & RESERVE_FLAG_OVERLAP) ||
+	    (!node_bitmap))
 		return rc;
 
 	iter = list_iterator_create(resv_list);
@@ -1162,6 +1164,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_desc_ptr->flags = 0;
 	else {
 		resv_desc_ptr->flags &= RESERVE_FLAG_MAINT    | 
+					RESERVE_FLAG_OVERLAP  |
 					RESERVE_FLAG_IGN_JOBS | 
 					RESERVE_FLAG_DAILY    | 
 					RESERVE_FLAG_WEEKLY;
@@ -1367,6 +1370,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_MAINT;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_MAINT)
 			resv_ptr->flags &= (~RESERVE_FLAG_MAINT);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)
+			resv_ptr->flags |= RESERVE_FLAG_OVERLAP;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)
 			resv_ptr->flags |= RESERVE_FLAG_IGN_JOBS;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_IGN_JOB)
