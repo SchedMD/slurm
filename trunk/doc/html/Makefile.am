@@ -37,6 +37,7 @@ generated_html = \
 	plugins.html \
 	power_save.html \
 	preempt.html \
+	preemption_plugins.html \
 	proctrack_plugins.html \
 	priority_multifactor.html \
 	priority_plugins.html \

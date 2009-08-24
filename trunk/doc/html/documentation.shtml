@@ -66,6 +66,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="checkpoint_plugins.html">Job Checkpoint Plugin Programmer Guide</a></li>
 <li><a href="jobcompplugins.html">Job Completion Logging Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.html">MPI Plugin Programmer Guide</a></li>
+<li><a href="preemption_plugins.html">Preemption Plugin Programmer Guide</a></li>
 <li><a href="priority_plugins.html">Priority Plugin Programmer Guide</a></li>
 <li><a href="proctrack_plugins.html">Process Tracking Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
@@ -76,6 +77,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 March 2009</p>
+<p style="text-align:center;">Last modified 24 August 2009</p>
 
 <!--#include virtual="footer.txt"-->
