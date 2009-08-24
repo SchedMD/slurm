@@ -156,6 +156,17 @@ static uint32_t _parse_flags(const char *flagstr)
 				outflags |= RESERVE_FLAG_NO_MAINT;
 			else 
 				outflags |= RESERVE_FLAG_MAINT;
+		} else if ((strncasecmp(curr, "Overlap",MAX(taglen,1)) 
+			    == 0) && (!flip)) {
+			curr += taglen;
+			outflags |= RESERVE_FLAG_OVERLAP;
+		} else if (strncasecmp(curr, "Ignore_Jobs", MAX(taglen,1)) 
+			   == 0) {
+			curr += taglen;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_IGN_JOB;
+			else 
+				outflags |= RESERVE_FLAG_IGN_JOBS;
 		} else if (strncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)

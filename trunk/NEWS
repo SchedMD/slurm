@@ -70,7 +70,9 @@ documents those changes that are of interest to users and admins.
  -- Log fatal errors from slurmd and slurmctld to syslog.
  -- Added error detection and cleanup for the case in which a compute node is 
     rebooted and restarts its slurmd before its "down" state is noticed.
- -- BLUEGENE - remove vestigal start location from jobinfo for bluegene systems.
+ -- BLUEGENE systems only - remove vestigal start location from jobinfo.
+ -- Add reservation flag of "OVERLAP" to permit a new reservation to use
+    nodes already in another reservation.
 
 * Changes in SLURM 2.1.0-pre2
 =============================

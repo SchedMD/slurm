@@ -1138,15 +1138,16 @@ void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
  * Resource reservation data structures.
  * Create, show, modify and delete functions are required
  */
-#define RESERVE_FLAG_MAINT	0x0001		/* Set MAINT flag */
-#define RESERVE_FLAG_NO_MAINT	0x0002		/* Clear MAINT flag */
-#define RESERVE_FLAG_DAILY	0x0004		/* Set DAILY flag */
-#define RESERVE_FLAG_NO_DAILY	0x0008		/* Clear DAILY flag */
-#define RESERVE_FLAG_WEEKLY	0x0010		/* Set WEEKLY flag */
-#define RESERVE_FLAG_NO_WEEKLY	0x0020		/* Clear WEEKLY flag */
-#define RESERVE_FLAG_IGN_JOBS	0x0040		/* Ignore running jobs */
-#define RESERVE_FLAG_NO_IGN_JOB 0x0080          /* Clear ignore running jobs */
-#define RESERVE_FLAG_SPEC_NODES 0x8000		/* Contains specific nodes */
+#define RESERVE_FLAG_MAINT	0x0001	/* Set MAINT flag */
+#define RESERVE_FLAG_NO_MAINT	0x0002	/* Clear MAINT flag */
+#define RESERVE_FLAG_DAILY	0x0004	/* Set DAILY flag */
+#define RESERVE_FLAG_NO_DAILY	0x0008	/* Clear DAILY flag */
+#define RESERVE_FLAG_WEEKLY	0x0010	/* Set WEEKLY flag */
+#define RESERVE_FLAG_NO_WEEKLY	0x0020	/* Clear WEEKLY flag */
+#define RESERVE_FLAG_IGN_JOBS	0x0040	/* Ignore running jobs */
+#define RESERVE_FLAG_NO_IGN_JOB	0x0080	/* Clear ignore running jobs */
+#define RESERVE_FLAG_OVERLAP	0x4000	/* Permit to overlap others */
+#define RESERVE_FLAG_SPEC_NODES	0x8000	/* Contains specific nodes */
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */

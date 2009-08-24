@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "July 2009" "scontrol 2.0" "Slurm components"
+.TH SCONTROL "1" "August 2009" "scontrol 2.0" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -659,16 +659,24 @@ Identify the partition to be reserved.
 \fIFlags\fP=<flags>
 Flags associated with the reservation. 
 In order to remove a flag with the update option, preceed the name with 
-a minus sign. For example: Flags=\-MAINT.
+a minus sign. For example: Flags=\-DAILY (NOTE: this option is not supported 
+for all flags).
 Currently supported flags include:
 .RS
 .TP 12
 \fIMAINT\fR
-Maintenance mode, receives special accounting treatment
+Maintenance mode, receives special accounting treatment.
+This partition is permitted to use resources that are already in another 
+reservation.
+.TP
+\fIOVERLAP\fR
+This reservation can be allocated resources that are already in another 
+reservation.
 .TP
 \fIIGNORE_JOBS\fR
 Ignore currently running jobs when creating the reservation.
-This can be especially useful when reserving all nodes in the system for maintenance
+This can be especially useful when reserving all nodes in the system 
+for maintenance.
 .TP
 \fIDAILY\fR
 Repeat the reservation at the same time every day

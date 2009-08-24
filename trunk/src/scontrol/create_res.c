@@ -104,6 +104,13 @@ static uint32_t _parse_flags(const char *flagstr, const char *msg)
 				outflags |= RESERVE_FLAG_NO_MAINT;
 			else 
 				outflags |= RESERVE_FLAG_MAINT;
+		} else if ((strncasecmp(curr, "Overlap", MAX(taglen,1)) 
+			    == 0) && (!flip)) {
+			curr += taglen;
+			outflags |= RESERVE_FLAG_OVERLAP;
+			/* "-OVERLAP" is not supported since that's the 
+			 * default behavior and the option only applies 
+			 * for reservation creation, not updates */
 		} else if (strncasecmp(curr, "Ignore_Jobs", MAX(taglen,1)) 
 			   == 0) {
 			curr += taglen;
