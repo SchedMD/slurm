@@ -1860,7 +1860,16 @@ extern void slurm_free_ctl_conf PARAMS((slurm_ctl_conf_t* slurm_ctl_conf_ptr));
  * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  */
 extern void slurm_print_ctl_conf PARAMS((
-	FILE * out, slurm_ctl_conf_t* slurm_ctl_conf));
+	FILE * out, slurm_ctl_conf_t* slurm_ctl_conf_ptr));
+
+/*
+ * slurm_ctl_conf_2_key_pairs - put the slurm_ctl_conf_t variables into
+ *	a List of opaque data type config_key_pair_t
+ * IN slurm_ctl_conf_ptr - slurm control configuration pointer
+ * RET List of opaque data type config_key_pair_t
+ */
+extern void *slurm_ctl_conf_2_key_pairs PARAMS((
+	slurm_ctl_conf_t* slurm_ctl_conf_ptr));
 
 /*
  * slurm_load_slurmd_status - issue RPC to get the status of slurmd 
