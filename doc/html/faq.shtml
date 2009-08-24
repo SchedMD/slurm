@@ -39,79 +39,80 @@ in my allocation?</a></li>
 <ol>
 <li><a href="#suspend">How is job suspend/resume useful?</a></li>
 <li><a href="#fast_schedule">How can I configure SLURM to use the resources actually 
-found on a node rather than what is defined in <i>slurm.conf</i>?</a></li>
+  found on a node rather than what is defined in <i>slurm.conf</i>?</a></li>
 <li><a href="#return_to_service">Why is a node shown in state DOWN when the node 
-has registered for service?</a></li>
+  has registered for service?</a></li>
 <li><a href="#down_node">What happens when a node crashes?</a></li>
 <li><a href="#multi_job">How can I control the execution of multiple 
-jobs per node?</a></li>
+  jobs per node?</a></li>
 <li><a href="#inc_plugin">When the SLURM daemon starts, it prints
-&quot;cannot resolve X plugin operations&quot; and exits. What does this mean?</a></li>
+  &quot;cannot resolve X plugin operations&quot; and exits. What does this mean?</a></li>
 <li><a href="#sigpipe">Why are user tasks intermittently dying at launch with SIGPIPE
-error messages?</a></li>
+  error messages?</a></li>
 <li><a href="#maint_time">How can I dry up the workload for a maintenance 
-period?</a></li>
+  period?</a></li>
 <li><a href="#pam">How can PAM be used to control a user's limits on or 
-access to compute nodes?</a></li>
+  access to compute nodes?</a></li>
 <li><a href="#time">Why are jobs allocated nodes and then unable to initiate 
-programs on some nodes?</a></li>
+  programs on some nodes?</a></li>
 <li><a href="#ping"> Why does <i>slurmctld</i> log that some nodes
-are not responding even if they are not in any partition?</a></li>
+  are not responding even if they are not in any partition?</a></li>
 <li><a href="#controller"> How should I relocated the primary or backup
-controller?</a></li>
+  controller?</a></li>
 <li><a href="#multi_slurm">Can multiple SLURM systems be run in 
-parallel for testing purposes?</a></li>
+  parallel for testing purposes?</a></li>
 <li><a href="#multi_slurmd">Can slurm emulate a larger cluster?</a></li>
 <li><a href="#extra_procs">Can SLURM emulate nodes with more 
-resources than physically exist on the node?</a></li>
+  resources than physically exist on the node?</a></li>
 <li><a href="#credential_replayed">What does a 
-&quot;credential replayed&quot; error in the <i>SlurmdLogFile</i> 
-indicate?</a></li>
+  &quot;credential replayed&quot; error in the <i>SlurmdLogFile</i> 
+  indicate?</a></li>
 <li><a href="#large_time">What does 
-&quot;Warning: Note very large processing time&quot; 
-in the <i>SlurmctldLogFile</i> indicate?</a></li>
+  &quot;Warning: Note very large processing time&quot; 
+  in the <i>SlurmctldLogFile</i> indicate?</a></li>
 <li><a href="#lightweight_core">How can I add support for lightweight
-core files?</a></li>
+  core files?</a></li>
 <li><a href="#limit_propagation">Is resource limit propagation
-useful on a homogeneous cluster?</a></li>
+  useful on a homogeneous cluster?</a></li>
 <li<a href="#clock">Do I need to maintain synchronized clocks 
-on the cluster?</a></li>
+  on the cluster?</a></li>
 <li><a href="#cred_invalid">Why are &quot;Invalid job credential&quot; errors 
-generated?</a></li>
+  generated?</a></li>
 <li><a href="#cred_replay">Why are 
-&quot;Task launch failed on node ... Job credential replayed&quot; 
-errors generated?</a></li>
+  &quot;Task launch failed on node ... Job credential replayed&quot; 
+  errors generated?</a></li>
 <li><a href="#globus">Can SLURM be used with Globus?</li>
 <li><a href="#time_format">Can SLURM time output format include the year?</li>
 <li><a href="#file_limit">What causes the error 
-&quot;Unable to accept new connection: Too many open files&quot;?</li>
+  &quot;Unable to accept new connection: Too many open files&quot;?</li>
 <li><a href="#slurmd_log">Why does the setting of <i>SlurmdDebug</i> fail 
-to log job step information at the appropriate level?</li>
+  to log job step information at the appropriate level?</li>
 <li><a href="#rpm">Why isn't the auth_none.so (or other file) in a 
-SLURM RPM?</li>
+  SLURM RPM?</li>
 <li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
-regular database plugins?</li>
+  regular database plugins?</li>
 <li><a href="#debug">How can I build SLURM with debugging symbols?</li>
 <li><a href="#state_preserve">How can I easily preserve drained node 
-information between major SLURM updates?</li>
+  information between major SLURM updates?</li>
 <li><a href="#health_check">Why doesn't the <i>HealthCheckProgram</i>
-execute on DOWN nodes?</li>
+  execute on DOWN nodes?</li>
 <li><a href="#batch_lost">What is the meaning of the error 
-&quot;Batch JobId=# missing from master node, killing it&quot;?</a></li>
+  &quot;Batch JobId=# missing from master node, killing it&quot;?</a></li>
 <li><a href="#accept_again">What does the messsage
-&quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot; 
-indicate?</a></li>
+  &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot; 
+  indicate?</a></li>
 <li><a href="#task_prolog">How could I automatically print a job's 
-SLURM job ID to its standard output?</li>
+  SLURM job ID to its standard output?</li>
 <li><a href="#moab_start">I run SLURM with the Moab or Maui scheduler.
-How can I start a job under SLURM without the scheduler?</li>
+  How can I start a job under SLURM without the scheduler?</li>
 <li><a href="#orphan_procs">Why are user processes and <i>srun</i>
-running even though the job is supposed to be completed?</li>
+  running even though the job is supposed to be completed?</li>
 <li><a href="#slurmd_oom">How can I prevent the <i>slurmd</i> and
-<i>slurmstepd</i> daemons from being killed when a node's memory 
-is exhausted?</li>
+  <i>slurmstepd</i> daemons from being killed when a node's memory 
+  is exhausted?</li>
 <li><a href="#ubuntu">I see my host of my calling node as 127.0.1.1
-    instead of the correct ip address.  Why is that?</a></li>
+  instead of the correct IP address.  Why is that?</a></li>
+<li><a href="#stop_sched">How can I stop SLURM from scheduling jobs?</a></li>
 </ol>
 
 
@@ -1191,7 +1192,7 @@ environment variables set to the desired values.
 A value of -17 typically will disable killing.</p>
 
 <p><a name="ubuntu"><b>38. I see my host of my calling node as 127.0.1.1
-    instead of the correct ip address.  Why is that?</b></a></br>
+    instead of the correct IB address.  Why is that?</b></a></br>
 Some systems by default will put your host in the /etc/hosts file as
     something like 
 <pre>
@@ -1202,8 +1203,17 @@ address instead of the correct address and make it so the
 communication doesn't work.  Solution is to either remove this line or
 set a different nodeaddr that is known by your other nodes.</p>
 
+<p><a name="stop_sched"><b>38. How can I stop SLURM from scheduling jobs?</b></a></br>
+You can stop SLURM from scheduling jobs on a per partition basis by setting 
+that partition's state to DOWN. Set its state UP to resume scheduling. 
+For example:
+<pre>
+$ scontrol update PartitionName=foo State=DOWN
+$ scontrol update PartitionName=bar State=UP
+</pre></p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 June 2009</p>
+<p style="text-align:center;">Last modified 24 August 2009</p>
 
 <!--#include virtual="footer.txt"-->
