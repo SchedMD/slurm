@@ -73,6 +73,7 @@
 #include "src/slurmctld/state_save.h"
 
 #define _RESV_DEBUG	0
+#define ONE_YEAR	(365 * 24 * 60 * 60)
 #define RESV_MAGIC	0x3b82
 
 /* Change RESV_STATE_VERSION value when changing the state save format
@@ -528,10 +529,10 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 			resv.nodes = resv_ptr->node_list;
 		
 		/* Here if the reservation has started already we need
-		   to mark a new start time for it if certain
-		   variables are needed in accounting.  Right now if
-		   the assocs, nodes, flags or cpu count changes we need a
-		   new start time of now. */
+		 * to mark a new start time for it if certain
+		 * variables are needed in accounting.  Right now if
+		 * the assocs, nodes, flags or cpu count changes we need a
+		 * new start time of now. */
 		if((resv_ptr->start_time < now)
 		   && (resv.assocs
 		       || resv.nodes 
@@ -2351,15 +2352,29 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap)
 {
-	slurmctld_resv_t * resv_ptr;
+	slurmctld_resv_t * resv_ptr, *res2_ptr;
 	time_t job_start_time, job_end_time;
 	uint32_t duration;
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS;
 
+	if (job_ptr->time_limit == INFINITE)
+		duration = ONE_YEAR;
+	else if (job_ptr->time_limit != NO_VAL)
+		duration = (job_ptr->time_limit * 60);
+	else {	/* partition time limit */
+		if (job_ptr->part_ptr->max_time == INFINITE)
+			duration = ONE_YEAR;
+		else
+			duration = (job_ptr->part_ptr->max_time * 60);
+	}
+	job_start_time = job_end_time = *when;
+	job_end_time += duration;
+
 	*node_bitmap = (bitstr_t *) NULL;
 
 	if (job_ptr->resv_name) {
+		bool overlap_resv = false;
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
 				_find_resv_name, job_ptr->resv_name);
 		job_ptr->resv_ptr = resv_ptr;
@@ -2378,7 +2393,38 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			job_ptr->priority = 0;	/* administrative hold */
 			return ESLURM_RESERVATION_INVALID;
 		}
+		if (job_ptr->details->req_node_bitmap &&
+		    !bit_super_set(job_ptr->details->req_node_bitmap,
+				   resv_ptr->node_bitmap)) {
+			return ESLURM_RESERVATION_INVALID;
+		}
 		*node_bitmap = bit_copy(resv_ptr->node_bitmap);
+
+		/* if there are any overlapping reservations, we need to
+		 * prevent the job from using those nodes (e.g. MAINT nodes) */
+		iter = list_iterator_create(resv_list);
+		if (!iter)
+			fatal("malloc: list_iterator_create");
+		while ((res2_ptr = (slurmctld_resv_t *) list_next(iter))) {
+			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
+			    (res2_ptr == resv_ptr) ||
+			    (res2_ptr->node_bitmap == NULL) ||
+			    (res2_ptr->start_time >= job_end_time) ||
+			    (res2_ptr->end_time   <= job_start_time))
+				continue;
+			bit_not(res2_ptr->node_bitmap);
+			bit_and(*node_bitmap, res2_ptr->node_bitmap);
+			bit_not(res2_ptr->node_bitmap);
+			overlap_resv = true;
+		}
+		list_iterator_destroy(iter);
+#if _RESV_DEBUG
+{ 
+		char *nodes=bitmap2node_name(*node_bitmap); 
+		info("nodes:%s", nodes); 
+		xfree(nodes);
+}
+#endif
 		return SLURM_SUCCESS;
 	}
 
@@ -2390,20 +2436,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 
 	/* Job has no reservation, try to find time when this can
 	 * run and get it's required nodes (if any) */
-	if (job_ptr->time_limit == INFINITE)
-		duration = 365 * 24 * 60 * 60;
-	else if (job_ptr->time_limit != NO_VAL)
-		duration = (job_ptr->time_limit * 60);
-	else {	/* partition time limit */
-		if (job_ptr->part_ptr->max_time == INFINITE)
-			duration = 365 * 24 * 60 * 60;
-		else
-			duration = (job_ptr->part_ptr->max_time * 60);
-	}
 	for (i=0; ; i++) {
-		job_start_time = job_end_time = *when;
-		job_end_time += duration;
-
 		iter = list_iterator_create(resv_list);
 		if (!iter)
 			fatal("malloc: list_iterator_create");
@@ -2562,7 +2595,7 @@ extern void fini_job_resv_check(void)
 /* send all reservations to accounting.  Only needed at
  * first registration
  */
-extern int send_resvs_to_accounting()
+extern int send_resvs_to_accounting(void)
 {
 	ListIterator itr = NULL;
 	slurmctld_resv_t *resv_ptr;
