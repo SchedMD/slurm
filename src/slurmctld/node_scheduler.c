@@ -349,26 +349,25 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	int error_code = SLURM_SUCCESS, i;
 	bitstr_t *feature_bitmap, *accumulate_bitmap = NULL;
 	bitstr_t *save_avail_node_bitmap = NULL, *resv_bitmap;
+	time_t start_res = time(NULL);
 
 	/* Mark nodes reserved for other jobs as off limit for this job */
-	if (job_ptr->resv_name == NULL) {
-		time_t start_res = time(NULL);
-		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap);
-		if ((rc != SLURM_SUCCESS) ||
-		    (job_ptr->details->req_node_bitmap &&
-		     (!bit_super_set(job_ptr->details->req_node_bitmap,
-				     resv_bitmap)))) {
-			FREE_NULL_BITMAP(resv_bitmap);
-			return ESLURM_NODES_BUSY;	/* reserved */
-		}
-		if (resv_bitmap &&
-		    (!bit_equal(resv_bitmap, avail_node_bitmap))) {
-			bit_and(resv_bitmap, avail_node_bitmap);
-			save_avail_node_bitmap = avail_node_bitmap;
-			avail_node_bitmap = resv_bitmap;
-		} else
-			FREE_NULL_BITMAP(resv_bitmap);
+	rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap);
+	if ((rc != SLURM_SUCCESS) ||
+	    (bit_set_count(resv_bitmap) < min_nodes) ||
+	    (job_ptr->details->req_node_bitmap &&
+	     (!bit_super_set(job_ptr->details->req_node_bitmap,
+			     resv_bitmap)))) {
+		FREE_NULL_BITMAP(resv_bitmap);
+		return ESLURM_NODES_BUSY;	/* reserved */
 	}
+	if (resv_bitmap &&
+	    (!bit_equal(resv_bitmap, avail_node_bitmap))) {
+		bit_and(resv_bitmap, avail_node_bitmap);
+		save_avail_node_bitmap = avail_node_bitmap;
+		avail_node_bitmap = resv_bitmap;
+	} else
+		FREE_NULL_BITMAP(resv_bitmap);
 
 	/* save job and request state */
 	saved_min_nodes = min_nodes;
@@ -1304,7 +1303,8 @@ static int _build_node_list(struct job_record *job_ptr,
 	if (job_ptr->resv_name) {
 		/* Limit node selection to those in selected reservation */
 		time_t start_res = time(NULL);
-		rc = job_test_resv(job_ptr, &start_res, false, &usable_node_mask);
+		rc = job_test_resv(job_ptr, &start_res, false, 
+				   &usable_node_mask);
 		if (rc != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);
