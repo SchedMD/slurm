@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Resource Reservation Gude</h1>
+<h1>Resource Reservation Guide</h1>
 
 <p>SLURM version 2.0 has the ability to reserve resources for jobs
 being executed by select users and/or select bank accounts.
