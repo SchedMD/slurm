@@ -98,6 +98,7 @@ static int  _find_resv_id(void *x, void *key);
 static int  _find_resv_name(void *x, void *key);
 static void _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
+static uint32_t _get_job_duration(struct job_record *job_ptr);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint16_t flags, 
@@ -2552,6 +2553,33 @@ static int _license_cnt(List license_list, char *lic_name)
 	return lic_cnt;
 }
 
+static uint32_t _get_job_duration(struct job_record *job_ptr)
+{
+	uint32_t duration;
+	uint16_t time_slices = 1;
+
+	if (job_ptr->time_limit == INFINITE)
+		duration = ONE_YEAR;
+	else if (job_ptr->time_limit != NO_VAL)
+		duration = (job_ptr->time_limit * 60);
+	else {	/* partition time limit */
+		if (job_ptr->part_ptr->max_time == INFINITE)
+			duration = ONE_YEAR;
+		else
+			duration = (job_ptr->part_ptr->max_time * 60);
+	}
+	if (job_ptr->part_ptr)
+		time_slices = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
+	if ((duration != ONE_YEAR) && (time_slices > 1) &&
+	    (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
+		/* FIXME: Ideally we figure out how many jobs are actually
+		 * time-slicing on each node rather than using the maximum
+		 * value. */
+		duration *= time_slices;
+	}
+	return duration;
+}
+
 /*
  * Determine how many licenses of the give type the specified job is 
  *	prevented from using due to reservations
@@ -2566,23 +2594,11 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time;
-	uint32_t duration;
 	ListIterator iter;
 	int resv_cnt = 0;
 
-	if (job_ptr->time_limit == INFINITE)
-		duration = 365 * 24 * 60 * 60;
-	else if (job_ptr->time_limit != NO_VAL)
-		duration = (job_ptr->time_limit * 60);
-	else {	/* partition time limit */
-		if (job_ptr->part_ptr->max_time == INFINITE)
-			duration = 365 * 24 * 60 * 60;
-		else
-			duration = (job_ptr->part_ptr->max_time * 60);
-	}
-	job_start_time = job_end_time = when;
-	job_end_time += duration;
-
+	job_start_time = when;
+	job_end_time   = when + _get_job_duration(job_ptr);
 	iter = list_iterator_create(resv_list);
 	if (!iter)
 		fatal("malloc: list_iterator_create");
@@ -2624,33 +2640,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 {
 	slurmctld_resv_t * resv_ptr, *res2_ptr;
 	time_t job_start_time, job_end_time, lic_resv_time;
-	uint32_t duration;
-	uint16_t time_slices = 1;
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_ptr->time_limit == INFINITE)
-		duration = ONE_YEAR;
-	else if (job_ptr->time_limit != NO_VAL)
-		duration = (job_ptr->time_limit * 60);
-	else {	/* partition time limit */
-		if (job_ptr->part_ptr->max_time == INFINITE)
-			duration = ONE_YEAR;
-		else
-			duration = (job_ptr->part_ptr->max_time * 60);
-	}
-	if (job_ptr->part_ptr)
-		time_slices = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
-	if ((duration != ONE_YEAR) && (time_slices > 1) &&
-	    (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
-		/* FIXME: Ideally we figure out how many jobs are actually
-		 * time-slicing on each node rather than using the maximum
-		 * value. */
-		duration *= time_slices;
-	}
-	job_start_time = job_end_time = *when;
-	job_end_time += duration;
-
+	job_start_time = *when;
+	job_end_time   = *when + _get_job_duration(job_ptr);
 	*node_bitmap = (bitstr_t *) NULL;
 
 	if (job_ptr->resv_name) {
@@ -2784,7 +2778,7 @@ extern void begin_job_resv_check(void)
 	resv_over_run = conf->resv_over_run;
 	slurm_conf_unlock();
 	if (resv_over_run == (uint16_t) INFINITE)
-		resv_over_run = 365 * 24 * 60 * 60;
+		resv_over_run = ONE_YEAR;
 	else
 		resv_over_run *= 60;
 
