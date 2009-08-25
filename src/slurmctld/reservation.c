@@ -2625,6 +2625,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	slurmctld_resv_t * resv_ptr, *res2_ptr;
 	time_t job_start_time, job_end_time, lic_resv_time;
 	uint32_t duration;
+	uint16_t time_slices = 1;
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS;
 
@@ -2637,6 +2638,15 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			duration = ONE_YEAR;
 		else
 			duration = (job_ptr->part_ptr->max_time * 60);
+	}
+	if (job_ptr->part_ptr)
+		time_slices = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
+	if ((duration != ONE_YEAR) && (time_slices > 1) &&
+	    (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
+		/* FIXME: Ideally we figure out how many jobs are actually
+		 * time-slicing on each node rather than using the maximum
+		 * value. */
+		duration *= time_slices;
 	}
 	job_start_time = job_end_time = *when;
 	job_end_time += duration;
@@ -2677,6 +2687,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			fatal("malloc: list_iterator_create");
 		while ((res2_ptr = (slurmctld_resv_t *) list_next(iter))) {
 			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
+			    (resv_ptr->flags & RESERVE_FLAG_OVERLAP) ||
 			    (res2_ptr == resv_ptr) ||
 			    (res2_ptr->node_bitmap == NULL) ||
 			    (res2_ptr->start_time >= job_end_time) ||
