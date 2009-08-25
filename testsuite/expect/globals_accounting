@@ -583,7 +583,7 @@ proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpu g
 	}
 
 	if { [string length $qos] } {
-		set scommand "$scommand qoslevel=$qos"
+		set scommand "$scommand qoslevel$qos"
 		set assoc_stuff 1
 	}
 
