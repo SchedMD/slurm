@@ -194,7 +194,9 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki2 - Strip single and double quotes out of a node's reason 
     string to avoid confusing Moab's parser.
  -- Modified scancel to cancel any pending jobs before cancelling any other
- -- updated sview config info
+ -- Updated sview config info
+ -- Fix a couple of bugs with respect to scheduling with overlapping 
+    reservations (one with a flag of "Maintenance").
 
 * Changes in SLURM 2.0.4
 ========================
