@@ -73,6 +73,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE systems only - remove vestigal start location from jobinfo.
  -- Add reservation flag of "OVERLAP" to permit a new reservation to use
     nodes already in another reservation.
+ -- Fix so "scontrol update jobid=# nice=0" can clear previous nice value.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
