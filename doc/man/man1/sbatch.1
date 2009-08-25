@@ -86,8 +86,23 @@ For example:
    \-\-begin=16:00
    \-\-begin=now+1hour
    \-\-begin=now+60           (seconds by default)
-   \-\-begin=2010-01-20T12:34:00
+   \-\-begin=2010\-01\-20T12:34:00
 .fi
+
+.RS
+.PP
+Notes on date/time specifications:
+ \- Although the 'seconds' field of the HH:MM:SS time specification is
+allowed by the code, note that the poll time of the SLURM scheduler
+is not precise enough to guarantee dispatch of the job on the exact
+second.  The job will be eligible to start on the next poll
+following the specified time. The exact poll interval depends on the
+SLURM scheduler (e.g., 60 seconds with the default sched/builtin).
+ \- If no time (HH:MM:SS) is specified, the default is (00:00:00).
+ \- If a date is specified without a year (e.g., MM/DD) then the current
+year is assumed, unless the combination of MM/DD and HH:MM:SS has
+already passed for that year, in which case the next year is used.
+.RE
 
 .TP
 \fB\-\-checkpoint\fR=<\fItime\fR>

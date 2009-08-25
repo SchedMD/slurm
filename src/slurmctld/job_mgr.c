@@ -4843,6 +4843,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else if (super_user
 			 ||  (job_ptr->priority > job_specs->priority)) {
+			job_ptr->details->nice = NICE_OFFSET;
 			if(job_specs->priority == INFINITE) {
 				job_ptr->direct_set_prio = 0;
 				_set_job_prio(job_ptr);
@@ -4865,8 +4866,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (IS_JOB_FINISHED(job_ptr)) 
 			error_code = ESLURM_DISABLED;
 		else if (super_user || (job_specs->nice < NICE_OFFSET)) {
+			int64_t new_prio = job_ptr->priority;
+			new_prio += job_ptr->details->nice;
+			new_prio -= job_specs->nice;
+			job_ptr->priority = MAX(new_prio, 2);
 			job_ptr->details->nice = job_specs->nice;
-			_set_job_prio(job_ptr);
 			
 			info("update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority,
