@@ -3841,8 +3841,11 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			_purge_job_record(job_desc_msg->job_id);
 	}
 
-	if ((submit_uid != 0) 	/* only root or SlurmUser can set job prio */
-	    &&  (submit_uid != slurmctld_conf.slurm_user_id)) {
+
+	if (job_desc_msg->nice == (uint16_t) NO_VAL)
+		job_desc_msg->nice = NICE_OFFSET;
+	if ((submit_uid != 0) &&  /* only root or SlurmUser can set job prio */
+	    (submit_uid != slurmctld_conf.slurm_user_id)) {
 		if (job_desc_msg->priority != 0)
 			job_desc_msg->priority = NO_VAL;
 		if (job_desc_msg->nice < NICE_OFFSET)
@@ -4862,7 +4865,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->nice != NICE_OFFSET) {
+	if (job_specs->nice != (uint16_t) NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr)) 
 			error_code = ESLURM_DISABLED;
 		else if (super_user || (job_specs->nice < NICE_OFFSET)) {
