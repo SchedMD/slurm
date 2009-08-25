@@ -6,40 +6,48 @@
 <li><a href="#comp">Why is my job/node in COMPLETING state?</a></li>
 <li><a href="#rlimit">Why are my resource limits not propagated?</a></li>
 <li><a href="#pending">Why is my job not running?</a></li>
-<li><a href="#sharing">Why does the srun --overcommit option not permit multiple jobs 
-to run on nodes?</a></li>
+<li><a href="#sharing">Why does the srun --overcommit option not permit 
+  multiple jobs to run on nodes?</a></li>
 <li><a href="#purge">Why is my job killed prematurely?</a></li>
 <li><a href="#opts">Why are my srun options ignored?</a></li>
 <li><a href="#backfill">Why is the SLURM backfill scheduler not starting my 
-job?</a></li>
-<li><a href="#steps">How can I run multiple jobs from within a single script?</a></li>
-<li><a href="#orphan">Why do I have job steps when my job has already COMPLETED?</a></li>
-<li><a href="#multi_batch">How can I run a job within an existing job allocation?</a></li>
-<li><a href="#user_env">How does SLURM establish the environment for my job?</a></li>
+  job?</a></li>
+<li><a href="#steps">How can I run multiple jobs from within a single 
+  script?</a></li>
+<li><a href="#orphan">Why do I have job steps when my job has already 
+  COMPLETED?</a></li>
+<li><a href="#multi_batch">How can I run a job within an existing job 
+  allocation?</a></li>
+<li><a href="#user_env">How does SLURM establish the environment for my 
+  job?</a></li>
 <li><a href="#prompt">How can I get shell prompts in interactive mode?</a></li>
 <li><a href="#batch_out">How can I get the task ID in the output or error file
-name for a batch job?</a></li>
+  name for a batch job?</a></li>
 <li><a href="#parallel_make">Can the <i>make</i> command utilize the resources 
-allocated to a SLURM job?</a></li>
+  allocated to a SLURM job?</a></li>
 <li><a href="#terminal">Can tasks be launched with a remote terminal?</a></li>
-<li><a href="#force">What does &quot;srun: Force Terminated job&quot; indicate?</a></li>
+<li><a href="#force">What does &quot;srun: Force Terminated job&quot; 
+  indicate?</a></li>
 <li><a href="#early_exit">What does this mean: &quot;srun: First task exited 
-30s ago&quot; followed by &quot;srun Job Failed&quot;?</a></li>
+  30s ago&quot; followed by &quot;srun Job Failed&quot;?</a></li>
 <li><a href="#memlock">Why is my MPI job  failing due to the locked memory 
-(memlock) limit being too low?</a></li>
+  (memlock) limit being too low?</a></li>
 <li><a href="#inactive">Why is my batch job that launches no job steps being 
-killed?</a></li>
+  killed?</a></li>
 <li><a href="#arbitrary">How do I run specific tasks on certain nodes
-in my allocation?</a></li> 
+  in my allocation?</a></li> 
 <li><a href="#hold">How can I temporarily prevent a job from running 
-(e.g. place it into a <i>hold</i> state)?</a></li>
+  (e.g. place it into a <i>hold</i> state)?</a></li>
+<li><a href="#mem_limit">Why are jobs not getting the appropriate 
+  memory limit?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
 <ol>
 <li><a href="#suspend">How is job suspend/resume useful?</a></li>
-<li><a href="#fast_schedule">How can I configure SLURM to use the resources actually 
-  found on a node rather than what is defined in <i>slurm.conf</i>?</a></li>
+<li><a href="#fast_schedule">How can I configure SLURM to use the resources 
+  actually found on a node rather than what is defined in 
+  <i>slurm.conf</i>?</a></li>
 <li><a href="#return_to_service">Why is a node shown in state DOWN when the node 
   has registered for service?</a></li>
 <li><a href="#down_node">What happens when a node crashes?</a></li>
@@ -606,6 +614,13 @@ $ scontrol update JobId=1234 StartTime=now+30days
 ... later ...
 $ scontrol update JobId=1234 StartTime=now
 </pre>
+
+<p><a name="mem_limit"><b>22. Why are jobs not getting the appropriate 
+memory limit?</b></a><br>
+This is probably a variation on the <a href="#memlock">locked memory limit</a>
+problem described above. 
+Use the same solution for the AS (Address Space), RSS (Resident Set Size), 
+or other limits as needed.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -1214,6 +1229,6 @@ $ scontrol update PartitionName=bar State=UP
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 August 2009</p>
+<p style="text-align:center;">Last modified 25 August 2009</p>
 
 <!--#include virtual="footer.txt"-->
