@@ -4719,9 +4719,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (IS_JOB_FINISHED(job_ptr)) 
 			error_code = ESLURM_DISABLED;
 		else if (super_user || (job_specs->nice < NICE_OFFSET)) {
-			int delta_nice = job_ptr->details->nice;
-			delta_nice -= job_specs->nice;
-			job_ptr->priority += delta_nice;
+			int64_t new_prio = job_ptr->priority;
+			new_prio += job_ptr->details->nice;
+			new_prio -= job_specs->nice;
+			new_prio = MAX(new_prio, 2);
+			job_ptr->priority = new_prio;
 			job_ptr->details->nice = job_specs->nice;
 			
 			info("update_job: setting priority to %u for "
