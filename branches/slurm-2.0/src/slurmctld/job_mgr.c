@@ -4722,8 +4722,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			int64_t new_prio = job_ptr->priority;
 			new_prio += job_ptr->details->nice;
 			new_prio -= job_specs->nice;
-			new_prio = MAX(new_prio, 2);
-			job_ptr->priority = new_prio;
+			job_ptr->priority = MAX(new_prio, 2);
 			job_ptr->details->nice = job_specs->nice;
 			
 			info("update_job: setting priority to %u for "
