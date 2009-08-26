@@ -115,12 +115,13 @@ extern int topo_build_config(void)
  * topo_get_node_addr - build node address and the associated pattern 
  *      based on the topology information
  *
- * example of output :
- *      address : s0.s4.s8.tux1
- *      pattern : switch.switch.switch.node
+ * in 3d_torus plugin, only use node name as the topology address
  */
 extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 {
+	if (find_node_record(node_name) == NULL)
+		return SLURM_ERROR;
+
 	*paddr = xstrdup(node_name);
 	*ppattern = xstrdup("node");
 	return SLURM_SUCCESS;
