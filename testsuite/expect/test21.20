@@ -198,7 +198,7 @@ if {$matches != 27} {
 # cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
 
 #
-incr exit_code [mod_user "$tc1,$tc2,$tc3" "$nm2" $us1 "" "" "" "" "=$qs3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_user "$tc1,$tc2,$tc3" "$nm2" $us1 "" "" "" "" "$qs3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
@@ -244,7 +244,7 @@ if {$matches != 21} {
 # account adminlevel cluster defaultaccount qoslevel name
 # qoslevel waccounts wcluster wnames
 #
-incr exit_code [mod_user "$tc1,$tc2,$tc3" "$nm2" $us2 "" "" "" "" "+=$qs3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_user "$tc1,$tc2,$tc3" "$nm2" $us2 "" "" "" "" "+$qs3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
@@ -295,7 +295,7 @@ if {$matches != 15} {
 # account adminlevel cluster defaultaccount qoslevel name
 # qoslevel waccounts wcluster wnames
 #
-incr exit_code [mod_user "$tc1,$tc2,$tc3" "$nm2" $us3 "" "" "" "" "-=$qs2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_user "$tc1,$tc2,$tc3" "$nm2" $us3 "" "" "" "" "-$qs2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
