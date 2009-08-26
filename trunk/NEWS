@@ -200,6 +200,7 @@ documents those changes that are of interest to users and admins.
     reservations (one with a flag of "Maintenance").
  -- Fix bug when updating a pending job's nice value after explicitly setting
     it's priority.
+ -- We no longer add blank QOS'
 
 * Changes in SLURM 2.0.4
 ========================

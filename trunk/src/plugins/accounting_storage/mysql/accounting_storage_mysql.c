@@ -665,6 +665,9 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 			list_iterator_create(assoc->qos_list);
 		
 		while((tmp_char = list_next(qos_itr))) {
+			/* we don't want to include blank names */
+			if(!tmp_char[0])
+				continue;
 			if(!set) {
 				if(tmp_char[0] == '+' || tmp_char[0] == '-')
 					qos_type = "delta_qos";
@@ -674,11 +677,12 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		}
 		
 		list_iterator_destroy(qos_itr);
-		
-		xstrfmtcat(*cols, ", %s", qos_type);		
-		xstrfmtcat(*vals, ", '%s'", qos_val); 		
-		xstrfmtcat(*extra, ", %s=\"%s\"", qos_type, qos_val); 
-		xfree(qos_val);
+		if(qos_val) {
+			xstrfmtcat(*cols, ", %s", qos_type);		
+			xstrfmtcat(*vals, ", '%s'", qos_val); 		
+			xstrfmtcat(*extra, ", %s=\"%s\"", qos_type, qos_val); 
+			xfree(qos_val);
+		}
 	} else if((qos_level == QOS_LEVEL_SET) && default_qos_str) { 
 		/* Add default qos to the account */
 		xstrcat(*cols, ", qos");
