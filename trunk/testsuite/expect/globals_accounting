@@ -339,7 +339,10 @@ proc add_acct { cluster parent name desc org qos fairshare grpcpumin grpcpu grpj
 	}
 
 	if { [string length $qos] } {
-		set command "$command qoslevel=$qos"
+		if { [string compare $qos " "] } {
+			set $qos ""
+		}
+		set command "$command qoslevel='$qos'"
 		set assoc_stuff 1
 	}
 
@@ -586,7 +589,10 @@ proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpu g
 	}
 
 	if { [string length $qos] } {
-		set scommand "$scommand qoslevel$qos"
+		if { [string compare $qos " "] } {
+			set $qos ""
+		}
+		set scommand "$scommand qoslevel='$qos'"
 		set assoc_stuff 1
 	}
 
@@ -748,7 +754,10 @@ proc add_user { cluster account name part admin dacct dwckey wckey qos fairshare
 	}
 
 	if { [string length $qos] } {
-		set command "$command qoslevel=$qos"
+		if { [string compare $qos " "] } {
+			set $qos ""
+		}
+		set command "$command qoslevel='$qos'"
 	}
 
 	if { [string length $wckey] } {
@@ -1017,7 +1026,10 @@ proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare gr
 	}
 
 	if { [string length $qos] } {
-		set scommand "$scommand qoslevel$qos"
+		if { [string compare $qos " "] } {
+			set $qos ""
+		}
+		set scommand "$scommand qoslevel='$qos'"
 		set assoc_stuff 1
 	}
 
