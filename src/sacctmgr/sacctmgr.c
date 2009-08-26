@@ -823,10 +823,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        list cluster       - Format=, Names=, WOLimits                      \n\
        add cluster        - Fairshare=, GrpCPUs=, GrpJobs=,                \n\
                             GrpNodes=, GrpSubmitJob=, MaxCPUMins=          \n\
-                            MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
+                            MaxJobs=, MaxNodes=, MaxWall=, Name=,          \n\
+                            and QosLevel=                                  \n\
        modify cluster     - (set options) Fairshare=,                      \n\
                             GrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=,  \n\
-                            MaxCPUMins=, MaxJobs=, MaxNodes=, and MaxWall= \n\
+                            MaxCPUMins=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
+                            and QosLevel=                                  \n\
                             (where options) Names=                         \n\
        delete cluster     - Names=                                         \n\
                                                                            \n\

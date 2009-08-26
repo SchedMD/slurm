@@ -374,6 +374,17 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		}
 		xfree(query);
 		
+		/* If a reservation overlaps another reservation we
+		   total up everything here as if they didn't but when
+		   calculating the total time for a cluster we will
+		   remove the extra time received.  This may result in
+		   unexpected results with association based reports
+		   since the association is given the total amount of
+		   time of each reservation, thus equaling more time
+		   that is available.  Job/Cluster/Reservation reports
+		   should be fine though since we really don't over
+		   allocate resources.
+		*/
 		while((row = mysql_fetch_row(result))) {
 			int row_start = atoi(row[RESV_REQ_START]);
 			int row_end = atoi(row[RESV_REQ_END]);
@@ -945,6 +956,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		list_flush(assoc_usage_list);
 		list_flush(cluster_usage_list);
 		list_flush(wckey_usage_list);
+		list_flush(resv_usage_list);
 		curr_start = curr_end;
 		curr_end = curr_start + add_sec;
 	}

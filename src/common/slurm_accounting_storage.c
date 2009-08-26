@@ -7059,7 +7059,7 @@ extern char *acct_qos_str(List qos_list, uint32_t level)
 		return NULL;
 	} else if(!level) {
 		debug2("no level");
-		return "None";
+		return "";
 	}
 
 	itr = list_iterator_create(qos_list);
