@@ -153,8 +153,6 @@ int accounting_enforce = 0;
 int association_based_accounting = 0;
 bool ping_nodes_now = false;
 int      cluster_procs = 0;
-struct switch_record *switch_record_table = NULL;
-int switch_record_cnt = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;

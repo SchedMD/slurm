@@ -268,22 +268,6 @@ extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 
 /*****************************************************************************\
- *  SWITCH topology data structures
-\*****************************************************************************/
-struct switch_record {
-	int level;			/* level in hierarchy, leaf=0 */
-	uint32_t link_speed;		/* link speed, arbitrary units */
-	char *name;			/* switch name */
-	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from 
-					 * this switch */
-	char *nodes;			/* name if direct descendent nodes */
-	char *switches;			/* name if direct descendent switches */
-};
-
-extern struct switch_record *switch_record_table;  /* ptr to switch records */
-extern int switch_record_cnt;		/* size of switch_record_table */
-
-/*****************************************************************************\
  *  PARTITION parameters and data structures
 \*****************************************************************************/
 #define PART_MAGIC 0xaefe8495

@@ -42,6 +42,27 @@
 #include <slurm/slurm.h>
 #include <src/slurmctld/slurmctld.h>
 
+/*****************************************************************************\
+ *  SWITCH topology data structures
+ *  defined here but is really tree plugin related
+\*****************************************************************************/
+struct switch_record {
+	int level;			/* level in hierarchy, leaf=0 */
+	uint32_t link_speed;		/* link speed, arbitrary units */
+	char *name;			/* switch name */
+	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from 
+					 * this switch */
+	char *nodes;			/* name if direct descendent nodes */
+	char *switches;			/* name if direct descendent switches */
+};
+
+extern struct switch_record *switch_record_table;  /* ptr to switch records */
+extern int switch_record_cnt;		/* size of switch_record_table */
+
+/*****************************************************************************\
+ *  Slurm topology functions
+\*****************************************************************************/
+
 /*
  * Initialize the topology plugin.
  *

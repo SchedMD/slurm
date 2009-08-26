@@ -41,12 +41,13 @@
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#if 0
-#include "src/slurmctld/slurmctld.h"
-#endif
 
+/* defined here but is really tree plugin related */
+struct switch_record *switch_record_table = NULL;
+int switch_record_cnt = 0;
 
 /* ************************************************************************ */
 /*  TAG(                        slurm_topo_ops_t                         )  */
