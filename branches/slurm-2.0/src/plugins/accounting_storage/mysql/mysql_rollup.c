@@ -942,6 +942,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		list_flush(assoc_usage_list);
 		list_flush(cluster_usage_list);
 		list_flush(wckey_usage_list);
+		list_flush(resv_usage_list);
 		curr_start = curr_end;
 		curr_end = curr_start + add_sec;
 	}
