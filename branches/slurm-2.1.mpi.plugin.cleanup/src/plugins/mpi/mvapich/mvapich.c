@@ -167,8 +167,11 @@ struct mvapich_state {
 	int connect_once;
 	int do_timing;
 
-	int timeout;         /* Initialization timeout in seconds  */
-	int start_time;      /* Time from which to measure timeout */
+	int timeout;          /* Initialization timeout in seconds  */
+	int start_time;       /* Time from which to measure timeout */
+
+	int shutdown_pipe[2]; /* Write to this pipe to interrupt poll calls */
+	bool shutdown;        /* Flags mpi thread to exit */
 
 	mpi_plugin_client_info_t job[1];
 };
@@ -209,6 +212,7 @@ struct mvapich_poll
 
 
 static void do_timings (mvapich_state_t *st, const char *fmt, ...);
+static void mvapich_state_destroy(mvapich_state_t *st);
 
 static int mvapich_requires_pids (mvapich_state_t *st)
 {
@@ -1286,23 +1290,48 @@ static int mvapich_abort_timeout (void)
 	return (timeout * 1000);
 }
 
+
+/*
+ * Returns file descriptor from which to read abort message, 
+ * -1 on error, or -2 if told to shut down.
+ */
+
 static int mvapich_abort_accept (mvapich_state_t *st)
 {
 	slurm_addr addr;
 	int rc;
-	struct pollfd pfds[1];
+	struct pollfd pfds[2];
+	int last_cancel_state = 0;
 
-	pfds->fd = st->fd;
-	pfds->events = POLLIN;
+	/*
+	 * st->fd accepts connections from MPI procs to indicate an MPI error
+	 * st->shutdown_pipe is written to by the main thread, to break out
+	 * of the poll call when it is time to shut down
+	 */
+
+	pfds[0].fd = st->fd;
+	pfds[0].events = POLLIN;
+
+	pfds[1].fd = st->shutdown_pipe[0];
+	pfds[1].events = POLLIN;
 
 	mvapich_debug3 ("Polling to accept MPI_ABORT timeout=%d", 
 			mvapich_abort_timeout ());
 
-	while ((rc = poll (pfds, 1, mvapich_abort_timeout ())) < 0) {
+	/* 
+	 * limit cancellation to the long periods waiting on this poll
+	 */
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
+
+	while ((rc = poll (pfds, 2, mvapich_abort_timeout ())) < 0) {
 		if (errno == EINTR || errno == EAGAIN)
 			continue;
+
+		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &last_cancel_state);
 		return (-1);
 	}
+
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &last_cancel_state);
 
 	/* 
 	 *  If poll() timed out, forcibly kill job and exit instead of
@@ -1313,6 +1342,10 @@ static int mvapich_abort_accept (mvapich_state_t *st)
 		/* NORETURN */
 	}
 
+	if (pfds[1].revents & POLLIN) {
+		info("broke out of poll call, shutting down");
+		return -2;
+	}
 	return (slurm_accept_msg_conn (st->fd, &addr));
 }
 
@@ -1324,6 +1357,17 @@ static void mvapich_wait_for_abort(mvapich_state_t *st)
 	int n;
 	char msg [1024] = "";
 	int msglen = 0;
+	int last_cancel_state = 0, dummy = 0;
+
+	/*
+	 * The mvapich thread spends most of its time in this function,
+	 * specifically inside mvapich_abort_accept, until an outside
+	 * thread cancels this thread.  I disable thread cancellation
+	 * here, and only enable it around the poll in mvapich_abort_accept,
+	 * to prevent this thread from being cancelled while it has a
+	 * mutex locked, for the "error", "info", and "fatal" macros.
+	 */
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &last_cancel_state);
 
 	/*
 	 *  Wait for abort notification from any process.
@@ -1334,6 +1378,9 @@ static void mvapich_wait_for_abort(mvapich_state_t *st)
 	 */
 	while (1) {
 		int newfd = mvapich_abort_accept (st);
+
+		if (newfd == -2)
+			break;
 
 		if (newfd == -1) {
 			fatal("MPI master failed to accept (abort-wait)");
@@ -1372,7 +1419,8 @@ static void mvapich_wait_for_abort(mvapich_state_t *st)
 			first_abort_time = time (NULL);
 	}
 
-	return; /* but not reached */
+	pthread_setcancelstate(last_cancel_state, &dummy);
+	return;
 }
 
 
@@ -1638,6 +1686,9 @@ static int mvapich_accept_new (mvapich_state_t *st)
  *   read activity, these connections are processed using [fn], until
  *   such time as the mvapich_info state == MV_INIT_DONE.
  *
+ *  Returns 0  after all successful connections made
+ *         -1  on an error
+ *          1  after a request to shut down nicely
  */
 static int 
 mvapich_initialize_connections (mvapich_state_t *st, 
@@ -1651,13 +1702,13 @@ mvapich_initialize_connections (mvapich_state_t *st,
 	struct mvapich_info **mvmap;
 	struct pollfd *fds;
 	
-	fds = xmalloc ((st->nprocs+1) * sizeof (struct pollfd));
+	fds = xmalloc ((st->nprocs+2) * sizeof (struct pollfd));
 	mvmap = xmalloc (st->nprocs * sizeof (struct mvapich_info *));
 	st->nconnected = 0;
 
 	while (1) {
 
-		memset (fds, 0, sizeof (struct pollfd) * (st->nprocs + 1));
+		memset (fds, 0, sizeof (struct pollfd) * (st->nprocs + 2));
 		memset (mvmap, 0, sizeof (struct mvapich_info *) * st->nprocs);
 
 		/*
@@ -1666,8 +1717,14 @@ mvapich_initialize_connections (mvapich_state_t *st,
 		fds[0].fd = st->fd;
 		fds[0].events = POLLIN;
 
-		j = 1;
-		nfds = 1;
+		/*
+		 *  Shutdown pipe
+		 */
+		fds[1].fd = st->shutdown_pipe[0];
+		fds[1].events = POLLIN;
+
+		j = 2;
+		nfds = 2;
 		ncompleted = 0;
 
 		if (st->nconnected < st->nprocs)
@@ -1678,7 +1735,7 @@ mvapich_initialize_connections (mvapich_state_t *st,
 			struct mvapich_info *m = st->mvarray[i];
 
 			if (m->fd >= 0 && m->state < MV_INIT_DONE) {
-				mvmap[j-1] = m;
+				mvmap[j-2] = m;
 				fds[j].fd = m->fd;
 				fds[j].events = POLLIN;
 				j++;
@@ -1719,6 +1776,14 @@ mvapich_initialize_connections (mvapich_state_t *st,
 		mvapich_debug3 ("poll (nfds=%d) = %d\n", nfds, rc);
 
 		/*
+		 *  Stop other work if told to shut down
+		 */
+		if (fds[1].revents == POLLIN) {
+			info("pthread_exit called from mvapich_initialize_connections");
+			pthread_exit(NULL);
+		}
+
+		/*
 		 *  Preferentially accept new connections.
 		 */
 		if (fds[0].revents == POLLIN) {
@@ -1732,7 +1797,7 @@ mvapich_initialize_connections (mvapich_state_t *st,
 		 *   activity with passed in function [fn].
 		 */
 		for (i = 0; i < st->nconnected; i++) {
-			if (fds[i+1].revents == POLLIN) {
+			if (fds[i+2].revents == POLLIN) {
 				if ((rc = (*fn) (st, mvmap[i])) < 0) 
 					goto out;
 			}
@@ -1912,6 +1977,12 @@ static void *mvapich_thr(void *arg)
 	mvapich_state_t *st = arg;
 
 	/*
+	 * Register a cleanup function, called by this thread after it 
+	 * is cancelled.
+	 */
+	//pthread_cleanup_push(mvapich_state_destroy, (void *)st);
+
+	/*
 	 *  Accept and initialize all remote task connections:
 	 */
 	mvapich_connection_init (st);
@@ -1946,6 +2017,7 @@ static void *mvapich_thr(void *arg)
 	mvapich_wait_for_abort (st);
 
 	mvapich_mvarray_destroy (st);
+	//pthread_cleanup_pop(1);
 
 	return (NULL);
 }
@@ -1991,6 +2063,15 @@ mvapich_state_create(const mpi_plugin_client_info_t *job)
 	state->do_timing        = 0;
 	state->timeout          = 600;
 
+	if (pipe(state->shutdown_pipe) < 0) {
+		error ("mvapich_state_create: pipe: %m");
+		xfree(state);
+		return (NULL);
+	}
+	fd_set_nonblocking(state->shutdown_pipe[0]);
+	fd_set_nonblocking(state->shutdown_pipe[1]);
+	state->shutdown = false;
+
 	*(state->job) = *job;
 
 	return state;
@@ -1998,6 +2079,8 @@ mvapich_state_create(const mpi_plugin_client_info_t *job)
 
 static void mvapich_state_destroy(mvapich_state_t *st)
 {
+	close(st->shutdown_pipe[0]);
+	close(st->shutdown_pipe[1]);
 	xfree(st);
 }
 
@@ -2070,6 +2153,10 @@ extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
 	mvapich_state_t *st = NULL;
 
 	st = mvapich_state_create(job);
+	if (!st) {
+		error ("mvapich: Failed initialization\n");
+		return NULL;
+	}
 	if (process_environment (st) < 0) {
 		error ("mvapich: Failed to read environment settings\n");
 		mvapich_state_destroy(st);
@@ -2087,7 +2174,7 @@ extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
 	 * Accept in a separate thread.
 	 */
 	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	if (pthread_create(&st->tid, &attr, &mvapich_thr, (void *)st)) {
 		slurm_attr_destroy(&attr);
 		mvapich_state_destroy(st);
@@ -2115,8 +2202,23 @@ extern int mvapich_thr_destroy(mvapich_state_t *st)
 {
 	if (st != NULL) {
 		if (st->tid != (pthread_t)-1) {
-			pthread_cancel(st->tid);
+			char tmp = 1;
+			//pthread_cancel(st->tid);
+			//sleep(2);
+
+			st->shutdown = true;
+			info("Writing to shutdown pipe");
+			if (write(st->shutdown_pipe[1], &tmp, 1) != 1) {
+				info("Write failed");
+				/*
+				 * If can't write to this pipe, shutdown less
+				 * safely
+				 */
+				pthread_cancel(st->tid);
+			}
+
 			pthread_join(st->tid, NULL);
+			info("Joined mpi thread");
 		}
 		mvapich_state_destroy(st);
 	}
