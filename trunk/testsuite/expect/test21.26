@@ -35,19 +35,11 @@ source ./globals_accounting
 
 set test_id     "test21.26"
 set exit_code   0
-set tc1		qclustest
-set clu		Cluster
-set acc		Account
-set nm1		qacctest1
-set nm2		qacctest2
-set rt		root
-set qos		QOS
-set qs1		qqostest
-set qs2		normal
-set par		parent
-set usr		User
-set us1		qusertest
-set was		withassoc
+set cluster1		qclustest
+set account1		qacctest1
+set account2		qacctest2
+set qos1		qqostest
+set user1		qusertest
 set access_err  0
 
 print_header $test_id
@@ -73,10 +65,10 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 #
 # remove test associations to make sure we have a clean system
 #
-remove_user "" "" "$us1"
-remove_acct "" "$nm1,$nm2"
-remove_qos "$qs1"
-remove_cluster "$tc1"
+remove_user "" "" "$user1"
+remove_acct "" "$account1,$account2"
+remove_qos "$qos1"
+remove_cluster "$cluster1"
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
@@ -85,287 +77,409 @@ if {$access_err != 0} {
 # Build test associations
 #=====Done Cleaning System=========Begin Add Cluster======
 #add cluster
-incr exit_code [add_cluster "$tc1" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_cluster "$cluster1" " " "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 #=====Done Add Cluster========Begin Add QoS==========
 #add qos
-incr exit_code [add_qos "$qs1"]
+incr exit_code [add_qos "$qos1"]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 #====Done Add QoS===========Begin Add First Account========
 #add default account
-incr exit_code [add_acct "$tc1" "" "$nm1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct "$cluster1" "" "$account1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 #====Done Add First Account====Begin Add Second Account====
 #add account
-incr exit_code [add_acct "$tc1" "$nm1" "$nm2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_acct "$cluster1" "$account1" "$account2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 #=====Done Add Second Account========Begin Add User=========
 #add user
-incr exit_code [add_user "$tc1" "$nm1,$nm2" "$us1" "" "" "$nm1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [add_user "$cluster1" "$account1,$account2" "$user1" "" "" "$account1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 #====Done add user====Done building test associations===Begin test section=======
 
-################################################################
-# Begin check_qos procedure
-# Use sacctmgr to verify QoS of account
-################################################################
-proc check_qos { cluster acct user qos} {
-        global sacctmgr timeout exit_code
-
-	set matches 0
-	set my_pid [eval spawn $sacctmgr list assoc account=$acct cluster=$cluster format=qos,acct,user,cluster tree -p]
-		expect {
-		-re "There was a problem" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-				exit 1
-				}
-		-re "$qos.$acct\\\|\\\|$cluster" {
-				incr matches
-				exp_continue
-				}
-		-re "$qos. $acct.$user.$cluster" {
-				incr matches
-				exp_continue
-				}
-		timeout {
-			send_user "\nFAILURE: sacctmgr list associations not responding\n"
-				slow_kill $my_pid
-				exit 1
-				}
-		eof {
-			wait
-				}
-	}
-	return $matches
-}
-################################################################
-# End check_qos procedure
-################################################################
-
-
 #======Verify initial associations=============
-set matches [check_qos $tc1 $rt $rt "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Initial sacctmgr add failed at $rt account with ($matches)\n"
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 6} {
+	send_user "\nFAILURE: Initial sacctmgr add failed with ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit 1
 }
 
-set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Initial sacctmgr add failed at $nm1 account with ($matches)\n"
-	exit 1
-}
-set matches [check_qos $tc1 $nm2 $us1 "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Initial sacctmgr add failed at $nm2 account with ($matches)\n"
-	exit 1
-}
-
-#======Begin Modification to Add $qs1 to $nm1=======
+#======Begin Modification to Add $qos1 to $account1=======
 #modify test1 account to add test QoS
-incr exit_code [mod_acct "$tc1" "" "$nm1" "" "" "+=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$cluster1" "" "$account1" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 
 #=======Done Modifying Account=======Next is Verify=======
-set matches [check_qos $tc1 $rt $rt "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Second sacctmgr modify failed at $rt account with ($matches)\n"
-	exit 1
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
 }
-set matches [check_qos $tc1 $nm1 $us1 $qs1]
-if {$matches != 2} {
-	send_user "\nFAILURE: Second sacctmgr modify failed at $nm1 account with ($matches)\n"
-	exit 1
-}
-set matches [check_qos $tc1 $nm2 $us1 $qs1]
-if {$matches != 2} {
-	send_user "\nFAILURE: Second sacctmgr modify failed at $nm2 account with ($matches)\n"
+
+if {$matches != 6} {
+	send_user "\nFAILURE: failed on verify of +$qos1 to account $account1 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit 1
 }
 
-#======Begin Modification to Subtract $qs1 from $nm2=======
+#======Begin Modification to Subtract $qos1 from $account2=======
 #modify test2 account to remove test QoS
-incr exit_code [mod_acct "$tc1" "" "$nm2" "" "" "-=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 
 #=======Done Modifying Account=======Next is Verify=======
-set matches [check_qos $tc1 $rt $rt "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Third sacctmgr modify failed at $rt account with ($matches)\n"
-	exit 1
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
 }
-set matches [check_qos $tc1 $nm1 $us1 $qs1]
-if {$matches != 2} {
-	send_user "\nFAILURE: Third sacctmgr modify failed at $nm1 account with ($matches)\n"
-	exit 1
-}
-set matches [check_qos $tc1 $nm2 $us1 "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Third sacctmgr modify failed at $nm2 account with ($matches)\n"
+
+if {$matches != 6} {
+	send_user "\nFAILURE: verify of -$qos1 from account $account2 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit 1
 }
 
-#======Begin Modification to Subtract $qs1 from $nm1=======
+
+#======Begin Modification to Subtract $qos1 from $account1=======
 #modify test1 account to remove test QoS
-incr exit_code [mod_acct "$tc1" "" "$nm1" "" "" "-=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$cluster1" "" "$account1" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 
 #=======Done Modifying Account=======Next is Verify=======
-set matches [check_qos $tc1 $rt $rt "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Fourth sacctmgr modify failed at $rt account with ($matches)\n"
-	exit 1
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
 }
-set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Fourth sacctmgr modify failed at $nm1 account with ($matches)\n"
-	exit 1
-}
-set matches [check_qos $tc1 $nm2 $us1 "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Fourth sacctmgr modify failed at $nm2 account with ($matches)\n"
+
+if {$matches != 6} {
+	send_user "\nFAILURE: verify of -$qos1 from account $account1 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit 1
 }
 
-#=====Begin Modification to Add $qs1 from $nm2=======
+#=====Begin Modification to Add $qos1 from $account2=======
 #modify test2 account to add test QoS
-incr exit_code [mod_acct "$tc1" "" "$nm2" "" "" "+=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 
 #=======Done Modifying Account=======Next is Verify=======
-set matches [check_qos $tc1 $rt $rt "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Fifth sacctmgr modify failed at $rt account with ($matches)\n"
-	exit 1
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
 }
-set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Fifth sacctmgr modify failed at $nm1 account with ($matches)\n"
-	exit 1
-}
-set matches [check_qos $tc1 $nm2 $us1 $qs1]
-if {$matches != 2} {
-	send_user "\nFAILURE: Fifth sacctmgr modify failed at $nm2 account with ($matches)\n"
+
+if {$matches != 6} {
+	send_user "\nFAILURE: failed on verify of +$qos1 to account $account2 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit 1
 }
 
-#=======Begin Modification to Add $qs1 from $nm2=======
+#=======Begin Modification to Add $qos1 from $account2=======
 #modify root account to add test QoS
-incr exit_code [mod_acct "$tc1" "" "$rt" "" "" "+=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$cluster1" "" "root" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 
 #=======Done Modifying Account=======Next Is Verify=======
-set matches [check_qos $tc1 $rt $rt $qs1]
-if {$matches != 2} {
-	send_user "\nFAILURE: Sixth sacctmgr modify failed at $rt account with ($matches)\n"
-	exit 1
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "$qos1.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
 }
-set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Sixth sacctmgr modify failed at $nm1 account with ($matches)\n"
+
+if {$matches != 6} {
 	exit 1
-}
-set matches [check_qos $tc1 $nm2 $us1 $qs1]
-if {$matches != 2} {
-	send_user "\nFAILURE: Sixth sacctmgr modify failed at $nm2 account with ($matches)\n"
+	send_user "\nFAILURE: failed on verify of +$qos1 to account root ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit 1
 }
 
-#======Begin Modification to Add $qs1 from $nm2=======
+#======Begin Modification to Add $qos1 from $account2=======
 #modify test2 account to remove test QoS
-incr exit_code [mod_acct "$tc1" "" "$nm2" "" "" "-=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$us1"
-	remove_acct "" "$nm1,$nm2"
-	remove_qos "$qs1"
-	remove_cluster "$tc1"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 
 #=======Done Modifying Account=======Next is Verify=======
-set matches [check_qos $tc1 $rt $rt $qs1]
-if {$matches != 2} {
-	send_user "\nFAILURE: Seventh sacctmgr modify failed at $rt account with ($matches)\n"
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "$qos1.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 6} {
+	send_user "\nFAILURE: failed on verify of -$qos1 to account $account2 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
 	exit 1
 }
-set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Seventh sacctmgr modify failed at $nm1 account with ($matches)\n"
-	exit 1
-}
-set matches [check_qos $tc1 $nm2 $us1 "$qs1"]
-if {$matches != 0} {
-	send_user "\nFAILURE: Seventh sacctmgr modify failed at $nm2 account with ($matches)\n"
-	exit 1
-}
+
 
 #======Done With List====== Ending=======
 # This is the end below here
 #
-incr exit_code [remove_user "" "" "$us1"]
-incr exit_code [remove_acct "" "$nm1,$nm2"]
-incr exit_code [remove_qos "$qs1"]
-incr exit_code [remove_cluster "$tc1"]
+incr exit_code [remove_user "" "" "$user1"]
+incr exit_code [remove_acct "" "$account1,$account2"]
+incr exit_code [remove_qos "$qos1"]
+incr exit_code [remove_cluster "$cluster1"]
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS: $test_id\n"
@@ -373,4 +487,3 @@ if {$exit_code == 0} {
 	send_user "\nFAILURE: $test_id\n"
 }
 exit $exit_code
-
