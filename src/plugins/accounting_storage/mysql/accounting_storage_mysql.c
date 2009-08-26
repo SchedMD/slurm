@@ -8457,9 +8457,10 @@ empty:
 						      parent_qos+1);
 
 			/* then add the parents delta */
-			if(parent_delta_qos)
+			if(parent_delta_qos) 
 				slurm_addto_char_list(delta_qos_list,
 						      parent_delta_qos+1);
+
 			/* now add the associations */
 			if(row[ASSOC_REQ_DELTA_QOS][0]) 
 				slurm_addto_char_list(
