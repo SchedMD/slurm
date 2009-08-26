@@ -191,13 +191,13 @@ extern int task_slurmd_launch_request (uint32_t job_id,
 		_update_bind_type(req);
 
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		info("task affinity : before lllp distribution cpu bind "
+		debug("task affinity : before lllp distribution cpu bind "
 		     "method is '%s' (%s)", buf_type, req->cpu_bind);
 
 		lllp_distribution(req, node_id);
 		  
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		info("task affinity : after lllp distribution cpu bind "
+		debug("task affinity : after lllp distribution cpu bind "
 		     "method is '%s' (%s)", buf_type, req->cpu_bind);
 	}
 	
