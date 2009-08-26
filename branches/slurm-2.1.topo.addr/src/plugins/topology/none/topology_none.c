@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -105,3 +105,17 @@ extern int topo_build_config(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * topo_get_node_addr - build node address and the associated pattern 
+ *      based on the topology information
+ *
+ * example of output :
+ *      address : s0.s4.s8.tux1
+ *      pattern : switch.switch.switch.node
+ */
+extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
+{
+	*paddr = xstrdup(node_name);
+	*ppattern = xstrdup("node");
+	return SLURM_SUCCESS;
+}	

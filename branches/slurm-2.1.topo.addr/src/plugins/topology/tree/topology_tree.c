@@ -134,6 +134,81 @@ extern int topo_build_config(void)
 	return SLURM_SUCCESS;
 }
 
+
+/*
+ * topo_get_node_addr - build node address and the associated pattern 
+ *      based on the topology information
+ *
+ * example of output :
+ *      address : s0.s4.s8.tux1
+ *      pattern : switch.switch.switch.node
+ */
+extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
+{
+	struct node_record *node_ptr;
+	int node_inx;
+	hostlist_t sl = NULL;
+
+	char buf[8192];
+	int s_max_level = 0;
+	int i, j;
+
+	/* no switches found, return */
+	if ( switch_record_cnt == 0 ) {
+		*paddr = xstrdup(node_name);
+		*ppattern = xstrdup("node");
+		return SLURM_SUCCESS;
+	}
+
+	node_ptr = find_node_record(node_name);
+	/* node not found in configuration */
+	if ( node_ptr == NULL )
+		return SLURM_ERROR;
+	node_inx = node_ptr - node_record_table_ptr;
+
+	/* look for switches max level */
+	for (i=0; i<switch_record_cnt; i++) {
+		if ( switch_record_table[i].level > s_max_level )
+			s_max_level = switch_record_table[i].level;
+	}
+	
+	/* initialize output parameters */
+	*paddr = xstrdup("");
+	*ppattern = xstrdup("");
+
+	/* build node topology address and the associated pattern */
+	for (j=s_max_level; j>=0; j--) {
+		for (i=0; i<switch_record_cnt; i++) {
+			if ( switch_record_table[i].level != j )
+				continue;
+			if ( !bit_test(switch_record_table[i]. node_bitmap, 
+				       node_inx) )
+				continue;
+			if ( sl == NULL ) {
+				sl = hostlist_create(switch_record_table[i].
+						     name);
+			} else {
+				hostlist_push_host(sl,
+						   switch_record_table[i].
+						   name);
+			}
+		}
+		if ( sl ) {
+			hostlist_ranged_string(sl, sizeof(buf), buf);
+			xstrcat(*paddr,buf);
+			hostlist_destroy(sl);
+		}
+		xstrcat(*paddr, ".");
+		xstrcat(*ppattern, "switch.");
+	}
+
+	/* append node name */
+	xstrcat(*paddr, node_name);
+	xstrcat(*ppattern, "node");
+
+	return SLURM_SUCCESS;
+}
+
 static void _validate_switches(void)
 {
 	slurm_conf_switches_t *ptr, **ptr_array;
