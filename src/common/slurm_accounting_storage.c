@@ -2391,8 +2391,6 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(0, buffer);
 
 			packdouble(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
 			return;
 		}
 		packstr(object->description, buffer);	
@@ -2433,22 +2431,6 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->priority, buffer);
 		
 		packdouble(object->usage_factor, buffer);
-
-		if(object->user_limit_list)
-			count = list_count(object->user_limit_list);
-
-		pack32(count, buffer);
-
-		if(count && count != NO_VAL) {
-			acct_used_limits_t *used_limits = NULL;
-			itr = list_iterator_create(object->user_limit_list);
-			while((used_limits = list_next(itr))) {
-				pack_acct_used_limits(used_limits,
-						      rpc_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
 	} else if(rpc_version >= 5) {
 		if(!object) {
 			packnull(buffer);
@@ -2662,21 +2644,6 @@ extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&object_ptr->priority, buffer);
 
 		safe_unpackdouble(&object_ptr->usage_factor, buffer);
-
-		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
-			void *used_limits = NULL;
-
-			object_ptr->user_limit_list = 
-				list_create(slurm_destroy_char);
-			for(i=0; i<count; i++) {
-				unpack_acct_used_limits(&used_limits,
-							rpc_version, buffer);
-				list_append(object_ptr->user_limit_list,
-					    used_limits);
-			}
-		}
-
 	} else if(rpc_version >= 5) {
 		safe_unpackstr_xmalloc(&object_ptr->description,
 				       &uint32_tmp, buffer);

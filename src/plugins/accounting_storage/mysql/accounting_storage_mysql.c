@@ -2189,8 +2189,9 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	/* we want to remove completely all that is less than a day old */
 	if(!has_jobs && table != assoc_table) {
 		query = xstrdup_printf("delete from %s where creation_time>%d "
-				       "&& (%s);",
-				       table, day_old, name_char);
+				       "&& (%s);"
+				       "alter table %s AUTO_INCREMENT=0;",
+				       table, day_old, name_char, table);
 	}
 
 	if(table != assoc_table)
@@ -2385,20 +2386,14 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		}
 
 		xstrfmtcat(query,
-			   "delete quick from %s where lft between "
-			   "%s AND %s;",
-			   assoc_table,
-			   row2[0], row2[1]);
+			   "delete quick from %s where lft between %s AND %s;",
+			   assoc_table, row2[0], row2[1]);
 		
 		xstrfmtcat(query,
-			   "UPDATE %s SET rgt = rgt - %s WHERE "
-			   "rgt > %s;"
-			   "UPDATE %s SET lft = lft - %s WHERE "
-			   "lft > %s;",
-			   assoc_table, row2[2],
-			   row2[1],
-			   assoc_table, row2[2],
-			   row2[1]);
+			   "UPDATE %s SET rgt = rgt - %s WHERE rgt > %s;"
+			   "UPDATE %s SET lft = lft - %s WHERE lft > %s;",
+			   assoc_table, row2[2], row2[1],
+			   assoc_table, row2[2], row2[1]);
 		
 		mysql_free_result(result2);
 
@@ -2431,9 +2426,11 @@ just_update:
 			       "max_nodes_per_job=NULL, "
 			       "max_wall_duration_per_job=NULL, "
 			       "max_cpu_mins_per_job=NULL "
-			       "where (%s);",
+			       "where (%s);"
+			       "alter table %s AUTO_INCREMENT=0;",
 			       assoc_table, now,
-			       loc_assoc_char);
+			       loc_assoc_char,
+			       assoc_table);
 
 	if(table != assoc_table)
 		xfree(loc_assoc_char);
@@ -8723,7 +8720,7 @@ empty:
 			qos->name =  xstrdup(row[QOS_REQ_NAME]);
 
 		if(row[QOS_REQ_JOBF] && row[QOS_REQ_JOBF][0])
-		qos->job_flags =  xstrdup(row[QOS_REQ_JOBF]);
+			qos->job_flags =  xstrdup(row[QOS_REQ_JOBF]);
 
 		if(row[QOS_REQ_GCH])
 			qos->grp_cpu_mins = atoll(row[QOS_REQ_GCH]);
