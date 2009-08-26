@@ -2042,9 +2042,7 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 	acct_qos_rec_t *rec = NULL;
 	acct_qos_rec_t *object = NULL;
 
-	char *qos_char = NULL, *tmp_char = NULL;
-
-	ListIterator itr = NULL, assoc_itr = NULL, qos_itr = NULL;
+	ListIterator itr = NULL, assoc_itr = NULL;
 
 	acct_association_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
@@ -2081,41 +2079,74 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 				g_qos_count = object->id+1;
 			}
 			object = NULL;	
-	
 			break;
 		case ACCT_MODIFY_QOS:
-			/* FIX ME: fill in here the qos changes stuff */
+			if(!rec) {
+				rc = SLURM_ERROR;
+				break;
+			}
+
+			if(object->grp_cpu_mins != NO_VAL) 
+				rec->grp_cpu_mins = object->grp_cpu_mins;
+			if(object->grp_cpus != NO_VAL) 
+				rec->grp_cpus = object->grp_cpus;
+			if(object->grp_jobs != NO_VAL) 
+				rec->grp_jobs = object->grp_jobs;
+			if(object->grp_nodes != NO_VAL) 
+				rec->grp_nodes = object->grp_nodes;
+			if(object->grp_submit_jobs != NO_VAL) 
+				rec->grp_submit_jobs = object->grp_submit_jobs;
+			if(object->grp_wall != NO_VAL) 
+				rec->grp_wall = object->grp_wall;
+			
+			if(object->max_cpu_mins_pu != NO_VAL) 
+				rec->max_cpu_mins_pu = object->max_cpu_mins_pu;
+			if(object->max_cpus_pu != NO_VAL) 
+				rec->max_cpus_pu = object->max_cpus_pu;
+			if(object->max_jobs_pu != NO_VAL) 
+				rec->max_jobs_pu = object->max_jobs_pu;
+			if(object->max_nodes_pu != NO_VAL) 
+				rec->max_nodes_pu = object->max_nodes_pu;
+			if(object->max_submit_jobs_pu != NO_VAL) 
+				rec->max_submit_jobs_pu =
+					object->max_submit_jobs_pu;
+			if(object->max_wall_pu != NO_VAL) 
+				rec->max_wall_pu = object->max_wall_pu;
+			
+			if(object->preempt_bitstr) {
+				if(rec->preempt_bitstr) 
+					FREE_NULL_BITMAP(rec->preempt_bitstr);
+				
+				rec->preempt_bitstr = object->preempt_bitstr;
+				object->preempt_bitstr = NULL;
+			}
+
+			if(object->priority != NO_VAL) 
+				rec->priority = object->priority;
+
+			if(object->usage_factor != (double)NO_VAL) 
+				rec->usage_factor = object->usage_factor;
+			
 			break;
 		case ACCT_REMOVE_QOS:
 			/* Remove this qos from all the associations
 			   on this cluster.
 			*/
-			tmp_char = xstrdup_printf("%d", object->id);
 			slurm_mutex_lock(&assoc_mgr_association_lock);
 			assoc_itr = list_iterator_create(
 				assoc_mgr_association_list);
 			while((assoc = list_next(assoc_itr))) {
-				if(!assoc->qos_list
-				   || !list_count(assoc->qos_list))
+				if(!assoc->valid_qos)
 					continue;
-				qos_itr = list_iterator_create(assoc->qos_list);
-				while((qos_char = list_next(qos_itr))) {
-					if(!strcmp(qos_char, tmp_char)) {
-						list_delete_item(qos_itr);
-						break;
-					}
-				}
-				list_iterator_destroy(qos_itr);
+
+				if(bit_size(assoc->valid_qos) > object->id)
+					bit_clear(assoc->valid_qos, object->id);
 			}
 			list_iterator_destroy(assoc_itr);
 			slurm_mutex_unlock(&assoc_mgr_association_lock);
-			xfree(tmp_char);
-
-			if(!rec) {
-				//rc = SLURM_ERROR;
-				break;
-			}
-			list_delete_item(itr);
+			
+			if(rec) 
+				list_delete_item(itr);
 			break;
 		default:
 			break;
@@ -2124,6 +2155,8 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 	}
 
 	if(resize_qos_bitstr) {
+		/* we need to resize all bitstring's that represent
+		   qos' */
 		list_iterator_reset(itr);
 		while((object = list_next(itr))) {
 			if(!object->preempt_bitstr) 
@@ -2133,10 +2166,21 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 				bit_realloc(object->preempt_bitstr,
 					    g_qos_count);
 		}
+
+		slurm_mutex_lock(&assoc_mgr_association_lock);
+		assoc_itr = list_iterator_create(assoc_mgr_association_list);
+		while((assoc = list_next(assoc_itr))) {
+			if(!assoc->valid_qos)
+				continue;
+			assoc->valid_qos =
+				bit_realloc(assoc->valid_qos, g_qos_count);
+		}
+		list_iterator_destroy(assoc_itr);
+		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
-
+	
 	return rc;	
 }
 

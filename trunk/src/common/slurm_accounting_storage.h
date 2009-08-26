@@ -245,6 +245,7 @@ typedef struct acct_association_rec {
 	
 	char *user;		/* user associated to association */
 	bitstr_t *valid_qos;    /* qos available for this association
+				 * derived from the qos_list.
 				 * (DON'T PACK) */	
 } acct_association_rec_t;
 
@@ -343,13 +344,15 @@ typedef struct {
 	char *name;
 	double norm_priority;/* normalized priority (DON'T PACK) */
 	bitstr_t *preempt_bitstr; /* other qos' this qos can preempt */
-	List preempt_list; /* list of char *'s */
+	List preempt_list; /* list of char *'s only used to add or
+			    * change the other qos' this can preempt,
+			    * when doing a get use the preempt_bitstr */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
 	double usage_factor; /* factor to apply to usage in this qos */
 	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
 
-	List user_limit_list; /* acct_used_limits_t's */
+	List user_limit_list; /* acct_used_limits_t's (DON'T PACK) */
 } acct_qos_rec_t;
 
 typedef struct {
