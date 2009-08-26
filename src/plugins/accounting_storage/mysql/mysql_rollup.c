@@ -380,8 +380,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		   calculating the total time for a cluster we will
 		   remove the extra time received.  This may result in
 		   unexpected results with association based reports
-		   since the reservation is given the total amount of
-		   time of each reservation, thus equalling more time
+		   since the association is given the total amount of
+		   time of each reservation, thus equaling more time
 		   that is available.  Job/Cluster/Reservation reports
 		   should be fine though since we really don't over
 		   allocate resources.
