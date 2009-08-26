@@ -1,0 +1,376 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          sacctmgr +=, -= modify QoS test
+#          
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set test_id     "test21.26"
+set exit_code   0
+set tc1		qclustest
+set clu		Cluster
+set acc		Account
+set nm1		qacctest1
+set nm2		qacctest2
+set rt		root
+set qos		QOS
+set qs1		qqostest
+set qs2		normal
+set par		parent
+set usr		User
+set us1		qusertest
+set was		withassoc
+set access_err  0
+
+print_header $test_id
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
+#
+#make sure we have permission to do this work
+#
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
+	exit 0
+}
+
+#
+# remove test associations to make sure we have a clean system
+#
+remove_user "" "" "$us1"
+remove_acct "" "$nm1,$nm2"
+remove_qos "$qs1"
+remove_cluster "$tc1"
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
+
+# Build test associations
+#=====Done Cleaning System=========Begin Add Cluster======
+#add cluster
+incr exit_code [add_cluster "$tc1" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+#=====Done Add Cluster========Begin Add QoS==========
+#add qos
+incr exit_code [add_qos "$qs1"]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+#====Done Add QoS===========Begin Add First Account========
+#add default account
+incr exit_code [add_acct "$tc1" "" "$nm1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+#====Done Add First Account====Begin Add Second Account====
+#add account
+incr exit_code [add_acct "$tc1" "$nm1" "$nm2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+#=====Done Add Second Account========Begin Add User=========
+#add user
+incr exit_code [add_user "$tc1" "$nm1,$nm2" "$us1" "" "" "$nm1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+#====Done add user====Done building test associations===Begin test section=======
+
+################################################################
+# Begin check_qos procedure
+# Use sacctmgr to verify QoS of account
+################################################################
+proc check_qos { cluster acct user qos} {
+        global sacctmgr timeout exit_code
+
+	set matches 0
+	set my_pid [eval spawn $sacctmgr list assoc account=$acct cluster=$cluster format=qos,acct,user,cluster tree -p]
+		expect {
+		-re "There was a problem" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+				exit 1
+				}
+		-re "$qos.$acct\\\|\\\|$cluster" {
+				incr matches
+				exp_continue
+				}
+		-re "$qos. $acct.$user.$cluster" {
+				incr matches
+				exp_continue
+				}
+		timeout {
+			send_user "\nFAILURE: sacctmgr list associations not responding\n"
+				slow_kill $my_pid
+				exit 1
+				}
+		eof {
+			wait
+				}
+	}
+	return $matches
+}
+################################################################
+# End check_qos procedure
+################################################################
+
+
+#======Verify initial associations=============
+set matches [check_qos $tc1 $rt $rt "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Initial sacctmgr add failed at $rt account with ($matches)\n"
+	exit 1
+}
+
+set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Initial sacctmgr add failed at $nm1 account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm2 $us1 "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Initial sacctmgr add failed at $nm2 account with ($matches)\n"
+	exit 1
+}
+
+#======Begin Modification to Add $qs1 to $nm1=======
+#modify test1 account to add test QoS
+incr exit_code [mod_acct "$tc1" "" "$nm1" "" "" "+=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches [check_qos $tc1 $rt $rt "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Second sacctmgr modify failed at $rt account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm1 $us1 $qs1]
+if {$matches != 2} {
+	send_user "\nFAILURE: Second sacctmgr modify failed at $nm1 account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm2 $us1 $qs1]
+if {$matches != 2} {
+	send_user "\nFAILURE: Second sacctmgr modify failed at $nm2 account with ($matches)\n"
+	exit 1
+}
+
+#======Begin Modification to Subtract $qs1 from $nm2=======
+#modify test2 account to remove test QoS
+incr exit_code [mod_acct "$tc1" "" "$nm2" "" "" "-=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches [check_qos $tc1 $rt $rt "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Third sacctmgr modify failed at $rt account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm1 $us1 $qs1]
+if {$matches != 2} {
+	send_user "\nFAILURE: Third sacctmgr modify failed at $nm1 account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm2 $us1 "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Third sacctmgr modify failed at $nm2 account with ($matches)\n"
+	exit 1
+}
+
+#======Begin Modification to Subtract $qs1 from $nm1=======
+#modify test1 account to remove test QoS
+incr exit_code [mod_acct "$tc1" "" "$nm1" "" "" "-=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches [check_qos $tc1 $rt $rt "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Fourth sacctmgr modify failed at $rt account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Fourth sacctmgr modify failed at $nm1 account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm2 $us1 "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Fourth sacctmgr modify failed at $nm2 account with ($matches)\n"
+	exit 1
+}
+
+#=====Begin Modification to Add $qs1 from $nm2=======
+#modify test2 account to add test QoS
+incr exit_code [mod_acct "$tc1" "" "$nm2" "" "" "+=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches [check_qos $tc1 $rt $rt "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Fifth sacctmgr modify failed at $rt account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Fifth sacctmgr modify failed at $nm1 account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm2 $us1 $qs1]
+if {$matches != 2} {
+	send_user "\nFAILURE: Fifth sacctmgr modify failed at $nm2 account with ($matches)\n"
+	exit 1
+}
+
+#=======Begin Modification to Add $qs1 from $nm2=======
+#modify root account to add test QoS
+incr exit_code [mod_acct "$tc1" "" "$rt" "" "" "+=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next Is Verify=======
+set matches [check_qos $tc1 $rt $rt $qs1]
+if {$matches != 2} {
+	send_user "\nFAILURE: Sixth sacctmgr modify failed at $rt account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Sixth sacctmgr modify failed at $nm1 account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm2 $us1 $qs1]
+if {$matches != 2} {
+	send_user "\nFAILURE: Sixth sacctmgr modify failed at $nm2 account with ($matches)\n"
+	exit 1
+}
+
+#======Begin Modification to Add $qs1 from $nm2=======
+#modify test2 account to remove test QoS
+incr exit_code [mod_acct "$tc1" "" "$nm2" "" "" "-=$qs1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$us1"
+	remove_acct "" "$nm1,$nm2"
+	remove_qos "$qs1"
+	remove_cluster "$tc1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches [check_qos $tc1 $rt $rt $qs1]
+if {$matches != 2} {
+	send_user "\nFAILURE: Seventh sacctmgr modify failed at $rt account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm1 $us1 "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Seventh sacctmgr modify failed at $nm1 account with ($matches)\n"
+	exit 1
+}
+set matches [check_qos $tc1 $nm2 $us1 "$qs1"]
+if {$matches != 0} {
+	send_user "\nFAILURE: Seventh sacctmgr modify failed at $nm2 account with ($matches)\n"
+	exit 1
+}
+
+#======Done With List====== Ending=======
+# This is the end below here
+#
+incr exit_code [remove_user "" "" "$us1"]
+incr exit_code [remove_acct "" "$nm1,$nm2"]
+incr exit_code [remove_qos "$qs1"]
+incr exit_code [remove_cluster "$tc1"]
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS: $test_id\n"
+} else {
+	send_user "\nFAILURE: $test_id\n"
+}
+exit $exit_code
+
