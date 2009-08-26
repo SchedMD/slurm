@@ -159,13 +159,19 @@ extern int slurm_addto_char_list(List char_list, char *names)
 					if(!strcasecmp(tmp_char, name))
 						break;
 				}
-				
-				if(!tmp_char) {
-					_make_lower(name);
-					list_append(char_list, name);
+				/* If we get a duplicate remove the
+				   first one and tack this on the end.
+				   This is needed for get associations
+				   with qos.
+				*/
+				if(tmp_char) 
+					list_delete_item(itr);
+				else 
 					count++;
-				} else 
-					xfree(name);
+				
+				_make_lower(name);
+				list_append(char_list, name);
+				
 				list_iterator_reset(itr);
 				
 				i++;
@@ -187,12 +193,18 @@ extern int slurm_addto_char_list(List char_list, char *names)
 				break;
 		}
 		
-		if(!tmp_char) {
-			_make_lower(name);
-			list_append(char_list, name);
+		/* If we get a duplicate remove the
+		   first one and tack this on the end.
+		   This is needed for get associations
+		   with qos.
+		*/
+		if(tmp_char) 
+			list_delete_item(itr);
+		else 
 			count++;
-		} else 
-			xfree(name);
+		
+		_make_lower(name);
+		list_append(char_list, name);
 	}	
 	list_iterator_destroy(itr);
 	return count;

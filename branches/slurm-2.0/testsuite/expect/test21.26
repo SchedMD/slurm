@@ -1,0 +1,490 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          sacctmgr +=, -= modify QoS test
+#          
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set test_id     "test21.26"
+set exit_code   0
+set cluster1		qclustest
+set account1		qacctest1
+set account2		qacctest2
+set qos1		qqostest
+set user1		qusertest
+set access_err  0
+
+print_header $test_id
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
+#
+#make sure we have permission to do this work
+#
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
+	exit 0
+}
+
+#
+# remove test associations to make sure we have a clean system
+#
+remove_user "" "" "$user1"
+remove_acct "" "$account1,$account2"
+remove_qos "$qos1"
+remove_cluster "$cluster1"
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
+
+# Build test associations
+#=====Done Cleaning System=========Begin Add Cluster======
+#add cluster
+incr exit_code [add_cluster "$cluster1" " " "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+#=====Done Add Cluster========Begin Add QoS==========
+#add qos
+incr exit_code [add_qos "$qos1"]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+#====Done Add QoS===========Begin Add First Account========
+#add default account
+incr exit_code [add_acct "$cluster1" "" "$account1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+#====Done Add First Account====Begin Add Second Account====
+#add account
+incr exit_code [add_acct "$cluster1" "$account1" "$account2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+#=====Done Add Second Account========Begin Add User=========
+#add user
+incr exit_code [add_user "$cluster1" "$account1,$account2" "$user1" "" "" "$account1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+#====Done add user====Done building test associations===Begin test section=======
+
+#======Verify initial associations=============
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 6} {
+	send_user "\nFAILURE: Initial sacctmgr add failed with ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit 1
+}
+
+#======Begin Modification to Add $qos1 to $account1=======
+#modify test1 account to add test QoS
+incr exit_code [mod_acct "$cluster1" "" "$account1" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 6} {
+	send_user "\nFAILURE: failed on verify of +$qos1 to account $account1 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit 1
+}
+
+#======Begin Modification to Subtract $qos1 from $account2=======
+#modify test2 account to remove test QoS
+incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 6} {
+	send_user "\nFAILURE: verify of -$qos1 from account $account2 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit 1
+}
+
+
+#======Begin Modification to Subtract $qos1 from $account1=======
+#modify test1 account to remove test QoS
+incr exit_code [mod_acct "$cluster1" "" "$account1" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 6} {
+	send_user "\nFAILURE: verify of -$qos1 from account $account1 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit 1
+}
+
+#=====Begin Modification to Add $qos1 from $account2=======
+#modify test2 account to add test QoS
+incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "\n.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 6} {
+	send_user "\nFAILURE: failed on verify of +$qos1 to account $account2 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit 1
+}
+
+#=======Begin Modification to Add $qos1 from $account2=======
+#modify root account to add test QoS
+incr exit_code [mod_acct "$cluster1" "" "root" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next Is Verify=======
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "$qos1.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "$qos1.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 6} {
+	exit 1
+	send_user "\nFAILURE: failed on verify of +$qos1 to account root ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit 1
+}
+
+#======Begin Modification to Add $qos1 from $account2=======
+#modify test2 account to remove test QoS
+incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit $exit_code
+}
+
+#=======Done Modifying Account=======Next is Verify=======
+set matches 0
+set my_pid [eval spawn $sacctmgr list assoc cluster=$cluster1 format=qos,acct,user -p]
+
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "$qos1.root.(|root)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account1.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	-re "\n.$account2.(|$user1)." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 6} {
+	send_user "\nFAILURE: failed on verify of -$qos1 to account $account2 ($matches)\n"
+	remove_user "" "" "$user1"
+	remove_acct "" "$account1,$account2"
+	remove_qos "$qos1"
+	remove_cluster "$cluster1"
+	exit 1
+}
+
+
+#======Done With List====== Ending=======
+# This is the end below here
+#
+incr exit_code [remove_user "" "" "$user1"]
+incr exit_code [remove_acct "" "$account1,$account2"]
+incr exit_code [remove_qos "$qos1"]
+incr exit_code [remove_cluster "$cluster1"]
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS: $test_id\n"
+} else {
+	send_user "\nFAILURE: $test_id\n"
+}
+exit $exit_code
+
