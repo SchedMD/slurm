@@ -70,6 +70,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h" /* location of slurmctld_conf */
 #include "src/common/select_job_res.h"
@@ -162,88 +163,8 @@ extern int   association_based_accounting;
 extern int   cluster_procs;
 
 /*****************************************************************************\
- *  NODE parameters and data structures
+ *  NODE parameters and data structures, mostly in src/common/node_conf.h
 \*****************************************************************************/
-#define CONFIG_MAGIC	0xc065eded
-#define FEATURE_MAGIC	0x34dfd8b5
-#define NODE_MAGIC	0x0de575ed
-
-struct config_record {
-	uint32_t magic;		/* magic cookie to test data integrity */
-	uint16_t cpus;		/* count of processors running on the node */
-	uint16_t sockets;	/* number of sockets per node */
-	uint16_t cores;		/* number of cores per CPU */
-	uint16_t threads;	/* number of threads per core */
-	uint32_t real_memory;	/* MB real memory on the node */
-	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
-	uint32_t weight;	/* arbitrary priority of node for 
-				 * scheduling work on */
-	char *feature;		/* arbitrary list of features associated */
-	char **feature_array;	/* array of feature names */
-	char *nodes;		/* name of nodes with this configuration */
-	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
-};
-extern List config_list;	/* list of config_record entries */
-
-struct features_record {
-	uint32_t magic;		/* magic cookie to test data integrity */
-	char *name;		/* name of a feature */
-	bitstr_t *node_bitmap;	/* bitmap of nodes with this feature */
-};
-extern List feature_list;	/* list of features_record entries */
-
-struct node_record {
-	uint32_t magic;			/* magic cookie for data integrity */
-	char *name;			/* name of the node. NULL==defunct */
-	uint16_t node_state;		/* enum node_states, ORed with 
-					 * NODE_STATE_NO_RESPOND if not 
-					 * responding */
-	bool not_responding;		/* set if fails to respond, 
-					 * clear after logging this */
-	time_t last_response;		/* last response from the node */
-	time_t last_idle;		/* time node last become idle */
-	uint16_t cpus;			/* count of processors on the node */
-	uint16_t sockets;		/* number of sockets per node */
-	uint16_t cores;			/* number of cores per CPU */
-	uint16_t threads;		/* number of threads per core */
-	uint32_t real_memory;		/* MB real memory on the node */
-	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
-	uint32_t up_time;		/* seconds since node boot */
-	struct config_record *config_ptr;  /* configuration spec ptr */
-	uint16_t part_cnt;		/* number of associated partitions */
-	struct part_record **part_pptr;	/* array of pointers to partitions 
-					 * associated with this node*/
-	char *comm_name;		/* communications path name to node */
-	uint16_t port;			/* TCP port number of the slurmd */
-	slurm_addr slurm_addr;		/* network address */
-	uint16_t comp_job_cnt;		/* count of jobs completing on node */
-	uint16_t run_job_cnt;		/* count of jobs running on node */
-	uint16_t no_share_job_cnt;	/* count of jobs running that will
-					 * not share nodes */
-	char *reason; 			/* why a node is DOWN or DRAINING */
-	char *features;			/* associated features, used only
-					 * for state save/restore, DO NOT
-					 * use for scheduling purposes */
-	char *arch;			/* computer architecture */
-	char *os;			/* operating system currently running */
-	struct node_record *node_next;	/* next entry with same hash index */
-	uint32_t hilbert_integer;	/* Hilbert number based on node name,
-					 * no need to save/restore */
-#ifdef APBASIL_LOC
-	uint32_t basil_node_id;		/* Cray/BASIL node ID,
-					 * no need to save/restore */
-#endif	/* APBASIL_LOC */
-	select_nodeinfo_t *select_nodeinfo; /* opaque data structure,
-					     * use select_g_get_nodeinfo()
-					     * to access conents */
-
-};
-
-extern struct node_record *node_record_table_ptr;  /* ptr to node records */
-extern time_t last_bitmap_update;	/* time of last node creation or 
-					 * deletion */
-extern time_t last_node_update;		/* time of last node record update */
-extern int node_record_count;		/* count in node_record_table_ptr */
 extern uint32_t total_cpus;		/* count of CPUs in the entire cluster */
 extern bool ping_nodes_now;		/* if set, ping nodes immediately */
 
@@ -660,18 +581,6 @@ extern char * bitmap2node_name (bitstr_t *bitmap) ;
 /* Given a config_record with it's bitmap already set, update feature_list */
 extern void  build_config_feature_list(struct config_record *config_ptr);
 
-/*
- * create_config_record - create a config_record entry and set is values to 
- *	the defaults. each config record corresponds to a line in the  
- *	slurm.conf file and typically describes the configuration of a 
- *	large number of nodes
- * RET pointer to the config_record
- * global: default_config_record - default configuration values
- * NOTE: memory allocated will remain in existence until 
- *	_delete_config_record() is called to delete all configuration records
- */
-extern struct config_record *create_config_record (void);
-
 /* 
  * create_job_record - create an empty job_record including job_details.
  *	load its values with defaults (zeros, nulls, and magic cookie)
@@ -683,21 +592,6 @@ extern struct config_record *create_config_record (void);
  * NOTE: allocates memory that should be xfreed with _list_delete_job
  */
 extern struct job_record * create_job_record (int *error_code);
-
-/* 
- * create_node_record - create a node record and set its values to defaults
- * IN config_ptr - pointer to node's configuration information
- * IN node_name - name of the node
- * RET pointer to the record or NULL if error
- * global: default_node_record - default node values
- * NOTE: the record's values are initialized to those of default_node_record, 
- *	node_name and config_point's cpus, real_memory, and tmp_disk values
- * NOTE: allocates memory at node_record_table_ptr that must be xfreed when  
- *	the global node table is no longer required
- */
-extern struct node_record *create_node_record (struct config_record
-					       *config_ptr,
-					       char *node_name);
 
 /* 
  * create_part_record - create a partition record
@@ -801,10 +695,6 @@ extern struct job_record *find_job_record (uint32_t job_id);
  * IN node_bitmap
  */
 extern struct node_record *find_first_node_record (bitstr_t *node_bitmap);
-
-/* find_node_record - find a record for node with specified name, 
- *	returns pointer to record or NULL if not found */
-extern struct node_record *find_node_record (char *name);
 
 /* 
  * find_part_record - find a record for partition with specified name
@@ -1265,7 +1155,7 @@ extern void make_node_idle(struct node_record *node_ptr,
 extern void msg_to_slurmd (slurm_msg_type_t msg_type);
 
 /* node_fini - free all memory associated with node records */
-extern void node_fini(void);
+extern void node_fini (void);
 
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap 
@@ -1413,9 +1303,6 @@ extern void part_filter_set(uid_t uid);
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
 
-/* Purge the contents of a node record */
-extern void purge_node_rec(struct node_record *node_ptr);
-
 /*
  * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
@@ -1429,14 +1316,6 @@ extern void purge_old_job (void);
  * NOTE: run lock_slurmctld before entry: Read config, write job
  */
 extern void rehash_jobs(void);
-
-/* 
- * rehash_node - build a hash table of the node_record entries. 
- * global: node_record_table_ptr - pointer to global node table
- *         node_hash_table - table of hash indecies
- * NOTE: manages memory for node_hash_table
- */
-extern void rehash_node (void);
 
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);

@@ -112,7 +112,6 @@ static void _validate_node_proc_count(void);
 #endif
 
 static char *highest_node_name = NULL;
-int node_record_count = 0;
 
 /*
  * _build_bitmaps_pre_select - recover some state for jobs and nodes prior to 

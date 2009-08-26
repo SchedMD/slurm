@@ -80,30 +80,14 @@
 #define NODE_STATE_VERSION      "VER003"
 
 /* Global variables */
-List config_list  = NULL;		/* list of config_record entries */
-List feature_list = NULL;		/* list of features_record entries */
-struct node_record *node_record_table_ptr = NULL;	/* node records */
-struct node_record **node_hash_table = NULL;	/* node_record hash table */ 
-time_t last_bitmap_update = (time_t) NULL;	/* time of last node creation 
-						 * or deletion */
-time_t last_node_update = (time_t) NULL;	/* time of last update to 
-						 * node records */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
 
-static void	_add_config_feature(char *feature, bitstr_t *node_bitmap);
-static int	_delete_config_record (void);
 static void 	_dump_node_state (struct node_record *dump_node_ptr, 
 				  Buf buffer);
-static struct node_record * _find_alias_node_record (char *name);
-static int	_hash_index (char *name);
-static void 	_list_delete_config (void *config_entry);
-static void 	_list_delete_feature (void *feature_entry);
-static int	_list_find_config (void *config_entry, void *key);
-static int	_list_find_feature (void *feature_entry, void *key);
 static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
 static void	_node_did_resp(struct node_record *node_ptr);
@@ -118,9 +102,6 @@ static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint16_t old, uint16_t new); 
 #ifndef HAVE_FRONT_END
 static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
-#endif
-#if _DEBUG
-static void	_dump_hash (void);
 #endif
 
 /*
@@ -156,111 +137,6 @@ char * bitmap2node_name (bitstr_t *bitmap)
 	hostlist_destroy(hl);
 
 	return xstrdup(buf);
-}
-
-
-/*
- * create_config_record - create a config_record entry and set is values to 
- *	the defaults. each config record corresponds to a line in the  
- *	slurm.conf file and typically describes the configuration of a 
- *	large number of nodes
- * RET pointer to the config_record
- * NOTE: memory allocated will remain in existence until 
- *	_delete_config_record() is called to delete all configuration records
- */
-struct config_record * create_config_record (void) 
-{
-	struct config_record *config_ptr;
-
-	last_node_update = time (NULL);
-	config_ptr = (struct config_record *)
-		     xmalloc (sizeof (struct config_record));
-
-	config_ptr->nodes = NULL;
-	config_ptr->node_bitmap = NULL;
-	xassert (config_ptr->magic = CONFIG_MAGIC);  /* set value */
-
-	if (list_append(config_list, config_ptr) == NULL)
-		fatal ("create_config_record: unable to allocate memory");
-
-	return config_ptr;
-}
-
-
-/* 
- * create_node_record - create a node record and set its values to defaults
- * IN config_ptr - pointer to node's configuration information
- * IN node_name - name of the node
- * RET pointer to the record or NULL if error
- * NOTE: allocates memory at node_record_table_ptr that must be xfreed when  
- *	the global node table is no longer required
- */
-struct node_record * 
-create_node_record (struct config_record *config_ptr, char *node_name) 
-{
-	struct node_record *node_ptr;
-	int old_buffer_size, new_buffer_size;
-
-	last_node_update = time (NULL);
-	xassert(config_ptr);
-	xassert(node_name); 
-
-	/* round up the buffer size to reduce overhead of xrealloc */
-	old_buffer_size = (node_record_count) * sizeof (struct node_record);
-	old_buffer_size = 
-		((int) ((old_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
-	new_buffer_size = 
-		(node_record_count + 1) * sizeof (struct node_record);
-	new_buffer_size = 
-		((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
-	if (!node_record_table_ptr)
-		node_record_table_ptr = 
-			(struct node_record *) xmalloc (new_buffer_size);
-	else if (old_buffer_size != new_buffer_size)
-		xrealloc (node_record_table_ptr, new_buffer_size);
-	node_ptr = node_record_table_ptr + (node_record_count++);
-	node_ptr->name = xstrdup(node_name);
-	node_ptr->last_response = (time_t)0;
-	node_ptr->config_ptr = config_ptr;
-	node_ptr->part_cnt = 0;
-	node_ptr->part_pptr = NULL;
-	/* these values will be overwritten when the node actually registers */
-	node_ptr->cpus = config_ptr->cpus;
-	node_ptr->sockets = config_ptr->sockets;
-	node_ptr->cores = config_ptr->cores;
-	node_ptr->threads = config_ptr->threads;
-	node_ptr->real_memory = config_ptr->real_memory;
-	node_ptr->tmp_disk = config_ptr->tmp_disk;
-	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc(NO_VAL);
-	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
-	last_bitmap_update = time (NULL);
-	return node_ptr;
-}
-
-/* Purge the contents of a node record */
-extern void purge_node_rec(struct node_record *node_ptr)
-{
-	xfree(node_ptr->arch);
-	xfree(node_ptr->comm_name);
-	xfree(node_ptr->features);
-	xfree(node_ptr->name);
-	xfree(node_ptr->os);
-	xfree(node_ptr->part_pptr);
-	xfree(node_ptr->reason);
-	select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);
-}
-
-/*
- * _delete_config_record - delete all configuration records
- * RET 0 if no error, errno otherwise
- * global: config_list - list of all configuration records
- */
-static int _delete_config_record (void) 
-{
-	last_node_update = time (NULL);
-	(void) list_delete_all (config_list,  &_list_find_config,  NULL);
-	(void) list_delete_all (feature_list, &_list_find_feature, NULL);
-	return SLURM_SUCCESS;
 }
 
 
@@ -368,64 +244,6 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 }
 
-/* 
- * _find_alias_node_record - find a record for node with the alias of
- * the specified name supplied
- * input: name - name to be aliased of the desired node 
- * output: return pointer to node record or NULL if not found
- * global: node_record_table_ptr - pointer to global node table
- *         node_hash_table - table of hash indecies
- */
-static struct node_record * 
-_find_alias_node_record (char *name) 
-{
-	int i;
-	char *alias = NULL;
-	
-	if ((name == NULL)
-	||  (name[0] == '\0')) {
-		info("_find_alias_node_record: passed NULL name");
-		return NULL;
-	}
-	/* Get the alias we have just to make sure the user isn't
-	 * trying to use the real hostname to run on something that has
-	 * been aliased.  
-	 */
-	alias = slurm_conf_get_nodename(name);
-	
-	if(!alias)
-		return NULL;
-	
-	/* try to find via hash table, if it exists */
-	if (node_hash_table) {
-		struct node_record *node_ptr;
-			
-		i = _hash_index (alias);
-		node_ptr = node_hash_table[i];
-		while (node_ptr) {
-			xassert(node_ptr->magic == NODE_MAGIC);
-			if (!strcmp(node_ptr->name, alias)) {
-				xfree(alias);
-				return node_ptr;
-			}
-			node_ptr = node_ptr->node_next;
-		}
-		error ("_find_alias_node_record: lookup failure for %s", name);
-	} 
-
-	/* revert to sequential search */
-	else {
-		for (i = 0; i < node_record_count; i++) {
-			if (!strcmp (alias, node_record_table_ptr[i].name)) {
-				xfree(alias);
-				return (&node_record_table_ptr[i]);
-			} 
-		}
-	}
-
-	xfree(alias);
-	return (struct node_record *) NULL;
-}
 
 /* Open the node state save file, or backup if necessary.
  * state_file IN - the name of the state save file used
@@ -660,119 +478,6 @@ unpack_error:
 	goto fini;
 }
 
-/* 
- * find_node_record - find a record for node with specified name
- * input: name - name of the desired node 
- * output: return pointer to node record or NULL if not found
- * global: node_record_table_ptr - pointer to global node table
- *         node_hash_table - table of hash indecies
- */
-struct node_record * 
-find_node_record (char *name) 
-{
-	int i;
-	
-	if ((name == NULL) || (name[0] == '\0')) {
-		info("find_node_record passed NULL name");
-		return NULL;
-	}
-	
-	/* try to find via hash table, if it exists */
-	if (node_hash_table) {
-		struct node_record *node_ptr;
-			
-		i = _hash_index (name);
-		node_ptr = node_hash_table[i];
-		while (node_ptr) {
-			xassert(node_ptr->magic == NODE_MAGIC);
-			if (!strcmp(node_ptr->name, name)) {
-				return node_ptr;
-			}
-			node_ptr = node_ptr->node_next;
-		}
-
-		if ((node_record_count == 1) &&
-		    (strcmp(node_record_table_ptr[0].name, "localhost") == 0))
-			return (&node_record_table_ptr[0]);
-	       
-		error ("find_node_record: lookup failure for %s", name);
-	} 
-
-	/* revert to sequential search */
-	else {
-		for (i = 0; i < node_record_count; i++) {
-			if (!strcmp (name, node_record_table_ptr[i].name)) {
-				return (&node_record_table_ptr[i]);
-			} 
-		}
-	}
-	
-	/* look for the alias node record if the user put this in
-	   instead of what slurm sees the node name as */
-	return _find_alias_node_record (name);
-}
-
-/* 
- * _hash_index - return a hash table index for the given node name 
- * IN name = the node's name
- * RET the hash table index
- */
-static int _hash_index (char *name) 
-{
-	int index = 0;
-	int j;
-
-	if ((node_record_count == 0)
-	||  (name == NULL))
-		return 0;	/* degenerate case */
-
-	/* Multiply each character by its numerical position in the
-	 * name string to add a bit of entropy, because host names such
-	 * as cluster[0001-1000] can cause excessive index collisions.
-	 */
-	for (j = 1; *name; name++, j++)
-		index += (int)*name * j;
-	index %= node_record_count;
-	
-	return index;
-}
-
-
-/* 
- * init_node_conf - initialize the node configuration tables and values. 
- *	this should be called before creating any node or configuration 
- *	entries.
- * RET 0 if no error, otherwise an error code
- * global: node_record_table_ptr - pointer to global node table
- *         node_hash_table - table of hash indecies
- *         last_node_update - time of last node table update
- */
-int init_node_conf (void) 
-{
-	last_node_update = time (NULL);
-	int i;
-	struct node_record *node_ptr;
-
-	node_ptr = node_record_table_ptr;
-	for (i=0; i< node_record_count; i++, node_ptr++)
-		purge_node_rec(node_ptr);
-
-	node_record_count = 0;
-	xfree(node_record_table_ptr);
-	xfree(node_hash_table);
-
-	if (config_list)	/* delete defunct configuration entries */
-		(void) _delete_config_record ();
-	else {
-		config_list  = list_create (_list_delete_config);
-		feature_list = list_create (_list_delete_feature);
-		if ((config_list == NULL) || (feature_list == NULL))
-			fatal("list_create malloc failure");
-	}
-
-	return SLURM_SUCCESS;
-}
-
 
 /* list_compare_config - compare two entry from the config list based upon 
  *	weight, see common/list.h for documentation */
@@ -784,68 +489,6 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 	return (weight1 - weight2);
 }
 
-
-/* _list_delete_config - delete an entry from the config list, 
- *	see list.h for documentation */
-static void _list_delete_config (void *config_entry) 
-{
-	struct config_record *config_ptr = (struct config_record *) 
-					   config_entry;
-
-	xassert(config_ptr);
-	xassert(config_ptr->magic == CONFIG_MAGIC);
-	xfree (config_ptr->feature);
-	build_config_feature_list(config_ptr);
-	xfree (config_ptr->nodes);
-	FREE_NULL_BITMAP (config_ptr->node_bitmap);
-	xfree (config_ptr);
-}
-
-/* _list_delete_feature - delete an entry from the feature list, 
- *	see list.h for documentation */
-static void _list_delete_feature (void *feature_entry) 
-{
-	struct features_record *feature_ptr = (struct features_record *) 
-					     feature_entry;
-
-	xassert(feature_ptr);
-	xassert(feature_ptr->magic == FEATURE_MAGIC);
-	xfree (feature_ptr->name);
-	FREE_NULL_BITMAP (feature_ptr->node_bitmap);
-	xfree (feature_ptr);
-}
-
-/* 
- * _list_find_config - find an entry in the config list, see list.h for   
- *	documentation 
- * IN key - is NULL for all config
- * RET 1 if key == NULL, 0 otherwise
- */
-static int _list_find_config (void *config_entry, void *key) 
-{
-	if (key == NULL)
-		return 1;
-	return 0;
-}
-
-/* 
- * _list_find_feature - find an entry in the feature list, see list.h for   
- *	documentation 
- * IN key - is feature name or NULL for all features
- * RET 1 if found, 0 otherwise
- */
-static int _list_find_feature (void *feature_entry, void *key) 
-{
-	struct features_record *feature_ptr;
-
-	if (key == NULL)
-		return 1;
-
-	feature_ptr = (struct features_record *) feature_entry;
-	if (strcmp(feature_ptr->name, (char *) key) == 0)
-		return 1;
-	return 0;
-}
 
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap 
@@ -1023,37 +666,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
 	packstr (dump_node_ptr->config_ptr->feature, buffer);
 	packstr (dump_node_ptr->os, buffer);
 	packstr (dump_node_ptr->reason, buffer);
-}
-
-
-/* 
- * rehash_node - build a hash table of the node_record entries. 
- * global: node_record_table_ptr - pointer to global node table
- *         node_hash_table - table of hash indecies
- * NOTE: manages memory for node_hash_table
- */
-void rehash_node (void) 
-{
-	int i, inx;
-	struct node_record *node_ptr = node_record_table_ptr;
-
-	xfree (node_hash_table);
-	node_hash_table = xmalloc (sizeof (struct node_record *) * 
-				   node_record_count);
-
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if ((node_ptr->name == NULL) ||
-		    (node_ptr->name[0] == '\0'))
-			continue;	/* vestigial record */
-		inx = _hash_index (node_ptr->name);
-		node_ptr->node_next = node_hash_table[inx];
-		node_hash_table[inx] = node_ptr;
-	}
-
-#if _DEBUG
-	_dump_hash();
-#endif
-	return;
 }
 
 
@@ -2400,32 +2012,6 @@ find_first_node_record (bitstr_t *node_bitmap)
 		return &node_record_table_ptr[inx];
 }
 
-#if _DEBUG
-/* 
- * _dump_hash - print the node_hash_table contents, used for debugging
- *	or analysis of hash technique 
- * global: node_record_table_ptr - pointer to global node table
- *         node_hash_table - table of hash indecies
- */
-static void _dump_hash (void) 
-{
-	int i, inx;
-	struct node_record *node_ptr;
-
-	if (node_hash_table == NULL)
-		return;
-
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_hash_table[i];
-		while (node_ptr) {
-			inx = node_ptr -  node_record_table_ptr;
-			debug3("node_hash[%d]:%d", i, inx);
-			node_ptr = node_ptr->node_next;
-		}
-	}
-}
-#endif
-
 /* msg_to_slurmd - send given msg_type (REQUEST_RECONFIGURE or
  * REQUEST_SHUTDOWN) to every slurmd, no args */
 void msg_to_slurmd (slurm_msg_type_t msg_type)
@@ -2657,34 +2243,6 @@ void make_node_idle(struct node_record *node_ptr,
 	}
 }
 
-/* node_fini - free all memory associated with node records */
-void node_fini(void)
-{
-	int i;
-	struct node_record *node_ptr;
-
-	if (config_list) {
-		list_destroy(config_list);
-		config_list = NULL;
-		list_destroy(feature_list);
-		feature_list = NULL;
-	}
-
-	node_ptr = node_record_table_ptr;
-	for (i=0; i< node_record_count; i++, node_ptr++)
-		purge_node_rec(node_ptr);
-
-	FREE_NULL_BITMAP(idle_node_bitmap);
-	FREE_NULL_BITMAP(avail_node_bitmap);
-	FREE_NULL_BITMAP(power_node_bitmap);
-	FREE_NULL_BITMAP(share_node_bitmap);
-	FREE_NULL_BITMAP(up_node_bitmap);
-
-	xfree(node_record_table_ptr);
-	xfree(node_hash_table);
-	node_record_count = 0;
-}
-
 extern int send_nodes_to_accounting(time_t event_time)
 {
 	int rc = SLURM_SUCCESS, i = 0;
@@ -2757,71 +2315,14 @@ extern int send_nodes_to_accounting(time_t event_time)
 	return rc;
 }
 
-static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
+/* node_fini - free all memory associated with node records */
+extern void node_fini (void)
 {
-	struct features_record *feature_ptr;
-	ListIterator feature_iter;
-	bool match = false;
-
-	/* If feature already exists in feature_list, just update the bitmap */
-	feature_iter = list_iterator_create(feature_list);
-	if (feature_iter == NULL)
-		fatal("list_iterator_create malloc failure");
-	while ((feature_ptr = (struct features_record *) 
-			list_next(feature_iter))) {
-		if (strcmp(feature, feature_ptr->name))
-			continue;
-		bit_or(feature_ptr->node_bitmap, node_bitmap);
-		match = true;
-		break;
-	}
-	list_iterator_destroy(feature_iter);
-
-	if (!match) {	/* Need to create new feature_list record */
-		feature_ptr = xmalloc(sizeof(struct features_record));
-		feature_ptr->magic = FEATURE_MAGIC;
-		feature_ptr->name = xstrdup(feature);
-		feature_ptr->node_bitmap = bit_copy(node_bitmap);
-		list_append(feature_list, feature_ptr);
-	}
+	FREE_NULL_BITMAP(idle_node_bitmap);
+	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(power_node_bitmap);
+	FREE_NULL_BITMAP(share_node_bitmap);
+	FREE_NULL_BITMAP(up_node_bitmap);
+	node_fini2();
 }
 
-/* Given a config_record with it's bitmap already set, update feature_list */
-extern void  build_config_feature_list(struct config_record *config_ptr)
-{
-	struct features_record *feature_ptr;
-	ListIterator feature_iter;
-	int i, j;
-	char *tmp_str, *token, *last = NULL;
-
-	/* Clear these nodes from the feature_list record,
-	 * then restore as needed */
-	feature_iter = list_iterator_create(feature_list);
-	if (feature_iter == NULL)
-		fatal("list_inerator_create malloc failure");
-	bit_not(config_ptr->node_bitmap);
-	while ((feature_ptr = (struct features_record *) 
-			list_next(feature_iter))) {
-		bit_and(feature_ptr->node_bitmap, config_ptr->node_bitmap);
-	}
-	list_iterator_destroy(feature_iter);
-	bit_not(config_ptr->node_bitmap);
-
-	if (config_ptr->feature) {
-		i = strlen(config_ptr->feature) + 1;	/* oversized */
-		tmp_str = xmalloc(i);
-		/* Remove white space from feature specification */
-		for (i=0, j=0; config_ptr->feature[i]; i++) {
-			if (!isspace(config_ptr->feature[i]))
-				tmp_str[j++] = config_ptr->feature[i];
-		}
-		if (i != j)
-			strcpy(config_ptr->feature, tmp_str);
-		token = strtok_r(tmp_str, ",", &last);
-		while (token) {
-			_add_config_feature(token, config_ptr->node_bitmap);
-			token = strtok_r(NULL, ",", &last);
-		}
-		xfree(tmp_str);
-	}
-}

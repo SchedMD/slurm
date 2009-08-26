@@ -45,8 +45,8 @@
 
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"
+#include "src/common/node_conf.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/slurmctld.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
