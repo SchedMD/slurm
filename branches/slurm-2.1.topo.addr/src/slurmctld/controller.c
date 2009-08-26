@@ -74,6 +74,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
@@ -96,7 +97,6 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
-#include "src/slurmctld/topo_plugin.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 

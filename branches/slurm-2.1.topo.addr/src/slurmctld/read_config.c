@@ -65,6 +65,7 @@
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
@@ -85,7 +86,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "src/slurmctld/topo_plugin.h"
 
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);
