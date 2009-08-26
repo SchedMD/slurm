@@ -114,7 +114,10 @@ proc add_cluster {name qos fairshare grpcpu grpjob grpnode grpsubmit maxcpumin m
 	}
 
 	if { [string length $qos] } {
-		set command "$command qoslevel=$qos"
+		if { [string compare $qos " "] } {
+			set $qos ""
+		}
+		set command "$command qoslevel='$qos'"
 	}
 
 	set my_pid [eval spawn $sacctmgr -i add cluster $command]

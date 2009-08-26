@@ -526,6 +526,7 @@ test21.22  sacctmgr load file
 test21.23  sacctmgr wckey
 test21.24  sacctmgr dump file
 test21.25  sacctmgr show config
+test21.26  sacctmgr +=, -= modify QoS test
 
 test22.#   Testing of sreport commands and options. 
            These also test the sacctmgr archive dump/load functions.
