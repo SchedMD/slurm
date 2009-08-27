@@ -200,6 +200,7 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 			hostlist_ranged_string(sl, sizeof(buf), buf);
 			xstrcat(*paddr,buf);
 			hostlist_destroy(sl);
+			sl = NULL;
 		}
 		xstrcat(*paddr, ".");
 		xstrcat(*ppattern, "switch.");
