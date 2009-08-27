@@ -178,15 +178,12 @@ extern int task_slurmd_launch_request (uint32_t job_id,
 				       launch_tasks_request_msg_t *req, 
 				       uint32_t node_id)
 {
-	int hw_sockets, hw_cores, hw_threads;
 	char buf_type[100];
 
 	debug("task_slurmd_launch_request: %u %u", job_id, node_id);
-	hw_sockets = conf->sockets;
-	hw_cores   = conf->cores;
-	hw_threads = conf->threads;
 
-	if (((hw_sockets >= 1) && ((hw_cores > 1) || (hw_threads > 1))) 
+	if (((conf->sockets >= 1) 
+	     && ((conf->cores > 1) || (conf->threads > 1))) 
 	    || (!(req->cpu_bind_type & CPU_BIND_NONE))) {
 		_update_bind_type(req);
 

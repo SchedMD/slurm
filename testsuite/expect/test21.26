@@ -412,7 +412,6 @@ expect {
 }
 
 if {$matches != 6} {
-	exit 1
 	send_user "\nFAILURE: failed on verify of +$qos1 to account root ($matches)\n"
 	remove_user "" "" "$user1"
 	remove_acct "" "$account1,$account2"
