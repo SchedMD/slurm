@@ -85,6 +85,8 @@ struct node_record *node_record_table_ptr = NULL;	/* node records */
 struct node_record **node_hash_table = NULL;	/* node_record hash table */int node_record_count = 0;	/* count in node_record_table_ptr */
 
 static void	_add_config_feature(char *feature, bitstr_t *node_bitmap);
+static int	_build_single_nodeline_info(slurm_conf_node_t *node_ptr,
+					    struct config_record *config_ptr);
 static int	_delete_config_record (void);
 #if _DEBUG
 static void	_dump_hash (void);
@@ -125,6 +127,116 @@ static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
 		feature_ptr->node_bitmap = bit_copy(node_bitmap);
 		list_append(feature_list, feature_ptr);
 	}
+}
+
+
+/* 
+ * _build_single_nodeline_info - From the slurm.conf reader, build table,
+ * 	and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ *	default_node_record - default node configuration values
+ */
+static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
+				       struct config_record *config_ptr)
+{
+	int error_code = SLURM_SUCCESS;
+	struct node_record *node_rec = NULL;
+	hostlist_t alias_list = NULL;
+	hostlist_t hostname_list = NULL;
+	hostlist_t address_list = NULL;
+	char *alias = NULL;
+	char *hostname = NULL;
+	char *address = NULL;
+	int state_val = NODE_STATE_UNKNOWN;
+
+	if (node_ptr->state != NULL) {
+		state_val = state_str2int(node_ptr->state);
+		if (state_val == NO_VAL)
+			goto cleanup;
+	}
+
+	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
+		fatal("Unable to create NodeName list from %s",
+		      node_ptr->nodenames);
+		error_code = errno;
+		goto cleanup;
+	}
+	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
+		fatal("Unable to create NodeHostname list from %s",
+		      node_ptr->hostnames);
+		error_code = errno;
+		goto cleanup;
+	}
+	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
+		fatal("Unable to create NodeAddr list from %s",
+		      node_ptr->addresses);
+		error_code = errno;
+		goto cleanup;
+	}
+
+	/* some sanity checks */
+#ifdef HAVE_FRONT_END
+	if ((hostlist_count(hostname_list) != 1) ||
+	    (hostlist_count(address_list)  != 1)) {
+		error("Only one hostname and address allowed "
+		      "in FRONT_END mode");
+		goto cleanup;
+	}
+	hostname = node_ptr->hostnames;
+	address = node_ptr->addresses;
+#else
+	if (hostlist_count(hostname_list) < hostlist_count(alias_list)) {
+		error("At least as many NodeHostname are required "
+		      "as NodeName");
+		goto cleanup;
+	}
+	if (hostlist_count(address_list) < hostlist_count(alias_list)) {
+		error("At least as many NodeAddr are required as NodeName");
+		goto cleanup;
+	}
+#endif
+
+	/* now build the individual node structures */
+	while ((alias = hostlist_shift(alias_list))) {
+#ifndef HAVE_FRONT_END
+		hostname = hostlist_shift(hostname_list);
+		address = hostlist_shift(address_list);
+#endif
+		/* find_node_record locks this to get the
+		 * alias so we need to unlock */
+		node_rec = find_node_record(alias);
+
+		if (node_rec == NULL) {
+			node_rec = create_node_record(config_ptr, alias);
+			if ((state_val != NO_VAL) &&
+			    (state_val != NODE_STATE_UNKNOWN))
+				node_rec->node_state = state_val;
+			node_rec->last_response = (time_t) 0;
+			node_rec->comm_name = xstrdup(address);
+
+			node_rec->port = node_ptr->port;
+			node_rec->reason = xstrdup(node_ptr->reason);
+		} else {
+			/* FIXME - maybe should be fatal? */
+			error("reconfiguration for node %s, ignoring!", alias);
+		}
+		free(alias);
+#ifndef HAVE_FRONT_END
+		free(hostname);
+		free(address);
+#endif
+	}
+
+	/* free allocated storage */
+cleanup:
+	if (alias_list)
+		hostlist_destroy(alias_list);
+	if (hostname_list)
+		hostlist_destroy(hostname_list);
+	if (address_list)
+		hostlist_destroy(address_list);
+	return error_code;
 }
 
 /*
@@ -309,6 +421,44 @@ static int _list_find_feature (void *feature_entry, void *key)
 	if (strcmp(feature_ptr->name, (char *) key) == 0)
 		return 1;
 	return 0;
+}
+
+/* 
+ * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
+ *	from the slurm.conf reader, build table, and set values
+ * RET 0 if no error, error code otherwise
+ */
+extern int build_all_nodeline_info (void)
+{
+	slurm_conf_node_t *node, **ptr_array;
+	struct config_record *config_ptr = NULL;
+	int count;
+	int i, rc, max_rc = SLURM_SUCCESS;
+
+	count = slurm_conf_nodename_array(&ptr_array);
+	if (count == 0)
+		fatal("No NodeName information available!");
+
+	for (i = 0; i < count; i++) {
+		node = ptr_array[i];
+
+		config_ptr = create_config_record();
+		config_ptr->nodes = xstrdup(node->nodenames);
+		config_ptr->cpus = node->cpus;
+		config_ptr->sockets = node->sockets;
+		config_ptr->cores = node->cores;
+		config_ptr->threads = node->threads;
+		config_ptr->real_memory = node->real_memory;
+		config_ptr->tmp_disk = node->tmp_disk;
+		config_ptr->weight = node->weight;
+		if (node->feature)
+			config_ptr->feature = xstrdup(node->feature);
+
+		rc = _build_single_nodeline_info(node, config_ptr);
+		max_rc = MAX(max_rc, rc);
+	}
+
+	return max_rc;
 }
 
 /* Given a config_record with it's bitmap already set, update feature_list */
@@ -573,3 +723,29 @@ extern void rehash_node (void)
 	return;
 }
 
+/* Convert a node state string to it's equivalent enum value */
+extern int state_str2int(const char *state_str)
+{
+	int state_val = NO_VAL;
+	int i;
+
+	for (i = 0; i <= NODE_STATE_END; i++) {
+		if (strcasecmp(node_state_string(i), "END") == 0)
+			break;
+		if (strcasecmp(node_state_string(i), state_str) == 0) {
+			state_val = i;
+			break;
+		}
+	}
+	if (i >= NODE_STATE_END) {
+		if (strncasecmp("DRAIN", state_str, 5) == 0)
+			state_val = NODE_STATE_UNKNOWN | NODE_STATE_DRAIN;
+		else if (strncasecmp("FAIL", state_str, 4) == 0)
+			state_val = NODE_STATE_IDLE | NODE_STATE_FAIL;
+	}
+	if (state_val == NO_VAL) {
+		error("invalid node state %s", state_str);
+		errno = EINVAL;
+	}
+	return state_val;
+}

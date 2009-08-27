@@ -138,8 +138,16 @@ extern int node_record_count;		/* count in node_record_table_ptr */
 extern time_t last_node_update;		/* time of last node record update */
 
 
+
+/* 
+ * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
+ *	from the slurm.conf reader, build table, and set values
+ * RET 0 if no error, error code otherwise
+ */
+extern int build_all_nodeline_info (void);
+
 /* Given a config_record with it's bitmap already set, update feature_list */
-extern void  build_config_feature_list(struct config_record *config_ptr);
+extern void  build_config_feature_list (struct config_record *config_ptr);
 
 /*
  * create_config_record - create a config_record entry and set is values to 
@@ -190,5 +198,8 @@ extern void purge_node_rec (struct node_record *node_ptr);
  * NOTE: manages memory for node_hash_table
  */
 extern void rehash_node (void);
+
+/* Convert a node state string to it's equivalent enum value */
+extern int state_str2int(const char *state_str);
 
 #endif /* !_HAVE_NODE_CONF_H */

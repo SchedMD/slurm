@@ -79,6 +79,8 @@
 #include "src/common/forward.h"
 #include "src/common/bitstring.h"
 #include "src/common/stepd_api.h"
+#include "src/common/slurm_topology.h"
+#include "src/common/node_conf.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
@@ -145,6 +147,7 @@ static void     *_registration_engine(void *arg);
 static int       _restore_cred_state(slurm_cred_ctx_t ctx);
 static void     *_service_connection(void *);
 static int       _set_slurmd_spooldir(void);
+static int       _set_topo_info(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
 static void      _spawn_registration_engine(void);
@@ -792,6 +795,12 @@ _reconfigure(void)
 	_print_conf();
 	
 	/*
+	 * Rebuild topology information and refresh slurmd topo infos
+	 */
+	slurm_topo_build_config();
+	_set_topo_info();
+
+	/*
 	 * Make best effort at changing to new public key
 	 */
 	slurm_cred_ctx_key_update(conf->vctx, conf->pubkey);
@@ -816,6 +825,9 @@ _print_conf(void)
 	int i;
 
 	cf = slurm_conf_lock();
+	debug3("NodeName    = %s",       conf->node_name);
+	debug3("TopoAddr    = %s",       conf->node_topo_addr);
+	debug3("TopoPattern = %s",       conf->node_topo_pattern);
 	debug3("CacheGroups = %d",       cf->cache_groups);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       cf->slurmd_debug);
@@ -913,20 +925,22 @@ _destroy_conf(void)
 	if(conf) {
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
+		xfree(conf->conffile);
+		xfree(conf->epilog);
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
+		xfree(conf->logfile);
 		xfree(conf->node_name);
 		xfree(conf->node_addr);
-		xfree(conf->conffile);
-		xfree(conf->prolog);
-		xfree(conf->epilog);
-		xfree(conf->logfile);
-		xfree(conf->pubkey);
-		xfree(conf->task_prolog);
-		xfree(conf->task_epilog);
+		xfree(conf->node_topo_addr);
+		xfree(conf->node_topo_pattern);
 		xfree(conf->pidfile);
+		xfree(conf->prolog);
+		xfree(conf->pubkey);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
+		xfree(conf->task_prolog);
+		xfree(conf->task_epilog);
 		xfree(conf->tmpfs);
 		slurm_mutex_destroy(&conf->config_mutex);
 		list_destroy(conf->starting_steps);
@@ -1036,6 +1050,24 @@ _slurmd_init(void)
 	 *
 	 */
 	_read_config();
+
+	/*
+	 * Initialize topology support
+	 */
+	if (slurm_topo_init() != SLURM_SUCCESS)
+		return SLURM_FAILURE;
+
+	/*
+	 * Build nodes table like in slurmctld
+	 * This is required by the topology stack
+	 */
+	init_node_conf();
+	build_all_nodeline_info();
+
+	/*
+	 * Get and set slurmd topology information
+	 */
+	_set_topo_info();
 
 	/* 
 	 * Update location of log messages (syslog, stderr, logfile, etc.),
@@ -1184,6 +1216,8 @@ _slurmd_fini(void)
 	slurm_conf_destroy();
 	slurm_proctrack_fini();
 	slurm_auth_fini();
+	node_fini2();
+	slurm_topo_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();
 	return SLURM_SUCCESS;
@@ -1392,3 +1426,22 @@ static void _install_fork_handlers(void)
 	return;
 }
 
+/*
+ * set topology address and address pattern of slurmd node
+ */
+static int _set_topo_info(void)
+{
+	int rc;
+	char * addr, * pattern;
+       
+	xfree(conf->node_topo_addr);
+	xfree(conf->node_topo_pattern);
+	
+	rc = slurm_topo_get_node_addr(conf->node_name, &addr, &pattern);
+	if ( rc == 0 ) {
+		conf->node_topo_addr = addr;
+		conf->node_topo_pattern = pattern;
+	}
+       
+	return rc;
+}

@@ -160,6 +160,8 @@ ending:
 	xfree(conf->hostname);
 	xfree(conf->spooldir);
 	xfree(conf->node_name);
+	xfree(conf->node_topo_addr);
+	xfree(conf->node_topo_pattern);
 	xfree(conf->logfile);
 	xfree(conf);
 #endif
