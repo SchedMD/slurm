@@ -370,6 +370,14 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 	job->jmgr_pid = getpid();
 	job->jobacct = jobacct_gather_g_create(NULL);
 	
+	/*
+	 * Add slurmd node topology informations to job env array
+	 */
+	env_array_overwrite(&job->env,"SLURM_TOPOLOGY_ADDR",
+			    conf->node_topo_addr);
+	env_array_overwrite(&job->env,"SLURM_TOPOLOGY_ADDR_PATTERN",
+			    conf->node_topo_pattern);
+
 	return job;
 }
 
