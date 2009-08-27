@@ -44,7 +44,7 @@ set timeout $max_job_delay
 set matches 0
 spawn $srun -N1 $scontrol show slurmd
 expect {
-	-re "Active Steps *= $number" {
+	-re "Active Steps *= ($number|NONE)" {
 		incr matches
 		exp_continue
 	}
