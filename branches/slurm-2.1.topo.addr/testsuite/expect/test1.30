@@ -50,17 +50,22 @@ if { [test_bluegene] } {
 } else {
 	set srun_opts "-c1"
 }
+if { [test_front_end] } {
+	set max_node_cnt 2
+} else {
+	set max_node_cnt 1024
+}
 
 #
 # Spawn a srun immediate jobs with ever larger node counts
 #
 set timeout $max_job_delay
-for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
+for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt * 2]} {
 	set srun_pid [spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "Immediate execution impossible" {
 			send_user "This error is expected, no worries\n"
-			set node_cnt 0
+			set node_cnt $max_node_cnt
 			set error 0
 			exp_continue
 		}
@@ -71,13 +76,13 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 		}
 		-re "Unable to allocate resources" {
 			send_user "This error is expected, no worries\n"
-			set node_cnt 0
+			set node_cnt $max_node_cnt
 			set error 0
 			exp_continue
 		}
 		-re "Too many open files" {
 			send_user "This error is expected, no worries\n"
-			set node_cnt 0
+			set node_cnt $max_node_cnt
 			exp_continue
 		}
 		-re "error" {
@@ -92,9 +97,6 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 		eof {
 			wait
 		}
-	}
-	if {$node_cnt > 30000} {
-		break
 	}
 }
 
