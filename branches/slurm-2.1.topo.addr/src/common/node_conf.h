@@ -139,6 +139,16 @@ extern time_t last_node_update;		/* time of last node record update */
 
 
 
+/*
+ * bitmap2node_name - given a bitmap, build a list of comma separated node 
+ *	names. names may include regular expressions (e.g. "lx[01-10]")
+ * IN bitmap - bitmap pointer
+ * RET pointer to node list or NULL on error 
+ * globals: node_record_table_ptr - pointer to node table
+ * NOTE: the caller must xfree the memory at node_list when no longer required
+ */
+char * bitmap2node_name (bitstr_t *bitmap);
+
 /* 
  * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
@@ -189,6 +199,18 @@ extern int init_node_conf (void);
 
 /* node_fini2 - free memory associated with node records (except bitmaps) */
 extern void node_fini2 (void);
+
+/*
+ * node_name2bitmap - given a node name regular expression, build a bitmap 
+ *	representation
+ * IN node_names  - list of nodes
+ * IN best_effort - if set don't return an error on invalid node name entries 
+ * OUT bitmap     - set to bitmap, may not have all bits set on error 
+ * RET 0 if no error, otherwise EINVAL
+ * NOTE: the caller must bit_free() memory at bitmap when no longer required
+ */
+extern int node_name2bitmap (char *node_names, bool best_effort, 
+			     bitstr_t **bitmap);
 
 /* Purge the contents of a node record */
 extern void purge_node_rec (struct node_record *node_ptr);

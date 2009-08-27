@@ -104,41 +104,6 @@ static bool 	_valid_node_state_change(uint16_t old, uint16_t new);
 static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
 #endif
 
-/*
- * bitmap2node_name - given a bitmap, build a list of comma separated node 
- *	names. names may include regular expressions (e.g. "lx[01-10]")
- * IN bitmap - bitmap pointer
- * RET pointer to node list or NULL on error 
- * globals: node_record_table_ptr - pointer to node table
- * NOTE: the caller must xfree the memory at node_list when no longer required
- */
-char * bitmap2node_name (bitstr_t *bitmap) 
-{
-	int i, first, last;
-	hostlist_t hl;
-	char buf[8192];
-
-	if (bitmap == NULL)
-		return xstrdup("");
-
-	first = bit_ffs(bitmap);
-	if (first == -1)
-		return xstrdup("");
-
-	last  = bit_fls(bitmap);
-	hl = hostlist_create("");
-	for (i = first; i <= last; i++) {
-		if (bit_test(bitmap, i) == 0)
-			continue;
-		hostlist_push(hl, node_record_table_ptr[i].name);
-	}
-	hostlist_uniq(hl);
-	hostlist_ranged_string(hl, sizeof(buf), buf);
-	hostlist_destroy(hl);
-
-	return xstrdup(buf);
-}
-
 
 /* dump_all_node_state - save the state of all nodes to file */
 int dump_all_node_state ( void )
@@ -489,61 +454,6 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 	return (weight1 - weight2);
 }
 
-
-/*
- * node_name2bitmap - given a node name regular expression, build a bitmap 
- *	representation
- * IN node_names  - list of nodes
- * IN best_effort - if set don't return an error on invalid node name entries 
- * OUT bitmap     - set to bitmap, may not have all bits set on error 
- * RET 0 if no error, otherwise EINVAL
- * global: node_record_table_ptr - pointer to global node table
- * NOTE: the caller must bit_free() memory at bitmap when no longer required
- */
-extern int node_name2bitmap (char *node_names, bool best_effort, 
-		bitstr_t **bitmap) 
-{
-	int rc = SLURM_SUCCESS;
-	char *this_node_name;
-	bitstr_t *my_bitmap;
-	hostlist_t host_list;
-
-	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
-	if (my_bitmap == NULL)
-		fatal("bit_alloc malloc failure");
-	*bitmap = my_bitmap;
-	
-	if (node_names == NULL) {
-		info("node_name2bitmap: node_names is NULL");
-		return rc;
-	}
-
-	if ( (host_list = hostlist_create (node_names)) == NULL) {
-		/* likely a badly formatted hostlist */
-		error ("hostlist_create on %s error:", node_names);
-		if (!best_effort)
-			rc = EINVAL;
-		return rc;
-	}
-
-	while ( (this_node_name = hostlist_shift (host_list)) ) {
-		struct node_record *node_ptr;
-		node_ptr = find_node_record (this_node_name);
-		if (node_ptr) {
-			bit_set (my_bitmap, (bitoff_t) (node_ptr - 
-						node_record_table_ptr));
-		} else {
-			error ("node_name2bitmap: invalid node specified %s",
-			       this_node_name);
-			if (!best_effort)
-				rc = EINVAL;
-		}
-		free (this_node_name);
-	}
-	hostlist_destroy (host_list);
-
-	return rc;
-}
 
 static bool _node_is_hidden(struct node_record *node_ptr)
 {

@@ -568,16 +568,6 @@ enum select_plugindata_info {
 extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 			      struct node_record *node_ptr);
 
-/*
- * bitmap2node_name - given a bitmap, build a list of comma separated node 
- *	names. names may include regular expressions (e.g. "lx[01-10]")
- * IN bitmap - bitmap pointer
- * RET pointer to node list or NULL on error 
- * globals: node_record_table_ptr - pointer to node table
- * NOTE: the caller must xfree the memory at node_list when no longer required
- */
-extern char * bitmap2node_name (bitstr_t *bitmap) ;
-
 /* Given a config_record with it's bitmap already set, update feature_list */
 extern void  build_config_feature_list(struct config_record *config_ptr);
 
@@ -1156,19 +1146,6 @@ extern void msg_to_slurmd (slurm_msg_type_t msg_type);
 
 /* node_fini - free all memory associated with node records */
 extern void node_fini (void);
-
-/*
- * node_name2bitmap - given a node name regular expression, build a bitmap 
- *	representation
- * IN node_names  - list of nodes
- * IN best_effort - if set don't return an error on invalid node name entries 
- * OUT bitmap     - set to bitmap, may not have all bits set on error 
- * RET 0 if no error, otherwise EINVAL
- * global: node_record_table_ptr - pointer to global node table
- * NOTE: the caller must bit_free() memory at bitmap when no longer required
- */
-extern int node_name2bitmap (char *node_names, bool best_effort, 
-		bitstr_t **bitmap);
 
 /* node_did_resp - record that the specified node is responding
  * IN name - name of the node */
