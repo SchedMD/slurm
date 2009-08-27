@@ -152,9 +152,10 @@ char * bitmap2node_name (bitstr_t *bitmap);
 /* 
  * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
+ * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info (void);
+extern int build_all_nodeline_info (bool set_bitmap);
 
 /* Given a config_record with it's bitmap already set, update feature_list */
 extern void  build_config_feature_list (struct config_record *config_ptr);

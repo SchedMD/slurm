@@ -463,9 +463,10 @@ static int _list_find_feature (void *feature_entry, void *key)
 /* 
  * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
+ * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info (void)
+extern int build_all_nodeline_info (bool set_bitmap)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	struct config_record *config_ptr = NULL;
@@ -495,6 +496,19 @@ extern int build_all_nodeline_info (void)
 		max_rc = MAX(max_rc, rc);
 	}
 
+	if (set_bitmap) {
+		ListIterator config_iterator;
+		config_iterator = list_iterator_create(config_list);
+		if (config_iterator == NULL)
+			fatal ("memory allocation failure");
+		while ((config_ptr = (struct config_record *)
+				list_next(config_iterator))) {
+			node_name2bitmap(config_ptr->nodes, true, 
+					 &config_ptr->node_bitmap);
+		}
+		list_iterator_destroy(config_iterator);
+	}
+
 	return max_rc;
 }
 
@@ -510,7 +524,7 @@ extern void  build_config_feature_list(struct config_record *config_ptr)
 	 * then restore as needed */
 	feature_iter = list_iterator_create(feature_list);
 	if (feature_iter == NULL)
-		fatal("list_inerator_create malloc failure");
+		fatal("list_iterator_create malloc failure");
 	bit_not(config_ptr->node_bitmap);
 	while ((feature_ptr = (struct features_record *) 
 			list_next(feature_iter))) {

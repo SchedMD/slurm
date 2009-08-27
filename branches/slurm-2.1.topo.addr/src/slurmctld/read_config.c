@@ -379,7 +379,7 @@ static int _build_all_nodeline_info(void)
 	int rc;
 
 	/* Load the node table here */
-	rc = build_all_nodeline_info();
+	rc = build_all_nodeline_info(false);
 
 	/* Now perform operations on the node table as needed by slurmctld */
 #ifdef HAVE_3D
