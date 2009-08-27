@@ -170,7 +170,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
 	uint16_t sockets=0, cores=0, num_procs;
-	int hw_size, start, p, t, task_cnt=0;
+	int start, p, t, task_cnt=0;
 	char *str;
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
@@ -184,11 +184,10 @@ void batch_bind(batch_job_launch_msg_t *req)
 		return;
 	}
 
-	hw_size    = conf->sockets * conf->cores * conf->threads;
 	num_procs  = MIN((sockets * cores),
 			 (conf->sockets * conf->cores));
 	req_map = (bitstr_t *) bit_alloc(num_procs);
-	hw_map  = (bitstr_t *) bit_alloc(hw_size);
+	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 	if (!req_map || !hw_map) {
 		error("task/affinity: malloc error");
 		bit_free(req_map);
@@ -582,7 +581,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 {
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
-	uint16_t p, t, num_procs, num_threads, sockets, cores, hw_size;
+	uint16_t p, t, num_procs, num_threads, sockets, cores;
 	uint32_t job_node_id;
 	int start;
 	char *str;
@@ -590,7 +589,6 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	*hw_sockets = conf->sockets;
 	*hw_cores   = conf->cores;
 	*hw_threads = conf->threads;
-	hw_size    = (*hw_sockets) * (*hw_cores) * (*hw_threads);
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
 		error("task/affinity: job lacks a credential");
@@ -613,7 +611,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	num_procs   = MIN((sockets * cores),
 			  ((*hw_sockets)*(*hw_cores)));
 	req_map = (bitstr_t *) bit_alloc(num_procs);
-	hw_map  = (bitstr_t *) bit_alloc(hw_size);
+	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 	if (!req_map || !hw_map) {
 		error("task/affinity: malloc error");
 		bit_free(req_map);
@@ -786,7 +784,7 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 						continue;
 					if (masks[taskcount] == NULL)
 						masks[taskcount] =
-						    (bitstr_t *)bit_alloc(size);
+							bit_alloc(conf->block_map_size);
 					bit_set(masks[taskcount], bit);
 					if (++i < req->cpus_per_task)
 						continue;
@@ -886,7 +884,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 						continue;
 					if (masks[taskcount] == NULL)
 						masks[taskcount] =
-						    (bitstr_t *)bit_alloc(size);
+						    (bitstr_t *)bit_alloc(conf->block_map_size);
 					bit_set(masks[taskcount], bit);
 					if (++i < req->cpus_per_task)
 						continue;
@@ -1016,7 +1014,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	for (i = 0; i < size; i++) {
 		for (t = 0; t < task_array[i]; t++) {
 			if (masks[taskcount] == NULL)
-				masks[taskcount] = (bitstr_t *)bit_alloc(size);
+				masks[taskcount] = (bitstr_t *)bit_alloc(conf->block_map_size);
 			bit_set(masks[taskcount++], i);
 		}
 	}
@@ -1077,7 +1075,12 @@ static bitstr_t *_lllp_map_abstract_mask(bitstr_t *bitmask)
 	for (i = 0; i < num_bits; i++) {
 		if (bit_test(bitmask,i)) {
 			bit = BLOCK_MAP(i);
-			bit_set(newmask, bit);
+			if(bit < bit_size(newmask))
+				bit_set(newmask, bit);
+			else
+				error("_lllp_map_abstract_mask: can't go from "
+				      "%d -> %d since we only have %d bits",
+				      i, bit, bit_size(newmask));
 		}
 	}
 	return newmask;
