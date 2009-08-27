@@ -20,8 +20,6 @@ generated_html = \
 	gang_scheduling.html \
 	help.html \
 	ibm.html \
-	priority_multifactor.html \
-	priority_plugins.html \
 	jobacct_gatherplugins.html \
 	accounting_storageplugins.html \
 	jobcompplugins.html \
