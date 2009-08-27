@@ -1062,7 +1062,7 @@ _slurmd_init(void)
 	 * This is required by the topology stack
 	 */
 	init_node_conf();
-	build_all_nodeline_info();
+	build_all_nodeline_info(true);
 
 	/*
 	 * Get and set slurmd topology information
