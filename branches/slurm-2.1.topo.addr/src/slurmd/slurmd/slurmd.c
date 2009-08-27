@@ -375,12 +375,18 @@ _registration_engine(void *arg)
 static void
 _msg_engine(void)
 {
+	slurm_addr *cli;
 	slurm_fd sock;
 
 	msg_pthread = pthread_self();
 	slurmd_req(NULL);	/* initialize timer */
 	while (!_shutdown) {
-		slurm_addr *cli = xmalloc (sizeof (slurm_addr));
+		if (_reconfig) {
+			verbose("got reconfigure request");
+			_reconfigure();
+		}
+
+		cli = xmalloc (sizeof (slurm_addr));
 		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
 			_handle_connection(sock, cli);
 			continue;
@@ -389,13 +395,8 @@ _msg_engine(void)
 		 *  Otherwise, accept() failed.
 		 */
 		xfree (cli);
-		if (errno == EINTR) {
-			if (_reconfig) {
-				verbose("got reconfigure request");
-				_reconfigure();
-			}
+		if (errno == EINTR)
 			continue;
-		} 
 		error("accept: %m");
 	}
 	verbose("got shutdown request");
