@@ -517,55 +517,61 @@ extern void log_select_job_res(uint32_t job_id,
 extern void pack_select_job_res(select_job_res_t *select_job_res_ptr, 
 				Buf buffer)
 {
-	int i;
-	uint32_t core_cnt = 0, sock_recs = 0;
-
 	if (select_job_res_ptr == NULL) {
 		uint32_t empty = NO_VAL;
 		pack32(empty, buffer);
 		return;
 	}
 
-	xassert(select_job_res_ptr->cores_per_socket);
-	xassert(select_job_res_ptr->cpus);
 	xassert(select_job_res_ptr->nhosts);
-	xassert(select_job_res_ptr->sock_core_rep_count);
-	xassert(select_job_res_ptr->sockets_per_node);
 
 	pack32(select_job_res_ptr->nhosts, buffer);
 	pack32(select_job_res_ptr->nprocs, buffer);
 	pack8(select_job_res_ptr->node_req, buffer);
 
-	if (select_job_res_ptr->cpu_array_cnt &&
-	    select_job_res_ptr->cpu_array_reps &&
-	    select_job_res_ptr->cpu_array_value) {
-		pack32(select_job_res_ptr->cpu_array_cnt, buffer);
+	if (select_job_res_ptr->cpu_array_reps) 
 		pack32_array(select_job_res_ptr->cpu_array_reps,
 			     select_job_res_ptr->cpu_array_cnt, buffer);
+	else
+		pack32_array(select_job_res_ptr->cpu_array_reps, 0, buffer);
+
+	if (select_job_res_ptr->cpu_array_value) 
 		pack16_array(select_job_res_ptr->cpu_array_value,
 			     select_job_res_ptr->cpu_array_cnt, buffer);
-	} else {
-		pack32((uint32_t) 0, buffer);
-	}
+	else
+		pack16_array(select_job_res_ptr->cpu_array_value, 0, buffer);
 
-	pack16_array(select_job_res_ptr->cpus,
-		     select_job_res_ptr->nhosts, buffer);
-	if (select_job_res_ptr->cpus_used) {
+	if (select_job_res_ptr->cpus) 
+		pack16_array(select_job_res_ptr->cpus,
+			     select_job_res_ptr->nhosts, buffer);
+	else
+		pack16_array(select_job_res_ptr->cpus, 0, buffer);
+
+	if (select_job_res_ptr->cpus_used) 
 		pack16_array(select_job_res_ptr->cpus_used,
 			     select_job_res_ptr->nhosts, buffer);
-	} else
+	else
 		pack16_array(select_job_res_ptr->cpus_used, 0, buffer);
-
-	if (select_job_res_ptr->memory_allocated) {
+	
+	if (select_job_res_ptr->memory_allocated) 
 		pack32_array(select_job_res_ptr->memory_allocated,  
 			     select_job_res_ptr->nhosts, buffer);
-	} else
+	else
 		pack32_array(select_job_res_ptr->memory_allocated, 0, buffer);
-	if (select_job_res_ptr->memory_used) {
+
+	if (select_job_res_ptr->memory_used) 
 		pack32_array(select_job_res_ptr->memory_used,  
 			     select_job_res_ptr->nhosts, buffer);
-	} else
+	else
 		pack32_array(select_job_res_ptr->memory_used, 0, buffer);
+
+#ifndef HAVE_BG
+{
+	int i;
+	uint32_t core_cnt = 0, sock_recs = 0;
+	xassert(select_job_res_ptr->cores_per_socket);
+	xassert(select_job_res_ptr->sock_core_rep_count);
+	xassert(select_job_res_ptr->sockets_per_node);
 
 	for (i=0; i<select_job_res_ptr->nhosts; i++) {
 		core_cnt += select_job_res_ptr->sockets_per_node[i] *
@@ -583,16 +589,13 @@ extern void pack_select_job_res(select_job_res_t *select_job_res_ptr,
 	pack32_array(select_job_res_ptr->sock_core_rep_count, 
 		     (uint32_t) i, buffer);
 
-#ifndef HAVE_BG
 	xassert(select_job_res_ptr->core_bitmap);
 	xassert(select_job_res_ptr->core_bitmap_used);
-	pack32(core_cnt, buffer);
-	xassert(core_cnt == bit_size(select_job_res_ptr->core_bitmap));
-	pack_bit_fmt(select_job_res_ptr->core_bitmap, buffer);
-	xassert(core_cnt == bit_size(select_job_res_ptr->core_bitmap_used));
-	pack_bit_fmt(select_job_res_ptr->core_bitmap_used, buffer);
+	pack_bit_str(select_job_res_ptr->core_bitmap, buffer);
+	pack_bit_str(select_job_res_ptr->core_bitmap_used, buffer);
 	/* Do not pack the node_bitmap, but rebuild it in reset_node_bitmap()
 	 * based upon job_ptr->nodes and the current node table */
+}
 #endif
 }
 
@@ -644,28 +647,16 @@ extern int unpack_select_job_res(select_job_res_t **select_job_res_pptr,
 	if (tmp32 == 0)
 		xfree(select_job_res->memory_used);
 
+#ifndef HAVE_BG
 	safe_unpack16_array(&select_job_res->sockets_per_node, &tmp32, buffer);
 	safe_unpack16_array(&select_job_res->cores_per_socket, &tmp32, buffer);
 	safe_unpack32_array(&select_job_res->sock_core_rep_count,
 			    &tmp32, buffer);
 
-#ifndef HAVE_BG
-{
-	uint32_t core_cnt = 0;
-	safe_unpack32(&core_cnt, buffer);    /* NOTE: Not part of struct */
-	safe_unpackstr_xmalloc(&bit_fmt, &tmp32, buffer);
-	select_job_res->core_bitmap = bit_alloc((bitoff_t) core_cnt);
-	if (bit_unfmt(select_job_res->core_bitmap, bit_fmt))
-		goto unpack_error;
-	xfree(bit_fmt);
-	safe_unpackstr_xmalloc(&bit_fmt, &tmp32, buffer);
-	select_job_res->core_bitmap_used = bit_alloc((bitoff_t) core_cnt);
-	if (bit_unfmt(select_job_res->core_bitmap_used, bit_fmt))
-		goto unpack_error;
-	xfree(bit_fmt);
+	unpack_bit_str(&select_job_res->core_bitmap, buffer);
+	unpack_bit_str(&select_job_res->core_bitmap_used, buffer);
 	/* node_bitmap is not packed, but rebuilt in reset_node_bitmap()
 	 * based upon job_ptr->nodes and the current node table */
-}
 #endif
 
 	*select_job_res_pptr = select_job_res;

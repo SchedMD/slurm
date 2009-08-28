@@ -1680,7 +1680,6 @@ static int _parse_single_range(const char *str, struct _range *range)
 {
 	char *p, *q;
 	char *orig = strdup(str);
-	uint64_t temp;
 	int hostlist_base = HOSTLIST_BASE;
 
 	if (!orig) 
@@ -1706,7 +1705,6 @@ static int _parse_single_range(const char *str, struct _range *range)
 		hostlist_base = 10;	
 #endif
 	range->lo = strtoul(str, &q, hostlist_base);
-	temp = strtoul(str, &q, hostlist_base);
 
 	if (q == str) 
 		goto error;
@@ -3023,12 +3021,18 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 			 * this does not necessarily contain a
 			 * SYSTEM_DIMENSION dimensional
 			 * host list. It could just be numeric values */
-			if (hl->hr[i]->prefix[0]) {
+			if (hl->hr[i]->prefix[0] && hl->hr[i]->width) {
 				debug("This node is not in %dD format.  "
 				      "Prefix of range %d is %s and suffix is "
 				      "%d chars long",
 				      SYSTEM_DIMENSIONS, i,
 				      hl->hr[i]->prefix, hl->hr[i]->width);
+			} else if (hl->hr[i]->prefix[0]) {
+				debug4("This node is not in %dD format.  "
+				       "Prefix of range %d is %s and suffix is "
+				       "%d chars long",
+				       SYSTEM_DIMENSIONS, i,
+				       hl->hr[i]->prefix, hl->hr[i]->width);
 			} else {
 				debug3("This node is not in %dD format.  "
 				       "No prefix for range %d but suffix is "

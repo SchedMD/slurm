@@ -74,6 +74,9 @@ documents those changes that are of interest to users and admins.
  -- Add reservation flag of "OVERLAP" to permit a new reservation to use
     nodes already in another reservation.
  -- Fix so "scontrol update jobid=# nice=0" can clear previous nice value.
+ -- BLUEGENE - env vars such as SLURM_NNODES, SLURM_JOB_NUM_NODES, and
+    SLURM_JOB_CPUS_PER_NODE now reference cnode counts instead of midplane
+    counts.  SLURM_NODELIST still references midplane names.
 
 * Changes in SLURM 2.1.0-pre2
 =============================

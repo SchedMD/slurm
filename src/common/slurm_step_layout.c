@@ -52,6 +52,7 @@
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/node_select.h"
 
 /* build maps for task layout on nodes */
 static int _init_task_layout(slurm_step_layout_t *step_layout, 
@@ -125,7 +126,11 @@ slurm_step_layout_t *slurm_step_layout_create(
 	 * Normally we would not permit execution of job steps,
 	 * but can fake it by just allocating all tasks to
 	 * one of the allocated nodes. */
-	step_layout->node_cnt    = 1;
+#ifdef HAVE_BG
+	step_layout->node_cnt  = num_hosts;
+#else
+	step_layout->node_cnt  = 1;
+#endif
 #else
 	step_layout->node_cnt  = num_hosts;
 #endif
@@ -401,7 +406,9 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			     uint16_t task_dist, uint16_t plane_size)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
+#ifndef HAVE_BG
 	hostlist_t hl = NULL;
+#endif
 /* 	char *name = NULL; */
 	uint16_t cpus[step_layout->node_cnt];
 
@@ -420,18 +427,20 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 	step_layout->tids  = xmalloc(sizeof(uint32_t *) 
 				     * step_layout->node_cnt);
 
+#ifndef HAVE_BG
 	hl = hostlist_create(step_layout->node_list);
 	/* make sure the number of nodes we think we have 
 	 * is the correct number */
 	i = hostlist_count(hl);
 	if(step_layout->node_cnt > i)
 		step_layout->node_cnt = i;
+	hostlist_destroy(hl);
+#endif
 	debug("laying out the %u tasks on %u hosts %s\n", 
 	      step_layout->task_cnt, step_layout->node_cnt,
 	      step_layout->node_list);
 	if(step_layout->node_cnt < 1) {
 		error("no hostlist given can't layout tasks");
-		hostlist_destroy(hl);
 		return SLURM_ERROR;
 	}
 
@@ -458,7 +467,6 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			cpu_cnt = 0;
 		}
 	}
-	hostlist_destroy(hl);
 	
         if ((task_dist == SLURM_DIST_CYCLIC) ||
             (task_dist == SLURM_DIST_CYCLIC_CYCLIC) ||
