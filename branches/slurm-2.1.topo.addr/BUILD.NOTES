@@ -183,7 +183,9 @@ not change gnats bug state, but records source files associated
 with the bug.
 
 For memory leaks (for AIX use zerofault, zf; for linux use valgrind)
- valgrind --tool=memcheck --leak-check=yes --num-callers=6 --leak-resolution=med ./slurmctld
+ - run configure with the option --enable-memory-leak-debug
+ - valgrind --tool=memcheck --leak-check=yes --num-callers=6 --leak-resolution=med \
+   ./slurmctld -Dc >ctld.out 2>&1    (or similar like for slurmd)
 
 Before new major release:
  - Test on ia64, i386, x86_64, BGL, AIX, OSX, XCPU
