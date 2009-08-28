@@ -222,7 +222,7 @@ require DynaLoader;
 push @ISA, 'DynaLoader';
 bootstrap Slurm $VERSION;
 
-sub dl_load_flags {0x01}
+sub dl_load_flags { if($^O eq 'aix') { 0x00 } else { 0x01 }}
 
 ############################################################
 # Preloaded methods go here.
