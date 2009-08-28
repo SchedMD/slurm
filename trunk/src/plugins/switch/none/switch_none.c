@@ -242,34 +242,34 @@ extern int switch_p_clear_node_state(void)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_alloc_node_info(switch_node_info_t *switch_node)
+extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_build_node_info(switch_node_info_t switch_node)
+extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_pack_node_info(switch_node_info_t switch_node, 
+extern int switch_p_pack_node_info(switch_node_info_t *switch_node, 
 	Buf buffer)
 {
 	return 0;
 }
 
-extern int switch_p_unpack_node_info(switch_node_info_t switch_node,
+extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
 	Buf buffer)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_free_node_info(switch_node_info_t *switch_node)
+extern int switch_p_free_node_info(switch_node_info_t **switch_node)
 {
 	return SLURM_SUCCESS;
 }
 
-extern char*switch_p_sprintf_node_info(switch_node_info_t switch_node,
+extern char*switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 	char *buf, size_t size)
 {
 	if ((buf != NULL) && size) {
