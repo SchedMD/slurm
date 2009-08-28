@@ -903,10 +903,18 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	slurm_step_layout_t *step_layout = NULL;
 	uint32_t num_tasks = desc->num_tasks;
 	int rc = SLURM_SUCCESS;
-	
+	uint32_t node_cnt = alloc->node_cnt;
+
+#ifdef HAVE_BG
+	select_g_select_jobinfo_get(alloc->select_jobinfo, 
+				    SELECT_JOBDATA_NODE_CNT,
+				    &node_cnt);
+	if(!node_cnt)
+		node_cnt = alloc->node_cnt;
+#endif
+
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
-	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",
-				alloc->node_cnt);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s",
 				alloc->node_list);
 
@@ -970,7 +978,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", alloc->job_id);
-	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", alloc->node_cnt);
+	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", alloc->node_list);
 	
 	if(num_tasks == NO_VAL) {
@@ -998,18 +1006,17 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 					"%s", tmp);
 	} else
 		tmp = alloc->node_list;
-	//info("got %d and %d", num_tasks,  desc->cpus_per_task);
+
 	if(!(step_layout = slurm_step_layout_create(tmp,
 						    alloc->cpus_per_node,
 						    alloc->cpu_count_reps,
-						    alloc->node_cnt,
+						    node_cnt,
 						    num_tasks,
 						    desc->cpus_per_task,
 						    desc->task_dist,
 						    desc->plane_size))) 
 		return SLURM_ERROR;
 	
-
 	tmp = _uint16_array_to_str(step_layout->node_cnt,
 				   step_layout->tasks);
 	slurm_step_layout_destroy(step_layout);
@@ -1066,8 +1073,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
 
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
-					batch->cpus_per_node,
-					batch->cpu_count_reps);
+				       batch->cpus_per_node,
+				       batch->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 	xfree(tmp);
 

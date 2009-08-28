@@ -1221,64 +1221,102 @@ static int _sync_block_lists(List full_list, List incomp_list)
 	return count;
 }
 
-static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
+/* static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap) */
+/* { */
+/* 	int i, j, k; */
+/* 	int first_bit, last_bit; */
+/* 	uint32_t node_cpus, total_cpus = 0, node_cnt; */
+/* 	select_job_res_t *select_ptr; */
+
+/* 	if (job_ptr->select_job) { */
+/* 		error("select_p_job_test: already have select_job"); */
+/* 		free_select_job_res(&job_ptr->select_job); */
+/* 	} */
+
+/* 	node_cnt = bit_set_count(bitmap); */
+/* 	job_ptr->select_job = select_ptr = create_select_job_res(); */
+/* 	select_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t) * node_cnt); */
+/* 	select_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * node_cnt); */
+/* 	select_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt); */
+/* 	select_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt); */
+/* 	select_ptr->nhosts = node_cnt; */
+/* 	select_ptr->node_bitmap = bit_copy(bitmap); */
+/* 	if (select_ptr->node_bitmap == NULL) */
+/* 		fatal("bit_copy malloc failure"); */
+/* 	select_ptr->nprocs = job_ptr->num_procs; */
+/* 	if (build_select_job_res(select_ptr, (void *)node_record_table_ptr, 1)) */
+/* 		error("select_p_job_test: build_select_job_res: %m"); */
+
+/* 	if (job_ptr->num_procs <= bg_conf->procs_per_bp) */
+/* 		node_cpus = job_ptr->num_procs; */
+/* 	else */
+/* 		node_cpus = bg_conf->procs_per_bp; */
+
+/* 	first_bit = bit_ffs(bitmap); */
+/* 	last_bit  = bit_fls(bitmap); */
+/* 	for (i=first_bit, j=0, k=-1; i<=last_bit; i++) { */
+/* 		if (!bit_test(bitmap, i)) */
+/* 			continue; */
+
+/* 		select_ptr->cpus[j] = node_cpus; */
+/* 		if ((k == -1) ||  */
+/* 		    (select_ptr->cpu_array_value[k] != node_cpus)) { */
+/* 			select_ptr->cpu_array_cnt++; */
+/* 			select_ptr->cpu_array_reps[++k] = 1; */
+/* 			select_ptr->cpu_array_value[k] = node_cpus; */
+/* 		} else */
+/* 			select_ptr->cpu_array_reps[k]++; */
+/* 		total_cpus += node_cpus; */
+/* #if 0 */
+/* 		/\* This function could be used to control allocation of  */
+/* 		 * specific c-nodes for multiple job steps per job allocation.  */
+/* 		 * Such functionality is not currently support on BlueGene  */
+/* 		 * systems.  */
+/* 		 * Also see #ifdef HAVE_BG logic in common/select_job_res.c *\/ */
+/* 		if (set_select_job_res_node(select_ptr, j)) */
+/* 			error("select_p_job_test: set_select_job_res_node: %m"); */
+/* #endif */
+/* 		j++; */
+/* 	} */
+/* 	if (select_ptr->nprocs != total_cpus) { */
+/* 		error("select_p_job_test: nprocs mismatch %u != %u", */
+/* 		      select_ptr->nprocs, total_cpus); */
+/* 	} */
+/* } */
+
+static void _build_select_struct(struct job_record *job_ptr,
+				 bitstr_t *bitmap, uint32_t node_cnt)
 {
-	int i, j, k;
-	int first_bit, last_bit;
-	uint32_t node_cpus, total_cpus = 0, node_cnt;
+	int i;
+	uint32_t total_cpus = 0;
 	select_job_res_t *select_ptr;
+
+	xassert(job_ptr);
 
 	if (job_ptr->select_job) {
 		error("select_p_job_test: already have select_job");
 		free_select_job_res(&job_ptr->select_job);
 	}
 
-
-	node_cnt = bit_set_count(bitmap);
 	job_ptr->select_job = select_ptr = create_select_job_res();
-	select_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t) * node_cnt);
-	select_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * node_cnt);
+	select_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t));
+	select_ptr->cpu_array_value = xmalloc(sizeof(uint16_t));
 	select_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
 	select_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
 	select_ptr->nhosts = node_cnt;
+	select_ptr->nprocs = job_ptr->num_procs;
 	select_ptr->node_bitmap = bit_copy(bitmap);
 	if (select_ptr->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
-	select_ptr->nprocs = job_ptr->num_procs;
-	if (build_select_job_res(select_ptr, (void *)node_record_table_ptr, 1))
-		error("select_p_job_test: build_select_job_res: %m");
+	
+	select_ptr->cpu_array_cnt = 1;
+	select_ptr->cpu_array_value[0] = bg_conf->proc_ratio;
+	select_ptr->cpu_array_reps[0] = node_cnt;
+	total_cpus = bg_conf->proc_ratio * node_cnt;
 
-	if (job_ptr->num_procs <= bg_conf->procs_per_bp)
-		node_cpus = job_ptr->num_procs;
-	else
-		node_cpus = bg_conf->procs_per_bp;
-
-	first_bit = bit_ffs(bitmap);
-	last_bit  = bit_fls(bitmap);
-	for (i=first_bit, j=0, k=-1; i<=last_bit; i++) {
-		if (!bit_test(bitmap, i))
-			continue;
-
-		select_ptr->cpus[j] = node_cpus;
-		if ((k == -1) || 
-		    (select_ptr->cpu_array_value[k] != node_cpus)) {
-			select_ptr->cpu_array_cnt++;
-			select_ptr->cpu_array_reps[++k] = 1;
-			select_ptr->cpu_array_value[k] = node_cpus;
-		} else
-			select_ptr->cpu_array_reps[k]++;
-		total_cpus += node_cpus;
-#if 0
-		/* This function could be used to control allocation of 
-		 * specific c-nodes for multiple job steps per job allocation. 
-		 * Such functionality is not currently support on BlueGene 
-		 * systems. 
-		 * Also see #ifdef HAVE_BG logic in common/select_job_res.c */
-		if (set_select_job_res_node(select_ptr, j))
-			error("select_p_job_test: set_select_job_res_node: %m");
-#endif
-		j++;
-	}
+	for (i=0; i<node_cnt; i++) 
+		select_ptr->cpus[i] = bg_conf->proc_ratio;
+	
 	if (select_ptr->nprocs != total_cpus) {
 		error("select_p_job_test: nprocs mismatch %u != %u",
 		      select_ptr->nprocs, total_cpus);
@@ -1411,11 +1449,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			job_ptr->start_time = starttime;
 			
 			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					     SELECT_JOBDATA_NODES, 
-					     bg_record->nodes);
+						    SELECT_JOBDATA_NODES, 
+						    bg_record->nodes);
 			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-					     SELECT_JOBDATA_IONODES, 
-					     bg_record->ionodes);
+						    SELECT_JOBDATA_IONODES, 
+						    bg_record->ionodes);
 			
 			if(!bg_record->bg_block_id) {
 				debug2("%d can start unassigned job %u at "
@@ -1427,13 +1465,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_BLOCK_ID,
 					"unassigned");
-
-				min_nodes = bg_record->node_cnt;
-
 				select_g_select_jobinfo_set(
 					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_NODE_CNT,
-					&min_nodes);
+					&bg_record->node_cnt);
 
 				/* This is a fake record so we need to
 				 * destroy it after we get the info from
@@ -1465,16 +1500,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_NODE_CNT, 
 					&bg_record->node_cnt);
-
-				/* tmp16 = bg_record->conn_type; */
-/* 				select_g_select_jobinfo_set(job_ptr->select_jobinfo, */
-/* 						     SELECT_JOBDATA_CONN_TYPE,  */
-/* 						     &tmp16); */
 			}
-			if (mode == SELECT_MODE_RUN_NOW) {
-				_build_select_struct(job_ptr, 
-						     slurm_block_bitmap);
-			}
+			if (mode == SELECT_MODE_RUN_NOW) 
+				_build_select_struct(job_ptr,
+						     slurm_block_bitmap,
+						     bg_record->node_cnt);
+			
 		} else {
 			error("we got a success, but no block back");
 		}
