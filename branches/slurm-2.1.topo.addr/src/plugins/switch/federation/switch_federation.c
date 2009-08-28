@@ -318,12 +318,12 @@ int switch_p_clear_node_state(void)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_alloc_node_info(switch_node_info_t *switch_node)
+int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 {
 	return fed_alloc_nodeinfo((fed_nodeinfo_t **)switch_node);
 }
 
-int switch_p_build_node_info(switch_node_info_t switch_node)
+int switch_p_build_node_info(switch_node_info_t *switch_node)
 {
 	char hostname[256];
 	char *tmp;
@@ -337,23 +337,23 @@ int switch_p_build_node_info(switch_node_info_t switch_node)
 	return fed_build_nodeinfo((fed_nodeinfo_t *)switch_node, hostname);
 }
 
-int switch_p_pack_node_info(switch_node_info_t switch_node, Buf buffer)
+int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer)
 {
 	return fed_pack_nodeinfo((fed_nodeinfo_t *)switch_node, buffer);
 }
 
-int switch_p_unpack_node_info(switch_node_info_t switch_node, Buf buffer)
+int switch_p_unpack_node_info(switch_node_info_t *switch_node, Buf buffer)
 {
 	return fed_unpack_nodeinfo((fed_nodeinfo_t *)switch_node, buffer);
 }
 
-void switch_p_free_node_info(switch_node_info_t *switch_node)
+void switch_p_free_node_info(switch_node_info_t **switch_node)
 {
 	if(switch_node)
 		fed_free_nodeinfo((fed_nodeinfo_t *)*switch_node, false);
 }
 
-char * switch_p_sprintf_node_info(switch_node_info_t switch_node, 
+char * switch_p_sprintf_node_info(switch_node_info_t *switch_node, 
 		char *buf, size_t size)
 {
 	return fed_print_nodeinfo((fed_nodeinfo_t *)switch_node, buf, size);
@@ -447,7 +447,7 @@ switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
 {
 	switch_jobinfo_t *j;
 
-	j = (switch_jobinfo_t)fed_copy_jobinfo((fed_jobinfo_t *)switch_job);
+	j = (switch_jobinfo_t *)fed_copy_jobinfo((fed_jobinfo_t *)switch_job);
 	if (!j)
 		error("fed_copy_jobinfo failed");
 
