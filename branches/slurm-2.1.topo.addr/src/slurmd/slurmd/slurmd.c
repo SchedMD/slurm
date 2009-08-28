@@ -792,14 +792,14 @@ _reconfigure(void)
 	_reconfig = 0;
 	_read_config();
 	
-	/* _update_logging(); */
-	_print_conf();
-	
 	/*
 	 * Rebuild topology information and refresh slurmd topo infos
 	 */
 	slurm_topo_build_config();
 	_set_topo_info();
+
+	/* _update_logging(); */
+	_print_conf();
 
 	/*
 	 * Make best effort at changing to new public key
@@ -1068,6 +1068,7 @@ _slurmd_init(void)
 	/*
 	 * Get and set slurmd topology information
 	 */
+	slurm_topo_build_config();
 	_set_topo_info();
 
 	/* 
@@ -1434,12 +1435,11 @@ static int _set_topo_info(void)
 {
 	int rc;
 	char * addr, * pattern;
-       
-	xfree(conf->node_topo_addr);
-	xfree(conf->node_topo_pattern);
 	
 	rc = slurm_topo_get_node_addr(conf->node_name, &addr, &pattern);
-	if ( rc == 0 ) {
+	if ( rc == SLURM_SUCCESS ) {
+		xfree(conf->node_topo_addr);
+		xfree(conf->node_topo_pattern);
 		conf->node_topo_addr = addr;
 		conf->node_topo_pattern = pattern;
 	}
