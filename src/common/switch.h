@@ -54,13 +54,13 @@
 /* opaque data structures - no peeking! */
 #ifndef __switch_jobinfo_t_defined
 #  define __switch_jobinfo_t_defined
-   typedef struct switch_jobinfo   *switch_jobinfo_t;
+   typedef struct switch_jobinfo   switch_jobinfo_t;
 #endif
 #ifndef __switch_node_info_t_defined
 #  define __switch_node_info_t_defined
-   typedef struct switch_node_info *switch_node_info_t;
+   typedef struct switch_node_info switch_node_info_t;
 #endif
-typedef struct slurm_switch_context * slurm_switch_context_t;
+typedef struct slurm_switch_context slurm_switch_context_t;
 
 /*****************************************\
  * GLOBAL SWITCH STATE MANGEMENT FUNCIONS *
@@ -314,37 +314,37 @@ extern int switch_g_slurmd_step_init(void);
 /*
  * Allocate storage for a node's switch state record
  */
-extern int switch_g_alloc_node_info(switch_node_info_t *switch_node);
+extern int switch_g_alloc_node_info(switch_node_info_t **switch_node);
 
 /*
  * Fill in a previously allocated switch state record for the node on which 
  * this function is executed. 
  */
-extern int switch_g_build_node_info(switch_node_info_t switch_node);
+extern int switch_g_build_node_info(switch_node_info_t *switch_node);
 
 /* 
  * Pack the data associated with a node's switch state into a buffer 
  * for network transmission.
  */
-extern int switch_g_pack_node_info(switch_node_info_t switch_node, 
+extern int switch_g_pack_node_info(switch_node_info_t *switch_node, 
 	Buf buffer);
 
 /*
  * Unpack the data associated with a node's switch state record 
  * from a buffer.
  */
-extern int switch_g_unpack_node_info(switch_node_info_t switch_node,
+extern int switch_g_unpack_node_info(switch_node_info_t *switch_node,
 	Buf buffer);
 
 /*
  * Release the storage associated with a node's switch state record.
  */
-extern int switch_g_free_node_info(switch_node_info_t *switch_node);
+extern int switch_g_free_node_info(switch_node_info_t **switch_node);
 
 /*
  * Print the contents of a node's switch state record to a buffer.
  */
-extern char*switch_g_sprintf_node_info(switch_node_info_t switch_node,
+extern char*switch_g_sprintf_node_info(switch_node_info_t *switch_node,
 	char *buf, size_t size);
 
 #endif /* _SWITCH_H */

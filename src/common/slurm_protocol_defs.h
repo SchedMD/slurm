@@ -527,7 +527,7 @@ typedef struct epilog_complete_msg {
 	uint32_t job_id;
 	uint32_t return_code;
 	char    *node_name;
-	switch_node_info_t switch_nodeinfo;
+	switch_node_info_t *switch_nodeinfo;
 } epilog_complete_msg_t;
 
 typedef struct shutdown_msg {
@@ -878,7 +878,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t status;	/* node status code, same as return codes */
 	uint16_t startup;	/* slurmd just restarted */
 	uint32_t up_time;	/* seconds since reboot */
-	switch_node_info_t switch_nodeinfo;	/* set only if startup != 0 */
+	switch_node_info_t *switch_nodeinfo;	/* set only if startup != 0 */
 } slurm_node_registration_status_msg_t;
 
 

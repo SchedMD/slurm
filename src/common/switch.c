@@ -95,14 +95,14 @@ typedef struct slurm_switch_ops {
 	char *	     (*switch_strerror)   ( int errnum );
 	int          (*switch_errno)      ( void );
 	int          (*clear_node)        ( void );
-	int          (*alloc_nodeinfo)    ( switch_node_info_t *nodeinfo );
-	int          (*build_nodeinfo)    ( switch_node_info_t nodeinfo );
-	int          (*pack_nodeinfo)     ( switch_node_info_t nodeinfo,
+	int          (*alloc_nodeinfo)    ( switch_node_info_t **nodeinfo );
+	int          (*build_nodeinfo)    ( switch_node_info_t *nodeinfo );
+	int          (*pack_nodeinfo)     ( switch_node_info_t *nodeinfo,
 						Buf buffer );
-	int          (*unpack_nodeinfo)   ( switch_node_info_t nodeinfo,
+	int          (*unpack_nodeinfo)   ( switch_node_info_t *nodeinfo,
 						Buf buffer );
-	int          (*free_nodeinfo)     ( switch_node_info_t *nodeinfo );
-	char *       (*sprintf_nodeinfo)  ( switch_node_info_t nodeinfo,
+	int          (*free_nodeinfo)     ( switch_node_info_t **nodeinfo );
+	char *       (*sprintf_nodeinfo)  ( switch_node_info_t *nodeinfo,
 						char *buf, size_t size );
 	int          (*step_complete)     ( switch_jobinfo_t *jobinfo,
 						char *nodelist );
@@ -125,14 +125,14 @@ struct slurm_switch_context {
 	slurm_switch_ops_t	ops;
 };
 
-static slurm_switch_context_t g_context = NULL;
+static slurm_switch_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
-static slurm_switch_context_t
+static slurm_switch_context_t *
 _slurm_switch_context_create(const char *switch_type)
 {
-	slurm_switch_context_t c;
+	slurm_switch_context_t *c;
 
 	if ( switch_type == NULL ) {
 		debug3( "_slurm_switch_context_create: no switch type" );
@@ -159,7 +159,7 @@ _slurm_switch_context_create(const char *switch_type)
 }
 
 static int
-_slurm_switch_context_destroy( slurm_switch_context_t c )
+_slurm_switch_context_destroy( slurm_switch_context_t *c )
 {
 	int rc = SLURM_SUCCESS;
 	/*
@@ -184,7 +184,7 @@ _slurm_switch_context_destroy( slurm_switch_context_t c )
  * Resolve the operations from the plugin.
  */
 static slurm_switch_ops_t * 
-_slurm_switch_get_ops( slurm_switch_context_t c )
+_slurm_switch_get_ops( slurm_switch_context_t *c )
 {
 	/*
 	 * These strings must be kept in the same order as the fields
@@ -510,7 +510,7 @@ extern int switch_g_clear_node_state(void)
 	return (*(g_context->ops.clear_node))();
 }
 
-extern int switch_g_alloc_node_info(switch_node_info_t *switch_node)
+extern int switch_g_alloc_node_info(switch_node_info_t **switch_node)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -518,7 +518,7 @@ extern int switch_g_alloc_node_info(switch_node_info_t *switch_node)
 	return (*(g_context->ops.alloc_nodeinfo))( switch_node );
 }
 
-extern int switch_g_build_node_info(switch_node_info_t switch_node)
+extern int switch_g_build_node_info(switch_node_info_t *switch_node)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -526,7 +526,7 @@ extern int switch_g_build_node_info(switch_node_info_t switch_node)
 	return (*(g_context->ops.build_nodeinfo))( switch_node );
 }
 
-extern int switch_g_pack_node_info(switch_node_info_t switch_node, 
+extern int switch_g_pack_node_info(switch_node_info_t *switch_node, 
 	Buf buffer)
 {
 	if ( switch_init() < 0 )
@@ -535,7 +535,7 @@ extern int switch_g_pack_node_info(switch_node_info_t switch_node,
 	return (*(g_context->ops.pack_nodeinfo))( switch_node, buffer );
 }
 
-extern int switch_g_unpack_node_info(switch_node_info_t switch_node,
+extern int switch_g_unpack_node_info(switch_node_info_t *switch_node,
 	Buf buffer)
 {
 	if ( switch_init() < 0 )
@@ -544,7 +544,7 @@ extern int switch_g_unpack_node_info(switch_node_info_t switch_node,
 	return (*(g_context->ops.unpack_nodeinfo))( switch_node, buffer );
 }
 
-extern int switch_g_free_node_info(switch_node_info_t *switch_node)
+extern int switch_g_free_node_info(switch_node_info_t **switch_node)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -552,7 +552,7 @@ extern int switch_g_free_node_info(switch_node_info_t *switch_node)
 	return (*(g_context->ops.free_nodeinfo))( switch_node );
 }
 
-extern char*switch_g_sprintf_node_info(switch_node_info_t switch_node,
+extern char*switch_g_sprintf_node_info(switch_node_info_t *switch_node,
 	char *buf, size_t size)
 {
 	if ( switch_init() < 0 )
