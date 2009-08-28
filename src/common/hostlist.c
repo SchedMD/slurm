@@ -59,7 +59,6 @@
 #include <ctype.h>
 #include <sys/param.h>
 #include <unistd.h>
-#include <slurm/slurm.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
