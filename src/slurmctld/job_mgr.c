@@ -850,19 +850,6 @@ static int _load_job_state(Buf buffer)
 		_add_job_hash(job_ptr);
 	}
 
-	if(qos) {
-		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-		qos_rec.id = qos;
-		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-					  accounting_enforce, 
-					  (acct_qos_rec_t **)
-					  &job_ptr->qos_ptr))
-		   != SLURM_SUCCESS) {
-			verbose("Invalid qos (%u) for job_id %u", qos, job_id);
-			/* not a fatal error, qos could have been removed */
-		} 
-	}
-
 	if ((maximum_prio >= priority) && (priority > 1))
 		maximum_prio = priority;
 	if (job_id_sequence <= job_id)
@@ -1007,6 +994,28 @@ static int _load_job_state(Buf buffer)
 		   database */
 		if(IS_JOB_FINISHED(job_ptr))
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
+	}
+
+	if(job_ptr->qos) {
+		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+		qos_rec.id = job_ptr->qos;
+		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce, 
+					  (acct_association_rec_t *)
+					  job_ptr->assoc_ptr,
+					  (acct_qos_rec_t **)
+					  &job_ptr->qos_ptr))
+		   != SLURM_SUCCESS) {
+			info("Cancelling job %u with invalid qos",
+			     job_id);
+			job_ptr->job_state = JOB_CANCELLED;
+			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+			xfree(job_ptr->state_desc);
+			if (IS_JOB_PENDING(job_ptr))
+				job_ptr->start_time = now;
+			job_ptr->end_time = now;
+			job_completion_logger(job_ptr);
+		} 
 	}
 
 	safe_unpack16(&step_flag, buffer);
@@ -3349,8 +3358,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		else
 			qos_rec.name = "normal";
 	}
-	if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec, accounting_enforce,
-				  (acct_qos_rec_t **) &job_ptr->qos_ptr))
+	if(assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec, accounting_enforce,
+				 (acct_association_rec_t *) job_ptr->assoc_ptr,
+				 (acct_qos_rec_t **) &job_ptr->qos_ptr)
 	   != SLURM_SUCCESS) {
 		error("Invalid qos (%s) for job_id %u", qos_rec.name,
 		      job_ptr->job_id);
@@ -4822,6 +4832,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			
 			if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 						  accounting_enforce,
+						  (acct_association_rec_t *) 
+						  job_ptr->assoc_ptr,
 						  (acct_qos_rec_t **)
 						  &job_ptr->qos_ptr))
 			   != SLURM_SUCCESS) {

@@ -1746,20 +1746,6 @@ static void *_assoc_cache_mgr(void *no_data)
 	       list_count(job_list));
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
-		if(job_ptr->qos) {
-			memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-			qos_rec.id = job_ptr->qos;
-			if((assoc_mgr_fill_in_qos(
-				    acct_db_conn, &qos_rec,
-				    accounting_enforce,
-				    (acct_qos_rec_t **)&job_ptr->qos_ptr))
-			   != SLURM_SUCCESS) {
-				verbose("Invalid qos (%u) for job_id %u",
-					job_ptr->qos, job_ptr->job_id);
-				/* not a fatal error, qos could have
-				 * been removed */
-			} 
-		}
 		if(job_ptr->assoc_id) {
 			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
@@ -1783,6 +1769,21 @@ static void *_assoc_cache_mgr(void *no_data)
 			debug("now assoc is %x (%d) for job %u", 
 			      job_ptr->assoc_ptr, job_ptr->assoc_id, 
 			      job_ptr->job_id);
+		}
+		if(job_ptr->qos) {
+			memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+			qos_rec.id = job_ptr->qos;
+			if((assoc_mgr_fill_in_qos(
+				    acct_db_conn, &qos_rec,
+				    accounting_enforce,
+				    NULL,
+				    (acct_qos_rec_t **)&job_ptr->qos_ptr))
+			   != SLURM_SUCCESS) {
+				verbose("Invalid qos (%u) for job_id %u",
+					job_ptr->qos, job_ptr->job_id);
+				/* not a fatal error, qos could have
+				 * been removed */
+			} 
 		}
 	}
 	list_iterator_destroy(itr);
