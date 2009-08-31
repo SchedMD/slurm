@@ -2354,6 +2354,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	acct_association_rec_t assoc_rec, *assoc_ptr;
 	List license_list = NULL;
 	bool valid;
+	acct_qos_rec_t qos_rec;
 
 #ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -2671,6 +2672,24 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	/* This must be done after we have the assoc_ptr set */
 	
+	memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+	qos_rec.name = job_desc->qos;
+	if (wiki_sched && job_ptr->comment &&
+	    strstr(job_ptr->comment, "QOS:")) {
+		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
+			qos_rec.name = "expedite";
+		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
+			qos_rec.name = "standby";
+	}
+
+	error_code = _determine_and_validate_qos(job_ptr, &qos_rec);
+	if(error_code != SLURM_SUCCESS) {
+		error("Invalid qos (%s) for job_id %u", qos_rec.name,
+		      job_ptr->job_id);
+		goto cleanup_fail;
+	} 
+
+
 	/* already confirmed submit_uid==0 */
 	/* If the priority isn't given we will figure it out later
 	 * after we see if the job is eligible or not. So we want
@@ -3295,7 +3314,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			     bitstr_t ** req_bitmap,
 			     bitstr_t ** exc_bitmap)
 {
-	acct_qos_rec_t qos_rec;
 	int error_code;
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
@@ -3385,25 +3403,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		xfree(sched_type);
 		wiki_sched_test = true;
 	}
-
-	memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-	qos_rec.name = job_desc->qos;
-	if (wiki_sched && job_ptr->comment &&
-	    strstr(job_ptr->comment, "QOS:")) {
-		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-			qos_rec.name = "expedite";
-		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-			qos_rec.name = "standby";
-	}
-
-	error_code = _determine_and_validate_qos(job_ptr, &qos_rec);
-	if(error_code != SLURM_SUCCESS) {
-		error("Invalid qos (%s) for job_id %u", qos_rec.name,
-		      job_ptr->job_id);
-		return error_code;
-	} 
-	
-	job_ptr->qos = qos_rec.id;
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
