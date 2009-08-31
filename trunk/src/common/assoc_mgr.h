@@ -127,6 +127,10 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 /* 
  * get info from the storage 
  * IN/OUT:  qos - acct_qos_rec_t with the id set of the qos.
+ * IN:      assoc_ptr - acct_association_rec_t with the valid_qos
+ *                      bitstring avaliable to check against.  If this
+ *                      is NULL no checking is done, if not NULL we
+ *                      validate if this qos is usable by this association.
  * IN/OUT:  qos_pptr - if non-NULL then return a pointer to the 
  *		       acct_qos record in cache on success
  *                     DO NOT FREE.
@@ -134,6 +138,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
  */
 extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 				 int enforce,
+				 acct_association_rec_t *assoc_ptr,
 				 acct_qos_rec_t **qos_pptr);
 /* 
  * get info from the storage 

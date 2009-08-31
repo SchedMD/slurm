@@ -1039,6 +1039,12 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	assoc->max_submit_jobs = ret_assoc->max_submit_jobs;
 	assoc->max_wall_pj     = ret_assoc->max_wall_pj;
 
+	if(assoc->valid_qos) {
+		FREE_NULL_BITMAP(assoc->valid_qos);
+		assoc->valid_qos = bit_copy(ret_assoc->valid_qos);
+	} else
+		assoc->valid_qos = ret_assoc->valid_qos;
+
 	if(assoc->parent_acct) {
 		xfree(assoc->parent_acct);
 		assoc->parent_acct       = xstrdup(ret_assoc->parent_acct);
@@ -1116,6 +1122,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 
 extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 				 int enforce,
+				 acct_association_rec_t *assoc_ptr,
 				 acct_qos_rec_t **qos_pptr)
 {
 	ListIterator itr = NULL;
@@ -1147,6 +1154,17 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
+	} else if(assoc_ptr) {
+		if(enforce 
+		   && (!assoc_ptr->valid_qos 
+		       || !bit_test(assoc_ptr->valid_qos, found_qos->id))) {
+			error("This association %d(account='%s', "
+			      "user='%s', partition='%s' does not have "
+			      "access to qos %s", 
+			      assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
+			      assoc_ptr->partition, found_qos->name);
+			return SLURM_ERROR;
+		}			
 	}
 
 	debug3("found correct qos");
