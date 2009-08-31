@@ -3247,6 +3247,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			     bitstr_t ** req_bitmap,
 			     bitstr_t ** exc_bitmap)
 {
+	acct_qos_rec_t qos_rec;
 	int error_code;
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
@@ -3283,7 +3284,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 						    &wckey_ptr)) {
 				if(accounting_enforce 
 				   & ACCOUNTING_ENFORCE_WCKEYS) {
-					info("_job_create: invalid wckey '%s' "
+					error("_job_create: invalid wckey '%s' "
 					     "for user %u.",
 					     wckey_rec.name, 
 					     job_desc->user_id);
@@ -3336,11 +3337,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		xfree(sched_type);
 		wiki_sched_test = true;
 	}
+	memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+	qos_rec.name = job_desc->qos;
 	if (wiki_sched && job_ptr->comment &&
 	    strstr(job_ptr->comment, "QOS:")) {
-		acct_qos_rec_t qos_rec;
-
-		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 
 		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
 			qos_rec.name = "expedite";
@@ -3348,18 +3348,15 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			qos_rec.name = "standby";
 		else
 			qos_rec.name = "normal";
-		
-		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-					  accounting_enforce,
-					  (acct_qos_rec_t **)
-					  &job_ptr->qos_ptr))
-		   != SLURM_SUCCESS) {
-			verbose("Invalid qos (%s) for job_id %u", 
-				qos_rec.name, job_ptr->job_id);
-			/* not a fatal error, qos could have been removed */
-		} else 
-			job_ptr->qos = qos_rec.id;
 	}
+	if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec, accounting_enforce,
+				  (acct_qos_rec_t **) &job_ptr->qos_ptr))
+	   != SLURM_SUCCESS) {
+		error("Invalid qos (%s) for job_id %u", qos_rec.name,
+		      job_ptr->job_id);
+		return ESLURM_INVALID_QOS;
+	} else
+		job_ptr->qos = qos_rec.id;
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
@@ -3931,6 +3928,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
+	xfree(job_ptr->qos);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
 	free_select_job_res(&job_ptr->select_job);
@@ -4158,6 +4156,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->comment, buffer);
+	packstr(dump_job_ptr->qos, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resv_name, buffer);
