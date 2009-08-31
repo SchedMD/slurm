@@ -4156,7 +4156,11 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->comment, buffer);
-	packstr(dump_job_ptr->qos, buffer);
+	
+	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	packstr(acct_qos_str(assoc_mgr_qos_list, dump_job_ptr->qos));
+	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resv_name, buffer);
