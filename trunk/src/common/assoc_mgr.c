@@ -1142,7 +1142,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 	while((found_qos = list_next(itr))) {
 		if(qos->id == found_qos->id) 
 			break;
-		else if(qos->name && strcasecmp(qos->name, found_qos->name))
+		else if(qos->name && !strcasecmp(qos->name, found_qos->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -1867,7 +1867,8 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 	while((object = list_pop(update->objects))) {
 		if(object->cluster && assoc_mgr_cluster_name) {
 			/* only update the local clusters assocs */
-			if(strcasecmp(object->cluster, assoc_mgr_cluster_name)) {
+			if(strcasecmp(object->cluster,
+				      assoc_mgr_cluster_name)) {
 				destroy_acct_wckey_rec(object);	
 				continue;
 			}
