@@ -53,9 +53,9 @@ option processing.
 \fBslurm_spank_init_post_opt\fR
 Called at the same point as \fBslurm_spank_init\fR, but after all
 user options to the plugin have been processed. The reason that the
-\fBunit\fR and \fBinit_post_opt\fR callbacks are separated is so that
+\fBinit\fR and \fBinit_post_opt\fR callbacks are separated is so that
 plugins can process system-wide options specified in plugstack.conf in
-the \fBinit\fR callback, then process user options, and finaly take some
+the \fBinit\fR callback, then process user options, and finally take some
 action in \fBslurm_spank_init_post_opt\fR if necessary.
 .TP
 \fBslurm_spank_local_user_init\fR
