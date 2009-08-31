@@ -342,7 +342,7 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 		assoc =	xmalloc(sizeof(acct_association_rec_t));
 		list_append(ret_list, assoc);
 
-		assoc->id = ACCT_PROBLEM_ACCT_NO_ASSOC;
+		assoc->id = ACCT_PROBLEM_USER_NO_ASSOC;
 		assoc->user = xstrdup(row[0]);		
 	}
 	mysql_free_result(result);
