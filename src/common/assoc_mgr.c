@@ -1210,7 +1210,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 		qos->user_limit_list = found_qos->user_limit_list;
 
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
-	return SLURM_ERROR;
+	return SLURM_SUCCESS;
 }
 
 extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,

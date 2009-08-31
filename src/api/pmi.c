@@ -1141,8 +1141,9 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 			rc = PMI_FAIL;	/* malloc error */
 		else {
 			rc = PMI_SUCCESS;
-			strncpy(kvs_recs[i].kvs_values[j], value, PMI_MAX_VAL_LEN);
-			strncpy(kvs_recs[i].kvs_keys[j],   key,   PMI_MAX_KEY_LEN);
+			strncpy(kvs_recs[i].kvs_values[j], value, 
+				PMI_MAX_VAL_LEN);
+			strncpy(kvs_recs[i].kvs_keys[j], key, PMI_MAX_KEY_LEN);
 		}
 		goto fini;
 	}
@@ -1307,13 +1308,14 @@ int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int lengt
 		if (strncmp(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN))
 			continue;
 		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
-			if (strncmp(kvs_recs[i].kvs_keys[j], key, PMI_MAX_KEY_LEN))
+			if (strncmp(kvs_recs[i].kvs_keys[j], key,
+				    PMI_MAX_KEY_LEN))
 				continue;
 			if (strlen(kvs_recs[i].kvs_values[j]) > (length-1))
 				rc = PMI_ERR_INVALID_LENGTH;
 			else {
 				strncpy(value, kvs_recs[i].kvs_values[j], 
-					PMI_MAX_VAL_LEN);
+					length);
 				rc = PMI_SUCCESS;
 			}
 			goto fini;
@@ -1390,9 +1392,10 @@ int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[]
 			rc = PMI_ERR_INVALID_VAL_LENGTH;
 		} else {
 			strncpy(key, kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx], 
-				PMI_MAX_KEY_LEN);
-			strncpy(val, kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
-				PMI_MAX_VAL_LEN);
+				key_len);
+			strncpy(val,
+				kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
+				val_len);
 			rc = PMI_SUCCESS;
 		}
 		goto fini;
@@ -1467,9 +1470,10 @@ int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 			rc = PMI_ERR_INVALID_VAL_LENGTH;
 		} else {
 			strncpy(key, kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx],
-				PMI_MAX_KEY_LEN);
-			strncpy(val, kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
-				PMI_MAX_VAL_LEN);
+				key_len);
+			strncpy(val, 
+				kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
+				val_len);
 			rc = PMI_SUCCESS;
 		}
 		goto fini;
@@ -1569,7 +1573,8 @@ specific arguments in the args array, this function may parse more than one
 argument as long as the options are contiguous in the args array.
 
 @*/
-int PMI_Parse_option(int num_args, char *args[], int *num_parsed, PMI_keyval_t **keyvalp, 
+int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
+		     PMI_keyval_t **keyvalp, 
 		int *size)
 {
 	int i, n, s, len;
