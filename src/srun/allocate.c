@@ -604,6 +604,8 @@ job_desc_msg_create_from_opts ()
 		j->account = xstrdup(opt.account);
 	if (opt.comment)
 		j->comment = xstrdup(opt.comment);
+	if (opt.qos)
+		j->qos = xstrdup(opt.qos);
 
 	if (opt.hold)
 		j->priority     = 0;
@@ -693,6 +695,7 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 	if (j) {
 		xfree(j->account);
 		xfree(j->comment);
+		xfree(j->qos);
 		xfree(j);
 	}
 }

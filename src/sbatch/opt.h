@@ -100,7 +100,7 @@ typedef struct sbatch_options {
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
-
+	char *qos;		/* --qos			*/
 	int immediate;		/* -i, --immediate      	*/
 
 	bool hold;		/* --hold, -H			*/

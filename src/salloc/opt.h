@@ -96,7 +96,7 @@ typedef struct salloc_options {
 	int nice;		/* --nice			*/
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/
-
+	char *qos;		/* --qos			*/
 	int immediate;		/* -I, --immediate      	*/
 
 	bool hold;		/* --hold, -H			*/

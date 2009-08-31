@@ -578,6 +578,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t priority;	/* relative priority of the job,  
 				 * explicitly set only for user root, 
 				 * 0 == held (don't initiate) */
+	char *qos;		/* Quality of Service */
 	char *resp_host;	/* NOTE: Set by slurmctld */
 	char *req_nodes;	/* comma separated list of required nodes
 				 * default NONE */
@@ -706,6 +707,7 @@ typedef struct job_info {
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job, 
 				 * 0=held, 1=required nodes DOWN/DRAINED */
+	char *qos;		/* Quality of Service */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int *req_node_inx;	/* required list index pairs into node_table: 
 				 * start_range_1, end_range_1, 

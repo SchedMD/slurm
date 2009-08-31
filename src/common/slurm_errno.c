@@ -214,6 +214,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Memory required by task is not available"		},
 	{ ESLURM_INVALID_ACCOUNT,
 	  "Job has invalid account"				},
+	{ ESLURM_INVALID_QOS,
+	  "Job has invalid qos"					},
 	{ ESLURM_INVALID_WCKEY,
 	  "Job has invalid wckey"				},
 	{ ESLURM_INVALID_LICENSES,
