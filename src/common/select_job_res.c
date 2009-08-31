@@ -618,21 +618,21 @@ extern int unpack_select_job_res(select_job_res_t **select_job_res_pptr,
 	safe_unpack32(&select_job_res->nprocs, buffer);
 	safe_unpack8(&select_job_res->node_req, buffer);
 
-	safe_unpack32(&select_job_res->cpu_array_cnt, buffer);
-	if (select_job_res->cpu_array_cnt) {
-		safe_unpack32_array(&select_job_res->cpu_array_reps,
-				    &tmp32, buffer);
-		if (tmp32 != select_job_res->cpu_array_cnt)
-			goto unpack_error;
-		safe_unpack16_array(&select_job_res->cpu_array_value,
-				    &tmp32, buffer);
-		if (tmp32 != select_job_res->cpu_array_cnt)
-			goto unpack_error;
-	}
+	safe_unpack32_array(&select_job_res->cpu_array_reps,
+			    &select_job_res->cpu_array_cnt, buffer);
+	if (tmp32 == 0)
+		xfree(select_job_res->cpu_array_reps);
+
+	safe_unpack16_array(&select_job_res->cpu_array_value,
+			    &tmp32, buffer);
+	if (tmp32 == 0)
+		xfree(select_job_res->cpu_array_value);
+	else if(!select_job_res->cpu_array_cnt)
+		select_job_res->cpu_array_cnt = tmp32;
 
 	safe_unpack16_array(&select_job_res->cpus, &tmp32, buffer);
-	if (tmp32 != select_job_res->nhosts)
-		goto unpack_error;
+	if (tmp32 == 0)
+		xfree(select_job_res->cpus);
 	safe_unpack16_array(&select_job_res->cpus_used, &tmp32, buffer);
 	if (tmp32 == 0)
 		xfree(select_job_res->cpus_used);
@@ -649,9 +649,15 @@ extern int unpack_select_job_res(select_job_res_t **select_job_res_pptr,
 
 #ifndef HAVE_BG
 	safe_unpack16_array(&select_job_res->sockets_per_node, &tmp32, buffer);
+	if (tmp32 == 0)
+		xfree(select_job_res->sockets_per_node);
 	safe_unpack16_array(&select_job_res->cores_per_socket, &tmp32, buffer);
+	if (tmp32 == 0)
+		xfree(select_job_res->cores_per_socket);
 	safe_unpack32_array(&select_job_res->sock_core_rep_count,
 			    &tmp32, buffer);
+	if (tmp32 == 0)
+		xfree(select_job_res->sock_core_rep_count);
 
 	unpack_bit_str(&select_job_res->core_bitmap, buffer);
 	unpack_bit_str(&select_job_res->core_bitmap_used, buffer);
