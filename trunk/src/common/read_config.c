@@ -2027,12 +2027,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (strstr(temp_str, "1") || strstr(temp_str, "associations"))
 			conf->accounting_storage_enforce 
 				|= ACCOUNTING_ENFORCE_ASSOCS;
+
 		if (strstr(temp_str, "2") || strstr(temp_str, "limits")) {
 			conf->accounting_storage_enforce 
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce 
 				|= ACCOUNTING_ENFORCE_LIMITS;
 		}
+
 		if (strstr(temp_str, "wckeys")) {
 			conf->accounting_storage_enforce 
 				|= ACCOUNTING_ENFORCE_ASSOCS;
@@ -2040,6 +2042,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				|= ACCOUNTING_ENFORCE_WCKEYS;
 			conf->track_wckey = true;
 		}		
+
+		if (strstr(temp_str, "qos")) {
+			conf->accounting_storage_enforce 
+				|= ACCOUNTING_ENFORCE_ASSOCS;
+			conf->accounting_storage_enforce 
+				|= ACCOUNTING_ENFORCE_QOS;
+		}		
+
 		if (strstr(temp_str, "all")) {
 			conf->accounting_storage_enforce = 0xffff;
 			conf->track_wckey = true;

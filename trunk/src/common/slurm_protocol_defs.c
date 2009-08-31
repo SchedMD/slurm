@@ -1206,7 +1206,7 @@ accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 {
 	if (str_len > 0)
 		str[0] = '\0';
-	if (str_len < 26) {
+	if (str_len < 30) {
 		error("enforce: output buffer too small");
 		return;
 	}
@@ -1218,12 +1218,17 @@ accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 			strcat(str, ",");
 		strcat(str, "limits"); //7 len
 	}
+	if (enforce & ACCOUNTING_ENFORCE_QOS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "qos"); //4 len
+	}
 	if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 		if (str[0])
 			strcat(str, ",");
 		strcat(str, "wckeys"); //7 len
 	}
-	// total len 26
+	// total len 30
 
 	if (str[0] == '\0')
 		strcat(str, "none");
