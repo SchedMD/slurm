@@ -2099,7 +2099,7 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf("select t0.associd from %s as t0, %s as t1, "
 			       "%s as t2 where t1.lft between "
-			       "t2.lft and t2.rgt && (%s)"
+			       "t2.lft and t2.rgt && (%s) "
 			       "and t0.associd=t1.id limit 1;",
 			       job_table, assoc_table, assoc_table, 
 			       assoc_char);
@@ -2130,7 +2130,7 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 
 	query = xstrdup_printf("select t1.associd from %s as t1, "
-			       "%s as t2 where (%s)"
+			       "%s as t2 where (%s) "
 			       "and t1.associd=t2.id limit 1;",
 			       job_table, assoc_table, 
 			       assoc_char);
@@ -2174,9 +2174,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	 * really delete it for accounting purposes.  This is for
 	 * corner cases most of the time this won't matter.
 	 */
-	if((table == acct_coord_table) 
-	   || (table == qos_table)
-	   || (table == wckey_table)) {
+	if(table == acct_coord_table) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
@@ -2217,35 +2215,12 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		list_flush(mysql_conn->update_list);
 		
 		return SLURM_ERROR;
-	}
-	
-	if(table == qos_table) {
-		/* remove this qos from all the users/accts that have it */
-		xstrfmtcat(query, "update %s set mod_time=%d %s "
-			   "where deleted=0;",
-			   assoc_table, now, assoc_char);
-		debug3("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
-		xfree(query);
-		if(rc != SLURM_SUCCESS) {
-			if(mysql_conn->rollback) {
-				mysql_db_rollback(mysql_conn->db_conn);
-			}
-			list_flush(mysql_conn->update_list);
-			return SLURM_ERROR;
-		}
-		/* we don't have to send anything else since removing
-		   the qos in the first place will remove it from the
-		   clusters 
-		*/		
-		return SLURM_SUCCESS;
 	} else if((table == acct_coord_table)
+		  || (table == qos_table)
 		  || (table == wckey_table))
 		return SLURM_SUCCESS;
-
-	/* mark deleted=1 or remove completely the
-	   accounting tables
+	
+	/* mark deleted=1 or remove completely the accounting tables
 	*/
 	if(table != assoc_table) {
 		if(!assoc_char) {
@@ -5173,7 +5148,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL,
-		*name_char = NULL, *assoc_char= NULL, *send_char = NULL;
+		*name_char = NULL, *send_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int set = 0;
@@ -5358,7 +5333,6 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 
 end_it:
 	xfree(name_char);
-	xfree(assoc_char);
 	xfree(vals);
 	xfree(send_char);
 
@@ -7173,7 +7147,11 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(name_char, "id=\"%s\"", row[0]);
 		else
 			xstrfmtcat(name_char, " || id=\"%s\"", row[0]); 
-		xstrfmtcat(assoc_char, 
+		if(!assoc_char)
+			xstrfmtcat(assoc_char, "t2.qos=\"%s\"", row[0]);
+		else
+			xstrfmtcat(assoc_char, " || t2.qos=\"%s\"", row[0]); 
+		xstrfmtcat(extra, 
 			   ", qos=replace(qos, ',%s', '')"
 			   ", delta_qos=replace(delta_qos, ',+%s', '')"
 			   ", delta_qos=replace(delta_qos, ',-%s', '')",
@@ -7195,6 +7173,23 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
+	/* remove this qos from all the users/accts that have it */
+	query = xstrdup_printf("update %s set mod_time=%d %s where deleted=0;",
+			       assoc_table, now, extra);
+	xfree(extra);
+	debug3("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
+	rc = mysql_db_query(mysql_conn->db_conn, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->db_conn);
+		}
+		list_flush(mysql_conn->update_list);
+		list_destroy(ret_list);
+		return NULL;
+	}
+	
 	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_QOS, now,
 			    user_name, qos_table, name_char, assoc_char);
@@ -7204,7 +7199,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (rc == SLURM_ERROR) {
 		list_destroy(ret_list);
 		return NULL;
-	}
+	} 
 
 	return ret_list;
 }
@@ -7258,6 +7253,11 @@ empty:
 			xstrfmtcat(name_char, "id=\"%s\"", row[0]);
 		else
 			xstrfmtcat(name_char, " || id=\"%s\"", row[0]); 
+		if(!assoc_char)
+			xstrfmtcat(assoc_char, "t2.wckeyid=\"%s\"", row[0]);
+		else
+			xstrfmtcat(assoc_char,
+				   " || t2.wckeyid=\"%s\"", row[0]); 
 		
 		wckey_rec = xmalloc(sizeof(acct_wckey_rec_t));
 		/* we only need id when removing no real need to init */
@@ -7271,13 +7271,14 @@ empty:
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
+		xfree(assoc_char);
 		return ret_list;
 	}
 	xfree(query);
 
 	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_WCKEYS, now,
-			    user_name, wckey_table, name_char, NULL);
+			    user_name, wckey_table, name_char, assoc_char);
 	xfree(assoc_char);
 	xfree(name_char);
 	xfree(user_name);
