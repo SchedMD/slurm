@@ -1107,7 +1107,6 @@ static int
 _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
-	int slurm_proctrack_init();
 	switch_fini();
 	slurmd_task_fini(); 
 	slurm_conf_destroy();
@@ -1115,6 +1114,8 @@ _slurmd_fini()
 	slurm_auth_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();
+	slurm_select_fini();
+	slurm_jobacct_gather_fini();
 	return SLURM_SUCCESS;
 }
 
