@@ -139,7 +139,7 @@ typedef struct srun_options {
 	int nice;		/* --nice			*/
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/
-
+	char *qos;		/* --qos			*/
 	char *ofname;		/* --output -o filename         */
 	char *ifname;		/* --input  -i filename         */
 	char *efname;		/* --error, -e filename         */

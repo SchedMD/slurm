@@ -120,7 +120,7 @@ static void _print_version (void);
 static void _xlate_job_step_ids(char **rest);
 
 /* translate job state name to number */
-static uint16_t _xlate_state_name(const char *state_name);
+static uint16_t _xlate_state_name(const char *state_name, bool env_var);
 
 /* translate name name to number */
 static uint16_t _xlate_signal_name(const char *signal_name);
@@ -151,7 +151,7 @@ int initialize_and_process_args(int argc, char *argv[])
 }
 
 static uint16_t 
-_xlate_state_name(const char *state_name)
+_xlate_state_name(const char *state_name, bool env_var)
 {
 	enum job_states i;
 	char *state_names;
@@ -175,7 +175,12 @@ _xlate_state_name(const char *state_name)
 		return JOB_CONFIGURING;
 	}
 
-	fprintf (stderr, "Invalid job state specified: %s\n", state_name);
+	if (env_var)
+		fprintf(stderr, "Unrecognized SCANCEL_STATE value: %s\n",
+			state_name);
+	else
+		fprintf(stderr, "Invalid job state specified: %s\n",
+			state_name);
 	state_names = xstrdup(job_state_string(0));
 	for (i=1; i<JOB_END; i++) {
 		xstrcat(state_names, ",");
@@ -293,9 +298,7 @@ static void _opt_env()
 	}
 
 	if ( (val=getenv("SCANCEL_STATE")) ) {
-		opt.state = true;
-			error ("Unrecognized SCANCEL_STATE value: %s",
-				val);
+		opt.state = _xlate_state_name(val, true);
 	}
 
 	if ( (val=getenv("SCANCEL_USER")) ) {
@@ -378,7 +381,7 @@ static void _opt_args(int argc, char **argv)
 				opt.signal = _xlate_signal_name(optarg);
 				break;
 			case (int)'t':
-				opt.state = _xlate_state_name(optarg);
+				opt.state = _xlate_state_name(optarg, false);
 				break;
 			case (int)'u':
 				opt.user_name = xstrdup(optarg);

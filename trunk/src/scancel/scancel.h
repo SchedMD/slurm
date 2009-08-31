@@ -44,6 +44,7 @@
 #endif
 
 typedef struct scancel_options {
+	char *account;		/* --account=			*/
 	bool batch;		/* --batch, -b			*/
 	bool ctld;		/* --ctld			*/
 	bool interactive;	/* --interactive, -i		*/

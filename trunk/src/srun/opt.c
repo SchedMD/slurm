@@ -153,6 +153,7 @@
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_COMMENT     0x124
+#define LONG_OPT_QOS             0x127
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET	 0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -351,6 +352,7 @@ static void _opt_default()
 	opt.dependency = NULL;
 	opt.account  = NULL;
 	opt.comment  = NULL;
+	opt.qos      = NULL;
 
 	opt.distribution = SLURM_DIST_UNKNOWN;
 	opt.plane_size   = NO_VAL;
@@ -737,67 +739,68 @@ static void set_options(const int argc, char **argv)
 		{"exclude",       required_argument, 0, 'x'},
 		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
-		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
-		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
-		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
-		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
-		{"core",             required_argument, 0, LONG_OPT_CORE},
-		{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
-		{"minsockets",       required_argument, 0, LONG_OPT_MINSOCKETS},
-		{"mincores",         required_argument, 0, LONG_OPT_MINCORES},
-		{"minthreads",       required_argument, 0, LONG_OPT_MINTHREADS},
-		{"mem",              required_argument, 0, LONG_OPT_MEM},
-		{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
-		{"hint",             required_argument, 0, LONG_OPT_HINT},
-		{"mpi",              required_argument, 0, LONG_OPT_MPI},
-		{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
-		{"tmp",              required_argument, 0, LONG_OPT_TMP},
-		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
-		{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
-		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
-		{"uid",              required_argument, 0, LONG_OPT_UID},
-		{"gid",              required_argument, 0, LONG_OPT_GID},
-		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
-		{"help",             no_argument,       0, LONG_OPT_HELP},
-		{"usage",            no_argument,       0, LONG_OPT_USAGE},
-		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
-		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
-		{"network",          required_argument, 0, LONG_OPT_NETWORK},
-		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
-		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
-		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
+		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
-		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
-		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
-		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
-		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
-		{"nice",             optional_argument, 0, LONG_OPT_NICE},
-		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
-		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
-		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
-		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
-		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
-		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
-		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
-		{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
-		{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
-		{"cnload-image",     required_argument, 0, LONG_OPT_LINUX_IMAGE},
-		{"mloader-image",    required_argument, 0, LONG_OPT_MLOADER_IMAGE},
-		{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
-		{"ioload-image",     required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
-		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},            
-		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
-		{"pty",              no_argument,       0, LONG_OPT_PTY},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 		{"checkpoint-dir",   required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
+		{"cnload-image",     required_argument, 0, LONG_OPT_LINUX_IMAGE},
+		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
+		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
+		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
+		{"core",             required_argument, 0, LONG_OPT_CORE},
+		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
+		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
+		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
+		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
+		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
+		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
+		{"gid",              required_argument, 0, LONG_OPT_GID},
+		{"help",             no_argument,       0, LONG_OPT_HELP},
+		{"hint",             required_argument, 0, LONG_OPT_HINT},
+		{"ioload-image",     required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
+		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
+		{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
+		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
+		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
+		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
+		{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
+		{"mem",              required_argument, 0, LONG_OPT_MEM},
+		{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
+		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
+		{"mincores",         required_argument, 0, LONG_OPT_MINCORES},
+		{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
+		{"minsockets",       required_argument, 0, LONG_OPT_MINSOCKETS},
+		{"minthreads",       required_argument, 0, LONG_OPT_MINTHREADS},
+		{"mloader-image",    required_argument, 0, LONG_OPT_MLOADER_IMAGE},
+		{"mpi",              required_argument, 0, LONG_OPT_MPI},
+		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
+		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
+		{"network",          required_argument, 0, LONG_OPT_NETWORK},
+		{"nice",             optional_argument, 0, LONG_OPT_NICE},
+		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
+		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
+		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
-		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
-		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
+		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
+		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
+		{"pty",              no_argument,       0, LONG_OPT_PTY},
+		{"qos",		     required_argument, 0, LONG_OPT_QOS},
+		{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
+		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
 		{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
+		{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
+		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
+		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
+		{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
+		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
+		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
+		{"tmp",              required_argument, 0, LONG_OPT_TMP},
+		{"uid",              required_argument, 0, LONG_OPT_UID},
+		{"usage",            no_argument,       0, LONG_OPT_USAGE},
+		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
@@ -1234,6 +1237,10 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
 			opt.comment = xstrdup(optarg);
+			break;
+		case LONG_OPT_QOS:
+			xfree(opt.qos);
+			opt.qos = xstrdup(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			get_resource_arg_range( optarg, "sockets-per-node",
@@ -2057,6 +2064,7 @@ static void _opt_list()
 
 	info("dependency     : %s", opt.dependency);
 	info("exclusive      : %s", tf_(opt.exclusive));
+	info("qos            : %s", opt.qos);
 	if (opt.shared != (uint16_t) NO_VAL)
 		info("shared         : %u", opt.shared);
 	str = print_constraints();
@@ -2140,7 +2148,7 @@ static void _usage(void)
 "            [--jobid=id] [--verbose] [--slurmd_debug=#]\n"
 "            [--core=type] [-T threads] [-W sec] [--checkpoint=time]\n"
 "            [--checkpoint-dir=dir]  [--licenses=names]\n"
-"            [--restart-dir=dir]\n"
+"            [--restart-dir=dir] [--qos=qos]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
@@ -2219,6 +2227,7 @@ static void _help(void)
 #endif
 "  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
+"      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
 "      --restart-dir=dir       directory of checkpoint image files to restart\n"
@@ -2236,13 +2245,13 @@ static void _help(void)
 "  -X, --disable-status        Disable Ctrl-C status feature\n"
 "\n"
 "Constraint options:\n"
-"  -C, --constraint=list       specify a list of constraints\n"
 "      --contiguous            demand a contiguous range of nodes\n"
-"      --mincpus=n             minimum number of logical processors (threads) per node\n"
+"  -C, --constraint=list       specify a list of constraints\n"
+"      --mem=MB                minimum amount of real memory\n"
 "      --mincores=n            minimum number of cores per socket\n"
+"      --mincpus=n             minimum number of logical processors (threads) per node\n"
 "      --minsockets=n          minimum number of sockets per node\n"
 "      --minthreads=n          minimum number of threads per core\n"
-"      --mem=MB                minimum amount of real memory\n"
 "      --reservation=name      allocate resources from named reservation\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"

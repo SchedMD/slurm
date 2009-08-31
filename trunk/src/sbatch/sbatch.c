@@ -211,6 +211,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->account = xstrdup(opt.account);
 	if (opt.comment)
 		desc->comment = xstrdup(opt.comment);
+	if (opt.qos)
+		desc->qos = xstrdup(opt.qos);
 
 	if (opt.hold)
 		desc->priority     = 0;

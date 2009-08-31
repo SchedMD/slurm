@@ -77,6 +77,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - env vars such as SLURM_NNODES, SLURM_JOB_NUM_NODES, and
     SLURM_JOB_CPUS_PER_NODE now reference cnode counts instead of midplane
     counts.  SLURM_NODELIST still references midplane names.
+ -- Added qos support to salloc/sbatch/srun
 
 * Changes in SLURM 2.1.0-pre2
 =============================

@@ -23,7 +23,7 @@
  *  
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
- *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
@@ -127,6 +127,7 @@
 #define LONG_OPT_WRAP        0x118
 #define LONG_OPT_REQUEUE     0x119
 #define LONG_OPT_NETWORK     0x120
+#define LONG_OPT_QOS             0x127
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -293,6 +294,7 @@ static void _opt_default()
 	opt.dependency = NULL;
 	opt.account  = NULL;
 	opt.comment  = NULL;
+	opt.qos      = NULL;
 
 	opt.distribution = SLURM_DIST_UNKNOWN;
 	opt.plane_size   = NO_VAL;
@@ -627,53 +629,54 @@ static struct option long_options[] = {
 	{"version",       no_argument,       0, 'V'},
 	{"nodelist",      required_argument, 0, 'w'},
 	{"exclude",       required_argument, 0, 'x'},
-	{"contiguous",    no_argument,       0, LONG_OPT_CONT},
-	{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
-	{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
-	{"minsockets",    required_argument, 0, LONG_OPT_MINSOCKETS},
-	{"mincores",      required_argument, 0, LONG_OPT_MINCORES},
-	{"minthreads",    required_argument, 0, LONG_OPT_MINTHREADS},
-	{"mem",           required_argument, 0, LONG_OPT_MEM},
-	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
-	{"hint",          required_argument, 0, LONG_OPT_HINT},
-	{"tmp",           required_argument, 0, LONG_OPT_TMP},
-	{"jobid",         required_argument, 0, LONG_OPT_JOBID},
-	{"uid",           required_argument, 0, LONG_OPT_UID},
-	{"gid",           required_argument, 0, LONG_OPT_GID},
-	{"conn-type",     required_argument, 0, LONG_OPT_CONNTYPE},
+	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 	{"begin",         required_argument, 0, LONG_OPT_BEGIN},
+	{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
+	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
+	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
+	{"cnload-image",  required_argument, 0, LONG_OPT_LINUX_IMAGE},
+	{"comment",       required_argument, 0, LONG_OPT_COMMENT},
+	{"conn-type",     required_argument, 0, LONG_OPT_CONNTYPE},
+	{"contiguous",    no_argument,       0, LONG_OPT_CONT},
+	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
+	{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
+	{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
+	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
+	{"gid",           required_argument, 0, LONG_OPT_GID},
+	{"hint",          required_argument, 0, LONG_OPT_HINT},
+	{"ioload-image",  required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
+	{"jobid",         required_argument, 0, LONG_OPT_JOBID},
+	{"linux-image",   required_argument, 0, LONG_OPT_LINUX_IMAGE},
 	{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
+	{"mem",           required_argument, 0, LONG_OPT_MEM},
+	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
+	{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
+	{"mincores",      required_argument, 0, LONG_OPT_MINCORES},
+	{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
+	{"minsockets",    required_argument, 0, LONG_OPT_MINSOCKETS},
+	{"minthreads",    required_argument, 0, LONG_OPT_MINTHREADS},
+	{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
+	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{"nice",          optional_argument, 0, LONG_OPT_NICE},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
-	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
-	{"comment",       required_argument, 0, LONG_OPT_COMMENT},
-	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
-	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
+	{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
-	{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
-	{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
-	{"linux-image",   required_argument, 0, LONG_OPT_LINUX_IMAGE},
-	{"cnload-image",  required_argument, 0, LONG_OPT_LINUX_IMAGE},
-	{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
-	{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
-	{"ioload-image",  required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
-	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
-	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
-	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
-	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
-	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
-	{"network",       required_argument, 0, LONG_OPT_NETWORK},
-	{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
-	{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
-	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
+	{"qos",		  required_argument, 0, LONG_OPT_QOS},
+	{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
+	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
+	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
- 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
- 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
+	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
+	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
+	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
+	{"tmp",           required_argument, 0, LONG_OPT_TMP},
+	{"uid",           required_argument, 0, LONG_OPT_UID},
+	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
+	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1357,6 +1360,10 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
 			opt.comment = xstrdup(optarg);
+			break;
+		case LONG_OPT_QOS:
+			xfree(opt.qos);
+			opt.qos = xstrdup(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			get_resource_arg_range( optarg, "sockets-per-node",
@@ -2445,6 +2452,7 @@ static void _opt_list()
 	info("account           : %s", opt.account);
 	info("comment           : %s", opt.comment);
 	info("dependency        : %s", opt.dependency);
+	info("qos               : %s", opt.qos);
 	str = print_constraints();
 	info("constraints       : %s", str);
 	xfree(str);
@@ -2529,7 +2537,7 @@ static void _usage(void)
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
-"              [--network=type] [--mem-per-cpu=MB]\n"
+"              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              executable [args...]\n");
 }
@@ -2571,6 +2579,7 @@ static void _help(void)
 "  -p, --partition=partition   partition requested\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
+"      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --requeue               if set, permit the job to be requeued\n"
 "  -t, --time=minutes          time limit\n"
@@ -2580,16 +2589,16 @@ static void _help(void)
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "\n"
 "Constraint options:\n"
+"      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
 "  -F, --nodefile=filename     request a specific list of hosts\n"
 "      --mem=MB                minimum amount of real memory\n"
+"      --mincores=n            minimum number of cores per socket\n"
 "      --mincpus=n             minimum number of logical processors (threads) per node\n"
 "      --minsockets=n          minimum number of sockets per node\n"
-"      --mincores=n            minimum number of cores per socket\n"
 "      --minthreads=n          minimum number of threads per core\n"
 "      --reservation=name      allocate resources from named reservation\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
-"      --contiguous            demand a contiguous range of nodes\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "\n"

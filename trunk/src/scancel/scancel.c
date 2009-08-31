@@ -188,6 +188,12 @@ _filter_job_records (void)
 			continue;
 		}
 
+		if (opt.account != NULL &&
+		    (strcmp(job_ptr[i].account, opt.account) != 0)) {
+			job_ptr[i].job_id = 0;
+			continue;
+		}
+
 		if (opt.job_name != NULL &&
 		    (strcmp(job_ptr[i].name, opt.job_name) != 0)) {
 			job_ptr[i].job_id = 0;
