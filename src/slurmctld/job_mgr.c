@@ -323,7 +323,7 @@ static int _determine_and_validate_qos(struct job_record *job_ptr,
 		return ESLURM_INVALID_QOS;
 	} 
 	
-	if(accounting_enforce 
+	if((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 	   && (!assoc_ptr->valid_qos || !bit_test(assoc_ptr->valid_qos,
 						  qos_rec->id))) {
 		error("This association %d(account='%s', "
@@ -1056,8 +1056,8 @@ static int _load_job_state(Buf buffer)
 			job_completion_logger(job_ptr);
 		} 
 	}
-
 	safe_unpack16(&step_flag, buffer);
+
 	while (step_flag == STEP_FLAG) {
 		/* No need to put these into accounting if they
 		 * haven't been since all information will be put in when
@@ -1296,7 +1296,6 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-
 
 /*	for (i=0; i<argc; i++) 
 	xfree(argv[i]);  Don't trust this on unpack error */
@@ -3974,7 +3973,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
-	xfree(job_ptr->qos);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
 	free_select_job_res(&job_ptr->select_job);
