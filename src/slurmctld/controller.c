@@ -1776,7 +1776,6 @@ static void *_assoc_cache_mgr(void *no_data)
 			if((assoc_mgr_fill_in_qos(
 				    acct_db_conn, &qos_rec,
 				    accounting_enforce,
-				    NULL,
 				    (acct_qos_rec_t **)&job_ptr->qos_ptr))
 			   != SLURM_SUCCESS) {
 				verbose("Invalid qos (%u) for job_id %u",

@@ -126,6 +126,8 @@ static job_desc_msg_t * _copy_job_record_to_job_desc(struct job_record *job_ptr)
 static char *_copy_nodelist_no_dup(char *node_list);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
+static int  _determine_and_validate_qos(struct job_record *job_ptr, 
+					acct_qos_rec_t *qos_rec);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
@@ -294,6 +296,49 @@ static void _delete_job_desc_files(uint32_t job_id)
 		(void) rmdir(dir_name);
 	xfree(dir_name);
 }
+
+static int _determine_and_validate_qos(struct job_record *job_ptr, 
+				       acct_qos_rec_t *qos_rec)
+{ 
+	acct_association_rec_t *assoc_ptr = 
+		(acct_association_rec_t *)job_ptr->assoc_ptr;
+
+	xassert(job_ptr);
+	xassert(job_ptr->assoc_ptr);
+	xassert(qos_rec);
+		
+	if(!qos_rec->name && !qos_rec->id) {
+		if(assoc_ptr->valid_qos 
+		   && bit_set_count(assoc_ptr->valid_qos) == 1)
+			qos_rec->id = bit_ffs(assoc_ptr->valid_qos);
+		else 
+			qos_rec->name = "normal";
+	}
+
+	if(assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
+				 (acct_qos_rec_t **) &job_ptr->qos_ptr)
+	   != SLURM_SUCCESS) {
+		error("Invalid qos (%s) for job_id %u", qos_rec->name,
+		      job_ptr->job_id);
+		return ESLURM_INVALID_QOS;
+	} 
+	
+	if(accounting_enforce 
+	   && (!assoc_ptr->valid_qos || !bit_test(assoc_ptr->valid_qos,
+						  qos_rec->id))) {
+		error("This association %d(account='%s', "
+		      "user='%s', partition='%s') does not have "
+		      "access to qos %s", 
+		      assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
+		      assoc_ptr->partition, qos_rec->name);
+		return ESLURM_INVALID_QOS;
+	}			
+
+	job_ptr->qos = qos_rec->id;
+
+	return SLURM_SUCCESS;
+}
+
 
 /*
  * dump_all_job_state - save the state of all jobs to file for checkpoint
@@ -999,15 +1044,9 @@ static int _load_job_state(Buf buffer)
 	if(job_ptr->qos) {
 		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 		qos_rec.id = job_ptr->qos;
-		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-					  accounting_enforce, 
-					  (acct_association_rec_t *)
-					  job_ptr->assoc_ptr,
-					  (acct_qos_rec_t **)
-					  &job_ptr->qos_ptr))
+		if(_determine_and_validate_qos(job_ptr, &qos_rec)
 		   != SLURM_SUCCESS) {
-			info("Cancelling job %u with invalid qos",
-			     job_id);
+			info("Cancelling job %u with invalid qos", job_id);
 			job_ptr->job_state = JOB_CANCELLED;
 			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
 			xfree(job_ptr->state_desc);
@@ -3346,27 +3385,25 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		xfree(sched_type);
 		wiki_sched_test = true;
 	}
+
 	memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 	qos_rec.name = job_desc->qos;
 	if (wiki_sched && job_ptr->comment &&
 	    strstr(job_ptr->comment, "QOS:")) {
-
 		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
 			qos_rec.name = "expedite";
 		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
 			qos_rec.name = "standby";
-		else
-			qos_rec.name = "normal";
 	}
-	if(assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec, accounting_enforce,
-				 (acct_association_rec_t *) job_ptr->assoc_ptr,
-				 (acct_qos_rec_t **) &job_ptr->qos_ptr)
-	   != SLURM_SUCCESS) {
+
+	error_code = _determine_and_validate_qos(job_ptr, &qos_rec);
+	if(error_code != SLURM_SUCCESS) {
 		error("Invalid qos (%s) for job_id %u", qos_rec.name,
 		      job_ptr->job_id);
-		return ESLURM_INVALID_QOS;
-	} else
-		job_ptr->qos = qos_rec.id;
+		return error_code;
+	} 
+	
+	job_ptr->qos = qos_rec.id;
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
@@ -4827,24 +4864,21 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				qos_rec.name = "expedite";
 			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
 				qos_rec.name = "standby";
-			else
-				qos_rec.name = "normal";
 			
-			if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-						  accounting_enforce,
-						  (acct_association_rec_t *) 
-						  job_ptr->assoc_ptr,
-						  (acct_qos_rec_t **)
-						  &job_ptr->qos_ptr))
-			   != SLURM_SUCCESS) {
-				verbose("Invalid qos (%s) for job_id %u",
-					qos_rec.name, job_ptr->job_id);
-				/* not a fatal error, qos could have
-				 * been removed */
-			} else 
-				job_ptr->qos = qos_rec.id;
+			error_code = _determine_and_validate_qos(job_ptr, 
+								 &qos_rec);
 		}
-	}
+	} else if(job_specs->qos) {
+		acct_qos_rec_t qos_rec;
+		
+		info("update_job: setting qos to %s for job_id %u",
+		     job_specs->qos, job_specs->job_id);		
+		
+		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+		qos_rec.name = job_specs->qos;
+		
+		error_code = _determine_and_validate_qos(job_ptr, &qos_rec);
+	}	
 
 	if (job_specs->requeue != (uint16_t) NO_VAL) {
 		detail_ptr->requeue = job_specs->requeue;

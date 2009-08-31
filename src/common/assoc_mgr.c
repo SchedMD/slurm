@@ -1122,7 +1122,6 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 
 extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 				 int enforce,
-				 acct_association_rec_t *assoc_ptr,
 				 acct_qos_rec_t **qos_pptr)
 {
 	ListIterator itr = NULL;
@@ -1134,8 +1133,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 		if(_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if((!assoc_mgr_qos_list 
-	    || !list_count(assoc_mgr_qos_list)) && !enforce) 
+	if((!assoc_mgr_qos_list || !list_count(assoc_mgr_qos_list))
+	   && !(enforce & ACCOUNTING_ENFORCE_QOS)) 
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
@@ -1150,21 +1149,10 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 	
 	if(!found_qos) {
 		slurm_mutex_unlock(&assoc_mgr_qos_lock);
-		if(enforce) 
+		if(enforce & ACCOUNTING_ENFORCE_QOS) 
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
-	} else if(assoc_ptr) {
-		if(enforce 
-		   && (!assoc_ptr->valid_qos 
-		       || !bit_test(assoc_ptr->valid_qos, found_qos->id))) {
-			error("This association %d(account='%s', "
-			      "user='%s', partition='%s' does not have "
-			      "access to qos %s", 
-			      assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
-			      assoc_ptr->partition, found_qos->name);
-			return SLURM_ERROR;
-		}			
 	}
 
 	debug3("found correct qos");
