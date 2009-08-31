@@ -2681,14 +2681,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			qos_rec.name = "standby";
 	}
 
-	error_code = _determine_and_validate_qos(job_ptr, &qos_rec);
-	if(error_code != SLURM_SUCCESS) {
-		error("Invalid qos (%s) for job_id %u", qos_rec.name,
-		      job_ptr->job_id);
+	if((error_code = _determine_and_validate_qos(job_ptr, &qos_rec))
+	   != SLURM_SUCCESS) 
 		goto cleanup_fail;
-	} 
-
-
+	
 	/* already confirmed submit_uid==0 */
 	/* If the priority isn't given we will figure it out later
 	 * after we see if the job is eligible or not. So we want
