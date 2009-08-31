@@ -79,6 +79,8 @@
 #include "src/common/forward.h"
 #include "src/common/bitstring.h"
 #include "src/common/stepd_api.h"
+#include "src/common/node_select.h"
+#include "src/common/slurm_jobacct_gather.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
@@ -1178,7 +1180,6 @@ static int
 _slurmd_fini(void)
 {
 	save_cred_state(conf->vctx);
-	int slurm_proctrack_init();
 	switch_fini();
 	slurmd_task_fini(); 
 	slurm_conf_destroy();
@@ -1186,6 +1187,8 @@ _slurmd_fini(void)
 	slurm_auth_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();
+	slurm_select_fini();
+	slurm_jobacct_gather_fini();
 	return SLURM_SUCCESS;
 }
 
