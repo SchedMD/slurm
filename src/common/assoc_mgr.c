@@ -1089,7 +1089,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 
 	if(!found_user) {
 		slurm_mutex_unlock(&assoc_mgr_user_lock);
-		if(enforce) 
+		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) 
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
