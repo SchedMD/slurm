@@ -78,6 +78,8 @@
 #include "src/common/forward.h"
 #include "src/common/bitstring.h"
 #include "src/common/stepd_api.h"
+#include "src/common/node_select.h"
+#include "src/common/slurm_jobacct_gather.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
