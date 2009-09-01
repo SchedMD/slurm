@@ -797,6 +797,14 @@ The maximum stack size
 Suppress informational messages from sbatch. Errors will still be displayed.
 
 .TP
+\fB\-\-qos\fR=<\fIqos\fR>
+Request a quality of service for the job.  QOS values can be defined
+for each user/cluster/account association in the SLURM database.
+Users will be limited to their association's defined set of qos's when
+the SLURM configuration parameter, AccountingStorageEnforce, is set to
+"qos".
+
+.TP
 \fB\-\-requeue\fR
 Specifies that the batch job should be requeued after node failure.
 When a job is requeued, the batch script is initiated from its beginning.

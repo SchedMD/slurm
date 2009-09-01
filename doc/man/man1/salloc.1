@@ -710,6 +710,14 @@ partition as designated by the system administrator.
 Suppress informational messages from salloc. Errors will still be displayed.
 
 .TP
+\fB\-\-qos\fR=<\fIqos\fR>
+Request a quality of service for the job.  QOS values can be defined
+for each user/cluster/account association in the SLURM database.
+Users will be limited to their association's defined set of qos's when
+the SLURM configuration parameter, AccountingStorageEnforce, is set to
+"qos".
+
+.TP
 \fB\-\-reservation\fR=<\fIname\fR>
 Allocate resources for the job from the named reservation.
 

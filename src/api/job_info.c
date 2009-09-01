@@ -522,9 +522,8 @@ line7:	/****** Line 7 ******/
 
 	/****** Line 11 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"Dependency=%s Account=%s Requeue=%u Restarts=%u",
-		job_ptr->dependency, job_ptr->account, job_ptr->requeue,
-		job_ptr->restart_cnt);
+		"Dependency=%s Requeue=%u Restarts=%u",
+		job_ptr->dependency, job_ptr->requeue, job_ptr->restart_cnt);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -532,6 +531,16 @@ line7:	/****** Line 7 ******/
 		xstrcat(out, "\n   ");
 
 	/****** Line 12 ******/
+	snprintf(tmp_line, sizeof(tmp_line), 
+		"Account=%s QOS=%s",
+		job_ptr->account, job_ptr->qos);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 13 ******/
 	if (job_ptr->state_desc) {
 		/* Replace white space with underscore for easier parsing */
 		for (j=0; job_ptr->state_desc[j]; j++) {
@@ -550,7 +559,7 @@ line7:	/****** Line 7 ******/
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 13 ******/
+	/****** Line 14 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "Req%s=%s Req%sIndices=", 
 		nodelist, job_ptr->req_nodes, nodelist);
 	xstrcat(out, tmp_line);
@@ -567,7 +576,7 @@ line7:	/****** Line 7 ******/
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 14 ******/
+	/****** Line 15 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "Exc%s=%s Exc%sIndices=", 
 		nodelist, job_ptr->exc_nodes, nodelist);
 	xstrcat(out, tmp_line);
@@ -584,7 +593,7 @@ line7:	/****** Line 7 ******/
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 15 ******/
+	/****** Line 16 ******/
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, time_str, 
 		sizeof(time_str));
 	snprintf(tmp_line, sizeof(tmp_line), "SubmitTime=%s ", 
@@ -600,7 +609,7 @@ line7:	/****** Line 7 ******/
 		  time_str, (long int)job_ptr->pre_sus_time);
 	xstrcat(out, tmp_line);
 
-	/****** Lines 16, 17 (optional, batch only) ******/
+	/****** Lines 17, 18 (optional, batch only) ******/
 	if (job_ptr->batch_flag) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -617,7 +626,7 @@ line7:	/****** Line 7 ******/
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 18 (optional) ******/
+	/****** Line 19 (optional) ******/
 	if (job_ptr->comment) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -628,7 +637,7 @@ line7:	/****** Line 7 ******/
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 19 (optional) ******/
+	/****** Line 20 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MIXED);
@@ -640,7 +649,7 @@ line7:	/****** Line 7 ******/
 		xstrcat(out, select_buf);
 	}
 #ifdef HAVE_BG
-	/****** Line 20 (optional) ******/
+	/****** Line 21 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_BLRTS_IMAGE);
@@ -653,7 +662,7 @@ line7:	/****** Line 7 ******/
 			 "BlrtsImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 21 (optional) ******/
+	/****** Line 22 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_LINUX_IMAGE);
@@ -671,7 +680,7 @@ line7:	/****** Line 7 ******/
 #endif
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 22 (optional) ******/
+	/****** Line 23 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MLOADER_IMAGE);
@@ -684,7 +693,7 @@ line7:	/****** Line 7 ******/
 			 "MloaderImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 23 (optional) ******/
+	/****** Line 24 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_RAMDISK_IMAGE);

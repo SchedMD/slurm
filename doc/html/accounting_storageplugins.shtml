@@ -912,8 +912,8 @@ database with.
 <dt><span class="commandline">AccountingStorageEnforce</span>
 <dd>Specifies if we should enforce certain things be in existence
   before allowing job submissions and such valid options are
-  "associations, limits, and wckeys". You can use any combination of
-  those listed.
+  "associations, limits, qos, and wckeys". You can use any combination
+  of those listed.
 </dl>
 
 <h2>Versioning</h2>
