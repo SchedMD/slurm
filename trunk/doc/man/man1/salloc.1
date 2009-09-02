@@ -748,7 +748,7 @@ Specify a minimum amount of temporary disk space.
 
 .TP
 \fB\-U\fR, \fB\-\-account\fR=<\fIaccount\fR>
-Change resource use by this job to specified account.
+Charge resources used by this job to specified account.
 The \fIaccount\fR is an arbitrary string. The account name may
 be changed after job submission using the \fBscontrol\fR
 command.
@@ -915,6 +915,9 @@ Same as \fB\-O, \-\-overcommit\fR
 .TP
 \fBSALLOC_PARTITION\fR
 Same as \fB\-p, \-\-partition\fR
+.TP
+\fBSALLOC_QOS\fR
+Same as \fB\-\-qos\fR
 .TP
 \fBSALLOC_TIMELIMIT\fR
 Same as \fB\-t, \-\-time\fR
