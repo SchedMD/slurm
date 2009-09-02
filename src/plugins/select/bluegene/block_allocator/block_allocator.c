@@ -1204,6 +1204,7 @@ extern void ba_fini()
 extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state)
 {
 	uint16_t node_base_state = state & NODE_STATE_BASE;
+	uint16_t node_flags = state & NODE_STATE_FLAGS;
 
 	if (!_initialized){
 		error("Error, configuration not initialized, "
@@ -1223,7 +1224,7 @@ extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state)
 
 	/* basically set the node as used */
 	if((node_base_state == NODE_STATE_DOWN)
-	   || (state & NODE_STATE_DRAIN)) 
+	   || (node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL))) 
 		ba_node->used = true;
 	else
 		ba_node->used = false;
