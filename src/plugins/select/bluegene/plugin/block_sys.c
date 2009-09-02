@@ -1083,7 +1083,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 #endif
 
 	slurm_mutex_lock(&block_state_mutex);
-	reset_ba_system(false);
+	reset_ba_system(true);
 
 	/* Locks are already in place to protect part_list here */
 	bitmap = bit_alloc(node_record_count);
