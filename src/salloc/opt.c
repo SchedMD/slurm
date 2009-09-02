@@ -374,6 +374,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL          },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },

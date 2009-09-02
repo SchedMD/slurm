@@ -109,12 +109,14 @@ main (int argc, char *argv[])
 	_load_job_records();
 	_verify_job_ids();
 
-	if ((opt.interactive) ||
+	if ((opt.account) ||
+	    (opt.interactive) ||
 	    (opt.job_name) ||
+	    (opt.nodelist) ||
 	    (opt.partition) ||
+	    (opt.qos) ||
 	    (opt.state != JOB_END) ||
-	    (opt.user_name) ||
-	    (opt.nodelist)) {
+	    (opt.user_name)) {
 		_filter_job_records ();
 	}
 	_cancel_jobs ();
@@ -200,14 +202,14 @@ _filter_job_records (void)
 			continue;
 		}
 
-		if (opt.wckey != NULL &&
-		    (strcmp(job_ptr[i].wckey, opt.wckey) != 0)) {
+		if ((opt.partition != NULL) &&
+		    (strcmp(job_ptr[i].partition,opt.partition) != 0)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}
 
-		if ((opt.partition != NULL) &&
-		    (strcmp(job_ptr[i].partition,opt.partition) != 0)) {
+		if ((opt.qos != NULL) &&
+		    (strcmp(job_ptr[i].qos,opt.qos) != 0)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}

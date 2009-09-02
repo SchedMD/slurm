@@ -78,6 +78,7 @@ documents those changes that are of interest to users and admins.
     SLURM_JOB_CPUS_PER_NODE now reference cnode counts instead of midplane
     counts.  SLURM_NODELIST still references midplane names.
  -- Added qos support to salloc/sbatch/srun
+ -- Added to scancel the ability to select jobs by account and qos
 
 * Changes in SLURM 2.1.0-pre2
 =============================

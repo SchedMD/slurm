@@ -44,15 +44,16 @@
 #endif
 
 typedef struct scancel_options {
-	char *account;		/* --account=			*/
+	char *account;		/* --account=n, -a		*/
 	bool batch;		/* --batch, -b			*/
 	bool ctld;		/* --ctld			*/
 	bool interactive;	/* --interactive, -i		*/
 	char *job_name;		/* --name=n, -nn		*/
 	char *partition;	/* --partition=n, -pn		*/
+	char *qos;		/* --qos=n, -qn			*/
 	uint16_t signal;	/* --signal=n, -sn		*/
 	uint16_t state;		/* --state=n, -tn		*/
-	uid_t user_id;		/* --user=n, -un		*/
+	uid_t user_id;		/* derived from user_name	*/
 	char *user_name;	/* --user=n, -un		*/
 	int verbose;		/* --verbose, -v		*/
 

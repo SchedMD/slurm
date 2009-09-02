@@ -976,7 +976,7 @@ Specify a minimum amount of temporary disk space.
 
 .TP
 \fB\-U\fR, \fB\-\-account\fR=<\fIaccount\fR>
-Change resource use by this job to specified account.
+Charge resources used by this job to specified account.
 The \fIaccount\fR is an arbitrary string. The account name may
 be changed after job submission using the \fBscontrol\fR
 command.
@@ -1384,6 +1384,9 @@ Same as \fB\-p, \-\-partition\fR
 \fBSLURM_PROLOG\fR
 Same as \fB\-\-prolog\fR
 .TP
+\fBSLURM_QOS\fR
+Same as \fB\-\-qos\fR
+.TP
 \fBSLURM_REMOTE_CWD\fR
 Same as \fB\-D, \-\-chdir=\fR
 .TP
@@ -1416,6 +1419,9 @@ Same as \fB\-u, \-\-unbuffered\fR
 .TP
 \fBSLURM_WAIT\fR
 Same as \fB\-W, \-\-wait\fR
+.TP
+\fBSLURM_WCKEY\fR
+Same as \fB\-W, \-\-wckey\fR
 .TP
 \fBSLURM_WORKING_DIR\fR
 \fB\-D, \-\-chdir\fR

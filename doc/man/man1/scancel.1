@@ -17,6 +17,10 @@ be printed and the job will not be signaled.
 .SH "OPTIONS"
 
 .TP
+\fB\-a\fR, \fB\-\-account\fR=\fIaccount\fR
+Restrict the scancel operation to jobs under this charge account.
+
+.TP
 \fB\-b\fR, \fB\-\-batch\fR
 Signal the batch job shell and its child processes.
 This is not applicable if \fIstep_id\fR is specified.
@@ -40,11 +44,15 @@ Interactive mode. Confirm each job_id.step_id before performing the cancel opera
 
 .TP
 \fB\-n\fR, \fB\-\-name\fR=\fIjob_name\fR
-The name of jobs to be signaled.
+Restrict the scancel operation to jobs with this job name.
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition_name\fR
-The name of the partition from which jobs are to be signaled.
+Restrict the scancel operation to jobs in this partition.
+
+.TP
+\fB\-p\fR, \fB\-\-qos\fR=\fIqos\fR
+Restrict the scancel operation to jobs with this quality of service.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
@@ -53,17 +61,18 @@ This option is incompatible with the \fB\-\-verbose\fR option.
 
 .TP
 \fB\-s\fR, \fB\-\-signal\fR=\fIsignal_name\fR
-The name or number of the signal to be send. 
-If no signal is specified, the specified job or step will be terminated.
+The name or number of the signal to send.  If no signal is specified,
+the specified job or step will be terminated.
 
 .TP
 \fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
-The state of the jobs to be signaled. \fIjob_state_name\fR may have a value of 
-either "PENDING", "RUNNING" or "SUSPENDED".
+Restrict the scancel operation to jobs in this
+state. \fIjob_state_name\fR may have a value of either "PENDING",
+"RUNNING" or "SUSPENDED".
 
 .TP
 \fB\-u\fR, \fB\-\-user\fR=\fIuser_name\fR
-The name of the user whose jobs are to be signaled.
+Restrict the scancel operation to jobs owned by this user.
 
 .TP
 \fB\-\-usage\fR
@@ -114,6 +123,9 @@ Some \fBscancel\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed below.
 (Note: commandline options will always override these settings)
 .TP 20
+\fBSCANCEL_ACCOUNT\fR
+\fB\-a\fR, \fB\-\-account\fR=\fIaccount\fR
+.TP 20
 \fBSCANCEL_BATCH\fR
 \fB\-b, \-\-batch\fR
 .TP 20
@@ -128,6 +140,9 @@ environment variables, along with their corresponding options, are listed below.
 .TP 20
 \fBSCANCEL_PARTITION\fR
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition_name\fR
+.TP 20
+\fBSCANCEL_QOS\fR
+\fB\-q\fR, \fB\-\-qos\fR=\fIqos\fR
 .TP 20
 \fBSCANCEL_STATE\fR
 \fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR

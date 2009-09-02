@@ -154,7 +154,6 @@ static uint16_t
 _xlate_state_name(const char *state_name, bool env_var)
 {
 	enum job_states i;
-	char *state_names;
 
 	for (i=0; i<JOB_END; i++) {
 		if ((strcasecmp(state_name,job_state_string(i)) == 0) ||
@@ -181,17 +180,8 @@ _xlate_state_name(const char *state_name, bool env_var)
 	else
 		fprintf(stderr, "Invalid job state specified: %s\n",
 			state_name);
-	state_names = xstrdup(job_state_string(0));
-	for (i=1; i<JOB_END; i++) {
-		xstrcat(state_names, ",");
-		xstrcat(state_names, job_state_string(i));
-	}
-	xstrcat(state_names, ",");
-	xstrcat(state_names, job_state_string(JOB_COMPLETING));
-	xstrcat(state_names, ",");
-	xstrcat(state_names, job_state_string(JOB_CONFIGURING));
-	fprintf (stderr, "Valid job states include: %s\n", state_names);
-	xfree (state_names);
+
+	fprintf (stderr, "Valid job states are PENDING, RUNNING, and SUSPENDED\n");
 	exit (1);
 }
 
@@ -234,19 +224,21 @@ static void _print_version (void)
  */
 static void _opt_default()
 {
+	opt.account	= NULL;
 	opt.batch	= false;
 	opt.ctld	= false;
 	opt.interactive	= false;
 	opt.job_cnt	= 0;
 	opt.job_name	= NULL;
+	opt.nodelist	= NULL;
 	opt.partition	= NULL;
+	opt.qos		= NULL;
 	opt.signal	= (uint16_t)-1; /* no signal specified */
 	opt.state	= JOB_END;
-	opt.user_name	= NULL;
 	opt.user_id	= 0;
+	opt.user_name	= NULL;
 	opt.verbose	= 0;
 	opt.wckey	= NULL;
-	opt.nodelist	= NULL;
 }
 
 /*
@@ -257,6 +249,10 @@ static void _opt_default()
 static void _opt_env()
 {
 	char *val;
+
+	if ( (val=getenv("SCANCEL_ACCOUNT")) ) {
+		opt.account = xstrdup(val);
+	}
 
 	if ( (val=getenv("SCANCEL_BATCH")) ) {
 		if (strcasecmp(val, "true") == 0)
@@ -297,6 +293,10 @@ static void _opt_env()
 		opt.partition = xstrdup(val);
 	}
 
+	if ( (val=getenv("SCANCEL_QOS")) ) {
+		opt.qos = xstrdup(val);
+	}
+
 	if ( (val=getenv("SCANCEL_STATE")) ) {
 		opt.state = _xlate_state_name(val, true);
 	}
@@ -332,25 +332,27 @@ static void _opt_args(int argc, char **argv)
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = { 
+		{"account",	required_argument, 0, 'a'},
 		{"batch",	no_argument,       0, 'b'},
 		{"ctld",	no_argument,	   0, OPT_LONG_CTLD},
+		{"help",        no_argument,       0, OPT_LONG_HELP},
 		{"interactive", no_argument,       0, 'i'},
 		{"name",        required_argument, 0, 'n'},
+		{"nodelist",    required_argument, 0, 'w'},
 		{"partition",   required_argument, 0, 'p'},
+		{"qos",         required_argument, 0, 'q'},
 		{"quiet",       no_argument,       0, 'Q'},
 		{"signal",      required_argument, 0, 's'},
 		{"state",       required_argument, 0, 't'},
+		{"usage",       no_argument,       0, OPT_LONG_USAGE},
 		{"user",        required_argument, 0, 'u'},
 		{"verbose",     no_argument,       0, 'v'},
 		{"version",     no_argument,       0, 'V'},
-		{"nodelist",    required_argument, 0, 'w'},
 		{"wckey",       required_argument, 0, OPT_LONG_WCKEY},
-		{"help",        no_argument,       0, OPT_LONG_HELP},
-		{"usage",       no_argument,       0, OPT_LONG_USAGE},
 		{NULL,          0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "bin:p:Qs:t:u:vVw:",
+	while((opt_char = getopt_long(argc, argv, "a:bin:p:Qq:s:t:u:vVw:",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
@@ -358,6 +360,9 @@ static void _opt_args(int argc, char **argv)
 					"Try \"scancel --help\" for more "
 					"information\n");
 				exit(1);
+				break;
+			case (int)'a':
+				opt.account = xstrdup(optarg);
 				break;
 			case (int)'b':
 				opt.batch = true;
@@ -376,6 +381,9 @@ static void _opt_args(int argc, char **argv)
 				break;
 			case (int)'Q':
 				opt.verbose = -1;
+				break;
+			case (int)'q':
+				opt.qos = xstrdup(optarg);
 				break;
 			case (int)'s':
 				opt.signal = _xlate_signal_name(optarg);
@@ -479,13 +487,15 @@ _opt_verify(void)
 		}
 	}
 
-	if ((opt.job_name == NULL) &&
+	if ((opt.account == 0) &&
+	    (opt.job_cnt == 0) &&
+	    (opt.job_name == NULL) &&
+	    (opt.nodelist == NULL) &&
 	    (opt.partition == NULL) &&
+	    (opt.qos == NULL) &&
 	    (opt.state == JOB_END) &&
 	    (opt.user_name == NULL) &&
-	    (opt.wckey == NULL) &&
-	    (opt.job_cnt == 0) &&
-	    (opt.nodelist == NULL)) {
+	    (opt.wckey == NULL)) {
 		error("No job identification provided");
 		verified = false;	/* no job specification */
 	}
@@ -499,18 +509,20 @@ static void _opt_list(void)
 {
 	int i;
 
+	info("account        : %s", opt.account);
 	info("batch          : %s", tf_(opt.batch));
 	info("ctld           : %s", tf_(opt.ctld));
 	info("interactive    : %s", tf_(opt.interactive));
 	info("job_name       : %s", opt.job_name);
+	info("nodelist       : %s", opt.nodelist);
 	info("partition      : %s", opt.partition);
+	info("qos            : %s", opt.qos);
 	info("signal         : %u", opt.signal);
 	info("state          : %s", job_state_string(opt.state));
 	info("user_id        : %u", opt.user_id);
 	info("user_name      : %s", opt.user_name);
 	info("verbose        : %d", opt.verbose);
 	info("wckey          : %s", opt.wckey);
-	info("nodelist       : %s", opt.nodelist);
 
 	for (i=0; i<opt.job_cnt; i++) {
 		info("job_steps      : %u.%u ", opt.job_id[i], opt.step_id[i]);
@@ -519,28 +531,32 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-Q] [-s name | integer]\n");
-	printf("               [--batch] [-t PENDING | RUNNING | SUSPENDED] [--usage] [-v] [-V]\n");
-	printf("               [-w hosts...] [job_id[.step_id]]\n");
+	printf("Usage: scancel [-a account] [--batch] [--interactive] [-n job_name]\n");
+	printf("               [-p partition] [-Q] [-q qos] [-s signal | integer]\n");
+	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
+	printf("               [-V] [-v] [-w hosts...] [--wckey=wckey] [job_id[.step_id]]\n");
 }
 
 static void _help(void)
 {
 	printf("Usage: scancel [OPTIONS] [job_id[.step_id]]\n");
+	printf("  -a, --account=account           act only on jobs charging this account\n");
 	printf("  -b, --batch                     signal batch shell for specified job\n");
 /*	printf("      --ctld                      route request through slurmctld\n"); */
 	printf("  -i, --interactive               require response from user for each job\n");
-	printf("  -n, --name=job_name             name of job to be signaled\n");
-	printf("  -p, --partition=partition       name of job's partition\n");
+	printf("  -n, --name=job_name             act only on jobs with this name\n");
+	printf("  -p, --partition=partition       act only on jobs in this partition\n");
 	printf("  -Q, --quiet                     disable warnings\n");
+	printf("  -q, --qos=qos                   act only on jobs with this quality of service\n");
 	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
-	printf("  -t, --state=states              states of jobs to be signaled,\n");
-	printf("                                  default is pending, running, and\n");
-	printf("                                  suspended\n");
-	printf("  -u, --user=user                 name or id of user to have jobs cancelled\n");
-	printf("  -v, --verbose                   verbosity level\n");
+	printf("  -t, --state=states              act only on jobs in this state.  Valid job\n");
+	printf("                                  states are PENDING, RUNNING and SUSPENDED\n");
+	printf("  -u, --user=user_name            act only on jobs of this user\n");
 	printf("  -V, --version                   output version information and exit\n");
-	printf("  -w, --nodelist                  cancel jobs using any of these nodes\n");
+	printf("  -v, --verbose                   verbosity level\n");
+	printf("  -w, --nodelist                  act only on jobs on these nodes\n");
+	printf("      --wckey=wckey               act only on jobs with this workload\n");
+	printf("                                  charactization key\n");
 	printf("\nHelp options:\n");
 	printf("  --help                          show this help message\n");
 	printf("  --usage                         display brief usage message\n");
