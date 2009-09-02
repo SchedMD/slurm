@@ -883,7 +883,8 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
  *	LOADLBATCH (AIX only)
- *	MPIRUN_PARTITION, MPIRUN_NOFREE, and MPIRUN_NOALLOCATE (BGL only)
+ *	SLURM_BG_NUM_NODES, MPIRUN_PARTITION, MPIRUN_NOFREE, and
+ *	MPIRUN_NOALLOCATE (BGL only)
  *
  * Sets OBSOLETE variables (needed for MPI, do not remove):
  *	SLURM_JOBID
@@ -911,6 +912,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 				    &node_cnt);
 	if(!node_cnt)
 		node_cnt = alloc->node_cnt;
+	env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES", "%u", node_cnt);
 #endif
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
@@ -1070,6 +1072,9 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
+#ifdef HAVE_BG
+	env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES", "%u", num_nodes);
+#endif
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
 
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,

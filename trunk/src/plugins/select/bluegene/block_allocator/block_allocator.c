@@ -1223,10 +1223,11 @@ extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state)
 
 	/* basically set the node as used */
 	if((node_base_state == NODE_STATE_DOWN)
-	   || (ba_node->state & NODE_STATE_DRAIN)) 
+	   || (state & NODE_STATE_DRAIN)) 
 		ba_node->used = true;
 	else
 		ba_node->used = false;
+
 	ba_node->state = state;
 }
 
@@ -1486,14 +1487,26 @@ extern int check_and_set_node_list(List nodes)
 			grid[ba_node->coord[X]]
 			[ba_node->coord[Y]]
 			[ba_node->coord[Z]];
+		
 		if(ba_node->used && curr_ba_node->used) {
-			debug4("I have already been to "
-			       "this node %c%c%c",
-			       alpha_num[ba_node->coord[X]], 
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]]);
-			rc = SLURM_ERROR;
-			goto end_it;
+			/* Only error if the midplane isn't already
+			 * marked down or in a error state outside of
+			 * the bluegene block.
+			 */
+			uint16_t base_state, node_flags;
+			base_state = curr_ba_node->state & NODE_STATE_BASE;
+			node_flags = curr_ba_node->state & NODE_STATE_FLAGS;
+			if (!(node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL))
+			    && (base_state != NODE_STATE_DOWN)) {
+				debug4("I have already been to "
+				       "this node %c%c%c %s",
+				       alpha_num[ba_node->coord[X]], 
+				       alpha_num[ba_node->coord[Y]],
+				       alpha_num[ba_node->coord[Z]],
+				       node_state_string(curr_ba_node->state));
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
 		}
 		
 		if(ba_node->used) 
@@ -3770,7 +3783,6 @@ requested_end:
 static bool _node_used(ba_node_t* ba_node, int x_size)
 {
 	ba_switch_t* ba_switch = NULL;
-	
 	/* if we've used this node in another block already */
 	if (!ba_node || ba_node->used) {
 		debug4("node %c%c%c used", 

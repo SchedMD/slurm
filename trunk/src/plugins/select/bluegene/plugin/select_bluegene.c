@@ -1047,7 +1047,6 @@ extern int select_p_update_node_config (int index)
 extern int select_p_update_node_state (int index, uint16_t state)
 {
 	int x, y, z;
-	
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {

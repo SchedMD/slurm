@@ -211,6 +211,11 @@ documents those changes that are of interest to users and admins.
  -- Slurm.pm loads without warning now on AIX systems
  -- modified pmi code to do strncpy's on the correct len
  -- Fix for filling in a qos structure to return SLURM_SUCCESS on success.
+ -- BLUEGENE - Added SLURM_BG_NUM_NODES with cnode count of allocation, 
+    SLURM_JOB_NUM_NODES represents midplane counts until 2.1.
+ -- BLUEGENE - Added fix for if a block is in error state and the midplane 
+    containning the block is also set to drain/down.  This previously 
+    prevented dynamic creation of new blocks when this state was present.
 
 * Changes in SLURM 2.0.4
 ========================
