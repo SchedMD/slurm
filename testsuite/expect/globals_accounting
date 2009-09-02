@@ -594,6 +594,7 @@ proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpu g
 		}
 		set scommand "$scommand qoslevel='$qos'"
 		set assoc_stuff 1
+		send_user "qos set to $qos\n"
 	}
 
 	incr expected $acct_stuff

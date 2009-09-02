@@ -35,7 +35,7 @@ source ./globals_accounting
 
 set test_id     "test21.26"
 set exit_code   0
-set cluster1		qclustest
+set cluster1		[get_cluster_name]
 set account1		qacctest1
 set account2		qacctest2
 set qos1		qqostest
@@ -62,67 +62,85 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	exit 0
 }
 
+proc end_test { } {
+	global user1 account1 account2 cluster1 qos1 qos_val
+	set exit_code 0
+	incr exit_code [remove_user "" "" "$user1"]
+	incr exit_code [remove_acct "" "$account1,$account2"]
+	incr exit_code [remove_qos "$qos1"]
+	incr exit_code [mod_acct "$cluster1" "" "root" "" "" "$qos_val" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+}
+
+
 #
 # remove test associations to make sure we have a clean system
 #
 remove_user "" "" "$user1"
 remove_acct "" "$account1,$account2"
 remove_qos "$qos1"
-remove_cluster "$cluster1"
-if {$access_err != 0} {
-	send_user "\nWARNING: not authorized to perform this test\n"
+
+# get the qos of root on the cluster since we are going to set it to 
+# nothing here.  And put it back at the end of the test.
+set match 0
+set my_pid [eval spawn $sacctmgr list cluster $cluster1 format=cluster,qos -np]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		exit 1
+	}
+	-re "$cluster1.(\[a-z,\]*)." {
+		set qos_val $expect_out(1,string)
+		set match 1
+		exp_continue
+	}
+
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if { !$match } {
+	send_user "\nFAILURE: couldn't query qos\n"
+	exit 1
+}
+
+#now set default for cluster to ""
+incr exit_code [mod_acct "$cluster1" "" "root" "" "" " " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
+if { $exit_code } {
+	remove_qos "$qos1"
 	exit $exit_code
 }
 
-# Build test associations
-#=====Done Cleaning System=========Begin Add Cluster======
-#add cluster
-incr exit_code [add_cluster "$cluster1" " " "" "" "" "" "" "" "" "" "" "" ""]
-if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
-	exit $exit_code
-}
-#=====Done Add Cluster========Begin Add QoS==========
+
 #add qos
 incr exit_code [add_qos "$qos1"]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
 	remove_qos "$qos1"
-	remove_cluster "$cluster1"
 	exit $exit_code
 }
 #====Done Add QoS===========Begin Add First Account========
 #add default account
 incr exit_code [add_acct "$cluster1" "" "$account1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit $exit_code
 }
 #====Done Add First Account====Begin Add Second Account====
 #add account
 incr exit_code [add_acct "$cluster1" "$account1" "$account2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit $exit_code
 }
 #=====Done Add Second Account========Begin Add User=========
 #add user
 incr exit_code [add_user "$cluster1" "$account1,$account2" "$user1" "" "" "$account1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit $exit_code
 }
 #====Done add user====Done building test associations===Begin test section=======
@@ -159,10 +177,7 @@ expect {
 
 if {$matches != 6} {
 	send_user "\nFAILURE: Initial sacctmgr add failed with ($matches)\n"
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit 1
 }
 
@@ -170,10 +185,7 @@ if {$matches != 6} {
 #modify test1 account to add test QoS
 incr exit_code [mod_acct "$cluster1" "" "$account1" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit $exit_code
 }
 
@@ -210,10 +222,7 @@ expect {
 
 if {$matches != 6} {
 	send_user "\nFAILURE: failed on verify of +$qos1 to account $account1 ($matches)\n"
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit 1
 }
 
@@ -221,10 +230,7 @@ if {$matches != 6} {
 #modify test2 account to remove test QoS
 incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit $exit_code
 }
 
@@ -260,10 +266,7 @@ expect {
 
 if {$matches != 6} {
 	send_user "\nFAILURE: verify of -$qos1 from account $account2 ($matches)\n"
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit 1
 }
 
@@ -272,10 +275,7 @@ if {$matches != 6} {
 #modify test1 account to remove test QoS
 incr exit_code [mod_acct "$cluster1" "" "$account1" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit $exit_code
 }
 
@@ -311,10 +311,7 @@ expect {
 
 if {$matches != 6} {
 	send_user "\nFAILURE: verify of -$qos1 from account $account1 ($matches)\n"
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit 1
 }
 
@@ -322,10 +319,7 @@ if {$matches != 6} {
 #modify test2 account to add test QoS
 incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit $exit_code
 }
 
@@ -362,10 +356,7 @@ expect {
 
 if {$matches != 6} {
 	send_user "\nFAILURE: failed on verify of +$qos1 to account $account2 ($matches)\n"
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit 1
 }
 
@@ -373,10 +364,7 @@ if {$matches != 6} {
 #modify root account to add test QoS
 incr exit_code [mod_acct "$cluster1" "" "root" "" "" "+$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit $exit_code
 }
 
@@ -413,10 +401,7 @@ expect {
 
 if {$matches != 6} {
 	send_user "\nFAILURE: failed on verify of +$qos1 to account root ($matches)\n"
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit 1
 }
 
@@ -424,10 +409,7 @@ if {$matches != 6} {
 #modify test2 account to remove test QoS
 incr exit_code [mod_acct "$cluster1" "" "$account2" "" "" "-$qos1" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit $exit_code
 }
 
@@ -464,10 +446,7 @@ expect {
 
 if {$matches != 6} {
 	send_user "\nFAILURE: failed on verify of -$qos1 to account $account2 ($matches)\n"
-	remove_user "" "" "$user1"
-	remove_acct "" "$account1,$account2"
-	remove_qos "$qos1"
-	remove_cluster "$cluster1"
+	end_test
 	exit 1
 }
 
@@ -475,11 +454,7 @@ if {$matches != 6} {
 #======Done With List====== Ending=======
 # This is the end below here
 #
-incr exit_code [remove_user "" "" "$user1"]
-incr exit_code [remove_acct "" "$account1,$account2"]
-incr exit_code [remove_qos "$qos1"]
-incr exit_code [remove_cluster "$cluster1"]
-
+incr exit_code [end_test]
 if {$exit_code == 0} {
 	send_user "\nSUCCESS: $test_id\n"
 } else {

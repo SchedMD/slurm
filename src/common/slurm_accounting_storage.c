@@ -7585,8 +7585,8 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 	if(assoc_ptr->user)
 		debug2("  User             : %s(%u)",
 		       assoc_ptr->user, assoc_ptr->uid);
-	debug2("  UsedJobs        : %u", assoc_ptr->used_jobs);
-	debug2("  RawUsage        : %Lf", assoc_ptr->usage_raw);
+	debug2("  UsedJobs         : %u", assoc_ptr->used_jobs);
+	debug2("  RawUsage         : %Lf", assoc_ptr->usage_raw);
 }
 
 /*

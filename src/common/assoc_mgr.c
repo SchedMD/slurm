@@ -178,6 +178,10 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 		return SLURM_SUCCESS;
 	}			
 
+	/* Even though we only use the valid_qos bitstr for things we
+	   need to keep the list around for now since we don't pack the
+	   bitstr for state save.
+	*/
 	new_qos_itr = list_iterator_create(new_qos_list);
 	curr_qos_itr = list_iterator_create(assoc->qos_list);
 	
@@ -1698,6 +1702,19 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				} else {
 					rec->qos_list = object->qos_list;
 					object->qos_list = NULL;
+				}
+
+				if(rec->user && (g_qos_count > 0)) {
+					if(!rec->valid_qos
+					   || (bit_size(rec->valid_qos)
+					       != g_qos_count)) {
+						FREE_NULL_BITMAP(
+							rec->valid_qos);
+						rec->valid_qos = 
+							bit_alloc(g_qos_count);
+					} 
+					set_qos_bitstr_from_list(
+						rec->valid_qos, rec->qos_list);
 				}
 			}
 
