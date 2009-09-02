@@ -688,6 +688,9 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*cols, ", qos");
 		xstrfmtcat(*vals, ", '%s'", default_qos_str);
 		xstrfmtcat(*extra, ", qos=\"%s\"", default_qos_str);
+		if(!assoc->qos_list)
+			assoc->qos_list = list_create(slurm_destroy_char);
+		slurm_addto_char_list(assoc->qos_list, default_qos_str);
 	} else {
 		/* clear the qos */
 		xstrcat(*cols, ", qos, delta_qos");
@@ -1558,6 +1561,108 @@ static int _set_assoc_lft_rgt(
 	mysql_free_result(result);
 
 	return rc;
+}
+
+static int _set_assoc_limits_for_add(
+	mysql_conn_t *mysql_conn, acct_association_rec_t *assoc)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = NULL;
+	char *parent = NULL;
+	char *qos_delta = NULL;
+
+	enum {
+		ASSOC_REQ_PARENT_ID,
+		ASSOC_REQ_MJ,
+		ASSOC_REQ_MSJ,
+		ASSOC_REQ_MCPJ,
+		ASSOC_REQ_MNPJ,
+		ASSOC_REQ_MWPJ,
+		ASSOC_REQ_MCMPJ,
+		ASSOC_REQ_QOS,
+		ASSOC_REQ_DELTA_QOS,
+	};
+
+	xassert(assoc);
+
+	if(assoc->parent_acct) 
+		parent = assoc->parent_acct;
+	else if(assoc->user) 
+		parent = assoc->acct;
+	else 
+		return SLURM_SUCCESS;
+	
+	query = xstrdup_printf("call get_parent_limits(\"%s\", "
+			       "\"%s\", \"%s\", %u);"
+			       "select @par_id, @mj, @msj, @mcpj, "
+			       "@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;", 
+			       assoc_table, parent, assoc->cluster, 0);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+			
+	if(!(row = mysql_fetch_row(result))) 
+		goto end_it;
+	
+	if(row[ASSOC_REQ_MJ] && assoc->max_jobs == NO_VAL) 
+		assoc->max_jobs = atoi(row[ASSOC_REQ_MJ]);
+	if(row[ASSOC_REQ_MSJ] && assoc->max_submit_jobs == NO_VAL)
+		assoc->max_submit_jobs = atoi(row[ASSOC_REQ_MSJ]);
+	if(row[ASSOC_REQ_MCPJ] && assoc->max_cpus_pj == NO_VAL)
+		assoc->max_cpus_pj = atoi(row[ASSOC_REQ_MCPJ]);
+	if(row[ASSOC_REQ_MNPJ] && assoc->max_nodes_pj == NO_VAL)
+		assoc->max_nodes_pj = atoi(row[ASSOC_REQ_MNPJ]);
+	if(row[ASSOC_REQ_MWPJ] && assoc->max_wall_pj == NO_VAL)
+		assoc->max_wall_pj = atoi(row[ASSOC_REQ_MWPJ]);
+	if(row[ASSOC_REQ_MCMPJ] && assoc->max_cpu_mins_pj == NO_VAL)
+		assoc->max_cpu_mins_pj = atoi(row[ASSOC_REQ_MCMPJ]);
+
+	if(assoc->qos_list) {
+		int set = 0;
+		char *tmp_char = NULL;
+		ListIterator qos_itr = list_iterator_create(assoc->qos_list);
+		while((tmp_char = list_next(qos_itr))) {
+			/* we don't want to include blank names */
+			if(!tmp_char[0])
+				continue;
+
+			if(!set) {
+				if(tmp_char[0] != '+' && tmp_char[0] != '-')
+					break;
+				set = 1;
+			}
+			xstrfmtcat(qos_delta, ",%s", tmp_char);
+		}
+		list_iterator_destroy(qos_itr);
+
+		if(tmp_char) {
+			/* we have the qos here nothing from parents
+			   needed */
+			goto end_it;
+		}
+		list_flush(assoc->qos_list);
+	} else 
+		assoc->qos_list = list_create(slurm_destroy_char);
+
+	if(row[ASSOC_REQ_QOS][0])
+		slurm_addto_char_list(assoc->qos_list, row[ASSOC_REQ_QOS]+1);
+
+	if(row[ASSOC_REQ_DELTA_QOS][0])
+		slurm_addto_char_list(assoc->qos_list,
+				      row[ASSOC_REQ_DELTA_QOS]+1);
+	if(qos_delta) {
+		slurm_addto_char_list(assoc->qos_list, qos_delta+1);
+		xfree(qos_delta);
+	}
+		
+end_it:
+	mysql_free_result(result);
+
+	return SLURM_SUCCESS;
 }
 
 /* This function will take the object given and free it later so it
@@ -4435,8 +4540,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		 * the assoc_id will already be set
 		 */
 		if(!assoc_id) {
-			affect_rows = _last_affected_rows(
-				mysql_conn->db_conn);
+			affect_rows = _last_affected_rows(mysql_conn->db_conn);
 			assoc_id = mysql_insert_id(mysql_conn->db_conn);
 			//info("last id was %d", assoc_id);
 		}
@@ -4461,29 +4565,12 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			}
 		}
 		object->parent_id = my_par_id;
-
-		if(!moved_parent && !object->lft)
-			_set_assoc_lft_rgt(mysql_conn, object);
-
-
-               /* get the parent id only if we haven't moved the
-                * parent since we get the total list if that has
-                * happened */
-               if(!moved_parent &&
-                  (!last_parent || !last_cluster
-                   || strcmp(parent, last_parent)
-                   || strcmp(object->cluster, last_cluster))) {
-                       uint32_t tmp32 = 0;
-                       if((tmp32 = _get_parent_id(mysql_conn, 
-                                                  parent,
-                                                  object->cluster))) {
-                               my_par_id = tmp32;
-
-                               last_parent = parent;
-                               last_cluster = object->cluster;
-                       }
-               }
-               object->parent_id = my_par_id;
+		
+		if(!moved_parent) {
+			_set_assoc_limits_for_add(mysql_conn, object);
+			if(!object->lft)
+				_set_assoc_lft_rgt(mysql_conn, object);
+		}
 
 		if(_addto_update_list(mysql_conn->update_list, ACCT_ADD_ASSOC,
 				      object) == SLURM_SUCCESS) {
