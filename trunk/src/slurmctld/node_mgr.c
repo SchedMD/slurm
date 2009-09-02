@@ -647,8 +647,7 @@ extern int load_all_node_state ( bool state_only )
 			   until the nodes check in.  This is needed
 			   for bluegene to set up drained nodes
 			   correctly. */
-			if((node_ptr->node_state & NODE_STATE_BASE)
-			   == NODE_STATE_UNKNOWN) 
+			if(IS_NODE_UNKNOWN(node_ptr)) 
 				node_ptr->node_state |= NODE_STATE_IDLE;
 
 			select_g_update_node_state(
