@@ -210,7 +210,7 @@ _filter_job_records (void)
 		}
 
 		if ((opt.qos != NULL) &&
-		    (strcmp(job_ptr[i].qos,opt.qos) != 0)) {
+		    (strcmp(job_ptr[i].qos, opt.qos) != 0)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}
@@ -261,7 +261,7 @@ _filter_job_records (void)
 			if ((opt.wckey[0] != '*') && (job_key[0] == '*'))
 				job_key++;
 
-			if (strcmp(job_key, job_ptr[i].wckey) != 0) {
+			if (strcmp(job_key, opt.wckey) != 0) {
 				job_ptr[i].job_id = 0;
 				continue;
 			}
