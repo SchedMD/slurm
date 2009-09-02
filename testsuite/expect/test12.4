@@ -51,7 +51,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME set admin=admin.\n"
 	exit 0
 }
-
+set cluster [get_cluster_name]
 #
 # Identify the user and his current default account
 #
@@ -100,7 +100,7 @@ expect {
 # Use sacctmgr to add an account
 #
 set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $test_acct]
+set sadd_pid [spawn $sacctmgr -i add account $test_acct cluster=$cluster]
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -128,7 +128,7 @@ if {$aamatches != 1} {
 #
 # Add self to this new account
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
+set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cluster]
 expect {
 	 timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
