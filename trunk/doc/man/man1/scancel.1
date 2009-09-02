@@ -84,7 +84,7 @@ Print additional logging. Multiple v's increase logging detail.
 This option is incompatible with the \fB\-\-quiet\fR option.
 
 .TP
-\fB\-V\fR, \fB\-\-Version\fR
+\fB\-V\fR, \fB\-\-version\fR
 Print the version number of the scancel command. 
 
 .TP
@@ -93,6 +93,11 @@ Cancel any jobs using any of the given hosts.  The list may be specified as
 a comma\-separated list of hosts, a range of hosts (host[1\-5,7,...] for 
 example), or a filename. The host list will be assumed to be a filename only 
 if it contains a "/" character. 
+
+.TP
+\fB\-\-wckey\fR=\fIwckey\fR
+Restrict the scancel operation to jobs using this workload
+characterization key.
 
 .TP
 ARGUMENTS
@@ -152,6 +157,9 @@ environment variables, along with their corresponding options, are listed below.
 .TP 20
 \fBSCANCEL_VERBOSE\fR
 \fB\-v\fR, \fB\-\-verbose\fR
+.TP 20
+\fBSCANCEL_WCKEY\fR
+\fB\-\-wckey\fR=\fIwckey\fR
 .TP 20
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
