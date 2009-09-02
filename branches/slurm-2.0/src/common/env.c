@@ -882,7 +882,8 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
  *	LOADLBATCH (AIX only)
- *	MPIRUN_PARTITION, MPIRUN_NOFREE, and MPIRUN_NOALLOCATE (BGL only)
+ *	SLURM_BG_NUM_NODES, MPIRUN_PARTITION, MPIRUN_NOFREE, and
+ *	MPIRUN_NOALLOCATE (BGL only)
  *
  * Sets OBSOLETE variables (needed for MPI, do not remove):
  *	SLURM_JOBID
@@ -902,7 +903,15 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	slurm_step_layout_t *step_layout = NULL;
 	uint32_t num_tasks = desc->num_tasks;
 	int rc = SLURM_SUCCESS;
-	
+
+#ifdef HAVE_BG
+	uint32_t node_cnt = alloc->node_cnt;
+	select_g_get_jobinfo(alloc->select_jobinfo, 
+			     SELECT_DATA_NODE_CNT,
+			     &node_cnt);
+	env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES", "%u", node_cnt);
+#endif
+
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",
 				alloc->node_cnt);
@@ -1051,6 +1060,13 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	uint16_t cpus_per_task;
 	uint16_t task_dist;
 
+#ifdef HAVE_BG
+	uint32_t node_cnt = 0;
+	select_g_get_jobinfo(batch->select_jobinfo, 
+			     SELECT_DATA_NODE_CNT,
+			     &node_cnt);
+	env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES", "%u", node_cnt);
+#endif
 	/* There is no explicit node count in the batch structure,
 	 * so we need to calculate the node count. */
 	for (i = 0; i < batch->num_cpu_groups; i++) {
@@ -1063,8 +1079,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
 
 	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
-					batch->cpus_per_node,
-					batch->cpu_count_reps);
+				       batch->cpus_per_node,
+				       batch->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 	xfree(tmp);
 
