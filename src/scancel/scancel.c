@@ -116,7 +116,8 @@ main (int argc, char *argv[])
 	    (opt.partition) ||
 	    (opt.qos) ||
 	    (opt.state != JOB_END) ||
-	    (opt.user_name)) {
+	    (opt.user_name) ||
+	    (opt.wckey)) {
 		_filter_job_records ();
 	}
 	_cancel_jobs ();
@@ -245,6 +246,24 @@ _filter_job_records (void)
 				continue;
 			} else {
 				hostset_destroy(hs);
+			}
+		}
+
+		if (opt.wckey != NULL) {
+			char *job_key = job_ptr[i].wckey;
+
+			/*
+			 * A wckey that begins with '*' indicates that the wckey
+			 * was applied by default.  When the --wckey option does
+			 * not begin with a '*', act on all wckeys with the same
+			 * name, default or not.
+			 */
+			if ((opt.wckey[0] != '*') && (job_key[0] == '*'))
+				job_key++;
+
+			if (strcmp(job_key, job_ptr[i].wckey) != 0) {
+				job_ptr[i].job_id = 0;
+				continue;
 			}
 		}
 
