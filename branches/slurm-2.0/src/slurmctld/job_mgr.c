@@ -2376,7 +2376,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    (!_validate_acct_policy(job_desc, part_ptr, &assoc_rec))) {
+	    (!_validate_acct_policy(job_desc, part_ptr, assoc_ptr))) {
 		info("_job_create: exceeded association's node or time limit "
 		     "for user %u", job_desc->user_id);
 		error_code = ESLURM_ACCOUNTING_POLICY;
@@ -6625,7 +6625,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				job_desc->max_nodes = assoc_ptr->max_nodes_pj;
 			}
 		}
-		
+
 		if ((assoc_ptr->max_submit_jobs != NO_VAL) &&
 		    (assoc_ptr->max_submit_jobs != INFINITE) &&
 		    (assoc_ptr->used_submit_jobs 

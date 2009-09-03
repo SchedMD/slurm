@@ -66,6 +66,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Added fix for if a block is in error state and the midplane 
     containning the block is also set to drain/down.  This previously 
     prevented dynamic creation of new blocks when this state was present.
+ -- Fixed bug where a users association limits were not enforced, only 
+    parent limits were being enforced.
 
 * Changes in SLURM 2.0.4
 ========================
