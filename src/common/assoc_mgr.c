@@ -1193,7 +1193,10 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 
 	qos->norm_priority = found_qos->norm_priority;
 
-	if(!qos->preempt_bitstr)
+	if(qos->preempt_bitstr) {
+		FREE_NULL_BITMAP(qos->preempt_bitstr);
+		qos->preempt_bitstr = bit_copy(found_qos->preempt_bitstr);
+	} else
 		qos->preempt_bitstr = found_qos->preempt_bitstr;
 
 	qos->priority = found_qos->priority;
@@ -2093,7 +2096,14 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 				break;
 			}
 			list_append(assoc_mgr_qos_list, object);
-
+/* 			char *tmp = get_qos_complete_str_bitstr( */
+/* 				assoc_mgr_qos_list, */
+/* 				object->preempt_bitstr); */
+			
+/* 			info("new qos %s(%d) now preempts %s",  */
+/* 			     object->name, object->id, tmp); */
+/* 			xfree(tmp); */
+			
 			/* Since in the database id's don't start at 1
 			   instead of 0 we need to ignore the 0 bit and start
 			   with 1 so increase the count by 1.
@@ -2143,6 +2153,13 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 				
 				rec->preempt_bitstr = object->preempt_bitstr;
 				object->preempt_bitstr = NULL;
+	/* 			char *tmp = get_qos_complete_str_bitstr( */
+/* 					assoc_mgr_qos_list, */
+/* 					rec->preempt_bitstr); */
+				
+/* 				info("qos %s(%d) now preempts %s",  */
+/* 				     rec->name, rec->id, tmp); */
+/* 				xfree(tmp); */
 			}
 
 			if(object->priority != NO_VAL) 
@@ -2153,6 +2170,11 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 			
 			break;
 		case ACCT_REMOVE_QOS:
+			if(rec) 
+				list_delete_item(itr);
+
+			if(!assoc_mgr_association_list)
+				break;
 			/* Remove this qos from all the associations
 			   on this cluster.
 			*/
@@ -2169,8 +2191,6 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 			list_iterator_destroy(assoc_itr);
 			slurm_mutex_unlock(&assoc_mgr_association_lock);
 			
-			if(rec) 
-				list_delete_item(itr);
 			break;
 		default:
 			break;

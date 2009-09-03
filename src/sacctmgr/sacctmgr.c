@@ -670,6 +670,8 @@ static void _modify_it (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "Clusters", 
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "QOSs", MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_modify_qos((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
 	} else {
@@ -677,7 +679,8 @@ static void _modify_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", \"Cluster\", or \"User\"\n");
+		fprintf(stderr, "\"Account\", \"Cluster\", \"QOS\", "
+			"or \"User\"\n");
 	}
 
 	if (error_code == SLURM_ERROR) {

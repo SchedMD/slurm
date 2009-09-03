@@ -140,9 +140,9 @@ int main(int argc, char *argv[])
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 
-	/* If we are tacking wckey we need to cache associations and
-	   wckeys if we aren't only cache the users */
-	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER;
+	/* If we are tacking wckey we need to cache 
+	   wckeys, if we aren't only cache the users and qos */
+	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_QOS;
 	if(slurmdbd_conf->track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 	

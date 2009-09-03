@@ -254,6 +254,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Functionality not available with current block layout mode"},
 	{ ESLURM_INVALID_BLOCK_NAME, 
 	  "Invalid block name specified"			},
+	{ ESLURM_QOS_PREEMPTION_LOOP,
+	  "QOS Preemption loop detected"                	},
 
 	/* slurmd error codes */
 
