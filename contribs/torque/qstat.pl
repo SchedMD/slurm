@@ -103,7 +103,11 @@ if ($man)
 
 # Use sole remaining argument as jobIds
 
-$hostname = `hostname -f`;
+if($^O eq 'aix') { 
+	$hostname = `hostname`;
+} else {
+	$hostname = `hostname -f`;
+}
 chomp $hostname;
 		
 # Handle unsupported arguments
