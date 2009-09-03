@@ -115,7 +115,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int i, mins;
 	int set = 0;
 	int end = 0;
-	List qos_list = NULL;
 	int command_len = 0;
 	int option = 0;
 
@@ -236,12 +235,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 				assoc->qos_list = 
 					list_create(slurm_destroy_char);
 						
-			if(!qos_list) 
-				qos_list = acct_storage_g_get_qos(
+			if(!g_qos_list) 
+				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 						
 			if(addto_qos_char_list(assoc->qos_list,
-					       qos_list, argv[i]+end, option))
+					       g_qos_list, argv[i]+end, option))
 				set = 1;
 			else
 				exit_code = 1;
@@ -253,9 +252,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 		}
 	}
 	(*start) = i;
-
-	if(qos_list)
-		list_destroy(qos_list);
 
 	return set;
 
@@ -420,7 +416,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	ListIterator itr2 = NULL;
 	acct_cluster_rec_t *cluster = NULL;
 	char *object;
-	List qos_list = NULL;
 
 	int field_count = 0;
 
@@ -786,12 +781,12 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				break;
 				
 			case PRINT_QOS:
-				if(!qos_list) 
-					qos_list = acct_storage_g_get_qos(
+				if(!g_qos_list) 
+					g_qos_list = acct_storage_g_get_qos(
 						db_conn, my_uid, NULL);
 				
 				field->print_routine(field,
-						     qos_list,
+						     g_qos_list,
 						     assoc->qos_list,
 						     (curr_inx == field_count));
 				break;
@@ -817,9 +812,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		list_iterator_reset(itr2);
 		printf("\n");
 	}
-
-	if(qos_list)
-		list_destroy(qos_list);
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);

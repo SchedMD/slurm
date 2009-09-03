@@ -56,6 +56,7 @@ int rollback_flag;       /* immediate execute=1, else = 0 */
 int with_assoc_flag = 0;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
+List g_qos_list = NULL;
 
 static void	_add_it (int argc, char *argv[]);
 static void	_archive_it (int argc, char *argv[]);
@@ -228,6 +229,8 @@ main (int argc, char *argv[])
 		exit_code = local_exit_code;
 	acct_storage_g_close_connection(&db_conn);
 	slurm_acct_storage_fini();
+	if(g_qos_list)
+		list_destroy(g_qos_list);
 	exit(exit_code);
 }
 

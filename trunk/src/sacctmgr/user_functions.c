@@ -48,7 +48,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int u_set = 0;
 	int a_set = 0;
 	int end = 0;
-	List qos_list = NULL;
 	acct_association_cond_t *assoc_cond = NULL;
 	int command_len = 0;
 	int option = 0;
@@ -290,13 +289,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 					list_create(slurm_destroy_char);
 			}
 			
-			if(!qos_list) {
-				qos_list = acct_storage_g_get_qos(
+			if(!g_qos_list) {
+				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 			}
 
 			addto_qos_char_list(assoc_cond->qos_list,
-					    qos_list, argv[i]+end, option);
+					    g_qos_list, argv[i]+end, option);
 			u_set = 1;
 		} else {
 			exit_code=1;
@@ -305,9 +304,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 				argv[i]);
 		}		
 	}	
-
-	if(qos_list)
-		list_destroy(qos_list);
 
 	(*start) = i;
 
@@ -329,7 +325,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int u_set = 0;
 	int a_set = 0;
 	int end = 0;
-	List qos_list = NULL;
 	int command_len = 0;
 	int option = 0;
 
@@ -492,12 +487,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 				assoc->qos_list = 
 					list_create(slurm_destroy_char);
 						
-			if(!qos_list) 
-				qos_list = acct_storage_g_get_qos(
+			if(!g_qos_list) 
+				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 						
 			if(addto_qos_char_list(assoc->qos_list,
-					       qos_list, argv[i]+end, option))
+					       g_qos_list, argv[i]+end, option))
 				a_set = 1;
 			else
 				exit_code = 1;
@@ -510,9 +505,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 	}	
 
 	(*start) = i;
-
-	if(qos_list)
-		list_destroy(qos_list);
 
 	if(u_set && a_set)
 		return 3;
@@ -674,7 +666,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	acct_association_cond_t *assoc_cond = NULL;
 	acct_wckey_rec_t *wckey = NULL;
 	acct_wckey_cond_t *wckey_cond = NULL;
-	List qos_list = NULL;
 	acct_admin_level_t admin_level = ACCT_ADMIN_NOTSET;
 	char *name = NULL, *account = NULL, *cluster = NULL, *partition = NULL;
 	int partition_set = 0;
@@ -861,11 +852,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				start_assoc.qos_list = 
 					list_create(slurm_destroy_char);
 			
-			if(!qos_list) 
-				qos_list = acct_storage_g_get_qos(
+			if(!g_qos_list) 
+				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 			
-			if(addto_qos_char_list(start_assoc.qos_list, qos_list,
+			if(addto_qos_char_list(start_assoc.qos_list, g_qos_list,
 					       argv[i]+end, option))
 				limit_set = 1;
 			else
@@ -1484,7 +1475,6 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	acct_user_rec_t *user = NULL;
 	acct_association_rec_t *assoc = NULL;
 	char *object;
-	List qos_list = NULL;
 
 	print_field_t *field = NULL;
 	int field_count = 0;
@@ -1930,8 +1920,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 							 field_count));
 						break;
 					case PRINT_QOS:
-						if(!qos_list) {
-							qos_list = 
+						if(!g_qos_list) {
+							g_qos_list = 
 								acct_storage_g_get_qos(
 									db_conn,
 									my_uid,
@@ -1939,7 +1929,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						}
 						field->print_routine(
 							field,
-							qos_list,
+							g_qos_list,
 							assoc->qos_list,
 							(curr_inx == 
 							 field_count));

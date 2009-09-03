@@ -98,6 +98,7 @@ extern int with_assoc_flag;/* show acct/user associations flag */
 extern int readonly_flag; /* make it so you can only run list commands */
 extern void *db_conn;
 extern uint32_t my_uid;
+extern List g_qos_list;
 
 extern int sacctmgr_add_association(int argc, char *argv[]);
 extern int sacctmgr_add_user(int argc, char *argv[]);

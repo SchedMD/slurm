@@ -111,8 +111,6 @@ typedef enum {
 	MOD_USER
 } sacctmgr_mod_type_t;
 
-static List qos_list = NULL;
-
 static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 {
 	if(!file_opts)
@@ -495,12 +493,12 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 					list_create(slurm_destroy_char);
 			}
 			
-			if(!qos_list) {
-				qos_list = acct_storage_g_get_qos(
+			if(!g_qos_list) {
+				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 			}
 
-			addto_qos_char_list(file_opts->qos_list, qos_list,
+			addto_qos_char_list(file_opts->qos_list, g_qos_list,
 					    option, option2);
 		} else if (!strncasecmp (sub, "WCKeys",
 					 MAX(command_len, 2))) {
@@ -843,9 +841,13 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 						     assoc->partition);
 				break;
 			case PRINT_QOS:
+				if(!g_qos_list) 
+					g_qos_list = acct_storage_g_get_qos(
+						db_conn, my_uid, NULL);
+	
 				field->print_routine(
 					field,
-					qos_list,
+					g_qos_list,
 					assoc->qos_list);
 				break;
 			case PRINT_USER:
@@ -1093,7 +1095,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		list_iterator_destroy(new_qos_itr);
 		list_iterator_destroy(now_qos_itr);
 		if(mod_assoc.qos_list && list_count(mod_assoc.qos_list))
-			new_qos = get_qos_complete_str(qos_list,
+			new_qos = get_qos_complete_str(g_qos_list,
 						       mod_assoc.qos_list);
 		if(new_qos) {
 			xstrfmtcat(my_info, 
@@ -1108,7 +1110,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			mod_assoc.qos_list = NULL;
 		}
 	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
-		char *new_qos = get_qos_complete_str(qos_list,
+		char *new_qos = get_qos_complete_str(g_qos_list,
 						     file_opts->qos_list);
 		
 		if(new_qos) {
@@ -1867,11 +1869,6 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 extern int print_file_add_limits_to_line(char **line,
 					 acct_association_rec_t *assoc)
 {
-	static List qos_list = NULL; /* This is a leak, since we never
-				      * free it, but we don't
-				      * really care since this isn't a
-				      * deamon.
-				      */
 	if(!assoc)
 		return SLURM_ERROR;
 
@@ -1918,11 +1915,11 @@ extern int print_file_add_limits_to_line(char **line,
 
 	if(assoc->qos_list && list_count(assoc->qos_list)) {
 		char *temp_char = NULL;
-		if(!qos_list) 
-			qos_list = acct_storage_g_get_qos(
+		if(!g_qos_list) 
+			g_qos_list = acct_storage_g_get_qos(
 				db_conn, my_uid, NULL);
 		
-		temp_char = get_qos_complete_str(qos_list, assoc->qos_list);
+		temp_char = get_qos_complete_str(g_qos_list, assoc->qos_list);
 		xstrfmtcat(*line, ":QOS='%s'", temp_char);
 		xfree(temp_char);
 	}
