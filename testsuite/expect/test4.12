@@ -101,7 +101,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 		}
 	}
 	expect {
-		-re "($number)(k?).($number)(k?).($number)(k?).($number)(k?) ($number)(k?).($number)(k?) $node" {
+		-re "($number)(K?).($number)(K?).($number)(K?).($number)(K?) ($number)(K?).($number)(K?) $node" {
 			set found 1
 			set num_alloc $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
@@ -178,14 +178,14 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 		}
 	}
 	expect {
-		-re "alloc ($number)(k?) $node" {
+		-re "alloc ($number)(K?) $node" {
 			set num_alloc $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
 				set num_alloc [expr $inode_procs * 1024]
 			}
 			exp_continue
 		}
-		-re "idle ($number)(k?) $node" {
+		-re "idle ($number)(K?) $node" {
 			set num_idle $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
 				set num_idle [expr $num_idle * 1024]
@@ -361,7 +361,7 @@ set inode_found 0
 for {set host_inx 0} {($host_inx < $host_cnt) && ($inode_found == 0)} {incr host_inx} {
 	spawn $scontrol show node
 	expect {
-		-re "NodeName=($alpha_numeric_under) State=IDLE Procs=($number)(k?).* Sockets=($number) CoresPerSocket=($number) ThreadsPerCore=($number)"  {
+		-re "NodeName=($alpha_numeric_under) State=IDLE Procs=($number)(K?).* Sockets=($number) CoresPerSocket=($number) ThreadsPerCore=($number)"  {
 			set inode_name $expect_out(1,string) 
 			set inode_procs $expect_out(2,string)
 			if {[string compare $expect_out(3,string) ""]} {
