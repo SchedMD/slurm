@@ -46,7 +46,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 {
 	int i, end = 0;
 	int set = 0;
-	List qos_list = NULL;
 	int command_len = 0;
 	int option = 0;
 	for (i=(*start); i<argc; i++) {
@@ -121,8 +120,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
 		}
 	}
-	if(qos_list)
-		list_destroy(qos_list);
 
 	(*start) = i;
 
@@ -141,7 +138,6 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 	ListIterator itr2 = NULL;
 	char *object = NULL;
 	List tree_list = NULL;
-	List qos_list = NULL;
 
 	int field_count = 0;
 
@@ -296,9 +292,6 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 		list_iterator_reset(itr2);
 		printf("\n");
 	}
-
-	if(qos_list)
-		list_destroy(qos_list);
 
 	if(tree_list) 
 		list_destroy(tree_list);

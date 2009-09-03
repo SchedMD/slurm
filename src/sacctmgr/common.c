@@ -1168,26 +1168,25 @@ extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 	}
 
 	if(assoc->qos_list) {
-		List qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
-		char *temp_char = get_qos_complete_str(qos_list,
+		if(!g_qos_list)
+			g_qos_list = 
+				acct_storage_g_get_qos(db_conn, my_uid, NULL);
+		char *temp_char = get_qos_complete_str(g_qos_list,
 						       assoc->qos_list);
 		if(temp_char) {		
 			printf("  QOS           = %s\n", temp_char);
 			xfree(temp_char);
 		}
-		if(qos_list)
-			list_destroy(qos_list);
 	} 
 }
 
 extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 {
-	List qos_list = NULL;
 	if(!qos)
 		return;
 
-	if(qos->preempt_list)
-		qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+	if(qos->preempt_list && !g_qos_list)
+		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
 
 	if(qos->job_flags)
 		printf("  JobFlags       = %s", qos->job_flags);
@@ -1265,7 +1264,7 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 	}
 
 	if(qos->preempt_list) {
-		char *temp_char = get_qos_complete_str(qos_list,
+		char *temp_char = get_qos_complete_str(g_qos_list,
 						       qos->preempt_list);
 		if(temp_char) {		
 			printf("  Preempt        = %s\n", temp_char);
@@ -1278,8 +1277,6 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 	else if(qos->priority != NO_VAL) 
 		printf("  Priority       = %d\n", qos->priority);
 
-	if(qos_list)
-		list_destroy(qos_list);
 }
 
 extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)

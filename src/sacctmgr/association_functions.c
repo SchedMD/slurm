@@ -47,7 +47,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 {
 	int i, end = 0;
 	int set = 0;
-	List qos_list = NULL;
 	int command_len = 0;
 	int option = 0;
 	for (i=(*start); i<argc; i++) {
@@ -274,12 +273,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 					list_create(slurm_destroy_char);
 			}
 			
-			if(!qos_list) {
-				qos_list = acct_storage_g_get_qos(
+			if(!g_qos_list) {
+				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 			}
 			
-			if(addto_qos_char_list(assoc_cond->qos_list, qos_list,
+			if(addto_qos_char_list(assoc_cond->qos_list, g_qos_list,
 					       argv[i]+end, option))
 				set = 1;
 			else
@@ -297,8 +296,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
 		}
 	}
-	if(qos_list)
-		list_destroy(qos_list);
 
 	(*start) = i;
 
@@ -319,7 +316,6 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	char *object = NULL;
 	char *print_acct = NULL, *last_cluster = NULL;
 	List tree_list = NULL;
-	List qos_list = NULL;
 
 	int field_count = 0;
 
@@ -735,12 +731,12 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_QOS:
-				if(!qos_list) 
-					qos_list = acct_storage_g_get_qos(
+				if(!g_qos_list) 
+					g_qos_list = acct_storage_g_get_qos(
 						db_conn, my_uid, NULL);
 				
 				field->print_routine(field,
-						     qos_list,
+						     g_qos_list,
 						     assoc->qos_list,
 						     (curr_inx == field_count));
 				break;
@@ -770,9 +766,6 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		list_iterator_reset(itr2);
 		printf("\n");
 	}
-
-	if(qos_list)
-		list_destroy(qos_list);
 
 	if(tree_list) 
 		list_destroy(tree_list);

@@ -136,7 +136,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 static int _set_rec(int *start, int argc, char *argv[],
-		    List qos_list,
+		    List name_list,
 		    acct_qos_rec_t *qos)
 {
 	int i, mins;
@@ -166,8 +166,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if(!end
 			  || !strncasecmp (argv[i], "Name",
 					   MAX(command_len, 1))) {
-			if(qos_list) 
-				slurm_addto_char_list(qos_list, argv[i]+end);
+			if(name_list) 
+				slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Description",
 					 MAX(command_len, 1))) {
 			if(!qos->description)
@@ -290,12 +290,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 				qos->preempt_list = 
 					list_create(slurm_destroy_char);
 						
-			if(!qos_list) 
-				qos_list = acct_storage_g_get_qos(
+			if(!g_qos_list) 
+				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 						
 			if(addto_qos_char_list(qos->preempt_list,
-					       qos_list, argv[i]+end, option))
+					       g_qos_list, argv[i]+end, option))
 				set = 1;
 			else
 				exit_code = 1;
@@ -338,7 +338,6 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	char *description = NULL;
 	char *name = NULL;
 	List qos_list = NULL;
-	List local_qos_list = NULL;
 	char *qos_str = NULL;
 
 	init_acct_qos_rec(start_qos);
@@ -364,16 +363,18 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		return SLURM_SUCCESS;
 	} 
 
-
-	local_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
-
-	if(!local_qos_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem getting qos's from database.  "
-		       "Contact your admin.\n");
-		list_destroy(name_list);
-		xfree(description);
-		return SLURM_ERROR;
+	if(!g_qos_list) {
+		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+		
+		if(!g_qos_list) {
+			exit_code=1;
+			fprintf(stderr, " Problem getting qos's "
+				"from database.  "
+				"Contact your admin.\n");
+			list_destroy(name_list);
+			xfree(description);
+			return SLURM_ERROR;
+		}
 	}
 
 	qos_list = list_create(destroy_acct_qos_rec);
@@ -381,7 +382,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
 		qos = NULL;
-		if(!sacctmgr_find_qos_from_list(local_qos_list, name)) {
+		if(!sacctmgr_find_qos_from_list(g_qos_list, name)) {
 			qos = xmalloc(sizeof(acct_qos_rec_t));
 			qos->name = xstrdup(name);
 			if(start_qos->description) 
@@ -407,6 +408,9 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			if(start_qos->job_flags)
 				qos->job_flags = start_qos->job_flags;
 
+			qos->preempt_list =
+				copy_char_list(start_qos->preempt_list);
+
 			qos->priority = start_qos->priority;
 
 			qos->usage_factor = start_qos->usage_factor;
@@ -416,7 +420,6 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		}
 	}
 	list_iterator_destroy(itr);
-	list_destroy(local_qos_list);
 	list_destroy(name_list);
 	
 	if(!list_count(qos_list)) {
@@ -487,7 +490,6 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		PRINT_ID,
 		PRINT_NAME,
 		PRINT_JOBF,
-		PRINT_PRIO,
 		PRINT_GRPCM,
 		PRINT_GRPC,
 		PRINT_GRPJ,
@@ -500,6 +502,8 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		PRINT_MAXN,
 		PRINT_MAXS,
 		PRINT_MAXW,
+		PRINT_PREE,
+		PRINT_PRIO,
 		PRINT_UF,
 	};
 
@@ -516,7 +520,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		list_destroy(format_list);		
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "N,Prio,JobF,"
+		slurm_addto_char_list(format_list, "N,Prio,Pree,"
 				      "GrpJ,GrpN,GrpS,MaxJ,MaxN,MaxS,MaxW");
 	}
 
@@ -623,8 +627,14 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			field->name = xstrdup("Name");
 			field->len = 10;
 			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("Preempt", object,
+				       MAX(command_len, 3))) {
+			field->type = PRINT_PREE;
+			field->name = xstrdup("Preempt");
+			field->len = 10;
+			field->print_routine = sacctmgr_print_qos_bitstr;
 		} else if(!strncasecmp("Priority", object,
-				       MAX(command_len, 1))) {
+				       MAX(command_len, 3))) {
 			field->type = PRINT_PRIO;
 			field->name = xstrdup("Priority");
 			field->len = 10;
@@ -755,6 +765,15 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			case PRINT_NAME:
 				field->print_routine(
 					field, qos->name,
+					(curr_inx == field_count));
+				break;
+			case PRINT_PREE:
+				if(!g_qos_list) 
+					g_qos_list = acct_storage_g_get_qos(
+						db_conn, my_uid, NULL);
+
+				field->print_routine(
+					field, g_qos_list, qos->preempt_bitstr,
 					(curr_inx == field_count));
 				break;
 			case PRINT_PRIO:
