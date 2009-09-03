@@ -68,6 +68,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
+			break;
 		} else if (!strncasecmp (argv[i], "WithDeleted", 
 					 MAX(command_len, 5))) {
 			qos_cond->with_deleted = 1;
@@ -131,7 +132,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 	}
 
 	(*start) = i;
-
 	return set;
 }
 
@@ -282,14 +282,14 @@ static int _set_rec(int *start, int argc, char *argv[],
 					argv[i]);
 			}
 		} else if (!strncasecmp (argv[i], "Preempt", 
-					 MAX(command_len, 9))) {
+					 MAX(command_len, 3))) {
 			if(!qos)
 				continue;
 
 			if(!qos->preempt_list) 
 				qos->preempt_list = 
 					list_create(slurm_destroy_char);
-						
+
 			if(!g_qos_list) 
 				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);

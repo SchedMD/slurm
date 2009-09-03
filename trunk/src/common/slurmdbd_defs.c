@@ -252,7 +252,10 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 		}
 	}
 
-	buffer = pack_slurmdbd_msg(rpc_version, req);
+	if(!(buffer = pack_slurmdbd_msg(rpc_version, req))) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
 
 	rc = _send_msg(buffer);
 	free_buf(buffer);
@@ -501,6 +504,7 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
+	case DBD_MODIFY_QOS:
 	case DBD_MODIFY_USERS:
 		slurmdbd_pack_modify_msg(
 			rpc_version, req->msg_type,
@@ -672,6 +676,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
+	case DBD_MODIFY_QOS:
 	case DBD_MODIFY_USERS:
 		rc = slurmdbd_unpack_modify_msg(
 			rpc_version,
@@ -801,6 +806,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_MODIFY_ASSOCS;
 	} else if(!strcasecmp(msg_type, "Modify Clusters")) {
 		return DBD_MODIFY_CLUSTERS;
+	} else if(!strcasecmp(msg_type, "Modify QOS")) {
+		return DBD_MODIFY_QOS;
 	} else if(!strcasecmp(msg_type, "Modify Users")) {
 		return DBD_MODIFY_USERS;
 	} else if(!strcasecmp(msg_type, "Node State")) {
@@ -1076,6 +1083,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_MODIFY_CLUSTERS";
 		} else
 			return "Modify Clusters";
+		break;
+	case DBD_MODIFY_QOS:
+		if(get_enum) {
+			return "DBD_MODIFY_QOS";
+		} else
+			return "Modify QOS";
 		break;
 	case DBD_MODIFY_USERS:
 		if(get_enum) {
@@ -2213,6 +2226,10 @@ void inline slurmdbd_free_modify_msg(uint16_t rpc_version,
 			destroy_cond = destroy_acct_cluster_cond;
 			destroy_rec = destroy_acct_cluster_rec;
 			break;
+		case DBD_MODIFY_QOS:
+			destroy_cond = destroy_acct_qos_cond;
+			destroy_rec = destroy_acct_qos_rec;
+			break;
 		case DBD_MODIFY_USERS:
 			destroy_cond = destroy_acct_user_cond;
 			destroy_rec = destroy_acct_user_rec;
@@ -3249,6 +3266,10 @@ void inline slurmdbd_pack_modify_msg(uint16_t rpc_version,
 		my_cond = pack_acct_cluster_cond;
 		my_rec = pack_acct_cluster_rec;
 		break;
+	case DBD_MODIFY_QOS:
+		my_cond = pack_acct_qos_cond;
+		my_rec = pack_acct_qos_rec;
+		break;
 	case DBD_MODIFY_USERS:
 		my_cond = pack_acct_user_cond;
 		my_rec = pack_acct_user_rec;
@@ -3284,6 +3305,10 @@ int inline slurmdbd_unpack_modify_msg(uint16_t rpc_version,
 	case DBD_MODIFY_CLUSTERS:
 		my_cond = unpack_acct_cluster_cond;
 		my_rec = unpack_acct_cluster_rec;
+		break;
+	case DBD_MODIFY_QOS:
+		my_cond = unpack_acct_qos_cond;
+		my_rec = unpack_acct_qos_rec;
 		break;
 	case DBD_MODIFY_USERS:
 		my_cond = unpack_acct_user_cond;

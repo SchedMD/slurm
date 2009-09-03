@@ -348,6 +348,43 @@ no_wckeyid:
 	return wckeyid;
 }
 
+static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid, 
+			    bitstr_t *preempt_bitstr)
+{
+	acct_qos_rec_t qos_rec;
+	int rc = 0, i=0;
+
+	xassert(preempt_bitstr);
+	
+	/* check in the preempt list for all qos's preempted */
+	for(i=0; i<bit_size(preempt_bitstr); i++) {
+		if(!bit_test(preempt_bitstr, i))
+			continue;
+
+		memset(&qos_rec, 0, sizeof(qos_rec));
+		qos_rec.id = i;
+		assoc_mgr_fill_in_qos(mysql_conn, &qos_rec,
+				      ACCOUNTING_ENFORCE_QOS,
+				      NULL);
+		/* check if the begin_qosid is preempted by this qos
+		 * if so we have a loop */
+		if(qos_rec.preempt_bitstr 
+		   && bit_test(qos_rec.preempt_bitstr, begin_qosid)) {
+			error("QOS id %d has a loop at QOS %s",
+			      begin_qosid, qos_rec.name);
+			rc = 1;
+			break;
+		} else if(qos_rec.preempt_bitstr) {
+			/* check this qos' preempt list and make sure
+			   no loops exist there either */
+			if((rc = _preemption_loop(mysql_conn, begin_qosid,
+						  qos_rec.preempt_bitstr)))
+				break;
+		}
+	}
+	return rc;
+}
+
 static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 				  time_t *usage_start, time_t *usage_end)
 {
@@ -705,7 +742,7 @@ end_qos:
 
 static int _setup_qos_limits(acct_qos_rec_t *qos,
 			     char **cols, char **vals,
-			     char **extra)
+			     char **extra, char **added_preempt)
 {	
 	if(!qos)
 		return SLURM_ERROR;
@@ -880,11 +917,17 @@ static int _setup_qos_limits(acct_qos_rec_t *qos,
 					   "replace(%s, ',%s', ''), ',%s')",
 					   begin_preempt, 
 					   tmp_char+1, tmp_char+1);
+				if(added_preempt)
+					xstrfmtcat(*added_preempt, ",%s",
+						   tmp_char+1);
 				xfree(begin_preempt);
 				begin_preempt = preempt_val;
-			} else if(tmp_char[0]) 
+			} else if(tmp_char[0]) {
 				xstrfmtcat(preempt_val, ",%s", tmp_char);
-			else
+				if(added_preempt)
+					xstrfmtcat(*added_preempt, ",%s",
+						   tmp_char);
+			} else
 				xstrcat(preempt_val, "");
 		}
 		list_iterator_destroy(preempt_itr);
@@ -4702,6 +4745,7 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
+	char *added_preempt = NULL;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -4719,7 +4763,13 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			   now, now, object->name); 
 		xstrfmtcat(extra, ", mod_time=%d", now);
 
-		_setup_qos_limits(object, &cols, &vals, &extra);
+		_setup_qos_limits(object, &cols, &vals, &extra, &added_preempt);
+		if(added_preempt) {
+			object->preempt_bitstr = bit_alloc(g_qos_count);
+			bit_unfmt(object->preempt_bitstr, added_preempt+1);
+			xfree(added_preempt);
+		}
+
 		xstrfmtcat(query, 
 			   "insert into %s (%s) values (%s) "
 			   "on duplicate key update deleted=0, "
@@ -4749,9 +4799,7 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(vals);
 			continue;
 		}
-		/* FIX ME: we have to edit all the other qos's to set
-		   there preemptee or preemptor based on what is here.
-		*/
+		
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = _fix_double_quotes(extra+2);
 
@@ -5899,6 +5947,8 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *tmp_char1=NULL, *tmp_char2=NULL;
+	bitstr_t *preempt_bitstr = NULL;
+	char *added_preempt = NULL;
 
 	if(!qos_cond || !qos) {
 		error("we need something to change");
@@ -5955,20 +6005,27 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 	
-	_setup_qos_limits(qos, &tmp_char1, &tmp_char2, &vals);
+	_setup_qos_limits(qos, &tmp_char1, &tmp_char2, &vals, &added_preempt);
+	if(added_preempt) {
+		preempt_bitstr = bit_alloc(g_qos_count);
+		bit_unfmt(preempt_bitstr, added_preempt+1);
+		xfree(added_preempt);
+	}
 	xfree(tmp_char1);
 	xfree(tmp_char2);
 
 	if(!extra || !vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
+		FREE_NULL_BITMAP(preempt_bitstr);
 		error("Nothing to change");
 		return NULL;
 	}
-	query = xstrdup_printf("select name, preempt from %s %s;",
+	query = xstrdup_printf("select name, preempt, id from %s %s;",
 			       qos_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
+		FREE_NULL_BITMAP(preempt_bitstr);
 		return NULL;
 	}
 
@@ -5976,7 +6033,11 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		acct_qos_rec_t *qos_rec = NULL;
-		
+		if(preempt_bitstr) {
+			if(_preemption_loop(mysql_conn,
+					    atoi(row[2]), preempt_bitstr))
+				break;
+		}
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
 		if(!rc) {
@@ -5985,6 +6046,7 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		} else  {
 			xstrfmtcat(name_char, " || name='%s'", object);
 		}
+		
 		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
 		qos_rec->name = xstrdup(object);
 
@@ -6040,6 +6102,18 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				   qos_rec);
 	}
 	mysql_free_result(result);
+
+	FREE_NULL_BITMAP(preempt_bitstr);
+	
+	if(row) {
+		xfree(vals);
+		xfree(name_char);
+		xfree(query);
+		list_destroy(ret_list);
+		ret_list = NULL;
+		errno = ESLURM_QOS_PREEMPTION_LOOP;
+		return ret_list;
+	}
 
 	if(!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
@@ -8860,9 +8934,11 @@ empty:
 		else
 			qos->max_wall_pu = INFINITE;
 
-		if(row[QOS_REQ_PREE] && row[QOS_REQ_PREE][0]) 
+		if(row[QOS_REQ_PREE] && row[QOS_REQ_PREE][0]) {
+			if(!qos->preempt_bitstr)
+				qos->preempt_bitstr = bit_alloc(g_qos_count);
 			bit_unfmt(qos->preempt_bitstr, row[QOS_REQ_PREE]+1);
-		
+		}
 		if(row[QOS_REQ_PRIO])
 			qos->priority = atoi(row[QOS_REQ_PRIO]);
 

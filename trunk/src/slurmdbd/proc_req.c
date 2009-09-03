@@ -2092,6 +2092,9 @@ static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
+		} else if(errno == ESLURM_QOS_PREEMPTION_LOOP) {
+			comment = "QOS Preemption loop detected";
+			rc = ESLURM_QOS_PREEMPTION_LOOP;
 		} else {
 			comment = "Unknown issue";
 			rc = SLURM_ERROR;

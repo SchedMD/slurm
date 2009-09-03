@@ -176,6 +176,7 @@ enum {
 	ESLURM_INVALID_BLOCK_LAYOUT,
 	ESLURM_INVALID_BLOCK_NAME,
 	ESLURM_INVALID_QOS,
+	ESLURM_QOS_PREEMPTION_LOOP,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
