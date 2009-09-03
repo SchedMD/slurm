@@ -62,7 +62,7 @@ proc def_node_cnt { } {
 	set node_cnt 1
 	spawn $sinfo -h -o "name=%P node_cnt=%D" -p $partition
 	expect {
-		-re "name=($alpha_numeric_under) node_cnt=($number)(k?)" {
+		-re "name=($alpha_numeric_under) node_cnt=($number)(K?)" {
 			set node_cnt $expect_out(2,string) 
 			if {[string compare $expect_out(3,string) ""]} {
 				set node_cnt [expr $node_cnt * 1024]
