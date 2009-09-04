@@ -1188,9 +1188,6 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 	if(qos->preempt_list && !g_qos_list)
 		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
 
-	if(qos->job_flags)
-		printf("  JobFlags       = %s", qos->job_flags);
-
 	if(qos->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins     = NONE\n");
 	else if(qos->grp_cpu_mins != NO_VAL) 
@@ -1227,26 +1224,26 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 		printf("  GrpWall        = %s\n", time_buf);
 	}
 
-	if(qos->max_cpu_mins_pu == INFINITE)
+	if(qos->max_cpu_mins_pj == INFINITE)
 		printf("  MaxCPUMins     = NONE\n");
-	else if(qos->max_cpu_mins_pu != NO_VAL) 
+	else if(qos->max_cpu_mins_pj != NO_VAL) 
 		printf("  MaxCPUMins     = %llu\n", 
-		       (long long unsigned)qos->max_cpu_mins_pu);
+		       (long long unsigned)qos->max_cpu_mins_pj);
 		
-	if(qos->max_cpus_pu == INFINITE)
+	if(qos->max_cpus_pj == INFINITE)
 		printf("  MaxCPUs        = NONE\n");
-	else if(qos->max_cpus_pu != NO_VAL) 
-		printf("  MaxCPUs        = %u\n", qos->max_cpus_pu);
+	else if(qos->max_cpus_pj != NO_VAL) 
+		printf("  MaxCPUs        = %u\n", qos->max_cpus_pj);
 				
 	if(qos->max_jobs_pu == INFINITE) 
 		printf("  MaxJobs        = NONE\n");
 	else if(qos->max_jobs_pu != NO_VAL) 
 		printf("  MaxJobs        = %u\n", qos->max_jobs_pu);
 		
-	if(qos->max_nodes_pu == INFINITE)
+	if(qos->max_nodes_pj == INFINITE)
 		printf("  MaxNodes       = NONE\n");
-	else if(qos->max_nodes_pu != NO_VAL)
-		printf("  MaxNodes       = %u\n", qos->max_nodes_pu);
+	else if(qos->max_nodes_pj != NO_VAL)
+		printf("  MaxNodes       = %u\n", qos->max_nodes_pj);
 		
 	if(qos->max_submit_jobs_pu == INFINITE) 
 		printf("  MaxSubmitJobs  = NONE\n");
@@ -1254,11 +1251,11 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 		printf("  MaxSubmitJobs  = %u\n", 
 		       qos->max_submit_jobs_pu);
 		
-	if(qos->max_wall_pu == INFINITE) 
+	if(qos->max_wall_pj == INFINITE) 
 		printf("  MaxWall        = NONE\n");		
-	else if(qos->max_wall_pu != NO_VAL) {
+	else if(qos->max_wall_pj != NO_VAL) {
 		char time_buf[32];
-		mins2time_str((time_t) qos->max_wall_pu, 
+		mins2time_str((time_t) qos->max_wall_pj, 
 			      time_buf, sizeof(time_buf));
 		printf("  MaxWall        = %s\n", time_buf);
 	}
