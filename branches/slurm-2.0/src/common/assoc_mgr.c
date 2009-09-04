@@ -987,25 +987,22 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	if (assoc_pptr)
 		*assoc_pptr = ret_assoc;
 	assoc->id = ret_assoc->id;
-	if(!assoc->user)
-		assoc->user = ret_assoc->user;
-	assoc->uid = ret_assoc->uid;
 
 	if(!assoc->acct)
 		assoc->acct = ret_assoc->acct;
 	if(!assoc->cluster)
 		assoc->cluster = ret_assoc->cluster;
-	if(!assoc->partition)
-		assoc->partition = ret_assoc->partition;
 
-	assoc->shares_raw       = ret_assoc->shares_raw;
-
-	assoc->grp_cpu_mins   = ret_assoc->grp_cpu_mins;
+	assoc->grp_cpu_mins    = ret_assoc->grp_cpu_mins;
 	assoc->grp_cpus        = ret_assoc->grp_cpus;
 	assoc->grp_jobs        = ret_assoc->grp_jobs;
 	assoc->grp_nodes       = ret_assoc->grp_nodes;
 	assoc->grp_submit_jobs = ret_assoc->grp_submit_jobs;
 	assoc->grp_wall        = ret_assoc->grp_wall;
+
+	assoc->grp_used_cpus   = ret_assoc->grp_used_cpus;
+	assoc->grp_used_nodes  = ret_assoc->grp_used_nodes;
+	assoc->grp_used_wall   = ret_assoc->grp_used_wall;
 
 	assoc->max_cpu_mins_pj = ret_assoc->max_cpu_mins_pj;
 	assoc->max_cpus_pj     = ret_assoc->max_cpus_pj;
@@ -1021,6 +1018,26 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		assoc->parent_acct       = ret_assoc->parent_acct;
 	assoc->parent_assoc_ptr          = ret_assoc->parent_assoc_ptr;
 	assoc->parent_id                 = ret_assoc->parent_id;
+
+	if(!assoc->partition)
+		assoc->partition = ret_assoc->partition;
+
+	assoc->rgt              = ret_assoc->rgt;
+
+	assoc->shares_norm      = ret_assoc->shares_norm;
+	assoc->shares_raw       = ret_assoc->shares_raw;
+
+	assoc->uid = ret_assoc->uid;
+
+	assoc->usage_efctv      = ret_assoc->usage_efctv;
+	assoc->usage_norm       = ret_assoc->usage_norm;
+	assoc->usage_raw        = ret_assoc->usage_raw;
+
+	assoc->used_jobs        = ret_assoc->used_jobs;
+	assoc->used_submit_jobs = ret_assoc->used_submit_jobs;
+
+	if(!assoc->user)
+		assoc->user = ret_assoc->user;
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
