@@ -301,13 +301,11 @@ typedef struct {
 typedef struct {
 	char *description;
 	uint32_t id;
-	char *job_flags;
 	List job_list; /* list of job pointers to submitted/running
 			  jobs (DON'T PACK) */
 
-	uint64_t grp_cpu_mins; /* max number of cpu hours the
-				     * underlying group of
-				     * associations can run for */
+	uint64_t grp_cpu_mins; /* max number of cpu minutes all jobs
+				* running under this qos can run for */
 	uint32_t grp_cpus; /* max number of cpus this qos
 			      can allocate at one time */
 	uint32_t grp_jobs;	/* max number of jobs this qos can run
@@ -328,17 +326,17 @@ typedef struct {
 	double grp_used_wall;   /* group count of time (minutes) used in
 				 * running jobs (DON'T PACK) */
 
-	uint64_t max_cpu_mins_pu; /* max number of cpu mins a user can
+	uint64_t max_cpu_mins_pj; /* max number of cpu mins a user can
 				   * use with this qos */
-	uint32_t max_cpus_pu; /* max number of cpus a user can
+	uint32_t max_cpus_pj; /* max number of cpus a job can
 			       * allocate with this qos */
 	uint32_t max_jobs_pu;	/* max number of jobs a user can
 				 * run with this qos at one time */
-	uint32_t max_nodes_pu; /* max number of nodes a user can
+	uint32_t max_nodes_pj; /* max number of nodes a job can
 				* allocate with this qos at one time */
 	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
 				     submit with this qos at once */
-	uint32_t max_wall_pu; /* longest time this
+	uint32_t max_wall_pj; /* longest time this
 			       * qos can run a job */
 
 	char *name;
@@ -395,12 +393,8 @@ typedef struct {
 /* Right now this is used in the acct_qos_rec_t structure.  In the
  * user_limit_list. */
 typedef struct {
- 	uint64_t cpu_mins;	/* count of cpu mins used */
- 	uint32_t cpus;	/* count of cpus in use */
 	uint32_t jobs;	/* count of active jobs */
-	uint32_t nodes;	/* count of nodes in use */
 	uint32_t submit_jobs; /* count of jobs pending or running */
-	uint32_t wall; /* how much time this user has used */
 	uint32_t uid;
 } acct_used_limits_t;
 

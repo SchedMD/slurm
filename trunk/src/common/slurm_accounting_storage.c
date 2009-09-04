@@ -563,7 +563,6 @@ extern void destroy_acct_qos_rec(void *object)
 	acct_qos_rec_t *acct_qos = (acct_qos_rec_t *)object;
 	if(acct_qos) {
 		xfree(acct_qos->description);
-		xfree(acct_qos->job_flags);
 		if(acct_qos->job_list)
 			list_destroy(acct_qos->job_list);
 		xfree(acct_qos->name);
@@ -941,12 +940,12 @@ extern void init_acct_qos_rec(acct_qos_rec_t *qos)
 	qos->grp_submit_jobs = NO_VAL;
 	qos->grp_wall = NO_VAL;
 
-	qos->max_cpu_mins_pu = NO_VAL;
-	qos->max_cpus_pu = NO_VAL;
+	qos->max_cpu_mins_pj = NO_VAL;
+	qos->max_cpus_pj = NO_VAL;
 	qos->max_jobs_pu = NO_VAL;
-	qos->max_nodes_pu = NO_VAL;
+	qos->max_nodes_pj = NO_VAL;
 	qos->max_submit_jobs_pu = NO_VAL;
-	qos->max_wall_pu = NO_VAL;
+	qos->max_wall_pj = NO_VAL;
 
 	qos->usage_factor = NO_VAL;
 }
@@ -1256,24 +1255,37 @@ extern void pack_acct_used_limits(void *in, uint16_t rpc_version, Buf buffer)
 {
 	acct_used_limits_t *object = (acct_used_limits_t *)in;
 
-	if(!object) {
+	if(rpc_version >= 6) {
+		if(!object) {
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			return;
+		}
+		
+		pack32(object->jobs, buffer);
+		pack32(object->submit_jobs, buffer);
+		pack32(object->uid, buffer);
+	} else {
+		if(!object) {
+			pack64(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			return;
+		}
+		
 		pack64(0, buffer);
 		pack32(0, buffer);
+		pack32(object->jobs, buffer);
 		pack32(0, buffer);
+		pack32(object->submit_jobs, buffer);
 		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		return;
+		pack32(object->uid, buffer);
 	}
-	
-	pack64(object->cpu_mins, buffer);
-	pack32(object->cpus, buffer);
-	pack32(object->jobs, buffer);
-	pack32(object->nodes, buffer);
-	pack32(object->submit_jobs, buffer);
-	pack32(object->wall, buffer);
-	pack32(object->uid, buffer);
 }
 
 extern int unpack_acct_used_limits(void **object,
@@ -1283,13 +1295,21 @@ extern int unpack_acct_used_limits(void **object,
 
 	*object = (void *)object_ptr;
 
-	safe_unpack64(&object_ptr->cpu_mins, buffer);
-	safe_unpack32(&object_ptr->cpus, buffer);
-	safe_unpack32(&object_ptr->jobs, buffer);
-	safe_unpack32(&object_ptr->nodes, buffer);
-	safe_unpack32(&object_ptr->submit_jobs, buffer);
-	safe_unpack32(&object_ptr->wall, buffer);
-	safe_unpack32(&object_ptr->uid, buffer);
+	if(rpc_version >= 6) {
+		safe_unpack32(&object_ptr->jobs, buffer);
+		safe_unpack32(&object_ptr->submit_jobs, buffer);
+		safe_unpack32(&object_ptr->uid, buffer);
+	} else {
+		uint64_t tmp_64;
+		uint32_t tmp_32;
+		safe_unpack64(&tmp_64, buffer);
+		safe_unpack32(&tmp_32, buffer);
+		safe_unpack32(&object_ptr->jobs, buffer);
+		safe_unpack32(&tmp_32, buffer);
+		safe_unpack32(&object_ptr->submit_jobs, buffer);
+		safe_unpack32(&tmp_32, buffer);
+		safe_unpack32(&object_ptr->uid, buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2403,12 +2423,12 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
-		pack64(object->max_cpu_mins_pu, buffer);
-		pack32(object->max_cpus_pu, buffer);
+		pack64(object->max_cpu_mins_pj, buffer);
+		pack32(object->max_cpus_pj, buffer);
 		pack32(object->max_jobs_pu, buffer);
-		pack32(object->max_nodes_pu, buffer);
+		pack32(object->max_nodes_pj, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
-		pack32(object->max_wall_pu, buffer);
+		pack32(object->max_wall_pj, buffer);
 
 		packstr(object->name, buffer);	
 
@@ -2473,12 +2493,12 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
-		pack64(object->max_cpu_mins_pu, buffer);
-		pack32(object->max_cpus_pu, buffer);
+		pack64(object->max_cpu_mins_pj, buffer);
+		pack32(object->max_cpus_pj, buffer);
 		pack32(object->max_jobs_pu, buffer);
-		pack32(object->max_nodes_pu, buffer);
+		pack32(object->max_nodes_pj, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
-		pack32(object->max_wall_pu, buffer);
+		pack32(object->max_wall_pj, buffer);
 
 		packstr(object->name, buffer);	
 
@@ -2548,12 +2568,12 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
-		pack64(object->max_cpu_mins_pu, buffer);
-		pack32(object->max_cpus_pu, buffer);
+		pack64(object->max_cpu_mins_pj, buffer);
+		pack32(object->max_cpus_pj, buffer);
 		pack32(object->max_jobs_pu, buffer);
-		pack32(object->max_nodes_pu, buffer);
+		pack32(object->max_nodes_pj, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
-		pack32(object->max_wall_pu, buffer);
+		pack32(object->max_wall_pj, buffer);
 
 		packstr(object->name, buffer);	
 
@@ -2618,12 +2638,12 @@ extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpack64(&object_ptr->max_cpu_mins_pu, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pu, buffer);
+		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_wall_pu, buffer);
+		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 
@@ -2656,12 +2676,12 @@ extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpack64(&object_ptr->max_cpu_mins_pu, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pu, buffer);
+		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_wall_pu, buffer);
+		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 
@@ -2719,12 +2739,12 @@ extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpack64(&object_ptr->max_cpu_mins_pu, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pu, buffer);
+		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_wall_pu, buffer);
+		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 

@@ -1015,26 +1015,32 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	debug3("found correct association");
 	if (assoc_pptr)
 		*assoc_pptr = ret_assoc;
-	assoc->id = ret_assoc->id;
-	if(!assoc->user)
-		assoc->user = ret_assoc->user;
-	assoc->uid = ret_assoc->uid;
+
+	assoc->id              = ret_assoc->id;
 
 	if(!assoc->acct)
-		assoc->acct = ret_assoc->acct;
+		assoc->acct    = ret_assoc->acct;
+	
+	if(!assoc->childern_list)
+		assoc->childern_list = ret_assoc->childern_list;
+
 	if(!assoc->cluster)
 		assoc->cluster = ret_assoc->cluster;
-	if(!assoc->partition)
-		assoc->partition = ret_assoc->partition;
 
-	assoc->shares_raw       = ret_assoc->shares_raw;
-
-	assoc->grp_cpu_mins   = ret_assoc->grp_cpu_mins;
+	assoc->grp_cpu_mins    = ret_assoc->grp_cpu_mins;
 	assoc->grp_cpus        = ret_assoc->grp_cpus;
 	assoc->grp_jobs        = ret_assoc->grp_jobs;
 	assoc->grp_nodes       = ret_assoc->grp_nodes;
 	assoc->grp_submit_jobs = ret_assoc->grp_submit_jobs;
 	assoc->grp_wall        = ret_assoc->grp_wall;
+
+	assoc->grp_used_cpus   = ret_assoc->grp_used_cpus;
+	assoc->grp_used_nodes  = ret_assoc->grp_used_nodes;
+	assoc->grp_used_wall   = ret_assoc->grp_used_wall;
+
+	assoc->level_shares    = ret_assoc->level_shares;
+
+	assoc->lft             = ret_assoc->lft;
 
 	assoc->max_cpu_mins_pj = ret_assoc->max_cpu_mins_pj;
 	assoc->max_cpus_pj     = ret_assoc->max_cpus_pj;
@@ -1043,12 +1049,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	assoc->max_submit_jobs = ret_assoc->max_submit_jobs;
 	assoc->max_wall_pj     = ret_assoc->max_wall_pj;
 
-	if(assoc->valid_qos) {
-		FREE_NULL_BITMAP(assoc->valid_qos);
-		assoc->valid_qos = bit_copy(ret_assoc->valid_qos);
-	} else
-		assoc->valid_qos = ret_assoc->valid_qos;
-
 	if(assoc->parent_acct) {
 		xfree(assoc->parent_acct);
 		assoc->parent_acct       = xstrdup(ret_assoc->parent_acct);
@@ -1056,6 +1056,35 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		assoc->parent_acct       = ret_assoc->parent_acct;
 	assoc->parent_assoc_ptr          = ret_assoc->parent_assoc_ptr;
 	assoc->parent_id                 = ret_assoc->parent_id;
+
+	if(!assoc->partition)
+		assoc->partition = ret_assoc->partition;
+
+	if(!assoc->qos_list)
+		assoc->qos_list = ret_assoc->qos_list;
+
+	assoc->rgt              = ret_assoc->rgt;
+
+	assoc->shares_norm      = ret_assoc->shares_norm;
+	assoc->shares_raw       = ret_assoc->shares_raw;
+
+	assoc->uid              = ret_assoc->uid;
+
+	assoc->usage_efctv      = ret_assoc->usage_efctv;
+	assoc->usage_norm       = ret_assoc->usage_norm;
+	assoc->usage_raw        = ret_assoc->usage_raw;
+
+	assoc->used_jobs        = ret_assoc->used_jobs;
+	assoc->used_submit_jobs = ret_assoc->used_submit_jobs;
+
+	if(!assoc->user)
+		assoc->user = ret_assoc->user;
+
+	if(assoc->valid_qos) {
+		FREE_NULL_BITMAP(assoc->valid_qos);
+		assoc->valid_qos = bit_copy(ret_assoc->valid_qos);
+	} else
+		assoc->valid_qos = ret_assoc->valid_qos;
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
@@ -1118,6 +1147,9 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 		user->default_wckey = found_user->default_wckey;
 	if(!user->name)
 		user->name = found_user->name;
+	user->uid = found_user->uid;
+	if(!user->wckey_list)
+		user->wckey_list = found_user->wckey_list;
 
 	slurm_mutex_unlock(&assoc_mgr_user_lock);
 	return SLURM_SUCCESS;
@@ -1168,9 +1200,6 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 
 	qos->id = found_qos->id;
 
-	if(!qos->job_flags)
-		qos->job_flags = found_qos->job_flags;
-
 	if(!qos->job_list)
 		qos->job_list = found_qos->job_list;
 
@@ -1181,12 +1210,18 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 	qos->grp_submit_jobs = found_qos->grp_submit_jobs;
 	qos->grp_wall        = found_qos->grp_wall;
 
-	qos->max_cpu_mins_pu = found_qos->max_cpu_mins_pu;
-	qos->max_cpus_pu     = found_qos->max_cpus_pu;
+	qos->grp_used_cpus   = found_qos->grp_used_cpus;
+	qos->grp_used_jobs   = found_qos->grp_used_jobs;
+	qos->grp_used_nodes  = found_qos->grp_used_nodes;
+	qos->grp_used_submit_jobs   = found_qos->grp_used_submit_jobs;
+	qos->grp_used_wall   = found_qos->grp_used_wall;
+
+	qos->max_cpu_mins_pj = found_qos->max_cpu_mins_pj;
+	qos->max_cpus_pj     = found_qos->max_cpus_pj;
 	qos->max_jobs_pu     = found_qos->max_jobs_pu;
-	qos->max_nodes_pu    = found_qos->max_nodes_pu;
+	qos->max_nodes_pj    = found_qos->max_nodes_pj;
 	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
-	qos->max_wall_pu     = found_qos->max_wall_pu;
+	qos->max_wall_pj     = found_qos->max_wall_pj;
 
 	if(!qos->name) 
 		qos->name = found_qos->name;
@@ -1200,6 +1235,9 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 		qos->preempt_bitstr = found_qos->preempt_bitstr;
 
 	qos->priority = found_qos->priority;
+
+	qos->usage_factor = found_qos->usage_factor;
+	qos->usage_raw = found_qos->usage_raw;
 
 	if(!qos->user_limit_list)
 		qos->user_limit_list = found_qos->user_limit_list;
@@ -1335,17 +1373,17 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 	if (wckey_pptr)
 		*wckey_pptr = ret_wckey;
 
-	wckey->id = ret_wckey->id;
-	
-	if(!wckey->user)
-		wckey->user = ret_wckey->user;
-	wckey->uid = ret_wckey->uid;
-	
-	if(!wckey->name)
-		wckey->name = ret_wckey->name;
 	if(!wckey->cluster)
 		wckey->cluster = ret_wckey->cluster;
 
+	wckey->id = ret_wckey->id;
+	
+	if(!wckey->name)
+		wckey->name = ret_wckey->name;
+
+	wckey->uid = ret_wckey->uid;
+	if(!wckey->user)
+		wckey->user = ret_wckey->user;
 
 	slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 
@@ -2133,19 +2171,19 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 			if(object->grp_wall != NO_VAL) 
 				rec->grp_wall = object->grp_wall;
 			
-			if(object->max_cpu_mins_pu != NO_VAL) 
-				rec->max_cpu_mins_pu = object->max_cpu_mins_pu;
-			if(object->max_cpus_pu != NO_VAL) 
-				rec->max_cpus_pu = object->max_cpus_pu;
+			if(object->max_cpu_mins_pj != NO_VAL) 
+				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
+			if(object->max_cpus_pj != NO_VAL) 
+				rec->max_cpus_pj = object->max_cpus_pj;
 			if(object->max_jobs_pu != NO_VAL) 
 				rec->max_jobs_pu = object->max_jobs_pu;
-			if(object->max_nodes_pu != NO_VAL) 
-				rec->max_nodes_pu = object->max_nodes_pu;
+			if(object->max_nodes_pj != NO_VAL) 
+				rec->max_nodes_pj = object->max_nodes_pj;
 			if(object->max_submit_jobs_pu != NO_VAL) 
 				rec->max_submit_jobs_pu =
 					object->max_submit_jobs_pu;
-			if(object->max_wall_pu != NO_VAL) 
-				rec->max_wall_pu = object->max_wall_pu;
+			if(object->max_wall_pj != NO_VAL) 
+				rec->max_wall_pj = object->max_wall_pj;
 			
 			if(object->preempt_bitstr) {
 				if(rec->preempt_bitstr) 
