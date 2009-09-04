@@ -48,6 +48,11 @@ set file_out_n_glob  ""
 
 print_header $test_id
 
+if {[test_bluegene] != 0} {
+	send_user "\nWARNING: This test is incompatable with bluegene systems\n"
+	exit 0
+}
+
 #
 # Spawn a program that generates "task_id" (%t) in stdout file names
 # and confirm they are created
