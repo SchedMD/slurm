@@ -2248,19 +2248,23 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 				bit_realloc(object->preempt_bitstr,
 					    g_qos_count);
 		}
-
-		slurm_mutex_lock(&assoc_mgr_association_lock);
-		assoc_itr = list_iterator_create(assoc_mgr_association_list);
-		while((assoc = list_next(assoc_itr))) {
-			if(!assoc->valid_qos)
-				continue;
-			assoc->valid_qos =
-				bit_realloc(assoc->valid_qos, g_qos_count);
+		if(assoc_mgr_association_list) {
+			slurm_mutex_lock(&assoc_mgr_association_lock);
+			assoc_itr = list_iterator_create(
+				assoc_mgr_association_list);
+			while((assoc = list_next(assoc_itr))) {
+				if(!assoc->valid_qos)
+					continue;
+				assoc->valid_qos =
+					bit_realloc(assoc->valid_qos,
+						    g_qos_count);
+			}
+			list_iterator_destroy(assoc_itr);
+			slurm_mutex_unlock(&assoc_mgr_association_lock);
 		}
-		list_iterator_destroy(assoc_itr);
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	}
 	list_iterator_destroy(itr);
+	
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
 	
 	return rc;	
