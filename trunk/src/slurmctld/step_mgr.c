@@ -1393,12 +1393,14 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 		if ((step_specs->resv_port_cnt != (uint16_t) NO_VAL) &&
 		    (step_specs->resv_port_cnt == 0)) {
-			/* reserved port count set to max task count any node */
+			/* reserved port count set to maximum task count on 
+			 * any node plus one */
 			for (i=0; i<step_ptr->step_layout->node_cnt; i++) {
 				step_specs->resv_port_cnt = 
 					MAX(step_specs->resv_port_cnt,
 					    step_ptr->step_layout->tasks[i]);
 			}
+			step_specs->resv_port_cnt++;
 		}
 		if (step_specs->resv_port_cnt != (uint16_t) NO_VAL) {
 			step_ptr->resv_port_cnt = step_specs->resv_port_cnt;

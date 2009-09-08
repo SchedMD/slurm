@@ -371,7 +371,7 @@ int srun(int ac, char **av)
 		env->ws_col   = job->ws_col;
 		env->ws_row   = job->ws_row;
 	}
-	setup_env(env);
+	setup_env(env, opt.preserve_env);
 	xfree(env->task_count);
 	xfree(env);
 	

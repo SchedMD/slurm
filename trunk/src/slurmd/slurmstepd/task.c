@@ -382,7 +382,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->distribution = -1;
 	job->envtp->ckpt_dir = xstrdup(job->ckpt_dir);
 	job->envtp->batch_flag = job->batch;
-	setup_env(job->envtp);
+	setup_env(job->envtp, false);
 	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
 	job->env = job->envtp->env;
 	job->envtp->env = NULL;
