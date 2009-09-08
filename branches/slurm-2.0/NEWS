@@ -68,6 +68,8 @@ documents those changes that are of interest to users and admins.
     prevented dynamic creation of new blocks when this state was present.
  -- Fixed bug where a users association limits were not enforced, only 
     parent limits were being enforced.
+ -- For OpenMPI use of SLURM reserved ports, reserve a count of ports equal to 
+    the maximum task count on any node plus one (the plus one is a correction).
 
 * Changes in SLURM 2.0.4
 ========================
