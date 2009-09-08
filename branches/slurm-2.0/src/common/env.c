@@ -305,7 +305,7 @@ char *getenvp(char **env, const char *name)
 	return NULL;
 }
 
-int setup_env(env_t *env)
+int setup_env(env_t *env, bool preserve_env)
 {
 	int rc = SLURM_SUCCESS;
 	char *dist = NULL, *lllp_dist = NULL;
@@ -320,7 +320,7 @@ int setup_env(env_t *env)
 		 rc = SLURM_FAILURE;
 	}
 
-	if (env->nprocs
+	if (!preserve_env && env->nprocs
 	   && setenvf(&env->env, "SLURM_NPROCS", "%d", env->nprocs)) {
 		error("Unable to set SLURM_NPROCS environment variable");
 		rc = SLURM_FAILURE;
@@ -686,7 +686,7 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	}
 	
-	if (env->nhosts
+	if (!preserve_env && env->nhosts
 	    && setenvf(&env->env, "SLURM_NNODES", "%d", env->nhosts)) {
 		error("Unable to set SLURM_NNODES environment var");
 		rc = SLURM_FAILURE;
@@ -698,7 +698,7 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	}
 	
-	if (env->task_count 
+	if (!preserve_env && env->task_count 
 	    && setenvf (&env->env, 
 			"SLURM_TASKS_PER_NODE", "%s", env->task_count)) {
 		error ("Can't set SLURM_TASKS_PER_NODE env variable");
@@ -1144,7 +1144,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
  * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
  * The array is terminated by a NULL pointer, and thus is suitable for
  * use by execle() and other env_array_* functions.  If preserve_env is
- * true, the variables SLURM_NNODES and SLURM_NPROCS remain unchanged.
+ * true, the variables SLURM_NNODES, SLURM_NPROCS and SLURM_TASKS_PER_NODE
+ * remain unchanged.
  *
  * Sets variables:
  *	SLURM_STEP_ID
@@ -1192,13 +1193,20 @@ env_array_for_step(char ***dest,
 
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
-	if (!preserve_env) {
+	if (preserve_env) {
+		env_array_append_fmt(dest, "SLURM_NNODES",
+				     "%hu", step->step_layout->node_cnt);
+		env_array_append_fmt(dest, "SLURM_NPROCS",
+				     "%u", step->step_layout->task_cnt);
+		env_array_append_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
+	} else {
 		env_array_overwrite_fmt(dest, "SLURM_NNODES",
 					"%hu", step->step_layout->node_cnt);
 		env_array_overwrite_fmt(dest, "SLURM_NPROCS",
 					"%u", step->step_layout->task_cnt);
+		env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", 
+					tmp);
 	}
-	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_PORT",
 				"%hu", launcher_port);
 
