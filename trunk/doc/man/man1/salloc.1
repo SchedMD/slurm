@@ -25,6 +25,13 @@ user's default shell.
 .LP
 
 .TP
+\fB\-A\fR, \fB\-\-account\fR=<\fIaccount\fR>
+Charge resources used by this job to specified account.
+The \fIaccount\fR is an arbitrary string. The account name may
+be changed after job submission using the \fBscontrol\fR
+command.
+
+.TP
 \fB\-\-acctg\-freq\fR=<\fIseconds\fR>
 Define the job accounting sampling interval.
 This can be used to override the \fIJobAcctGatherFrequency\fR parameter in SLURM's
@@ -747,13 +754,6 @@ limit be imposed.  Acceptable time formats include "minutes",
 Specify a minimum amount of temporary disk space.
 
 .TP
-\fB\-U\fR, \fB\-\-account\fR=<\fIaccount\fR>
-Charge resources used by this job to specified account.
-The \fIaccount\fR is an arbitrary string. The account name may
-be changed after job submission using the \fBscontrol\fR
-command.
-
-.TP
 \fB\-u\fR, \fB\-\-usage\fR
 Display brief help message and exit.
 
@@ -869,7 +869,7 @@ variables settings.
 
 .TP 22
 \fBSALLOC_ACCOUNT\fR
-Same as \fB\-U, \-\-account\fR
+Same as \fB\-A, \-\-account\fR
 .TP
 \fBSALLOC_ACCTG_FREQ\fR
 Same as \fB\-\-acctg\-freq\fR

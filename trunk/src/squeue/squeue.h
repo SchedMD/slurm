@@ -84,23 +84,25 @@ struct squeue_parameters {
 	int  max_procs;
 	int  verbose;
 
+	char* accounts;
+	char* format;
 	char* jobs;
 	hostset_t nodes;
 	char* partitions;
-	char* accounts;
+	char* qoss;
+	char* sort;
 	char* states;
 	char* steps;
 	char* users;
-	char* format;
-	char* sort;
 
+	List  account_list;
+	List  format_list;
 	List  job_list;
 	List  part_list;
-	List  account_list;
+	List  qos_list;
 	List  state_list;
 	List  step_list;
 	List  user_list;
-	List  format_list;
 };
 
 extern struct squeue_parameters params;

@@ -548,6 +548,7 @@ void set_options(const int argc, char **argv)
 	int opt_char, option_index = 0;
 	char *tmp;
 	static struct option long_options[] = {
+		{"account",       required_argument, 0, 'A'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
@@ -573,7 +574,6 @@ void set_options(const int argc, char **argv)
 		{"share",         no_argument,       0, 's'},
 		{"time",          required_argument, 0, 't'},
 		{"usage",         no_argument,       0, 'u'},
-		{"account",       required_argument, 0, 'U'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{"nodelist",      required_argument, 0, 'w'},
@@ -625,7 +625,8 @@ void set_options(const int argc, char **argv)
 		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,            0,                 0, 0}
 	};
-	char *opt_string = "+B:c:C:d:D:F:g:hHIJ:kK::L:m:n:N:Op:P:QRst:uU:vVw:W:x:";
+	char *opt_string =
+		"+A:B:c:C:d:D:F:g:hHIJ:kK::L:m:n:N:Op:P:QRst:uU:vVw:W:x:";
 
 	struct option *optz = spank_option_table_create(long_options);
 
@@ -642,6 +643,11 @@ void set_options(const int argc, char **argv)
 			fprintf(stderr, "Try \"salloc --help\" for more "
 				"information\n");
 			exit(1);
+			break;
+		case 'A':
+		case 'U':	/* backwards compatibility */
+			xfree(opt.account);
+			opt.account = xstrdup(optarg);
 			break;
 		case 'B':
 			opt.extra_set = verify_socket_core_thread_count(
@@ -772,10 +778,6 @@ void set_options(const int argc, char **argv)
 		case 'u':
 			_usage();
 			exit(0);
-		case 'U':
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
-			break;
 		case 'v':
 			opt.verbose++;
 			break;
@@ -1726,6 +1728,7 @@ static void _help(void)
 "Usage: salloc [OPTIONS...] [executable [args...]]\n"
 "\n"
 "Parallel run options:\n"
+"  -A, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --bell                  ring the terminal bell when the job is allocated\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
@@ -1758,7 +1761,6 @@ static void _help(void)
 "  -s, --share                 share nodes with other jobs\n"
 "  -t, --time=minutes          time limit\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
-"  -U, --account=name          charge job to specified account\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "\n"
 "Constraint options:\n"
@@ -1807,18 +1809,17 @@ static void _help(void)
 
 	spank_print_options(stdout, 6, 30);
 
-        printf("\n"
+	printf("\n"
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
 "AIX related options:\n"
-"  --network=type              communication protocol to be used\n"
+"      --network=type          communication protocol to be used\n"
 "\n"
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */
-"\n"
 "Blue Gene related options:\n"
 "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
 "  -R, --no-rotate             disable geometry rotation\n"
-"      --reboot                reboot nodes before starting job\n"
+"      --reboot                reboot block before starting job\n"
 "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
 "                              if not set, then tries to fit TORUS else MESH\n"
 #ifndef HAVE_BGL
@@ -1848,6 +1849,6 @@ static void _help(void)
 "Other options:\n"
 "  -V, --version               output version information and exit\n"
 "\n"
-);
+		);
 
 }
