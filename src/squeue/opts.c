@@ -95,6 +95,7 @@ parse_command_line( int argc, char* argv[] )
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
+		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
 		{"noheader",   no_argument,       0, 'h'},
 		{"iterate",    required_argument, 0, 'i'},
@@ -104,12 +105,12 @@ parse_command_line( int argc, char* argv[] )
 		{"nodes",      required_argument, 0, 'n'},
 		{"format",     required_argument, 0, 'o'},
 		{"partitions", required_argument, 0, 'p'},
+		{"qos",        required_argument, 0, 'q'},
 		{"steps",      optional_argument, 0, 's'},
 		{"sort",       required_argument, 0, 'S'},
 		{"states",     required_argument, 0, 't'},
 		{"user",       required_argument, 0, 'u'},
 		{"users",      required_argument, 0, 'u'},
-		{"account",    required_argument, 0, 'U'},
 		{"verbose",    no_argument,       0, 'v'},
 		{"version",    no_argument,       0, 'V'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
@@ -126,13 +127,20 @@ parse_command_line( int argc, char* argv[] )
 		params.sort = xstrdup(env_val);
 
 	while((opt_char = getopt_long(argc, argv, 
-				      "ahi:j::ln:o:p:s::S:t:u:U:vV",
+				      "A:ahi:j::ln:o:p:q:s::S:t:u:U:vV",
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
 				fprintf(stderr, "Try \"squeue --help\" "
 						"for more information\n");
 				exit(1);
+			case (int) 'A':
+			case (int) 'U':	/* backwards compatibility */
+				xfree(params.accounts);
+				params.accounts = xstrdup(optarg);
+				params.account_list = 
+					_build_str_list( params.accounts );
+				break;
 			case (int)'a':
 				params.all_flag = true;
 				break;
@@ -179,11 +187,11 @@ parse_command_line( int argc, char* argv[] )
 					_build_str_list( params.partitions );
 				params.all_flag = true;
 				break;
-			case (int) 'U':
-				xfree(params.accounts);
-				params.accounts = xstrdup(optarg);
-				params.account_list = 
-					_build_str_list( params.accounts );
+			case (int) 'q':
+				xfree(params.qoss);
+				params.qoss = xstrdup(optarg);
+				params.qos_list =
+					_build_str_list( params.qoss );
 				break;
 			case (int) 's':
 				if (optarg) {
@@ -284,6 +292,12 @@ parse_command_line( int argc, char* argv[] )
 		params.nodes = nodenames;
 	}
 
+	if ( ( params.accounts == NULL ) && 
+	     ( env_val = getenv("SQUEUE_ACCOUNT") ) ) {
+		params.accounts = xstrdup(env_val);
+		params.account_list = _build_str_list( params.accounts );
+	}
+
 	if ( ( params.partitions == NULL ) && 
 	     ( env_val = getenv("SQUEUE_PARTITION") ) ) {
 		params.partitions = xstrdup(env_val);
@@ -291,10 +305,10 @@ parse_command_line( int argc, char* argv[] )
 		params.all_flag = true;
 	}
 
-	if ( ( params.accounts == NULL ) && 
-	     ( env_val = getenv("SQUEUE_ACCOUNT") ) ) {
-		params.accounts = xstrdup(env_val);
-		params.account_list = _build_str_list( params.accounts );
+	if ( ( params.qoss == NULL ) &&
+	     ( env_val = getenv("SQUEUE_QOS") ) ) {
+		params.qoss = xstrdup(env_val);
+		params.qos_list = _build_str_list( params.qoss );
 	}
 
 	if ( ( params.states == NULL ) && 
@@ -557,6 +571,11 @@ extern int parse_format( char* format )
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
+			else if (field[0] == 'k')
+				job_format_add_comment( params.format_list, 
+				                        field_size, 
+				                        right_justify, 
+				                        suffix );
 			else if (field[0] == 'l')
 				job_format_add_time_limit( params.format_list, 
 				                           field_size, 
@@ -602,10 +621,10 @@ extern int parse_format( char* format )
 				                          right_justify, 
 				                          suffix );
 			else if (field[0] == 'q')
-				job_format_add_comment( params.format_list, 
-				                        field_size, 
-				                        right_justify, 
-				                        suffix );
+				job_format_add_qos( params.format_list, 
+						    field_size, 
+						    right_justify, 
+						    suffix );
 			else if (field[0] == 'Q')
 				 job_format_add_priority_long( 
 							params.format_list,
@@ -1041,25 +1060,29 @@ static void _help(void)
 {
 	printf("\
 Usage: squeue [OPTIONS]\n\
+  -A, --account=account(s)        comma separated list of accounts\n\
+                                  to view, default is all accounts\n\
   -a, --all                       display jobs in hidden partitions\n\
   -h, --noheader                  no headers on output\n\
   --hide                          do not display jobs in hidden partitions\n\
   -i, --iterate=seconds           specify an interation period\n\
-  -j, --jobs                      comma separated list of jobs\n\
+  -j, --job=job(s)                comma separated list of jobs IDs\n\
                                   to view, default is all\n\
   -l, --long                      long report\n\
   -n, --nodes=hostlist            list of nodes to view, default is \n\
                                   all nodes\n\
   -o, --format=format             format specification\n\
-  -p, --partitions=partitions     comma separated list of partitions\n\
+  -p, --partition=partition(s)    comma separated list of partitions\n\
                                   to view, default is all partitions\n\
-  -s, --steps                     comma separated list of job steps\n\
+  -q, --qos=qos(s)                comma separated list of qos's\n\
+                                  to view, default is all qos's\n\
+  -s, --step=step(s)              comma separated list of job steps\n\
                                   to view, default is all\n\
-  -S, --sort=fields               comma seperated list of fields to sort on\n\
-  -t, --states=states             comma seperated list of states to view,\n\
+  -S, --sort=field(s)             comma separated list of fields to sort on\n\
+  -t, --state=state(s)            comma separated list of states to view,\n\
                                   default is pending and running,\n\
                                   '--states=all' reports all states\n\
-  -u, --user=user_name            comma separated list of users to view\n\
+  -u, --user=user_name(s)         comma separated list of users to view\n\
   -v, --verbose                   verbosity level\n\
   -V, --version                   output version information and exit\n\
 \nHelp options:\n\

@@ -332,7 +332,7 @@ static void _opt_args(int argc, char **argv)
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = { 
-		{"account",	required_argument, 0, 'a'},
+		{"account",	required_argument, 0, 'A'},
 		{"batch",	no_argument,       0, 'b'},
 		{"ctld",	no_argument,	   0, OPT_LONG_CTLD},
 		{"help",        no_argument,       0, OPT_LONG_HELP},
@@ -352,7 +352,7 @@ static void _opt_args(int argc, char **argv)
 		{NULL,          0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "a:bin:p:Qq:s:t:u:vVw:",
+	while((opt_char = getopt_long(argc, argv, "A:bin:p:Qq:s:t:u:vVw:",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
@@ -361,7 +361,7 @@ static void _opt_args(int argc, char **argv)
 					"information\n");
 				exit(1);
 				break;
-			case (int)'a':
+			case (int)'A':
 				opt.account = xstrdup(optarg);
 				break;
 			case (int)'b':
@@ -531,7 +531,7 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [-a account] [--batch] [--interactive] [-n job_name]\n");
+	printf("Usage: scancel [-A account] [--batch] [--interactive] [-n job_name]\n");
 	printf("               [-p partition] [-Q] [-q qos] [-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
 	printf("               [-V] [-v] [-w hosts...] [--wckey=wckey] [job_id[.step_id]]\n");
@@ -540,7 +540,7 @@ static void _usage(void)
 static void _help(void)
 {
 	printf("Usage: scancel [OPTIONS] [job_id[.step_id]]\n");
-	printf("  -a, --account=account           act only on jobs charging this account\n");
+	printf("  -A, --account=account           act only on jobs charging this account\n");
 	printf("  -b, --batch                     signal batch shell for specified job\n");
 /*	printf("      --ctld                      route request through slurmctld\n"); */
 	printf("  -i, --interactive               require response from user for each job\n");

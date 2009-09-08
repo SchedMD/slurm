@@ -594,6 +594,7 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
+	{"account",       required_argument, 0, 'A'},
 	{"batch",         no_argument,       0, 'b'}, /* batch option
 							 is only here for
 							 moab tansition
@@ -625,7 +626,6 @@ static struct option long_options[] = {
 	{"share",         no_argument,       0, 's'},
 	{"time",          required_argument, 0, 't'},
 	{"usage",         no_argument,       0, 'u'},
-	{"account",       required_argument, 0, 'U'},
 	{"verbose",       no_argument,       0, 'v'},
 	{"version",       no_argument,       0, 'V'},
 	{"nodelist",      required_argument, 0, 'w'},
@@ -682,7 +682,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+bB:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:P:QRst:uU:vVw:x:";
+	"+bA:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:P:QRst:uU:vVw:x:";
 
 
 /*
@@ -1050,6 +1050,11 @@ static void _set_options(int argc, char **argv)
 		case '?':
 			fatal("Try \"sbatch --help\" for more information");
 			break;
+		case 'A':
+		case 'U':	/* backwards compatibility */
+			xfree(opt.account);
+			opt.account = xstrdup(optarg);
+			break;
 		case 'b':
 			/* Only here for Moab transition not suppose
 			   to do anything */
@@ -1196,10 +1201,6 @@ static void _set_options(int argc, char **argv)
 		case 'u':
 			_usage();
 			exit(0);
-		case 'U':
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
-			break;
 		case 'v':
 			opt.verbose++;
 			break;
@@ -2551,6 +2552,7 @@ static void _help(void)
 "Usage: sbatch [OPTIONS...] executable [args...]\n"
 "\n"
 "Parallel run options:\n"
+"  -A, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
@@ -2585,7 +2587,6 @@ static void _help(void)
 "      --requeue               if set, permit the job to be requeued\n"
 "  -t, --time=minutes          time limit\n"
 "  -s, --share                 share nodes with other jobs\n"
-"  -U, --account=name          charge job to specified account\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "\n"
@@ -2606,8 +2607,9 @@ static void _help(void)
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
-"      --mem-per-cpu=MB        maximum amount of real memory per CPU\n"
-"                              allocated to the job.\n" 
+"      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
+"                              cpu required by the job.\n" 
+"                              --mem >= --mem-per-cpu if --mem is specified.\n" 
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
 "  -B  --extra-node-info=S[:C[:T]]            Expands to:\n"
@@ -2632,9 +2634,9 @@ static void _help(void)
 	}
 	slurm_conf_unlock();
 
-	spank_print_options (stdout, 6, 30);
+	spank_print_options(stdout, 6, 30);
 
-	printf(
+	printf("\n"
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
 "AIX related options:\n"
 "      --network=type          communication protocol to be used\n"
@@ -2674,6 +2676,6 @@ static void _help(void)
 "Other options:\n"
 "  -V, --version               output version information and exit\n"
 "\n"
-);
+		);
 
 }

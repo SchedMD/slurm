@@ -13,6 +13,11 @@ SLURM.
 .SH "OPTIONS"
 
 .TP
+\fB\-A <account_list>\fR, \fB\-\-account=<account_list>\fR
+Specify the accounts of the jobs to view. Accepts a comma separated
+list of account names. This has no effect when listing job steps.
+
+.TP
 \fB\-a\fR, \fB\-\-all\fR
 Display information about jobs and job steps in all partions. 
 This causes information to be displayed about partitions that are configured as 
@@ -158,6 +163,8 @@ Job or job step name.
 Minimum number of threads per core requested by the job.
 This reports the value of the \fBsrun \-\-minthreads\fR option.
 .TP
+\fB%k\fR
+Comment associated with the job.
 \fB%l\fR
 Time limit of the job or job step in days\-hours:minutes:seconds. 
 The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
@@ -199,8 +206,8 @@ Also see \fB%Q\fR.
 \fB%P\fR 
 Partition of the job or job step.
 .TP
-\fB%q\fR 
-Comment associated with the job.
+\fB%q\fR
+Quality of service associated with the job.
 .TP
 \fB%Q\fR
 Priority of the job (generally a very large unsigned integer).
@@ -265,6 +272,11 @@ Specify the partitions of the jobs or steps to view. Accepts a comma separated
 list of partition names.
 
 .TP
+\fB\-q <qos_list>\fR, \fB\-\-qos=<qos_list>\fR
+Specify the qos(s) of the jobs or steps to view. Accepts a comma
+separated list of qos's.
+
+.TP
 \fB\-s\fR, \fB\-\-steps\fR
 Specify the job steps to view.  This flag indicates that a comma separated list 
 of job steps to view follows without an equal sign (see examples).
@@ -297,11 +309,6 @@ COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
 FAILED (F), TIMEOUT (TO), and NODE_FAIL (NF). Note the \fB<state_list>\fR
 supplied is case insensitve ("pd" and "PD" work the same).
 See the \fBJOB STATE CODES\fR section below for more information.
-
-.TP
-\fB\-U <account_list>\fR, \fB\-\-account=<account_list>\fR
-Specify the accounts of the jobs to view. Accepts a comma separated 
-list of account names. This have no effect when listing job steps.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
@@ -417,6 +424,9 @@ below. (Note: Commandline options will always override these settings.)
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
 .TP
+\fBSQUEUE_ACCOUNT\fR
+\fB\-A <account_list>, \-\-account=<account_list>\fR
+.TP
 \fBSQUEUE_ALL\fR
 \fB\-a, \-\-all\fR
 .TP
@@ -425,6 +435,9 @@ The location of the SLURM configuration file.
 .TP
 \fBSQUEUE_PARTITION\fR
 \fB\-p <part_list>, \-\-partition=<part_list>\fR
+.TP
+\fBSQUEUE_QOS\fR
+\fB\-p <qos_list>, \-\-qos=<qos_list>\fR
 .TP
 \fBSQUEUE_SORT\fR
 \fB\-S <sort_list>, \-\-sort=<sort_list>\fR

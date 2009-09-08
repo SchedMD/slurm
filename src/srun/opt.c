@@ -697,7 +697,7 @@ static void set_options(const int argc, char **argv)
 	struct utsname name;
 	static struct option long_options[] = {
 		{"attach",        no_argument,       0, 'a'},
-		{"allocate",      no_argument,       0, 'A'},
+		{"account",       required_argument, 0, 'A'},
 		{"batch",         no_argument,       0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
@@ -732,7 +732,6 @@ static void set_options(const int argc, char **argv)
 		{"time",          required_argument, 0, 't'},
 		{"threads",       required_argument, 0, 'T'},
 		{"unbuffered",    no_argument,       0, 'u'},
-		{"account",       required_argument, 0, 'U'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{"nodelist",      required_argument, 0, 'w'},
@@ -804,7 +803,7 @@ static void set_options(const int argc, char **argv)
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+aAbB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
+	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
 		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -828,13 +827,14 @@ static void set_options(const int argc, char **argv)
 				"Try \"srun --help\" for more information\n");
 			exit(1);
 			break;
+		case (int)'A':
+		case (int)'U':	/* backwards compatibility */
+			xfree(opt.account);
+			opt.account = xstrdup(optarg);
+			break;
 		case (int)'a':
 			error("Please use the \"sattach\" command instead of "
 			      "\"srun -a/--attach\".");
-			exit(1);
-		case (int)'A':
-			error("Please use the \"salloc\" command instead of "
-			      "\"srun -A/--allocate\".");
 			exit(1);
 		case (int)'b':
 			error("Please use the \"sbatch\" command instead of "
@@ -1009,10 +1009,6 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'u':
 			opt.unbuffered = true;
-			break;
-		case (int)'U':
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
 			break;
 		case (int)'v':
 			_verbose++;
@@ -2181,6 +2177,7 @@ static void _help(void)
 "Usage: srun [OPTIONS...] executable [args...]\n"
 "\n"
 "Parallel run options:\n"
+"  -A, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --checkpoint=time       job step checkpoint interval\n"
@@ -2239,7 +2236,6 @@ static void _help(void)
 "      --task-prolog=program   run \"program\" before launching task\n"
 "  -T, --threads=threads       set srun launch fanout\n"
 "  -u, --unbuffered            do not line-buffer stdout/err\n"
-"  -U, --account=name          charge job to specified account\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
@@ -2264,7 +2260,7 @@ static void _help(void)
 "                              cpu consumable resource is enabled\n"
 "                              or don't share CPUs for job steps\n"
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
-"                              CPU required by the job.\n" 
+"                              cpu required by the job.\n" 
 "                              --mem >= --mem-per-cpu if --mem is specified.\n" 
 "      --resv-ports            reserve communication ports\n" 
 "\n"
@@ -2275,10 +2271,9 @@ static void _help(void)
 "       --threads-per-core=T   number of threads per core to allocate\n"
 "                              each field can be 'min[-max]' or wildcard '*'\n"
 "                              total cpus requested = (N x S x C x T)\n"
-"      --ntasks-per-socket=n   number of tasks to invoke on each socket\n"
-"      --ntasks-per-core=n     number of tasks to invoke on each core\n"
 "\n"
-"\n");
+"      --ntasks-per-core=n     number of tasks to invoke on each core\n"
+"      --ntasks-per-socket=n   number of tasks to invoke on each socket\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
@@ -2288,19 +2283,18 @@ static void _help(void)
 "      --hint=                 Bind tasks according to application hints\n"
 "                              (see \"--hint=help\" for options)\n"
 "      --mem_bind=             Bind memory to locality domains (ldom)\n"
-"                              (see \"--mem_bind=help\" for options)\n"
-			);
+"                              (see \"--mem_bind=help\" for options)\n");
 	}
 	slurm_conf_unlock();
-	spank_print_options (stdout, 6, 30);
+
+	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
 "AIX related options:\n"
-"  --network=type              communication protocol to be used\n"
+"      --network=type          communication protocol to be used\n"
 "\n"
 #endif
-
 #ifdef HAVE_BG				/* Blue gene specific options */
 "Blue Gene related options:\n"
 "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
@@ -2325,8 +2319,8 @@ static void _help(void)
 #endif
 "\n"
 "Help options:\n"
-"      --help                  show this help message\n"
-"      --usage                 display brief usage message\n"
+"  -h, --help                  show this help message\n"
+"  -u, --usage                 display brief usage message\n"
 "      --print-request         Display job's layout without scheduling it\n"
 "\n"
 "Other options:\n"

@@ -1024,6 +1024,18 @@ int _print_job_dependency(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_qos(job_info_t * job, int width, bool right_justify,
+			char* suffix)
+{
+	if (job == NULL)	 /* Print the Header instead */
+		_print_str("QOS", width, right_justify, true);
+	else
+		_print_str(job->qos, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 			char* suffix) 
 {
@@ -1262,7 +1274,7 @@ static int _filter_job(job_info_t * job)
 	ListIterator iterator;
 	uint32_t *job_id, *user;
 	uint16_t *state_id;
-	char *part, *account;
+	char *account, *part, *qos;
 
 	if (params.job_list) {
 		filter = 1;
@@ -1298,6 +1310,21 @@ static int _filter_job(job_info_t * job)
 		while ((account = list_next(iterator))) {
 			 if ((job->account != NULL) &&
 			     (strcmp(account, job->account) == 0)) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy(iterator);
+		if (filter == 1)
+			return 2;
+	}
+
+	if (params.qos_list) {
+		filter = 1;
+		iterator = list_iterator_create(params.qos_list);
+		while ((qos = list_next(iterator))) {
+			 if ((job->qos != NULL) &&
+			     (strcmp(qos, job->qos) == 0)) {
 				filter = 0;
 				break;
 			}
