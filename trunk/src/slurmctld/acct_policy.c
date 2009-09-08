@@ -107,6 +107,32 @@ extern void acct_policy_add_job_submit(struct job_record *job_ptr)
 	    || !_valid_job_assoc(job_ptr))
 		return;
 
+	if (job_ptr->qos_ptr && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)) {
+		ListIterator itr = NULL;
+		acct_qos_rec_t *qos_ptr = NULL;
+		acct_used_limits_t *used_limits = NULL;
+
+		slurm_mutex_lock(&assoc_mgr_qos_lock);
+		qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+		if(!qos_ptr->user_limit_list) 
+			qos_ptr->user_limit_list = 
+				list_create(destroy_acct_used_limits);
+		itr = list_iterator_create(qos_ptr->user_limit_list);
+		while((used_limits = list_next(itr))) {
+			if(used_limits->uid == job_ptr->user_id)
+				break;
+		}
+		list_iterator_destroy(itr);
+		if(!used_limits) {
+			used_limits = xmalloc(sizeof(acct_used_limits_t));
+			used_limits->uid = job_ptr->user_id;
+			list_append(qos_ptr->user_limit_list, used_limits);
+		}
+		qos_ptr->grp_used_submit_jobs++;	
+		used_limits->submit_jobs++;	
+		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	}
+
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
 	while(assoc_ptr) {
@@ -129,6 +155,45 @@ extern void acct_policy_remove_job_submit(struct job_record *job_ptr)
 	if (!job_ptr->assoc_ptr || 
 	    !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return;
+
+	if (job_ptr->qos_ptr && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)) {
+		ListIterator itr = NULL;
+		acct_qos_rec_t *qos_ptr = NULL;
+		acct_used_limits_t *used_limits = NULL;
+
+		slurm_mutex_lock(&assoc_mgr_qos_lock);
+		qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+		if(!qos_ptr->user_limit_list) 
+			qos_ptr->user_limit_list = 
+				list_create(destroy_acct_used_limits);
+		itr = list_iterator_create(qos_ptr->user_limit_list);
+		while((used_limits = list_next(itr))) {
+			if(used_limits->uid == job_ptr->user_id)
+				break;
+		}
+		list_iterator_destroy(itr);
+		if(!used_limits) {
+			used_limits = xmalloc(sizeof(acct_used_limits_t));
+			used_limits->uid = job_ptr->user_id;
+			list_append(qos_ptr->user_limit_list, used_limits);
+		}
+
+		if(qos_ptr->grp_used_submit_jobs)
+			qos_ptr->grp_used_submit_jobs--;	
+		else
+			debug2("_acct_remove_job_submit: "
+			       "grp_submit_jobs underflow for qos %s",
+			       qos_ptr->name);
+
+		if(used_limits->submit_jobs)
+			used_limits->submit_jobs--;	
+		else
+			debug2("_acct_remove_job_submit: "
+			       "used_submit_jobs underflow for qos %s user %d",
+			       qos_ptr->name, used_limits->uid);
+			
+		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	}
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
@@ -156,6 +221,34 @@ extern void acct_policy_job_begin(struct job_record *job_ptr)
 	    || !_valid_job_assoc(job_ptr))
 		return;
 
+	if (job_ptr->qos_ptr && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)) {
+		ListIterator itr = NULL;
+		acct_qos_rec_t *qos_ptr = NULL;
+		acct_used_limits_t *used_limits = NULL;
+
+		slurm_mutex_lock(&assoc_mgr_qos_lock);
+		qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+		if(!qos_ptr->user_limit_list) 
+			qos_ptr->user_limit_list = 
+				list_create(destroy_acct_used_limits);
+		itr = list_iterator_create(qos_ptr->user_limit_list);
+		while((used_limits = list_next(itr))) {
+			if(used_limits->uid == job_ptr->user_id)
+				break;
+		}
+		list_iterator_destroy(itr);
+		if(!used_limits) {
+			used_limits = xmalloc(sizeof(acct_used_limits_t));
+			used_limits->uid = job_ptr->user_id;
+			list_append(qos_ptr->user_limit_list, used_limits);
+		}
+		qos_ptr->grp_used_jobs++;	
+		qos_ptr->grp_used_cpus += job_ptr->total_procs;
+		qos_ptr->grp_used_nodes += job_ptr->node_cnt;
+		used_limits->jobs++;	
+		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	}
+
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
 	while(assoc_ptr) {
@@ -179,6 +272,58 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 	    || !job_ptr->assoc_ptr)
 		return;
+
+	if (job_ptr->qos_ptr && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)) {
+		ListIterator itr = NULL;
+		acct_qos_rec_t *qos_ptr = NULL;
+		acct_used_limits_t *used_limits = NULL;
+
+		slurm_mutex_lock(&assoc_mgr_qos_lock);
+		qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+		if(!qos_ptr->user_limit_list) 
+			qos_ptr->user_limit_list = 
+				list_create(destroy_acct_used_limits);
+		itr = list_iterator_create(qos_ptr->user_limit_list);
+		while((used_limits = list_next(itr))) {
+			if(used_limits->uid == job_ptr->user_id)
+				break;
+		}
+		list_iterator_destroy(itr);
+		if(!used_limits) {
+			used_limits = xmalloc(sizeof(acct_used_limits_t));
+			used_limits->uid = job_ptr->user_id;
+			list_append(qos_ptr->user_limit_list, used_limits);
+		}
+
+		if(qos_ptr->grp_used_jobs) 
+			qos_ptr->grp_used_jobs--;
+		else
+			debug2("acct_policy_job_fini: used_jobs underflow "
+			       "for qos %s", qos_ptr->name);
+			
+		qos_ptr->grp_used_cpus -= job_ptr->total_procs;
+		if((int)qos_ptr->grp_used_cpus < 0) {
+			qos_ptr->grp_used_cpus = 0;
+			debug2("acct_policy_job_fini: grp_used_cpus underflow "
+			       "for qos %s", qos_ptr->name);			
+		}
+
+		qos_ptr->grp_used_nodes -= job_ptr->node_cnt;
+		if((int)qos_ptr->grp_used_nodes < 0) {
+			qos_ptr->grp_used_nodes = 0;
+			debug2("acct_policy_job_fini: grp_used_nodes underflow "
+			       "for qos %s", qos_ptr->name);			
+		}
+
+		if(used_limits->jobs)
+			used_limits->jobs--;	
+		else
+			debug2("acct_policy_job_fini: used_jobs underflow "
+			       "for qos %s user %d", qos_ptr->name,
+			       used_limits->uid);
+		
+		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	}
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
