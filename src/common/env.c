@@ -1193,13 +1193,7 @@ env_array_for_step(char ***dest,
 
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
-	if (preserve_env) {
-		env_array_append_fmt(dest, "SLURM_NNODES",
-				     "%hu", step->step_layout->node_cnt);
-		env_array_append_fmt(dest, "SLURM_NPROCS",
-				     "%u", step->step_layout->task_cnt);
-		env_array_append_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
-	} else {
+	if (!preserve_env) {
 		env_array_overwrite_fmt(dest, "SLURM_NNODES",
 					"%hu", step->step_layout->node_cnt);
 		env_array_overwrite_fmt(dest, "SLURM_NPROCS",
