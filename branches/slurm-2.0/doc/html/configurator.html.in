@@ -316,7 +316,7 @@ function displayfile()
 </HEAD>
 <BODY>
 <FORM name=config>
-<H1>SLURM Version @SLURM_MAJOR@.@SLURM_MINOR@ Configration Tool</H1>
+<H1>SLURM Version @SLURM_MAJOR@.@SLURM_MINOR@ Configuration Tool</H1>
 <P>This form can be used to create a SLURM configuration file with 
 you controlling many of the important configuration parameters.</P>
 
@@ -325,7 +325,7 @@ Configuration files for other versions of SLURM should be built
 using the tool distributed with it in <i>doc/html/configurator.html</i>.
 Some parameters will be set to default values, but you can
 manually edit the resulting <I>slurm.conf</I> as desired
-for greater flexibiilty. See <I>man slurm.conf</I> for more
+for greater flexibility. See <I>man slurm.conf</I> for more
 details about the configuration parameters.</P>
 
 <P>Note the while SLURM daemons create log files and other files as needed, 
@@ -375,7 +375,7 @@ You can also specify addresses of these computers if desired
 Only a few of the possible parameters associated with the nodes will 
 be set by this tool, but many others are available. 
 All of the nodes will be placed into a single partition (or queue) 
-with global access. Many options are availble to group nodes into 
+with global access. Many options are available to group nodes into 
 partitions with a wide variety of configuration parameters. 
 Manually edit the <i>slurm.conf</i> produced to exercise these options.
 Node names and addresses may be specified using a numeric range specification.
@@ -453,10 +453,10 @@ after making any changes to system password or group databases.
 <P>
 
 <H2>SLURM Port Numbers</H2>
-The SLURM controller (slurmctld) requires a unique port for communcations 
-as do the SLURM compute node deamonds (slurmd). If not set, slurm ports 
+The SLURM controller (slurmctld) requires a unique port for communications 
+as do the SLURM compute node daemons (slurmd). If not set, slurm ports 
 are set by checking for an entry in <I>/etc/services</I> and if that 
-fails by using an interal default set at SLURM build time. 
+fails by using an interval default set at SLURM build time. 
 <P>
 <input type="text" name="slurmctld_port" value="6817"> <B>SlurmctldPort</B>
 <P>
@@ -528,15 +528,19 @@ to Maui (configuration parameter <B>SchedulerPort</B> must specified)<BR>
 to Moab (configuration parameter <B>SchedulerPort</B> must specified)<BR>
 <P>
 <input type="text" name="scheduler_port" value="7321"> <B>SchedulerPort</B>: scheduler 
-communcations port (used by Wiki only)
+communications port (used by Wiki only)
 <P>
-Define what node configuration should be used. 
+Define what node configuration (sockets, cores, memory, etc.) should be used. 
 Using values defined in the configuration file will provide faster scheduling.<BR>
 Select one value for <B>FastSchedule</B>:<BR>
 <input type="radio" name="fast_schedule" value="1" checked>
 <B>1</B>: Use node configuration values defined in configuration file<BR>
 <input type="radio" name="fast_schedule" value="0">
-<B>0</B>: Use node configuration values actually found on each node
+<B>0</B>: Use node configuration values actually found on each node 
+(if configured with with gang scheduling or allocation of individual 
+processors to jobs rather than only whole node allocations, the processor 
+count on the node should match the configured value to avoid having extra 
+processors left idle)
 <P>
 
 <H2>Interconnect</H2>
@@ -631,7 +635,7 @@ Select one value for <B>SelectType</B>:<BR>
 </DL>
 <input type="radio" name="select_type" value="linear" checked>
 <B>Linear</B>: Node-base 
-resource allocation, does not manage indivual processor allocation<BR>
+resource allocation, does not manage individual processor allocation<BR>
 <input type="radio" name="select_type" value="bluegene">
 <B>BlueGene</B>: For IBM Blue Gene systems only<BR>
 <P>
@@ -716,7 +720,7 @@ Write completion status to a MySQL database<BR>
 <input type="radio" name="job_comp_type" value="pgsql"> <B>PGSQL</B>: 
 Write completion status to a PostreSQL database<BR>
 <input type="radio" name="job_comp_type" value="slurmdbd"> <B>SlurmDBD</B>: 
-Write completion status to Slurm adatabase daemon (serving multiple Slurm clusters) 
+Write completion status to Slurm a database daemon (serving multiple Slurm clusters) 
 which will write to some database<BR>
 <P>
 <input type="text" name="job_comp_loc" value=""> <B>JobCompLoc</B>: 
