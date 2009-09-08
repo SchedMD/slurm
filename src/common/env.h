@@ -84,7 +84,7 @@ int     setenvfs(const char *fmt, ...);
 int     setenvf(char ***envp, const char *name, const char *fmt, ...);
 void	unsetenvp(char **env, const char *name);
 char *	getenvp(char **env, const char *name);
-int     setup_env(env_t *env);
+int	setup_env(env_t *env, bool preserve_env);
 
 /**********************************************************************
  * Newer environment variable handling scheme
