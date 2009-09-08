@@ -71,7 +71,7 @@ documents those changes that are of interest to users and admins.
  -- For OpenMPI use of SLURM reserved ports, reserve a count of ports equal to 
     the maximum task count on any node plus one (the plus one is a correction).
  -- Do not reset SLURM_TASKS_PER_NODE when srun --preserve-env option is used
-   (needed by OpenMPI).
+    (needed by OpenMPI).
 
 * Changes in SLURM 2.0.4
 ========================
