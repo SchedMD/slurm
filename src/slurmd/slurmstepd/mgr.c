@@ -1388,7 +1388,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			
 			job->envtp->distribution = -1;
 			job->envtp->batch_flag = job->batch;
-			setup_env(job->envtp);
+			setup_env(job->envtp, false);
 			job->env = job->envtp->env;
 			if (job->task_epilog) {
 				_run_script_as_user("user task_epilog",

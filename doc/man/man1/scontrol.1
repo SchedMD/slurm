@@ -401,8 +401,10 @@ Set the job's name to the specified value.
 \fINice\fP[=delta]
 Adjust job's priority by the specified value. Default value is 100.
 The adjustment range is from \-10000 (highest priority)
-to 10000 (lowest priority). Only privileged users can specify
-a negative adjustment.
+to 10000 (lowest priority). 
+Nice value changes are not additive, but overwrite any prior nice
+value and are applied to the job's base priority.
+Only privileged users can specify a negative adjustment.
 .TP
 \fIPartition\fP=<name>
 Set the job's partition to the specified value.
