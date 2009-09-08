@@ -111,6 +111,17 @@ University of Karlsruhe
 <HR SIZE=4>
 
 <i>
+"I had missed SLURM initially when looking for software for a cluster and
+ended up installing Torque. When I found out about SLURM later, it took
+me only a couple of days to go from knowing nothing about it to having a 
+SLURM cluster than ran better than the Torque one. I just wanted to say that
+your focus on more "secondary" stuff in cluster software, like security, 
+usability and ease of getting started is *really* appreciated." <br><br>
+Christian Hudson, ApSTAT Technologies
+</i>
+<HR SIZE=4>
+
+<i>
 "SLURM has been adopted as the parallel allocation infrastructure used 
 in HP's premier cluster stack, XC System Software. SLURM has permitted 
 easy scaling of parallel applications on cluster systems with thousands
@@ -122,6 +133,6 @@ Bill Celmaster, XC Program Manager, Hewlett-Packard Company
 </i>
 <HR SIZE=4>
 
-<p style="text-align:center;">Last modified 8 April 2009</p>
+<p style="text-align:center;">Last modified 8 September 2009</p>
 
 <!--#include virtual="footer.txt"-->
