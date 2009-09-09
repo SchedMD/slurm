@@ -397,6 +397,22 @@ gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	return st;
 }
 
+
+/*
+ * Warning: This pthread_cancel/pthread_join is a little unsafe.  The thread is
+ * not joinable, so on most systems the join will fail, then the thread's state
+ * will be destroyed, possibly before the thread has actually stopped.  In 
+ * practice the thread will usually be waiting on an accept call when it gets
+ * cancelled.  If the mpi thread has a mutex locked when it is cancelled--while 
+ * using the "info" or "error" functions for logging--the caller will deadlock.
+ * See mpich1_p4.c or mvapich.c for code that shuts down cleanly by letting
+ * the mpi thread wait on a poll call, and creating a pipe that the poll waits
+ * on, which can be written to by the main thread to tell the mpi thread to 
+ * exit.  Also see rev 18654 of mpichmx.c, on 
+ * branches/slurm-2.1.mpi.plugin.cleanup for an implementation.  There were no
+ * myrinet systems available for testing, which is why I couldn't complete the
+ * patch for this plugin.  -djb
+ */
 extern int gmpi_thr_destroy(gmpi_state_t *st)
 {
 	if (st != NULL) {
