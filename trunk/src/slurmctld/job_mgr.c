@@ -300,15 +300,21 @@ static void _delete_job_desc_files(uint32_t job_id)
 static int _determine_and_validate_qos(struct job_record *job_ptr, 
 				       acct_qos_rec_t *qos_rec)
 { 
-	acct_association_rec_t *assoc_ptr = 
-		(acct_association_rec_t *)job_ptr->assoc_ptr;
+	acct_association_rec_t *assoc_ptr = NULL;
+
+	/* If enforcing associations make sure this is a valid qos
+	   with the association.  If not just fill in the qos and
+	   continue. */
 
 	xassert(job_ptr);
-	xassert(job_ptr->assoc_ptr);
+	if(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
+		xassert(job_ptr->assoc_ptr);
 	xassert(qos_rec);
-		
+
+	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;	
+
 	if(!qos_rec->name && !qos_rec->id) {
-		if(assoc_ptr->valid_qos 
+		if(assoc_ptr && assoc_ptr->valid_qos 
 		   && bit_set_count(assoc_ptr->valid_qos) == 1)
 			qos_rec->id = bit_ffs(assoc_ptr->valid_qos);
 		else 
@@ -324,6 +330,7 @@ static int _determine_and_validate_qos(struct job_record *job_ptr,
 	} 
 	
 	if((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
+	   && assoc_ptr 
 	   && (!assoc_ptr->valid_qos || !bit_test(assoc_ptr->valid_qos,
 						  qos_rec->id))) {
 		error("This association %d(account='%s', "
@@ -1041,7 +1048,7 @@ static int _load_job_state(Buf buffer)
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	}
 
-	if(job_ptr->qos && (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
+	if(job_ptr->qos) {
 		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 		qos_rec.id = job_ptr->qos;
 		if(_determine_and_validate_qos(job_ptr, &qos_rec)
