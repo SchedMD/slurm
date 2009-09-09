@@ -83,6 +83,8 @@ documents those changes that are of interest to users and admins.
     accept the --account argument (srun -A to allocate is no longer supported.)
  -- Change sbatch response from "sbatch: Submitted batch job #" written to 
     stderr to "Submitted batch job #" written to stdout.
+ -- Made shutdown and cleanup a little safer for the mvapich and mpich1_p4
+    plugins.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
