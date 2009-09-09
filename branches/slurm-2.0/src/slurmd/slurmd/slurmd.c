@@ -690,7 +690,7 @@ _read_config()
 		     conf->conf_threads, conf->actual_threads);
 	}
 
-	if(!cf->fast_schedule) {
+	if((cf->fast_schedule == 0) || (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
