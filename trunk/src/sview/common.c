@@ -772,7 +772,18 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 	gtk_tree_selection_unselect_all(selection);
 	gtk_tree_selection_select_path(selection, path);
 	
-	if(event->x <= 20) {	
+	if(event->x <= 2) {	
+		/* When you try to resize a column this event happens
+		   for some reason.  Resizing always happens in the
+		   first 2 of x so if that happens just return and
+		   continue. */
+		did_something = FALSE;
+	} else if(event->x <= 20) {
+		/* This should also be included with above since there
+		   is no reason for us to handle this here since it is
+		   already handled automatically. Just to make sure
+		   we will keep it this way until 2.1 just so we
+		   don't break anything. */
 		if(!gtk_tree_view_expand_row(tree_view, path, FALSE))
 			gtk_tree_view_collapse_row(tree_view, path);
 		did_something = TRUE;

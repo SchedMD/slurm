@@ -190,9 +190,12 @@ void batch_bind(batch_job_launch_msg_t *req)
 	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 	if (!req_map || !hw_map) {
 		error("task/affinity: malloc error");
-		bit_free(req_map);
-		bit_free(hw_map);
+		if (req_map)
+			bit_free(req_map);
+		if (hw_map)
+			bit_free(hw_map);
 		slurm_cred_free_args(&arg);
+		return;
 	}
 
 	/* Transfer core_bitmap data to local req_map.
@@ -215,8 +218,13 @@ void batch_bind(batch_job_launch_msg_t *req)
 		 * add them here but limit them to what the job
 		 * requested */
 		for (t = 0; t < conf->threads; t++) {
-			uint16_t bit = p * conf->threads + t;
-			bit_set(hw_map, bit);
+			uint16_t pos = p * conf->threads + t;
+			if (pos >= conf->block_map_size) {
+				info("more resources configured than exist");
+				p = num_procs;
+				break;
+			}
+			bit_set(hw_map, pos);
 			task_cnt++;
 		}
 	}

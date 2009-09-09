@@ -101,6 +101,9 @@ if {$job_id != 0} {
 		set exit_code 1
 	}
 }
+if {$exit_code != 0} {
+	exit $exit_code
+}
 
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
