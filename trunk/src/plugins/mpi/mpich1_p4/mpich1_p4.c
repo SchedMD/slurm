@@ -91,6 +91,18 @@ const uint32_t plugin_version   = 100;
 pthread_t p4_tid = (pthread_t) -1;
 int p4_fd1 = -1, p4_fd2 = -1;
 
+/* 
+ * These vars are used to break the mpi thread out of a poll call, exit, 
+ * and allow the main thread to do a timed wait for that exit 
+ */
+static int  shutdown_pipe[2];
+static bool shutdown_complete;  /* Set true when mpi thr about to exit */
+static int  shutdown_timeout;   /* Num secs for main thread to wait for 
+				   mpi thread to finish */
+static pthread_mutex_t shutdown_lock;
+static pthread_cond_t  shutdown_cond;
+
+
 int p_mpi_hook_slurmstepd_task (const mpi_plugin_client_info_t *job,
 				char ***env)
 {
@@ -154,48 +166,65 @@ static void *mpich1_thr(void *arg)
 {
 	int cc, flags;
 	int new_port, new_fd;
-	struct pollfd ufds;
+	struct pollfd ufds[2];
 	struct sockaddr cli_addr;
 	socklen_t cli_len;
 	char in_buf[128];
-
 	debug("waiting for p4 communication");
 	if ((flags = fcntl(p4_fd1, F_GETFL)) < 0) {
 		error("mpich_p4: fcntl: %m");
-		return NULL;
+		goto done;
 	}
 	if (fcntl(p4_fd1, F_SETFL, flags | O_NONBLOCK) < 0) {
 		error("mpich_p4: fcntl: %m");
-		return NULL;
+		goto done;
 	}
-	ufds.fd = p4_fd1;
-	ufds.events = POLLIN | POLLERR | POLLHUP | POLLNVAL;
+	ufds[0].fd = p4_fd1;
+	ufds[0].events = POLLIN;
+	ufds[1].fd = shutdown_pipe[0];
+	ufds[1].events = POLLIN;
+	
 	while (1) {
 		if (p4_tid == (pthread_t) -1)
-			return NULL;
+			goto done;
 		cc = read(p4_fd1, &new_port, sizeof(new_port));
 		if (cc >= 0)
 			break;
 		if (errno != EAGAIN) {
 			error("mpich_p4: read/1: %m");
-			return NULL;
+			goto done;
 		}
-		cc = poll(&ufds, 1, 10000);
+		cc = poll(ufds, 2, 10000);
 		if (cc <= 0) {
 			error("mpich_p4: poll/1: %m");
-			return NULL;
+			goto done;
+		}
+		if (ufds[1].revents & POLLIN) {
+			goto done;
 		}
 	}
 	if (cc != sizeof(new_port)) {
 		error("mpich_p4: read/1 %d bytes", cc);
-		return NULL;
+		goto done;
 	}
 	debug("mpich_p4 read/1 port %d", new_port);
+
+	ufds[0].fd = p4_fd2;
 
 	/* send this port number to other tasks on demand */
 	while (1) {
 		if (p4_tid == (pthread_t) -1)
-			return NULL;
+			goto done;
+
+		cc = poll(ufds, 2, -1);
+		if (cc <= 0) {
+			error("mpich_p4: poll/2: %m");
+			goto done;
+		}
+		if (ufds[1].revents & POLLIN) {
+			goto done;
+		}
+		
 		new_fd = accept(p4_fd2, &cli_addr, &cli_len);
 		if (new_fd < 0)
 			continue;
@@ -207,6 +236,12 @@ static void *mpich1_thr(void *arg)
 			error("mpich_p4: write2: %m");
 		close(new_fd);
 	}
+
+done:
+	pthread_mutex_lock(&shutdown_lock);
+	shutdown_complete = true;
+	pthread_cond_signal(&shutdown_cond);
+	pthread_mutex_unlock(&shutdown_lock);
 	return NULL;
 }
 
@@ -254,6 +289,15 @@ p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 	}
 	port2 = ntohs(sin.sin_port);
 
+	if (pipe(shutdown_pipe) < 0) {
+		error ("pipe: %m");
+		return (NULL);
+	}
+	shutdown_complete = false;
+	shutdown_timeout = 5;
+	slurm_mutex_init(&shutdown_lock);
+	pthread_cond_init(&shutdown_cond, NULL);
+
 	/* Process messages in a separate thread */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -280,8 +324,39 @@ int p_mpi_hook_client_single_task_per_node()
 int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
 {
 	if (p4_tid != (pthread_t)-1) {
-		pthread_cancel(p4_tid);
-		pthread_join(p4_tid, NULL);
+		char tmp = 1;
+		int n;
+
+		/*
+		 * Write to the pipe to break the mpi thread out of a poll 
+		 * (or leave the poll immediately after it is called) and exit.
+		 * Do a timed wait for the mpi thread to shut down, or just 
+		 * exit if the mpi thread cannot respond.
+		 */
+		n = write(shutdown_pipe[1], &tmp, 1);
+		if (n == 1) {
+			struct timespec ts = {0, 0};
+
+			slurm_mutex_lock(&shutdown_lock);
+			ts.tv_sec = time(NULL) + shutdown_timeout;
+
+			while (!shutdown_complete) {
+				if (time(NULL) >= ts.tv_sec) {
+					break;
+				}
+				pthread_cond_timedwait(
+					&shutdown_cond, 
+					&shutdown_lock, &ts);
+			}
+			slurm_mutex_unlock(&shutdown_lock);
+		}
+		if (shutdown_complete) {
+			close(shutdown_pipe[0]);
+			close(shutdown_pipe[1]);
+
+			slurm_mutex_destroy(&shutdown_lock);
+			pthread_cond_destroy(&shutdown_cond);
+		}
 		p4_tid = (pthread_t) -1;
 	}
 	return SLURM_SUCCESS;
