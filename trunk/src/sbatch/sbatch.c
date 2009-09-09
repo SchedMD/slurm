@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 			error(msg);
 		sleep (++retries);
         }
-	info("Submitted batch job %d", resp->job_id);
+	printf("Submitted batch job %u\n", resp->job_id);
 	xfree(desc.script);
 	slurm_free_submit_response_response_msg(resp);
 	return 0;
