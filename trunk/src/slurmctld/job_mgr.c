@@ -122,12 +122,13 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 struct part_record *part_ptr,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
-static job_desc_msg_t * _copy_job_record_to_job_desc(struct job_record *job_ptr);
+static job_desc_msg_t * _copy_job_record_to_job_desc(
+	struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
-static int  _determine_and_validate_qos(struct job_record *job_ptr, 
-					acct_qos_rec_t *qos_rec);
+static acct_qos_rec_t *_determine_and_validate_qos(
+	acct_association_rec_t *assoc_ptr, acct_qos_rec_t *qos_rec);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
@@ -169,7 +170,8 @@ static int  _suspend_job_nodes(struct job_record *job_ptr, bool clear_prio);
 static bool _top_priority(struct job_record *job_ptr);
 static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				  struct part_record *part_ptr,
-				  acct_association_rec_t *assoc_ptr);
+				  acct_association_rec_t *assoc_in,
+				  acct_qos_rec_t *qos_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			       uid_t submit_uid);
@@ -297,21 +299,18 @@ static void _delete_job_desc_files(uint32_t job_id)
 	xfree(dir_name);
 }
 
-static int _determine_and_validate_qos(struct job_record *job_ptr, 
-				       acct_qos_rec_t *qos_rec)
+static acct_qos_rec_t *_determine_and_validate_qos(
+	acct_association_rec_t *assoc_ptr, acct_qos_rec_t *qos_rec)
 { 
-	acct_association_rec_t *assoc_ptr = NULL;
+	acct_qos_rec_t *qos_ptr = NULL;
 
 	/* If enforcing associations make sure this is a valid qos
 	   with the association.  If not just fill in the qos and
 	   continue. */
 
-	xassert(job_ptr);
 	if(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-		xassert(job_ptr->assoc_ptr);
+		xassert(assoc_ptr);
 	xassert(qos_rec);
-
-	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;	
 
 	if(!qos_rec->name && !qos_rec->id) {
 		if(assoc_ptr && assoc_ptr->valid_qos 
@@ -322,11 +321,11 @@ static int _determine_and_validate_qos(struct job_record *job_ptr,
 	}
 
 	if(assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
-				 (acct_qos_rec_t **) &job_ptr->qos_ptr)
+				 &qos_ptr)
 	   != SLURM_SUCCESS) {
-		error("Invalid qos (%s) for job_id %u", qos_rec->name,
-		      job_ptr->job_id);
-		return ESLURM_INVALID_QOS;
+		error("Invalid qos (%s)", qos_rec->name);
+		errno = ESLURM_INVALID_QOS;
+		return NULL;
 	} 
 	
 	if((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
@@ -338,12 +337,13 @@ static int _determine_and_validate_qos(struct job_record *job_ptr,
 		      "access to qos %s", 
 		      assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
 		      assoc_ptr->partition, qos_rec->name);
-		return ESLURM_INVALID_QOS;
+		errno = ESLURM_INVALID_QOS;
+		return NULL;
 	}			
 
-	job_ptr->qos = qos_rec->id;
+	errno = SLURM_SUCCESS;
 
-	return SLURM_SUCCESS;
+	return qos_ptr;
 }
 
 
@@ -1051,8 +1051,9 @@ static int _load_job_state(Buf buffer)
 	if(job_ptr->qos) {
 		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 		qos_rec.id = job_ptr->qos;
-		if(_determine_and_validate_qos(job_ptr, &qos_rec)
-		   != SLURM_SUCCESS) {
+		job_ptr->qos_ptr = _determine_and_validate_qos(
+			job_ptr->assoc_ptr, &qos_rec);
+		if(errno != SLURM_SUCCESS) {
 			info("Cancelling job %u with invalid qos", job_id);
 			job_ptr->job_state = JOB_CANCELLED;
 			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
@@ -1062,6 +1063,7 @@ static int _load_job_state(Buf buffer)
 			job_ptr->end_time = now;
 			job_completion_logger(job_ptr);
 		} 
+		job_ptr->qos = qos_rec.id;
 	}
 	safe_unpack16(&step_flag, buffer);
 
@@ -2360,7 +2362,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	acct_association_rec_t assoc_rec, *assoc_ptr;
 	List license_list = NULL;
 	bool valid;
-	acct_qos_rec_t qos_rec;
+	acct_qos_rec_t qos_rec, *qos_ptr;
 
 #ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -2496,8 +2498,26 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
+
+	/* This must be done after we have the assoc_ptr set */
+	
+	memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+	qos_rec.name = job_desc->qos;
+	if (wiki_sched && job_ptr->comment &&
+	    strstr(job_ptr->comment, "QOS:")) {
+		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
+			qos_rec.name = "expedite";
+		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
+			qos_rec.name = "standby";
+	}
+
+	qos_ptr = _determine_and_validate_qos(assoc_ptr, &qos_rec);
+	
+	if(errno != SLURM_SUCCESS)
+		return errno;
+
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    (!_validate_acct_policy(job_desc, part_ptr, assoc_ptr))) {
+	    (!_validate_acct_policy(job_desc, part_ptr, assoc_ptr, qos_ptr))) {
 		info("_job_create: exceeded association's node or time limit "
 		     "for user %u", job_desc->user_id);
 		error_code = ESLURM_ACCOUNTING_POLICY;
@@ -2582,7 +2602,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			geo[i] = 0;
 		}
 		select_g_select_jobinfo_set(job_desc->select_jobinfo,
-				     SELECT_JOBDATA_GEOMETRY, &geo);
+					    SELECT_JOBDATA_GEOMETRY, &geo);
 	} else if (geo[0] != 0) {
 		uint32_t i, tot = 1;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
@@ -2596,28 +2616,29 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_desc->min_nodes = tot;
 	}
 	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-			     SELECT_JOBDATA_REBOOT, &reboot);
+				    SELECT_JOBDATA_REBOOT, &reboot);
 	if (reboot == (uint16_t) NO_VAL) {
 		reboot = 0;	/* default is no reboot */
 		select_g_select_jobinfo_set(job_desc->select_jobinfo,
-				     SELECT_JOBDATA_REBOOT, &reboot);
+					    SELECT_JOBDATA_REBOOT, &reboot);
 	}
 	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-			     SELECT_JOBDATA_ROTATE, &rotate);
+				    SELECT_JOBDATA_ROTATE, &rotate);
 	if (rotate == (uint16_t) NO_VAL) {
 		rotate = 1;	/* refault is to rotate */
 		select_g_select_jobinfo_set(job_desc->select_jobinfo,
-				     SELECT_JOBDATA_ROTATE, &rotate);
+					    SELECT_JOBDATA_ROTATE, &rotate);
 	}
 	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-			     SELECT_JOBDATA_CONN_TYPE, &conn_type);
+				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if (conn_type == (uint16_t) NO_VAL) {
 		conn_type = (uint16_t) SELECT_TORUS;
 		select_g_select_jobinfo_set(job_desc->select_jobinfo,
-				     SELECT_JOBDATA_CONN_TYPE, &conn_type);
+					    SELECT_JOBDATA_CONN_TYPE,
+					    &conn_type);
 	}
 #endif
-
+	
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
 	if ((part_ptr->state_up)
@@ -2675,23 +2696,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
+	job_ptr->qos_ptr = (void *) qos_ptr;
+	job_ptr->qos = qos_ptr->id;
 
-	/* This must be done after we have the assoc_ptr set */
-	
-	memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-	qos_rec.name = job_desc->qos;
-	if (wiki_sched && job_ptr->comment &&
-	    strstr(job_ptr->comment, "QOS:")) {
-		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-			qos_rec.name = "expedite";
-		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-			qos_rec.name = "standby";
-	}
-
-	if((error_code = _determine_and_validate_qos(job_ptr, &qos_rec))
-	   != SLURM_SUCCESS) 
-		goto cleanup_fail;
-	
 	/* already confirmed submit_uid==0 */
 	/* If the priority isn't given we will figure it out later
 	 * after we see if the job is eligible or not. So we want
@@ -3597,6 +3604,9 @@ void job_time_limit(void)
 	time_t over_run;
 	int resv_status = 0;
 	uint64_t job_cpu_usage_mins = 0;
+	uint64_t usage_mins;
+	uint32_t wall_mins;
+
 	if (slurmctld_conf.over_time_limit == (uint16_t) INFINITE)
 		over_run = now - (365 * 24 * 60 * 60);	/* one year */
 	else
@@ -3605,7 +3615,7 @@ void job_time_limit(void)
 	begin_job_resv_check();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr =(struct job_record *) list_next(job_iterator))) {
-/* 		acct_qos_rec_t *qos = NULL; */
+		acct_qos_rec_t *qos = NULL;
 		acct_association_rec_t *assoc =	NULL;
 
 		xassert (job_ptr->magic == JOB_MAGIC);
@@ -3637,7 +3647,7 @@ void job_time_limit(void)
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 
-/* 		qos = (acct_qos_rec_t *)job_ptr->qos_ptr; */
+		qos = (acct_qos_rec_t *)job_ptr->qos_ptr;
 		assoc =	(acct_association_rec_t *)job_ptr->assoc_ptr;
 
 		/* find out how many cpu minutes this job has been
@@ -3691,55 +3701,68 @@ void job_time_limit(void)
 		    (list_count(job_ptr->step_list) > 0))
 			check_job_step_time_limit(job_ptr, now);
 
-		/* Too be added later once qos actually works.  The
-		 * idea here is for qos to trump what an association
+		/* The idea here is for qos to trump what an association
 		 * has set for a limit, so if an association set of
 		 * wall 10 mins and the qos has 20 mins set and the
 		 * job has been running for 11 minutes it continues
 		 * until 20.
 		 */
-/* 		if(qos) { */
-/* 			slurm_mutex_lock(&assoc_mgr_qos_lock); */
-/* 			if ((qos->grp_cpu_mins != (uint64_t)NO_VAL) */
-/* 			    && (qos->grp_cpu_mins != (uint64_t)INFINITE) */
-/* 			    && ((uint64_t)qos->usage_raw  */
-/* 				>= qos->grp_cpu_mins)) { */
-/* 				last_job_update = now; */
-/* 				info("QOS %s group max cpu minutes is " */
-/* 				     "at or exceeds %llu with %Lf for JobId=%u", */
-/* 				     qos->name, qos->grp_cpu_mins, */
-/* 				     qos->usage_raw, job_ptr->job_id); */
-/* 				_job_timed_out(job_ptr); */
-/* 				job_ptr->state_reason = FAIL_TIMEOUT; */
-/* 			} */
+		if(qos) {
+			slurm_mutex_lock(&assoc_mgr_qos_lock);
+			usage_mins = (uint64_t)(qos->usage_raw / 60.0);
+			wall_mins = qos->grp_used_wall / 60;
 
-/* 			if ((qos->max_wall_pj != NO_VAL) */
-/* 			    && (qos->max_wall_pj != INFINITE) */
-/* 			    && (job_ptr-> >= qos->max_wall_pj)) { */
-/* 				last_job_update = now; */
-/* 				info("QOS %s group max cpu minutes is " */
-/* 				     "at or exceeds %llu with %Lf for JobId=%u", */
-/* 				     qos->name, qos->grp_cpu_mins, */
-/* 				     qos->usage_raw, job_ptr->job_id); */
-/* 				_job_timed_out(job_ptr); */
-/* 				job_ptr->state_reason = FAIL_TIMEOUT; */
-/* 			} */
-/* 			slurm_mutex_unlock(&assoc_mgr_qos_lock); */
+			if ((qos->grp_cpu_mins != (uint64_t)INFINITE)
+			    && (usage_mins >= qos->grp_cpu_mins)) {
+				last_job_update = now;
+				info("Job %u timed out, "
+				     "the job is at or exceeds QOS %s's "
+				     "group max cpu minutes of %llu with %llu",
+				     job_ptr->job_id, 
+				     qos->name, qos->grp_cpu_mins,
+				     usage_mins);
+				job_ptr->state_reason = FAIL_TIMEOUT;
+				slurm_mutex_unlock(&assoc_mgr_qos_lock);
+				goto job_failed;
+			}
 
-/* 			if(job_ptr->state_reason == FAIL_TIMEOUT) { */
-/* 				xfree(job_ptr->state_desc); */
-/* 				continue; */
-/* 			} */
-/* 		} */
+			if ((qos->grp_wall != INFINITE)
+			    && (wall_mins >= qos->grp_wall)) {
+				last_job_update = now;
+				info("Job %u timed out, "
+				     "the job is at or exceeds QOS %s's "
+				     "group wall limit of %u with %u",
+				     job_ptr->job_id, 
+				     qos->name, qos->grp_wall,
+				     wall_mins);
+				job_ptr->state_reason = FAIL_TIMEOUT;
+				slurm_mutex_unlock(&assoc_mgr_qos_lock);
+				goto job_failed;
+			}
+			
+			if ((qos->max_cpu_mins_pj != (uint64_t)INFINITE)
+			    && (job_cpu_usage_mins >= qos->max_cpu_mins_pj)) {
+				last_job_update = now;
+				info("Job %u timed out, "
+				     "the job is at or exceeds QOS %s's "
+				     "max cpu minutes of %llu with %llu",
+				     job_ptr->job_id, 
+				     qos->name, qos->max_cpu_mins_pj,
+				     job_cpu_usage_mins);
+				job_ptr->state_reason = FAIL_TIMEOUT;
+				slurm_mutex_unlock(&assoc_mgr_qos_lock);
+				goto job_failed;
+			}
+			slurm_mutex_unlock(&assoc_mgr_qos_lock);
+		}
 
 		/* handle any association stuff here */
 		slurm_mutex_lock(&assoc_mgr_association_lock);
 		while(assoc) {
-			uint64_t usage_mins =
-				(uint64_t)(assoc->usage_raw / 60.0);
-			uint32_t wall_mins = assoc->grp_used_wall / 60;
+			usage_mins = (uint64_t)(assoc->usage_raw / 60.0);
+			wall_mins = assoc->grp_used_wall / 60;
 			
-			if ((assoc->grp_cpu_mins != (uint64_t)NO_VAL)
+			if ((qos && (qos->grp_cpu_mins == INFINITE))
 			    && (assoc->grp_cpu_mins != (uint64_t)INFINITE)
 			    && (usage_mins >= assoc->grp_cpu_mins)) {
 				info("Job %u timed out, "
@@ -3753,7 +3776,7 @@ void job_time_limit(void)
 				break;
 			}
 
-			if ((assoc->grp_wall != NO_VAL)
+			if ((qos && (qos->grp_wall == INFINITE))
 			    && (assoc->grp_wall != INFINITE)
 			    && (wall_mins >= assoc->grp_wall)) {
 				info("Job %u timed out, "
@@ -3767,9 +3790,9 @@ void job_time_limit(void)
 				break;
 			}
 
-			if ((assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)   &&
-			    (assoc->max_cpu_mins_pj != (uint64_t)INFINITE) &&
-			    (job_cpu_usage_mins >= assoc->max_cpu_mins_pj)) {
+			if ((qos && (qos->max_cpu_mins_pj == INFINITE))
+			    && (assoc->max_cpu_mins_pj != (uint64_t)INFINITE) 
+			    && (job_cpu_usage_mins >= assoc->max_cpu_mins_pj)) {
 				info("Job %u timed out, "
 				     "assoc %u is at or exceeds "
 				     "max cpu minutes limit %llu "
@@ -3787,7 +3810,7 @@ void job_time_limit(void)
 				break;
 		}
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
-		
+	job_failed:
 		if(job_ptr->state_reason == FAIL_TIMEOUT) {
 			last_job_update = now;
 			_job_timed_out(job_ptr);
@@ -4745,7 +4768,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false;
-
+#ifdef HAVE_BG
+ 	 uint16_t reboot = (uint16_t) NO_VAL;
+	 uint16_t rotate = (uint16_t) NO_VAL;
+	 uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
+	 char *image = NULL;
+#endif
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
 		error("update_job: job_id %u does not exist.",
@@ -4846,43 +4874,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			}
 		}
 	}
-
-	if (job_specs->comment && wiki_sched && (!super_user)) {
-		/* User must use Moab command to change job comment */
-		error("Attempt to change comment for job %u",
-		      job_specs->job_id);
-		error_code = ESLURM_ACCESS_DENIED;
-	} else if (job_specs->comment) {
-		xfree(job_ptr->comment);
-		job_ptr->comment = job_specs->comment;
-		job_specs->comment = NULL;	/* Nothing left to free */
-		info("update_job: setting comment to %s for job_id %u",
-		     job_ptr->comment, job_specs->job_id);
-
-		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
-			acct_qos_rec_t qos_rec;
-
-			memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-
-			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-				qos_rec.name = "expedite";
-			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-				qos_rec.name = "standby";
-			
-			error_code = _determine_and_validate_qos(job_ptr, 
-								 &qos_rec);
-		}
-	} else if(job_specs->qos) {
-		acct_qos_rec_t qos_rec;
-		
-		info("update_job: setting qos to %s for job_id %u",
-		     job_specs->qos, job_specs->job_id);		
-		
-		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-		qos_rec.name = job_specs->qos;
-		
-		error_code = _determine_and_validate_qos(job_ptr, &qos_rec);
-	}	
 
 	if (job_specs->requeue != (uint16_t) NO_VAL) {
 		detail_ptr->requeue = job_specs->requeue;
@@ -5412,13 +5403,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 #ifdef HAVE_BG
- {
-	 uint16_t reboot = (uint16_t) NO_VAL;
-	 uint16_t rotate = (uint16_t) NO_VAL;
-	 uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
-	 char *image = NULL;
-
-	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
+ 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
 				     SELECT_JOBDATA_ROTATE, &rotate);
 	 if (rotate != (uint16_t) NO_VAL) {
 		 if (!IS_JOB_PENDING(job_ptr))
@@ -5525,16 +5510,60 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				 image);
 		 }
 	 }
- }
+ 
 #endif
-        if(update_accounting) {
-		if (job_ptr->details && job_ptr->details->begin_time) {
-			/* Update job record in accounting to reflect changes */
-			jobacct_storage_g_job_start(
-				acct_db_conn, slurmctld_cluster_name, job_ptr);
-		}
-	}
-	return error_code;
+	 /* Always do this last just incase the assoc_ptr changed */
+	 if (job_specs->comment && wiki_sched && (!super_user)) {
+		 /* User must use Moab command to change job comment */
+		 error("Attempt to change comment for job %u",
+		       job_specs->job_id);
+		 error_code = ESLURM_ACCESS_DENIED;
+	 } else if (job_specs->comment) {
+		 xfree(job_ptr->comment);
+		 job_ptr->comment = job_specs->comment;
+		 job_specs->comment = NULL;	/* Nothing left to free */
+		 info("update_job: setting comment to %s for job_id %u",
+		      job_ptr->comment, job_specs->job_id);
+		 
+		 if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
+			 acct_qos_rec_t qos_rec;
+
+			 memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+
+			 if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
+				 qos_rec.name = "expedite";
+			 else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
+				 qos_rec.name = "standby";
+			
+			 job_ptr->qos_ptr = _determine_and_validate_qos(
+				 job_ptr->assoc_ptr, &qos_rec);
+			 job_ptr->qos = qos_rec.id;			
+			 error_code = errno;
+		 }
+	 } else if(job_specs->qos) {
+		 acct_qos_rec_t qos_rec;
+		
+		 info("update_job: setting qos to %s for job_id %u",
+		      job_specs->qos, job_specs->job_id);		
+		
+		 memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+		 qos_rec.name = job_specs->qos;
+		
+		 job_ptr->qos_ptr = _determine_and_validate_qos(
+			 job_ptr->assoc_ptr, &qos_rec);
+		 job_ptr->qos = qos_rec.id;
+		 error_code = errno;
+	 }
+	
+	 if(update_accounting) {
+		 if (job_ptr->details && job_ptr->details->begin_time) {
+			 /* Update job record in accounting to reflect
+			  * changes */
+			 jobacct_storage_g_job_start(
+				 acct_db_conn, slurmctld_cluster_name, job_ptr);
+		 }
+	 }
+	 return error_code;
 }
 
 
@@ -6740,7 +6769,8 @@ extern void update_job_nodes_completing(void)
 
 static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				  struct part_record *part_ptr,
-				  acct_association_rec_t *assoc_in)
+				  acct_association_rec_t *assoc_in,
+				  acct_qos_rec_t *qos_ptr)
 {
 	uint32_t time_limit;
 	acct_association_rec_t *assoc_ptr = assoc_in;
@@ -6749,6 +6779,167 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	int max_nodes_set = 0;
 	char *user_name = assoc_ptr->user;
 	bool rc = true;
+
+	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	if(qos_ptr) {
+		/* for validation we don't need to look at 
+		 * qos_ptr->grp_cpu_mins.
+		 */
+
+		/* NOTE: We can't enforce qos_ptr->grp_cpus at this
+		 * time because we don't have access to a CPU count for the job
+		 * due to how all of the job's specifications interact */
+
+		/* for validation we don't need to look at 
+		 * qos_ptr->grp_jobs.
+		 */
+
+		if (qos_ptr->grp_nodes != INFINITE) {
+			if (job_desc->min_nodes > qos_ptr->grp_nodes) {
+				info("job submit for user %s(%u): "
+				     "min node request %u exceeds "
+				     "group max node limit %u for qos '%s'",
+				     user_name,
+				     job_desc->user_id, 
+				     job_desc->min_nodes, 
+				     qos_ptr->grp_nodes,
+				     qos_ptr->name);
+				rc = false;
+				goto end_qos;
+			} else if (job_desc->max_nodes == 0
+				   || (max_nodes_set 
+				       && (job_desc->max_nodes 
+					   > qos_ptr->grp_nodes))) {
+				job_desc->max_nodes = qos_ptr->grp_nodes;
+				max_nodes_set = 1;
+			} else if (job_desc->max_nodes > 
+				   qos_ptr->grp_nodes) {
+				info("job submit for user %s(%u): "
+				     "max node changed %u -> %u because "
+				     "of qos limit",
+				     user_name,
+				     job_desc->user_id, 
+				     job_desc->max_nodes, 
+				     qos_ptr->grp_nodes);
+				job_desc->max_nodes = qos_ptr->grp_nodes;
+			}
+		}
+
+		if ((qos_ptr->grp_submit_jobs != INFINITE) &&
+		    (qos_ptr->grp_used_submit_jobs 
+		     >= qos_ptr->grp_submit_jobs)) {
+			info("job submit for user %s(%u): "
+			     "group max submit job limit exceded %u "
+			     "for qos '%s'",
+			     user_name,
+			     job_desc->user_id, 
+			     qos_ptr->grp_submit_jobs,
+			     qos_ptr->name);
+			rc = false;
+			goto end_qos;
+		}
+		
+		
+		/* for validation we don't need to look at 
+		 * qos_ptr->grp_wall. It is checked while the job is running.
+		 */
+		
+				
+		/* for validation we don't need to look at 
+		 * qos_ptr->max_cpu_mins_pj.
+		 */
+		
+		/* NOTE: We can't enforce qos_ptr->max_cpus at this
+		 * time because we don't have access to a CPU count for the job
+		 * due to how all of the job's specifications interact */
+				
+		/* for validation we don't need to look at 
+		 * qos_ptr->max_jobs.
+		 */
+				
+		if (qos_ptr->max_nodes_pj != INFINITE) {
+			if (job_desc->min_nodes > qos_ptr->max_nodes_pj) {
+				info("job submit for user %s(%u): "
+				     "min node limit %u exceeds "
+				     "qos max %u",
+				     user_name,
+				     job_desc->user_id, 
+				     job_desc->min_nodes, 
+				     qos_ptr->max_nodes_pj);
+				rc = false;
+				goto end_qos;
+			} else if (job_desc->max_nodes == 0
+				   || (max_nodes_set 
+				       && (job_desc->max_nodes 
+					   > qos_ptr->max_nodes_pj))) {
+				job_desc->max_nodes = qos_ptr->max_nodes_pj;
+				max_nodes_set = 1;
+			} else if (job_desc->max_nodes > 
+				   qos_ptr->max_nodes_pj) {
+				info("job submit for user %s(%u): "
+				     "max node changed %u -> %u because "
+				     "of qos limit",
+				     user_name,
+				     job_desc->user_id, 
+				     job_desc->max_nodes, 
+				     qos_ptr->max_nodes_pj);
+				job_desc->max_nodes = qos_ptr->max_nodes_pj;
+			}
+		}
+			
+		if (qos_ptr->max_submit_jobs_pu != INFINITE) {
+			acct_used_limits_t *used_limits = NULL;
+			if(qos_ptr->user_limit_list) {
+				ListIterator itr = list_iterator_create(
+					qos_ptr->user_limit_list);
+				while((used_limits = list_next(itr))) {
+					if(used_limits->uid 
+					   == job_desc->user_id)
+						break;
+				}
+				list_iterator_destroy(itr);
+			}
+			if(used_limits && (used_limits->submit_jobs 
+					   >= qos_ptr->max_submit_jobs_pu)) {
+				info("job submit for user %s(%u): "
+				     "account max submit job limit exceded %u",
+				     user_name,
+				     job_desc->user_id, 
+				     qos_ptr->max_submit_jobs_pu);
+				rc = false;
+				goto end_qos;
+			}
+		}
+
+		if (qos_ptr->max_wall_pj != INFINITE) {
+			time_limit = qos_ptr->max_wall_pj;
+			if (job_desc->time_limit == NO_VAL) {
+				if (part_ptr->max_time == INFINITE)
+					job_desc->time_limit = time_limit;
+				else 
+					job_desc->time_limit =
+						MIN(time_limit, 
+						    part_ptr->max_time);
+				timelimit_set = 1;
+			} else if (timelimit_set && 
+				   job_desc->time_limit > time_limit) {
+				job_desc->time_limit = time_limit;
+			} else if (job_desc->time_limit > time_limit) {
+				info("job submit for user %s(%u): "
+				     "time limit %u exceeds account max %u",
+				     user_name,
+				     job_desc->user_id, 
+				     job_desc->time_limit, time_limit);
+				rc = false;
+				goto end_qos;
+			}
+		}
+
+	}
+	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+end_qos:
+	if(!rc)
+		return rc;
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	while(assoc_ptr) {
@@ -6764,7 +6955,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		 * assoc_ptr->grp_jobs.
 		 */
 
-		if ((assoc_ptr->grp_nodes != NO_VAL) &&
+		if ((qos_ptr->grp_nodes == INFINITE) &&
 		    (assoc_ptr->grp_nodes != INFINITE)) {
 			if (job_desc->min_nodes > assoc_ptr->grp_nodes) {
 				info("job submit for user %s(%u): "
@@ -6796,7 +6987,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 			}
 		}
 
-		if ((assoc_ptr->grp_submit_jobs != NO_VAL) &&
+		if ((qos_ptr->grp_submit_jobs == INFINITE) &&
 		    (assoc_ptr->grp_submit_jobs != INFINITE) &&
 		    (assoc_ptr->used_submit_jobs 
 		     >= assoc_ptr->grp_submit_jobs)) {
@@ -6837,7 +7028,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		 * assoc_ptr->max_jobs.
 		 */
 		
-		if ((assoc_ptr->max_nodes_pj != NO_VAL) &&
+		if ((qos_ptr->max_nodes_pj == INFINITE) &&
 		    (assoc_ptr->max_nodes_pj != INFINITE)) {
 			if (job_desc->min_nodes > assoc_ptr->max_nodes_pj) {
 				info("job submit for user %s(%u): "
@@ -6868,7 +7059,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 			}
 		}
 
-		if ((assoc_ptr->max_submit_jobs != NO_VAL) &&
+		if ((qos_ptr->max_submit_jobs_pu == INFINITE) &&
 		    (assoc_ptr->max_submit_jobs != INFINITE) &&
 		    (assoc_ptr->used_submit_jobs 
 		     >= assoc_ptr->max_submit_jobs)) {
@@ -6881,7 +7072,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 			break;
 		}
 		
-		if ((assoc_ptr->max_wall_pj != NO_VAL) &&
+		if ((qos_ptr->max_wall_pj == INFINITE) &&
 		    (assoc_ptr->max_wall_pj != INFINITE)) {
 			time_limit = assoc_ptr->max_wall_pj;
 			if (job_desc->time_limit == NO_VAL) {

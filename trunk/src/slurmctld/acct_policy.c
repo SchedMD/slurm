@@ -361,9 +361,12 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
  */
 extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 {
+	acct_qos_rec_t *qos_ptr;
 	acct_association_rec_t *assoc_ptr;
 	uint32_t time_limit;
 	bool rc = true;
+	uint64_t usage_mins;
+	uint32_t wall_mins;
 	int parent = 0; /*flag to tell us if we are looking at the
 			 * parent or not 
 			 */
@@ -387,18 +390,174 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT))
                 job_ptr->state_reason = WAIT_NO_REASON;
 
+	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	qos_ptr = job_ptr->qos_ptr;
+	if(qos_ptr) {
+		usage_mins = (uint64_t)(qos_ptr->usage_raw / 60.0);
+		wall_mins = qos_ptr->grp_used_wall / 60;
+
+		if ((qos_ptr->grp_cpu_mins != (uint64_t)INFINITE)
+		    && (usage_mins >= qos_ptr->grp_cpu_mins)) {
+			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+			xfree(job_ptr->state_desc);
+			debug2("Job %u being held, "
+			       "the job is at or exceeds QOS %s's "
+			       "group max cpu minutes of %llu with %llu",
+			       job_ptr->job_id, 
+			       qos_ptr->name, qos_ptr->grp_cpu_mins,
+			       usage_mins);
+			rc = false;
+			goto end_qos;
+		}
+
+		/* NOTE: We can't enforce qos_ptr->grp_cpus at this
+		 * time because we don't have access to a CPU count for the job
+		 * due to how all of the job's specifications interact */
+
+		if ((qos_ptr->grp_jobs != INFINITE) &&
+		    (qos_ptr->grp_used_jobs >= qos_ptr->grp_jobs)) {
+			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+			xfree(job_ptr->state_desc);
+			debug2("job %u being held, "
+			       "the job is at or exceeds QOS %s's "
+			       "group max jobs limit %u with %u for qos %s",
+			       job_ptr->job_id, 
+			       qos_ptr->grp_jobs, 
+			       qos_ptr->grp_used_jobs, qos_ptr->name);
+			
+			rc = false;
+			goto end_qos;
+		}
+		
+		if (qos_ptr->grp_nodes != INFINITE) {
+			if (job_ptr->details->min_nodes > qos_ptr->grp_nodes) {
+				info("job %u is being cancelled, "
+				     "min node request %u exceeds "
+				     "group max node limit %u for qos '%s'",
+				     job_ptr->job_id, 
+				     job_ptr->details->min_nodes, 
+				     qos_ptr->grp_nodes,
+				     qos_ptr->name);
+				_cancel_job(job_ptr);
+			} else if ((qos_ptr->grp_used_nodes + 
+				    job_ptr->details->min_nodes) > 
+				   qos_ptr->grp_nodes) {
+				job_ptr->state_reason = 
+					WAIT_ASSOC_RESOURCE_LIMIT;
+				xfree(job_ptr->state_desc);
+				debug2("job %u being held, "
+				       "the job is at or exceeds "
+				       "group max node limit %u "
+				       "with already used %u + requested %u "
+				       "for qos %s",
+				       job_ptr->job_id,
+				       qos_ptr->grp_nodes, 
+				       qos_ptr->grp_used_nodes,
+				       job_ptr->details->min_nodes, 
+				       qos_ptr->name);
+				rc = false;
+				goto end_qos;
+			}
+		}
+
+		/* we don't need to check submit_jobs here */
+		
+		if ((qos_ptr->grp_wall != INFINITE)
+		    && (wall_mins >= qos_ptr->grp_wall)) {
+			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+			xfree(job_ptr->state_desc);
+			debug2("job %u being held, "
+			       "the job is at or exceeds "
+			       "group wall limit %u "
+			       "with %u for qos %s",
+			       job_ptr->job_id,
+			       qos_ptr->grp_wall, 
+			       wall_mins, qos_ptr->name);
+			       
+			rc = false;
+			goto end_qos;
+		}
+				
+		/* NOTE: We can't enforce qos_ptr->max_cpu_mins_pj at this
+		 * time because we don't have access to a CPU count for the job
+		 * due to how all of the job's specifications interact */
+		
+		/* NOTE: We can't enforce qos_ptr->max_cpus at this
+		 * time because we don't have access to a CPU count for the job
+		 * due to how all of the job's specifications interact */
+				
+		if (qos_ptr->max_jobs_pu != INFINITE) {
+			acct_used_limits_t *used_limits = NULL;
+			if(qos_ptr->user_limit_list) {
+				ListIterator itr = list_iterator_create(
+					qos_ptr->user_limit_list);
+				while((used_limits = list_next(itr))) {
+					if(used_limits->uid == job_ptr->user_id)
+						break;
+				}
+				list_iterator_destroy(itr);
+			}
+			if(used_limits && (used_limits->jobs 
+					   >= qos_ptr->max_jobs_pu)) {
+				debug2("job %u being held, "
+				       "the job is at or exceeds "
+				       "max jobs limit %u with %u for QOS %s",
+				       job_ptr->job_id,
+				       qos_ptr->max_jobs_pu, 
+				       used_limits->jobs, qos_ptr->name);
+				rc = false;
+				goto end_qos;
+			}
+		}
+		
+		if (qos_ptr->max_nodes_pj != INFINITE) {
+			if (job_ptr->details->min_nodes > 
+			    qos_ptr->max_nodes_pj) {
+				info("job %u being cancelled, "
+				     "min node limit %u exceeds "
+				     "qos max %u",
+				     job_ptr->job_id,
+				     job_ptr->details->min_nodes, 
+				     qos_ptr->max_nodes_pj);
+				_cancel_job(job_ptr);
+				rc = false;
+				goto end_qos;
+			}
+		}
+			
+		/* we don't need to check submit_jobs_pu here */
+
+		/* if the qos limits have changed since job
+		 * submission and job can not run, then kill it */
+		if ((qos_ptr->max_wall_pj != INFINITE)) {
+			time_limit = qos_ptr->max_wall_pj;
+			if ((job_ptr->time_limit != NO_VAL) &&
+			    (job_ptr->time_limit > time_limit)) {
+				info("job %u being cancelled, "
+				     "time limit %u exceeds account max %u",
+				     job_ptr->job_id, job_ptr->time_limit, 
+				     time_limit);
+				_cancel_job(job_ptr);
+				rc = false;
+				goto end_qos;
+			}
+		}		
+	}
+	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+end_qos:
+	if(!rc)
+		return rc;
+
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
-		uint64_t usage_mins =
-			(uint64_t)(assoc_ptr->usage_raw / 60.0);
-		uint32_t wall_mins = assoc_ptr->grp_used_wall / 60;
+		usage_mins = (uint64_t)(assoc_ptr->usage_raw / 60.0);
+		wall_mins = assoc_ptr->grp_used_wall / 60;
 #if _DEBUG
 		info("acct_job_limits: %u of %u", 
 		     assoc_ptr->used_jobs, assoc_ptr->max_jobs);
 #endif		
-		if ((assoc_ptr->grp_cpu_mins != (uint64_t)NO_VAL)
-		    && (assoc_ptr->grp_cpu_mins != (uint64_t)INFINITE)
+		if ((assoc_ptr->grp_cpu_mins != (uint64_t)INFINITE)
 		    && (usage_mins >= assoc_ptr->grp_cpu_mins)) {
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
@@ -414,8 +573,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			goto end_it;
 		}
 
-		if ((assoc_ptr->grp_jobs != NO_VAL) &&
-		    (assoc_ptr->grp_jobs != INFINITE) &&
+		if ((assoc_ptr->grp_jobs != INFINITE) &&
 		    (assoc_ptr->used_jobs >= assoc_ptr->grp_jobs)) {
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
@@ -430,8 +588,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			goto end_it;
 		}
 		
-		if ((assoc_ptr->grp_nodes != NO_VAL) &&
-		    (assoc_ptr->grp_nodes != INFINITE)) {
+		if (assoc_ptr->grp_nodes != INFINITE) {
 			if (job_ptr->details->min_nodes > 
 			    assoc_ptr->grp_nodes) {
 				info("job %u being cancelled, "
@@ -464,8 +621,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 		/* we don't need to check submit_jobs here */
 
-		if ((assoc_ptr->grp_wall != NO_VAL) 
-		    && (assoc_ptr->grp_wall != INFINITE)
+		if ((assoc_ptr->grp_wall != INFINITE)
 		    && (wall_mins >= assoc_ptr->grp_wall)) {
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
@@ -499,8 +655,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		 * time because we don't have access to a CPU count for the job
 		 * due to how all of the job's specifications interact */
 
-		if ((assoc_ptr->max_jobs != NO_VAL) &&
-		    (assoc_ptr->max_jobs != INFINITE) &&
+		if ((assoc_ptr->max_jobs != INFINITE) &&
 		    (assoc_ptr->used_jobs >= assoc_ptr->max_jobs)) {
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
@@ -514,8 +669,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			goto end_it;
 		}
 		
-		if ((assoc_ptr->max_nodes_pj != NO_VAL) &&
-		    (assoc_ptr->max_nodes_pj != INFINITE)) {
+		if ((assoc_ptr->max_nodes_pj != INFINITE)) {
 			if (job_ptr->details->min_nodes > 
 			    assoc_ptr->max_nodes_pj) {
 				info("job %u being cancelled, "
@@ -534,8 +688,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 		/* if the association limits have changed since job
 		 * submission and job can not run, then kill it */
-		if ((assoc_ptr->max_wall_pj != NO_VAL) &&
-		    (assoc_ptr->max_wall_pj != INFINITE)) {
+		if (assoc_ptr->max_wall_pj != INFINITE) {
 			time_limit = assoc_ptr->max_wall_pj;
 			if ((job_ptr->time_limit != NO_VAL) &&
 			    (job_ptr->time_limit > time_limit)) {
@@ -555,19 +708,4 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 end_it:
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 	return rc;
-}
-
-/* FIX ME: This function should be called every so often to update time, and
- * shares used.  It doesn't do anything right now.
- */
-extern void acct_policy_update_running_job_usage(struct job_record *job_ptr)
-{
-	acct_association_rec_t *assoc_ptr;
-
-	slurm_mutex_lock(&assoc_mgr_association_lock);
-	assoc_ptr = job_ptr->assoc_ptr;
-	while(assoc_ptr) {
-		assoc_ptr = assoc_ptr->parent_assoc_ptr;
-	}
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
 }
