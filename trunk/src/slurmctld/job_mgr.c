@@ -1041,7 +1041,7 @@ static int _load_job_state(Buf buffer)
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	}
 
-	if(job_ptr->qos) {
+	if(job_ptr->qos && (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 		qos_rec.id = job_ptr->qos;
 		if(_determine_and_validate_qos(job_ptr, &qos_rec)
