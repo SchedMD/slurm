@@ -3555,7 +3555,7 @@ void job_time_limit(void)
 				info("Job %u timed out, "
 				     "assoc %u is at or exceeds "
 				     "group max cpu minutes limit %llu "
-				     "with %Lf for account %s",
+				     "with %llu for account %s",
 				     job_ptr->job_id, assoc->id,
 				     assoc->grp_cpu_mins, 
 				     usage_mins, assoc->acct);
@@ -3583,7 +3583,7 @@ void job_time_limit(void)
 				info("Job %u timed out, "
 				     "assoc %u is at or exceeds "
 				     "max cpu minutes limit %llu "
-				     "with %Lf for account %s",
+				     "with %llu for account %s",
 				     job_ptr->job_id, assoc->id,
 				     assoc->max_cpu_mins_pj, 
 				     job_cpu_usage_mins, assoc->acct);
