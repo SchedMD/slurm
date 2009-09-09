@@ -50,7 +50,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <strings.h>
-#include <poll.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/xmalloc.h"
@@ -76,12 +75,7 @@ struct gmpi_state {
 	pthread_t tid;
 	int fd; /* = -1 */
 	mpi_plugin_client_info_t *job;
-	int shutdown_pipe[2];
 };
-
-static void gmpi_state_destroy(gmpi_state_t *st);
-
-
 
 static int _gmpi_parse_init_recv_msg(mpi_plugin_client_info_t *job, char *rbuf,
 				     gm_slave_t *slave_data, int *ii)
@@ -133,68 +127,23 @@ static int _gmpi_parse_init_recv_msg(mpi_plugin_client_info_t *job, char *rbuf,
 }
 
 
-/* 
- * return file desc for new socket if successful
- *       -1 on an error
- *       -2 if shutting down nicely
- */
-static int _gmpi_interruptable_accept(gmpi_state_t *st, 
-				      struct sockaddr *addr, 
-				      socklen_t *addrlen)
-{
-	int newfd, j;
-	struct pollfd pfds[2];
-
-	pfds[0].fd = st->fd;
-	pfds[0].events = POLLIN;
-
-	pfds[1].fd = st->shutdown_pipe[0];
-	pfds[1].events = POLLIN;
-
-	while (poll(pfds, 2, -1) < 0) {
-		if (errno == EINTR || errno == EAGAIN) {
-			continue;
-		} else {
-			return -1;
-		}
-	}
-	for (j = 0; j < 2; j++) {
-		if ((pfds[j].revents & POLLHUP) ||
-		    (pfds[j].revents & POLLNVAL) ||
-		    (pfds[j].revents & POLLERR)) {
-			return -1;
-		}
-	}
-	if (pfds[1].revents & POLLIN) {
-		return -2;
-	}
-	newfd = accept(st->fd, addr, addrlen);
-	return newfd;
-}
-
-/* 
- * return 0 if completed successfully
- *       -1 on an error
- *       -2 if shutting down nicely
- */
 static int _gmpi_establish_map(gmpi_state_t *st)
 {
 	mpi_plugin_client_info_t *job = st->job;
 	struct sockaddr_in addr;
-	in_addr_t *iaddrs = NULL;
+	in_addr_t *iaddrs;
 	socklen_t addrlen;
-	int newfd, rlen, nprocs, i, j, id;
+	int accfd, newfd, rlen, nprocs, i, j, id;
 	size_t gmaplen, lmaplen, maplen;
 	char *p, *rbuf = NULL, *gmap = NULL, *lmap = NULL, *map = NULL;
 	char tmp[128];
 	gm_slave_t *slave_data = NULL, *dp;
-	int rc;
-
+	
 	/*
 	 * Collect info from slaves.
 	 * Will never finish unless slaves are GMPI processes.
 	 */
-	//accfd = st->fd;
+	accfd = st->fd;
 	addrlen = sizeof(addr);
 	nprocs = job->step_layout->task_cnt;
 	iaddrs = (in_addr_t *)xmalloc(sizeof(*iaddrs)*nprocs);
@@ -205,12 +154,7 @@ static int _gmpi_establish_map(gmpi_state_t *st)
 	rbuf = (char *)xmalloc(GMPI_RECV_BUF_LEN);
 	
 	while (i < nprocs) {
-		newfd = _gmpi_interruptable_accept(st, (struct sockaddr *)&addr,
-						   &addrlen);
-		if (newfd == -2) {
-			rc = -2;
-			goto done;
-		}
+		newfd = accept(accfd, (struct sockaddr *)&addr, &addrlen);
 		if (newfd == -1) {
 			error("accept(2) in GMPI master thread: %m");
 			continue;
@@ -231,7 +175,6 @@ static int _gmpi_establish_map(gmpi_state_t *st)
 		close(newfd);
 	}
 	xfree(rbuf);
-	rbuf = NULL;
 	debug2("Received data from all of %d GMPI processes.", i);
 
 	/*
@@ -296,24 +239,14 @@ static int _gmpi_establish_map(gmpi_state_t *st)
 		send(newfd, map, maplen, 0);
 		close(newfd);
 		xfree(map);
-		map = NULL;
 	}
-done:
-	if (slave_data)
-		xfree(slave_data);
-	if (lmap)
-		xfree(lmap);
-	if (gmap)
-		xfree(gmap);
-	if (iaddrs)
-		xfree(iaddrs);
-	if (map)
-		xfree(map);
-	if (rbuf)
-		xfree(rbuf);
+	xfree(slave_data);
+	xfree(lmap);
+	xfree(gmap);
+	xfree(iaddrs);
 
 	debug2("GMPI master responded to all GMPI processes");
-	return rc;
+	return 0;
 }
 
 static void _gmpi_wait_abort(gmpi_state_t *st)
@@ -328,11 +261,8 @@ static void _gmpi_wait_abort(gmpi_state_t *st)
 	rbuf = (char *)xmalloc(GMPI_RECV_BUF_LEN);
 	addrlen = sizeof(addr);
 	while (1) {
-		newfd = _gmpi_interruptable_accept(st, (struct sockaddr *)&addr,
-						   &addrlen);
-		if (newfd == -2) {
-			break;
-		}
+		newfd = accept(st->fd, (struct sockaddr *)&addr,
+			       &addrlen);
 		if (newfd == -1) {
 			fatal("GMPI master failed to accept (abort-wait)");
 		}
@@ -357,8 +287,13 @@ static void _gmpi_wait_abort(gmpi_state_t *st)
 		close(newfd);
 		debug("Received ABORT message from an MPI process.");
 		slurm_signal_job_step(job->jobid, job->stepid, SIGKILL);
+#if 0
+		xfree(rbuf);
+		close(jgmpi_fd);
+		gmpi_fd = -1;
+		return;
+#endif
 	}
-	xfree(rbuf);
 }
 
 
@@ -371,13 +306,11 @@ static void *_gmpi_thr(void *arg)
 	job = st->job;
 
 	debug3("GMPI master thread pid=%lu", (unsigned long) getpid());
-	if (_gmpi_establish_map(st) != 0)
-		return (void *)0;
+	_gmpi_establish_map(st);
 	
 	debug3("GMPI master thread is waiting for ABORT message.");
 	_gmpi_wait_abort(st);
 
-	gmpi_state_destroy(st);
 	return (void *)0;
 }
 
@@ -392,22 +325,12 @@ gmpi_state_create(const mpi_plugin_client_info_t *job)
 	state->fd  = -1;
 	state->job = (mpi_plugin_client_info_t *) job;
 
-	if (pipe(state->shutdown_pipe) < 0) {
-		error ("gmpi_state_create: pipe: %m");
-		xfree(state);
-		return (NULL);
-	}
-	fd_set_nonblocking(state->shutdown_pipe[0]);
-	fd_set_nonblocking(state->shutdown_pipe[1]);
-
 	return state;
 }
 
 static void
 gmpi_state_destroy(gmpi_state_t *st)
 {
-	close(st->shutdown_pipe[0]);
-	close(st->shutdown_pipe[1]);
 	xfree(st);
 }
 
@@ -474,22 +397,30 @@ gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	return st;
 }
 
+
+/*
+ * Warning: This pthread_cancel/pthread_join is a little unsafe.  The thread is
+ * not joinable, so on most systems the join will fail, then the thread's state
+ * will be destroyed, possibly before the thread has actually stopped.  In 
+ * practice the thread will usually be waiting on an accept call when it gets
+ * cancelled.  If the mpi thread has a mutex locked when it is cancelled--while 
+ * using the "info" or "error" functions for logging--the caller will deadlock.
+ * See mpich1_p4.c or mvapich.c for code that shuts down cleanly by letting
+ * the mpi thread wait on a poll call, and creating a pipe that the poll waits
+ * on, which can be written to by the main thread to tell the mpi thread to 
+ * exit.  Also see rev 18654 of mpichmx.c, on 
+ * branches/slurm-2.1.mpi.plugin.cleanup for an implementation.  There were no
+ * myrinet systems available for testing, which is why I couldn't complete the
+ * patch for this plugin.  -djb
+ */
 extern int gmpi_thr_destroy(gmpi_state_t *st)
 {
-	char tmp = 1;
-
 	if (st != NULL) {
 		if (st->tid != (pthread_t)-1) {
-			/*
-			 * The mpi thread spends most of its time in a poll,
-			 * waiting for a set of init messages and then waiting
-			 * for an abort message.  This write breaks the wait
-			 * and causes the mpi thread to exit, or if the thread
-			 * is not waiting, it will exit the next time it calls 
-			 * poll.
-			 */
-			write(st->shutdown_pipe[1], &tmp, 1);
+			pthread_cancel(st->tid);
+			pthread_join(st->tid, NULL);
 		}
+		gmpi_state_destroy(st);
 	}
 	return SLURM_SUCCESS;
 }
