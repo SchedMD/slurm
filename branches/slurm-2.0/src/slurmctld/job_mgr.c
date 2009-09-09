@@ -6511,7 +6511,9 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	int timelimit_set = 0;
 	int max_nodes_set = 0;
 	char *user_name = assoc_ptr->user;
+	bool rc = true;
 
+	slurm_mutex_lock(&assoc_mgr_association_lock);
 	while(assoc_ptr) {
 		/* for validation we don't need to look at 
 		 * assoc_ptr->grp_cpu_mins.
@@ -6536,7 +6538,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->min_nodes, 
 				     assoc_ptr->grp_nodes,
 				     assoc_ptr->acct);
-				return false;
+				rc = false;
+				break;
 			} else if (job_desc->max_nodes == 0
 				   || (max_nodes_set 
 				       && (job_desc->max_nodes 
@@ -6567,7 +6570,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 			     job_desc->user_id, 
 			     assoc_ptr->grp_submit_jobs,
 			     assoc_ptr->acct);
-			return false;
+			rc = false;
+			break;
 		}
 
 		
@@ -6606,7 +6610,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id, 
 				     job_desc->min_nodes, 
 				     assoc_ptr->max_nodes_pj);
-				return false;
+				rc = false;
+				break;
 			} else if (job_desc->max_nodes == 0
 				   || (max_nodes_set 
 				       && (job_desc->max_nodes 
@@ -6635,7 +6640,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 			     user_name,
 			     job_desc->user_id, 
 			     assoc_ptr->max_submit_jobs);
-			return false;
+			rc = false;
+			break;
 		}
 		
 		if ((assoc_ptr->max_wall_pj != NO_VAL) &&
@@ -6658,14 +6664,17 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     user_name,
 				     job_desc->user_id, 
 				     job_desc->time_limit, time_limit);
-				return false;
+				rc = false;
+				break;
 			}
 		}
 		
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 		parent = 1;
 	}
-	return true;
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+
+	return rc;
 }
 
 /*
