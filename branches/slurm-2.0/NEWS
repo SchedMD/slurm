@@ -74,6 +74,7 @@ documents those changes that are of interest to users and admins.
     (needed by OpenMPI).
  -- Fix possible assert failure in task/affinity if a node is configured with
     more resources than physically exist.
+ -- Sview can now resize columns
 
 * Changes in SLURM 2.0.4
 ========================
