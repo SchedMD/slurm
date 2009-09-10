@@ -2785,7 +2785,7 @@ again:
 static int
 _get_boxes(char *buf, int max_len)
 {
-	int len, i;
+	int len=0, i;
 	int curr_min[SYSTEM_DIMENSIONS], curr_max[SYSTEM_DIMENSIONS];
 /* 	char coord[SYSTEM_DIMENSIONS+1]; */
 /* 	char coord2[SYSTEM_DIMENSIONS+1]; */
