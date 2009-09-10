@@ -40,6 +40,13 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  else
+#    if HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#  endif  /* HAVE_INTTYPES_H */
 #  if HAVE_STRING_H
 #    include <string.h>
 #  endif
@@ -47,6 +54,7 @@
 #    include <pthread.h>
 #  endif
 #else                /* !HAVE_CONFIG_H */
+#  include <inttypes.h>
 #  include <string.h>
 #  include <pthread.h>
 #endif                /* HAVE_CONFIG_H */
