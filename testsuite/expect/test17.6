@@ -94,6 +94,8 @@ if {$job_id != 0} {
 	}
 	if {[wait_for_file $file_out] == 0} {
 		file delete $file_out
+	} else {
+		set exit_code 1
 	}
 } else {
 	if {$no_run == 0} {
