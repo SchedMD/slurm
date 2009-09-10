@@ -604,6 +604,8 @@ end_qos:
 				     job_ptr->details->min_nodes, 
 				     assoc_ptr->grp_nodes, assoc_ptr->acct);
 				_cancel_job(job_ptr);
+				rc = false;
+				goto end_it;
 			} else if ((assoc_ptr->grp_used_nodes + 
 				    job_ptr->details->min_nodes) > 
 				   assoc_ptr->grp_nodes) {

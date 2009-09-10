@@ -734,7 +734,21 @@ _read_config(void)
 		    &conf->block_map_size,
 		    &conf->block_map, &conf->block_map_inv);
 
-	if(!cf->fast_schedule) {
+	if(cf->fast_schedule && 
+	   ((conf->conf_cpus != conf->actual_cpus)    ||
+	    (conf->sockets   != conf->actual_sockets) ||
+	    (conf->cores     != conf->actual_cores)   ||
+	    (conf->threads   != conf->actual_threads))) {
+		info("Node configuration differs from hardware\n"
+		     "   Procs=%u:%u(hw) Sockets=%u:%u(hw)\n"
+		     "   CoresPerSocket%u:%u(hw) ThreadsPerCore:%u:%u(hw)",
+		     conf->conf_cpus,    conf->actual_cpus,
+		     conf->conf_sockets, conf->actual_sockets,
+		     conf->conf_cores,   conf->actual_cores,
+		     conf->conf_threads, conf->actual_threads);
+	}
+
+	if((cf->fast_schedule == 0) || (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
