@@ -138,8 +138,7 @@ static int _remove_job(db_job_id_t job_id)
 			      bg_err_str(rc));
 			continue;
 		}
-		
-			
+					
 		if ((rc = bridge_get_data(job_rec, RM_JobState, &job_state)) 
 		    != STATUS_OK) {
 			(void) bridge_free_job(job_rec);
@@ -152,6 +151,7 @@ static int _remove_job(db_job_id_t job_id)
 			      "%s", job_id, bg_err_str(rc));
 			continue;
 		}
+
 		if ((rc = bridge_free_job(job_rec)) != STATUS_OK)
 			error("bridge_free_job: %s", bg_err_str(rc));
 
@@ -910,8 +910,7 @@ static void *_block_agent(void *args)
 	if (agent_cnt == 0) {
 		list_destroy(bg_update_list);
 		bg_update_list = NULL;
-		pthread_cond_signal(&agent_cond);
-			
+		pthread_cond_signal(&agent_cond);			
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
 	return NULL;
@@ -1187,8 +1186,8 @@ int term_job(struct job_record *job_ptr)
 	bg_update_ptr->op = TERM_OP;
 	bg_update_ptr->job_ptr = job_ptr;
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_BLOCK_ID, 
-			     &(bg_update_ptr->bg_block_id));
+				    SELECT_JOBDATA_BLOCK_ID, 
+				    &(bg_update_ptr->bg_block_id));
 	info("Queue termination of job %u in BG block %s",
 	     job_ptr->job_id, bg_update_ptr->bg_block_id);
 	_block_op(bg_update_ptr);
