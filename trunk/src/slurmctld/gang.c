@@ -732,7 +732,10 @@ static void _preempt_job_dequeue(void)
 	int rc = 0;
 	uint32_t job_id, *tmp_id;
 	uint16_t preempt_mode = slurm_get_preempt_mode();
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
+	lock_slurmctld(job_write_lock);
 	preempt_mode &= (~PREEMPT_MODE_GANG);
 	while ((tmp_id = list_pop(preempt_job_list))) {
 		job_id = *tmp_id;
@@ -764,6 +767,8 @@ static void _preempt_job_dequeue(void)
 			}
 		}
 	}
+	unlock_slurmctld(job_write_lock);
+
 	return;
 }
 
