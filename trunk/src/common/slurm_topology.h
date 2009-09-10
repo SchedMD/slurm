@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  topo_plugin.h - Define topology plugin functions.
+ *  slurm_topology.h - Define topology plugin functions.
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -42,6 +42,27 @@
 #include <slurm/slurm.h>
 #include <src/slurmctld/slurmctld.h>
 
+/*****************************************************************************\
+ *  SWITCH topology data structures
+ *  defined here but is really tree plugin related
+\*****************************************************************************/
+struct switch_record {
+	int level;			/* level in hierarchy, leaf=0 */
+	uint32_t link_speed;		/* link speed, arbitrary units */
+	char *name;			/* switch name */
+	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from 
+					 * this switch */
+	char *nodes;			/* name if direct descendent nodes */
+	char *switches;			/* name if direct descendent switches */
+};
+
+extern struct switch_record *switch_record_table;  /* ptr to switch records */
+extern int switch_record_cnt;		/* size of switch_record_table */
+
+/*****************************************************************************\
+ *  Slurm topology functions
+\*****************************************************************************/
+
 /*
  * Initialize the topology plugin.
  *
@@ -66,6 +87,13 @@ extern int slurm_topo_fini(void);
  * slurm_topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
-int slurm_topo_build_config( void );
+extern int slurm_topo_build_config( void );
+
+/*
+ * slurm_topo_get_node_addr - build node address and the associated pattern 
+ *      based on the topology information
+ */
+extern int slurm_topo_get_node_addr( char* node_name, char** addr, 
+				     char** pattern );
 
 #endif /*__SLURM_CONTROLLER_TOPO_PLUGIN_API_H__*/

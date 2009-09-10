@@ -113,16 +113,17 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	jobacct_common.c jobacct_common.h slurm_accounting_storage.c \
 	slurm_accounting_storage.h slurm_jobacct_gather.c \
 	slurm_jobacct_gather.h slurm_jobcomp.c slurm_jobcomp.h \
-	switch.c switch.h arg_desc.c arg_desc.h macros.h malloc.c \
-	malloc.h getopt.h getopt.c getopt1.c unsetenv.c unsetenv.h \
-	slurm_selecttype_info.c slurm_resource_info.c \
-	slurm_resource_info.h hostlist.c hostlist.h \
-	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
-	checkpoint.h select_job_res.c select_job_res.h parse_time.c \
-	parse_time.h job_options.c job_options.h global_defaults.c \
-	timers.c timers.h slurm_xlator.h stepd_api.c stepd_api.h \
-	write_labelled_message.c write_labelled_message.h proc_args.c \
-	proc_args.h slurm_strcasestr.c slurm_strcasestr.h
+	slurm_topology.c slurm_topology.h switch.c switch.h arg_desc.c \
+	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
+	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
+	slurm_resource_info.c slurm_resource_info.h hostlist.c \
+	hostlist.h slurm_step_layout.c slurm_step_layout.h \
+	checkpoint.c checkpoint.h select_job_res.c select_job_res.h \
+	parse_time.c parse_time.h job_options.c job_options.h \
+	global_defaults.c timers.c timers.h slurm_xlator.h stepd_api.c \
+	stepd_api.h write_labelled_message.c write_labelled_message.h \
+	proc_args.c proc_args.h slurm_strcasestr.c slurm_strcasestr.h \
+	node_conf.h node_conf.c
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo forward.lo strlcpy.lo list.lo \
@@ -135,12 +136,13 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdbd_defs.lo \
 	uid.lo util-net.lo slurm_auth.lo jobacct_common.lo \
 	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
-	slurm_jobcomp.lo switch.lo arg_desc.lo malloc.lo getopt.lo \
-	getopt1.lo $(am__objects_1) slurm_selecttype_info.lo \
-	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
-	checkpoint.lo select_job_res.lo parse_time.lo job_options.lo \
-	global_defaults.lo timers.lo stepd_api.lo \
-	write_labelled_message.lo proc_args.lo slurm_strcasestr.lo
+	slurm_jobcomp.lo slurm_topology.lo switch.lo arg_desc.lo \
+	malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
+	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
+	slurm_step_layout.lo checkpoint.lo select_job_res.lo \
+	parse_time.lo job_options.lo global_defaults.lo timers.lo \
+	stepd_api.lo write_labelled_message.lo proc_args.lo \
+	slurm_strcasestr.lo node_conf.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -434,6 +436,7 @@ libcommon_la_SOURCES = \
 	slurm_accounting_storage.c slurm_accounting_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
+	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
@@ -456,7 +459,8 @@ libcommon_la_SOURCES = \
 	write_labelled_message.c	\
 	write_labelled_message.h	\
 	proc_args.c proc_args.h		\
-	slurm_strcasestr.c slurm_strcasestr.h		
+	slurm_strcasestr.c slurm_strcasestr.h \
+	node_conf.h node_conf.c
 
 EXTRA_libcommon_la_SOURCES = \
 	$(extra_unsetenv_src)
@@ -575,6 +579,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/malloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_conf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optz.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack.Plo@am__quote@
@@ -606,6 +611,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_selecttype_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_step_layout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_strcasestr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_topology.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_defs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@

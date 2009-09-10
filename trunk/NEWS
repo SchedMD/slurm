@@ -1,6 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.1.0-pre4
+=============================
+ -- Move processing of node configuration information in slurm.conf and 
+    topology information in topology.conf from slurmctld into common and load 
+    that information into slurmd. Use it to set environment variables for jobs
+    SLURM_TOPOLOGY_ADDR and SLURM_TOPOLOGY_ADDR_PATTERN describing the network
+    topology for each task. Based upon patch from Mattheu Hautreux (CEA).
+
 * Changes in SLURM 2.1.0-pre3
 =============================
  -- Removed sched/gang plugin and moved the logic directly into the slurmctld
