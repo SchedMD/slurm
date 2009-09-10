@@ -410,8 +410,8 @@ extern int schedule(void)
 			last_job_update = now;
 #ifdef HAVE_BG
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
-					     SELECT_JOBDATA_IONODES, 
-					     &ionodes);
+						    SELECT_JOBDATA_IONODES, 
+						    &ionodes);
 			if(ionodes) {
 				sprintf(tmp_char,"%s[%s]",
 					job_ptr->nodes, ionodes);
