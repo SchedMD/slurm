@@ -384,10 +384,12 @@ static int _build_all_nodeline_info(void)
 	/* Now perform operations on the node table as needed by slurmctld */
 #ifdef HAVE_3D
 {
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	char *node_000 = NULL;
 	struct node_record *node_rec = NULL;
 	if (conf->node_prefix)
 		node_000 = xstrdup(conf->node_prefix);
+	slurm_conf_unlock();
 	xstrcat(node_000, "000");
 	node_rec = find_node_record(node_000);
 	if (node_rec == NULL)
