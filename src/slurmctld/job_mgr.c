@@ -2697,7 +2697,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
 	job_ptr->qos_ptr = (void *) qos_ptr;
-	job_ptr->qos = qos_ptr->id;
+	job_ptr->qos = qos_rec.id;
 
 	/* already confirmed submit_uid==0 */
 	/* If the priority isn't given we will figure it out later
