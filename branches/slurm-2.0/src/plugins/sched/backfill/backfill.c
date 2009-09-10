@@ -343,6 +343,10 @@ static void _attempt_backfill(void)
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	time_t now = time(NULL), start_res;
 	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 2];
+	static int sched_timeout = 0;
+
+	if(!sched_timeout)
+		sched_timeout = MIN(slurm_get_msg_timeout(), 10);
 
 	if (slurm_get_root_filter())
 		filter_root = true;
@@ -466,9 +470,15 @@ static void _attempt_backfill(void)
 
 		j = _try_sched(job_ptr, &avail_bitmap, 
 			       min_nodes, max_nodes, req_nodes);
-		if (j != SLURM_SUCCESS)
+		if (j != SLURM_SUCCESS) {
+			if((time(NULL) - now) >= sched_timeout) {
+				debug("backfill: loop taking to long "
+				      "breaking out");
+				break;
+			}
 			continue;	/* not runable */
-		
+		}
+
 		job_ptr->start_time = MAX(job_ptr->start_time, start_res);
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, resv_bitmap);
@@ -500,6 +510,10 @@ static void _attempt_backfill(void)
 #if __DEBUG
 		_dump_node_space_table(node_space);
 #endif
+		if((time(NULL) - now) >= sched_timeout) {
+			debug("backfill: loop taking to long breaking out");
+			break;
+		}
 	}
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);

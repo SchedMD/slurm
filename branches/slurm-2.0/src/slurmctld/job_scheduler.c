@@ -287,9 +287,13 @@ extern int schedule(void)
 	static bool backfill_sched = false;
 	static bool sched_test = false;
 	static bool wiki_sched = false;
+	static int sched_timeout = 0;
 	time_t now = time(NULL);
 
 	DEF_TIMERS;
+	
+	if(!sched_timeout)
+		sched_timeout = MIN(slurm_get_msg_timeout(), 10);
 
 	START_TIMER;
 	if (!sched_test) {
@@ -446,6 +450,11 @@ extern int schedule(void)
 				job_completion_logger(job_ptr);
 				delete_job_details(job_ptr);
 			}
+		}
+		
+		if((time(NULL) - now) >= sched_timeout) {
+			debug("schedule: loop taking to long breaking out");
+			break;
 		}
 	}
 
