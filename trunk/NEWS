@@ -85,6 +85,8 @@ documents those changes that are of interest to users and admins.
     stderr to "Submitted batch job #" written to stdout.
  -- Made shutdown and cleanup a little safer for the mvapich and mpich1_p4
     plugins.
+ -- QOS support added with limits, priority and preemption
+    (no documentation yet).
 
 * Changes in SLURM 2.1.0-pre2
 =============================
