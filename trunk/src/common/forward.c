@@ -102,7 +102,7 @@ void *_forward_thread(void *arg)
 			      "%s, check slurm.conf", name);
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
-					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+					       SLURM_UNKNOWN_FORWARD_ADDR);
  			free(name);
 			if (hostlist_count(hl) > 0) {
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
@@ -114,8 +114,9 @@ void *_forward_thread(void *arg)
 			error("forward_thread to %s: %m", name);
 
 			slurm_mutex_lock(fwd_msg->forward_mutex);
-			mark_as_failed_forward(&fwd_msg->ret_list, name,
-					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+			mark_as_failed_forward(
+				&fwd_msg->ret_list, name,
+				SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 			free(name);
 			if (hostlist_count(hl) > 0) {
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
@@ -321,7 +322,7 @@ void *_fwd_tree_thread(void *arg)
 			      "%s, check slurm.conf", name);
 			slurm_mutex_lock(fwd_tree->tree_mutex);
 			mark_as_failed_forward(&fwd_tree->ret_list, name,
-					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+					       SLURM_UNKNOWN_FORWARD_ADDR);
  			pthread_cond_signal(fwd_tree->notify);
 			slurm_mutex_unlock(fwd_tree->tree_mutex);
 			free(name);
@@ -361,8 +362,9 @@ void *_fwd_tree_thread(void *arg)
 			error("fwd_tree_thread: no return list given from "
 			      "slurm_send_addr_recv_msgs", name);
 			slurm_mutex_lock(fwd_tree->tree_mutex);
-			mark_as_failed_forward(&fwd_tree->ret_list, name,
-					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+			mark_as_failed_forward(
+				&fwd_tree->ret_list, name,
+				SLURM_COMMUNICATIONS_CONNECTION_ERROR);
  			pthread_cond_signal(fwd_tree->notify);
 			slurm_mutex_unlock(fwd_tree->tree_mutex);
 			free(name);

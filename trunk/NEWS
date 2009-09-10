@@ -87,6 +87,10 @@ documents those changes that are of interest to users and admins.
     plugins.
  -- QOS support added with limits, priority and preemption
     (no documentation yet).
+ -- If a slurmd does not have a node listed in it's slurm.conf (slurm.conf's 
+    should be kept the same on all nodes) an error message is printed in the 
+    slurmctld log along with the message already being printed in the slurmd 
+    log for easier debugging.
 
 * Changes in SLURM 2.1.0-pre2
 =============================
