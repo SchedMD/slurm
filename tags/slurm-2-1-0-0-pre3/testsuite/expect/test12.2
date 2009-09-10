@@ -1,0 +1,317 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test sacct functionality and accuracy.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2005 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "12.2"
+set exit_code   0
+set file_in     "test$test_id.input"
+set file_out    "test$test_id.output"
+set file_err    "test$test_id.error"
+set file_prog   "test$test_id.prog"
+set job_id      0
+set matches     0
+set aix         0
+
+# job paramters
+set mem_size    1024000
+set sleep_time  21
+set ret_code    42
+
+print_header $test_id
+
+if {[test_bluegene] != 0} {
+	send_user "\nWARNING: This test is incompatable with bluegene systems\n"
+	exit 0
+}
+
+proc _get_mem {prog} {
+	global sstat float number mem_size job_id
+
+	set mem_used -1
+	set mem_task -1
+	set ave_used -1
+	set exit_code 0
+
+	spawn $prog --noheader -p --job=$job_id.0 --fields maxvmsize,maxvmsizetask,avevmsize
+	expect {
+		-re "($float)(\[KMG\]*).($number).($float)(\[KMG\]*)" {
+			set mem_used  $expect_out(1,string)
+			set scale1    $expect_out(2,string)
+			set mem_task  $expect_out(3,string)
+			set ave_used  $expect_out(4,string)
+			set scale2    $expect_out(5,string)
+			if {[string compare $scale1 "G"] == 0} {
+				set mem_used [expr $mem_used * 1024 * 1024]
+			} elseif {[string compare $scale1 "M"] == 0} {
+				set mem_used [expr $mem_used * 1024]
+			} elseif {[string compare $scale1 "K"] == 0} {
+				set mem_used [expr $mem_used * 1]
+			} else {
+				set mem_used [expr $mem_used / 1024]
+			}
+			if {[string compare $scale2 "G"] == 0} {
+				set ave_used [expr $ave_used * 1024 * 1024]
+			} elseif {[string compare $scale2 "M"] == 0} {
+				set ave_used [expr $ave_used * 1024]
+			} elseif {[string compare $scale2 "K"] == 0} {
+				set ave_used [expr $ave_used * 1]
+			} else {
+				set ave_used [expr $ave_used / 1024]
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sstat not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $exit_code } {
+		return 1
+	}
+
+	if { $mem_used == -1 } {
+		send_user "\nFAILURE: sstat stat memory not found\n"
+		return 1
+	} elseif { $mem_task == -1 } {
+		send_user "\nFAILURE: sstat stat memory task not found\n"
+		return 1
+	} elseif { $ave_used != $mem_used } {
+		send_user "\nFAILURE: sstat stat memory task not equal to ave memory\n"
+		return 1	
+	}
+	# Compute error in KB
+	set diff_mem [expr $mem_used - $mem_size]
+	set error_mem [expr abs($diff_mem)]
+	if {$error_mem > 4000} {
+		send_user "\nFAILURE: sstat memory use discrepancy of $error_mem KB\n"
+		send_user "  Wanted $mem_size KB, got $mem_used KB\n"
+		return 1
+	} else {
+		send_user "\nSUCCESS: sstat memory use discrepancy of $error_mem KB\n"
+	}
+	return 0
+}
+
+#
+# Check if accounting is enabled
+#
+set supported_gather  0
+set supported_storage 1
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "AccountingStorageType *= accounting_storage/none" {
+		set supported_storage 0
+		exp_continue
+	}
+	-re "JobAcctGatherType *= jobacct_gather/linux" {
+		set supported_gather 1
+		exp_continue
+	}
+	-re "JobAcctGatherType *= jobacct_gather/aix" {
+		set supported_gather 1
+		set aix 1
+		send_user "AIX doesn't do a great job tracking memory usage,\n"
+		send_user "as long as some memory number was\n"
+		send_user "returned we are ok since users are looking for\n"
+		send_user "mostly abnormalities between tasks instead\n"
+		send_user "of actual memory usuage.\n"
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$supported_gather == 0} {
+	send_user "\nWARNING: Job accounting information not gathered on this system\n"
+	exit 0
+}
+if {$supported_storage == 0} {
+	send_user "\nWARNING: Job accounting information not stored on this system\n"
+	exit 0
+}
+
+#
+# Delete left-over program and rebuild it
+#
+exec $bin_rm -f $file_prog
+exec $bin_rm -f $file_in $file_out $file_err
+exec $bin_cc -O -o $file_prog ${file_prog}.c
+exec $bin_chmod 700 $file_prog
+
+make_bash_script $file_in "
+    $srun $file_prog $ret_code $sleep_time $mem_size
+"
+
+#
+# Run a simple job
+# Usage: test12.2.prog <exit_code> <sleep_secs> <mem_kb>
+#
+set timeout [expr $max_job_delay + $sleep_time]
+set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to run
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to run\n"
+	set exit_code 1
+}
+
+# Wait for data to get logged
+exec $bin_sleep 5
+
+if {[_get_mem $sstat] != 0} {
+	set exit_code 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+
+#
+# Report basic sacct info
+#
+ 
+spawn $sacct --noheader -P --job=$job_id.0 --fields jobid,jobname,state,exitcode
+expect {
+	-re "$job_id\.0" {
+		incr matches
+		exp_continue
+	}
+	-re "$file_prog" {
+		incr matches
+		exp_continue
+	}
+	-re "FAILED" {
+		incr matches
+		exp_continue
+	}
+	-re "$ret_code" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches < 4} {
+	send_user "\nFAILURE: sacct reporting failed $matches\n"
+	set exit_code 1
+}
+
+#
+# Report the sacct accouting info
+# Note we load each digit of seconds individually to avoid this error:
+#   expected integer but got "08" (looks like invalid octal number)
+#
+set elapsed_time 0
+spawn $sacct --noheader -P --job=$job_id.0 --fields elapsed
+expect {
+	-re "($number):($number):(\[0-9\])(\[0-9\])" {
+		set hours $expect_out(1,string)
+		set mins $expect_out(2,string)
+		set sec_ten $expect_out(3,string)
+		set sec_one $expect_out(4,string)
+		set secs [expr $sec_ten * 10 + $sec_one]
+		set elapsed_time [expr ($hours * 3600) + ($mins * 60) + $secs]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set diff_time [expr $elapsed_time - $sleep_time]
+set error_time [expr abs($diff_time)]
+if {$error_time > 5} {
+	send_user "\nFAILURE: sacct elapsed time discrepancy of $error_time secs\n"
+	send_user "  Wanted $sleep_time secs, got $elapsed_time secs\n"
+	set exit_code 1
+} else {
+	send_user "\nSUCCESS: sacct elapsed time discrepancy of $error_time secs\n"
+}
+
+if {[_get_mem $sacct] != 0} {
+	set exit_code 1
+}
+
+if {$aix == 1 && $exit_code == 1} {
+	send_user "\nIf there were failures in the memory parts of this\n"
+	send_user "test, they are expected.  AIX doesn't do a great job\n"
+	send_user "tracking memory usage, as long as some memory number was\n"
+	send_user "returned we are ok since users are looking for\n"
+	send_user "mostly abnormalities between tasks instead of actual\n"
+	send_user "memory usuage.\n"
+}
+
+if {$exit_code == 0} {
+	exec rm -f $file_prog $file_in $file_out $file_err
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
