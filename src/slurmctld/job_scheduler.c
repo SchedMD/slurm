@@ -1263,10 +1263,14 @@ static void *_run_prolog(void *arg)
 		}
 	}
 	if (status != 0) {
+		slurmctld_lock_t job_write_lock = {
+			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 		error("prolog_slurmctld job %u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
+		lock_slurmctld(job_write_lock);
 		if (job_requeue(0, job_id, -1))
 			(void) job_signal(job_id, SIGKILL, 0, 0);
+		unlock_slurmctld(job_write_lock);
 	} else
 		debug2("prolog_slurmctld job %u prolog completed", job_id);
 

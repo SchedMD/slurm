@@ -7902,7 +7902,10 @@ extern void job_preempt_remove(uint32_t job_id)
 	int rc = SLURM_SUCCESS;
 	uint16_t preempt_mode = slurm_get_preempt_mode();
 	checkpoint_msg_t ckpt_msg;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
+	lock_slurmctld(job_write_lock);
 	preempt_mode &= (~PREEMPT_MODE_GANG);
 	if (preempt_mode == PREEMPT_MODE_REQUEUE) {
 		rc = job_requeue(0, job_id, -1);
@@ -7921,7 +7924,6 @@ extern void job_preempt_remove(uint32_t job_id)
 		}
 	} else {
 		error("Invalid preempt_mode: %u", preempt_mode);
-		return;
 	}
 
 	if (rc != SLURM_SUCCESS) {
@@ -7933,5 +7935,6 @@ extern void job_preempt_remove(uint32_t job_id)
 			     job_id, slurm_strerror(rc));
 		}
 	}
+	lock_slurmctld(job_write_lock);
 }
 
