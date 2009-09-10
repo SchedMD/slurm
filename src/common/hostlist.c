@@ -1181,13 +1181,12 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 			int coord[SYSTEM_DIMENSIONS];
 
 			_parse_int_to_array(i, coord);
-
-			len += snprintf(buf+len, m, "%s", hr->prefix);
+			ret = snprintf(buf+len, m, "%s", hr->prefix);
 			for(i2 = 0; i2<SYSTEM_DIMENSIONS; i2++) {
-				if(len <= n)
-					buf[len++] = alpha_num[coord[i2]];
+				if(len+ret < n)
+					buf[len+ret] = alpha_num[coord[i2]];
+				ret++;
 			}
-			ret = len;
 		} else {
 			ret = snprintf(buf + len, m, "%s%0*lu",
 				       hr->prefix, hr->width, i);
@@ -3719,7 +3718,3 @@ int main(int ac, char **av)
 }
 
 #endif		/* TEST_MAIN */
-
-/* 
- * vi: tabstop=4 shiftwidth=4 expandtab 
- */
