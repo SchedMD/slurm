@@ -529,7 +529,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 		/* if the qos limits have changed since job
 		 * submission and job can not run, then kill it */
-		if ((qos_ptr->max_wall_pj != INFINITE)) {
+		if (qos_ptr->max_wall_pj != INFINITE) {
 			time_limit = qos_ptr->max_wall_pj;
 			if ((job_ptr->time_limit != NO_VAL) &&
 			    (job_ptr->time_limit > time_limit)) {
@@ -557,7 +557,9 @@ end_qos:
 		info("acct_job_limits: %u of %u", 
 		     assoc_ptr->used_jobs, assoc_ptr->max_jobs);
 #endif		
-		if ((assoc_ptr->grp_cpu_mins != (uint64_t)INFINITE)
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->grp_cpu_mins == (uint64_t)INFINITE))
+		    && (assoc_ptr->grp_cpu_mins != (uint64_t)INFINITE)
 		    && (usage_mins >= assoc_ptr->grp_cpu_mins)) {
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
@@ -573,7 +575,9 @@ end_qos:
 			goto end_it;
 		}
 
-		if ((assoc_ptr->grp_jobs != INFINITE) &&
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->grp_jobs == INFINITE)) &&
+		    (assoc_ptr->grp_jobs != INFINITE) &&
 		    (assoc_ptr->used_jobs >= assoc_ptr->grp_jobs)) {
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
@@ -588,7 +592,9 @@ end_qos:
 			goto end_it;
 		}
 		
-		if (assoc_ptr->grp_nodes != INFINITE) {
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->grp_nodes == INFINITE))
+		    && (assoc_ptr->grp_nodes != INFINITE)) {
 			if (job_ptr->details->min_nodes > 
 			    assoc_ptr->grp_nodes) {
 				info("job %u being cancelled, "
@@ -621,7 +627,9 @@ end_qos:
 
 		/* we don't need to check submit_jobs here */
 
-		if ((assoc_ptr->grp_wall != INFINITE)
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->grp_wall == INFINITE))
+		    && (assoc_ptr->grp_wall != INFINITE)
 		    && (wall_mins >= assoc_ptr->grp_wall)) {
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
@@ -655,7 +663,9 @@ end_qos:
 		 * time because we don't have access to a CPU count for the job
 		 * due to how all of the job's specifications interact */
 
-		if ((assoc_ptr->max_jobs != INFINITE) &&
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->max_jobs_pu == INFINITE)) &&
+		    (assoc_ptr->max_jobs != INFINITE) &&
 		    (assoc_ptr->used_jobs >= assoc_ptr->max_jobs)) {
 			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 			xfree(job_ptr->state_desc);
@@ -669,7 +679,9 @@ end_qos:
 			goto end_it;
 		}
 		
-		if ((assoc_ptr->max_nodes_pj != INFINITE)) {
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->max_nodes_pj == INFINITE))
+		    && (assoc_ptr->max_nodes_pj != INFINITE)) {
 			if (job_ptr->details->min_nodes > 
 			    assoc_ptr->max_nodes_pj) {
 				info("job %u being cancelled, "
@@ -688,7 +700,9 @@ end_qos:
 
 		/* if the association limits have changed since job
 		 * submission and job can not run, then kill it */
-		if (assoc_ptr->max_wall_pj != INFINITE) {
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->max_wall_pj == INFINITE))
+		    && (assoc_ptr->max_wall_pj != INFINITE)) {
 			time_limit = assoc_ptr->max_wall_pj;
 			if ((job_ptr->time_limit != NO_VAL) &&
 			    (job_ptr->time_limit > time_limit)) {
