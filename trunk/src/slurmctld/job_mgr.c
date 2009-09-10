@@ -6936,10 +6936,6 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		}
 
 	}
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
-end_qos:
-	if(!rc)
-		return rc;
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	while(assoc_ptr) {
@@ -6955,7 +6951,8 @@ end_qos:
 		 * assoc_ptr->grp_jobs.
 		 */
 
-		if ((qos_ptr->grp_nodes == INFINITE) &&
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->grp_nodes == INFINITE)) &&
 		    (assoc_ptr->grp_nodes != INFINITE)) {
 			if (job_desc->min_nodes > assoc_ptr->grp_nodes) {
 				info("job submit for user %s(%u): "
@@ -6987,7 +6984,8 @@ end_qos:
 			}
 		}
 
-		if ((qos_ptr->grp_submit_jobs == INFINITE) &&
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->grp_submit_jobs == INFINITE)) &&
 		    (assoc_ptr->grp_submit_jobs != INFINITE) &&
 		    (assoc_ptr->used_submit_jobs 
 		     >= assoc_ptr->grp_submit_jobs)) {
@@ -7028,7 +7026,8 @@ end_qos:
 		 * assoc_ptr->max_jobs.
 		 */
 		
-		if ((qos_ptr->max_nodes_pj == INFINITE) &&
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->max_nodes_pj == INFINITE)) &&
 		    (assoc_ptr->max_nodes_pj != INFINITE)) {
 			if (job_desc->min_nodes > assoc_ptr->max_nodes_pj) {
 				info("job submit for user %s(%u): "
@@ -7059,7 +7058,8 @@ end_qos:
 			}
 		}
 
-		if ((qos_ptr->max_submit_jobs_pu == INFINITE) &&
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->max_submit_jobs_pu == INFINITE)) &&
 		    (assoc_ptr->max_submit_jobs != INFINITE) &&
 		    (assoc_ptr->used_submit_jobs 
 		     >= assoc_ptr->max_submit_jobs)) {
@@ -7072,7 +7072,8 @@ end_qos:
 			break;
 		}
 		
-		if ((qos_ptr->max_wall_pj == INFINITE) &&
+		if ((!qos_ptr || 
+		     (qos_ptr && qos_ptr->max_wall_pj == INFINITE)) &&
 		    (assoc_ptr->max_wall_pj != INFINITE)) {
 			time_limit = assoc_ptr->max_wall_pj;
 			if (job_desc->time_limit == NO_VAL) {
@@ -7101,6 +7102,8 @@ end_qos:
 		parent = 1;
 	}
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
+end_qos:
+	slurm_mutex_unlock(&assoc_mgr_qos_lock);
 
 	return rc;
 }
