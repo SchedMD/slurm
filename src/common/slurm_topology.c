@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  topo_plugin.c - Topology plugin function setup.
+ *  slurm_topology.c - Topology plugin function setup.
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -41,18 +41,22 @@
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#if 0
-#include "src/slurmctld/slurmctld.h"
-#endif
 
+/* defined here but is really tree plugin related */
+struct switch_record *switch_record_table = NULL;
+int switch_record_cnt = 0;
 
 /* ************************************************************************ */
 /*  TAG(                        slurm_topo_ops_t                         )  */
 /* ************************************************************************ */
 typedef struct slurm_topo_ops {
 	int		(*build_config)		( void );
+	int		(*get_node_addr)	( char* node_name,
+						  char** addr,
+						  char** pattern );
 } slurm_topo_ops_t;
 
 
@@ -82,6 +86,7 @@ slurm_topo_get_ops( slurm_topo_context_t *c )
 	 */
 	static const char *syms[] = {
 		"topo_build_config",
+		"topo_get_node_addr",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -247,5 +252,18 @@ slurm_topo_build_config( void )
 		return SLURM_ERROR;
 
 	return (*(g_topo_context->ops.build_config))();
+}
+
+
+/* *********************************************************************** */
+/*  TAG(                      slurm_topo_get_node_addr                  )  */
+/* *********************************************************************** */
+extern int
+slurm_topo_get_node_addr( char* node_name, char ** addr, char** pattern )
+{
+	if ( slurm_topo_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_topo_context->ops.get_node_addr))(node_name,addr,pattern);
 }
 

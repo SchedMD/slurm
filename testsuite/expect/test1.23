@@ -144,12 +144,22 @@ if {$err_msg != 1} {
 }
 
 #
-# Submit a job with valid mem requirement
+# Submit a job with what should be valid mem requirement.
 #
+# We can't set --mem=1 or the job will abort for lack of memory, 
+# so we just use a small value that should be valid if the node
+# is properly configured.
+#
+set err_msg     0
 set host_0      ""
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -l --mem=10 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
+	-re "not available" {
+		send_user "This error is not unexpected, no worries\n"
+		set err_msg 1
+		exp_continue
+	}
 	-re "0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
@@ -164,7 +174,7 @@ expect {
 	}
 }
 
-if {[string compare $host_0 ""] == 0} {
+if {$err_msg == 0 && [string compare $host_0 ""] == 0} {
 	send_user "\nFAILURE: job failed with valid mem option\n"
 	set exit_code   1	
 }

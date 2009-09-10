@@ -99,6 +99,8 @@ typedef struct slurmd_config {
 					 * CR_DEFAULT, etc.                */
 	char         *node_name;	/* node name                       */
 	char         *node_addr;	/* node's address                  */
+	char         *node_topo_addr;   /* node's topology address         */
+	char         *node_topo_pattern;/* node's topology address pattern */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
 	char         *spooldir;		/* SlurmdSpoolDir	           */

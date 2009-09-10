@@ -74,6 +74,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
@@ -96,7 +97,6 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
-#include "src/slurmctld/topo_plugin.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 
@@ -153,8 +153,6 @@ int accounting_enforce = 0;
 int association_based_accounting = 0;
 bool ping_nodes_now = false;
 int      cluster_procs = 0;
-struct switch_record *switch_record_table = NULL;
-int switch_record_cnt = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;

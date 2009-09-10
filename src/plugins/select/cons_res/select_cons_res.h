@@ -56,6 +56,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/slurm_topology.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/slurmctld.h"
 

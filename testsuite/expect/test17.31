@@ -92,6 +92,7 @@ make_bash_script $file_in "
 $bin_sleep $delay
 "
 
+set job_id  0
 set matches 0
 set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
 #exp_internal 1
@@ -131,10 +132,9 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	"error" {
-		send_user "\nFAILURE: sbatch got an error\n"
-		set exit_code 1
-		exit $exit_code
+	"error: Batch job submission failed" {
+		send_user "\nWARNING: this might be legitimate, depending upon configuration\n"
+		exp_continue
 	}
 
 	timeout {
@@ -151,10 +151,7 @@ if {$matches != 3} {
 	send_user "\nFAILURE: sbatch didn't read the correct options from batch file\n"
 	set exit_code 1
 }
-if {$job_id == 0} {
-	send_user "\nFAILURE: sbatch failed to submit the job\n"
-	set exit_code 1
-} else {
+if {$job_id != 0} {
 	cancel_job $job_id
 }
 

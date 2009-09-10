@@ -65,6 +65,7 @@
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
@@ -85,7 +86,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "src/slurmctld/topo_plugin.h"
 
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);
@@ -110,9 +110,6 @@ static int  _update_preempt(uint16_t old_enable_preempt);
 #ifdef 	HAVE_ELAN
 static void _validate_node_proc_count(void);
 #endif
-
-static char *highest_node_name = NULL;
-int node_record_count = 0;
 
 /*
  * _build_bitmaps_pre_select - recover some state for jobs and nodes prior to 
@@ -301,154 +298,7 @@ static int _init_all_slurm_conf(void)
 	if ((error_code = init_job_conf()))
 		return error_code;
 
-	xfree(highest_node_name);
 	return 0;
-}
-
-static int _state_str2int(const char *state_str)
-{
-	int state_val = NO_VAL;
-	int i;
-
-	for (i = 0; i <= NODE_STATE_END; i++) {
-		if (strcasecmp(node_state_string(i), "END") == 0)
-			break;
-		if (strcasecmp(node_state_string(i), state_str) == 0) {
-			state_val = i;
-			break;
-		}
-	}
-	if (i >= NODE_STATE_END) {
-		if (strncasecmp("DRAIN", state_str, 5) == 0)
-			state_val = NODE_STATE_UNKNOWN | NODE_STATE_DRAIN;
-		else if (strncasecmp("FAIL", state_str, 4) == 0)
-			state_val = NODE_STATE_IDLE | NODE_STATE_FAIL;
-	}
-	if (state_val == NO_VAL) {
-		error("invalid node state %s", state_str);
-		errno = EINVAL;
-	}
-	return state_val;
-}
-
-/* 
- * _build_single_nodeline_info - From the slurm.conf reader, build table,
- * 	and set values
- * RET 0 if no error, error code otherwise
- * Note: Operates on common variables
- *	default_node_record - default node configuration values
- */
-static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
-				       struct config_record *config_ptr,
-				       slurm_ctl_conf_t *conf)
-{
-	int error_code = SLURM_SUCCESS;
-	struct node_record *node_rec = NULL;
-	hostlist_t alias_list = NULL;
-	hostlist_t hostname_list = NULL;
-	hostlist_t address_list = NULL;
-	char *alias = NULL;
-	char *hostname = NULL;
-	char *address = NULL;
-	int state_val = NODE_STATE_UNKNOWN;
-
-	if (node_ptr->state != NULL) {
-		state_val = _state_str2int(node_ptr->state);
-		if (state_val == NO_VAL)
-			goto cleanup;
-	}
-
-	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
-		fatal("Unable to create NodeName list from %s",
-		      node_ptr->nodenames);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
-		fatal("Unable to create NodeHostname list from %s",
-		      node_ptr->hostnames);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
-		fatal("Unable to create NodeAddr list from %s",
-		      node_ptr->addresses);
-		error_code = errno;
-		goto cleanup;
-	}
-
-	/* some sanity checks */
-#ifdef HAVE_FRONT_END
-	if ((hostlist_count(hostname_list) != 1) ||
-	    (hostlist_count(address_list)  != 1)) {
-		error("Only one hostname and address allowed "
-		      "in FRONT_END mode");
-		goto cleanup;
-	}
-	hostname = node_ptr->hostnames;
-	address = node_ptr->addresses;
-#else
-	if (hostlist_count(hostname_list) < hostlist_count(alias_list)) {
-		error("At least as many NodeHostname are required "
-		      "as NodeName");
-		goto cleanup;
-	}
-	if (hostlist_count(address_list) < hostlist_count(alias_list)) {
-		error("At least as many NodeAddr are required as NodeName");
-		goto cleanup;
-	}
-#endif
-
-	/* now build the individual node structures */
-	while ((alias = hostlist_shift(alias_list))) {
-#ifndef HAVE_FRONT_END
-		hostname = hostlist_shift(hostname_list);
-		address = hostlist_shift(address_list);
-#endif		
-		if (highest_node_name &&
-		    (strcmp(alias, highest_node_name) <= 0)) {
-			/* find_node_record locks this to get the
-			   alias so we need to unlock */
-			slurm_conf_unlock();
-			node_rec = find_node_record(alias);
-			slurm_conf_lock();			
-		} else {
-			xfree(highest_node_name);
-			highest_node_name = xstrdup(alias);
-			node_rec = NULL;
-		}
-
-		if (node_rec == NULL) {
-			node_rec = create_node_record(config_ptr, alias);
-			if ((state_val != NO_VAL) &&
-			    (state_val != NODE_STATE_UNKNOWN))
-				node_rec->node_state = state_val;
-			node_rec->last_response = (time_t) 0;
-			node_rec->comm_name = xstrdup(address);
-
-			node_rec->port = node_ptr->port;
-			node_rec->reason = xstrdup(node_ptr->reason);
-		} else {
-			/* FIXME - maybe should be fatal? */
-			error("reconfiguration for node %s, ignoring!", alias);
-		}
-		free(alias);
-#ifndef HAVE_FRONT_END
-		free(hostname);
-		free(address);
-#endif
-	}
-
-	/* free allocated storage */
-cleanup:
-	if (alias_list)
-		hostlist_destroy(alias_list);
-	if (hostname_list)
-		hostlist_destroy(hostname_list);
-	if (address_list)
-		hostlist_destroy(address_list);
-	return error_code;
-
 }
 
 static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
@@ -460,7 +310,7 @@ static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 	int state_val = NODE_STATE_DOWN;
 
 	if (down->state != NULL) {
-		state_val = _state_str2int(down->state);
+		state_val = state_str2int(down->state);
 		if (state_val == NO_VAL) {
 			error("Invalid State \"%s\"", down->state);
 			goto cleanup;
@@ -526,45 +376,20 @@ static void _handle_all_downnodes(void)
  */
 static int _build_all_nodeline_info(void)
 {
-	slurm_conf_node_t *node, **ptr_array;
-	struct config_record *config_ptr = NULL;
-	slurm_ctl_conf_t *conf;
-	int count;
-	int i;
+	int rc;
 
-	count = slurm_conf_nodename_array(&ptr_array);
-	if (count == 0)
-		fatal("No NodeName information available!");
+	/* Load the node table here */
+	rc = build_all_nodeline_info(false);
 
-	conf = slurm_conf_lock();
-	for (i = 0; i < count; i++) {
-		node = ptr_array[i];
-
-		config_ptr = create_config_record();
-		config_ptr->nodes = xstrdup(node->nodenames);
-		config_ptr->cpus = node->cpus;
-		config_ptr->sockets = node->sockets;
-		config_ptr->cores = node->cores;
-		config_ptr->threads = node->threads;
-		config_ptr->real_memory = node->real_memory;
-		config_ptr->tmp_disk = node->tmp_disk;
-		config_ptr->weight = node->weight;
-		if (node->feature)
-			config_ptr->feature = xstrdup(node->feature);
-
-		_build_single_nodeline_info(node, config_ptr, conf);
-	}
-	xfree(highest_node_name);
-
-	/* Unlock config here so that we can call
-	 * find_node_record() below and in the topology plugins */
-	slurm_conf_unlock();
+	/* Now perform operations on the node table as needed by slurmctld */
 #ifdef HAVE_3D
 {
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	char *node_000 = NULL;
 	struct node_record *node_rec = NULL;
 	if (conf->node_prefix)
 		node_000 = xstrdup(conf->node_prefix);
+	slurm_conf_unlock();
 	xstrcat(node_000, "000");
 	node_rec = find_node_record(node_000);
 	if (node_rec == NULL)
@@ -577,7 +402,7 @@ static int _build_all_nodeline_info(void)
 	slurm_topo_build_config();
 #endif	/* ! HAVE_BG */
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*

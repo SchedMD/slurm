@@ -7,7 +7,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008-2009 Lawrence Livermore National Security
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -57,6 +58,8 @@ array set good_vars {
     SLURM_STEPID 0
     SLURM_TASKS_PER_NODE 1
     SLURM_TASK_PID 1
+    SLURM_TOPOLOGY_ADDR 0
+    SLURM_TOPOLOGY_ADDR_PATTERN 0
     SLURM_UMASK 0
 }
 
