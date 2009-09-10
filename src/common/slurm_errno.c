@@ -70,7 +70,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{-1, "Unspecified error"},
 	{EINPROGRESS, "Operation now in progress"},
 
-	/*General Message error codes */
+	/* General Message error codes */
 	{ SLURM_UNEXPECTED_MSG_ERROR, 
 	  "Unexpected message received" 			},
 	{ SLURM_COMMUNICATIONS_CONNECTION_ERROR,
@@ -95,6 +95,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "MPI plugin's pre-launch setup failed"                },
 	{ SLURM_PLUGIN_NAME_INVALID,
 	  "Plugin initialization failed"			},
+	{ SLURM_UNKNOWN_FORWARD_ADDR,
+	  "Can't find an address, check slurm.conf"		},
 
 	/* communication failures to/from slurmctld */
 	{ SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR,

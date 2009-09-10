@@ -939,6 +939,13 @@ static void *_thread_per_group_rpc(void *args)
 			  ret_data_info->node_name); */
 			thread_state = DSH_DONE;
 			break;
+		case SLURM_UNKNOWN_FORWARD_ADDR:
+			error("We were unable to forward message to '%s'.  "
+			      "Make sure the slurm.conf for each slurmd "
+			      "contain all other nodes in your system.",
+			      ret_data_info->node_name);
+			thread_state = DSH_NO_RESP;
+			break;
 		case ESLURMD_EPILOG_FAILED:
 			error("Epilog failure on host %s, "
 			      "setting DOWN", 
