@@ -741,7 +741,7 @@ _read_config(void)
 	    (conf->threads   != conf->actual_threads))) {
 		info("Node configuration differs from hardware\n"
 		     "   Procs=%u:%u(hw) Sockets=%u:%u(hw)\n"
-		     "   CoresPerSocket%u:%u(hw) ThreadsPerCore:%u:%u(hw)",
+		     "   CoresPerSocket=%u:%u(hw) ThreadsPerCore=%u:%u(hw)",
 		     conf->conf_cpus,    conf->actual_cpus,
 		     conf->conf_sockets, conf->actual_sockets,
 		     conf->conf_cores,   conf->actual_cores,
