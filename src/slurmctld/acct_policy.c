@@ -543,10 +543,6 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			}
 		}		
 	}
-	slurm_mutex_unlock(&assoc_mgr_qos_lock);
-end_qos:
-	if(!rc)
-		return rc;
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
@@ -604,8 +600,6 @@ end_qos:
 				     job_ptr->details->min_nodes, 
 				     assoc_ptr->grp_nodes, assoc_ptr->acct);
 				_cancel_job(job_ptr);
-				rc = false;
-				goto end_it;
 			} else if ((assoc_ptr->grp_used_nodes + 
 				    job_ptr->details->min_nodes) > 
 				   assoc_ptr->grp_nodes) {
@@ -723,5 +717,7 @@ end_qos:
 	}
 end_it:
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
+end_qos:
+	slurm_mutex_unlock(&assoc_mgr_qos_lock);
 	return rc;
 }
