@@ -121,6 +121,8 @@
 <li><a href="#ubuntu">I see my host of my calling node as 127.0.1.1
   instead of the correct IP address.  Why is that?</a></li>
 <li><a href="#stop_sched">How can I stop SLURM from scheduling jobs?</a></li>
+<li><a href="#scontrol_multi_jobs">Can I update multiple jobs with a single
+<i>scontrol</i> command?</a></li>
 </ol>
 
 
@@ -1227,8 +1229,16 @@ $ scontrol update PartitionName=foo State=DOWN
 $ scontrol update PartitionName=bar State=UP
 </pre></p>
 
+<p><a name="scontrol_multi_jobs"><b>39. Can I update multiple jobs with a 
+single <i>scontrol</i> command?</b></a></br>
+No, but you can probably use <i>squeue</i> to build the script taking 
+advantage of its filtering and formatting options. For example:
+<pre>
+$ squeue -tpd -h -o "scontrol update jobid=%i priority=1000" >my.script
+</pre></p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 August 2009</p>
+<p style="text-align:center;">Last modified 11 September 2009</p>
 
 <!--#include virtual="footer.txt"-->
