@@ -1353,11 +1353,13 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					node_flags;
 				node_ptr->last_idle = now;
 			}
-			if (!IS_NODE_DRAIN(node_ptr))
+			if (!IS_NODE_DRAIN(node_ptr) && 
+			    !IS_NODE_FAIL(node_ptr)) {
 				xfree(node_ptr->reason);
-			clusteracct_storage_g_node_up(acct_db_conn, 
+				clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
+			}
 		} else if (IS_NODE_DOWN(node_ptr) &&
 			   ((slurmctld_conf.ret2service == 2) ||
 		            ((slurmctld_conf.ret2service == 1) &&
@@ -1375,12 +1377,15 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			}
 			info("node %s returned to service", 
 			     reg_msg->node_name);
-			xfree(node_ptr->reason);
 			reset_job_priority();
 			trigger_node_up(node_ptr);
-			clusteracct_storage_g_node_up(acct_db_conn, 
+			if (!IS_NODE_DRAIN(node_ptr) && 
+			    !IS_NODE_FAIL(node_ptr)) {
+				xfree(node_ptr->reason);
+				clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
+			}
 		} else if (IS_NODE_ALLOCATED(node_ptr) &&
 			   (reg_msg->job_count == 0)) {	/* job vanished */
 			last_node_update = now;
@@ -1560,9 +1565,9 @@ extern int validate_nodes_via_front_end(
 						node_flags;
 					node_ptr->last_idle = now;
 				}
-				xfree(node_ptr->reason);
 				if (!IS_NODE_DRAIN(node_ptr) &&
 				    !IS_NODE_FAIL(node_ptr)) {
+					xfree(node_ptr->reason);
 					clusteracct_storage_g_node_up(
 						acct_db_conn, 
 						slurmctld_cluster_name,
@@ -1589,12 +1594,15 @@ extern int validate_nodes_via_front_end(
 				else
 					return_hostlist = hostlist_create(
 						node_ptr->name);
-				xfree(node_ptr->reason);
 				trigger_node_up(node_ptr);
-				clusteracct_storage_g_node_up(
-					acct_db_conn, 
-					slurmctld_cluster_name,
-					node_ptr, now);
+				if (!IS_NODE_DRAIN(node_ptr) &&
+				    !IS_NODE_FAIL(node_ptr)) {
+					xfree(node_ptr->reason);
+					clusteracct_storage_g_node_up(
+						acct_db_conn, 
+						slurmctld_cluster_name,
+						node_ptr, now);
+				}
 			} else if (IS_NODE_ALLOCATED(node_ptr) &&
 				   (jobs_on_node == 0)) {
 				/* job vanished */
@@ -1728,9 +1736,9 @@ static void _node_did_resp(struct node_record *node_ptr)
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		info("node_did_resp: node %s returned to service", 
 			node_ptr->name);
-		xfree(node_ptr->reason);
 		trigger_node_up(node_ptr);
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
+			xfree(node_ptr->reason);
 			clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
@@ -1854,8 +1862,8 @@ void set_node_down (char *name, char *reason)
 		return;
 	}
 
-	if ((node_ptr->reason == NULL)
-	||  (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
+	if ((node_ptr->reason == NULL) ||
+	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		time_t now;
 		char time_buf[64], time_str[32];
 

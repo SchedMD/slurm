@@ -1152,11 +1152,10 @@ explicitly changes its state (even if the slurmd daemon registers
 and resumes communications).
 .TP
 \fB1\fR
-A non\-responding (DOWN) node will become available for use upon
-registration. Note that DOWN node's state will be changed only if
-it was set DOWN due to being non\-responsive. If the node was
-set DOWN for any other reason (low memory, prolog failure, epilog
-failure, etc.), its state will not automatically be changed.  
+A DOWN node will become available for use upon registration with a
+valid configuration only if it was set DOWN due to being non\-responsive. 
+If the node was set DOWN for any other reason (low memory, prolog failure, 
+epilog failure, etc.), its state will not automatically be changed.  
 .TP
 \fB2\fR
 A DOWN node will become available for use upon registration with a
@@ -1293,7 +1292,8 @@ The following values are supported for \fBSelectType=select/cons_res\fR:
 .TP
 \fBCR_CPU\fR
 CPUs are consumable resources.
-There is no notion of sockets, cores or threads.
+There is no notion of sockets, cores or threads; 
+do not define those values in the node specification.
 On a multi\-core system, each core will be considered a CPU.
 On a multi\-core and hyperthreaded system, each thread will be
 considered a CPU.
@@ -1301,6 +1301,8 @@ On single\-core systems, each CPUs will be considered a CPU.
 .TP
 \fBCR_CPU_Memory\fR
 CPUs and memory are consumable resources.
+There is no notion of sockets, cores or threads; 
+do not define those values in the node specification.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Core\fR
