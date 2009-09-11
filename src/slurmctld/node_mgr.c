@@ -97,6 +97,7 @@ static void 	_dump_node_state (struct node_record *dump_node_ptr,
 				  Buf buffer);
 static struct node_record * _find_alias_node_record (char *name);
 static int	_hash_index (char *name);
+static bool	_is_node_drain(struct node_record *node_ptr);
 static void 	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
 static void 	_make_node_down(struct node_record *node_ptr,
@@ -1126,9 +1127,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			if (state_val == NODE_RESUME) {
 				base_state &= NODE_STATE_BASE;
 				if ((base_state == NODE_STATE_IDLE) &&
-				    ((node_ptr->node_state & NODE_STATE_DRAIN) 
-				     || (node_ptr->node_state &
-					 NODE_STATE_FAIL))) {
+				    _is_node_drain(node_ptr)) {
 					clusteracct_storage_g_node_up(
 						acct_db_conn, 
 						slurmctld_cluster_name,
@@ -1278,11 +1277,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 		}
 
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		if ((base_state != NODE_STATE_DOWN)
-		&&  ((node_ptr->node_state & (NODE_STATE_DRAIN |
-				NODE_STATE_FAIL)) == 0))
+		if ((base_state != NODE_STATE_DOWN) && 
+		    !_is_node_drain(node_ptr)) {
 			xfree(node_ptr->reason);
-
+		}
 		free (this_node_name);
 	}
 	hostlist_destroy (host_list);
@@ -1839,11 +1837,12 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					node_flags;
 				node_ptr->last_idle = now;
 			}
-			if ((node_flags & NODE_STATE_DRAIN) == 0)
+			if (!_is_node_drain(node_ptr)) {
 				xfree(node_ptr->reason);
-			clusteracct_storage_g_node_up(acct_db_conn, 
+				clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
+			}
 		} else if ((base_state == NODE_STATE_DOWN) &&
 			   ((slurmctld_conf.ret2service == 2) ||
 		            ((slurmctld_conf.ret2service == 1) &&
@@ -1860,12 +1859,14 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 				node_ptr->last_idle = now;
 			}
 			info ("node %s returned to service", reg_msg->node_name);
-			xfree(node_ptr->reason);
 			reset_job_priority();
 			trigger_node_up(node_ptr);
-			clusteracct_storage_g_node_up(acct_db_conn, 
-						      slurmctld_cluster_name,
-						      node_ptr, now);
+			if (!_is_node_drain(node_ptr)) {
+				xfree(node_ptr->reason);
+				clusteracct_storage_g_node_up(acct_db_conn, 
+							slurmctld_cluster_name,
+							node_ptr, now);
+			}
 		} else if ((base_state == NODE_STATE_ALLOCATED) &&
 			   (reg_msg->job_count == 0)) {	/* job vanished */
 			last_node_update = now;
@@ -2041,16 +2042,21 @@ extern int validate_nodes_via_front_end(
 						node_flags;
 					node_ptr->last_idle = now;
 				}
-				xfree(node_ptr->reason);
-				if ((node_flags & 
-				     (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0)
+				if (!_is_node_drain(node_ptr)) {
+					xfree(node_ptr->reason);
 					clusteracct_storage_g_node_up(
 						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr,
 						now);
+				}
+
 			} else if ((base_state == NODE_STATE_DOWN) &&
-			           (slurmctld_conf.ret2service == 1)) {
+				   ((slurmctld_conf.ret2service == 2) ||
+			            ((slurmctld_conf.ret2service == 1) &&
+				     (node_ptr->reason != NULL) && 
+				     (strncmp(node_ptr->reason, 
+					      "Not responding", 14) == 0)))) {
 				updated_job = true;
 				if (jobs_on_node) {
 					node_ptr->node_state = 
@@ -2069,12 +2075,14 @@ extern int validate_nodes_via_front_end(
 				else
 					return_hostlist = hostlist_create(
 						node_ptr->name);
-				xfree(node_ptr->reason);
 				trigger_node_up(node_ptr);
-				clusteracct_storage_g_node_up(
-					acct_db_conn, 
-					slurmctld_cluster_name,
-					node_ptr, now);
+				if (!_is_node_drain(node_ptr)) {
+					xfree(node_ptr->reason);
+					clusteracct_storage_g_node_up(
+						acct_db_conn, 
+						slurmctld_cluster_name,
+						node_ptr, now);
+				}
 			} else if ((base_state == NODE_STATE_ALLOCATED) &&
 				   (jobs_on_node == 0)) {
 				/* job vanished */
@@ -2209,12 +2217,13 @@ static void _node_did_resp(struct node_record *node_ptr)
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		info("node_did_resp: node %s returned to service", 
 			node_ptr->name);
-		xfree(node_ptr->reason);
 		trigger_node_up(node_ptr);
-		if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0)
+		if (!_is_node_drain(node_ptr)) {
+			xfree(node_ptr->reason);
 			clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
+		}
 	}
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	if ((base_state == NODE_STATE_IDLE) 
@@ -2337,8 +2346,8 @@ void set_node_down (char *name, char *reason)
 		return;
 	}
 
-	if ((node_ptr->reason == NULL)
-	||  (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
+	if ((node_ptr->reason == NULL) ||
+	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		time_t now;
 		char time_buf[64], time_str[32];
 
@@ -2773,4 +2782,12 @@ extern void  build_config_feature_array(struct config_record *config_ptr)
 		}
 		xfree(tmp_str);
 	}
+}
+
+/* Return true if the node state is DRAIN or FAIL */
+static bool _is_node_drain(struct node_record *node_ptr)
+{
+	if (node_ptr->node_state & (NODE_STATE_DRAIN | NODE_STATE_FAIL))
+		return true;
+	return false;
 }
