@@ -484,7 +484,8 @@ if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 } else {
 	send_user "\nNOTE: This test can fail if the node configuration in slurm.conf \n"
-	send_user "  (sockets, cores, threads) differs from the actual configuration\n"
+	send_user "  (sockets, cores, threads) differs from the actual configuration \n"
+	send_user "  or if Shared=FORCE for the default partition.\n"
 }
 exit $exit_code
 
