@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     that information into slurmd. Use it to set environment variables for jobs
     SLURM_TOPOLOGY_ADDR and SLURM_TOPOLOGY_ADDR_PATTERN describing the network
     topology for each task. Based upon patch from Mattheu Hautreux (CEA).
+ -- Correction in computing a job's TotalProcs value when ThreadsPerCore>1 and
+    allocating by cores or sockets.
 
 * Changes in SLURM 2.1.0-pre3
 =============================
