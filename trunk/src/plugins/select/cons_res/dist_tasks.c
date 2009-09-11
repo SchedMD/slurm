@@ -173,17 +173,22 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				    const select_type_plugin_info_t cr_type)
 {
-	uint32_t c, i, n, size, csize;
+	uint32_t c, i, n, size, csize, core_cnt;
 	uint16_t cpus, num_bits, vpus = 1;
 	select_job_res_t *job_res = job_ptr->select_job;
-	bool alloc_sockets = false;
+	bool alloc_cores = false, alloc_sockets = false;
 
 	if (!job_res)
 		return;
 
+	if ((cr_type == CR_CORE)   || (cr_type == CR_CORE_MEMORY))
+		alloc_cores = true;
 #ifdef ALLOCATE_FULL_SOCKET
 	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
 		alloc_sockets = true;
+#else
+	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+		alloc_cores = true;
 #endif
 
 	size  = bit_size(job_res->node_bitmap);
@@ -192,12 +197,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		
 		if (bit_test(job_res->node_bitmap, n) == 0)
 			continue;
+		core_cnt = 0;
 		num_bits = select_node_record[n].sockets *
 				select_node_record[n].cores;
 		if ((c + num_bits) > csize)
 			fatal ("cons_res: _block_sync_core_bitmap index error");
 		
-		cpus  = job_res->cpus[i++];
+		cpus  = job_res->cpus[i];
 		if (job_ptr->details && job_ptr->details->mc_ptr) {
 			vpus  = MIN(job_ptr->details->mc_ptr->max_threads,
 				    select_node_record[n].vpus);
@@ -205,6 +211,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 		while (cpus > 0 && num_bits > 0) {
 			if (bit_test(job_res->core_bitmap, c++)) {
+				core_cnt++;
 				if (cpus < vpus)
 					cpus = 0;
 				else
@@ -220,7 +227,8 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		if (alloc_sockets) {	/* Advance to end of socket */
 			while ((num_bits > 0) && 
 			       (c % select_node_record[n].cores)) {
-				c++;
+				if (bit_test(job_res->core_bitmap, c++))
+					core_cnt++;
 				num_bits--;
 			}
 		}
@@ -228,7 +236,12 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			bit_clear(job_res->core_bitmap, c++);
 			num_bits--;
 		}
-		
+		if ((alloc_cores || alloc_sockets) &&
+		    (select_node_record[n].vpus > 1)) {
+			job_res->cpus[i] = core_cnt *
+					   select_node_record[n].vpus;
+		}
+		i++;
 	}
 }
 
@@ -241,20 +254,24 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				     const select_type_plugin_info_t cr_type)
 {
-	uint32_t c, i, s, n, *sock_start, *sock_end, size, csize;
+	uint32_t c, i, j, s, n, *sock_start, *sock_end, size, csize, core_cnt;
 	uint16_t cps = 0, cpus, vpus, sockets, sock_size;
 	select_job_res_t *job_res = job_ptr->select_job;
 	bitstr_t *core_map;
-	bool *sock_used, alloc_sockets = false;
+	bool *sock_used, alloc_cores = false, alloc_sockets = false;
 
 	if ((job_res == NULL) || (job_res->core_bitmap == NULL))
 		return;
 
+	if ((cr_type == CR_CORE)   || (cr_type == CR_CORE_MEMORY))
+		alloc_cores = true;
 #ifdef ALLOCATE_FULL_SOCKET
 	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
 		alloc_sockets = true;
+#else
+	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+		alloc_cores = true;
 #endif
-
 	core_map = job_res->core_bitmap;
 
 	sock_size  = select_node_record[0].sockets;
@@ -292,7 +309,8 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			sock_start[s] = c + (s * cps);
 			sock_end[s]   = sock_start[s] + cps;
 		}
-		cpus  = job_res->cpus[i++];
+		core_cnt = 0;
+		cpus  = job_res->cpus[i];
 		while (cpus > 0) {
 			uint16_t prev_cpus = cpus;
 			for (s = 0; s < sockets && cpus > 0; s++) {
@@ -300,13 +318,14 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				while (sock_start[s] < sock_end[s]) {
 					if (bit_test(core_map,sock_start[s])) {
 						sock_used[s] = true;
+						core_cnt++;
 						break;
 					} else
 						sock_start[s]++;
 				}
 
 				if (sock_start[s] == sock_end[s])
-					/* this socket is unusable*/
+					/* this socket is unusable */
 					continue;
 				if (cpus < vpus)
 					cpus = 0;
@@ -315,7 +334,7 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				sock_start[s]++;
 			}
 			if (prev_cpus == cpus) {
-				/* we're stuck!*/
+				/* we're stuck! */
 				fatal("cons_res: sync loop not progressing");
 			}
 		}
@@ -328,7 +347,20 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				bit_nclear(core_map, sock_start[s], 
 					   sock_end[s]-1);
 			}
+			if ((select_node_record[n].vpus > 1) &&
+			    (alloc_sockets || alloc_cores) && sock_used[s]) {
+				for (j=sock_start[s]; j<sock_end[s]; j++) {
+					if (bit_test(core_map, j))
+						core_cnt++;
+				}
+			}
 		}
+		if ((alloc_cores || alloc_sockets) &&
+		    (select_node_record[n].vpus > 1)) {
+			job_res->cpus[i] = core_cnt *
+					   select_node_record[n].vpus;
+		}
+		i++;
 		/* advance 'c' to the beginning of the next node */
 		c += sockets * cps;
 	}
