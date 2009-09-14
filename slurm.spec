@@ -287,8 +287,7 @@ Perl tool to print SLURM job state information.
 %package pam_slurm
 Summary: PAM module for restricting access to compute nodes via SLURM.
 Group: System Environment/Base
-Requires: slurm
-BuildRequires: slurm-devel pam-devel
+Requires: slurm slurm-devel pam-devel
 %description pam_slurm
 This module restricts access to compute nodes in a cluster where the Simple
 Linux Utility for Resource Managment (SLURM) is in use.  Access is granted
