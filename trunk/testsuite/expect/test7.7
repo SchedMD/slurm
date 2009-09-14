@@ -181,7 +181,7 @@ if {$job_id1 == 0} {
 #
 set timeout 60
 exec $bin_rm -f $test_prog
-exec $bin_make -f /dev/null $test_prog
+exec $bin_cc $test_prog.c -o $test_prog
 set success 0
 set moab_pid [spawn $test_prog $auth_key $control_addr $e_port $job_id1 $sched_port $is_bluegene]
 set master_id $spawn_id

@@ -219,7 +219,7 @@ static int _xmit(char *msg)
 static void _event_mgr(void)
 {
 	int accept_fd, event_fd;
-	int accept_addr_len = sizeof(struct sockaddr);
+	socklen_t accept_addr_len = sizeof(struct sockaddr);
 	size_t cnt;
 	char in_msg[5];
 	struct sockaddr_in accept_addr;
@@ -497,7 +497,7 @@ int main(int argc, char * argv[])
 	}
 	_cancel_job(job_id+1);
 	_job_requeue(job_id);	/* Put job back into HELD state */
-	sleep(10);
+	sleep(15);
 	_start_job(job_id);
 	_get_jobs();
 #endif
