@@ -1,0 +1,73 @@
+Here is a list of the major SLURM components and who has
+expertise in those areas. Anyone listed as a "Primary" 
+has extensive knowledge of the component and is typically 
+the author. Anyone listed as a "Backup" has a working 
+knowldege of the component and should be able to address 
+problems.
+
+Command/Daemon	Primary	Backup	Notes
+==============	=======	=======	=====
+sacct		DA		very active
+sacctmgr	DA		very active
+salloc			DA,MJ	stable
+sattach			DA,MJ	stable
+sbatch			DA,MJ	stable
+sbcast		MJ		very stable
+scancel		DA,MJ		very stable
+scontrol	MJ,DA
+sinfo		MJ,DA
+slurmctld	MJ	DA
+slurmd			DA,MJ
+slurmstepd		DA,MJ
+slurmdbd	DA
+smap		DA	MJ
+sprio		DL
+squeue		MJ	DA	stable
+sreport		DA
+srun			DA,MJ
+sshare		DA
+sstat		DA
+strigger	MJ		very stable
+sview		DA	MJ
+
+Plugins		Primary	Backup	Notes
+==============	=======	=======	=====
+acctg_storage	DA	MJ	very active
+auth		MJ	DA	very static
+checkpoint	MJ,NUDT		active for BLCR
+crypto		MJ	DA	very static
+jobacct_gather	DA	MJ	stable
+jobcomp		MJ	DA	very stable
+mpi		MJ		active for OpenMPI
+preempt		MJ		new
+priority	DL	DA
+proctrack	MJ	DA	very stable
+sched		MJ	DA	stable
+select		MJ,HP	DA
+switch		MJ	DA	very stable
+task			MG,DL
+topology	MJ
+
+Other		Primary	Backup	Notes
+==============	=======	=======	=====
+api		DA,MJ
+common		DA,MJ
+database	DA
+pam		MG		very stable
+perlapi		DA		stable
+phpext		DA
+python		NSC
+sjstat		PE		stable
+slurmdb_direct	DA
+testsuite	DA,MJ
+torque		DA		stable
+
+
+DA	Danny Auble
+DL	Don Lipari
+HP	HP
+MG	Mark Grondona
+MJ	Moe Jette
+NSC	National Supercomputer Center (Sweden)
+NUDT	National University of Defense Technology (China)
+PE	Phil Eckert
