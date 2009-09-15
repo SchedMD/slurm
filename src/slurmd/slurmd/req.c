@@ -2993,7 +2993,12 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		 * to terminate is resent.
 		 */
 		_sync_messages_kill(req);
-		_epilog_complete(req->job_id, rc);
+		if (msg->conn_fd < 0) {
+			/* The epilog complete message processing on 
+			 * slurmctld is equivalent to that of a 
+			 * ESLURMD_KILL_JOB_ALREADY_COMPLETE reply above */
+			_epilog_complete(req->job_id, rc);
+		}
 		return;
 	}
 #endif
