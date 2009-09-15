@@ -6708,8 +6708,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	job_ptr->tot_sus_time = (time_t) 0;
 	job_ptr->restart_cnt++;
 	/* Since the job completion logger removes the submit we need
-	   to add it again.
-	*/
+	 * to add it again. */
 	acct_policy_add_job_submit(job_ptr);
 
     reply:
