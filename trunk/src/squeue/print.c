@@ -521,7 +521,7 @@ int _print_job_time_start(job_info_t * job, int width, bool right,
 			  char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("START", width, right, true);
+		_print_str("START_TIME", width, right, true);
 	else
 		_print_time(job->start_time, 0, width, right);
 	if (suffix)
@@ -532,7 +532,7 @@ int _print_job_time_start(job_info_t * job, int width, bool right,
 int _print_job_time_end(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("END", width, right, true);
+		_print_str("END_TIME", width, right, true);
 	else if ((job->time_limit == INFINITE) &&
 		 (job->end_time > time(NULL)))
 		_print_str("NONE", width, right, true);
@@ -1205,7 +1205,7 @@ int _print_step_time_start(job_step_info_t * step, int width, bool right,
 			   char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("START", width, false, true);
+		_print_str("START_TIME", width, false, true);
 	else
 		_print_time(step->start_time, 0, width, right);
 	if (suffix)
