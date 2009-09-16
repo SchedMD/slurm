@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "July 2009" "squeue 2.1" "Slurm components"
+.TH SQUEUE "1" "September 2009" "squeue 2.1" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -234,7 +234,7 @@ Node use (VIRTUAL or COPROCESSOR),
 etc.
 .TP
 \fB%S\fR 
-Start time of the job or job step.
+Actual or expected start time of the job or job step.
 .TP
 \fB%t\fR 
 Job state, compact form:
@@ -297,6 +297,16 @@ name then within a given partition by increasing node state and then
 decreasing priority).
 The default value of sort for job steps is "P,i" (increasing partition 
 name then within a given partition by increasing step id).
+
+.TP
+\fB\-\-start\fR
+Report the expected start time of pending jobs in order of increasing 
+start time. This is equivalent to the following options:
+\fB\-\-format="%.7i %.9P %.8j %.8u %.2t  %.19S %.6D %R"\fR,
+\fB\-\-sort=S\fR and \fB\-\-states=PENDING\fR.
+Any of these options may be explicitly changed as desired by
+combining the \fB\-\-start\fR option with other option values
+(e.g. to use a different output format).
 
 .TP
 \fB\-t <state_list>\fR, \fB\-\-states=<state_list>\fR

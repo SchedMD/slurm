@@ -1,7 +1,8 @@
 /****************************************************************************\
  *  squeue.h - definitions used for printing job queue state
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -77,6 +78,7 @@ typedef struct job_step squeue_job_step_t;
 struct squeue_parameters {
 	bool all_flag;
 	bool job_flag;
+	bool start_flag;
 	bool step_flag;
 	bool long_list;
 	bool no_header;
