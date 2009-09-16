@@ -307,6 +307,8 @@ start time. This is equivalent to the following options:
 Any of these options may be explicitly changed as desired by
 combining the \fB\-\-start\fR option with other option values
 (e.g. to use a different output format).
+The expected start time of pending jobs is only available if the
+SLURM is configured to use the backfill scheduling plugin.
 
 .TP
 \fB\-t <state_list>\fR, \fB\-\-states=<state_list>\fR
