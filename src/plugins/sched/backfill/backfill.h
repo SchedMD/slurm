@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  backfill.h - header for simple backfill scheduler plugin. 
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2003-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -36,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define STOP_CHECK_USEC     100000	/* check for shutdown every 0.1 secs */
-#define BACKFILL_CHECK_SEC  2		/* try to backfill every 2.0 seconds */
+#define STOP_CHECK_USEC     200000	/* check for shutdown every 0.2 secs */
+#define BACKFILL_CHECK_SEC  5		/* try to backfill every 5.0 seconds */
 
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args);
