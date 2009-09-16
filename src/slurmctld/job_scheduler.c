@@ -176,7 +176,8 @@ extern int build_job_queue(struct job_queue **job_queue)
 
 /*
  * job_is_completing - Determine if jobs are in the process of completing.
- * RET - True of any job is in the process of completing
+ * RET - True of any job is in the process of completing AND 
+ *	 CompleteWait is configured non-zero
  * NOTE: This function can reduce resource fragmentation, which is a 
  * critical issue on Elan interconnect based systems.
  */
