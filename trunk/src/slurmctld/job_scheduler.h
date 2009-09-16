@@ -3,7 +3,7 @@
  *	of pending jobs in priority order
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  Derived from dsh written by Jim Garlick <garlick1@llnl.gov>
@@ -19,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -76,11 +76,11 @@ extern int epilog_slurmctld(struct job_record *job_ptr);
 
 /*
  * job_is_completing - Determine if jobs are in the process of completing.
- * RET - True of any job is in the process of completing
+ * RET - True of any job is in the process of completing AND 
+ *	 CompleteWait is configured non-zero
  * NOTE: This function can reduce resource fragmentation, which is a 
  * critical issue on Elan interconnect based systems.
  */
-
 extern bool job_is_completing(void);
 
 /* Determine if a pending job will run using only the specified nodes
