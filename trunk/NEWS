@@ -3,7 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.0-pre5
 =============================
-
+ -- Add squeue option "--start" to report expected start time of pending jobs.
 
 * Changes in SLURM 2.1.0-pre4
 =============================

@@ -67,6 +67,7 @@
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
 #define OPT_LONG_HIDE  0x102
+#define OPT_LONG_START 0x103
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -97,25 +98,26 @@ parse_command_line( int argc, char* argv[] )
 	static struct option long_options[] = {
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
-		{"noheader",   no_argument,       0, 'h'},
+		{"format",     required_argument, 0, 'o'},
+		{"help",       no_argument,       0, OPT_LONG_HELP},
+		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",    required_argument, 0, 'i'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
 		{"node",       required_argument, 0, 'n'},
 		{"nodes",      required_argument, 0, 'n'},
-		{"format",     required_argument, 0, 'o'},
+		{"noheader",   no_argument,       0, 'h'},
 		{"partitions", required_argument, 0, 'p'},
 		{"qos",        required_argument, 0, 'q'},
-		{"steps",      optional_argument, 0, 's'},
 		{"sort",       required_argument, 0, 'S'},
+		{"start",      no_argument,       0, OPT_LONG_START},
+		{"steps",      optional_argument, 0, 's'},
 		{"states",     required_argument, 0, 't'},
+		{"usage",      no_argument,       0, OPT_LONG_USAGE},
 		{"user",       required_argument, 0, 'u'},
 		{"users",      required_argument, 0, 'u'},
 		{"verbose",    no_argument,       0, 'v'},
 		{"version",    no_argument,       0, 'V'},
-		{"help",       no_argument,       0, OPT_LONG_HELP},
-		{"usage",      no_argument,       0, OPT_LONG_USAGE},
-		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{NULL,         0,                 0, 0}
 	};
 
@@ -226,12 +228,15 @@ parse_command_line( int argc, char* argv[] )
 			case OPT_LONG_HELP:
 				_help();
 				exit(0);
-			case OPT_LONG_USAGE:
-				_usage();
-				exit(0);
 			case OPT_LONG_HIDE:
 				params.all_flag = false;
 				break;
+			case OPT_LONG_START:
+				params.start_flag = true;
+				break;
+			case OPT_LONG_USAGE:
+				_usage();
+				exit(0);
 		}
 	}
 	
@@ -321,6 +326,18 @@ parse_command_line( int argc, char* argv[] )
 	     ( env_val = getenv("SQUEUE_USERS") ) ) {
 		params.users = xstrdup(env_val);
 		params.user_list = _build_user_list( params.users );
+	}
+
+	if ( params.start_flag && !params.step_flag ) {
+		/* Set more defaults */
+		if (params.format == NULL)
+			params.format = xstrdup("%.7i %.9P %.8j %.8u  %.2t  %.19S %.6D %R");
+		if (params.sort == NULL)
+			params.sort = xstrdup("S");
+		if (params.states == NULL) {
+			params.states = xstrdup("PD");
+			params.state_list = _build_state_list( params.states );
+		}
 	}
 
 	params.max_procs = _max_procs_per_node();
@@ -788,6 +805,7 @@ _print_options()
 	printf( "nodes      = %s\n", hostlist ) ;
 	printf( "partitions = %s\n", params.partitions ) ;
 	printf( "sort       = %s\n", params.sort ) ;
+	printf( "start_flag = %d\n", params.start_flag );
 	printf( "states     = %s\n", params.states ) ;
 	printf( "step_flag  = %d\n", params.step_flag );
 	printf( "steps      = %s\n", params.steps );	
@@ -1052,8 +1070,10 @@ static void _print_version(void)
 
 static void _usage(void)
 {
-	printf("Usage: squeue [-i seconds] [-S fields] [-t states] [-p partitions]\n");
-	printf("              [-n node] [-o format] [-u user_name] [--usage] [-ahjlsv]\n");
+	printf("\
+Usage: squeue [-i seconds] [-S fields] [--start] [-t states]\n\
+              [-p partitions] [-n node] [-o format] [-u user_name]\n\
+              [--usage] [-ahjlsv]\n");
 }
 
 static void _help(void)
@@ -1064,7 +1084,7 @@ Usage: squeue [OPTIONS]\n\
                                   to view, default is all accounts\n\
   -a, --all                       display jobs in hidden partitions\n\
   -h, --noheader                  no headers on output\n\
-  --hide                          do not display jobs in hidden partitions\n\
+      --hide                      do not display jobs in hidden partitions\n\
   -i, --iterate=seconds           specify an interation period\n\
   -j, --job=job(s)                comma separated list of jobs IDs\n\
                                   to view, default is all\n\
@@ -1079,6 +1099,7 @@ Usage: squeue [OPTIONS]\n\
   -s, --step=step(s)              comma separated list of job steps\n\
                                   to view, default is all\n\
   -S, --sort=field(s)             comma separated list of fields to sort on\n\
+      --start                     print expected start times of pending jobs\n\
   -t, --state=state(s)            comma separated list of states to view,\n\
                                   default is pending and running,\n\
                                   '--states=all' reports all states\n\

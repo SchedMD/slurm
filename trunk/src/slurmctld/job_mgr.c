@@ -4212,9 +4212,12 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 		pack_time(dump_job_ptr->details->submit_time, buffer);
 	else
 		pack_time((time_t) 0, buffer);
-	if (IS_JOB_PENDING(dump_job_ptr) && dump_job_ptr->details)
+	if (IS_JOB_PENDING(dump_job_ptr) && dump_job_ptr->details && 
+	    dump_job_ptr->details->begin_time && 
+	    (dump_job_ptr->details->begin_time > time(NULL))) {
+		/* Earliest possible begin time */
 		pack_time(dump_job_ptr->details->begin_time, buffer);
-	else
+	} else	/* Actual or expected start time */
 		pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);

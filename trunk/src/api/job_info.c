@@ -222,16 +222,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
-	if (IS_JOB_PENDING(job_ptr))
-		tmp3_ptr = "EligibleTime";
-	else
-		tmp3_ptr = "StartTime";
 	slurm_make_time_str((time_t *)&job_ptr->start_time, time_str,
 		sizeof(time_str));
 	snprintf(tmp_line, sizeof(tmp_line),
-		"JobState=%s %s=%s EndTime=",
-		job_state_string(job_ptr->job_state), 
-		tmp3_ptr, time_str);
+		"JobState=%s StartTime=%s EndTime=",
+		job_state_string(job_ptr->job_state), time_str);
 	xstrcat(out, tmp_line);
 	if ((job_ptr->time_limit == INFINITE) && 
 	    (job_ptr->end_time > time(NULL)))

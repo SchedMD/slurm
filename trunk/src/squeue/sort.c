@@ -531,13 +531,33 @@ static int _sort_job_by_time_limit(void *void1, void *void2)
 	return diff;
 }
 
+static uint32_t _get_start_time(job_info_t *job)
+{
+	time_t now = time(NULL);
+
+	if (job->start_time == (time_t) 0)
+		return 0xffffffff;
+	if ((job->job_state == JOB_PENDING) && (job->start_time < now))
+		return (uint32_t) now;
+	return (uint32_t) job->start_time;
+}
+
 static int _sort_job_by_time_start(void *void1, void *void2)
 {
 	int diff;
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
+	uint32_t start_time1, start_time2;
 
-	diff = job1->start_time - job2->start_time;
+	start_time1 = _get_start_time(job1);
+	start_time2 = _get_start_time(job2);
+
+	if (start_time1 > start_time2)
+		diff = 1;
+	else if (start_time1 < start_time2)
+		diff = -1;
+	else
+		diff = 0;
 
 	if (reverse_order)
 		diff = -diff;
