@@ -119,6 +119,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 static void _attempt_backfill(void);
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
+static bool _job_is_completing(void);
 static bool _more_work(void);
 static int  _num_feature_count(struct job_record *job_ptr);
 static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
@@ -164,6 +165,37 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
+}
+
+/*
+ * _job_is_completing - Determine if jobs are in the process of completing.
+ *	This is a variant of job_is_completing in slurmctld/job_scheduler.c.
+ *	It always gives completing jobs at least 5 secs to complete.
+ * RET - True of any job is in the process of completing
+ */
+static bool _job_is_completing(void)
+{
+	bool completing = false;
+	ListIterator job_iterator;
+	struct job_record *job_ptr = NULL;
+	uint16_t complete_wait = slurm_get_complete_wait();
+	time_t recent;
+
+	if (job_list == NULL)
+		return completing;
+
+	recent = time(NULL) - MIN(complete_wait, 5);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (IS_JOB_COMPLETING(job_ptr) &&
+		    (job_ptr->end_time >= recent)) {
+			completing = true;
+			break;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	return completing;
 }
 
 /* test if job has feature count specification */
@@ -498,7 +530,7 @@ static void _attempt_backfill(void)
 			else if (rc != SLURM_SUCCESS)
 				/* Planned to start job, but something bad
 				 * happended. */
-				continue;
+				break;
 		}
 		if (job_ptr->start_time > (now + BACKFILL_WINDOW)) {
 			/* Starts too far in the future to worry about */
@@ -573,7 +605,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		/* This happens when a job has sharing disabled and
 		 * a selected node is still completing some job, 
 		 * which should be a temporary situation. */
-		verbose("backfill: Failed to start JobId=%u in %s: %s",
+		verbose("backfill: Failed to start JobId=%u on %s: %s",
 			job_ptr->job_id, node_list, slurm_strerror(rc));
 		xfree(node_list);
 		fail_jobid = job_ptr->job_id;
