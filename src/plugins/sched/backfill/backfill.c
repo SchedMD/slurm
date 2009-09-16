@@ -438,8 +438,8 @@ static void _attempt_backfill(void)
 		bit_and(avail_bitmap, up_node_bitmap);
 		for (j=0; ; ) {
 			if (node_space[j].end_time < start_res)
-				continue;
-			if (node_space[j].begin_time <= end_time) {
+				;
+			else if (node_space[j].begin_time <= end_time) {
 				bit_and(avail_bitmap, 
 					node_space[j].avail_bitmap);
 			} else
