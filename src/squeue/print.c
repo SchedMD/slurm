@@ -662,7 +662,8 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		if ((job->select_job_res->cpu_array_cnt > 0) &&
+		if (job->select_job_res &&
+		    (job->select_job_res->cpu_array_cnt > 0) &&
 		    (job->select_job_res->cpu_array_value) &&
 		    (job->select_job_res->cpu_array_reps)) {
 			uint32_t cnt = 0, i;

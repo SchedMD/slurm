@@ -140,6 +140,11 @@ _print_job ( void )
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
+
+	/* We require detail data when CPUs are requested */
+	if (params.format && strstr(params.format, "C"))
+		show_flags |= SHOW_DETAIL;
+
 	if (params.job_list && (list_count(params.job_list) == 1)) {
 		ListIterator iterator;
 		uint32_t *job_id_ptr;
