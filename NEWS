@@ -6,8 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Add squeue option "--start" to report expected start time of pending jobs.
  -- Sched/backfill plugin modified to set expected start time of pending jobs.
  -- Add SchedulerParameters option of "max_job_bf=#" to control how far down
-    the queue SLURM searched in an attempt to backfill jobs, default value 
-    is 50 jobs.
+    the queue of pending jobs that SLURM searches in an attempt backfill 
+    schedule them. The default value is 50 jobs.
  -- Fixed cause of squeue -o "%C" seg fault
 
 * Changes in SLURM 2.1.0-pre4
