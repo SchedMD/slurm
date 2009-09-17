@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "August 2009" "scontrol 2.0" "Slurm components"
+.TH SCONTROL "1" "September 2009" "scontrol 2.1" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -337,9 +337,6 @@ Possible values are "YES" and "NO".
 \fIDependency\fP=<job_id>
 Defer job's initiation until specified job_id completes.
 Cancel dependency with job_id value of "0", "Dependency=0".
-.TP
-\fIEligibleTime\fP=<time_spec>
-Equivalent to \fIStartTime\fP. 
 .TP
 \fIExcNodeList\fP=<nodes>
 Set the job's list of excluded node. Multiple node names may be 

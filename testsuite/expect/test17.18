@@ -177,11 +177,11 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re "EligibleTime=($number)/($number)-12:00:00" {
+	-re "StartTime=($number)/($number)-12:00:00" {
 		incr match
 		exp_continue
 	}
-	-re "EligibleTime=($number)-($number)-($number)T12:00:00" {
+	-re "StartTime=($number)-($number)-($number)T12:00:00" {
 		incr match
 		exp_continue
 	}
@@ -195,7 +195,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: unexpected JobState or EligibleTime\n"
+	send_user "\nFAILURE: unexpected JobState or StartTime\n"
 	set exit_code 1
 }
 
