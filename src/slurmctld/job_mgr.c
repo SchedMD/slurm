@@ -123,12 +123,13 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
 static job_desc_msg_t * _copy_job_record_to_job_desc(
-	struct job_record *job_ptr);
+					struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static acct_qos_rec_t *_determine_and_validate_qos(
-	acct_association_rec_t *assoc_ptr, acct_qos_rec_t *qos_rec);
+					acct_association_rec_t *assoc_ptr, 
+					acct_qos_rec_t *qos_rec);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
@@ -1036,14 +1037,16 @@ static int _load_job_state(Buf buffer)
 		if(job_ptr->assoc_id && !job_ptr->db_index && job_ptr->nodes) {
 			debug("starting job %u in accounting", 
 			      job_ptr->job_id);
-			jobacct_storage_g_job_start(
-				acct_db_conn, slurmctld_cluster_name, job_ptr);
-			if (IS_JOB_SUSPENDED(job_ptr)) 
+			jobacct_storage_g_job_start(acct_db_conn, 
+						    slurmctld_cluster_name, 
+						    job_ptr);
+			if (IS_JOB_SUSPENDED(job_ptr)) {
 				jobacct_storage_g_job_suspend(acct_db_conn,
 							      job_ptr);
+			}
 		}
 		/* make sure we have this job completed in the
-		   database */
+		 * database */
 		if(IS_JOB_FINISHED(job_ptr))
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	}
@@ -2500,7 +2503,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_desc->account = xstrdup(assoc_rec.acct);
 
 	/* This must be done after we have the assoc_ptr set */
-	
 	memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 	qos_rec.name = job_desc->qos;
 	if (wiki_sched && job_ptr->comment &&
@@ -2512,7 +2514,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 
 	qos_ptr = _determine_and_validate_qos(assoc_ptr, &qos_rec);
-	
 	if(errno != SLURM_SUCCESS)
 		return errno;
 
