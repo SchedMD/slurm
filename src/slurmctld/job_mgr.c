@@ -129,7 +129,8 @@ static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static acct_qos_rec_t *_determine_and_validate_qos(
 					acct_association_rec_t *assoc_ptr, 
-					acct_qos_rec_t *qos_rec);
+					acct_qos_rec_t *qos_rec,
+					int *error_code);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
@@ -301,7 +302,9 @@ static void _delete_job_desc_files(uint32_t job_id)
 }
 
 static acct_qos_rec_t *_determine_and_validate_qos(
-	acct_association_rec_t *assoc_ptr, acct_qos_rec_t *qos_rec)
+				acct_association_rec_t *assoc_ptr, 
+				acct_qos_rec_t *qos_rec,
+				int *error_code)
 { 
 	acct_qos_rec_t *qos_ptr = NULL;
 
@@ -325,7 +328,7 @@ static acct_qos_rec_t *_determine_and_validate_qos(
 				 &qos_ptr)
 	   != SLURM_SUCCESS) {
 		error("Invalid qos (%s)", qos_rec->name);
-		errno = ESLURM_INVALID_QOS;
+		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	} 
 	
@@ -338,12 +341,11 @@ static acct_qos_rec_t *_determine_and_validate_qos(
 		      "access to qos %s", 
 		      assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
 		      assoc_ptr->partition, qos_rec->name);
-		errno = ESLURM_INVALID_QOS;
+		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}			
 
-	errno = SLURM_SUCCESS;
-
+	*error_code = SLURM_SUCCESS;
 	return qos_ptr;
 }
 
@@ -784,7 +786,7 @@ static int _load_job_state(Buf buffer)
 	char **spank_job_env = (char **) NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
-	int error_code, i;
+	int error_code, i, qos_error;
 	select_jobinfo_t *select_jobinfo = NULL;
 	select_job_res_t *select_job = NULL;
 	check_jobinfo_t check_job = NULL;
@@ -1051,12 +1053,12 @@ static int _load_job_state(Buf buffer)
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	}
 
-	if(job_ptr->qos) {
+	if (job_ptr->qos) {
 		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 		qos_rec.id = job_ptr->qos;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
-			job_ptr->assoc_ptr, &qos_rec);
-		if(errno != SLURM_SUCCESS) {
+				job_ptr->assoc_ptr, &qos_rec, &qos_error);
+		if (qos_error != SLURM_SUCCESS) {
 			info("Cancelling job %u with invalid qos", job_id);
 			job_ptr->job_state = JOB_CANCELLED;
 			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
@@ -2355,7 +2357,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		       struct job_record **job_pptr, uid_t submit_uid)
 {
-	int error_code = SLURM_SUCCESS, i;
+	int error_code = SLURM_SUCCESS, i, qos_error;
 	struct job_details *detail_ptr;
 	enum job_state_reason fail_reason;
 	struct part_record *part_ptr;
@@ -2513,9 +2515,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			qos_rec.name = "standby";
 	}
 
-	qos_ptr = _determine_and_validate_qos(assoc_ptr, &qos_rec);
-	if(errno != SLURM_SUCCESS)
-		return errno;
+	qos_ptr = _determine_and_validate_qos(assoc_ptr, &qos_rec, &qos_error);
+	if (qos_error != SLURM_SUCCESS)
+		return qos_error;
 
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!_validate_acct_policy(job_desc, part_ptr, assoc_ptr, qos_ptr))) {
@@ -5540,9 +5542,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				 qos_rec.name = "standby";
 			
 			 job_ptr->qos_ptr = _determine_and_validate_qos(
-				 job_ptr->assoc_ptr, &qos_rec);
-			 job_ptr->qos = qos_rec.id;			
-			 error_code = errno;
+				 job_ptr->assoc_ptr, &qos_rec, &error_code);
+			 job_ptr->qos = qos_rec.id;
 		 }
 	 } else if(job_specs->qos) {
 		 acct_qos_rec_t qos_rec;
@@ -5554,17 +5555,17 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		 qos_rec.name = job_specs->qos;
 		
 		 job_ptr->qos_ptr = _determine_and_validate_qos(
-			 job_ptr->assoc_ptr, &qos_rec);
+			 job_ptr->assoc_ptr, &qos_rec, &error_code);
 		 job_ptr->qos = qos_rec.id;
-		 error_code = errno;
 	 }
 	
 	 if(update_accounting) {
 		 if (job_ptr->details && job_ptr->details->begin_time) {
-			 /* Update job record in accounting to reflect
-			  * changes */
-			 jobacct_storage_g_job_start(
-				 acct_db_conn, slurmctld_cluster_name, job_ptr);
+			/* Update job record in accounting to reflect
+			 * changes */
+			jobacct_storage_g_job_start(acct_db_conn, 
+						    slurmctld_cluster_name, 
+						    job_ptr);
 		 }
 	 }
 	 return error_code;
