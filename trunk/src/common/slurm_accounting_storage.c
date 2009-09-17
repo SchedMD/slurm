@@ -51,14 +51,15 @@
 #include <string.h>
 
 #include "src/common/list.h"
-#include "src/common/slurm_accounting_storage.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/xstring.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/sacctmgr/sacctmgr.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
+#include "src/sacctmgr/sacctmgr.h"
+#include "src/slurmctld/slurmctld.h"
 
 /*
  * Local data
@@ -8078,13 +8079,29 @@ extern int clusteracct_storage_g_register_ctld(
 }
 
 /* 
- * load into the storage the start of a job
+ * load into the storage information about a job, 
+ * typically when it begins execution, but possibly earlier
  */
 extern int jobacct_storage_g_job_start (void *db_conn, char *cluster_name,
 					struct job_record *job_ptr) 
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
+
+	/* A pending job's start_time is it's expected initiation time
+	 * (changed in slurm v2.1). Rather than changing a bunch of code
+	 * in the accounting_storage plugins and SlurmDBD, just clear
+	 * start_time before accounting and restore it later. */
+	if (IS_JOB_PENDING(job_ptr)) {
+		int rc;
+		time_t orig_start_time = job_ptr->start_time;
+		job_ptr->start_time = (time_t) 0;
+		rc = (*(g_acct_storage_context->ops.job_start))(
+			db_conn, cluster_name, job_ptr);
+		job_ptr->start_time = orig_start_time;
+		return rc;
+	}
+
 	return (*(g_acct_storage_context->ops.job_start))(
 		db_conn, cluster_name, job_ptr);
 }
