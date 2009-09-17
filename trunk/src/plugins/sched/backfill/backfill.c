@@ -90,22 +90,19 @@ int backfilled_jobs = 0;
 static bool new_work      = false;
 static bool stop_backfill = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int max_backfill_job_cnt = 50;
 
 #ifndef BACKFILL_INTERVAL
 #  ifdef HAVE_BG
 #    define BACKFILL_INTERVAL	5
 #  else
-#    define BACKFILL_INTERVAL	15
+#    define BACKFILL_INTERVAL	10
 #  endif
 #endif
 
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
 #define __DEBUG			0
-
-/* Do not attempt to build job/resource/time record for
- * more than MAX_BACKFILL_JOB_CNT records */
-#define MAX_BACKFILL_JOB_CNT	100
 
 /* Do not build job/resource/time record for more than this 
  * far in the future, in seconds, currently one day */
@@ -317,7 +314,7 @@ extern void *backfill_agent(void *args)
 	struct timeval tv1, tv2;
 	char tv_str[20], *sched_params, *tmp_ptr;
 	time_t now;
-	int backfill_interval = 0, i, iter;
+	int backfill_interval = BACKFILL_INTERVAL, i, iter;
 	static time_t last_backfill_time = 0;
 	/* Read config, and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
@@ -325,12 +322,16 @@ extern void *backfill_agent(void *args)
 
 	sched_params = slurm_get_sched_params();
 	if (sched_params && (tmp_ptr=strstr(sched_params, "interval=")))
-		backfill_interval = atoi(tmp_ptr+9);
-	else
-		backfill_interval = BACKFILL_INTERVAL;
+		backfill_interval = atoi(tmp_ptr + 9);
 	if (backfill_interval < 1) {
 		fatal("Invalid backfill scheduler interval: %d", 
 		      backfill_interval);
+	}
+	if (sched_params && (tmp_ptr=strstr(sched_params, "max_job_bf=")))
+		max_backfill_job_cnt = atoi(tmp_ptr + 11);
+	if (max_backfill_job_cnt < 1) {
+		fatal("Invalid backfill scheduler max_job_bf: %d", 
+		      max_backfill_job_cnt);
 	}
 
 	while (!stop_backfill) {
@@ -345,7 +346,7 @@ extern void *backfill_agent(void *args)
 			break;
 
 		now = time(NULL);
-		if (!_more_work() || job_is_completing() ||
+		if (!_more_work() || _job_is_completing() ||
 		    (difftime(now, last_backfill_time) < backfill_interval))
 			continue;
 		last_backfill_time = now;
@@ -374,7 +375,7 @@ static void _attempt_backfill(void)
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	time_t now = time(NULL), later_start, start_res;
-	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 3];
+	node_space_map_t *node_space;
 	static int sched_timeout = 0;
 
 	if(!sched_timeout)
@@ -389,6 +390,8 @@ static void _attempt_backfill(void)
 
 	sort_job_queue(job_queue, job_queue_size);
 
+	node_space = xmalloc(sizeof(node_space_map_t) * 
+			     (max_backfill_job_cnt + 3));
 	node_space[0].begin_time = now;
 	node_space[0].end_time = now + BACKFILL_WINDOW;
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
@@ -536,7 +539,7 @@ static void _attempt_backfill(void)
 			continue;
 		}
 
-		if (node_space_recs == MAX_BACKFILL_JOB_CNT) {
+		if (node_space_recs == max_backfill_job_cnt) {
 			/* Already have too many jobs to deal with */
 			break;
 		}
@@ -564,6 +567,7 @@ static void _attempt_backfill(void)
 		if ((i = node_space[i].next) == 0)
 			break;
 	}
+	xfree(node_space);
 	xfree(job_queue);
 }
 
