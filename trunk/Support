@@ -34,7 +34,7 @@ sview		DA	MJ
 
 Plugins		Primary	Backup	Notes
 ==============	=======	=======	=====
-acctg_storage	DA	MJ	very active
+acct_storage	DA	MJ	very active
 auth		MJ	DA	very stable
 checkpoint	MJ,NUDT		
 crypto		MJ	DA	very stable
