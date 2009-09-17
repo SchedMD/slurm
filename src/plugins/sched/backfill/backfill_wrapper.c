@@ -18,7 +18,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -71,7 +71,8 @@ int init( void )
 
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( backfill_thread ) {
-		debug2( "Backfill thread already running, not starting another" );
+		debug2( "Backfill thread already running, not starting "
+			"another" );
 		pthread_mutex_unlock( &thread_flag_mutex );
 		return SLURM_ERROR;
 	}

@@ -281,7 +281,7 @@ Sched/wiki and wiki2 communications
 Default real memory size available per allocated CPU in MegaBytes. 
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerCPU\fR would generally be used if individual processors
-are alocated to jobs (\fBSelectType=select/cons_res\fR). 
+are allocated to jobs (\fBSelectType=select/cons_res\fR). 
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
@@ -294,7 +294,7 @@ not be stored, just collected).
 Default real memory size available per allocated node in MegaBytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerNode\fR would generally be used if whole nodes
-are alocated to jobs (\fBSelectType=select/linear\fR) and 
+are allocated to jobs (\fBSelectType=select/linear\fR) and 
 resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
@@ -423,7 +423,7 @@ match the actual hardware configuration if \fBSchedulerType=sched/gang\fR
 or \fBSelectType=select/cons_res\fR are configured (both of those plugins
 maintain resource allocation information using bitmaps for the cores in the
 system and must remain static, while the node's memory and disk space can
-be esblished later).
+be established later).
 .TP
 \fB2\fR
 Consider the configuration of each node to be that specified in the 
@@ -647,7 +647,7 @@ May not exceed 65533.
 Maximum real memory size available per allocated CPU in MegaBytes. 
 Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerCPU\fR would generally be used if individual processors
-are alocated to jobs (\fBSelectType=select/cons_res\fR).
+are allocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
@@ -660,7 +660,7 @@ not be stored, just collected).
 Maximum real memory size available per allocated node in MegaBytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerNode\fR would generally be used if whole nodes
-are alocated to jobs (\fBSelectType=select/linear\fR) and
+are allocated to jobs (\fBSelectType=select/linear\fR) and
 resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
@@ -704,15 +704,15 @@ LAM MPI and Open MPI).
 \fBMpiParams\fR
 MPI parameters. 
 Used to identify ports used by OpenMPI only and the input format is
-"ports=12000\-12999" to identify a range of communcation ports to be used.
+"ports=12000\-12999" to identify a range of communication ports to be used.
 
 .TP
 \fBOverTimeLimit\fR
 Number of minutes by which a job can exceed its time limit before 
-being cancelled. 
+being canceled. 
 The configured job time limit is treated as a \fIsoft\fR limit.
 Adding \fBOverTimeLimit\fR to the \fIsoft\fR limit provides a \fIhard\fR
-limit, at which point the job is cancelled.
+limit, at which point the job is canceled.
 This is particularly useful for backfill scheduling, which bases upon
 each job's soft time limit.
 The default value is zero.
@@ -751,20 +751,20 @@ method specification with the two options comma separated.
 \fBOFF\fR
 is the default value and disables job preemption and gang scheduling.
 This is the only option compatible with \fBSchedulerType=sched/wiki\fR 
-or \fBSchedulerType=sched/wiki2\fR (used by Maui and Moab respecitvely, 
+or \fBSchedulerType=sched/wiki2\fR (used by Maui and Moab respectively, 
 which provide their own job preemption functionality).
 .TP
 \fBCANCEL\fR
 always cancel the job.
 .TP
 \fBCHECKPOINT\fR
-preempts jobs by checkpointing them (if possible) or cancelling them.
+preempts jobs by checkpointing them (if possible) or canceling them.
 .TP
 \fBGANG\fR
 enables gang scheduling (time slicing) of jobs in the same partition.
 .TP
 \fBREQUEUE\fR
-preempts jobs by requeuing them (if possible) or cancelling them.
+preempts jobs by requeuing them (if possible) or canceling them.
 .TP
 \fBSUSPEND\fR
 preempts jobs by suspending them.
@@ -933,7 +933,7 @@ prevents regular users from viewing reservations.
 .TP
 \fBusage\fR 
 (NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
-usage of any other user.  This applys to sreport.
+usage of any other user.  This applies to sreport.
 .TP
 \fBusers\fR 
 (NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
@@ -1184,12 +1184,26 @@ would run \fBxterm\fR with the title set to the SLURM jobid.
 
 .TP
 \fBSchedulerParameters\fR
-The interprettation of this parameter varies by \fBSchedulerType\fR.
-In the case of \fBSchedulerType=sched/backfill\fR, there is one 
-optional argument of the form "interval=#", where "#" is number of
-seconds between iterations. Higher values result in less overhead 
-and responsivenss, The default value is 5 secondson BlueGene systems 
-and 10 seconds otherwise.
+The interpretation of this parameter varies by \fBSchedulerType\fR.
+Multiple options may be comma separated.
+The following options apply only to \fBSchedulerType=sched/backfill\fR.
+.RS
+.TP
+\fBinterval=#\fR
+The number of seconds between iterations. 
+Higher values result in less overhead and responsiveness.
+The default value is 5 seconds on BlueGene systems and 10 seconds otherwise.
+.TP
+\fBmax_job_bf=#\fR
+The maximum number of jobs to attempt backfill scheduling for 
+(i.e. the queue depth).
+Higher values result in more overhead and less responsiveness.
+Until an attempt is made to backfill schedule a job, its expected
+initiation time value will not be set.
+The default value is 50.
+In the case of large clusters (more than 1000 nodes) configured with\fBSelectType=select/cons_res\fR, setting a smaller value may be
+desirable.
+.RE
 
 .TP
 \fBSchedulerPort\fR
@@ -1234,6 +1248,7 @@ priority job.
 Effectiveness of backfill scheduling is dependent upon users specifying
 job time limits, otherwise all jobs will have the same time limit and
 backfilling is impossible.
+Note documentation for the \fBSchedulerParameters\fR option above.
 .TP
 \fBsched/gang\fR
 for gang scheduler (time\-slicing of parallel jobs). This also supports
@@ -1441,7 +1456,7 @@ confirm the state of \fBslurmd\fR, the node will not be automatically set to
 a DOWN state indicating a non\-responsive \fBslurmd\fR, and some other tool 
 will take responsibility for monitoring the state of each compute node 
 and its \fBslurmd\fR daemon.
-SLURM's hiearchical communication mechanism is used to ping the \fBslurmd\fR
+SLURM's hierarchical communication mechanism is used to ping the \fBslurmd\fR
 daemons in order to minimize system noise and overhead.
 The default value is 300 seconds.
 The value may not exceed 65533 seconds.
@@ -2300,10 +2315,10 @@ User ID of the job's owner.
 User name of the job's owner.
 
 .SH "NETWORK TOPOLOGY"
-SLURM is able to optimze job allocations to minimize network contention.
+SLURM is able to optimize job allocations to minimize network contention.
 Special SLURM logic is used to optimize allocations on systems with a 
 three\-dimensional interconnect (BlueGene, Sun Constellation, etc.)
-and information about configuring those systems are availble on 
+and information about configuring those systems are available on 
 web pages available here: <https://computing.llnl.gov/linux/slurm/>.
 For a hierarchical network, SLURM needs to have detailed information 
 about how nodes are configured on the network switches.
