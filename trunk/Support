@@ -2,29 +2,31 @@ Here is a list of the major SLURM components and who has
 expertise in those areas. Anyone listed as a "Primary" 
 has extensive knowledge of the component and is typically 
 the author. Anyone listed as a "Backup" has a working 
-knowldege of the component and should be able to address 
-problems.
+knowledge of the component and should be able to address 
+problems. Where I list the primary in parenthesis, that
+indicates the person is actively developing the expertise
+to serve as the primary contact for that component.
 
 Command/Daemon	Primary	Backup	Notes
 ==============	=======	=======	=====
 sacct		DA		very active
 sacctmgr	DA		very active
-salloc			DA,MJ	stable
-sattach			DA,MJ	stable
-sbatch			DA,MJ	stable
+salloc		(DL)	DA,MJ	stable
+sattach		(DL)	DA,MJ	stable
+sbatch		(DL)	DA,MJ	stable
 sbcast		MJ		very stable
 scancel		DA,MJ		very stable
-scontrol	MJ,DA
-sinfo		MJ,DA
+scontrol	MJ,DA		stable
+sinfo		MJ,DA		stable
 slurmctld	MJ	DA
-slurmd			DA,MJ
-slurmstepd		DA,MJ
-slurmdbd	DA
+slurmd		(DL)	DA,MJ
+slurmstepd	(DL)	DA,MJ
+slurmdbd	DA		very active
 smap		DA	MJ
 sprio		DL
 squeue		MJ	DA	stable
-sreport		DA
-srun			DA,MJ
+sreport		DA		very active
+srun		(DL)	DA,MJ	stable
 sshare		DA
 sstat		DA
 strigger	MJ		very stable
@@ -33,30 +35,32 @@ sview		DA	MJ
 Plugins		Primary	Backup	Notes
 ==============	=======	=======	=====
 acctg_storage	DA	MJ	very active
-auth		MJ	DA	very static
-checkpoint	MJ,NUDT		active for BLCR
-crypto		MJ	DA	very static
+auth		MJ	DA	very stable
+checkpoint	MJ,NUDT		
+crypto		MJ	DA	very stable
 jobacct_gather	DA	MJ	stable
 jobcomp		MJ	DA	very stable
 mpi		MJ		active for OpenMPI
 preempt		MJ		new
 priority	DL	DA
 proctrack	MJ	DA	very stable
-sched		MJ	DA	stable
-select		MJ,HP	DA
+sched		MJ	DA	
+select/bluegene	DA	MJ
+select/cons_res	MJ	HP,DA
+select/linear	MJ	DA	stable
 switch		MJ	DA	very stable
-task			MG,DL
+task		DL	MG,HP
 topology	MJ
 
 Other		Primary	Backup	Notes
 ==============	=======	=======	=====
 api		DA,MJ
 common		DA,MJ
-database	DA
+database	DA	DL	very active
 pam		MG		very stable
 perlapi		DA		stable
-phpext		DA
-python		NSC
+phpext		DA		stable
+python		NSC		stable
 sjstat		PE		stable
 slurmdb_direct	DA
 testsuite	DA,MJ
