@@ -345,7 +345,6 @@ extern void *backfill_agent(void *args)
 			break;
 
 		now = time(NULL);
-		/* Avoid resource fragmentation if important */
 		if (!_more_work() || job_is_completing() ||
 		    (difftime(now, last_backfill_time) < backfill_interval))
 			continue;
