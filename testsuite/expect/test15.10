@@ -46,12 +46,12 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			send "$scontrol show job $job_id\n"
+			send "$scontrol show job $job_id\r"
 			exp_continue
 		}
 		-re "ReqProcs=($number).*" {
 			set tasks_get $expect_out(1,string)
-			send "exit\n"
+			send "exit\r"
 			exp_continue
 		}
 		-re "Failed to allocate.*" {

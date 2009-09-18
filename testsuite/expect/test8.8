@@ -81,7 +81,7 @@ proc allocate_and_quit { node_cnt node error_cnt check} {
 					set block ""
 				}
 			}
-			send "exit\n"
+			send "exit\r"
 			exp_continue
 		}
 		-re "Unable to contact" {
@@ -213,7 +213,7 @@ proc check_node { node error_cnt alloc_cnt } {
 	set alloc_procs [expr $alloc_cnt * $procs_per_cnode]
 	set total_procs 0
 	set match 0
-	send "$scontrol show node $node\n"
+	send "$scontrol show node $node\r"
 	expect {
 		-nocase -re " Procs=($number)" {
 			incr match 
@@ -251,7 +251,7 @@ proc check_node { node error_cnt alloc_cnt } {
 	set total_cnt [expr ($total_procs / $procs_per_cnode) - $alloc_cnt - $error_cnt]
 	set idle_procs [expr $total_procs - $error_procs - $alloc_procs]
 	set match 0
-	send "$sinfo -h --format \"%C %A\" -n $node\n"
+	send "$sinfo -h --format \"%C %A\" -n $node\r"
 
 	# make sure we get by the sinfo command so we don't 
 	# think the %'s are a prompt

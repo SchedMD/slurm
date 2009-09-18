@@ -60,7 +60,7 @@ expect {
 	-re "Granted job allocation ($number)" {
 		send_user "\nFAILURE: salloc job submitted with invalid constraint\n"
 		set exit_code 1
-		send "exit\n"
+		send "exit\r"
 	}
 	-re "Pending job allocation ($number)" {
 		send_user "\nFAILURE: salloc job submitted with invalid constraint\n"

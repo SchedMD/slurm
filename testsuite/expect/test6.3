@@ -81,7 +81,7 @@ expect {
 		exp_continue
 	}
 	-re "Cancel job.*\? " {
-		send "n\n"
+		send "n\r"
 		incr matches
 		exp_continue
 	}
@@ -102,7 +102,7 @@ if {$exit_code != 0} {
 spawn $scancel --interactive $job_id1
 expect {
 	-re "Cancel job.*\? " {
-		send "y\n"
+		send "y\r"
 		incr matches
 		exp_continue
 	}

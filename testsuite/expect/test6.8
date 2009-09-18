@@ -112,7 +112,7 @@ set matches  0
 spawn $scancel --name=job.$test_id --interactive --state=RUNNING
 expect {
 	-re "Cancel job_id=$job_id2.*\? " {
-		send "y\n"
+		send "y\r"
 		incr matches
 		exp_continue
 	}
@@ -134,7 +134,7 @@ set matches  0
 spawn $scancel --name=job.$test_id --interactive --state=PENDING
 expect {
 	-re "Cancel job_id=$job_id1.*\? " {
-		send "y\n"
+		send "y\r"
 		incr matches
 		exp_continue
 	}

@@ -106,10 +106,10 @@ expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
 			incr matches
-			send "G\n"
+			send "G\r"
 		}
 		if {$no_capability != 0} {
-			send "quit\n"
+			send "quit\r"
 		}
 		exp_continue
 	}
@@ -120,7 +120,7 @@ expect {
 	}
 	-re "Do you want to stop the job now?.*:" {
 		incr matches
-		send "yes\n"
+		send "yes\r"
 		exp_continue
 	}
 	-re "Attached to parallel task ($number)" {
@@ -129,7 +129,7 @@ expect {
 	}
 	-re "Loaded MPI support.*" {
 		exec sleep 2
-		send "G\n"
+		send "G\r"
 		exp_continue
 	}
 	-re "I just received msg from Rank" {
@@ -143,12 +143,12 @@ expect {
 	-re "Process 1 has exited.*" {
 		incr matches
 		exec sleep 2
-		send "quit\n"
+		send "quit\r"
 		exp_continue
 	}
 	-re "Do you really wish to exit TotalView?" {
 		incr matches
-		send "yes\n"
+		send "yes\r"
 		exp_continue
 	}
 	-re "Could not open breakpoint file" {
@@ -188,10 +188,10 @@ expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
 			incr matches
-			send "G\n"
+			send "G\r"
 		}
 		if {$no_capability != 0} {
-			send "quit\n"
+			send "quit\r"
 		}
 		exp_continue
 	}
@@ -202,7 +202,7 @@ expect {
 	}
 	-re "Do you want to stop the job now?.*:" {
 		incr matches
-		send "yes\n"
+		send "yes\r"
 		exp_continue
 	}
 	-re "Attached to parallel task ($number)" {
@@ -211,7 +211,7 @@ expect {
 	}
 	-re "Loaded MPI support.*" {
 		exec sleep 2
-		send "G\n"
+		send "G\r"
 		exp_continue
 	}
 	-re "I just received msg from Rank" {
@@ -225,12 +225,12 @@ expect {
 	-re "Process 1 has exited.*" {
 		incr matches
 		exec sleep 2
-		send "quit\n"
+		send "quit\r"
 		exp_continue
 	}
 	-re "Do you really wish to exit TotalView?" {
 		incr matches
-		send "yes\n"
+		send "yes\r"
 		exp_continue
 	}
 	-re "Could not open breakpoint file" {

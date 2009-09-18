@@ -58,7 +58,7 @@ expect {
 	}
 	-re "\[Rr\]emove .*\?" {
 		set matches 1
-		send "y\n"
+		send "y\r"
 		exp_continue
 	}
 	timeout {

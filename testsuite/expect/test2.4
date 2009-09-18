@@ -56,12 +56,12 @@ expect {
 	-re "scontrol: " {
 		if {$matches == 0} {
 			if {$ping_sent == 0} {
-				send "ping\n"
+				send "ping\r"
 				set ping_sent 1
 			}
 		} else {
 			if {$exit_sent == 0} {
-				send "exit\n"
+				send "exit\r"
 				set exit_sent 1
 			}
 		}
@@ -95,12 +95,12 @@ expect {
 	-re "scontrol: " {
 		if {$matches == 0} {
 			if {$ping_sent == 0} {
-				send "ping\n"
+				send "ping\r"
 				set ping_sent 1
 			}
 		} else {
 			if {$quit_sent == 0} {
-				send "quit\n"
+				send "quit\r"
 				set quit_sent 1
 			}
 		}
@@ -135,19 +135,19 @@ expect {
 	-re "scontrol: " {
 		if {$matches == 0} {
 			if {$ping_sent == 0} {
-				send "ping\n"
+				send "ping\r"
 				set ping_sent 1
 			}
 		}
 		if {$matches == 1} {
 			if {$excl_sent == 0} {
-				send "!!\n"
+				send "!!\r"
 				set excl_sent 1
 			}
 		}
 		if {$matches > 1} {
 			if {$quit_sent == 0} {
-				send "quit\n"
+				send "quit\r"
 				set quit_sent 1
 			}
 		}

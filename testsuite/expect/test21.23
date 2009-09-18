@@ -144,8 +144,8 @@ spawn $salloc -N1 --account=$test_acct --wckey=$wk
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "$scontrol show job $job_id\n"
-		send "exit\n"
+		send "$scontrol show job $job_id\r"
+		send "exit\r"
 		exp_continue
 	}
 	-re "WCKey=$wk" {

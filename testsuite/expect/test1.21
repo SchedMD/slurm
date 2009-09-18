@@ -49,7 +49,7 @@ set srun_pid [spawn $srun --input=$task_id -N1 -n10 -O -v --wait=2 -t1 $bin_bash
 expect {
 	-re "launching ($number).0 on host" {
 		set job_id $expect_out(1,string)
-		send "$bin_env\n"
+		send "$bin_env\r"
 		exp_continue
 	}
 	-re "SLURM_PROCID=($number)" {
@@ -60,7 +60,7 @@ expect {
 			send_user "\nFAILURE: wrong task_id responded\n"
 			set exit_code 1
 		}
-		send "exit\n"
+		send "exit\r"
 		exp_continue
 	}
 	-re "error: First task exited" {
