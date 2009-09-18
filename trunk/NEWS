@@ -182,6 +182,9 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - add support for scontrol show blocks.
  -- Added support for job step time limits.
 
+* Changes in SLURM 2.0.6
+========================
+
 * Changes in SLURM 2.0.5
 ========================
  -- BLUEGENE - Added support for emulating systems with a X-dimension of 4.
