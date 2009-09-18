@@ -107,4 +107,9 @@ char *print_commandline(const int script_argc, char **script_argv);
 /* helper function for printing geometry option */
 char *print_geometry(const uint16_t *geometry);
 
+/* Translate a signal option string "--signal=<int>[@<time>]" into 
+ * it's warn_signal and warn_time components.
+ * RET 0 on success, -1 on failure */
+int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time);
+
 #endif /* !_PROC_ARGS_H */

@@ -540,6 +540,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	uint16_t cpu_bind_type;	/* see cpu_bind_type_t */
 	char *dependency;	/* syncrhonize job execution with other jobs */
+	time_t end_time;	/* time by which job must complete, used for
+				 * job update only now, possible deadline 
+				 * scheduling in the future */
 	char **environment;	/* environment variables to set for job, 
 				 *  name=value pairs, one per line */
 	uint32_t env_size;	/* element count in environment */
@@ -597,6 +600,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * partition limit */
 	uint32_t user_id;	/* set only if different from current UID, 
 				 * can only be explicitly set by user root */
+	uint16_t warn_signal;	/* signal to send when approaching end time */
+	uint16_t warn_time;	/* time before end to send signal (seconds) */
 	char *work_dir;		/* pathname of working directory */
 
 	/* job constraints: */

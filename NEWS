@@ -8,7 +8,9 @@ documents those changes that are of interest to users and admins.
  -- Add SchedulerParameters option of "max_job_bf=#" to control how far down
     the queue of pending jobs that SLURM searches in an attempt backfill 
     schedule them. The default value is 50 jobs.
- -- Fixed cause of squeue -o "%C" seg fault
+ -- Fixed cause of squeue -o "%C" seg fault.
+ -- Add -"-signal=<int>@<time>" option to salloc, sbatch and srun commands to
+    notify programs before reaching the end of their time limit.
 
 * Changes in SLURM 2.1.0-pre4
 =============================

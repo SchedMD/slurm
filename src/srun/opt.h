@@ -153,6 +153,8 @@ typedef struct srun_options {
 	/*int debug;*/		/* -d, --debug			*/
 
 	int immediate;		/* -I, --immediate=secs      	*/
+	uint16_t warn_signal;	/* --signal=<int>@<time>	*/
+	uint16_t warn_time;	/* --signal=<int>@<time>	*/
 
 	bool hold;		/* --hold, -H			*/
 	bool labelio;		/* --label-output, -l		*/

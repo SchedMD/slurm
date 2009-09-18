@@ -15,6 +15,17 @@
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission 
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and 
+ *  distribute linked combinations including the two. You must obey the GNU 
+ *  General Public License in all respects for all of the code used other than 
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this 
+ *  exception to your version of the file(s), but you are not obligated to do 
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in 
+ *  the program, then also delete it here.
  *  
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -99,7 +110,8 @@
 #define OPT_CPU_BIND    0x10
 #define OPT_MEM_BIND    0x11
 #define OPT_IMMEDIATE   0x12
-#define OPT_WCKEY       0x15
+#define OPT_WCKEY       0x14
+#define OPT_SIGNAL      0x15
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_CPU_BIND    0x101
@@ -144,6 +156,7 @@
 #define LONG_OPT_ACCTG_FREQ      0x13c
 #define LONG_OPT_WCKEY           0x13d
 #define LONG_OPT_RESERVATION     0x13e
+#define LONG_OPT_SIGNAL          0x13f
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -305,6 +318,8 @@ static void _opt_default()
 
 	opt.quiet = 0;
 	opt.verbose = 0;
+	opt.warn_signal = 0;
+	opt.warn_time   = 0;
 
 	/* constraint default (-1 is no constraint) */
 	opt.mincpus	    = -1;
@@ -375,6 +390,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
+  {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
@@ -513,6 +529,12 @@ _process_env_var(env_vars_t *e, const char *val)
 		xfree(opt.wckey);
 		opt.wckey = xstrdup(optarg);
 		break;
+	case OPT_SIGNAL:
+		if (get_signal_opts(optarg, &opt.warn_signal, 
+				    &opt.warn_time)) {
+			fatal("Invalid signal specification: %s", optarg);
+		}
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -617,6 +639,7 @@ void set_options(const int argc, char **argv)
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
+		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
@@ -908,15 +931,15 @@ void set_options(const int argc, char **argv)
 				opt.nice = 100;
 			if (abs(opt.nice) > NICE_OFFSET) {
 				error("Invalid nice value, must be between "
-					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
+				       "-%d and %d", NICE_OFFSET, NICE_OFFSET);
 				exit(1);
 			}
 			if (opt.nice < 0) {
 				uid_t my_uid = getuid();
 				if ((my_uid != 0) &&
 				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be non-negative, "
-					      "value ignored");
+					error("Nice value must be "
+					      "non-negative, value ignored");
 					opt.nice = 0;
 				}
 			}
@@ -1032,6 +1055,13 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_RESERVATION:
 			xfree(opt.reservation);
 			opt.reservation = xstrdup(optarg);
+			break;
+		case LONG_OPT_SIGNAL:
+			if (get_signal_opts(optarg, &opt.warn_signal, 
+					    &opt.warn_time)) {
+				fatal("Invalid signal specification: %s",
+				      optarg);
+			}
 			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0)

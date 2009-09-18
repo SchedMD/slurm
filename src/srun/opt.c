@@ -118,6 +118,7 @@
 #define OPT_OPEN_MODE   0x14
 #define OPT_ACCTG_FREQ  0x15
 #define OPT_WCKEY       0x16
+#define OPT_SIGNAL      0x17
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -179,6 +180,7 @@
 #define LONG_OPT_WCKEY           0x14b
 #define LONG_OPT_RESERVATION     0x14c
 #define LONG_OPT_RESTART_DIR     0x14d
+#define LONG_OPT_SIGNAL          0x14e
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -384,6 +386,8 @@ static void _opt_default()
 	opt.quiet = 0;
 	_verbose = 0;
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
+	opt.warn_signal = 0;
+	opt.warn_time   = 0;
 
 	opt.job_min_cpus    = NO_VAL;
 	opt.job_min_sockets = NO_VAL;
@@ -508,6 +512,7 @@ env_vars_t env_vars[] = {
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
 {"SLURM_RESTART_DIR",   OPT_STRING,     &opt.restart_dir ,  NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
+{"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
 {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
 {"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL             },
@@ -660,6 +665,13 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
+	case OPT_SIGNAL:
+		if (get_signal_opts(optarg, &opt.warn_signal, 
+				    &opt.warn_time)) {
+			fatal("Invalid signal specification: %s", optarg);
+		}
+		break;
+
 	default:
 		/* do nothing */
 		break;
@@ -791,6 +803,7 @@ static void set_options(const int argc, char **argv)
 		{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
 		{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 		{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
+		{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
@@ -1351,6 +1364,13 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_RESTART_DIR:
 			xfree(opt.restart_dir);
 			opt.restart_dir = xstrdup(optarg);
+			break;
+		case LONG_OPT_SIGNAL:
+			if (get_signal_opts(optarg, &opt.warn_signal, 
+					    &opt.warn_time)) {
+				fatal("Invalid signal specification: %s",
+				      optarg);
+			}
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {

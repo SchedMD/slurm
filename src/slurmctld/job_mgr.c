@@ -1549,8 +1549,10 @@ extern int kill_running_job_by_node_name(char *node_name)
 				    job_ptr->details->ckpt_dir) {
 					xfree(job_ptr->details->restart_dir);
 					job_ptr->details->restart_dir =
-						xstrdup (job_ptr->details->ckpt_dir);
-					xstrfmtcat(job_ptr->details->restart_dir,
+						xstrdup (job_ptr->details->
+							 ckpt_dir);
+					xstrfmtcat(job_ptr->details->
+						   restart_dir,
 						   "/%u", job_ptr->job_id);
 				}
 				job_ptr->restart_cnt++;
@@ -1574,7 +1576,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 						job_ptr->suspend_time;
 					job_ptr->tot_sus_time += 
 						difftime(now, 
-							 job_ptr->suspend_time);
+							 job_ptr->
+							 suspend_time);
 				} else
 					job_ptr->end_time = time(NULL);
 				deallocate_nodes(job_ptr, false, suspended);
@@ -1787,6 +1790,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       "licenses=%s", 
 	       job_specs->network, buf, cpus_per_task, requeue,
 	       job_specs->licenses);
+
+	slurm_make_time_str(&job_specs->end_time, buf, sizeof(buf));
+	debug3("   end_time=%s signal=%u@%u", 
+	       buf, job_specs->warn_signal, job_specs->warn_time);
 
 	ntasks_per_node = (job_specs->ntasks_per_node != (uint16_t) NO_VAL) ?
 		(long) job_specs->ntasks_per_node : -1L;

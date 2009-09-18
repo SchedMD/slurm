@@ -15,6 +15,17 @@
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission 
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and 
+ *  distribute linked combinations including the two. You must obey the GNU 
+ *  General Public License in all respects for all of the code used other than 
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this 
+ *  exception to your version of the file(s), but you are not obligated to do 
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in 
+ *  the program, then also delete it here.
  *  
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -100,6 +111,7 @@
 #define OPT_CPU_BIND    0x12
 #define OPT_MEM_BIND    0x13
 #define OPT_WCKEY       0x14
+#define OPT_SIGNAL      0x15
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -148,6 +160,7 @@
 #define LONG_OPT_RESERVATION     0x14a
 #define LONG_OPT_CHECKPOINT      0x14b
 #define LONG_OPT_CHECKPOINT_DIR  0x14c
+#define LONG_OPT_SIGNAL          0x14d
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -308,6 +321,8 @@ static void _opt_default()
 
 	opt.quiet = 0;
 	opt.verbose = 0;
+	opt.warn_signal = 0;
+	opt.warn_time   = 0;
 
 	/* constraint default (-1 is no constraint) */
 	opt.mincpus	    = -1;
@@ -412,36 +427,38 @@ struct env_vars {
 
 
 env_vars_t env_vars[] = {
-  {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
-  {"SBATCH_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
-  {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL           },
-  {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL       },
-  {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL           },
-  {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL           },
-  {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
-  {"SBATCH_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
-  {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
-  {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL           },
-  {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
-  {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
-  {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL           },
-  {"SBATCH_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL           },
-  {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
-  {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL           },
-  {"SBATCH_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL           },
-  {"SBATCH_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
-  {"SBATCH_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL           },
-  {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL           },
-  {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL           },
-  {"SBATCH_NO_ROTATE",     OPT_BOOL,       &opt.no_rotate,     NULL           },
-  {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL           },
-  {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
-  {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-  {"SBATCH_QOS",           OPT_STRING,     &opt.qos,           NULL           },
-  {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
-  {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL           },
-  {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
-  {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL           },
+  {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
+  {"SBATCH_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL          },
+  {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL          },
+  {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL      },
+  {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL          },
+  {"SBATCH_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL          },
+  {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL          },
+  {"SBATCH_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL          },
+  {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
+  {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL          },
+  {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
+  {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
+  {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL          },
+  {"SBATCH_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL          },
+  {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL          },
+  {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL          },
+  {"SBATCH_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL          },
+  {"SBATCH_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
+  {"SBATCH_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL          },
+  {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL          },
+  {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
+  {"SBATCH_NO_ROTATE",     OPT_BOOL,       &opt.no_rotate,     NULL          },
+  {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
+  {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
+  {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  {"SBATCH_QOS",           OPT_STRING,     &opt.qos,           NULL          },
+  {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL          },
+  {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
+  {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
+  {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
+  {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
+
   {NULL, 0, NULL, NULL}
 };
 
@@ -584,6 +601,12 @@ _process_env_var(env_vars_t *e, const char *val)
 		xfree(opt.wckey);
 		opt.wckey = xstrdup(optarg);
 		break;
+	case OPT_SIGNAL:
+		if (get_signal_opts(optarg, &opt.warn_signal, 
+				    &opt.warn_time)) {
+			fatal("Invalid signal specification: %s", optarg);
+		}
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -671,6 +694,7 @@ static struct option long_options[] = {
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
+	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
@@ -1483,10 +1507,18 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.ckpt_dir);
 			opt.ckpt_dir = xstrdup(optarg);
 			break;
+		case LONG_OPT_SIGNAL:
+			if (get_signal_opts(optarg, &opt.warn_signal, 
+					    &opt.warn_time)) {
+				fatal("Invalid signal specification: %s",
+				      optarg);
+			}
+			break;
 		default:
-			if (spank_process_option (opt_char, optarg) < 0)
+			if (spank_process_option (opt_char, optarg) < 0) {
 				fatal("Unrecognized command line parameter %c",
-						opt_char);
+				      opt_char);
+			}
 		}
 	}
 
