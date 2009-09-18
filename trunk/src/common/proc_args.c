@@ -730,8 +730,10 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time)
 		return -1;
 	*warn_signal = (uint16_t) num;
 
-	if (endptr[0] == '\0')
+	if (endptr[0] == '\0') {
+		*warn_time = 60;
 		return 0;
+	}
 	if (endptr[0] != '@')
 		return -1;
 

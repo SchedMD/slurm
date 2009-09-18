@@ -711,6 +711,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->state_reason, buffer);
 	pack16(dump_job_ptr->restart_cnt, buffer);
 	pack16(dump_job_ptr->resv_flags, buffer);
+	pack16(dump_job_ptr->warn_signal, buffer);
+	pack16(dump_job_ptr->warn_time, buffer);
 
 	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resp_host, buffer);
@@ -778,6 +780,7 @@ static int _load_job_state(Buf buffer)
 	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, resv_flags, ckpt_interval;
+	uint16_t warn_signal, warn_time;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -824,6 +827,8 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&state_reason, buffer);
 	safe_unpack16(&restart_cnt, buffer);
 	safe_unpack16(&resv_flags, buffer);
+	safe_unpack16(&warn_signal, buffer);
+	safe_unpack16(&warn_time, buffer);
 
 	safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
 	safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
@@ -1000,6 +1005,8 @@ static int _load_job_state(Buf buffer)
 	job_ptr->total_procs  = total_procs;
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->user_id      = user_id;
+	job_ptr->warn_signal  = warn_signal;
+	job_ptr->warn_time    = warn_time;
 
 	memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 
@@ -3443,6 +3450,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->spank_job_env = (char **) NULL; /* nothing left to free */
 	job_desc->spank_job_env_size = 0;         /* nothing left to free */
 
+	job_ptr->warn_signal = job_desc->warn_signal;
+	job_ptr->warn_time = job_desc->warn_time;
+
 	detail_ptr = job_ptr->details;
 	detail_ptr->argc = job_desc->argc;
 	detail_ptr->argv = job_desc->argv;
@@ -3684,15 +3694,23 @@ void job_time_limit(void)
 			xfree(job_ptr->state_desc);
 			continue;
 		}
-		if ((job_ptr->time_limit != INFINITE) &&
-		    (job_ptr->end_time <= over_run)) {
-			last_job_update = now;
-			info("Time limit exhausted for JobId=%u",
-			     job_ptr->job_id);
-			_job_timed_out(job_ptr);
-			job_ptr->state_reason = FAIL_TIMEOUT;
-			xfree(job_ptr->state_desc);
-			continue;
+		if (job_ptr->time_limit != INFINITE) {
+			if (job_ptr->end_time <= over_run) {
+				last_job_update = now;
+				info("Time limit exhausted for JobId=%u",
+				     job_ptr->job_id);
+				_job_timed_out(job_ptr);
+				job_ptr->state_reason = FAIL_TIMEOUT;
+				xfree(job_ptr->state_desc);
+				continue;
+			} else if ((job_ptr->warn_time) &&
+				   (job_ptr->warn_time + PERIODIC_TIMEOUT +
+				    now >= job_ptr->end_time)) {
+				info("warning signal %u to job %u ",
+				     job_ptr->warn_signal, job_ptr->job_id);
+				job_ptr->warn_signal = 0;
+				job_ptr->warn_time = 0;
+			}
 		}
 
 		if (resv_status != SLURM_SUCCESS) {
