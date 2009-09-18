@@ -117,7 +117,7 @@ for {set i 0} {$i<4} {incr i} {
 				previous srun\n"
 			exit 1
 		}
-		send "export SLURM_HOSTFILE=$hostfile\n"
+		send "export SLURM_HOSTFILE=$hostfile\r"
 		expect {
 			-re $prompt {
 				#send_user "srun completed\n"
@@ -175,7 +175,7 @@ for {set i 0} {$i<4} {incr i} {
 	#
 	# execute srun with a specific node count
 	#
-	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\n"
+	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\r"
 	expect {
 		-re "($number): ($alpha_numeric_under)" {
 			set task_id $expect_out(1,string)
@@ -256,7 +256,7 @@ for {set i 0} {$i<4} {incr i} {
 		}
 	}
 }
-send "unset SLURM_HOSTFILE\n"
+send "unset SLURM_HOSTFILE\r"
 expect {
 	-re $prompt {
 		#send_user "srun completed\n"
@@ -327,7 +327,7 @@ for {set i 0} {$i<5} {incr i} {
 	# execute srun with a specific node count
 	#
 	
-	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\n"
+	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\r"
 	
 	expect {
 		-re "($number): ($alpha_numeric_under)" {
@@ -406,7 +406,7 @@ for {set i 0} {$i<5} {incr i} {
 	}
 }
 
-send "exit\n"
+send "exit\r"
 expect {
 	-re "error.*Exit 1" {
 		send_user "This error is expected, no worries\n"
