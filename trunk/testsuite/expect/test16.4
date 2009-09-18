@@ -165,7 +165,7 @@ expect {
 	-re "($number): WAITING" {
 		incr matches
 		if {$matches == 4} {
-			send -i $attach_id "exit\n"
+			send -i $attach_id "exit\r"
 		}
 		exp_continue
 	}

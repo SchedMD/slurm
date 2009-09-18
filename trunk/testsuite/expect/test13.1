@@ -99,7 +99,7 @@ set job_id $expect_out(1,string)
 
 # start initial job step to claim some switch windows
 expect -re $prompt
-send "$srun -N1 -O -n$windows_used $bin_sleep $step_delay &\n"
+send "$srun -N1 -O -n$windows_used $bin_sleep $step_delay &\r"
 
 # start more job steps to check see if any switch window conflicts occur
 for {set inx 0} {$inx < $windows_iterations} {incr inx} {
@@ -111,7 +111,7 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
                 }
 		-re $prompt {
 			send_user "spawning step $inx\n"
-			send "$srun -N1 -O -n$windows_used true\n"
+			send "$srun -N1 -O -n$windows_used true\r"
 		}
 		timeout {
 			send_user "\nFAILURE: salloc not responding\n"
@@ -130,7 +130,7 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
 expect -re $prompt
 send_user "(sleeping for $step_delay seconds, for job step zero to complete) "
 exec $bin_sleep $step_delay
-send "exit\n"
+send "exit\r"
 
 expect {
 	-re "error" {

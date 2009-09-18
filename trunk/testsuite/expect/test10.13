@@ -70,11 +70,11 @@ expect {
 	}
 	-re "to exit" {
 		if { $matches == 0 } {
-			send "create 1\n"
+			send "create 1\r"
 		} elseif { $matches == 1 } {
-			send "save $file\n"
+			send "save $file\r"
 		} elseif { $matches == 2 } {
-			send "exit\n"
+			send "exit\r"
 		}
 		incr matches
 		exp_continue

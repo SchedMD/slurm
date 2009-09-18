@@ -50,7 +50,7 @@ set salloc_pid [spawn $salloc -t1 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "$bin_echo MY_ID=\$SLURM_JOB_ID \n"
+		send "$bin_echo MY_ID=\$SLURM_JOB_ID \r"
 		array unset expect_out
 		exp_continue
 	}
@@ -62,7 +62,7 @@ expect {
 				break
 			}
 		}
-		send "exit 4\n"
+		send "exit 4\r"
 		exp_continue
 	}
 	-re "\[Ee\]xit 4" {

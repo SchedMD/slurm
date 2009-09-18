@@ -103,7 +103,7 @@ spawn $scancel --interactive $job_id
 expect {
 	-re "Cancel job_id=$job_id .* partition=($alpha_numeric_under) .*\? " {
 		set default_part $expect_out(1,string)
-		send "n\n"
+		send "n\r"
 		exp_continue
 	}
 	timeout {
@@ -121,11 +121,11 @@ expect {
 spawn $scancel --interactive --user=$my_login --partition=NO_VAL
 expect {
 	-re "Cancel job_id=$job_id .* partition=NO_VAL .*\? " {
-		send "n\n"
+		send "n\r"
 		exp_continue
 	}
 	-re "Cancel job_id=$job_id .* partition= .*\? " {
-		send "n\n"
+		send "n\r"
 		send_user "\nFAILURE: scancel partition filter failure\n"
 		set exit_code 1
 		exp_continue
@@ -142,11 +142,11 @@ expect {
 spawn $scancel --interactive --user=$my_login --partition=$default_part
 expect {
 	-re "Cancel job_id=.* partition=$default_part .*\? " {
-		send "n\n"
+		send "n\r"
 		exp_continue
 	}
 	-re "Cancel job_id=.* partition= .*\? " {
-		send "n\n"
+		send "n\r"
 		send_user "\nFAILURE: scancel partition filter failure\n"
 		set exit_code 1
 		exp_continue

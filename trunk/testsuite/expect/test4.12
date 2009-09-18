@@ -53,7 +53,7 @@ proc scontrol_test { node proc_cnt } {
 	set found 0
 	set rc 0
 
-	send "$scontrol show node $node\n"
+	send "$scontrol show node $node\r"
 	expect {
 		-re "AllocProcs=($number)" {
 			set num_alloc $expect_out(1,string)
@@ -93,7 +93,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 	set found 0
 	set rc 0
 
-	send "$sinfo -o \"%C %A %N\" -h -n $node\n"
+	send "$sinfo -o \"%C %A %N\" -h -n $node\r"
 	# make sure we get by the sinfo command so we don't 
 	# think the %'s are a prompt
 	expect {
@@ -170,7 +170,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	}
 	set idle_nodes [expr $total_nodes - $alloc_nodes]
 
-	send "$sinfo -o \"%t %D %N\" -h -n $node\n"
+	send "$sinfo -o \"%t %D %N\" -h -n $node\r"
 	# make sure we get by the sinfo command so we don't 
 	# think the %'s are a prompt
 	expect {
@@ -237,22 +237,22 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 		-re $prompt {
 			# test for scontrol to give me the correct cpu count
 			if { [scontrol_test $node $proc_cnt] } {
-				send "exit\n"
+				send "exit\r"
 				return 1
 			}
 			
 
 			# test for sinfo to give me the correct cpu count
 			if { [sinfo_test_1 $node $proc_cnt $total_procs $idle_cpus] } {
-				send "exit\n"
+				send "exit\r"
 				return 1
 			}
 			# test for sinfo to give me the correct node count
 			if { [sinfo_test_2 $node $proc_cnt $total_procs] } {
-				send "exit\n"
+				send "exit\r"
 				return 1
 			}
-			send "exit\n"
+			send "exit\r"
 			exp_continue
 		}
 

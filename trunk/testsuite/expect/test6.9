@@ -90,7 +90,7 @@ set matches  0
 spawn $scancel --interactive $job_id.0
 expect {
 	-re "Cancel step_id=$job_id.0*\? " {
-		send "y\n"
+		send "y\r"
 		incr matches
 		exp_continue
 	}
@@ -111,7 +111,7 @@ set matches  0
 spawn $scancel --interactive $job_id.1
 expect {
 	-re "Cancel step_id=$job_id.1*\? " {
-		send "y\n"
+		send "y\r"
 		incr matches
 		exp_continue
 	}

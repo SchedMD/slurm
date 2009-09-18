@@ -66,7 +66,7 @@ expect {
 		exit 0
 	}
 	-re $prompt {
-		send "$srun -l -c1 $file_bash | sort -n\n"
+		send "$srun -l -c1 $file_bash | sort -n\r"
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
@@ -129,7 +129,7 @@ if {$task_cnt < (2 * $node_cnt)} {
 set this_cnt  0
 set prev_node -1
 set this_node -1
-send "$srun -l -n $task_cnt -m block $file_bash | sort -n\n"
+send "$srun -l -n $task_cnt -m block $file_bash | sort -n\r"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -179,7 +179,7 @@ set this_cnt  0
 set prev_node -1
 set this_node -1
 set prev_cnt  $block_size
-send "$srun -l -n $task_cnt -m cyclic $file_bash | sort -n\n"
+send "$srun -l -n $task_cnt -m cyclic $file_bash | sort -n\r"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -229,7 +229,7 @@ set this_cnt  0
 set prev_node -1
 set this_node -1
 set prev_cnt  $block_size
-send "$srun -l -n $task_cnt -m plane=$block_size $file_bash | sort -n\n"
+send "$srun -l -n $task_cnt -m plane=$block_size $file_bash | sort -n\r"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -274,7 +274,7 @@ if {$this_cnt != $task_cnt} {
 #
 # Terminate the job, free the allocation
 #
-send "exit\n"
+send "exit\r"
 expect {
 	-re "error" {
 		send_user "\nFAILURE: some error occurred\n"

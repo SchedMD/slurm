@@ -71,7 +71,7 @@ set salloc_pid [spawn $salloc -N$node_cnt -t1 $srun -l $bin_printenv SLURMD_NODE
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "$bin_echo MY_ID=\$SLURM_JOB_ID \n"
+		send "$bin_echo MY_ID=\$SLURM_JOB_ID \r"
 		exp_continue
 	}
 	-re "More processors requested than permitted" {

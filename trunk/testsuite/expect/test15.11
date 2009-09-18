@@ -61,7 +61,7 @@ set salloc_pid [spawn $salloc -t1 --job-name=$job_name $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "$scontrol show job $job_id\n"
+		send "$scontrol show job $job_id\r"
 		exp_continue
 	}
 	-re "Name=$job_name" {
@@ -70,7 +70,7 @@ expect {
 	}
 	-re "Priority=($number)" {
 		set priority1 $expect_out(1,string)
-		send "exit\n"
+		send "exit\r"
 		exp_continue
 	}
 	timeout {
@@ -104,12 +104,12 @@ set salloc_pid [spawn $salloc -t1 --nice=1000 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "$scontrol show job $job_id\n"
+		send "$scontrol show job $job_id\r"
 		exp_continue
 	}
 	-re "Priority=($number)" {
 		set priority2 $expect_out(1,string)
-		send "exit\n"
+		send "exit\r"
 		exp_continue
         }
 	timeout {

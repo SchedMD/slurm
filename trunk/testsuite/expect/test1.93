@@ -89,7 +89,7 @@ exec $bin_rm -f $file_in
 #
 set host_0      ""
 set host_1      ""
-send "$srun -l --mpi=lam $bin_printenv SLURMD_NODENAME\n"
+send "$srun -l --mpi=lam $bin_printenv SLURMD_NODENAME\r"
 expect {
 	-re "($number): ($alpha_numeric_under)" {
 		set host_inx $expect_out(1,string)
@@ -134,7 +134,7 @@ if {[string compare $host_0 $host_1] == 0} {
 #
 # Post-processing
 #
-send "exit\n"
+send "exit\r"
 expect {
 	-re "error" {
 		send_user "\nFAILURE: Some error occured\n"

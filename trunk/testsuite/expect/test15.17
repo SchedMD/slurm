@@ -65,17 +65,17 @@ set salloc_pid [spawn $salloc -N$node_cnt -t1 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id_1 $expect_out(1,string)
-		send "$sbatch --jobid=$job_id_1 -o none -e none $file_in \n"
+		send "$sbatch --jobid=$job_id_1 -o none -e none $file_in \r"
 		exp_continue
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id_2 $expect_out(1,string)
-		send "exit \n"
+		send "exit \r"
 		exp_continue
 	}
 	-re "jobid ($number).0 submitted" {
 		set job_id_2 $expect_out(1,string)
-		send "exit \n"
+		send "exit \r"
 		exp_continue
 	}
 	timeout {

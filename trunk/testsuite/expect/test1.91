@@ -137,7 +137,7 @@ set salloc_pid [spawn $salloc -w $node_name -N1 --exclusive --verbose -t2 $bin_b
 expect -re $prompt
 set mask 0
 set task_cnt 0
-send "$srun -c1 $file_prog\n"
+send "$srun -c1 $file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_cnt
@@ -164,7 +164,7 @@ expect {
 #
 set expected_mask [ expr ((1 << $task_cnt) - 1) ]
 set task_mask 0
-send "$srun -c1 -n $task_cnt -B 1:1:1 $file_prog\n"
+send "$srun -c1 -n $task_cnt -B 1:1:1 $file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -197,7 +197,7 @@ while {$this_cnt <= $num_sockets} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -B $this_cnt-$this_cnt:$num_cores:$num_threads $file_prog\n"
+	send "$srun -B $this_cnt-$this_cnt:$num_cores:$num_threads $file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -247,7 +247,7 @@ while {$this_cnt <= $num_cores} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -B $num_sockets:$this_cnt-$this_cnt:$num_threads $file_prog\n"
+	send "$srun -B $num_sockets:$this_cnt-$this_cnt:$num_threads $file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -297,7 +297,7 @@ while {$this_cnt <= $num_threads} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -B $num_sockets:$num_cores:$this_cnt-$this_cnt $file_prog\n"
+	send "$srun -B $num_sockets:$num_cores:$this_cnt-$this_cnt $file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -346,7 +346,7 @@ while {$this_cnt <= $task_cnt} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -c$this_cnt -B 1:1:1 $file_prog\n"
+	send "$srun -c$this_cnt -B 1:1:1 $file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -392,7 +392,7 @@ while {$this_cnt <= $task_cnt} {
 #
 set expected_mask [ expr ((1 << $task_cnt) - 1) ]
 set task_mask 0
-send "$srun -n $task_cnt -m plane=4 $file_prog\n"
+send "$srun -n $task_cnt -m plane=4 $file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -419,7 +419,7 @@ if {$task_mask != $expected_mask} {
 #
 # Terminate the job, free the allocation
 #
-send "exit\n"
+send "exit\r"
 expect {
 	-re "error" {
 		send_user "\nFAILURE: some error occurred\n"
