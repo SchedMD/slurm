@@ -3706,8 +3706,10 @@ void job_time_limit(void)
 			} else if ((job_ptr->warn_time) &&
 				   (job_ptr->warn_time + PERIODIC_TIMEOUT +
 				    now >= job_ptr->end_time)) {
-				info("warning signal %u to job %u ",
-				     job_ptr->warn_signal, job_ptr->job_id);
+				debug("Warning signal %u to job %u ", 
+				      job_ptr->warn_signal, job_ptr->job_id);
+				(void) job_signal(job_ptr->job_id, 
+						  job_ptr->warn_signal, 0, 0);
 				job_ptr->warn_signal = 0;
 				job_ptr->warn_time = 0;
 			}
