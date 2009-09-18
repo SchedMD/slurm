@@ -147,8 +147,8 @@ test1.48   Test of srun mail options (--mail-type and --mail-user options).
 test1.49   Test of srun task-prolog and task-epilog options.
 test1.50   Test of running non-existant job, confirm timely termination.
 test1.51   Test propagation of umask to spawned tasks.
-test1.52   Test of hostfile logic
-test1.53   REMOVED
+test1.52   Test of hostfile logic.
+test1.53   Test of --signal option.
 test1.54   Test of running different executables with different arguments
            for each task (--multi-prog option).
 test1.55   Make certain that srun behaves when its controlling terminal
