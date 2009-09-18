@@ -103,7 +103,7 @@
 #define	PERIODIC_SCHEDULE	60
 
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
-#define	PERIODIC_TIMEOUT	60
+#define	PERIODIC_TIMEOUT	30
 
 /* Attempt to purge defunct job records and resend job kill requests
  * every PURGE_JOB_INTERVAL seconds */
@@ -465,6 +465,9 @@ struct job_record {
 	uint32_t total_procs;		/* number of allocated processors, 
 					 * for accounting */
 	uint32_t user_id;		/* user the job runs as */
+	uint16_t warn_signal;		/* signal to send before end_time */
+	uint16_t warn_time;		/* when to send signal before 
+					 * end_time (secs) */
 	char *wckey;		        /* optional wckey */
 };
 

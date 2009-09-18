@@ -1242,7 +1242,7 @@ static void *_slurmctld_background(void *no_data)
 
 		if (difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) {
 			last_timelimit_time = now;
-			debug2("Performing job time limit and checkpoint test");
+			debug2("Testing job time limits and checkpoints");
 			lock_slurmctld(job_write_lock);
 			job_time_limit();
 			step_checkpoint();
