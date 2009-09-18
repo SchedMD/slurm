@@ -676,6 +676,11 @@ job_desc_msg_create_from_opts ()
 		j->time_limit          = opt.time_limit;
 	j->shared = opt.shared;
 
+	if (opt.warn_signal)
+		j->warn_signal = opt.warn_signal;
+	if (opt.warn_time)
+		j->warn_time = opt.warn_time;
+
 	/* srun uses the same listening port for the allocation response
 	 * message as all other messages */
 	j->alloc_resp_port = slurmctld_comm_addr.port;

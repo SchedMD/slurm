@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 2.0" "April 2009" "SLURM Commands"
+.TH "srun" "1" "SLURM 2.1" "September 2009" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -933,6 +933,18 @@ The job can share nodes with other running jobs. This may result in faster job
 initiation and higher system utilization, but lower application performance.
 
 .TP
+\fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
+When a job is within \fIsig_time\fR seconds of its end time, 
+send it the signal \fIsig_num\fR. 
+Due to the resolution of event handling by SLURM, the signal may 
+be sent up to 60 seconds earlier than specified.
+Both \fIsig_time\fR and \fIsig_num\fR must have integer values
+between zero and 65535.
+By default, no signal is sent before the job's end time. 
+If a \fIsig_num\fR is specified without any \fIsig_time\fR, 
+the default time will be 60 seconds.
+
+.TP
 \fB\-T\fR, \fB\-\-threads\fR=<\fInthreads\fR>
 Request that \fBsrun\fR
 use \fInthreads\fR to initiate and control the parallel job. The 
@@ -1391,7 +1403,10 @@ Same as \fB\-\-qos\fR
 Same as \fB\-D, \-\-chdir=\fR
 .TP
 \fBSLURM_RESTART_DIR\fR
-Same as \fB\-\-restart-dir\fR
+Same as \fB\-\-restart\-dir\fR
+.TP
+\fBSLURM_SIGNAL\fR
+Same as \fB\-\-signal\fR
 .TP
 \fBSLURM_STDERRMODE\fR
 Same as \fB\-e, \-\-error\fR

@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.0" "May 2009" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.1" "September 2009" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -832,6 +832,18 @@ option was not set and allow higher system utilization, but application
 performance will likely suffer due to competition for resources within a node.
 
 .TP
+\fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
+When a job is within \fIsig_time\fR seconds of its end time, 
+send it the signal \fIsig_num\fR. 
+Due to the resolution of event handling by SLURM, the signal may 
+be sent up to 60 seconds earlier than specified.
+Both \fIsig_time\fR and \fIsig_num\fR must have integer values
+between zero and 65535.
+By default, no signal is sent before the job's end time. 
+If a \fIsig_num\fR is specified without any \fIsig_time\fR, 
+the default time will be 60 seconds.
+
+.TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
 Set a limit on the total run time of the job allocation.  If the
 requested time limit exceeds the partition's time limit, the job will
@@ -1034,6 +1046,9 @@ Same as \fB\-p, \-\-partition\fR
 .TP
 \fBSBATCH_QOS\fR
 Same as \fB\-\-qos\fR
+.TP
+\fBSBATCH_SIGNAL\fR
+Same as \fB\-\-signal\fR
 .TP
 \fBSBATCH_TIMELIMIT\fR
 Same as \fB\-t, \-\-time\fR
