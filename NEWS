@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed cause of squeue -o "%C" seg fault.
  -- Add -"-signal=<int>@<time>" option to salloc, sbatch and srun commands to
     notify programs before reaching the end of their time limit.
+ -- Add scontrol option to update a running job's EndTime (also resets the 
+    job's time limit).
 
 * Changes in SLURM 2.1.0-pre4
 =============================

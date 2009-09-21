@@ -150,7 +150,8 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 }
 
 static int
-_parse_checkpoint_args(int argc, char **argv, uint16_t *max_wait, char **image_dir)
+_parse_checkpoint_args(int argc, char **argv, uint16_t *max_wait, 
+		       char **image_dir)
 {
 	int i;
 	
@@ -257,7 +258,8 @@ scontrol_requeue(char *job_id_str)
 
 
 /* 
- * scontrol_update_job - update the slurm job configuration per the supplied arguments 
+ * scontrol_update_job - update the slurm job configuration per the supplied 
+ *	arguments 
  * IN argc - count of arguments
  * IN argv - list of arguments
  * RET 0 if no slurm error, errno otherwise. parsing error prints 
@@ -537,6 +539,10 @@ scontrol_update_job (int argc, char *argv[])
 		else if (!strncasecmp(tag, "EligibleTime", MAX(taglen, 2)) ||
 			 !strncasecmp(tag, "StartTime",    MAX(taglen, 2))) {
 			job_msg.begin_time = parse_time(val, 0);
+			update_cnt++;
+		}
+		else if (!strncasecmp(tag, "EndTime", MAX(taglen, 2))) {
+			job_msg.end_time = parse_time(val, 0);
 			update_cnt++;
 		}
 		else {
