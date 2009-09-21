@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fixed seg fault when "scontrol listpids" is invoked for a specific job step
     on a node on which a stepd is not running.
+ -- Corrections to boot sequences and dependencies in /etc/init.d scripts. Contributed 
+    by Petter Reinholdtsen (University of Oslo).
 
 * Changes in SLURM 2.0.5
 ========================

@@ -15,10 +15,12 @@
 #
 ### BEGIN INIT INFO
 # Provides:          slurm
-# Required-Start:    $local_fs $syslog $network $named munge
-# Required-Stop:     $local_fs $syslog $network $named munge
-# Default-Start:     3 5
-# Default-Stop:      0 1 2 6
+# Required-Start:    $remote_fs $syslog $network munge
+# Required-Stop:     $remote_fs $syslog $network munge
+# Should-Start:      $named
+# Should-Stop:       $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
 # Short-Description: slurm daemon management
 # Description:       Start slurm to provide resource management
 ### END INIT INFO
