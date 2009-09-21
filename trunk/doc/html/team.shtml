@@ -11,9 +11,8 @@ Linux NetworX and many other contributors.
 <ul>
 <li>Morris Jette (LLNL, Project leader)</li>
 <li>Danny Auble (LLNL)</li>
-<li>Susanne Balle (HP)</li>
-<li>David Bremer (LLNL)</li>
 <li>Chris Holmes (HP)</li>
+<li>Don Lipari (LLNL)</li>
 </ul>
 
 <p> SLURM contributers include: </p>
@@ -22,7 +21,9 @@ Linux NetworX and many other contributors.
 <li>P&auml;r Andersson (National Supercomputer Centre, Sweden)</li>
 <li>Don Albert (Bull)</li>
 <li>Ernest Artiaga (Barcelona Supercomputer Center, Spain)</li>
+<li>Susanne Balle (HP)</li>
 <li>Anton Blanchard (Samba)</li>
+<li>David Bremer (LLNL)</li>
 <li>Hongjia Cao (National University of Defense Techonogy, China)</li>
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
@@ -56,12 +57,13 @@ Linux NetworX and many other contributors.
 <li>Michal Novotny (Masaryk University, Czech Republic)</li> 
 <li>Bryan O'Sullivan (Pathscale)</li>
 <li>Gennaro Oliva (Institute of High Performance Computing and 
-Networking, Italy)</li>
+    Networking, Italy)</li>
 <li>Daniel Palermo (HP)</li>
 <li>Dan Phung (LLNL/Columbia University)</li>
-<li>Ashley Pittman (Quadrics)</li>
+<li>Ashley Pittman (Quadrics, UK)</li>
 <li>Vijay Ramasubramanian (University of Maryland)</li>
 <li>Krishnakumar Ravi[KK] (HP)</li>
+<li>Petter Reinholdtsen (University of Oslo, Norway)</li>
 <li>Andy Riebs (HP)</li>
 <li>Asier Roa (Barcelona Supercomputer Center, Spain)<li>
 <li>Miguel Ros (Barcelona Supercomputer Center, Spain)<li>
@@ -77,6 +79,6 @@ Networking, Italy)</li>
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 16 June 2009</p>
+<p style="text-align:center;">Last modified 21 September 2009</p>
 
 <!--#include virtual="footer.txt"-->
