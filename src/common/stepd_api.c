@@ -203,7 +203,8 @@ stepd_connect(const char *directory, const char *nodename,
 	int len;
 
 	if (nodename == NULL) {
-		nodename = _guess_nodename();
+		if (!(nodename = _guess_nodename()))
+			return -1;
 	}
 	if (directory == NULL) {
 		slurm_ctl_conf_t *cf;
