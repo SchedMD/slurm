@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     notify programs before reaching the end of their time limit.
  -- Add scontrol option to update a running job's EndTime (also resets the 
     job's time limit).
+ -- Add new job wait reason, ReqNodeNotAvail: Required node is not available (down or 
+    drained).
 
 * Changes in SLURM 2.1.0-pre4
 =============================

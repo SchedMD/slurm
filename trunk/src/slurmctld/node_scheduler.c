@@ -557,9 +557,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
  * RET SLURM_SUCCESS on success, 
  *	ESLURM_NODES_BUSY if request can not be satisfied now, 
  *	ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE if request can never 
- *	be satisfied , or
+ *	be satisfied , 
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE if the job can not be 
- *	initiated until the parition's configuration changes
+ *	initiated until the parition's configuration changes or
+ *	ESLURM_NODE_NOT_AVAIL if required nodes are DOWN or DRAINED
  * NOTE: the caller must FREE_NULL_BITMAP memory pointed to by select_bitmap
  * Notes: The algorithm is
  *	1) If required node list is specified, determine implicitly required
@@ -668,7 +669,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (!bit_super_set(job_ptr->details->req_node_bitmap, 
 				   avail_node_bitmap)) {
 			FREE_NULL_BITMAP(partially_idle_node_bitmap);
-			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+			return ESLURM_NODE_NOT_AVAIL;
 		}
 
 		if (partially_idle_node_bitmap) {
@@ -1032,11 +1033,19 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	if (error_code) {
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
-			/* Required nodes are down or 
-			 * too many nodes requested */
+			/* Too many nodes requested */
 			debug3("JobId=%u not runnable with present config",
 			       job_ptr->job_id);
 			job_ptr->state_reason = WAIT_PART_NODE_LIMIT;
+			xfree(job_ptr->state_desc);
+			if (job_ptr->priority != 0)  /* Move to end of queue */
+				job_ptr->priority = 1;
+			last_job_update = now;
+		} else if (error_code == ESLURM_NODE_NOT_AVAIL) {
+			/* Required nodes are down or drained */
+			debug3("JobId=%u required nodes not avail",
+			       job_ptr->job_id);
+			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
 			if (job_ptr->priority != 0)  /* Move to end of queue */
 				job_ptr->priority = 1;

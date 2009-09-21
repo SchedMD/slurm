@@ -792,6 +792,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 			return "AssociationTimeLimit";
 		case WAIT_RESERVATION:
 			return "Reservation";
+		case WAIT_NODE_NOT_AVAIL:
+			return "ReqNodeNotAvail";
 		case FAIL_DOWN_PARTITION:
 			return "PartitionDown";
 		case FAIL_DOWN_NODE:
