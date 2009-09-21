@@ -4885,8 +4885,27 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+	if (job_specs->end_time) {
+		if (!IS_JOB_RUNNING(job_ptr)) {
+			/* We may want to use this for deadline scheduling
+			 * at some point in the future. For now only reset
+			 * the time limit of running jobs. */
+			error_code = ESLURM_DISABLED;
+		} else if (job_specs->end_time < now) {
+			error_code = ESLURM_INVALID_TIME_VALUE;
+		} else {
+			int delta_t  = job_specs->end_time - job_ptr->end_time;
+			job_ptr->end_time = job_specs->end_time;
+			job_ptr->time_limit += (delta_t+30)/60; /* Sec->min */
+			info("update_job: setting time_limit to %u for "
+			     "job_id %u", job_ptr->time_limit, 
+			     job_specs->job_id);
+			update_accounting = true;
+		}
+	}
+
 	if (job_specs->reservation) {
-		if (!IS_JOB_PENDING(job_ptr)) {
+		if (!IS_JOB_RUNNING(job_ptr)) {
 			error_code = ESLURM_DISABLED;
 		} else {
 			int rc;
