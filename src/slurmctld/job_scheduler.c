@@ -435,9 +435,9 @@ extern int schedule(void)
 			else if (job_ptr->details->prolog_running == 0)
 				launch_job(job_ptr);
 			job_cnt++;
-		} else if ((error_code !=
-			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)
-			   && (error_code != ESLURM_ACCOUNTING_POLICY)) {
+		} else if ((error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+			   (error_code != ESLURM_NODE_NOT_AVAIL) &&
+			   (error_code != ESLURM_ACCOUNTING_POLICY)) {
 			info("schedule: JobId=%u non-runnable: %s",
 				job_ptr->job_id, 
 				slurm_strerror(error_code));
@@ -453,7 +453,7 @@ extern int schedule(void)
 			}
 		}
 		
-		if((time(NULL) - now) >= sched_timeout) {
+		if ((time(NULL) - now) >= sched_timeout) {
 			debug("schedule: loop taking to long breaking out");
 			break;
 		}

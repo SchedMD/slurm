@@ -258,6 +258,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid block name specified"			},
 	{ ESLURM_QOS_PREEMPTION_LOOP,
 	  "QOS Preemption loop detected"                	},
+	{ ESLURM_NODE_NOT_AVAIL,
+	  "Required node not available (down or drained)"	},
 
 	/* slurmd error codes */
 
