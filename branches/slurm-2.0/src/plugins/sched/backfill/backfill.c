@@ -534,7 +534,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 	static uint32_t fail_jobid = 0;
 
 	if (job_ptr->details->exc_node_bitmap) {
-		orig_exc_nodes = job_ptr->details->exc_node_bitmap;
+		orig_exc_nodes = bit_copy(job_ptr->details->exc_node_bitmap);
 		bit_or(job_ptr->details->exc_node_bitmap, resv_bitmap);
 	} else
 		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
