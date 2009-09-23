@@ -1,0 +1,203 @@
+%
+% $Id$
+%
+
+\documentclass[letter,landscape]{seminar}
+
+\usepackage{pstcol}
+\usepackage{slidesec}
+\usepackage{semcolor}
+
+\input{seminar.bug}
+\input{seminar.bg2}
+
+\usepackage{graphics}
+\usepackage{fancybox}
+\usepackage{fancyhdr}
+\usepackage{epsfig}
+
+% Headers and footers personalization using the `fancyhdr' package
+\fancyhf{} % Clear all fields
+\renewcommand{\headrulewidth}{0.2mm}
+\renewcommand{\footrulewidth}{0.2mm}
+\fancyhead[C]{\Large\textbf{QsNet Support}}
+%\fancyfoot[L]{\tiny\thedate}
+\fancyfoot[L]{\includegraphics[scale=0.075]{penguin.eps}\\\tiny LINUX} 
+%\fancyfoot[R]{\small LLNL}
+\fancyfoot[R]{\includegraphics[scale=0.2]{llnl.ps}\\\tiny LLNL} 
+\fancyfoot[C]{\tiny Page \theslide}
+
+% Create room for headers and footers
+\renewcommand{\slidetopmargin}{2cm}
+\renewcommand{\slidebottommargin}{3cm}
+
+% Center horizontally the headers and footers (see seminar.bug)
+\renewcommand{\headwidth}{\textwidth}
+
+% To adjust the frame length to the header and footer ones
+\autoslidemarginstrue
+
+% Hook to tell dvips to print in landscape mode
+\def\printlandscape{\special{landscape}}
+
+% Possibilities: shadow, oval, double, none, plain
+\slideframe{none}
+
+% display grey text diagonally across background of each slide
+%\definecolor{LightGray}{gray}{0.85}
+%\newslideframe{BackgroundText}{%
+%  \boxput{\rotatebox{56}{\scalebox{4.5}{%
+%    \textcolor{LightGray}{CONFIDENTIAL}}}}{#1}}
+%\slideframe*{BackgroundText}
+
+% Put an image in the background of each slide
+%\newslideframe{IMAGE}{%
+%  \boxput{\rput(1,0){\includegraphics[scale=1.0]{kaos_logo2.ps}}}{#1}}
+%\slideframe*{IMAGE}
+
+% This allows text to be blued with \textcolor{Blue}{my text}
+\definecolor{Blue}{rgb}{0.,0.,1.}
+\definecolor{Gold}{rgb}{1.,0.84,0.}
+\definecolor{Pink}{rgb}{1.,0.75,0.8}
+
+\begin{document}
+
+\slidepagestyle{fancy}
+
+% The presentation begins here.
+
+\begin{slide}
+  %\slideheading{The Big Picture}
+\begin{center}
+\epsfig{file=slurm.eps,scale=0.50}
+\end{center}
+\end{slide}
+
+\begin{slide}
+  \slideheading{Goals}
+  \small
+  \begin{itemize}
+  \item Encapsulate QsNet details so QSW include files, data structures, etc.
+        do not "pollute" the rest of slurm.
+  \item Provide the simplest API possible for manipulating QsNet interconnect
+        resources, but no simpler.
+  \item Checkpointability of internal library state for transfer to failover
+        slurmctld.
+  \item Interfaces to pack/unpack data structures in network byte order for
+        use in slurmd packet protocol discussed last week.
+  \item API calls compatable with standalone programs like pdsh and
+        long-running servers like slurmctld.
+  \item Both client (pdsh/slurmctld) and server (qshd/slurmd) side functions
+        provided.
+  \end{itemize}
+\end{slide}
+
+\begin{slide}
+  \slideheading{Library Initialization}
+  \small
+  Initialize/finalize the library, optionally saving/restoring internal state.
+  \begin{verbatim}
+  int qsw_init(qsw_libstate_t restorestate);
+  void qsw_fini(qsw_libstate_t savestate);
+  \end{verbatim}
+  Allocate/free a {\tt qsw\_libstate\_t} to represent internal state.
+  \begin{verbatim}
+  int qsw_alloc_libstate(qsw_libstate_t *lsp);
+  void qsw_free_libstate(qsw_libstate_t ls);
+  \end{verbatim}
+  Pack/unpack a {\tt qsw\_libstate\_t} into a format suitable for transmitting
+  over the network, writing to checkpoint file, etc..
+  \begin{verbatim}
+  int qsw_pack_libstate(qsw_libstate_t ls, void *buf, int size);
+  int qsw_unpack_libstate(qsw_libstate_t ls, void *buf, int size);
+  \end{verbatim}
+\end{slide}
+
+\begin{slide}
+  \slideheading{Client Side Functions}
+  \small
+  Create all the interconnect information necessary to start a parallel 
+  program including Elan capability, program description number, etc..
+  \begin{verbatim}
+  int qsw_setup_jobinfo(qsw_jobinfo_t job, int nprocs, 
+                        bitstr_t *nodeset, int cyclic_alloc);
+  \end{verbatim}
+  Allocate/free a {\tt qsw\_jobinfo\_t} to represent job information.
+  \begin{verbatim}
+  int qsw_alloc_jobinfo(qsw_jobinfo_t *jobp);
+  void qsw_free_jobinfo(qsw_jobinfo_t job);
+  \end{verbatim}
+  Pack/unpack a {\tt qsw\_jobinfo\_t} into a format suitable for transmitting
+  over the network.
+  \begin{verbatim}
+  int qsw_pack_jobinfo(qsw_jobinfo_t job, void *buf, int size);
+  int qsw_unpack_jobinfo(qsw_jobinfo_t job, void *buf, int size);
+  \end{verbatim}
+\end{slide}
+
+
+\begin{slide}
+  \slideheading{Server Side Functions}
+  \small
+  1: Fork.  Wait.  Destroy program group with {\tt qsw\_prog\_reap}.
+  \begin{verbatim}
+  int qsw_prog_reap(qsw_jobinfo_t jobinfo);
+  \end{verbatim}
+  2: Initialize program description and capability with {\tt qsw\_prog\_init}.
+  Fork N times.  Wait N times.  Exit. Destroy capability with {\tt qsw\_prog\_fini}.
+  \begin{verbatim}
+  int qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid);
+  int qsw_prog_fini(qsw_jobinfo_t jobinfo);
+  \end{verbatim}
+  3: (N instances) Attach to a hardware context with {\tt qsw\_attach}.  
+  Set up environment.  Fork.  Wait.  Exit.
+  \begin{verbatim}
+  int qsw_attach(qsw_jobinfo_t jobinfo, int procnum);
+  \end{verbatim}
+  4: Setuid to the user.  Exec.
+\end{slide}
+
+\begin{slide}
+  \slideheading{Discussion Points}
+  \small
+  \begin{itemize}
+  \item If library is initialized, {\tt qsw\_setup\_jobinfo} allocates
+  program descriptions and Elan hardware contexts sequentially, else random.
+  \item Library internal state checkpoint capability available for failover.
+  \item Pack/Unpack routines translate between host/network byte order.
+  Macros used to permit assertions about size of incoming data types before
+  type promotion.
+  \item bitstr\_t used to represent ``nodeset''.  Bit positions are elan 
+  addresses.  There is no provision for converting between Elan address and
+  hostname.
+  \item Elan include files are not required outside of qsw.c.
+  \item configure --with-elan or qsw.c becomes an empty source file.
+  \end{itemize}
+\end{slide}
+
+\begin{slide}
+  \slideheading{pack.c}
+  \tiny
+  htonl/ntohl, htons/ntohs functions with macro wrappers with many assertions:
+  \begin{verbatim}
+  void pack32(uint32_t val, void **bufp, int *lenp);
+  void pack16(uint16_t val, void **bufp, int *lenp);
+  void unpack32(uint32_t *val, void **bufp, int *lenp);
+  void unpack16(uint16_t *val, void **bufp, int *lenp);
+  \end{verbatim}
+  Example - qsw\_pack\_libstate(qsw\_libstate\_t ls, void *data, int len)
+  \begin{verbatim}
+  pack32(ls->ls_magic, &data, &len);
+  pack32(ls->ls_prognum, &data, &len);
+  pack32(ls->ls_hwcontext, &data, &len);
+  \end{verbatim}
+  Example - qsw\_unpack\_libstate(qsw\_libstate\_t ls, void *data, int len)
+  \begin{verbatim}
+  unpack32(&ls->ls_magic, &data, &len);
+  unpack32(&ls->ls_prognum, &data, &len);
+  unpack32(&ls->ls_hwcontext, &data, &len);
+  \end{verbatim}
+\end{slide}
+ 
+
+\end{document}
