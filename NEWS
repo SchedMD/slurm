@@ -16,6 +16,9 @@ documents those changes that are of interest to users and admins.
  -- Add new job wait reason, ReqNodeNotAvail: Required node is not available 
     (down or drained).
  -- Log when slurmctld or slurmd are started with small core file limit.
+ -- Permit job's owner to change features, processor count, minimum and 
+    maximun node counts of pending jobs (the operation was previously 
+    restricted to user root)
 
 * Changes in SLURM 2.1.0-pre4
 =============================

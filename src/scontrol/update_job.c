@@ -349,7 +349,8 @@ scontrol_update_job (int argc, char *argv[])
 			if (tmp[0] == '-') {
 				job_msg.max_nodes = (uint32_t)
 					strtol(&tmp[1], (char **) NULL, 10);
-				if (job_msg.max_nodes < job_msg.min_nodes) {
+				if ((job_msg.max_nodes != 0) && 
+				    (job_msg.max_nodes < job_msg.min_nodes)) {
 					error("Maximum node count less than "
 						"minimum value (%u < %u)",
 						job_msg.max_nodes,
