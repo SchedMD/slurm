@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -43,6 +43,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/resource.h>
 
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
@@ -199,3 +200,20 @@ create_pidfile(const char *pidfile)
 	return -1;
 }
 
+void 
+test_core_limit(void)
+{
+#ifdef RLIMIT_CORE
+	struct rlimit rlim[1];
+	if (getrlimit(RLIMIT_CORE, rlim) < 0)
+		error("Unable to get core limit");
+	else if (rlim->rlim_cur != RLIM_INFINITY) {
+		rlim->rlim_cur /= 1024;	/* bytes to KB */
+		if (rlim->rlim_cur < 2048) {
+			verbose("Warning: Core limit is only %u KB", 
+				rlim->rlim_cur);
+		}
+	}
+#endif
+	return;
+}

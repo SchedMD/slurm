@@ -245,9 +245,11 @@ main (int argc, char *argv[])
 	 * Become a daemon if desired.
 	 * Do not chdir("/") or close all fd's
 	 */
-	if (conf->daemonize) 
-		if(daemon(1,1) == -1) 
+	if (conf->daemonize) {
+		if (daemon(1,1) == -1) 
 			error("Couldn't daemonize slurmd: %m");
+	}
+	test_core_limit();
 	info("slurmd version %s started", SLURM_VERSION);
 	debug3("finished daemonize");
 

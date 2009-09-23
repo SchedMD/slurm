@@ -293,6 +293,7 @@ int main(int argc, char *argv[])
 	} else {
 		slurmctld_config.daemonize = 0;
 	}
+	test_core_limit();
 
 	/* This must happen before we spawn any threads
 	 * which are not designed to handle them */
@@ -307,7 +308,7 @@ int main(int argc, char *argv[])
 		slurm_get_is_association_based_accounting();
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
 
-	if(accounting_enforce && !association_based_accounting) {
+	if (accounting_enforce && !association_based_accounting) {
 		slurm_ctl_conf_t *conf = slurm_conf_lock();
 		conf->track_wckey = false;
 		conf->accounting_storage_enforce = 0;
