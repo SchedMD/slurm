@@ -4795,6 +4795,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 {
 	int error_code = SLURM_SUCCESS;
 	int super_user = 0;
+	uint32_t save_min_nodes = NO_VAL, save_max_nodes = NO_VAL;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
@@ -4808,6 +4809,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	 uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
 	 char *image = NULL;
 #endif
+
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
 		error("update_job: job_id %u does not exist.",
@@ -5076,51 +5078,56 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->num_procs != NO_VAL) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
-		else if (super_user
-			 || (job_ptr->num_procs > job_specs->num_procs)) {
+		else if (job_specs->num_procs < 1)
+			error_code = ESLURM_BAD_TASK_COUNT;
+		else {
 			job_ptr->num_procs = job_specs->num_procs;
 			info("update_job: setting num_procs to %u for "
 			     "job_id %u", job_specs->num_procs, 
 			     job_specs->job_id);
 			update_accounting = true;
-		} else {
-			error("Attempt to increase num_procs for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
+	/* Reset min and max node counts as needed, insure consistency */
 	if (job_specs->min_nodes != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user
-			 || (detail_ptr->min_nodes > job_specs->min_nodes)) {
+		else if (job_specs->min_nodes < 1)
+			error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		else {
+			save_min_nodes = detail_ptr->min_nodes;
 			detail_ptr->min_nodes = job_specs->min_nodes;
-			info("update_job: setting min_nodes to %u for "
-			     "job_id %u", job_specs->min_nodes, 
-			     job_specs->job_id);
-			update_accounting = true;
-		} else {
-			error("Attempt to increase min_nodes for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
-
 	if (job_specs->max_nodes != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user
-			 || (detail_ptr->max_nodes > job_specs->max_nodes)) {
+		else {
+			save_max_nodes = detail_ptr->max_nodes;
 			detail_ptr->max_nodes = job_specs->max_nodes;
-			info("update_job: setting max_nodes to %u for "
-			     "job_id %u", job_specs->max_nodes, 
-			     job_specs->job_id);
-		} else {
-			error("Attempt to increase max_nodes for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
+	}
+	if ((save_min_nodes || save_max_nodes) && detail_ptr->max_nodes &&
+	    (detail_ptr->max_nodes < detail_ptr->min_nodes)) {
+		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		if (save_min_nodes) {
+			detail_ptr->min_nodes = save_min_nodes;
+			save_min_nodes = 0;
+		}
+		if (save_max_nodes) {
+			detail_ptr->max_nodes = save_max_nodes;
+			save_max_nodes = 0;
+		}
+	}
+	if (save_min_nodes != NO_VAL) {
+		info("update_job: setting min_nodes to %u for job_id %u", 
+		     job_specs->min_nodes, job_specs->job_id);
+		update_accounting = true;
+	}
+	if (save_max_nodes != NO_VAL) {
+		info("update_job: setting max_nodes to %u for job_id %u",
+		     job_specs->max_nodes, job_specs->job_id);
 	}
 
 	if (job_specs->min_sockets != (uint16_t) NO_VAL) {
@@ -5190,47 +5197,37 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->features) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user) {
-			if (job_specs->features[0] != '\0') {
-				char *old_features = detail_ptr->features;
-				List old_list = detail_ptr->feature_list;
-				detail_ptr->features = job_specs->features;
-				detail_ptr->feature_list = NULL;
-				if (build_feature_list(job_ptr)) {
-					info("update_job: invalid features"
-				 	     "(%s) for job_id %u", 
-					     job_specs->features, 
-				  	     job_specs->job_id);
-					if (detail_ptr->feature_list) {
-						list_destroy(detail_ptr->
-							     feature_list);
-					}
-					detail_ptr->features = old_features;
-					detail_ptr->feature_list = old_list;
-					error_code = ESLURM_INVALID_FEATURE;
-				} else {
-					info("update_job: setting features to "
-				 	     "%s for job_id %u", 
-					     job_specs->features, 
-				  	     job_specs->job_id);
-					xfree(old_features);
-					if (old_list)
-						list_destroy(old_list);
-					job_specs->features = NULL;
-				}
-			} else {
-				info("update_job: cleared features for job %u",
-				     job_specs->job_id);
-				xfree(detail_ptr->features);
-				if (detail_ptr->feature_list) {
+		else if (job_specs->features[0] != '\0') {
+			char *old_features = detail_ptr->features;
+			List old_list = detail_ptr->feature_list;
+			detail_ptr->features = job_specs->features;
+			detail_ptr->feature_list = NULL;
+			if (build_feature_list(job_ptr)) {
+				info("update_job: invalid features"
+			 	     "(%s) for job_id %u", 
+				     job_specs->features, job_specs->job_id);
+				if (detail_ptr->feature_list)
 					list_destroy(detail_ptr->feature_list);
-					detail_ptr->feature_list = NULL;
-				}
+				detail_ptr->features = old_features;
+				detail_ptr->feature_list = old_list;
+				error_code = ESLURM_INVALID_FEATURE;
+			} else {
+				info("update_job: setting features to "
+			 	     "%s for job_id %u", 
+				     job_specs->features, job_specs->job_id);
+				xfree(old_features);
+				if (old_list)
+					list_destroy(old_list);
+				job_specs->features = NULL;
 			}
 		} else {
-			error("Attempt to change features for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
+			info("update_job: cleared features for job %u",
+			     job_specs->job_id);
+			xfree(detail_ptr->features);
+			if (detail_ptr->feature_list) {
+				list_destroy(detail_ptr->feature_list);
+				detail_ptr->feature_list = NULL;
+			}
 		}
 	}
 
