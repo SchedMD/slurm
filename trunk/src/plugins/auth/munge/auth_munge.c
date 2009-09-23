@@ -18,7 +18,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -388,8 +388,8 @@ slurm_auth_unpack( Buf buf )
 	 */
 	safe_unpackmem_ptr( &type, &size, buf );
 	
-	if (( type == NULL )
-	||  ( strcmp( type, plugin_type ) != 0 )) {
+	if (( type == NULL ) ||
+	    ( strcmp( type, plugin_type ) != 0 )) {
 		plugin_errno = SLURM_AUTH_MISMATCH;
 		return NULL;
 	}
@@ -465,11 +465,13 @@ slurm_auth_errstr( int slurm_errno )
 	int i;
 
 	if (slurm_errno > MUNGE_ERRNO_OFFSET)
-		return munge_strerror(slurm_errno);
+		return munge_strerror(slurm_errno - MUNGE_ERRNO_OFFSET);
 
 	for ( i = 0; ; ++i ) {
-		if ( tbl[ i ].msg == NULL ) return "unknown error";
-		if ( tbl[ i ].err == slurm_errno ) return tbl[ i ].msg;
+		if ( tbl[ i ].msg == NULL )
+			return "unknown error";
+		if ( tbl[ i ].err == slurm_errno )
+			return tbl[ i ].msg;
 	}
 }
 
@@ -505,7 +507,8 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 	}
 
     again:
-	if ((e = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid, &c->gid))) {
+	if ((e = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid, 
+			      &c->gid))) {
 		if ((e == EMUNGE_SOCKET) && retry--) {
 			error ("Munge decode failed: %s (retrying ...)",
 				munge_ctx_strerror(ctx));
@@ -525,7 +528,7 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 			       munge_ctx_strerror(ctx));
 			_print_cred(ctx); 
 			
-			plugin_errno = e + MUNGE_ERRNO_OFFSET;
+			c->cr_errno = e + MUNGE_ERRNO_OFFSET;
 #ifdef MULTIPLE_SLURMD
 		} else {
 			debug2("We had a replayed cred, "
