@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
  -- Permit job's owner to change features, processor count, minimum and 
     maximun node counts of pending jobs (the operation was previously 
     restricted to user root)
+ -- Applied patch from Chuck Clouston for scontrol man page with clarifications
+    and additional info
 
 * Changes in SLURM 2.1.0-pre4
 =============================
