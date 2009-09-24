@@ -127,7 +127,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested nodes not in this partition"		},
 	{ ESLURM_TOO_MANY_REQUESTED_CPUS,
 	  "More processors requested than permitted"		},
-	{ ESLURM_TOO_MANY_REQUESTED_NODES,
+	{ ESLURM_INVALID_NODE_COUNT,
 	  "Node count specification invalid"			},
 	{ ESLURM_ERROR_ON_DESC_TO_RECORD_COPY,
 	  "Unable to create job record, try again"		},
