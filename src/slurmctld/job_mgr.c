@@ -2418,7 +2418,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		info("_job_create: job's min nodes greater than partition's "
 		     "max nodes (%u > %u)", 
 		     job_desc->min_nodes, part_ptr->max_nodes_orig);
-		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		error_code = ESLURM_INVALID_NODE_COUNT;
 		return error_code;
 	} else if ((job_desc->min_nodes < part_ptr->min_nodes_orig) &&
 		   ((job_desc->max_nodes == NO_VAL) ||
@@ -2436,7 +2436,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		info("_job_create: job's max nodes less than partition's "
 		     "min nodes (%u < %u)", 
 		     job_desc->max_nodes, part_ptr->min_nodes_orig);
-		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		error_code = ESLURM_INVALID_NODE_COUNT;
 		return error_code;
 	}
 
@@ -2674,14 +2674,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		info("Job requested too many nodes (%u) of partition %s(%u)", 
 		     job_desc->min_nodes, part_ptr->name, 
 		     part_ptr->total_nodes);
-		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup_fail;
 	}
 	if (job_desc->max_nodes && 
 	    (job_desc->max_nodes < job_desc->min_nodes)) {
 		info("Job's max_nodes(%u) < min_nodes(%u)",
 		     job_desc->max_nodes, job_desc->min_nodes);
-		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup_fail;
 	}
 
@@ -5094,7 +5094,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (job_specs->min_nodes < 1)
-			error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+			error_code = ESLURM_INVALID_NODE_COUNT;
 		else {
 			save_min_nodes = detail_ptr->min_nodes;
 			detail_ptr->min_nodes = job_specs->min_nodes;
@@ -5110,7 +5110,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 	if ((save_min_nodes || save_max_nodes) && detail_ptr->max_nodes &&
 	    (detail_ptr->max_nodes < detail_ptr->min_nodes)) {
-		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		error_code = ESLURM_INVALID_NODE_COUNT;
 		if (save_min_nodes) {
 			detail_ptr->min_nodes = save_min_nodes;
 			save_min_nodes = 0;
