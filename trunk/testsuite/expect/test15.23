@@ -36,7 +36,6 @@ source ./globals
 set test_id          "15.23"
 set exit_code        0
 set job_id           0
-set timeout          $max_job_delay
 
 print_header $test_id
 
@@ -51,6 +50,7 @@ set env(SALLOC_TIMELIMIT)     2
 # Spawn a job via salloc using these environment variables
 #
 set matches 0
+set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 $bin_bash]
 expect {
 	-re "debug:  Entering _msg_thr_internal" {
@@ -59,19 +59,10 @@ expect {
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "$scontrol show job $job_id\r"
-		send "exit\r"
 		exp_continue
 	}
-	-re "TimeLimit=($number):($number):" {
-		set time_limit [expr $expect_out(1,string) * 60 + $expect_out(2,string)]
-		if {$time_limit == 2} {
-			incr matches
-		} else {
-			send_user "FAILURE: TimeLimit not set\n"
-			set exit_code 1
-		}
-		exp_continue
+	-re $prompt {
+		#send_user "Job initiated\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -90,6 +81,37 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: did not get job_id\n" 
 	exit 1
 }
+
+set timeout 5
+send "$scontrol show job $job_id\r"
+expect {
+	-re "TimeLimit=($number):($number):" {
+		set time_limit [expr $expect_out(1,string) * 60 + $expect_out(2,string)]
+		if {$time_limit == 2} {
+			incr matches
+		} else {
+			send_user "FAILURE: TimeLimit not set\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	-re $prompt {
+		send "exit\r"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		if {$job_id != 0} {
+			cancel_job $job_id
+		}
+		slow_kill [expr 0 - $salloc_pid]
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 if {$matches != 2} {
 	send_user "\nFAILURE: processed $matches of 2 environment variables\n"
 	set exit_code 1
