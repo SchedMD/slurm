@@ -69,10 +69,11 @@ int main (int argc, char *argv[])
 
 	/* Create a job allocation */
 	slurm_init_job_desc_msg( &job_req );
-	job_req.min_nodes = min_nodes;
-	job_req.max_nodes = max_nodes;
-	job_req.user_id   = getuid();
-	job_req.group_id  = getgid();
+	job_req.min_nodes  = min_nodes;
+	job_req.max_nodes  = max_nodes;
+	job_req.user_id    = getuid();
+	job_req.group_id   = getgid();
+	job_req.time_limit = 1;
 	if (slurm_allocate_resources(&job_req, &job_resp)) {
 		slurm_perror ("slurm_allocate_resources");
 		exit(0);
