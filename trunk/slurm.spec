@@ -505,6 +505,17 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_script.so
+%{_libdir}/slurm/mpi_lam.so
+%{_libdir}/slurm/mpi_mpich1_p4.so
+%{_libdir}/slurm/mpi_mpich1_shmem.so
+%{_libdir}/slurm/mpi_mpichgm.so
+%{_libdir}/slurm/mpi_mpichmx.so
+%{_libdir}/slurm/mpi_mvapich.so
+%{_libdir}/slurm/mpi_none.so
+%{_libdir}/slurm/mpi_openmpi.so
+%{_libdir}/slurm/preempt_none.so
+%{_libdir}/slurm/preempt_partition_prio.so
+%{_libdir}/slurm/preempt_qos.so
 %{_libdir}/slurm/priority_basic.so
 %{_libdir}/slurm/priority_multifactor.so
 %{_libdir}/slurm/proctrack_pgid.so
@@ -517,18 +528,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
+%{_libdir}/slurm/task_none.so
 %{_libdir}/slurm/topology_3d_torus.so
 %{_libdir}/slurm/topology_none.so
 %{_libdir}/slurm/topology_tree.so
-%{_libdir}/slurm/mpi_lam.so
-%{_libdir}/slurm/mpi_mpich1_p4.so
-%{_libdir}/slurm/mpi_mpich1_shmem.so
-%{_libdir}/slurm/mpi_mpichgm.so
-%{_libdir}/slurm/mpi_mpichmx.so
-%{_libdir}/slurm/mpi_mvapich.so
-%{_libdir}/slurm/mpi_none.so
-%{_libdir}/slurm/mpi_openmpi.so
-%{_libdir}/slurm/task_none.so
 #############################################################################
 
 %files torque
