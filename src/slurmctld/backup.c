@@ -108,6 +108,8 @@ void run_backup(void)
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 	slurmctld_lock_t config_read_lock = { 
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	slurmctld_lock_t config_write_lock = {
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	info("slurmctld running in background mode");
 	takeover = false;
@@ -202,6 +204,7 @@ void run_backup(void)
 	pthread_join(slurmctld_config.thread_id_rpc, NULL);
 
 	/* clear old state and read new state */
+	lock_slurmctld(config_write_lock);
 	job_fini();
 	if (switch_restore(slurmctld_conf.state_save_location, true)) {
 		error("failed to restore switch state");
@@ -212,6 +215,8 @@ void run_backup(void)
 		abort();
 	}
 	slurmctld_config.shutdown_time = (time_t) 0;
+	unlock_slurmctld(config_write_lock);
+
 	return;
 }
 

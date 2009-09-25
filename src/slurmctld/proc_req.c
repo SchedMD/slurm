@@ -2954,9 +2954,9 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	checkpoint_msg_t *ckpt_ptr = (checkpoint_msg_t *) msg->data;
-	/* Locks: write job */
+	/* Locks: write job lock, read node lock */
 	slurmctld_lock_t job_write_lock = { 
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	char *op;
 
