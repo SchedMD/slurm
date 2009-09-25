@@ -298,7 +298,7 @@ slurm_sched_schedule( void )
 		return SLURM_ERROR;
 
 #if 0
-	/* synchronize job listings? Here? */
+	/* Must have job write lock and node read lock set here */
 	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) && 
 	     (gs_job_scan() != SLURM_SUCCESS))
 		error( "gang scheduler could not rescan jobs" );
@@ -384,7 +384,7 @@ slurm_sched_partition_change( void )
 		return;
 
 #if 0
-	/* synchronize job listings? Here? */
+	/* Must have job write lock and node read lock set here */
 	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) && 
 	     (gs_job_scan() != SLURM_SUCCESS))
 		error( "gang scheduler could not rescan jobs" );

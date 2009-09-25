@@ -732,10 +732,7 @@ static void _preempt_job_dequeue(void)
 	int rc = 0;
 	uint32_t job_id, *tmp_id;
 	uint16_t preempt_mode = slurm_get_preempt_mode();
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
-	lock_slurmctld(job_write_lock);
 	preempt_mode &= (~PREEMPT_MODE_GANG);
 	while ((tmp_id = list_pop(preempt_job_list))) {
 		job_id = *tmp_id;
@@ -767,7 +764,6 @@ static void _preempt_job_dequeue(void)
 			}
 		}
 	}
-	unlock_slurmctld(job_write_lock);
 
 	return;
 }
@@ -1609,13 +1605,16 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 /* The timeslicer thread */
 static void *_timeslicer_thread(void *arg)
 {
+	/* Write locks on job and read lock on nodes */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 	struct gs_part *p_ptr;
 	int i;
 	
 	debug3("gang: starting timeslicer loop");
 	while (!thread_shutdown) {
+		lock_slurmctld(job_write_lock);
 		pthread_mutex_lock(&data_mutex);
-
 		_sort_partitions();
 		
 		/* scan each partition... */
@@ -1633,6 +1632,7 @@ static void *_timeslicer_thread(void *arg)
 
 		/* Preempt jobs that were formerly only suspended */
 		_preempt_job_dequeue();	/* MUST BE OUTSIDE data_mutex lock */
+		unlock_slurmctld(job_write_lock);
 
 		/* sleep AND check for thread termination requests */
 		pthread_testcancel();
