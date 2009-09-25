@@ -1258,19 +1258,12 @@ extern int gs_fini(void)
 {
 	/* terminate the timeslicer thread */
 	debug3("gang: entering gs_fini");
-	pthread_mutex_lock(&thread_flag_mutex);
+	pthread_mutex_lock(&hread_flag_mutex);
 	if (thread_running) {
-		int i;
 		thread_shutdown = true;
-		for (i=0; i<4; i++) {
-			if (pthread_cancel(timeslicer_thread_id)) {
-				timeslicer_thread_id = 0;
-				break;
-			}
-			usleep(1000);
-		}
+		usleep(120000);
 		if (timeslicer_thread_id)
-			error("gang: Cound not kill timeslicer pthread");
+			error("gang: timeslicer pthread still running");
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 
@@ -1602,6 +1595,14 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 	debug3("gang: leaving _cycle_job_list");
 }
 
+static void _slice_sleep(void)
+{
+	int i, cycles = timeslicer_seconds * 10;
+
+	for (i=0; ((i<cycles) && !thread_shutdown); i++)
+		usleep(100000);
+}
+
 /* The timeslicer thread */
 static void *_timeslicer_thread(void *arg)
 {
@@ -1634,13 +1635,10 @@ static void *_timeslicer_thread(void *arg)
 		_preempt_job_dequeue();	/* MUST BE OUTSIDE data_mutex lock */
 		unlock_slurmctld(job_write_lock);
 
-		/* sleep AND check for thread termination requests */
-		pthread_testcancel();
-		debug3("gang: _timeslicer_thread: preparing to sleep");
-		sleep(timeslicer_seconds);
-		debug3("gang: _timeslicer_thread: waking up");
-		pthread_testcancel();
+		_slice_sleep();
 	}
+
+	timeslicer_thread_id = (pthread_t) 0;
 	pthread_exit((void *) 0);
 	return NULL;
 }
