@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in sched/backfill which could result in invalid memory reference
     when trying to schedule jobs submitted with --exclude option.
  -- Fix for slurmctld deadlock at startup with PreemptMode=SUSPEND,GANG.
+ -- Added preemptition plugins to RPM.
  
 * Changes in SLURM 2.1.0-pre4
 =============================
