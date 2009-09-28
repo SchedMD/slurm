@@ -29,6 +29,10 @@ documents those changes that are of interest to users and admins.
  -- Added preemptition plugins to RPM.
  -- Completely disable logging of sched/wiki and sched/wiki2 (Maui & Moab) 
     message traffic unless DebugFlag=Wiki is configured.
+ -- Change scontrol show job info: ReqProcs (number of processors requested) 
+    is replaced by NumProcs (number of processors requested or actually 
+    allocated) and ReqNodes (number of nodes requested) is replaced by 
+    NumNodes (number of nodes requested or actually allocated).
  
 * Changes in SLURM 2.1.0-pre4
 =============================

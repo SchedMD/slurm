@@ -331,7 +331,9 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.nice = NICE_OFFSET + nice;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "ReqProcs", MAX(taglen, 4)) == 0) {
+		/* ReqProcs was replaced by NumProcs in SLURM version 2.1 */
+		else if ((strncasecmp(tag, "ReqProcs", MAX(taglen, 4)) == 0) ||
+			 (strncasecmp(tag, "NumProcs", MAX(taglen, 8)) == 0)) {
 			job_msg.num_procs = 
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
@@ -341,9 +343,9 @@ scontrol_update_job (int argc, char *argv[])
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		/* MinNodes was replaced by ReqNodes in SLURM version 1.2 */
-		else if ((strncasecmp(tag, "MinNodes", MAX(taglen, 4)) == 0) ||
-		         (strncasecmp(tag, "ReqNodes", MAX(taglen, 8)) == 0)) {
+		/* ReqNodes was replaced by NumNodes in SLURM version 2.1 */
+		else if ((strncasecmp(tag, "ReqNodes", MAX(taglen, 8)) == 0) ||
+		         (strncasecmp(tag, "NumNodes", MAX(taglen, 8)) == 0)) {
 			char *tmp;
 			job_msg.min_nodes = (uint32_t) strtol(val, &tmp, 10);
 			if (tmp[0] == '-') {
