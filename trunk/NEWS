@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     when trying to schedule jobs submitted with --exclude option.
  -- Fix for slurmctld deadlock at startup with PreemptMode=SUSPEND,GANG.
  -- Added preemptition plugins to RPM.
+ -- Completely disable logging of sched/wiki and sched/wiki2 (Maui & Moab) 
+    message traffic unless DebugFlag=Wiki is configured.
  
 * Changes in SLURM 2.1.0-pre4
 =============================
