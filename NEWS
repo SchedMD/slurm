@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.0.7
+========================
+ -- Fix bug in select/cons_res when nodes are configured in more than one 
+    partition and those partitions have different priorities and sched/gang
+    is not configured. CPUs were previously over-allocated.
+
 * Changes in SLURM 2.0.6
 ========================
  -- Fixed seg fault when "scontrol listpids" is invoked for a specific job step
