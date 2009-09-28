@@ -386,7 +386,7 @@ static void _attempt_backfill(void)
 		if ((part_ptr->root_only) && filter_root)
 			continue;
 
-		if ((!job_independent(job_ptr)) ||
+		if ((!job_independent(job_ptr, 0)) ||
 		    (license_job_test(job_ptr) != SLURM_SUCCESS))
 			continue;
 
