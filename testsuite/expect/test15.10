@@ -49,7 +49,7 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 			send "$scontrol show job $job_id\r"
 			exp_continue
 		}
-		-re "ReqProcs=($number).*" {
+		-re "NumProcs=($number).*" {
 			set tasks_get $expect_out(1,string)
 			send "exit\r"
 			exp_continue

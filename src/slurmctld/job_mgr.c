@@ -148,7 +148,7 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
 static int  _open_job_state_file(char **state_file);
 static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer);
-static void _pack_default_job_details(struct job_details *detail_ptr,
+static void _pack_default_job_details(struct job_record *job_ptr,
 				      Buf buffer);
 static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer);
@@ -4286,13 +4286,16 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	packstr(dump_job_ptr->wckey, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
-	pack32(dump_job_ptr->num_procs, buffer);
+	if (dump_job_ptr->total_procs)
+		pack32(dump_job_ptr->total_procs, buffer);
+	else
+		pack32(dump_job_ptr->num_procs, buffer);
 	
 	select_g_select_jobinfo_pack(dump_job_ptr->select_jobinfo, buffer);
 
 	detail_ptr = dump_job_ptr->details;
 	/* A few details are always dumped here */
-	_pack_default_job_details(detail_ptr, buffer);
+	_pack_default_job_details(dump_job_ptr, buffer);
 
 	/* other job details are only dumped until the job starts 
 	 * running (at which time they become meaningless) */
@@ -4303,10 +4306,11 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 }
 
 /* pack default job details for "get_job_info" RPC */
-static void _pack_default_job_details(struct job_details *detail_ptr,
+static void _pack_default_job_details(struct job_record *job_ptr,
 				      Buf buffer)
 {
 	int i;
+	struct job_details *detail_ptr = job_ptr->details;
 	char *cmd_line = NULL;
 
 	if (detail_ptr) {
@@ -4324,8 +4328,13 @@ static void _pack_default_job_details(struct job_details *detail_ptr,
 		} else
 			packnull(buffer);
 
-		pack32(detail_ptr->min_nodes, buffer);
-		pack32(detail_ptr->max_nodes, buffer);
+		if (job_ptr->node_cnt)
+			pack32(job_ptr->node_cnt, buffer);
+			pack32(job_ptr->node_cnt, buffer);
+		else {
+			pack32(detail_ptr->min_nodes, buffer);
+			pack32(detail_ptr->max_nodes, buffer);
+		}
 		pack16(detail_ptr->requeue,   buffer);
 	} else {
 		packnull(buffer);
@@ -4333,7 +4342,7 @@ static void _pack_default_job_details(struct job_details *detail_ptr,
 		packnull(buffer);
 		packnull(buffer);
 
-		pack32((uint32_t) 0, buffer);
+		pack32(job_ptr->node_cnt, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
 	}

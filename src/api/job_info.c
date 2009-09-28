@@ -441,11 +441,11 @@ line7:	/****** Line 7 ******/
 #ifdef HAVE_BG
 	convert_num_unit((float)job_ptr->num_nodes, tmp2, sizeof(tmp2),
 			 UNIT_NONE);
-	snprintf(tmp_line, sizeof(tmp_line), "ReqProcs=%s MinBPs=%s ", 
+	snprintf(tmp_line, sizeof(tmp_line), "NumProcs=%s MinBPs=%s ", 
 		 tmp1, tmp2);
 #else
 	_sprint_range(tmp2, job_ptr->num_nodes, job_ptr->max_nodes);
-	snprintf(tmp_line, sizeof(tmp_line), "ReqProcs=%s ReqNodes=%s ", 
+	snprintf(tmp_line, sizeof(tmp_line), "NumProcs=%s NumNodes=%s ", 
 		 tmp1, tmp2);
 #endif
 	xstrcat(out, tmp_line);

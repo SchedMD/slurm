@@ -71,7 +71,7 @@ expect {
 if {$job_id != 0} {
 	spawn $scontrol show job $job_id
 	expect {
-		-re "ReqProcs=($number)" {
+		-re "NumProcs=($number)" {
 			set tasks $expect_out(1,string)
 			exp_continue
 		}

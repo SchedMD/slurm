@@ -403,6 +403,12 @@ Nice value changes are not additive, but overwrite any prior nice
 value and are applied to the job's base priority.
 Only privileged users can specify a negative adjustment.
 .TP
+\fINumNodes\fP=<min_count>[\-<max_count>]
+Set the job's minimum and optionally maximum count of nodes to be allocated.
+.TP
+\fINumProcs\fP=<count>
+Set the job's count of required processes to the specified value.
+.TP
 \fIPartition\fP=<name>
 Set the job's partition to the specified value.
 .TP
@@ -420,12 +426,6 @@ Set the job's count of required cores to the specified value.
 Set the job's list of required node. Multiple node names may be specified using 
 simple node range expressions (e.g. "lx[10\-20]"). 
 Value may be cleared with blank data value, "ReqNodeList=".
-.TP
-\fIReqNodes\fP=<min_count>[\-<max_count>]
-Set the job's minimum and optionally maximum count of nodes to be allocated.
-.TP
-\fIReqProcs\fP=<count>
-Set the job's count of required processes to the specified value.
 .TP
 \fIReqSockets\fP=<count>
 Set the job's count of required sockets to the specified value.
