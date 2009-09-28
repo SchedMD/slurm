@@ -155,7 +155,7 @@ extern int build_job_queue(struct job_queue **job_queue)
 		    IS_JOB_COMPLETING(job_ptr)   ||
 		    (job_ptr->priority == 0))	/* held */
 			continue;
-		if (!job_independent(job_ptr))	/* can not run now */
+		if (!job_independent(job_ptr, 0))	/* can not run now */
 			continue;
 		if (job_buffer_size <= job_queue_size) {
 			job_buffer_size += 200;
@@ -238,7 +238,7 @@ extern void set_job_elig_time(void)
 		     (job_ptr->details->min_nodes > part_ptr->max_nodes)))
 			continue;
 		/* Job's eligible time is set in job_independent() */
-		if (!job_independent(job_ptr))
+		if (!job_independent(job_ptr, 0))
 			continue;
 	}
 	list_iterator_destroy(job_iterator);
