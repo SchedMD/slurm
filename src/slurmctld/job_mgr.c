@@ -7983,6 +7983,6 @@ extern void job_preempt_remove(uint32_t job_id)
 			     job_id, slurm_strerror(rc));
 		}
 	}
-	lock_slurmctld(job_write_lock);
+	unlock_slurmctld(job_write_lock);
 }
 
