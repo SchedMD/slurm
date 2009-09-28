@@ -1258,7 +1258,7 @@ extern int gs_fini(void)
 {
 	/* terminate the timeslicer thread */
 	debug3("gang: entering gs_fini");
-	pthread_mutex_lock(&hread_flag_mutex);
+	pthread_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
 		thread_shutdown = true;
 		usleep(120000);
