@@ -211,6 +211,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in select/cons_res when nodes are configured in more than one 
     partition and those partitions have different priorities and sched/gang
     is not configured. CPUs were previously over-allocated.
+ -- Fix core of smap when specifying -i option with invalid argument.
+ -- Fix issue when using srun --test-only to not put an entry of test 
+    job into accounting.
 
 * Changes in SLURM 2.0.6
 ========================

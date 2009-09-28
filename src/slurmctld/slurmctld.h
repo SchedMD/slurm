@@ -962,9 +962,10 @@ extern int job_complete (uint32_t job_id, uid_t uid, bool requeue,
  * job_independent - determine if this job has a depenentent job pending
  *	or if the job's scheduled begin time is in the future
  * IN job_ptr - pointer to job being tested
+ * IN will_run - is this a test for will_run or not
  * RET - true if job no longer must be defered for another job
  */
-extern bool job_independent(struct job_record *job_ptr);
+extern bool job_independent(struct job_record *job_ptr, int will_run);
 
 /*
  * job_req_node_filter - job reqeust node filter.

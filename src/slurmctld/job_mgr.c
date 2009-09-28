@@ -1912,7 +1912,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		return error_code;
 	}
 	xassert(job_ptr);
-	independent = job_independent(job_ptr);
+	independent = job_independent(job_ptr, will_run);
 	/* priority needs to be calculated after this since we set a
 	   begin time in job_independent and that lets us know if the
 	   job is eligible.
@@ -4743,7 +4743,7 @@ static bool _top_priority(struct job_record *job_ptr)
 				continue;
 			if (!IS_JOB_PENDING(job_ptr2))
 				continue;
-			if (!job_independent(job_ptr2))
+			if (!job_independent(job_ptr2, 0))
 				continue;
 			if ((job_ptr2->resv_name && (!job_ptr->resv_name)) ||
 			    ((!job_ptr2->resv_name) && job_ptr->resv_name))
@@ -6290,7 +6290,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
  * IN job_ptr - pointer to job being tested
  * RET - true if job no longer must be defered for another job
  */
-extern bool job_independent(struct job_record *job_ptr)
+extern bool job_independent(struct job_record *job_ptr, int will_run)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	time_t now = time(NULL);
@@ -6323,7 +6323,7 @@ extern bool job_independent(struct job_record *job_ptr)
 			xfree(job_ptr->state_desc);
 			send_acct_rec = true;
 		}
-		if (send_acct_rec) {
+		if (send_acct_rec && !will_run) {
 			/* We want to record when a job becomes eligible in
 			 * order to calculate reserved time (a measure of
 			 * system over-subscription), job really is not

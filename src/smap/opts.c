@@ -102,7 +102,7 @@ extern void parse_command_line(int argc, char *argv[])
 		case 'i':
 			params.iterate = atoi(optarg);
 			if (params.iterate <= 0) {
-				error("Error: --iterate=%s");
+				error("Error: --iterate=%s", optarg);
 				exit(1);
 			}
 			break;
