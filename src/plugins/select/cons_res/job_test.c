@@ -1773,7 +1773,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * of resources for this job. Here is the procedure:
 	 *
 	 * Step 1: Seek idle nodes across all partitions. If successful then
-	 *         place job and exit. If not successful, then continue:
+	 *         place job and exit. If not successful, then continue. Two
+	 *         related items to note:
+	 *          1. Jobs that don't share CPUs finish with step 1.
+	 *          2. The remaining steps assume sharing or preemption.
 	 *
 	 * Step 2: Remove resources that are in use by higher-priority 
 	 *         partitions, and test that job can still succeed. If not 
@@ -1826,6 +1829,15 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	debug3("cons_res: cr_job_test: test 1 fail - "
 	       "not enough idle resources");
+
+	if (job_node_req == NODE_CR_ONE_ROW) {
+		/* This job CANNOT share CPUs regardless of priority,
+		 * so we fail here. Note that Shared=EXCLUSIVE was already 
+		 * addressed in _verify_node_state() and job preemption
+		 * removes jobs from simulated resource allocation map
+		 * before this point. */
+		goto alloc_job;
+	}
 
 	/*** Step 2 ***/
 	bit_copybits(bitmap, orig_map);
