@@ -1201,7 +1201,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t  *req_nodes_bitmap   = NULL;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
-	int avail_cpus, alloc_cpus = 0;
+	int avail_cpus;
 	int i, j, rc = SLURM_SUCCESS;
 	int best_fit_inx, first, last;
 	int best_fit_nodes, best_fit_cpus;
@@ -1289,7 +1289,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
 						  freq, size);
 			rem_cpus   -= avail_cpus;
-			alloc_cpus += avail_cpus;
 			for (j=0; j<switch_record_cnt; j++) {
 				if (!bit_test(switches_bitmap[j], i))
 					continue;
@@ -1327,7 +1326,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				avail_cpus = _get_cpu_cnt(job_ptr, i, cpu_cnt,
 							  freq, size);
 				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
 			}
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0))
@@ -1456,7 +1454,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			rem_nodes--;
 			max_nodes--;
 			rem_cpus   -= avail_cpus;
-			alloc_cpus += avail_cpus;
 			if ((max_nodes <= 0) || 
 			    ((rem_nodes <= 0) && (rem_cpus <= 0)))
 				break;
@@ -1469,11 +1466,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	} else
 		rc = SLURM_ERROR;
 
- fini:	if (rc == SLURM_SUCCESS) {
-		/* Job's total_procs is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_procs = alloc_cpus;
-	}
-	FREE_NULL_BITMAP(avail_nodes_bitmap);
+ fini:	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
 	for (i=0; i<switch_record_cnt; i++)
 		bit_free(switches_bitmap[i]);
@@ -1753,8 +1746,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		       "insufficient resources");
 		return SLURM_ERROR;
 	} else if (test_only) {
-		/* FIXME: does "test_only" expect struct_job_res
-		 * to be filled out? For now we assume NO */
+		/* Note: "test_only" does not need struct_job_res */
 		FREE_NULL_BITMAP(orig_map);
 		FREE_NULL_BITMAP(free_cores);
 		FREE_NULL_BITMAP(avail_cores);
@@ -2020,6 +2012,12 @@ alloc_job:
 
 	if ((mode != SELECT_MODE_WILL_RUN) && (job_ptr->part_ptr == NULL))
 		error_code = EINVAL;
+	if ((error_code == SLURM_SUCCESS) && (mode == SELECT_MODE_WILL_RUN)) {
+		/* Set a reasonable value for the number of allocated CPUs.
+		 * Without computing task distribution this is only a guess */
+		job_ptr->total_procs = MAX(job_ptr->num_procs,
+					   job_ptr->details->min_nodes);
+	}
 	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
 		FREE_NULL_BITMAP(free_cores);
 		xfree(cpu_count);
