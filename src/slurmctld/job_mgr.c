@@ -173,7 +173,8 @@ static bool _top_priority(struct job_record *job_ptr);
 static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				  struct part_record *part_ptr,
 				  acct_association_rec_t *assoc_in,
-				  acct_qos_rec_t *qos_ptr);
+				  acct_qos_rec_t *qos_ptr,
+				  bool *limit_set_max_nodes);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			       uid_t submit_uid);
@@ -2383,6 +2384,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	List license_list = NULL;
 	bool valid;
 	acct_qos_rec_t qos_rec, *qos_ptr;
+	bool limit_set_max_nodes = 0;
 
 #ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -2535,7 +2537,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		return qos_error;
 
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    (!_validate_acct_policy(job_desc, part_ptr, assoc_ptr, qos_ptr))) {
+	    (!_validate_acct_policy(job_desc, part_ptr,
+				    assoc_ptr, qos_ptr, 
+				    &limit_set_max_nodes))) {
 		info("_job_create: exceeded association's node or time limit "
 		     "for user %u", job_desc->user_id);
 		error_code = ESLURM_ACCOUNTING_POLICY;
@@ -2614,7 +2618,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-			     SELECT_JOBDATA_GEOMETRY, &geo);
+				    SELECT_JOBDATA_GEOMETRY, &geo);
 	if (geo[0] == (uint16_t) NO_VAL) {
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			geo[i] = 0;
@@ -2711,7 +2715,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 
 	job_ptr = *job_pptr;
-	
+
+	job_ptr->limit_set_max_nodes = limit_set_max_nodes;
+
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
 	job_ptr->qos_ptr = (void *) qos_ptr;
@@ -4239,17 +4245,16 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	else
 		pack32(dump_job_ptr->time_limit, buffer);
 
-	if (dump_job_ptr->details)
+	if (dump_job_ptr->details) {
 		pack_time(dump_job_ptr->details->submit_time, buffer);
-	else
-		pack_time((time_t) 0, buffer);
-	if (IS_JOB_PENDING(dump_job_ptr) && dump_job_ptr->details && 
-	    dump_job_ptr->details->begin_time && 
-	    (dump_job_ptr->details->begin_time > time(NULL))) {
 		/* Earliest possible begin time */
 		pack_time(dump_job_ptr->details->begin_time, buffer);
-	} else	/* Actual or expected start time */
-		pack_time(dump_job_ptr->start_time, buffer);
+	} else {
+		pack_time((time_t) 0, buffer);
+		pack_time((time_t) 0, buffer);		
+	}
+	/* Actual or expected start time */
+	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
@@ -6827,16 +6832,19 @@ extern void update_job_nodes_completing(void)
 static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				  struct part_record *part_ptr,
 				  acct_association_rec_t *assoc_in,
-				  acct_qos_rec_t *qos_ptr)
+				  acct_qos_rec_t *qos_ptr,
+				  bool *limit_set_max_nodes)
 {
 	uint32_t time_limit;
 	acct_association_rec_t *assoc_ptr = assoc_in;
 	int parent = 0;
 	int timelimit_set = 0;
-	int max_nodes_set = 0;
 	char *user_name = assoc_ptr->user;
 	bool rc = true;
 
+	xassert(limit_set_max_nodes);
+	(*limit_set_max_nodes) = 0;
+	
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	if(qos_ptr) {
 		/* for validation we don't need to look at 
@@ -6864,11 +6872,11 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				rc = false;
 				goto end_qos;
 			} else if (job_desc->max_nodes == 0
-				   || (max_nodes_set 
+				   || (*limit_set_max_nodes 
 				       && (job_desc->max_nodes 
 					   > qos_ptr->grp_nodes))) {
 				job_desc->max_nodes = qos_ptr->grp_nodes;
-				max_nodes_set = 1;
+				(*limit_set_max_nodes) = 1;
 			} else if (job_desc->max_nodes > 
 				   qos_ptr->grp_nodes) {
 				info("job submit for user %s(%u): "
@@ -6878,7 +6886,9 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id, 
 				     job_desc->max_nodes, 
 				     qos_ptr->grp_nodes);
-				job_desc->max_nodes = qos_ptr->grp_nodes;
+				if(job_desc->max_nodes == NO_VAL)
+					(*limit_set_max_nodes) = 1;
+				job_desc->max_nodes = qos_ptr->grp_nodes;   
 			}
 		}
 
@@ -6926,11 +6936,11 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				rc = false;
 				goto end_qos;
 			} else if (job_desc->max_nodes == 0
-				   || (max_nodes_set 
+				   || (*limit_set_max_nodes 
 				       && (job_desc->max_nodes 
 					   > qos_ptr->max_nodes_pj))) {
 				job_desc->max_nodes = qos_ptr->max_nodes_pj;
-				max_nodes_set = 1;
+				(*limit_set_max_nodes) = 1;
 			} else if (job_desc->max_nodes > 
 				   qos_ptr->max_nodes_pj) {
 				info("job submit for user %s(%u): "
@@ -6940,6 +6950,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id, 
 				     job_desc->max_nodes, 
 				     qos_ptr->max_nodes_pj);
+				if(job_desc->max_nodes == NO_VAL)
+					(*limit_set_max_nodes) = 1;
 				job_desc->max_nodes = qos_ptr->max_nodes_pj;
 			}
 		}
@@ -7023,11 +7035,11 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				rc = false;
 				break;
 			} else if (job_desc->max_nodes == 0
-				   || (max_nodes_set 
+				   || (*limit_set_max_nodes 
 				       && (job_desc->max_nodes 
 					   > assoc_ptr->grp_nodes))) {
 				job_desc->max_nodes = assoc_ptr->grp_nodes;
-				max_nodes_set = 1;
+				(*limit_set_max_nodes) = 1;
 			} else if (job_desc->max_nodes > 
 				   assoc_ptr->grp_nodes) {
 				info("job submit for user %s(%u): "
@@ -7037,6 +7049,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id, 
 				     job_desc->max_nodes, 
 				     assoc_ptr->grp_nodes);
+				if(job_desc->max_nodes == NO_VAL)
+					(*limit_set_max_nodes) = 1;
 				job_desc->max_nodes = assoc_ptr->grp_nodes;
 			}
 		}
@@ -7097,11 +7111,11 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				rc = false;
 				break;
 			} else if (job_desc->max_nodes == 0
-				   || (max_nodes_set 
+				   || (*limit_set_max_nodes 
 				       && (job_desc->max_nodes 
 					   > assoc_ptr->max_nodes_pj))) {
 				job_desc->max_nodes = assoc_ptr->max_nodes_pj;
-				max_nodes_set = 1;
+				(*limit_set_max_nodes) = 1;
 			} else if (job_desc->max_nodes > 
 				   assoc_ptr->max_nodes_pj) {
 				info("job submit for user %s(%u): "
@@ -7111,6 +7125,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->user_id, 
 				     job_desc->max_nodes, 
 				     assoc_ptr->max_nodes_pj);
+				if(job_desc->max_nodes == NO_VAL)
+					(*limit_set_max_nodes) = 1;
 				job_desc->max_nodes = assoc_ptr->max_nodes_pj;
 			}
 		}

@@ -1015,7 +1015,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		max_nodes = MIN(job_ptr->details->max_nodes, 
 				part_ptr->max_nodes);
 	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-	if (job_ptr->details->max_nodes)
+	if (!job_ptr->limit_set_max_nodes 
+	    && job_ptr->details->max_nodes)
 		req_nodes = max_nodes;
 	else
 		req_nodes = min_nodes;
