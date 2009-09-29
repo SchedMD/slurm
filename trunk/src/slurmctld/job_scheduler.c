@@ -1003,7 +1003,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			max_nodes = MIN(job_ptr->details->max_nodes, 
 					part_ptr->max_nodes);
 		max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-		if (job_ptr->details->max_nodes)
+		if (!job_ptr->limit_set_max_nodes 
+		    && job_ptr->details->max_nodes)
 			req_nodes = max_nodes;
 		else
 			req_nodes = min_nodes;

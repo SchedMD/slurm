@@ -70,6 +70,8 @@ enum {
 #ifdef HAVE_BG
 	SORTID_BLRTSIMAGE,
 	SORTID_NODELIST, 
+	SORTID_NODELIST_EXC,
+	SORTID_NODELIST_REQ,
 	SORTID_BLOCK, 
 #endif
 	SORTID_COLOR,
@@ -80,8 +82,6 @@ enum {
 	SORTID_CONTIGUOUS,
 	SORTID_DEPENDENCY,	
 	SORTID_CPUS_PER_TASK,
-	SORTID_END_TIME,
-	SORTID_EXC_NODELIST,
 	SORTID_FEATURES,
 	SORTID_EXIT_CODE,
 #ifdef HAVE_BG
@@ -113,6 +113,8 @@ enum {
 	SORTID_NICE,
 #ifndef HAVE_BG
 	SORTID_NODELIST,
+	SORTID_NODELIST_EXC,
+	SORTID_NODELIST_REQ,
 #endif
 	SORTID_NODES,
 	SORTID_NTASKS_PER_CORE,
@@ -125,20 +127,21 @@ enum {
 	SORTID_RAMDISKIMAGE,
 #endif
 	SORTID_REASON,
-	SORTID_REQ_NODELIST,
 	SORTID_REQ_PROCS,
 	SORTID_RESV_NAME,
 #ifdef HAVE_BG
 	SORTID_ROTATE,
 #endif
 	SORTID_SHARED,
-	SORTID_START_TIME,
 	SORTID_STATE,
 	SORTID_STATE_NUM,
-	SORTID_SUBMIT_TIME,
-	SORTID_SUSPEND_TIME,
 	SORTID_TASKS,
 	SORTID_TIME,
+	SORTID_TIME_ELIGIBLE,
+	SORTID_TIME_END,
+	SORTID_TIME_START,
+	SORTID_TIME_SUBMIT,
+	SORTID_TIME_SUSPEND,
 	SORTID_TIMELIMIT,
 	SORTID_TMP_DISK,
 	SORTID_UPDATED,
@@ -200,36 +203,39 @@ static display_data_t display_data_job[] = {
 	 create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIME, "Running Time", TRUE,
+	{G_TYPE_STRING, SORTID_TIME, "Time:Running", TRUE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_SUBMIT_TIME, "Submit Time", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_SUBMIT, "Time:Submit", FALSE,
 	 EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_START_TIME, "Start Time", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_ELIGIBLE, "Time:Eligible", FALSE,
 	 EDIT_TEXTBOX, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_END_TIME, "End Time", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_START, "Time:Start", FALSE,
+	 EDIT_TEXTBOX, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TIME_END, "Time:End", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_SUSPEND_TIME, "Suspended Time", FALSE,
+	{G_TYPE_STRING, SORTID_TIME_SUSPEND, "Time:Suspended", FALSE,
 	 EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time:Limit", FALSE,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested BP List",
+	{G_TYPE_STRING, SORTID_NODELIST_EXC, "BP List Excluded",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded BP List",
+	{G_TYPE_STRING, SORTID_NODELIST_REQ, "BP List Requested",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 #else
 	{G_TYPE_STRING, SORTID_NODELIST, "Nodelist", TRUE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested NodeList", 
+	{G_TYPE_STRING, SORTID_NODELIST_EXC, "NodeList Excluded", 
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded NodeList", 
+	{G_TYPE_STRING, SORTID_NODELIST_REQ, "NodeList Requested", 
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #endif
 	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", FALSE, EDIT_MODEL, 
@@ -280,7 +286,7 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NICE, "Nice", 
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_ACCOUNT, "Account Charged", 
+	{G_TYPE_STRING, SORTID_ACCOUNT, "Account", 
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REASON, "Reason Waiting", 
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
@@ -698,11 +704,11 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			
 		type = "contiguous";	
 		break;
-	case SORTID_REQ_NODELIST:		
+	case SORTID_NODELIST_REQ:		
 		job_msg->req_nodes = xstrdup(new_text);
 		type = "requested nodelist";
 		break;
-	case SORTID_EXC_NODELIST:
+	case SORTID_NODELIST_EXC:
 		job_msg->exc_nodes = xstrdup(new_text);
 		type = "excluded nodelist";
 		break;
@@ -825,7 +831,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 					    (void *) new_text);
 		break;
 #endif
-	case SORTID_START_TIME:
+	case SORTID_TIME_START:
 		job_msg->begin_time = parse_time((char *)new_text, 0);
 		type = "start time";
 		break;
@@ -1061,13 +1067,19 @@ static void _layout_job_record(GtkTreeView *treeview,
 			    sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_SUBMIT_TIME), 
+						 SORTID_TIME_SUBMIT), 
+				   tmp_char);
+	slurm_make_time_str((time_t *)&job_ptr->eligible_time, tmp_char,
+			    sizeof(tmp_char));
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_TIME_ELIGIBLE), 
 				   tmp_char);
 	slurm_make_time_str((time_t *)&job_ptr->start_time, tmp_char,
 			    sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_START_TIME), 
+						 SORTID_TIME_START), 
 				   tmp_char);
 	if ((job_ptr->time_limit == INFINITE) && 
 	    (job_ptr->end_time > time(NULL)))
@@ -1077,12 +1089,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 				    sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_END_TIME), 
+						 SORTID_TIME_END), 
 				   tmp_char);
 	secs2time_str(job_ptr->suspend_time, tmp_char, sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_SUSPEND_TIME), 
+						 SORTID_TIME_SUSPEND), 
 				   tmp_char);
 
 	if (job_ptr->time_limit == NO_VAL)
@@ -1218,11 +1230,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   tmp_char);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_REQ_NODELIST),
+						 SORTID_NODELIST_REQ),
 				   job_ptr->req_nodes);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_EXC_NODELIST),
+						 SORTID_NODELIST_EXC),
 				   job_ptr->exc_nodes);
 #ifdef HAVE_BG
 	add_display_treestore_line(update, treestore, &iter, 
@@ -1466,20 +1478,23 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_TIME, tmp_char, -1);
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, tmp_char,
 			    sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_SUBMIT_TIME, tmp_char, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_TIME_SUBMIT, tmp_char, -1);
+	slurm_make_time_str((time_t *)&job_ptr->eligible_time, tmp_char,
+			    sizeof(tmp_char));
+	gtk_tree_store_set(treestore, iter, SORTID_TIME_ELIGIBLE, tmp_char, -1);
 	slurm_make_time_str((time_t *)&job_ptr->start_time, tmp_char,
 			    sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_START_TIME, tmp_char, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_TIME_START, tmp_char, -1);
 	if ((job_ptr->time_limit == INFINITE) && 
 	    (job_ptr->end_time > time(NULL)))
 		sprintf(tmp_char, "NONE");
 	else 
 		slurm_make_time_str((time_t *)&job_ptr->end_time, tmp_char,
 				    sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_END_TIME, tmp_char, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_TIME_END, tmp_char, -1);
 	slurm_make_time_str((time_t *)&job_ptr->suspend_time, tmp_char,
 			    sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_SUSPEND_TIME, tmp_char, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_TIME_SUSPEND, tmp_char, -1);
 
 	if (job_ptr->time_limit == NO_VAL)
 		sprintf(tmp_char, "Partition Limit");
@@ -1623,9 +1638,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NODE_INX, job_ptr->node_inx, -1);
 
-	gtk_tree_store_set(treestore, iter, SORTID_REQ_NODELIST,
+	gtk_tree_store_set(treestore, iter, SORTID_NODELIST_REQ,
 			   job_ptr->req_nodes, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_EXC_NODELIST,
+	gtk_tree_store_set(treestore, iter, SORTID_NODELIST_EXC,
 			   job_ptr->exc_nodes, -1);
 
 	if(job_ptr->contiguous)
@@ -2750,7 +2765,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, display_data_job,
-				 SORTID_CNT, SORTID_SUBMIT_TIME, SORTID_COLOR);
+				 SORTID_CNT, SORTID_TIME_SUBMIT, SORTID_COLOR);
 	}
 
 	view = INFO_VIEW;
@@ -2861,7 +2876,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data, 
-				 SORTID_CNT, SORTID_SUBMIT_TIME, SORTID_COLOR);
+				 SORTID_CNT, SORTID_TIME_SUBMIT, SORTID_COLOR);
 	}
 
 	setup_popup_grid_list(popup_win);

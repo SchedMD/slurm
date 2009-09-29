@@ -407,6 +407,8 @@ struct job_record {
 					 * in progress */
 	char *licenses;			/* licenses required by the job */
 	List license_list;		/* structure with license info */
+	bool limit_set_max_nodes;	/* if max_nodes was set from
+					 * a limit false if user set */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t magic;			/* magic cookie for data integrity */

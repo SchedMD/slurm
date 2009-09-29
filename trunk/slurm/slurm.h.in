@@ -673,6 +673,7 @@ typedef struct job_info {
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
 	char *dependency;	/* syncrhonize job execution with other jobs */
+	time_t eligible_time;	/* time job is eligible for running */
 	time_t end_time;	/* time of termination, actual or expected */
 	char *exc_nodes;	/* comma separated list of excluded nodes */
 	int *exc_node_inx;	/* excluded list index pairs into node_table:
