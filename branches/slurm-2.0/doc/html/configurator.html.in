@@ -162,7 +162,7 @@ function displayfile()
    "#MailProg=/bin/mail <br>" +
    "#MaxJobCount=5000 <br>" +
    "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
-   "#MpiParams=ports:#-# <br>" +
+   "#MpiParams=ports=#-# <br>" +
    "#PluginDir= <br>" +
    "#PlugStackConfig= <br>" +
    "#PrivateData=jobs <br>" +
