@@ -500,12 +500,8 @@ static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg,
 	GtkBin *bin = NULL;
 	GtkViewport *view = NULL;
 	GtkTable *table = NULL;
-	GtkWidget *label = NULL;
-	GtkWidget *entry = NULL;
-	GtkTreeModel *model2 = NULL; 
-	GtkCellRenderer *renderer = NULL;
 	int i = 0, row = 0;
-	char *temp_char = NULL;
+	display_data_t *display_data = display_data_part;
 
 	gtk_scrolled_window_set_policy(window,
 				       GTK_POLICY_NEVER,
@@ -519,61 +515,22 @@ static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg,
 	gtk_table_set_homogeneous(table, FALSE);	
 
 	for(i = 0; i < SORTID_CNT; i++) {
-		if(display_data_part[i].extra == EDIT_MODEL) {
-			/* edittable items that can only be known
-			   values */
-			model2 = GTK_TREE_MODEL(
-				create_model_part(display_data_part[i].id));
-			if(!model2) {
-				g_print("no model set up for %d(%s)\n",
-					display_data_part[i].id,
-					display_data_part[i].name);
+		while(display_data++) {
+			if(display_data->id == -1)
+				break;
+			if(!display_data->name)
 				continue;
-			}
-			entry = gtk_combo_box_new_with_model(model2);
-			g_object_unref(model2);
-			
-			_set_active_combo_part(GTK_COMBO_BOX(entry), model,
-					      iter, display_data_part[i].id);
-			
-			g_signal_connect(entry, "changed",
-					 G_CALLBACK(
-						 _admin_edit_combo_box_part),
-					 part_msg);
-			
-			renderer = gtk_cell_renderer_text_new();
-			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(entry),
-						   renderer, TRUE);
-			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(entry),
-						      renderer, "text", 0);
-		} else if(display_data_part[i].extra == EDIT_TEXTBOX) {
-			/* other edittable items that are unknown */
-			entry = create_entry();
-			gtk_tree_model_get(model, iter,
-					   display_data_part[i].id,
-					   &temp_char, -1);
-			gtk_entry_set_max_length(GTK_ENTRY(entry), 
-						 (DEFAULT_ENTRY_LENGTH +
-						  display_data_part[i].id));
-			
-			if(temp_char) {
-				gtk_entry_set_text(GTK_ENTRY(entry),
-						   temp_char);
-				g_free(temp_char);
-			}
-			g_signal_connect(entry, "focus-out-event",
-					 G_CALLBACK(_admin_focus_out_part),
-					 part_msg);
-		} else /* others can't be altered by the user */
-			continue;
-		label = gtk_label_new(display_data_part[i].name);
-		gtk_table_attach(table, label, 0, 1, row, row+1,
-				 GTK_FILL | GTK_EXPAND, GTK_SHRINK, 
-				 0, 0);
-		gtk_table_attach(table, entry, 1, 2, row, row+1,
-				 GTK_FILL, GTK_SHRINK,
-				 0, 0);
-		row++;
+			if(display_data->id != i)
+				continue;
+			display_admin_edit(
+				table, part_msg, &row, model, iter, 
+				display_data,
+				G_CALLBACK(_admin_edit_combo_box_part),
+				G_CALLBACK(_admin_focus_out_part),
+				_set_active_combo_part);
+			break;
+		}
+		display_data = display_data_part;
 	}
 	gtk_table_resize(table, row, 2);
 	
