@@ -1184,6 +1184,79 @@ end_it:
 	return reason_str;
 }
 
+extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,
+			       GtkTreeModel *model, GtkTreeIter *iter,
+			       display_data_t *display_data,
+			       GCallback changed_callback,
+			       GCallback focus_callback,
+			       void (*set_active)(
+				       GtkComboBox *combo, 
+				       GtkTreeModel *model, GtkTreeIter *iter,
+				       int type))
+{
+	GtkWidget *label = NULL;
+	GtkWidget *entry = NULL;
+
+	if(display_data->extra == EDIT_MODEL) {
+		/* edittable items that can only be known
+		   values */
+		GtkCellRenderer *renderer = NULL;
+		GtkTreeModel *model2 = GTK_TREE_MODEL(
+			(display_data->create_model)(display_data->id));
+		if(!model2) {
+			g_print("no model set up for %d(%s)\n",
+				display_data->id,
+				display_data->name);
+			return;
+		}
+		entry = gtk_combo_box_new_with_model(model2);
+		g_object_unref(model2);
+		
+/* 		(callback)_set_active_combo_part(GTK_COMBO_BOX(entry), model, */
+/* 				       iter, display_data->id); */
+		(set_active)(GTK_COMBO_BOX(entry), model,
+			     iter, display_data->id);
+		
+		g_signal_connect(entry, "changed",
+				 changed_callback,
+				 type_msg);
+		
+		renderer = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(entry),
+					   renderer, TRUE);
+		gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(entry),
+					      renderer, "text", 0);
+	} else if(display_data->extra == EDIT_TEXTBOX) {
+		char *temp_char = NULL;	
+		/* other edittable items that are unknown */
+		entry = create_entry();
+		gtk_tree_model_get(model, iter,
+				   display_data->id,
+				   &temp_char, -1);
+		gtk_entry_set_max_length(GTK_ENTRY(entry), 
+					 (DEFAULT_ENTRY_LENGTH +
+					  display_data->id));
+		
+		if(temp_char) {
+			gtk_entry_set_text(GTK_ENTRY(entry),
+					   temp_char);
+			g_free(temp_char);
+		}
+		g_signal_connect(entry, "focus-out-event",
+				 focus_callback,
+				 type_msg);
+	} else /* others can't be altered by the user */
+		return;
+	label = gtk_label_new(display_data->name);
+	gtk_table_attach(table, label, 0, 1, *row, (*row)+1,
+			 GTK_FILL | GTK_EXPAND, GTK_SHRINK, 
+			 0, 0);
+	gtk_table_attach(table, entry, 1, 2, *row, (*row)+1,
+			 GTK_FILL, GTK_SHRINK,
+			 0, 0);
+	(*row)++;
+}
+
 extern void display_edit_note(char *edit_note)
 {
 	GError *error = NULL;

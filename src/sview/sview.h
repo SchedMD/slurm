@@ -446,6 +446,15 @@ extern GtkWidget *create_pulldown_combo(display_data_t *display_data,
 					int count);
 extern char *str_tolower(char *upper_str);
 extern char *get_reason();
+extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,
+			       GtkTreeModel *model, GtkTreeIter *iter,
+			       display_data_t *display_data,
+			       GCallback changed_callback,
+			       GCallback focus_callback,
+			       void (*set_active)(
+				       GtkComboBox *combo, 
+				       GtkTreeModel *model, GtkTreeIter *iter,
+				       int type));
 extern void display_edit_note(char *edit_note);
 extern void add_display_treestore_line(int update,
 				       GtkTreeStore *treestore,
