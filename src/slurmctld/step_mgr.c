@@ -1535,7 +1535,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 
 	if (step_ptr->step_layout) {
 		task_cnt = step_ptr->step_layout->task_cnt;
-		node_list = step_ptr->step_layout->node_list;		
+		node_list = step_ptr->step_layout->node_list;	
 	} else {
 		task_cnt = step_ptr->job_ptr->num_procs;
 		node_list = step_ptr->job_ptr->nodes;	
@@ -1544,6 +1544,14 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	pack32(step_ptr->step_id, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
 	pack32(step_ptr->job_ptr->user_id, buffer);
+#ifdef HAVE_BG
+	if (step_ptr->job_ptr->total_procs)
+		pack32(step_ptr->job_ptr->total_procs, buffer);
+	else
+		pack32(step_ptr->job_ptr->num_procs, buffer);
+#else
+	pack32(step_ptr->cpu_count, buffer);
+#endif
 	pack32(task_cnt, buffer);
 
 	pack32(step_ptr->time_limit, buffer);
@@ -1552,7 +1560,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 		run_time = step_ptr->pre_sus_time;
 	} else {
 		begin_time = MAX(step_ptr->start_time,
-				step_ptr->job_ptr->suspend_time);
+				 step_ptr->job_ptr->suspend_time);
 		run_time = step_ptr->pre_sus_time +
 			difftime(time(NULL), begin_time);
 	}

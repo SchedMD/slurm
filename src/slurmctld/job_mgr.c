@@ -4228,6 +4228,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 {
 	struct job_details *detail_ptr;
+	time_t begin_time = 0;
 
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
@@ -4246,15 +4247,23 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 		pack32(dump_job_ptr->time_limit, buffer);
 
 	if (dump_job_ptr->details) {
+		pack16(dump_job_ptr->details->nice,  buffer);
 		pack_time(dump_job_ptr->details->submit_time, buffer);
 		/* Earliest possible begin time */
-		pack_time(dump_job_ptr->details->begin_time, buffer);
+		begin_time = dump_job_ptr->details->begin_time;
 	} else {
+		pack16(0, buffer);
 		pack_time((time_t) 0, buffer);
-		pack_time((time_t) 0, buffer);		
 	}
+
+	pack_time(begin_time, buffer);
+
 	/* Actual or expected start time */
-	pack_time(dump_job_ptr->start_time, buffer);
+	if(dump_job_ptr->start_time)
+		pack_time(dump_job_ptr->start_time, buffer);
+	else
+		pack_time(begin_time, buffer);
+
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
