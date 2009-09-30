@@ -9,6 +9,10 @@ documents those changes that are of interest to users and admins.
  -- Fix core of smap when specifying -i option with invalid argument.
  -- Fix issue when using srun --test-only to not put an entry of test 
     job into accounting.
+ -- For OpenMPI use of SLURM reserved ports. If any of the tasks fails to 
+    acquire a reserved port and has an exit code of 108 then srun will 
+    kill all remaining tasks and respawn the tasks. Previous code waited 
+    for tasks to exit.
 
 * Changes in SLURM 2.0.6
 ========================
