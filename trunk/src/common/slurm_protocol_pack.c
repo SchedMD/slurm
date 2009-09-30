@@ -2671,6 +2671,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	safe_unpack32(&step->step_id, buffer);
 	safe_unpack16(&step->ckpt_interval, buffer);
 	safe_unpack32(&step->user_id, buffer);
+	safe_unpack32(&step->num_cpus, buffer);
 	safe_unpack32(&step->num_tasks, buffer);
 
 	safe_unpack32(&step->time_limit, buffer);
@@ -2791,6 +2792,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 
 	safe_unpack32(&job->alloc_sid,    buffer);
 	safe_unpack32(&job->time_limit,   buffer);
+
+	safe_unpack16(&job->nice, buffer);
 
 	safe_unpack_time(&job->submit_time, buffer);
 	safe_unpack_time(&job->eligible_time, buffer);

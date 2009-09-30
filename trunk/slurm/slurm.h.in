@@ -701,6 +701,7 @@ typedef struct job_info {
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */
+	uint16_t nice;    	/* requested priority change */
 	int *node_inx;		/* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1, 
 				 * start_range_2, .., -1  */
@@ -924,6 +925,7 @@ typedef struct {
 	int *node_inx;		/* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
+	uint32_t num_cpus;	/* how many cpus are being used by step */
 	uint32_t num_tasks;	/* number of tasks */
 	char *partition;	/* name of assigned partition */
 	char *resv_ports;	/* ports allocated for MPI */
