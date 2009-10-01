@@ -1077,8 +1077,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			xfree(job_ptr->state_desc);
 			job_completion_logger(job_ptr);
 			cnt++;
-		} else if (IS_NODE_UNKNOWN(node_ptr) || 
-			   IS_NODE_IDLE(node_ptr)) {
+		} else if (IS_NODE_IDLE(node_ptr)) {
 			cnt++;
 			node_ptr->node_state =
 				NODE_STATE_ALLOCATED | node_flags;
