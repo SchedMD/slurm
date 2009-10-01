@@ -4344,7 +4344,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 
 		if (job_ptr->node_cnt) {
 			pack32(job_ptr->node_cnt, buffer);
-			pack32(job_ptr->node_cnt, buffer);
+			pack32((uint32_t) 0, buffer);
 		} else {
 			pack32(detail_ptr->min_nodes, buffer);
 			pack32(detail_ptr->max_nodes, buffer);
