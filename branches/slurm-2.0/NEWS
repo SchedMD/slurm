@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     acquire a reserved port and has an exit code of 108 then srun will 
     kill all remaining tasks and respawn the tasks. Previous code waited 
     for tasks to exit.
+ -- MySQL plugin - When doing archiving we now get a correct end time.  
+    Previously it would grab an extra day to archive.
 
 * Changes in SLURM 2.0.6
 ========================

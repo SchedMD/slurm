@@ -1640,6 +1640,9 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 			      last_submit);
 			return SLURM_ERROR;
 		}
+		time_tm.tm_sec = 0;
+		time_tm.tm_min = 0;
+		time_tm.tm_hour = 0;
 		time_tm.tm_mday = 1;
 		time_tm.tm_mon -= arch_cond->purge_event;
 		time_tm.tm_isdst = -1;
@@ -1724,6 +1727,9 @@ exit_events:
 			      last_submit);
 			return SLURM_ERROR;
 		}
+		time_tm.tm_sec = 0;
+		time_tm.tm_min = 0;
+		time_tm.tm_hour = 0;
 		time_tm.tm_mday = 1;
 		time_tm.tm_mon -= arch_cond->purge_suspend;
 		time_tm.tm_isdst = -1;
@@ -1807,6 +1813,10 @@ exit_suspend:
 			      last_submit);
 			return SLURM_ERROR;
 		}
+		time_tm.tm_sec = 0;
+		time_tm.tm_min = 0;
+		time_tm.tm_hour = 0;
+		time_tm.tm_mday = 1;
 		time_tm.tm_mon -= arch_cond->purge_step;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
@@ -1891,6 +1901,9 @@ exit_steps:
 			      last_submit);
 			return SLURM_ERROR;
 		}
+		time_tm.tm_sec = 0;
+		time_tm.tm_min = 0;
+		time_tm.tm_hour = 0;
 		time_tm.tm_mday = 1;
 		time_tm.tm_mon -= arch_cond->purge_job;
 		time_tm.tm_isdst = -1;
