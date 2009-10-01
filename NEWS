@@ -216,6 +216,16 @@ documents those changes that are of interest to users and admins.
  -- Fix core of smap when specifying -i option with invalid argument.
  -- Fix issue when using srun --test-only to not put an entry of test 
     job into accounting.
+ -- For OpenMPI use of SLURM reserved ports. If any of the tasks fails to 
+    acquire a reserved port and has an exit code of 108 then srun will 
+    kill all remaining tasks and respawn the tasks. Previous code waited 
+    for tasks to exit.
+ -- MySQL plugin - When doing archiving we now get a correct end time.  
+    Previously it would grab an extra day to archive.
+ -- BLUEGENE - Handle initial state correctly, previously was setting initial 
+    state to IDLE if UNKNOWN which would make it not set a registration 
+    message to accounting, which could lead to nodes not being listed as up 
+    when they really were.
 
 * Changes in SLURM 2.0.6
 ========================
@@ -287,7 +297,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Added SLURM_BG_NUM_NODES with cnode count of allocation, 
     SLURM_JOB_NUM_NODES represents midplane counts until 2.1.
  -- BLUEGENE - Added fix for if a block is in error state and the midplane 
-    containning the block is also set to drain/down.  This previously 
+    containing the block is also set to drain/down.  This previously 
     prevented dynamic creation of new blocks when this state was present.
  -- Fixed bug where a users association limits were not enforced, only 
     parent limits were being enforced.
