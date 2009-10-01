@@ -238,7 +238,7 @@ void ping_nodes (void)
 	} else {
 		hostlist_uniq(ping_agent_args->hostlist);
 		hostlist_ranged_string(ping_agent_args->hostlist, 
-			sizeof(host_str), host_str);
+				       sizeof(host_str), host_str);
 		debug("Spawning ping agent for %s", host_str);
 		ping_begin();
 		agent_queue_request(ping_agent_args);
@@ -250,7 +250,7 @@ void ping_nodes (void)
 	} else {
 		hostlist_uniq(reg_agent_args->hostlist);
 		hostlist_ranged_string(reg_agent_args->hostlist, 
-			sizeof(host_str), host_str);
+				       sizeof(host_str), host_str);
 		debug("Spawning registration agent for %s %d hosts", 
 		      host_str, reg_agent_args->node_count);
 		ping_begin();
@@ -260,7 +260,7 @@ void ping_nodes (void)
 	if (down_hostlist) {
 		hostlist_uniq(down_hostlist);
 		hostlist_ranged_string(down_hostlist,
-			sizeof(host_str), host_str);
+				       sizeof(host_str), host_str);
 		error("Nodes %s not responding, setting DOWN", host_str);
 		hostlist_destroy(down_hostlist);
 	}
