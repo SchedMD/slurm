@@ -1114,20 +1114,26 @@ _is_openmpi_port_error(int errcode)
 }
 
 static void
-_handle_openmpi_port_error(const char *tasks, const char *hosts)
+_handle_openmpi_port_error(const char *tasks, const char *hosts,
+			   slurm_step_ctx_t *step_ctx)
 {
+	uint32_t job_id, step_id;
 	char *msg = "retrying";
 
 	if (!retry_step_begin) {
 		retry_step_begin = true;
 		retry_step_cnt++;
 	}
-	if (retry_step_cnt >= MAX_STEP_RETRIES) {
+
+	if (retry_step_cnt >= MAX_STEP_RETRIES)
 		msg = "aborting";
-		opt.kill_bad_exit = true;
-	}
 	error("%s: tasks %s unable to claim reserved port, %s.",
 	      hosts, tasks, msg);
+
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
+	info("Terminating job step %u.%u", job_id, step_id);
+	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
 
 static void
@@ -1151,11 +1157,13 @@ _task_finish(task_exit_msg_t *msg)
 			verbose("%s: %s %s: Completed", hosts, task_str, tasks);
 			normal_exit = 1;
 		}
-		else if (_is_openmpi_port_error(rc))
-			_handle_openmpi_port_error(tasks, hosts);
-		else
+		else if (_is_openmpi_port_error(rc)) {
+			_handle_openmpi_port_error(tasks, hosts, 
+						   job->step_ctx);
+		} else {
 			error("%s: %s %s: Exited with exit code %d",
 			      hosts, task_str, tasks, rc);
+		}
 		if (!WIFEXITED(global_rc) || (rc > WEXITSTATUS(global_rc)))
 			global_rc = msg->return_code;
 	}
