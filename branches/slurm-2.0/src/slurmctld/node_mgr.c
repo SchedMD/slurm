@@ -583,20 +583,10 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->last_idle	= now;
 		}
 		xfree (node_name);
-		if(node_ptr) {
-			/* If the state is UNKNOWN we will assume IDLE
-			   until the nodes check in.  This is needed
-			   for bluegene to set up drained nodes
-			   correctly. */
-			if((node_ptr->node_state & NODE_STATE_BASE)
-			   == NODE_STATE_UNKNOWN) 
-				node_ptr->node_state |= NODE_STATE_IDLE;
-
+		if(node_ptr) 
 			select_g_update_node_state(
 				(node_ptr - node_record_table_ptr), 
 				node_ptr->node_state);
-		}
-
 	}
 
 fini:	info("Recovered state of %d nodes", node_cnt);
