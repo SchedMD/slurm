@@ -1383,10 +1383,24 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			last_node_update = now;
 			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 			node_ptr->last_idle = now;
+			if (!IS_NODE_DRAIN(node_ptr) && 
+			    !IS_NODE_FAIL(node_ptr)) {
+				xfree(node_ptr->reason);
+				clusteracct_storage_g_node_up(acct_db_conn, 
+						      slurmctld_cluster_name,
+						      node_ptr, now);
+			}
 		} else if (IS_NODE_COMPLETING(node_ptr) &&
 			   (reg_msg->job_count == 0)) {	/* job already done */
 			last_node_update = now;
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+			if (!IS_NODE_DRAIN(node_ptr) && 
+			    !IS_NODE_FAIL(node_ptr)) {
+				xfree(node_ptr->reason);
+				clusteracct_storage_g_node_up(acct_db_conn, 
+						      slurmctld_cluster_name,
+						      node_ptr, now);
+			}
 		}
 		select_g_update_node_config((node_ptr-node_record_table_ptr));
 		select_g_update_node_state((node_ptr - node_record_table_ptr),
