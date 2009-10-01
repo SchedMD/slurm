@@ -1510,8 +1510,8 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 			continue;
 		if(!bit_test(bg_record->bitmap, node_inx))
 			continue;
-		if(bg_record->node_cnt >= bg_conf->bp_node_cnt) {
-			total_cpus = bg_conf->bp_node_cnt;
+		if(bg_record->cpu_cnt >= bg_conf->procs_per_bp) {
+			total_cpus = bg_conf->procs_per_bp;
 			break;
 		} else
 			total_cpus += bg_record->cpu_cnt;
