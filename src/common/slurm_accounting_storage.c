@@ -8037,8 +8037,23 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 					     SELECT_NODEDATA_SUBCNT,
 					     NODE_STATE_ERROR,
 					     &err_cpus);
-		if(err_cpus) 
-			return SLURM_SUCCESS;
+		if(err_cpus) {
+			char *reason = "Setting partial node down.";
+			struct node_record send_node;
+			struct config_record config_rec;
+			memset(&send_node, 0, sizeof(struct node_record));
+			memset(&config_rec, 0, sizeof(struct config_record));
+			send_node.name = node_ptr->name;
+			send_node.config_ptr = &config_rec;
+			send_node.cpus = err_cpus;
+			config_rec.cpus = err_cpus;
+		 
+			send_node.node_state = NODE_STATE_ERROR;		
+
+			return (*(g_acct_storage_context->ops.node_down))
+				(db_conn, cluster, &send_node,
+				 event_time, reason);
+		}
 	}
 
  	return (*(g_acct_storage_context->ops.node_up))

@@ -4382,9 +4382,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 		pack_bit_fmt(detail_ptr->exc_node_bitmap, buffer);
 
 		pack_multi_core_data(detail_ptr->mc_ptr, buffer);
-	} 
-
-	else {
+	} else {
 		pack16((uint16_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
