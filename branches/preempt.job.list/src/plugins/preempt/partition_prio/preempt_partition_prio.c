@@ -115,7 +115,7 @@ extern struct job_record **find_preemptable_jobs(struct job_record *job_ptr)
 		if (pre_job_inx >= pre_job_size) {
 			pre_job_size += 100;
 			xrealloc(pre_job_p, 
-				 (sizeof(struct job_record) * pre_job_size));
+				 (sizeof(struct job_record *) * pre_job_size));
 		}
 		pre_job_p[pre_job_inx++] = job_p;
 	}
@@ -127,7 +127,8 @@ extern struct job_record **find_preemptable_jobs(struct job_record *job_ptr)
 	_sort_pre_job_list(pre_job_p, pre_job_inx);
 	if (pre_job_inx == pre_job_size) {	/* Insure NULL terminated */
 		pre_job_size++;
-		xrealloc(pre_job_p, (sizeof(struct job_record)*pre_job_size));
+		xrealloc(pre_job_p, 
+			 (sizeof(struct job_record * ) * pre_job_size));
 	}
 	return pre_job_p;
 }
