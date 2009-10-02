@@ -71,6 +71,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "where",
 					       MAX(command_len, 5))) {
 			continue;
+		} else if (!end && !strncasecmp (argv[i], "WOLimits",
+						 MAX(command_len, 3))) {
+			without_limits = 1;
 		} else if(!end || !strncasecmp (argv[i], "Names",
 						MAX(command_len, 1))
 			  || !strncasecmp (argv[i], "Clusters",
@@ -80,9 +83,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 							 argv[i]+end))
 					set = 1;
 			}
-		} else if (!end && !strncasecmp (argv[i], "WOLimits",
-						 MAX(command_len, 3))) {
-			without_limits = 1;
 		} else if (!strncasecmp (argv[i], "Classification", 
 					 MAX(command_len, 3))) {
 			if(classification) {
