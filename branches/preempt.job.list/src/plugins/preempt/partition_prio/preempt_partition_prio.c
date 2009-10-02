@@ -41,6 +41,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/plugin.h"
 #include "src/slurmctld/slurmctld.h"
@@ -49,8 +50,9 @@ const char	plugin_name[]	= "Preempt by partition priority plugin";
 const char	plugin_type[]	= "preempt/partition_prio";
 const uint32_t	plugin_version	= 100;
 
-static void _sort_pre_job_list(struct job_record **pre_job_p, 
-			       int pre_job_inx);
+static uint32_t _gen_job_prio(struct job_record **job_pptr);
+static void _preempt_list_del(void *x);
+static int  _sort_by_prio (void *x, void *y);
 
 /**************************************************************************/
 /*  TAG(                              init                              ) */
@@ -72,31 +74,31 @@ extern void fini( void )
 /**************************************************************************/
 /* TAG(                 find_preemptable_jobs                           ) */
 /**************************************************************************/
-extern struct job_record **find_preemptable_jobs(struct job_record *job_ptr)
+extern List find_preemptable_jobs(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
-	struct job_record *job_p, **pre_job_p = NULL;
-	int pre_job_inx = 0, pre_job_size = 0;
+	struct job_record *job_p, **preemptee_ptr;
+	List preemptee_job_list = NULL;
 
 	/* Validate the preemptor job */
 	if (job_ptr == NULL) {
 		error("find_preemptable_jobs: job_ptr is NULL");
-		return NULL;
+		return preemptee_job_list;
 	}
 	if (!IS_JOB_PENDING(job_ptr)) {
 		error("find_preemptable_jobs: job %u not pending", 
 		      job_ptr->job_id);
-		return NULL;
+		return preemptee_job_list;
 	}
 	if (job_ptr->part_ptr == NULL) {
 		error("find_preemptable_jobs: job %u has NULL partition ptr", 
 		      job_ptr->job_id);
-		return NULL;
+		return preemptee_job_list;
 	}
 	if (job_ptr->part_ptr->node_bitmap == NULL) {
 		error("find_preemptable_jobs: partition %s node_bitmap=NULL", 
 		      job_ptr->part_ptr->name);
-		return NULL;
+		return preemptee_job_list;
 	}
 
 	/* Build an array of pointers to preemption candidates */
@@ -111,63 +113,60 @@ extern struct job_record **find_preemptable_jobs(struct job_record *job_ptr)
 		    (bit_overlap(job_p->node_bitmap, 
 				 job_ptr->part_ptr->node_bitmap) == 0))
 			continue;
+
 		/* This job is a preemption candidate */
-		if (pre_job_inx >= pre_job_size) {
-			pre_job_size += 100;
-			xrealloc(pre_job_p, 
-				 (sizeof(struct job_record *) * pre_job_size));
+		if (preemptee_job_list == NULL) {
+			preemptee_job_list = list_create(_preempt_list_del);
+			if (preemptee_job_list == NULL)
+				fatal("list_create malloc failure");
 		}
-		pre_job_p[pre_job_inx++] = job_p;
+		preemptee_ptr = xmalloc(sizeof(struct job_record *));
+		preemptee_ptr[0] = job_p;
+		list_append(preemptee_job_list, preemptee_ptr);;
 	}
 	list_iterator_destroy(job_iterator);
 
-	if (pre_job_inx <= 1)
-		return pre_job_p;
-
-	_sort_pre_job_list(pre_job_p, pre_job_inx);
-	if (pre_job_inx == pre_job_size) {	/* Insure NULL terminated */
-		pre_job_size++;
-		xrealloc(pre_job_p, 
-			 (sizeof(struct job_record * ) * pre_job_size));
-	}
-	return pre_job_p;
+	list_sort(preemptee_job_list, _sort_by_prio);
+	return preemptee_job_list;
 }
 
-/* Sort a list of jobs, lowest priority jobs are first */
-static void _sort_pre_job_list(struct job_record **pre_job_p, 
-			       int pre_job_inx)
+static uint32_t _gen_job_prio(struct job_record **job_pptr)
 {
-	int i, j;
-	struct job_record *tmp_job_ptr;
-	uint32_t tmp_job_prio;
-	uint32_t *job_prio = xmalloc(sizeof(uint32_t) * pre_job_inx);
+	struct job_record *job_ptr = *job_pptr;
+	uint32_t job_prio;
 
-	/* for each job, compute a priority value
-	 * (partition_priority << 16) + job_node_count
-	 *
-	 * alternate algorithms could base job priority upon run time,
-	 * QOS or other factors */
-	for (i=0; i<pre_job_inx; i++) {
-		job_prio[i] = pre_job_p[i]->part_ptr->priority << 16;
-		if (pre_job_p[i]->node_cnt >= 0xffff)
-			job_prio[i] += 0xffff;
-		else
-			job_prio[i] +=  pre_job_p[i]->node_cnt;
-	}
+	if (job_ptr->part_ptr)
+		job_prio = job_ptr->part_ptr->priority << 16;
+	else
+		job_prio = 0;
 
-	/* sort the list, lower priority first */
-	for (i=0; i<pre_job_inx; i++) {
-		for (j=(i+1); j<pre_job_inx; j++) {
-			if (job_prio[i] <= job_prio[j])
-				continue;
-			/* swap the records */
-			tmp_job_prio = job_prio[i];
-			job_prio[i]  = job_prio[j];
-			job_prio[j]  = tmp_job_prio;
-			tmp_job_ptr  = pre_job_p[i];
-			pre_job_p[i] = pre_job_p[j];
-			pre_job_p[j] = tmp_job_ptr;
-		}
-	}
-	xfree(job_prio);
+	if (job_ptr->node_cnt >= 0xffff)
+		job_prio += 0xffff;
+	else
+		job_prio += job_ptr->node_cnt;
+
+	return job_prio;
+}
+
+static int _sort_by_prio (void *x, void *y)
+{
+	int rc;
+	uint32_t job_prio1, job_prio2;
+
+	job_prio1 = _gen_job_prio((struct job_record **) x);
+	job_prio2 = _gen_job_prio((struct job_record **) y);
+
+	if (job_prio1 > job_prio2)
+		rc = 1;
+	else if (job_prio1 < job_prio2)
+		rc = -1;
+	else
+		rc = 0;
+
+	return rc;
+}
+
+static void _preempt_list_del(void *x)
+{
+	xfree(x);
 }
