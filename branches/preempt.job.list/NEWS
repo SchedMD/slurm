@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
     NumNodes (number of nodes requested or actually allocated).
  -- Fixed issue when max nodes wasn't specified and was later set by limit 
     to not request that as the actual maximum.
+ -- Move job preemption (for requeue, checkpoint and kill modes only) out of
+    gang scheduling module - select/linear only so far.
 
 * Changes in SLURM 2.1.0-pre4
 =============================

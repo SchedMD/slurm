@@ -134,19 +134,22 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
 			  uint32_t req_nodes);
+static void _preempt_list_del(void *x);
 static bool _rem_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id);
 static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      bool remove_all);
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes, 
-		    int max_share, uint32_t req_nodes);
+		    int max_share, uint32_t req_nodes, 
+		    List *preemptee_job_list);
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
 			  uint32_t req_nodes);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
-			  int max_share, uint32_t req_nodes);
+			  int max_share, uint32_t req_nodes,
+			  List *preemptee_job_list);
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
@@ -191,9 +194,9 @@ static bool job_preemption_enabled = false;
 static bool job_preemption_killing = false;
 static bool job_preemption_tested  = false;
 
+/* Record of resources consumed on each node including job details */
 static struct node_cr_record *node_cr_ptr = NULL;
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
-static List preempt_job_list = NULL;
 
 #ifdef HAVE_XCPU
 #define XCPU_POLL_TIME 120
@@ -490,10 +493,8 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 		}
 	}
 
-	if (job_ptr->select_job) {
-		/* Due to job requeue */
+	if (job_ptr->select_job)	/* Old struct due to job requeue */
 		free_select_job_res(&job_ptr->select_job);
-	}
 
 	node_cnt = bit_set_count(bitmap);
 	job_ptr->select_job = select_ptr = create_select_job_res();
@@ -1685,7 +1686,8 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 /* Allocate resources for a job now, if possible */
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes, 
-		    int max_share, uint32_t req_nodes)
+		    int max_share, uint32_t req_nodes,
+		    List *preemptee_job_list)
 {
 
 	bitstr_t *orig_map;
@@ -1764,21 +1766,29 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 		list_iterator_destroy(job_iterator);
 
-		if ((rc == SLURM_SUCCESS) && _job_preemption_killing()) {
-			/* Queue preemption of jobs whose resources are 
+		if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
+		    _job_preemption_killing()) {
+			/* Build list of preemptee jobs whose resources are 
 			 * actually used */
+			if (*preemptee_job_list == NULL) {
+				*preemptee_job_list = list_create(
+							_preempt_list_del);
+				if (*preemptee_job_list == NULL)
+					fatal("list_create malloc failure");
+			}
 			for (j=0; preempt_job_ptr[j]; j++) {
-				uint32_t *job_id;
+				struct job_record **preemptee_ptr;
 				if (bit_overlap(bitmap, 
 						preempt_job_ptr[j]->
 						node_bitmap) == 0)
 					continue;
 
-				job_id = xmalloc(sizeof(uint32_t));
-				job_id[0] = preempt_job_ptr[j]->job_id;
-				list_append(preempt_job_list, job_id);
+				preemptee_ptr = xmalloc(sizeof(struct 
+							job_record *));
+				preemptee_ptr[0] = preempt_job_ptr[j];
+				list_append(*preemptee_job_list, 
+					    preemptee_ptr);
 			}
-			rc = EINVAL;	/* Wait until after preemptions */
 		}
 		_free_node_cr(exp_node_cr);
 	}
@@ -1796,7 +1806,8 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
  * will begin execution. Used by SLURM's sched/backfill plugin and Moab. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
-			  int max_share, uint32_t req_nodes)
+			  int max_share, uint32_t req_nodes,
+			  List *preemptee_job_list)
 {
 	struct node_cr_record *exp_node_cr;
 	struct job_record *tmp_job_ptr, **tmp_job_pptr;
@@ -1804,7 +1815,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	List cr_job_list;
 	ListIterator job_iterator;
 	bitstr_t *orig_map;
-	int i, rc = SLURM_ERROR;
+	int i, j, rc = SLURM_ERROR;
 	int max_run_jobs = max_share - 1;	/* exclude this job */
 	time_t now = time(NULL);
 
@@ -1870,7 +1881,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (rc == SLURM_SUCCESS)
 				job_ptr->start_time = now + 1;
 		}
-		xfree(preempt_job_ptr);
 	}
 
 	/* Remove the running jobs one at a time from exp_node_cr and try
@@ -1899,8 +1909,34 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			break;
 		}
 		list_iterator_destroy(job_iterator);
+
+		if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
+		    _job_preemption_killing()) {
+			/* Build list of preemptee jobs whose resources are 
+			 * actually used */
+			if (*preemptee_job_list == NULL) {
+				*preemptee_job_list = list_create(
+							_preempt_list_del);
+				if (*preemptee_job_list == NULL)
+					fatal("list_create malloc failure");
+			}
+			for (j=0; preempt_job_ptr[j]; j++) {
+				struct job_record **preemptee_ptr;
+				if (bit_overlap(bitmap, 
+						preempt_job_ptr[j]->
+						node_bitmap) == 0)
+					continue;
+
+				preemptee_ptr = xmalloc(sizeof(struct 
+							job_record *));
+				preemptee_ptr[0] = preempt_job_ptr[j];
+				list_append(*preemptee_job_list, 
+					    preemptee_ptr);
+			}
+		}
 	}
 
+	xfree(preempt_job_ptr);
 	list_destroy(cr_job_list);
 	_free_node_cr(exp_node_cr);
 	bit_free(orig_map);
@@ -1940,10 +1976,6 @@ extern int init ( void )
 #endif
 	cr_type = (select_type_plugin_info_t)
 			slurmctld_conf.select_type_param;
-	slurm_mutex_lock(&cr_mutex);
-	if (!preempt_job_list)
-		preempt_job_list = list_create(_preempt_list_del);
-	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
 
@@ -1956,9 +1988,6 @@ extern int fini ( void )
 	slurm_mutex_lock(&cr_mutex);
 	_free_node_cr(node_cr_ptr);
 	node_cr_ptr = NULL;
-	if (preempt_job_list)
-		list_destroy(preempt_job_list);
-	preempt_job_list = NULL;
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
@@ -2031,6 +2060,9 @@ extern int select_p_block_init(List part_list)
  * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the 
+ *		jobs to be preempted to initiate the pending job. Not set 
+ *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * RET zero on success, EINVAL otherwise
  * globals (passed via select_p_node_init): 
  *	node_recurd_count - count of nodes configured
@@ -2044,10 +2076,10 @@ extern int select_p_block_init(List part_list)
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes, 
-			     uint32_t req_nodes, int mode)
+			     uint32_t req_nodes, int mode,
+			     List *preemptee_job_list)
 {
 	int max_share = 0, rc = EINVAL;
-	uint32_t *job_id;
 
 	xassert(bitmap);
 	if (job_ptr->details == NULL)
@@ -2079,26 +2111,16 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (mode == SELECT_MODE_WILL_RUN) {
 		rc = _will_run_test(job_ptr, bitmap, min_nodes, max_nodes,
-				    max_share, req_nodes);
+				    max_share, req_nodes, preemptee_job_list);
 	} else if (mode == SELECT_MODE_TEST_ONLY) {
 		rc = _test_only(job_ptr, bitmap, min_nodes, max_nodes,
 				req_nodes);
 	} else if (mode == SELECT_MODE_RUN_NOW) {
 		rc = _run_now(job_ptr, bitmap, min_nodes, max_nodes,
-			      max_share, req_nodes);
+			      max_share, req_nodes, preemptee_job_list);
 	} else
 		fatal("select_p_job_test: Mode %d is invalid", mode);
 
-	/* Preempt any needed jobs. Preempting job will start later. */
-	while (preempt_job_list &&
-	       (job_id = list_pop(preempt_job_list))) {
-		slurm_mutex_unlock(&cr_mutex);
-		/* job preemption must happen outside of cr_mutex so that 
-		 * the resource deallocation can take place */
-		job_preempt_remove(job_id[0]);
-		xfree(job_id);
-		slurm_mutex_lock(&cr_mutex);
-	}
 	slurm_mutex_unlock(&cr_mutex);
 
 	return rc;

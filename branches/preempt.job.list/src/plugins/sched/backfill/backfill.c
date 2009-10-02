@@ -262,7 +262,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		} else {
 			rc = select_g_job_test(job_ptr, *avail_bitmap, 
 					       high_cnt, max_nodes, req_nodes,
-					       SELECT_MODE_WILL_RUN);
+					       SELECT_MODE_WILL_RUN, NULL);
 		}
 
 		/* Restore the feature counts */
@@ -284,7 +284,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		tmp_bitmap = bit_copy(*avail_bitmap);
 		rc = select_g_job_test(job_ptr, *avail_bitmap, min_nodes,
 				       max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN);
+				       SELECT_MODE_WILL_RUN, NULL);
 		job_ptr->details->shared = orig_shared;
 		if (((rc != SLURM_SUCCESS) || (job_ptr->start_time > now)) &&
 		    (orig_shared != 0)) {
@@ -292,7 +292,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			*avail_bitmap= tmp_bitmap;
 			rc = select_g_job_test(job_ptr, *avail_bitmap, 
 					       min_nodes, max_nodes, req_nodes,
-					       SELECT_MODE_WILL_RUN);
+					       SELECT_MODE_WILL_RUN, NULL);
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 	}

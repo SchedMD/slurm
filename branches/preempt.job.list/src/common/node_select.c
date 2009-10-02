@@ -82,7 +82,8 @@ typedef struct slurm_select_ops {
 						uint32_t min_nodes, 
 						uint32_t max_nodes,
 						uint32_t req_nodes,
-						int mode);
+						int mode,
+						List *preemptee_job_list);
 	int             (*job_list_test)       (List req_list);
 	int		(*job_begin)	       (struct job_record *job_ptr);
 	int		(*job_ready)	       (struct job_record *job_ptr);
@@ -633,18 +634,23 @@ extern int select_g_block_init(List block_list)
  * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the 
+ *		jobs to be preempted to initiate the pending job. Not set 
+ *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * RET zero on success, EINVAL otherwise
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes, 
-			     uint32_t req_nodes, int mode)
+			     uint32_t req_nodes, int mode, 
+			     List *preemptee_job_list)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_test))(job_ptr, bitmap, 
 						   min_nodes, max_nodes, 
-						   req_nodes, mode);
+						   req_nodes, mode,
+						   preemptee_job_list);
 }
 
 /*

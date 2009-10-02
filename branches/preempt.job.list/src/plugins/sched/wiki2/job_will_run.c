@@ -319,7 +319,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 				select_will_run->min_nodes, 
 				select_will_run->max_nodes, 
 				select_will_run->req_nodes, 
-				SELECT_MODE_WILL_RUN);
+				SELECT_MODE_WILL_RUN, NULL);
 	} else {
 		rc = select_g_job_list_test(select_list);
 	}
