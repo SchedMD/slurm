@@ -198,9 +198,10 @@ The default value is TORUS.
 .TP
 \fBSMALL\fR: The base partition is divided into more than one bgblock.
 The administrator should define the number of single node cards and 
-quarter base partition blocks using the options \fB32CN\fR and 
-\fB128CN\fR respectively for a Bluegene L system.  \fB16CN\fR, \fB64CN\fR, 
-and \fB256CN\fR are also available for Bluegene P systems.  Keep in mind you 
+quarter base partition blocks using the options \fB32CNBlocks\fR and 
+\fB128CNBlocks\fR respectively for a Bluegene L system.  \fB16CNBlocks\fR, 
+\fB64CNBlocks\fR, and \fB256CNBlocks\fR are also available for 
+Bluegene P systems.  Keep in mind you 
 must have enough ionodes to make all these configurations possible.
 
 The total number of c\-nodes in defined blocks must not exceed
@@ -264,7 +265,7 @@ BPs=[330x331] Type=TORUS          # 1x1x2 =  2
 .br
 BPs=[332] Type=TORUS          # 1x1x1 =  1
 .br
-BPs=[333] Type=SMALL 32CN=4 128CN=3 # 1/16 * 4 + 1/4 * 3
+BPs=[333] Type=SMALL 32CNBlocks=4 128CNBlocks=3 # 1/16 * 4 + 1/4 * 3
 
 .SH "COPYING"
 Copyright (C) 2006 The Regents of the University of California.
