@@ -71,5 +71,5 @@ extern void fini( void )
 /**************************************************************************/
 extern List find_preemptable_jobs(struct job_record *job_ptr)
 {
-	return (struct job_record **) NULL;
+	return (List) NULL;
 }

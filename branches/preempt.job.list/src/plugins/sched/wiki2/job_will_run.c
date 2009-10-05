@@ -41,6 +41,7 @@
 #include "src/common/node_select.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
@@ -151,7 +152,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			       char **node_list, int job_cnt, 
 			       int *err_code, char **err_msg)
 {
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	char *hostlist, *reply_msg = NULL;
