@@ -969,6 +969,10 @@ char *node_state_string(uint16_t inx)
 			if (no_resp_flag)
 				return "ERROR*";
 			return "ERROR";
+		} else if (base == NODE_STATE_MIXED) {
+			if (no_resp_flag)
+				return "MIXED*";
+			return "MIXED";
 		} else {
 			if (no_resp_flag)
 				return "DRAINED*";
@@ -1075,6 +1079,14 @@ char *node_state_string_compact(uint16_t inx)
 			if (no_resp_flag)
 				return "DRNG*";
 			return "DRNG";
+		} else if (inx == NODE_STATE_ERROR) {
+			if (no_resp_flag)
+				return "ERROR*";
+			return "ERROR";
+		} else if (inx == NODE_STATE_MIXED) {
+			if (no_resp_flag)
+				return "MIXED*";
+			return "MIXED";
 		} else {
 			if (no_resp_flag)
 				return "DRAIN*";
