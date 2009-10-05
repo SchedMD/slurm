@@ -1358,20 +1358,16 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (*preemptee_job_list == NULL)
 				fatal("list_create malloc failure");
 		}
-		preemptee_iterator = list_iterator_create(
-						preemptee_candidates);
+		preemptee_iterator =list_iterator_create(preemptee_candidates);
 		while ((tmp_job_pptr = (struct job_record **)
 				list_next(preemptee_iterator))) {
 			struct job_record **preemptee_ptr;
 			if (bit_overlap(bitmap, 
-					tmp_job_pptr[0]->
-					node_bitmap) == 0)
+					tmp_job_pptr[0]->node_bitmap) == 0)
 				continue;
-			preemptee_ptr = xmalloc(sizeof(struct 
-						job_record *));
+			preemptee_ptr = xmalloc(sizeof(struct job_record *));
 			preemptee_ptr[0] = tmp_job_pptr[0];
-			list_append(*preemptee_job_list, 
-				    preemptee_ptr);
+			list_append(*preemptee_job_list, preemptee_ptr);
 		}
 		list_iterator_destroy(preemptee_iterator);
 	}

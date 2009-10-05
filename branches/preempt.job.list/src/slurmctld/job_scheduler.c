@@ -923,6 +923,11 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	return rc;
 }
 
+static void _pre_list_del(void *x)
+{
+	xfree(x);
+}
+
 /* Determine if a pending job will run using only the specified nodes
  * (in job_desc_msg->req_nodes), build response message and return 
  * SLURM_SUCCESS on success. Otherwise return an error code. Caller 
@@ -1010,7 +1015,6 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			req_nodes = max_nodes;
 		else
 			req_nodes = min_nodes;
-// FIXME: Add preemptee job list to request
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		rc = select_g_job_test(job_ptr, avail_bitmap,
 				min_nodes, max_nodes, req_nodes, 
@@ -1033,7 +1037,25 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		resp_data->start_time = MAX(job_ptr->start_time, start_res);
 		job_ptr->start_time   = 0;  /* restore pending job start time */
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
-// FIXME: Add preemptee job list to response
+
+		if (preemptee_job_list) {
+			ListIterator preemptee_iterator;
+			uint32_t *preemptee_jid;
+			struct job_record **tmp_job_pptr;
+			resp_data->preemptee_job_id=list_create(_pre_list_del);
+			if (resp_data->preemptee_job_id == NULL)
+				fatal("list_create: malloc failure");
+			preemptee_iterator = list_iterator_create(
+							preemptee_job_list);
+			while ((tmp_job_pptr = (struct job_record **)
+					list_next(preemptee_iterator))) {
+				preemptee_jid = xmalloc(sizeof(uint32_t));
+				preemptee_jid[0] = tmp_job_pptr[0]->job_id;
+				list_append(resp_data->preemptee_job_id, 
+					    preemptee_jid);
+			}
+			list_iterator_destroy(preemptee_iterator);
+		}
 		*resp = resp_data;
 	} else {
 		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;

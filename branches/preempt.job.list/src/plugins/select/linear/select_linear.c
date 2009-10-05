@@ -1900,35 +1900,30 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			break;
 		}
 		list_iterator_destroy(job_iterator);
+	}
 
-		if ((rc == SLURM_SUCCESS) && preemptee_job_list && 
-		    preemptee_candidates && _job_preemption_killing()) {
-			/* Build list of preemptee jobs whose resources are 
-			 * actually used */
-			if (*preemptee_job_list == NULL) {
-				*preemptee_job_list = list_create(
-							_preempt_list_del);
-				if (*preemptee_job_list == NULL)
-					fatal("list_create malloc failure");
-			}
-			preemptee_iterator = list_iterator_create(
-							preemptee_candidates);
-			while ((tmp_job_pptr = (struct job_record **)
-					list_next(preemptee_iterator))) {
-				struct job_record **preemptee_ptr;
-				if (bit_overlap(bitmap, 
-						tmp_job_pptr[0]->
-						node_bitmap) == 0)
-					continue;
-
-				preemptee_ptr = xmalloc(sizeof(struct 
-							job_record *));
-				preemptee_ptr[0] = tmp_job_pptr[0];
-				list_append(*preemptee_job_list, 
-					    preemptee_ptr);
-			}
-			list_iterator_destroy(preemptee_iterator);
+	if ((rc == SLURM_SUCCESS) && preemptee_job_list && 
+	    preemptee_candidates && _job_preemption_killing()) {
+		/* Build list of preemptee jobs whose resources are 
+		 * actually used */
+		if (*preemptee_job_list == NULL) {
+			*preemptee_job_list = list_create(_preempt_list_del);
+			if (*preemptee_job_list == NULL)
+				fatal("list_create malloc failure");
 		}
+		preemptee_iterator =list_iterator_create(preemptee_candidates);
+		while ((tmp_job_pptr = (struct job_record **)
+				list_next(preemptee_iterator))) {
+			struct job_record **preemptee_ptr;
+			if (bit_overlap(bitmap, 
+					tmp_job_pptr[0]->node_bitmap) == 0)
+				continue;
+
+			preemptee_ptr = xmalloc(sizeof(struct job_record *));
+			preemptee_ptr[0] = tmp_job_pptr[0];
+			list_append(*preemptee_job_list, preemptee_ptr);
+		}
+		list_iterator_destroy(preemptee_iterator);
 	}
 
 	list_destroy(cr_job_list);

@@ -852,10 +852,11 @@ typedef struct pty_winsz {
 } pty_winsz_t;
 
 typedef struct will_run_response_msg {
-	uint32_t job_id;
-	uint32_t proc_cnt;
-	time_t start_time;
-	char *node_list;
+	uint32_t job_id;	/* ID of job to start */
+	uint32_t proc_cnt;	/* CPUs allocated to job at start */
+	time_t start_time;	/* time when job will start */
+	char *node_list;	/* nodes where job will start */
+	List preemptee_job_id;	/* jobs preempted to start this job */
 } will_run_response_msg_t;
 
 /*****************************************************************************\

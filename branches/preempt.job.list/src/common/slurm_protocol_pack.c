@@ -5549,23 +5549,54 @@ _unpack_set_debug_level_msg(set_debug_level_msg_t ** msg_ptr, Buf buffer)
 static void 
 _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer)
 {
+	uint32_t count = NO_VAL, *job_id_ptr;
+
 	pack32(msg->job_id, buffer);
 	pack32(msg->proc_cnt, buffer);
 	pack_time(msg->start_time, buffer);
 	packstr(msg->node_list, buffer);
+
+	if (msg->preemptee_job_id)
+		count = list_count(msg->preemptee_job_id);
+	pack32(count, buffer);
+	if (count && (count != NO_VAL)) {
+		ListIterator itr = list_iterator_create(msg->preemptee_job_id);
+		if (itr == NULL)
+			fatal("list_iterator_create: malloc failure");
+		while ((job_id_ptr = list_next(itr)))
+			pack32(job_id_ptr[0], buffer);
+		list_iterator_destroy(itr);
+	}
+}
+
+static void _pre_list_del(void *x)
+{
+	xfree(x);
 }
 
 static int
 _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer)
 {
 	will_run_response_msg_t *msg;
-	uint32_t uint32_tmp;
+	uint32_t count, i, uint32_tmp, *job_id_ptr;
 
 	msg = xmalloc(sizeof(will_run_response_msg_t));
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->proc_cnt, buffer);
 	safe_unpack_time(&msg->start_time, buffer);
 	safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
+
+	safe_unpack32(&count, buffer);
+	if (count && (count != NO_VAL)) {
+		msg->preemptee_job_id = list_create(_pre_list_del);
+		for (i=0; i<count; i++) {
+			safe_unpack32(&uint32_tmp, buffer);
+			job_id_ptr = xmalloc(sizeof(uint32_t));
+			job_id_ptr[0] = uint32_tmp;
+			list_append(msg->preemptee_job_id, job_id_ptr);
+		}
+	}
+
 	*msg_ptr = msg;
 	return SLURM_SUCCESS;
 
