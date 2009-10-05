@@ -797,7 +797,7 @@ static int _remove_allocation(char *com, List allocated_blocks)
 {
 	ListIterator results_i;
 	allocated_block_t *allocated_block = NULL;
-	int i=6, found=0;
+	int i=1, found=0;
 	int len = strlen(com);
 	char letter;
 
@@ -890,17 +890,15 @@ static int _copy_allocation(char *com, List allocated_blocks)
 	allocated_block_t *temp_block = NULL;
 	ba_request_t *request = NULL; 
 	
-	int i=0;
+	int i=1;
 	int len = strlen(com);
 	char letter = '\0';
 	int count = 1;
 	int *geo = NULL, *geo_ptr = NULL;
 			
-	while(i<=len) {
-		if((i>0) && (com[i-1] != ' '))
-			break;
+	/* look for the space after copy */
+	while(com[i-1]!=' ' && i<len) 
 		i++;
-	}
 	
 	if(i<=len) {
 		/* Here we are looking for a real number for the count
