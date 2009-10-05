@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
     state to IDLE if UNKNOWN which would make it not set a registration 
     message to accounting, which could lead to nodes not being listed as up 
     when they really were.
+ -- Fixed buffer size issue with scontrol show hostlist.
 
 * Changes in SLURM 2.0.6
 ========================
