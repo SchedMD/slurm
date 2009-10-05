@@ -109,6 +109,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    struct part_record *part_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, bool test_only,
+			    List preemptee_candidates,
 			    List *preemptee_job_list);
 static bool _valid_feature_counts(struct job_details *detail_ptr, 
 				  bitstr_t *node_bitmap, bool *has_xor);
@@ -357,6 +358,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bitstr_t *feature_bitmap, *accumulate_bitmap = NULL;
 	bitstr_t *save_avail_node_bitmap = NULL, *resv_bitmap;
 	time_t start_res = time(NULL);
+	List preemptee_candidates = NULL;
 
 	/* Mark nodes reserved for other jobs as off limit for this job */
 	rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap);
@@ -375,6 +377,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		avail_node_bitmap = resv_bitmap;
 	} else
 		FREE_NULL_BITMAP(resv_bitmap);
+	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 
 	/* save job and request state */
 	saved_min_nodes = min_nodes;
@@ -442,6 +445,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					tmp_node_set_size, &feature_bitmap, 
 					job_ptr, part_ptr, min_nodes, 
 					max_nodes, req_nodes, test_only,
+					preemptee_candidates,
 					preemptee_job_list);
 #if 0
 {
@@ -527,7 +531,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		error_code = _pick_best_nodes(node_set_ptr, node_set_size,
 				select_bitmap, job_ptr, part_ptr, min_nodes, 
 				max_nodes, req_nodes, test_only, 
-				preemptee_job_list);
+				preemptee_candidates, preemptee_job_list);
 	}
 #if 0
 {
@@ -537,6 +541,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	xfree(tmp_str);
 }
 #endif
+	if (preemptee_candidates)
+		list_destroy(preemptee_candidates);
 
 	/* restore job's initial required node bitmap */
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
@@ -595,7 +601,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 bitstr_t ** select_bitmap, struct job_record *job_ptr,
 		 struct part_record *part_ptr,
 		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
-		 bool test_only, List *preemptee_job_list)
+		 bool test_only, List preemptee_candidates,
+		 List *preemptee_job_list)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, avail_nodes = 0;	
@@ -810,7 +817,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      min_nodes, 
 						      max_nodes,
 						      req_nodes,
-						      select_mode, 
+						      select_mode,
+						      preemptee_candidates, 
 						      preemptee_job_list);
 #if 0
 {
@@ -858,6 +866,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      min_nodes, max_nodes,
 						      req_nodes, 
 						      select_mode,
+						      preemptee_candidates,
 						      preemptee_job_list);
 			if ((pick_code == SLURM_SUCCESS) &&
 			     (bit_set_count(avail_bitmap) <= max_nodes)) {
@@ -890,7 +899,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						min_nodes, 
 						max_nodes,
 						req_nodes,
-						SELECT_MODE_TEST_ONLY, NULL);
+						SELECT_MODE_TEST_ONLY, 
+						preemptee_candidates, NULL);
 				if (pick_code == SLURM_SUCCESS) {
 					runable_ever  = true;
 					if (bit_set_count(avail_bitmap) <=
@@ -907,7 +917,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						min_nodes, 
 						max_nodes,
 						req_nodes, 
-						SELECT_MODE_TEST_ONLY, NULL);
+						SELECT_MODE_TEST_ONLY, 
+						preemptee_candidates, NULL);
 				if (pick_code == SLURM_SUCCESS) {
 					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = total_bitmap;

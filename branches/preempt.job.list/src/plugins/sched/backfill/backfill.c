@@ -73,6 +73,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
@@ -228,6 +229,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 	bitstr_t *tmp_bitmap;
 	int rc = SLURM_SUCCESS;
 	int feat_cnt = _num_feature_count(job_ptr);
+	List preemptee_candidates = NULL;
 
 	if (feat_cnt) {
 		/* Ideally schedule the job feature by feature,
@@ -260,9 +262,12 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		    (bit_set_count(*avail_bitmap) < high_cnt)) {
 			rc = ESLURM_NODES_BUSY;
 		} else {
+			preemptee_candidates = 
+					slurm_find_preemptable_jobs(job_ptr);
 			rc = select_g_job_test(job_ptr, *avail_bitmap, 
 					       high_cnt, max_nodes, req_nodes,
-					       SELECT_MODE_WILL_RUN, NULL);
+					       SELECT_MODE_WILL_RUN, 
+					       preemptee_candidates, NULL);
 		}
 
 		/* Restore the feature counts */
@@ -279,12 +284,14 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		 * then on shared nodes (if so configured). */
 		uint16_t orig_shared;
 		time_t now = time(NULL);
+		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		orig_shared = job_ptr->details->shared;
 		job_ptr->details->shared = 0;
 		tmp_bitmap = bit_copy(*avail_bitmap);
 		rc = select_g_job_test(job_ptr, *avail_bitmap, min_nodes,
 				       max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN, NULL);
+				       SELECT_MODE_WILL_RUN, 
+				       preemptee_candidates, NULL);
 		job_ptr->details->shared = orig_shared;
 		if (((rc != SLURM_SUCCESS) || (job_ptr->start_time > now)) &&
 		    (orig_shared != 0)) {
@@ -292,11 +299,14 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			*avail_bitmap= tmp_bitmap;
 			rc = select_g_job_test(job_ptr, *avail_bitmap, 
 					       min_nodes, max_nodes, req_nodes,
-					       SELECT_MODE_WILL_RUN, NULL);
+					       SELECT_MODE_WILL_RUN, 
+					       preemptee_candidates, NULL);
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 	}
 
+	if (preemptee_candidates)
+		list_destroy(preemptee_candidates);
 	return rc;
 
 }

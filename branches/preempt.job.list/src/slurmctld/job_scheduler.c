@@ -64,6 +64,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
@@ -935,7 +936,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL), start_res;
-	List preemptee_job_list = NULL;
+	List preemptee_candidates = NULL, preemptee_job_list = NULL;
 
 	job_ptr = find_job_record(job_desc_msg->job_id);
 	if (job_ptr == NULL)
@@ -1009,10 +1010,12 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			req_nodes = max_nodes;
 		else
 			req_nodes = min_nodes;
-
+// FIXME: Add preemptee job list to request
+		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		rc = select_g_job_test(job_ptr, avail_bitmap,
 				min_nodes, max_nodes, req_nodes, 
-				SELECT_MODE_WILL_RUN, &preemptee_job_list);
+				SELECT_MODE_WILL_RUN, preemptee_candidates,
+				&preemptee_job_list);
 	}
 
 	if (rc == SLURM_SUCCESS) {
@@ -1036,6 +1039,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
+	if (preemptee_candidates)
+		list_destroy(preemptee_candidates);
 	if (preemptee_job_list)
 		list_destroy(preemptee_job_list);
 	FREE_NULL_BITMAP(avail_bitmap);

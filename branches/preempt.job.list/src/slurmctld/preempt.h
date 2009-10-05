@@ -69,6 +69,6 @@ extern int slurm_preempt_fini(void);
  * NOTE: Returns NULL if no preemptable jobs are found.
  * NOTE: Caller must list_destroy() any list returned.
  */
-extern struct job_record ** slurm_find_preemptable_jobs(struct job_record *job_ptr);
+extern List slurm_find_preemptable_jobs(struct job_record *job_ptr);
 
 #endif /*__SLURM_CONTROLLER_PREEMPT_H__*/

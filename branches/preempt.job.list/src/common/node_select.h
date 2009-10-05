@@ -192,14 +192,17 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
  * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
+ * IN preemptee_candidates - List of pointers to jobs which can bee preempted
  * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the 
  *		jobs to be preempted to initiate the pending job. Not set 
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
+ *		Existing list is appended to.
  * RET zero on success, EINVAL otherwise
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes, 
 			     uint32_t req_nodes, int mode, 
+			     List preemptee_candidates,
 			     List *preemptee_job_list);
 
 /*
