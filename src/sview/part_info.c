@@ -33,24 +33,18 @@
 #define _DEBUG 0
 
 typedef struct {
-	partition_info_t* part_ptr;
-	uint16_t node_state;
-
-	uint32_t node_cnt;
-	uint32_t min_cpus;
-	uint32_t max_cpus;
-	uint32_t min_disk;
-	uint32_t max_disk;
-	uint32_t min_mem;
-	uint32_t max_mem;
-	uint32_t min_weight;
-	uint32_t max_weight;
-
+	uint32_t cpu_alloc_cnt;
+	uint32_t cpu_error_cnt;
+	uint32_t cpu_idle_cnt;
+	uint32_t disk_total;
 	char *features;
-	char *reason;
-
 	hostlist_t hl;
+	uint32_t mem_total;
+	uint32_t node_cnt;
 	List node_ptr_list;
+	uint16_t node_state;
+	partition_info_t* part_ptr;
+	char *reason;
 } sview_part_sub_t;
 
 /* Collection of data for printing reports. Like data is combined here */
@@ -73,6 +67,7 @@ enum {
 	SORTID_AVAIL, 
 #ifdef HAVE_BG
 	SORTID_NODELIST, 
+	SORTID_NODES_ALLOWED, 
 #endif
 	SORTID_COLOR,
 	SORTID_CPUS, 
@@ -81,15 +76,16 @@ enum {
 	SORTID_GROUPS,
 	SORTID_HIDDEN,
 	SORTID_JOB_SIZE,
-	SORTID_MAX_NODES,
 	SORTID_MEM, 
-	SORTID_MIN_NODES,
 	SORTID_NAME, 
 #ifndef HAVE_BG
 	SORTID_NODELIST, 
+	SORTID_NODES_ALLOWED, 
 #endif
-	SORTID_NODE_INX,
 	SORTID_NODES, 
+	SORTID_NODES_MAX,
+	SORTID_NODES_MIN,
+	SORTID_NODE_INX,
 	SORTID_ONLY_LINE, 
 	SORTID_PRIORITY,
 	SORTID_REASON,
@@ -100,7 +96,6 @@ enum {
 	SORTID_TMP_DISK, 
 	SORTID_TIMELIMIT, 
 	SORTID_UPDATED, 
-	SORTID_WEIGHT,
 	SORTID_CNT
 };
 
@@ -120,8 +115,34 @@ static display_data_t display_data_part[] = {
 	 TRUE, EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, EDIT_NONE, refresh_part,
+	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, EDIT_MODEL, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, EDIT_MODEL, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_GROUPS, "Groups Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_TMP_DISK, "Temp Disk", FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MEM, "Memory", FALSE, EDIT_NONE, refresh_part,
+	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
@@ -129,32 +150,6 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #endif
-	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
-	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_MIN_NODES, "Min Nodes", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_MAX_NODES, "Max Nodes", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, EDIT_MODEL, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, EDIT_MODEL, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, EDIT_NONE, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_TMP_DISK, "Temp Disk", FALSE,
-	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_MEM, "Memory", FALSE, EDIT_NONE, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", FALSE,
-	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
-	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
-	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, EDIT_NONE, refresh_part,
@@ -212,34 +207,8 @@ static void _append_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    GtkTreeStore *treestore, GtkTreeIter *iter,
 				    int line);
 
-static int 
-_build_min_max_16_string(char *buffer, int buf_size, 
-	uint16_t min, uint16_t max, bool range)
-{
-	char tmp_min[8];
-	char tmp_max[8];
-	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE);
-	if(max != (uint16_t) INFINITE) {
-		convert_num_unit((float)max, tmp_max, sizeof(tmp_max), 
-				 UNIT_NONE);
-	}
-	
-	if (max == min)
-		return snprintf(buffer, buf_size, "%s", tmp_max);
-	else if (range) {
-		if (max == (uint16_t) INFINITE)
-			return snprintf(buffer, buf_size, "%s-infinite", 
-					tmp_min);
-		else
-			return snprintf(buffer, buf_size, "%s-%s", 
-					tmp_min, tmp_max);
-	} else
-		return snprintf(buffer, buf_size, "%s+", tmp_min);
-}
-
-static int 
-_build_min_max_32_string(char *buffer, int buf_size, 
-	uint32_t min, uint32_t max, bool range)
+static int _build_min_max_32_string(char *buffer, int buf_size, 
+				    uint32_t min, uint32_t max, bool range)
 {
 	char tmp_min[8];
 	char tmp_max[8];
@@ -378,7 +347,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		type = "priority";
 		part_msg->priority = (uint16_t)temp_int;
 		break;
-	case SORTID_MIN_NODES:
+	case SORTID_NODES_MIN:
 		temp_int = strtol(new_text, (char **)NULL, 10);
 		type = "min_nodes";
 		
@@ -386,7 +355,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 			goto return_error;
 		part_msg->min_nodes = (uint32_t)temp_int;
 		break;
-	case SORTID_MAX_NODES:
+	case SORTID_NODES_MAX:
 		if (!strcasecmp(new_text, "infinite")) {
 			temp_int = INFINITE;
 		} else {
@@ -422,6 +391,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 	case SORTID_GROUPS:
 		type = "groups";
 		part_msg->allow_groups = xstrdup(new_text);
+		break;
+	case SORTID_NODES_ALLOWED:
+		type = "allowed alloc nodes";
+		part_msg->allow_alloc_nodes = xstrdup(new_text);
 		break;
 	case SORTID_NODELIST:
 		part_msg->nodes = xstrdup(new_text);
@@ -658,154 +631,18 @@ static void _layout_part_record(GtkTreeView *treeview,
 	sview_part_sub_t alloc_part_sub;
 	sview_part_sub_t idle_part_sub;
 	sview_part_sub_t other_part_sub;
-	char tmp[1024];
+	char ind_cnt[1024];
 	char *temp_char = NULL;
-	int global_set = 0;
-
+	int global_set = 0, i;
+	int yes_no = -1;
+	uint32_t limit_set = NO_VAL;
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 	
 	memset(&alloc_part_sub, 0, sizeof(sview_part_sub_t));
 	memset(&idle_part_sub, 0, sizeof(sview_part_sub_t));
 	memset(&other_part_sub, 0, sizeof(sview_part_sub_t));
-	
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_NAME),
-				   part_ptr->name);
 
-	if(part_ptr->default_part) 
-		temp_char = "yes";
-	else 
-		temp_char = "no";
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_DEFAULT),
-				   temp_char);
-	
-	if(part_ptr->hidden) 
-		temp_char = "yes";
-	else 
-		temp_char = "no";
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_HIDDEN),
-				   temp_char);
-	
-	if (part_ptr->state_up) 
-		temp_char = "up";
-	else 
-		temp_char = "down";
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_AVAIL),
-				   temp_char);
-			
-	if (part_ptr->max_time == INFINITE)
-		snprintf(time_buf, sizeof(time_buf), "infinite");
-	else {
-		secs2time_str((part_ptr->max_time * 60), 
-			      time_buf, sizeof(time_buf));
-	}
-
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_TIMELIMIT),
-				   time_buf);
-	
-	_build_min_max_32_string(time_buf, sizeof(time_buf), 
-			      part_ptr->min_nodes, 
-			      part_ptr->max_nodes, true);
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_JOB_SIZE),
-				   time_buf);
-
-	convert_num_unit((float)part_ptr->priority,
-			 time_buf, sizeof(time_buf), UNIT_NONE);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_part,
-						 SORTID_PRIORITY),
-				   time_buf);
-				   
-	if (part_ptr->min_nodes == (uint32_t) INFINITE)
-		snprintf(time_buf, sizeof(time_buf), "infinite");
-	else {
-		convert_num_unit((float)part_ptr->min_nodes, 
-				 time_buf, sizeof(time_buf), UNIT_NONE);
-	}
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_MIN_NODES), 
-				   time_buf);
-	if (part_ptr->max_nodes == (uint32_t) INFINITE)
-		snprintf(time_buf, sizeof(time_buf), "infinite");
-	else {
-		convert_num_unit((float)part_ptr->max_nodes, 
-				 time_buf, sizeof(time_buf), UNIT_NONE);
-	}
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_MAX_NODES), 
-				   time_buf);
-
-	if(part_ptr->root_only)
-		temp_char = "yes";
-	else 
-		temp_char = "no";
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_part,
-						 SORTID_ROOT),
-				   temp_char);
-		
-	if(part_ptr->max_share & SHARED_FORCE) {
-		snprintf(tmp_buf, sizeof(tmp_buf), "force:%u", 
-			 (part_ptr->max_share & ~(SHARED_FORCE))); 
-		temp_char = tmp_buf;
-	} else if(part_ptr->max_share == 0)
-		temp_char = "exclusive";
-	else if(part_ptr->max_share > 1) {
-		snprintf(tmp_buf, sizeof(tmp_buf), "yes:%u", 
-			 part_ptr->max_share);
-		temp_char = tmp_buf;
-	} else 
-		temp_char = "no";
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_part,
-						 SORTID_SHARE),
-				   temp_char);
-		
-	if(part_ptr->allow_groups)
-		temp_char = part_ptr->allow_groups;
-	else
-		temp_char = "all";
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_GROUPS),
-				   temp_char);
-	
-#ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, 
-			 sizeof(tmp_cnt), UNIT_NONE);
-#else
-	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
-#endif
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_NODES), 
-				   tmp_cnt);
-	convert_num_unit((float)part_ptr->total_cpus, tmp_cnt, sizeof(tmp_cnt),
-			 UNIT_NONE);
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_CPUS), 
-				   tmp_cnt);
-	
-
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_NODELIST), 
-				   part_ptr->nodes);
 	itr = list_iterator_create(sview_part_info->sub_list);
 	while((sview_part_sub = list_next(itr))) {
 		if(sview_part_sub->node_state == NODE_STATE_IDLE)
@@ -815,45 +652,176 @@ static void _layout_part_record(GtkTreeView *treeview,
 		else
 			temp_part_sub = &other_part_sub;
 		temp_part_sub->node_cnt += sview_part_sub->node_cnt;
-		temp_part_sub->min_cpus += sview_part_sub->min_cpus;
-		temp_part_sub->max_cpus += sview_part_sub->max_cpus;
-		
-		temp_part_sub->min_disk += sview_part_sub->min_disk;
-		temp_part_sub->max_disk += sview_part_sub->max_disk;
-		
-		temp_part_sub->min_mem += sview_part_sub->min_mem;
-		temp_part_sub->max_mem += sview_part_sub->max_mem;
-		
-		temp_part_sub->min_weight += sview_part_sub->min_weight;
-		temp_part_sub->max_weight += sview_part_sub->max_weight;
+		temp_part_sub->cpu_alloc_cnt += sview_part_sub->cpu_alloc_cnt;
+		temp_part_sub->cpu_error_cnt += sview_part_sub->cpu_error_cnt;
+		temp_part_sub->cpu_idle_cnt += sview_part_sub->cpu_idle_cnt;
+		/* temp_part_sub->disk_total += sview_part_sub->disk_total; */
+/* 		temp_part_sub->mem_total += sview_part_sub->mem_total; */
+
 		if(!global_set) {
 			global_set = 1;
 			/* store features and reasons in the others
 			   group */
-			other_part_sub.features = temp_part_sub->features;
-			other_part_sub.reason = temp_part_sub->reason;
+			other_part_sub.features = sview_part_sub->features;
+			other_part_sub.reason = sview_part_sub->reason;
+			other_part_sub.disk_total = sview_part_sub->disk_total;
+			other_part_sub.mem_total = sview_part_sub->mem_total;
+		} else {
+			other_part_sub.disk_total += sview_part_sub->disk_total;
+			other_part_sub.mem_total += sview_part_sub->mem_total;
 		}
 	}
+	list_iterator_destroy(itr);
+
 	convert_num_unit((float)alloc_part_sub.node_cnt, 
 			 tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
 	convert_num_unit((float)idle_part_sub.node_cnt, 
 			 tmp_cnt1, sizeof(tmp_cnt1), UNIT_NONE);
 	convert_num_unit((float)other_part_sub.node_cnt, 
 			 tmp_cnt2, sizeof(tmp_cnt2), UNIT_NONE);
-	snprintf(tmp, sizeof(tmp), "%s/%s/%s",
+	snprintf(ind_cnt, sizeof(ind_cnt), "%s/%s/%s",
 		 tmp_cnt, tmp_cnt1, tmp_cnt2);
-	add_display_treestore_line(update, treestore, &iter,
-				   "Nodes (Allocated/Idle/Other)",
-				   tmp);
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_FEATURES), 
-				   other_part_sub.features);
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_part,
-						 SORTID_REASON), 
-				   other_part_sub.reason);
 
+	for(i = 0; i < SORTID_CNT; i++) {
+		switch(i) {
+		case SORTID_AVAIL: 
+			yes_no = part_ptr->state_up;
+			break;
+		case SORTID_CPUS: 
+			convert_num_unit((float)part_ptr->total_cpus,
+					 tmp_cnt, sizeof(tmp_cnt),
+					 UNIT_NONE);
+			temp_char = tmp_cnt;
+			break;
+		case SORTID_DEFAULT:
+			yes_no = part_ptr->default_part;
+			break;
+		case SORTID_FEATURES: 
+			sview_part_sub = list_peek(sview_part_info->sub_list);
+			temp_char = sview_part_sub->features;
+			break;
+		case SORTID_GROUPS:
+			if(part_ptr->allow_groups)
+				temp_char = part_ptr->allow_groups;
+			else
+				temp_char = "all";
+			break;
+		case SORTID_HIDDEN:
+			yes_no = part_ptr->hidden;
+			break;
+		case SORTID_JOB_SIZE:
+			_build_min_max_32_string(time_buf, sizeof(time_buf), 
+			      part_ptr->min_nodes, 
+			      part_ptr->max_nodes, true);
+			temp_char = time_buf;
+			break;
+		case SORTID_MEM: 
+			convert_num_unit((float)other_part_sub.mem_total,
+					 tmp_cnt, sizeof(tmp_cnt),
+					 UNIT_MEGA);
+			temp_char = tmp_cnt;
+			break;
+		case SORTID_NAME: 
+			temp_char = part_ptr->name;
+			break;
+		case SORTID_NODELIST: 
+			temp_char = part_ptr->nodes;
+			break;
+		case SORTID_NODES_ALLOWED: 
+			temp_char = part_ptr->allow_alloc_nodes;
+			break;
+		case SORTID_NODES: 
+#ifdef HAVE_BG
+			convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, 
+					 sizeof(tmp_cnt), UNIT_NONE);
+#else
+			sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
+#endif
+			temp_char = tmp_cnt;
+			break;
+		case SORTID_NODES_MAX:
+			limit_set = part_ptr->max_nodes;
+			break;
+		case SORTID_NODES_MIN:
+			limit_set = part_ptr->min_nodes;
+			break;
+		case SORTID_NODE_INX:
+			break;
+		case SORTID_ONLY_LINE: 
+			break;
+		case SORTID_PRIORITY:
+			convert_num_unit((float)part_ptr->priority,
+					 time_buf, sizeof(time_buf), UNIT_NONE);
+			temp_char = time_buf;
+			break;			
+		case SORTID_REASON:
+			sview_part_sub = list_peek(sview_part_info->sub_list);
+			temp_char = sview_part_sub->features;
+			break;
+		case SORTID_ROOT: 
+			yes_no = part_ptr->root_only;
+			break;
+		case SORTID_SHARE: 
+			if(part_ptr->max_share & SHARED_FORCE) {
+				snprintf(tmp_buf, sizeof(tmp_buf), "force:%u", 
+					 (part_ptr->max_share 
+					  & ~(SHARED_FORCE))); 
+				temp_char = tmp_buf;
+			} else if(part_ptr->max_share == 0)
+				temp_char = "exclusive";
+			else if(part_ptr->max_share > 1) {
+				snprintf(tmp_buf, sizeof(tmp_buf), "yes:%u", 
+					 part_ptr->max_share);
+				temp_char = tmp_buf;
+			} else 
+				temp_char = "no";
+			break;
+		case SORTID_TMP_DISK: 
+			convert_num_unit(
+				(float)other_part_sub.disk_total, 
+				time_buf, sizeof(time_buf), UNIT_NONE);
+			temp_char = time_buf;
+			break;
+		case SORTID_TIMELIMIT: 
+			limit_set = part_ptr->max_time;
+			break;
+		default:
+			break;
+		}
+
+		if(yes_no != -1) {
+			if(yes_no) 
+				temp_char = "yes";
+			else 
+				temp_char = "no";
+			yes_no = -1;
+		} else if(limit_set != NO_VAL) {
+			if (limit_set == (uint32_t) INFINITE)
+				temp_char = "infinite";
+			else {
+				convert_num_unit(
+					(float)limit_set, 
+					time_buf, sizeof(time_buf), UNIT_NONE);
+				temp_char = time_buf;
+			}
+			limit_set = NO_VAL;
+		}
+
+		if(temp_char) {
+			add_display_treestore_line(
+				update, treestore, &iter, 
+				find_col_name(display_data_part,
+					      i),
+				temp_char);
+			if(i == SORTID_NODES) {
+				add_display_treestore_line(
+					update, treestore, &iter,
+					"Nodes (Allocated/Idle/Other)",
+					ind_cnt);
+			}
+			temp_char = NULL;
+		}
+	}
 }
 
 static void _update_part_record(sview_part_info_t *sview_part_info,
@@ -915,7 +883,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		convert_num_unit((float)part_ptr->min_nodes, 
 				 time_buf, sizeof(time_buf), UNIT_NONE);
 	}
-	gtk_tree_store_set(treestore, iter, SORTID_MIN_NODES, 
+	gtk_tree_store_set(treestore, iter, SORTID_NODES_MIN, 
 			   time_buf, -1);
 	if (part_ptr->max_nodes == (uint32_t) INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
@@ -923,7 +891,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		convert_num_unit((float)part_ptr->max_nodes, 
 				 time_buf, sizeof(time_buf), UNIT_NONE);
 	}
-	gtk_tree_store_set(treestore, iter, SORTID_MAX_NODES, 
+	gtk_tree_store_set(treestore, iter, SORTID_NODES_MAX, 
 			   time_buf, -1);
 
 	if(part_ptr->root_only)
@@ -960,6 +928,14 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 #endif
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
+#ifdef HAVE_BG
+	convert_num_unit((float)part_ptr->total_cpus, tmp_cnt, 
+			 sizeof(tmp_cnt), UNIT_NONE);
+#else
+	sprintf(tmp_cnt, "%u", part_ptr->total_cpus);
+#endif
+	gtk_tree_store_set(treestore, iter, SORTID_CPUS, tmp_cnt, -1);
+
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
 			   part_ptr->nodes, -1);
 
@@ -970,10 +946,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	/* clear out info for the main listing */
 	gtk_tree_store_set(treestore, iter, SORTID_STATE, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM, -1, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_CPUS, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_TMP_DISK, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_MEM, "", -1);
-	gtk_tree_store_set(treestore, iter, SORTID_WEIGHT, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
 	gtk_tree_store_set(treestore, iter, SORTID_FEATURES, "", -1);	
 	gtk_tree_store_set(treestore, iter, SORTID_REASON, "", -1);	
@@ -994,8 +968,9 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	char time_buf[20];
-	char tmp_cnt[8];
+	char tmp_cnt[20];
+	char *cpu_tmp = NULL;
+	char *node_tmp = NULL;
 	partition_info_t *part_ptr = sview_part_sub->part_ptr;
 	char *upper = NULL, *lower = NULL;		     
 	char tmp[MAXHOSTRANGELEN];
@@ -1010,31 +985,79 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	
 	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM,
 			   sview_part_sub->node_state, -1);
+
+	if((sview_part_sub->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED) {
+		if(sview_part_sub->cpu_alloc_cnt) {
+			convert_num_unit((float)sview_part_sub->cpu_alloc_cnt,
+					 tmp_cnt, 
+					 sizeof(tmp_cnt), UNIT_NONE);
+			xstrfmtcat(cpu_tmp, "Alloc:%s", tmp_cnt);
+#ifdef HAVE_BG
+			convert_num_unit((float)(sview_part_sub->cpu_alloc_cnt
+						 / cpus_per_node),
+					 tmp_cnt, 
+					 sizeof(tmp_cnt), UNIT_NONE);
+			xstrfmtcat(node_tmp, "Alloc:%s", tmp_cnt);
+#endif
+		}
+		if(sview_part_sub->cpu_error_cnt) {
+			convert_num_unit((float)sview_part_sub->cpu_error_cnt,
+					 tmp_cnt, 
+					 sizeof(tmp_cnt), UNIT_NONE);
+			if(cpu_tmp)
+				xstrcat(cpu_tmp, " ");
+			xstrfmtcat(cpu_tmp, "Err:%s", tmp_cnt);
+#ifdef HAVE_BG
+			convert_num_unit((float)(sview_part_sub->cpu_error_cnt
+						 / cpus_per_node),
+					 tmp_cnt, 
+					 sizeof(tmp_cnt), UNIT_NONE);
+			if(node_tmp)
+				xstrcat(node_tmp, " ");
+			xstrfmtcat(node_tmp, "Err:%s", tmp_cnt);
+#endif
+		}
+		if(sview_part_sub->cpu_idle_cnt) {
+			convert_num_unit((float)sview_part_sub->cpu_idle_cnt,
+					 tmp_cnt, 
+					 sizeof(tmp_cnt), UNIT_NONE);
+			if(cpu_tmp)
+				xstrcat(cpu_tmp, " ");
+			xstrfmtcat(cpu_tmp, "Idle:%s", tmp_cnt);
+#ifdef HAVE_BG
+			convert_num_unit((float)(sview_part_sub->cpu_idle_cnt
+						 / cpus_per_node),
+					 tmp_cnt, 
+					 sizeof(tmp_cnt), UNIT_NONE);
+			if(node_tmp)
+				xstrcat(node_tmp, " ");
+			xstrfmtcat(node_tmp, "Idle:%s", tmp_cnt);
+#endif
+		}
+	} else {
+		cpu_tmp = xmalloc(20);
+		convert_num_unit((float)sview_part_sub->cpu_idle_cnt,
+				 cpu_tmp, 20, UNIT_NONE);
+	}
+	gtk_tree_store_set(treestore, iter, SORTID_CPUS, cpu_tmp, -1);
+	xfree(cpu_tmp);
 	
-	_build_min_max_16_string(time_buf, sizeof(time_buf), 
-			      sview_part_sub->min_cpus, 
-			      sview_part_sub->max_cpus, false);
-	gtk_tree_store_set(treestore, iter, SORTID_CPUS, time_buf, -1);
-	
-	_build_min_max_32_string(time_buf, sizeof(time_buf), 
-			      sview_part_sub->min_disk, 
-			      sview_part_sub->max_disk, false);
-	gtk_tree_store_set(treestore, iter, SORTID_TMP_DISK, time_buf, -1);
-
-	_build_min_max_32_string(time_buf, sizeof(time_buf), 
-			      sview_part_sub->min_mem, 
-			      sview_part_sub->max_mem, false);
-	gtk_tree_store_set(treestore, iter, SORTID_MEM, time_buf, -1);
-
-	_build_min_max_32_string(time_buf, sizeof(time_buf), 
-			      sview_part_sub->min_weight, 
-			      sview_part_sub->max_weight, false);
-	gtk_tree_store_set(treestore, iter, SORTID_WEIGHT, time_buf, -1);
-
-	convert_num_unit((float)sview_part_sub->node_cnt, tmp_cnt, 
+	convert_num_unit((float)sview_part_sub->disk_total, tmp_cnt, 
 			 sizeof(tmp_cnt), UNIT_NONE);
-	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_TMP_DISK, tmp_cnt, -1);
 	
+	convert_num_unit((float)sview_part_sub->mem_total, tmp_cnt, 
+			 sizeof(tmp_cnt), UNIT_MEGA);
+	gtk_tree_store_set(treestore, iter, SORTID_MEM, tmp_cnt, -1);
+	
+	if(!node_tmp) {
+		convert_num_unit((float)sview_part_sub->node_cnt, tmp_cnt, 
+				 sizeof(tmp_cnt), UNIT_NONE);
+		node_tmp = xstrdup(tmp_cnt);
+	}
+	gtk_tree_store_set(treestore, iter, SORTID_NODES, node_tmp, -1);
+	xfree(node_tmp);
+
 	hostlist_ranged_string(sview_part_sub->hl, sizeof(tmp), tmp);
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST, 
 			   tmp, -1);
@@ -1169,6 +1192,13 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 				   node_info_t *node_ptr, 
 				   int node_scaling)
 {
+	int cpus_per_node = 1;
+	int idle_cpus = node_ptr->cpus;
+	uint16_t err_cpus = 0, alloc_cpus = 0;
+
+	if(node_scaling) 
+		cpus_per_node = node_ptr->cpus / node_scaling;
+
 	xassert(sview_part_sub);
 	xassert(sview_part_sub->node_ptr_list);
 	xassert(sview_part_sub->hl);
@@ -1177,41 +1207,44 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 		sview_part_sub->node_state = node_ptr->node_state;
 		sview_part_sub->features   = xstrdup(node_ptr->features);
 		sview_part_sub->reason     = xstrdup(node_ptr->reason);
-		sview_part_sub->min_cpus   = node_ptr->cpus;
-		sview_part_sub->max_cpus   = node_ptr->cpus;
-		sview_part_sub->min_disk   = node_ptr->tmp_disk;
-		sview_part_sub->max_disk   = node_ptr->tmp_disk;
-		sview_part_sub->min_mem    = node_ptr->real_memory;
-		sview_part_sub->max_mem    = node_ptr->real_memory;
-		sview_part_sub->min_weight = node_ptr->weight;
-		sview_part_sub->max_weight = node_ptr->weight;
 	} else if (hostlist_find(sview_part_sub->hl, node_ptr->name) != -1) {
 		/* we already have this node in this record,
 		 * just return, don't duplicate */
+		g_print("already been here\n");
 		return;
-	} else {
-		if (sview_part_sub->min_cpus > node_ptr->cpus)
-			sview_part_sub->min_cpus = node_ptr->cpus;
-		if (sview_part_sub->max_cpus < node_ptr->cpus)
-			sview_part_sub->max_cpus = node_ptr->cpus;
-
-		if (sview_part_sub->min_disk > node_ptr->tmp_disk)
-			sview_part_sub->min_disk = node_ptr->tmp_disk;
-		if (sview_part_sub->max_disk < node_ptr->tmp_disk)
-			sview_part_sub->max_disk = node_ptr->tmp_disk;
-
-		if (sview_part_sub->min_mem > node_ptr->real_memory)
-			sview_part_sub->min_mem = node_ptr->real_memory;
-		if (sview_part_sub->max_mem < node_ptr->real_memory)
-			sview_part_sub->max_mem = node_ptr->real_memory;
-
-		if (sview_part_sub->min_weight> node_ptr->weight)
-			sview_part_sub->min_weight = node_ptr->weight;
-		if (sview_part_sub->max_weight < node_ptr->weight)
-			sview_part_sub->max_weight = node_ptr->weight;
 	}
 
-	sview_part_sub->node_cnt += node_scaling;
+	if((sview_part_sub->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED) {
+		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo, 
+					  SELECT_NODEDATA_SUBCNT,
+					  NODE_STATE_ALLOCATED,
+					  &alloc_cpus);
+#ifdef HAVE_BG
+		if(!alloc_cpus 
+		   && (IS_NODE_ALLOCATED(node_ptr)
+		       || IS_NODE_COMPLETING(node_ptr)))
+			alloc_cpus = node_ptr->cpus;
+		else
+			alloc_cpus *= cpus_per_node;
+#endif
+		idle_cpus -= alloc_cpus;
+		
+		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo, 
+					  SELECT_NODEDATA_SUBCNT,
+					  NODE_STATE_ERROR,
+					  &err_cpus);
+#ifdef HAVE_BG
+		err_cpus *= cpus_per_node;
+#endif
+		idle_cpus -= err_cpus;
+	}
+
+	sview_part_sub->cpu_alloc_cnt += alloc_cpus;
+	sview_part_sub->cpu_error_cnt += err_cpus;
+	sview_part_sub->cpu_idle_cnt += idle_cpus;
+	sview_part_sub->disk_total += node_ptr->tmp_disk;
+	sview_part_sub->mem_total  += node_ptr->real_memory;
+	sview_part_sub->node_cnt   += node_scaling;
 	list_append(sview_part_sub->node_ptr_list, node_ptr);
 	hostlist_push(sview_part_sub->hl, node_ptr->name);
 }
@@ -1272,101 +1305,6 @@ static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 			list_push(sview_part_info->sub_list, 
 				  sview_part_sub);
 	}
-	return SLURM_SUCCESS;
-}
-
-static int _handle_subgrps(sview_part_info_t *sview_part_info,
-			   partition_info_t *part_ptr,
-			   node_info_t *node_ptr, uint32_t node_scaling)
-{
-/* 	char *tmp_char = NULL, *orig_name = NULL; */
-/* 	bitstr_t *tmp_bitmap = NULL; */
-	uint16_t size;
-/* 	bitstr_t *bitmap = NULL; */
-	int i=0, state_cnt = 2;
-/* 	bool set = 0; */
-	enum node_states state[] =
-		{ NODE_STATE_ALLOCATED, NODE_STATE_ERROR };
-
-/* 	if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,  */
-/* 					SELECT_NODEDATA_BITMAP_SIZE, */
-/* 					0, */
-/* 					&size) != SLURM_SUCCESS) */
-/* 		return SLURM_ERROR; */
-	
-/* 	bitmap = bit_alloc(size); */
-	
-	/* If we ever update the hostlist stuff to support this stuff
-	 * then we can use this to tack on the end of the node name
-	 * the subgrp stuff.  On bluegene systems this would be nice
-	 * to see the ionodes in certain states.
-	 */
-/* 	orig_name = node_ptr->name; */
-/* 	node_ptr->name = NULL; */
-	for(i=0; i<state_cnt; i++) {
-		if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
-						SELECT_NODEDATA_SUBCNT,
-						state[i],
-						&size) == SLURM_SUCCESS
-		   && size) {
-/* 			if(select_g_select_nodeinfo_get( */
-/* 				   node_ptr->select_nodeinfo,  */
-/* 				   SELECT_NODEDATA_BITMAP, */
-/* 				   state[i], */
-/* 				   &tmp_bitmap) != SLURM_SUCCESS) */
-/* 				continue; */
-			
-/* 			if(select_g_select_nodeinfo_get( */
-/* 				   node_ptr->select_nodeinfo,  */
-/* 				   SELECT_NODEDATA_STR, */
-/* 				   state[i], */
-/* 				   &tmp_char) != SLURM_SUCCESS) { */
-/* 				FREE_NULL_BITMAP(tmp_bitmap); */
-/* 				continue; */
-/* 			} */
-/* 			bit_or(bitmap, tmp_bitmap); */
-/* 			FREE_NULL_BITMAP(tmp_bitmap); */
-/* 			xfree(node_ptr->name); */
-/* 			node_ptr->name = xstrdup_printf("%s[%s]", */
-/* 						  orig_name, tmp_char); */
-/* 			xfree(tmp_char); */
-			node_scaling -= size;
-			node_ptr->node_state &= NODE_STATE_FLAGS;
-			node_ptr->node_state |= state[i];
-/* 			info("%s got %s of %u", node_ptr->name, */
-/* 			     node_state_string(node_ptr->node_state), size); */
-			_insert_sview_part_sub(sview_part_info, part_ptr,
-					       node_ptr, size);
-/* 			set = 1; */
-		}
-	}
-/* 	xfree(node_ptr->name); */
-/* 	if(set) { */
-/* 		char bitstring[BITSIZE]; */
-/* 		bit_not(bitmap); */
-/* 		bit_fmt(bitstring, BITSIZE, bitmap); */
-
-/* 		node_ptr->name = xstrdup_printf("%s[%s]", */
-/* 						orig_name, bitstring); */
-/* 	} else { */
-/* 		xfree(node_ptr->name); */
-/* 		node_ptr->name = orig_name; */
-/* 	} */
-
-	/* now handle the idle */
-	node_ptr->node_state &= NODE_STATE_FLAGS;
-	node_ptr->node_state |= NODE_STATE_IDLE; 
-/* 	info("%s got %s of %u", node_ptr->name, */
-/* 	     node_state_string(node_ptr->node_state), size); */
-	if((int)node_scaling > 0)
-		_insert_sview_part_sub(sview_part_info, part_ptr,
-				       node_ptr, node_scaling);
-	
-/* 	FREE_NULL_BITMAP(bitmap); */
-/* 	if(set) { */
-/* 		xfree(node_ptr->name); */
-/* 		node_ptr->name = orig_name; */
-/* 	} */
 	return SLURM_SUCCESS;
 }
 
@@ -1457,27 +1395,15 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		j2 = 0;
 		while(part_ptr->node_inx[j2] >= 0) {
 			int i2 = 0;
-			uint16_t subgrp_size = 0;
+
 			for(i2 = part_ptr->node_inx[j2];
 			    i2 <= part_ptr->node_inx[j2+1];
 			    i2++) {
 				node_ptr = &(node_info_ptr->node_array[i2]);
-				if(select_g_select_nodeinfo_get(
-					   node_ptr->select_nodeinfo, 
-					   SELECT_NODEDATA_SUBGRP_SIZE,
-					   0,
-					   &subgrp_size) == SLURM_SUCCESS
-				   && subgrp_size)
-					_handle_subgrps(sview_part_info,
-							part_ptr,
-							node_ptr,
-							g_node_scaling);
-				else
-					_insert_sview_part_sub(sview_part_info,
-							       part_ptr,
-							       node_ptr,
-							       g_node_scaling);
-				
+				_insert_sview_part_sub(sview_part_info,
+						       part_ptr,
+						       node_ptr,
+						       g_node_scaling);
 			}			
 			j2 += 2;
 		}
@@ -1663,8 +1589,8 @@ extern GtkListStore *create_model_part(int type)
 		break;
 	case SORTID_PRIORITY:
 	case SORTID_TIMELIMIT:
-	case SORTID_MIN_NODES:
-	case SORTID_MAX_NODES:
+	case SORTID_NODES_MIN:
+	case SORTID_NODES_MAX:
 		break;
 	case SORTID_ROOT:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);

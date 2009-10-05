@@ -942,7 +942,6 @@ extern void sview_init_grid()
 	int i = 0;
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
-	uint16_t error_cpus = 0;
 
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
@@ -952,19 +951,6 @@ extern void sview_init_grid()
 		return;
 	} else if (error_code != SLURM_SUCCESS) {
 		return;
-	}
-
-	for (i=0; i<node_info_ptr->record_count; i++) {
-		node_ptr = &(node_info_ptr->node_array[i]);
-		
-		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
-					     SELECT_NODEDATA_SUBCNT,
-					     NODE_STATE_ERROR,
-					     &error_cpus);
-		if(error_cpus) {
-			node_ptr->node_state &= NODE_STATE_FLAGS;		
-			node_ptr->node_state |= NODE_STATE_ERROR;
-		}
 	}
 
 	if(!grid_button_list) {

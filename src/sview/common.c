@@ -139,22 +139,54 @@ static int _sort_iter_compare_func_nodes(GtkTreeModel *model,
 		
 		ret = (name1 == NULL) ? -1 : 1;
 	} else {
-		uint64_t int1 = atoi(name1);
-		uint64_t int2 = atoi(name2);
-		if(strchr(name1, 'K')) {
-			int1 *= 1024;
-		} else if(strchr(name1, 'M')) {
-			int1 *= 1048576;
-		} else if(strchr(name1, 'G')) {
-			int1 *= 1073741824;
+		uint64_t int1=0, int2=0, tmp_int;
+		int spot=0;
+		/* If this is in a mixed state we need to get them all */
+		while(name1[spot]) {
+			while(name1[spot]
+			      && !g_ascii_isdigit(name1[spot])) {
+				spot++;
+			}
+			if(!name1[spot])
+				break;
+			tmp_int = atoi(name1+spot);
+			while(name1[spot] && g_ascii_isdigit(name1[spot])) {
+				spot++;
+			}
+			
+			if(!name1[spot]) {
+			} else if(name1[spot] == 'K')
+				tmp_int *= 1024;
+			else if(name1[spot] == 'M')
+				tmp_int *= 1048576;
+			else if(name1[spot] == 'G') 
+				tmp_int *= 1073741824;
+
+			int1 += tmp_int;
 		}
 
-		if(strchr(name2, 'K')) {
-			int2 *= 1024;
-		} else if(strchr(name2, 'M')) {
-			int2 *= 1048576;
-		} else if(strchr(name2, 'G')) {
-			int2 *= 1073741824;
+		spot=0;
+		while(name2[spot]) {
+			while(name2[spot]
+			      && !g_ascii_isdigit(name2[spot])) {
+				spot++;
+			}
+			if(!name2[spot])
+				break;
+			tmp_int = atoi(name2+spot);
+			while(name2[spot] && g_ascii_isdigit(name2[spot])) {
+				spot++;
+			}
+			
+			if(!name2[spot]) {
+			} else if(name2[spot] == 'K')
+				tmp_int *= 1024;
+			else if(name2[spot] == 'M')
+				tmp_int *= 1048576;
+			else if(name2[spot] == 'G') 
+				tmp_int *= 1073741824;
+
+			int2 += tmp_int;
 		}
 
 		if (int1 != int2)
@@ -696,6 +728,7 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 			break;
 		case G_TYPE_STRING:
 			if(!strcasecmp(display_data[i].name, "Nodes")
+			   || !strcasecmp(display_data[i].name, "CPUs")
 			   || !strcasecmp(display_data[i].name, "Real Memory")
 			   || !strcasecmp(display_data[i].name, "Tmp Disk")) {
 				gtk_tree_sortable_set_sort_func(
