@@ -122,11 +122,12 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		}
 		preemptee_ptr = xmalloc(sizeof(struct job_record *));
 		preemptee_ptr[0] = job_p;
-		list_append(preemptee_job_list, preemptee_ptr);;
+		list_append(preemptee_job_list, preemptee_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 
-	list_sort(preemptee_job_list, _sort_by_prio);
+	if (preemptee_job_list)
+		list_sort(preemptee_job_list, _sort_by_prio);
 	return preemptee_job_list;
 }
 

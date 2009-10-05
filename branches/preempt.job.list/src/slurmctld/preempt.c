@@ -229,11 +229,27 @@ extern int slurm_preempt_fini(void)
 /* *********************************************************************** */
 /*  TAG(                   slurm_find_preemptable_jobs                  )  */
 /* *********************************************************************** */
-extern List slurm_find_preemptable_jobs(struct job_record *job_ptr)
+extern struct job_record ** slurm_find_preemptable_jobs(struct job_record *job_ptr)
 {
+	List tmp_list;
+	int i;
+	struct job_record **job_pptr, **job_pptr2;
+
 	if ( slurm_preempt_init() < 0 )
 		return NULL;
 
-	return (*(g_preempt_context->ops.find_jobs))(job_ptr);
+	tmp_list = (*(g_preempt_context->ops.find_jobs))(job_ptr);
+	if (tmp_list == NULL)
+		return NULL;
+
+	i = list_count(tmp_list);
+	job_pptr = xmalloc(sizeof(struct job_record *) * (i + 1));
+	i = 0;
+	while ((job_pptr2 = list_pop(tmp_list))) {
+		job_pptr[i++] = job_pptr2[0];
+		xfree(job_pptr2);
+	}
+	list_destroy(tmp_list);
+	return job_pptr;
 }
 

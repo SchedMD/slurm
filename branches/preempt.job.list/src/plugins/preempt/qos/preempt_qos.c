@@ -128,7 +128,8 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	}
 	list_iterator_destroy(job_iterator);
 
-	list_sort(preemptee_job_list, _sort_by_prio);
+	if (preemptee_job_list)
+		list_sort(preemptee_job_list, _sort_by_prio);
 	return preemptee_job_list;
 }
 
