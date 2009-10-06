@@ -233,6 +233,9 @@ documents those changes that are of interest to users and admins.
     message to accounting, which could lead to nodes not being listed as up 
     when they really were.
  -- Fixed buffer size issue with scontrol show hostlist.
+ -- Fixed issue with copy in smap -Dc previously command wouldn't work.
+ -- BLUEGENE - Update documentation about small blocks in the bluegene.conf 
+    file.
 
 * Changes in SLURM 2.0.6
 ========================
