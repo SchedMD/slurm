@@ -333,8 +333,7 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 		xstrcat(buf, tmp);
 	}
 
-	if (node_ptr->config_ptr
-	&&  node_ptr->config_ptr->feature) {
+	if (node_ptr->config_ptr && node_ptr->config_ptr->feature) {
 		snprintf(tmp, sizeof(tmp), "FEATURE=%s;",
 			node_ptr->config_ptr->feature);
 		/* comma separator to colon */
