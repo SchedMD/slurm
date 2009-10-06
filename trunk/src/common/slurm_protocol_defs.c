@@ -829,6 +829,8 @@ void inline slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
 {
         if (msg) {
                 xfree(msg->node_list);
+		if (msg->preemptee_job_id)
+			list_destroy(msg->preemptee_job_id);
                 xfree(msg);
         }
 }

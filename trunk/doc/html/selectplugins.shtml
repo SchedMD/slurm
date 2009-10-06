@@ -234,7 +234,8 @@ The plugin will test global variables for changes as appropriate.</p>
 <h3>Job-Specific Functions</h3>
 
 <p class="commandline">int select_p_job_test (struct job_record *job_ptr,
-bitstr_t *bitmap, int min_nodes, int max_nodes, int req_nodes, int mode);</p>
+bitstr_t *bitmap, int min_nodes, int max_nodes, int req_nodes, int mode,
+List preemption_candidates, List *preempted_jobs);</p>
 <p style="margin-left:.2in"><b>Description</b>: Given a job's scheduling requirement 
 specification and a set of nodes which might  be used to satisfy the request, identify 
 the nodes which "best" satisfy the request. Note that nodes being considered for allocation 
@@ -270,7 +271,17 @@ maximum node specification (if supplied).<br><br>
 controls the mode of operation. Valid options are 
 SELECT_MODE_RUN_NOW: try to schedule job now<br>
 SELECT_MODE_TEST_ONLY: test if job can ever run<br>
-SELECT_MODE_WILL_RUN: determine when and where job can run</p>
+SELECT_MODE_WILL_RUN: determine when and where job can run<br><br>
+<span class="commandline"> preemption_candidates</span>&nbsp; &nbsp;&nbsp;(input)
+list of pointers to jobs which may be preempted in order to initiate this 
+pending job. May be NULL if there are no preemption candidates.<br><br>
+<span class="commandline"> preempted_jobs</span>&nbsp; &nbsp;&nbsp;(input/output)
+list of jobs which must be preempted in order to initiate the pending job.
+If the value is NULL, no job list is returned.
+If the list pointed to has a value of NULL, a new list will be created
+otherwise the existing list will be overwritten. 
+Use the <i>list_destroy</i> function to destroy the list when no longer 
+needed.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and future attempts may be made to schedule 
 the job.</p>
@@ -401,6 +412,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 February 2009</p>
+<p style="text-align:center;">Last modified 5 October 2009</p>
 
 <!--#include virtual="footer.txt"-->

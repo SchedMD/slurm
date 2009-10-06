@@ -64,6 +64,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
@@ -922,6 +923,11 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	return rc;
 }
 
+static void _pre_list_del(void *x)
+{
+	xfree(x);
+}
+
 /* Determine if a pending job will run using only the specified nodes
  * (in job_desc_msg->req_nodes), build response message and return 
  * SLURM_SUCCESS on success. Otherwise return an error code. Caller 
@@ -935,6 +941,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL), start_res;
+	List preemptee_candidates = NULL, preemptee_job_list = NULL;
 
 	job_ptr = find_job_record(job_desc_msg->job_id);
 	if (job_ptr == NULL)
@@ -1003,15 +1010,16 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			max_nodes = MIN(job_ptr->details->max_nodes, 
 					part_ptr->max_nodes);
 		max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-		if (!job_ptr->limit_set_max_nodes 
-		    && job_ptr->details->max_nodes)
+		if (!job_ptr->limit_set_max_nodes &&
+		    job_ptr->details->max_nodes)
 			req_nodes = max_nodes;
 		else
 			req_nodes = min_nodes;
-
+		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		rc = select_g_job_test(job_ptr, avail_bitmap,
 				min_nodes, max_nodes, req_nodes, 
-				SELECT_MODE_WILL_RUN);
+				SELECT_MODE_WILL_RUN, preemptee_candidates,
+				&preemptee_job_list);
 	}
 
 	if (rc == SLURM_SUCCESS) {
@@ -1029,14 +1037,36 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		resp_data->start_time = MAX(job_ptr->start_time, start_res);
 		job_ptr->start_time   = 0;  /* restore pending job start time */
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
-		FREE_NULL_BITMAP(avail_bitmap);
+
+		if (preemptee_job_list) {
+			ListIterator preemptee_iterator;
+			uint32_t *preemptee_jid;
+			struct job_record **tmp_job_pptr;
+			resp_data->preemptee_job_id=list_create(_pre_list_del);
+			if (resp_data->preemptee_job_id == NULL)
+				fatal("list_create: malloc failure");
+			preemptee_iterator = list_iterator_create(
+							preemptee_job_list);
+			while ((tmp_job_pptr = (struct job_record **)
+					list_next(preemptee_iterator))) {
+				preemptee_jid = xmalloc(sizeof(uint32_t));
+				preemptee_jid[0] = tmp_job_pptr[0]->job_id;
+				list_append(resp_data->preemptee_job_id, 
+					    preemptee_jid);
+			}
+			list_iterator_destroy(preemptee_iterator);
+		}
 		*resp = resp_data;
-		return SLURM_SUCCESS;
 	} else {
-		FREE_NULL_BITMAP(avail_bitmap);
-		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
+	if (preemptee_candidates)
+		list_destroy(preemptee_candidates);
+	if (preemptee_job_list)
+		list_destroy(preemptee_job_list);
+	FREE_NULL_BITMAP(avail_bitmap);
+	return rc;
 }
 
 /*

@@ -40,6 +40,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/plugin.h"
 #include "src/slurmctld/slurmctld.h"
@@ -68,7 +69,7 @@ extern void fini( void )
 /**************************************************************************/
 /* TAG(                 find_preemptable_jobs                           ) */
 /**************************************************************************/
-extern struct job_record **find_preemptable_jobs(struct job_record *job_ptr)
+extern List find_preemptable_jobs(struct job_record *job_ptr)
 {
-	return (struct job_record **) NULL;
+	return (List) NULL;
 }

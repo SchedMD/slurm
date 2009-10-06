@@ -41,6 +41,7 @@
 #include "src/common/node_select.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
@@ -151,7 +152,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			       char **node_list, int job_cnt, 
 			       int *err_code, char **err_msg)
 {
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	char *hostlist, *reply_msg = NULL;
@@ -313,13 +314,21 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 	}
 
 	if (job_cnt == 1) {
+		/* FIXME: Need to modify wiki for 
+		 * input: preemptee candidates
+		 * output: preempted jobs */
+		List preemptee_candidates = NULL;
+		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		rc = select_g_job_test(
 				select_will_run->job_ptr, 
 				select_will_run->avail_nodes,
 				select_will_run->min_nodes, 
 				select_will_run->max_nodes, 
 				select_will_run->req_nodes, 
-				SELECT_MODE_WILL_RUN);
+				SELECT_MODE_WILL_RUN, 
+				preemptee_candidates, NULL);
+		if (preemptee_candidates)
+			list_destroy(preemptee_candidates);
 	} else {
 		rc = select_g_job_list_test(select_list);
 	}
