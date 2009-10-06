@@ -2,7 +2,7 @@
  *  get_jobs.c - Process Wiki get job info request
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -239,9 +239,9 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		}
 	} else if (!IS_JOB_FINISHED(job_ptr)) {
 		char *hosts = _task_list(job_ptr);
-		snprintf(tmp, sizeof(tmp),
-			"TASKLIST=%s;", hosts);
-		xstrcat(buf, tmp);
+		xstrcat(buf,"TASKLIST=");
+		xstrcat(buf, hosts);
+		xstrcat(buf, ";");
 		xfree(hosts);
 	}
 
