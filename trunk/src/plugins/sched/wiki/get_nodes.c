@@ -152,7 +152,7 @@ static char *	_dump_all_nodes(int *node_cnt, time_t update_time)
 
 static char *	_dump_node(struct node_record *node_ptr, time_t update_time)
 {
-	char tmp[512], *buf = NULL;
+	char tmp[1024], *buf = NULL;
 	int i;
 
 	if (!node_ptr)
@@ -173,14 +173,12 @@ static char *	_dump_node(struct node_record *node_ptr, time_t update_time)
 		xstrcat(buf, tmp);
 	}
 
-	if (node_ptr->config_ptr
-	&&  node_ptr->config_ptr->feature) {
+	if (node_ptr->config_ptr && node_ptr->config_ptr->feature) {
 		snprintf(tmp, sizeof(tmp), "FEATURES=%s;",
 			node_ptr->config_ptr->feature);
 		/* comma separated to colon */
 		for (i=0; (tmp[i] != '\0'); i++) {
-			if ((tmp[i] == ',')
-			||  (tmp[i] == '|'))
+			if ((tmp[i] == ',') || (tmp[i] == '|'))
 				tmp[i] = ':';
 		}
 		xstrcat(buf, tmp);

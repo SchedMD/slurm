@@ -2,6 +2,7 @@
  *  get_jobs.c - Process Wiki get job info request
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -256,9 +257,9 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 			xstrcat(buf, tmp);
 			xfree(req_features);
 		}
-		if ((job_ptr->details)
-		&&  (job_ptr->details->req_nodes)
-		&&  (job_ptr->details->req_nodes[0])) {
+		if ((job_ptr->details) &&
+		    (job_ptr->details->req_nodes) &&
+		    (job_ptr->details->req_nodes[0])) {
 			char *hosts = bitmap2wiki_node_name(
 				job_ptr->details->req_node_bitmap);
 			snprintf(tmp, sizeof(tmp),
@@ -266,8 +267,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 			xstrcat(buf, tmp);
 			xfree(hosts);
 		}
-		if ((job_ptr->details)
-		&&  (job_ptr->details->begin_time)) {
+		if ((job_ptr->details) && (job_ptr->details->begin_time)) {
 			snprintf(tmp, sizeof(tmp),
 				"STARTDATE=%u;", (uint32_t)
 				job_ptr->details->begin_time);
@@ -616,9 +616,9 @@ static char * _get_job_features(struct job_record *job_ptr)
 	int i;
 	char *rfeatures;
 
-	if ((job_ptr->details == NULL)
-	||  (job_ptr->details->features == NULL)
-	||  (job_ptr->details->features[0] == '\0'))
+	if ((job_ptr->details == NULL) ||
+	    (job_ptr->details->features == NULL) ||
+	    (job_ptr->details->features[0] == '\0'))
 		return NULL;
 
 	rfeatures = xstrdup(job_ptr->details->features);

@@ -222,8 +222,8 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		return buf;
 
 	if (IS_JOB_PENDING(job_ptr) && (job_ptr->details)) {
-		if ((job_ptr->details->req_nodes)
-		    &&  (job_ptr->details->req_nodes[0])) {
+		if ((job_ptr->details->req_nodes) &&
+		    (job_ptr->details->req_nodes[0])) {
 			char *hosts = bitmap2wiki_node_name(
 				job_ptr->details->req_node_bitmap);
 			snprintf(tmp, sizeof(tmp),
