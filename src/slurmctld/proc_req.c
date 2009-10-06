@@ -2642,11 +2642,16 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 	int error_code, result;
 	job_id_msg_t *id_msg = (job_id_msg_t *) msg->data;
 	DEF_TIMERS;
+	/* Locks: read job */
+	slurmctld_lock_t job_read_lock = { 
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	slurm_msg_t response_msg;
 	return_code_msg_t rc_msg;
 
 	START_TIMER;
+	lock_slurmctld(job_read_lock);
 	error_code = job_node_ready(id_msg->job_id, &result);
+	unlock_slurmctld(job_read_lock);
 	END_TIMER2("_slurm_rpc_job_ready");
 
 	if (error_code) {
