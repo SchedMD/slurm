@@ -296,8 +296,8 @@ int slurm_job_will_run (job_desc_msg_t *req)
 	char buf[64];
 
 	/* req.immediate = true;    implicit */
-	if ((req->alloc_node == NULL)
-	&&  (gethostname_short(buf, sizeof(buf)) == 0))
+	if ((req->alloc_node == NULL) &&
+	    (gethostname_short(buf, sizeof(buf)) == 0))
 		req->alloc_node = buf;
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
@@ -325,6 +325,21 @@ int slurm_job_will_run (job_desc_msg_t *req)
 		     will_run_resp->job_id, buf,
 		     will_run_resp->proc_cnt,
 		     will_run_resp->node_list);
+		if (will_run_resp->preemptee_job_id) {
+			ListIterator itr;
+			uint32_t *job_id_ptr;
+			char *job_list = NULL, *sep = "";
+			itr = list_iterator_create(will_run_resp->
+						   preemptee_job_id);
+			while ((job_id_ptr = list_next(itr))) {
+				if (job_list)
+					sep = ",";
+				xstrfmtcat(job_list, "%s%u", 
+					   sep, job_id_ptr[0]);
+			}
+			info("  Preempts: %s", job_list);
+			xfree(job_list);
+		}
 
 		slurm_free_will_run_response_msg(will_run_resp);
 		break;

@@ -50,7 +50,7 @@
 /*  TAG(                     slurm_preempt_ops_t                         )  */
 /* ************************************************************************ */
 typedef struct slurm_preempt_ops {
-	struct job_record ** (*find_jobs)	( struct job_record *job_ptr );
+	List (*find_jobs)	( struct job_record *job_ptr );
 } slurm_preempt_ops_t;
 
 
@@ -229,8 +229,7 @@ extern int slurm_preempt_fini(void)
 /* *********************************************************************** */
 /*  TAG(                   slurm_find_preemptable_jobs                  )  */
 /* *********************************************************************** */
-extern struct job_record **
-		slurm_find_preemptable_jobs(struct job_record *job_ptr)
+extern List slurm_find_preemptable_jobs(struct job_record *job_ptr)
 {
 	if ( slurm_preempt_init() < 0 )
 		return NULL;

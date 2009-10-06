@@ -672,49 +672,6 @@ static void _resume_job(uint32_t job_id)
 	}
 }
 
-static int _cancel_job(uint32_t job_id)
-{
-	int rc;
-
-	rc = job_signal(job_id, SIGKILL, 0, 0);
-	if (rc == SLURM_SUCCESS)
-		info("gang: preempted job %u has been killed", job_id);
-
-	return rc;
-}
-static int _checkpoint_job(uint32_t job_id)
-{
-	int rc;
-	checkpoint_msg_t ckpt_msg;
-
-	/* NOTE: job_checkpoint(VACATE) eventually calls gs_job_fini(),
-	 * so we can't process this request in real-time */
-	memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
-	ckpt_msg.op        = CHECK_VACATE;
-	rc = job_checkpoint(&ckpt_msg, 0, -1);
-	if (rc == SLURM_SUCCESS) {
-		info("gang: preempted job %u has been checkpointed",
-		     job_id);
-	}
-
-	return rc;
-}
-
-static int _requeue_job(uint32_t job_id)
-{
-	int rc;
-
-	/* NOTE: job_requeue eventually calls gs_job_fini(),
-	 * so we can't process this request in real-time */
-	rc = job_requeue(0, job_id, -1);
-	if (rc == SLURM_SUCCESS) {
-		info("gang: preempted job %u has been requeued",
-		     job_id);
-	}
-
-	return rc;
-}
-
 void _preempt_job_list_del(void *x)
 {
 	xfree(x);
@@ -729,7 +686,6 @@ static void _preempt_job_queue(uint32_t job_id)
 
 static void _preempt_job_dequeue(void)
 {
-	int rc = 0;
 	uint32_t job_id, *tmp_id;
 	uint16_t preempt_mode = slurm_get_preempt_mode();
 
@@ -738,31 +694,11 @@ static void _preempt_job_dequeue(void)
 		job_id = *tmp_id;
 		xfree(tmp_id);
 
-		if (preempt_mode == PREEMPT_MODE_SUSPEND)
-			(void) _suspend_job(job_id);
-		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
-			rc = _requeue_job(job_id);
-		else if (preempt_mode == PREEMPT_MODE_CANCEL)
-			rc = _cancel_job(job_id);
-		else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
-			rc = _checkpoint_job(job_id);
-		else if (preempt_mode == PREEMPT_MODE_OFF) {
-			/* FIXME: Remove this once preemption is moved out of
-			 * gang scheduling module. */
-			(void) _suspend_job(job_id);
-		} else
-			fatal("Invalid preempt_mode: %u", preempt_mode);
-
-		if (rc != SLURM_SUCCESS) {
-			rc = job_signal(job_id, SIGKILL, 0, 0);
-			if (rc == SLURM_SUCCESS)
-				info("gang: preempted job %u had to be killed",
-				     job_id);
-			else {
-				info("gang: preempted job %u kill failure %s", 
-				     job_id, slurm_strerror(rc));
-			}
+		if (preempt_mode != PREEMPT_MODE_SUSPEND) {
+			error("Job %u allocated resources overlap other jobs",
+			      job_id);
 		}
+		(void) _suspend_job(job_id);
 	}
 
 	return;
@@ -1566,9 +1502,8 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 	/* Suspend running jobs that are GS_NO_ACTIVE */
 	for (i = 0; i < p_ptr->num_jobs; i++) {
 		j_ptr = p_ptr->job_list[i];
-		if ((p_ptr->shadow_size)		||
-		    ((j_ptr->row_state == GS_NO_ACTIVE) &&
-		     (j_ptr->sig_state == GS_RESUME))) {
+		if ((j_ptr->row_state == GS_NO_ACTIVE) &&
+		     (j_ptr->sig_state == GS_RESUME)) {
 		    	debug3("gang: _cycle_job_list: suspending job %u", 
 			       j_ptr->job_id);
 			if (p_ptr->num_shadows)

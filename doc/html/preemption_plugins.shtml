@@ -40,18 +40,18 @@ for an example implementation of a SLURM preemption plugin.</p>
 <p>The following functions must appear. Functions which are not implemented 
 should be stubbed.</p>
 
-<p class="commandline">struct job_record **find_preemptable_jobs(
+<p class="commandline">List find_preemptable_jobs(
 struct job_record *job_ptr)</p>
 <p style="margin-left:.2in"><b>Description</b>: Identifies the jobs 
 which can be preempted by a specific pending job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">job_ptr</span> (input) a pointer to the 
 pending job which is attempting to be started</p>
-<p style="margin-left:.2in"><b>Returns</b>: An array of pointers to 
+<p style="margin-left:.2in"><b>Returns</b>: A list of pointers to 
 jobs which may be preempted. 
-The array should be NULL terminated and will be released using 
-the <i>xfree</i> function when no longer required.
-This array should be sorted in order from most attractive to
+The list should be be released using the <i>list_destroy</i> function when 
+no longer required.
+This list should be sorted in order from most attractive to
 preempt to least attractive to preempt (e.g. lowest to highest priority).
 For example, even within a given partition or QOS one might want to 
 smaller jobs first.</p>
@@ -64,6 +64,6 @@ plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 August 2009</p>
+<p style="text-align:center;">Last modified 5 October 2009</p>
 
 <!--#include virtual="footer.txt"-->

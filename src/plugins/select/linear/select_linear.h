@@ -68,9 +68,9 @@ struct node_cr_record {
 					 * list that contains alloc_core info */
 	uint32_t alloc_memory;		/* real memory reserved by already
 					 * scheduled jobs */
-	uint32_t exclusive_jobid;	/* if the node is allocated exclusively
-					 * to some job, put its jobid here, 
-					 * otherwise value is zero */
+	uint16_t exclusive_cnt;		/* count of jobs exclusively allocated
+					 * this node (from different 
+					 * partitions) */
 };
 
 #endif /* !_SELECT_LINEAR_H */
