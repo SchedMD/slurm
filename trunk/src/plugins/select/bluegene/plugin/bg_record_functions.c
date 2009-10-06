@@ -1423,7 +1423,8 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 		return SLURM_ERROR;
 	}
 	
-	info("Setting Block %s to ERROR state.", bg_record->bg_block_id);
+	info("Setting Block %s to ERROR state. (reason: '%s')",
+	     bg_record->bg_block_id, reason);
 	/* we add the block to these lists so we don't try to schedule
 	   on them. */
 	if(!block_ptr_exist_in_list(bg_lists->job_running, bg_record)) {
