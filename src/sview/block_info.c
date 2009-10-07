@@ -1171,12 +1171,12 @@ extern void set_menus_block(void *arg, GtkTreePath *path,
 	case TAB_CLICKED:
 		make_fields_menu(NULL, menu, display_data_block, SORTID_CNT);
 		break;
+	case ROW_CLICKED:
+		make_options_menu(tree_view, path, menu, options_data_block);
+		/* don't break, need to highlight */
 	case ROW_LEFT_CLICKED:
 		highlight_grid(tree_view, path, 
 			       SORTID_NODE_INX, grid_button_list);
-		break;
-	case ROW_CLICKED:
-		make_options_menu(tree_view, path, menu, options_data_block);
 		break;
 	case POPUP_CLICKED:
 		make_fields_menu(popup_win, menu,
