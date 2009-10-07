@@ -782,8 +782,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		req->job_mem = arg.job_mem;
 	req->cpus_allocated[node_id] = alloc_lps;
 #if 0
-	info("mem orig:%u cpus:%u limit:%u", 
-	     arg.job_mem, alloc_lps, req->job_mem);
+	info("%u.%u mem orig:%u cpus:%u limit:%u", 
+	     jobid, stepid, arg.job_mem, alloc_lps, req->job_mem);
 #endif
 
 	*step_hset = hset;
