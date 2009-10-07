@@ -125,7 +125,7 @@ static display_data_t display_data_block[] = {
 #endif
 	{G_TYPE_STRING, SORTID_MLOADERIMAGE, "Mloader Image",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE, 
+	{G_TYPE_POINTER, SORTID_NODE_INX, "NodeInx", FALSE, EDIT_NONE, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -1170,6 +1170,10 @@ extern void set_menus_block(void *arg, GtkTreePath *path,
 	switch(type) {
 	case TAB_CLICKED:
 		make_fields_menu(NULL, menu, display_data_block, SORTID_CNT);
+		break;
+	case ROW_LEFT_CLICKED:
+		highlight_grid(tree_view, path, 
+			       SORTID_NODE_INX, grid_button_list);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_block);

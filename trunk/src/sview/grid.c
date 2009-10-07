@@ -71,6 +71,9 @@ static int _coord(char coord)
 static gboolean _mouseover_node(GtkWidget *widget, GdkEventButton *event,
 				grid_button_t *grid_button)
 {
+	gboolean rc = false;
+
+	grid_button->last_state = GTK_WIDGET_STATE(widget);
 #ifdef GTK2_USE_TOOLTIP
 	gtk_widget_set_tooltip_text(grid_button->button, 
 				    grid_button->node_name);
@@ -82,11 +85,22 @@ static gboolean _mouseover_node(GtkWidget *widget, GdkEventButton *event,
 			     grid_button->node_name,
 			     "click for node stats");
 #endif
-        return false;
+        return rc;
 }
 
-static void _open_node(GtkWidget *widget, GdkEventButton *event, 
-		       grid_button_t *grid_button)
+static gboolean _mouseoff_node(GtkWidget *widget, GdkEventButton *event,
+				grid_button_t *grid_button)
+{
+	gboolean rc = false;
+
+	if(grid_button->last_state == GTK_STATE_PRELIGHT)
+		rc = true;
+
+        return rc;
+}
+
+static gboolean _open_node(GtkWidget *widget, GdkEventButton *event, 
+			   grid_button_t *grid_button)
 {
 	GError *error = NULL;
 	char title[100];
@@ -118,11 +132,11 @@ static void _open_node(GtkWidget *widget, GdkEventButton *event,
 			g_printerr ("Failed to create grid popup thread: "
 				    "%s\n", 
 				    error->message);
-			return;
+			return false;
 		}	
 	} else
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
-	return;
+	return false;
 }
 
 #ifdef HAVE_BG
@@ -165,6 +179,22 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 }
 #endif
 
+static void _add_button_signals(grid_button_t *grid_button)
+{
+	g_signal_connect(G_OBJECT(grid_button->button),
+			 "button-press-event",
+			 G_CALLBACK(_open_node),
+			 grid_button);
+	g_signal_connect(G_OBJECT(grid_button->button), 
+			 "enter-notify-event",
+			 G_CALLBACK(_mouseover_node),
+			 grid_button);
+	g_signal_connect(G_OBJECT(grid_button->button), 
+			 "leave-notify-event",
+			 G_CALLBACK(_mouseoff_node),
+			 grid_button);
+}
+
 /* 
  * Comparator used for sorting buttons
  * 
@@ -202,19 +232,15 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 	gtk_widget_set_size_request(grid_button->button, 10, 10);
 	gtk_event_box_set_above_child(GTK_EVENT_BOX(grid_button->button),
 				      FALSE);
-	g_signal_connect(G_OBJECT(grid_button->button),
-			 "button-press-event",
-			 G_CALLBACK(_open_node),
-			 grid_button);
-	g_signal_connect(G_OBJECT(grid_button->button), 
-			 "enter-notify-event",
-			 G_CALLBACK(_mouseover_node),
-			 grid_button);
+	_add_button_signals(grid_button);
 	
-	if(grid_button->table) 
+/* 	if(grid_button->frame) */
+/* 		gtk_container_add(GTK_CONTAINER(grid_button->frame), */
+/* 				  grid_button->button); */
+	if(grid_button->table)
 		gtk_table_attach(grid_button->table, grid_button->button,
 				 grid_button->table_x,
-				 (grid_button->table_x+1), 
+				 (grid_button->table_x+1),
 				 grid_button->table_y,
 				 (grid_button->table_y+1),
 				 GTK_SHRINK, GTK_SHRINK,
@@ -222,7 +248,7 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 	
 	gdk_color_parse("black", &color);
 	sview_widget_modify_bg(grid_button->button, GTK_STATE_NORMAL, color);
-	gdk_color_parse(white_color, &color);
+	//gdk_color_parse(white_color, &color);
 	sview_widget_modify_bg(grid_button->button, GTK_STATE_PRELIGHT, color);
 	if(state == NODE_STATE_DRAIN)
 		image = gtk_image_new_from_stock(GTK_STOCK_DIALOG_ERROR,
@@ -235,6 +261,7 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 	return;	
 }
 
+
 void _put_button_as_up(grid_button_t *grid_button)
 {
 	if(GTK_IS_BUTTON(grid_button->button)) {
@@ -243,18 +270,15 @@ void _put_button_as_up(grid_button_t *grid_button)
 	gtk_widget_destroy(grid_button->button);		
 	grid_button->button = gtk_button_new();
 	gtk_widget_set_size_request(grid_button->button, 10, 10);
-	g_signal_connect(G_OBJECT(grid_button->button), 
-			 "button-press-event",
-			 G_CALLBACK(_open_node),
-			 grid_button);
-	g_signal_connect(G_OBJECT(grid_button->button), 
-			 "enter-notify-event",
-			 G_CALLBACK(_mouseover_node),
-			 grid_button);
-	if(grid_button->table) 
+	_add_button_signals(grid_button);
+	
+/* 	if(grid_button->frame) */
+/* 		gtk_container_add(GTK_CONTAINER(grid_button->frame), */
+/* 				  grid_button->button); */
+	if(grid_button->table)
 		gtk_table_attach(grid_button->table, grid_button->button,
 				 grid_button->table_x,
-				 (grid_button->table_x+1), 
+				 (grid_button->table_x+1),
 				 grid_button->table_y,
 				 (grid_button->table_y+1),
 				 GTK_SHRINK, GTK_SHRINK,
@@ -274,18 +298,15 @@ void _put_button_as_inactive(grid_button_t *grid_button)
 	gtk_widget_set_size_request(grid_button->button, 10, 10);
 	//gtk_widget_set_sensitive (grid_button->button, FALSE);
 
-	g_signal_connect(G_OBJECT(grid_button->button), 
-			 "button-press-event",
-			 G_CALLBACK(_open_node),
-			 grid_button);
-	g_signal_connect(G_OBJECT(grid_button->button), 
-			 "enter-notify-event",
-			 G_CALLBACK(_mouseover_node),
-			 grid_button);
-	if(grid_button->table) 
+	_add_button_signals(grid_button);
+
+/* 	if(grid_button->frame) */
+/* 		gtk_container_add(GTK_CONTAINER(grid_button->frame), */
+/* 				  grid_button->button); */
+	if(grid_button->table)
 		gtk_table_attach(grid_button->table, grid_button->button,
 				 grid_button->table_x,
-				 (grid_button->table_x+1), 
+				 (grid_button->table_x+1),
 				 grid_button->table_y,
 				 (grid_button->table_y+1),
 				 GTK_SHRINK, GTK_SHRINK,
@@ -360,6 +381,8 @@ extern grid_button_t *create_grid_button_from_another(
 		send_grid_button->color = new_col;
 		sview_widget_modify_bg(send_grid_button->button, 
 				       GTK_STATE_NORMAL, color);
+		sview_widget_modify_bg(send_grid_button->button, 
+				       GTK_STATE_PRELIGHT, color);
 	} else if((color_inx >= 0) && node_base_state == NODE_STATE_DOWN) {
 		GtkWidget *image = gtk_image_new_from_stock(
 			GTK_STOCK_CANCEL,
@@ -371,7 +394,7 @@ extern grid_button_t *create_grid_button_from_another(
 		gdk_color_parse("black", &color);
 		sview_widget_modify_bg(send_grid_button->button, 
 				       GTK_STATE_NORMAL, color);
-		gdk_color_parse("white", &color);
+		//gdk_color_parse("white", &color);
 		sview_widget_modify_bg(send_grid_button->button, 
 				     GTK_STATE_PRELIGHT, color);
 		gtk_container_add(
@@ -391,7 +414,7 @@ extern grid_button_t *create_grid_button_from_another(
 		gdk_color_parse("black", &color);
 		sview_widget_modify_bg(send_grid_button->button, 
 				       GTK_STATE_NORMAL, color);
-		gdk_color_parse("white", &color);
+		//gdk_color_parse("white", &color);
 		sview_widget_modify_bg(send_grid_button->button, 
 				       GTK_STATE_PRELIGHT, color);
 		gtk_container_add(
@@ -403,6 +426,8 @@ extern grid_button_t *create_grid_button_from_another(
 		gdk_color_parse(new_col, &color);
 		sview_widget_modify_bg(send_grid_button->button, 
 				       GTK_STATE_NORMAL, color);
+		sview_widget_modify_bg(send_grid_button->button, 
+				       GTK_STATE_PRELIGHT, color);
 	}
 	gtk_widget_set_size_request(send_grid_button->button, 10, 10);
 	
@@ -421,13 +446,9 @@ extern char *change_grid_color(List button_list, int start, int end,
 	uint16_t node_base_state;
 	GdkColor color;
 	char *new_col = NULL;
-	static GQuark quark_rc_style = 0;
-  
+ 
 	if(!button_list)
 		return NULL;
-
-	if(!quark_rc_style)
-		quark_rc_style = g_quark_from_static_string ("gtk-rc-style");
 
 	if(color_inx >= 0) {
 		color_inx %= sview_colors_cnt;
@@ -458,6 +479,9 @@ extern char *change_grid_color(List button_list, int start, int end,
 				grid_button->color_inx = color_inx;
 				sview_widget_modify_bg(grid_button->button, 
 						       GTK_STATE_NORMAL, color);
+				sview_widget_modify_bg(grid_button->button, 
+						       GTK_STATE_PRELIGHT,
+						       color);
 			}
 			
 			continue;
@@ -477,11 +501,56 @@ extern char *change_grid_color(List button_list, int start, int end,
 			grid_button->color_inx = color_inx;
 			sview_widget_modify_bg(grid_button->button, 
 					       GTK_STATE_NORMAL, color);
+			sview_widget_modify_bg(grid_button->button, 
+					       GTK_STATE_PRELIGHT, color);
 		}
 	}
 	list_iterator_destroy(itr);
 
 	return sview_colors[color_inx];
+}
+
+/* start == -1 for all */
+extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
+			   int node_inx_id, List button_list)
+{
+	ListIterator itr = NULL;
+	grid_button_t *grid_button = NULL;
+	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
+	GtkTreeIter iter;
+	int *node_inx = NULL;
+	int j=0;	       
+				
+	if(!button_list)
+		return;
+	
+	if (!gtk_tree_model_get_iter(model, &iter, path)) {
+		g_error("error getting iter from model\n");
+		return;
+	}	
+	gtk_tree_model_get(model, &iter, node_inx_id, &node_inx, -1);
+
+	if(!node_inx)
+		return;
+
+	itr = list_iterator_create(button_list);
+	while((grid_button = list_next(itr))) {
+		/* clear everyone else */
+		gtk_widget_set_state(grid_button->button, GTK_STATE_NORMAL);
+		
+		if((node_inx[j] < 0) 
+		   || (grid_button->inx < node_inx[j])
+		   || (grid_button->inx > node_inx[j+1]))
+			continue;
+		/* highlight this one */
+		//g_print("highlighting %d\n", grid_button->inx);
+		gtk_widget_set_state(grid_button->button, GTK_STATE_PRELIGHT);
+		if(grid_button->inx == node_inx[j+1])
+			j+=2;
+	}
+	list_iterator_destroy(itr);
+
+	return;
 }
 
 extern void set_grid_used(List button_list, int start, int end,
@@ -500,6 +569,7 @@ extern void set_grid_used(List button_list, int start, int end,
 			    ||  (grid_button->inx > end)) 
 				continue;
 		grid_button->used = used;
+		gtk_widget_set_state(grid_button->button, GTK_STATE_NORMAL);
 	}
 	list_iterator_destroy(itr);
 
@@ -535,14 +605,7 @@ extern void get_button_list_from_main(List *button_list, int start, int end,
 		send_grid_button = create_grid_button_from_another(
 			grid_button, grid_button->node_name, color_inx);
 		if(send_grid_button) {
-			g_signal_connect(G_OBJECT(send_grid_button->button),
-					 "button-press-event",
-					 G_CALLBACK(_open_node),
-					 send_grid_button);
-			g_signal_connect(G_OBJECT(send_grid_button->button), 
-					 "enter-notify-event",
-					 G_CALLBACK(_mouseover_node),
-					 send_grid_button);
+			_add_button_signals(send_grid_button);
 			list_append(*button_list, send_grid_button);
 		}
 	}
@@ -562,14 +625,7 @@ extern List copy_main_button_list(int initial_color)
 		send_grid_button = create_grid_button_from_another(
 			grid_button, grid_button->node_name, initial_color);
 		if(send_grid_button) {
-			g_signal_connect(G_OBJECT(send_grid_button->button),
-					 "button-press-event",
-					 G_CALLBACK(_open_node),
-					 send_grid_button);
-			g_signal_connect(G_OBJECT(send_grid_button->button), 
-					 "enter-notify-event",
-					 G_CALLBACK(_mouseover_node),
-					 send_grid_button);
+			_add_button_signals(send_grid_button);
 			send_grid_button->used = false;
 			list_append(button_list, send_grid_button);
 		}
@@ -650,16 +706,21 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 		if(send_grid_button) {
 			send_grid_button->table_x = 0;
 			send_grid_button->table_y = coord_y++;
+			//_add_button_signals(send_grid_button);
+			/* this is a different signal than usual */
 			g_signal_connect(
 				G_OBJECT(send_grid_button->button),
 				"button-press-event",
 				G_CALLBACK(_open_block),
 				send_grid_button);
-			g_signal_connect(
-				G_OBJECT(send_grid_button->button), 
-				"enter-notify-event",
-				G_CALLBACK(_mouseover_node),
-				send_grid_button);			
+			g_signal_connect(G_OBJECT(grid_button->button), 
+					 "enter-notify-event",
+					 G_CALLBACK(_mouseover_node),
+					 grid_button);
+			g_signal_connect(G_OBJECT(grid_button->button), 
+					 "leave-notify-event",
+					 G_CALLBACK(_mouseoff_node),
+					 grid_button);
 			list_append(*button_list, send_grid_button);
 			(*color_inx)++;
 		}
@@ -670,16 +731,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 		if(send_grid_button) {
 			send_grid_button->table_x = 0;
 			send_grid_button->table_y = coord_y++;
-			g_signal_connect(
-				G_OBJECT(send_grid_button->button),
-				"button-press-event",
-				G_CALLBACK(_open_node),
-				send_grid_button);
-			g_signal_connect(
-                                G_OBJECT(send_grid_button->button), 
-				"enter-notify-event",
-				G_CALLBACK(_mouseover_node),
-				send_grid_button);			
+			_add_button_signals(send_grid_button);
 			list_append(*button_list, send_grid_button);
 			(*color_inx)++;
 		}
@@ -879,27 +931,25 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		grid_button->table = table;
 		grid_button->table_x = coord_x;
 		grid_button->table_y = coord_y;
+/* 		grid_button->frame = gtk_frame_new(NULL); */
 		grid_button->button = gtk_button_new();
-
 		grid_button->node_name =
 			xstrdup(sview_node_info_ptr->node_ptr->name);
 
 		gtk_widget_set_size_request(grid_button->button, 10, 10);
-		g_signal_connect(G_OBJECT(grid_button->button), 
-				 "button-press-event",
-				 G_CALLBACK(_open_node),
-				 grid_button);
-		g_signal_connect(G_OBJECT(grid_button->button), 
-				 "enter-notify-event",
-				 G_CALLBACK(_mouseover_node),
-				 grid_button);
+		_add_button_signals(grid_button);
 		list_append(button_list, grid_button);
 		
 		gtk_table_attach(table, grid_button->button,
 				 coord_x, (coord_x+1),
 				 coord_y, (coord_y+1),
 				 GTK_SHRINK, GTK_SHRINK,
-				 1, 1);		
+				 1, 1);	
+
+		/* gtk_container_add(GTK_CONTAINER(grid_button->frame),  */
+/* 				  grid_button->button); */
+/* 		gtk_frame_set_shadow_type(GTK_FRAME(grid_button->frame), */
+/* 					  GTK_SHADOW_ETCHED_OUT); */
 #ifndef HAVE_3D
 		/* On linear systems we just up the x_coord until we
 		   hit the side of the table and then incrememnt the
@@ -968,6 +1018,9 @@ extern void sview_init_grid()
 				continue;
 			grid_button->used = false;
 			grid_button->state = node_ptr->node_state;
+			gtk_widget_set_state(grid_button->button,
+					     GTK_STATE_NORMAL);
+
 			break;
 		}
 		if(!grid_button && !tried_again) {

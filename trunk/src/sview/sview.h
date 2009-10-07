@@ -104,6 +104,7 @@ enum { JOB_PAGE,
        PAGE_CNT 
 };
 enum { TAB_CLICKED,
+       ROW_LEFT_CLICKED,
        ROW_CLICKED,
        POPUP_CLICKED
 };
@@ -230,6 +231,7 @@ typedef struct {
 	char *color;
 	int color_inx;
 	int inx;
+	GtkStateType last_state;
 	char *node_name;
 	int state;
 	GtkTable *table;
@@ -297,6 +299,8 @@ extern grid_button_t *create_grid_button_from_another(
 extern char *change_grid_color(List button_list, int start, int end,
 			       int color_inx, bool change_unused,
 			       enum node_states state_override);
+extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
+			   int node_inx_id, List button_list);
 extern void set_grid_used(List button_list, int start, int end, bool used);
 extern void get_button_list_from_main(List *button_list, int start, int end,
 				      int color_inx);

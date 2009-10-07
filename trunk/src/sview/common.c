@@ -627,7 +627,6 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 extern GtkTreeView *create_treeview(display_data_t *local)
 {
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
-
 	local->user_data = NULL;
 	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
 			 G_CALLBACK(row_clicked),
@@ -788,6 +787,35 @@ extern void right_button_pressed(GtkTreeView *tree_view,
 	}
 }
 
+extern gboolean left_button_pressed(GtkTreeView *tree_view, 
+				    GtkTreePath *path,
+				    GdkEventButton *event, 
+				    const display_data_t *display_data,
+				    int type)
+{
+	static time_t last_time = 0;
+	time_t now = time(NULL);
+	gboolean rc = false;
+
+	if(event->button != 1)
+		return false;
+
+	if(!(now-last_time)) {
+		/* double click */
+		rc = true;
+	} else if(event->button == 1) {
+		/* highlight the nodes from this row */
+		(display_data->set_menu)(tree_view, path, 
+					 NULL, ROW_LEFT_CLICKED);
+		if(!admin_mode)
+			rc = true;
+	}
+
+	last_time = now;
+
+	return rc;
+}
+
 extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
 			    const display_data_t *display_data)
 {
@@ -813,6 +841,10 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		   column, that happens in the first 20 so just skip
 		   that also. */
 		did_something = FALSE;
+	} else if(event->button == 1) {
+		/*  left click */
+		did_something = left_button_pressed(tree_view, path, event, 
+						    display_data, ROW_CLICKED);
 	} else if(event->button == 3) {
 		/*  right click */
 		right_button_pressed(tree_view, path, event, 
@@ -1425,7 +1457,7 @@ extern void sview_widget_modify_bg(GtkWidget *widget, GtkStateType state,
 		rc_style->color_flags[state] |= GTK_RC_BG;
 		gtk_widget_reset_rc_styles (widget);
 	} else 
-		gtk_widget_modify_bg(widget, GTK_STATE_NORMAL, &color);
+		gtk_widget_modify_bg(widget, state, &color);
 
 /* 	END_TIMER; */
 /* 	g_print("got %s\n", TIME_STR); */
