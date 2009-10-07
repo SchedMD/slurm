@@ -316,14 +316,14 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
 	key_pair->name = xstrdup("DefMemPerCPU");
-	if (slurm_ctl_conf_ptr->def_mem_per_task & MEM_PER_CPU) {
+	if (slurm_ctl_conf_ptr->def_mem_per_cpu & MEM_PER_CPU) {
 		snprintf(tmp_str, sizeof(tmp_str), "%u", 
-			 slurm_ctl_conf_ptr->def_mem_per_task & 
+			 slurm_ctl_conf_ptr->def_mem_per_cpu & 
 			 (~MEM_PER_CPU));
 		key_pair->value = xstrdup(tmp_str);
-	} else if (slurm_ctl_conf_ptr->def_mem_per_task) {
+	} else if (slurm_ctl_conf_ptr->def_mem_per_cpu) {
 		snprintf(tmp_str, sizeof(tmp_str), "%u", 
-			 slurm_ctl_conf_ptr->def_mem_per_task);
+			 slurm_ctl_conf_ptr->def_mem_per_cpu);
 		key_pair->value = xstrdup(tmp_str);
 	} else {
 		key_pair->value = xstrdup("UNLIMITED");
@@ -513,14 +513,14 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);
 	key_pair->name = xstrdup("MaxMemPerCPU");
-	if (slurm_ctl_conf_ptr->max_mem_per_task & MEM_PER_CPU) {
+	if (slurm_ctl_conf_ptr->max_mem_per_cpu & MEM_PER_CPU) {
 		snprintf(tmp_str, sizeof(tmp_str), "%u", 
-			 slurm_ctl_conf_ptr->max_mem_per_task & (~MEM_PER_CPU));
+			 slurm_ctl_conf_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
 		key_pair->value = xstrdup(tmp_str);
 
-	} else if (slurm_ctl_conf_ptr->max_mem_per_task) {
+	} else if (slurm_ctl_conf_ptr->max_mem_per_cpu) {
 		snprintf(tmp_str, sizeof(tmp_str), "%u", 
-			 slurm_ctl_conf_ptr->max_mem_per_task);
+			 slurm_ctl_conf_ptr->max_mem_per_cpu);
 		key_pair->value = xstrdup(tmp_str);
 	} else {
 		key_pair->value = xstrdup("UNLIMITED");

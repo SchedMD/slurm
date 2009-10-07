@@ -123,20 +123,20 @@ uint16_t slurm_get_complete_wait(void);
  */
 uint32_t slurm_get_debug_flags(void);
 
-/* slurm_get_def_mem_per_task
- * RET DefMemPerTask value from slurm.conf
+/* slurm_get_def_mem_per_cpu
+ * RET DefMemPerCPU/Node value from slurm.conf
  */
-uint32_t slurm_get_def_mem_per_task(void);
+uint32_t slurm_get_def_mem_per_cpu(void);
 
 /* slurm_get_kill_on_bad_exit
  * RET KillOnBadExit value from slurm.conf
  */
 uint16_t slurm_get_kill_on_bad_exit(void);
 
-/* slurm_get_max_mem_per_task
- * RET MaxMemPerTask value from slurm.conf
+/* slurm_get_max_mem_per_cpu
+ * RET MaxMemPerCPU/Node value from slurm.conf
  */
-uint32_t slurm_get_max_mem_per_task(void);
+uint32_t slurm_get_max_mem_per_cpu(void);
 
 /* slurm_get_epilog_msg_time
  * RET EpilogMsgTime value from slurm.conf

@@ -238,8 +238,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->network, step_spec->exclusive);
 	debug3("   checkpoint-dir=%s checkpoint_int=%u",
 	       step_spec->ckpt_dir, step_spec->ckpt_interval);
-	debug3("   mem_per_task=%u resv_port_cnt=%u immediate=%u no_kill=%u",
-	       step_spec->mem_per_task, step_spec->resv_port_cnt,
+	debug3("   mem_per_cpu=%u resv_port_cnt=%u immediate=%u no_kill=%u",
+	       step_spec->mem_per_cpu, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
 	debug3("   overcommit=%d time_limit=%u",
 	       step_spec->overcommit, step_spec->time_limit);
@@ -447,7 +447,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	struct node_record *node_ptr;
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
-	int error_code, nodes_picked_cnt=0, cpus_picked_cnt = 0, i;
+	int error_code, nodes_picked_cnt=0, cpus_picked_cnt = 0, i, task_cnt;
 	ListIterator step_iterator;
 	struct step_record *step_p;
 	select_job_res_t *select_ptr = job_ptr->select_job;
@@ -467,12 +467,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		fatal("bit_copy malloc failure");
 	bit_and (nodes_avail, up_node_bitmap);
 
-	if (step_spec->mem_per_task &&
+	if (step_spec->mem_per_cpu &&
 	    ((select_ptr->memory_allocated == NULL) ||
 	     (select_ptr->memory_used == NULL))) {
 		error("_pick_step_nodes: lack memory allocation details "
 		      "to enforce memory limits for job %u", job_ptr->job_id);
-		step_spec->mem_per_task = 0;
+		step_spec->mem_per_cpu = 0;
 	}
 
 	if (job_ptr->next_step_id == 0) {
@@ -560,16 +560,21 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				avail_tasks = step_spec->num_tasks;
 				total_tasks = step_spec->num_tasks;
 			}
-			if (step_spec->mem_per_task) {
+			if (step_spec->mem_per_cpu) {
 				avail_mem = select_ptr->
 					    memory_allocated[node_inx] -
 					    select_ptr->memory_used[node_inx];
-				avail_mem /= step_spec->mem_per_task;
-				avail_tasks = MIN(avail_tasks, avail_mem);
+				task_cnt = avail_mem / step_spec->mem_per_cpu;
+				if (cpus_per_task > 0)
+					task_cnt /= cpus_per_task;
+				avail_tasks = MIN(avail_tasks, task_cnt);
+
 				total_mem = select_ptr->
 					    memory_allocated[node_inx];
-				total_mem /= step_spec->mem_per_task;
-				total_tasks = MIN(total_tasks, total_mem);
+				task_cnt = total_mem / step_spec->mem_per_cpu;
+				if (cpus_per_task > 0)
+					task_cnt /= cpus_per_task;
+				total_tasks = MIN(total_tasks, task_cnt);
 			}
 			if ((avail_tasks <= 0) ||
 			    ((selected_nodes == NULL) &&
@@ -599,11 +604,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		if (total_task_cnt >= step_spec->num_tasks)
 			*return_code = ESLURM_NODES_BUSY;
 		else
-			*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+			*return_code =ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		return NULL;
 	}
 
-	if (step_spec->mem_per_task) {
+	if (step_spec->mem_per_cpu) {
 		int node_inx = 0, usable_mem;
 		for (i=bit_ffs(select_ptr->node_bitmap); i<node_record_count; 
 		     i++) {
@@ -611,8 +616,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				continue;
 			usable_mem = select_ptr->memory_allocated[node_inx] -
 				     select_ptr->memory_used[node_inx];
-			usable_mem /= step_spec->mem_per_task;
-			if (usable_mem <= 0) {
+			task_cnt = usable_mem / step_spec->mem_per_cpu;
+			if (cpus_per_task > 0)
+				task_cnt /= cpus_per_task;
+			if (task_cnt <= 0) {
 				if (step_spec->node_count == INFINITE) {
 					FREE_NULL_BITMAP(nodes_avail);
 					*return_code = 
@@ -983,12 +990,12 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	}
 #endif
 
-	if (step_ptr->mem_per_task &&
+	if (step_ptr->mem_per_cpu &&
 	    ((select_ptr->memory_allocated == NULL) ||
 	     (select_ptr->memory_used == NULL))) {
 		error("step_alloc_lps: lack memory allocation details "
 		      "to enforce memory limits for job %u", job_ptr->job_id);
-		step_ptr->mem_per_task = 0;
+		step_ptr->mem_per_cpu = 0;
 	}
 
 	for (i_node = i_first; i_node <= i_last; i_node++) {
@@ -1005,10 +1012,9 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
 		select_ptr->cpus_used[job_node_inx] += cpus_alloc; 
-		if (step_ptr->mem_per_task) {
+		if (step_ptr->mem_per_cpu) {
 			select_ptr->memory_used[job_node_inx] += 
-				(step_ptr->mem_per_task *
-				 step_ptr->step_layout->tasks[step_node_inx]);
+				(step_ptr->mem_per_cpu * cpus_alloc);
 		}
 		if (pick_step_cores) {
 			_pick_step_cores(step_ptr, select_ptr, 
@@ -1089,12 +1095,12 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	if (i_first == -1)	/* empty bitmap */
 		return;
 
-	if (step_ptr->mem_per_task &&
+	if (step_ptr->mem_per_cpu &&
 	    ((select_ptr->memory_allocated == NULL) ||
 	     (select_ptr->memory_used == NULL))) {
 		error("_step_dealloc_lps: lack memory allocation details "
 		      "to enforce memory limits for job %u", job_ptr->job_id);
-		step_ptr->mem_per_task = 0;
+		step_ptr->mem_per_cpu = 0;
 	}
 
 	for (i_node = i_first; i_node <= i_last; i_node++) {
@@ -1115,10 +1121,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 				job_ptr->job_id, step_ptr->step_id);
 			select_ptr->cpus_used[job_node_inx] = 0;
 		}
-		if (step_ptr->mem_per_task) {
-			uint32_t mem_use = step_ptr->mem_per_task *
-					   step_ptr->step_layout->
-					   tasks[step_node_inx];
+		if (step_ptr->mem_per_cpu) {
+			uint32_t mem_use = step_ptr->mem_per_cpu * cpus_alloc;
 			if (select_ptr->memory_used[job_node_inx] >= mem_use) {
 				select_ptr->memory_used[job_node_inx] -= 
 						mem_use;
@@ -1302,8 +1306,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	/* set the step_record values */
 
 	/* Here is where the node list is set for the step */
-	if(step_specs->node_list &&
-	   (step_specs->task_dist == SLURM_DIST_ARBITRARY)) {
+	if (step_specs->node_list &&
+	    (step_specs->task_dist == SLURM_DIST_ARBITRARY)) {
 		step_node_list = xstrdup(step_specs->node_list);
 		xfree(step_specs->node_list);
 		step_specs->node_list = bitmap2node_name(nodeset);
@@ -1333,7 +1337,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
 	step_ptr->cpus_per_task = cpus_per_task;
-	step_ptr->mem_per_task = step_specs->mem_per_task;
+	step_ptr->mem_per_cpu = step_specs->mem_per_cpu;
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;
 	step_ptr->ckpt_time = now;
 	step_ptr->cpu_count = orig_cpu_count;
@@ -1455,12 +1459,12 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
 
-	if (step_ptr->mem_per_task &&
+	if (step_ptr->mem_per_cpu &&
 	    ((select_ptr->memory_allocated == NULL) ||
 	     (select_ptr->memory_used == NULL))) {
 		error("step_layout_create: lack memory allocation details "
 		      "to enforce memory limits for job %u", job_ptr->job_id);
-		step_ptr->mem_per_task = 0;
+		step_ptr->mem_per_cpu = 0;
 	}
 
 	/* build the cpus-per-node arrays for the subset of nodes
@@ -1480,12 +1484,10 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					      select_ptr->cpus_used[pos];
 			} else
 				usable_cpus = select_ptr->cpus[pos];
-			if (step_ptr->mem_per_task) {
-				usable_mem = select_ptr->memory_allocated[pos] -
+			if (step_ptr->mem_per_cpu) {
+				usable_mem = select_ptr->memory_allocated[pos]-
 					     select_ptr->memory_used[pos];
-				usable_mem /= step_ptr->mem_per_task;
-				if (cpus_per_task > 0)
-					usable_mem *= cpus_per_task;
+				usable_mem /= step_ptr->mem_per_cpu;
 				usable_cpus = MIN(usable_cpus, usable_mem);
 			}
 			if (usable_cpus <= 0) {
@@ -1512,6 +1514,13 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			if (set_nodes == node_count)
 				break;
 		}
+	}
+
+	if (set_tasks < num_tasks) {
+		info("Resources only available for %u of %u tasks",
+		     set_tasks, num_tasks);
+//NEED TO GET ERROR CODE BACK
+		return NULL;
 	}
 
 	/* layout the tasks on the nodes */
@@ -2165,7 +2174,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack8(step_ptr->no_kill, buffer);
 
 	pack32(step_ptr->cpu_count, buffer);
-	pack32(step_ptr->mem_per_task, buffer);
+	pack32(step_ptr->mem_per_cpu, buffer);
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
 		pack_bit_fmt(step_ptr->exit_node_bitmap, buffer);
@@ -2210,7 +2219,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	uint8_t no_kill;
 	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt;
-	uint32_t core_size, cpu_count, exit_code, mem_per_task, name_len;
+	uint32_t core_size, cpu_count, exit_code, mem_per_cpu, name_len;
 	uint32_t step_id, time_limit;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
@@ -2229,7 +2238,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack8(&no_kill, buffer);
 
 	safe_unpack32(&cpu_count, buffer);
-	safe_unpack32(&mem_per_task, buffer);
+	safe_unpack32(&mem_per_cpu, buffer);
 	safe_unpack32(&exit_code, buffer);
 	if (exit_code != NO_VAL) {
 		safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
@@ -2293,7 +2302,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->ckpt_dir     = ckpt_dir;
 	step_ptr->port         = port;
 	step_ptr->ckpt_interval= ckpt_interval;
-	step_ptr->mem_per_task = mem_per_task;
+	step_ptr->mem_per_cpu  = mem_per_cpu;
 	step_ptr->host         = host;
 	host                   = NULL;  /* re-used, nothing left to free */
 	step_ptr->batch_step   = batch_step;

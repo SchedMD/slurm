@@ -3572,7 +3572,7 @@ static char *_copy_nodelist_no_dup(char *node_list)
 static bool _valid_job_min_mem(job_desc_msg_t * job_desc_msg)
 {
 	uint32_t base_size = job_desc_msg->job_min_memory;
-	uint32_t size_limit = slurmctld_conf.max_mem_per_task;
+	uint32_t size_limit = slurmctld_conf.max_mem_per_cpu;
 	uint16_t cpus_per_node;
 
 	if (size_limit == 0)
@@ -3959,7 +3959,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 
 	if (job_desc_msg->job_min_memory == NO_VAL) {
 		/* Default memory limit is DefMemPerCPU (if set) or no limit */
-		job_desc_msg->job_min_memory = slurmctld_conf.def_mem_per_task;
+		job_desc_msg->job_min_memory = slurmctld_conf.def_mem_per_cpu;
 	} else if (!_valid_job_min_mem(job_desc_msg))
 		return ESLURM_INVALID_TASK_MEMORY;
 

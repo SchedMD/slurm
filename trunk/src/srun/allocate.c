@@ -726,6 +726,9 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		job->ntasks = opt.nprocs = job->nhosts * opt.ntasks_per_node;
 	job->ctx_params.task_count = opt.nprocs;
 
+	if (opt.mem_per_cpu != NO_VAL)
+		job->ctx_params.mem_per_cpu = opt.mem_per_cpu;
+
 	if (use_all_cpus)
 		job->ctx_params.cpu_count = job->cpu_count;
 	else if (opt.overcommit)
