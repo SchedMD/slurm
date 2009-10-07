@@ -1233,6 +1233,10 @@ extern void set_menus_node(void *arg, GtkTreePath *path,
 	case TAB_CLICKED:
 		make_fields_menu(NULL, menu, display_data_node, SORTID_CNT);
 		break;
+	case ROW_LEFT_CLICKED:
+		/* highlight_grid(tree_view, path,  */
+/* 			       SORTID_NODE_INX, grid_button_list); */
+		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_node);
 		break;

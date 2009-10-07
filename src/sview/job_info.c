@@ -322,8 +322,8 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_WORKDIR, "Work Dir",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE, 
-	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_POINTER, SORTID_NODE_INX, "NodeInx", FALSE, EDIT_NONE, 
+	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -3053,6 +3053,10 @@ extern void set_menus_job(void *arg, GtkTreePath *path,
 	switch(type) {
 	case TAB_CLICKED:
 		make_fields_menu(NULL, menu, display_data_job, SORTID_CNT);
+		break;
+	case ROW_LEFT_CLICKED:
+		highlight_grid(tree_view, path, 
+			       SORTID_NODE_INX, grid_button_list);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_job);
