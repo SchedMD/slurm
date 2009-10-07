@@ -2250,7 +2250,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	pack32(msg->node_count, buffer);
 	pack32(msg->cpu_count, buffer);
 	pack32(msg->num_tasks, buffer);
-	pack32(msg->mem_per_task, buffer);
+	pack32(msg->mem_per_cpu, buffer);
 	pack32(msg->time_limit, buffer);
 
 	pack16(msg->relative, buffer);
@@ -2289,7 +2289,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack32(&(tmp_ptr->node_count), buffer);
 	safe_unpack32(&(tmp_ptr->cpu_count), buffer);
 	safe_unpack32(&(tmp_ptr->num_tasks), buffer);
-	safe_unpack32(&(tmp_ptr->mem_per_task), buffer);
+	safe_unpack32(&(tmp_ptr->mem_per_cpu), buffer);
 	safe_unpack32(&(tmp_ptr->time_limit), buffer);
 
 	safe_unpack16(&(tmp_ptr->relative), buffer);
@@ -2923,7 +2923,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->control_machine, buffer);
 	packstr(build_ptr->crypto_type, buffer);
 
-	pack32(build_ptr->def_mem_per_task, buffer);
+	pack32(build_ptr->def_mem_per_cpu, buffer);
 	pack32(build_ptr->debug_flags, buffer);
 	pack16(build_ptr->disable_root_jobs, buffer);
 
@@ -2965,7 +2965,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	packstr(build_ptr->mail_prog, buffer);
 	pack16(build_ptr->max_job_cnt, buffer);
-	pack32(build_ptr->max_mem_per_task, buffer);
+	pack32(build_ptr->max_mem_per_cpu, buffer);
 	pack16(build_ptr->max_tasks_per_node, buffer);
 	pack16(build_ptr->min_job_age, buffer);
 	packstr(build_ptr->mpi_default, buffer);
@@ -3134,7 +3134,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint32_tmp,
 			       buffer);
 
-	safe_unpack32(&build_ptr->def_mem_per_task, buffer);
+	safe_unpack32(&build_ptr->def_mem_per_cpu, buffer);
 	safe_unpack32(&build_ptr->debug_flags, buffer);
 	safe_unpack16(&build_ptr->disable_root_jobs, buffer);
 
@@ -3182,7 +3182,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpackstr_xmalloc(&build_ptr->mail_prog, &uint32_tmp, buffer);
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
-	safe_unpack32(&build_ptr->max_mem_per_task, buffer);
+	safe_unpack32(&build_ptr->max_mem_per_cpu, buffer);
 	safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->mpi_default, &uint32_tmp, buffer);

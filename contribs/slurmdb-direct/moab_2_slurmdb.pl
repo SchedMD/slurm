@@ -121,7 +121,7 @@ foreach my $line (<STDIN>) {
 	    $cpu_secs,
 	    $cluster,
 	    $procs_per_task,
-	    $mem_per_task,
+	    $mem_per_cpu,
 	    $disk_per_task,
 	    $swap_per_task,
 	    $other_time,

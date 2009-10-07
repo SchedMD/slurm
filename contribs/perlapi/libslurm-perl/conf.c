@@ -50,7 +50,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	if(conf->crypto_type)
 		STORE_FIELD(hv, conf, crypto_type, charp);
 	STORE_FIELD(hv, conf, debug_flags, uint32_t);
-	STORE_FIELD(hv, conf, def_mem_per_task, uint32_t);
+	STORE_FIELD(hv, conf, def_mem_per_cpu, uint32_t);
 	STORE_FIELD(hv, conf, disable_root_jobs, uint16_t);
 	STORE_FIELD(hv, conf, enforce_part_limits, uint16_t);
 	if(conf->epilog)
@@ -93,7 +93,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	if(conf->mail_prog)
 		STORE_FIELD(hv, conf, mail_prog, charp);
 	STORE_FIELD(hv, conf, max_job_cnt, uint16_t);
-	STORE_FIELD(hv, conf, max_mem_per_task, uint32_t);
+	STORE_FIELD(hv, conf, max_mem_per_cpu, uint32_t);
 	STORE_FIELD(hv, conf, min_job_age, uint16_t);
 	if(conf->mpi_default)
 		STORE_FIELD(hv, conf, mpi_default, charp);

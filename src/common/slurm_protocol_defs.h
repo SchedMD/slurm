@@ -551,7 +551,7 @@ typedef struct job_step_specs {
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
 	uint32_t job_id;	/* job ID */
-	uint32_t mem_per_task;	/* MB memory required per task, 0=no limit */
+	uint32_t mem_per_cpu;	/* MB memory required per CPU, 0=no limit */
 	char *name;		/* name of the job step, default "" */
 	char *network;		/* network use spec */
 	uint32_t node_count;	/* count of required nodes */

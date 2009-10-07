@@ -830,7 +830,7 @@ typedef struct {
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately, 
 				 * 0 if to be queued awaiting resources */
 	uint32_t job_id;	/* job ID */
-	uint32_t mem_per_task;	/* memory required per task (MB), 
+	uint32_t mem_per_cpu;	/* memory required per CPU (MB), 
 				 * use job limit if 0 */
 	char *ckpt_dir;		/* directory to store checkpoint image files */
 	char *name;		/* name of the job step */
@@ -1250,7 +1250,7 @@ typedef struct slurm_ctl_conf {
 	char *control_machine;	/* name of slurmctld primary server */
 	char *crypto_type;	/* cryptographic signature plugin */
 	uint32_t debug_flags;	/* see DEBUG_FLAG_* above for values */
-	uint32_t def_mem_per_task; /* default MB memory per spawned task */
+	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding 
 					 * partition size and/or time limits */
@@ -1288,7 +1288,7 @@ typedef struct slurm_ctl_conf {
 	char *licenses;		/* licenses available on this cluster */
 	char *mail_prog;	/* pathname of mail program */
 	uint16_t max_job_cnt;	/* maximum number of active jobs */
-	uint32_t max_mem_per_task; /* maximum MB memory per spawned task */
+	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint16_t max_tasks_per_node; /* maximum tasks per node */
 	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs) 
 	                         * purged from in memory records */

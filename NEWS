@@ -41,6 +41,8 @@ documents those changes that are of interest to users and admins.
     the select plugin. Make output of srun --test-only option include a list
     of preempted job IDs. 
  -- Better record keeping for front end systems when registering.
+ -- Enable memory allocation logic for jobs step (i.e. allocate resources
+    within the job's memory allocation and enforce limits).
 
 * Changes in SLURM 2.1.0-pre4
 =============================

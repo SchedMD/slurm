@@ -1425,7 +1425,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
-	ctl_conf_ptr->def_mem_per_task          = 0;
+	ctl_conf_ptr->def_mem_per_cpu           = 0;
 	ctl_conf_ptr->debug_flags		= 0;
 	ctl_conf_ptr->disable_root_jobs         = 0;
 	ctl_conf_ptr->enforce_part_limits       = 0;
@@ -1453,7 +1453,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
-	ctl_conf_ptr->max_mem_per_task          = 0;
+	ctl_conf_ptr->max_mem_per_cpu           = 0;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
@@ -1811,11 +1811,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		      "JobCredentialPublicCertificate be set");
 	}
 
-	if (s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerCPU", hashtbl))
-		conf->def_mem_per_task |= MEM_PER_CPU;
-	else if (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerNode", 
+	if (s_p_get_uint32(&conf->def_mem_per_cpu, "DefMemPerCPU", hashtbl))
+		conf->def_mem_per_cpu |= MEM_PER_CPU;
+	else if (!s_p_get_uint32(&conf->def_mem_per_cpu, "DefMemPerNode", 
 				 hashtbl))
-		conf->def_mem_per_task = DEFAULT_MEM_PER_CPU;
+		conf->def_mem_per_cpu = DEFAULT_MEM_PER_CPU;
 
 	if (s_p_get_string(&temp_str, "DebugFlags", hashtbl)) {
 		conf->debug_flags = debug_str2flags(temp_str);
@@ -1978,14 +1978,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
 
-	if ((s_p_get_uint32(&conf->max_mem_per_task, 
-			    "MaxMemPerCPU", hashtbl)) ||
-	    (s_p_get_uint32(&conf->max_mem_per_task, 
-			    "MaxMemPerTask", hashtbl))) {
-		conf->max_mem_per_task |= MEM_PER_CPU;
-	} else if (!s_p_get_uint32(&conf->max_mem_per_task, 
+	if (s_p_get_uint32(&conf->max_mem_per_cpu, 
+			   "MaxMemPerCPU", hashtbl)) {
+		conf->max_mem_per_cpu |= MEM_PER_CPU;
+	} else if (!s_p_get_uint32(&conf->max_mem_per_cpu, 
 				 "MaxMemPerNode", hashtbl)) {
-		conf->max_mem_per_task = DEFAULT_MAX_MEM_PER_CPU;
+		conf->max_mem_per_cpu = DEFAULT_MAX_MEM_PER_CPU;
 	}
 
 	if (!s_p_get_uint16(&conf->max_tasks_per_node, "MaxTasksPerNode", 

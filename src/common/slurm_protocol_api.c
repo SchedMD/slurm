@@ -262,21 +262,21 @@ uint16_t slurm_get_suspend_time(void)
 	return suspend_time;
 }
 
-/* slurm_get_def_mem_per_task
- * RET DefMemPerTask value from slurm.conf
+/* slurm_get_def_mem_per_cpu
+ * RET DefMemPerCPU/Node value from slurm.conf
  */
-uint32_t slurm_get_def_mem_per_task(void)
+uint32_t slurm_get_def_mem_per_cpu(void)
 {
-	uint32_t mem_per_task = 0;
+	uint32_t mem_per_cpu = 0;
 	slurm_ctl_conf_t *conf;
 
 	if(slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		mem_per_task = conf->def_mem_per_task;
+		mem_per_cpu = conf->def_mem_per_cpu;
 		slurm_conf_unlock();
 	}
-	return mem_per_task;
+	return mem_per_cpu;
 }
 
 /* slurm_get_kill_on_bad_exit
@@ -313,21 +313,21 @@ uint32_t slurm_get_debug_flags(void)
 	return debug_flags;
 }
 
-/* slurm_get_max_mem_per_task
- * RET MaxMemPerTask value from slurm.conf
+/* slurm_get_max_mem_per_cpu
+ * RET MaxMemPerCPU/Node value from slurm.conf
  */
-uint32_t slurm_get_max_mem_per_task(void)
+uint32_t slurm_get_max_mem_per_cpu(void)
 {
-	uint32_t mem_per_task = 0;
+	uint32_t mem_per_cpu = 0;
 	slurm_ctl_conf_t *conf;
 
 	if(slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		mem_per_task = conf->max_mem_per_task;
+		mem_per_cpu = conf->max_mem_per_cpu;
 		slurm_conf_unlock();
 	}
-	return mem_per_task;
+	return mem_per_cpu;
 }
 
 /* slurm_get_epilog_msg_time

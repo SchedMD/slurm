@@ -29,7 +29,7 @@ hv_to_slurm_step_ctx_params(HV* hv, slurm_step_ctx_params_t* params)
 	FETCH_FIELD(hv, params, node_list, charp, FALSE);
 	FETCH_FIELD(hv, params, network, charp, FALSE);
 	FETCH_FIELD(hv, params, overcommit, bool, FALSE);
-	FETCH_FIELD(hv, params, mem_per_task, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, mem_per_cpu, uint16_t, FALSE);
 	return 0;
 }
 

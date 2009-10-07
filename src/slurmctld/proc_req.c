@@ -427,7 +427,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->control_machine     = xstrdup(conf->control_machine);
 	conf_ptr->crypto_type         = xstrdup(conf->crypto_type);
 
-	conf_ptr->def_mem_per_task    = conf->def_mem_per_task;
+	conf_ptr->def_mem_per_cpu     = conf->def_mem_per_cpu;
 	conf_ptr->debug_flags         = conf->debug_flags;
 	conf_ptr->disable_root_jobs   = conf->disable_root_jobs;
 
@@ -471,7 +471,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->mail_prog           = xstrdup(conf->mail_prog);
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;
-	conf_ptr->max_mem_per_task    = conf->max_mem_per_task;
+	conf_ptr->max_mem_per_cpu     = conf->max_mem_per_cpu;
 	conf_ptr->max_tasks_per_node  = conf->max_tasks_per_node;
 	conf_ptr->min_job_age         = conf->min_job_age;
 	conf_ptr->mpi_default         = xstrdup(conf->mpi_default);
@@ -618,7 +618,12 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.jobid    = job_ptr->job_id;
 	cred_arg.stepid   = step_ptr->step_id;
 	cred_arg.uid      = job_ptr->user_id;
-	cred_arg.job_mem  = job_ptr->details->job_min_memory;
+	if (step_ptr->mem_per_cpu) {
+		cred_arg.job_mem = step_ptr->mem_per_cpu |
+				   MEM_PER_CPU;
+	} else {
+		cred_arg.job_mem = job_ptr->details->job_min_memory;
+	}
 #ifdef HAVE_FRONT_END
 	cred_arg.hostlist = node_record_table_ptr[0].name;
 #else
