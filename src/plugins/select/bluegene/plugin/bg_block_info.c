@@ -393,7 +393,7 @@ extern int update_block_list()
 				   weren't really suppose to notice
 				   that. So we will just skip this
 				   state and act like this didn't happen. */
-				goto funky_state;
+				goto nochange_state;
 			
 			bg_record->state = state;
 
@@ -436,8 +436,8 @@ extern int update_block_list()
 				trigger_block_error();
 			}
 			updated = 1;
-		funky_state:
 		}
+	nochange_state:
 
 		/* check the boot state */
 		debug3("boot state for block %s is %d",
