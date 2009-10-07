@@ -301,7 +301,8 @@ extern char *change_grid_color(List button_list, int start, int end,
 			       enum node_states state_override);
 extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 			   int node_inx_id, List button_list);
-extern void set_grid_used(List button_list, int start, int end, bool used);
+extern void set_grid_used(List button_list, int start, int end,
+			  bool used, bool reset_highlight);
 extern void get_button_list_from_main(List *button_list, int start, int end,
 				      int color_inx);
 extern List copy_main_button_list(int initial_color);
@@ -313,8 +314,7 @@ extern void add_extra_cr_buttons(List *button_list, node_info_t *node_ptr);
 extern void put_buttons_in_table(GtkTable *table, List button_list);
 extern int get_system_stats(GtkTable *table);
 extern int setup_grid_table(GtkTable *table, List button_list, List node_list);
-extern void sview_init_grid();
-extern void sview_reset_grid();
+extern void sview_init_grid(bool reset_highlight);
 extern void sview_clear_unused_grid(List button_list, int color_inx);
 extern void setup_popup_grid_list(popup_info_t *popup_win);
 extern void post_setup_popup_grid_list(popup_info_t *popup_win);

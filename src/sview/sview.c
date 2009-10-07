@@ -120,7 +120,8 @@ void *_page_thr(void *arg)
 	GtkTable *table = page->table;
 	display_data_t *display_data = &main_display_data[num];
 	static int thread_count = 0;
-/* 	DEF_TIMERS; */
+	bool reset_highlight = true;
+	/* 	DEF_TIMERS; */
 	xfree(page);
 	
 	if(!grid_init) {
@@ -139,7 +140,6 @@ void *_page_thr(void *arg)
 			return NULL;
 	}
 	gdk_threads_enter();
-	//sview_reset_grid();
 	thread_count++;
 	gdk_flush();
 	gdk_threads_leave();
@@ -147,7 +147,8 @@ void *_page_thr(void *arg)
 /* 		START_TIMER; */
 		g_static_mutex_lock(&sview_mutex);
 		gdk_threads_enter();
-		sview_init_grid();
+		sview_init_grid(reset_highlight);
+		reset_highlight=false;
 		(display_data->get_info)(table, display_data);
 		gdk_flush();
 		gdk_threads_leave();
