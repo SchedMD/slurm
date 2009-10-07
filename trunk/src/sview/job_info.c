@@ -116,6 +116,7 @@ enum {
 	SORTID_NODELIST_EXC,
 	SORTID_NODELIST_REQ,
 #endif
+	SORTID_NODE_INX, 
 	SORTID_NODES,
 	SORTID_NODES_MAX,
 	SORTID_NODES_MIN,
@@ -150,7 +151,6 @@ enum {
 	SORTID_UPDATED,
 	SORTID_WCKEY,
 	SORTID_WORKDIR,
-	SORTID_NODE_INX, 
 	SORTID_CNT
 };
 
@@ -322,7 +322,7 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_WORKDIR, "Work Dir",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_POINTER, SORTID_NODE_INX, "NodeInx", FALSE, EDIT_NONE, 
+	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, FALSE, EDIT_NONE, 
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
