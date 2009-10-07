@@ -18,39 +18,7 @@ this plug-in is described below.
 <h2>Using the Consumable Resource Node Allocation Plugin: <b>select/cons_res</b></h2>
 
 <ol start=1 type=1>
- <li><b>SLURM v0.5 and up to SLURM v1.1: <u>ONLY</u> CPUs as a consumable resource</b></li>
- <ul>
-  <li>Managing <b>CPUs</b> as a consumable resource means that SLURM will 
-    not overallocate CPUs. In this implementation it is possible to oversubscribe 
-    memory if co-located jobs are using more memory than is available on the node. 
-    See features for SLURM 1.2 (below) for memory as a consumable resource.</li>
-  <li>The consumable resource plugin is enabled via SelectType in the 
-    slurm.conf (e.g. <i>SelectType=select/cons_res</i>).</li>
-<pre>
-#
-# "SelectType"         : node selection logic for scheduling.
-#    "select/bluegene" : the default on BlueGene systems, aware of
-#                        system topology, manages bglblocks, etc.
-#    "select/cons_res" : allocate individual consumable resources
-#                        (i.e. processors, memory, etc.)
-#    "select/linear"   : the default on non-BlueGene systems,
-#                        no topology awareness, oriented toward
-#                        allocating nodes to jobs rather than
-#                        resources within a node (e.g. CPUs)
-#
-# SelectType=select/linear
-SelectType=select/cons_res
-</pre>
-  <li>The <b>select/cons_res</b> plug-in requires SHARED=No at the 
-    partition level.</li>
-  <li>Using the <i>--overcommit</i> or <i>-O</i> switch in the
-    <b>select/cons_res</b> environment is only possible when users
-    request dedicated nodes using <i>--exclusive</i>.</li> 
-    Overcommiting CPUs in a non-dedicated environment would impact 
-    jobs that are co-located on the nodes which is not a desirable 
-    feature. This feature is available in SLURM 1.2 (see below).</li>
- </ul>
- <li><b>SLURM 1.2 and newer versions of SLURM</b></li>
+ <li><b>SLURM version 1.2 and newer</b></li>
   <ul>
    <li>Consumable resources has been enhanced with several new resources 
     --namely CPU (same as in previous version), Socket, Core, Memory 
