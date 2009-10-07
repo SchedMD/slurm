@@ -154,7 +154,7 @@ static display_data_t display_data_part[] = {
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_POINTER, SORTID_NODE_INX, "NodeInx", FALSE, EDIT_NONE, 
+	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, FALSE, EDIT_NONE, 
 	 refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
