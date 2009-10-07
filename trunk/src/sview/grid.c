@@ -218,7 +218,7 @@ static int _sort_button_inx(grid_button_t *button_a, grid_button_t *button_b)
 void _put_button_as_down(grid_button_t *grid_button, int state)
 {
 	GtkWidget *image = NULL;
-	GdkColor color;
+/* 	GdkColor color; */
 
 	if(GTK_IS_EVENT_BOX(grid_button->button)) {
 		//gtk_widget_set_sensitive (grid_button->button, TRUE);
@@ -246,10 +246,10 @@ void _put_button_as_down(grid_button_t *grid_button, int state)
 				 GTK_SHRINK, GTK_SHRINK,
 				 1, 1);
 	
-	gdk_color_parse("black", &color);
-	sview_widget_modify_bg(grid_button->button, GTK_STATE_NORMAL, color);
+	//gdk_color_parse("black", &color);
+	//sview_widget_modify_bg(grid_button->button, GTK_STATE_NORMAL, color);
 	//gdk_color_parse(white_color, &color);
-	sview_widget_modify_bg(grid_button->button, GTK_STATE_PRELIGHT, color);
+	//sview_widget_modify_bg(grid_button->button, GTK_STATE_PRELIGHT, color);
 	if(state == NODE_STATE_DRAIN)
 		image = gtk_image_new_from_stock(GTK_STOCK_DIALOG_ERROR,
 						 GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -381,8 +381,8 @@ extern grid_button_t *create_grid_button_from_another(
 		send_grid_button->color = new_col;
 		sview_widget_modify_bg(send_grid_button->button, 
 				       GTK_STATE_NORMAL, color);
-		sview_widget_modify_bg(send_grid_button->button, 
-				       GTK_STATE_PRELIGHT, color);
+/* 		sview_widget_modify_bg(send_grid_button->button,  */
+/* 				       GTK_STATE_PRELIGHT, color); */
 	} else if((color_inx >= 0) && node_base_state == NODE_STATE_DOWN) {
 		GtkWidget *image = gtk_image_new_from_stock(
 			GTK_STOCK_CANCEL,
@@ -395,8 +395,8 @@ extern grid_button_t *create_grid_button_from_another(
 		sview_widget_modify_bg(send_grid_button->button, 
 				       GTK_STATE_NORMAL, color);
 		//gdk_color_parse("white", &color);
-		sview_widget_modify_bg(send_grid_button->button, 
-				     GTK_STATE_PRELIGHT, color);
+/* 		sview_widget_modify_bg(send_grid_button->button,  */
+/* 				     GTK_STATE_PRELIGHT, color); */
 		gtk_container_add(
 			GTK_CONTAINER(send_grid_button->button),
 			image);
@@ -412,11 +412,11 @@ extern grid_button_t *create_grid_button_from_another(
 			GTK_EVENT_BOX(send_grid_button->button),
 			FALSE);
 		gdk_color_parse("black", &color);
-		sview_widget_modify_bg(send_grid_button->button, 
-				       GTK_STATE_NORMAL, color);
+/* 		sview_widget_modify_bg(send_grid_button->button,  */
+/* 				       GTK_STATE_NORMAL, color); */
 		//gdk_color_parse("white", &color);
-		sview_widget_modify_bg(send_grid_button->button, 
-				       GTK_STATE_PRELIGHT, color);
+/* 		sview_widget_modify_bg(send_grid_button->button,  */
+/* 				       GTK_STATE_PRELIGHT, color); */
 		gtk_container_add(
 			GTK_CONTAINER(send_grid_button->button),
 			image);		
@@ -426,8 +426,8 @@ extern grid_button_t *create_grid_button_from_another(
 		gdk_color_parse(new_col, &color);
 		sview_widget_modify_bg(send_grid_button->button, 
 				       GTK_STATE_NORMAL, color);
-		sview_widget_modify_bg(send_grid_button->button, 
-				       GTK_STATE_PRELIGHT, color);
+/* 		sview_widget_modify_bg(send_grid_button->button,  */
+/* 				       GTK_STATE_PRELIGHT, color); */
 	}
 	gtk_widget_set_size_request(send_grid_button->button, 10, 10);
 	
@@ -479,9 +479,9 @@ extern char *change_grid_color(List button_list, int start, int end,
 				grid_button->color_inx = color_inx;
 				sview_widget_modify_bg(grid_button->button, 
 						       GTK_STATE_NORMAL, color);
-				sview_widget_modify_bg(grid_button->button, 
-						       GTK_STATE_PRELIGHT,
-						       color);
+/* 				sview_widget_modify_bg(grid_button->button,  */
+/* 						       GTK_STATE_PRELIGHT, */
+/* 						       color); */
 			}
 			
 			continue;
@@ -501,8 +501,8 @@ extern char *change_grid_color(List button_list, int start, int end,
 			grid_button->color_inx = color_inx;
 			sview_widget_modify_bg(grid_button->button, 
 					       GTK_STATE_NORMAL, color);
-			sview_widget_modify_bg(grid_button->button, 
-					       GTK_STATE_PRELIGHT, color);
+/* 			sview_widget_modify_bg(grid_button->button,  */
+/* 					       GTK_STATE_PRELIGHT, color); */
 		}
 	}
 	list_iterator_destroy(itr);
@@ -554,7 +554,7 @@ extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 }
 
 extern void set_grid_used(List button_list, int start, int end,
-			  bool used)
+			  bool used, bool reset_highlight)
 {
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
@@ -566,10 +566,13 @@ extern void set_grid_used(List button_list, int start, int end,
 	while((grid_button = list_next(itr))) {
 		if(start != -1)
 			if ((grid_button->inx < start)
-			    ||  (grid_button->inx > end)) 
+			    || (grid_button->inx > end)) 
 				continue;
 		grid_button->used = used;
-		gtk_widget_set_state(grid_button->button, GTK_STATE_NORMAL);
+		if(reset_highlight)
+			gtk_widget_set_state(grid_button->button,
+					     GTK_STATE_NORMAL);
+		
 	}
 	list_iterator_destroy(itr);
 
@@ -984,7 +987,7 @@ end_it:
 	return error_code;
 }
 
-extern void sview_init_grid()
+extern void sview_init_grid(bool reset_highlight)
 {
 	static node_info_msg_t *node_info_ptr = NULL;
 	int error_code = SLURM_SUCCESS;
@@ -996,8 +999,7 @@ extern void sview_init_grid()
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		/* need to clear out old data */
-		set_grid_used(grid_button_list, -1, -1, false);
-		//sview_reset_grid();
+		set_grid_used(grid_button_list, -1, -1, false, reset_highlight);
 		return;
 	} else if (error_code != SLURM_SUCCESS) {
 		return;
@@ -1007,7 +1009,7 @@ extern void sview_init_grid()
 		g_print("you need to run get_system_stats() first\n");
 		exit(0);
 	}
-	
+
 	itr = list_iterator_create(grid_button_list);
 	for(i=0; i<node_info_ptr->record_count; i++) {
 		int tried_again = 0;
@@ -1040,7 +1042,8 @@ extern void setup_popup_grid_list(popup_info_t *popup_win)
 	int def_color = MAKE_BLACK;
 
 	if(popup_win->grid_button_list) {
-		set_grid_used(popup_win->grid_button_list, -1, -1, false);
+		set_grid_used(popup_win->grid_button_list,
+			      -1, -1, false, false);
 	} else {
 		popup_win->grid_button_list =
 			copy_main_button_list(def_color);
