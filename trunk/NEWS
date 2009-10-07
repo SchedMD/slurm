@@ -240,6 +240,8 @@ documents those changes that are of interest to users and admins.
     file.
  -- In sched/wiki plugin (for Maui) fix possible message truncation on very 
     large cluster.
+ -- BLUEGENE - Fix for handling undocumented Deallocating to Configuring to 
+    Free block transition state.
 
 * Changes in SLURM 2.0.6
 ========================
