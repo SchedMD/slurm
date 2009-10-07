@@ -382,7 +382,17 @@ extern int update_block_list()
 				xfree(bg_record->target_name);
 				bg_record->target_name =
 					xstrdup(bg_record->user_name);
-			}
+			} else if((bg_record->state 
+				   == RM_PARTITION_DEALLOCATING)
+				  && (state == RM_PARTITION_CONFIGURING)) 
+				/* This is a funky state IBM says
+				   isn't a bug, but all their
+				   documentation says this doesn't
+				   happen, but IBM says oh yeah, you
+				   weren't really suppose to notice
+				   that. So we will just skip this
+				   state and act like this didn't happen. */
+				goto nochange_state;
 
 			bg_record->state = state;
 
@@ -425,8 +435,8 @@ extern int update_block_list()
 				trigger_block_error();
 			}
 			updated = 1;
-			
 		}
+	nochange_state:
 
 		/* check the boot state */
 		debug3("boot state for block %s is %d",
