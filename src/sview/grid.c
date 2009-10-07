@@ -523,7 +523,7 @@ extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 				
 	if(!button_list)
 		return;
-	
+
 	if (!gtk_tree_model_get_iter(model, &iter, path)) {
 		g_error("error getting iter from model\n");
 		return;
