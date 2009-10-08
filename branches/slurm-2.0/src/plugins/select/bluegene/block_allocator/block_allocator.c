@@ -1839,9 +1839,8 @@ extern int reset_all_removed_bps()
 		int y, z;
 		for (y = 0; y < DIM_SIZE[Y]; y++)
 			for (z = 0; z < DIM_SIZE[Z]; z++) 
-				if(ba_system_ptr->grid[x][y][z].used == 2) {
+				if(ba_system_ptr->grid[x][y][z].used == 2)
 					ba_system_ptr->grid[x][y][z].used = 0;
-				}
 #else
 		if(ba_system_ptr->grid[x].used == 2)
 			ba_system_ptr->grid[x].used = 0;
@@ -1851,10 +1850,11 @@ extern int reset_all_removed_bps()
 }
 
 /*
- * IN: hostlist of midplanes we do not want
+ * IN: hostlist of midplanes we want to be able to use, mark all
+ *     others as used.
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *
- * Need to call rest_all_removed_bps before starting another
+ * Need to call reset_all_removed_bps before starting another
  * allocation attempt if possible use removable_set_bps since it is
  * faster. It does basically the opposite of this function. If you
  * have to come up with this list though it is faster to use this
@@ -1894,24 +1894,13 @@ extern int set_all_bps_except(char *bps)
 		y = temp;
 		temp = start % HOSTLIST_BASE;
 		z = temp;
-		if((ba_system_ptr->grid[x][y][z].state != NODE_STATE_UNKNOWN)
-		   && (ba_system_ptr->grid[x][y][z].state != NODE_STATE_IDLE)) {
-			error("we can't use this node %c%c%c",	
-			      alpha_num[x],
-			      alpha_num[y],
-			      alpha_num[z]);
-
-			return SLURM_ERROR;
-		}
-		ba_system_ptr->grid[x][y][z].state = NODE_STATE_END;
+		if((ba_system_ptr->grid[x][y][z].state == NODE_STATE_UNKNOWN)
+		   || (ba_system_ptr->grid[x][y][z].state == NODE_STATE_IDLE)) 
+			ba_system_ptr->grid[x][y][z].state = NODE_STATE_END;
 #else
-		if((ba_system_ptr->grid[x].state != NODE_STATE_UNKNOWN)
-		   && (ba_system_ptr->grid[x].state != NODE_STATE_IDLE)) {
-			error("we can't use this node %d", x);
-
-			return SLURM_ERROR;
-		}
-		ba_system_ptr->grid[x].state = NODE_STATE_END;
+		if((ba_system_ptr->grid[x].state == NODE_STATE_UNKNOWN)
+		   || (ba_system_ptr->grid[x].state == NODE_STATE_IDLE)) 
+			ba_system_ptr->grid[x].state = NODE_STATE_END;
 #endif
 		free(host);
 	}
