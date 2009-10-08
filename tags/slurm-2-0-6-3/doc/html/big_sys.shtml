@@ -1,0 +1,138 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Large Cluster Administration Guide</h1>
+
+<p>This document contains SLURM administrator information specifically 
+for clusters containing 1,024 nodes or more. 
+Virtually all SLURM components have been validated (through emulation) 
+for clusters containing up to 65,536 compute nodes. 
+Getting optimal performance at that scale does require some tuning and 
+this document should help you off to a good start.
+A working knowledge of SLURM should be considered a prerequisite 
+for this material.</p>
+
+<h2>Performance Results</h2>
+
+<p>SLURM has been used on clusters containing up to 4,184 nodes. 
+At that scale, the total time to execute a simple program (resource 
+allocation, task launch, I/O processing, and cleanup, e.g. 
+"time srun -N4184 -n8368 uname") at 8,368 tasks 
+across the 4,184 nodes was under 57 seconds. The table below shows
+total execution times for several large clusters with different architectures.</p>
+<table border>
+<caption>SLURM Total Job Execution Time</caption>
+<tr>
+<th>Nodes</th><th>Tasks</th><th>Seconds</th>
+</tr>
+<tr>
+<th>256</th><th>512</th><th>1.0</th>
+</tr>
+<tr>
+<th>512</th><th>1024</th><th>2.2</th>
+</tr>
+<tr>
+<th>1024</th><th>2048</th><th>3.7</th>
+</tr>
+<tr>
+<th>2123</th><th>4246</th><th>19.5</th>
+</tr>
+<tr>
+<th>4184</th><th>8368</th><th>56.6</th>
+</tr>
+</table>
+
+<h2>Node Selection Plugin (SelectType)</h2>
+
+<p>While allocating individual processors within a node is great 
+for smaller clusters, the overhead of keeping track of the individual 
+processors and memory within each node adds significant overhead. 
+For best scalability, allocate whole nodes using <i>select/linear</i>
+or <i>select/bluegene</i> and avoid <i>select/cons_res</i>.</p>
+
+<h2>Job Accounting Gather Plugin (JobAcctGatherType)</h2>
+
+<p>Job accounting relies upon the <i>slurmstepd</i> daemon on each compute 
+node periodically sampling data.
+This data collection will take compute cycles away from the application
+inducing what is known as <i>system noise</i>.
+For large parallel applications, this system noise can detract for 
+application scalability.
+For optimal application performance, disabling job accounting 
+is best (<i>jobacct_gather/none</i>).
+Consider use of job completion records (<i>JobCompType</i>) for accounting 
+purposes as this entails far less overhead.
+If job accounting is required, configure the sampling interval 
+to a relatively large size (e.g. <i>JobAcctGatherFrequency=300</i>).
+Some experimentation may also be required to deal with collisions 
+on data transmission.</p>
+
+<h2>Node Configuration</h2>
+
+<p>While SLURM can track the amount of memory and disk space actually found 
+on each compute node and use it for scheduling purposes, this entails 
+extra overhead. 
+Optimize performance by specifying the expected configuration using 
+the available parameters (<i>RealMemory</i>, <i>Procs</i>, and 
+<i>TmpDisk</i>). 
+If the node is found to contain less resources than configured, 
+it will be marked DOWN and not used. 
+Also set the <i>FastSchedule</i> parameter.
+While SLURM can easily handle a heterogeneous cluster, configuring 
+the nodes using the minimal number of lines in <i>slurm.conf</i>
+will both make for easier administration and better performance.</p>
+
+<h2>Timers</h2>
+
+<p>The configuration parameter <i>SlurmdTimeout</i> determines the interval 
+at which <i>slurmctld</i> routinely communicates with <i>slurmd</i>.
+Communications occur at half the <i>SlurmdTimeout</i> value.
+The purpose of this is to determine when a compute node fails 
+and thus should not be allocated work. 
+Longer intervals decrease system noise on compute nodes (we do 
+synchronize these requests across the cluster, but there will 
+be some impact upon applications).
+For really large clusters, <i>SlurmdTimeout</i> values of 
+120 seconds or more are reasonable.</p> 
+
+<p>If MPICH-2 is used, the srun command will manage the key-pairs
+used to bootstrap the application. 
+Depending upon the processor speed and architecture, the communication 
+of key-pair information may require extra time. 
+This can be done by setting an environment variable PMI_TIME before 
+executing srun to launch the tasks. 
+The default value of PMI_TIME is 500 and this is the number of 
+microseconds alloted to transmit each key-pair. 
+We have executed up to 16,000 tasks with a value of PMI_TIME=4000.</p>
+
+<p>The individual slurmd daemons on compute nodes will initiate messages
+to the slurmctld daemon only when they start up or when the epilog 
+completes for a job. When a job allocated a large number of nodes 
+completes, it can cause a very large number of messages to be sent 
+by the slurmd daemons on these nodes to the slurmctld daemon all at
+the same time. In order to spread this message traffic out over time
+and avoid message loss, The <i>EpilogMsgTime</i> parameter may be 
+used. Note that even if messages are lost, they will be retransmitted, 
+but this will result in a delay for reallocating resources to new jobs.</p>
+
+<h2>Other</h2>
+
+<p>SLURM uses hierarchical communications between the slurmd daemons
+in order to increase parallelism and improve performance. The 
+<i>TreeWidth</i> configuration parameter controls the fanout of messages.
+The default value is 50, meaning each slurmd daemon can communicate
+with up to 50 other slurmd daemons and over 2500 nodes can be contacted
+with two message hops.
+The default value will work well for most clusters.
+Optimal system performance can typically be achieved if <i>TreeWidth</i>
+is set to the square root of the number of nodes in the cluster for
+systems having no more than 2500 nodes or the cube root for larger
+systems.</p>
+ 
+<p>The srun command automatically increases its open file limit to 
+the hard limit in order to process all of the standard input and output
+connections to the launched tasks. It is recommended that you set the
+open file hard limit to 8192 across the cluster.</p>
+
+<p style="text-align:center;">Last modified 11 March 2008</p>
+
+<!--#include virtual="footer.txt"-->

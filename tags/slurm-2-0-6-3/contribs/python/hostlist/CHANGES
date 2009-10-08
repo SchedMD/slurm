@@ -1,0 +1,46 @@
+Version 1.5 (2009-02-22)
+
+    Make each "-" on the command line count as one hostlist argument.
+    If multiple hostslists are given on stdin they are combined to a
+    union hostlist before being used in the way requested by the
+    options.
+
+    Add hostgrep utility to search for lines matching a hostlist.
+
+    Make the build system (used when building tar.gz and RPMs from the
+    source code held in git) smarter.
+
+Version 1.4 (2008-12-28)
+
+    Support Python 3.
+
+    Import reduce from functools if possible.
+    Use Python 2/3 installation trick from .../Demo/distutils/test2to3
+
+Version 1.3 (2008-09-30)
+
+    Add -s/--separator, -p/--prepend, -a/--append and --version
+    options contributed by Pär Andersson at NSC.
+
+    Let -e be the short form of the --expand option (-w is now
+    deprecated).
+
+    Add a manual page for hostlist(1).
+
+Version 1.2 (2008-09-18)
+
+    Add "--prefix /usr" in the installation script of the spec file
+    (needed on SUSE Linux where the default is /usr/local).
+
+Version 1.1 (2008-09-17)
+
+    Move the command line utility to a separate 'hostlist' command.
+
+    Provide a python-hostlist.spec file to build RPM packages.
+    Inspired by a contribution by Dr. Holger Obermaier at
+    Rechenzentrum, Universität Karlsruhe.
+
+Version 1.0 (2008-07-25)
+
+    Initial version.
+
