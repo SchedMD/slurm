@@ -249,6 +249,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix for overlap mode loading blocks when midplane is in an
     error state.
  -- Add range check for SuspendTime configuration parameter.
+ -- Moved unzipped python-hostname tarball out and the tarball in.
 
 * Changes in SLURM 2.0.6
 ========================
