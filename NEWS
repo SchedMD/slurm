@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     large cluster.
  -- BLUEGENE - Fix for handling undocumented Deallocating to Configuring to 
     Free block transition state.
+ -- BLUEGENE - Fix for overlap mode loading blocks when midplane is in an
+    error state.
 
 * Changes in SLURM 2.0.6
 ========================
