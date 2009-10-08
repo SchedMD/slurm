@@ -2378,9 +2378,16 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->suspend_program, "SuspendProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->suspend_rate, "SuspendRate", hashtbl))
 		conf->suspend_rate = DEFAULT_SUSPEND_RATE;
-	if (s_p_get_long(&long_suspend_time, "SuspendTime", hashtbl))
-		conf->suspend_time = long_suspend_time + 1;
-	else
+	if (s_p_get_long(&long_suspend_time, "SuspendTime", hashtbl)) {
+		if (long_suspend_time >= 0xfffe) {
+			error("SuspendTime value (%ld) is greater than 65534",
+			      long_suspend_time);
+		} else if (long_suspend_time < -1) {
+			error("SuspendTime value (%ld) is less than -1",
+			      long_suspend_time);
+		} else
+			conf->suspend_time = long_suspend_time + 1;
+	} else
 		conf->suspend_time = 0;
 	if (!s_p_get_uint16(&conf->suspend_timeout, "SuspendTimeout", hashtbl))
 		conf->suspend_timeout = DEFAULT_SUSPEND_TIMEOUT;
