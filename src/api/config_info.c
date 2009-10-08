@@ -885,7 +885,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SLURM_VERSION");
-	key_pair->value = xstrdup(SLURM_VERSION);
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->version);
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

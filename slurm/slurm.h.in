@@ -1392,6 +1392,7 @@ typedef struct slurm_ctl_conf {
                                       * job step have been signalled, before
                                       * they are considered "unkillable". */
 	uint16_t use_pam;	/* enable/disable PAM support */
+	char *version;		/* version of slurmctld */
 	uint16_t wait_time;	/* default job --wait time */
 	uint16_t z_16;		/* reserved for future use */
 	uint32_t z_32;		/* reserved for future use */

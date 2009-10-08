@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
  -- Enable memory allocation logic for jobs step (i.e. allocate resources
     within the job's memory allocation and enforce limits).
  -- handle error state in sinfo
+ -- sview and "scontrol show config" now report as SLURM_VERSION the version 
+    of slurmctld rather than that of the command.
 
 * Changes in SLURM 2.1.0-pre4
 =============================

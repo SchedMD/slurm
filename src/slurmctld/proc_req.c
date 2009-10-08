@@ -571,6 +571,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->use_pam             = conf->use_pam;
 	conf_ptr->unkillable_program  = xstrdup(conf->unkillable_program);
 	conf_ptr->unkillable_timeout  = conf->unkillable_timeout;
+	conf_ptr->version             = xstrdup(SLURM_VERSION);
 
 	slurm_conf_unlock();
 	return;
