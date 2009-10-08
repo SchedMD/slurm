@@ -448,6 +448,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt=0, cpus_picked_cnt = 0, i, task_cnt;
+	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
 	ListIterator step_iterator;
 	struct step_record *step_p;
 	select_job_res_t *select_ptr = job_ptr->select_job;
@@ -627,6 +628,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 					return NULL;
 				}
 				bit_clear(nodes_avail, i);
+				mem_blocked_nodes++;
+				task_cnt = select_ptr->
+					   memory_allocated[node_inx] /
+					   step_spec->mem_per_cpu;
+				mem_blocked_cpus += MIN(task_cnt, 
+							select_ptr->
+							cpus[node_inx]);
 			}
 			if (++node_inx >= select_ptr->nhosts)
 				break;
@@ -657,6 +665,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			goto cleanup;
 		}
 		if (!bit_super_set(selected_nodes, nodes_avail)) {
+			*return_code = ESLURM_INVALID_TASK_MEMORY;
 			info ("_pick_step_nodes: requested nodes %s "
 			      "have inadequate memory",
 			       step_spec->node_list);
@@ -680,9 +689,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				FREE_NULL_BITMAP(selected_nodes);
 				step_spec->node_count =
 					bit_set_count(nodes_avail);
-			} else 
+			} else {
 				step_spec->node_count =
 					bit_set_count(selected_nodes);
+			}
 		}
 		if (selected_nodes) {
 			/* use selected nodes to run the job and
@@ -695,9 +705,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			 * Other than that copy the nodes selected as
 			 * the nodes we want.
 			 */ 
-			if (step_spec->node_count 
-			    && (bit_set_count(selected_nodes)
-				> step_spec->node_count)) {
+			if (step_spec->node_count &&
+			    (bit_set_count(selected_nodes) >
+			     step_spec->node_count)) {
 				nodes_picked =
 					bit_alloc(bit_size(nodes_avail));
 				if (nodes_picked == NULL)
@@ -771,8 +781,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	 * a node count */
 	if (step_spec->cpu_count && job_ptr->select_job && 
 	    (job_ptr->select_job->cpu_array_cnt == 1) &&
-	    job_ptr->select_job->cpu_array_value) {
-		i = (step_spec->cpu_count + 
+	    (job_ptr->select_job->cpu_array_value)) {
+		i = (step_spec->cpu_count +
 		     (job_ptr->select_job->cpu_array_value[0] - 1)) /
 		    job_ptr->select_job->cpu_array_value[0];
 		step_spec->node_count = (i > step_spec->node_count) ? 
@@ -786,9 +796,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			verbose("got %u %d", step_spec->node_count, 
 			        nodes_picked_cnt);
 		}
-		if (nodes_idle 
-		    && (bit_set_count(nodes_idle) >= step_spec->node_count)
-		    && (step_spec->node_count > nodes_picked_cnt)) {
+		if (nodes_idle &&
+		    (bit_set_count(nodes_idle) >= step_spec->node_count) &&
+		    (step_spec->node_count > nodes_picked_cnt)) {
 			node_tmp = bit_pick_cnt(nodes_idle,
 						(step_spec->node_count -
 						 nodes_picked_cnt));
@@ -806,8 +816,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			node_tmp = bit_pick_cnt(nodes_avail, 
 						(step_spec->node_count - 
 						 nodes_picked_cnt));
-			if (node_tmp == NULL)
+			if (node_tmp == NULL) {
+				if (step_spec->node_count <= 
+				    (bit_set_count(nodes_avail) +
+				     nodes_picked_cnt + 
+				     mem_blocked_nodes)) {
+					*return_code = 
+						ESLURM_INVALID_TASK_MEMORY;
+				}
 				goto cleanup;
+			}
 			bit_or  (nodes_picked, node_tmp);
 			bit_not (node_tmp);
 			bit_and (nodes_avail, node_tmp);
@@ -823,6 +841,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		/* user is requesting more cpus than we got from the
 		 * picked nodes we should return with an error */
 		if (step_spec->cpu_count > cpus_picked_cnt) {
+			if (step_spec->cpu_count <= 
+			    (cpus_picked_cnt + mem_blocked_cpus)) {
+				*return_code = ESLURM_INVALID_TASK_MEMORY;
+			}
 			debug2("Have %d nodes with %d cpus which is less "
 			       "than what the user is asking for (%d cpus) "
 			       "aborting.",
@@ -840,7 +862,8 @@ cleanup:
 	FREE_NULL_BITMAP(nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
 	FREE_NULL_BITMAP(nodes_picked);
-	*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+	if (*return_code == SLURM_SUCCESS)
+		*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	return NULL;
 }
 
@@ -1392,6 +1415,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 		xfree(step_node_list);
 		if (!step_ptr->step_layout) {
 			delete_step_record (job_ptr, step_ptr->step_id);
+			if (step_specs->mem_per_cpu)
+				return ESLURM_INVALID_TASK_MEMORY;
 			return SLURM_ERROR;
 		}
 
@@ -1410,7 +1435,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
 			i = resv_port_alloc(step_ptr);
 			if (i != SLURM_SUCCESS) {
-				delete_step_record (job_ptr, step_ptr->step_id);
+				delete_step_record (job_ptr, 
+						    step_ptr->step_id);
 				return i;
 			}
 		}
@@ -1519,7 +1545,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	if (set_tasks < num_tasks) {
 		info("Resources only available for %u of %u tasks",
 		     set_tasks, num_tasks);
-//NEED TO GET ERROR CODE BACK
 		return NULL;
 	}
 
