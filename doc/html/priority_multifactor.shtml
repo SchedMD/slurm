@@ -45,7 +45,7 @@
 <DT> Partition
 <DD> a factor associated with each node partition
 <DT> QOS
-<DD> a factor associated with each Quality Of Service (Still under Development)
+<DD> a factor associated with each Quality Of Service
 </DL>
 
 <P> Additionally, a weight can be assigned to each of the above
@@ -62,11 +62,11 @@
 <P> The job's priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm.conf file.  Job priority can be expressed as:</P>
 <PRE>
 Job_priority =
-	(age_weight) * (age_factor) +
-	(fair-share_weight) * (fair-share_factor) +
-	(job_size_weight) * (job_size_factor) +
-	(partition_weight) * (partition_factor) +
-	(QOS_weight) * (QOS_factor)
+	(PriorityWeightAge) * (age_factor) +
+	(PriorityWeightFairshare) * (fair-share_factor) +
+	(PriorityWeightJobSize) * (job_size_factor) +
+	(PriorityWeightPartition) * (partition_factor) +
+	(PriorityWeightQOS) * (QOS_factor)
 </PRE>
 
 <P> All of the factors in this formula are floating point numbers that
@@ -74,7 +74,7 @@ Job_priority =
   The job's priority is an integer that ranges between 0 and
   4294967295.  The higher the number,  the higher the job will be
   positioned in the queue, and the sooner the job will be scheduled.
-  A job's priority, and hence its order in the queue, will vary over
+  A job's priority, and hence its order in the queue, can vary over
   time.  For example, the longer a job sits in the queue, the higher
   its priority will grow when the age_weight is non-zero.</P>
 
@@ -105,15 +105,20 @@ Job_priority =
 <a name=partition>
 <h2>Partition Factor</h2></a>
 
-<P> Each node partition can be assigned a factor from 0.0 to 1.0.  The higher the number, the greater the job priority will be for jobs that are slated to run in this partition.</P>
+<P> Each node partition can be assigned an integer priority.  The
+higher the number, the greater the job priority will be for jobs that
+request to run in this partition.  This priority value is then
+normalized to the highest priority of all the partitions to become the
+partition factor.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=qos>
 <h2>Quality of Service (QOS) Factor</h2></a>
 
-<P> Each QOS can be assigned a factor from 0.0 to 1.0.  The higher the
-  number, the greater the job priority will be for jobs that request
-  this QOS. (Still under Development)</P>
+<P> Each QOS can be assigned an integer priority.  The higher the
+number, the greater the job priority will be for jobs that request
+this QOS.  This priority value is then normalized to the highest
+priority of all the QOS's to become the QOS factor.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=fairshare>
