@@ -43,6 +43,7 @@ documents those changes that are of interest to users and admins.
  -- Better record keeping for front end systems when registering.
  -- Enable memory allocation logic for jobs step (i.e. allocate resources
     within the job's memory allocation and enforce limits).
+ -- handle error state in sinfo
 
 * Changes in SLURM 2.1.0-pre4
 =============================

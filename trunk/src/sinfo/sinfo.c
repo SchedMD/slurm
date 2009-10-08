@@ -275,15 +275,16 @@ _query_server(partition_info_msg_t ** part_pptr,
 		error_code =
 		    slurm_load_node(old_node_ptr->last_update,
 				    &new_node_ptr, show_flags);
-		if (error_code == SLURM_SUCCESS)
+		if (error_code == SLURM_SUCCESS) 
 			slurm_free_node_info_msg(old_node_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_node_ptr = old_node_ptr;
 		}
-	} else
+	} else 
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
 				show_flags);
+	
 	if (error_code) {
 		slurm_perror("slurm_load_node");
 		return error_code;
@@ -424,6 +425,7 @@ static bool _filter_out(node_info_t *node_ptr)
 		bool match = false;
 		uint16_t base_state;
 		ListIterator iterator;
+		uint16_t cpus = 0;
 
 		iterator = list_iterator_create(params.state_list);
 		while ((node_state = list_next(iterator))) {
@@ -451,6 +453,26 @@ static bool _filter_out(node_info_t *node_ptr)
 				}
 			} else if (*node_state & NODE_STATE_FLAGS) {
 				if (*node_state & node_ptr->node_state) {
+					match = true;
+					break;
+				}
+			} else if (*node_state == NODE_STATE_ERROR) {
+				slurm_get_select_nodeinfo(
+					node_ptr->select_nodeinfo, 
+					SELECT_NODEDATA_SUBCNT,
+					NODE_STATE_ERROR,
+					&cpus);
+				if(cpus) {
+					match = true;
+					break;
+				}
+			} else if (*node_state == NODE_STATE_ALLOCATED) {
+				slurm_get_select_nodeinfo(
+					node_ptr->select_nodeinfo, 
+					SELECT_NODEDATA_SUBCNT,
+					NODE_STATE_ALLOCATED,
+					&cpus);
+				if(cpus) {
 					match = true;
 					break;
 				}
@@ -679,6 +701,11 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 				     NODE_STATE_ERROR,
 				     &error_cpus);
 #ifdef HAVE_BG
+	if(error_cpus) {
+		xfree(node_ptr->reason);
+		node_ptr->reason = xstrdup("Block(s) in error state");
+		sinfo_ptr->reason     = node_ptr->reason;
+	}
 	if(params.match_flags.cpus_flag && (used_cpus || error_cpus)) {
 		/* we only get one shot at this (because the node name
 		   is the same), so we need to make
@@ -712,7 +739,6 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 		return;
 	}
-
 #else
 	if ((base_state == NODE_STATE_ALLOCATED)
 	    ||  IS_NODE_COMPLETING(node_ptr))
@@ -778,12 +804,13 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 /* 	char *tmp_char = NULL, *orig_name = NULL; */
 /* 	bitstr_t *tmp_bitmap = NULL; */
 	uint16_t size;
+	int *node_state;
 /* 	bitstr_t *bitmap = NULL; */
 	int i=0, state_cnt = 2;
+	ListIterator iterator = NULL;
 /* 	bool set = 0; */
 	enum node_states state[] =
 		{ NODE_STATE_ALLOCATED, NODE_STATE_ERROR };
-
 /* 	if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,  */
 /* 					SELECT_NODEDATA_BITMAP_SIZE, */
 /* 					0, */
@@ -799,7 +826,19 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 	 */
 /* 	orig_name = node_ptr->name; */
 /* 	node_ptr->name = NULL; */
+	if (params.state_list) 
+		iterator = list_iterator_create(params.state_list);
+
 	for(i=0; i<state_cnt; i++) {
+		if(iterator) {
+			while ((node_state = list_next(iterator))) {
+				if(*node_state == state[i]) 
+					break;
+			}
+			list_iterator_reset(iterator);
+			if(!node_state) 
+				continue;
+		}
 		if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
 						SELECT_NODEDATA_SUBCNT,
 						state[i],
@@ -850,6 +889,15 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 /* 	} */
 
 	/* now handle the idle */
+	if(iterator) {
+		while ((node_state = list_next(iterator))) {
+			if(*node_state == NODE_STATE_IDLE)
+				break;
+		}
+		list_iterator_destroy(iterator);
+		if(!node_state)
+			return SLURM_SUCCESS;
+	}
 	node_ptr->node_state &= NODE_STATE_FLAGS;
 	node_ptr->node_state |= NODE_STATE_IDLE; 
 /* 	info("%s got %s of %u", node_ptr->name, */
