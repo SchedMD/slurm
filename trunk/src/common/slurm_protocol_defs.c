@@ -1485,6 +1485,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->tmp_fs);
 		xfree(config_ptr->topology_plugin);
 		xfree(config_ptr->unkillable_program);
+		xfree(config_ptr->version);
 		xfree(config_ptr->z_char);
 		xfree(config_ptr);
 	}
