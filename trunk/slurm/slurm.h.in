@@ -1374,7 +1374,7 @@ typedef struct slurm_ctl_conf {
 	char *suspend_exc_parts;/* partitions to not make power saving */
 	char *suspend_program;	/* program to make nodes power saving */
 	uint16_t suspend_rate;	/* nodes to make power saving, per minute */
-	uint16_t suspend_time;	/* node idle for this long before power save mode */
+	uint32_t suspend_time;	/* node idle for this long before power save mode */
 	uint16_t suspend_timeout;/* time required in order to perform a node
 				 * suspend operation */
 	char *switch_type;	/* switch or interconnect type */

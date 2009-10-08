@@ -46,6 +46,7 @@ documents those changes that are of interest to users and admins.
  -- handle error state in sinfo
  -- sview and "scontrol show config" now report as SLURM_VERSION the version 
     of slurmctld rather than that of the command.
+ -- Change SuspendTime configuration parameter from 16-bits to 32-bits.
 
 * Changes in SLURM 2.1.0-pre4
 =============================
