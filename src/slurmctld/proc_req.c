@@ -1000,7 +1000,8 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
 	&&  (!validate_super_user(uid))) {
 		unlock_slurmctld(node_read_lock);
-		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d", uid);
+		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d",
+		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
 	} 

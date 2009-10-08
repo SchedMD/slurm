@@ -256,7 +256,7 @@ extern void parse_command_line(int argc, char *argv[])
 	_parse_format( params.format );
 
 	if (params.list_reasons && (params.state_list == NULL)) {
-		params.states = xstrdup ("down,drain");
+		params.states = xstrdup ("down,drain,error");
 		if (!(params.state_list = _build_state_list (params.states)))
 			fatal ("Unable to build state list for -R!");
 	}
@@ -420,6 +420,8 @@ _node_state_id (char *str)
 		return NODE_STATE_DRAIN;
 	if (strncasecmp("DRAINED", str, len) == 0)
 		return NODE_STATE_DRAIN | NODE_STATE_IDLE;
+	if (strncasecmp("ERROR", str, len) == 0)
+		return NODE_STATE_ERROR;
 	if ((strncasecmp("DRAINING", str, len) == 0) ||
 	    (strncasecmp("DRNG", str, len) == 0))
 		return NODE_STATE_DRAIN | NODE_STATE_ALLOCATED;
