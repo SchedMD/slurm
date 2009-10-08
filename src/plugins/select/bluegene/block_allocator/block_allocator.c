@@ -1894,22 +1894,13 @@ extern int set_all_bps_except(char *bps)
 		y = temp;
 		temp = start % HOSTLIST_BASE;
 		z = temp;
-		if(ba_system_ptr->grid[x][y][z].state != NODE_STATE_IDLE) {
-			error("we can't use this node %c%c%c",	
-			      alpha_num[x],
-			      alpha_num[y],
-			      alpha_num[z]);
-
-			return SLURM_ERROR;
-		}
-		ba_system_ptr->grid[x][y][z].state = NODE_STATE_END;
+		if((ba_system_ptr->grid[x][y][z].state == NODE_STATE_UNKNOWN)
+		   || (ba_system_ptr->grid[x][y][z].state == NODE_STATE_IDLE)) 
+			ba_system_ptr->grid[x][y][z].state = NODE_STATE_END;
 #else
-		if(ba_system_ptr->grid[x].state != NODE_STATE_IDLE) {
-			error("we can't use this node %d", x);
-
-			return SLURM_ERROR;
-		}
-		ba_system_ptr->grid[x].state = NODE_STATE_END;
+		if((ba_system_ptr->grid[x].state == NODE_STATE_UNKNOWN)
+		   || (ba_system_ptr->grid[x].state == NODE_STATE_IDLE)) 
+			ba_system_ptr->grid[x].state = NODE_STATE_END;
 #endif
 		free(host);
 	}
