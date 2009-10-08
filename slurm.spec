@@ -69,7 +69,9 @@
 # Build with sgijob plugin and mysql (for slurmdbdb) on CHAOS systems
 %if %{?chaos}0
 %slurm_with_opt mysql
+%if %chaos < 5
 %slurm_with_opt sgijob
+%endif
 %else
 %slurm_without_opt sgijob
 %endif
@@ -127,6 +129,8 @@ BuildRequires: mysql-devel >= 5.0.0
 %if %{slurm_with postgres}
 BuildRequires: postgresql-devel >= 8.0.0
 %endif
+
+BuildRequires: perl(ExtUtils::MakeMaker)
 
 %description 
 SLURM is an open source, fault-tolerant, and highly
@@ -287,7 +291,8 @@ Perl tool to print SLURM job state information.
 %package pam_slurm
 Summary: PAM module for restricting access to compute nodes via SLURM.
 Group: System Environment/Base
-Requires: slurm slurm-devel pam-devel
+Requires: slurm slurm-devel
+BuildRequires: pam-devel
 %description pam_slurm
 This module restricts access to compute nodes in a cluster where the Simple
 Linux Utility for Resource Managment (SLURM) is in use.  Access is granted
