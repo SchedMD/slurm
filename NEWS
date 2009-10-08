@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
     Free block transition state.
  -- BLUEGENE - Fix for overlap mode loading blocks when midplane is in an
     error state.
+ -- Add range check for SuspendTime configuration parameter.
 
 * Changes in SLURM 2.0.6
 ========================
