@@ -1,1 +1,1 @@
-SUBDIRS = hostlist
+SUBDIRS =
