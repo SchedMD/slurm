@@ -5780,7 +5780,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 	uint16_t batch_start_timeout	= slurm_get_batch_start_timeout();
 	uint16_t msg_timeout		= slurm_get_msg_timeout();
 	uint16_t resume_timeout		= slurm_get_resume_timeout();
-	uint16_t suspend_time		= slurm_get_suspend_time();
+	uint32_t suspend_time		= slurm_get_suspend_time();
 	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
 
 	if (node_ptr->up_time) {

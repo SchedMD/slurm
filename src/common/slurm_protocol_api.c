@@ -248,9 +248,9 @@ uint16_t slurm_get_resume_timeout(void)
 /* slurm_get_suspend_time
  * RET SuspendTime value from slurm.conf
  */
-uint16_t slurm_get_suspend_time(void)
+uint32_t slurm_get_suspend_time(void)
 {
-	uint16_t suspend_time = 0;
+	uint32_t suspend_time = 0;
 	slurm_ctl_conf_t *conf;
 
 	if(slurmdbd_conf) {
