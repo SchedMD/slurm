@@ -68,6 +68,7 @@ BlueGene build notes:
 	%_prefix                /usr
 	%_slurm_sysconfdir      /etc/slurm
 	%_with_bluegene         1
+	%_without_pam		1
 	%_with_debug            1
 	%with_cflags		CFLAGS=-m64
    Build on Service Node with using the following syntax
