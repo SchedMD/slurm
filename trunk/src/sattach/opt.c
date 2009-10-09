@@ -86,6 +86,7 @@
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
+int error_exit = 1;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -176,12 +177,12 @@ _get_pos_int(const char *arg, const char *what)
 
 	if (p == arg || !xstring_is_whitespace(p) || (result < 0L)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		exit(1);
+		exit(error_exit);
 	}
 
 	if (result > INT_MAX) {
 		error ("Numeric argument %ld to big for %s.", result, what);
-		exit(1);
+		exit(error_exit);
 	}
 
 	return (int) result;
@@ -312,7 +313,7 @@ void set_options(const int argc, char **argv)
 		case '?':
 			fprintf(stderr, "Try \"sattach --help\" for more "
 				"information\n");
-			exit(1);
+			exit(error_exit);
 			break;
 		case 'h':
 			_help();
@@ -361,8 +362,9 @@ void set_options(const int argc, char **argv)
 			opt.debugger_test = true;
 			break;
 		default:
-			fatal("Unrecognized command line parameter %c",
+			error("Unrecognized command line parameter %c",
 			      opt_char);
+			exit(error_exit);
 		}
 	}
 }
@@ -379,7 +381,7 @@ static void _parse_jobid_stepid(char *jobid_str)
 		error("Did not find a period in the step ID string");
 		_usage();
 		xfree(job);
-		exit(1);
+		exit(error_exit);
 	} else {
 		*ptr = '\0';
 		step = ptr + 1;
@@ -390,7 +392,7 @@ static void _parse_jobid_stepid(char *jobid_str)
 		error("\"%s\" does not look like a jobid", job);
 		_usage();
 		xfree(job);
-		exit(1);
+		exit(error_exit);
 	}
 
 	stepid = strtol(step, &ptr, 10);
@@ -398,7 +400,7 @@ static void _parse_jobid_stepid(char *jobid_str)
 		error("\"%s\" does not look like a stepid", step);
 		_usage();
 		xfree(job);
-		exit(1);
+		exit(error_exit);
 	}
 
 	opt.jobid = (uint32_t) jobid;
@@ -426,13 +428,13 @@ static void _opt_args(int argc, char **argv)
 	if (leftover != 1) {
 		error("too many parameters");
 		_usage();
-		exit(1);
+		exit(error_exit);
 	}
 
 	_parse_jobid_stepid(*(argv + optind));
 
 	if (!_opt_verify())
-		exit(1);
+		exit(error_exit);
 }
 
 /* 
