@@ -96,7 +96,9 @@ QOS will only influence job scheduling priority when the multi-factor
 priority plugin is loaded and a non-zero "PriorityWeightQOS" has been
 defined in the slurm.conf file.  The QOS will only determine job
 preemption when the "PreemptType" is defined as "preempt/qos" in the
-slurm.conf file.</P>
+slurm.conf file.  Limits defined for a QOS (and described above) will
+override the limits of the user/account/cluster/partition
+association.</P>
 
 <p style="text-align: center;">Last modified 9 October 2009</p>
 
