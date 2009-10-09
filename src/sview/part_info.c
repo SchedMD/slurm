@@ -554,7 +554,7 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 				memcpy(sub_iter, &first_sub_iter, 
 				       sizeof(GtkTreeIter));		
 			}
-			
+			line = 0;
 			while(1) {
 				/* search for the state number and
 				   check to see if it is in the list */
@@ -570,14 +570,9 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 					goto found;
 				}			
 				
-				/* see what line we were on to add the
-				   next one to the list */
-				gtk_tree_model_get(model, sub_iter, 
-						   SORTID_POS, 
-						   &line, -1);
+				line++;
 				if(!gtk_tree_model_iter_next(model, 
 							     sub_iter)) {
-					line++;
 					break;
 				}
 			}
@@ -585,8 +580,8 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 			_append_part_sub_record(sview_part_sub, 
 						GTK_TREE_STORE(model), 
 						iter, line);
-			if(i == NO_VAL)
-				line++;
+/* 			if(i == NO_VAL) */
+/* 				line++; */
 		found:
 			;
 		}
@@ -1122,6 +1117,7 @@ static void _update_info_part(List info_list,
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
 			goto adding;
 		} 
+		line = 0;
 		while(1) {
 			/* search for the jobid and check to see if 
 			   it is in the list */
@@ -1137,12 +1133,8 @@ static void _update_info_part(List info_list,
 			}
 			g_free(part_name);
 				
-			/* see what line we were on to add the next one 
-			   to the list */
-			gtk_tree_model_get(model, &iter, SORTID_POS, 
-					   &line, -1);
+			line++;
 			if(!gtk_tree_model_iter_next(model, &iter)) {
-				line++;
 				break;
 			}
 		}

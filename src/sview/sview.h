@@ -251,6 +251,7 @@ typedef struct {
 typedef struct {
 	node_info_t *node_ptr;
 	char *color;
+	int pos;
 } sview_node_info_t;
 
 typedef struct {
@@ -313,6 +314,7 @@ extern char *change_grid_color(List button_list, int start, int end,
 			       enum node_states state_override);
 extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 			   int node_inx_id, List button_list);
+extern void highlight_grid_range(int start, int end, List button_list);
 extern void set_grid_used(List button_list, int start, int end,
 			  bool used, bool reset_highlight);
 extern void get_button_list_from_main(List *button_list, int start, int end,

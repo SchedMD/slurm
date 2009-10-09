@@ -2123,7 +2123,7 @@ static void _update_info_job(List info_list,
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
 			goto adding;
 		}
-
+		line = 0;
 		while(1) {
 			/* search for the jobid and check to see if 
 			   it is in the list */
@@ -2137,12 +2137,8 @@ static void _update_info_job(List info_list,
 				goto found;
 			}
 			
-			/* see what line we were on to add the next one 
-			   to the list */
-			gtk_tree_model_get(model, &iter, SORTID_POS, 
-					   &line, -1);
+			line++;
 			if(!gtk_tree_model_iter_next(model, &iter)) {
-				line++;
 				break;
 			}
 		}

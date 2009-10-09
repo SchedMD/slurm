@@ -538,6 +538,40 @@ extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 	return;
 }
 
+extern void highlight_grid_range(int start, int end, List button_list)
+{
+	ListIterator itr = NULL;
+	grid_button_t *grid_button = NULL;
+
+	if(!button_list)
+		return;
+
+	itr = list_iterator_create(button_list);
+	while((grid_button = list_next(itr))) {
+		if(start != -1)
+			if ((grid_button->inx < start)
+			    || (grid_button->inx > end)) {
+			/* clear everyone else */
+				if((GTK_WIDGET_STATE(grid_button->button)
+				    != GTK_STATE_NORMAL))
+					gtk_widget_set_state(
+						grid_button->button,
+						GTK_STATE_NORMAL); 
+				continue;
+			}
+		/* highlight this one, if it is already hightlighted,
+		 * put it back to normal */
+		//g_print("highlighting %d\n", grid_button->inx);
+		if((GTK_WIDGET_STATE(grid_button->button)
+		    != GTK_STATE_PRELIGHT))
+			gtk_widget_set_state(grid_button->button,
+					     GTK_STATE_PRELIGHT);
+	}
+	list_iterator_destroy(itr);
+
+	return;
+}
+
 extern void set_grid_used(List button_list, int start, int end,
 			  bool used, bool reset_highlight)
 {
