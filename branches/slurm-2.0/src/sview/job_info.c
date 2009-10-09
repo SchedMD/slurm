@@ -3111,14 +3111,6 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			snprintf(title, 100, "Block with job %d.%d",
 				 jobid, stepid);
 		break;
-	case SUBMIT_PAGE: 
-		if(stepid == NO_VAL)
-			snprintf(title, 100, "Submit job on job %d", jobid);
-		else
-			snprintf(title, 100, "Submit job on job %d.%d",
-				 jobid, stepid);
-			
-		break;
 	case INFO_PAGE: 
 		if(stepid == NO_VAL)
 			snprintf(title, 100, "Full info for job %d", jobid);
