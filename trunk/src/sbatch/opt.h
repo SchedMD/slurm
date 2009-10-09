@@ -172,6 +172,7 @@ typedef struct sbatch_options {
 } opt_t;
 
 extern opt_t opt;
+extern int error_exit;
 
 /*
  * process_options_first_pass()

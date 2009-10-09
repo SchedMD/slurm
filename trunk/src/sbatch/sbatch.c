@@ -66,6 +66,7 @@
 static int   fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
 static char *script_wrap(char *command_string);
+static void  _set_exit_code(void);
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static void  _set_submit_dir_env(void);
@@ -83,8 +84,11 @@ int main(int argc, char *argv[])
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
-	if (spank_init_allocator() < 0)
-		fatal("Failed to intialize plugin stack");
+	_set_exit_code();
+	if (spank_init_allocator() < 0) {
+		error("Failed to intialize plugin stack");
+		exit(error_exit);
+	}
 
 	/* Be sure to call spank_fini when sbatch exits
 	 */
@@ -106,15 +110,18 @@ int main(int argc, char *argv[])
 		script_body = get_script_buffer(script_name, &script_size);
 	}
 	if (script_body == NULL)
-		exit(1);
+		exit(error_exit);
 
 	if (process_options_second_pass((argc - opt.script_argc), argv,
 					script_body, script_size) < 0) {
-		fatal("sbatch parameter parsing");
+		error("sbatch parameter parsing");
+		exit(error_exit);
 	}
 
-	if (spank_init_post_opt() < 0)
-		fatal("Plugin stack post-option processing failed");
+	if (spank_init_post_opt() < 0) {
+		error("Plugin stack post-option processing failed");
+		exit(error_exit);
+	}
 
 	if (opt.get_user_env_time < 0) {
 		/* Moab does not propage the user's resource limits, so 
@@ -128,7 +135,7 @@ int main(int argc, char *argv[])
 	_set_umask_env();
 	slurm_init_job_desc_msg(&desc);
 	if (fill_job_desc_from_opts(&desc) == -1) {
-		exit(2);
+		exit(error_exit);
 	}
 
 	desc.script = (char *)script_body;
@@ -148,7 +155,7 @@ int main(int argc, char *argv[])
 			msg = NULL;
 		if ((msg == NULL) || (retries >= MAX_RETRIES)) {
 			error("Batch job submission failed: %m");
-			exit(3);
+			exit(error_exit);
 		}
 
 		if (retries)
@@ -341,6 +348,20 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	return 0;
 }
 
+static void _set_exit_code(void)
+{
+	int i;
+	char *val = getenv("SLURM_ERROR_EXIT");
+
+	if (val) {
+		i = atoi(val);
+		if (i == 0)
+			error("SLURM_ERROR_EXIT has zero value");
+		else
+			error_exit = i;
+	}
+}
+
 /* Set SLURM_SUBMIT_DIR environment variable with current state */
 static void _set_submit_dir_env(void)
 {
@@ -349,14 +370,16 @@ static void _set_submit_dir_env(void)
 	if (getenv("SLURM_SUBMIT_DIR"))	/* use this value */
 		return;
 
-	if ((getcwd(buf, MAXPATHLEN)) == NULL)
-		fatal("getcwd failed: %m");
+	if ((getcwd(buf, MAXPATHLEN)) == NULL) {
+		error("getcwd failed: %m");
+		exit(error_exit);
+	}
 
 	if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0) {
-		error ("unable to set SLURM_SUBMIT_DIR in environment");
+		error("unable to set SLURM_SUBMIT_DIR in environment");
 		return;
 	}
-	debug ("propagating SUBMIT_DIR=%s", buf);
+	debug("propagating SUBMIT_DIR=%s", buf);
 }
 
 /* Set SLURM_UMASK environment variable with current state */
@@ -565,8 +588,10 @@ static int _set_rlimit_env(void)
 	slurm_conf_unlock();
 
 	/* Modify limits with any command-line options */
-	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS))
-		fatal( "--propagate=%s is not valid.", opt.propagate );
+	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)){
+		error("--propagate=%s is not valid.", opt.propagate);
+		exit(error_exit);
+	}
 
 	for (rli = get_slurm_rlimits_info(); rli->name != NULL; rli++ ) {
 
