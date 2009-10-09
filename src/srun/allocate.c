@@ -199,9 +199,11 @@ static bool _retry(void)
 		debug("Syscall interrupted while allocating resources, "
 		      "retrying.");
 		return true;
-	} else if ((errno == ETIMEDOUT) && opt.immediate) {
+	} else if (opt.immediate && 
+		   ((errno == ETIMEDOUT) || (errno == ESLURM_NODES_BUSY))) {
 		error("Unable to allocate resources: %s",
 		      slurm_strerror(ESLURM_NODES_BUSY));
+		error_exit = immediate_exit;
 		return false;
 	} else {
 		error("Unable to allocate resources: %m");
@@ -386,6 +388,7 @@ allocate_nodes(void)
 	xsignal(SIGUSR2, _signal_while_allocating);
 
 	while (!resp) {
+//WHAT IS THIS?
 		resp = slurm_allocate_resources_blocking(j, opt.immediate,
 							 _set_pending_job_id);
 		if (destroy_job) {
@@ -420,8 +423,8 @@ allocate_nodes(void)
 		goto relinquish;
 	}
 
-	xsignal(SIGHUP, _exit_on_signal);
-	xsignal(SIGINT, ignore_signal);
+	xsignal(SIGHUP,  _exit_on_signal);
+	xsignal(SIGINT,  ignore_signal);
 	xsignal(SIGQUIT, ignore_signal);
 	xsignal(SIGPIPE, ignore_signal);
 	xsignal(SIGTERM, ignore_signal);

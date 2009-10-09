@@ -186,6 +186,7 @@
 int _verbose;
 opt_t opt;
 int error_exit = 1;
+int immediate_exit = 1;
 
 /*---- forward declarations of static functions  ----*/
 

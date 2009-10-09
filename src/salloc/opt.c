@@ -161,6 +161,7 @@
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
 int error_exit = 1;
+int immediate_exit = 1;
 
 /*---- forward declarations of static functions  ----*/
 

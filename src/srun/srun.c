@@ -667,14 +667,22 @@ static void  _set_prio_process_env(void)
 static void _set_exit_code(void)
 {
 	int i;
-	char *val = getenv("SLURM_ERROR_EXIT");
+	char *val;
 
-	if (val) {
+	if ((val = getenv("SLURM_ERROR_EXIT"))) {
 		i = atoi(val);
 		if (i == 0)
 			error("SLURM_ERROR_EXIT has zero value");
 		else
 			error_exit = i;
+	}
+
+	if ((val = getenv("SLURM_IMMEDIATE_EXIT"))) {
+		i = atoi(val);
+		if (i == 0)
+			error("SLURM_IMMEDIATE_EXIT has zero value");
+		else
+			immediate_exit = i;
 	}
 }
 
