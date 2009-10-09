@@ -2,7 +2,8 @@
  *  salloc.h - definitions for srun option processing
  *  $Id: opt.h 8700 2006-07-26 01:12:40Z morrone $
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -15,6 +16,17 @@
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission 
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and 
+ *  distribute linked combinations including the two. You must obey the GNU 
+ *  General Public License in all respects for all of the code used other than 
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this 
+ *  exception to your version of the file(s), but you are not obligated to do 
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in 
+ *  the program, then also delete it here.
  *  
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -23,7 +35,7 @@
  *  
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
- *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
 #ifndef _HAVE_SALLOC_H
@@ -35,6 +47,7 @@
 extern char **command_argv;
 extern int command_argc;
 extern pid_t command_pid;
+extern int error_exit;
 
 enum possible_allocation_states {NOT_GRANTED, GRANTED, REVOKED};
 extern enum possible_allocation_states allocation_state;

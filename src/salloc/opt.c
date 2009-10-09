@@ -518,12 +518,12 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_CPU_BIND:
 		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
 					  &opt.cpu_bind_type))
-			exit(1);
+			exit(error_exit);
 		break;
 	case OPT_MEM_BIND:
 		if (slurm_verify_mem_bind(val, &opt.mem_bind,
 					  &opt.mem_bind_type))
-			exit(1);
+			exit(error_exit);
 		break;
 	case OPT_WCKEY:
 		xfree(opt.wckey);
@@ -532,7 +532,8 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_SIGNAL:
 		if (get_signal_opts(optarg, &opt.warn_signal, 
 				    &opt.warn_time)) {
-			fatal("Invalid signal specification: %s", optarg);
+			error("Invalid signal specification: %s", optarg);
+			exit(error_exit);
 		}
 		break;
 	default:
@@ -555,7 +556,7 @@ _get_int(const char *arg, const char *what)
 
 	if ((*p != '\0') || (result < 0L)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		exit(1);
+		exit(error_exit);
 	}
 
 	if (result > INT_MAX) {
@@ -653,8 +654,10 @@ void set_options(const int argc, char **argv)
 
 	struct option *optz = spank_option_table_create(long_options);
 
-	if (!optz)
-		fatal("Unable to create options table");
+	if (!optz) {
+		error("Unable to create options table");
+		exit(error_exit);
+	}
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -665,7 +668,7 @@ void set_options(const int argc, char **argv)
 		case '?':
 			fprintf(stderr, "Try \"salloc --help\" for more "
 				"information\n");
-			exit(1);
+			exit(error_exit);
 			break;
 		case 'A':
 		case 'U':	/* backwards compatibility */
@@ -687,7 +690,7 @@ void set_options(const int argc, char **argv)
 			if (opt.extra_set == false) {
 				error("invalid resource allocation -B `%s'",
 					optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case 'c':
@@ -712,12 +715,12 @@ void set_options(const int argc, char **argv)
 				free(tmp);
 			} else {
 				error("\"%s\" is not a valid node file");
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case 'g':
 			if (verify_geometry(optarg, opt.geometry))
-				exit(1);
+				exit(error_exit);
 			break;
 		case 'h':
 			_help();
@@ -740,9 +743,9 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'K': /* argument is optional */
 			if (optarg) {
-				opt.kill_command_signal = _parse_signal(optarg);
+				opt.kill_command_signal =_parse_signal(optarg);
 				if (opt.kill_command_signal == 0)
-					exit(1);
+					exit(error_exit);
 			}
 			opt.kill_command_signal_set = true;
 			break;
@@ -756,7 +759,7 @@ void set_options(const int argc, char **argv)
 			if (opt.distribution == SLURM_DIST_UNKNOWN) {
 				error("distribution type `%s' " 
 				      "is not recognized", optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case 'n':
@@ -770,7 +773,7 @@ void set_options(const int argc, char **argv)
 						  &opt.min_nodes,
 						  &opt.max_nodes);
 			if (opt.nodes_set == false) {
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case 'O':
@@ -830,7 +833,7 @@ void set_options(const int argc, char **argv)
 			xfree(opt.exc_nodes);
 			opt.exc_nodes = xstrdup(optarg);
 			if (!_valid_node_list(&opt.exc_nodes))
-				exit(1);
+				exit(error_exit);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
@@ -843,7 +846,7 @@ void set_options(const int argc, char **argv)
 			if (opt.mincpus < 0) {
 				error("invalid mincpus constraint %s", 
 				      optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_MINSOCKETS:
@@ -851,7 +854,7 @@ void set_options(const int argc, char **argv)
 			if (opt.minsockets < 0) {
 				error("invalid minsockets constraint %s", 
 				      optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_MINCORES:
@@ -859,7 +862,7 @@ void set_options(const int argc, char **argv)
 			if (opt.mincores < 0) {
 				error("invalid mincores constraint %s", 
 				      optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_MINTHREADS:
@@ -867,7 +870,7 @@ void set_options(const int argc, char **argv)
 			if (opt.minthreads < 0) {
 				error("invalid minthreads constraint %s", 
 				      optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_MEM:
@@ -875,7 +878,7 @@ void set_options(const int argc, char **argv)
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s", 
 				      optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
@@ -883,27 +886,35 @@ void set_options(const int argc, char **argv)
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s", 
 				      optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_TMP:
 			opt.tmpdisk = str_to_bytes(optarg);
 			if (opt.tmpdisk < 0) {
 				error("invalid tmp value %s", optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_UID:
-			if (opt.euid != (uid_t) -1)
-				fatal ("duplicate --uid option");
-			if (uid_from_string (optarg, &opt.euid) < 0)
-				fatal ("--uid=\"%s\" invalid", optarg);
+			if (opt.euid != (uid_t) -1) {
+				error("duplicate --uid option");
+				exit(error_exit);
+			}
+			if (uid_from_string (optarg, &opt.euid) < 0) {
+				error("--uid=\"%s\" invalid", optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_GID:
-			if (opt.egid != (gid_t) -1)
-				fatal ("duplicate --gid option");
-			if (gid_from_string (optarg, &opt.euid) < 0)
-				fatal ("--gid=\"%s\" invalid", optarg);
+			if (opt.egid != (gid_t) -1) {
+				error("duplicate --gid option");
+				exit(error_exit);
+			}
+			if (gid_from_string (optarg, &opt.euid) < 0) {
+				error("--gid=\"%s\" invalid", optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_CONNTYPE:
 			opt.conn_type = verify_conn_type(optarg);
@@ -911,14 +922,17 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg, 0);
 			if (opt.begin == 0) {
-				fatal("Invalid time specification %s",
+				error("Invalid time specification %s",
 				      optarg);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_MAIL_TYPE:
 			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == 0)
-				fatal("--mail-type=%s invalid", optarg);
+			if (opt.mail_type == 0) {
+				error("--mail-type=%s invalid", optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_MAIL_USER:
 			xfree(opt.mail_user);
@@ -932,7 +946,7 @@ void set_options(const int argc, char **argv)
 			if (abs(opt.nice) > NICE_OFFSET) {
 				error("Invalid nice value, must be between "
 				       "-%d and %d", NICE_OFFSET, NICE_OFFSET);
-				exit(1);
+				exit(error_exit);
 			}
 			if (opt.nice < 0) {
 				uid_t my_uid = getuid();
@@ -981,14 +995,14 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_HINT:
 			if (verify_hint(optarg,
-				&opt.min_sockets_per_node,
-				&opt.max_sockets_per_node,
-				&opt.min_cores_per_socket,
-				&opt.max_cores_per_socket,
-				&opt.min_threads_per_core,
-				&opt.max_threads_per_core,
-				&opt.cpu_bind_type)) {
-				exit(1);
+					&opt.min_sockets_per_node,
+					&opt.max_sockets_per_node,
+					&opt.min_cores_per_socket,
+					&opt.max_cores_per_socket,
+					&opt.min_threads_per_core,
+					&opt.max_threads_per_core,
+					&opt.cpu_bind_type)) {
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_NTASKSPERNODE:
@@ -1041,12 +1055,12 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_CPU_BIND:
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
-				exit(1);
+				exit(error_exit);
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
 						  &opt.mem_bind_type))
-				exit(1);
+				exit(error_exit);
 			break;
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
@@ -1059,14 +1073,17 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_SIGNAL:
 			if (get_signal_opts(optarg, &opt.warn_signal, 
 					    &opt.warn_time)) {
-				fatal("Invalid signal specification: %s",
+				error("Invalid signal specification: %s",
 				      optarg);
+				exit(error_exit);
 			}
 			break;
 		default:
-			if (spank_process_option(opt_char, optarg) < 0)
-			    fatal("Unrecognized command line parameter %c",
-				    opt_char);
+			if (spank_process_option(opt_char, optarg) < 0) {
+				error("Unrecognized command line parameter %c",
+				      opt_char);
+				exit(error_exit);
+			}
 		}
 	}
 
@@ -1114,7 +1131,7 @@ static void _opt_args(int argc, char **argv)
 	command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (!_opt_verify())
-		exit(1);
+		exit(error_exit);
 }
 
 /* _get_shell - return a string containing the default shell for this user
@@ -1264,7 +1281,7 @@ static bool _opt_verify(void)
 #endif
 				error("Too few processes for the requested "
 				      "{plane,node} distribution");
-				exit(1);
+				exit(error_exit);
 			}
 		}
 	}
@@ -1350,7 +1367,7 @@ static bool _opt_verify(void)
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
 				      "hostfile");
-				exit(1);
+				exit(error_exit);
 			} else {
 				debug("loaded nodes (%s) from hostfile",
 				      opt.nodelist);
@@ -1358,7 +1375,7 @@ static bool _opt_verify(void)
 		}
 	} else {
 		if (!_valid_node_list(&opt.nodelist))
-			exit(1);
+			exit(error_exit);
 	}
 
 	/* set up the proc and node counts based on the arbitrary list
@@ -1382,7 +1399,7 @@ static bool _opt_verify(void)
 		opt.time_limit = time_str2mins(opt.time_limit_str);
 		if ((opt.time_limit < 0) && (opt.time_limit != INFINITE)) {
 			error("Invalid time limit specification");
-			exit(1);
+			exit(error_exit);
 		}
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
@@ -1395,7 +1412,7 @@ static bool _opt_verify(void)
 
 	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
 				  &opt.cpu_bind_type))
-		exit(1);
+		exit(error_exit);
 	if (opt.cpu_bind_type && (getenv("SLURM_CPU_BIND") == NULL)) {
 		char tmp[64];
 		slurm_sprint_cpu_bind_type(tmp, opt.cpu_bind_type);
