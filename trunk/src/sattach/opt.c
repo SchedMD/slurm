@@ -256,7 +256,7 @@ env_vars_t env_vars[] = {
  *            environment variables. See comments above for how to
  *            extend sattach to process different vars
  */
-static void _opt_env()
+static void _opt_env(void)
 {
 	char       *val = NULL;
 	env_vars_t *e   = env_vars;

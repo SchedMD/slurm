@@ -245,9 +245,12 @@ int main(int argc, char *argv[])
 		} else if (errno == EINTR) {
 			error("Interrupted by signal."
 			      "  Allocation request rescinded.");
-		} else if ((errno == ETIMEDOUT) && opt.immediate) {
+		} else if (opt.immediate && 
+			   ((errno == ETIMEDOUT) || 
+			    (errno == ESLURM_NODES_BUSY))) {
 			error("Unable to allocate resources: %s",
 			      slurm_strerror(ESLURM_NODES_BUSY));
+			error_exit = immediate_exit;
 		} else {
 			error("Failed to allocate resources: %m");
 		}
@@ -407,14 +410,22 @@ relinquish:
 static void _set_exit_code(void)
 {
 	int i;
-	char *val = getenv("SLURM_ERROR_EXIT");
+	char *val;
 
-	if (val) {
+	if ((val = getenv("SLURM_ERROR_EXIT"))) {
 		i = atoi(val);
 		if (i == 0)
 			error("SLURM_ERROR_EXIT has zero value");
 		else
 			error_exit = i;
+	}
+
+	if ((val = getenv("SLURM_IMMEDIATE_EXIT"))) {
+		i = atoi(val);
+		if (i == 0)
+			error("SLURM_IMMEDIATE_EXIT has zero value");
+		else
+			immediate_exit = i;
 	}
 }
 
