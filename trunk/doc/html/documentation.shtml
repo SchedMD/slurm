@@ -32,6 +32,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
 <li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
 <li><a href="preempt.html">Preemption</a></li>
+<li><a href="qos.html">Quality of Service</a></li>
 <li><a href="resource_limits.html">Resource Limits</a></li>
 <li><a href="reservations.html">Resource Reservation Gude</a></li>
 <li><a href="cons_res_share.html">Sharing Consumable Resources</a></li>

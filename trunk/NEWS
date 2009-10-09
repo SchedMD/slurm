@@ -54,6 +54,7 @@ documents those changes that are of interest to users and admins.
     exit code when the --immediate option is specified and resources are not
     available. Any other non-zero exit code would be that of the application
     run by SLURM.
+ -- Added a Quality of Service (QOS) html page.
 
 * Changes in SLURM 2.1.0-pre4
 =============================
