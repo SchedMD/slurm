@@ -190,7 +190,7 @@ static display_data_t options_data_part[] = {
 #else
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PART_PAGE},
 #endif
-	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, PART_PAGE},
+	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, PART_PAGE},
 	{G_TYPE_STRING, RESV_PAGE, "Reservations", TRUE, PART_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
