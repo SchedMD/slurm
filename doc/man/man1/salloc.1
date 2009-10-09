@@ -898,28 +898,28 @@ Same as \fB\-\-cpu_bind\fR
 \fBSALLOC_DEBUG\fR
 Same as \fB\-v, \-\-verbose\fR
 .TP
-\fBSLURM_ERROR_EXIT\fR
+\fBSALLOC_EXCLUSIVE\fR
+Same as \fB\-\-exclusive\fR
+.TP
+\fBSLURM_EXIT_ERROR\fR
 Specifies the exit code generated when a SLURM error occurs 
 (e.g. invalid options).
 This can be used by a script to distinguish application exit codes from
 various SLURM error conditions.
-Also see \fBSLURM_IMMEDIATE_EXIT\fR.
+Also see \fBSLURM_EXIT_IMMEDIATE\fR.
 .TP
-\fBSALLOC_EXCLUSIVE\fR
-Same as \fB\-\-exclusive\fR
+\fBSLURM_EXIT_IMMEDIATE\fR
+Specifies the exit code generated when the \fB\-\-immediate\fR option 
+is used and resources are not currently available. 
+This can be used by a script to distinguish application exit codes from
+various SLURM error conditions.
+Also see \fBSLURM_EXIT_ERROR\fR.
 .TP
 \fBSALLOC_GEOMETRY\fR
 Same as \fB\-g, \-\-geometry\fR
 .TP
 \fBSALLOC_IMMEDIATE\fR
 Same as \fB\-I, \-\-immediate\fR
-.TP
-\fBSLURM_IMMEDIATE_EXIT\fR
-Specifies the exit code generated when the \fB\-\-immediate\fR option 
-is used and resources are not currently available. 
-This can be used by a script to distinguish application exit codes from
-various SLURM error conditions.
-Also see \fBSLURM_ERROR_EXIT\fR.
 .TP
 \fBSALLOC_JOBID\fR
 Same as \fB\-\-jobid\fR

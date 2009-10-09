@@ -1346,25 +1346,25 @@ Same as \fB\-m, \-\-distribution\fR
 \fBSLURM_EPILOG\fR
 Same as \fB\-\-epilog\fR
 .TP
-\fBSLURM_ERROR_EXIT\fR
+\fBSLURM_EXCLUSIVE\fR
+Same as \fB\-\-exclusive\fR
+.TP
+\fBSLURM_EXIT_ERROR\fR
 Specifies the exit code generated when a SLURM error occurs 
 (e.g. invalid options).
 This can be used by a script to distinguish application exit codes from
 various SLURM error conditions.
-Also see \fBSLURM_IMMEDIATE_EXIT\fR.
+Also see \fBSLURM_EXIT_IMMEDIATE\fR.
 .TP
-\fBSLURM_EXCLUSIVE\fR
-Same as \fB\-\-exclusive\fR
-.TP
-\fBSLURM_GEOMETRY\fR
-Same as \fB\-g, \-\-geometry\fR
-.TP
-\fBSLURM_IMMEDIATE_EXIT\fR
+\fBSLURM_EXIT_IMMEDIATE\fR
 Specifies the exit code generated when the \fB\-\-immediate\fR option 
 is used and resources are not currently available. 
 This can be used by a script to distinguish application exit codes from
 various SLURM error conditions.
-Also see \fBSLURM_ERROR_EXIT\fR.
+Also see \fBSLURM_EXIT_ERROR\fR.
+.TP
+\fBSLURM_GEOMETRY\fR
+Same as \fB\-g, \-\-geometry\fR
 .TP
 \fBSLURM_JOB_NAME\fR
 Same as \fB\-J, \-\-job\-name\fR except within an existing

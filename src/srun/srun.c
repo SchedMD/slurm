@@ -669,18 +669,18 @@ static void _set_exit_code(void)
 	int i;
 	char *val;
 
-	if ((val = getenv("SLURM_ERROR_EXIT"))) {
+	if ((val = getenv("SLURM_EXIT_ERROR"))) {
 		i = atoi(val);
 		if (i == 0)
-			error("SLURM_ERROR_EXIT has zero value");
+			error("SLURM_EXIT_ERROR has zero value");
 		else
 			error_exit = i;
 	}
 
-	if ((val = getenv("SLURM_IMMEDIATE_EXIT"))) {
+	if ((val = getenv("SLURM_EXIT_IMMEDIATE"))) {
 		i = atoi(val);
 		if (i == 0)
-			error("SLURM_IMMEDIATE_EXIT has zero value");
+			error("SLURM_EXIT_IMMEDIATE has zero value");
 		else
 			immediate_exit = i;
 	}
