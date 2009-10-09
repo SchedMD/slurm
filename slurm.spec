@@ -343,6 +343,9 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.{a,la}
 %if ! %{slurm_with auth_none}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %endif
+%if ! %{slurm_with bluegene}
+rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
+%endif
 
 # Build conditional file list for main package
 LIST=./slurm.files
@@ -358,9 +361,6 @@ install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/fed
 %if %{slurm_with bluegene}
 rm ${RPM_BUILD_ROOT}%{_bindir}/srun
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
-%else
-# Delete unpackaged file
-rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 %endif
 
 LIST=./aix.files
