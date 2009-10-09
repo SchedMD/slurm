@@ -113,6 +113,11 @@ if {[expr $match_run + $match_wait + $match_term] != 3} {
 	send_user "\nFAILURE: srun failed to properly process SIGINT matches was $match_run $match_wait $match_term\n"
 	set exit_code 1
 }
+if {$exit_code == 0} {
+	send_user "\nSo far, so good\n\n"
+} else {
+	exit $exit_code
+}
 
 #
 # Spawn initial program via srun and use SIGINT to kill
