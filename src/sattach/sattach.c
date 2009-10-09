@@ -2,7 +2,7 @@
  *  sattach.c - Attach to a running job step.
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -71,6 +71,7 @@ static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 					uint32_t node_cnt);
 static uint32_t _nodeid_from_layout(slurm_step_layout_t *layout,
 				    uint32_t taskid);
+static void _set_exit_code(void);
 static int _attach_to_tasks(uint32_t jobid,
 			    uint32_t stepid,
 			    slurm_step_layout_t *layout,
@@ -80,6 +81,8 @@ static int _attach_to_tasks(uint32_t jobid,
 			    int num_io_ports,
 			    uint16_t *io_ports,
 			    bitstr_t *tasks_started);
+
+int global_rc = 0;
 
 /**********************************************************************
  * Message handler declarations
@@ -117,8 +120,10 @@ int sattach(int argc, char *argv[])
 	client_io_t *io;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+	_set_exit_code();
 	if (initialize_and_process_args(argc, argv) < 0) {
-		fatal("sattach parameter parsing");
+		error("sattach parameter parsing");
+		exit(error_exit);
 	}
 	/* reinit log with new verbosity (if changed by command line) */
 	if (opt.verbose || opt.quiet) {
@@ -131,7 +136,7 @@ int sattach(int argc, char *argv[])
 	layout = slurm_job_step_layout_get(opt.jobid, opt.stepid);
 	if (layout == NULL) {
 		error("Could not get job step info: %m");
-		return 1;
+		exit(error_exit);
 	}
 	if (opt.layout_only) {
 		print_layout_info(layout);
@@ -174,7 +179,21 @@ int sattach(int argc, char *argv[])
 	client_io_handler_destroy(io);
 	_mpir_cleanup();
 
-	return 0;
+	return global_rc;
+}
+
+static void _set_exit_code(void)
+{
+	int i;
+	char *val = getenv("SLURM_ERROR_EXIT");
+
+	if (val) {
+		i = atoi(val);
+		if (i == 0)
+			error("SLURM_ERROR_EXIT has zero value");
+		else
+			error_exit = i;
+	}
 }
 
 static uint32_t
@@ -479,9 +498,9 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 			    (socklen_t *)&len)) < 0) {
 		if (errno == EINTR)
 			continue;
-		if (errno == EAGAIN
-		    || errno == ECONNABORTED
-		    || errno == EWOULDBLOCK) {
+		if ((errno == EAGAIN)       ||
+		    (errno == ECONNABORTED) ||
+		    (errno == EWOULDBLOCK)) {
 			return SLURM_SUCCESS;
 		}
 		error("Error on msg accept socket: %m");
@@ -569,6 +588,7 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 				error("task %u exited with exit code %d",
 				      msg->task_id_list[i], rc);
 			}
+			global_rc = MAX(rc, global_rc);
 		}
 	} else if (WIFSIGNALED(msg->return_code)) {
 		for (i = 0; i < msg->num_tasks; i++) {
@@ -635,8 +655,10 @@ _mpir_init(int num_tasks)
 {
 	MPIR_proctable_size = num_tasks;
 	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * num_tasks);
-	if (MPIR_proctable == NULL)
-		fatal("Unable to initialize MPIR_proctable: %m");
+	if (MPIR_proctable == NULL) {
+		error("Unable to initialize MPIR_proctable: %m");
+		exit(error_exit);
+	}
 }
 
 static void
