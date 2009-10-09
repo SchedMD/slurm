@@ -164,6 +164,7 @@ typedef struct salloc_options {
 } opt_t;
 
 extern opt_t opt;
+extern int error_exit;
 
 /* process options:
  * 1. set defaults

@@ -87,7 +87,6 @@ extern int   spank_unset_job_env(const char *name);
 char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
-int error_exit = 1;
 
 enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;

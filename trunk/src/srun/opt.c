@@ -185,6 +185,7 @@
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
 opt_t opt;
+int error_exit = 1;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -233,7 +234,7 @@ int initialize_and_process_args(int argc, char *argv[])
 	_opt_args(argc, argv);
 
 	if (!_opt_verify())
-		exit(1);
+		exit(error_exit);
 
 	if (_verbose > 3)
 		_opt_list();
@@ -305,8 +306,10 @@ static void _opt_default()
 
 	opt.gid = getgid();
 
-	if ((getcwd(buf, MAXPATHLEN)) == NULL) 
-		fatal("getcwd failed: %m");
+	if ((getcwd(buf, MAXPATHLEN)) == NULL) {
+		error("getcwd failed: %m");
+		exit(error_exit);
+	}
 	opt.cwd = xstrdup(buf);
 	opt.cwd_set = false;
 
@@ -587,13 +590,13 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_CPU_BIND:
 		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
 					  &opt.cpu_bind_type))
-			exit(1);
+			exit(error_exit);
 		break;
 
 	case OPT_MEM_BIND:
 		if (slurm_verify_mem_bind(val, &opt.mem_bind,
 					  &opt.mem_bind_type))
-			exit(1);
+			exit(error_exit);
 		break;
 
 	case OPT_NODES:
@@ -659,16 +662,18 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_MPI:
 		if (mpi_hook_client_init((char *)val) == SLURM_ERROR) {
-			fatal("\"%s=%s\" -- invalid MPI type, "
+			error("\"%s=%s\" -- invalid MPI type, "
 			      "--mpi=list for acceptable types.",
 			      e->var, val);
+			exit(error_exit);
 		}
 		break;
 
 	case OPT_SIGNAL:
 		if (get_signal_opts(optarg, &opt.warn_signal, 
 				    &opt.warn_time)) {
-			fatal("Invalid signal specification: %s", optarg);
+			error("Invalid signal specification: %s", optarg);
+			exit(error_exit);
 		}
 		break;
 
@@ -693,7 +698,7 @@ _get_int(const char *arg, const char *what, bool positive)
 	if ((*p != '\0') || (result < 0L)
 	||  (positive && (result <= 0L))) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		exit(1);
+		exit(error_exit);
 	} else if (result > INT_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, what);
 	} else if (result < INT_MIN) {
@@ -818,12 +823,13 @@ static void set_options(const int argc, char **argv)
 	};
 	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
 		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
+	char *tmp_str;
 
 	struct option *optz = spank_option_table_create (long_options);
 
 	if (!optz) {
-		error ("Unable to create option table");
-		exit (1);
+		error("Unable to create option table");
+		exit(error_exit);
 	}
 
 	if(opt.progname == NULL)
@@ -838,7 +844,7 @@ static void set_options(const int argc, char **argv)
 		case (int)'?':
 			fprintf(stderr,
 				"Try \"srun --help\" for more information\n");
-			exit(1);
+			exit(error_exit);
 			break;
 		case (int)'A':
 		case (int)'U':	/* backwards compatibility */
@@ -848,11 +854,11 @@ static void set_options(const int argc, char **argv)
 		case (int)'a':
 			error("Please use the \"sattach\" command instead of "
 			      "\"srun -a/--attach\".");
-			exit(1);
+			exit(error_exit);
 		case (int)'b':
 			error("Please use the \"sbatch\" command instead of "
 			      "\"srun -b/--batch\".");
-			exit(1);
+			exit(error_exit);
 		case (int)'B':
 			opt.extra_set = verify_socket_core_thread_count(
 				optarg,
@@ -868,7 +874,7 @@ static void set_options(const int argc, char **argv)
 			if (opt.extra_set == false) {
 				error("invalid resource allocation -B `%s'",
 					optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case (int)'c':
@@ -891,8 +897,9 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'e':
 			if (opt.pty) {
-				fatal("--error incompatable with --pty "
+				error("--error incompatable with --pty "
 				      "option");
+				exit(error_exit);
 			}
 			xfree(opt.efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
@@ -905,15 +912,16 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'g':
 			if (verify_geometry(optarg, opt.geometry))
-				exit(1);
+				exit(error_exit);
 			break;
 		case (int)'H':
 			opt.hold = true;
 			break;
 		case (int)'i':
 			if (opt.pty) {
-				fatal("--input incompatable with "
+				error("--input incompatable with "
 				      "--pty option");
+				exit(error_exit);
 			}
 			xfree(opt.ifname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
@@ -954,7 +962,7 @@ static void set_options(const int argc, char **argv)
 			if (opt.distribution == SLURM_DIST_UNKNOWN) {
 				error("distribution type `%s' " 
 				      "is not recognized", optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case (int)'n':
@@ -972,12 +980,15 @@ static void set_options(const int argc, char **argv)
 			if (opt.nodes_set == false) {
 				error("invalid resource allocation -N `%s'", 
 				      optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case (int)'o':
-			if (opt.pty)
-				fatal("--output incompatable with --pty option");
+			if (opt.pty) {
+				error("--output incompatable with --pty "
+				      "option");
+				exit(error_exit);
+			}
 			xfree(opt.ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ofname = xstrdup("/dev/null");
@@ -1041,7 +1052,7 @@ static void set_options(const int argc, char **argv)
 			xfree(opt.exc_nodes);
 			opt.exc_nodes = xstrdup(optarg);
 			if (!_valid_node_list(&opt.exc_nodes))
-				exit(1);
+				exit(error_exit);
 			break;
 		case (int)'X': 
 			opt.disable_status = true;
@@ -1062,12 +1073,12 @@ static void set_options(const int argc, char **argv)
                 case LONG_OPT_CPU_BIND:
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
-				exit(1);
+				exit(error_exit);
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
 						  &opt.mem_bind_type))
-				exit(1);
+				exit(error_exit);
 			break;
 		case LONG_OPT_CORE:
 			opt.core_type = core_format_type (optarg);
@@ -1094,7 +1105,7 @@ static void set_options(const int argc, char **argv)
 			if (opt.job_min_memory < 0) {
 				error("invalid memory constraint %s", 
 				      optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_MEM_PER_CPU:
@@ -1102,15 +1113,16 @@ static void set_options(const int argc, char **argv)
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s", 
 				      optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_MPI:
 			if (mpi_hook_client_init((char *)optarg)
 			    == SLURM_ERROR) {
-				fatal("\"--mpi=%s\" -- long invalid MPI type, "
+				error("\"--mpi=%s\" -- long invalid MPI type, "
 				      "--mpi=list for acceptable types.",
 				      optarg);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_RESV_PORTS:
@@ -1123,7 +1135,7 @@ static void set_options(const int argc, char **argv)
 			opt.job_min_tmp_disk = str_to_bytes(optarg);
 			if (opt.job_min_tmp_disk < 0) {
 				error("invalid tmp value %s", optarg);
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_JOBID:
@@ -1143,16 +1155,24 @@ static void set_options(const int argc, char **argv)
 				_get_int(optarg, "max-exit-timeout", true);
 			break;
 		case LONG_OPT_UID:
-			if (opt.euid != (uid_t) -1)
-				fatal ("duplicate --uid option");
-			if (uid_from_string (optarg, &opt.euid) < 0)
-				fatal ("--uid=\"%s\" invalid", optarg);
+			if (opt.euid != (uid_t) -1) {
+				error("duplicate --uid option");
+				exit(error_exit);
+			}
+			if (uid_from_string (optarg, &opt.euid) < 0) {
+				error("--uid=\"%s\" invalid", optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_GID:
-			if (opt.egid != (gid_t) -1)
-				fatal ("duplicate --gid option");
-			if (gid_from_string (optarg, &opt.egid) < 0)
-				fatal ("--gid=\"%s\" invalid", optarg);
+			if (opt.egid != (gid_t) -1) {
+				error("duplicate --gid option");
+				exit(error_exit);
+			}
+			if (gid_from_string (optarg, &opt.egid) < 0) {
+				error("--gid=\"%s\" invalid", optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_DEBUG_TS:
 			opt.debugger_test    = true;
@@ -1200,14 +1220,17 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg, 0);
 			if (opt.begin == 0) {
-				fatal("Invalid time specification %s",
+				error("Invalid time specification %s",
 				      optarg);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_MAIL_TYPE:
 			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == 0)
-				fatal("--mail-type=%s invalid", optarg);
+			if (opt.mail_type == 0) {
+				error("--mail-type=%s invalid", optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_MAIL_USER:
 			xfree(opt.mail_user);
@@ -1229,7 +1252,7 @@ static void set_options(const int argc, char **argv)
 			if (abs(opt.nice) > NICE_OFFSET) {
 				error("Invalid nice value, must be between "
 				      "-%d and %d", NICE_OFFSET, NICE_OFFSET);
-				exit(1);
+				exit(error_exit);
 			}
 			if (opt.nice < 0) {
 				uid_t my_uid = getuid();
@@ -1279,7 +1302,7 @@ static void set_options(const int argc, char **argv)
 				&opt.min_threads_per_core,
 				&opt.max_threads_per_core,
 				&opt.cpu_bind_type)) {
-				exit(1);
+				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_NTASKSPERNODE:
@@ -1322,13 +1345,21 @@ static void set_options(const int argc, char **argv)
 			opt.pty = true;
 			opt.unbuffered = true;	/* implicit */
 			if (opt.ifname)
-				fatal("--input incompatable with --pty option");
-			if (opt.ofname)
-				fatal("--output incompatable with --pty option");
-			if (opt.efname)
-				fatal("--error incompatable with --pty option");
+				tmp_str = "--input";
+			else if (opt.ofname)
+				tmp_str = "--output";
+			else if (opt.efname)
+				tmp_str = "--error";
+			else
+				tmp_str = NULL;
+			if (tmp_str) {
+				error("%s incompatable with --pty option",
+				      tmp_str);
+				exit(error_exit);
+			}
 #else
-			error("--pty not currently supported on this system type");
+			error("--pty not currently supported on this system "
+			      "type");
 #endif
 			break;
 		case LONG_OPT_CHECKPOINT:
@@ -1368,13 +1399,14 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_SIGNAL:
 			if (get_signal_opts(optarg, &opt.warn_signal, 
 					    &opt.warn_time)) {
-				fatal("Invalid signal specification: %s",
+				error("Invalid signal specification: %s",
 				      optarg);
+				exit(error_exit);
 			}
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
-				exit (1);
+				exit(error_exit);
 			}
 		}
 	}
@@ -1394,17 +1426,17 @@ static void _load_multi(int *argc, char **argv)
 	if ((config_fd = open(argv[0], O_RDONLY)) == -1) {
 		error("Could not open multi_prog config file %s",
 		      argv[0]);
-		exit(1);
+		exit(error_exit);
 	}
 	if (fstat(config_fd, &stat_buf) == -1) {
 		error("Could not stat multi_prog config file %s",
 		      argv[0]);
-		exit(1);
+		exit(error_exit);
 	}
 	if (stat_buf.st_size > 60000) {
 		error("Multi_prog config file %s is too large",
 		      argv[0]);
-		exit(1);
+		exit(error_exit);
 	}
 	data_buf = xmalloc(stat_buf.st_size + 1);
 	while ((i = read(config_fd, &data_buf[data_read], stat_buf.st_size 
@@ -1412,7 +1444,7 @@ static void _load_multi(int *argc, char **argv)
 		if (i < 0) {
 			error("Error reading multi_prog config file %s", 
 			      argv[0]);
-			exit(1);
+			exit(error_exit);
 		} else
 			data_read += i;
 	}
@@ -1461,7 +1493,7 @@ static void _opt_args(int argc, char **argv)
 #endif
 				error("Too few processes for the requested "
 				      "{plane,node} distribution");
-				exit(1);
+				exit(error_exit);
 			}
 		}
 	}
@@ -1500,7 +1532,7 @@ static void _opt_args(int argc, char **argv)
 	if (opt.multi_prog) {
 		if (opt.argc < 1) {
 			error("configuration file not specified");
-			exit(1);
+			exit(error_exit);
 		}
 		_load_multi(&opt.argc, opt.argv);
 	}
@@ -1514,7 +1546,7 @@ static void _opt_args(int argc, char **argv)
 	}
 
 	if (opt.multi_prog && verify_multi_name(opt.argv[0], opt.nprocs))
-		exit(1);
+		exit(error_exit);
 }
 
 /* 
@@ -1586,7 +1618,7 @@ static bool _opt_verify(void)
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
 				      "hostfile");
-				exit(1);
+				exit(error_exit);
 			} else {
 				debug("loaded nodes (%s) from hostfile",
 				      opt.nodelist);
@@ -1594,7 +1626,7 @@ static bool _opt_verify(void)
 		}
 	} else {
 		if (!_valid_node_list(&opt.nodelist))
-			exit(1);
+			exit(error_exit);
 	}
 
 	/* set up the proc and node counts based on the arbitrary list
@@ -1729,8 +1761,10 @@ static bool _opt_verify(void)
 	/* massage the numbers */
 	if (opt.nodelist) {
 		hl = hostlist_create(opt.nodelist);
-		if (!hl)
-			fatal("memory allocation failure");
+		if (!hl) {
+			error("memory allocation failure");
+			exit(error_exit);
+		}
 		hostlist_uniq(hl);
 		hl_cnt = hostlist_count(hl);
 		if (opt.nodes_set)
@@ -1764,8 +1798,10 @@ static bool _opt_verify(void)
 		/* massage the numbers */
 		if (opt.nodelist) {
 			hl = hostlist_create(opt.nodelist);
-			if (!hl)
-				fatal("memory allocation failure");
+			if (!hl) {
+				error("memory allocation failure");
+				exit(error_exit);
+			}
 			if(opt.distribution == SLURM_DIST_ARBITRARY
 			   && !opt.nprocs_set) {
 				opt.nprocs = hostlist_count(hl);
@@ -1836,7 +1872,7 @@ static bool _opt_verify(void)
 	if (opt.labelio && opt.unbuffered) {
 		error("Do not specify both -l (--label) and " 
 		      "-u (--unbuffered)");
-		exit(1);
+		exit(error_exit);
 	}
 
 	/*
@@ -1849,7 +1885,7 @@ static bool _opt_verify(void)
 		opt.time_limit = time_str2mins(opt.time_limit_str);
 		if ((opt.time_limit < 0) && (opt.time_limit != INFINITE)) {
 			error("Invalid time limit specification");
-			exit(1);
+			exit(error_exit);
 		}
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
@@ -1860,7 +1896,7 @@ static bool _opt_verify(void)
 		if ((opt.ckpt_interval < 0) && 
 		    (opt.ckpt_interval != INFINITE)) {
 			error("Invalid checkpoint interval specification");
-			exit(1);
+			exit(error_exit);
 		}
 	}
 
@@ -1875,7 +1911,7 @@ static bool _opt_verify(void)
 
 	 if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
 				   &opt.cpu_bind_type))
-		exit(1);
+		exit(error_exit);
 
 	return verified;
 }

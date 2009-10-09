@@ -437,7 +437,7 @@ relinquish:
 	slurm_free_resource_allocation_response_msg(resp);
 	if(!destroy_job)
 		slurm_complete_job(resp->job_id, 1);
-	exit(1);
+	exit(error_exit);
 	return NULL;
 }
 
@@ -475,7 +475,7 @@ existing_allocation(void)
                               old_job_id);
                 info ("Check SLURM_JOB_ID environment variable "
                       "for expired or invalid job.");
-                exit(1);
+                exit(error_exit);
         }
 
         return resp;
@@ -495,10 +495,14 @@ slurmctld_msg_init(void)
 	slurmctld_fd = -1;
 	slurmctld_comm_addr.port = 0;
 
-	if ((slurmctld_fd = slurm_init_msg_engine_port(0)) < 0)
-		fatal("slurm_init_msg_engine_port error %m");
-	if (slurm_get_stream_addr(slurmctld_fd, &slurm_address) < 0)
-		fatal("slurm_get_stream_addr error %m");
+	if ((slurmctld_fd = slurm_init_msg_engine_port(0)) < 0) {
+		error("slurm_init_msg_engine_port error %m");
+		exit(error_exit);
+	}
+	if (slurm_get_stream_addr(slurmctld_fd, &slurm_address) < 0) {
+		error("slurm_get_stream_addr error %m");
+		exit(error_exit);
+	}
 	fd_set_nonblocking(slurmctld_fd);
 	/* hostname is not set,  so slurm_get_addr fails
 	   slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
