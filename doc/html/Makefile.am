@@ -41,6 +41,7 @@ generated_html = \
 	priority_plugins.html \
 	programmer_guide.html \
 	publications.html \
+	qos.html \
 	quickstart_admin.html \
 	quickstart.html \
 	reservations.html \

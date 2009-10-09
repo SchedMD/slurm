@@ -122,40 +122,17 @@ will apply.</p>
 -->
 
 <!-- For future use
+<li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
+  running from this association.  If this limit is
+  reached the job will be killed will be allowed to run.
+</li>
+-->
+
+<!-- For future use
 <li><b>GrpCPUs=</b> The total count of cpus able to be used at any given
   time from jobs running from this association and its children.  If
   this limit is reached new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
-</li>
--->
-
-<li><b>GrpJobs=</b> The total number of jobs able to run at any given
-  time from this association and its children.  If
-  this limit is reached new jobs will be queued but only allowed to
-  run after previous jobs complete from this group.
-</li>
-
-<li><b>GrpNodes=</b> The total count of nodes able to be used at any given
-  time from jobs running from this association and its children.  If
-  this limit is reached new jobs will be queued but only allowed to
-  run after resources have been relinquished from this group.
-</li>
-
-<li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
-  to the system at any given time from this association and its children.  If
-  this limit is reached new submission requests will be denied until
-  previous jobs complete from this group.
-</li>
-
-<li><b>GrpWall=</b> The maximum wall clock time any job submitted to
-  this group can run for.  If this limit is reached submission requests
-  will be denied. 
-</li>
-
-<!-- For future use
-<li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
-  running from this association.  If this limit is
-  reached the job will be killed will be allowed to run.
 </li>
 -->
 
@@ -166,26 +143,49 @@ will apply.</p>
 </li>
 -->
 
+<li><b>GrpJobs=</b> The total number of jobs able to run at any given
+  time from this association and its children.  If
+  this limit is reached new jobs will be queued but only allowed to
+  run after previous jobs complete from this group.
+</li>
+
 <li><b>MaxJobs=</b> The total number of jobs able to run at any given
   time from this association.  If this limit is reached new jobs will
   be queued but only allowed to run after previous jobs complete from
   this association.
 </li>
 
+<li><b>GrpNodes=</b> The total count of nodes able to be used at any given
+  time from jobs running from this association and its children.  If
+  this limit is reached new jobs will be queued but only allowed to
+  run after resources have been relinquished from this group.
+</li>
+
 <li><b>MaxNodesPerJob=</b> The maximum size in nodes any given job can
   have from this association.  If this limit is reached the job will
   be denied at submission.
 </li>
- 
+
+<li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
+  to the system at any given time from this association and its children.  If
+  this limit is reached new submission requests will be denied until
+  previous jobs complete from this group.
+</li>
+
 <li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
   to the system at any given time from this association.  If
   this limit is reached new submission requests will be denied until
   previous jobs complete from this association.
 </li>
 
+<li><b>GrpWall=</b> The maximum wall clock time any job submitted to
+  this group can run for.  Submitting jobs that specify a wall clock
+  time limit that exceeds this limit will be denied.</li>
+
 <li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any job
-  submitted to this association can run for.  If this limit is reached
-  the job will be denied at submission.
+  submitted to this association can run for.  Submitting jobs that
+  specify a wall clock time limit that exceeds this limit will be
+  denied.
 </li>
 
 <li><b>QOS=</b> comma separated list of QOS's this association is
@@ -193,36 +193,18 @@ will apply.</p>
 </li>
 </ul>
 
-<p>The <b>MaxNodes</b> and <b>MaxWall</b> options already exist in 
-SLURM's configuration on a per-partition basis, but these options 
-provide the ability to establish limits on a per-user basis.
-The <b>MaxJobs</b> option provides an entirely new mechanism 
-for SLURM to control the workload any individual may place on
-a cluster in order to achieve some balance between users.</p>
+<p>The <b>MaxNodes</b> and <b>MaxWall</b> options already exist in
+SLURM's configuration on a per-partition basis, but the above options
+provide the ability to impose limits on a per-user basis.  The
+<b>MaxJobs</b> option provides an entirely new mechanism for SLURM to
+control the workload any individual may place on a cluster in order to
+achieve some balance between users.</p>
 
-<p>Fair-share scheduling based upon the hierarchical bank account
-data is already maintained in the SLURM database.  This information
-  can now be leveraged from
-  the <a href="priority_multifactor.html">priority/multifactor</a> plugin.
-<p>
-The priorities of pending jobs will be adjusted in order to 
-deliver resources in proportion to each association's fair-share.
-<br>
-Consider the trivial example of a single bank account with 
-two users named Alice and Brian. 
-<br>
-We might allocate Alice 60 percent of the resources and Brian the 
-remaining 40 percent.
-<br>
-If Alice has actually used 80 percent of available resources in the 
-recent past, then Brian's pending jobs will automatically be given a
-higher priority than Alice's in order to deliver resources in 
-proportion to the fair-share target. 
-<br>
-The time window considered in fair-share scheduling will be configurable 
-as well as the relative importance of job age (time waiting to run), 
-but this this example illustrates the concepts involved.</p>
+<p>Fair-share scheduling is based upon the hierarchical bank account
+data maintained in the SLURM database.  More information can be found
+in the <a href="priority_multifactor.html">priority/multifactor</a>
+plugin description.</p>
 
-<p style="text-align: center;">Last modified 2 March 2009</p>
+<p style="text-align: center;">Last modified 9 October 2009</p>
 
 </ul></body></html>
