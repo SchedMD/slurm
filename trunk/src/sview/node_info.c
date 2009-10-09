@@ -324,13 +324,13 @@ static void _update_node_record(node_info_t *node_ptr,
 	return;
 }
 
-static void _append_node_record(node_info_t *node_ptr,
-				GtkTreeStore *treestore, GtkTreeIter *iter,
-				int line)
+static void _append_node_record(sview_node_info_t *sview_node_info,
+				GtkTreeStore *treestore, GtkTreeIter *iter)
 {
 	gtk_tree_store_append(treestore, iter, NULL);
-	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
-	_update_node_record(node_ptr, treestore, iter);
+	gtk_tree_store_set(treestore, iter, SORTID_POS,
+			   sview_node_info->pos, -1);
+	_update_node_record(sview_node_info->node_ptr, treestore, iter);
 }
 
 static void _update_info_node(List info_list, GtkTreeView *tree_view)
@@ -339,7 +339,6 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkTreeIter iter;
 	node_info_t *node_ptr = NULL;
-	int line = 0;
 	char *name;
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info = NULL;
@@ -362,6 +361,7 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
 			goto adding;
 		}
+
 		while(1) {
 			/* search for the node name and check to see if 
 			   it is in the list */
@@ -376,18 +376,14 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 				goto found;
 			}
 			g_free(name);
-			/* see what line we were on to add the next one 
-			   to the list */
-			gtk_tree_model_get(model, &iter, SORTID_POS, 
-					   &line, -1);
+			
 			if(!gtk_tree_model_iter_next(model, &iter)) {
-				line++;
 				break;
 			}
 		}
 	adding:
-		_append_node_record(node_ptr, GTK_TREE_STORE(model), &iter,
-				    line);
+		_append_node_record(sview_node_info,
+				    GTK_TREE_STORE(model), &iter);
 	found:
 		;
 	}
@@ -534,6 +530,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
 		list_append(info_list, sview_node_info_ptr);
 		sview_node_info_ptr->node_ptr = node_ptr;
+		sview_node_info_ptr->pos = i;
 	}
 update_color:
 	
@@ -1231,7 +1228,7 @@ extern void set_menus_node(void *arg, void *arg2, GtkTreePath *path, int type)
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	GtkMenu *menu = (GtkMenu *)arg2;
-/* 	List button_list = (List)arg2; */
+	List button_list = (List)arg2;
 
 	switch(type) {
 	case TAB_CLICKED:
@@ -1241,8 +1238,18 @@ extern void set_menus_node(void *arg, void *arg2, GtkTreePath *path, int type)
 		make_options_menu(tree_view, path, menu, options_data_node);
 		break;
 	case ROW_LEFT_CLICKED:
-		//highlight_grid(tree_view, path, SORTID_NODE_INX, button_list);
+	{
+		GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
+		GtkTreeIter iter;
+		int node_inx = 0;
+		if (!gtk_tree_model_get_iter(model, &iter, path)) {
+			g_error("error getting iter from model\n");
+			break;
+		}		
+		gtk_tree_model_get(model, &iter, SORTID_POS, &node_inx, -1);
+		highlight_grid_range(node_inx, node_inx, button_list);
 		break;
+	}
 	case FULL_CLICKED:
 	{
 		GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
