@@ -57,7 +57,8 @@
 #include "src/common/env.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/xmalloc.h"/* external functions available for SPANK plugins to modify the environment
+#include "src/common/xmalloc.h"
+/* external functions available for SPANK plugins to modify the environment
  * exported to the SLURM Prolog and Epilog programs */
 extern char *spank_get_job_env(const char *name);
 extern int   spank_set_job_env(const char *name, const char *value, 
@@ -86,6 +87,8 @@ extern int   spank_unset_job_env(const char *name);
 char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
+int error_exit = 1;
+
 enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -102,6 +105,7 @@ static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
 static void _signal_while_allocating(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
+static void _set_exit_code(void);
 static void _set_rlimits(char **env);
 static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
@@ -138,8 +142,11 @@ int main(int argc, char *argv[])
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
-	if (spank_init_allocator() < 0)
-		fatal("Failed to initialize plugin stack");
+	_set_exit_code();
+	if (spank_init_allocator() < 0) {
+		error("Failed to initialize plugin stack");
+		exit(error_exit);
+	}
 
 	/* Be sure to call spank_fini when salloc exits
 	 */
@@ -148,7 +155,8 @@ int main(int argc, char *argv[])
 
 
 	if (initialize_and_process_args(argc, argv) < 0) {
-		fatal("salloc parameter parsing");
+		error("salloc parameter parsing");
+		exit(error_exit);
 	}
 	/* reinit log with new verbosity (if changed by command line) */
 	if (opt.verbose || opt.quiet) {
@@ -158,12 +166,13 @@ int main(int argc, char *argv[])
 		log_alter(logopt, 0, NULL);
 	}
 
-	if (spank_init_post_opt() < 0)
-		fatal("Plugin stack post-option processing failed");
-
+	if (spank_init_post_opt() < 0) {
+		error("Plugin stack post-option processing failed");
+		exit(error_exit);
+	}
 	if (opt.cwd && chdir(opt.cwd)) {
 		error("chdir(%s): %m", opt.cwd);
-		exit(1);
+		exit(error_exit);
 	}
 
 	if (opt.get_user_env_time >= 0) {
@@ -171,13 +180,13 @@ int main(int argc, char *argv[])
 		pw = getpwuid(opt.uid);
 		if (pw == NULL) {
 			error("getpwuid(%u): %m", (uint32_t)opt.uid);
-			exit(1);
+			exit(error_exit);
 		}
 		env = env_array_user_default(pw->pw_name,
 					     opt.get_user_env_time,
 					     opt.get_user_env_mode);
 		if (env == NULL)
-			exit(1);    /* error already logged */
+			exit(error_exit);    /* error already logged */
 		_set_rlimits(env);
 	}
 
@@ -186,15 +195,19 @@ int main(int argc, char *argv[])
 	 */
 	slurm_init_job_desc_msg(&desc);
 	if (_fill_job_desc_from_opts(&desc) == -1) {
-		exit(1);
+		exit(error_exit);
 	}
 	if (opt.gid != (gid_t) -1) {
-		if (setgid(opt.gid) < 0)
-			fatal("setgid: %m");
+		if (setgid(opt.gid) < 0) {
+			error("setgid: %m");
+			exit(error_exit);
+		}
 	}
 	if (opt.uid != (uid_t) -1) {
-		if (setuid(opt.uid) < 0)
-			fatal("setuid: %m");
+		if (setuid(opt.uid) < 0) {
+			error("setuid: %m");
+			exit(error_exit);
+		}
 	}
 
 	callbacks.ping = _ping_handler;
@@ -240,7 +253,7 @@ int main(int argc, char *argv[])
 			error("Failed to allocate resources: %m");
 		}
 		slurm_allocation_msg_thr_destroy(msg_thr);
-		exit(1);
+		exit(error_exit);
 	} else if (!allocation_interrupted) {
 		/*
 		 * Allocation granted!
@@ -339,7 +352,7 @@ int main(int argc, char *argv[])
 				continue;
 		}
 		errnum = errno;
-		if (rc_pid == -1 && errnum != EINTR)
+		if ((rc_pid == -1) && (errnum != EINTR))
 			error("waitpid for %s failed: %m", command_argv[0]);
 	}
 
@@ -375,8 +388,8 @@ relinquish:
 			verbose("Command \"%s\" was terminated by signal %d",
 				command_argv[0], WTERMSIG(status));
 			/* if we get these signals we return a normal
-			   exit since this was most likely sent from the
-			   user */
+			 * exit since this was most likely sent from the
+			 * user */
 			switch(WTERMSIG(status)) {
 			case SIGHUP:
 			case SIGINT:
@@ -392,6 +405,19 @@ relinquish:
 	return rc;
 }
 
+static void _set_exit_code(void)
+{
+	int i;
+	char *val = getenv("SLURM_ERROR_EXIT");
+
+	if (val) {
+		i = atoi(val);
+		if (i == 0)
+			error("SLURM_ERROR_EXIT has zero value");
+		else
+			error_exit = i;
+	}
+}
 
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
@@ -557,7 +583,7 @@ static pid_t _fork_command(char **command)
 
 		/* should only get here if execvp failed */
 		error("Unable to exec command \"%s\"", command[0]);
-		exit(1);
+		exit(error_exit);
 	}
 	/* parent returns */
 	return pid;
