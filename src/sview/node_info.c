@@ -116,8 +116,8 @@ static display_data_t options_data_node[] = {
 #ifdef HAVE_BG
 	{G_TYPE_STRING, BLOCK_PAGE, "Blocks", TRUE, NODE_PAGE},
 #endif
-	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, NODE_PAGE},
-	{G_TYPE_STRING, RESV_PAGE, "Reservation", TRUE, NODE_PAGE},
+	{G_TYPE_STRING, PART_PAGE, "Partitions", TRUE, NODE_PAGE},
+	{G_TYPE_STRING, RESV_PAGE, "Reservations", TRUE, NODE_PAGE},
 	//{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, NODE_PAGE},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
@@ -1002,7 +1002,8 @@ display_it:
 		display_widget = NULL;
 	}
 	if(!display_widget) {
-		tree_view = create_treeview(local_display_data);
+		tree_view = create_treeview(local_display_data,
+					    &grid_button_list);
 		
 		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(GTK_TABLE(table),
@@ -1086,7 +1087,8 @@ display_it:
 		spec_info->display_widget = NULL;
 	}
 	if(spec_info->type != INFO_PAGE && !spec_info->display_widget) {
-		tree_view = create_treeview(local_display_data);
+		tree_view = create_treeview(local_display_data,
+					    &popup_win->grid_button_list);
 		
 		spec_info->display_widget = 
 			gtk_widget_ref(GTK_WIDGET(tree_view));
@@ -1224,22 +1226,36 @@ end_it:
 	
 }
 
-extern void set_menus_node(void *arg, GtkTreePath *path, 
-			   GtkMenu *menu, int type)
+extern void set_menus_node(void *arg, void *arg2, GtkTreePath *path, int type)
 {
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
+	GtkMenu *menu = (GtkMenu *)arg2;
+/* 	List button_list = (List)arg2; */
+
 	switch(type) {
 	case TAB_CLICKED:
 		make_fields_menu(NULL, menu, display_data_node, SORTID_CNT);
 		break;
 	case ROW_CLICKED:
 		make_options_menu(tree_view, path, menu, options_data_node);
-		/* don't break, need to highlight */
-	case ROW_LEFT_CLICKED:
-		/* highlight_grid(tree_view, path,  */
-/* 			       SORTID_NODE_INX, grid_button_list); */
 		break;
+	case ROW_LEFT_CLICKED:
+		//highlight_grid(tree_view, path, SORTID_NODE_INX, button_list);
+		break;
+	case FULL_CLICKED:
+	{
+		GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
+		GtkTreeIter iter;
+		if (!gtk_tree_model_get_iter(model, &iter, path)) {
+			g_error("error getting iter from model\n");
+			break;
+		}		
+	
+		popup_all_node(model, &iter, INFO_PAGE);
+
+		break;
+	}
 	case POPUP_CLICKED:
 		make_fields_menu(popup_win, menu,
 				 popup_win->display_data, SORTID_CNT);
@@ -1252,6 +1268,15 @@ extern void set_menus_node(void *arg, GtkTreePath *path,
 extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
+
+	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	popup_all_node_name(name, id);
+	/* this name gets g_strdup'ed in the previous function */
+	g_free(name);
+}
+
+extern void popup_all_node_name(char *name, int id)
+{
 	char title[100];
 	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
@@ -1262,10 +1287,9 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 #else
 	char *node = "node";
 #endif
-	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
 	switch(id) {
 	case JOB_PAGE:
-		snprintf(title, 100, "Jobs(s) with %s %s", node, name);
+		snprintf(title, 100, "Job(s) with %s %s", node, name);
 		break;
 	case PART_PAGE:
 		snprintf(title, 100, "Partition(s) with %s %s", node, name);
@@ -1300,7 +1324,7 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win = create_popup_info(id, NODE_PAGE, title);
 		else
 			popup_win = create_popup_info(NODE_PAGE, id, title);
-		popup_win->spec_info->search_info->gchar_data = name;
+		popup_win->spec_info->search_info->gchar_data = g_strdup(name);
 		if (!g_thread_create((gpointer)popup_thr, popup_win, 
 				     FALSE, &error))
 		{
@@ -1309,15 +1333,75 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 				    error->message);
 			return;
 		}
-	} else {
-		g_free(name);
+	} else 
 		gtk_window_present(GTK_WINDOW(popup_win->popup));
+}
+
+static void _selected_page(GtkMenuItem *menuitem, 
+			   display_data_t *display_data)
+{
+	switch(display_data->extra) {
+	case NODE_PAGE:
+		popup_all_node_name(display_data->user_data, display_data->id);
+		break;
+	case ADMIN_PAGE:
+		admin_node_name(display_data->user_data,
+				NULL, display_data->name);
+		break;
+	default:
+		g_print("node got %d %d\n", display_data->extra,
+			display_data->id);
 	}
+
+}
+
+extern void admin_menu_node_name(char *name, GdkEventButton *event)
+{
+	GtkMenu *menu = GTK_MENU(gtk_menu_new());
+	display_data_t *display_data = options_data_node;
+	GtkWidget *menuitem;
+
+	while(display_data++) {
+		if(display_data->id == -1)
+			break;
+		if(!display_data->name)
+			continue;
+		
+		display_data->user_data = name;
+		menuitem = gtk_menu_item_new_with_label(display_data->name); 
+		g_signal_connect(menuitem, "activate",
+				 G_CALLBACK(_selected_page), 
+				 display_data);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+	}
+	gtk_widget_show_all(GTK_WIDGET(menu));
+	gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
+		       (event != NULL) ? event->button : 0,
+		       gdk_event_get_time((GdkEvent*)event));
 }
 
 extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	char *name = NULL;
+	char *old_features = NULL;
+
+	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
+	if(!strcasecmp("Update Features", type))  /* get old features */
+		gtk_tree_model_get(model, iter, SORTID_FEATURES,
+				   &old_features, -1);
+		
+	admin_node_name(name, old_features, type);
+
+	if(name)
+		g_free(name);
+	if(old_features)
+		g_free(old_features);	
+
+	return;
+}
+
+extern void admin_node_name(char *name, char *old_features, char *type)
+{
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		type,
 		GTK_WINDOW(main_window),
@@ -1325,18 +1409,11 @@ extern void admin_node(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
-	gtk_tree_model_get(model, iter, SORTID_NAME, &name, -1);
-		
 	if(!strcasecmp("Update Features", type)) { /* update features */
-		char *old_features = NULL;
-		gtk_tree_model_get(model, iter, SORTID_FEATURES,
-				   &old_features, -1);
 		update_features_node(GTK_DIALOG(popup), name, old_features);
-		g_free(old_features);
-
 	} else /* something that has to deal with a node state change */
 		update_state_node(GTK_DIALOG(popup), name, type);
-	g_free(name);
+
 	gtk_widget_destroy(popup);
 		
 	return;

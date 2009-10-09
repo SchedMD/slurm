@@ -102,40 +102,13 @@ static gboolean _mouseoff_node(GtkWidget *widget, GdkEventButton *event,
 static gboolean _open_node(GtkWidget *widget, GdkEventButton *event, 
 			   grid_button_t *grid_button)
 {
-	GError *error = NULL;
-	char title[100];
-	ListIterator itr = NULL;
-	popup_info_t *popup_win = NULL;
-
-#ifdef HAVE_BG
-	snprintf(title, 100, 
-		 "Info about base partition %s", grid_button->node_name);
-#else
-	snprintf(title, 100, "Info about node %s", grid_button->node_name);
-#endif
-	itr = list_iterator_create(popup_list);
-	while((popup_win = list_next(itr))) {
-		if(popup_win->spec_info)
-			if(!strcmp(popup_win->spec_info->title, title)) {
-				break;
-			} 
+	if(event->button == 1) {
+		popup_all_node_name(grid_button->node_name, INFO_PAGE);
+	} else if(event->button == 3) {
+		/* right click */
+		admin_menu_node_name(grid_button->node_name, event);
 	}
-	list_iterator_destroy(itr);
 
-	if(!popup_win) {
-		popup_win = create_popup_info(INFO_PAGE, NODE_PAGE, title);
-		popup_win->spec_info->search_info->gchar_data =
-			g_strdup(grid_button->node_name);
-		if (!g_thread_create((gpointer)popup_thr, popup_win,
-				     FALSE, &error))
-		{
-			g_printerr ("Failed to create grid popup thread: "
-				    "%s\n", 
-				    error->message);
-			return false;
-		}	
-	} else
-		gtk_window_present(GTK_WINDOW(popup_win->popup));
 	return false;
 }
 
@@ -519,6 +492,7 @@ extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	GtkTreeIter iter;
 	int *node_inx = NULL;
+/* 	static int *last_node_inx = NULL; */
 	int j=0;	       
 				
 	if(!button_list)
@@ -535,21 +509,32 @@ extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
-		/* clear everyone else */
-		gtk_widget_set_state(grid_button->button, GTK_STATE_NORMAL);
-		
 		if((node_inx[j] < 0) 
 		   || (grid_button->inx < node_inx[j])
-		   || (grid_button->inx > node_inx[j+1]))
+		   || (grid_button->inx > node_inx[j+1])) {
+			/* clear everyone else */
+			if((GTK_WIDGET_STATE(grid_button->button)
+			    != GTK_STATE_NORMAL))
+				gtk_widget_set_state(grid_button->button,
+						     GTK_STATE_NORMAL);
 			continue;
-		/* highlight this one */
+		}
+		/* highlight this one, if it is already hightlighted,
+		 * put it back to normal */
 		//g_print("highlighting %d\n", grid_button->inx);
-		gtk_widget_set_state(grid_button->button, GTK_STATE_PRELIGHT);
+		if((GTK_WIDGET_STATE(grid_button->button)
+		    != GTK_STATE_PRELIGHT))
+			gtk_widget_set_state(grid_button->button,
+					     GTK_STATE_PRELIGHT);
+/* 		else if(last_node_inx && (last_node_inx == node_inx)) */
+/* 			gtk_widget_set_state(grid_button->button, */
+/* 					     GTK_STATE_NORMAL); */
+			
 		if(grid_button->inx == node_inx[j+1])
 			j+=2;
 	}
 	list_iterator_destroy(itr);
-
+//	last_node_inx = node_inx;
 	return;
 }
 
@@ -608,6 +593,7 @@ extern void get_button_list_from_main(List *button_list, int start, int end,
 		send_grid_button = create_grid_button_from_another(
 			grid_button, grid_button->node_name, color_inx);
 		if(send_grid_button) {
+			send_grid_button->button_list = *button_list;
 			_add_button_signals(send_grid_button);
 			list_append(*button_list, send_grid_button);
 		}
@@ -628,6 +614,7 @@ extern List copy_main_button_list(int initial_color)
 		send_grid_button = create_grid_button_from_another(
 			grid_button, grid_button->node_name, initial_color);
 		if(send_grid_button) {
+			send_grid_button->button_list = button_list;
 			_add_button_signals(send_grid_button);
 			send_grid_button->used = false;
 			list_append(button_list, send_grid_button);
@@ -707,6 +694,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 			grid_button, nodes, *color_inx);
 		grid_button->state = orig_state;
 		if(send_grid_button) {
+			send_grid_button->button_list = *button_list;
 			send_grid_button->table_x = 0;
 			send_grid_button->table_y = coord_y++;
 			//_add_button_signals(send_grid_button);
@@ -732,6 +720,7 @@ extern void add_extra_bluegene_buttons(List *button_list, int inx,
 		send_grid_button = create_grid_button_from_another(
 			grid_button, grid_button->node_name, *color_inx);
 		if(send_grid_button) {
+			send_grid_button->button_list = *button_list;
 			send_grid_button->table_x = 0;
 			send_grid_button->table_y = coord_y++;
 			_add_button_signals(send_grid_button);

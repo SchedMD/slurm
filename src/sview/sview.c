@@ -53,7 +53,8 @@ int fini = 0;
 int grid_init = 0;
 bool toggled = FALSE;
 bool force_refresh = FALSE;
-List popup_list;
+List popup_list = NULL;
+List signal_params_list = NULL;
 int page_running[PAGE_CNT];
 int global_sleep_time = 5;
 bool admin_mode = FALSE;
@@ -360,6 +361,8 @@ static gboolean _delete(GtkWidget *widget,
 		list_destroy(popup_list);
 	if(grid_button_list)
 		list_destroy(grid_button_list);
+	if(signal_params_list)
+		list_destroy(signal_params_list);
 	return FALSE;
 }
 
@@ -572,14 +575,18 @@ extern void refresh_main(GtkAction *action, gpointer user_data)
 }
 
 extern void tab_pressed(GtkWidget *widget, GdkEventButton *event, 
-			const display_data_t *display_data)
+			display_data_t *display_data)
 {
+	signal_params_t signal_params;
+	signal_params.display_data = display_data;
+	signal_params.button_list = &grid_button_list;
+
 	/* single click with the right mouse button? */
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
 				      display_data->extra);
 	if(event->button == 3) {
 		right_button_pressed(NULL, NULL, event, 
-				     display_data, TAB_CLICKED);
+				     &signal_params, TAB_CLICKED);
 	} 
 }
 
@@ -673,6 +680,7 @@ int main(int argc, char *argv[])
 	/* tell signal we are done adding */
 	adding = 0;
 	popup_list = list_create(destroy_popup_info);
+	signal_params_list = list_create(destroy_signal_params);
 	gtk_widget_show_all(main_window);
 
 	/* Finished! */

@@ -70,11 +70,14 @@ extern void get_info_submit(GtkTable *table, display_data_t *display_data)
 }
 
 
-extern void set_menus_submit(void *arg, GtkTreePath *path, 
-			     GtkMenu *menu, int type)
+extern void set_menus_submit(void *arg, void *arg2,
+			     GtkTreePath *path, int type)
 {
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
+	GtkMenu *menu = (GtkMenu *)arg2;
+	/* List button_list = (List)arg2; */
+
 	switch(type) {
 	case TAB_CLICKED:
 		make_fields_menu(NULL, menu, display_data_submit, SORTID_CNT);
