@@ -339,6 +339,7 @@ install -D -m755 contribs/sjstat ${RPM_BUILD_ROOT}%{_bindir}/sjstat
 
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
+rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.{a,la}
 
 # Build conditional file list for main package
 LIST=./slurm.files
