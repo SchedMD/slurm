@@ -61,6 +61,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/srun/debugger.h"
+#include "src/srun/opt.h"
 
 /* Given a program name, translate it to a fully qualified pathname
  * as needed based upon the PATH environment variable */
@@ -226,12 +227,14 @@ mpir_init(int num_tasks)
 {
 	MPIR_proctable_size = num_tasks;
 	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * num_tasks);
-	if (MPIR_proctable == NULL)
-		fatal("Unable to initialize MPIR_proctable: %m");
+	if (MPIR_proctable == NULL) {
+		error("Unable to initialize MPIR_proctable: %m");
+		exit(error_exit);
+	}
 }
 
 extern void
-mpir_cleanup()
+mpir_cleanup(void)
 {
 	int i;
 
@@ -249,9 +252,11 @@ mpir_set_executable_names(const char *executable_name)
 
 	for (i = 0; i < MPIR_proctable_size; i++) {
 		MPIR_proctable[i].executable_name = xstrdup(executable_name);
-		if (MPIR_proctable[i].executable_name == NULL)
-			fatal("Unable to set MPI_proctable executable_name:"
+		if (MPIR_proctable[i].executable_name == NULL) {
+			error("Unable to set MPI_proctable executable_name:"
 			      " %m");
+			exit(error_exit);
+		}
 	}
 }
 

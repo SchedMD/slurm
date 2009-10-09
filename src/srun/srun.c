@@ -143,6 +143,7 @@ static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
 static void  _set_cpu_env_var(resource_allocation_response_msg_t *resp);
+static void  _set_exit_code(void);
 static int   _setup_signals();
 static void  _step_opt_exclusive(void);
 static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
@@ -196,6 +197,7 @@ int srun(int ac, char **av)
 	debug_level = _slurm_debug_env_val();
 	logopt.stderr_level += debug_level;
 	log_init(xbasename(av[0]), logopt, 0, NULL);
+	_set_exit_code();
 
 /* 	xsignal(SIGQUIT, _ignore_signal); */
 /* 	xsignal(SIGPIPE, _ignore_signal); */
@@ -205,7 +207,8 @@ int srun(int ac, char **av)
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */
 	if (spank_init(NULL) < 0) {
-		fatal("Plug-in initialization failed");
+		error("Plug-in initialization failed");
+		exit(error_exit);
 		_define_symbols();
 	}
 
@@ -223,9 +226,11 @@ int srun(int ac, char **av)
 	}
 	record_ppid();
 
-	if (spank_init_post_opt() < 0)
-		fatal("Plugin stack post-option processing failed.");
-	
+	if (spank_init_post_opt() < 0) {
+		error("Plugin stack post-option processing failed.");
+		exit(error_exit);
+	}
+
 	/* reinit log with new verbosity (if changed by command line)
 	 */
 	if (_verbose || opt.quiet) {
@@ -262,7 +267,7 @@ int srun(int ac, char **av)
 		info("do not allocate resources");
 		job = job_create_noalloc(); 
 		if (create_job_step(job, false) < 0) {
-			exit(1);
+			exit(error_exit);
 		}
 	} else if ((resp = existing_allocation())) {
 		
@@ -280,7 +285,7 @@ int srun(int ac, char **av)
 				" are already allocated.");
 
 		if (!job || create_job_step(job, false) < 0)
-			exit(1);
+			exit(error_exit);
 	} else {
 		/* Combined job allocation and job step launch */
 #ifdef HAVE_FRONT_END
@@ -288,12 +293,12 @@ int srun(int ac, char **av)
 		if ((my_uid != 0)
 		&&  (my_uid != slurm_get_slurm_user_id())) {
 			error("srun task launch not supported on this system");
-			exit(1);
+			exit(error_exit);
 		}
 #endif
 	
 		if ( !(resp = allocate_nodes()) ) 
-			exit(1);
+			exit(error_exit);
 		got_alloc = 1;
 		_print_job_information(resp);
 		_set_cpu_env_var(resp);
@@ -306,7 +311,7 @@ int srun(int ac, char **av)
 		}
 		if (!job || create_job_step(job, true) < 0) {
 			slurm_complete_job(resp->job_id, 1);
-			exit(1);
+			exit(error_exit);
 		}
 		
 		slurm_free_resource_allocation_response_msg(resp);
@@ -430,7 +435,7 @@ int srun(int ac, char **av)
 	if (_call_spank_local_user (job) < 0) {
 		error("Failure in local plugin stack");
 		slurm_step_launch_abort(job->step_ctx);
-		exit(1);
+		exit(error_exit);
 	}
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
@@ -467,10 +472,10 @@ int srun(int ac, char **av)
 		slurm_step_ctx_destroy(job->step_ctx);
 		if (got_alloc) {
 			if (create_job_step(job, true) < 0)
-				exit(1);
+				exit(error_exit);
 		} else {
 			if (create_job_step(job, false) < 0)
-				exit(1);
+				exit(error_exit);
 		}
 		task_state_destroy(task_state);
 		goto re_launch;
@@ -659,6 +664,20 @@ static void  _set_prio_process_env(void)
 	debug ("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
 
+static void _set_exit_code(void)
+{
+	int i;
+	char *val = getenv("SLURM_ERROR_EXIT");
+
+	if (val) {
+		i = atoi(val);
+		if (i == 0)
+			error("SLURM_ERROR_EXIT has zero value");
+		else
+			error_exit = i;
+	}
+}
+
 static void _set_cpu_env_var(resource_allocation_response_msg_t *resp)
 {
 	char *tmp;
@@ -686,8 +705,10 @@ static int _set_rlimit_env(void)
 	slurm_rlimits_info_t *rli;
 
 	/* Modify limits with any command-line options */
-	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS))
-		fatal( "--propagate=%s is not valid.", opt.propagate );
+	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)){
+		error( "--propagate=%s is not valid.", opt.propagate );
+		exit(error_exit);
+	}
 
 	for (rli = get_slurm_rlimits_info(); rli->name != NULL; rli++ ) {
 
@@ -856,12 +877,15 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 	 * create stdin file descriptor
 	 */
 	if (_is_local_file(job->ifname)) {
-		if ((job->ifname->name == NULL) || (job->ifname->taskid != -1)) {
+		if ((job->ifname->name == NULL) || 
+		    (job->ifname->taskid != -1)) {
 			cio_fds->in.fd = STDIN_FILENO;
 		} else {
 			cio_fds->in.fd = open(job->ifname->name, O_RDONLY);
-			if (cio_fds->in.fd == -1)
-				fatal("Could not open stdin file: %m");
+			if (cio_fds->in.fd == -1) {
+				error("Could not open stdin file: %m");
+				exit(error_exit);
+			}
 		}
 		if (job->ifname->type == IO_ONE) {
 			cio_fds->in.taskid = job->ifname->taskid;
@@ -875,13 +899,16 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 	 * create stdout file descriptor
 	 */
 	if (_is_local_file(job->ofname)) {
-		if ((job->ofname->name == NULL) || (job->ofname->taskid != -1)) {
+		if ((job->ofname->name == NULL) ||
+		    (job->ofname->taskid != -1)) {
 			cio_fds->out.fd = STDOUT_FILENO;
 		} else {
 			cio_fds->out.fd = open(job->ofname->name,
 					       file_flags, 0644);
-			if (cio_fds->out.fd == -1)
-				fatal("Could not open stdout file: %m");
+			if (cio_fds->out.fd == -1) {
+				error("Could not open stdout file: %m");
+				exit(error_exit);
+			}
 		}
 		if (job->ofname->name != NULL
 		    && job->efname->name != NULL
@@ -899,13 +926,16 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 		cio_fds->err.fd = cio_fds->out.fd;
 		cio_fds->err.taskid = cio_fds->out.taskid;
 	} else if (_is_local_file(job->efname)) {
-		if ((job->efname->name == NULL) || (job->efname->taskid != -1)) {
+		if ((job->efname->name == NULL) || 
+		    (job->efname->taskid != -1)) {
 			cio_fds->err.fd = STDERR_FILENO;
 		} else {
 			cio_fds->err.fd = open(job->efname->name,
 					       file_flags, 0644);
-			if (cio_fds->err.fd == -1)
-				fatal("Could not open stderr file: %m");
+			if (cio_fds->err.fd == -1) {
+				error("Could not open stderr file: %m");
+				exit(error_exit);
+			}
 		}
 	}
 }
@@ -938,12 +968,18 @@ static void _step_opt_exclusive(void)
 		opt.min_nodes = 1;
 		opt.max_nodes = 0;
 	}
-	if (!opt.nprocs_set)
-		fatal("--ntasks must be set with --exclusive");
-	if (opt.relative_set)
-		fatal("--relative disabled, incompatible with --exclusive");
-	if (opt.exc_nodes)
-		fatal("--exclude is incompatible with --exclusive");
+	if (!opt.nprocs_set) {
+		error("--ntasks must be set with --exclusive");
+		exit(error_exit);
+	}
+	if (opt.relative_set) {
+		error("--relative disabled, incompatible with --exclusive");
+		exit(error_exit);
+	}
+	if (opt.exc_nodes) {
+		error("--exclude is incompatible with --exclusive");
+		exit(error_exit);
+	}
 }
 
 static void
@@ -1055,8 +1091,10 @@ _task_array_to_string(int ntasks, uint32_t taskids[])
 	int i;
 
 	tasks_bitmap = bit_alloc(job->ntasks);
-	if (!tasks_bitmap)
-		fatal("bit_alloc: memory allocation failure");
+	if (!tasks_bitmap) {
+		error("bit_alloc: memory allocation failure");
+		exit(error_exit);
+	}
 	for (i=0; i<ntasks; i++)
 		bit_set(tasks_bitmap, taskids[i]);
 	str = xmalloc(2048);

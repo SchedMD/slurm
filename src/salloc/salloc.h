@@ -47,7 +47,6 @@
 extern char **command_argv;
 extern int command_argc;
 extern pid_t command_pid;
-extern int error_exit;
 
 enum possible_allocation_states {NOT_GRANTED, GRANTED, REVOKED};
 extern enum possible_allocation_states allocation_state;

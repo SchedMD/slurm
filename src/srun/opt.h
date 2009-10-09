@@ -230,6 +230,8 @@ typedef struct srun_options {
 
 extern opt_t opt;
 
+extern int error_exit;
+
 /* return whether any constraints were specified by the user 
  * (if new constraints are added above, might want to add them to this
  *  macro or move this to a function if it gets a little complicated)
