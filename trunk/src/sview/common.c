@@ -624,15 +624,23 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 
 }
 
-extern GtkTreeView *create_treeview(display_data_t *local)
+extern GtkTreeView *create_treeview(display_data_t *local, List *button_list)
 {
+	signal_params_t *signal_params = xmalloc(sizeof(signal_params));
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 	local->user_data = NULL;
+
+	signal_params->display_data = local;
+	signal_params->button_list = button_list;
+	
 	g_signal_connect(G_OBJECT(tree_view), "button-press-event",
 			 G_CALLBACK(row_clicked),
-			 local);
+			 signal_params);
+	g_signal_connect(G_OBJECT(tree_view), "row-activated",
+			 G_CALLBACK(row_activated),
+			 signal_params);
 	gtk_widget_show(GTK_WIDGET(tree_view));
-	
+	list_push(signal_params_list, signal_params);
 	return tree_view;
 
 }
@@ -769,59 +777,95 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 	return treestore;
 }
 
-extern void right_button_pressed(GtkTreeView *tree_view, 
-				 GtkTreePath *path,
-				 GdkEventButton *event, 
-				 const display_data_t *display_data,
-				 int type)
+extern gboolean right_button_pressed(GtkTreeView *tree_view, 
+				     GtkTreePath *path,
+				     GdkEventButton *event, 
+				     const signal_params_t *signal_params,
+				     int type)
 {
-	if(event->button == 3) {
-		GtkMenu *menu = GTK_MENU(gtk_menu_new());
+	GtkMenu *menu = GTK_MENU(gtk_menu_new());
+	display_data_t *display_data = signal_params->display_data;
 	
-		(display_data->set_menu)(tree_view, path, menu, type);
-				
-		gtk_widget_show_all(GTK_WIDGET(menu));
-		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
-			       (event != NULL) ? event->button : 0,
-			       gdk_event_get_time((GdkEvent*)event));
-	}
+	/* These next 2 functions are there to keep the keyboard in
+	   sync */
+	gtk_tree_view_set_cursor(tree_view, path, NULL, false);
+	gtk_widget_grab_focus(GTK_WIDGET(tree_view));
+
+	/* highlight the nodes from this row */
+	(display_data->set_menu)(tree_view, *signal_params->button_list,
+				 path, ROW_LEFT_CLICKED);
+
+	(display_data->set_menu)(tree_view, menu, path, type);
+	
+	gtk_widget_show_all(GTK_WIDGET(menu));
+	gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
+		       (event != NULL) ? event->button : 0,
+		       gdk_event_get_time((GdkEvent*)event));
+	return true;
 }
 
 extern gboolean left_button_pressed(GtkTreeView *tree_view, 
 				    GtkTreePath *path,
-				    GdkEventButton *event, 
-				    const display_data_t *display_data,
-				    int type)
+				    const signal_params_t *signal_params)
 {
 	static time_t last_time = 0;
 	time_t now = time(NULL);
 	gboolean rc = false;
+	GtkTreeIter iter;
+	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
+	display_data_t *display_data = signal_params->display_data;
+	static gpointer *last_user_data = NULL;
+	
+	/* These next 2 functions are there to keep the keyboard in
+	   sync */
+	gtk_tree_view_set_cursor(tree_view, path, NULL, false);
+	gtk_widget_grab_focus(GTK_WIDGET(tree_view));
 
-	if(event->button != 1)
-		return false;
-
-	if(!(now-last_time)) {
+	/* highlight the nodes from this row */
+	(display_data->set_menu)(tree_view, *signal_params->button_list,
+				 path, ROW_LEFT_CLICKED);
+	
+	/* make sure it was a double click */
+	if (!gtk_tree_model_get_iter(model, &iter, path)) {
+		g_error("error getting iter from model\n");
+		return rc;
+	}		
+	if(!(now-last_time) 
+	   && (!last_user_data || (iter.user_data == last_user_data))) {
 		/* double click */
-		rc = true;
-	} else if(event->button == 1) {
-		/* highlight the nodes from this row */
-		(display_data->set_menu)(tree_view, path, 
-					 NULL, ROW_LEFT_CLICKED);
-		if(!admin_mode)
-			rc = true;
+		(display_data->set_menu)(tree_view, NULL, path, FULL_CLICKED); 
 	}
+	last_user_data = iter.user_data;
+
+	if(!admin_mode)
+		rc = true;
 
 	last_time = now;
 
 	return rc;
 }
 
+extern gboolean row_activated(GtkTreeView *tree_view, GtkTreePath *path,
+			      GtkTreeViewColumn *column,
+			      const signal_params_t *signal_params)
+{
+	display_data_t *display_data = signal_params->display_data;
+	/* highlight the nodes from this row */
+	(display_data->set_menu)(tree_view, *signal_params->button_list,
+				 path, ROW_LEFT_CLICKED);
+	/* display the full info */
+	(display_data->set_menu)(tree_view, NULL, path, FULL_CLICKED);
+		
+	return false;
+}
+
 extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event, 
-			    const display_data_t *display_data)
+			    const signal_params_t *signal_params)
 {
 	GtkTreePath *path = NULL;
 	GtkTreeSelection *selection = NULL;
 	gboolean did_something = FALSE;
+
 	if(!gtk_tree_view_get_path_at_pos(tree_view,
 					  (gint) event->x, 
 					  (gint) event->y,
@@ -843,12 +887,12 @@ extern gboolean row_clicked(GtkTreeView *tree_view, GdkEventButton *event,
 		did_something = FALSE;
 	} else if(event->button == 1) {
 		/*  left click */
-		did_something = left_button_pressed(tree_view, path, event, 
-						    display_data, ROW_CLICKED);
+		did_something = left_button_pressed(
+			tree_view, path, signal_params);
 	} else if(event->button == 3) {
 		/*  right click */
 		right_button_pressed(tree_view, path, event, 
-				     display_data, ROW_CLICKED);
+				     signal_params, ROW_CLICKED);
 		did_something = TRUE;
 	} else if(!admin_mode)
 		did_something = TRUE;
@@ -974,9 +1018,9 @@ extern void redo_popup(GtkWidget *widget, GdkEventButton *event,
 	if(event->button == 3) {
 		GtkMenu *menu = GTK_MENU(gtk_menu_new());
 		
-		(popup_win->display_data->set_menu)(popup_win, 
+		(popup_win->display_data->set_menu)(popup_win, menu, 
 						    NULL, 
-						    menu, POPUP_CLICKED);
+						    POPUP_CLICKED);
 		
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
@@ -1051,6 +1095,15 @@ extern void destroy_popup_info(void *arg)
 		g_static_mutex_unlock(&sview_mutex);
 	}
 	
+}
+
+extern void destroy_signal_params(void *arg)
+{
+	signal_params_t *signal_params = (signal_params_t *)arg;
+	
+	if(signal_params) {
+		xfree(signal_params);
+	}
 }
 
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
