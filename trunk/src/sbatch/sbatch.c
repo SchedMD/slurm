@@ -351,12 +351,12 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 static void _set_exit_code(void)
 {
 	int i;
-	char *val = getenv("SLURM_ERROR_EXIT");
+	char *val = getenv("SLURM_EXIT_ERROR");
 
 	if (val) {
 		i = atoi(val);
 		if (i == 0)
-			error("SLURM_ERROR_EXIT has zero value");
+			error("SLURM_EXIT_ERROR has zero value");
 		else
 			error_exit = i;
 	}
