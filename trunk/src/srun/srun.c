@@ -290,8 +290,8 @@ int srun(int ac, char **av)
 		/* Combined job allocation and job step launch */
 #ifdef HAVE_FRONT_END
 		uid_t my_uid = getuid();
-		if ((my_uid != 0)
-		&&  (my_uid != slurm_get_slurm_user_id())) {
+		if ((my_uid != 0) &&
+		    (my_uid != slurm_get_slurm_user_id())) {
 			error("srun task launch not supported on this system");
 			exit(error_exit);
 		}
