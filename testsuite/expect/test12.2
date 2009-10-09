@@ -183,7 +183,7 @@ make_bash_script $file_in "
 # Usage: test12.2.prog <exit_code> <sleep_secs> <mem_kb>
 #
 set timeout [expr $max_job_delay + $sleep_time]
-set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 $file_in]
+set sbatch_pid [spawn $sbatch --mem-per-cpu=1024 --output=$file_out --error=$file_err -t2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
