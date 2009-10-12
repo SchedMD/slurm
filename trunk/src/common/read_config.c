@@ -2199,9 +2199,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 	}
 #ifdef HAVE_BG
-	if (strcmp(conf->preempt_type, "preempt/none") != 0)
-		fatal("PreemptType incompatable with BlueGene systems");
-	if (conf->preempt_mode != PREEMPT_MODE_OFF)
+	if ((conf->preempt_mode & PREEMPT_MODE_GANG) ||
+	    (conf->preempt_mode & PREEMPT_MODE_SUSPEND))
 		fatal("PreemptMode incompatable with BlueGene systems");
 #endif
 
