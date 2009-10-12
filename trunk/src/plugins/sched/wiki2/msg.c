@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -699,8 +699,14 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 		job_release_task(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
 		msg_type = "wiki:JOBWILLRUN";
-		if (!job_will_run(cmd_ptr, &err_code, &err_msg))
-			goto free_resp_msg;
+		if (strstr(cmd_ptr, "NODES=")) {
+			/* Updated format input and output */
+			if (!job_will_run2(cmd_ptr, &err_code, &err_msg))
+				goto free_resp_msg;
+		} else {
+			if (!job_will_run(cmd_ptr, &err_code, &err_msg))
+				goto free_resp_msg;
+		}
 	} else if (strncmp(cmd_ptr, "MODIFYJOB", 9) == 0) {
 		msg_type = "wiki:MODIFYJOB";
 		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
