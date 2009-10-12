@@ -1350,9 +1350,10 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
-	    preemptee_candidates && cr_preemption_killing()) {
+	    preemptee_candidates) {
 		/* Build list of preemptee jobs whose resources are 
-		 * actually used */
+		 * actually used. List returned even if not killed
+		 * in selected plugin, but by Moab or something else. */
 		if (*preemptee_job_list == NULL) {
 			*preemptee_job_list = list_create(_preempt_list_del);
 			if (*preemptee_job_list == NULL)
