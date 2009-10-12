@@ -31,7 +31,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, comment, charp);
 	STORE_FIELD(hv, job_info, contiguous, uint16_t);
 	STORE_FIELD(hv, job_info, cpus_per_task, uint16_t);
-	STORE_FIELD(hv, job_info, dependency, charp);
+	if(job_info->dependency)
+		STORE_FIELD(hv, job_info, dependency, charp);
 	STORE_FIELD(hv, job_info, end_time, time_t);
 	if(job_info->exc_nodes)
 		STORE_FIELD(hv, job_info, exc_nodes, charp);
