@@ -499,7 +499,7 @@ extern void highlight_grid(GtkTreeView *tree_view, GtkTreePath *path,
 		return;
 
 	if (!gtk_tree_model_get_iter(model, &iter, path)) {
-		g_error("error getting iter from model\n");
+		g_error("highlight, error getting iter from model\n");
 		return;
 	}	
 	gtk_tree_model_get(model, &iter, node_inx_id, &node_inx, -1);

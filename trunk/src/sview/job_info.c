@@ -3065,7 +3065,7 @@ extern void set_menus_job(void *arg, void *arg2, GtkTreePath *path, int type)
 		GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 		GtkTreeIter iter;
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
-			g_error("error getting iter from model\n");
+			g_error("job error getting iter from model\n");
 			break;
 		}		
 	

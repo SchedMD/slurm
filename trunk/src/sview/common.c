@@ -440,7 +440,7 @@ extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path)
 	}
 	
 	if (!gtk_tree_model_get_iter(model, &iter, path)) {
-		g_error("error getting iter from model");
+		g_error("get row, error getting iter from model");
 		return -1;
 	}	
 	gtk_tree_model_get(model, &iter, POS_LOC, &line, -1);
@@ -487,7 +487,7 @@ extern void *get_pointer(GtkTreeView *tree_view, GtkTreePath *path, int loc)
 	}
 	
 	if (!gtk_tree_model_get_iter(model, &iter, path)) {
-		g_error("error getting iter from model");
+		g_error("get pointer, error getting iter from model");
 		return ptr;
 	}	
 	gtk_tree_model_get(model, &iter, loc, &ptr, -1);
@@ -546,7 +546,7 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 	treedata_t *treedata = xmalloc(sizeof(treedata_t));
 	treedata->model = gtk_tree_view_get_model(tree_view);
 	if (!gtk_tree_model_get_iter(treedata->model, &treedata->iter, path)) {
-		g_error("error getting iter from model\n");
+		g_error("make menus error getting iter from model\n");
 		return;
 	}	
 	if(display_data->user_data)
@@ -786,17 +786,18 @@ extern gboolean right_button_pressed(GtkTreeView *tree_view,
 	GtkMenu *menu = GTK_MENU(gtk_menu_new());
 	display_data_t *display_data = signal_params->display_data;
 	
-	/* These next 2 functions are there to keep the keyboard in
-	   sync */
-	gtk_tree_view_set_cursor(tree_view, path, NULL, false);
-	gtk_widget_grab_focus(GTK_WIDGET(tree_view));
-
-	/* highlight the nodes from this row */
-	(display_data->set_menu)(tree_view, *signal_params->button_list,
-				 path, ROW_LEFT_CLICKED);
+	if(type == ROW_CLICKED) {
+		/* These next 2 functions are there to keep the keyboard in
+		   sync */
+		gtk_tree_view_set_cursor(tree_view, path, NULL, false);
+		gtk_widget_grab_focus(GTK_WIDGET(tree_view));
+		
+		/* highlight the nodes from this row */
+		(display_data->set_menu)(tree_view, *signal_params->button_list,
+					 path, ROW_LEFT_CLICKED);
+	}
 
 	(display_data->set_menu)(tree_view, menu, path, type);
-	
 	gtk_widget_show_all(GTK_WIDGET(menu));
 	gtk_menu_popup(menu, NULL, NULL, NULL, NULL,
 		       (event != NULL) ? event->button : 0,
@@ -827,7 +828,7 @@ extern gboolean left_button_pressed(GtkTreeView *tree_view,
 	
 	/* make sure it was a double click */
 	if (!gtk_tree_model_get_iter(model, &iter, path)) {
-		g_error("error getting iter from model\n");
+		g_error("left pressed, error getting iter from model\n");
 		return rc;
 	}		
 	if(!(now-last_time) 
