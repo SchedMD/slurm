@@ -497,24 +497,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 */
 
 	return submit_job(job_ptr, bitmap, min_nodes, max_nodes, 
-			  req_nodes, mode);
-}
-
-/*
- * select_p_job_list_test - Given a list of select_will_run_t's in
- *	accending priority order we will see if we can start and
- *	finish all the jobs without increasing the start times of the
- *	jobs specified and fill in the est_start of requests with no
- *	est_start.  If you are looking to see if one job will ever run
- *	then use select_p_job_test instead.
- * IN/OUT req_list - list of select_will_run_t's in asscending
- *	             priority order on success of placement fill in
- *	             est_start of request with time.
- * RET zero on success, EINVAL otherwise
- */
-extern int select_p_job_list_test(List req_list)
-{
-	return test_job_list(req_list);
+			  req_nodes, mode, preemptee_candidates, 
+			  preemptee_job_list);
 }
 
 extern int select_p_job_begin(struct job_record *job_ptr)

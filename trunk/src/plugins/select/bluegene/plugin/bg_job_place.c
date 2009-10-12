@@ -58,7 +58,6 @@ _STMT_START {		\
 
 
 pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t job_list_test_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* This list is for the test_job_list function because we will be
  * adding and removing blocks off the bg_lists->job_running and don't want
@@ -1333,11 +1332,17 @@ static void _build_select_struct(struct job_record *job_ptr,
  * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
+ * IN preemptee_candidates - List of pointers to jobs which can be preempted.
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the 
+ *		jobs to be preempted to initiate the pending job. Not set 
+ *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
-		      uint32_t req_nodes, int mode)
+		      uint32_t req_nodes, int mode,
+		      List preemptee_candidates,
+		      List *preemptee_job_list)
 {
 	int rc = SLURM_SUCCESS;
 	bg_record_t* bg_record = NULL;
@@ -1520,244 +1525,5 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	}
 
 	list_destroy(block_list);
-	return rc;
-}
-
-extern int test_job_list(List req_list)
-{
-	int rc = SLURM_SUCCESS;
-	bg_record_t* bg_record = NULL;
-	bg_record_t* new_record = NULL;
-	char buf[100];
-//	uint16_t tmp16 = (uint16_t)NO_VAL;
-	List block_list = NULL;
-	int blocks_added = 0;
-	time_t starttime = time(NULL);
-	ListIterator itr = NULL;
-	select_will_run_t *will_run = NULL;
-
-	slurm_mutex_lock(&job_list_test_mutex);
-	
-	if(bg_conf->layout_mode == LAYOUT_DYNAMIC)
-		slurm_mutex_lock(&create_dynamic_mutex);
-
-	job_block_test_list = copy_bg_list(bg_lists->job_running);
-
-	slurm_mutex_lock(&block_state_mutex);
-	block_list = copy_bg_list(bg_lists->main);
-	slurm_mutex_unlock(&block_state_mutex);
-
-	itr = list_iterator_create(req_list);
-	while((will_run = list_next(itr))) {
-		uint16_t conn_type = (uint16_t)NO_VAL;
-
-		if(!will_run->job_ptr) {
-			error("test_job_list: you need to give me a job_ptr");
-			rc = SLURM_ERROR;
-			break;
-		}
-		
-		select_g_select_jobinfo_get(will_run->job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_CONN_TYPE, &conn_type);
-		if(conn_type == SELECT_NAV) {
-			if(bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
-				conn_type = SELECT_SMALL;
-			else if(will_run->min_nodes > 1) 
-				conn_type = SELECT_TORUS;
-			else if(will_run->job_ptr->num_procs 
-				  < bg_conf->procs_per_bp)
-					conn_type = SELECT_SMALL;
-			
-			select_g_select_jobinfo_set(
-				will_run->job_ptr->select_jobinfo,
-				SELECT_JOBDATA_CONN_TYPE,
-				&conn_type);
-		}
-		select_g_select_jobinfo_sprint(
-			will_run->job_ptr->select_jobinfo,
-			buf, sizeof(buf), 
-			SELECT_PRINT_MIXED);
-		debug("bluegene:submit_job_list: %s nodes=%u-%u-%u", 
-		      buf, will_run->min_nodes,
-		      will_run->req_nodes, will_run->max_nodes);
-		list_sort(block_list, (ListCmpF)_bg_record_sort_aval_dec);
-		rc = _find_best_block_match(block_list, &blocks_added,
-					    will_run->job_ptr,
-					    will_run->avail_nodes,
-					    will_run->min_nodes, 
-					    will_run->max_nodes,
-					    will_run->req_nodes, 
-					    &bg_record, true);
-		
-		if(rc == SLURM_SUCCESS) {
-			if(bg_record) {
-				/* Here we see if there is a job running since
-				 * some jobs take awhile to finish we need to
-				 * make sure the time of the end is in the
-				 * future.  If it isn't (meaning it is in the
-				 * past or current time) we add 5 seconds to
-				 * it so we don't use the block immediately.
-				 */
-				if(bg_record->job_ptr 
-				   && bg_record->job_ptr->end_time) { 
-					if(bg_record->job_ptr->end_time <= 
-					   starttime)
-						starttime += 5;
-					else {
-						starttime = bg_record->
-							    job_ptr->end_time;
-					}
-				}
-				bg_record->job_running =
-					will_run->job_ptr->job_id;
-				bg_record->job_ptr = will_run->job_ptr;
-				debug2("test_job_list: "
-				       "can run job %u on found block at %d"
-				       "nodes = %s",
-				       bg_record->job_ptr->job_id,
-				       starttime,
-				       bg_record->nodes);
-				
-				if(!block_exist_in_list(job_block_test_list,
-							bg_record)) {
-					new_record =
-						xmalloc(sizeof(bg_record_t));
-					copy_bg_record(bg_record, new_record);
-					list_append(job_block_test_list,
-						    new_record);
-				}
-
-				if(will_run->job_ptr->start_time) {
-					if(will_run->job_ptr->start_time
-					   < starttime) {
-						debug2("test_job_list: "
-						       "Time is later "
-						       "than one supplied.");
-						rc = SLURM_ERROR;
-						break;
-					}
-					
-					//continue;
-				} else
-					will_run->job_ptr->start_time 
-						= starttime;
-
-				if(will_run->job_ptr->time_limit != INFINITE
-				   && will_run->job_ptr->time_limit != NO_VAL) 
-					will_run->job_ptr->end_time =
-						will_run->job_ptr->start_time +
-						will_run->job_ptr->time_limit *
-						60;
-				else if(will_run->job_ptr->part_ptr->max_time
-					!= INFINITE
-					&& will_run->job_ptr->
-					part_ptr->max_time != NO_VAL) 
-					will_run->job_ptr->end_time =
-						will_run->job_ptr->start_time +
-						will_run->job_ptr->
-						part_ptr->max_time * 60;
-				else
-					will_run->job_ptr->end_time = 
-						will_run->job_ptr->start_time +
-						31536000; // + year
-						
-				select_g_select_jobinfo_set(
-					will_run->job_ptr->select_jobinfo,
-					SELECT_JOBDATA_NODES, 
-					bg_record->nodes);
-				select_g_select_jobinfo_set(
-					will_run->job_ptr->select_jobinfo,
-					SELECT_JOBDATA_IONODES, 
-					bg_record->ionodes);
-				
-/* 				if(!bg_record->bg_block_id) { */
-/* 					uint16_t geo[BA_SYSTEM_DIMENSIONS]; */
-					
-/* 					debug2("test_job_list: " */
-/* 					       "can start job at " */
-/* 					       "%u on %s on unmade block", */
-/* 					       starttime, */
-/* 					       bg_record->nodes); */
-/* 					select_g_select_jobinfo_set( */
-/* 						will_run->job_ptr-> */
-/* 						select_jobinfo, */
-/* 						SELECT_JOBDATA_BLOCK_ID, */
-/* 						"unassigned"); */
-/* 					if(will_run->job_ptr->num_procs */
-/* 					   < bg_conf->bp_node_cnt  */
-/* 					   && will_run->job_ptr->num_procs */
-/* 					   > 0) { */
-/* 						i = bg_conf->procs_per_bp/ */
-/* 							will_run->job_ptr-> */
-/* 							num_procs; */
-/* 						debug2("divide by %d", i); */
-/* 					} else  */
-/* 						i = 1; */
-/* 					will_run->min_nodes *=  */
-/* 						bg_conf->bp_node_cnt/i; */
-/* 					select_g_select_jobinfo_set( */
-/* 						will_run->job_ptr-> */
-/* 						select_jobinfo, */
-/* 						SELECT_JOBDATA_NODE_CNT, */
-/* 						&will_run->min_nodes); */
-/* 					memset(geo, 0,  */
-/* 					       sizeof(uint16_t)  */
-/* 					       * BA_SYSTEM_DIMENSIONS); */
-/* 					select_g_select_jobinfo_set( */
-/* 						will_run->job_ptr-> */
-/* 						select_jobinfo, */
-/* 						SELECT_JOBDATA_GEOMETRY,  */
-/* 						&geo); */
-/* 				} else { */
-/* 					if((bg_record->ionodes) */
-/* 					   && (will_run->job_ptr->part_ptr-> */
-/* 					       max_share */
-/* 					       <= 1)) */
-/* 						error("Small block used in " */
-/* 						      "non-shared partition"); */
-					
-/* 					debug2("test_job_list: " */
-/* 					       "can start job at %u on %s", */
-/* 					       starttime, */
-/* 					       bg_record->nodes); */
-					
-/* 					select_g_select_jobinfo_set( */
-/* 						will_run->job_ptr-> */
-/* 						select_jobinfo, */
-/* 						SELECT_JOBDATA_BLOCK_ID, */
-/* 						bg_record->bg_block_id); */
-/* 					select_g_select_jobinfo_set( */
-/* 						will_run->job_ptr-> */
-/* 						select_jobinfo, */
-/* 						SELECT_JOBDATA_NODE_CNT,  */
-/* 						&bg_record->node_cnt); */
-/* 					select_g_select_jobinfo_set( */
-/* 						will_run->job_ptr-> */
-/* 						select_jobinfo, */
-/* 						SELECT_JOBDATA_GEOMETRY,  */
-/* 						&bg_record->geo); */
-					
-/* 					tmp16 = bg_record->conn_type; */
-/* 					select_g_select_jobinfo_set( */
-/* 						will_run->job_ptr-> */
-/* 						select_jobinfo, */
-/* 						SELECT_JOBDATA_CONN_TYPE,  */
-/* 						&tmp16); */
-/* 				} */
-			} else {
-				error("we got a success, but no block back");
-				rc = SLURM_ERROR;
-			}
-		}
-	}
-	list_iterator_destroy(itr);
-
-	if(bg_conf->layout_mode == LAYOUT_DYNAMIC) 		
-		slurm_mutex_unlock(&create_dynamic_mutex);	
-
-	list_destroy(block_list);
-	list_destroy(job_block_test_list);
-	
-	slurm_mutex_unlock(&job_list_test_mutex);
 	return rc;
 }

@@ -85,7 +85,6 @@ typedef struct slurm_select_ops {
 						int mode,
 						List preeemptee_candidates,
 						List *preemptee_job_list);
-	int             (*job_list_test)       (List req_list);
 	int		(*job_begin)	       (struct job_record *job_ptr);
 	int		(*job_ready)	       (struct job_record *job_ptr);
 	int		(*job_fini)	       (struct job_record *job_ptr);
@@ -183,7 +182,6 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_node_init",
 		"select_p_block_init",
 		"select_p_job_test",
-		"select_p_job_list_test",
 		"select_p_job_begin",
 		"select_p_job_ready",
 		"select_p_job_fini",
@@ -656,26 +654,6 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 						   req_nodes, mode,
 						   preemptee_candidates,
 						   preemptee_job_list);
-}
-
-/*
- * Given a list of select_will_run_t's in
- * accending priority order we will see if we can start and
- * finish all the jobs without increasing the start times of the
- * jobs specified and fill in the est_start of requests with no
- * est_start.  If you are looking to see if one job will ever run
- * then use select_p_job_test instead.
- * IN/OUT req_list - list of select_will_run_t's in asscending
- *	             priority order on success of placement fill in
- *	             est_start of request with time.
- * RET zero on success, EINVAL otherwise
- */
-extern int select_g_job_list_test(List req_list) 
-{
-	if (slurm_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(g_select_context->ops.job_list_test))(req_list);
 }
 
 /*
