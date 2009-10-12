@@ -223,11 +223,13 @@ extern int bridge_init()
 		"setSayMessageParams"
 	};
 #endif
-	int n_syms = sizeof( syms ) / sizeof( char * );
+	int n_syms;
 	int rc;
 
 	if(initialized)
 		return 1;
+
+	n_syms = sizeof( syms ) / sizeof( char * );
 
 	initialized = true;
 	if(!_get_syms(n_syms, syms, (void **) &bridge_api))
