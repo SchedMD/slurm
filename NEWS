@@ -55,6 +55,9 @@ documents those changes that are of interest to users and admins.
     available. Any other non-zero exit code would be that of the application
     run by SLURM.
  -- Added a Quality of Service (QOS) html page.
+ -- In sched/wiki2, JOBWILLRUN command, add support for identification of 
+    preemptable and preempted jobs (both new and old format of commands are
+    supported).
 
 * Changes in SLURM 2.1.0-pre4
 =============================
