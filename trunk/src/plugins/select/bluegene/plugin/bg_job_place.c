@@ -1322,6 +1322,89 @@ static void _build_select_struct(struct job_record *job_ptr,
 	}
 }
 
+static List _get_preemptables(bg_record_t *bg_record, List preempt_jobs) 
+{
+	List preempt = NULL;
+	ListIterator itr;
+	ListIterator job_itr;
+	bg_record_t *found_record;
+	struct job_record *job_ptr;
+
+	xassert(bg_record);
+	xassert(preempt_jobs);
+
+	preempt = list_create(NULL);
+	slurm_mutex_lock(&block_state_mutex);
+	job_itr = list_iterator_create(preempt_jobs);
+	itr = list_iterator_create(bg_lists->main);
+	while((found_record = list_next(itr))) {
+		if (!found_record->job_ptr
+		    || (!found_record->bg_block_id)
+		    || (bg_record == found_record)
+		    || !blocks_overlap(bg_record, found_record))
+			continue;
+		
+		while((job_ptr = list_next(job_itr))) {
+			if(job_ptr == found_record->job_ptr)
+				break;
+		}
+		if(job_ptr) 
+			list_append(preempt, job_ptr);
+		else {
+			error("Job %u running on block %s "
+			      "wasn't in the preempt list, but needs to be "
+			      "preempted for queried job to run on block %s",
+			      found_record->job_ptr->job_id, 
+			      found_record->bg_block_id,
+			      bg_record->bg_block_id);
+			list_destroy(preempt);
+			preempt = NULL;
+			break;
+		}
+		list_iterator_reset(job_itr);	
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(job_itr);
+	slurm_mutex_unlock(&block_state_mutex);
+	
+	return preempt;
+}
+
+static int _remove_preemptables(List block_list, List preempt_jobs) 
+{
+	ListIterator itr;
+	ListIterator job_itr;
+	bg_record_t *found_record;
+	struct job_record *job_ptr;
+
+	xassert(block_list);
+	xassert(block_list != bg_lists->main);
+	xassert(preempt_jobs);
+
+	job_itr = list_iterator_create(preempt_jobs);
+	itr = list_iterator_create(block_list);
+	while((job_ptr = list_next(job_itr))) {
+		while((found_record = list_next(itr))) {
+			if (found_record->job_ptr == job_ptr) {
+				found_record->job_ptr = NULL;
+				found_record->job_running = NO_JOB_RUNNING;
+				break;
+			}
+		}
+		list_iterator_reset(itr);	
+		
+		if(!found_record) 
+			error("Job %u wasn't found running anywhere, "
+			      "can't preempt",
+			      job_ptr->job_id);
+		
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(job_itr);
+	
+	return SLURM_SUCCESS;
+}
+
 /*
  * Try to find resources for a given job request
  * IN job_ptr - pointer to job record in slurmctld
@@ -1353,10 +1436,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	time_t starttime = time(NULL);
 	bool test_only;
 
-	if (mode == SELECT_MODE_TEST_ONLY || mode == SELECT_MODE_WILL_RUN)
-		test_only = true;
-	else if (mode == SELECT_MODE_RUN_NOW)
+	if (mode == SELECT_MODE_RUN_NOW 
+	    || (preemptee_candidates && mode != SELECT_MODE_TEST_ONLY))
 		test_only = false;
+	else if (mode == SELECT_MODE_TEST_ONLY || mode == SELECT_MODE_WILL_RUN)
+		test_only = true;
 	else	
 		return EINVAL;	/* something not yet supported */
 
@@ -1366,7 +1450,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	job_block_test_list = bg_lists->job_running;
 	
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_CONN_TYPE, &conn_type);
+				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if(conn_type == SELECT_NAV) {
 		if(bg_conf->bp_node_cnt == bg_conf->nodecard_node_cnt)
 			conn_type = SELECT_SMALL;
@@ -1376,8 +1460,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			conn_type = SELECT_SMALL;
 		
 		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-				     SELECT_JOBDATA_CONN_TYPE,
-				     &conn_type);
+					    SELECT_JOBDATA_CONN_TYPE,
+					    &conn_type);
 	}
 
 	if(slurm_block_bitmap && !bit_set_count(slurm_block_bitmap)) {
@@ -1424,6 +1508,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	slurm_mutex_lock(&block_state_mutex);
 	block_list = copy_bg_list(bg_lists->main);
 	slurm_mutex_unlock(&block_state_mutex);
+	
+	/* just remove the preemptable jobs now since we are treating
+	   this as a run now deal */
+	if((mode != SELECT_MODE_TEST_ONLY)
+	   && preemptee_candidates && preemptee_job_list) 
+		_remove_preemptables(block_list, preemptee_candidates);
 	
 	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_dec);
 
@@ -1510,7 +1600,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				_build_select_struct(job_ptr,
 						     slurm_block_bitmap,
 						     bg_record->node_cnt);
-			
+			/* set up the preempted job list */
+			if((mode != SELECT_MODE_TEST_ONLY)
+			   && preemptee_candidates && preemptee_job_list) {
+				if(*preemptee_job_list) 
+					list_destroy(*preemptee_job_list);
+				*preemptee_job_list = _get_preemptables(
+					bg_record, preemptee_candidates);
+			}			
 		} else {
 			error("we got a success, but no block back");
 		}
