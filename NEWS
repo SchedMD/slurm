@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
     error state.
  -- Add range check for SuspendTime configuration parameter.
  -- Moved unzipped python-hostname tarball out and the tarball in.
+ -- BLUEGENE - Patched memory leak when running state test.
 
 * Changes in SLURM 2.0.6
 ========================

@@ -351,6 +351,8 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 /* 	} */
 	
 clean_up:
+	if(ncard_list)
+		bridge_free_nodecard_list(ncard_list);
 	xfree(node_name);
 /* 	if(ionode_bitmap) */
 /* 		FREE_NULL_BITMAP(ionode_bitmap); */
