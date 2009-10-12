@@ -2524,11 +2524,11 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	/* This must be done after we have the assoc_ptr set */
 	memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 	qos_rec.name = job_desc->qos;
-	if (wiki_sched && job_ptr->comment &&
-	    strstr(job_ptr->comment, "QOS:")) {
-		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
+	if (wiki_sched && job_desc->comment && 
+	    strstr(job_desc->comment, "QOS:")) {
+		if (strstr(job_desc->comment, "FLAGS:PREEMPTOR"))
 			qos_rec.name = "expedite";
-		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
+		else if (strstr(job_desc->comment, "FLAGS:PREEMPTEE"))
 			qos_rec.name = "standby";
 	}
 
