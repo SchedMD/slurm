@@ -286,19 +286,6 @@ needed.</p>
 the plugin should return SLURM_ERROR and future attempts may be made to schedule 
 the job.</p>
 
-<p class="commandline">int select_p_job_list_test (List req_list);</p>
-<p style="margin-left:.2in"><b>Description</b>: This is a variation of the
-select_p_job_test function meant to determine when an ordered list of jobs
-can be initiated.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> req_list</span>&nbsp; &nbsp;&nbsp;(input/output) 
-priority ordered list of <i>select_will_run_t</i> records (a structure
-containing the arguments to the select_p_job_test function).
-Expected start time of each job will be set.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and future attempts may be made to schedule 
-the job.</p>
-
 <p class="commandline">int select_p_job_begin (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the initiation of the specified job
 is about to begin. This function is called immediately after 
