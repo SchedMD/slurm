@@ -163,7 +163,10 @@ partition management, job management, scheduling and accounting modules.
 # sure we get the correct installdir
 %define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;') 
 
+%define _perlarchlib %(perl -e 'use Config; $T=$Config{installarchlib}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;') 
+
 %define _perldir %{_prefix}%{_perlarch}
+%define _perlarchlibdir %{_prefix}%{_perlarchlib}
 %define _php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php5)
 
 %package perlapi
@@ -346,6 +349,8 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %if ! %{slurm_with bluegene}
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 %endif
+rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/.packlist
+rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
 
 # Build conditional file list for main package
 LIST=./slurm.files
@@ -480,9 +485,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_perldir}/Slurm.pm
 %{_perldir}/auto/Slurm/Slurm.so
-%{_mandir}/man3/Slurm.*
 %{_perldir}/auto/Slurm/Slurm.bs
 %{_perldir}/auto/Slurm/autosplit.ix
+%{_mandir}/man3/Slurm.*
 
 #############################################################################
 
