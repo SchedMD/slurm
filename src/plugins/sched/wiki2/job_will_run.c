@@ -325,7 +325,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		if (preemptee_candidates)
 			list_destroy(preemptee_candidates);
 	} else {
-		rc = select_g_job_list_test(select_list);
+		//rc = select_g_job_list_test(select_list);
 	}
 
 	if (rc == SLURM_SUCCESS) {
