@@ -226,6 +226,8 @@ Test 3.1     Verify slurm only accepts requests with valid credential
 =====================================================================
 Submit a job with a fabricated credential (lacking a proper digital 
 signature). 
+NOTE: This test is not compatible with BlueGene systems since srun is 
+      not available for task launch.
 NOTE: Insure the event is logged in SlurmdLogFile for test 3.3 verification.
 
 Example:
