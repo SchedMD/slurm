@@ -1,0 +1,344 @@
+This work was produced at the University of California, Lawrence Livermore 
+National Laboratory (UC LLNL) under contract no. W-7405-ENG-48 (Contract 48)
+between the U.S. Department of Energy (DOE) and The Regents of the University
+of California (University) for the operation of UC LLNL. The rights of the 
+Federal Government are reserved under Contract 48 subject to the restrictions
+agreed upon by the DOE and Universiity as allowed under DOE Acquisition 
+Letter 97-1.
+
+
+DISCLAIMER
+
+This work was prepared as an account of work sponsored by an agency of the
+United States Government. Neither the United States Government nor the 
+University of California nor any of their employees, makes any warranty, 
+express or implied, or assumes any liability or responsibility for the 
+accuracy, completeness, or usefulness of any information, apparatus, product, 
+or process disclosed, or represented that its use would not infringe 
+privately-owned rights. Reference herein to any specific commercial products, 
+process, or service by trade name, trademark, manufacturer or otherwise does 
+not necessarily constitute or imply its endorsement, recommendation, or
+favoring by the United States Government or the University of California. 
+The views and opinions of authors expressed herein do not necessarily state
+or reflect those of the United States Government or the University of 
+California, and shall not be used for advertising or product endorsement 
+purposes.
+
+
+NOTIFICATION OF COMMERCIAL USE
+
+Commercialization of this product is prohibited without notifying the 
+Department of Energy (DOE) or Lawrence Livermore National Laboratory (LLNL).
+
+
+USE OF THIS PATCH
+
+This patch makes use of SLURM's srun command to launch all tasks.
+IMPORTANT: In order to launch more than one task per mode, shared
+memory is used for communications. You must explicitly enable shared
+memory when building MPICH with the following configure line:
+  ./configure --with-device=ch_p4 --with-comm=shared
+
+Applications must be rebuilt with this new library to function 
+with SLURM launch. The "--mpi=mpich1_p4" srun option MUST be 
+used to launch the tasks (it sets a bunch of environment variables 
+and launches only one task per node, the MPICH library launches 
+the other tasks on the node). Here is a sample execute line:  
+   srun --mpi=mpich1_p4 [srun_options...] <progname> [options...]
+
+
+IDENTIFICATION: UCRL-CODE-234229
+
+
+
+Index: mpid/ch_p4/p4/lib/p4_args.c
+===================================================================
+--- mpid/ch_p4/p4/lib/p4_args.c	(revision 11616)
++++ mpid/ch_p4/p4/lib/p4_args.c	(working copy)
+@@ -5,6 +5,10 @@
+  */
+ #include "p4.h"
+ #include "p4_sys.h"
++#include <sys/poll.h>
++#include <sys/types.h>
++#include <sys/socket.h>
++#include <arpa/inet.h>
+ 
+ /* Macro used to see if an arg is not following the correct format. */
+ #define bad_arg(a)    ( ((a)==NULL) || ((*(a)) == '-') )
+@@ -54,6 +58,213 @@
+     execer_mastport = 0;
+     execer_pg = NULL;
+ 
++    /*
++     * For SLURM based job initiations (from srun command), get the
++     * parameters from environment variables as needed. This allows
++     * for a truly parallel job launch using the existing "execer"
++     * mode of operation with slight modification.
++     */
++    if (getenv("SLURM_JOB_ID")) {
++	int i;
++	char *tmp, *hostlist, *host2, *tasks_per_node, *task2;
++
++	execer_starting_remotes = P4_TRUE;
++	strcpy(execer_id, "mpiexec");
++
++	if ((tmp = getenv("SLURMD_NODENAME")))
++	    strcpy(execer_myhost, tmp);
++	else {
++	    printf("SLURMD_NODENAME environment variable missing\n");
++	    exit(-1);
++	}
++
++	if ((tmp = getenv("SLURM_NODEID")))
++	    execer_mynodenum = atoi(tmp);
++	else {
++	    printf("SLURM_NODEID environment variable missing\n");
++	    exit(-1);
++	}
++
++	if ((tmp = getenv("SLURM_NNODES")))
++	    execer_numtotnodes = atoi(tmp);
++	else {
++	    printf("SLURM_NNODES environment variable missing\n");
++	    exit(-1);
++	}
++
++	if (!(tmp = getenv("SLURM_MPICH_NODELIST"))) {
++	    printf("SLURM_MPICH_NODELIST environment variable missing\n");
++	    printf("  SLURM's mpich1_p4 plugin likely not in use\n");
++	    exit(-1);
++	}
++	i = strlen(tmp) + 1;
++	hostlist = malloc(i);
++	bcopy(tmp, hostlist, i);
++	tmp = strtok_r(hostlist, ",", &host2);
++	if (!tmp) {
++	    printf("SLURM_MPICH_NODELIST environment variable invalid\n");
++	    exit(-1);
++	}
++	strcpy(execer_masthost, tmp);
++
++	if (!(tmp = getenv("SLURM_MPICH_TASKS"))) {
++	    printf("SLURM_MPICH_TASKS environment variable missing\n");
++	    exit(-1);
++	}
++	i = strlen(tmp) + 1;
++	tasks_per_node = malloc(i);
++	bcopy(tmp, tasks_per_node, i);
++	tmp = strtok_r(tasks_per_node, ",", &task2);
++	if (!tmp) {
++	    printf("SLURM_MPICH_TASKS environment variable invalid\n");
++	    exit(-1);
++	}
++	execer_mynumprocs = atoi(tmp);
++
++	if (execer_mynodenum == 0) {
++	    if ((tmp = getenv("SLURM_MPICH_PORT1")))
++		execer_mastport = atoi(tmp);
++	    else {
++		printf("SLURM_MPICH_PORT1 environment variable missing\n");
++		exit(-1);
++	    }	
++	    execer_pg = p4_alloc_procgroup();
++	    pe = execer_pg->entries;
++	    strcpy(pe->host_name, execer_myhost);
++	    pe->numslaves_in_group = execer_mynumprocs - 1;
++	    strcpy(pe->slave_full_pathname, argv[0]);
++	    pe->username[0] = '\0'; /* unused */
++	    execer_pg->num_entries++;
++	    for (i=0; i<(execer_numtotnodes-1); i++) {
++		pe++;
++		tmp = strtok_r(NULL, ",", &host2);
++		if (!tmp) {
++		    printf("SLURM_MPICH_NODELIST environment variable invalid\n");
++		    exit(-1);
++		}
++		strcpy(pe->host_name, tmp);
++		tmp = strtok_r(NULL, ",", &task2);
++		if (!tmp) {
++		    printf("SLURM_MPICH_TASKS environment variable invalid\n");
++		    exit(-1);
++		}
++		pe->numslaves_in_group = atoi(tmp);
++#if 0
++		printf("host[%d] name:%s tasks:%d\n", 
++			i, pe->host_name, pe->numslaves_in_group);
++#endif
++		*pe->slave_full_pathname = 0;
++		pe->username[0] = '\0'; /* unused */
++		execer_pg->num_entries++;
++	    }
++	} else {
++	    int p4_fd2, cc;
++	    short new_port;
++	    struct sockaddr_in serv_addr;
++	    socklen_t serv_len;
++	    struct pollfd ufds;
++
++	    if (strcmp(execer_myhost, execer_masthost)) {
++		/* look up correct task count */
++		for (i=0; i<execer_numtotnodes; i++) {
++		    tmp = strtok_r(NULL, ",", &host2);
++		    if (!tmp) break;
++		    cc = strcmp(execer_myhost, tmp);
++		    tmp = strtok_r(NULL, ",", &task2);
++		    if (!tmp) break;
++		    if (cc) continue;
++		    execer_mynumprocs = atoi(tmp);
++		    break;
++		}
++	    }
++
++	    /* Read the correct port to use from srun */
++	    if ((tmp = getenv("SLURM_MPICH_PORT2")))
++		execer_mastport = atoi(tmp);
++	    else {
++		printf("SLURM_MPICH_PORT2 environment variable missing\n");
++		exit(-1);
++	    }
++	    if ((p4_fd2 = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
++		perror("socket");
++		exit(-1);
++	    }
++	    bzero((char *) &serv_addr, sizeof(serv_addr));
++	    serv_addr.sin_family = PF_INET;
++	    serv_addr.sin_port = htons(execer_mastport);
++	    inet_pton(AF_INET, getenv("SLURM_LAUNCH_NODE_IPADDR"),
++			(void *) &serv_addr.sin_addr);
++	    serv_len = sizeof(serv_addr);
++	    /* stagger the requests */
++	    usleep(2000 + execer_mynodenum * 300);
++	    if (connect(p4_fd2, (struct sockaddr *) &serv_addr, serv_len) < 0) {
++		perror("connect");
++		exit(-1);
++	    }
++	    ufds.fd = p4_fd2;
++	    ufds.events = POLLOUT | POLLERR | POLLHUP;
++	    ufds.revents = 0;
++poll1:	    cc = poll(&ufds, 1, 10000);		/* wait 10 secs max */
++	    if (cc == 0) {
++		printf("p4 startup, poll1 timeout\n");
++		exit(-1);
++	    } else if (cc < 0) {
++		if (errno == EINTR) goto poll1;
++		perror("poll1");
++		exit(-1);
++	    } else if ((ufds.revents & POLLOUT) == 0) {
++		printf("p4 startup, poll1 failure\n");
++		exit(-1);
++	    }
++write1:	    cc = write(p4_fd2, "GET", 4);
++	    if (cc < 0) {
++		if (errno == EINTR) goto write1;
++		perror("write");
++		exit(-1);
++	    } else if (cc < 4) {
++		printf("p4 startup, partitial write\n");
++		exit(-1);
++	    }
++	    ufds.fd = p4_fd2;
++	    ufds.events = POLLIN | POLLERR | POLLHUP;
++	    ufds.revents = 0;
++poll2:	    cc = poll(&ufds, 1, 10000);		/* wait 10 secs max */
++	    if (cc == 0) {
++		printf("p4 startup, poll2 timeout\n");
++		exit(-1);
++	    } else if (cc < 0) {
++		if (errno == EINTR) goto poll2;
++		perror("poll2");
++		exit(-1);
++	    } else if ((ufds.revents & POLLIN) == 0) {
++		printf("p4 startup, poll2 failure\n");
++		exit(-1);
++	    }
++read2:	    cc = read(p4_fd2, &new_port, sizeof(new_port)); 
++	    if (cc < 0) {
++		if (errno == EINTR) goto read2;
++		perror("read2");
++		exit(-1);
++	    } else if (cc != sizeof(new_port)) {
++		printf("p4 startup, partitial read\n");
++		exit(-1);
++	    }
++	    close(p4_fd2);
++	    execer_mastport = new_port;
++	}
++	free(hostlist);
++	free(tasks_per_node);
++#if 0
++	printf("execer_id:%s\n", execer_id);
++	printf("execer_myhost:%s\n", execer_myhost);
++	printf("execer_mynodenum:%d\n", execer_mynodenum);
++	printf("execer_numtotnodes:%d\n", execer_numtotnodes);
++	printf("execer_mastport:%d\n", execer_mastport);
++	printf("execer_masthost:%s\n", execer_masthost);
++	printf("execer_mynumprocs:%d\n", execer_mynumprocs);
++#endif
++    }
++
+     /* Move to last argument, so that we can go backwards. */
+     a = &argv[*argc - 1];
+ 
+Index: mpid/ch_p4/p4/lib/p4_utils.c
+===================================================================
+--- mpid/ch_p4/p4/lib/p4_utils.c	(revision 11616)
++++ mpid/ch_p4/p4/lib/p4_utils.c	(working copy)
+@@ -1418,13 +1418,16 @@
+     struct sockaddr_in s_in;
+     int len = sizeof(s_in);
+     int fd, cc;
+-
++    char *ip_addr;
+     /* send my local listening number to execer_mastport */
+     fd = socket(PF_INET, SOCK_DGRAM, 0);
+     if (fd < 0)
+         p4_error("put_execer_port: socket", errno);
+     s_in.sin_family = AF_INET;
+-    s_in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++    if ((ip_addr = getenv("SLURM_LAUNCH_NODE_IPADDR")))
++	inet_pton(AF_INET, ip_addr, (void *) &s_in.sin_addr);
++    else
++	s_in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+     s_in.sin_port = htons(execer_mastport);
+     cc = sendto(fd, &port, sizeof(port), 0, (struct sockaddr *)&s_in, len);
+     if (cc < 0)
+Index: README
+===================================================================
+--- README	(revision 11616)
++++ README	(working copy)
+@@ -171,3 +171,34 @@
+ this newsgroup is for discussions about MPI, not any particular implementation
+ of MPI.
+ 
++
++SLURM:
++
++This patch makes use of SLURM's srun command to launch all tasks.
++IMPORTANT: In order to launch more than one task per mode, shared
++memory is used for communications. You must explicitly enable shared
++memory when building MPICH with the following configure line:
++  ./configure --with-device=ch_p4 --with-comm=shared
++
++Applications must be rebuilt with this new library to function 
++with SLURM launch. The "--mpi=mpich1_p4" srun option MUST be 
++used to launch the tasks (it sets a bunch of environment variables 
++and launches only one task per node, the MPICH library launches 
++the other tasks on the node). Here is a sample execute line:  
++   srun --mpi=mpich1_p4 [srun_options...] <progname> [options...]
++
++The only real anomaly is that all output from all spawned tasks 
++on a node appear to slurm as coming from the one task that it
++launched. If the srun --label option is used, the task ID labels 
++will be misleading.
++
++DETAILS: The srun command opens two socket connections and passes 
++their ports to all tasks via the SLURM_MPICH1_P4_PORT1 and 
++SLURM_MPICH1_P4_PORT2 environment variables. Task zero connects to 
++SLURM_MPICH1_P4_PORT1 and writes its port number. The other tasks connect to 
++SLURM_MPICH1_P4_PORT2 and read that port number. This avoid the requirement 
++of having task zero launch all subsequent tasks and also launches 
++all tasks under the direct control of SLURM (for process management 
++and accounting).  SLURM only launches one task per node and that 
++launches additional MPI tasks as needed using shared memory for 
++communications. 
