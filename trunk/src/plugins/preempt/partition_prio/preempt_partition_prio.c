@@ -50,8 +50,7 @@ const char	plugin_name[]	= "Preempt by partition priority plugin";
 const char	plugin_type[]	= "preempt/partition_prio";
 const uint32_t	plugin_version	= 100;
 
-static uint32_t _gen_job_prio(struct job_record **job_pptr);
-static void _preempt_list_del(void *x);
+static uint32_t _gen_job_prio(struct job_record *job_ptr);
 static int  _sort_by_prio (void *x, void *y);
 
 /**************************************************************************/
@@ -77,7 +76,7 @@ extern void fini( void )
 extern List find_preemptable_jobs(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
-	struct job_record *job_p, **preemptee_ptr;
+	struct job_record *job_p;
 	List preemptee_job_list = NULL;
 
 	/* Validate the preemptor job */
@@ -116,13 +115,11 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 
 		/* This job is a preemption candidate */
 		if (preemptee_job_list == NULL) {
-			preemptee_job_list = list_create(_preempt_list_del);
+			preemptee_job_list = list_create(NULL);
 			if (preemptee_job_list == NULL)
 				fatal("list_create malloc failure");
 		}
-		preemptee_ptr = xmalloc(sizeof(struct job_record *));
-		preemptee_ptr[0] = job_p;
-		list_append(preemptee_job_list, preemptee_ptr);
+		list_append(preemptee_job_list, job_p);
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -131,9 +128,8 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	return preemptee_job_list;
 }
 
-static uint32_t _gen_job_prio(struct job_record **job_pptr)
+static uint32_t _gen_job_prio(struct job_record *job_ptr)
 {
-	struct job_record *job_ptr = *job_pptr;
 	uint32_t job_prio;
 
 	if (job_ptr->part_ptr)
@@ -154,8 +150,8 @@ static int _sort_by_prio (void *x, void *y)
 	int rc;
 	uint32_t job_prio1, job_prio2;
 
-	job_prio1 = _gen_job_prio((struct job_record **) x);
-	job_prio2 = _gen_job_prio((struct job_record **) y);
+	job_prio1 = _gen_job_prio((struct job_record *) x);
+	job_prio2 = _gen_job_prio((struct job_record *) y);
 
 	if (job_prio1 > job_prio2)
 		rc = 1;
@@ -165,9 +161,4 @@ static int _sort_by_prio (void *x, void *y)
 		rc = 0;
 
 	return rc;
-}
-
-static void _preempt_list_del(void *x)
-{
-	xfree(x);
 }

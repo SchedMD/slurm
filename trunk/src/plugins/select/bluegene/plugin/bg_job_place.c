@@ -104,7 +104,7 @@ static int _find_best_block_match(List block_list, int *blocks_added,
 				  uint32_t min_nodes, 
 				  uint32_t max_nodes, uint32_t req_nodes,
 				  bg_record_t** found_bg_record,
-				  bool test_only);
+				  bool test_only, int avail_cpus);
 static int _sync_block_lists(List full_list, List incomp_list);
 
 /* Rotate a 3-D geometry array through its six permutations */
@@ -823,7 +823,7 @@ static int _find_best_block_match(List block_list,
 				  uint32_t min_nodes, uint32_t max_nodes,
 				  uint32_t req_nodes,
 				  bg_record_t** found_bg_record, 
-				  bool test_only)
+				  bool test_only, int avail_cpus)
 {
 	bg_record_t *bg_record = NULL;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
@@ -857,9 +857,9 @@ static int _find_best_block_match(List block_list,
 		return SLURM_ERROR;
 	}
 
-	if(!test_only && req_procs > num_unused_cpus) {
+	if(!test_only && (req_procs > avail_cpus)) {
 		debug2("asking for %u I only got %d", 
-		       req_procs, num_unused_cpus);
+		       req_procs, avail_cpus);
 		return SLURM_ERROR;
 	}
 
@@ -1348,9 +1348,11 @@ static List _get_preemptables(bg_record_t *bg_record, List preempt_jobs)
 			if(job_ptr == found_record->job_ptr)
 				break;
 		}
-		if(job_ptr) 
+		if(job_ptr) {
 			list_append(preempt, job_ptr);
-		else {
+/* 			info("going to preempt %u running on %s", */
+/* 			     job_ptr->job_id, found_record->bg_block_id); */
+		} else {
 			error("Job %u running on block %s "
 			      "wasn't in the preempt list, but needs to be "
 			      "preempted for queried job to run on block %s",
@@ -1370,12 +1372,17 @@ static List _get_preemptables(bg_record_t *bg_record, List preempt_jobs)
 	return preempt;
 }
 
+/* Remove the jobs from the block list, this block list can not be
+ * equal to the main block list.  And then return the number of cpus
+ * we freed up by removing the jobs.
+ */
 static int _remove_preemptables(List block_list, List preempt_jobs) 
 {
 	ListIterator itr;
 	ListIterator job_itr;
 	bg_record_t *found_record;
 	struct job_record *job_ptr;
+	int freed_cpus = 0;
 
 	xassert(block_list);
 	xassert(block_list != bg_lists->main);
@@ -1386,8 +1393,12 @@ static int _remove_preemptables(List block_list, List preempt_jobs)
 	while((job_ptr = list_next(job_itr))) {
 		while((found_record = list_next(itr))) {
 			if (found_record->job_ptr == job_ptr) {
+/* 				info("removing job %u running on %s", */
+/* 				     job_ptr->job_id, */
+/* 				     found_record->bg_block_id); */
 				found_record->job_ptr = NULL;
 				found_record->job_running = NO_JOB_RUNNING;
+				freed_cpus += found_record->cpu_cnt;
 				break;
 			}
 		}
@@ -1396,13 +1407,12 @@ static int _remove_preemptables(List block_list, List preempt_jobs)
 		if(!found_record) 
 			error("Job %u wasn't found running anywhere, "
 			      "can't preempt",
-			      job_ptr->job_id);
-		
+			      job_ptr->job_id);		
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(job_itr);
 	
-	return SLURM_SUCCESS;
+	return freed_cpus;
 }
 
 /*
@@ -1434,7 +1444,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	List block_list = NULL;
 	int blocks_added = 0;
 	time_t starttime = time(NULL);
-	bool test_only;
+	bool test_only, preempt_done=false;
+	int avail_cpus = num_unused_cpus;
 
 	if (mode == SELECT_MODE_RUN_NOW 
 	    || (preemptee_candidates && mode != SELECT_MODE_TEST_ONLY))
@@ -1511,16 +1522,13 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	
 	/* just remove the preemptable jobs now since we are treating
 	   this as a run now deal */
-	if((mode != SELECT_MODE_TEST_ONLY)
-	   && preemptee_candidates && preemptee_job_list) 
-		_remove_preemptables(block_list, preemptee_candidates);
-	
+preempt:	
 	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_dec);
 
 	rc = _find_best_block_match(block_list, &blocks_added,
 				    job_ptr, slurm_block_bitmap, min_nodes, 
 				    max_nodes, req_nodes,  
-				    &bg_record, test_only);
+				    &bg_record, test_only, avail_cpus);
 	
 	if(rc == SLURM_SUCCESS) {
 		if(bg_record) {
@@ -1553,7 +1561,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			if(!bg_record->bg_block_id) {
 				debug2("%d can start unassigned job %u at "
 				       "%u on %s",
-				       test_only, job_ptr->job_id, starttime,
+				       mode, job_ptr->job_id, starttime,
 				       bg_record->nodes);
 
 				select_g_select_jobinfo_set(
@@ -1583,7 +1591,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					      "non-shared partition");
 				
 				debug2("%d can start job %u at %u on %s(%s)",
-				       test_only, job_ptr->job_id, starttime,
+				       mode, job_ptr->job_id, starttime,
 				       bg_record->bg_block_id,
 				       bg_record->nodes);
 				
@@ -1611,6 +1619,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		} else {
 			error("we got a success, but no block back");
 		}
+	} else if(!preempt_done && (mode != SELECT_MODE_TEST_ONLY)
+		  && preemptee_candidates && preemptee_job_list) {
+		avail_cpus += _remove_preemptables(
+			block_list, preemptee_candidates);
+		preempt_done = true;
+		goto preempt;
 	}
 
 	if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {		

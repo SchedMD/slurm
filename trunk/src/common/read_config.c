@@ -334,7 +334,7 @@ static void _set_node_prefix(const char *nodenames)
 	}
 	debug3("Prefix is %s %s %d", conf_ptr->node_prefix, nodenames, i);
 }
-#endif /* HAVE_BG */
+#endif /* HAVE_3D */
 
 
 static int _parse_nodename(void **dest, slurm_parser_enum_t type,

@@ -60,6 +60,7 @@ documents those changes that are of interest to users and admins.
     supported).
  -- Remove contribs/python/hostlist files. Download the materials as needed
     directly from http://www.nsc.liu.se/~kent/python-hostlist.
+ -- BLUEGENE - Preemption now works on bluegene systems
 
 * Changes in SLURM 2.1.0-pre4
 =============================

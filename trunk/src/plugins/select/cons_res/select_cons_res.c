@@ -515,9 +515,9 @@ static void _create_part_data()
 /* List sort function: sort by the job's expected end time */
 static int _cr_job_list_sort(void *x, void *y)
 {
-	struct job_record **job1_pptr = (struct job_record **) x;
-	struct job_record **job2_pptr = (struct job_record **) y;
-	return (int) difftime(job1_pptr[0]->end_time, job2_pptr[0]->end_time);
+	struct job_record *job1_ptr = (struct job_record *) x;
+	struct job_record *job2_ptr = (struct job_record *) y;
+	return (int) difftime(job1_ptr->end_time, job2_ptr->end_time);
 }
 
 
@@ -1108,8 +1108,8 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 
 static int _find_job (void *x, void *key)
 {
-	struct job_record **job_pptr = (struct job_record **) x;
-	if (job_pptr[0] == (struct job_record *) key)
+	struct job_record *job_ptr = (struct job_record *) x;
+	if (job_ptr == (struct job_record *) key)
 		return 1;
 	return 0;
 }
@@ -1146,7 +1146,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	int rc;
 	bitstr_t *orig_map;
-	struct job_record *tmp_job_ptr, **tmp_job_pptr;;
+	struct job_record *tmp_job_ptr;
 	ListIterator job_iterator, preemptee_iterator;
 	struct part_res_record *future_part;
 	struct node_use_record *future_usage;
@@ -1211,19 +1211,14 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			}
 			preemptee_iterator = list_iterator_create(
 						preemptee_candidates);
-			while ((tmp_job_pptr = (struct job_record **)
+			while ((tmp_job_ptr = (struct job_record *)
 					list_next(preemptee_iterator))) {
-				struct job_record **preemptee_ptr;
 				if (bit_overlap(bitmap, 
-						tmp_job_pptr[0]->
-						node_bitmap) == 0)
+						tmp_job_ptr->node_bitmap) == 0)
 					continue;
 
-				preemptee_ptr = xmalloc(sizeof(struct 
-							job_record *));
-				preemptee_ptr[0] = tmp_job_pptr[0];;
 				list_append(*preemptee_job_list, 
-					    preemptee_ptr);
+					    tmp_job_ptr);
 			}
 			list_iterator_destroy(preemptee_iterator);
 		}
@@ -1246,7 +1241,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	struct part_res_record *future_part;
 	struct node_use_record *future_usage;
-	struct job_record *tmp_job_ptr, **tmp_job_pptr;
+	struct job_record *tmp_job_ptr;
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
 	bitstr_t *orig_map;
@@ -1303,11 +1298,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* Remove preemptable job now */
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, action);
-		} else {
-			tmp_job_pptr = xmalloc(sizeof(struct job_record *));
-			*tmp_job_pptr = tmp_job_ptr;
-			list_append(cr_job_list, tmp_job_pptr);
-		}
+		} else 
+			list_append(cr_job_list, tmp_job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -1327,8 +1319,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (rc != SLURM_SUCCESS) {
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
-		while ((tmp_job_pptr = list_next(job_iterator))) {
-			tmp_job_ptr = *tmp_job_pptr;
+		while ((tmp_job_ptr = list_next(job_iterator))) {
 			_rm_job_from_res(future_part, future_usage, 
 					 tmp_job_ptr, 0);
 			bit_or(bitmap, orig_map);
@@ -1360,15 +1351,12 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				fatal("list_create malloc failure");
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
-		while ((tmp_job_pptr = (struct job_record **)
+		while ((tmp_job_ptr = (struct job_record *)
 				list_next(preemptee_iterator))) {
-			struct job_record **preemptee_ptr;
 			if (bit_overlap(bitmap, 
-					tmp_job_pptr[0]->node_bitmap) == 0)
+					tmp_job_ptr->node_bitmap) == 0)
 				continue;
-			preemptee_ptr = xmalloc(sizeof(struct job_record *));
-			preemptee_ptr[0] = tmp_job_pptr[0];
-			list_append(*preemptee_job_list, preemptee_ptr);
+			list_append(*preemptee_job_list, tmp_job_ptr);
 		}
 		list_iterator_destroy(preemptee_iterator);
 	}
