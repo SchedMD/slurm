@@ -58,6 +58,8 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki2, JOBWILLRUN command, add support for identification of 
     preemptable and preempted jobs (both new and old format of commands are
     supported).
+ -- Remove contribs/python/hostlist files. Download the materials as needed
+    directly from http://www.nsc.liu.se/~kent/python-hostlist.
 
 * Changes in SLURM 2.1.0-pre4
 =============================
