@@ -1639,8 +1639,8 @@ static void _init_node_cr(void)
 
 static int _find_job (void *x, void *key)
 {
-	struct job_record **job_pptr = (struct job_record **) x;
-	if (job_pptr[0] == (struct job_record *) key)
+	struct job_record *job_ptr = (struct job_record *) x;
+	if (job_ptr == (struct job_record *) key)
 		return 1;
 	return 0;
 }
@@ -1681,7 +1681,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	bitstr_t *orig_map;
 	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
-	struct job_record *tmp_job_ptr, **tmp_job_pptr;
+	struct job_record *tmp_job_ptr;
 	ListIterator job_iterator, preemptee_iterator;
 	struct node_cr_record *exp_node_cr;
 
@@ -1767,19 +1767,14 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			}
 			preemptee_iterator = list_iterator_create(
 						preemptee_candidates);
-			while ((tmp_job_pptr = (struct job_record **)
+			while ((tmp_job_ptr = (struct job_record *)
 					list_next(preemptee_iterator))) {
-				struct job_record **preemptee_ptr;
 				if (bit_overlap(bitmap, 
-						tmp_job_pptr[0]->
-						node_bitmap) == 0)
+						tmp_job_ptr->node_bitmap) == 0)
 					continue;
 
-				preemptee_ptr = xmalloc(sizeof(struct 
-							job_record *));
-				preemptee_ptr[0] = tmp_job_pptr[0];
 				list_append(*preemptee_job_list, 
-					    preemptee_ptr);
+					    tmp_job_ptr);
 			}
 			list_iterator_destroy(preemptee_iterator);
 		}
@@ -1803,7 +1798,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  List *preemptee_job_list)
 {
 	struct node_cr_record *exp_node_cr;
-	struct job_record *tmp_job_ptr, **tmp_job_pptr;
+	struct job_record *tmp_job_ptr;
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
 	bitstr_t *orig_map;
@@ -1854,11 +1849,9 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 					   "_will_run_test", 
 					   _job_preemption_killing());
-		} else {
-			tmp_job_pptr = xmalloc(sizeof(struct job_record *));
-			*tmp_job_pptr = tmp_job_ptr;
-			list_append(cr_job_list, tmp_job_pptr);
-		}
+		} else 
+			list_append(cr_job_list, tmp_job_ptr);
+		
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -1879,9 +1872,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (rc != SLURM_SUCCESS) {
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
-		while ((tmp_job_pptr = (struct job_record **) 
+		while ((tmp_job_ptr = (struct job_record *) 
 				       list_next(job_iterator))) {
-			tmp_job_ptr = *tmp_job_pptr;
 			_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 					   "_will_run_test", true);
 			i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, 
@@ -1913,16 +1905,13 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				fatal("list_create malloc failure");
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
-		while ((tmp_job_pptr = (struct job_record **)
+		while ((tmp_job_ptr = (struct job_record *)
 				list_next(preemptee_iterator))) {
-			struct job_record **preemptee_ptr;
 			if (bit_overlap(bitmap, 
-					tmp_job_pptr[0]->node_bitmap) == 0)
+					tmp_job_ptr->node_bitmap) == 0)
 				continue;
 
-			preemptee_ptr = xmalloc(sizeof(struct job_record *));
-			preemptee_ptr[0] = tmp_job_pptr[0];
-			list_append(*preemptee_job_list, preemptee_ptr);
+			list_append(*preemptee_job_list, tmp_job_ptr);
 		}
 		list_iterator_destroy(preemptee_iterator);
 	}
@@ -1940,9 +1929,9 @@ static void _cr_job_list_del(void *x)
 
 static int  _cr_job_list_sort(void *x, void *y)
 {
-	struct job_record **job1_pptr = (struct job_record **) x;
-	struct job_record **job2_pptr = (struct job_record **) y;
-	return (int) difftime(job1_pptr[0]->end_time, job2_pptr[0]->end_time);
+	struct job_record *job1_ptr = (struct job_record *) x;
+	struct job_record *job2_ptr = (struct job_record *) y;
+	return (int) difftime(job1_ptr->end_time, job2_ptr->end_time);
 }
 
 static void _preempt_list_del(void *x)

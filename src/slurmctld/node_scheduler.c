@@ -956,7 +956,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 static void _preempt_jobs(List preemptee_job_list, int *error_code)
 {
 	ListIterator iter;
-	struct job_record **job_pptr, *job_ptr;
+	struct job_record *job_ptr;
 	uint16_t mode;
 	int job_cnt = 0, rc = 0;
 
@@ -968,8 +968,7 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 	iter = list_iterator_create(preemptee_job_list);
 	if (!iter)
 		fatal("list_iterator_create: malloc failure");
-	while ((job_pptr = (struct job_record **) list_next(iter))) {
-		job_ptr = job_pptr[0];
+	while ((job_ptr = (struct job_record *) list_next(iter))) {
 		job_cnt++;
 		if (mode == PREEMPT_MODE_CANCEL) {
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0);
