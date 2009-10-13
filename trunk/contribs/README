@@ -18,9 +18,6 @@ of the SLURM contribs distribution follows:
      API to SLURM using perl.  Making available all SLURM command that exist
      in the SLURM proper API.
 
-  python/            [Python modules]
-     Directory for Python modules.
-
   sjstat             [ Perl program]
      Lists attributes of jobs under SLURM control
 
