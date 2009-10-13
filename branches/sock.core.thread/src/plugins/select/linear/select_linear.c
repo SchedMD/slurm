@@ -396,8 +396,6 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	uint16_t cpus_per_task = 1;
 	uint16_t ntasks_per_node = 0, ntasks_per_socket = 0;
 	uint16_t ntasks_per_core = 0;
-	uint16_t max_sockets = 0xffff, max_cores = 0xffff;
-	uint16_t max_threads = 0xffff;
 	multi_core_data_t *mc_ptr = NULL;
 	int min_sockets = 0, min_cores = 0;
 
@@ -409,9 +407,6 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	if (job_ptr->details->ntasks_per_node)
 		ntasks_per_node = job_ptr->details->ntasks_per_node;
 	if ((mc_ptr = job_ptr->details->mc_ptr)) {
-		max_sockets       = mc_ptr->max_sockets;
-		max_cores         = mc_ptr->max_cores;
-		max_threads       = mc_ptr->max_threads;
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 		ntasks_per_core   = mc_ptr->ntasks_per_core;
 	}
@@ -430,15 +425,11 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	}
 
 #if SELECT_DEBUG
-	info("host %s User_ sockets %u cores %u threads %u ", 
-	     node_ptr->name, max_sockets, max_cores, max_threads);
-
 	info("host %s HW_ cpus %u sockets %u cores %u threads %u ", 
 	     node_ptr->name, cpus, sockets, cores, threads);
 #endif
 
 	avail_cpus = slurm_get_avail_procs(
-			max_sockets, max_cores, max_threads, 
 			min_sockets, min_cores, cpus_per_task,
 			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
 	    		&cpus, &sockets, &cores, &threads, NULL, 

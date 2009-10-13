@@ -1662,11 +1662,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->num_procs : -1L;
 	debug3("   num_procs=%ld", num_procs);
 
-	debug3("   -N min-[max]: %u-[%u]:%u-[%u]:%u-[%u]:%u-[%u]",
+	debug3("   -N min-[max]: %u-[%u]:%u:%u:%u",
 	       job_specs->min_nodes,   job_specs->max_nodes,
-	       job_specs->min_sockets, job_specs->max_sockets,
-	       job_specs->min_cores,   job_specs->max_cores,
-	       job_specs->min_threads, job_specs->max_threads);
+	       job_specs->min_sockets, job_specs->min_cores,
+	       job_specs->min_threads);
 
 	job_min_procs    = (job_specs->job_min_procs != (uint16_t) NO_VAL) ? 
 		(long) job_specs->job_min_procs : -1L;
@@ -3273,13 +3272,10 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 	     (job_desc->job_min_threads  == (uint16_t) 1))	&&
 	    ((job_desc->min_sockets      == (uint16_t) NO_VAL)	||
 	     (job_desc->min_sockets      == (uint16_t) 1))	&&
-	    (job_desc->max_sockets       == (uint16_t) NO_VAL)	&&
 	    ((job_desc->min_cores        == (uint16_t) NO_VAL)	||
 	     (job_desc->min_cores        == (uint16_t) 1))	&&
-	    (job_desc->max_cores         == (uint16_t) NO_VAL)	&&
 	    ((job_desc->min_threads      == (uint16_t) NO_VAL)	||
 	     (job_desc->min_threads      == (uint16_t) 1))	&&
-	    (job_desc->max_threads       == (uint16_t) NO_VAL)	&&
 	    (job_desc->ntasks_per_socket == (uint16_t) NO_VAL)	&&
 	    (job_desc->ntasks_per_core   == (uint16_t) NO_VAL)	&&
 	    (job_desc->plane_size        == (uint16_t) NO_VAL))
@@ -3302,26 +3298,14 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 		mc_ptr->min_sockets        = job_desc->min_sockets;
 	else
 		mc_ptr->min_sockets        = 1;
-	if (job_desc->max_sockets != (uint16_t) NO_VAL)
-		mc_ptr->max_sockets        = job_desc->max_sockets;
-	else
-		mc_ptr->max_sockets        = 0xffff;
 	if (job_desc->min_cores != (uint16_t) NO_VAL)
 		mc_ptr->min_cores          = job_desc->min_cores;
 	else
 		mc_ptr->min_cores          = 1;
-	if (job_desc->max_cores != (uint16_t) NO_VAL)
-		mc_ptr->max_cores          = job_desc->max_cores;
-	else
-		mc_ptr->max_cores          = 0xffff;
 	if (job_desc->min_threads != (uint16_t) NO_VAL)
 		mc_ptr->min_threads        = job_desc->min_threads;
 	else
 		mc_ptr->min_threads        = 1;
-	if (job_desc->max_threads != (uint16_t) NO_VAL)
-		mc_ptr->max_threads        = job_desc->max_threads;
-	else
-		mc_ptr->max_threads        = 0xffff;
 	if (mc_ptr->ntasks_per_socket != (uint16_t) NO_VAL)
 		mc_ptr->ntasks_per_socket  = job_desc->ntasks_per_socket;
 	else
@@ -7741,11 +7725,8 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->min_nodes         = details->min_nodes;
 	job_desc->max_nodes         = details->max_nodes;
 	job_desc->min_sockets       = mc_ptr->min_sockets;
-	job_desc->max_sockets       = mc_ptr->max_sockets;
 	job_desc->min_cores         = mc_ptr->min_cores;
-	job_desc->max_cores         = mc_ptr->max_cores;
-	job_desc->min_threads       = mc_ptr->min_threads;
-	job_desc->max_threads       = mc_ptr->max_threads;
+	job_desc->min_threads       = mc_ptr->min_threads;;
 	job_desc->cpus_per_task     = details->cpus_per_task;
 	job_desc->ntasks_per_node   = details->ntasks_per_node;
 	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;

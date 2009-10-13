@@ -1066,11 +1066,8 @@ static struct multi_core_data * _create_default_mc(void)
 	struct multi_core_data *mc_ptr;
 	mc_ptr = xmalloc(sizeof(struct multi_core_data));
 	mc_ptr->min_sockets = 1;
-	mc_ptr->max_sockets = 0xffff;
 	mc_ptr->min_cores   = 1;
-	mc_ptr->max_cores   = 0xffff;
 	mc_ptr->min_threads = 1;
-	mc_ptr->max_threads = 0xffff;
 /*	mc_ptr is initialized to zero by xmalloc*/
 /*	mc_ptr->ntasks_per_socket = 0; */
 /*	mc_ptr->ntasks_per_core   = 0; */

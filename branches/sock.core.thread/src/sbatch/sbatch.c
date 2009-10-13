@@ -288,16 +288,10 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	/* node constraints */
 	if (opt.min_sockets_per_node > -1)
 		desc->min_sockets = opt.min_sockets_per_node;
-	if (opt.max_sockets_per_node > -1)
-		desc->max_sockets = opt.max_sockets_per_node;
 	if (opt.min_cores_per_socket > -1)
 		desc->min_cores = opt.min_cores_per_socket;
-	if (opt.max_cores_per_socket > -1)
-		desc->max_cores = opt.max_cores_per_socket;
 	if (opt.min_threads_per_core > -1)
 		desc->min_threads = opt.min_threads_per_core;
-	if (opt.max_threads_per_core > -1)
-		desc->max_threads = opt.max_threads_per_core;
 
 	if (opt.no_kill)
 		desc->kill_on_node_fail = 0;

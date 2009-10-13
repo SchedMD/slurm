@@ -66,16 +66,15 @@ by their application.  Table 1 summarizes the new multi-core flags.
 </td></tr>
 <tr>
     <td> --sockets-per-node=<i>S</i></td>
-    <td>Number of sockets in a node to dedicate to a job (minimum or range)
+    <td>Number of sockets in a node to dedicate to a job (minimum)
 </td></tr>
 <tr>
     <td> --cores-per-socket=<i>C</i></td>
-    <td> Number of cores in a socket to dedicate to a job (minimum or range)
+    <td> Number of cores in a socket to dedicate to a job (minimum)
 </td></tr>
 <tr>
     <td> --threads-per-core=<i>T</i></td>
-    <td> Number of threads in a core
-to dedicate to a job (minimum or range)
+    <td> Number of threads in a core to dedicate to a job (minimum)
 </td></tr>
 <tr>
     <td> -B <i>S[:C[:T]]</i></td>
@@ -209,7 +208,7 @@ of nodes, sockets,&nbsp; cores, and threads:</p>
     --sockets-per-node=<i>S</i>      number of sockets per node to allocate
     --cores-per-socket=<i>C</i>      number of cores per socket to allocate
     --threads-per-core=<i>T</i>      number of threads per core to allocate
-                each field can be 'min[-max]' or wildcard '*'
+                each field can be 'min' or wildcard '*'
 
      <font face="serif">Total cpus requested = (<i>Nodes</i>) x (<i>S</i> x <i>C</i> x <i>T</i>)</font>
 </PRE>
@@ -225,12 +224,12 @@ note: compare the above with the previous corresponding --cpu_bind=... examples
 
 <LI> srun -n 16 -N 4 a.out
 <LI> srun -n 16 -N 4 -B 2:2:1 a.out
-<LI> srun -n 16 -N 4 -B 2-2:2-2:1-1 a.out
+<LI> srun -n 16 -N 4 -B 2:2:1 a.out
 <BR> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or
-<LI> srun -n 16 -N 4 --sockets-per-node 2-2 --cores-per-socket 2-2 --threads-per-core 1-1 a.out
-<LI> srun -n 16 -N 2-4 -B '1-2:*:1' a.out
-<LI> srun -n 16 -N 4:2 -B '2:*:1-1' a.out
-<LI> srun -n 16 -N 4:4 -B '1-1:1-1' a.out
+<LI> srun -n 16 -N 4 --sockets-per-node=2 --cores-per-socket=2 --threads-per-core=1 a.out
+<LI> srun -n 16 -N 2-4 -B '1:*:1' a.out
+<LI> srun -n 16 -N 4-2 -B '2:*:1' a.out
+<LI> srun -n 16 -N 4-4 -B '1:1' a.out
 </UL>
 </UL>
 
@@ -1045,7 +1044,7 @@ using NodeName:
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 2 February 2007</p>
+<p style="text-align:center;">Last modified 13 October 2009</p>
 
 <!--#include virtual="footer.txt"-->
 

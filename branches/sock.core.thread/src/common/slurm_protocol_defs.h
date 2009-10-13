@@ -596,9 +596,6 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  argc;
 	uint16_t  multi_prog;
 	uint16_t  *cpus_allocated;
-	uint16_t  max_sockets;
-	uint16_t  max_cores;
-	uint16_t  max_threads;
 	uint16_t  cpus_per_task;
 	char    **env;
 	char    **argv;

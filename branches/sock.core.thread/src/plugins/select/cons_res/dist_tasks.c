@@ -204,12 +204,9 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			fatal ("cons_res: _block_sync_core_bitmap index error");
 		
 		cpus  = job_res->cpus[i];
-		if (job_ptr->details && job_ptr->details->mc_ptr) {
-			vpus  = MIN(job_ptr->details->mc_ptr->max_threads,
-				    select_node_record[n].vpus);
-		}
+		vpus  = select_node_record[n].vpus;
 
-		while (cpus > 0 && num_bits > 0) {
+		while ((cpus > 0) && (num_bits > 0)) {
 			if (bit_test(job_res->core_bitmap, c++)) {
 				core_cnt++;
 				if (cpus < vpus)
@@ -287,13 +284,11 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			continue;
 		sockets = select_node_record[n].sockets;
 		cps     = select_node_record[n].cores;
-		vpus    = MIN(job_ptr->details->mc_ptr->max_threads,
-			      select_node_record[n].vpus);
+		vpus    = select_node_record[n].vpus;
 #ifdef CR_DEBUG
-		info("DEBUG: job %u node %s max_threads %u, vpus %u cpus %u",
+		info("DEBUG: job %u node %s vpus %u cpus %u",
 		     job_ptr->job_id, select_node_record[n].node_ptr->name,
-		     job_ptr->details->mc_ptr->max_threads, vpus,
-		     job_res->cpus[i]);
+		     vpus, job_res->cpus[i]);
 #endif
 		if ((c + (sockets * cps)) > csize)
 			fatal ("cons_res: _cyclic_sync_core_bitmap index error");

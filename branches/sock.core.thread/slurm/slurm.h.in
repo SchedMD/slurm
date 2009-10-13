@@ -622,16 +622,10 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default=0 */
 	uint16_t min_sockets;	/* minimum number of sockets per node required
 				 * by job, default=0 */
-	uint16_t max_sockets;	/* maximum number of sockets per node usable 
-				 * by job, default=unlimited (NO_VAL) */
 	uint16_t min_cores;	/* minimum number of cores per cpu required
 				 * by job, default=0 */
-	uint16_t max_cores;	/* maximum number of cores per cpu usable
-				 * by job, default=unlimited (NO_VAL) */
 	uint16_t min_threads;	/* minimum number of threads per core required
 				 * by job, default=0 */
-	uint16_t max_threads;	/* maximum number of threads per core usable
-				 * by job, default=unlimited (NO_VAL) */
 	uint16_t cpus_per_task;	/* number of processors required for each task */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
@@ -691,10 +685,7 @@ typedef struct job_info {
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	char *licenses;		/* licenses required by the job */
-	uint16_t max_cores;	/* maximum number of cores per cpu */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
-	uint16_t max_sockets;	/* maximum number of sockets per node */
-	uint16_t max_threads;	/* maximum number of threads per core */
 	uint16_t min_cores;	/* minimum number of cores per cpu */
 	uint16_t min_sockets;	/* minimum number of sockets per node */
 	uint16_t min_threads;	/* minimum number of threads per core */
