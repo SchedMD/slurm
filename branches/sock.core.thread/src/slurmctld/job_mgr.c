@@ -1147,7 +1147,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack8(detail_ptr->overcommit, buffer);
 	pack8(detail_ptr->prolog_running, buffer);
 
-	pack32(detail_ptr->job_min_procs, buffer);
+	pack32(detail_ptr->job_min_cpus, buffer);
 	pack32(detail_ptr->job_min_memory, buffer);
 	pack32(detail_ptr->job_min_tmp_disk, buffer);
 	pack_time(detail_ptr->begin_time, buffer);
@@ -1179,8 +1179,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *ckpt_dir = NULL, *restart_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
-	uint32_t job_min_procs;
-	uint32_t job_min_memory, job_min_tmp_disk;
+	uint32_t job_min_cpus, job_min_memory, job_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0;
 	uint16_t shared, contiguous, nice, ntasks_per_node;
 	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
@@ -1214,7 +1213,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack8(&overcommit, buffer);
 	safe_unpack8(&prolog_running, buffer);
 
-	safe_unpack32(&job_min_procs, buffer);
+	safe_unpack32(&job_min_cpus, buffer);
 	safe_unpack32(&job_min_memory, buffer);
 	safe_unpack32(&job_min_tmp_disk, buffer);
 	safe_unpack_time(&begin_time, buffer);
@@ -1290,7 +1289,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->exc_nodes = exc_nodes;
 	job_ptr->details->features = features;
 	job_ptr->details->in = in;
-	job_ptr->details->job_min_procs = job_min_procs;
+	job_ptr->details->job_min_cpus = job_min_cpus;
 	job_ptr->details->job_min_memory = job_min_memory;
 	job_ptr->details->job_min_tmp_disk = job_min_tmp_disk;
 	job_ptr->details->max_nodes = max_nodes;
@@ -1641,8 +1640,7 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id;
-	long job_min_procs, job_min_sockets, job_min_cores, job_min_threads;
-	long job_min_memory, job_min_tmp_disk, num_procs;
+	long job_min_cpus, job_min_memory, job_min_tmp_disk, num_procs;
 	long time_limit, priority, contiguous, acctg_freq;
 	long kill_on_node_fail, shared, immediate;
 	long cpus_per_task, requeue, num_tasks, overcommit;
@@ -1660,25 +1658,14 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	num_procs = (job_specs->num_procs != NO_VAL) ? 
 		(long) job_specs->num_procs : -1L;
-	debug3("   num_procs=%ld", num_procs);
+	job_min_cpus    = (job_specs->job_min_cpus != (uint16_t) NO_VAL) ? 
+		(long) job_specs->job_min_cpus : -1L;
+	debug3("   num_procs=%ld job_min_procs=%ld", num_procs, job_min_cpus);
 
 	debug3("   -N min-[max]: %u-[%u]:%u:%u:%u",
 	       job_specs->min_nodes,   job_specs->max_nodes,
 	       job_specs->min_sockets, job_specs->min_cores,
 	       job_specs->min_threads);
-
-	job_min_procs    = (job_specs->job_min_procs != (uint16_t) NO_VAL) ? 
-		(long) job_specs->job_min_procs : -1L;
-	job_min_sockets  = (job_specs->job_min_sockets != (uint16_t) NO_VAL) ? 
-		(long) job_specs->job_min_sockets : -1L;
-	job_min_cores    = (job_specs->job_min_cores != (uint16_t) NO_VAL) ? 
-		(long) job_specs->job_min_cores : -1L;
-	job_min_threads  = (job_specs->job_min_threads != (uint16_t) NO_VAL) ? 
-		(long) job_specs->job_min_threads : -1L;
-	debug3("   job_min_procs=%ld job_min_sockets=%ld",
-	       job_min_procs, job_min_sockets);
-	debug3("   job_min_cores=%ld job_min_threads=%ld",
-	       job_min_cores, job_min_threads);
 
 	if (job_specs->job_min_memory == NO_VAL) {
 		job_min_memory = -1L;
@@ -3264,13 +3251,7 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 {
 	multi_core_data_t * mc_ptr;
 
-	if (((job_desc->job_min_sockets  == (uint16_t) NO_VAL)	||
-	     (job_desc->job_min_sockets  == (uint16_t) 1))	&&
-	    ((job_desc->job_min_cores    == (uint16_t) NO_VAL)	||
-	     (job_desc->job_min_cores    == (uint16_t) 1))	&&
-	    ((job_desc->job_min_threads  == (uint16_t) NO_VAL)	||
-	     (job_desc->job_min_threads  == (uint16_t) 1))	&&
-	    ((job_desc->min_sockets      == (uint16_t) NO_VAL)	||
+	if (((job_desc->min_sockets      == (uint16_t) NO_VAL)	||
 	     (job_desc->min_sockets      == (uint16_t) 1))	&&
 	    ((job_desc->min_cores        == (uint16_t) NO_VAL)	||
 	     (job_desc->min_cores        == (uint16_t) 1))	&&
@@ -3282,18 +3263,6 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 		return NULL;
 
 	mc_ptr = xmalloc(sizeof(multi_core_data_t));
-	if (job_desc->job_min_sockets != (uint16_t) NO_VAL)
-		mc_ptr->job_min_sockets    = job_desc->job_min_sockets;
-	else
-		mc_ptr->job_min_sockets    = 1;
-	if (job_desc->job_min_cores != (uint16_t) NO_VAL)
-		mc_ptr->job_min_cores      = job_desc->job_min_cores;
-	else
-		mc_ptr->job_min_cores      = 1;
-	if (job_desc->job_min_threads != (uint16_t) NO_VAL)
-		mc_ptr->job_min_threads    = job_desc->job_min_threads;
-	else
-		mc_ptr->job_min_threads    = 1;
 	if (job_desc->min_sockets != (uint16_t) NO_VAL)
 		mc_ptr->min_sockets        = job_desc->min_sockets;
 	else
@@ -3479,21 +3448,21 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
 	else
 		detail_ptr->cpus_per_task = 1;
-	if (job_desc->job_min_procs != (uint16_t) NO_VAL)
-		detail_ptr->job_min_procs = job_desc->job_min_procs;
+	if (job_desc->job_min_cpus != (uint16_t) NO_VAL)
+		detail_ptr->job_min_cpus = job_desc->job_min_cpus;
 	if (job_desc->overcommit != (uint8_t) NO_VAL)
 		detail_ptr->overcommit = job_desc->overcommit;
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL) {
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
 		if (detail_ptr->overcommit == 0) {
-			detail_ptr->job_min_procs = 
-					MAX(detail_ptr->job_min_procs,
+			detail_ptr->job_min_cpus = 
+					MAX(detail_ptr->job_min_cpus,
 					    (detail_ptr->cpus_per_task *
 					     detail_ptr->ntasks_per_node));
 		}
 	} else {
-		detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
-						detail_ptr->cpus_per_task);
+		detail_ptr->job_min_cpus = MAX(detail_ptr->job_min_cpus,
+					       detail_ptr->cpus_per_task);
 	}
 	if (job_desc->requeue != (uint16_t) NO_VAL)
 		detail_ptr->requeue = MIN(job_desc->requeue, 1);
@@ -3964,14 +3933,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
 
-	if (job_desc_msg->job_min_procs == (uint16_t) NO_VAL)
-		job_desc_msg->job_min_procs = 1;   /* default 1 cpu per node */
-	if (job_desc_msg->job_min_sockets == (uint16_t) NO_VAL)
-		job_desc_msg->job_min_sockets = 1; /* default 1 socket per node */
-	if (job_desc_msg->job_min_cores == (uint16_t) NO_VAL)
-		job_desc_msg->job_min_cores = 1;   /* default 1 core per socket */
-	if (job_desc_msg->job_min_threads == (uint16_t) NO_VAL)
-		job_desc_msg->job_min_threads = 1; /* default 1 thread per core */
+	if (job_desc_msg->job_min_cpus == (uint16_t) NO_VAL)
+		job_desc_msg->job_min_cpus = 1;   /* default 1 cpu per node */
 	if (job_desc_msg->job_min_tmp_disk == NO_VAL)
 		job_desc_msg->job_min_tmp_disk = 0;/* default 0MB disk per node */
 
@@ -4130,8 +4093,8 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		    (job_ptr->part_ptr->hidden))
 			continue;
 
-		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
+		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+		    (job_ptr->user_id != uid) && !validate_super_user(uid))
 			continue;
 
 		pack_job(job_ptr, show_flags, buffer);
@@ -4354,7 +4317,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 		pack16(detail_ptr->shared, buffer);
 		pack16(detail_ptr->contiguous, buffer);
 		pack16(detail_ptr->cpus_per_task, buffer);
-		pack16(detail_ptr->job_min_procs, buffer);
+		pack16(detail_ptr->job_min_cpus, buffer);
 
 		pack32(detail_ptr->job_min_memory, buffer);
 		pack32(detail_ptr->job_min_tmp_disk, buffer);
@@ -4990,53 +4953,20 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
  
-	if (job_specs->job_min_procs != (uint16_t) NO_VAL) {
+	if (job_specs->job_min_cpus != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user
-			 || (detail_ptr->job_min_procs
-			     > job_specs->job_min_procs)) {
-			detail_ptr->job_min_procs = job_specs->job_min_procs;
-			info("update_job: setting job_min_procs to %u for "
-			     "job_id %u", job_specs->job_min_procs, 
+			 || (detail_ptr->job_min_cpus
+			     > job_specs->job_min_cpus)) {
+			detail_ptr->job_min_cpus = job_specs->job_min_cpus;
+			info("update_job: setting job_min_cpus to %u for "
+			     "job_id %u", job_specs->job_min_cpus, 
 			     job_specs->job_id);
 		} else {
-			error("Attempt to increase job_min_procs for job %u",
+			error("Attempt to increase job_min_cpus for job %u",
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
-		}
-	}
-
-	if (job_specs->job_min_sockets != (uint16_t) NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
-			error_code = ESLURM_DISABLED;
-		else {
-			mc_ptr->job_min_sockets = job_specs->job_min_sockets;
-			info("update_job: setting job_min_sockets to %u for "
-			     "job_id %u", job_specs->job_min_sockets, 
-			     job_specs->job_id);
-		}
-	}
-
-	if (job_specs->job_min_cores != (uint16_t) NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
-			error_code = ESLURM_DISABLED;
-		else {
-			mc_ptr->job_min_cores = job_specs->job_min_cores;
-			info("update_job: setting job_min_cores to %u for "
-			     "job_id %u", job_specs->job_min_cores, 
-			     job_specs->job_id);
-		}
-	}
-
-	if (job_specs->job_min_threads != (uint16_t) NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
-			error_code = ESLURM_DISABLED;
-		else {
-			mc_ptr->job_min_threads = job_specs->job_min_threads;
-			info("update_job: setting job_min_threads to %u for "
-			     "job_id %u", job_specs->job_min_threads, 
-			     job_specs->job_id);
 		}
 	}
 
@@ -7715,10 +7645,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->time_limit        = job_ptr->time_limit;
 	job_desc->user_id           = job_ptr->user_id;
 	job_desc->work_dir          = xstrdup(details->work_dir);
-	job_desc->job_min_procs     = details->job_min_procs;
-	job_desc->job_min_sockets   = mc_ptr->job_min_sockets;
-	job_desc->job_min_cores     = mc_ptr->job_min_cores;
-	job_desc->job_min_threads   = mc_ptr->job_min_threads;
+	job_desc->job_min_cpus      = details->job_min_cpus;
 	job_desc->job_min_memory    = details->job_min_memory;
 	job_desc->job_min_tmp_disk  = details->job_min_tmp_disk;
 	job_desc->num_procs         = job_ptr->num_procs;

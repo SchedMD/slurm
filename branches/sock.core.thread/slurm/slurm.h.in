@@ -606,10 +606,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *work_dir;		/* pathname of working directory */
 
 	/* job constraints: */
-	uint16_t job_min_procs;    /* minimum processors per node, default=0 */
-	uint16_t job_min_sockets;  /* minimum sockets per node, default=0 */
-	uint16_t job_min_cores;    /* minimum cores per processor, default=0 */
-	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
+	uint16_t job_min_cpus;    /* minimum # CPUs per node, default=0 */
 	uint32_t job_min_memory;   /* minimum real memory per node OR 
 				    * real memory per CPU | MEM_PER_CPU,
 				    * default=0 (no limit) */
@@ -677,11 +674,8 @@ typedef struct job_info {
 	char *features;		/* comma separated list of required features */
 	uint32_t group_id;	/* group job sumitted as */
 	uint32_t job_id;	/* job ID */
-	uint16_t job_min_cores;    /* minimum cores per processor, default=0 */
 	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
-	uint16_t job_min_procs;	   /* minimum processors per node, default=0 */
-	uint16_t job_min_sockets;  /* minimum sockets per node, default=0 */
-	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
+	uint16_t job_min_cpus;	   /* minimum # CPUs per node, default=0 */
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	char *licenses;		/* licenses required by the job */

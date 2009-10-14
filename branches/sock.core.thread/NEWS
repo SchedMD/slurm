@@ -63,6 +63,9 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Preemption now works on bluegene systems
  -- For salloc, sbatch and srun commands, ignore _maximum_ values for
     --sockets-per-node, --cores-per-socket and --threads-per-core options.
+    Remove --mincores, --minsockets, --minthreads options (map them to 
+    minimum values of -sockets-per-node, --cores-per-socket and 
+    --threads-per-core for now).
 
 * Changes in SLURM 2.1.0-pre4
 =============================

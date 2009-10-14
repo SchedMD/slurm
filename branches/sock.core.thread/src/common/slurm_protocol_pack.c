@@ -2846,7 +2846,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack16(&job->shared,        buffer);
 	safe_unpack16(&job->contiguous,    buffer);
 	safe_unpack16(&job->cpus_per_task, buffer);
-	safe_unpack16(&job->job_min_procs, buffer);
+	safe_unpack16(&job->job_min_cpus, buffer);
 
 	safe_unpack32(&job->job_min_memory, buffer);
 	safe_unpack32(&job->job_min_tmp_disk, buffer);
@@ -2871,9 +2871,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	if (unpack_multi_core_data(&mc_ptr, buffer))
 		goto unpack_error;
 	if (mc_ptr) {
-		job->job_min_sockets   = mc_ptr->job_min_sockets;
-		job->job_min_cores     = mc_ptr->job_min_cores;
-		job->job_min_threads   = mc_ptr->job_min_threads;
 		job->min_sockets       = mc_ptr->min_sockets;
 		job->min_cores         = mc_ptr->min_cores;
 		job->min_threads       = mc_ptr->min_threads;
@@ -3346,10 +3343,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	packstr(job_desc_ptr->alloc_node, buffer);
 	pack32(job_desc_ptr->alloc_sid, buffer);
-	pack16(job_desc_ptr->job_min_procs, buffer);
-	pack16(job_desc_ptr->job_min_sockets, buffer);
-	pack16(job_desc_ptr->job_min_cores, buffer);
-	pack16(job_desc_ptr->job_min_threads, buffer);
+	pack16(job_desc_ptr->job_min_cpus, buffer);
 	pack32(job_desc_ptr->job_min_memory, buffer);
 	pack32(job_desc_ptr->job_min_tmp_disk, buffer);
 
@@ -3501,10 +3495,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	safe_unpackstr_xmalloc(&job_desc_ptr->alloc_node, &uint32_tmp, buffer);
 	safe_unpack32(&job_desc_ptr->alloc_sid, buffer);
-	safe_unpack16(&job_desc_ptr->job_min_procs, buffer);
-	safe_unpack16(&job_desc_ptr->job_min_sockets, buffer);
-	safe_unpack16(&job_desc_ptr->job_min_cores, buffer);
-	safe_unpack16(&job_desc_ptr->job_min_threads, buffer);
+	safe_unpack16(&job_desc_ptr->job_min_cpus, buffer);
 	safe_unpack32(&job_desc_ptr->job_min_memory, buffer);
 	safe_unpack32(&job_desc_ptr->job_min_tmp_disk, buffer);
 
@@ -5371,9 +5362,6 @@ pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer)
 	}
 
 	pack8((uint8_t) 0xff, buffer);		/* flag as Full */
-	pack16(multi_core->job_min_sockets, buffer);
-	pack16(multi_core->job_min_cores,   buffer);
-	pack16(multi_core->job_min_threads, buffer);
 
 	pack16(multi_core->min_sockets, buffer);
 	pack16(multi_core->min_cores,   buffer);
@@ -5398,9 +5386,6 @@ unpack_multi_core_data (multi_core_data_t **mc_ptr, Buf buffer)
 		return SLURM_ERROR;
 
 	multi_core = xmalloc(sizeof(multi_core_data_t));
-	safe_unpack16(&multi_core->job_min_sockets, buffer);
-	safe_unpack16(&multi_core->job_min_cores,   buffer);
-	safe_unpack16(&multi_core->job_min_threads, buffer);
 
 	safe_unpack16(&multi_core->min_sockets, buffer);
 	safe_unpack16(&multi_core->min_cores,   buffer);

@@ -647,13 +647,7 @@ job_desc_msg_create_from_opts ()
 		j->max_nodes    = opt.max_nodes;
 
 	if (opt.job_min_cpus != NO_VAL)
-		j->job_min_procs    = opt.job_min_cpus;
-	if (opt.job_min_sockets != NO_VAL)
-		j->job_min_sockets  = opt.job_min_sockets;
-	if (opt.job_min_cores != NO_VAL)
-		j->job_min_cores    = opt.job_min_cores;
-	if (opt.job_min_threads != NO_VAL)
-		j->job_min_threads  = opt.job_min_threads;
+		j->job_min_cpus    = opt.job_min_cpus;
 	if (opt.job_min_memory != NO_VAL)
 		j->job_min_memory = opt.job_min_memory;
 	else if (opt.mem_per_cpu != NO_VAL)

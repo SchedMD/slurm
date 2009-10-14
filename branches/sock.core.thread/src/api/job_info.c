@@ -476,9 +476,8 @@ line7:	/****** Line 7 ******/
 
 	/****** Line 9 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"MinProcs=%u MinSockets=%u MinCores=%u MinThreads=%u", 
-		job_ptr->job_min_procs, job_ptr->job_min_sockets, 
-		job_ptr->job_min_cores, job_ptr->job_min_threads);
+		"MinCPUs=%u", 
+		job_ptr->job_min_cpus);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

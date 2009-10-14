@@ -391,9 +391,6 @@ static void _opt_default()
 	opt.warn_time   = 0;
 
 	opt.job_min_cpus    = NO_VAL;
-	opt.job_min_sockets = NO_VAL;
-	opt.job_min_cores   = NO_VAL;
-	opt.job_min_threads = NO_VAL;
 	opt.job_min_memory  = NO_VAL;
 	opt.mem_per_cpu     = NO_VAL;
 	opt.job_min_tmp_disk= NO_VAL;
@@ -1083,16 +1080,38 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_MINCPUS:
 			opt.job_min_cpus = _get_int(optarg, "mincpus", true);
 			break;
-		case LONG_OPT_MINSOCKETS:
-			opt.job_min_sockets = _get_int(optarg, "minsockets", 
-				true);
-			break;
 		case LONG_OPT_MINCORES:
-			opt.job_min_cores = _get_int(optarg, "mincores", true);
+			verbose("mincores option has been deprecated, use "
+				"cores-per-socket");
+			opt.min_cores_per_socket = _get_int(optarg, 
+							    "mincores", true);
+			if (opt.min_cores_per_socket < 0) {
+				error("invalid mincores constraint %s", 
+				      optarg);
+				exit(error_exit);
+			}
+			break;
+		case LONG_OPT_MINSOCKETS:
+			verbose("minsockets option has been deprecated, use "
+				"sockets-per-node");
+			opt.min_sockets_per_node = _get_int(optarg, 
+							    "minsockets",true);
+			if (opt.min_sockets_per_node < 0) {
+				error("invalid minsockets constraint %s", 
+				      optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_MINTHREADS:
-			opt.job_min_threads = _get_int(optarg, "minthreads", 
-				true);
+			verbose("minthreads option has been deprecated, use "
+				"threads-per-core");
+			opt.min_threads_per_core = _get_int(optarg, 
+							    "minthreads",true);
+			if (opt.min_threads_per_core < 0) {
+				error("invalid minthreads constraint %s", 
+				      optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_MEM:
 			opt.job_min_memory = (int) str_to_bytes(optarg);
@@ -2003,15 +2022,6 @@ static char *print_constraints()
 	if (opt.job_min_cpus > 0)
 		xstrfmtcat(buf, "mincpus=%d ", opt.job_min_cpus);
 
-	if (opt.job_min_sockets > 0)
-		xstrfmtcat(buf, "minsockets=%d ", opt.job_min_sockets);
-
-	if (opt.job_min_cores > 0)
-		xstrfmtcat(buf, "mincores=%d ", opt.job_min_cores);
-
-	if (opt.job_min_threads > 0)
-		xstrfmtcat(buf, "minthreads=%d ", opt.job_min_threads);
-
 	if (opt.job_min_memory > 0)
 		xstrfmtcat(buf, "mem=%dM ", opt.job_min_memory);
 
@@ -2282,10 +2292,7 @@ static void _help(void)
 "      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
 "      --mem=MB                minimum amount of real memory\n"
-"      --mincores=n            minimum number of cores per socket\n"
 "      --mincpus=n             minimum number of logical processors (threads) per node\n"
-"      --minsockets=n          minimum number of sockets per node\n"
-"      --minthreads=n          minimum number of threads per core\n"
 "      --reservation=name      allocate resources from named reservation\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"

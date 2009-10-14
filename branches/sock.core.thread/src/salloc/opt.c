@@ -322,9 +322,6 @@ static void _opt_default()
 
 	/* constraint default (-1 is no constraint) */
 	opt.mincpus	    = -1;
-	opt.minsockets      = -1;
-	opt.mincores        = -1;
-	opt.minthreads      = -1;
 	opt.mem_per_cpu	    = -1;
 	opt.realmem	    = -1;
 	opt.tmpdisk	    = -1;
@@ -844,25 +841,34 @@ void set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			break;
-		case LONG_OPT_MINSOCKETS:
-			opt.minsockets = _get_int(optarg, "minsockets");
-			if (opt.minsockets < 0) {
-				error("invalid minsockets constraint %s", 
-				      optarg);
-				exit(error_exit);
-			}
-			break;
 		case LONG_OPT_MINCORES:
-			opt.mincores = _get_int(optarg, "mincores");
-			if (opt.mincores < 0) {
+			verbose("mincores option has been deprecated, use "
+				"cores-per-socket");
+			opt.min_cores_per_socket = _get_int(optarg, 
+							    "mincores");
+			if (opt.min_cores_per_socket < 0) {
 				error("invalid mincores constraint %s", 
 				      optarg);
 				exit(error_exit);
 			}
 			break;
+		case LONG_OPT_MINSOCKETS:
+			verbose("minsockets option has been deprecated, use "
+				"sockets-per-node");
+			opt.min_sockets_per_node = _get_int(optarg, 
+							    "minsockets");
+			if (opt.min_sockets_per_node < 0) {
+				error("invalid minsockets constraint %s", 
+				      optarg);
+				exit(error_exit);
+			}
+			break;
 		case LONG_OPT_MINTHREADS:
-			opt.minthreads = _get_int(optarg, "minthreads");
-			if (opt.minthreads < 0) {
+			verbose("minthreads option has been deprecated, use "
+				"threads-per-core");
+			opt.min_threads_per_core = _get_int(optarg, 
+							    "minthreads");
+			if (opt.min_threads_per_core < 0) {
 				error("invalid minthreads constraint %s", 
 				      optarg);
 				exit(error_exit);
@@ -1530,15 +1536,6 @@ static char *print_constraints()
 	if (opt.mincpus > 0)
 		xstrfmtcat(buf, "mincpus=%d ", opt.mincpus);
 
-	if (opt.minsockets > 0)
-		xstrfmtcat(buf, "minsockets=%d ", opt.minsockets);
-
-	if (opt.mincores > 0)
-		xstrfmtcat(buf, "mincores=%d ", opt.mincores);
-
-	if (opt.minthreads > 0)
-		xstrfmtcat(buf, "minthreads=%d ", opt.minthreads);
-
 	if (opt.realmem > 0)
 		xstrfmtcat(buf, "mem=%dM ", opt.realmem);
 
@@ -1726,9 +1723,8 @@ static void _usage(void)
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [--immediate[=secs]] [--no-kill] [--overcommit] [-D path]\n"
-"              [--share] [-J jobname] [--jobid=id]\n"
+"              [--share] [-J jobname] [--jobid=id] [-W sec]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--licenses=names]\n"
-"              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
@@ -1797,10 +1793,7 @@ static void _help(void)
 "  -C, --constraint=list       specify a list of constraints\n"
 "  -F, --nodefile=filename     request a specific list of hosts\n"
 "      --mem=MB                minimum amount of real memory\n"
-"      --mincores=n            minimum number of cores per socket\n"
 "      --mincpus=n             minimum number of logical processors (threads) per node\n"
-"      --minsockets=n          minimum number of sockets per node\n"
-"      --minthreads=n          minimum number of threads per core\n"
 "      --reservation=name      allocate resources from named reservation\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"

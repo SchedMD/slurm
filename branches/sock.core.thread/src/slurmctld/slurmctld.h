@@ -320,7 +320,7 @@ struct job_details {
 	char *features;			/* required features */
 	char *in;			/* pathname of job's stdin file */
 	/* job constraints: */
-	uint32_t job_min_procs;		/* minimum processors per node */
+	uint32_t job_min_cpus;		/* minimum processors per node */
 	uint32_t job_min_memory;	/* minimum memory per node (MB) OR
 					 * memory per allocated 
 					 * CPU | MEM_PER_CPU */
