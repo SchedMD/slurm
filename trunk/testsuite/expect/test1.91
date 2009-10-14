@@ -60,8 +60,25 @@ if {$affinity == 0} {
 	send_user "\nWARNING: task affinity not supported on this system\n"
 	exit 0
 }
-
 send_user "\ntask affinity plugin installed\n"
+
+set force 0
+log_user 0
+spawn $scontrol show partition [default_partition]
+expect {
+	-re "Shared=FORCE" {
+		set force 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$force == 1} {
+	send_user "\nWARNING: This test is not compatible with Shared=FORCE\n"
+	exit 0
+}
 
 # Identify a usable node
 set timeout $max_job_delay
