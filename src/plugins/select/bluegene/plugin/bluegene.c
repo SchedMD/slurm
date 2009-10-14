@@ -41,9 +41,10 @@
 #include "defined_block.h"
 #include <stdio.h>
 
-#define MMCS_POLL_TIME 30	/* poll MMCS for down switches and nodes 
-				 * every 120 secs */
-#define BG_POLL_TIME 0	        /* poll bg blocks every 3 secs */
+#define MMCS_POLL_TIME 30	/* seconds between poll of MMCS for
+				 * down switches and nodes */
+#define BG_POLL_TIME 1	        /* seconds between poll of state
+				 * change in bg blocks */
 
 #define _DEBUG 0
 
@@ -359,7 +360,6 @@ extern void *block_agent(void *args)
 
 	last_bg_test = now - BG_POLL_TIME;
 	while (!agent_fini) {
-
 		if (difftime(now, last_bg_test) >= BG_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
 				break;	/* quit now */
@@ -378,10 +378,10 @@ extern void *block_agent(void *args)
 						      "update_block_list 2");
 				}
 			}
-			now = time(NULL);
 		}
 		
 		sleep(1);
+		now = time(NULL);
 	}
 	return NULL;
 }
@@ -402,9 +402,12 @@ extern void *state_agent(void *args)
 			if (agent_fini)		/* don't bother */
 				break; 	/* quit now */
 			if(blocks_are_created) {
-				last_mmcs_test = now;
-				/* can run for a while */
+				/* can run for a while so set the
+				 * time after the call so there is
+				 * always MMCS_POLL_TIME between
+				 * calls */
 				test_mmcs_failures();
+				last_mmcs_test = time(NULL);
 			}
 		} 	
 				
