@@ -596,9 +596,6 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  argc;
 	uint16_t  multi_prog;
 	uint16_t  *cpus_allocated;
-	uint16_t  max_sockets;
-	uint16_t  max_cores;
-	uint16_t  max_threads;
 	uint16_t  cpus_per_task;
 	char    **env;
 	char    **argv;
@@ -824,22 +821,12 @@ typedef struct file_bcast_msg {
 } file_bcast_msg_t; 
 
 typedef struct multi_core_data {
-	uint16_t job_min_sockets;  /* minimum sockets per node, default=0 */
-	uint16_t job_min_cores;    /* minimum cores per processor, default=0 */
-	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
-
 	uint16_t min_sockets;	/* minimum number of sockets per node required
 				 * by job, default=0 */
-	uint16_t max_sockets;	/* maximum number of sockets per node usable 
-				 * by job, default=unlimited (NO_VAL) */
 	uint16_t min_cores;	/* minimum number of cores per cpu required
 				 * by job, default=0 */
-	uint16_t max_cores;	/* maximum number of cores per cpu usable
-				 * by job, default=unlimited (NO_VAL) */
 	uint16_t min_threads;	/* minimum number of threads per core required
 				 * by job, default=0 */
-	uint16_t max_threads;	/* maximum number of threads per core usable
-				 * by job, default=unlimited (NO_VAL) */
 
 	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
 	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */

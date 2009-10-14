@@ -450,21 +450,10 @@ line7:	/****** Line 7 ******/
 #endif
 	xstrcat(out, tmp_line);
 
-	_sprint_range(tmp1, job_ptr->min_sockets, job_ptr->max_sockets);
-	if (job_ptr->min_cores > 0) {
-		_sprint_range(tmp2, job_ptr->min_cores, job_ptr->max_cores);
-		strcat(tmp1, ":");
-		strcat(tmp1, tmp2);
-		if (job_ptr->min_threads > 0) {
-			_sprint_range(tmp2, job_ptr->min_threads,
-				      job_ptr->max_threads);
-			strcat(tmp1, ":");
-			strcat(tmp1, tmp2);
-		}
-	}
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"ReqS:C:T=%s",
-		tmp1);
+		"ReqS:C:T=%u:%u:%u",
+		job_ptr->min_sockets, job_ptr->min_cores, 
+		job_ptr->min_threads);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -487,9 +476,8 @@ line7:	/****** Line 7 ******/
 
 	/****** Line 9 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"MinProcs=%u MinSockets=%u MinCores=%u MinThreads=%u", 
-		job_ptr->job_min_procs, job_ptr->job_min_sockets, 
-		job_ptr->job_min_cores, job_ptr->job_min_threads);
+		"MinCPUs=%u", 
+		job_ptr->job_min_cpus);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

@@ -1150,10 +1150,10 @@ static void _layout_job_record(GtkTreeView *treeview,
 #endif
 
 #ifdef HAVE_BG
-	convert_num_unit((float)job_ptr->job_min_procs, 
+	convert_num_unit((float)job_ptr->job_min_cpus, 
 			 tmp_char, sizeof(tmp_char), UNIT_NONE);
 #else
-	snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_min_procs);
+	snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_min_cpus);
 #endif
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
@@ -1713,7 +1713,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		gtk_tree_store_set(treestore, iter, 
 				   SORTID_CPUS_PER_TASK, tmp_char, -1);
 	}
-	sprintf(tmp_char, "%u", job_ptr->job_min_procs);
+	sprintf(tmp_char, "%u", job_ptr->job_min_cpus);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_CPU_REQ, tmp_char, -1);
 
@@ -1723,23 +1723,14 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 /* 	sprintf(tmp_char, "%u", job_ptr->min_sockets); */
 /* 	gtk_tree_store_set(treestore, iter, */
 /* 			   SORTID_SOCKETS_MIN, tmp_char, -1); */
-/* 	sprintf(tmp_char, "%u", job_ptr->max_sockets); */
-/* 	gtk_tree_store_set(treestore, iter, */
-/* 			   SORTID_SOCKETS_MAX, tmp_char, -1); */
 	
 /* 	sprintf(tmp_char, "%u", job_ptr->min_cores); */
 /* 	gtk_tree_store_set(treestore, iter, */
 /* 			   SORTID_CORES_MIN, tmp_char, -1); */
-/* 	sprintf(tmp_char, "%u", job_ptr->max_cores); */
-/* 	gtk_tree_store_set(treestore, iter, */
-/* 			   SORTID_CORES_MAX, tmp_char, -1); */
 	
 /* 	sprintf(tmp_char, "%u", job_ptr->min_threads); */
 /* 	gtk_tree_store_set(treestore, iter, */
 /* 			   SORTID_THREADS_MIN, tmp_char, -1); */
-/* 	sprintf(tmp_char, "%u", job_ptr->max_threads); */
-/* 	gtk_tree_store_set(treestore, iter, */
-/* 			   SORTID_THREADS_MAX, tmp_char, -1); */
 	
 	sprintf(tmp_char, "%u", job_ptr->job_min_memory);
 	gtk_tree_store_set(treestore, iter,

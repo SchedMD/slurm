@@ -101,11 +101,8 @@ typedef struct srun_options {
 	int32_t min_nodes;	/* --nodes=n,       -N n	*/ 
 	int32_t max_nodes;	/* --nodes=x-n,       -N x-n	*/ 
 	int32_t min_sockets_per_node; /* --sockets-per-node=n      */
-	int32_t max_sockets_per_node; /* --sockets-per-node=x-n    */
 	int32_t min_cores_per_socket; /* --cores-per-socket=n      */
-	int32_t max_cores_per_socket; /* --cores-per-socket=x-n    */
 	int32_t min_threads_per_core; /* --threads-per-core=n      */
-	int32_t max_threads_per_core; /* --threads-per-core=x-n    */
 	int32_t ntasks_per_node;   /* --ntasks-per-node=n	*/
 	int32_t ntasks_per_socket; /* --ntasks-per-socket=n	*/
 	int32_t ntasks_per_core;   /* --ntasks-per-core=n	*/
@@ -180,9 +177,6 @@ typedef struct srun_options {
 
 	/* constraint options */
 	int32_t job_min_cpus;	/* --mincpus=n			*/
-	int32_t job_min_sockets;/* --minsockets=n		*/
-	int32_t job_min_cores;	/* --mincores=n			*/
-	int32_t job_min_threads;/* --minthreads=n		*/
 	int32_t job_min_memory;	/* --mem=n			*/
 	int32_t mem_per_cpu;	/* --mem-per-cpu=n		*/
 	long job_min_tmp_disk;	/* --tmp=n			*/
