@@ -138,16 +138,11 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t i, c, sockets    = select_node_record[node_i].sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
-
 	uint16_t min_cores = 0, min_sockets = 0, ntasks_per_socket = 0;
-	uint16_t max_cores = 0, max_sockets = 0, max_threads = 0;
 
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		min_cores   = job_ptr->details->mc_ptr->min_cores;
 		min_sockets = job_ptr->details->mc_ptr->min_sockets;
-		max_cores   = job_ptr->details->mc_ptr->max_cores;
-		max_sockets = job_ptr->details->mc_ptr->max_sockets;
-		max_threads = job_ptr->details->mc_ptr->max_threads;
 		ntasks_per_socket = job_ptr->details->mc_ptr->ntasks_per_socket;
 	}
 	
@@ -155,15 +150,8 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	 *
 	 *   job_ptr->details->mc_ptr->min_cores (cr_core|cr_socket)
 	 *	- min # of cores per socket to allocate to this job
-	 *   job_ptr->details->mc_ptr->max_cores (cr_core|cr_socket)
-	 *	- max # of cores per socket to allocate to this job
 	 *   job_ptr->details->mc_ptr->min_sockets (cr_core|cr_socket)
 	 *	- min # of sockets per node to allocate to this job
-	 *   job_ptr->details->mc_ptr->max_sockets (cr_core|cr_socket)
-	 *	- max # of sockets per node to allocate to this job
-	 *
-	 *   job_ptr->details->mc_ptr->max_threads (cr_core|cr_socket)
-	 *	- max_threads per core to allocate to this job
 	 *   job_ptr->details->mc_ptr->ntasks_per_core (cr_core|cr_socket)
 	 *	- number of tasks to launch per core
 	 *   job_ptr->details->mc_ptr->ntasks_per_socket (cr_core|cr_socket)
@@ -189,11 +177,10 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	 * Step 1: Determine the current usage data: used_cores[],
 	 *         used_core_count, free_cores[], free_core_count
 	 *
-	 * Step 2: For core-level and socket-level: apply min_sockets,
-	 *         max_sockets, min_cores, and max_cores to the "free"
-	 *         cores.
+	 * Step 2: For core-level and socket-level: apply min_sockets
+	 *         and min_cores to the "free" cores.
 	 *
-	 * Step 3: Compute task-related data: max_threads, ntasks_per_core,
+	 * Step 3: Compute task-related data: ntasks_per_core,
 	 *         ntasks_per_socket, ntasks_per_node and cpus_per_task
 	 *         and determine the number of tasks to run on this node
 	 *
@@ -256,22 +243,10 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 		goto fini;
 	}
 	
-	/* check max_cores and max_sockets */
 	c = 0;
 	for (i = 0; i < sockets; i++) {
-		if (max_cores && free_cores[i] > max_cores) {
-			/* remove extra cores from this socket */
-			uint16_t tmp = free_cores[i] - max_cores;
-			free_core_count -= tmp;
-			free_cores[i] -= tmp;
-		}
 		if (free_cores[i] > 0)
 			c++;
-		if (max_sockets && free_cores[i] && c > max_sockets) {
-			/* remove extra sockets from use */
-			free_core_count -= free_cores[i];
-			free_cores[i] = 0;
-		}
 	}
 	if (free_core_count < 1) {
 		/* no available resources on this node */
@@ -280,7 +255,7 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	}
 
 
-	/* Step 3: Compute task-related data: use max_threads,
+	/* Step 3: Compute task-related data: 
 	 *         ntasks_per_socket, ntasks_per_node and cpus_per_task
 	 *         to determine the number of tasks to run on this node
 	 *
@@ -289,7 +264,6 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	 */
 	avail_cpus = 0;
 	num_tasks = 0;
-	threads_per_core = MIN(threads_per_core,max_threads);
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;
 		avail_cpus += tmp;
@@ -384,31 +358,19 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t i, c, sockets    = select_node_record[node_i].sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
-
 	uint16_t min_cores = 0, min_sockets = 0;
-	uint16_t max_cores = 0, max_sockets = 0, max_threads = 0;
 
 	if (!cpu_type && job_ptr->details && job_ptr->details->mc_ptr) {
 		min_cores   = job_ptr->details->mc_ptr->min_cores;
 		min_sockets = job_ptr->details->mc_ptr->min_sockets;
-		max_cores   = job_ptr->details->mc_ptr->max_cores;
-		max_sockets = job_ptr->details->mc_ptr->max_sockets;
-		max_threads = job_ptr->details->mc_ptr->max_threads;
 	}
 	
 	/* These are the job parameters that we must respect:
 	 *
 	 *   job_ptr->details->mc_ptr->min_cores (cr_core|cr_socket)
-	 *	- min # of cores per socket to allocate to this job
-	 *   job_ptr->details->mc_ptr->max_cores (cr_core|cr_socket)
-	 *	- max # of cores per socket to allocate to this job
+	 *	- min # of cores per socket to allocate to this jobb
 	 *   job_ptr->details->mc_ptr->min_sockets (cr_core|cr_socket)
 	 *	- min # of sockets per node to allocate to this job
-	 *   job_ptr->details->mc_ptr->max_sockets (cr_core|cr_socket)
-	 *	- max # of sockets per node to allocate to this job
-	 *
-	 *   job_ptr->details->mc_ptr->max_threads (cr_core|cr_socket)
-	 *	- max_threads per core to allocate to this job
 	 *   job_ptr->details->mc_ptr->ntasks_per_core (cr_core|cr_socket)
 	 *	- number of tasks to launch per core
 	 *   job_ptr->details->mc_ptr->ntasks_per_socket (cr_core|cr_socket)
@@ -434,13 +396,11 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	 * Step 1: Determine the current usage data: free_cores[] and
 	 *         free_core_count
 	 *
-	 * Step 2: Apply min_sockets, max_sockets, min_cores and
-	 *         max_cores and to the "free" cores.
+	 * Step 2: Apply min_sockets and min_cores to the "free" cores.
 	 *
-	 * Step 3: Compute task-related data: use max_threads,
-	 *         ntasks_per_core, ntasks_per_node and cpus_per_task
-	 *         to determine the number of tasks that can run on
-	 *         this node
+	 * Step 3: Compute task-related data: use ntasks_per_core, 
+	 *         ntasks_per_node and cpus_per_task to determine 
+	 *         the number of tasks that can run on this node
 	 *
 	 * Step 4: Mark the allocated resources in the job_cores bitmap
 	 *         and return "num_tasks" from Step 3.
@@ -485,22 +445,10 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 		goto fini;
 	}
 	
-	/* Step 2b: check max_cores per socket and max_sockets per node */
 	c = 0;
 	for (i = 0; i < sockets; i++) {
-		if (max_cores && free_cores[i] > max_cores) {
-			/* remove extra cores from this socket */
-			uint16_t tmp = free_cores[i] - max_cores;
-			free_core_count -= tmp;
-			free_cores[i] -= tmp;
-		}
 		if (free_cores[i] > 0)
 			c++;
-		if (max_sockets && free_cores[i] && c > max_sockets) {
-			/* remove extra sockets from use */
-			free_core_count -= free_cores[i];
-			free_cores[i] = 0;
-		}
 	}
 	if (free_core_count < 1) {
 		/* no available resources on this node */
@@ -509,17 +457,13 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	}
 
 
-	/* Step 3: Compute task-related data: use max_threads,
-	 *         ntasks_per_core, ntasks_per_node and cpus_per_task
-	 *         to determine the number of tasks to run on this node
+	/* Step 3: Compute task-related data: use ntasks_per_core, 
+	 *         ntasks_per_node and cpus_per_task to determine 
+	 *         the number of tasks to run on this node
 	 *
 	 * Note: cpus_per_task and ntasks_per_core need to play nice
 	 *       2 tasks_per_core vs. 2 cpus_per_task
 	 */
-
-	if (cpu_type)
-		max_threads = threads_per_core;
-	threads_per_core = MIN(threads_per_core,max_threads);
 	num_tasks = avail_cpus = threads_per_core;
 	i = job_ptr->details->mc_ptr->ntasks_per_core;
 	if (!cpu_type && i > 0)

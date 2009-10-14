@@ -447,49 +447,6 @@ static int _get_local_node_info(slurm_cred_arg_t *arg, uint32_t job_node_id,
 	return bit_start;
 }
 
-/* enforce max_sockets, max_cores */
-static void _enforce_limits(launch_tasks_request_msg_t *req, bitstr_t *mask,
-			    uint16_t hw_sockets, uint16_t hw_cores,
-			    uint16_t hw_threads)
-{
-	uint16_t i, j, size, count = 0;
-	int prev = -1;
-
-	size = bit_size(mask);
-	/* enforce max_sockets */
-	for (i = 0; i < size; i++) {
-		if (bit_test(mask, i) == 0)
-			continue;
-		/* j = first bit in socket; i = last bit in socket */
-		j = i/(hw_cores * hw_threads) * (hw_cores * hw_threads);
-		i = j+(hw_cores * hw_threads)-1;
-		if (++count > req->max_sockets) {
-			bit_nclear(mask, j, i);
-			count--;
-		}
-	}
-
-	/* enforce max_cores */
-	for (i = 0; i < size; i++) {
-		if (bit_test(mask, i) == 0)
-			continue;
-		/* j = first bit in socket */
-		j = i/(hw_cores * hw_threads) * (hw_cores * hw_threads);
-		if (j != prev) {
-			/* we're in a new socket, so reset the count */
-			count = 0;
-			prev = j;
-		}
-		/* j = first bit in core; i = last bit in core */
-		j = i/hw_threads * hw_threads;
-		i = j+hw_threads-1;
-		if (++count > req->max_cores) {
-			bit_nclear(mask, j, i);
-			count--;
-		}
-	}
-}
-
 /* Determine which CPUs a job step can use. 
  * OUT whole_<entity>_count - returns count of whole <entities> in this 
  *                            allocation for this node
@@ -589,7 +546,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 {
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
-	uint16_t p, t, num_procs, num_threads, sockets, cores;
+	uint16_t p, t, num_procs, sockets, cores;
 	uint32_t job_node_id;
 	int start;
 	char *str;
@@ -641,36 +598,17 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		req->job_id, req->job_step_id, str);
 	xfree(str);
 
-	if (req->max_threads == 0) {
-		error("task/affinity: job %u.%u has max_threads=0",
-		      req->job_id, req->job_step_id);
-		req->max_threads = 1;
-	}
-	if (req->max_cores == 0) {
-		error("task/affinity: job %u.%u has max_coress=0",
-		      req->job_id, req->job_step_id);
-		req->max_cores = 1;
-	}
-	if (req->max_sockets == 0) {
-		error("task/affinity: job %u.%u has max_sockets=0",
-		      req->job_id, req->job_step_id);
-		req->max_sockets = 1;
-	}
-	num_threads = MIN(req->max_threads, (*hw_threads));
 	for (p = 0; p < num_procs; p++) {
 		if (bit_test(req_map, p) == 0)
 			continue;
 		/* core_bitmap does not include threads, so we
 		 * add them here but limit them to what the job
 		 * requested */
-		for (t = 0; t < num_threads; t++) {
+		for (t = 0; t < (*hw_threads); t++) {
 			uint16_t bit = p * (*hw_threads) + t;
 			bit_set(hw_map, bit);
 		}
 	}
-
-	/* enforce max_sockets and max_cores limits */
-	_enforce_limits(req, hw_map, *hw_sockets, *hw_cores, *hw_threads);
 	
 	str = (char *)bit_fmt_hexmask(hw_map);
 	debug3("task/affinity: job %u.%u CPU final mask for local node: %s",
@@ -744,7 +682,6 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 {
 	int last_taskcount = -1, taskcount = 0;
 	uint16_t c, i, s, t, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
-	uint16_t num_threads, num_cores, num_sockets;
 	int size, max_tasks = req->tasks_to_launch[(int)node_id];
 	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
@@ -775,9 +712,6 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 	}
 	
 	size = bit_size(avail_map);
-	num_sockets = MIN(req->max_sockets, hw_sockets);
-	num_cores   = MIN(req->max_cores, hw_cores);
-	num_threads = MIN(req->max_threads, hw_threads);
 	i = 0;
 	while (taskcount < max_tasks) {
 		if (taskcount == last_taskcount)
@@ -785,7 +719,7 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 		last_taskcount = taskcount; 
 		for (s = 0; s < hw_sockets; s++) {
 			for (c = 0; c < hw_cores; c++) {
-				for (t = 0; t < num_threads; t++) {
+				for (t = 0; t < hw_threads; t++) {
 					uint16_t bit = s*(hw_cores*hw_threads) +
 							c*(hw_threads) + t;
 					if (bit_test(avail_map, bit) == 0)
@@ -844,7 +778,6 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 {
 	int last_taskcount = -1, taskcount = 0;
 	uint16_t c, i, s, t, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
-	uint16_t num_threads, num_cores, num_sockets;
 	int size, max_tasks = req->tasks_to_launch[(int)node_id];
 	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
@@ -875,15 +808,12 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	}
 
 	size = bit_size(avail_map);
-	num_sockets = MIN(req->max_sockets, hw_sockets);
-	num_cores   = MIN(req->max_cores, hw_cores);
-	num_threads = MIN(req->max_threads, hw_threads);
 	i = 0;
 	while (taskcount < max_tasks) {
 		if (taskcount == last_taskcount)
 			fatal("_task_layout_lllp_cyclic failure");
 		last_taskcount = taskcount; 
-		for (t = 0; t < num_threads; t++) {
+		for (t = 0; t < hw_threads; t++) {
 			for (c = 0; c < hw_cores; c++) {
 				for (s = 0; s < hw_sockets; s++) {
 					uint16_t bit = s*(hw_cores*hw_threads) +
@@ -944,7 +874,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 {
 	int c, i, j, t, size, last_taskcount = -1, taskcount = 0;
 	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
-	uint16_t num_sockets, num_cores, num_threads;
 	int max_tasks = req->tasks_to_launch[(int)node_id];
 	int max_cpus = max_tasks * req->cpus_per_task;
 	int *task_array;
@@ -985,9 +914,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 	
 	/* block distribution with oversubsciption */
-	num_sockets = MIN(req->max_sockets, hw_sockets);
-	num_cores   = MIN(req->max_cores, hw_cores);
-	num_threads = MIN(req->max_threads, hw_threads);
 	c = 0;
 	while(taskcount < max_tasks) {
 		if (taskcount == last_taskcount) {
@@ -999,7 +925,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 		 */
 		for (i = 0; i < size; i++) {
 			/* skip unrequested threads */
-			if (i%hw_threads >= num_threads)
+			if (i%hw_threads >= hw_threads)
 				continue;
 			/* skip unavailable resources */
 			if (bit_test(avail_map, i) == 0)

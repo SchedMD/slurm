@@ -383,24 +383,9 @@ scontrol_update_job (int argc, char *argv[])
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "MinProcs", MAX(taglen, 4)) == 0) {
-			job_msg.job_min_procs = 
+		else if (strncasecmp(tag, "MinCPUs", MAX(taglen, 4)) == 0) {
+			job_msg.job_min_cpus = 
 				(uint32_t) strtol(val, (char **) NULL, 10);
-			update_cnt++;
-		}
-		else if (strncasecmp(tag, "MinSockets", MAX(taglen, 4)) == 0) {
-			job_msg.job_min_sockets = 
-				(uint16_t) strtol(val, (char **) NULL, 10);
-			update_cnt++;
-		}
-		else if (strncasecmp(tag, "MinCores", MAX(taglen, 4)) == 0) {
-			job_msg.job_min_cores = 
-				(uint16_t) strtol(val, (char **) NULL, 10);
-			update_cnt++;
-		}
-		else if (strncasecmp(tag, "MinThreads", MAX(taglen, 5)) == 0) {
-			job_msg.job_min_threads = 
-				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinMemoryNode", 

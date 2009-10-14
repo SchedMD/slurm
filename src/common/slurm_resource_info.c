@@ -91,9 +91,6 @@ static int _isvalue(char *arg) {
  *	given this number given the number of cpus_per_task and
  *	maximum sockets, cores, threads.  Note that the value of
  *	cpus is the lowest-level logical processor (LLLP).
- * IN max_sockets    - Job requested max sockets
- * IN max_cores      - Job requested max cores
- * IN max_threads    - Job requested max threads
  * IN min_sockets    - Job requested min sockets
  * IN min_cores      - Job requested min cores
  * IN cpus_per_task  - Job requested cpus per task
@@ -109,10 +106,7 @@ static int _isvalue(char *arg) {
  *
  * Note: currently only used in the select/linear plugin.
  */
-int slurm_get_avail_procs(const uint16_t max_sockets,
-			  const uint16_t max_cores,
-			  const uint16_t max_threads,
-			  const uint16_t min_sockets,
+int slurm_get_avail_procs(const uint16_t min_sockets,
 			  const uint16_t min_cores,
 			  uint16_t cpus_per_task,
 			  const uint16_t ntaskspernode,
@@ -147,8 +141,6 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 			allocated_sockets++;
 	}
 #if(DEBUG)
-	info("get_avail_procs %u %s MAX User_ sockets %u cores %u threads %u",
-			job_id, name, max_sockets, max_cores, max_threads);
 	info("get_avail_procs %u %s MIN User_ sockets %u cores %u",
 			job_id, name, min_sockets, min_cores);
 	info("get_avail_procs %u %s HW_   sockets %u cores %u threads %u",
@@ -208,11 +200,6 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 			}
 		} 
 
-		/*** honor socket/core/thread maximums ***/
-		*sockets = MIN(*sockets, max_sockets);
-		*threads = MIN(*threads, max_threads);
-		*cores   = MIN(*cores,   max_cores);
-
 		if (min_sockets > *sockets) {
 			*cpus = 0;
 		} else {
@@ -260,11 +247,6 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 			*cpus = 0;
 			error("cons_res: *cpus underflow");
 		}
-
-		/*** honor socket/core/thread maximums ***/
-		*sockets = MIN(*sockets, max_sockets);
-		*cores   = MIN(*cores,   max_cores);
-		*threads = MIN(*threads, max_threads);
 
 		if (min_sockets > *sockets)
 			*cpus = 0;

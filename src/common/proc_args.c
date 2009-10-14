@@ -14,6 +14,17 @@
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission 
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and 
+ *  distribute linked combinations including the two. You must obey the GNU 
+ *  General Public License in all respects for all of the code used other than 
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this 
+ *  exception to your version of the file(s), but you are not obligated to do 
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in 
+ *  the program, then also delete it here.
  *  
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -22,7 +33,7 @@
  *  
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
- *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
@@ -378,16 +389,19 @@ bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
 	return true;
 }
 
-
 /* 
  * get either 1 or 2 integers for a resource count in the form of either
  * (count, min-max, or '*')
  * A partial error message is passed in via the 'what' param.
+ * IN arg - argument
+ * IN what - variable name (for errors)
+ * OUT min - first number
+ * OUT max - maximum value if specified, NULL if don't care
+ * IN isFatal - if set, exit on error
  * RET true if valid
  */
-bool
-get_resource_arg_range(const char *arg, const char *what, int* min, int *max, 
-		       bool isFatal)
+bool get_resource_arg_range(const char *arg, const char *what, int* min, 
+			    int *max, bool isFatal)
 {
 	char *p;
 	long int result;
@@ -395,7 +409,8 @@ get_resource_arg_range(const char *arg, const char *what, int* min, int *max,
 	/* wildcard meaning every possible value in range */
 	if ((*arg == '\0') || (*arg == '*' )) {
 		*min = 1;
-		*max = INT_MAX;
+		if (max)
+			*max = INT_MAX;
 		return true;
 	}
 
@@ -405,38 +420,45 @@ get_resource_arg_range(const char *arg, const char *what, int* min, int *max,
 		p++;
 	}
 
-	if (((*p != '\0')&&(*p != '-')) || (result <= 0L)) {
+	if (((*p != '\0') && (*p != '-')) || (result <= 0L)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		if (isFatal) exit(1);
+		if (isFatal)
+			exit(1);
 		return false;
 	} else if (result > INT_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, what);
-		if (isFatal) exit(1);
+		if (isFatal)
+			exit(1);
 		return false;
 	}
 
 	*min = (int) result;
 
-	if (*p == '\0') return true;
-	if (*p == '-') p++;
+	if (*p == '\0')
+		return true;
+	if (*p == '-')
+		p++;
 
 	result = strtol(p, &p, 10);
-        if (*p == 'k' || *p == 'K') {
+        if ((*p == 'k') || (*p == 'K')) {
 		result *= 1024;
 		p++;
 	}
 	
-	if (((*p != '\0')&&(*p != '-')) || (result <= 0L)) {
+	if (((*p != '\0') && (*p != '-')) || (result <= 0L)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		if (isFatal) exit(1);
+		if (isFatal)
+			exit(1);
 		return false;
 	} else if (result > INT_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, what);
-		if (isFatal) exit(1);
+		if (isFatal)
+			exit(1);
 		return false;
 	}
 
-	*max = (int) result;
+	if (max)
+		*max = (int) result;
 
 	return true;
 }
@@ -446,10 +468,8 @@ get_resource_arg_range(const char *arg, const char *what, int* min, int *max,
  * X:X:X:X, where X is defined as either (count, min-max, or '*')
  * RET true if valid
  */
-bool verify_socket_core_thread_count(const char *arg, 
-				     int *min_sockets, int *max_sockets,
-				     int *min_cores, int *max_cores,
-				     int *min_threads, int  *max_threads,
+bool verify_socket_core_thread_count(const char *arg, int *min_sockets, 
+				     int *min_cores, int *min_threads, 
 				     cpu_bind_type_t *cpu_bind_type)
 {
 	bool tmp_val,ret_val;
@@ -490,13 +510,13 @@ bool verify_socket_core_thread_count(const char *arg,
 
 	ret_val = true;
 	tmp_val = get_resource_arg_range(&buf[0][0], "first arg of -B", 
-					 min_sockets, max_sockets, true);
+					 min_sockets, NULL, true);
 	ret_val = ret_val && tmp_val;
 	tmp_val = get_resource_arg_range(&buf[1][0], "second arg of -B", 
-					 min_cores, max_cores, true);
+					 min_cores, NULL, true);
 	ret_val = ret_val && tmp_val;
 	tmp_val = get_resource_arg_range(&buf[2][0], "third arg of -B", 
-					 min_threads, max_threads, true);
+					 min_threads, NULL, true);
 	ret_val = ret_val && tmp_val;
 
 	return ret_val;
@@ -506,9 +526,8 @@ bool verify_socket_core_thread_count(const char *arg,
  * verify that a hint is valid and convert it into the implied settings
  * RET true if valid
  */
-bool verify_hint(const char *arg, int *min_sockets, int *max_sockets,
-		 int *min_cores, int *max_cores, int *min_threads,
-		 int *max_threads, cpu_bind_type_t *cpu_bind_type)
+bool verify_hint(const char *arg, int *min_sockets, int *min_cores, 
+		 int *min_threads, cpu_bind_type_t *cpu_bind_type)
 {
 	char *buf, *p, *tok;
 	if (!arg) {
@@ -538,21 +557,16 @@ bool verify_hint(const char *arg, int *min_sockets, int *max_sockets,
 			return 1;
 		} else if (strcasecmp(tok, "compute_bound") == 0) {
 		        *min_sockets = 1;
-		        *max_sockets = INT_MAX;
 		        *min_cores   = 1;
-		        *max_cores   = INT_MAX;
 			*cpu_bind_type |= CPU_BIND_TO_CORES;
 		} else if (strcasecmp(tok, "memory_bound") == 0) {
 		        *min_cores = 1;
-		        *max_cores = 1;
 			*cpu_bind_type |= CPU_BIND_TO_CORES;
 		} else if (strcasecmp(tok, "multithread") == 0) {
 		        *min_threads = 1;
-		        *max_threads = INT_MAX;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
 		} else if (strcasecmp(tok, "nomultithread") == 0) {
 		        *min_threads = 1;
-		        *max_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
 		} else {
 			error("unrecognized --hint argument \"%s\", "

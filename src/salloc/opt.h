@@ -80,11 +80,8 @@ typedef struct salloc_options {
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
 	bool nodes_set;		/* true if nodes explicitly set */
 	int min_sockets_per_node; /* --sockets-per-node=n      */
-	int max_sockets_per_node; /* --sockets-per-node=x-n    */
 	int min_cores_per_socket; /* --cores-per-socket=n      */
-	int max_cores_per_socket; /* --cores-per-socket=x-n    */
 	int min_threads_per_core; /* --threads-per-core=n      */
-	int max_threads_per_core; /* --threads-per-core=x-n    */
 	int ntasks_per_node;   /* --ntasks-per-node=n	    */
 	int ntasks_per_socket; /* --ntasks-per-socket=n     */
 	int ntasks_per_core;   /* --ntasks-per-core=n	    */
@@ -125,9 +122,6 @@ typedef struct salloc_options {
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
-	int minsockets;		/* --minsockets=n		*/
-	int mincores;		/* --mincores=n			*/
-	int minthreads;		/* --minthreads=n		*/
 	int mem_per_cpu;	/* --mem_per_cpu=n		*/
 	int realmem;		/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/

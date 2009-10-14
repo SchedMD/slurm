@@ -384,7 +384,7 @@ static int _sort_job_by_min_sockets(void *void1, void *void2)
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	diff = job1->job_min_sockets - job2->job_min_sockets;
+	diff = job1->min_sockets - job2->min_sockets;
 
 	if (reverse_order)
 		diff = -diff;
@@ -397,7 +397,7 @@ static int _sort_job_by_min_cores(void *void1, void *void2)
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	diff = job1->job_min_cores - job2->job_min_cores;
+	diff = job1->min_cores - job2->min_cores;
 
 	if (reverse_order)
 		diff = -diff;
@@ -410,7 +410,7 @@ static int _sort_job_by_min_threads(void *void1, void *void2)
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	diff = job1->job_min_threads - job2->job_min_threads;
+	diff = job1->min_threads - job2->min_threads;
 
 	if (reverse_order)
 		diff = -diff;

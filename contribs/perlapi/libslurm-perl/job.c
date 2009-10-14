@@ -50,19 +50,13 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, features, charp);
 	STORE_FIELD(hv, job_info, group_id, uint32_t);
 	STORE_FIELD(hv, job_info, job_id, uint32_t);
-	STORE_FIELD(hv, job_info, job_min_cores, uint16_t);
 	STORE_FIELD(hv, job_info, job_min_memory, uint32_t);
-	STORE_FIELD(hv, job_info, job_min_procs, uint16_t);
-	STORE_FIELD(hv, job_info, job_min_sockets, uint16_t);
-	STORE_FIELD(hv, job_info, job_min_threads, uint16_t);
+	STORE_FIELD(hv, job_info, job_min_cpus, uint16_t);
 	STORE_FIELD(hv, job_info, job_min_tmp_disk, uint32_t);
 	STORE_FIELD(hv, job_info, job_state, uint16_t);
 	if(job_info->licenses)
 		STORE_FIELD(hv, job_info, licenses, charp);
-	STORE_FIELD(hv, job_info, max_cores, uint16_t);
 	STORE_FIELD(hv, job_info, max_nodes, uint32_t);
-	STORE_FIELD(hv, job_info, max_sockets, uint16_t);
-	STORE_FIELD(hv, job_info, max_threads, uint16_t);
 	STORE_FIELD(hv, job_info, min_cores, uint16_t);
 	STORE_FIELD(hv, job_info, min_sockets, uint16_t);
 	STORE_FIELD(hv, job_info, min_threads, uint16_t);

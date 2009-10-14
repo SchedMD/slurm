@@ -322,12 +322,9 @@ static void _opt_default()
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
-	opt.min_sockets_per_node = NO_VAL; /* requested min/maxsockets */
-	opt.max_sockets_per_node = NO_VAL;
-	opt.min_cores_per_socket = NO_VAL; /* requested min/maxcores */
-	opt.max_cores_per_socket = NO_VAL;
-	opt.min_threads_per_core = NO_VAL; /* requested min/maxthreads */
-	opt.max_threads_per_core = NO_VAL; 
+	opt.min_sockets_per_node = NO_VAL; /* requested min sockets */
+	opt.min_cores_per_socket = NO_VAL; /* requested min cores */
+	opt.min_threads_per_core = NO_VAL; /* requested min threads */
 	opt.ntasks_per_node      = NO_VAL; /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL; 
 	opt.ntasks_per_core      = NO_VAL; 
@@ -394,9 +391,6 @@ static void _opt_default()
 	opt.warn_time   = 0;
 
 	opt.job_min_cpus    = NO_VAL;
-	opt.job_min_sockets = NO_VAL;
-	opt.job_min_cores   = NO_VAL;
-	opt.job_min_threads = NO_VAL;
 	opt.job_min_memory  = NO_VAL;
 	opt.mem_per_cpu     = NO_VAL;
 	opt.job_min_tmp_disk= NO_VAL;
@@ -862,15 +856,11 @@ static void set_options(const int argc, char **argv)
 			exit(error_exit);
 		case (int)'B':
 			opt.extra_set = verify_socket_core_thread_count(
-				optarg,
-				&opt.min_sockets_per_node,
-				&opt.max_sockets_per_node,
-				&opt.min_cores_per_socket,
-				&opt.max_cores_per_socket,
-				&opt.min_threads_per_core,
-				&opt.max_threads_per_core,
-				&opt.cpu_bind_type);
-
+						optarg,
+						&opt.min_sockets_per_node,
+						&opt.min_cores_per_socket,
+						&opt.min_threads_per_core,
+						&opt.cpu_bind_type);
 
 			if (opt.extra_set == false) {
 				error("invalid resource allocation -B `%s'",
@@ -1090,16 +1080,38 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_MINCPUS:
 			opt.job_min_cpus = _get_int(optarg, "mincpus", true);
 			break;
-		case LONG_OPT_MINSOCKETS:
-			opt.job_min_sockets = _get_int(optarg, "minsockets", 
-				true);
-			break;
 		case LONG_OPT_MINCORES:
-			opt.job_min_cores = _get_int(optarg, "mincores", true);
+			verbose("mincores option has been deprecated, use "
+				"cores-per-socket");
+			opt.min_cores_per_socket = _get_int(optarg, 
+							    "mincores", true);
+			if (opt.min_cores_per_socket < 0) {
+				error("invalid mincores constraint %s", 
+				      optarg);
+				exit(error_exit);
+			}
+			break;
+		case LONG_OPT_MINSOCKETS:
+			verbose("minsockets option has been deprecated, use "
+				"sockets-per-node");
+			opt.min_sockets_per_node = _get_int(optarg, 
+							    "minsockets",true);
+			if (opt.min_sockets_per_node < 0) {
+				error("invalid minsockets constraint %s", 
+				      optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_MINTHREADS:
-			opt.job_min_threads = _get_int(optarg, "minthreads", 
-				true);
+			verbose("minthreads option has been deprecated, use "
+				"threads-per-core");
+			opt.min_threads_per_core = _get_int(optarg, 
+							    "minthreads",true);
+			if (opt.min_threads_per_core < 0) {
+				error("invalid minthreads constraint %s", 
+				      optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_MEM:
 			opt.job_min_memory = (int) str_to_bytes(optarg);
@@ -1279,29 +1291,23 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_SOCKETSPERNODE:
 			get_resource_arg_range( optarg, "sockets-per-node",
 						&opt.min_sockets_per_node,
-						&opt.max_sockets_per_node,
-						true );
+						NULL, true );
 			break;
 		case LONG_OPT_CORESPERSOCKET:
 			get_resource_arg_range( optarg, "cores-per-socket",
 						&opt.min_cores_per_socket,
-						&opt.max_cores_per_socket,
-						true);
+						NULL, true);
 			break;
 		case LONG_OPT_THREADSPERCORE:
 			get_resource_arg_range( optarg, "threads-per-core",
 						&opt.min_threads_per_core,
-						&opt.max_threads_per_core,
-						true );
+						NULL, true );
 			break;
 		case LONG_OPT_HINT:
 			if (verify_hint(optarg,
 				&opt.min_sockets_per_node,
-				&opt.max_sockets_per_node,
 				&opt.min_cores_per_socket,
-				&opt.max_cores_per_socket,
 				&opt.min_threads_per_core,
-				&opt.max_threads_per_core,
 				&opt.cpu_bind_type)) {
 				exit(error_exit);
 			}
@@ -1730,9 +1736,7 @@ static bool _opt_verify(void)
 	}
 
 	/* bound max_threads/cores from ntasks_cores/sockets */ 
-	if ((opt.max_threads_per_core <= 0) &&
-	    (opt.ntasks_per_core > 0)) {
-		opt.max_threads_per_core = opt.ntasks_per_core;
+	if (opt.ntasks_per_core > 0) {
 		/* if cpu_bind_type doesn't already have a auto pref,
 		 * choose the level based on the level of ntasks
 		 */
@@ -1743,9 +1747,7 @@ static bool _opt_verify(void)
 			opt.cpu_bind_type |= CPU_BIND_TO_CORES;
 		}
 	}
-	if ((opt.max_cores_per_socket <= 0) &&
-	    (opt.ntasks_per_socket > 0)) {
-		opt.max_cores_per_socket = opt.ntasks_per_socket;
+	if (opt.ntasks_per_socket > 0) {
 		/* if cpu_bind_type doesn't already have a auto pref,
 		 * choose the level based on the level of ntasks
 		 */
@@ -2020,15 +2022,6 @@ static char *print_constraints()
 	if (opt.job_min_cpus > 0)
 		xstrfmtcat(buf, "mincpus=%d ", opt.job_min_cpus);
 
-	if (opt.job_min_sockets > 0)
-		xstrfmtcat(buf, "minsockets=%d ", opt.job_min_sockets);
-
-	if (opt.job_min_cores > 0)
-		xstrfmtcat(buf, "mincores=%d ", opt.job_min_cores);
-
-	if (opt.job_min_threads > 0)
-		xstrfmtcat(buf, "minthreads=%d ", opt.job_min_threads);
-
 	if (opt.job_min_memory > 0)
 		xstrfmtcat(buf, "mem=%dM ", opt.job_min_memory);
 
@@ -2167,12 +2160,9 @@ static void _opt_list()
 	info("task_prolog    : %s", opt.task_prolog);
 	info("task_epilog    : %s", opt.task_epilog);
 	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
-	info("sockets-per-node  : %d - %d", opt.min_sockets_per_node,
-					    opt.max_sockets_per_node);
-	info("cores-per-socket  : %d - %d", opt.min_cores_per_socket,
-					    opt.max_cores_per_socket);
-	info("threads-per-core  : %d - %d", opt.min_threads_per_core,
-					    opt.max_threads_per_core);
+	info("sockets-per-node  : %d", opt.min_sockets_per_node);
+	info("cores-per-socket  : %d", opt.min_cores_per_socket);
+	info("threads-per-core  : %d", opt.min_threads_per_core);
 	info("ntasks-per-node   : %d", opt.ntasks_per_node);
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
@@ -2302,10 +2292,7 @@ static void _help(void)
 "      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
 "      --mem=MB                minimum amount of real memory\n"
-"      --mincores=n            minimum number of cores per socket\n"
 "      --mincpus=n             minimum number of logical processors (threads) per node\n"
-"      --minsockets=n          minimum number of sockets per node\n"
-"      --minthreads=n          minimum number of threads per core\n"
 "      --reservation=name      allocate resources from named reservation\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
@@ -2326,7 +2313,7 @@ static void _help(void)
 "       --sockets-per-node=S   number of sockets per node to allocate\n"
 "       --cores-per-socket=C   number of cores per socket to allocate\n"
 "       --threads-per-core=T   number of threads per core to allocate\n"
-"                              each field can be 'min[-max]' or wildcard '*'\n"
+"                              each field can be 'min' or wildcard '*'\n"
 "                              total cpus requested = (N x S x C x T)\n"
 "\n"
 "      --ntasks-per-core=n     number of tasks to invoke on each core\n"

@@ -81,11 +81,8 @@ typedef struct sbatch_options {
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
 	bool nodes_set;		/* true if nodes explicitly set */
 	int min_sockets_per_node; /* --sockets-per-node=n      */
-	int max_sockets_per_node; /* --sockets-per-node=x-n    */
 	int min_cores_per_socket; /* --cores-per-socket=n      */
-	int max_cores_per_socket; /* --cores-per-socket=x-n    */
 	int min_threads_per_core; /* --threads-per-core=n      */
-	int max_threads_per_core; /* --threads-per-core=x-n    */
 	int ntasks_per_node;   /* --ntasks-per-node=n	    */
 	int ntasks_per_socket; /* --ntasks-per-socket=n     */
 	int ntasks_per_core;   /* --ntasks-per-core=n	    */

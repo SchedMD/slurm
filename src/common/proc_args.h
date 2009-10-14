@@ -14,6 +14,17 @@
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission 
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and 
+ *  distribute linked combinations including the two. You must obey the GNU 
+ *  General Public License in all respects for all of the code used other than 
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this 
+ *  exception to your version of the file(s), but you are not obligated to do 
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in 
+ *  the program, then also delete it here.
  *  
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -22,7 +33,7 @@
  *  
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
- *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
 #ifndef _PROC_ARGS_H
@@ -75,21 +86,29 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes);
 /* verify a node list is valid based on the dist and task count given */
 bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
 		      int task_count);
-/* parse a possible range of values from the form: count, min-max, or '*' */
-bool get_resource_arg_range(const char *arg, const char *what,
-				   int* min, int *max, bool isFatal);
+
+/* 
+ * get either 1 or 2 integers for a resource count in the form of either
+ * (count, min-max, or '*')
+ * A partial error message is passed in via the 'what' param.
+ * IN arg - argument
+ * IN what - variable name (for errors)
+ * OUT min - first number
+ * OUT max - maximum value if specified, NULL if don't care
+ * IN isFatal - if set, exit on error
+ * RET true if valid
+ */
+bool get_resource_arg_range(const char *arg, const char *what, int* min, 
+			    int *max, bool isFatal);
 
 /* verify resource counts from a complex form of: X, X:X, X:X:X or X:X:X:X */
-bool verify_socket_core_thread_count(const char *arg, 
-				     int *min_sockets, int *max_sockets,
-				     int *min_cores, int *max_cores,
-				     int *min_threads, int  *max_threads,
+bool verify_socket_core_thread_count(const char *arg, int *min_sockets, 
+				     int *min_cores, int *min_threads, 
 				     cpu_bind_type_t *cpu_bind_type);
 
 /* verify a hint and convert it into the implied settings */
-bool verify_hint(const char *arg, int *min_sockets, int *max_sockets,
-		 int *min_cores, int *max_cores, int *min_threads,
-		 int  *max_threads, cpu_bind_type_t *cpu_bind_type);
+bool verify_hint(const char *arg, int *min_sockets, int *min_cores, 
+		 int *min_threads, cpu_bind_type_t *cpu_bind_type);
 
 /* parse the mail type */
 uint16_t parse_mail_type(const char *arg);

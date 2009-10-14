@@ -368,9 +368,6 @@ Possible values are "YES" and "NO".
 \fIJobId\fP=<id>
 Identify the job to be updated. This specification is required.
 .TP
-\fIMinCores\fP=<count>
-Set the job's minimum number of cores per socket to the specified value.
-.TP
 \fIMinMemoryCPU\fP=<megabytes>
 Set the job's minimum real memory required per allocated CPU to the specified 
 value.
@@ -380,14 +377,8 @@ Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 Set the job's minimum real memory required per node to the specified value.
 Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 .TP
-\fIMinProcs\fP=<count>
-Set the job's minimum number of processors per node to the specified value.
-.TP
-\fIMinSockets\fP=<count>
-Set the job's minimum number of sockets per node to the specified value.
-.TP
-\fIMinThreads\fP=<count>
-Set the job's minimum number of threads per core to the specified value.
+\fIMinCPUs\fP=<count>
+Set the job's minimum number of CPUs per node to the specified value.
 .TP
 \fIMinTmpDisk\fP=<megabytes>
 Set the job's minimum temporary disk space required per node to the specified value.
@@ -420,7 +411,7 @@ Set the priority to a non\-zero value to permit it to run.
 Explicitly setting a job's priority clears any previously set nice value.
 .TP
 \fIReqCores\fP=<count>
-Set the job's count of required cores to the specified value.
+Set the job's count of minimum cores per socket to the specified value.
 .TP
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using 
@@ -428,10 +419,10 @@ simple node range expressions (e.g. "lx[10\-20]").
 Value may be cleared with blank data value, "ReqNodeList=".
 .TP
 \fIReqSockets\fP=<count>
-Set the job's count of required sockets to the specified value.
+Set the job's count of minimum sockets per node to the specified value.
 .TP
 \fIReqThreads\fP=<count>
-Set the job's count of required threads to the specified value.
+Set the job's count of minimum threads per core to the specified value.
 .TP
 \fIShared\fP=<yes|no>
 Set the job's ability to share nodes with other jobs. Possible values are
@@ -821,7 +812,7 @@ JobId=65539 UserId=1500 JobState=PENDING TimeLimit=0:20:00
 .br 
    StartTime=0 EndTime=0 Shared=0 ReqProcs=1000
 .br
-   ReqNodes=400 Contiguous=1 MinProcs=4 MinMemoryNode=1024
+   ReqNodes=400 Contiguous=1 MinCPUs=4 MinMemoryNode=1024
 .br 
    MinTmpDisk=2034 ReqNodeList=lx[3000-3003] 
 .br

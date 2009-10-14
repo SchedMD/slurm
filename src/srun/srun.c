@@ -404,9 +404,6 @@ int srun(int ac, char **av)
 	if (opt.acctg_freq >= 0)
 		launch_params.acctg_freq = opt.acctg_freq;
 	launch_params.pty = opt.pty;
-	launch_params.max_sockets	= opt.max_sockets_per_node;
-	launch_params.max_cores		= opt.max_cores_per_socket;
-	launch_params.max_threads	= opt.max_threads_per_core;
 	launch_params.cpus_per_task	= opt.cpus_per_task;
 	launch_params.task_dist         = opt.distribution;
 	launch_params.ckpt_dir		= opt.ckpt_dir;
