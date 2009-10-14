@@ -26,7 +26,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in sched/backfill which could result in invalid memory reference
     when trying to schedule jobs submitted with --exclude option.
  -- Fix for slurmctld deadlock at startup with PreemptMode=SUSPEND,GANG.
- -- Added preemptition plugins to RPM.
+ -- Added preemption plugins to RPM.
  -- Completely disable logging of sched/wiki and sched/wiki2 (Maui & Moab) 
     message traffic unless DebugFlag=Wiki is configured.
  -- Change scontrol show job info: ReqProcs (number of processors requested) 
