@@ -300,8 +300,19 @@ extern status_t bridge_get_block_info(pm_partition_id_t pid,
 	int rc = CONNECTION_ERROR;
 	if(!bridge_init())
 		return rc;
+
+	/* this is here to make sure we don't lock up things with
+	   polling and the long running get_BG call */
+	rc = pthread_mutex_trylock(&api_file_mutex);
+	if (rc == EBUSY) 
+		return rc;
+	else if(rc) {
+		errno = rc;
+		error("%s:%d %s: pthread_mutex_trylock(): %m",
+		      __FILE__, __LINE__, __CURRENT_FUNC__);     
+	}
 	
-	slurm_mutex_lock(&api_file_mutex);
+	//slurm_mutex_lock(&api_file_mutex);
 	rc = (*(bridge_api.get_partition_info))(pid, partition);
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
