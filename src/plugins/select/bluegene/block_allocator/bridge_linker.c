@@ -251,8 +251,9 @@ extern int bridge_fini()
 {
 	if(handle)
 		dlclose(handle);
-
-	return SLURM_ERROR;
+	initialized = false;
+	
+	return SLURM_SUCCESS;
 }
 
 extern status_t bridge_get_bg(my_bluegene_t **bg)
