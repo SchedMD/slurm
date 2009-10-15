@@ -283,6 +283,16 @@ extern int update_block_list()
 					break;
 				}
 			}
+
+			/* If the call was busy, just skip this
+			   iteration.  It usually means something like
+			   rm_get_BG was called which can be a very
+			   long call */
+			if(rc == EBUSY) {
+				debug5("lock was busy, aborting");
+				break;
+			}
+
 			error("bridge_get_block_info(%s): %s", 
 			      name, 
 			      bg_err_str(rc));
@@ -621,6 +631,15 @@ extern int update_freeing_block_list()
 					break;
 				}
 			}
+			/* If the call was busy, just skip this
+			   iteration.  It usually means something like
+			   rm_get_BG was called which can be a very
+			   long call */
+			if(rc == EBUSY) {
+				debug5("lock was busy, aborting");
+				break;
+			}
+
 			error("bridge_get_block_info(%s): %s", 
 			      name, 
 			      bg_err_str(rc));
