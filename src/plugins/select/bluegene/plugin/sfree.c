@@ -364,6 +364,15 @@ static int _update_bg_record_state()
 				continue;
 			}
 			
+			/* If the call was busy, just skip this
+			   iteration.  It usually means something like
+			   rm_get_BG was called which can be a very
+			   long call */
+			if(rc == EBUSY) {
+				debug5("lock was busy, aborting");
+				break;
+			}
+
 			error("bridge_get_block_info(%s): %s", 
 			      name, 
 			      _bg_err_str(rc));
