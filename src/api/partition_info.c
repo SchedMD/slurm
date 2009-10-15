@@ -105,43 +105,152 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 char *slurm_sprint_partition_info ( partition_info_t * part_ptr, 
 				    int one_liner )
 {
-	int j;
 	char tmp1[16], tmp2[16];
 	char tmp_line[MAXHOSTRANGELEN];
 	char *out = NULL;
 	uint16_t force, val;
 
 	/****** Line 1 ******/
-#ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp1, sizeof(tmp1),
-			 UNIT_NONE);
-	convert_num_unit((float)part_ptr->total_cpus, tmp2, sizeof(tmp2),
-			 UNIT_NONE);
-#else
-	snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->total_nodes);
-	snprintf(tmp2, sizeof(tmp2), "%u", part_ptr->total_cpus);
-#endif
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "PartitionName=%s TotalNodes=%s TotalCPUs=%s ", 
-		 part_ptr->name, tmp1, tmp2);
-	xstrcat(out, tmp_line);
 
-	if (part_ptr->root_only)
-		sprintf(tmp_line, "RootOnly=YES");
-	else
-		sprintf(tmp_line, "RootOnly=NO");
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "PartitionName=%s ", 
+		 part_ptr->name);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
 	else
 		xstrcat(out, "\n   ");
-	
+
 	/****** Line 2 ******/
+
+	if (part_ptr->allow_alloc_nodes == NULL)
+		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s","ALL ");
+	else
+		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s",
+			 part_ptr->allow_alloc_nodes);
+	xstrcat(out, tmp_line);
+	if ((part_ptr->allow_groups == NULL) || 
+	    (part_ptr->allow_groups[0] == '\0'))
+		sprintf(tmp_line, "AllowGroups=ALL ");
+	else {
+		snprintf(tmp_line, sizeof(tmp_line), 
+			"AllowGroups=%s", part_ptr->allow_groups);
+	}
+	xstrcat(out, tmp_line);
 	if (part_ptr->default_part)
 		sprintf(tmp_line, "Default=YES ");
 	else
 		sprintf(tmp_line, "Default=NO ");
 	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line added here for BG partitions 
+	 to keep with alphabetized output******/
+
+#ifdef HAVE_BG
+	snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s", 
+		part_ptr->nodes);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+#else
+#endif
+
+	/****** Line 3 ******/
+
+	if (part_ptr->default_time == INFINITE)
+		sprintf(tmp_line, "DefaultTime=UNLIMITED ");
+	else if (part_ptr->default_time == NO_VAL)
+		sprintf(tmp_line, "DefaultTime=NONE ");	  
+	else {
+		char time_line[32];
+		secs2time_str(part_ptr->default_time * 60, time_line, 
+			sizeof(time_line));
+		sprintf(tmp_line, " DefaultTime=%s ", time_line);
+	}
+	xstrcat(out, tmp_line);
+	if (part_ptr->disable_root_jobs)
+		sprintf(tmp_line, "DisableRootJobs=YES ");
+	else
+		sprintf(tmp_line, "DisableRootJobs=NO ");
+	xstrcat(out, tmp_line);
+		if (part_ptr->hidden)
+		sprintf(tmp_line, "Hidden=YES ");
+	else
+		sprintf(tmp_line, "Hidden=NO ");
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+      
+	/****** Line 4 ******/
+
+	if (part_ptr->max_nodes == INFINITE)
+		sprintf(tmp_line, "MaxNodes=UNLIMITED ");
+	else {
+#ifdef HAVE_BG
+		convert_num_unit((float)part_ptr->max_nodes, tmp1, sizeof(tmp1),
+				 UNIT_NONE);
+#else
+		snprintf(tmp1, sizeof(tmp1),"%u", part_ptr->max_nodes);
+#endif
+		sprintf(tmp_line, "MaxNodes=%s ", tmp1);
+	}
+		xstrcat(out, tmp_line);
+		if (part_ptr->max_time == INFINITE)
+		sprintf(tmp_line, "MaxTime=UNLIMITED ");
+	else {
+		char time_line[32];
+		secs2time_str(part_ptr->max_time * 60, time_line, 
+			sizeof(time_line));
+		sprintf(tmp_line, "MaxTime=%s ", time_line);
+	}
+	xstrcat(out, tmp_line);
+#ifdef HAVE_BG
+	convert_num_unit((float)part_ptr->min_nodes, tmp1, sizeof(tmp1),
+			 UNIT_NONE);
+#else
+	snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->min_nodes);
+#endif
+	sprintf(tmp_line, "MinNodes=%s ", tmp1);
+	xstrcat(out, tmp_line);
+
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line added here for non BG nodes
+	 to keep with alphabetized output******/
+
+#ifdef HAVE_BG
+	/***Proceed to non BG option***/
+#else
+	snprintf(tmp_line, sizeof(tmp_line), "Nodes=%s", 
+		part_ptr->nodes);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+#endif
+
+	/****** Line 6 ******/
+
+	sprintf(tmp_line, "Priority=%u ", part_ptr->priority);
+	xstrcat(out, tmp_line);	
+	if (part_ptr->root_only)
+		sprintf(tmp_line, "RootOnly=YES ");
+	else
+		sprintf(tmp_line, "RootOnly=NO ");
+	xstrcat(out, tmp_line);
+
 	force = part_ptr->max_share & SHARED_FORCE;
 	val = part_ptr->max_share & (~SHARED_FORCE);
 	if (val == 0)
@@ -155,115 +264,35 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		sprintf(tmp_line, "Shared=YES:%u ", val);
 		xstrcat(out, tmp_line);
 	}
-	sprintf(tmp_line, "Priority=%u ", part_ptr->priority);
-	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 7 ******/
+
 	if (part_ptr->state_up)
 		sprintf(tmp_line, "State=UP ");
 	else
 		sprintf(tmp_line, "State=DOWN ");
 	xstrcat(out, tmp_line);
-	if (part_ptr->max_time == INFINITE)
-		sprintf(tmp_line, "MaxTime=UNLIMITED ");
-	else {
-		char time_line[32];
-		secs2time_str(part_ptr->max_time * 60, time_line, 
-			sizeof(time_line));
-		sprintf(tmp_line, "MaxTime=%s ", time_line);
-	}
-	xstrcat(out, tmp_line);
-	if (part_ptr->hidden)
-		sprintf(tmp_line, "Hidden=YES");
-	else
-		sprintf(tmp_line, "Hidden=NO");
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
 	
-	/****** Line 3 ******/
 #ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->min_nodes, tmp1, sizeof(tmp1),
+	convert_num_unit((float)part_ptr->total_cpus, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
 #else
-	snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->min_nodes);
+	snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->total_cpus);
 #endif
-	sprintf(tmp_line, "MinNodes=%s ", tmp1);
+		sprintf(tmp_line, "TotalCPUs=%s ", tmp1);
 	xstrcat(out, tmp_line);
-
-	if (part_ptr->max_nodes == INFINITE)
-		sprintf(tmp_line, "MaxNodes=UNLIMITED ");
-	else {
 #ifdef HAVE_BG
-		convert_num_unit((float)part_ptr->max_nodes, tmp1, sizeof(tmp1),
-				 UNIT_NONE);
+	convert_num_unit((float)part_ptr->total_nodes, tmp2, sizeof(tmp2),
+			 UNIT_NONE);
 #else
-		snprintf(tmp1, sizeof(tmp1),"%u", part_ptr->max_nodes);
+	snprintf(tmp2, sizeof(tmp2), "%u", part_ptr->total_nodes);
 #endif
-		sprintf(tmp_line, "MaxNodes=%s ", tmp1);
-	}
+		sprintf(tmp_line, "TotalNodes=%s ", tmp2);
 	xstrcat(out, tmp_line);
-	if (part_ptr->disable_root_jobs)
-		sprintf(tmp_line, "DisableRootJobs=YES ");
-	else
-		sprintf(tmp_line, "DisableRootJobs=NO ");
-	xstrcat(out, tmp_line);
-	if ((part_ptr->allow_groups == NULL) || 
-	    (part_ptr->allow_groups[0] == '\0'))
-		sprintf(tmp_line, "AllowGroups=ALL");
-	else {
-		snprintf(tmp_line, sizeof(tmp_line), 
-			"AllowGroups=%s", part_ptr->allow_groups);
-	}
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
-	
-	/****** Line 4 ******/
-	if (part_ptr->allow_alloc_nodes == NULL)
-		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s","ALL");
-	else
-		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s",
-			 part_ptr->allow_alloc_nodes);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
-	
-
-	/****** Line 5 ******/
-#ifdef HAVE_BG
-	snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s BPIndices=", 
-		part_ptr->nodes);
-#else
-	snprintf(tmp_line, sizeof(tmp_line), "Nodes=%s NodeIndices=", 
-		part_ptr->nodes);
-#endif
-	xstrcat(out, tmp_line);
-	for (j = 0; (part_ptr->node_inx && (part_ptr->node_inx[j] != -1)); 
-				j+=2) {
-		if (j > 0)
-			xstrcat(out, ",");
-		sprintf(tmp_line, "%d-%d", part_ptr->node_inx[j],
-			part_ptr->node_inx[j+1]);
-		xstrcat(out, tmp_line);
-	}
-
-	if (part_ptr->default_time == INFINITE)
-		sprintf(tmp_line, " DefaultTime=UNLIMITED ");
-	else if (part_ptr->default_time == NO_VAL)
-		sprintf(tmp_line, " DefaultTime=NONE ");	  
-	else {
-		char time_line[32];
-		secs2time_str(part_ptr->default_time * 60, time_line, 
-			sizeof(time_line));
-		sprintf(tmp_line, " DefaultTime=%s ", time_line);
-	}
-	xstrcat(out, tmp_line);
-
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
@@ -271,7 +300,6 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	
 	return out;
 }
-
 
 
 /*
