@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.0.8
+========================
+
 * Changes in SLURM 2.0.7
 ========================
  -- Fix bug in select/cons_res when nodes are configured in more than one 
