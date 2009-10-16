@@ -1,7 +1,7 @@
 LLNL CHAOS-SPECIFIC RELEASE NOTES FOR SLURM VERSION 2.1
 16 October 2009
 
-This lists only the most significant changes from Slurm v2.0 to v2.1
+This lists only the most significant changes from SLURM v2.0 to v2.1
 with respect to Chaos systems. See the file RELEASE_NOTES for other
 changes.
 
