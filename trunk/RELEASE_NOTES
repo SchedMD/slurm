@@ -45,13 +45,14 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * Added PreemptType parameter to specify the plugin used to identify 
   preemptable jobs (partition priority or quality of service) and 
   PreemptionMode to identify how to preempt jobs (requeue, cancel, checkpoint,
-  or suspend).
+  or suspend). Default is no job preemption.
 * The sched/gang plugin has be removed, use PreemptType=preempt/partition_prio
   and PreemptMode=suspend,gang.
 * ControlMachine changed to  accept multiple comma-separated hostnames for 
   support of some high-availability architectures.
 * Added MaxTasksPerNode to control how many tasks that the slurmd can launch.
-* Removed SrunIOTimeout parameter.
+  The default value is 128 (same as Slurm v2.0 value).
+* Removed SrunIOTimeout parameter. It now uses MessageTimeout value.
 * Added SchedulerParameters option of "max_job_bf=#" to control how far down
   the queue of pending jobs that SLURM searches in an attempt backfill 
   schedule them. The default value is 50 jobs.
