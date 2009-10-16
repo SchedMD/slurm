@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.0.8
 ========================
+ -- BLUEGENE - added dub2 of stderr to put error messages sent from underlying 
+    libraries of the bridge api to the bridgeapi.log
 
 * Changes in SLURM 2.0.7
 ========================
