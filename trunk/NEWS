@@ -3,7 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.0-pre6
 =============================
-
+ -- When getting information about nodes in hidden partitions, return a node
+    name of NULL rather than returning no information about the node so that 
+    node index information is still valid.
+ 
 * Changes in SLURM 2.1.0-pre5
 =============================
  -- Add squeue option "--start" to report expected start time of pending jobs.
