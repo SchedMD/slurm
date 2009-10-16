@@ -87,16 +87,19 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 		slurm_print_job_info(out, &job_ptr[i], one_liner);
 }
 
-static void _sprint_range(char *str, uint16_t lower, uint16_t upper)
+static void _sprint_range(char *str, uint32_t str_size,
+			  uint32_t lower, uint32_t upper)
 {
+	char tmp[128];
 	/* Note: We don't have the size of str here */
-	convert_num_unit((float)lower, str, 16, UNIT_NONE);
+	convert_num_unit((float)lower, tmp, sizeof(tmp), UNIT_NONE);
 	if (upper > 0) {
-    		char tmp[128];
-		convert_num_unit((float)upper, tmp, sizeof(tmp), UNIT_NONE);
-		strcat(str, "-");
-		strcat(str, tmp);
-	}
+    		char tmp2[128];
+		convert_num_unit((float)upper, tmp2, sizeof(tmp2), UNIT_NONE);
+		snprintf(str, str_size, "%s-%s", tmp, tmp2);
+	} else
+		snprintf(str, str_size, "%s", tmp);
+
 }
 
 /*
@@ -133,12 +136,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	uint16_t exit_status = 0, term_sig = 0;
 	select_job_res_t *select_job_res = job_ptr->select_job_res;
 	char *out = NULL;
-	
+	uint32_t min_nodes, max_nodes;
+
 #ifdef HAVE_BG
 	char *nodelist = "BP_List";
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
-			     SELECT_JOBDATA_IONODES, 
-			     &ionodes);
+				    SELECT_JOBDATA_IONODES, 
+				    &ionodes);
 #else
 	bitstr_t *core_bitmap;
 	char *host;
@@ -245,7 +249,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	/****** Line 6 ******/
 	xstrfmtcat(out, "%s=", nodelist);
 	xstrcat(out, job_ptr->nodes);
-	if(ionodes) {
+	if(job_ptr->nodes && ionodes) {
 		snprintf(tmp_line, sizeof(tmp_line), "[%s]", ionodes);
 		xstrcat(out, tmp_line);
 		xfree(ionodes);
@@ -439,15 +443,21 @@ line7:	/****** Line 7 ******/
 	convert_num_unit((float)job_ptr->num_procs, tmp1, sizeof(tmp1), 
 			 UNIT_NONE);
 #ifdef HAVE_BG
-	convert_num_unit((float)job_ptr->num_nodes, tmp2, sizeof(tmp2),
-			 UNIT_NONE);
-	snprintf(tmp_line, sizeof(tmp_line), "NumProcs=%s MinBPs=%s ", 
-		 tmp1, tmp2);
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				    SELECT_JOBDATA_NODE_CNT, 
+				    &min_nodes);
+	if ((min_nodes == 0) || (min_nodes == NO_VAL)) {
+		min_nodes = job_ptr->num_nodes;
+		max_nodes = job_ptr->max_nodes;
+	} else
+		max_nodes = min_nodes;
 #else
-	_sprint_range(tmp2, job_ptr->num_nodes, job_ptr->max_nodes);
+	min_nodes = job_ptr->num_nodes;
+	max_nodes = job_ptr->max_nodes;
+#endif
+	_sprint_range(tmp2, sizeof(tmp2), min_nodes, max_nodes);
 	snprintf(tmp_line, sizeof(tmp_line), "NumProcs=%s NumNodes=%s ", 
 		 tmp1, tmp2);
-#endif
 	xstrcat(out, tmp_line);
 
 	snprintf(tmp_line, sizeof(tmp_line), 
@@ -475,10 +485,32 @@ line7:	/****** Line 7 ******/
 		xstrcat(out, "\n   ");
 
 	/****** Line 9 ******/
+	slurm_make_time_str((time_t *)&job_ptr->eligible_time, time_str,
+			    sizeof(time_str));
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"MinCPUs=%u", 
-		job_ptr->job_min_cpus);
+		 "EligibleTime=%s", 
+		 time_str);
 	xstrcat(out, tmp_line);
+
+	convert_num_unit((float)job_ptr->job_min_cpus, tmp1, sizeof(tmp1), 
+			 UNIT_NONE);
+	snprintf(tmp_line, sizeof(tmp_line), 
+		" MinCPUs=%s", 
+		tmp1);
+	xstrcat(out, tmp_line);
+#ifdef HAVE_BG
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+				    SELECT_JOBDATA_MAX_CPUS, 
+				    &max_nodes);
+	
+	convert_num_unit((float)max_nodes, tmp1, sizeof(tmp1), 
+			 UNIT_NONE);
+	snprintf(tmp_line, sizeof(tmp_line), 
+		" MaxCPUs=%s", 
+		tmp1);
+	xstrcat(out, tmp_line);
+#endif
+
 	if (one_liner)
 		xstrcat(out, " ");
 	else
@@ -622,8 +654,8 @@ line7:	/****** Line 7 ******/
 
 	/****** Line 20 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				select_buf, sizeof(select_buf),
-				SELECT_PRINT_MIXED);
+				       select_buf, sizeof(select_buf),
+				       SELECT_PRINT_MIXED);
 	if (select_buf[0] != '\0') {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -634,8 +666,8 @@ line7:	/****** Line 7 ******/
 #ifdef HAVE_BG
 	/****** Line 21 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				select_buf, sizeof(select_buf),
-				SELECT_PRINT_BLRTS_IMAGE);
+				       select_buf, sizeof(select_buf),
+				       SELECT_PRINT_BLRTS_IMAGE);
 	if (select_buf[0] != '\0') {
 		if (one_liner)
 			xstrcat(out, " ");

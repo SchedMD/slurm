@@ -73,8 +73,8 @@ typedef struct {
 	uint16_t nodecard_node_cnt;
 	uint16_t nodecard_ionode_cnt;
 	uint16_t numpsets;
-	uint16_t proc_ratio;
-	uint32_t procs_per_bp;
+	uint16_t cpu_ratio;
+	uint32_t cpus_per_bp;
 	uint16_t quarter_node_cnt;
 	uint16_t quarter_ionode_cnt;
 	List ramdisk_list;

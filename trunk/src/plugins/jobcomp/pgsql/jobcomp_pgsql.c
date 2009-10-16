@@ -328,7 +328,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		strcpy(lim_str, "UNLIMITED");
 	else
 		snprintf(lim_str, sizeof(lim_str), "%lu", 
-				(unsigned long) job_ptr->time_limit);
+			 (unsigned long) job_ptr->time_limit);
 
 	/* Job will typically be COMPLETING when this is called. 
 	 * We remove the flags to get the eventual completion state:
@@ -336,23 +336,23 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	job_state = job_ptr->job_state & JOB_STATE_BASE;
 	
 	connect_type = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						SELECT_PRINT_CONNECTION);
+						       SELECT_PRINT_CONNECTION);
 	reboot = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-					  SELECT_PRINT_REBOOT);
+						 SELECT_PRINT_REBOOT);
 	rotate = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-					  SELECT_PRINT_ROTATE);
+						 SELECT_PRINT_ROTATE);
 	maxprocs = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-					    SELECT_PRINT_MAX_PROCS);
+						   SELECT_PRINT_MAX_CPUS);
 	geometry = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-					    SELECT_PRINT_GEOMETRY);
+						   SELECT_PRINT_GEOMETRY);
 	start = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-					 SELECT_PRINT_START);
+						SELECT_PRINT_START);
 #ifdef HAVE_BG
 	blockid = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-					   SELECT_PRINT_BG_ID);
+						  SELECT_PRINT_BG_ID);
 #else
 	blockid = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-					   SELECT_PRINT_RESV_ID);
+						  SELECT_PRINT_RESV_ID);
 #endif
 	query = xstrdup_printf(
 		"insert into %s (jobid, uid, user_name, gid, group_name, "

@@ -42,6 +42,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/node_select.h"
 
 /* Given a string, replace the first space found with '\0' */
 extern void	null_term(char *str)
@@ -307,13 +308,30 @@ host_fini:	if (rc) {
 	}
 
 	if (new_node_cnt) {
+		job_desc_msg_t job_desc;
+	
+		memset(&job_desc, 0, sizeof(job_desc_msg_t));
+		
+		job_desc.min_nodes = new_node_cnt;
+		job_desc.max_nodes = NO_VAL;
+		job_desc.select_jobinfo = select_g_select_jobinfo_alloc();
+		
+		select_g_alter_node_cnt(SELECT_SET_NODE_CNT, &job_desc);
+
+		select_g_select_jobinfo_free(job_desc.select_jobinfo);
+
 		if (IS_JOB_PENDING(job_ptr) && job_ptr->details) {
-			job_ptr->details->min_nodes = new_node_cnt;
+			job_ptr->details->min_nodes = job_desc.min_nodes;
 			if (job_ptr->details->max_nodes
-			&&  (job_ptr->details->max_nodes < new_node_cnt))
-				job_ptr->details->max_nodes = new_node_cnt;
+			&&  (job_ptr->details->max_nodes < job_desc.min_nodes))
+				job_ptr->details->max_nodes = 
+					job_desc.min_nodes;
 			info("wiki: change job %u min_nodes to %u",
 				jobid, new_node_cnt);
+#ifdef HAVE_BG
+			job_ptr->num_procs = job_desc.num_procs;
+			job_ptr->details->job_min_cpus = job_desc.job_min_cpus;
+#endif
 			last_job_update = now;
 			update_accounting = true;
 		} else {
