@@ -34,6 +34,7 @@ HIGHLIGHTS
 * Added -"-signal=<int>@<time>" option to salloc, sbatch and srun commands to
   notify programs before reaching the end of their time limit.
 * Added squeue option "--start" to report expected start time of pending jobs.
+  The times are only set if the backfill scheduler is in use.
 * The pam_slurm Pluggable Authentication Module for SLURM previously
   distributed separately has been moved within the main SLURM distribution
   and is packaged as a separate RPM.
@@ -60,7 +61,7 @@ COMMAND CHANGES (see man pages for details)
 * Added a --detail option to "scontrol show job" to display the cpu/memory
   allocation informaton on a node-by-node basis.
 * sacctmgr show problems command added to display problems in the accounting 
-  database (e.g. accounts with no users, users with no UID, etc.)
+  database (e.g. accounts with no users, users with no UID, etc.).
 * Several redundant squeue output and sorting options have been removed: 
   "%o" (use %D"), "%b" (use "%S"), "%X", %Y, and "%Z" (use "%z").
 * Standardized on the use of the '-Q' flag for all commands that offer the
