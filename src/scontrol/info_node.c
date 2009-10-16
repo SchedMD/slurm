@@ -96,7 +96,8 @@ scontrol_print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 			if (strcmp (node_name, 
 				    node_buffer_ptr->node_array[i].name))
 				continue;
-		}
+		} else if (node_buffer_ptr->node_array[j].name == NULL)
+			continue;
 		else
 			i = j;
 		print_cnt++;

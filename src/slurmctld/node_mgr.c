@@ -44,6 +44,7 @@
 #  include "config.h"
 #endif
 
+
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -497,6 +498,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	Buf buffer;
 	time_t now = time(NULL);
 	struct node_record *node_ptr = node_record_table_ptr;
+	bool hidden;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -519,16 +521,26 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		xassert (node_ptr->config_ptr->magic ==  
 			 CONFIG_MAGIC);
 
+		/* We can't avoid packing node records without breaking
+		 * the node index pointers. So pack a node with a name of
+		 * NULL and let the caller deal with it. */
+		hidden = false;
 		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 		    (_node_is_hidden(node_ptr)))
-			continue;
-		if (IS_NODE_FUTURE(node_ptr))
-			continue;
-		if ((node_ptr->name == NULL) ||
-		    (node_ptr->name[0] == '\0'))
-			continue;
+			hidden = true;
+		else if (IS_NODE_FUTURE(node_ptr))
+			hidden = true;
+		else if ((node_ptr->name == NULL) ||
+			 (node_ptr->name[0] == '\0'))
+			hidden = true;
 
-		_pack_node(node_ptr, buffer);
+		if (hidden) {
+			char *orig_name = node_ptr->name;
+			node_ptr->name = NULL;
+			_pack_node(node_ptr, buffer);
+			node_ptr->name = orig_name;
+		} else
+			_pack_node(node_ptr, buffer);
 		nodes_packed ++ ;
 	}
 	part_filter_clear();

@@ -2,7 +2,7 @@
  *  sinfo.c - Report overall state the system
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -111,8 +111,8 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
-		if ((!params.no_header)
-		&&  (params.iterate || params.verbose || params.long_output))
+		if ((!params.no_header) &&
+		    (params.iterate || params.verbose || params.long_output))
 			print_date();
 
 		if (_query_server(&partition_msg, &node_msg, &block_msg)
@@ -356,8 +356,8 @@ static int _build_sinfo_data(List sinfo_list,
 	for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
 		part_ptr = &(partition_msg->partition_array[j]);
 		
-		if (params.filtering && params.partition
-		&&  _strcmp(part_ptr->name, params.partition))
+		if (params.filtering && params.partition &&
+		    _strcmp(part_ptr->name, params.partition))
 			continue;
 		
 		j2 = 0;
@@ -369,7 +369,9 @@ static int _build_sinfo_data(List sinfo_list,
 			    i2++) {
 				node_ptr = &(node_msg->node_array[i2]);
 				
-				if (params.filtering && _filter_out(node_ptr))
+				if (node_ptr->name == NULL ||
+				    (params.filtering &&
+				     _filter_out(node_ptr)))
 					continue;
 
 				if(select_g_select_nodeinfo_get(
@@ -378,13 +380,15 @@ static int _build_sinfo_data(List sinfo_list,
 					   0,
 					   &subgrp_size) == SLURM_SUCCESS
 				   && subgrp_size)
-					_handle_subgrps(sinfo_list, (uint16_t)j,
+					_handle_subgrps(sinfo_list, 
+							(uint16_t) j,
 							part_ptr,
 							node_ptr,
-							node_msg->node_scaling);
+							node_msg->
+							node_scaling);
 				else
 					_insert_node_ptr(sinfo_list,
-							 (uint16_t)j,
+							 (uint16_t) j,
 							 part_ptr,
 							 node_ptr,
 							 node_msg->
@@ -740,8 +744,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		return;
 	}
 #else
-	if ((base_state == NODE_STATE_ALLOCATED)
-	    ||  IS_NODE_COMPLETING(node_ptr))
+	if ((base_state == NODE_STATE_ALLOCATED) ||
+	    IS_NODE_COMPLETING(node_ptr))
 		sinfo_ptr->nodes_alloc += total_nodes;
 	else if (base_state == NODE_STATE_IDLE)
 		sinfo_ptr->nodes_idle += total_nodes;
@@ -755,7 +759,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	sinfo_ptr->cpus_total += total_cpus;
 	total_cpus -= used_cpus + error_cpus;
 
-	if(error_cpus) {
+	if (error_cpus) {
 		sinfo_ptr->cpus_idle += total_cpus;
 		sinfo_ptr->cpus_other += error_cpus;
 	} else if (IS_NODE_DRAIN(node_ptr) ||
@@ -781,8 +785,8 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 	while ((sinfo_ptr = list_next(itr))) {
 		if (!_match_part_data(sinfo_ptr, part_ptr))
 			continue;
-		if (sinfo_ptr->nodes_total
-		    && (!_match_node_data(sinfo_ptr, node_ptr)))
+		if (sinfo_ptr->nodes_total &&
+		    (!_match_node_data(sinfo_ptr, node_ptr)))
 			continue;
 		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);
 		break;
@@ -934,7 +938,7 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 	sinfo_ptr->nodes = hostlist_create("");
 
 	if (node_ptr) 
-		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);		
+		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);
 	
 	return sinfo_ptr;
 }
