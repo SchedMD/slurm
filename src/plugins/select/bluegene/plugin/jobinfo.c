@@ -99,7 +99,7 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 	jobinfo->rotate = (uint16_t) NO_VAL;
 	jobinfo->magic = JOBINFO_MAGIC;
 	jobinfo->node_cnt = NO_VAL;
-	jobinfo->max_procs =  NO_VAL;
+	jobinfo->max_cpus =  NO_VAL;
 	/* Remainder of structure is already NULL fulled */
 
 	return jobinfo;
@@ -185,8 +185,8 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 	case SELECT_JOBDATA_ALTERED:
 		jobinfo->altered = *uint16;
 		break;
-	case SELECT_JOBDATA_MAX_PROCS:
-		jobinfo->max_procs = *uint32;
+	case SELECT_JOBDATA_MAX_CPUS:
+		jobinfo->max_cpus = *uint32;
 		break;
 	case SELECT_JOBDATA_BLRTS_IMAGE:
 		/* we xfree() any preset value to avoid a memory leak */
@@ -281,8 +281,8 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 	case SELECT_JOBDATA_ALTERED:
 		*uint16 = jobinfo->altered;
 		break;
-	case SELECT_JOBDATA_MAX_PROCS:
-		*uint32 = jobinfo->max_procs;
+	case SELECT_JOBDATA_MAX_CPUS:
+		*uint32 = jobinfo->max_cpus;
 		break;
 	case SELECT_JOBDATA_BLRTS_IMAGE:
 		if ((jobinfo->blrtsimage == NULL)
@@ -348,7 +348,7 @@ extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 		rc->ionodes = xstrdup(jobinfo->ionodes);
 		rc->node_cnt = jobinfo->node_cnt;
 		rc->altered = jobinfo->altered;
-		rc->max_procs = jobinfo->max_procs;
+		rc->max_cpus = jobinfo->max_cpus;
 		rc->blrtsimage = xstrdup(jobinfo->blrtsimage);
 		rc->linuximage = xstrdup(jobinfo->linuximage);
 		rc->mloaderimage = xstrdup(jobinfo->mloaderimage);
@@ -378,7 +378,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer)
 		pack16(jobinfo->rotate, buffer);
 
 		pack32(jobinfo->node_cnt, buffer);
-		pack32(jobinfo->max_procs, buffer);
+		pack32(jobinfo->max_cpus, buffer);
 
 		packstr(jobinfo->bg_block_id, buffer);
 		packstr(jobinfo->nodes, buffer);
@@ -395,7 +395,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer)
 			pack16((uint16_t) 0, buffer);
 
 		pack32((uint32_t) 0, buffer); //node_cnt
-		pack32((uint32_t) 0, buffer); //max_procs
+		pack32((uint32_t) 0, buffer); //max_cpus
 
 		packnull(buffer); //bg_block_id
 		packnull(buffer); //nodes
@@ -431,7 +431,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer)
 	safe_unpack16(&(jobinfo->rotate), buffer);
 
 	safe_unpack32(&(jobinfo->node_cnt), buffer);
-	safe_unpack32(&(jobinfo->max_procs), buffer);
+	safe_unpack32(&(jobinfo->max_cpus), buffer);
 
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id),  &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->nodes),        &uint32_tmp, buffer);
@@ -461,7 +461,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 {
 	uint16_t geometry[SYSTEM_DIMENSIONS];
 	int i;
-	char max_procs_char[8];
+	char max_cpus_char[8];
 	char *tmp_image = "default";
 		
 	if (buf == NULL) {
@@ -491,40 +491,33 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
 		snprintf(buf, size,
-			 "CONNECT REBOOT ROTATE MAX_PROCS GEOMETRY BLOCK_ID");
+			 "CONNECT REBOOT ROTATE MAX_CPUS GEOMETRY BLOCK_ID");
 		break;
 	case SELECT_PRINT_DATA:
-		if (jobinfo->max_procs == NO_VAL)
-			sprintf(max_procs_char, "None");
+		if (jobinfo->max_cpus == NO_VAL)
+			sprintf(max_cpus_char, "None");
 		else
-			convert_num_unit((float)jobinfo->max_procs, 
-					 max_procs_char, sizeof(max_procs_char),
+			convert_num_unit((float)jobinfo->max_cpus, 
+					 max_cpus_char, sizeof(max_cpus_char),
 					 UNIT_NONE);
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %6.6s %9s    %cx%cx%c %-16s",
+			 "%7.7s %6.6s %6.6s %8s    %cx%cx%c %-16s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
-			 max_procs_char,
+			 max_cpus_char,
 			 alpha_num[geometry[0]],
 			 alpha_num[geometry[1]],
 			 alpha_num[geometry[2]],
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
-		if (jobinfo->max_procs == NO_VAL)
-			sprintf(max_procs_char, "None");
-		else
-			convert_num_unit((float)jobinfo->max_procs,
-					 max_procs_char, sizeof(max_procs_char),
-					 UNIT_NONE);
 		snprintf(buf, size, 
-			 "Connection=%s Reboot=%s Rotate=%s MaxProcs=%s "
+			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%cx%cx%c Block_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
-			 max_procs_char,
 			 alpha_num[geometry[0]],
 			 alpha_num[geometry[1]],
 			 alpha_num[geometry[2]],
@@ -558,15 +551,15 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			 alpha_num[geometry[1]],
 			 alpha_num[geometry[2]]);
 		break;
-	case SELECT_PRINT_MAX_PROCS:
-		if (jobinfo->max_procs == NO_VAL)
-			sprintf(max_procs_char, "None");
+	case SELECT_PRINT_MAX_CPUS:
+		if (jobinfo->max_cpus == NO_VAL)
+			sprintf(max_cpus_char, "None");
 		else
-			convert_num_unit((float)jobinfo->max_procs,
-					 max_procs_char, sizeof(max_procs_char),
+			convert_num_unit((float)jobinfo->max_cpus,
+					 max_cpus_char, sizeof(max_cpus_char),
 					 UNIT_NONE);
 		
-		snprintf(buf, size, "%s", max_procs_char);
+		snprintf(buf, size, "%s", max_cpus_char);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
 		if(jobinfo->blrtsimage)
@@ -606,7 +599,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 {
 	uint16_t geometry[SYSTEM_DIMENSIONS];
 	int i;
-	char max_procs_char[8];
+	char max_cpus_char[8];
 	char *tmp_image = "default";
 	char *buf = NULL;
 		
@@ -632,41 +625,33 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
 		xstrcat(buf, 
-			"CONNECT REBOOT ROTATE MAX_PROCS "
-			"GEOMETRY BLOCK_ID");
+			"CONNECT REBOOT ROTATE MAX_CPUS GEOMETRY BLOCK_ID");
 		break;
 	case SELECT_PRINT_DATA:
-		if (jobinfo->max_procs == NO_VAL)
-			sprintf(max_procs_char, "None");
+		if (jobinfo->max_cpus == NO_VAL)
+			sprintf(max_cpus_char, "None");
 		else
-			convert_num_unit((float)jobinfo->max_procs, 
-					 max_procs_char, sizeof(max_procs_char),
+			convert_num_unit((float)jobinfo->max_cpus, 
+					 max_cpus_char, sizeof(max_cpus_char),
 					 UNIT_NONE);
 		xstrfmtcat(buf, 
-			   "%7.7s %6.6s %6.6s %9s    %cx%cx%c %-16s",
+			   "%7.7s %6.6s %6.6s %8s    %cx%cx%c %-16s",
 			   _job_conn_type_string(jobinfo->conn_type),
 			   _yes_no_string(jobinfo->reboot),
 			   _yes_no_string(jobinfo->rotate),
-			   max_procs_char,
+			   max_cpus_char,
 			   alpha_num[geometry[0]],
 			   alpha_num[geometry[1]],
 			   alpha_num[geometry[2]],
 			   jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
-		if (jobinfo->max_procs == NO_VAL)
-			sprintf(max_procs_char, "None");
-		else
-			convert_num_unit((float)jobinfo->max_procs,
-					 max_procs_char, sizeof(max_procs_char),
-					 UNIT_NONE);
 		xstrfmtcat(buf, 
-			 "Connection=%s Reboot=%s Rotate=%s MaxProcs=%s "
+			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%cx%cx%c Block_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
-			 max_procs_char,
 			 alpha_num[geometry[0]],
 			 alpha_num[geometry[1]],
 			 alpha_num[geometry[2]],
@@ -700,15 +685,15 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 			 alpha_num[geometry[1]],
 			 alpha_num[geometry[2]]);
 		break;
-	case SELECT_PRINT_MAX_PROCS:
-		if (jobinfo->max_procs == NO_VAL)
-			sprintf(max_procs_char, "None");
+	case SELECT_PRINT_MAX_CPUS:
+		if (jobinfo->max_cpus == NO_VAL)
+			sprintf(max_cpus_char, "None");
 		else
-			convert_num_unit((float)jobinfo->max_procs,
-					 max_procs_char, sizeof(max_procs_char),
+			convert_num_unit((float)jobinfo->max_cpus,
+					 max_cpus_char, sizeof(max_cpus_char),
 					 UNIT_NONE);
 		
-		xstrfmtcat(buf, "%s", max_procs_char);
+		xstrfmtcat(buf, "%s", max_cpus_char);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
 		if(jobinfo->blrtsimage)

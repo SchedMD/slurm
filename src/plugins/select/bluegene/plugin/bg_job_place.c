@@ -85,7 +85,7 @@ static bg_record_t *_find_matching_block(List block_list,
 					 struct job_record* job_ptr, 
 					 bitstr_t* slurm_block_bitmap,
 					 ba_request_t *request,
-					 uint32_t max_procs,
+					 uint32_t max_cpus,
 					 int *allow, int check_image,
 					 int overlap_check,
 					 List overlapped_list,
@@ -341,7 +341,7 @@ static bg_record_t *_find_matching_block(List block_list,
 					 struct job_record* job_ptr, 
 					 bitstr_t* slurm_block_bitmap,
 					 ba_request_t *request,
-					 uint32_t max_procs,
+					 uint32_t max_cpus,
 					 int *allow, int check_image,
 					 int overlap_check,
 					 List overlapped_list,
@@ -383,10 +383,10 @@ static bg_record_t *_find_matching_block(List block_list,
 
 		/* Check processor count */
 		debug3("asking for %u-%u looking at %d", 
-		       request->procs, max_procs, bg_record->cpu_cnt);
+		       request->procs, max_cpus, bg_record->cpu_cnt);
 		if ((bg_record->cpu_cnt < request->procs)
-		    || ((max_procs != NO_VAL)
-			&& (bg_record->cpu_cnt > max_procs))) {
+		    || ((max_cpus != NO_VAL)
+			&& (bg_record->cpu_cnt > max_cpus))) {
 			/* We use the proccessor count per block here
 			   mostly to see if we can run on a smaller block. 
 			 */
@@ -834,7 +834,7 @@ static int _find_best_block_match(List block_list,
 	int overlap_check = 0;
 	int allow = 0;
 	int check_image = 1;
-	uint32_t max_procs = (uint32_t)NO_VAL;
+	uint32_t max_cpus = (uint32_t)NO_VAL;
 	char tmp_char[256];
 	static int total_cpus = 0;
 #ifdef HAVE_BGL
@@ -849,7 +849,7 @@ static int _find_best_block_match(List block_list,
 
 	if(!total_cpus)
 		total_cpus = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
-			* bg_conf->procs_per_bp;
+			* bg_conf->cpus_per_bp;
 
 	if(req_nodes > max_nodes) {
 		error("can't run this job max bps is %u asking for %u",
@@ -875,7 +875,7 @@ static int _find_best_block_match(List block_list,
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_ROTATE, &rotate);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_MAX_PROCS, &max_procs);
+			     SELECT_JOBDATA_MAX_CPUS, &max_cpus);
 
 	
 #ifdef HAVE_BGL
@@ -938,12 +938,12 @@ static int _find_best_block_match(List block_list,
 		request.avail_node_bitmap = slurm_block_bitmap;
 
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_MAX_PROCS, &max_procs);
+			     SELECT_JOBDATA_MAX_CPUS, &max_cpus);
 	/* since we only look at procs after this and not nodes we
-	 *  need to set a max_procs if given
+	 *  need to set a max_cpus if given
 	 */
-	if(max_procs == (uint32_t)NO_VAL) 
-		max_procs = max_nodes * bg_conf->procs_per_bp;
+	if(max_cpus == (uint32_t)NO_VAL) 
+		max_cpus = max_nodes * bg_conf->cpus_per_bp;
 	
 	while(1) {
 		/* Here we are creating a list of all the blocks that
@@ -958,7 +958,7 @@ static int _find_best_block_match(List block_list,
 						 job_ptr,
 						 slurm_block_bitmap,
 						 &request,
-						 max_procs,
+						 max_cpus,
 						 &allow, check_image,
 						 overlap_check, 
 						 overlapped_list,
@@ -1246,10 +1246,10 @@ static int _sync_block_lists(List full_list, List incomp_list)
 /* 	if (build_select_job_res(select_ptr, (void *)node_record_table_ptr, 1)) */
 /* 		error("select_p_job_test: build_select_job_res: %m"); */
 
-/* 	if (job_ptr->num_procs <= bg_conf->procs_per_bp) */
+/* 	if (job_ptr->num_procs <= bg_conf->cpus_per_bp) */
 /* 		node_cpus = job_ptr->num_procs; */
 /* 	else */
-/* 		node_cpus = bg_conf->procs_per_bp; */
+/* 		node_cpus = bg_conf->cpus_per_bp; */
 
 /* 	first_bit = bit_ffs(bitmap); */
 /* 	last_bit  = bit_fls(bitmap); */
@@ -1309,12 +1309,12 @@ static void _build_select_struct(struct job_record *job_ptr,
 		fatal("bit_copy malloc failure");
 	
 	select_ptr->cpu_array_cnt = 1;
-	select_ptr->cpu_array_value[0] = bg_conf->proc_ratio;
+	select_ptr->cpu_array_value[0] = bg_conf->cpu_ratio;
 	select_ptr->cpu_array_reps[0] = node_cnt;
-	total_cpus = bg_conf->proc_ratio * node_cnt;
+	total_cpus = bg_conf->cpu_ratio * node_cnt;
 
 	for (i=0; i<node_cnt; i++) 
-		select_ptr->cpus[i] = bg_conf->proc_ratio;
+		select_ptr->cpus[i] = bg_conf->cpu_ratio;
 	
 	if (select_ptr->nprocs != total_cpus) {
 		error("select_p_job_test: nprocs mismatch %u != %u",
@@ -1467,7 +1467,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			conn_type = SELECT_SMALL;
 		else if(min_nodes > 1) 
 			conn_type = SELECT_TORUS;
-		else if(job_ptr->num_procs < bg_conf->procs_per_bp)
+		else if(job_ptr->num_procs < bg_conf->cpus_per_bp)
 			conn_type = SELECT_SMALL;
 		
 		select_g_select_jobinfo_set(job_ptr->select_jobinfo,
@@ -1557,7 +1557,6 @@ preempt:
 			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_IONODES, 
 						    bg_record->ionodes);
-			
 			if(!bg_record->bg_block_id) {
 				debug2("%d can start unassigned job %u at "
 				       "%u on %s",

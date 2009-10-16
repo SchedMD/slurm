@@ -147,7 +147,7 @@ static List _get_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("NodeCPUCnt");
-	key_pair->value = xstrdup_printf("%u", bg_conf->proc_ratio);
+	key_pair->value = xstrdup_printf("%u", bg_conf->cpu_ratio);
 	list_append(my_list, key_pair);
 
 
@@ -421,7 +421,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 	if(node_cnt>0 && bg_conf)
 		if(node_ptr->cpus >= bg_conf->bp_node_cnt) 
-			bg_conf->procs_per_bp = node_ptr->cpus;
+			bg_conf->cpus_per_bp = node_ptr->cpus;
 		
 	return SLURM_SUCCESS;
 }
@@ -1104,17 +1104,17 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		}
 		tmp = 1;
 		set_select_jobinfo(job_desc->select_jobinfo,
-				     SELECT_JOBDATA_ALTERED, &tmp);
+				   SELECT_JOBDATA_ALTERED, &tmp);
 		tmp = NO_VAL;
 		set_select_jobinfo(job_desc->select_jobinfo,
-				   SELECT_JOBDATA_MAX_PROCS, 
+				   SELECT_JOBDATA_MAX_CPUS, 
 				   &tmp);
 	
 		if(job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
 
 		get_select_jobinfo(job_desc->select_jobinfo,
-				     SELECT_JOBDATA_GEOMETRY, &req_geometry);
+				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
 
 		if(req_geometry[0] != 0 
 		   && req_geometry[0] != (uint16_t)NO_VAL) {
@@ -1131,10 +1131,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		*/
 		if(job_desc->num_procs > job_desc->min_nodes)
 			job_desc->min_nodes = 
-				job_desc->num_procs / bg_conf->proc_ratio;
+				job_desc->num_procs / bg_conf->cpu_ratio;
 
 		/* initialize num_procs to the min_nodes */
-		job_desc->num_procs = job_desc->min_nodes * bg_conf->proc_ratio;
+		job_desc->num_procs = job_desc->min_nodes * bg_conf->cpu_ratio;
 
 		if((job_desc->max_nodes == (uint32_t) NO_VAL)
 		   || (job_desc->max_nodes < job_desc->min_nodes))
@@ -1160,7 +1160,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					     SELECT_JOBDATA_NODE_CNT,
 					     &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
-			job_desc->num_procs = bg_conf->procs_per_bp * tmp;
+			job_desc->num_procs = bg_conf->cpus_per_bp * tmp;
 		} else { 
 #ifdef HAVE_BGL
 			if(job_desc->min_nodes <= bg_conf->nodecard_node_cnt
@@ -1181,7 +1181,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 			tmp = bg_conf->bp_node_cnt/job_desc->min_nodes;
 			
-			job_desc->num_procs = bg_conf->procs_per_bp/tmp;
+			job_desc->num_procs = bg_conf->cpus_per_bp/tmp;
 			job_desc->min_nodes = 1;
 #else
 			i = bg_conf->smallest_block;
@@ -1198,10 +1198,11 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					   &job_desc->min_nodes);
 
 			job_desc->num_procs = job_desc->min_nodes 
-				* bg_conf->proc_ratio;
+				* bg_conf->cpu_ratio;
 			job_desc->min_nodes = 1;
 #endif
 		}
+		job_desc->job_min_cpus = job_desc->num_procs;
 
 		if(job_desc->max_nodes > bg_conf->bp_node_cnt) {
 			tmp = job_desc->max_nodes % bg_conf->bp_node_cnt;
@@ -1213,9 +1214,9 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 		if(tmp > 0) {
 			job_desc->max_nodes = tmp;
-			tmp *= bg_conf->procs_per_bp;
+			tmp *= bg_conf->cpus_per_bp;
 			set_select_jobinfo(job_desc->select_jobinfo,
-					   SELECT_JOBDATA_MAX_PROCS, 
+					   SELECT_JOBDATA_MAX_CPUS, 
 					   &tmp);
 			tmp = NO_VAL;
 		} else {
@@ -1233,10 +1234,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					bg_conf->bp_node_cnt;
 		
 			tmp = bg_conf->bp_node_cnt/job_desc->max_nodes;
-			tmp = bg_conf->procs_per_bp/tmp;
+			tmp = bg_conf->cpus_per_bp/tmp;
 			
 			set_select_jobinfo(job_desc->select_jobinfo,
-					   SELECT_JOBDATA_MAX_PROCS, 
+					   SELECT_JOBDATA_MAX_CPUS, 
 					   &tmp);
 			job_desc->max_nodes = 1;
 #else
@@ -1248,9 +1249,9 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				}
 				i *= 2;
 			}
-			tmp = job_desc->max_nodes * bg_conf->proc_ratio;
+			tmp = job_desc->max_nodes * bg_conf->cpu_ratio;
 			set_select_jobinfo(job_desc->select_jobinfo,
-					   SELECT_JOBDATA_MAX_PROCS,
+					   SELECT_JOBDATA_MAX_CPUS,
 					   &tmp);
 
 			job_desc->max_nodes = 1;

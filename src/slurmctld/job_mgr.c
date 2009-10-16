@@ -2365,7 +2365,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	struct job_record *job_ptr = NULL;
-	uint32_t total_nodes, max_procs;
+	uint32_t total_nodes, max_cpus;
 	acct_association_rec_t assoc_rec, *assoc_ptr;
 	List license_list = NULL;
 	bool valid;
@@ -2535,15 +2535,15 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	/* This needs to be done after the association acct policy check since
 	 * it looks at unaltered nodes for bluegene systems
 	 */
-	debug3("before alteration asking for nodes %u-%u procs %u", 
+	debug3("before alteration asking for nodes %u-%u cpus %u", 
 	       job_desc->min_nodes, job_desc->max_nodes,
 	       job_desc->num_procs);
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
 	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-				    SELECT_JOBDATA_MAX_PROCS, &max_procs);
-	debug3("after alteration asking for nodes %u-%u procs %u-%u", 
+				    SELECT_JOBDATA_MAX_CPUS, &max_cpus);
+	debug3("after alteration asking for nodes %u-%u cpus %u-%u", 
 	       job_desc->min_nodes, job_desc->max_nodes,
-	       job_desc->num_procs, max_procs);
+	       job_desc->num_procs, max_cpus);
 	
 	/* check if select partition has sufficient resources to satisfy
 	 * the request */
@@ -4763,7 +4763,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 {
 	int error_code = SLURM_SUCCESS;
 	int super_user = 0;
-	uint32_t save_min_nodes = NO_VAL, save_max_nodes = NO_VAL;
+	uint32_t save_min_nodes = NO_VAL, save_max_nodes = NO_VAL, max_cpus;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
@@ -4804,6 +4804,197 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (detail_ptr)
 		mc_ptr = detail_ptr->mc_ptr;
 	last_job_update = now;
+
+	if (job_specs->account) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else {
+			int rc = update_job_account("update_job", job_ptr, 
+						    job_specs->account);
+			if (rc != SLURM_SUCCESS)
+				error_code = rc;
+			else
+				update_accounting = true;
+		}
+	}
+
+	if (job_specs->partition) {
+		tmp_part_ptr = find_part_record(job_specs->partition);
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else if (tmp_part_ptr == NULL)
+			error_code = ESLURM_INVALID_PARTITION_NAME;
+		else if (super_user) {
+			acct_association_rec_t assoc_rec;
+			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
+			assoc_rec.uid       = job_ptr->user_id;
+			assoc_rec.partition = job_specs->partition;
+			assoc_rec.acct      = job_ptr->account;
+			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+						    accounting_enforce,
+						    (acct_association_rec_t **)
+						    &job_ptr->assoc_ptr)) {
+				info("job_update: invalid account %s "
+				     "for job %u",
+				     job_specs->account, job_ptr->job_id);
+				error_code = ESLURM_INVALID_ACCOUNT;
+				/* Let update proceed. Note there is an invalid
+				 * association ID for accounting purposes */
+			} else 
+				job_ptr->assoc_id = assoc_rec.id;
+
+			xfree(job_ptr->partition);
+			job_ptr->partition = xstrdup(job_specs->partition);
+			job_ptr->part_ptr = tmp_part_ptr;
+			info("update_job: setting partition to %s for "
+			     "job_id %u", job_specs->partition, 
+			     job_specs->job_id);
+			update_accounting = true;
+		} else {
+			error("Attempt to change partition for job %u",
+			      job_specs->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+	
+	/* Always do this last just incase the assoc_ptr changed */
+	if (job_specs->comment && wiki_sched && (!super_user)) {
+		/* User must use Moab command to change job comment */
+		error("Attempt to change comment for job %u",
+		      job_specs->job_id);
+		error_code = ESLURM_ACCESS_DENIED;
+	} else if (job_specs->comment) {
+		xfree(job_ptr->comment);
+		job_ptr->comment = job_specs->comment;
+		job_specs->comment = NULL;	/* Nothing left to free */
+		info("update_job: setting comment to %s for job_id %u",
+		     job_ptr->comment, job_specs->job_id);
+		
+		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
+			acct_qos_rec_t qos_rec;
+			
+			memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+			
+			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
+				qos_rec.name = "expedite";
+			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
+				qos_rec.name = "standby";
+			
+			job_ptr->qos_ptr = _determine_and_validate_qos(
+				job_ptr->assoc_ptr, &qos_rec, &error_code);
+			job_ptr->qos = qos_rec.id;
+			update_accounting = true;
+		}
+	} else if(job_specs->qos) {
+		acct_qos_rec_t qos_rec;
+		
+		info("update_job: setting qos to %s for job_id %u",
+		     job_specs->qos, job_specs->job_id);		
+		
+		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
+		qos_rec.name = job_specs->qos;
+		
+		job_ptr->qos_ptr = _determine_and_validate_qos(
+			job_ptr->assoc_ptr, &qos_rec, &error_code);
+		job_ptr->qos = qos_rec.id;
+		update_accounting = true;
+	}
+
+	if (!super_user && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
+	    (!_validate_acct_policy(job_specs, job_ptr->part_ptr,
+				    job_ptr->assoc_ptr, job_ptr->qos_ptr, 
+				    &job_ptr->limit_set_max_nodes))) {
+		info("_job_create: exceeded association's node or time limit "
+		     "for user %u", job_specs->user_id);
+		error_code = ESLURM_ACCOUNTING_POLICY;
+		return error_code;
+	}
+
+	
+	 /* This needs to be done after the association acct policy check since
+	  * it looks at unaltered nodes for bluegene systems
+	  */
+	 debug3("update before alteration asking for nodes %u-%u cpus %u", 
+		job_specs->min_nodes, job_specs->max_nodes,
+	       job_specs->num_procs);
+	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_specs);
+	select_g_select_jobinfo_get(job_specs->select_jobinfo,
+				    SELECT_JOBDATA_MAX_CPUS, &max_cpus);
+	debug3("update after alteration asking for nodes %u-%u cpus %u-%u", 
+	       job_specs->min_nodes, job_specs->max_nodes,
+	       job_specs->num_procs, max_cpus);
+
+	if (job_specs->num_procs != NO_VAL) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else if (job_specs->num_procs < 1)
+			error_code = ESLURM_BAD_TASK_COUNT;
+		else {
+			job_ptr->num_procs = job_specs->num_procs;
+			info("update_job: setting num_procs to %u for "
+			     "job_id %u", job_specs->num_procs, 
+			     job_specs->job_id);
+			update_accounting = true;
+		}
+	}
+
+	if (job_specs->job_min_cpus != (uint16_t) NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user
+			 || (detail_ptr->job_min_cpus
+			     > job_specs->job_min_cpus)) {
+			detail_ptr->job_min_cpus = job_specs->job_min_cpus;
+			info("update_job: setting job_min_cpus to %u for "
+			     "job_id %u", job_specs->job_min_cpus, 
+			     job_specs->job_id);
+		} else {
+			error("Attempt to increase job_min_cpus for job %u",
+			      job_specs->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+
+	/* Reset min and max node counts as needed, insure consistency */
+	if (job_specs->min_nodes != NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (job_specs->min_nodes < 1)
+			error_code = ESLURM_INVALID_NODE_COUNT;
+		else {
+			save_min_nodes = detail_ptr->min_nodes;
+			detail_ptr->min_nodes = job_specs->min_nodes;
+		}
+	}
+	if (job_specs->max_nodes != NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else {
+			save_max_nodes = detail_ptr->max_nodes;
+			detail_ptr->max_nodes = job_specs->max_nodes;
+		}
+	}
+	if ((save_min_nodes || save_max_nodes) && detail_ptr->max_nodes &&
+	    (detail_ptr->max_nodes < detail_ptr->min_nodes)) {
+		error_code = ESLURM_INVALID_NODE_COUNT;
+		if (save_min_nodes) {
+			detail_ptr->min_nodes = save_min_nodes;
+			save_min_nodes = 0;
+		}
+		if (save_max_nodes) {
+			detail_ptr->max_nodes = save_max_nodes;
+			save_max_nodes = 0;
+		}
+	}
+	if (save_min_nodes != NO_VAL) {
+		info("update_job: setting min_nodes to %u for job_id %u", 
+		     job_specs->min_nodes, job_specs->job_id);
+		update_accounting = true;
+	}
+	if (save_max_nodes != NO_VAL) {
+		info("update_job: setting max_nodes to %u for job_id %u",
+		     job_specs->max_nodes, job_specs->job_id);
+	}
 
 	if (job_specs->time_limit != NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr)) 
@@ -4953,23 +5144,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
  
-	if (job_specs->job_min_cpus != (uint16_t) NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
-		else if (super_user
-			 || (detail_ptr->job_min_cpus
-			     > job_specs->job_min_cpus)) {
-			detail_ptr->job_min_cpus = job_specs->job_min_cpus;
-			info("update_job: setting job_min_cpus to %u for "
-			     "job_id %u", job_specs->job_min_cpus, 
-			     job_specs->job_id);
-		} else {
-			error("Attempt to increase job_min_cpus for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
-		}
-	}
-
 	if (job_specs->job_min_memory != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
@@ -5008,61 +5182,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
-	}
-
-	if (job_specs->num_procs != NO_VAL) {
-		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
-		else if (job_specs->num_procs < 1)
-			error_code = ESLURM_BAD_TASK_COUNT;
-		else {
-			job_ptr->num_procs = job_specs->num_procs;
-			info("update_job: setting num_procs to %u for "
-			     "job_id %u", job_specs->num_procs, 
-			     job_specs->job_id);
-			update_accounting = true;
-		}
-	}
-
-	/* Reset min and max node counts as needed, insure consistency */
-	if (job_specs->min_nodes != NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
-		else if (job_specs->min_nodes < 1)
-			error_code = ESLURM_INVALID_NODE_COUNT;
-		else {
-			save_min_nodes = detail_ptr->min_nodes;
-			detail_ptr->min_nodes = job_specs->min_nodes;
-		}
-	}
-	if (job_specs->max_nodes != NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_DISABLED;
-		else {
-			save_max_nodes = detail_ptr->max_nodes;
-			detail_ptr->max_nodes = job_specs->max_nodes;
-		}
-	}
-	if ((save_min_nodes || save_max_nodes) && detail_ptr->max_nodes &&
-	    (detail_ptr->max_nodes < detail_ptr->min_nodes)) {
-		error_code = ESLURM_INVALID_NODE_COUNT;
-		if (save_min_nodes) {
-			detail_ptr->min_nodes = save_min_nodes;
-			save_min_nodes = 0;
-		}
-		if (save_max_nodes) {
-			detail_ptr->max_nodes = save_max_nodes;
-			save_max_nodes = 0;
-		}
-	}
-	if (save_min_nodes != NO_VAL) {
-		info("update_job: setting min_nodes to %u for job_id %u", 
-		     job_specs->min_nodes, job_specs->job_id);
-		update_accounting = true;
-	}
-	if (save_max_nodes != NO_VAL) {
-		info("update_job: setting max_nodes to %u for job_id %u",
-		     job_specs->max_nodes, job_specs->job_id);
 	}
 
 	if (job_specs->min_sockets != (uint16_t) NO_VAL) {
@@ -5190,59 +5309,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error_code = rc;
 			else 
 				update_accounting = true;
-		}
-	}
-
-
-	if (job_specs->account) {
-		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
-		else {
-			int rc = update_job_account("update_job", job_ptr, 
-						    job_specs->account);
-			if (rc != SLURM_SUCCESS)
-				error_code = rc;
-			else
-				update_accounting = true;
-		}
-	}
-
-	if (job_specs->partition) {
-		tmp_part_ptr = find_part_record(job_specs->partition);
-		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_DISABLED;
-		else if (tmp_part_ptr == NULL)
-			error_code = ESLURM_INVALID_PARTITION_NAME;
-		else if (super_user) {
-			acct_association_rec_t assoc_rec;
-			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
-			assoc_rec.uid       = job_ptr->user_id;
-			assoc_rec.partition = job_specs->partition;
-			assoc_rec.acct      = job_ptr->account;
-			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce,
-						    (acct_association_rec_t **)
-						    &job_ptr->assoc_ptr)) {
-				info("job_update: invalid account %s "
-				     "for job %u",
-				     job_specs->account, job_ptr->job_id);
-				error_code = ESLURM_INVALID_ACCOUNT;
-				/* Let update proceed. Note there is an invalid
-				 * association ID for accounting purposes */
-			} else 
-				job_ptr->assoc_id = assoc_rec.id;
-
-			xfree(job_ptr->partition);
-			job_ptr->partition = xstrdup(job_specs->partition);
-			job_ptr->part_ptr = tmp_part_ptr;
-			info("update_job: setting partition to %s for "
-			     "job_id %u", job_specs->partition, 
-			     job_specs->job_id);
-			update_accounting = true;
-		} else {
-			error("Attempt to change partition for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
@@ -5497,47 +5563,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	 }
  
 #endif
-	 /* Always do this last just incase the assoc_ptr changed */
-	 if (job_specs->comment && wiki_sched && (!super_user)) {
-		 /* User must use Moab command to change job comment */
-		 error("Attempt to change comment for job %u",
-		       job_specs->job_id);
-		 error_code = ESLURM_ACCESS_DENIED;
-	 } else if (job_specs->comment) {
-		 xfree(job_ptr->comment);
-		 job_ptr->comment = job_specs->comment;
-		 job_specs->comment = NULL;	/* Nothing left to free */
-		 info("update_job: setting comment to %s for job_id %u",
-		      job_ptr->comment, job_specs->job_id);
-		 
-		 if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
-			 acct_qos_rec_t qos_rec;
-
-			 memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-
-			 if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-				 qos_rec.name = "expedite";
-			 else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-				 qos_rec.name = "standby";
-			
-			 job_ptr->qos_ptr = _determine_and_validate_qos(
-				 job_ptr->assoc_ptr, &qos_rec, &error_code);
-			 job_ptr->qos = qos_rec.id;
-		 }
-	 } else if(job_specs->qos) {
-		 acct_qos_rec_t qos_rec;
-		
-		 info("update_job: setting qos to %s for job_id %u",
-		      job_specs->qos, job_specs->job_id);		
-		
-		 memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
-		 qos_rec.name = job_specs->qos;
-		
-		 job_ptr->qos_ptr = _determine_and_validate_qos(
-			 job_ptr->assoc_ptr, &qos_rec, &error_code);
-		 job_ptr->qos = qos_rec.id;
-	 }
-	
 	 if(update_accounting) {
 		 if (job_ptr->details && job_ptr->details->begin_time) {
 			/* Update job record in accounting to reflect
@@ -6764,7 +6789,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	bool rc = true;
 
 	xassert(limit_set_max_nodes);
-	(*limit_set_max_nodes) = 0;
+	//(*limit_set_max_nodes) = 0;
 	
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	if(qos_ptr) {

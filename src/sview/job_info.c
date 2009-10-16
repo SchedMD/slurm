@@ -1146,7 +1146,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 					   job_ptr->select_jobinfo, 
 					   tmp_char, 
 					   sizeof(tmp_char), 
-					   SELECT_PRINT_MAX_PROCS));
+					   SELECT_PRINT_MAX_CPUS));
 #endif
 
 #ifdef HAVE_BG
@@ -1598,7 +1598,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   job_ptr->select_jobinfo, 
 				   tmp_char, 
 				   sizeof(tmp_char), 
-				   SELECT_PRINT_MAX_PROCS), -1);
+				   SELECT_PRINT_MAX_CPUS), -1);
 #ifdef HAVE_BGL
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_IMAGE_BLRTS, 

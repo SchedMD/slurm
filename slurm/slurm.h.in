@@ -298,7 +298,7 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_IONODES,	/* data-> char *ionodes */
 	SELECT_JOBDATA_NODE_CNT,	/* data-> uint32_t node_cnt */
 	SELECT_JOBDATA_ALTERED,    /* data-> uint16_t altered */
-	SELECT_JOBDATA_MAX_PROCS,	/* data-> uint32_t max_procs */
+	SELECT_JOBDATA_MAX_CPUS,	/* data-> uint32_t max_cpus */
 	SELECT_JOBDATA_BLRTS_IMAGE,/* data-> char *blrtsimage */
 	SELECT_JOBDATA_LINUX_IMAGE,/* data-> char *linuximage */
 	SELECT_JOBDATA_MLOADER_IMAGE,/* data-> char *mloaderimage */
@@ -327,7 +327,7 @@ enum select_print_mode {
 	SELECT_PRINT_ROTATE,    /* Print just the ROTATE */
 	SELECT_PRINT_GEOMETRY,	/* Print just the GEO */
 	SELECT_PRINT_START,	/* Print just the START location */
-	SELECT_PRINT_MAX_PROCS,  /* Print just the MAX PROCS */
+	SELECT_PRINT_MAX_CPUS,  /* Print just the MAX CPUS */
 	SELECT_PRINT_BLRTS_IMAGE,/* Print just the BLRTS IMAGE */
 	SELECT_PRINT_LINUX_IMAGE,/* Print just the LINUX IMAGE */
 	SELECT_PRINT_MLOADER_IMAGE,/* Print just the MLOADER IMAGE */

@@ -65,7 +65,7 @@ extern List create_dynamic_block(List block_list,
 	int geo[BA_SYSTEM_DIMENSIONS];
 	int i;
 	blockreq_t blockreq;
-	int cnodes = request->procs / bg_conf->proc_ratio;
+	int cnodes = request->procs / bg_conf->cpu_ratio;
 	char *unusable_nodes = NULL;
 
 	if(cnodes < bg_conf->smallest_block) {
@@ -381,8 +381,8 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 				
 	found_record->conn_type = SELECT_SMALL;
 				
-	xassert(bg_conf->proc_ratio);
-	found_record->cpu_cnt = bg_conf->proc_ratio * size;
+	xassert(bg_conf->cpu_ratio);
+	found_record->cpu_cnt = bg_conf->cpu_ratio * size;
 	found_record->node_cnt = size;
 
 	found_record->ionode_bitmap = bit_copy(ionodes);
@@ -591,7 +591,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	int total_cnode_cnt=0;
 	char tmp_char[256];
 	bitstr_t *ionodes = bit_alloc(bg_conf->numpsets);
-	int cnodes = request->procs / bg_conf->proc_ratio;
+	int cnodes = request->procs / bg_conf->cpu_ratio;
 	
 	debug2("proc count = %d cnodes = %d size = %d",
 	       request->procs, cnodes, request->size);

@@ -116,7 +116,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 			}
 			if(bg_record->bp_count > 0 
 			   && !bg_record->full_block
-			   && bg_record->cpu_cnt >= bg_conf->procs_per_bp) {
+			   && bg_record->cpu_cnt >= bg_conf->cpus_per_bp) {
 				char *name = NULL;
 
 				if(overlapped == LAYOUT_OVERLAP) {

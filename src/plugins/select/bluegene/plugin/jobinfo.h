@@ -58,7 +58,7 @@ struct select_jobinfo {
 	uint32_t node_cnt;      /* how many cnodes in block */ 
 	uint16_t altered;       /* see if we have altered this job 
 				 * or not yet */
-	uint32_t max_procs;	/* maximum processors to use */
+	uint32_t max_cpus;	/* maximum processors to use */
 	char *blrtsimage;       /* BlrtsImage for this block */
 	char *linuximage;       /* LinuxImage for this block */
 	char *mloaderimage;     /* mloaderImage for this block */

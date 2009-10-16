@@ -985,27 +985,27 @@ extern int read_bg_conf(void)
 
 		bg_conf->quarter_node_cnt = bg_conf->bp_node_cnt/4;
 	}
-	/* bg_conf->procs_per_bp should had already been set from the
+	/* bg_conf->cpus_per_bp should had already been set from the
 	 * node_init */
-	if(bg_conf->procs_per_bp < bg_conf->bp_node_cnt) {
-		fatal("For some reason we have only %u procs per bp, but "
+	if(bg_conf->cpus_per_bp < bg_conf->bp_node_cnt) {
+		fatal("For some reason we have only %u cpus per bp, but "
 		      "have %u cnodes per bp.  You need at least the same "
-		      "number of procs as you have cnodes per bp.  "
+		      "number of cpus as you have cnodes per bp.  "
 		      "Check the NodeName Procs= "
 		      "definition in the slurm.conf.", 
-		      bg_conf->procs_per_bp, bg_conf->bp_node_cnt); 
+		      bg_conf->cpus_per_bp, bg_conf->bp_node_cnt); 
 	}
 	
-	bg_conf->proc_ratio = bg_conf->procs_per_bp/bg_conf->bp_node_cnt;
-	if(!bg_conf->proc_ratio)
-		fatal("We appear to have less than 1 proc on a cnode.  "
+	bg_conf->cpu_ratio = bg_conf->cpus_per_bp/bg_conf->bp_node_cnt;
+	if(!bg_conf->cpu_ratio)
+		fatal("We appear to have less than 1 cpu on a cnode.  "
 		      "You specified %u for BasePartitionNodeCnt "
-		      "in the blugene.conf and %u procs "
+		      "in the blugene.conf and %u cpus "
 		      "for each node in the slurm.conf",
-		      bg_conf->bp_node_cnt, bg_conf->procs_per_bp);
+		      bg_conf->bp_node_cnt, bg_conf->cpus_per_bp);
 	num_unused_cpus = 
 		DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
-		* bg_conf->procs_per_bp;
+		* bg_conf->cpus_per_bp;
 
 	if (!s_p_get_uint16(
 		    &bg_conf->nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {

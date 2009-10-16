@@ -641,7 +641,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	}
 
 	/* small blocks */
-	if(bg_record->cpu_cnt < bg_conf->procs_per_bp) {
+	if(bg_record->cpu_cnt < bg_conf->cpus_per_bp) {
 		debug2("small block");
 		goto end_it;
 	}
@@ -768,7 +768,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	bg_record->node_use = SELECT_COPROCESSOR_MODE;
 #endif
 	bg_record->conn_type = blockreq->conn_type;
-	bg_record->cpu_cnt = bg_conf->procs_per_bp * bg_record->bp_count;
+	bg_record->cpu_cnt = bg_conf->cpus_per_bp * bg_record->bp_count;
 	bg_record->node_cnt = bg_conf->bp_node_cnt * bg_record->bp_count;
 	bg_record->job_running = NO_JOB_RUNNING;
 
@@ -1511,8 +1511,8 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 			continue;
 		if(!bit_test(bg_record->bitmap, node_inx))
 			continue;
-		if(bg_record->cpu_cnt >= bg_conf->procs_per_bp) {
-			total_cpus = bg_conf->procs_per_bp;
+		if(bg_record->cpu_cnt >= bg_conf->cpus_per_bp) {
+			total_cpus = bg_conf->cpus_per_bp;
 			break;
 		} else
 			total_cpus += bg_record->cpu_cnt;

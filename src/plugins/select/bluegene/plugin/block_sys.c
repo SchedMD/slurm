@@ -379,7 +379,7 @@ extern int configure_block(bg_record_t *bg_record)
 #endif
 	_pre_allocate(bg_record);
 
-	if(bg_record->cpu_cnt < bg_conf->procs_per_bp)
+	if(bg_record->cpu_cnt < bg_conf->cpus_per_bp)
 		configure_small_block(bg_record);
 	else
 		configure_block_switches(bg_record);
@@ -503,7 +503,7 @@ int read_bg_blocks(List curr_block_list)
 			goto clean_up;
 
 		bg_record->node_cnt = bp_cnt;
-		bg_record->cpu_cnt = bg_conf->proc_ratio * bg_record->node_cnt;
+		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->node_cnt;
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
 		
@@ -600,7 +600,7 @@ int read_bg_blocks(List curr_block_list)
 			bg_record->node_cnt = 
 				nc_cnt * bg_conf->nodecard_node_cnt;
 			bg_record->cpu_cnt =
-				bg_conf->proc_ratio * bg_record->node_cnt;
+				bg_conf->cpu_ratio * bg_record->node_cnt;
 
 			if ((rc = bridge_get_data(ncard, 
 						  RM_NodeCardQuarter, 
@@ -677,7 +677,7 @@ int read_bg_blocks(List curr_block_list)
 			       bg_record->ionodes);
 		} else {
 #ifdef HAVE_BGL
-			bg_record->cpu_cnt = bg_conf->procs_per_bp 
+			bg_record->cpu_cnt = bg_conf->cpus_per_bp 
 				* bg_record->bp_count;
 			bg_record->node_cnt =  bg_conf->bp_node_cnt
 				* bg_record->bp_count;
@@ -1160,9 +1160,9 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		if(bg_conf->bp_node_cnt > bg_record->node_cnt) {
 			ionodes = bg_conf->bp_node_cnt 
 				/ bg_record->node_cnt;
-			bg_record->cpu_cnt = bg_conf->procs_per_bp / ionodes;
+			bg_record->cpu_cnt = bg_conf->cpus_per_bp / ionodes;
 		} else {
-			bg_record->cpu_cnt = bg_conf->procs_per_bp
+			bg_record->cpu_cnt = bg_conf->cpus_per_bp
 				* bg_record->bp_count;
 		}
 #ifdef HAVE_BGL
