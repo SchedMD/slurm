@@ -174,21 +174,25 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "NodeName=%s State=%s%s%s%s Procs=%u",
-		 node_ptr->name, node_state_string(my_state),
-		 comp_str, drain_str, power_str,
-		 node_ptr->cpus);
+		 "NodeName=%s AllocProcs=%u ",
+		 node_ptr->name, alloc_cpus);
 	xstrcat(out, tmp_line);
+	if (node_ptr->arch ) {
+		snprintf(tmp_line, sizeof(tmp_line),
+			"Arch=%s ",
+			node_ptr->arch);
+		xstrcat(out, tmp_line);
+	}
 	if (one_liner)
 		xstrcat(out, " ");
 	else
 		xstrcat(out, "\n   ");
 
 	/****** Line 2 ******/
+
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "AllocProcs=%u ErrProcs=%u RealMemory=%u TmpDisk=%u",
-		 alloc_cpus, err_cpus,
-		 node_ptr->real_memory, node_ptr->tmp_disk);
+		"CoresPerSocket=%u ErrProcs=%u Features=%s",
+		node_ptr->cores, err_cpus, node_ptr->features);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -196,9 +200,15 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 3 ******/
+	if (node_ptr->os ) {
+		snprintf(tmp_line, sizeof(tmp_line),
+			"OS=%s ",
+			node_ptr->os);
+		xstrcat(out, tmp_line);
+	}
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Sockets=%u CoresPerSocket=%u ThreadsPerCore=%u",
-		node_ptr->sockets, node_ptr->cores, node_ptr->threads);
+		"Procs=%u RealMemory=%u Reason=%s ",
+	node_ptr->cpus,	node_ptr->real_memory, node_ptr->reason);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -206,25 +216,17 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 4 ******/
+
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Weight=%u Features=%s Reason=%s" ,
-		node_ptr->weight, node_ptr->features,
-		node_ptr->reason);
+		"Sockets=%u State=%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u",
+		node_ptr->sockets, node_state_string(my_state),
+		 comp_str, drain_str, power_str, node_ptr->threads, 
+		 node_ptr->tmp_disk, node_ptr->weight);
 	xstrcat(out, tmp_line);
-
-	/****** Line 5 (optional) ******/
-	if (node_ptr->arch || node_ptr->os) {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-		snprintf(tmp_line, sizeof(tmp_line),
-			"Arch=%s OS=%s",
-			node_ptr->arch, node_ptr->os);
-		xstrcat(out, tmp_line);
-	}
-	xstrcat(out, "\n");
-
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n");
 	return out;
 }
 
