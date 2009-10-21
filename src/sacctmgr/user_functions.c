@@ -1384,7 +1384,7 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
-	int cond_set = 0;
+	int cond_set = 0, prev_set = 0;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	char *name = NULL;
 	char *user_str = NULL;
@@ -1396,7 +1396,8 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
 			i++;		
-		cond_set += _set_cond(&i, argc, argv, user_cond, NULL);
+		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+		cond_set = MAX(cond_set, prev_set);
 	}
 
 	if(exit_code) {
@@ -1459,7 +1460,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	List user_list;
-	int i=0, set=0;
+	int i=0, cond_set=0, prev_set=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	acct_user_rec_t *user = NULL;
@@ -1509,7 +1510,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
 			i++;		
-		set += _set_cond(&i, argc, argv, user_cond, format_list);
+		prev_set = _set_cond(&i, argc, argv, user_cond, format_list);
+		cond_set = MAX(cond_set, prev_set);
 	}
 
 	if(exit_code) {
@@ -1532,7 +1534,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			slurm_addto_char_list(format_list, "Coord");
 	}
 
-	if(!user_cond->with_assocs && set > 1) {
+	if(!user_cond->with_assocs && cond_set > 1) {
 		if(!commit_check("You requested options that are only vaild "
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
@@ -2068,7 +2070,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
 	acct_association_rec_t *assoc = xmalloc(sizeof(acct_association_rec_t));
 	int i=0;
-	int cond_set = 0, rec_set = 0, set = 0;
+	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 
 	init_acct_association_rec(assoc);
@@ -2077,13 +2079,15 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i++;
-			cond_set += _set_cond(&i, argc, argv, user_cond, NULL);
-			      
+			prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+			cond_set = MAX(cond_set, prev_set);
 		} else if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i++;
-			rec_set += _set_rec(&i, argc, argv, user, assoc);
+			prev_set = _set_rec(&i, argc, argv, user, assoc);
+			rec_set = MAX(rec_set, prev_set);
 		} else {
-			cond_set += _set_cond(&i, argc, argv, user_cond, NULL);
+			prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+			cond_set = MAX(cond_set, prev_set);
 		}
 	}
 
@@ -2221,17 +2225,18 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	int i=0;
 	List ret_list = NULL;
-	int set = 0;
+	int cond_set = 0, prev_set = 0;
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
 			i++;		
-		set += _set_cond(&i, argc, argv, user_cond, NULL);
+		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+		cond_set = MAX(cond_set, prev_set);
 	}
 
-	if(!set) {
+	if(!cond_set) {
 		exit_code=1;
 		fprintf(stderr, 
 			" No conditions given to remove, not executing.\n");
@@ -2245,10 +2250,10 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	} 
 
 	notice_thread_init();
-	if(set == 1) {
+	if(cond_set == 1) {
 		ret_list = acct_storage_g_remove_users(
 			db_conn, my_uid, user_cond);		
-	} else if(set == 2 || set == 3) {
+	} else if(cond_set == 2 || cond_set == 3) {
 		ret_list = acct_storage_g_remove_associations(
 			db_conn, my_uid, user_cond->assoc_cond);
 	}
@@ -2259,9 +2264,9 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
-		if(set == 1) {
+		if(cond_set == 1) {
 			printf(" Deleting users...\n");
-		} else if(set == 2 || set == 3) {
+		} else if(cond_set == 2 || cond_set == 3) {
 			printf(" Deleting user associations...\n");
 		}
 		while((object = list_next(itr))) {
@@ -2293,7 +2298,7 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0, set=0;
-	int cond_set = 0;
+	int cond_set = 0, prev_set = 0;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	char *name = NULL;
 	char *user_str = NULL;
@@ -2307,7 +2312,8 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
 			i++;		
-		cond_set += _set_cond(&i, argc, argv, user_cond, NULL);
+		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+		cond_set = MAX(cond_set, prev_set);
 	}
 
 	if(exit_code) {
