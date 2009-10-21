@@ -314,7 +314,7 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
  *   HH:MM[:SS] [AM|PM]
  *   MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
  *   MM/DD[/YY]-HH:MM[:SS]
- *   YYYY-MM-DD[THH[:MM[:SS]]]
+ *   YYYY-MM-DD[THH:MM[:SS]]
  *
  *   now + count [minutes | hours | days | weeks]
  * 
