@@ -407,7 +407,7 @@ sacct [<OPTION>]                                                            \n\
 	           Print a list of fields that can be specified with the    \n\
 	           '--format' option                                        \n\
      -E, --endtime:                                                         \n\
-                   Select jobs started before this time.                    \n\
+                   Select jobs eligible before this time.                   \n\
      -f, --file=file:                                                       \n\
 	           Read data from the specified file, rather than SLURM's   \n\
                    current accounting log file. (Only appliciable when      \n\
@@ -481,7 +481,7 @@ sacct [<OPTION>]                                                            \n\
 	           HH:MM[:SS] [AM|PM]                                       \n\
 	           MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]                     \n\
 	           MM/DD[/YY]-HH:MM[:SS]                                    \n\
-	           YYYY-MM-DD[THH[:MM[:SS]]]                                \n\
+	           YYYY-MM-DD[THH:MM[:SS]]                                  \n\
 \n");
 
 	return;
@@ -601,6 +601,7 @@ void parse_command_line(int argc, char **argv)
 
 	static struct option long_options[] = {
 		{"allusers", 0,0, 'a'},
+		{"allclusters", 0,0, 'L'},
 		{"accounts", 1, 0, 'A'},
 		{"allocations", 0, &params.opt_allocs,  1},
 		{"brief", 0, 0, 'b'},
@@ -646,7 +647,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:deE:f:g:hj:lnN:o:OpPr:s:S:tu:vVW:X",
+				"aA:bcC:deE:f:g:hj:lLnN:o:OpPr:s:S:tu:vVW:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
