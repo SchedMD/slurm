@@ -176,9 +176,35 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
  * JOB-SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/
 
-#define SELECT_MODE_RUN_NOW	0
-#define SELECT_MODE_TEST_ONLY	1
-#define SELECT_MODE_WILL_RUN	2
+#define SELECT_MODE_BASE         0x00ff
+#define SELECT_MODE_FLAGS        0xff00
+
+#define SELECT_MODE_RUN_NOW	 0x0000
+#define SELECT_MODE_TEST_ONLY	 0x0001
+#define SELECT_MODE_WILL_RUN	 0x0002
+
+#define SELECT_MODE_PREEMPT_FLAG 0x0100
+
+#define SELECT_IS_MODE_RUN_NOW(_X) \
+	((_X & SELECT_MODE_BASE) == SELECT_MODE_RUN_NOW)
+
+#define SELECT_IS_MODE_TEST_ONLY(_X) \
+	(_X & SELECT_MODE_TEST_ONLY)
+
+#define SELECT_IS_MODE_WILL_RUN(_X) \
+	(_X & SELECT_MODE_WILL_RUN)
+
+#define SELECT_IS_PREEMPT_SET(_X) \
+	(_X & SELECT_MODE_PREEMPT_FLAG)
+
+#define SELECT_IS_TEST(_X) \
+	((SELECT_IS_MODE_TEST_ONLY(_X) || SELECT_IS_MODE_WILL_RUN(_X))	\
+	 && !SELECT_IS_PREEMPT_SET(_X))
+
+#define SELECT_IS_PREEMPTABLE_TEST(_X) \
+	((SELECT_IS_MODE_TEST_ONLY(_X) || SELECT_IS_MODE_WILL_RUN(_X))	\
+	 && SELECT_IS_PREEMPT_SET(_X))
+
 
 /*
  * Select the "best" nodes for given job from those available
@@ -201,7 +227,7 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes, 
-			     uint32_t req_nodes, int mode, 
+			     uint32_t req_nodes, uint16_t mode, 
 			     List preemptee_candidates,
 			     List *preemptee_job_list);
 

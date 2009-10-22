@@ -1041,16 +1041,16 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		if (preemptee_job_list) {
 			ListIterator preemptee_iterator;
 			uint32_t *preemptee_jid;
-			struct job_record **tmp_job_pptr;
+			struct job_record *tmp_job_ptr;
 			resp_data->preemptee_job_id=list_create(_pre_list_del);
 			if (resp_data->preemptee_job_id == NULL)
 				fatal("list_create: malloc failure");
 			preemptee_iterator = list_iterator_create(
 							preemptee_job_list);
-			while ((tmp_job_pptr = (struct job_record **)
+			while ((tmp_job_ptr = (struct job_record *)
 					list_next(preemptee_iterator))) {
 				preemptee_jid = xmalloc(sizeof(uint32_t));
-				preemptee_jid[0] = tmp_job_pptr[0]->job_id;
+				(*preemptee_jid) = tmp_job_ptr->job_id;
 				list_append(resp_data->preemptee_job_id, 
 					    preemptee_jid);
 			}

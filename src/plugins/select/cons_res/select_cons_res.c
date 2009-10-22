@@ -1633,7 +1633,7 @@ extern int select_p_block_init(List part_list)
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes, 
-			     uint32_t req_nodes, int mode,
+			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
 			     List *preemptee_job_list)
 {
