@@ -4206,7 +4206,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	pack_time(begin_time, buffer);
 
 	/* Actual or expected start time */
-	if(dump_job_ptr->start_time)
+	if(dump_job_ptr->start_time >= begin_time)
 		pack_time(dump_job_ptr->start_time, buffer);
 	else
 		pack_time(begin_time, buffer);

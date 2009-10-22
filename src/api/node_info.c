@@ -173,18 +173,14 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	}
 
 	/****** Line 1 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "NodeName=%s",
-		 node_ptr->name);
+	snprintf(tmp_line, sizeof(tmp_line), "NodeName=%s ", node_ptr->name);
 	xstrcat(out, tmp_line);
 	if (node_ptr->arch ) {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 " Arch=%s",
+		snprintf(tmp_line, sizeof(tmp_line), "Arch=%s ",
 			 node_ptr->arch);
 		xstrcat(out, tmp_line);
 	}
-	snprintf(tmp_line, sizeof(tmp_line),
-		 " CoresPerSocket=%u",
+	snprintf(tmp_line, sizeof(tmp_line), "CoresPerSocket=%u",
 		 node_ptr->cores);
 	xstrcat(out, tmp_line);
 	if (one_liner)
@@ -204,14 +200,11 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 	
 	/****** Line 3 ******/
-	if (node_ptr->os ) {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "OS=%s",
-			 node_ptr->os);
+	if (node_ptr->os) {
+		snprintf(tmp_line, sizeof(tmp_line), "OS=%s ", node_ptr->os);
 		xstrcat(out, tmp_line);
 	}
-	snprintf(tmp_line, sizeof(tmp_line),
-		 " RealMemory=%u Reason=%s",
+	snprintf(tmp_line, sizeof(tmp_line), "RealMemory=%u Reason=%s",
 		 node_ptr->real_memory, node_ptr->reason);
 	xstrcat(out, tmp_line);
 	if (one_liner)
