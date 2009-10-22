@@ -76,7 +76,7 @@ proc allocate_and_quit { node_cnt node error_cnt check} {
 		}
 		-re $prompt {
 			if {$check} {
-				send_user "looking for $error_cnt $node_cnt\n"
+# 				send_user "looking for $error_cnt $node_cnt\n"
 				if {[check_node $node $error_cnt $node_cnt] } {
 					set block ""
 				}
@@ -213,19 +213,20 @@ proc check_node { node error_cnt alloc_cnt } {
 	set alloc_procs [expr $alloc_cnt * $procs_per_cnode]
 	set total_procs 0
 	set match 0
+# 	send_user "really looking for $error_procs $alloc_procs\n"
 	send "$scontrol show node $node\r"
 	expect {
-		-nocase -re " Procs=($number)" {
+		-nocase -re "CPUAlloc=$alloc_procs" {
+			incr match 
+			exp_continue
+		}
+		-nocase -re "CPUErr=$error_procs" {
+			incr match 
+			exp_continue
+		}
+		-nocase -re "CPUTot=($number)" {
 			incr match 
 			set total_procs $expect_out(1,string)
-			exp_continue
-		}
-		-nocase -re "AllocProcs=$alloc_procs" {
-			incr match 
-			exp_continue
-		}
-		-nocase -re "ErrProcs=$error_procs" {
-			incr match 
 			exp_continue
 		}
 		-re $prompt {
@@ -244,7 +245,7 @@ proc check_node { node error_cnt alloc_cnt } {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: scontrol didn't give correct proc counts $total_procs.\n"
+		send_user "\nFAILURE: scontrol didn't give correct cpu counts $match\n"
 		return 1
 	}
 
@@ -260,8 +261,53 @@ proc check_node { node error_cnt alloc_cnt } {
 		}
 	}
 	expect {
-		-nocase -re "$alloc_procs.$idle_procs.$error_procs.$total_procs $alloc_cnt.$total_cnt" {
-			set match 1
+		-re "($number)(K?).($number)(K?).($number)(K?).($number)(K?) ($number)(K?).($number)(K?)" {
+			set found 1
+			set num_alloc $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set num_alloc [expr $num_alloc * 1024]
+			}
+			set num_idle $expect_out(3,string)
+			if {[string compare $expect_out(4,string) ""]} {
+				set num_idle [expr $num_idle * 1024]
+			}
+			set num_other $expect_out(5,string)
+			if {[string compare $expect_out(6,string) ""]} {
+				set num_other [expr $num_other * 1024]
+			}
+			set num_total $expect_out(7,string)
+			if {[string compare $expect_out(8,string) ""]} {
+				set num_total [expr $num_total * 1024]
+			}
+			
+			set num_nodes_alloc $expect_out(9,string)
+			if {[string compare $expect_out(10,string) ""]} {
+				set num_nodes_alloc [expr $num_nodes_alloc * 1024]
+			}
+			
+			set num_nodes_idle $expect_out(11,string)
+			if {[string compare $expect_out(12,string) ""]} {
+				set num_nodes_idle [expr $num_nodes_idle * 1024]
+			}
+			
+			if { $num_alloc != $alloc_procs } {
+				send_user "\nFAILURE: sinfo 1 allocated cpus wrong, got $num_alloc but needed $alloc_procs\n"
+				set rc 1
+			} elseif { $num_idle != $idle_procs } {
+				send_user "\nFAILURE: sinfo 1 idle cpus wrong, got $num_idle but needed $idle_procs\n"
+				set rc 1
+			} elseif { $num_total != $total_procs } {
+				send_user "\nFAILURE: sinfo 1 total cpus wrong, got $num_total but needed $total_procs\n"
+				set rc 1
+			} elseif { $num_nodes_alloc != $alloc_cnt } {
+				send_user "\nFAILURE: sinfo 1 total allocated nodes wrong, got $num_nodes_alloc but needed $alloc_cnt\n"
+				set rc 1
+			} elseif { $num_nodes_idle != $total_cnt } {
+				send_user "\nFAILURE: sinfo 1 total allocated nodes wrong, got $num_nodes_idle but needed $idle_cnt\n"
+				set rc 1
+			} else {
+				set match 1
+			}
 			exp_continue
 		}
 		-re $prompt {
