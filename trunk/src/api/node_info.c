@@ -80,7 +80,7 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
 	slurm_make_time_str ((time_t *)&node_info_msg_ptr->last_update, 
 			     time_str, sizeof(time_str));
 	fprintf( out, "Node data as of %s, record count %d\n",
-		time_str, node_info_msg_ptr->record_count);
+		 time_str, node_info_msg_ptr->record_count);
 
 	for (i = 0; i < node_info_msg_ptr-> record_count; i++) {
 		slurm_print_node_table ( out, & node_ptr[i], 
@@ -174,15 +174,19 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "NodeName=%s AllocProcs=%u ",
-		 node_ptr->name, alloc_cpus);
+		 "NodeName=%s",
+		 node_ptr->name);
 	xstrcat(out, tmp_line);
 	if (node_ptr->arch ) {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"Arch=%s ",
-			node_ptr->arch);
+			 " Arch=%s",
+			 node_ptr->arch);
 		xstrcat(out, tmp_line);
 	}
+	snprintf(tmp_line, sizeof(tmp_line),
+		 " CoresPerSocket=%u",
+		 node_ptr->cores);
+	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
 	else
@@ -191,24 +195,24 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	/****** Line 2 ******/
 
 	snprintf(tmp_line, sizeof(tmp_line),
-		"CoresPerSocket=%u ErrProcs=%u Features=%s",
-		node_ptr->cores, err_cpus, node_ptr->features);
+		 "CPUAlloc=%u CPUErr=%u CPUTot=%u Features=%s",
+		 alloc_cpus, err_cpus, node_ptr->cpus, node_ptr->features);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
 	else
 		xstrcat(out, "\n   ");
-
+	
 	/****** Line 3 ******/
 	if (node_ptr->os ) {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"OS=%s ",
-			node_ptr->os);
+			 "OS=%s ",
+			 node_ptr->os);
 		xstrcat(out, tmp_line);
 	}
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Procs=%u RealMemory=%u Reason=%s ",
-	node_ptr->cpus,	node_ptr->real_memory, node_ptr->reason);
+		 "RealMemory=%u Reason=%s ",
+		 node_ptr->real_memory, node_ptr->reason);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -218,8 +222,9 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	/****** Line 4 ******/
 
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Sockets=%u State=%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u",
-		node_ptr->sockets, node_state_string(my_state),
+		 "Sockets=%u State=%s%s%s%s ThreadsPerCore=%u "
+		 "TmpDisk=%u Weight=%u",
+		 node_ptr->sockets, node_state_string(my_state),
 		 comp_str, drain_str, power_str, node_ptr->threads, 
 		 node_ptr->tmp_disk, node_ptr->weight);
 	xstrcat(out, tmp_line);
@@ -241,7 +246,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
  * NOTE: free the response using slurm_free_node_info_msg
  */
 extern int slurm_load_node (time_t update_time, 
-		node_info_msg_t **resp, uint16_t show_flags)
+			    node_info_msg_t **resp, uint16_t show_flags)
 {
         int rc;
         slurm_msg_t req_msg;
