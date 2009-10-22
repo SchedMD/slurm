@@ -206,12 +206,12 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	/****** Line 3 ******/
 	if (node_ptr->os ) {
 		snprintf(tmp_line, sizeof(tmp_line),
-			 "OS=%s ",
+			 "OS=%s",
 			 node_ptr->os);
 		xstrcat(out, tmp_line);
 	}
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "RealMemory=%u Reason=%s ",
+		 " RealMemory=%u Reason=%s",
 		 node_ptr->real_memory, node_ptr->reason);
 	xstrcat(out, tmp_line);
 	if (one_liner)
