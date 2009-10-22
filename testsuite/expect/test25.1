@@ -60,11 +60,11 @@ proc def_node_cnt { } {
 	global sinfo alpha_numeric_under number exit_code partition
 
 	set node_cnt 1
-	spawn $sinfo -h -o "name=%P node_cnt=%D" -p $partition
+	spawn $sinfo -h -o "name=%P node_cnt=%D" -p $partition --state=idle
 	expect {
-		-re "name=($alpha_numeric_under) node_cnt=($number)(K?)" {
-			set node_cnt $expect_out(2,string) 
-			if {[string compare $expect_out(3,string) ""]} {
+		-re "name=$partition node_cnt=($number)(K?)" {
+			set node_cnt $expect_out(1,string) 
+			if {[string compare $expect_out(2,string) ""]} {
 				set node_cnt [expr $node_cnt * 1024]
 			}
 
@@ -658,25 +658,63 @@ set nuid [get_my_nuid]
 # Start testing sprio options and arguments
 #
 sprio_args -h -j $jobid2
-sprio_args --noheader -j $jobid2
-sprio_args -j -j $jobid2
-sprio_args --jobs -j $jobid2
-sprio_args -l -j $jobid2
-sprio_args --long -j $jobid2
-sprio_args -n -j $jobid2
-sprio_args --norm -j $jobid2
-sprio_args -o -j $jobid2
-sprio_args --format -j $jobid2
-sprio_args -u $nuid $jobid2
-sprio_args --user= $nuid $jobid2
-sprio_args -v -j $jobid2
-sprio_args -verbose -j $jobid2
-sprio_opt -V
-sprio_opt --version
-sprio_opt -w
-sprio_opt --weights
-sprio_opt --help
-sprio_opt --usage
+if {!$exit_code} {
+	sprio_args --noheader -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args -j -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args --jobs -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args -l -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args --long -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args -n -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args --norm -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args -o -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args --format -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args -u $nuid $jobid2
+}
+if {!$exit_code} {
+	sprio_args --user= $nuid $jobid2
+}
+if {!$exit_code} {
+	sprio_args -v -j $jobid2
+}
+if {!$exit_code} {
+	sprio_args -verbose -j $jobid2
+}
+if {!$exit_code} {
+	sprio_opt -V
+}
+if {!$exit_code} {
+	sprio_opt --version
+}
+if {!$exit_code} {
+	sprio_opt -w
+}
+if {!$exit_code} {
+	sprio_opt --weights
+}
+if {!$exit_code} {
+	sprio_opt --help
+}
+if {!$exit_code} {
+	sprio_opt --usage
+}
 
 #
 # Cancel jobs
