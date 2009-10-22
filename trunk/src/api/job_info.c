@@ -404,7 +404,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	    (select_job_res->cpu_array_value) &&
 	    (select_job_res->cpu_array_reps)) {
 		int length = 0;
-		xstrcat(out, "AllocCPUs=");
+		xstrcat(out, "CPUs=");
 		length += 10;
 		for (i = 0; i < select_job_res->cpu_array_cnt; i++) {
 			if (length > 70) {

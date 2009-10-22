@@ -363,12 +363,14 @@ extern time_t parse_time(char *time_str, int past)
 		if (strncasecmp(time_str+pos, "noon", 4) == 0) {
 			hour   = 12;
 			minute = 0;
+			second = 0;
 			pos += 3;
 			continue;
 		}
 		if (strncasecmp(time_str+pos, "teatime", 7) == 0) {
 			hour   = 16;
 			minute = 0;
+			second = 0;
 			pos += 6;
 			continue;
 		}
@@ -481,7 +483,7 @@ extern time_t parse_time(char *time_str, int past)
 	res_tm.tm_year  = year;
 	res_tm.tm_isdst = -1;
 
-	/* printf("%d/%d/%d %d:%d\n",month+1,mday,year,hour+1,minute);  */
+/* 	printf("%d/%d/%d %d:%d\n",month+1,mday,year,hour,minute); */
 
 	return mktime(&res_tm);
 
