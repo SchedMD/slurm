@@ -1125,7 +1125,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes *= bg_conf->bp_node_cnt;
 			job_desc->max_nodes = job_desc->min_nodes;
 		}
-
+		
 		/* make sure if the user only specified num_procs to
 		   set min_nodes correctly
 		*/
@@ -1202,7 +1202,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes = 1;
 #endif
 		}
-		job_desc->job_min_cpus = job_desc->num_procs;
+		//job_desc->job_min_cpus = job_desc->num_procs;
 
 		if(job_desc->max_nodes > bg_conf->bp_node_cnt) {
 			tmp = job_desc->max_nodes % bg_conf->bp_node_cnt;
