@@ -334,8 +334,7 @@ int slurm_job_will_run (job_desc_msg_t *req)
 			while ((job_id_ptr = list_next(itr))) {
 				if (job_list)
 					sep = ",";
-				xstrfmtcat(job_list, "%s%u", 
-					   sep, job_id_ptr[0]);
+				xstrfmtcat(job_list, "%s%u", sep, *job_id_ptr);
 			}
 			info("  Preempts: %s", job_list);
 			xfree(job_list);

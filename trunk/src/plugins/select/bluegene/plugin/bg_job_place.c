@@ -89,22 +89,22 @@ static bg_record_t *_find_matching_block(List block_list,
 					 int *allow, int check_image,
 					 int overlap_check,
 					 List overlapped_list,
-					 bool test_only);
+					 uint16_t query_mode);
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
 	bg_record_t *bg_record, int overlap_check, List overlapped_list,
-	bool test_only);
+	uint16_t query_mode);
 static int _dynamically_request(List block_list, int *blocks_added,
 				ba_request_t *request,
 				char *user_req_nodes,
-				bool test_only);
+				uint16_t query_mode);
 static int _find_best_block_match(List block_list, int *blocks_added,
 				  struct job_record* job_ptr,
 				  bitstr_t* slurm_block_bitmap,
 				  uint32_t min_nodes, 
 				  uint32_t max_nodes, uint32_t req_nodes,
 				  bg_record_t** found_bg_record,
-				  bool test_only, int avail_cpus);
+				  uint16_t query_mode, int avail_cpus);
 static int _sync_block_lists(List full_list, List incomp_list);
 
 /* Rotate a 3-D geometry array through its six permutations */
@@ -345,7 +345,7 @@ static bg_record_t *_find_matching_block(List block_list,
 					 int *allow, int check_image,
 					 int overlap_check,
 					 List overlapped_list,
-					 bool test_only)
+					 uint16_t query_mode)
 {
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
@@ -353,7 +353,7 @@ static bg_record_t *_find_matching_block(List block_list,
 	
 	debug("number of blocks to check: %d state %d", 
 	      list_count(block_list),
-	      test_only);
+	      query_mode);
 		
 	itr = list_iterator_create(block_list);
 	while ((bg_record = list_next(itr))) {		
@@ -372,7 +372,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		} else if((bg_record->job_running != NO_JOB_RUNNING) 
 			  && (bg_record->job_running != job_ptr->job_id)
 			  && (bg_conf->layout_mode == LAYOUT_DYNAMIC 
-			      || (!test_only 
+			      || (!SELECT_IS_TEST(query_mode) 
 				  && bg_conf->layout_mode != LAYOUT_DYNAMIC))) {
 			debug("block %s in use by %s job %d", 
 			      bg_record->bg_block_id,
@@ -425,7 +425,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		
 		if(_check_for_booted_overlapping_blocks(
 			   block_list, itr, bg_record,
-			   overlap_check, overlapped_list, test_only))
+			   overlap_check, overlapped_list, query_mode))
 			continue;
 		
 		if(check_image) {
@@ -537,15 +537,16 @@ static bg_record_t *_find_matching_block(List block_list,
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
 	bg_record_t *bg_record, int overlap_check, List overlapped_list,
-	bool test_only)
+	uint16_t query_mode)
 {
 	bg_record_t *found_record = NULL;
 	ListIterator itr = NULL;
 	int rc = 0;
 	int overlap = 0;
+	bool is_test = SELECT_IS_TEST(query_mode);
 
 	 /* this test only is for actually picking a block not testing */
-	if(test_only && bg_conf->layout_mode == LAYOUT_DYNAMIC)
+	if(is_test && bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		return rc;
 
 	/* Make sure no other blocks are under this block 
@@ -574,7 +575,7 @@ static int _check_for_booted_overlapping_blocks(
 			 * don't have to remove them since the
 			 * block_list should always be destroyed afterwards.
 			 */
-			if(test_only && overlapped_list
+			if(is_test && overlapped_list
 			   && found_record->job_ptr 
 			   && bg_record->job_running == NO_JOB_RUNNING) {
 				debug2("found over lapping block %s "
@@ -618,7 +619,7 @@ static int _check_for_booted_overlapping_blocks(
 			       || (overlap_check == 1 && found_record->state 
 				   != RM_PARTITION_FREE))) {
 
-				if(!test_only) {
+				if(!is_test) {
 					rc = 1;
 					break;
 				}
@@ -691,7 +692,7 @@ static int _check_for_booted_overlapping_blocks(
 				} 
 				rc = 1;
 					
-				if(!test_only) 
+				if(!is_test) 
 					break;
 			} 
 		} 
@@ -709,7 +710,7 @@ static int _check_for_booted_overlapping_blocks(
 static int _dynamically_request(List block_list, int *blocks_added,
 				ba_request_t *request,
 				char *user_req_nodes,
-				bool test_only)
+				uint16_t query_mode)
 {
 	List list_of_lists = NULL;
 	List temp_list = NULL;
@@ -756,7 +757,12 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			while((bg_record = list_pop(new_blocks))) {
 				if(block_exist_in_list(block_list, bg_record))
 					destroy_bg_record(bg_record);
-				else if(test_only) {
+				else if(SELECT_IS_PREEMPTABLE_TEST(
+						query_mode)) {
+					/* Here we don't really want
+					   to create the block if we
+					   are testing. 
+					*/
 					list_append(block_list, bg_record);
 					(*blocks_added) = 1;
 				} else {
@@ -823,7 +829,7 @@ static int _find_best_block_match(List block_list,
 				  uint32_t min_nodes, uint32_t max_nodes,
 				  uint32_t req_nodes,
 				  bg_record_t** found_bg_record, 
-				  bool test_only, int avail_cpus)
+				  uint16_t query_mode, int avail_cpus)
 {
 	bg_record_t *bg_record = NULL;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
@@ -846,6 +852,7 @@ static int _find_best_block_match(List block_list,
 	int rc = SLURM_SUCCESS;
 	int create_try = 0;
 	List overlapped_list = NULL;
+	bool is_test = SELECT_IS_TEST(query_mode);
 
 	if(!total_cpus)
 		total_cpus = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
@@ -857,7 +864,7 @@ static int _find_best_block_match(List block_list,
 		return SLURM_ERROR;
 	}
 
-	if(!test_only && (req_procs > avail_cpus)) {
+	if(!is_test && (req_procs > avail_cpus)) {
 		debug2("asking for %u I only got %d", 
 		       req_procs, avail_cpus);
 		return SLURM_ERROR;
@@ -951,7 +958,8 @@ static int _find_best_block_match(List block_list,
 		 * works we will have can look and see the earliest
 		 * the job can start.  This doesn't apply to Dynamic mode.
 		 */ 
-		if(test_only && bg_conf->layout_mode != LAYOUT_DYNAMIC) 
+		if(is_test
+		   && bg_conf->layout_mode != LAYOUT_DYNAMIC) 
 			overlapped_list = list_create(NULL);
 		
 		bg_record = _find_matching_block(block_list, 
@@ -962,8 +970,8 @@ static int _find_best_block_match(List block_list,
 						 &allow, check_image,
 						 overlap_check, 
 						 overlapped_list,
-						 test_only);
-		if(!bg_record && test_only
+						 query_mode);
+		if(!bg_record && is_test
 		   && bg_conf->layout_mode != LAYOUT_DYNAMIC
 		   && list_count(overlapped_list)) {
 			ListIterator itr =
@@ -978,12 +986,12 @@ static int _find_best_block_match(List block_list,
 			list_iterator_destroy(itr);
 		}
 		
-		if(test_only && bg_conf->layout_mode != LAYOUT_DYNAMIC)
+		if(is_test && bg_conf->layout_mode != LAYOUT_DYNAMIC)
 			list_destroy(overlapped_list);
 
 		/* set the bitmap and do other allocation activities */
 		if (bg_record) {
-			if(!test_only) {
+			if(!is_test) {
 				if(check_block_bp_states(
 					   bg_record->bg_block_id) 
 				   == SLURM_ERROR) {
@@ -1025,7 +1033,7 @@ static int _find_best_block_match(List block_list,
 		/* all these assume that the *bg_record is NULL */
 
 		if(bg_conf->layout_mode == LAYOUT_OVERLAP
-		   && !test_only && overlap_check < 2) {
+		   && !is_test && overlap_check < 2) {
 			overlap_check++;
 			continue;
 		}
@@ -1036,14 +1044,14 @@ static int _find_best_block_match(List block_list,
 		if((rc = _dynamically_request(block_list, blocks_added,
 					      &request, 
 					      job_ptr->details->req_nodes,
-					      test_only))
+					      query_mode))
 		   == SLURM_SUCCESS) {
 			create_try = 1;
 			continue;
 		}
 			
 
-		if(test_only) {
+		if(is_test) {
 			List new_blocks = NULL;
 			List job_list = NULL;
 			debug("trying with empty machine");
@@ -1433,7 +1441,7 @@ static int _remove_preemptables(List block_list, List preempt_jobs)
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
-		      uint32_t req_nodes, int mode,
+		      uint32_t req_nodes, uint16_t mode,
 		      List preemptee_candidates,
 		      List *preemptee_job_list)
 {
@@ -1444,16 +1452,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	List block_list = NULL;
 	int blocks_added = 0;
 	time_t starttime = time(NULL);
-	bool test_only, preempt_done=false;
+	uint16_t local_mode = mode, preempt_done=false;
 	int avail_cpus = num_unused_cpus;
 
-	if (mode == SELECT_MODE_RUN_NOW 
-	    || (preemptee_candidates && mode != SELECT_MODE_TEST_ONLY))
-		test_only = false;
-	else if (mode == SELECT_MODE_TEST_ONLY || mode == SELECT_MODE_WILL_RUN)
-		test_only = true;
-	else	
-		return EINVAL;	/* something not yet supported */
+	if (preemptee_candidates && preemptee_job_list 
+	    && list_count(preemptee_candidates))
+		local_mode |= SELECT_MODE_PREEMPT_FLAG;
 
 	if(bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
@@ -1488,7 +1492,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				       buf, sizeof(buf), 
 				       SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %d %s nodes=%u-%u-%u", 
-	      mode, buf, min_nodes, req_nodes, max_nodes);
+	      local_mode, buf, min_nodes, req_nodes, max_nodes);
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       buf, sizeof(buf), 
 				       SELECT_PRINT_BLRTS_IMAGE);
@@ -1528,7 +1532,7 @@ preempt:
 	rc = _find_best_block_match(block_list, &blocks_added,
 				    job_ptr, slurm_block_bitmap, min_nodes, 
 				    max_nodes, req_nodes,  
-				    &bg_record, test_only, avail_cpus);
+				    &bg_record, local_mode, avail_cpus);
 	
 	if(rc == SLURM_SUCCESS) {
 		if(bg_record) {
@@ -1560,7 +1564,7 @@ preempt:
 			if(!bg_record->bg_block_id) {
 				debug2("%d can start unassigned job %u at "
 				       "%u on %s",
-				       mode, job_ptr->job_id, starttime,
+				       local_mode, job_ptr->job_id, starttime,
 				       bg_record->nodes);
 
 				select_g_select_jobinfo_set(
@@ -1590,26 +1594,32 @@ preempt:
 					      "non-shared partition");
 				
 				debug2("%d can start job %u at %u on %s(%s)",
-				       mode, job_ptr->job_id, starttime,
+				       local_mode, job_ptr->job_id, starttime,
 				       bg_record->bg_block_id,
 				       bg_record->nodes);
 				
-				select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,
-					SELECT_JOBDATA_BLOCK_ID,
-					bg_record->bg_block_id);
+				if (SELECT_IS_MODE_RUN_NOW(local_mode)) 
+					select_g_select_jobinfo_set(
+						job_ptr->select_jobinfo,
+						SELECT_JOBDATA_BLOCK_ID,
+						bg_record->bg_block_id);
+				else
+					select_g_select_jobinfo_set(
+						job_ptr->select_jobinfo,
+						SELECT_JOBDATA_BLOCK_ID,
+						"unassigned");
+					
 				select_g_select_jobinfo_set(
 					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_NODE_CNT, 
 					&bg_record->node_cnt);
 			}
-			if (mode == SELECT_MODE_RUN_NOW) 
+			if (SELECT_IS_MODE_RUN_NOW(local_mode)) 
 				_build_select_struct(job_ptr,
 						     slurm_block_bitmap,
 						     bg_record->node_cnt);
 			/* set up the preempted job list */
-			if((mode != SELECT_MODE_TEST_ONLY)
-			   && preemptee_candidates && preemptee_job_list) {
+			if(SELECT_IS_PREEMPT_SET(local_mode)) {
 				if(*preemptee_job_list) 
 					list_destroy(*preemptee_job_list);
 				*preemptee_job_list = _get_preemptables(
@@ -1618,8 +1628,7 @@ preempt:
 		} else {
 			error("we got a success, but no block back");
 		}
-	} else if(!preempt_done && (mode != SELECT_MODE_TEST_ONLY)
-		  && preemptee_candidates && preemptee_job_list) {
+	} else if(!preempt_done && SELECT_IS_PREEMPT_SET(local_mode)) {
 		avail_cpus += _remove_preemptables(
 			block_list, preemptee_candidates);
 		preempt_done = true;
