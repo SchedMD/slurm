@@ -456,7 +456,7 @@ line7:	/****** Line 7 ******/
 	max_nodes = job_ptr->max_nodes;
 #endif
 	_sprint_range(tmp2, sizeof(tmp2), min_nodes, max_nodes);
-	snprintf(tmp_line, sizeof(tmp_line), "NumProcs=%s NumNodes=%s ", 
+	snprintf(tmp_line, sizeof(tmp_line), "NumCPUs=%s NumNodes=%s ", 
 		 tmp1, tmp2);
 	xstrcat(out, tmp_line);
 
@@ -472,7 +472,7 @@ line7:	/****** Line 7 ******/
 
 	/****** Line 8 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Shared=%s Contiguous=%d CPUs/task=%u Licenses=%s", 
+		"Shared=%s Contiguous=%d CPUs/Task=%u Licenses=%s", 
 		 (job_ptr->shared == 0 ? "0" :
 		  job_ptr->shared == 1 ? "1" : "OK"),
 		 job_ptr->contiguous, job_ptr->cpus_per_task,
