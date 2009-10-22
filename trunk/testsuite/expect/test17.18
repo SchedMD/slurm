@@ -195,7 +195,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	send_user "\nFAILURE: unexpected JobState or StartTime\n"
+	send_user "\nFAILURE: unexpected JobState or StartTime $match\n"
 	set exit_code 1
 }
 

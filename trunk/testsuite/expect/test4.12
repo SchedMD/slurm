@@ -127,7 +127,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 				send_user "\nFAILURE: sinfo 1 idle cpus wrong, got $num_idle but needed $idle_cpus\n"
 				set rc 1
 			} elseif { $num_total != $total_procs } {
-				send_user "\nFAILURE: sinfo 1 total cpus wrong, got $num_idle but needed $idle_cpus\n"
+				send_user "\nFAILURE: sinfo 1 total cpus wrong, got $num_total but needed $total_procs\n"
 				set rc 1
 			} else {
 				send_user "SUCCESS\n"

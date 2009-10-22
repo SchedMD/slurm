@@ -80,11 +80,16 @@ proc run_and_test { size } {
 	}
 
 	set matches 0
-	set requested_cpus [expr $size * $procs_per_cnode]
+
+	if {$size > 1} {
+		set requested_cpus "$procs_per_cnode\\*$size"
+	} else {
+		set requested_cpus "$procs_per_cnode"
+	}
 
 	set scon_pid [spawn $scontrol -d show job $job_id]
 	expect {
-		-re "AllocCPUs=$requested_cpus" {
+		-re "CPUs=$requested_cpus" {
 			incr matches
 			exp_continue
 		}
@@ -97,6 +102,7 @@ proc run_and_test { size } {
 			wait
 		}
 	}
+
 	if {$matches != 1} {
 		send_user "\nFAILURE: Bluegene $size cnode block not created correctly\n"
 		set exit_code 1
