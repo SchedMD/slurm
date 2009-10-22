@@ -55,7 +55,7 @@ proc scontrol_test { node proc_cnt } {
 
 	send "$scontrol show node $node\r"
 	expect {
-		-re "AllocProcs=($number)" {
+		-re "CPUAlloc=($number)" {
 			set num_alloc $expect_out(1,string)
 			set found 1
 			if {$proc_cnt != $num_alloc} {
@@ -357,34 +357,30 @@ if {$host_cnt == 0} {
 
 # find me an idle node in default partition
 log_user 0
-set inode_found 0
-for {set host_inx 0} {($host_inx < $host_cnt) && ($inode_found == 0)} {incr host_inx} {
-	spawn $scontrol show node
-	expect {
-		-re "NodeName=($alpha_numeric_under) State=IDLE Procs=($number)(K?).* Sockets=($number) CoresPerSocket=($number) ThreadsPerCore=($number)"  {
-			set inode_name $expect_out(1,string) 
-			set inode_procs $expect_out(2,string)
-			if {[string compare $expect_out(3,string) ""]} {
-				set inode_procs [expr $inode_procs * 1024]
-			}
-			set inode_sockets $expect_out(4,string)
-			set inode_cores_per_socket $expect_out(5,string)
-			set inode_threads_per_core $expect_out(6,string)
-			set inode_found 1
-			exp_continue
+set inode_procs 0
+spawn $scontrol -o show node $def_hostlist
+expect {
+	-re "NodeName=($alpha_numeric_under) .*CoresPerSocket=($number) .*CPUTot=($number)(K?).* Sockets=($number) State=IDLE ThreadsPerCore=($number)"  {
+		set inode_name $expect_out(1,string) 
+		set inode_cores_per_socket $expect_out(2,string)
+		set inode_procs $expect_out(3,string)
+		if {[string compare $expect_out(4,string) ""]} {
+			set inode_procs [expr $inode_procs * 1024]
 		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+		set inode_sockets $expect_out(5,string)
+		set inode_threads_per_core $expect_out(6,string)
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
 	}
 }
 log_user 1
 
-if {!$inode_found} {
+if {!$inode_procs} {
 	send_user "\nFAILURE: couldn't find an idle node in the default partition\n"
 	exit 1
 }
