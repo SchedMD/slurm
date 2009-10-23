@@ -167,7 +167,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"EnforcePartLimits", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
-	{"EPilogSlurmctld", S_P_STRING},
+	{"EpilogSlurmctld", S_P_STRING},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
 	{"GetEnvTimeout", S_P_UINT16},
