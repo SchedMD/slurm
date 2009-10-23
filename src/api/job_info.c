@@ -337,6 +337,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 		bit_fmt(tmp1, sizeof(tmp1), core_bitmap);
 		bit_free(core_bitmap);
+		if (tmp2[0] == '\0')
+			strcpy(tmp2, tmp1);
 		host = hostlist_shift(hl);
 /*
  *		If the allocation values for this host are not the same as the
