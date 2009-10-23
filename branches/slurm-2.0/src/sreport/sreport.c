@@ -201,8 +201,7 @@ main (int argc, char *argv[])
 /*
  * Alternative to readline if readline is not available
  */
-static char *
-getline(const char *prompt)
+static char *_getline(const char *prompt)
 {
 	char buf[4096];
 	char *line;
@@ -367,7 +366,7 @@ _get_command (int *argc, char **argv)
 #if HAVE_READLINE
 	in_line = readline ("sreport: ");
 #else
-	in_line = getline("sreport: ");
+	in_line = _getline("sreport: ");
 #endif
 	if (in_line == NULL)
 		return 0;

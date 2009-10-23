@@ -530,6 +530,7 @@ static void *_ckpt_agent_thr(void *arg)
 		slurm_mutex_unlock(&ckpt_agent_mutex);
 		list_iterator_destroy(iter);
 	}
+	return NULL;
 }
 
 /* Queue a checkpoint request timeout */

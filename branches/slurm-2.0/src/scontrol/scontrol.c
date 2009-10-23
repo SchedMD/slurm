@@ -189,8 +189,7 @@ static void _print_version(void)
 /*
  * Alternative to readline if readline is not available
  */
-static char *
-getline(const char *prompt)
+static char *_getline(const char *prompt)
 {
 	char buf[4096];
 	char *line;
@@ -230,7 +229,7 @@ _get_command (int *argc, char **argv)
 #if HAVE_READLINE
 	in_line = readline ("scontrol: ");
 #else
-	in_line = getline("scontrol: ");
+	in_line = _getline("scontrol: ");
 #endif
 	if (in_line == NULL)
 		return 0;
