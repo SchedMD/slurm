@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue with sacctmgr when modifing a user and specifying 'where'
     after giving the user name also.
  -- -L, --allclusters now works with sacct
+ -- Modified job table to use 32bit u/gids for those with ids greater 
+    than 16 bits.
 
 * Changes in SLURM 2.0.7
 ========================
