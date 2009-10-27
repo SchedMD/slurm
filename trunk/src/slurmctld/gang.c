@@ -104,10 +104,10 @@ struct gs_part {
  *
  *       SUMMARY OF DATA MANAGEMENT
  *
- * For GS_NODE:   job_ptr->select_job->node_bitmap only
- * For GS_CPU:    job_ptr->select_job->{node_bitmap, cpus}
- * For GS_SOCKET: job_ptr->select_job->{node,core}_bitmap
- * For GS_CORE:   job_ptr->select_job->{node,core}_bitmap
+ * For GS_NODE:   job_ptr->job_resrcs->node_bitmap only
+ * For GS_CPU:    job_ptr->job_resrcs->{node_bitmap, cpus}
+ * For GS_SOCKET: job_ptr->job_resrcs->{node,core}_bitmap
+ * For GS_CORE:   job_ptr->job_resrcs->{node,core}_bitmap
  *
  *         EVALUATION ALGORITHM
  *
@@ -468,7 +468,7 @@ static int _can_cpus_fit(struct job_record *job_ptr, struct gs_part *p_ptr)
 {
 	int i, j, size;
 	uint16_t *p_cpus, *j_cpus;
-	select_job_res_t *job_res = job_ptr->select_job;
+	job_resources_t *job_res = job_ptr->job_resrcs;
 
 	if (gr_type != GS_CPU)
 		return 0;
@@ -495,7 +495,7 @@ static int _can_cpus_fit(struct job_record *job_ptr, struct gs_part *p_ptr)
 static int _job_fits_in_active_row(struct job_record *job_ptr, 
 				   struct gs_part *p_ptr)
 {
-	select_job_res_t *job_res = job_ptr->select_job;
+	job_resources_t *job_res = job_ptr->job_resrcs;
 	int count;
 	bitstr_t *job_map;
 
@@ -503,7 +503,7 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 		return 1;
 
 	if ((gr_type == GS_CORE) || (gr_type == GS_SOCKET)) {
-		return can_select_job_cores_fit(job_res, p_ptr->active_resmap,
+		return job_fits_into_cores(job_res, p_ptr->active_resmap,
 						gs_bits_per_node,
 						gs_bit_rep_count);
 	}
@@ -575,7 +575,7 @@ static void _fill_sockets(bitstr_t *job_nodemap, struct gs_part *p_ptr)
 static void _add_job_to_active(struct job_record *job_ptr, 
 			       struct gs_part *p_ptr)
 {
-	select_job_res_t *job_res = job_ptr->select_job;
+	job_resources_t *job_res = job_ptr->job_resrcs;
 
 	/* add job to active_resmap */
 	if (gr_type == GS_CORE || gr_type == GS_SOCKET) {
@@ -583,7 +583,7 @@ static void _add_job_to_active(struct job_record *job_ptr,
 			uint32_t size = bit_size(p_ptr->active_resmap);
 			bit_nclear(p_ptr->active_resmap, 0, size-1);
 		}
-		add_select_job_to_row(job_res, &(p_ptr->active_resmap),
+		add_job_to_cores(job_res, &(p_ptr->active_resmap),
 				      gs_bits_per_node, gs_bit_rep_count);
 		if (gr_type == GS_SOCKET)
 			_fill_sockets(job_res->node_bitmap, p_ptr);
@@ -975,9 +975,9 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 
 	xassert(p_ptr);
 	xassert(job_ptr->job_id > 0);
-	xassert(job_ptr->select_job);
-	xassert(job_ptr->select_job->node_bitmap);
-	xassert(job_ptr->select_job->core_bitmap);
+	xassert(job_ptr->job_resrcs);
+	xassert(job_ptr->job_resrcs->node_bitmap);
+	xassert(job_ptr->job_resrcs->core_bitmap);
 
 	debug3("gang: _add_job_to_part: adding job %u to %s",
 		job_ptr->job_id, p_ptr->part_name);

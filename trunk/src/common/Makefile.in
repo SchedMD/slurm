@@ -118,7 +118,7 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
 	slurm_resource_info.c slurm_resource_info.h hostlist.c \
 	hostlist.h slurm_step_layout.c slurm_step_layout.h \
-	checkpoint.c checkpoint.h select_job_res.c select_job_res.h \
+	checkpoint.c checkpoint.h job_resources.c job_resources.h \
 	parse_time.c parse_time.h job_options.c job_options.h \
 	global_defaults.c timers.c timers.h slurm_xlator.h stepd_api.c \
 	stepd_api.h write_labelled_message.c write_labelled_message.h \
@@ -139,7 +139,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo basil_resv_conf.lo xmalloc.lo \
 	slurm_jobcomp.lo slurm_topology.lo switch.lo arg_desc.lo \
 	malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
 	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
-	slurm_step_layout.lo checkpoint.lo select_job_res.lo \
+	slurm_step_layout.lo checkpoint.lo job_resources.lo \
 	parse_time.lo job_options.lo global_defaults.lo timers.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
 	slurm_strcasestr.lo node_conf.lo
@@ -449,7 +449,7 @@ libcommon_la_SOURCES = \
 	hostlist.c hostlist.h		\
 	slurm_step_layout.c slurm_step_layout.h	\
 	checkpoint.c checkpoint.h	\
-	select_job_res.c select_job_res.h	\
+	job_resources.c job_resources.h	\
 	parse_time.c parse_time.h	\
 	job_options.c job_options.h	\
 	global_defaults.c		\
@@ -593,7 +593,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/safeopen.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_job_res.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_accounting_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_auth.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_cred.Plo@am__quote@

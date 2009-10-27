@@ -85,7 +85,7 @@ enum node_cr_state {
 struct part_row_data {
 	bitstr_t *row_bitmap;		/* contains all jobs for this row */
 	uint32_t num_jobs;		/* Number of jobs in this row */
-	struct select_job_res **job_list;/* List of jobs in this row */
+	struct job_resources **job_list;/* List of jobs in this row */
 	uint32_t job_list_size;		/* Size of job_list array */
 };
 

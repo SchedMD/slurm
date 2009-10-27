@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  select_job_res.h - functions to manage data structure identifying specific
+ *  job_resources.h - functions to manage data structure identifying specific
  *	CPUs allocated to a job, step or partition
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -36,8 +36,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _SELECT_JOB_RES_H
-#define _SELECT_JOB_RES_H
+#ifndef _JOB_RESOURCES_H
+#define _JOB_RESOURCES_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -54,13 +54,13 @@
 #include "src/common/pack.h"
 #include "src/slurmctld/slurmctld.h"
 
-/* struct select_job_res defines exactly which resources are allocated
+/* struct job_resources defines exactly which resources are allocated
  *	to a job, step, partition, etc.
  *
  * core_bitmap		- Bitmap of allocated cores for all nodes and sockets
  * core_bitmap_used	- Bitmap of cores allocated to job steps
- * cores_per_socket	- Count of cores per socket on this node, build by 
- *			  build_select_job_res() and insures consistent 
+ * cores_per_socket	- Count of cores per socket on this node, build by
+ *			  build_job_resources() and insures consistent
  *			  interpretation of core_bitmap
  * cpus			- Count of desired/allocated CPUs per node for job/step
  * cpus_used		- For a job, count of CPUs per node used by job steps
@@ -78,19 +78,19 @@
  * node_req		- NODE_CR_RESERVED|NODE_CR_ONE_ROW|NODE_CR_AVAILABLE
  * nprocs		- Number of processors in the allocation
  * sock_core_rep_count	- How many consecutive nodes that sockets_per_node
- *			  and cores_per_socket apply to, build by 
- *			  build_select_job_res() and insures consistent 
+ *			  and cores_per_socket apply to, build by
+ *			  build_job_resources() and insures consistent
  *			  interpretation of core_bitmap
- * sockets_per_node	- Count of sockets on this node, build by 
- *			  build_select_job_res() and insures consistent 
+ * sockets_per_node	- Count of sockets on this node, build by
+ *			  build_job_resources() and insures consistent
  *			  interpretation of core_bitmap
  *
  * NOTES:
  * cpu_array_* contains the same information as "cpus", but in a more compact
  * format. For example if cpus = {4, 4, 2, 2, 2, 2, 2, 2} then cpu_array_cnt=2
- * cpu_array_value = {4, 2} and cpu_array_reps = {2, 6}. We do not need to 
- * save/restore these values, but generate them by calling 
- * build_select_job_res_cpu_array()
+ * cpu_array_value = {4, 2} and cpu_array_reps = {2, 6}. We do not need to
+ * save/restore these values, but generate them by calling
+ * build_job_resources_cpu_array()
  *
  * Sample layout of core_bitmap:
  *   |               Node_0              |               Node_1              |
@@ -98,7 +98,7 @@
  *   | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 |
  *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
  */
-struct select_job_res {
+struct job_resources {
 	bitstr_t *	core_bitmap;
 	bitstr_t *	core_bitmap_used;
 	uint32_t	cpu_array_cnt;
@@ -117,118 +117,112 @@ struct select_job_res {
 	uint16_t *	sockets_per_node;
 };
 
-/* Create an empty select_job_res data structure, just a call to xmalloc() */
-extern select_job_res_t *create_select_job_res(void);
+/* Create an empty job_resources data structure, just a call to xmalloc() */
+extern job_resources_t *create_job_resources(void);
 
 /* Set the socket and core counts associated with a set of selected
- * nodes of a select_job_res data structure based upon slurmctld state.
+ * nodes of a job_resources data structure based upon slurmctld state.
  * (sets cores_per_socket, sockets_per_node, and sock_core_rep_count based
  * upon the value of node_bitmap, also creates core_bitmap based upon
- * the total number of cores in the allocation). Call this ONLY from 
+ * the total number of cores in the allocation). Call this ONLY from
  * slurmctld. Example of use:
  *
- * select_job_res_t *select_job_res_ptr = create_select_job_res();
- * node_name2bitmap("dummy[2,5,12,16]", true, &(select_res_ptr->node_bitmap));
- * rc = build_select_job_res(select_job_res_ptr, node_record_table_ptr,
+ * job_resources_t *job_resources_ptr = create_job_resources();
+ * node_name2bitmap("dummy[2,5,12,16]", true, &(job_res_ptr->node_bitmap));
+ * rc = build_job_resources(job_resources_ptr, node_record_table_ptr,
  *			     slurmctld_conf.fast_schedule);
  */
-extern int build_select_job_res(select_job_res_t *select_job_res_ptr,
-				void *node_rec_table,
-				uint16_t fast_schedule);
+extern int build_job_resources(job_resources_t *job_resources_ptr,
+			      void *node_rec_table, uint16_t fast_schedule);
 
 /* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
  * values of cpus in an existing data structure
  * Return total CPU count or -1 on error */
-extern int build_select_job_res_cpu_array(select_job_res_t *select_job_res_ptr);
+extern int build_job_resources_cpu_array(job_resources_t *job_resources_ptr);
 
 /* Rebuild cpus array based upon the values of nhosts, cpu_array_value and
  * cpu_array_reps in an existing data structure
  * Return total CPU count or -1 on error */
-extern int build_select_job_res_cpus_array(
-	select_job_res_t *select_job_res_ptr);
+extern int build_job_resources_cpus_array(job_resources_t *job_resources_ptr);
 
-/* Validate a select_job_res data structure originally built using
- * build_select_job_res() is still valid based upon slurmctld state.
+/* Validate a job_resources data structure originally built using
+ * build_job_resources() is still valid based upon slurmctld state.
  * NOTE: Reset the node_bitmap field before calling this function.
- * If the sockets_per_node or cores_per_socket for any node in the allocation 
- * changes, then return SLURM_ERROR. Otherwise return SLURM_SUCCESS. Any 
+ * If the sockets_per_node or cores_per_socket for any node in the allocation
+ * changes, then return SLURM_ERROR. Otherwise return SLURM_SUCCESS. Any
  * change in a node's socket or core count require that any job running on
  * that node be killed. Example of use:
  *
- * rc = valid_select_job_res(select_job_res_ptr, node_record_table_ptr,
+ * rc = valid_job_resources(job_resources_ptr, node_record_table_ptr,
  *			     slurmctld_conf.fast_schedule);
  */
-extern int valid_select_job_res(select_job_res_t *select_job_res_ptr,
-				void *node_rec_table,
-				uint16_t fast_schedule);
+extern int valid_job_resources(job_resources_t *job_resources_ptr,
+			      void *node_rec_table, uint16_t fast_schedule);
 
-/* Make a copy of a select_job_res data structure, 
- * free using free_select_job_res() */
-extern select_job_res_t *copy_select_job_res(
-	select_job_res_t *select_job_res_ptr);
+/* Make a copy of a job_resources data structure,
+ * free using free_job_resources() */
+extern job_resources_t *copy_job_resources(job_resources_t *job_resources_ptr);
 
-/* Free select_job_res data structure created using copy_select_job_res() or
- *	unpack_select_job_res() */
-extern void free_select_job_res(select_job_res_t **select_job_res_pptr);
+/* Free job_resources data structure created using copy_job_resources() or
+ *	unpack_job_resources() */
+extern void free_job_resources(job_resources_t **job_resources_pptr);
 
-/* Log the contents of a select_job_res data structure using info() */
-extern void log_select_job_res(uint32_t job_id, 
-			       select_job_res_t *select_job_res_ptr);
+/* Log the contents of a job_resources data structure using info() */
+extern void log_job_resources(uint32_t job_id,
+			      job_resources_t *job_resources_ptr);
 
-/* Un/pack full select_job_res data structure */
-extern void pack_select_job_res(select_job_res_t *select_job_res_ptr, 
+/* Un/pack full job_resources data structure */
+extern void pack_job_resources(job_resources_t *job_resources_ptr, Buf buffer);
+extern int unpack_job_resources(job_resources_t **job_resources_pptr,
 				Buf buffer);
-extern int unpack_select_job_res(select_job_res_t **select_job_res_pptr, 
-				 Buf buffer);
 
-/* Reset the node_bitmap in a select_job_res data structure
- * This is needed after a restart/reconfiguration since nodes can 
- * be added or removed from the system resulting in changing in 
+/* Reset the node_bitmap in a job_resources data structure
+ * This is needed after a restart/reconfiguration since nodes can
+ * be added or removed from the system resulting in changing in
  * the bitmap size or bit positions */
-extern void reset_node_bitmap(select_job_res_t *select_job_res_ptr,
+extern void reset_node_bitmap(job_resources_t *job_resources_ptr,
 			      bitstr_t *new_node_bitmap);
 
 /* For a given node_id, socket_id and core_id, get it's offset within
  * the core bitmap */
-extern int get_select_job_res_offset(select_job_res_t *select_job_res_ptr, 
-				     uint32_t node_id, uint16_t socket_id, 
-				     uint16_t core_id);
+extern int get_job_resources_offset(job_resources_t *job_resources_ptr,
+				   uint32_t node_id, uint16_t socket_id,
+				   uint16_t core_id);
 
 /* Get/set bit value at specified location.
  *	node_id, socket_id and core_id are all zero origin */
-extern int get_select_job_res_bit(select_job_res_t *select_job_res_ptr, 
-				  uint32_t node_id,
-				  uint16_t socket_id, uint16_t core_id);
-extern int set_select_job_res_bit(select_job_res_t *select_job_res_ptr, 
-				  uint32_t node_id,
-				  uint16_t socket_id, uint16_t core_id);
+extern int get_job_resources_bit(job_resources_t *job_resources_ptr,
+				uint32_t node_id, uint16_t socket_id,
+				uint16_t core_id);
+extern int set_job_resources_bit(job_resources_t *job_resources_ptr,
+				uint32_t node_id, uint16_t socket_id,
+				uint16_t core_id);
 
 /* Get/set bit value at specified location for whole node allocations
  *	get is for any socket/core on the specified node
  *	set is for all sockets/cores on the specified node
- *	fully comptabable with set/get_select_job_res_bit()
+ *	fully comptabable with set/get_job_resources_bit()
  *	node_id is all zero origin */
-extern int get_select_job_res_node(select_job_res_t *select_job_res_ptr, 
-				   uint32_t node_id);
-extern int set_select_job_res_node(select_job_res_t *select_job_res_ptr, 
-				   uint32_t node_id);
+extern int get_job_resources_node(job_resources_t *job_resources_ptr,
+				 uint32_t node_id);
+extern int set_job_resources_node(job_resources_t *job_resources_ptr,
+				 uint32_t node_id);
 
 /* Get socket and core count for a specific node_id (zero origin) */
-extern int get_select_job_res_cnt(select_job_res_t *select_job_res_ptr, 
-				  uint32_t node_id,
-				  uint16_t *socket_cnt,
- 				  uint16_t *cores_per_socket_cnt);
+extern int get_job_resources_cnt(job_resources_t *job_resources_ptr,
+				uint32_t node_id, uint16_t *socket_cnt,
+				uint16_t *cores_per_socket_cnt);
 
 /* check if given job can fit into the given full-length core_bitmap */
-extern int can_select_job_cores_fit(select_job_res_t *select_ptr,
-				    bitstr_t *full_bitmap,
-				    const uint16_t *bits_per_node,
-				    const uint32_t *bit_rep_count);
+extern int job_fits_into_cores(job_resources_t *job_resources_ptr,
+			       bitstr_t *full_bitmap,
+			       const uint16_t *bits_per_node,
+			       const uint32_t *bit_rep_count);
 
 /* add the given job to the given full_core_bitmap */
-extern void add_select_job_to_row(select_job_res_t *select_ptr,
-				  bitstr_t **full_core_bitmap,
-				  const uint16_t *cores_per_node,
-				  const uint32_t *core_rep_count);
+extern void add_job_to_cores(job_resources_t *job_resources_ptr,
+			     bitstr_t **full_core_bitmap,
+			     const uint16_t *cores_per_node,
+			     const uint32_t *core_rep_count);
 
-#endif /* !_SELECT_JOB_RES_H */
+#endif /* !_JOB_RESOURCES_H */

@@ -2815,7 +2815,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->resv_name,  &uint32_tmp, buffer);
 
 	safe_unpack32(&job->exit_code, buffer);
-	unpack_select_job_res(&job->select_job_res, buffer);
+	unpack_job_resources(&job->job_resources, buffer);
 
 	safe_unpackstr_xmalloc(&job->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->wckey, &uint32_tmp, buffer);

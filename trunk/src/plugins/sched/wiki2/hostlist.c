@@ -105,7 +105,7 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 				(*task_cnt)++;
 			} else if (slurm_tasklist[i] == ',')
 				(*task_cnt)++;
-		}		
+		}
 		return slurm_tasklist;
 	}
 
@@ -165,28 +165,30 @@ static char * _task_list(struct job_record *job_ptr)
 {
 	int i, j, node_inx = 0, task_cnt;
 	char *buf = NULL, *host;
-	select_job_res_t *select_ptr = job_ptr->select_job;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
-	xassert(select_ptr);
-	for (i=0; i<select_ptr->nhosts; i++) {
+	xassert(job_resrcs_ptr);
+	for (i=0; i<job_resrcs_ptr->nhosts; i++) {
 		if (i == 0) {
-			xassert(select_ptr->cpus && select_ptr->node_bitmap);
-			node_inx = bit_ffs(select_ptr->node_bitmap);
+			xassert(job_resrcs_ptr->cpus &&
+				job_resrcs_ptr->node_bitmap);
+			node_inx = bit_ffs(job_resrcs_ptr->node_bitmap);
 		} else {
-			for (node_inx++; node_inx<node_record_count; 
+			for (node_inx++; node_inx<node_record_count;
 			     node_inx++) {
-				if (bit_test(select_ptr->node_bitmap,node_inx))
+				if (bit_test(job_resrcs_ptr->node_bitmap,
+					     node_inx))
 					break;
 			}
 			if (node_inx >= node_record_count) {
-				error("Improperly formed select_job for %u",
+				error("Improperly formed job_resrcs for %u",
 				      job_ptr->job_id);
 				break;
 			}
 		}
 		host = node_record_table_ptr[node_inx].name;
 
-		task_cnt = select_ptr->cpus[i];
+		task_cnt = job_resrcs_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
 		if (task_cnt < 1) {
@@ -264,28 +266,30 @@ static char * _task_list_exp(struct job_record *job_ptr)
 	int i, node_inx = 0, reps = -1, task_cnt;
 	char *buf = NULL, *host;
 	hostlist_t hl_tmp = (hostlist_t) NULL;
-	select_job_res_t *select_ptr = job_ptr->select_job;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
-	xassert(select_ptr);
-	for (i=0; i<select_ptr->nhosts; i++) {
+	xassert(job_resrcs_ptr);
+	for (i=0; i<job_resrcs_ptr->nhosts; i++) {
 		if (i == 0) {
-			xassert(select_ptr->cpus && select_ptr->node_bitmap);
-			node_inx = bit_ffs(select_ptr->node_bitmap);
+			xassert(job_resrcs_ptr->cpus &&
+				job_resrcs_ptr->node_bitmap);
+			node_inx = bit_ffs(job_resrcs_ptr->node_bitmap);
 		} else {
-			for (node_inx++; node_inx<node_record_count; 
+			for (node_inx++; node_inx<node_record_count;
 			     node_inx++) {
-				if (bit_test(select_ptr->node_bitmap,node_inx))
+				if (bit_test(job_resrcs_ptr->node_bitmap,
+					     node_inx))
 					break;
 			}
 			if (node_inx >= node_record_count) {
-				error("Improperly formed select_job for %u",
+				error("Improperly formed job_resrcs for %u",
 				      job_ptr->job_id);
 				break;
 			}
 		}
 		host = node_record_table_ptr[node_inx].name;
 
-		task_cnt = select_ptr->cpus[i];
+		task_cnt = job_resrcs_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
 		if (task_cnt < 1) {

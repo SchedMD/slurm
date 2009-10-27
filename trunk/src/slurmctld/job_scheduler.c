@@ -574,19 +574,18 @@ extern void launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->script = get_job_script(job_ptr);
 	launch_msg_ptr->environment = get_job_env(job_ptr, 
 						  &launch_msg_ptr->envc);
-	launch_msg_ptr->job_mem = job_ptr->details->job_min_memory;
-
-	launch_msg_ptr->num_cpu_groups = job_ptr->select_job->cpu_array_cnt;
+	launch_msg_ptr->job_mem = job_ptr->details->job_min_memory; 
+	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
 	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint16_t) *
-			job_ptr->select_job->cpu_array_cnt);
+			job_ptr->job_resrcs->cpu_array_cnt);
 	memcpy(launch_msg_ptr->cpus_per_node, 
-	       job_ptr->select_job->cpu_array_value,
-	       (sizeof(uint16_t) * job_ptr->select_job->cpu_array_cnt));
+	       job_ptr->job_resrcs->cpu_array_value,
+	       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
 	launch_msg_ptr->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
-			job_ptr->select_job->cpu_array_cnt);
+			job_ptr->job_resrcs->cpu_array_cnt);
 	memcpy(launch_msg_ptr->cpu_count_reps, 
-	       job_ptr->select_job->cpu_array_reps,
-	       (sizeof(uint32_t) * job_ptr->select_job->cpu_array_cnt));
+	       job_ptr->job_resrcs->cpu_array_reps,
+	       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
 
 	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
 			job_ptr->select_jobinfo);
@@ -613,7 +612,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 			       struct job_record *job_ptr)
 {
 	slurm_cred_arg_t cred_arg;
-	select_job_res_t *select_ptr;
+	job_resources_t *job_resrcs_ptr;
 
 	cred_arg.jobid     = launch_msg_ptr->job_id;
 	cred_arg.stepid    = launch_msg_ptr->step_id;
@@ -626,22 +625,22 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	if (job_ptr->details == NULL)
 		cred_arg.job_mem = 0;
 	else if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
-		xassert(job_ptr->select_job);
-		xassert(job_ptr->select_job->cpus);
+		xassert(job_ptr->job_resrcs);
+		xassert(job_ptr->job_resrcs->cpus);
 		cred_arg.job_mem = job_ptr->details->job_min_memory;
 		cred_arg.job_mem &= (~MEM_PER_CPU);
-		cred_arg.job_mem *= job_ptr->select_job->cpus[0];
+		cred_arg.job_mem *= job_ptr->job_resrcs->cpus[0];
 	} else
 		cred_arg.job_mem = job_ptr->details->job_min_memory;
 
 	/* Identify the cores allocated to this job. */
-	xassert(job_ptr->select_job);
-	select_ptr = job_ptr->select_job;
-	cred_arg.core_bitmap         = select_ptr->core_bitmap;
-	cred_arg.cores_per_socket    = select_ptr->cores_per_socket;
-	cred_arg.sockets_per_node    = select_ptr->sockets_per_node;
-	cred_arg.sock_core_rep_count = select_ptr->sock_core_rep_count;
-	cred_arg.job_nhosts          = select_ptr->nhosts;
+	xassert(job_ptr->job_resrcs);
+	job_resrcs_ptr = job_ptr->job_resrcs;
+	cred_arg.core_bitmap         = job_resrcs_ptr->core_bitmap;
+	cred_arg.cores_per_socket    = job_resrcs_ptr->cores_per_socket;
+	cred_arg.sockets_per_node    = job_resrcs_ptr->sockets_per_node;
+	cred_arg.sock_core_rep_count = job_resrcs_ptr->sock_core_rep_count;
+	cred_arg.job_nhosts          = job_resrcs_ptr->nhosts;
 	cred_arg.job_hostlist        = job_ptr->nodes;
 
 	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,

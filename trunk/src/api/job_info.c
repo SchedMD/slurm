@@ -134,7 +134,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char tmp_line[512];
 	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
-	select_job_res_t *select_job_res = job_ptr->select_job_res;
+	job_resources_t *job_resources = job_ptr->job_resources;
 	char *out = NULL;
 	uint32_t min_nodes, max_nodes;
 
@@ -281,14 +281,14 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, tmp_line);
 #endif
 
-	if (!select_job_res)
+	if (!job_resources)
 		goto line7;
 
 #ifndef HAVE_BG
-	if (!select_job_res->core_bitmap)
+	if (!job_resources->core_bitmap)
 		goto line7;
 
-	last  = bit_fls(select_job_res->core_bitmap);
+	last  = bit_fls(job_resources->core_bitmap);
 	if (last == -1)
 		goto line7;
 
@@ -310,18 +310,18 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 /*	tmp1[] stores the current cpu(s) allocated	*/
 	tmp2[0] = '\0';	/* stores last cpu(s) allocated */
-	for (rel_node_inx=0; rel_node_inx < select_job_res->nhosts;
+	for (rel_node_inx=0; rel_node_inx < job_resources->nhosts;
 	     rel_node_inx++) {
 
 		if (sock_reps >=
-		    select_job_res->sock_core_rep_count[sock_inx]) {
+		    job_resources->sock_core_rep_count[sock_inx]) {
 			sock_inx++;
 			sock_reps = 0;
 		}
 		sock_reps++;
 
-		bit_reps = select_job_res->sockets_per_node[sock_inx] *
-			   select_job_res->cores_per_socket[sock_inx];
+		bit_reps = job_resources->sockets_per_node[sock_inx] *
+			   job_resources->cores_per_socket[sock_inx];
 
 		core_bitmap = bit_alloc(bit_reps);
 		if (core_bitmap == NULL) {
@@ -330,7 +330,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		}
 
 		for (j=0; j < bit_reps; j++) {
-			if (bit_test(select_job_res->core_bitmap, bit_inx))
+			if (bit_test(job_resources->core_bitmap, bit_inx))
 				bit_set(core_bitmap, j);
 			bit_inx++;
 		}
@@ -346,10 +346,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
  *		identical allocation values.
  */
 		if (strcmp(tmp1, tmp2) ||
-		    (last_mem_alloc_ptr != select_job_res->memory_allocated) ||
-		    (select_job_res->memory_allocated &&
+		    (last_mem_alloc_ptr != job_resources->memory_allocated) ||
+		    (job_resources->memory_allocated &&
 		     (last_mem_alloc !=
-		      select_job_res->memory_allocated[rel_node_inx]))) {
+		      job_resources->memory_allocated[rel_node_inx]))) {
 			if (hostlist_count(hl_last)) {
 				hostlist_ranged_string(hl_last,
 					       sizeof(last_hosts), last_hosts);
@@ -367,9 +367,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 				hl_last = hostlist_create(NULL);
 			}
 			strcpy(tmp2, tmp1);
-			last_mem_alloc_ptr = select_job_res->memory_allocated;
+			last_mem_alloc_ptr = job_resources->memory_allocated;
 			if (last_mem_alloc_ptr)
-				last_mem_alloc = select_job_res->
+				last_mem_alloc = job_resources->
 					         memory_allocated[rel_node_inx];
 			else
 				last_mem_alloc = NO_VAL;
@@ -402,16 +402,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	hostlist_destroy(hl);
 	hostlist_destroy(hl_last);
 #else
-	if ((select_job_res->cpu_array_cnt > 0) &&
-	    (select_job_res->cpu_array_value) &&
-	    (select_job_res->cpu_array_reps)) {
+	if ((job_resources->cpu_array_cnt > 0) &&
+	    (job_resources->cpu_array_value) &&
+	    (job_resources->cpu_array_reps)) {
 		int length = 0;
 		xstrcat(out, "CPUs=");
 		length += 10;
-		for (i = 0; i < select_job_res->cpu_array_cnt; i++) {
+		for (i = 0; i < job_resources->cpu_array_cnt; i++) {
 			if (length > 70) {
 				/* skip to last CPU group entry */
-			    	if (i < select_job_res->cpu_array_cnt - 1) {
+			    	if (i < job_resources->cpu_array_cnt - 1) {
 			    		continue;
 				}
 				/* add elipsis before last entry */
@@ -420,16 +420,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			}
 
 			snprintf(tmp_line, sizeof(tmp_line), "%d",
-				 select_job_res->cpu_array_value[i]);
+				 job_resources->cpu_array_value[i]);
 			xstrcat(out, tmp_line);
 			length += strlen(tmp_line);
-		    	if (select_job_res->cpu_array_reps[i] > 1) {
+		    	if (job_resources->cpu_array_reps[i] > 1) {
 				snprintf(tmp_line, sizeof(tmp_line), "*%d",
-					 select_job_res->cpu_array_reps[i]);
+					 job_resources->cpu_array_reps[i]);
 				xstrcat(out, tmp_line);
 				length += strlen(tmp_line);
 			}
-			if (i < select_job_res->cpu_array_cnt - 1) {
+			if (i < job_resources->cpu_array_cnt - 1) {
 				xstrcat(out, ",");
 				length++;
 			}

@@ -200,14 +200,14 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 #if (CR_DEBUG)
 
-static void _dump_job_res(select_job_res_t job) {
+static void _dump_job_res(job_resources_t job) {
 	char str[64];
 
 	if (job->core_bitmap)
 		bit_fmt(str, sizeof(str), job->core_bitmap);
 	else
 		sprintf(str, "[no core_bitmap]");
-	info("DEBUG: Dump select_job_res: nhosts %u cb %s", job->nhosts, str);
+	info("DEBUG: Dump job_resources: nhosts %u cb %s", job->nhosts, str);
 }
  
 static void _dump_nodes()
@@ -530,7 +530,7 @@ static void _destroy_node_data(struct node_use_record *node_usage,
 }
 
 
-static void _add_job_to_row(struct select_job_res *job,
+static void _add_job_to_row(struct job_resources *job,
 			    struct part_row_data *r_ptr)
 {
 	/* add the job to the row_bitmap */
@@ -539,26 +539,26 @@ static void _add_job_to_row(struct select_job_res *job,
 		uint32_t size = bit_size(r_ptr->row_bitmap);
 		bit_nclear(r_ptr->row_bitmap, 0, size-1);
 	}
-	add_select_job_to_row(job, &(r_ptr->row_bitmap), cr_node_num_cores,
+	add_job_to_cores(job, &(r_ptr->row_bitmap), cr_node_num_cores,
 				cr_num_core_count);
 	
 	/*  add the job to the job_list */
 	if (r_ptr->num_jobs >= r_ptr->job_list_size) {
 		r_ptr->job_list_size += 8;
 		xrealloc(r_ptr->job_list, r_ptr->job_list_size *
-					sizeof(struct select_job_res *));
+					sizeof(struct job_resources *));
 	}
 	r_ptr->job_list[r_ptr->num_jobs++] = job;
 }
 
 
 /* test for conflicting core_bitmap bits */
-static int _can_job_fit_in_row(struct select_job_res *job,
+static int _can_job_fit_in_row(struct job_resources *job,
 			       struct part_row_data *r_ptr)
 {
 	if (r_ptr->num_jobs == 0 || !r_ptr->row_bitmap)
 		return 1;
-	return can_select_job_cores_fit(job, r_ptr->row_bitmap,
+	return job_fits_into_cores(job, r_ptr->row_bitmap,
 					cr_node_num_cores, cr_num_core_count);
 }
 
@@ -626,7 +626,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 	uint32_t i, j, num_jobs, size;
 	int x, *jstart;
 	struct part_row_data *this_row, *orig_row;
-	struct select_job_res **tmpjobs, *job;
+	struct job_resources **tmpjobs, *job;
 	
 	if (!p_ptr->row)
 		return;
@@ -643,7 +643,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		
 		/* rebuild the row bitmap */
 		num_jobs = this_row->num_jobs;
-		tmpjobs = xmalloc(num_jobs * sizeof(struct select_job_res *));
+		tmpjobs = xmalloc(num_jobs * sizeof(struct job_resources *));
 		for (i = 0; i < num_jobs; i++) {
 			tmpjobs[i] = this_row->job_list[i];
 			this_row->job_list[i] = NULL;
@@ -690,7 +690,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 	size = bit_size(p_ptr->row[0].row_bitmap);
 	
 	/* create a master job list and clear out ALL row data */
-	tmpjobs = xmalloc(num_jobs * sizeof(struct select_job_res *));	
+	tmpjobs = xmalloc(num_jobs * sizeof(struct job_resources *));	
 	jstart  = xmalloc(num_jobs * sizeof(int));
 	x = 0;
 	for (i = 0; i < p_ptr->num_rows; i++) {
@@ -789,7 +789,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 			if (p_ptr->row[i].num_jobs == 0)
 				continue;
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
-				add_select_job_to_row(
+				add_job_to_cores(
 						p_ptr->row[i].job_list[j],
 						&(p_ptr->row[i].row_bitmap),
 						cr_node_num_cores,
@@ -841,7 +841,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 
 
 /* allocate resources to the given job
- * - add 'struct select_job_res' resources to 'struct part_res_record'
+ * - add 'struct job_resources' resources to 'struct part_res_record'
  * - add job's memory requirements to 'struct node_res_record'
  *
  * if action = 0 then add cores and memory
@@ -850,7 +850,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
  */
 static int _add_job_to_res(struct job_record *job_ptr, int action)
 {
-	struct select_job_res *job = job_ptr->select_job;
+	struct job_resources *job = job_ptr->job_resrcs;
 	struct part_res_record *p_ptr;
 	int i, n;
 
@@ -935,7 +935,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 
 
 /* deallocate resources to the given job
- * - subtract 'struct select_job_res' resources from 'struct part_res_record'
+ * - subtract 'struct job_resources' resources from 'struct part_res_record'
  * - subtract job's memory requirements from 'struct node_res_record'
  *
  * if action = 0 then subtract cores and memory
@@ -947,7 +947,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct node_use_record *node_usage,
 			    struct job_record *job_ptr, int action)
 {
-	struct select_job_res *job = job_ptr->select_job;
+	struct job_resources *job = job_ptr->job_resrcs;
 	int i, n;
 
 	if (!job || !job->core_bitmap) {
@@ -1679,14 +1679,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		fatal("select_p_job_test: Mode %d is invalid", mode);
 
 #if (CR_DEBUG)
-	if (job_ptr->select_job)
-		log_select_job_res(job_ptr->job_id, job_ptr->select_job);
+	if (job_ptr->job_resrcs)
+		log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
 	else
-		info("no select_job_res info for job %u", 
+		info("no job_resources info for job %u", 
 		     job_ptr->job_id);
 #else
-	if (debug_cpu_bind && job_ptr->select_job)
-		log_select_job_res(job_ptr->job_id, job_ptr->select_job);
+	if (debug_cpu_bind && job_ptr->job_resrcs)
+		log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
 #endif
 
 	return rc;
