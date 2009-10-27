@@ -527,6 +527,8 @@ scontrol_update_job (int argc, char *argv[])
 		else if (!strncasecmp(tag, "EligibleTime", MAX(taglen, 2)) ||
 			 !strncasecmp(tag, "StartTime",    MAX(taglen, 2))) {
 			job_msg.begin_time = parse_time(val, 0);
+			if(job_msg->begin_time < time(NULL))
+				job_msg->begin_time = time(NULL);
 			update_cnt++;
 		}
 		else if (!strncasecmp(tag, "EndTime", MAX(taglen, 2))) {
