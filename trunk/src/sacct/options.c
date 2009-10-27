@@ -407,7 +407,9 @@ sacct [<OPTION>]                                                            \n\
 	           Print a list of fields that can be specified with the    \n\
 	           '--format' option                                        \n\
      -E, --endtime:                                                         \n\
-                   Select jobs eligible before this time.                   \n\
+                   Select jobs eligible before this time.  If states are    \n\
+                   given with the -s option return jobs in this state before\n\
+                   this period.                                             \n\
      -f, --file=file:                                                       \n\
 	           Read data from the specified file, rather than SLURM's   \n\
                    current accounting log file. (Only appliciable when      \n\
@@ -457,7 +459,8 @@ sacct [<OPTION>]                                                            \n\
                    node_fail (nf).                                          \n\
      -S, --starttime:                                                       \n\
                    Select jobs eligible after this time.  Default is        \n\
-                   midnight of current day.                                 \n\
+                   midnight of current day.  If states are given with the -s\n\
+                   option then return jobs in this state at this time.      \n\
      -T, --truncate:                                                        \n\
                    Truncate time.  So if a job started before --starttime   \n\
                    the start time would be truncated to --starttime.        \n\
@@ -647,7 +650,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:deE:f:g:hj:lLnN:o:OpPr:s:S:tu:vVW:X",
+				"aA:bcC:dDeE:f:g:hj:lLnN:o:OpPr:s:S:Tu:vVW:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -872,6 +875,8 @@ void parse_command_line(int argc, char **argv)
 	      params.opt_help,
 	      params.opt_allocs);
 
+	if(params.opt_allocs)
+		job_cond->without_steps = 1;
 
 	if(params.opt_completion) {
 		g_slurm_jobcomp_init(params.opt_filein);
