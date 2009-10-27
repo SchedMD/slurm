@@ -57,6 +57,83 @@ typedef struct {
 	bitstr_t *asked_bitmap;
 } local_cluster_t;
 
+static void _state_time_string(char **extra, uint32_t state,
+			       uint32_t start, uint32_t end)
+{
+	int base_state = state & JOB_STATE_BASE;
+
+	if(!start && !end) {
+		xstrfmtcat(*extra, "t1.state='%u'", state);
+		return;
+	}
+
+ 	switch(base_state) {
+	case JOB_PENDING:
+		if(start) {
+			if(!end) {
+				xstrfmtcat(*extra, 
+					   "(t1.eligible && (%d between "
+					   "t1.eligible and t1.start))",
+					   start);
+			} else {
+				xstrfmtcat(*extra, 
+					   "(t1.eligible && ((%d between "
+					   "t1.eligible and t1.start) || "
+					   "(t1.eligible between %d and %d)))",
+					   start, start,
+					   end);
+			}
+		} else if (end) {
+			xstrfmtcat(*extra, "(t1.eligible && t1.eligible < %d)",
+				   end);
+		}
+		break;
+	case JOB_SUSPENDED:
+		/* FIX ME: this should do something with the suspended
+		   table, but it doesn't right now. */
+	case JOB_RUNNING:
+		if(start) {
+			if(!end) {
+				xstrfmtcat(*extra, 
+					   "(t1.start && "
+					   "(%d between t1.start and t1.end))",
+					   start);
+			} else {
+				xstrfmtcat(*extra, 
+					   "(t1.start && "
+					   "((%d between t1.start and t1.end) "
+					   "|| (t1.start between %d and %d)))",
+					   start, start,
+					   end);
+			}
+		} else if (end) {
+			xstrfmtcat(*extra, "(t1.start && t1.start < %d)", end);
+		}
+		break;
+	case JOB_COMPLETE:
+	case JOB_CANCELLED:
+	case JOB_FAILED:
+	case JOB_TIMEOUT:
+	case JOB_NODE_FAIL:
+	default:
+		xstrfmtcat(*extra, "(t1.state='%u' && (t1.end && ", state);	
+		if(start) {
+			if(!end) {
+				xstrfmtcat(*extra, "(t1.end >= %d)))", start);
+			} else {
+				xstrfmtcat(*extra, 
+					   "(t1.end between %d and %d)))",
+					   start, end);				
+			}
+		} else if(end) {
+			xstrfmtcat(*extra, "(t1.end <= %d)))", end);
+		}
+		break;
+	}
+
+	return;
+}
+
 static void _destroy_local_cluster(void *object)
 {
 	local_cluster_t *local_cluster = (local_cluster_t *)object;
@@ -178,8 +255,7 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 
 	if(with_deleted)
 	      	rc = _write_to_file(fd,
-			    " on duplicate key update "
-			    "deleted=1;");
+			    " on duplicate key update deleted=1;");
 	else
 	      	rc = _write_to_file(fd,
 			    " on duplicate key update "
@@ -649,30 +725,6 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		xstrcat(*extra, ")");
 	}
 
-	if(job_cond->usage_start) {
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-
-		if(!job_cond->usage_end)
-			xstrfmtcat(*extra, 
-				   "t1.end >= %d || t1.end = 0)",
-				   job_cond->usage_start);
-		else
-			xstrfmtcat(*extra, 
-				   "(t1.eligible < %d "
-				   "&& (t1.end >= %d || t1.end = 0)))",
-				   job_cond->usage_end, job_cond->usage_start);
-	} else if(job_cond->usage_end) {
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-		xstrfmtcat(*extra, 
-			   "(t1.eligible < %d))", job_cond->usage_end);
-	}
-
 	if(job_cond->state_list && list_count(job_cond->state_list)) {
 		set = 0;
 		if(*extra)
@@ -684,11 +736,40 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.state='%s'", object);
+			_state_time_string(extra, atoi(object), 
+					   job_cond->usage_start, 
+					   job_cond->usage_end);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(*extra, ")");
+	} else {
+		/* Only do this (default of all eligible jobs) if no
+		   state is given */
+		if(job_cond->usage_start) {
+			if(*extra)
+				xstrcat(*extra, " && (");
+			else
+				xstrcat(*extra, " where (");
+			
+			if(!job_cond->usage_end)
+				xstrfmtcat(*extra, 
+					   "(t1.end >= %d || t1.end = 0))",
+					   job_cond->usage_start);
+			else
+				xstrfmtcat(*extra, 
+					   "(t1.eligible < %d "
+					   "&& (t1.end >= %d || t1.end = 0)))",
+					   job_cond->usage_end, 
+					   job_cond->usage_start);
+		} else if(job_cond->usage_end) {
+			if(*extra)
+				xstrcat(*extra, " && (");
+			else
+				xstrcat(*extra, " where (");
+			xstrfmtcat(*extra, 
+				   "(t1.eligible < %d))", job_cond->usage_end);
+		}
 	}
 
 	/* we need to put all the associations (t2) stuff together here */
@@ -754,6 +835,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	acct_user_rec_t user;
 	local_cluster_t *curr_cluster = NULL;
 	List local_cluster_list = NULL;
+	int only_pending = 0; 
 
 	/* if this changes you will need to edit the corresponding 
 	 * enum below also t1 is job_table */
@@ -950,6 +1032,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			return NULL;
 		}
 	}
+
+	if(job_cond->state_list && (list_count(job_cond->state_list) == 1)
+	   && (atoi(list_peek(job_cond->state_list)) == JOB_PENDING))
+		only_pending = 1;
 
 	setup_job_cond_limits(mysql_conn, job_cond, &extra);
 
@@ -1209,6 +1295,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job->requid = atoi(row[JOB_REQ_KILL_REQUID]);
 		job->qos = atoi(row[JOB_REQ_QOS]);
 		job->show_full = 1;
+		
+		if(only_pending || (job_cond && job_cond->without_steps))
+			goto skip_steps;
 					
 		if(job_cond && job_cond->step_list
 		   && list_count(job_cond->step_list)) {
@@ -1376,7 +1465,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			step->requid = atoi(step_row[STEP_REQ_KILL_REQUID]);
 		}
 		mysql_free_result(step_result);
-		
+
 		if(!job->track_steps) {
 			/* If we don't have track_steps we want to see
 			   if we have multiple steps.  If we only have
@@ -1392,6 +1481,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					job->track_steps = 1;
 			}
 		}
+	skip_steps:		
 		/* need to reset here to make the above test valid */
 		step = NULL;
 	}

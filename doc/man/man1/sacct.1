@@ -163,7 +163,9 @@ The section titled "Job Accounting Fields" describes these fields.
 .TP
 \f3\-E \fP\f2end_time\fP\fP\f3,\fP \f3\-\-endtime\fP\f3=\fP\f2end_time\fP
 .IP
-Select jobs eligible before time.
+Select jobs eligible before time.  If states are given with the \-s
+option return jobs in this state before this period.
+
 Valid time formats are...
 HH:MM[:SS] [AM|PM]
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
@@ -306,7 +308,9 @@ Space characters are not allowed in the
 .TP 
 \f3\-S \fP\f3,\fP \f3\-\-starttime\fP
 Select jobs eligible after the specified time. Default is midnight of
-current day.
+current day.  If states are given with the \-s option then return jobs
+in this state at this time.
+
 Valid time formats are...
 HH:MM[:SS] [AM|PM]
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
