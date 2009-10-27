@@ -650,7 +650,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:dDeE:f:g:hj:lLnN:o:OpPr:s:S:Tu:vVW:X",
+				"aA:bcC:dDeE:f:g:hj:lLnN:o:OpPr:s:S:Ttu:vVW:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -825,6 +825,7 @@ void parse_command_line(int argc, char **argv)
 		params.opt_dup |= FDUMP_FLAG;
 
 	job_cond->duplicates = params.opt_dup;
+	job_cond->without_steps = params.opt_allocs;
 
 	if(!job_cond->usage_start) {
 		job_cond->usage_start = time(NULL);
@@ -874,9 +875,6 @@ void parse_command_line(int argc, char **argv)
 	      params.opt_field_list,
 	      params.opt_help,
 	      params.opt_allocs);
-
-	if(params.opt_allocs)
-		job_cond->without_steps = 1;
 
 	if(params.opt_completion) {
 		g_slurm_jobcomp_init(params.opt_filein);
