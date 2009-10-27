@@ -45,7 +45,7 @@ set job_id           0
 set limit_core       943
 set limit_fsize      674515
 set limit_nofile     1016
-set limit_nproc      345
+set limit_nproc      34500
 set limit_stack      2021
 set matches          0
 
