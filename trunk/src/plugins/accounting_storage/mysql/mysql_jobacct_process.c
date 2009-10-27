@@ -725,6 +725,40 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		xstrcat(*extra, ")");
 	}
 
+	if(job_cond->cpus_min) {
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		if(job_cond->cpus_max) {
+			xstrfmtcat(*extra, "(t1.alloc_cpus between %u and %u))",
+				   job_cond->cpus_min, job_cond->cpus_max);
+			
+		} else {
+			xstrfmtcat(*extra, "(t1.alloc_cpus='%u'))",
+				   job_cond->cpus_min);
+			
+		}
+	}
+
+	if(job_cond->nodes_min) {
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		if(job_cond->nodes_max) {
+			xstrfmtcat(*extra, 
+				   "(t1.alloc_nodes between %u and %u))",
+				   job_cond->nodes_min, job_cond->nodes_max);
+			
+		} else {
+			xstrfmtcat(*extra, "(t1.alloc_nodes='%u'))",
+				   job_cond->nodes_min);
+			
+		}
+	}
 	if(job_cond->state_list && list_count(job_cond->state_list)) {
 		set = 0;
 		if(*extra)

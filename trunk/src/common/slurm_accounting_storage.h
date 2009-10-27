@@ -279,8 +279,12 @@ typedef struct {
 	List acct_list;		/* list of char * */
 	List associd_list;	/* list of char */
 	List cluster_list;	/* list of char * */
+	uint32_t cpus_max;      /* number of cpus high range */
+	uint32_t cpus_min;      /* number of cpus low range */
 	uint16_t duplicates;    /* report duplicate job entries */
 	List groupid_list;	/* list of char * */
+	uint32_t nodes_max;     /* number of nodes high range */
+	uint32_t nodes_min;     /* number of nodes low range */
 	List partition_list;	/* list of char * */
 	List resv_list;		/* list of char * */
 	List resvid_list;	/* list of char * */

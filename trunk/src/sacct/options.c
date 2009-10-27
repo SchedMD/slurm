@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_time.h"
 #include "sacct.h"
@@ -419,6 +420,10 @@ sacct [<OPTION>]                                                            \n\
                    to select jobs to display.  By default, all groups are   \n\
                    selected.                                                \n\
      -h, --help:   Print this description of use.                           \n\
+     -i, --nnodes=N:                                                        \n\
+                   Return jobs which ran on this many nodes (N = min[-max]) \n\
+     -I, --ncpus=N:                                                         \n\
+                   Return jobs which ran on this many cpus (N = min[-max])  \n\
      -j, --jobs:                                                            \n\
 	           Format is <job(.step)>. Display information about this   \n\
                    job or comma-separated list of jobs. The default is all  \n\
@@ -440,8 +445,9 @@ sacct [<OPTION>]                                                            \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header; the option has no effect\n\
                    if --dump is specified                                   \n\
-     -N, --nodes:                                                           \n\
-                   A comma separated list of nodes where jobs ran           \n\
+     -N, --nodelist:                                                        \n\
+                   Display jobs that ran on any of these nodes,             \n\
+                   can be one or more using a ranged string.                \n\
      -o, --format:                                                          \n\
 	           Comma seperated list of fields. (use \"--helpformat\"    \n\
                    for a list of available fields).                         \n\
@@ -601,6 +607,7 @@ void parse_command_line(int argc, char **argv)
 	acct_job_cond_t *job_cond = params.job_cond;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int verbosity;		/* count of -v options */
+	bool set;
 
 	static struct option long_options[] = {
 		{"allusers", 0,0, 'a'},
@@ -620,9 +627,11 @@ void parse_command_line(int argc, char **argv)
 		{"group", 1, 0, 'g'},
 		{"help", 0, 0, 'h'},
 		{"helpformat", 0, &params.opt_help, 2},
+		{"nnodes", 1, 0, 'i'},
+		{"ncpus", 1, 0, 'I'},
 		{"jobs", 1, 0, 'j'},
 		{"long", 0, 0, 'l'},
-		{"nodes", 1, 0, 'N'},
+		{"nodelist", 1, 0, 'N'},
 		{"noheader", 0, 0, 'n'},
 		{"fields", 1, 0, 'o'},
 		{"format", 1, 0, 'o'},
@@ -650,7 +659,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:dDeE:f:g:hj:lLnN:o:OpPr:s:S:Ttu:vVW:X",
+				"aA:bcC:dDeE:f:g:hi:I:j:lLnN:o:OpPr:s:S:Ttu:vVW:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -705,6 +714,34 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'h':
 			params.opt_help = 1;
+			break;
+		case 'i':
+			set = get_resource_arg_range(
+				optarg, 
+				"requested node range",
+				(int *)&job_cond->nodes_min,
+				(int *)&job_cond->nodes_max,
+				true);
+			
+			if (set == false) {
+				error("invalid node range -i '%s'", 
+				      optarg);
+				exit(1);
+			}			
+			break;
+		case 'I':
+			set = get_resource_arg_range(
+				optarg, 
+				"requested cpu range",
+				(int *)&job_cond->cpus_min,
+				(int *)&job_cond->cpus_max,
+				true);
+			
+			if (set == false) {
+				error("invalid cpu range -i '%s'", 
+				      optarg);
+				exit(1);
+			}
 			break;
 		case 'j':
 			if ((strspn(optarg, "0123456789, ") < strlen(optarg))

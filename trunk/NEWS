@@ -6,11 +6,12 @@ documents those changes that are of interest to users and admins.
  -- When getting information about nodes in hidden partitions, return a node
     name of NULL rather than returning no information about the node so that 
     node index information is still valid.
- -- When quering database for jobs in certain state and a time period is 
+ -- When querying database for jobs in certain state and a time period is 
     given only jobs in that state during the period will be returned,
     previously if a time period was given in sacct jobs eligible to run or 
     running would be displayed, which is still the default if no states are 
     requested.
+ -- One can now query jobs based on size (nodes and or cpus) (mysql plugin only)
 
 * Changes in SLURM 2.1.0-pre5
 =============================
