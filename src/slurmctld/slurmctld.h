@@ -73,7 +73,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h" /* location of slurmctld_conf */
-#include "src/common/select_job_res.h"
+#include "src/common/job_resources.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -448,7 +448,7 @@ struct job_record {
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t *select_jobinfo;/* opaque data, BlueGene */
-	select_job_res_t *select_job;	/* details of allocated cores */
+	job_resources_t *job_resrcs;	/* details of allocated cores */
 	char **spank_job_env;		/* environment variables for job prolog
 					 * and epilog scripts as set by SPANK 
 					 * plugins */
@@ -493,7 +493,7 @@ struct 	step_record {
 	time_t ckpt_time;		/* time of last checkpoint */
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes, 
-					 * see src/common/select_job_res.h */
+					 * see src/common/job_resources.h */
 	uint32_t cpu_count;		/* count of step's CPUs */
 	uint16_t cpus_per_task;		/* cpus per task initiated */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 

@@ -73,7 +73,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	bool over_subscribe = false;
 	uint32_t n, i, tid, maxtasks;
 	uint16_t *avail_cpus;
-	select_job_res_t *job_res = job_ptr->select_job;
+	job_resources_t *job_res = job_ptr->job_resrcs;
 	if (!job_res || !job_res->cpus) {
 		error("cons_res: _compute_c_b_task_dist given NULL job_ptr");
 		return SLURM_ERROR;
@@ -117,7 +117,7 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	bool over_subscribe = false;
 	uint32_t n, i, p, tid, maxtasks;
 	uint16_t *avail_cpus, plane_size = 1;
-	select_job_res_t *job_res = job_ptr->select_job;
+	job_resources_t *job_res = job_ptr->job_resrcs;
 	if (!job_res || !job_res->cpus) {
 		error("cons_res: _compute_plane_dist given NULL job_res");
 		return SLURM_ERROR;
@@ -175,7 +175,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 {
 	uint32_t c, i, n, size, csize, core_cnt;
 	uint16_t cpus, num_bits, vpus = 1;
-	select_job_res_t *job_res = job_ptr->select_job;
+	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool alloc_cores = false, alloc_sockets = false;
 
 	if (!job_res)
@@ -253,7 +253,7 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 {
 	uint32_t c, i, j, s, n, *sock_start, *sock_end, size, csize, core_cnt;
 	uint16_t cps = 0, cpus, vpus, sockets, sock_size;
-	select_job_res_t *job_res = job_ptr->select_job;
+	job_resources_t *job_res = job_ptr->job_resrcs;
 	bitstr_t *core_map;
 	bool *sock_used, alloc_cores = false, alloc_sockets = false;
 
@@ -398,12 +398,12 @@ extern int cr_dist(struct job_record *job_ptr,
 {
 	int error_code, cr_cpu = 1; 
 	
-	if (job_ptr->select_job->node_req == NODE_CR_RESERVED) {
+	if (job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) {
 		/* the job has been allocated an EXCLUSIVE set of nodes,
 		 * so it gets all of the bits in the core_bitmap and
 		 * all of the available CPUs in the cpus array */
-		int size = bit_size(job_ptr->select_job->core_bitmap);
-		bit_nset(job_ptr->select_job->core_bitmap, 0, size-1);
+		int size = bit_size(job_ptr->job_resrcs->core_bitmap);
+		bit_nset(job_ptr->job_resrcs->core_bitmap, 0, size-1);
 		return SLURM_SUCCESS;
 	}
 	

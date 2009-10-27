@@ -577,14 +577,14 @@ static char * _task_list(struct job_record *job_ptr)
 	int i, j, task_cnt;
 	char *buf = NULL, *host;
 	hostlist_t hl = hostlist_create(job_ptr->nodes);
-	select_job_res_t *select_ptr = job_ptr->select_job;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
-	xassert(select_ptr && select_ptr->cpus);
+	xassert(job_resrcs_ptr && job_resrcs_ptr->cpus);
 	buf = xstrdup("");
 	if (hl == NULL)
 		return buf;
 
-	for (i=0; i<select_ptr->nhosts; i++) {
+	for (i=0; i<job_resrcs_ptr->nhosts; i++) {
 		host = hostlist_shift(hl);
 		if (host == NULL) {
 			error("bad node_cnt for job %u (%s, %d)", 
@@ -592,7 +592,7 @@ static char * _task_list(struct job_record *job_ptr)
 				job_ptr->node_cnt);
 			break;
 		}
-		task_cnt = select_ptr->cpus[i];
+		task_cnt = job_resrcs_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
 		for (j=0; j<task_cnt; j++) {

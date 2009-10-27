@@ -1633,14 +1633,14 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bool test_only;
 	uint32_t c, i, n, csize, total_cpus, save_mem = 0;
 	int32_t build_cnt;
-	select_job_res_t *job_res;
+	job_resources_t *job_res;
 	struct part_res_record *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
 
 	layout_ptr = job_ptr->details->req_node_layout;
 	reqmap = job_ptr->details->req_node_bitmap;
 	
-	free_select_job_res(&job_ptr->select_job);
+	free_job_resources(&job_ptr->job_resrcs);
 
 	if (mode == SELECT_MODE_TEST_ONLY)
 		test_only = true;
@@ -1936,7 +1936,7 @@ alloc_job:
 	 * - cpu_count is the number of cpus per allocated node
 	 *
 	 * Next steps are to cleanup the worker variables,
-	 * create the select_job_res struct,
+	 * create the job_resources struct,
 	 * distribute the job on the bits, and exit
 	 */
 	FREE_NULL_BITMAP(orig_map);
@@ -1971,7 +1971,7 @@ alloc_job:
 
 	debug3("cons_res: cr_job_test: distributing job %u", job_ptr->job_id);
 	/** create the struct_job_res  **/
-	job_res                   = create_select_job_res();
+	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(bitmap);
 	if (job_res->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
@@ -1990,10 +1990,10 @@ alloc_job:
 					    sizeof(uint32_t));
 
 	/* store the hardware data for the selected nodes */
-	error_code = build_select_job_res(job_res, node_record_table_ptr,
+	error_code = build_job_resources(job_res, node_record_table_ptr,
 					  select_fast_schedule);
 	if (error_code != SLURM_SUCCESS) {
-		free_select_job_res(&job_res);		
+		free_job_resources(&job_res);		
 		FREE_NULL_BITMAP(free_cores);
 		return error_code;
 	}
@@ -2046,15 +2046,15 @@ alloc_job:
 	FREE_NULL_BITMAP(free_cores);
 
 	/* distribute the tasks and clear any unused cores */
-	job_ptr->select_job = job_res;
+	job_ptr->job_resrcs = job_res;
 	error_code = cr_dist(job_ptr, cr_type);
 	if (error_code != SLURM_SUCCESS) {
-		free_select_job_res(&job_ptr->select_job);
+		free_job_resources(&job_ptr->job_resrcs);
 		return error_code;
 	}
 
 	/* translate job_res->cpus array into format with rep count */
-	build_cnt = build_select_job_res_cpu_array(job_res);
+	build_cnt = build_job_resources_cpu_array(job_res);
 	if (build_cnt >= 0)
 		job_ptr->total_procs = build_cnt;
 	else

@@ -742,7 +742,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->resv_name, buffer);
 
 	select_g_select_jobinfo_pack(dump_job_ptr->select_jobinfo, buffer);
-	pack_select_job_res(dump_job_ptr->select_job, buffer);
+	pack_job_resources(dump_job_ptr->job_resrcs, buffer);
 
 	pack16(dump_job_ptr->ckpt_interval, buffer);
 	checkpoint_pack_jobinfo(dump_job_ptr->check_job, buffer);
@@ -792,7 +792,7 @@ static int _load_job_state(Buf buffer)
 	struct part_record *part_ptr;
 	int error_code, i, qos_error;
 	select_jobinfo_t *select_jobinfo = NULL;
-	select_job_res_t *select_job = NULL;
+	job_resources_t *job_resources = NULL;
 	check_jobinfo_t check_job = NULL;
 	acct_association_rec_t assoc_rec;
 	acct_qos_rec_t qos_rec;
@@ -855,7 +855,7 @@ static int _load_job_state(Buf buffer)
 
 	if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer))
 		goto unpack_error;
-	if (unpack_select_job_res(&select_job, buffer))
+	if (unpack_job_resources(&job_resources, buffer))
 		goto unpack_error;
 
 	safe_unpack16(&ckpt_interval, buffer);
@@ -991,7 +991,7 @@ static int _load_job_state(Buf buffer)
 	resv_name             = NULL;	/* reused, nothing left to free */
 	job_ptr->resv_flags   = resv_flags;
 	job_ptr->select_jobinfo = select_jobinfo;
-	job_ptr->select_job   = select_job;
+	job_ptr->job_resrcs   = job_resources;
 	job_ptr->spank_job_env = spank_job_env;
 	job_ptr->spank_job_env_size = spank_job_env_size;
 	job_ptr->ckpt_interval = ckpt_interval;
@@ -1606,11 +1606,11 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 {
 	int i, orig_pos = -1, new_pos = -1;
 	bitstr_t *orig_bitmap = bit_copy(job_ptr->node_bitmap);
-	select_job_res_t *select_ptr = job_ptr->select_job;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
-	xassert(select_ptr);
-	xassert(select_ptr->cpus);
-	xassert(select_ptr->cpus_used);
+	xassert(job_resrcs_ptr);
+	xassert(job_resrcs_ptr->cpus);
+	xassert(job_resrcs_ptr->cpus_used);
 
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
@@ -1626,7 +1626,7 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 			continue;
 		memcpy(&job_ptr->node_addr[new_pos],
 		       &job_ptr->node_addr[orig_pos], sizeof(slurm_addr));
-		/* NOTE: The job's allocation in the job_ptr->select_job
+		/* NOTE: The job's allocation in the job_ptr->job_resrcs
 		 * data structure is unchanged  even after a node allocated
 		 * to the job goes DOWN. */
 	}
@@ -3985,7 +3985,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->partition);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
-	free_select_job_res(&job_ptr->select_job);
+	free_job_resources(&job_ptr->job_resrcs);
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	for (i=0; i<job_ptr->spank_job_env_size; i++)
 		xfree(job_ptr->spank_job_env[i]);
@@ -4237,7 +4237,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	pack32(dump_job_ptr->exit_code, buffer);
 
 	if (show_flags & SHOW_DETAIL) {
-		pack_select_job_res(dump_job_ptr->select_job, buffer);
+		pack_job_resources(dump_job_ptr->job_resrcs, buffer);
 	} else {
 		uint32_t empty = NO_VAL;
 		pack32(empty, buffer);
@@ -4443,11 +4443,11 @@ void reset_job_bitmaps(void)
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
-		reset_node_bitmap(job_ptr->select_job,
+		reset_node_bitmap(job_ptr->job_resrcs,
 				  job_ptr->node_bitmap);
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) && 
-		    job_ptr->select_job && (cr_flag || gang_flag) && 
-		    valid_select_job_res(job_ptr->select_job, 
+		    job_ptr->job_resrcs && (cr_flag || gang_flag) && 
+		    valid_job_resources(job_ptr->job_resrcs,
 					 node_record_table_ptr, 
 					 slurmctld_conf.fast_schedule)) {
 			error("Aborting JobID %u due to change in socket/core "
