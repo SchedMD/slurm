@@ -109,7 +109,6 @@ static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			      int suspended);
 static void _add_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id);
 static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap);
-static void _cr_job_list_del(void *x);
 static int  _cr_job_list_sort(void *x, void *y);
 static void _dump_node_cr(struct node_cr_record *node_cr_ptr);
 static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr);
@@ -1823,7 +1822,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* Build list of running and suspended jobs */
-	cr_job_list = list_create(_cr_job_list_del);
+	cr_job_list = list_create(NULL);
 	if (!cr_job_list)
 		fatal("list_create: memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
@@ -1911,11 +1910,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	_free_node_cr(exp_node_cr);
 	bit_free(orig_map);
 	return rc;
-}
-
-static void _cr_job_list_del(void *x)
-{
-	xfree(x);
 }
 
 static int  _cr_job_list_sort(void *x, void *y)
