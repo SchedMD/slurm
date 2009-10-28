@@ -1019,6 +1019,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	char tmp_char[50];
 	char running_char[50];
 	time_t now_time = time(NULL);
+	int suspend_secs = 0;
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
@@ -1040,13 +1041,18 @@ static void _layout_job_record(GtkTreeView *treeview,
 			if (!IS_JOB_RUNNING(job_ptr) &&
 			    (job_ptr->end_time != 0))
 				now_time = job_ptr->end_time;
-			if (job_ptr->suspend_time)
-				now_time = (difftime(now_time,
-						     job_ptr->suspend_time)
-					    + job_ptr->pre_sus_time);
-			now_time = difftime(now_time, job_ptr->start_time);
+			if (job_ptr->suspend_time) {
+				now_time = (time_t)
+					(difftime(now_time,
+						  job_ptr->suspend_time)
+					 + job_ptr->pre_sus_time);
+			} else 
+				now_time = (time_t)difftime(
+					now_time, job_ptr->start_time);
 		}
+		suspend_secs = (time(NULL) - job_ptr->start_time) - now_time;
 		secs2time_str(now_time, running_char, sizeof(running_char));
+		
 		nodes = sview_job_info_ptr->nodes;	
 	}
 
@@ -1451,7 +1457,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_TIME_SUBMIT), 
 				   tmp_char);
-	secs2time_str(job_ptr->suspend_time, tmp_char, sizeof(tmp_char));
+	secs2time_str(suspend_secs, tmp_char, sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_TIME_SUSPEND), 
@@ -1484,6 +1490,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char *nodes = NULL, *reason = NULL, *uname = NULL;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
+	int suspend_secs = 0;
 	GtkTreeIter step_iter;
 	int childern = 0;
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
@@ -1501,12 +1508,16 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			if (!IS_JOB_RUNNING(job_ptr) &&
 			    (job_ptr->end_time != 0)) 
 				now_time = job_ptr->end_time;
-			if (job_ptr->suspend_time)
-				now_time = (difftime(now_time,
-						     job_ptr->suspend_time)
-					    + job_ptr->pre_sus_time);
-			now_time = difftime(now_time, job_ptr->start_time);
+			if (job_ptr->suspend_time) {
+				now_time = (time_t)
+					(difftime(now_time,
+						  job_ptr->suspend_time)
+					 + job_ptr->pre_sus_time);
+			} else 
+				now_time = (time_t)difftime(
+					now_time, job_ptr->start_time);
 		}
+		suspend_secs = (time(NULL) - job_ptr->start_time) - now_time;
 		secs2time_str(now_time, tmp_char, sizeof(tmp_char));
 		nodes = sview_job_info_ptr->nodes;	
 	}
@@ -1529,8 +1540,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		slurm_make_time_str((time_t *)&job_ptr->end_time, tmp_char,
 				    sizeof(tmp_char));
 	gtk_tree_store_set(treestore, iter, SORTID_TIME_END, tmp_char, -1);
-	slurm_make_time_str((time_t *)&job_ptr->suspend_time, tmp_char,
-			    sizeof(tmp_char));
+	secs2time_str(suspend_secs, tmp_char, sizeof(tmp_char));
 	gtk_tree_store_set(treestore, iter, SORTID_TIME_SUSPEND, tmp_char, -1);
 
 	if (job_ptr->time_limit == NO_VAL)
