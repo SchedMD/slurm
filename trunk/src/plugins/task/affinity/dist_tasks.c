@@ -55,7 +55,7 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 				uint16_t *hw_sockets, uint16_t *hw_cores,
 				uint16_t *hw_threads);
-static int _get_local_node_info(slurm_cred_arg_t *arg, uint32_t job_node_id,
+static int _get_local_node_info(slurm_cred_arg_t *arg, int job_node_id,
 				uint16_t *sockets, uint16_t *cores);
 
 static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
@@ -424,7 +424,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
  * IN/OUT: cores   - pointer to cores_per_socket count variable
  * OUT:  returns the core_bitmap index of the first core for this node
  */
-static int _get_local_node_info(slurm_cred_arg_t *arg, uint32_t job_node_id,
+static int _get_local_node_info(slurm_cred_arg_t *arg, int job_node_id,
 				uint16_t *sockets, uint16_t *cores)
 {
 	int bit_start = 0, bit_finish = 0;
@@ -433,7 +433,7 @@ static int _get_local_node_info(slurm_cred_arg_t *arg, uint32_t job_node_id,
 	do {
 		index++;
 		for (i = 0; i < arg->sock_core_rep_count[index] &&
-			    cur_node_id < job_node_id; i++) {
+			     cur_node_id < job_node_id; i++) {
 			bit_start = bit_finish;
 			bit_finish += arg->sockets_per_node[index] *
 					arg->cores_per_socket[index];
@@ -547,7 +547,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
 	uint16_t p, t, num_procs, sockets, cores;
-	uint32_t job_node_id;
+	int job_node_id;
 	int start;
 	char *str;
 
@@ -565,7 +565,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	job_node_id = nodelist_find(arg.job_hostlist, conf->node_name);
 	start = _get_local_node_info(&arg, job_node_id, &sockets, &cores);
 	if (start < 0) {
-		error("task/affinity: missing node %u in job credential",
+		error("task/affinity: missing node %d in job credential",
 		      job_node_id);
 		slurm_cred_free_args(&arg);
 		return NULL;
