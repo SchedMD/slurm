@@ -261,6 +261,10 @@ documents those changes that are of interest to users and admins.
  -- Modified job table to use 32bit u/gids for those with ids greater 
     than 16 bits.
  -- Made minor changes for slurm to compile cleanly under gcc 4.4.1
+ -- Fixed issue with task/affinity when an allocation would run multiple sruns 
+    with the --exclusive flag in an allocation with more than 1 node.  
+    Previously when the first node was filled up no tasks would ever run 
+    on the other nodes.
 
 * Changes in SLURM 2.0.7
 ========================
