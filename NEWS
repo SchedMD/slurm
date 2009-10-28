@@ -265,6 +265,8 @@ documents those changes that are of interest to users and admins.
     with the --exclusive flag in an allocation with more than 1 node.  
     Previously when the first node was filled up no tasks would ever run 
     on the other nodes.
+ -- Fixed sview to display correct run time and suspend time when job has 
+    been suspended.
 
 * Changes in SLURM 2.0.7
 ========================
