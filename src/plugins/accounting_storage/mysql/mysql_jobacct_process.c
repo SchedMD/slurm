@@ -72,8 +72,9 @@ static void _state_time_string(char **extra, uint32_t state,
 		if(start) {
 			if(!end) {
 				xstrfmtcat(*extra, 
-					   "(t1.eligible && (%d between "
-					   "t1.eligible and t1.start))",
+					   "(t1.eligible && (!t1.start || "
+					   "(%d between "
+					   "t1.eligible and t1.start)))",
 					   start);
 			} else {
 				xstrfmtcat(*extra, 
@@ -95,8 +96,8 @@ static void _state_time_string(char **extra, uint32_t state,
 		if(start) {
 			if(!end) {
 				xstrfmtcat(*extra, 
-					   "(t1.start && "
-					   "(%d between t1.start and t1.end))",
+					   "(t1.start && (!t1.end || "
+					   "(%d between t1.start and t1.end)))",
 					   start);
 			} else {
 				xstrfmtcat(*extra, 
@@ -1182,6 +1183,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job = create_jobacct_job_rec();
 		list_append(job_list, job);
 
+		job->state = atoi(row[JOB_REQ_STATE]);
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		job->alloc_nodes = atoi(row[JOB_REQ_ALLOC_NODES]);
 		job->associd = atoi(row[JOB_REQ_ASSOCID]);
@@ -1291,7 +1293,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			}
 		} else {
 			job->suspended = atoi(row[JOB_REQ_SUSPENDED]);
-
+			
+			/* fix the suspended number to be correct */
+			if(job->state == JOB_SUSPENDED)
+				job->suspended = now - job->suspended;
 			if(!job->start) {
 				job->elapsed = 0;
 			} else if(!job->end) {
@@ -1323,7 +1328,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 			
 		job->track_steps = atoi(row[JOB_REQ_TRACKSTEPS]);
-		job->state = atoi(row[JOB_REQ_STATE]);
 		job->priority = atoi(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = atoi(row[JOB_REQ_REQ_CPUS]);
 		job->requid = atoi(row[JOB_REQ_KILL_REQUID]);
