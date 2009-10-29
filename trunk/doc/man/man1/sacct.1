@@ -270,7 +270,8 @@ from. The default is all partitions.
 
 .TP 
 \f3\-s \fP\f2state_list\fP \f3,\fP  \f3\-\-state\fP\f3=\fP\f2state_list\fP
-Selects jobs based on their current state, which can be designated with 
+Selects jobs based on their current state or the state they were in
+during the time period given, which can be designated with 
 the following state designators:
 .RS 
 .TP "10"
@@ -304,6 +305,9 @@ The
 operand is a comma\-separated list of these state designators.
 Space characters are not allowed in the 
 \f2state_list\fP\c
+
+NOTE: The default starttime is midnight of the current day so if you
+want to see only jobs in the state now use \-S now.
 \&.
 
 .TP 
