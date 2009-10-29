@@ -460,7 +460,8 @@ sacct [<OPTION>]                                                            \n\
 	           Comma seperated list of partitions to select jobs and    \n\
                    job steps from. The default is all partitions.           \n\
      -s, --state:                                                           \n\
-	           Select jobs based on their current state: running (r),   \n\
+	           Select jobs based on their current state or the state    \n\
+                   they were in during the time period given: running (r),  \n\
 	           completed (cd), failed (f), timeout (to), and            \n\
                    node_fail (nf).                                          \n\
      -S, --starttime:                                                       \n\
