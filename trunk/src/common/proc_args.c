@@ -418,6 +418,9 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
         if (*p == 'k' || *p == 'K') {
 		result *= 1024;
 		p++;
+	} else if(*p == 'm' || *p == 'M') {
+		result *= 1048576;
+		p++;
 	}
 
 	if (((*p != '\0') && (*p != '-')) || (result <= 0L)) {
@@ -442,6 +445,9 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 	result = strtol(p, &p, 10);
         if ((*p == 'k') || (*p == 'K')) {
 		result *= 1024;
+		p++;
+	} else if(*p == 'm' || *p == 'M') {
+		result *= 1048576;
 		p++;
 	}
 	

@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+#include "src/common/proc_args.h"
 
 static int _parse_checkpoint_args(int argc, char **argv,
 				  uint16_t *max_wait, char **image_dir);
@@ -346,21 +347,14 @@ scontrol_update_job (int argc, char *argv[])
 		/* ReqNodes was replaced by NumNodes in SLURM version 2.1 */
 		else if ((strncasecmp(tag, "ReqNodes", MAX(taglen, 8)) == 0) ||
 		         (strncasecmp(tag, "NumNodes", MAX(taglen, 8)) == 0)) {
-			char *tmp;
-			job_msg.min_nodes = (uint32_t) strtol(val, &tmp, 10);
-			if (tmp[0] == '-') {
-				job_msg.max_nodes = (uint32_t)
-					strtol(&tmp[1], (char **) NULL, 10);
-				if ((job_msg.max_nodes != 0) && 
-				    (job_msg.max_nodes < job_msg.min_nodes)) {
-					error("Maximum node count less than "
-						"minimum value (%u < %u)",
-						job_msg.max_nodes,
-						job_msg.min_nodes);
-					exit_code = 1;
-					return 0;
-				}
-			}
+			int rc = get_resource_arg_range(
+				val, 
+				"requested node count",
+				(int *)&job_msg.min_nodes,
+				(int *)&job_msg.max_nodes,
+				false);
+			if(!rc)
+				return rc;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ReqSockets", MAX(taglen, 4)) == 0) {

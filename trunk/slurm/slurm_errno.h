@@ -237,7 +237,10 @@ enum {
         ESLURM_AUTH_CRED_INVALID	= 6000,
 	ESLURM_AUTH_FOPEN_ERROR,
 	ESLURM_AUTH_NET_ERROR,
-        ESLURM_AUTH_UNABLE_TO_SIGN
+        ESLURM_AUTH_UNABLE_TO_SIGN,
+
+	/* accounting errors */
+	ESLURM_DB_CONNECTION            = 7000
 };
 
 /* look up an errno value */

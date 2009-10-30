@@ -351,7 +351,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_AUTH_FOPEN_ERROR,
 	  "Failed to open authentication public key"		},
 	{ ESLURM_AUTH_NET_ERROR,
-	  "Failed to connect to authentication agent"		}
+	  "Failed to connect to authentication agent"		},
+
+	/* accounting errors */
+	{ ESLURM_DB_CONNECTION,
+	  "Unable to connect to database"			}	
 };
 
 /* 
