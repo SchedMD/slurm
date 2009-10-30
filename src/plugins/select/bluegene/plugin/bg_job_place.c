@@ -1300,12 +1300,12 @@ static void _build_select_struct(struct job_record *job_ptr,
 
 	xassert(job_ptr);
 
-	if (job_ptr->select_job) {
+	if (job_ptr->job_resrcs) {
 		error("select_p_job_test: already have select_job");
-		free_job_resources(&job_ptr->select_job);
+		free_job_resources(&job_ptr->job_resrcs);
 	}
 
-	job_ptr->select_job = job_resrcs_ptr = create_job_resources();
+	job_ptr->job_resrcs = job_resrcs_ptr = create_job_resources();
 	job_resrcs_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t));
 	job_resrcs_ptr->cpu_array_value = xmalloc(sizeof(uint16_t));
 	job_resrcs_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
