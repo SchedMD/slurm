@@ -533,7 +533,7 @@ static int _check_connection(mysql_conn_t *mysql_conn)
 					   mysql_db_name, mysql_db_info)
 		   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
+			return ESLURM_DB_CONNECTION;
 		}
 	}
 	return SLURM_SUCCESS;
@@ -2779,7 +2779,7 @@ static int _get_usage_for_list(mysql_conn_t *mysql_conn,
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
@@ -3640,7 +3640,7 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 {
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	debug4("got %d commits", list_count(mysql_conn->update_list));
 
@@ -3794,7 +3794,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	List wckey_list = list_create(destroy_acct_wckey_rec);
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_list);
@@ -3934,7 +3934,7 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
@@ -4018,7 +4018,7 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	List assoc_list = list_create(destroy_acct_association_rec);
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(acct_list);
@@ -4134,7 +4134,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	acct_association_rec_t *assoc = NULL;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	assoc_list = list_create(destroy_acct_association_rec);
 
@@ -4315,7 +4315,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(association_list);
@@ -4740,7 +4740,7 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *added_preempt = NULL;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(qos_list);
@@ -4848,7 +4848,7 @@ extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	int added = 0;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(wckey_list);
@@ -9740,7 +9740,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	memset(&user, 0, sizeof(acct_user_rec_t));
 	user.uid = uid;
@@ -9903,7 +9903,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 	};
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	if(!sent_start) {
 		i=0;
@@ -10129,7 +10129,7 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	char *my_reason;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	if(!node_ptr) {
 		error("No node_ptr given!");
@@ -10184,7 +10184,7 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	query = xstrdup_printf(
 		"update %s set period_end=%d where cluster=\"%s\" "
@@ -10213,7 +10213,7 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 		      "should never be called from the slurmdbd.");
 	
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 	
 	info("Registering slurmctld for cluster %s at port %u in database.",
 	     cluster, port);
@@ -10259,7 +10259,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 
  	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	/* Record the processor count */
 	query = xstrdup_printf(
@@ -10464,7 +10464,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 	
 	debug2("mysql_jobacct_job_start() called");
 
@@ -10748,7 +10748,7 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 	debug2("mysql_jobacct_job_complete() called");
 	
 	/* If we get an error with this just fall through to avoid an
@@ -10837,7 +10837,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 	if(slurmdbd_conf) {
 		tasks = step_ptr->job_ptr->details->num_tasks;
 		cpus = step_ptr->cpu_count;
@@ -10958,7 +10958,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	if(slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
@@ -11090,7 +11090,7 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 	bool suspended = false;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 	if(!job_ptr->db_index) {
 		if(!(job_ptr->db_index =
 		     _get_db_index(mysql_conn->db_conn,
@@ -11172,7 +11172,7 @@ extern int jobacct_storage_p_archive(mysql_conn_t *mysql_conn,
 				     acct_archive_cond_t *arch_cond)
 {
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 	
 	return mysql_jobacct_process_archive(mysql_conn, arch_cond);
 }
@@ -11184,7 +11184,7 @@ extern int jobacct_storage_p_archive_load(mysql_conn_t *mysql_conn,
 					  acct_archive_rec_t *arch_rec)
 {
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	return mysql_jobacct_process_archive_load(mysql_conn, arch_rec);
 }
@@ -11208,7 +11208,7 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 	char *suspended_char = NULL;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+		return ESLURM_DB_CONNECTION;
 
 	/* First we need to get the id's and states so we can clean up
 	 * the suspend table and the step table 

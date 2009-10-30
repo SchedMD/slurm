@@ -577,6 +577,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 {
 	char *type = NULL;
 	int temp_int = 0;
+	char *p;
 #ifdef HAVE_BG
 	uint16_t rotate;
 	uint16_t conn_type;
@@ -630,7 +631,11 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->nice = NICE_OFFSET + temp_int;
 		break;
 	case SORTID_CPU_REQ:
-		temp_int = strtol(new_text, (char **)NULL, 10);
+		temp_int = strtol(new_text, &p, 10);
+		if (*p == 'k' || *p == 'K') 
+			temp_int *= 1024;
+		else if(*p == 'm' || *p == 'M') 
+			temp_int *= 1048576;
 		
 		type = "requested procs";
 		if(temp_int <= 0)
@@ -658,16 +663,24 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "reservation name";
 		break;
 	case SORTID_NODES_MIN:
-		temp_int = strtol(new_text, (char **)NULL, 10);
-		
+		temp_int = strtol(new_text, &p, 10);
+		if (*p == 'k' || *p == 'K') 
+			temp_int *= 1024;
+		else if(*p == 'm' || *p == 'M') 
+			temp_int *= 1048576;
+
 		type = "min nodes";
 		if(temp_int <= 0)
 			goto return_error;
 		job_msg->min_nodes = (uint32_t)temp_int;
 		break;
 	case SORTID_NODES_MAX:
-		temp_int = strtol(new_text, (char **)NULL, 10);
-
+		temp_int = strtol(new_text, &p, 10);
+		if (*p == 'k' || *p == 'K') 
+			temp_int *= 1024;
+		else if(*p == 'm' || *p == 'M') 
+			temp_int *= 1048576;
+		
 		type = "max nodes";
 		if(temp_int <= 0)
 			goto return_error;
@@ -675,6 +688,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		break;
 	case SORTID_MEM_MIN:
 		temp_int = strtol(new_text, (char **)NULL, 10);
+		if (*p == 'k' || *p == 'K') 
+			temp_int *= 1024;
+		else if(*p == 'm' || *p == 'M') 
+			temp_int *= 1048576;
 		
 		type = "min memory";
 		if(temp_int <= 0)
@@ -683,6 +700,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		break;
 	case SORTID_TMP_DISK:
 		temp_int = strtol(new_text, (char **)NULL, 10);
+		if (*p == 'k' || *p == 'K') 
+			temp_int *= 1024;
+		else if(*p == 'm' || *p == 'M') 
+			temp_int *= 1048576;
 		
 		type = "min tmp disk";
 		if(temp_int <= 0)
@@ -1326,7 +1347,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   tmp_char);
 
 #ifdef HAVE_BG
-	convert_num_unit((float)job_ptr->max_nodes,
+	convert_num_unit((float)sview_job_info_ptr->node_cnt,
 			 tmp_char, sizeof(tmp_char), UNIT_NONE);
 #else
 	snprintf(tmp_char, sizeof(tmp_char), "%u", 
@@ -1338,7 +1359,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   tmp_char);
 
 #ifdef HAVE_BG
-	convert_num_unit((float)job_ptr->num_nodes,
+	convert_num_unit((float)sview_job_info_ptr->node_cnt,
 			 tmp_char, sizeof(tmp_char), UNIT_NONE);
 #else
 	snprintf(tmp_char, sizeof(tmp_char), "%u", 
@@ -1713,11 +1734,11 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_BATCH, tmp_char, -1);
 	
-	sprintf(tmp_char, "%u", job_ptr->num_nodes);
+	sprintf(tmp_char, "%u", sview_job_info_ptr->node_cnt);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NODES_MIN, tmp_char, -1);
 	if(job_ptr->max_nodes > 0) {
-		sprintf(tmp_char, "%u", job_ptr->max_nodes);
+		sprintf(tmp_char, "%u", sview_job_info_ptr->node_cnt);
 		gtk_tree_store_set(treestore, iter, 
 				   SORTID_NODES_MAX, tmp_char, -1);
 	}
