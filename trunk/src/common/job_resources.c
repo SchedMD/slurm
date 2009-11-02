@@ -824,7 +824,7 @@ extern int set_job_resources_node(job_resources_t *job_resources_ptr,
 }
 
 extern int get_job_resources_cnt(job_resources_t *job_resources_ptr,
-				 uint32_t node_id,uint16_t *socket_cnt,
+				 uint32_t node_id, uint16_t *socket_cnt,
 				 uint16_t *cores_per_socket_cnt)
 {
 	int i, node_inx = -1;
