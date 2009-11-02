@@ -193,7 +193,7 @@ int switch_p_libstate_save (char *dir_name)
 	xstrcat(file_name, "/qsw_state");
 	(void) unlink(file_name);
 	state_fd = creat (file_name, 0600);
-	if (state_fd == 0) {
+	if (state_fd < 0) {
 		error ("Can't save state, error creating file %s %m",
 			file_name);
 		error_code = SLURM_ERROR;

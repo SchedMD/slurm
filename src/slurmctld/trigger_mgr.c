@@ -558,7 +558,7 @@ extern int trigger_state_save(void)
 
 	lock_state_files();
 	log_fd = creat(new_file, 0600);
-	if (log_fd == 0) {
+	if (log_fd < 0) {
 		error("Can't save state, create file %s error %m",
 		      new_file);
 		error_code = errno;

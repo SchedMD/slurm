@@ -225,7 +225,7 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 			new_file = xstrdup_printf("%s.new", reg_file);
 					
 			fd = creat(new_file, 0600);
-			if (fd == 0) {
+			if (fd < 0) {
 				error("Can't save archive, "
 				      "create file %s error %m",
 				      new_file);
