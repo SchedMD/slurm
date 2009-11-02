@@ -86,6 +86,13 @@ expect {
 		set got_job_grps 1
 		exp_continue
 	}
+
+	-re "salloc: Relinquishing job allocation" {
+		# this needs to be here so it doesn't get latched onto 
+		# the previous check and mess the test up. 
+		# This issue appears in later versions of expect.
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		if {$job_id != 0} {
@@ -108,7 +115,7 @@ if {$got_job_grps == 0} {
 # Confirm the user id and group id in the slurm job matches that  
 # of the local 'id' execution.
 #
- 
+
 if {[string compare $login_grp_info $job_grp_info] != 0} {
 	send_user "\nFAILURE: Login and slurm user info mismatch\n"
 	set exit_code 1
