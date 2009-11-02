@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
     running would be displayed, which is still the default if no states are 
     requested.
  -- One can now query jobs based on size (nodes and or cpus) (mysql plugin only)
+ -- Applied patch from Mark Grondona that tests for a missing config file before
+    any other processing in spank_init().  This now prevents fatal errors from
+    being mistakenly treated as recoverable.
 
 * Changes in SLURM 2.1.0-pre5
 =============================

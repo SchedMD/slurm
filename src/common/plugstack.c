@@ -668,10 +668,18 @@ int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 
 	spank_ctx = context;
 
-	if (_spank_stack_create(path, &spank_stack) < 0) {
-		/* No error if spank config doesn't exist */
+	/*
+	 *  A nonexistent spank config is not an error, but
+	 *   abort on any other access failures
+	 */
+	if (access (path, R_OK) < 0) {
 		if (errno == ENOENT)
 			return (0);
+		error ("spank: Unable to open config file `%s': %m", path);
+		return (-1);
+	}
+
+	if (_spank_stack_create(path, &spank_stack) < 0) {
 		error("spank: failed to create plugin stack");
 		return (-1);
 	}
