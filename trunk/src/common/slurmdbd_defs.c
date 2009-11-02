@@ -379,7 +379,7 @@ again:
 		} else {
 			fd_set_nonblocking(slurmdbd_fd);
 			if (_send_init_msg() != SLURM_SUCCESS)  {
-				error("slurmdbd: Sending DdbInit msg: %m");
+				debug2("slurmdbd: Sending DbdInit msg: %m");
 				_close_slurmdbd_fd();
 			} else {
 				debug("slurmdbd: Sent DbdInit msg");
@@ -1309,6 +1309,8 @@ static int _send_init_msg()
 	dbd_init_msg_t req;
 	int tmp_errno = SLURM_SUCCESS;
 
+	errno = tmp_errno;
+
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
 	req.rollback = rollback_started;
@@ -1330,6 +1332,8 @@ static int _send_init_msg()
 	rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
 	if(tmp_errno)
 		errno = tmp_errno;
+	else if(rc != SLURM_SUCCESS)
+		errno = rc;
 	return rc;
 }
 

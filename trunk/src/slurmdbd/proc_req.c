@@ -1167,11 +1167,11 @@ static int _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		
 	list_msg.my_list = jobacct_storage_g_get_jobs_cond(
 		slurmdbd_conn->db_conn, *uid, &job_cond);
-	slurmdbd_free_get_jobs_msg(slurmdbd_conn->rpc_version, 
-				   get_jobs_msg);
 
 	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
 		list_msg.my_list = list_create(NULL);
+	else if(!list_msg.my_list)
+		error("got this:%m");
 
 	if(job_cond.cluster_list)
 		list_destroy(job_cond.cluster_list);
@@ -1179,6 +1179,9 @@ static int _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		list_destroy(job_cond.userid_list);
 	if(job_cond.groupid_list)
 		list_destroy(job_cond.groupid_list);
+
+	slurmdbd_free_get_jobs_msg(slurmdbd_conn->rpc_version, 
+				   get_jobs_msg);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
@@ -1196,6 +1199,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_cond_msg_t *cond_msg = NULL;
 	dbd_list_msg_t list_msg;
 	char *comment = NULL;
+	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_JOBS_COND: called");
 	if (slurmdbd_unpack_cond_msg(slurmdbd_conn->rpc_version, 
@@ -1208,24 +1212,30 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 					      DBD_GET_JOBS_COND);
 		return SLURM_ERROR;
 	}
-	
+
 	list_msg.my_list = jobacct_storage_g_get_jobs_cond(
 		slurmdbd_conn->db_conn, *uid, cond_msg->cond);
 
+	if(!errno) {
+		if(!list_msg.my_list)
+			list_msg.my_list = list_create(NULL);
+		*out_buffer = init_buf(1024);
+		pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
+		slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
+				       DBD_GOT_JOBS, &list_msg, *out_buffer);
+	} else {
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      errno, slurm_strerror(errno), 
+					      DBD_GET_JOBS_COND);
+		rc = SLURM_ERROR;		
+	}
+
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GET_JOBS_COND, cond_msg);
-
-	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
-		list_msg.my_list = list_create(NULL);
-
-	*out_buffer = init_buf(1024);
-	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
-	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
-			       DBD_GOT_JOBS, &list_msg, *out_buffer);
 	if(list_msg.my_list)
-		list_destroy(list_msg.my_list);
+		list_destroy(list_msg.my_list);	
 	
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _get_probs(slurmdbd_conn_t *slurmdbd_conn, 
@@ -1234,6 +1244,7 @@ static int _get_probs(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_cond_msg_t *get_msg = NULL;
 	dbd_list_msg_t list_msg;
 	char *comment = NULL;
+	int rc = SLURM_SUCCESS;
 
 	debug2("DBD_GET_PROBS: called");
 
@@ -1262,20 +1273,28 @@ static int _get_probs(slurmdbd_conn_t *slurmdbd_conn,
 	
 	list_msg.my_list = acct_storage_g_get_problems(
 		slurmdbd_conn->db_conn, *uid, get_msg->cond);
+
+	if(!errno) {
+		if(!list_msg.my_list)
+			list_msg.my_list = list_create(NULL);
+		*out_buffer = init_buf(1024);
+		pack16((uint16_t) DBD_GOT_PROBS, *out_buffer);
+		slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
+				       DBD_GOT_PROBS, &list_msg, *out_buffer);
+	} else {
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      errno, slurm_strerror(errno), 
+					      DBD_GET_PROBS);
+		rc = SLURM_ERROR;		
+	}
+
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GET_PROBS, get_msg);
 
-	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
-		list_msg.my_list = list_create(NULL);
-
-	*out_buffer = init_buf(1024);
-	pack16((uint16_t) DBD_GOT_PROBS, *out_buffer);
-	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
-			       DBD_GOT_PROBS, &list_msg, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
 	
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _get_qos(slurmdbd_conn_t *slurmdbd_conn, 
@@ -1614,7 +1633,10 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdbd_conn->db_conn = acct_storage_g_get_connection(
 		false, slurmdbd_conn->newsockfd, init_msg->rollback);
 	slurmdbd_conn->rpc_version = init_msg->version;
-
+	if(errno) {
+		rc = errno;
+		comment = slurm_strerror(rc);
+	}
 end_it:
 	slurmdbd_free_init_msg(slurmdbd_conn->rpc_version, 
 			       init_msg);

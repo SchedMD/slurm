@@ -926,7 +926,6 @@ void parse_command_line(int argc, char **argv)
 		xfree(acct_type);
 	} else {
 		slurm_acct_storage_init(params.opt_filein);
-		acct_db_conn = acct_storage_g_get_connection(false, 0, false);
 		
 		acct_type = slurm_get_accounting_storage_type();
 		if ((strcmp(acct_type, "accounting_storage/none") == 0)
@@ -936,6 +935,9 @@ void parse_command_line(int argc, char **argv)
 			exit(1);
 		}
 		xfree(acct_type);
+		acct_db_conn = acct_storage_g_get_connection(false, 0, false);
+		if(errno != SLURM_SUCCESS)
+			exit(1);
 	}
 
 	/* specific clusters requested? */
