@@ -360,7 +360,7 @@ extern int select_p_state_save(char *dir_name)
 	slurm_conf_unlock();
 
 	log_fd = creat(new_file, 0600);
-	if (log_fd == 0) {
+	if (log_fd < 0) {
 		error("Can't save state, error creating file %s, %m",
 		      new_file);
 		error_code = errno;

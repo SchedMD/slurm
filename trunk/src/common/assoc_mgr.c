@@ -2384,7 +2384,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	
 	slurm_mutex_lock(&assoc_mgr_file_lock);
 	log_fd = creat(new_file, 0600);
-	if (log_fd == 0) {
+	if (log_fd < 0) {
 		error("Can't save state, create file %s error %m",
 		      new_file);
 		error_code = errno;
@@ -2455,7 +2455,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	new_file = xstrdup_printf("%s.new", reg_file);
 	
 	log_fd = creat(new_file, 0600);
-	if (log_fd == 0) {
+	if (log_fd < 0) {
 		error("Can't save state, create file %s error %m",
 		      new_file);
 		error_code = errno;
@@ -2523,7 +2523,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	new_file = xstrdup_printf("%s.new", reg_file);
 	
 	log_fd = creat(new_file, 0600);
-	if (log_fd == 0) {
+	if (log_fd < 0) {
 		error("Can't save state, create file %s error %m",
 		      new_file);
 		error_code = errno;

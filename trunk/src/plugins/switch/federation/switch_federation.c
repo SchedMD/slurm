@@ -185,7 +185,7 @@ static int _switch_p_libstate_save ( char * dir_name, bool free_flag )
 	xstrcat(file_name, "/fed_state");
 	(void)unlink(file_name);
 	state_fd = creat(file_name, 0600);
-	if(state_fd == 0) {
+	if(state_fd < 0) {
 		error ("Can't save state, error creating file %s %m",
 			file_name);
 		ret = SLURM_ERROR;
