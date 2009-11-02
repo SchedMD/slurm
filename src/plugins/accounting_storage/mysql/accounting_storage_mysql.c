@@ -526,6 +526,7 @@ static int _check_connection(mysql_conn_t *mysql_conn)
 {
 	if(!mysql_conn) {
 		error("We need a connection to run this");
+		errno = SLURM_ERROR;
 		return SLURM_ERROR;
 	} else if(!mysql_conn->db_conn
 		  || mysql_db_ping(mysql_conn->db_conn) != 0) {
@@ -533,6 +534,7 @@ static int _check_connection(mysql_conn_t *mysql_conn)
 					   mysql_db_name, mysql_db_info)
 		   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
+			errno = ESLURM_DB_CONNECTION;
 			return ESLURM_DB_CONNECTION;
 		}
 	}
@@ -3614,13 +3616,15 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 	mysql_conn->conn = conn_num;
 	mysql_conn->update_list = list_create(destroy_acct_update_object);
 
+	errno = SLURM_SUCCESS;
 	mysql_get_db_connection(&mysql_conn->db_conn,
 				mysql_db_name, mysql_db_info);
+
 	if(mysql_conn->db_conn) {
 		if(rollback) 
 			mysql_autocommit(mysql_conn->db_conn, 0);
-		errno = SLURM_SUCCESS;
 	}
+
 	return (void *)mysql_conn;
 }
 
@@ -11157,9 +11161,10 @@ extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 					    acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
-
-	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+	
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS) {
 		return NULL;
+	}
 	job_list = mysql_jobacct_process_get_jobs(mysql_conn, uid, job_cond);	
 
 	return job_list;

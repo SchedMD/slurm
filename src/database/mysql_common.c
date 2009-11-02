@@ -432,7 +432,8 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 						db_host = db_info->backup;
 						continue;
 					}
-					rc = SLURM_ERROR;
+					
+					rc = ESLURM_DB_CONNECTION;
 					break;
 				}
 			} else {
@@ -440,6 +441,8 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 			}
 		}
 	}
+
+	errno = rc;	
 	return rc;
 }
 
