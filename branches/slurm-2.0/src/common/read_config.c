@@ -73,6 +73,7 @@
 #include "src/common/slurm_selecttype_info.h"
 #include "src/common/util-net.h"
 #include "src/common/uid.h"
+#include "src/common/strlcpy.h"
 
 /* Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf"
  * found in slurmctld.h */
@@ -112,7 +113,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover);
 static void _destroy_nodename(void *ptr);
-static bool _is_valid_dir(char *file_name);
+static bool _is_valid_path(char *path, char *msg);
 static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
 				const char *line, char **leftover);
@@ -278,13 +279,60 @@ s_p_options_t slurm_conf_options[] = {
 	{NULL}
 };
 
-static bool _is_valid_dir(char *file_name)
+static bool _is_valid_path (char *path, char *msg)
 {
-	struct stat buf;
+	/*
+	 *  Allocate temporary space for walking the list of dirs:
+	 */
+	int pathlen = strlen (path);
+	char *buf = xmalloc (pathlen + 2);
+	char *p, *entry;
 
-	if (stat(file_name, &buf) || !S_ISDIR(buf.st_mode))
-		return false;
-	return true;
+	if (strlcpy (buf, path, pathlen + 1) > pathlen + 1) {
+		error ("is_valid_path: Failed to copy path!");
+		goto out_false;
+	}
+
+	/*
+	*  Ensure the path ends with a ':'
+	*/
+	if (buf [pathlen - 1] != ':') {
+		buf [pathlen] = ':';
+		buf [pathlen + 1] = '\0';
+	}
+
+
+	entry = buf;
+	while ((p = strchr (entry, ':'))) {
+		struct stat st;
+		/*
+		*  NUL terminate colon and advance p
+		*/
+		*(p++) = '\0';
+
+		/*
+		*  Check to see if current path element is a valid dir
+		*/
+		if (stat (entry, &st) < 0) {
+			error ("%s: %s: %m", msg, entry);
+			goto out_false;
+		}
+		else if (!S_ISDIR (st.st_mode)) {
+			error ("%s: %s: Not a directory");
+			goto out_false;
+		}
+		/*
+		*  Otherwise path element is valid, continue..
+		*/
+		entry = p;
+	}
+
+	xfree (buf);
+ 	return true;
+
+  out_false:
+	xfree (buf);
+	return false;
 }
 
 static int _defunct_option(void **dest, slurm_parser_enum_t type,
@@ -2087,7 +2135,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
 		conf->plugindir = xstrdup(default_plugin_path);
-	if (!_is_valid_dir(conf->plugindir))
+	if (!_is_valid_path(conf->plugindir, "PluginDir"))
 		fatal("Bad value \"%s\" for PluginDir", conf->plugindir);
 
 	if (!s_p_get_string(&conf->plugstack, "PlugStackConfig", hashtbl))
