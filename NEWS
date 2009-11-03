@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- Applied patch from Mark Grondona that tests for a missing config file before
     any other processing in spank_init().  This now prevents fatal errors from
     being mistakenly treated as recoverable.
+ -- --enable-debug no longer has to be stated at configure time to have 
+    the slurmctld or slurmstepd dump core on a seg fault.
 
 * Changes in SLURM 2.1.0-pre5
 =============================

@@ -254,12 +254,10 @@ int main(int argc, char *argv[])
 	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
 		fatal("Invalid Licenses value: %s", slurmctld_conf.licenses);
 
-#ifndef NDEBUG
-#  ifdef PR_SET_DUMPABLE
+#ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
-#  endif /* PR_SET_DUMPABLE */
-#endif   /* !NDEBUG         */
+#endif /* PR_SET_DUMPABLE */
 
 	/* 
 	 * Create StateSaveLocation directory if necessary.

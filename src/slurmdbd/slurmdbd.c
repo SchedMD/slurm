@@ -122,9 +122,15 @@ int main(int argc, char *argv[])
 	_kill_old_slurmdbd();
 	if (foreground == 0)
 		_daemonize();
+
 	_init_pidfile();
 	_become_slurm_user();
 	log_config();
+
+#ifdef PR_SET_DUMPABLE
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		debug ("Unable to set dumpable to 1");
+#endif /* PR_SET_DUMPABLE */
 
 	if (xsignal_block(dbd_sigarray) < 0)
 		error("Unable to block signals");
