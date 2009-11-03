@@ -178,6 +178,10 @@ main (int argc, char *argv[])
 	}
 
 	db_conn = acct_storage_g_get_connection(false, 0, false);
+	if(errno) {
+		error("Problem talking to the database: %m");
+		exit(1);
+	}
 	my_uid = getuid();
 
 	if (input_field_count)
