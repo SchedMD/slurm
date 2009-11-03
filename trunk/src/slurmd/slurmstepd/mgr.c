@@ -844,12 +844,10 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 	
-#ifndef NDEBUG
-#  ifdef PR_SET_DUMPABLE
+#ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
-#  endif /* PR_SET_DUMPABLE */
-#endif   /* !NDEBUG	 */
+#endif /* PR_SET_DUMPABLE */
 
 	set_umask(job);		/* set umask for stdout/err files */
 	if (job->user_managed_io)
