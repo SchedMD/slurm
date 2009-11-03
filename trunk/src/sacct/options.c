@@ -936,8 +936,10 @@ void parse_command_line(int argc, char **argv)
 		}
 		xfree(acct_type);
 		acct_db_conn = acct_storage_g_get_connection(false, 0, false);
-		if(errno != SLURM_SUCCESS)
+		if(errno != SLURM_SUCCESS) {
+			error("Problem talking to the database: %m");
 			exit(1);
+		}
 	}
 
 	/* specific clusters requested? */
