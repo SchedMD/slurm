@@ -198,10 +198,16 @@ main (int argc, char *argv[])
 		if((input_field_count == 2) &&
 		   (!strncasecmp(argv[2], "Configuration", strlen(argv[1]))) &&
 		   ((!strncasecmp(argv[1], "list", strlen(argv[0]))) || 
-		    (!strncasecmp(argv[1], "show", strlen(argv[0])))))
-			sacctmgr_list_config(false);
+		    (!strncasecmp(argv[1], "show", strlen(argv[0]))))) {
+			if(tmp_errno == ESLURM_DB_CONNECTION) {
+				tmp_errno = 0;
+				sacctmgr_list_config(true);
+			} else
+				sacctmgr_list_config(false);
+		}
 		errno = tmp_errno;
-		fprintf(stderr, "Problem talking to the database: %m\n");
+		if(errno) 
+			error("Problem talking to the database: %m");
 		exit(1);
 	}
 	my_uid = getuid();

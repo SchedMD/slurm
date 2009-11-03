@@ -104,7 +104,7 @@ static int    _fd_writeable(slurm_fd fd);
 static int    _get_return_code(uint16_t rpc_version, int read_timeout);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
-static void   _open_slurmdbd_fd(void);
+static void   _open_slurmdbd_fd(bool db_needed);
 static int    _purge_job_start_req(void);
 static Buf    _recv_msg(int read_timeout);
 static void   _reopen_slurmdbd_fd(void);
@@ -144,7 +144,7 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent,
 	rollback_started = rollback;
 
 	if (slurmdbd_fd < 0) {
-		_open_slurmdbd_fd();
+		_open_slurmdbd_fd(1);
 		tmp_errno = errno;
 	}
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -204,15 +204,23 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 	if (rc != SLURM_SUCCESS) {
 		;	/* error message already sent */
 	} else if (resp->msg_type != DBD_RC) {
-		error("slurmdbd: response is type DBD_RC: %d", resp->msg_type);
+		error("slurmdbd: response is not type DBD_RC: %s(%u)", 
+		      slurmdbd_msg_type_2_str(resp->msg_type, 1), 
+		      resp->msg_type);
 		rc = SLURM_ERROR;
 	} else {	/* resp->msg_type == DBD_RC */
 		dbd_rc_msg_t *msg = resp->data;
 		*resp_code = msg->return_code;
 		if(msg->return_code != SLURM_SUCCESS
-		   && msg->return_code != ACCOUNTING_FIRST_REG)
-			error("slurmdbd(%d): from %u: %s", msg->return_code, 
-			      msg->sent_type, msg->comment);
+		   && msg->return_code != ACCOUNTING_FIRST_REG) {
+			char *comment = msg->comment;
+			if(!comment)
+				comment = slurm_strerror(msg->return_code);
+			debug("slurmdbd: Issue with call %s(%u): %u(%s)",
+			      slurmdbd_msg_type_2_str(msg->sent_type, 1), 
+			      msg->sent_type, msg->return_code, 
+			      comment);
+		}
 		slurmdbd_free_rc_msg(rpc_version, msg);
 	}
 	xfree(resp);
@@ -245,7 +253,10 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	if (slurmdbd_fd < 0) {
 		/* Either slurm_open_slurmdbd_conn() was not executed or
 		 * the connection to Slurm DBD has been closed */
-		_open_slurmdbd_fd();
+		if(req->msg_type == DBD_GET_CONFIG) 
+			_open_slurmdbd_fd(0);
+		else
+			_open_slurmdbd_fd(1);
 		if (slurmdbd_fd < 0) {
 			rc = SLURM_ERROR;
 			goto end_it;
@@ -274,7 +285,6 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	}
 		
 	rc = unpack_slurmdbd_msg(rpc_version, resp, buffer);
-
 	/* check for the rc of the start job message */
 	if (rc == SLURM_SUCCESS && resp->msg_type == DBD_ID_RC) 
 		rc = ((dbd_id_rc_msg_t *)resp->data)->return_code;
@@ -334,7 +344,7 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 }
 
 /* Open a connection to the Slurm DBD and set slurmdbd_fd */
-static void _open_slurmdbd_fd(void)
+static void _open_slurmdbd_fd(bool need_db)
 {
 	slurm_addr dbd_addr;
 	uint16_t slurmdbd_port;
@@ -377,17 +387,20 @@ again:
 					goto again;			
 			}
 		} else {
+			int rc;
 			fd_set_nonblocking(slurmdbd_fd);
-			if (_send_init_msg() != SLURM_SUCCESS)  {
-				debug2("slurmdbd: Sending DbdInit msg: %m");
-				_close_slurmdbd_fd();
-			} else {
+			rc = _send_init_msg();
+			if((!need_db && rc == ESLURM_DB_CONNECTION)
+			   || (rc == SLURM_SUCCESS)) {
 				debug("slurmdbd: Sent DbdInit msg");
 				/* clear errno (checked after this for
 				   errors)
 				*/
 				errno = 0;
-			}
+			} else {
+				error("slurmdbd: Sending DbdInit msg: %m");
+				_close_slurmdbd_fd();
+			} 
 		}
 	}
 	xfree(slurmdbd_host);
@@ -1368,7 +1381,7 @@ static void _reopen_slurmdbd_fd(void)
 {
 	info("slurmdbd: reopening connection");
 	_close_slurmdbd_fd();
-	_open_slurmdbd_fd();
+	_open_slurmdbd_fd(1);
 }
 
 static int _send_msg(Buf buffer)
@@ -1462,7 +1475,7 @@ static int _get_return_code(uint16_t rpc_version, int read_timeout)
 					      "enforce associations, or no "
 					      "jobs will ever run.");
 				} else
-					error("slurmdbd: DBD_RC is %d from "
+					debug("slurmdbd: DBD_RC is %d from "
 					      "%s(%u): %s",
 					      rc,
 					      slurmdbd_msg_type_2_str(
@@ -1742,7 +1755,7 @@ static void *_agent(void *x)
 		if ((slurmdbd_fd < 0) && 
 		    (difftime(time(NULL), fail_time) >= 10)) {			
 			/* The connection to Slurm DBD is not open */
-			_open_slurmdbd_fd();
+			_open_slurmdbd_fd(1);
 			if (slurmdbd_fd < 0)
 				fail_time = time(NULL);
 		}
