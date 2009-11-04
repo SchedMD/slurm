@@ -53,7 +53,6 @@
 #include <sys/types.h>
 #include <slurm/slurm.h>
 
-#include "src/api/job_info.h"
 #include "src/common/hostlist.h"
 
 #define _DEBUG 0

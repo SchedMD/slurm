@@ -59,7 +59,6 @@
 
 #include <slurm/slurm_errno.h>
 
-#include "src/api/job_info.h"
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"

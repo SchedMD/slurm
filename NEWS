@@ -17,6 +17,9 @@ documents those changes that are of interest to users and admins.
     being mistakenly treated as recoverable.
  -- --enable-debug no longer has to be stated at configure time to have 
     the slurmctld or slurmstepd dump core on a seg fault.
+ -- Moved the errant slurm_job_node_ready() declaration from job_info.h to
+    slurm.h and deleted job_info.h.
+
 
 * Changes in SLURM 2.1.0-pre5
 =============================

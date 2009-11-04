@@ -55,7 +55,6 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
-#include "src/api/job_info.h"
 #include "src/common/forward.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
@@ -740,7 +739,7 @@ line7:	/****** Line 7 ******/
  *	information if changed since update_time 
  * IN update_time - time of current configuration data
  * IN job_info_msg_pptr - place to store a job configuration pointer
- * IN show_flags -  job filtering options
+ * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
@@ -786,7 +785,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN job_id -  ID of job we want information about 
- * IN show_flags -  job filtering options
+ * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
@@ -1025,7 +1024,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
  * IN job_id - slurm job id
- * RET: READY_* values as defined in api/job_info.h
+ * RET: READY_* values as defined in slurm.h
  */
 extern int slurm_job_node_ready(uint32_t job_id)
 {

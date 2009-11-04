@@ -46,7 +46,6 @@
 
 #include <slurm/slurm.h>
 
-#include "src/api/job_info.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"

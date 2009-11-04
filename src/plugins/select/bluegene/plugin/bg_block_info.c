@@ -64,7 +64,6 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/proc_req.h"
-#include "src/api/job_info.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "src/slurmctld/locks.h"
 #include "bluegene.h"
