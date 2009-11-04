@@ -1061,8 +1061,8 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	return rc;
 }
 
-extern int slurm_job_cpus_used_on_node_inx(struct job_resources *job_resrcs_ptr,
-					   int node_inx)
+extern int slurm_job_cpus_allocated_on_node_inx(
+	job_resources_t *job_resrcs_ptr, int node_inx)
 {
 	int i;
 	int start_node=-1; /* start with -1 less so the array reps
@@ -1082,8 +1082,8 @@ extern int slurm_job_cpus_used_on_node_inx(struct job_resources *job_resrcs_ptr,
 	return job_resrcs_ptr->cpu_array_value[i];
 }
 
-extern int slurm_job_cpus_used_on_node(struct job_resources *job_resrcs_ptr,
-				       char *node)
+extern int slurm_job_cpus_allocated_on_node(
+	job_resources_t *job_resrcs_ptr, char *node)
 {
 	int node_inx;
 
@@ -1104,6 +1104,6 @@ extern int slurm_job_cpus_used_on_node(struct job_resources *job_resrcs_ptr,
 		return -1;
 	}
 	
-	return slurm_job_cpus_used_on_node_inx(job_resrcs_ptr, node_inx);
+	return slurm_job_cpus_allocated_on_node_inx(job_resrcs_ptr, node_inx);
 }
 

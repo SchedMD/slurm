@@ -1920,8 +1920,8 @@ void slurm_print_key_pairs PARAMS((
  * IN node_inx		- node index
  * RET cpus used or -1 on error
  */
-extern int slurm_job_cpus_used_on_node_inx PARAMS(
-	(struct job_resources *job_resrcs_ptr, int node_inx));
+extern int slurm_job_cpus_allocated_on_node_inx PARAMS(
+	(job_resources_t *job_resrcs_ptr, int node_inx));
 
 /*
  * slurm_cpus_used_on_node - get the number of cpus a job used on a node
@@ -1930,8 +1930,8 @@ extern int slurm_job_cpus_used_on_node_inx PARAMS(
  * IN node_name		- name of node
  * RET cpus used or -1 on error
  */
-extern int slurm_job_cpus_used_on_node PARAMS(
-	(struct job_resources *job_resrcs_ptr, char *node_name));
+extern int slurm_job_cpus_allocated_on_node PARAMS(
+	(job_resources_t *job_resrcs_ptr, char *node_name));
 
 /*****************************************************************************\
  *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
