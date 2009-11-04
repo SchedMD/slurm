@@ -226,6 +226,11 @@ enum job_states {
 #define	JOB_COMPLETING    0x8000   /* Waiting for epilog completion */
 #define	JOB_CONFIGURING   0x4000   /* Allocated nodes booting */
 
+#define READY_JOB_FATAL	   -2	/* fatal error */
+#define READY_JOB_ERROR    -1	/* ordinary error */
+#define READY_NODE_STATE 0x01	/* node is ready */
+#define READY_JOB_STATE  0x02	/* job is ready to execute */
+
 #define MAIL_JOB_BEGIN 0x0001	/* notify when job begins */
 #define MAIL_JOB_END   0x0002	/* notify when job ends */
 #define MAIL_JOB_FAIL  0x0004	/* notify if job fails */
@@ -1909,6 +1914,35 @@ void slurm_print_key_pairs PARAMS((
 \*****************************************************************************/
 
 /*
+ * slurm_free_job_info_msg - free the job information response message
+ * IN msg - pointer to job information response message
+ * NOTE: buffer is loaded by slurm_load_jobs.
+ */
+extern void slurm_free_job_info_msg PARAMS((job_info_msg_t * job_buffer_ptr));
+
+/*
+ * slurm_get_end_time - get the expected end time for a given slurm job
+ * IN jobid     - slurm job id
+ * end_time_ptr - location in which to store scheduled end time for job 
+ * RET 0 or -1 on error
+ */
+extern int slurm_get_end_time PARAMS((uint32_t jobid, time_t *end_time_ptr));
+
+/*
+ * slurm_get_rem_time - get the expected time remaining for a given job
+ * IN jobid     - slurm job id
+ * RET remaining time in seconds or -1 on error
+ */
+extern long slurm_get_rem_time PARAMS((uint32_t jobid));
+
+/*
+ * slurm_job_node_ready - report if nodes are ready for job to execute now
+ * IN job_id - slurm job id
+ * RET: READY_* values defined above
+ */
+extern int slurm_job_node_ready(uint32_t job_id);
+
+/*
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN job_id -  ID of job we want information about 
@@ -1933,21 +1967,22 @@ extern int slurm_load_jobs PARAMS((
 	uint16_t show_flags));
 
 /*
- * slurm_free_job_info - free the job information response message
- * IN msg - pointer to job information response message
- * NOTE: buffer is loaded by slurm_load_jobs.
+ * slurm_notify_job - send message to the job's stdout, 
+ *	usable only by user root
+ * IN job_id - slurm job_id or 0 for all jobs
+ * IN message - arbitrary message
+ * RET 0 or -1 on error
  */
-extern void slurm_free_job_info_msg PARAMS((job_info_msg_t * job_buffer_ptr));
+extern int slurm_notify_job PARAMS(( uint32_t job_id, char *message ));
 
 /*
- * slurm_print_job_info_msg - output information about all Slurm 
- *	jobs based upon message as loaded using slurm_load_jobs
- * IN out - file to write to
- * IN job_info_msg_ptr - job information message pointer
- * IN one_liner - print as a single line if true
+ * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id 
+ *	on this machine
+ * IN job_pid - process_id of interest on this machine
+ * OUT job_id_ptr - place to store a slurm job_id
+ * RET 0 or -1 on error
  */
-extern void slurm_print_job_info_msg PARAMS((
-	FILE * out, job_info_msg_t * job_info_msg_ptr, int one_liner ));
+extern int slurm_pid2jobid PARAMS(( pid_t job_pid, uint32_t * job_id_ptr )) ;
 
 /*
  * slurm_print_job_info - output information about a specific Slurm 
@@ -1958,6 +1993,16 @@ extern void slurm_print_job_info_msg PARAMS((
  */
 extern void slurm_print_job_info PARAMS(( FILE*, job_info_t * job_ptr, 
 					  int one_liner ));
+
+/*
+ * slurm_print_job_info_msg - output information about all Slurm 
+ *	jobs based upon message as loaded using slurm_load_jobs
+ * IN out - file to write to
+ * IN job_info_msg_ptr - job information message pointer
+ * IN one_liner - print as a single line if true
+ */
+extern void slurm_print_job_info_msg PARAMS((
+	FILE * out, job_info_msg_t * job_info_msg_ptr, int one_liner ));
 
 /*
  * slurm_sprint_job_info - output information about a specific Slurm 
@@ -1971,45 +2016,12 @@ extern char *slurm_sprint_job_info PARAMS(( job_info_t * job_ptr,
 				            int one_liner ));
 
 /*
- * slurm_get_end_time - get the expected end time for a given slurm job
- * IN jobid     - slurm job id
- * end_time_ptr - location in which to store scheduled end time for job 
- * RET 0 or -1 on error
- */
-extern int slurm_get_end_time PARAMS((uint32_t jobid, time_t *end_time_ptr));
-
-/*
- * slurm_get_rem_time - get the expected time remaining for a given job
- * IN jobid     - slurm job id
- * RET remaining time in seconds or -1 on error
- */
-extern long slurm_get_rem_time PARAMS((uint32_t jobid));
-
-/*
- * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id 
- *	on this machine
- * IN job_pid - process_id of interest on this machine
- * OUT job_id_ptr - place to store a slurm job_id
- * RET 0 or -1 on error
- */
-extern int slurm_pid2jobid PARAMS(( pid_t job_pid, uint32_t * job_id_ptr )) ;
-
-/*
  * slurm_update_job - issue RPC to a job's configuration per request, 
  *	only usable by user root or (for some parameters) the job's owner
  * IN job_msg - description of job updates
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_update_job PARAMS(( job_desc_msg_t * job_msg )) ;
-
-/*
- * slurm_notify_job - send message to the job's stdout, 
- *	usable only by user root
- * IN job_id - slurm job_id or 0 for all jobs
- * IN message - arbitrary message
- * RET 0 or -1 on error
- */
-extern int slurm_notify_job PARAMS(( uint32_t job_id, char *message ));
 
 /*****************************************************************************\
  *	SLURM JOB STEP CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
