@@ -715,7 +715,7 @@ typedef struct job_info {
 	char *resv_name;	/* reservation name */
 	select_jobinfo_t *select_jobinfo; /* opaque data type,
 				 * process using slurm_get_select_jobinfo() */
-	job_resources_t *job_resources; /* opaque data type, job resources */
+	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	time_t start_time;	/* time execution begins, actual or expected */
 	char *state_desc;	/* optional details for state_reason */
@@ -1910,18 +1910,32 @@ void slurm_print_key_pairs PARAMS((
                 FILE* out, void* key_pairs, char *title));
 
 /*****************************************************************************\
- *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
+ *	SLURM JOB RESOURCES READ/PRINT FUNCTIONS
 \*****************************************************************************/
 
 /*
  * slurm_cpus_used_on_node_inx - get the number of cpus a job used on a node
- *	by node index
+ *	                         by node index
  * IN job_resrcs_ptr	- pointer to job_resources structure
- * IN i			- node index
+ * IN node_inx		- node index
  * RET cpus used or -1 on error
  */
-extern int slurm_cpus_used_on_node_inx(struct job_resources *job_resrcs_ptr,
-				       int i);
+extern int slurm_job_cpus_used_on_node_inx PARAMS(
+	(struct job_resources *job_resrcs_ptr, int node_inx));
+
+/*
+ * slurm_cpus_used_on_node - get the number of cpus a job used on a node
+ *	                     by node name
+ * IN job_resrcs_ptr	- pointer to job_resources structure
+ * IN node_name		- name of node
+ * RET cpus used or -1 on error
+ */
+extern int slurm_job_cpus_used_on_node PARAMS(
+	(struct job_resources *job_resrcs_ptr, char *node_name));
+
+/*****************************************************************************\
+ *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
+\*****************************************************************************/
 
 /*
  * slurm_free_job_info_msg - free the job information response message

@@ -133,7 +133,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char tmp_line[512];
 	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
-	job_resources_t *job_resources = job_ptr->job_resources;
+	job_resources_t *job_resrcs = job_ptr->job_resrcs;
 	char *out = NULL;
 	uint32_t min_nodes, max_nodes;
 
@@ -272,7 +272,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	/****** Line 6a (optional) ******/
 #if 0
 	/* mainly for debugging */ 
-	convert_num_unit((float)job_ptr->num_cpu_groups, tmp1, sizeof(tmp1),
+	convert_num_unit((float)job_ptr->job_resrcs->cpu_array_cnt,
+			 tmp1, sizeof(tmp1),
 			 UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line),
 		"NumCPUGroups=%s ",
@@ -280,14 +281,14 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, tmp_line);
 #endif
 
-	if (!job_resources)
+	if (!job_resrcs)
 		goto line7;
 
 #ifndef HAVE_BG
-	if (!job_resources->core_bitmap)
+	if (!job_resrcs->core_bitmap)
 		goto line7;
 
-	last  = bit_fls(job_resources->core_bitmap);
+	last  = bit_fls(job_resrcs->core_bitmap);
 	if (last == -1)
 		goto line7;
 
@@ -306,21 +307,21 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	bit_inx = 0;
 	i = sock_inx = sock_reps = 0;
 	abs_node_inx = job_ptr->node_inx[i];
-
+				
 /*	tmp1[] stores the current cpu(s) allocated	*/
 	tmp2[0] = '\0';	/* stores last cpu(s) allocated */
-	for (rel_node_inx=0; rel_node_inx < job_resources->nhosts;
+	for (rel_node_inx=0; rel_node_inx < job_resrcs->nhosts;
 	     rel_node_inx++) {
 
 		if (sock_reps >=
-		    job_resources->sock_core_rep_count[sock_inx]) {
+		    job_resrcs->sock_core_rep_count[sock_inx]) {
 			sock_inx++;
 			sock_reps = 0;
 		}
 		sock_reps++;
 
-		bit_reps = job_resources->sockets_per_node[sock_inx] *
-			   job_resources->cores_per_socket[sock_inx];
+		bit_reps = job_resrcs->sockets_per_node[sock_inx] *
+			   job_resrcs->cores_per_socket[sock_inx];
 
 		core_bitmap = bit_alloc(bit_reps);
 		if (core_bitmap == NULL) {
@@ -329,7 +330,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		}
 
 		for (j=0; j < bit_reps; j++) {
-			if (bit_test(job_resources->core_bitmap, bit_inx))
+			if (bit_test(job_resrcs->core_bitmap, bit_inx))
 				bit_set(core_bitmap, j);
 			bit_inx++;
 		}
@@ -345,10 +346,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
  *		identical allocation values.
  */
 		if (strcmp(tmp1, tmp2) ||
-		    (last_mem_alloc_ptr != job_resources->memory_allocated) ||
-		    (job_resources->memory_allocated &&
+		    (last_mem_alloc_ptr != job_resrcs->memory_allocated) ||
+		    (job_resrcs->memory_allocated &&
 		     (last_mem_alloc !=
-		      job_resources->memory_allocated[rel_node_inx]))) {
+		      job_resrcs->memory_allocated[rel_node_inx]))) {
 			if (hostlist_count(hl_last)) {
 				hostlist_ranged_string(hl_last,
 					       sizeof(last_hosts), last_hosts);
@@ -366,9 +367,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 				hl_last = hostlist_create(NULL);
 			}
 			strcpy(tmp2, tmp1);
-			last_mem_alloc_ptr = job_resources->memory_allocated;
+			last_mem_alloc_ptr = job_resrcs->memory_allocated;
 			if (last_mem_alloc_ptr)
-				last_mem_alloc = job_resources->
+				last_mem_alloc = job_resrcs->
 					         memory_allocated[rel_node_inx];
 			else
 				last_mem_alloc = NO_VAL;
@@ -401,16 +402,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	hostlist_destroy(hl);
 	hostlist_destroy(hl_last);
 #else
-	if ((job_resources->cpu_array_cnt > 0) &&
-	    (job_resources->cpu_array_value) &&
-	    (job_resources->cpu_array_reps)) {
+	if ((job_resrcs->cpu_array_cnt > 0) &&
+	    (job_resrcs->cpu_array_value) &&
+	    (job_resrcs->cpu_array_reps)) {
 		int length = 0;
 		xstrcat(out, "CPUs=");
 		length += 10;
-		for (i = 0; i < job_resources->cpu_array_cnt; i++) {
+		for (i = 0; i < job_resrcs->cpu_array_cnt; i++) {
 			if (length > 70) {
 				/* skip to last CPU group entry */
-			    	if (i < job_resources->cpu_array_cnt - 1) {
+			    	if (i < job_resrcs->cpu_array_cnt - 1) {
 			    		continue;
 				}
 				/* add elipsis before last entry */
@@ -419,16 +420,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			}
 
 			snprintf(tmp_line, sizeof(tmp_line), "%d",
-				 job_resources->cpu_array_value[i]);
+				 job_resrcs->cpu_array_value[i]);
 			xstrcat(out, tmp_line);
 			length += strlen(tmp_line);
-		    	if (job_resources->cpu_array_reps[i] > 1) {
+		    	if (job_resrcs->cpu_array_reps[i] > 1) {
 				snprintf(tmp_line, sizeof(tmp_line), "*%d",
-					 job_resources->cpu_array_reps[i]);
+					 job_resrcs->cpu_array_reps[i]);
 				xstrcat(out, tmp_line);
 				length += strlen(tmp_line);
 			}
-			if (i < job_resources->cpu_array_cnt - 1) {
+			if (i < job_resrcs->cpu_array_cnt - 1) {
 				xstrcat(out, ",");
 				length++;
 			}
@@ -1060,14 +1061,49 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	return rc;
 }
 
-extern int slurm_cpus_used_on_node_inx(struct job_resources *job_resrcs_ptr,
-				       int i)
+extern int slurm_job_cpus_used_on_node_inx(struct job_resources *job_resrcs_ptr,
+					   int node_inx)
 {
-	if (job_resrcs_ptr == NULL) {
+	int i;
+	int start_node=-1; /* start with -1 less so the array reps
+			    * lines up correctly */
+
+	if (!job_resrcs_ptr) {
 		error("slurm_cpus_used_on_node_inx: job_resources not set");
 		return -1;
 	}
 
-	return job_resrcs_ptr->cpus_used[i];
+	for (i = 0; i < job_resrcs_ptr->cpu_array_cnt; i++) {
+		start_node += job_resrcs_ptr->cpu_array_reps[i];
+		if(start_node >= node_inx) 
+			break;
+	}
+
+	return job_resrcs_ptr->cpu_array_value[i];
+}
+
+extern int slurm_job_cpus_used_on_node(struct job_resources *job_resrcs_ptr,
+				       char *node)
+{
+	int node_inx;
+
+	if (!job_resrcs_ptr) {
+		error("slurm_cpus_used_on_node: job_resources not set");
+		return -1;
+	} else if(!node) {
+		error("slurm_cpus_used_on_node: no node given");
+		return -1;
+	} else if(!job_resrcs_ptr->node_hl) {
+		error("slurm_cpus_used_on_node: "
+		      "hostlist not set in job_resources");
+		return -1;
+	} else if((node_inx = hostlist_find(job_resrcs_ptr->node_hl, node))
+		  == -1) {
+		error("slurm_cpus_used_on_node: "
+		      "node %s is not in this allocation", node);		
+		return -1;
+	}
+	
+	return slurm_job_cpus_used_on_node_inx(job_resrcs_ptr, node_inx);
 }
 

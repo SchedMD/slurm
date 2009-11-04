@@ -662,14 +662,14 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		if (job->job_resources &&
-		    (job->job_resources->cpu_array_cnt > 0) &&
-		    (job->job_resources->cpu_array_value) &&
-		    (job->job_resources->cpu_array_reps)) {
+		if (job->job_resrcs &&
+		    (job->job_resrcs->cpu_array_cnt > 0) &&
+		    (job->job_resrcs->cpu_array_value) &&
+		    (job->job_resrcs->cpu_array_reps)) {
 			uint32_t cnt = 0, i;
-			for (i=0; i<job->job_resources->cpu_array_cnt; i++) {
-				cnt += job->job_resources->cpu_array_value[i] *
-				       job->job_resources->cpu_array_reps[i];
+			for (i=0; i<job->job_resrcs->cpu_array_cnt; i++) {
+				cnt += job->job_resrcs->cpu_array_value[i] *
+				       job->job_resrcs->cpu_array_reps[i];
 			}
 			convert_num_unit((float)cnt, tmp_char, 
 					 sizeof(tmp_char), UNIT_NONE);
