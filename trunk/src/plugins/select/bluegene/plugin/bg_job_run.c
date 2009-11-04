@@ -400,8 +400,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 				 "_term_agent: Couldn't remove job "
 				 "[SLURM@%s]", time_str);
 			if(bg_record->nodes)
-				slurm_drain_nodes(bg_record->nodes, 
-						  reason);
+				slurm_drain_nodes(bg_record->nodes, reason);
 			else
 				error("Block %s doesn't have a node list.",
 				      block_id);
