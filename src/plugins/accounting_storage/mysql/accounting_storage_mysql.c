@@ -5437,9 +5437,11 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 
 		slurm_set_addr_char(&ctld_address, cluster->control_port,
 				    cluster->control_host);
-		fd =  slurm_open_msg_conn(&ctld_address);
+		fd = slurm_open_msg_conn(&ctld_address);
 		if (fd < 0) {
-			error("can not open socket back to slurmctld");
+			error("can not open socket back to slurmctld "
+			      "%s(%u): %m", cluster->control_host, 
+			      cluster->control_port);
 		} else {
 			slurm_msg_t out_msg;
 			accounting_update_msg_t update;
