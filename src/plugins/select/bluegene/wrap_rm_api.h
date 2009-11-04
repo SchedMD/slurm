@@ -35,6 +35,7 @@
   typedef char *   rm_component_id_t;
   typedef rm_component_id_t rm_bp_id_t;
   typedef int      rm_BP_state_t;
+  typedef char *   rm_job_list_t;
 
   /* these are the typedefs that we will need to have 
    * if we want the states on the Front End Node of a BG system

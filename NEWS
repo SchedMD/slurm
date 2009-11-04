@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
  -- Added the slurm_job_cpus_allocated_on_node_inx() 
     slurm_job_cpus_allocated_on_node() API for working with the 
     job_resources_t structure.
+ -- BLUEGENE - speed up start up for systems that have many blocks (100+)
+    configured on the system.
 
 * Changes in SLURM 2.1.0-pre5
 =============================

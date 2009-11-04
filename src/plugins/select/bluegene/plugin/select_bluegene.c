@@ -413,7 +413,13 @@ extern int select_p_state_restore(char *dir_name)
 /* Sync BG blocks to currently active jobs */
 extern int select_p_job_init(List job_list)
 {
-	return sync_jobs(job_list);
+	int rc = sync_jobs(job_list);
+	
+	/* after we have synced the blocks then we say they are
+	   created. */
+	blocks_are_created = 1;
+	return rc;
+
 }
 
 /* All initialization is performed by init() */
