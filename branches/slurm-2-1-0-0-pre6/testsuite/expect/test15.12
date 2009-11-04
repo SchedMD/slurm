@@ -1,0 +1,87 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Verify node configuration specification (--constraint option).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "15.12"
+set exit_code   0
+set file_in     "test$test_id.input"
+
+print_header $test_id
+
+if {[test_wiki_sched] == 1} {
+	send_user "\nWARNING: not compatable with sched/wiki (Maui)\n"
+	send_user "         or sched/wiki2 (Moab) schedulers\n"
+	exit $exit_code
+}
+
+#
+# Submit a job with invalid constraint requirement
+#
+set err_msg     0
+set timeout $max_job_delay
+spawn $salloc -N1 -t1 --constraint=invalid,constraint salloc -t1 $bin_bash 
+expect {
+	-re "error:.*Invalid feature specification" {
+		send_user "This error is expected, no worries\n"
+		set err_msg 1
+		exp_continue
+	}
+	-re "Granted job allocation ($number)" {
+		send_user "\nFAILURE: salloc job submitted with invalid constraint\n"
+		set exit_code 1
+		send "exit\r"
+	}
+	-re "Pending job allocation ($number)" {
+		send_user "\nFAILURE: salloc job submitted with invalid constraint\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$err_msg != 1} {
+	send_user "\nFAILURE: job failed to report required error\n"
+	set exit_code   1	
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

@@ -1,0 +1,1382 @@
+.TH SACCTMGR "1" "April 2009" "sacctmgr 2.0" "Slurm components"
+
+.SH "NAME"
+sacctmgr \- Used to view and modify Slurm account information.
+
+.SH "SYNOPSIS"
+\fBsacctmgr\fR [\fIOPTIONS\fR...] [\fICOMMAND\fR...]
+
+.SH "DESCRIPTION"
+\fBsacctmgr\fR is used to view or modify Slurm account information.
+The account information is maintained within a database with the interface 
+being provided by \fBslurmdbd\fR (Slurm Database daemon).
+This database can serve as a central storehouse of user and 
+computer information for multiple computers at a single site.
+Slurm account information is recorded based upon four parameters
+that form what is referred to as an \fIassociation\fR. 
+These parameters are \fIuser\fR, \fIcluster\fR, \fIpartition\fR, and 
+\fIaccount\fR. \fIuser\fR is the login name.
+\fIcluster\fR is the name of a Slurm managed cluster as specified by 
+the \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration file. 
+\fIpartition\fR is the name of a Slurm partition on that cluster.
+\fIaccount\fR is the bank account for a job.
+The intended mode of operation is to initiate the \fBsacctmgr\fR command, 
+add, delete, modify, and/or list \fIassociation\fR records then 
+commit the changes and exit.
+
+.SH "OPTIONS"
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print a help message describing the usage of \fBssacctmgr\fR.
+This is equivalent to the \fBhelp\fR command.
+
+.TP
+\fB\-i\fR, \fB\-\-immediate\fR
+commit changes immediately.
+
+.TP
+\fB\-n\fR, \fB\-\-noheader\fR
+No header will be added to the beginning of the output.
+
+.TP
+\fB\-o\fR, \fB\-\-oneliner\fR
+Report output one record per line.
+This is equivalent to the \fBoneliner\fR command.
+
+.TP
+\fB\-p\fR, \fB\-\-parsable\fR
+Output will be '|' delimited with a '|' at the end.
+
+.TP
+\fB\-P\fR, \fB\-\-parsable2\fR
+Output will be '|' delimited without a '|' at the end.
+
+.TP
+\fB\-Q\fR, \fB\-\-quiet\fR
+Print no messages other than error messages.
+This is equivalent to the \fBquiet\fR command.
+
+.TP
+\fB\-r\fR, \fB\-\-readonly\fR
+Makes it so the running sacctmgr can not modify accounting information.
+This is equivalent to the \fBreadonly\fR command.
+
+.TP
+\fB\-s\fR, \fB\-\-associations\fR
+Use with show or list to display associations with the entity.
+This is equivalent to the \fBassociations\fR command.
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Enable detailed logging. 
+This is equivalent to the \fBverbose\fR command.
+
+.TP
+\fB\-V\fR , \fB\-\-version\fR
+Display version number.
+This is equivalent to the \fBversion\fR command.
+
+.SH "COMMANDS"
+
+.TP
+\fBadd\fR <\fIENTITY\fR> <\fISPECS\fR>
+Add an entity.
+Identical to the \fBcreate\fR command.
+
+.TP
+\fBassociations\fR
+Use with show or list to display associations with the entity.
+
+.TP
+\fBcreate\fR <\fIENTITY\fR> <\fISPECS\fR>
+Add an entity.
+Identical to the \fBadd\fR command.
+
+.TP
+\fBdelete\fR <\fIENTITY\fR> with <\fISPECS\fR>
+Delete the specified entities.
+
+.TP
+\fBdump\fR <\fIENTITY\fR> with <\fIFile=FILENAME\fR>
+Dump cluster data to the specified file.
+
+.TP
+\fBexit\fP
+Terminate sacctmgr.
+Identical to the \fBquit\fR command.
+
+.TP
+\fBhelp\fP
+Display a description of sacctmgr options and commands.
+
+.TP
+\fBlist\fR <\fIENTITY\fR> [<\fISPECS\fR>]
+Display information about the specified entity.
+By default, all entries are displayed, you can narrow results by
+specifing SPECS in your query.
+Identical to the \fBshow\fR command.
+
+.TP
+\fBload\fR <\fIFILENAME\fR>
+Load cluster data to the specified file.
+
+.TP
+\fBmodify\fR <\fIENTITY\fR> \fbwith\fR <\fISPECS\fR> \fbset\fR <\fISPECS\fR>
+Modify an entity.
+
+.TP
+\fBoneliner\fP
+Output one record per line.
+
+.TP
+\fBquiet\fP
+Print no messages other than error messages.
+
+.TP
+\fBquit\fP
+Terminate the execution of sacctmgr.
+Identical to the \fBexit\fR command.
+
+.TP
+\fBshow\fR <\fIENTITY\fR> [<\fISPECS\fR>]
+Display information about the specified entity.
+By default, all entries are displayed, you can narrow results by
+specifing SPECS in your query.
+Identical to the \fBlist\fR command.
+
+.TP
+\fBverbose\fP
+Enable detailed logging. 
+This includes time\-stamps on data structures, record counts, etc.
+This is an independent command with no options meant for use in interactive mode.
+
+.TP
+\fBversion\fP
+Display the version number of sacctmgr.
+
+.TP
+\fB!!\fP
+Repeat the last command.
+
+.SH "ENTITIES"
+
+.TP
+\fIaccount\fP
+A bank account, typically specified at job submit time using the 
+\fI\-\-account=\fR option.
+These may be arranged in a hierarchical fashion, for example
+accounts \fIchemistry\fR and \fIphysics\fR may be children of
+the account \fIscience\fR. 
+The hierarchy may have an arbitrary depth.
+
+.TP
+\fIassociation\fP
+The entity used to group information consisting of four parameters:
+\fIaccount\fR, \fIcluster\fR, \fIpartition (optional)\fR, and \fIuser\fR.
+
+.TP
+\fIcluster\fP
+The \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration
+file, used to differentiate accounts from on different machines. 
+
+.TP
+\fIconfiguration\fP
+Used only with the \fIlist\fR or \fIshow\fR command to report current
+system configuration. 
+
+.TP
+\fIcoordinator\fR
+A special privileged user usually an account manager or such that can
+add users or sub accounts to the account they are coordinator over.
+This should be a trusted person since they can change limits on
+account and user associations inside their realm.
+ 
+.TP
+\fIqos\fR
+Quality of Service.
+
+.TP
+\fItransaction\fR
+List of transactions that have occurred during a given time period.
+
+.TP
+\fIuser\fR
+The login name.
+
+.TP
+\fIwckeys\fR
+Workload  Characterization  Key. An arbitrary  string  for  grouping orthogonal accounts.
+
+.SH "GENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES"
+
+.TP
+\fIFairshare\fP=<fairshare>
+Number used in conjunction with other accounts to determine job priority.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIGrpCPUMins\fP=<max cpu minutes> 
+Maximum number of CPU minutes running jobs are able to be allocated in 
+aggregate for this association and all association which are children
+of this association.
+To clear a previously set value use the modify command with a new
+value of \-1.  (NOTE: This limit is not enforced if set on the root
+association of a cluster.  So even though it may appear in sacctmgr
+output it will not be enforced.  
+NOTE: This limit only applys when using the Priority Multifactor
+plugin.  The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf.  Currently when
+this limit is reached jobs will be delayed until they are able to run
+inside the limit.  No jobs will be killed if this limit is reached,
+this will change in future versions of SLURM.)
+
+.TP
+\fIGrpCPUs\fP=<max cpus>
+Maximum number of CPUs running jobs are able to be allocated in aggregate for 
+this association and all association which are children of this association.
+To clear a previously set value use the modify command with a new
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
+You can still set this, but have to wait for future versions of SLURM
+before it is enforced.)
+
+.TP
+\fIGrpJobs\fP=<max jobs>
+Maximum number of running jobs in aggregate for 
+this association and all association which are children of this association.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIGrpNodes\fP=<max nodes>
+Maximum number of nodes running jobs are able to be allocated in aggregate for 
+this association and all association which are children of this association.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIGrpSubmitJobs\fP=<max jobs>
+Maximum number of jobs which can be in a pending or running state at any time 
+in aggregate for this association and all association which are children of 
+this association.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIGrpWall\fP=<max wall>
+Maximum wall clock time running jobs are able to be allocated in aggregate for 
+this association and all association which are children of this association.
+To clear a previously set value use the modify command with a new value of \-1.
+(NOTE: This limit is not enforced if set on the root
+association of a cluster.  So even though it may appear in sacctmgr
+output it will not be enforced.  
+NOTE: This limit only applys when using the Priority Multifactor
+plugin.  The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf.  Currently when
+this limit is reached jobs will be delayed until they are able to run
+inside the limit.  No jobs will be killed if this limit is reached,
+this will change in future versions of SLURM.)
+
+.TP
+\fIMaxCPUMins\fP=<max cpu minutes> 
+Maximum number of CPU minutes each job is able to use in this account.
+This is overridden if set directly on a user. 
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new
+value of \-1. 
+
+.TP
+\fIMaxCPUs\fP=<max cpus>
+Maximum number of CPUs each job is able to use in this account.
+This is overridden if set directly on a user. 
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
+You can still set this, but have to wait for future versions of SLURM
+before it is enforced.)
+
+.TP
+\fIMaxJobs\fP=<max jobs>
+Maximum number of jobs each user is allowed to run at one time in this account.
+This is overridden if set directly on a user. 
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMaxNodes\fP=<max nodes>
+Maximum number of nodes each job is able to use in this account.
+This is overridden if set directly on a user. 
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new value of \-1.
+This is a c\-node limit on BlueGene systems.
+
+.TP
+\fIMaxSubmitJobs\fP=<max jobs>
+Maximum number of jobs which can this association can have in a
+pending or running state at any time.
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMaxWall\fP=<max wall>
+Maximum wall clock time each job is able to use in this account.
+This is overridden if set directly on a user. 
+Default is the cluster's limit.
+<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or 
+<days>\-<hr>:<min>:<sec> or <days>\-<hr>.
+The value is recorded in minutes with rounding as needed.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIQosLevel\fP<operator><comma separated list of qos names>
+Specify the default Quality of Service's that jobs are able to run at
+for this account.  To get a list of valid QOS's use 'sacctmgr list qos'. 
+This value will override it's parents value and push down to it's
+children as the new default.  Setting a QosLevel to '' (two single
+quotes with nothing between them) restores it's default setting.  You
+can also use the operator += and \-= to add or remove certain QOS's
+from a QOS list.
+
+Valid <operator> values include:
+.RS
+.TP 5
+\fB=\fR
+Set \fIQosLevel\fP to the specified value.
+.TP
+\fB+=\fR
+Add the specified <qos> value to the current \fIQosLevel\fP .
+.TP
+\fB\-=\fR
+Remove the specified <qos> value from the current \fIQosLevel\fP.
+.RE
+
+
+.SH "SPECIFICATIONS FOR ACCOUNTS"
+
+.TP
+\fICluster\fP=<cluster>
+Specific cluster to add account to.  Default is all in system.
+
+.TP
+\fIDescription\fP=<description>
+An arbitrary string describing an account.
+
+.TP
+\fIName\fP=<name>
+The name of a bank account.
+
+.TP
+\fIOrganization\fP=<org>
+Organization to which the account belongs.
+
+.TP
+\fIParent\fP=<parent>
+Parent account of this account. Default is the root account, a top
+level account.
+
+.SH ""
+NOTE: If using the WithAssoc option you can also query against
+association specific information to view only certain associations
+this account may have.  These extra options can be found in the
+\fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
+general specifications list above in the \fIGENERAL SPECIFICATIONS FOR
+ASSOCIATION BASED ENTITIES\fP section.
+
+.SH "LIST/SHOW ACCOUNT FORMAT OPTIONS"
+
+.TP
+\fIAccount\fP
+The name of a bank account.
+
+.TP
+\fIDescription\fP
+An arbitrary string describing an account.
+
+.TP
+\fIOrganization\fP
+Organization to which the account belongs.
+
+.TP
+\fICoordinators\fP
+List of users that are a coordinator of the account. (Only filled in
+when using the WithCoordinator option.)
+
+.SH ""
+NOTE: If using the WithAssoc option you can also view the information
+about the various associations the account may have on all the
+clusters in the system.  The Association format fields are described
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+.RE
+
+
+.SH "SPECIFICATIONS FOR ASSOCIATIONS"
+
+.TP
+\fICluster\fP=<comma separated list of cluster names>
+List the associations of the cluster(s).
+
+.TP
+\fIAccount\fP=<comma separated list of account names>
+List the associations of the account(s).
+
+.TP
+\fIUser\fP=<comma separated list of user names>
+List the associations of the user(s).
+
+.TP
+\fIPartition\fP=<comma separated list of partition names>
+List the associations of the partition(s).
+
+.SH ""
+NOTE: You can also use the general specifications list above in the
+\fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
+
+\fBOther options unique for listing associations:\fP
+
+.TP
+\fITree\fP
+Display account names in a hierarchical fashion.
+
+.TP
+\fIWithDeleted\fP
+Display information with previously deleted data.
+
+.TP
+\fIWithSubAccounts\fP
+Display information with subaccounts.  Only really valuable when used
+with the account= option.  This will display all the subaccount
+associations along with the accounts listed in the option.
+              
+.TP
+\fIWOLimits\fP
+Display information without limit information. This is for a smaller
+default format of Cluster,Account,User,Partition
+
+.TP
+\fIWOPInfo\fP
+Display information without parent information. (i.e. parent id, and
+parent account name.) This option also invokes WOPLIMITS.
+              
+.TP
+\fIWOPLimits\fP
+Display information without hierarchical parent limits. (i.e. will
+only display limits where they are set instead of propagating them
+from the parent.)
+
+.RE
+
+
+.SH "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
+
+.TP
+\fIAccount\fP
+The name of a bank account in the association.
+
+.TP
+\fICluster\fP
+The name of a cluster in the association.
+
+.TP
+\fIFairshare\fP
+Number used in conjunction with other accounts to determine job priority.
+
+.TP
+\fIGrpCPUMins\fP
+Maximum number of CPU minutes running jobs are able to be allocated in 
+aggregate for this association and all association which are children
+of this association.
+
+.TP
+\fIGrpCPUs\fP
+Maximum number of CPUs running jobs are able to be allocated in aggregate for 
+this association and all association which are children of this association.
+
+.TP
+\fIGrpJobs\fP
+Maximum number of running jobs in aggregate for 
+this association and all association which are children of this association.
+
+.TP
+\fIGrpNodes\fP
+Maximum number of nodes running jobs are able to be allocated in aggregate for 
+this association and all association which are children of this association.
+
+.TP
+\fIGrpSubmitJobs\fP
+Maximum number of jobs which can be in a pending or running state at any time 
+in aggregate for this association and all association which are children of 
+this association.
+
+.TP
+\fIGrpWall\fP
+Maximum wall clock time running jobs are able to be allocated in aggregate for 
+this association and all association which are children of this association.
+
+.TP
+\fIID\fP
+The id of the association.
+
+.TP
+\fILFT\fP
+Associations are kept in a hierarchy this is the left most
+spot in the hierarchy.  When used with the RGT variable all
+associations with a LFT inside this LFT and before the RGT are
+childern of this association.
+
+.TP
+\fIMaxCPUMins\fP 
+Maximum number of CPU minutes each job is able to use.
+
+.TP
+\fIMaxCPUs\fP
+Maximum number of CPUs each job is able to use.
+
+.TP
+\fIMaxJobs\fP
+Maximum number of jobs each user is allowed to run at one time.
+
+.TP
+\fIMaxNodes\fP
+Maximum number of nodes each job is able to use.
+
+.TP
+\fIMaxSubmitJobs\fP
+Maximum number of jobs pending or running state at any time.
+
+.TP
+\fIMaxWall\fP
+Maximum wall clock time each job is able to use.
+
+.TP
+\fIQos\fP
+Valid QOS\' for this association.
+
+.TP
+\fIParentID\fP
+The association id of the parent of this association.
+
+.TP
+\fIParentName\fP
+The account name of the parent of this association.
+
+.TP
+\fIPartition\fP
+The name of a partition in the association.
+
+.TP
+\fIRawQOS\fP
+The numeric values of valid QOS\' for this association.
+
+.TP
+\fIRGT\fP
+Associations are kept in a hierarchy this is the right most
+spot in the hierarchy.  When used with the LFT variable all
+associations with a LFT inside this RGT and after the LFT are
+childern of this association.
+
+.TP
+\fIUser\fP
+The name of a user in the association.
+.RE
+
+
+.SH "SPECIFICATIONS FOR CLUSTERS"
+
+.TP
+\fIName\fP=<name>
+The name of a cluster.
+This should be equal to the \fIClusterName\fR parameter in the \fIslurm.conf\fR 
+configuration file for some Slurm\-managed cluster. 
+
+.TP
+\fIWOLimits\fP
+Display information without limit information. This is for a smaller
+default format of Cluster,ControlHost,ControlPort,RPC
+
+.SH ""
+NOTE: You can also use the general specifications list above in the
+\fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
+
+.RE
+
+.SH "LIST/SHOW CLUSTER FORMAT OPTIONS"
+
+.TP
+\fICluster\fP
+The name of the cluster.
+
+.TP
+\fIControl Host\fP
+When a slurmctld registers with the database the ip address of the
+controller is placed here.
+
+.TP
+\fIControl Port\fP
+When a slurmctld registers with the database the port the controller
+is listening on is placed here.
+
+.TP
+\fICPU Count\fP
+The current count of cpus on the cluster.
+
+.TP
+\fINodeNames\fP
+The current Nodes associated with the cluster.
+
+.TP
+\fINodeCount\fP
+The current count of nodes associated with the cluster.
+
+.TP
+\fIRPC\fP
+When a slurmctld registers with the database the rpc version the controller
+is running is placed here.
+
+.SH ""
+NOTE: You can also view the information about the root association for
+the cluster.  The Association format fields are described
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+.RE
+
+
+.SH "SPECIFICATIONS FOR COORDINATOR"
+.TP
+\fIAccounts\fP=<comma separated list of account names>
+Account name to add this user as a coordinator to.
+.TP
+\fINames\fP=<comma separated list of user names>
+Names of coordinators.
+
+.SH ""
+NOTE: To list coordinators use the WithCoordinator options with list
+account or list user.
+.RE
+
+
+.SH "SPECIFICATIONS FOR QOS"
+
+.TP
+\fIGrpCPUMins\fP
+Maximum number of CPU minutes running jobs are able to be allocated in 
+aggregate for this QOS.
+
+.TP
+\fIGrpCPUs\fP
+Maximum number of CPUs running jobs are able to be allocated in aggregate for 
+this QOS.
+
+.TP
+\fIGrpJobs\fP
+Maximum number of running jobs in aggregate for this QOS.
+
+.TP
+\fIGrpNodes\fP
+Maximum number of nodes running jobs are able to be allocated in aggregate for 
+this QOS.
+
+.TP
+\fIGrpSubmitJobs\fP
+Maximum number of jobs which can be in a pending or running state at any time 
+in aggregate for this QOS.
+
+.TP
+\fIGrpWall\fP
+Maximum wall clock time running jobs are able to be allocated in aggregate for 
+this QOS.
+
+.TP
+\fIID\fP
+The id of the QOS.
+
+.TP
+\fIMaxCPUMins\fP 
+Maximum number of CPU minutes each job is able to use.
+
+.TP
+\fIMaxCPUs\fP
+Maximum number of CPUs each job is able to use.
+
+.TP
+\fIMaxJobs\fP
+Maximum number of jobs each user is allowed to run at one time.
+
+.TP
+\fIMaxNodes\fP
+Maximum number of nodes each job is able to use.
+
+.TP
+\fIMaxSubmitJobs\fP
+Maximum number of jobs pending or running state at any time per user.
+
+.TP
+\fIMaxWall\fP
+Maximum wall clock time each job is able to use.
+
+.TP
+\fIName\fP
+Name of the QOS.
+
+.TP
+\fIPreempt\fP
+Other QOS\' this QOS can preempt.
+
+.TP
+\fIPriority\fP
+What priority will be added to a job\'s priority when using this QOS.
+
+.TP
+\fIUsageFactor\fP
+Usage factor when running with this QOS
+.RE
+
+
+.SH "LIST/SHOW QOS FORMAT OPTIONS"
+
+.TP
+\fIDescription\fP
+An arbitrary string describing a QOS.
+
+.TP
+\fIGrpCPUMins\fP
+Maximum number of CPU minutes running jobs are able to be allocated in 
+aggregate for this QOS.
+To clear a previously set value use the modify command with a new
+value of \-1. 
+NOTE: This limit only applys when using the Priority Multifactor
+plugin.  The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf.  Currently when
+this limit is reached jobs will be delayed until they are able to run
+inside the limit.  No jobs will be killed if this limit is reached,
+this will change in future versions of SLURM.)
+
+.TP
+\fIGrpCPUs\fP
+Maximum number of CPUs running jobs are able to be allocated in aggregate for 
+this QOS.
+To clear a previously set value use the modify command with a new
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
+You can still set this, but have to wait for future versions of SLURM
+before it is enforced.)
+
+.TP
+\fIGrpJobs\fP
+Maximum number of running jobs in aggregate for this QOS.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIGrpNodes\fP
+Maximum number of nodes running jobs are able to be allocated in aggregate for 
+this QOS.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIGrpSubmitJobs\fP
+Maximum number of jobs which can be in a pending or running state at any time 
+in aggregate for this QOS.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIGrpWall\fP
+Maximum wall clock time running jobs are able to be allocated in aggregate for 
+this QOS.
+To clear a previously set value use the modify command with a new value of \-1.
+NOTE: This limit only applys when using the Priority Multifactor
+plugin.  The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf.  Currently when
+this limit is reached jobs will be delayed until they are able to run
+inside the limit.  No jobs will be killed if this limit is reached,
+this will change in future versions of SLURM.)
+
+.TP
+\fIMaxCPUMins\fP 
+Maximum number of CPU minutes each job is able to use.
+To clear a previously set value use the modify command with a new
+value of \-1. 
+
+.TP
+\fIMaxCPUs\fP
+Maximum number of CPUs each job is able to use.
+To clear a previously set value use the modify command with a new
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
+You can still set this, but have to wait for future versions of SLURM
+before it is enforced.)
+
+.TP
+\fIMaxJobs\fP
+Maximum number of jobs each user is allowed to run at one time.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMaxNodes\fP
+Maximum number of nodes each job is able to use.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMaxSubmitJobs\fP
+Maximum number of jobs pending or running state at any time per user.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMaxWall\fP
+Maximum wall clock time each job is able to use.
+<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or 
+<days>\-<hr>:<min>:<sec> or <days>\-<hr>.
+The value is recorded in minutes with rounding as needed.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIName\fP
+Name of the QOS.  Needed for creation.
+
+.TP
+\fIPreempt\fP
+Other QOS\' this QOS can preempt.
+Setting a Preempt to '' (two single
+quotes with nothing between them) restores it's default setting.  You
+can also use the operator += and \-= to add or remove certain QOS's
+from a QOS list.
+
+.TP
+\fIPriority\fP
+What priority will be added to a job\'s priority when using this QOS.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIUsageFactor\fP
+Usage factor when running with this QOS.  This is a float that is
+factored into the time of running jobs.  i.e. if the usagefactor of a
+QOS was 2 for every cpu second a job ran it would count for 2.  Also
+if the usagefactor was .5 every second would only could for half the time.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.RE
+
+
+.SH "SPECIFICATIONS FOR TRANSACTIONS"
+
+.TP
+\fIAccounts\fP=<comma separated list of account names>
+Only print out the transactions affecting specified accounts.
+
+.TP
+\fIAction\fP=<Specific action the list will display>
+
+.TP
+\fIActor\fP=<Specific name the list will display>
+
+.TP
+\fIClusters\fP=<comma separated list of cluster names>
+Only print out the transactions affecting specified clusters.
+
+.TP
+\fIEndTime\fP=<Date and time where list should end>
+
+.TP
+\fIStartTime\fP=<Date and time where list should begin>
+
+.TP
+\fIUsers\fP=<comma separated list of user names>
+Only print out the transactions affecting specified users.
+
+.TP
+\fIWithAssoc\fP
+Get information about which associations were affected by the transactions.
+.RE
+
+.SH "LIST/SHOW TRANSACTIONS FORMAT OPTIONS"
+
+.TP
+\fIAction\fP
+
+.TP
+\fIActor\fP
+
+.TP
+\fIInfo\fP
+
+.TP
+\fITimeStamp\fP
+
+.TP
+\fIWhere\fP
+
+.SH ""
+NOTE: If using the WithAssoc option you can also view the information
+about the various associations the transaction effected.  The
+Association format fields are described 
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+.RE
+
+.SH "SPECIFICATIONS FOR USERS"
+
+.TP
+\fIAccount\fP=<account>
+Account name to add this user to.
+
+.TP
+\fIAdminLevel\fP=<level>
+Admin level of user.  Valid levels are None, Operator, and Admin.
+
+.TP
+\fICluster\fP=<cluster>
+Specific cluster to add user to the account on.  Default is all in system.
+
+.TP
+\fIDefaultAccount\fP=<account>
+Identify the default bank account name to be used for a job if none is 
+specified at submission time.
+
+.TP
+\fIDefaultWCKey\fP=<defaultwckey>
+Identify the default Workload Characterization Key.
+
+.TP
+\fIName\fP=<name>
+Name of user.
+
+.TP
+\fIPartition\fP=<name>
+Partition name.
+
+.TP
+\fIWCKeys\fP=<wckeys>
+Workload Characterization Key values.
+
+.SH ""
+NOTE: If using the WithAssoc option you can also query against
+association specific information to view only certain associations
+this account may have.  These extra options can be found in the
+\fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
+general specifications list above in the \fIGENERAL SPECIFICATIONS FOR
+ASSOCIATION BASED ENTITIES\fP section.
+.RE
+
+.SH "LIST/SHOW USER FORMAT OPTIONS"
+
+.TP
+\fIAdminLevel\fP
+Admin level of user. 
+
+.TP
+\fIDefaultAccount\fP
+An the users default account.
+
+.TP
+\fICoordinators\fP
+List of users that are a coordinator of the account. (Only filled in
+when using the WithCoordinator option.)
+
+.TP
+\fIUser\fP
+The name of a user.
+
+.SH ""
+NOTE: If using the WithAssoc option you can also view the information
+about the various associations the user may have on all the
+clusters in the system.  The Association format fields are described
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+.RE
+
+.SH "LIST/SHOW WCKey"
+
+.TP
+\fIWCKey\fP
+Workload Characterization Key. 
+
+.TP
+\fICluster\fP
+Specific cluster for the WCKey.
+
+.TP
+\fIUser\fP
+The name of a user for the WCKey.
+
+.SH ""
+NOTE: If using the WithAssoc option you can also view the information
+about the various associations the user may have on all the
+clusters in the system.  The Association format fields are described
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+.RE
+
+.SH "GLOBAL FORMAT OPTION"
+When using the format option for listing various fields you can put a
+%NUMBER afterwards to specify how many characters should be printed.
+
+i.e. format=name%30 will print 30 characters of field name right
+justified.  A \-30 will print 30 characters left justified.  
+
+.SH "FLAT FILE DUMP AND LOAD"
+sacctmgr has the capability to load and dump SLURM association data to and
+from a file.  This method can easily add a new cluster or copy an
+existing clusters associations into a new cluster with similar
+accounts. Each file contains SLURM association data for a single
+cluster.  Comments can be put into the file with the # character.
+Each line of information must begin with one of the four titles; \fBCluster, Parent, Account or
+User\fP. Following the title is a space, dash, space, entity value,
+then specifications. Specifications are colon separated.  If any
+variable such as Organization has a space in it surround the name with
+single or double quotes.
+
+To create a file of associations one can run
+
+> sacctmgr dump tux file=tux.cfg
+.br
+(file=tux.cfg is optional)
+
+To load a previously created file you can run
+
+> sacctmgr load file=tux.cfg
+
+Other options for load are \-
+
+clean \- delete what was already there and start from scratch with this
+information.
+.br
+Cluster= \- specify a different name for the cluster than that which is
+in the file.
+
+Quick explanation how the file works.
+
+Since the associations in the system follow a hierarchy so does the
+file.  Any thing that is a parent needs to be defined before any
+children.  The only exception is the understood 'root' account.  This
+is always a default for any cluster and does not need to be defined.
+
+To edit/create a file start with a cluster line for the new cluster
+
+\fBCluster\ \-\ cluster_name:MaxNodesPerJob=15\fP
+
+Anything included on this line will be the defaults for all
+associations on this cluster.  These options are as follows...
+.TP
+\fIGrpCPUMins=\fP
+Maximum number of CPU hours running jobs are able to
+be allocated in aggregate for this association and all association
+which are children of this association. (NOTE: This limit is not
+currently enforced in SLURM. You can still set this, but have to wait
+for future versions of SLURM before it is enforced.)
+.TP
+\fIGrpCPUs=\fP
+Maximum number of CPUs running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association. (NOTE: This limit is not currently
+enforced in SLURM. You can still set this, but have to wait for future
+versions of SLURM before it is enforced.)
+.TP
+\fIGrpJobs=\fP
+Maximum number of running jobs in aggregate for this
+association and all association which are children of this association.
+.TP
+\fIGrpNodes=\fP
+Maximum number of nodes running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association.
+.TP
+\fIGrpSubmitJobs=\fP
+Maximum number of jobs which can be in a pending or
+running state at any time in aggregate for this association and all
+association which are children of this association. 
+.TP
+\fIGrpWall=\fP
+Maximum wall clock time running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association. 
+.TP
+\fIFairShare=\fP
+Number used in conjunction with other associations to determine job priority.
+.TP
+\fIMaxJobs=\fP
+Maximum number of jobs the children of this association can run.
+.TP
+\fIMaxNodesPerJob=\fP
+Maximum number of nodes per job the children of this association can run.
+.TP
+\fIMaxProcSecondsPerJob=\fP
+Maximum cpu seconds children of this accounts jobs can run.
+.TP
+\fIMaxWallDurationPerJob=\fP
+Maximum time (not related to job size) children of this accounts jobs can run.
+.TP
+\fIQOS=\fP
+Comma separated list of Quality of Service names (Defined in sacctmgr).
+.TP
+
+Followed by Accounts you want in this fashion...
+
+.na
+\fBParent\ \-\ root\fP (Defined by default)
+.br
+\fBAccount\ \-\ cs\fP:MaxNodesPerJob=5:MaxJobs=4:MaxProcSecondsPerJob=20:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
+.br
+\fBParent\ \-\ cs\fP
+.br
+\fBAccount\ \-\ test\fP:MaxNodesPerJob=1:MaxJobs=1:MaxProcSecondsPerJob=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'
+.ad
+
+.TP
+Any of the options after a ':' can be left out and they can be in any order.
+If you want to add any sub accounts just list the Parent THAT HAS ALREADY 
+BEEN CREATED before the account line in this fashion...
+.TP
+All account options are
+.TP
+\fIDescription=\fP
+A brief description of the account.
+.TP
+\fIGrpCPUMins=\fP
+Maximum number of CPU hours running jobs are able to
+be allocated in aggregate for this association and all association
+which are children of this association. (NOTE: This limit is not
+currently enforced in SLURM. You can still set this, but have to wait
+for future versions of SLURM before it is enforced.)
+.TP
+\fIGrpCPUs=\fP
+Maximum number of CPUs running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association. (NOTE: This limit is not currently
+enforced in SLURM. You can still set this, but have to wait for future
+versions of SLURM before it is enforced.)
+.TP
+\fIGrpJobs=\fP
+Maximum number of running jobs in aggregate for this
+association and all association which are children of this association.
+.TP
+\fIGrpNodes=\fP
+Maximum number of nodes running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association.
+.TP
+\fIGrpSubmitJobs=\fP
+Maximum number of jobs which can be in a pending or
+running state at any time in aggregate for this association and all
+association which are children of this association. 
+.TP
+\fIGrpWall=\fP
+Maximum wall clock time running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association. 
+.TP
+\fIFairShare=\fP
+Number used in conjunction with other associations to determine job priority.
+.TP
+\fIMaxJobs=\fP
+Maximum number of jobs the children of this association can run.
+.TP
+\fIMaxNodesPerJob=\fP
+Maximum number of nodes per job the children of this association can run.
+.TP
+\fIMaxProcSecondsPerJob=\fP
+Maximum cpu seconds children of this accounts jobs can run.
+.TP
+\fIMaxWallDurationPerJob=\fP
+Maximum time (not related to job size) children of this accounts jobs can run.
+.TP
+\fIOrganization= 
+Name of organization that owns this account.
+.TP
+\fI\fIQOS(=,+=,\-=)\fP
+Comma separated list of Quality of Service names (Defined in sacctmgr).
+.TP
+
+.TP
+To add users to a account add a line like this after a Parent \- line
+\fBParent\ \-\ test\fP
+.br
+.na
+\fBUser\ \-\ adam\fP:MaxNodesPerJob=2:MaxJobs=3:MaxProcSecondsPerJob=4:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'
+.ad
+
+.TP
+All user options are
+.TP
+\fIAdminLevel=\fP
+Type of admin this user is (Administrator, Operator)
+.br
+\fBMust be defined on the first occurrence of the user.\fP
+.TP
+\fICoordinator=\fP
+Comma separated list of accounts this user is coordinator over
+.br
+\fBMust be defined on the first occurrence of the user.\fP
+.TP
+\fIDefaultAccount=\fP
+system wide default account name
+.br
+\fBMust be defined on the first occurrence of the user.\fP
+.TP
+\fIFairShare=\fP
+Number used in conjunction with other associations to determine job priority.
+.TP
+\fIMaxJobs=\fP
+Maximum number of jobs this user can run.
+.TP
+\fIMaxNodesPerJob=\fP
+Maximum number of nodes per job this user can run.
+.TP
+\fIMaxProcSecondsPerJob=\fP
+Maximum cpu seconds this user can run per job.
+.TP
+\fIMaxWallDurationPerJob=\fP
+Maximum time (not related to job size) this user can run.
+.TP
+\fIQOS(=,+=,\-=)\fP
+Comma separated list of Quality of Service names (Defined in sacctmgr).
+.RE
+
+.SH "ARCHIVE FUNCTIONALITY"
+Sacctmgr has the capability to archive to a flatfile and or load that
+data if needed later.  The archiving is usually done by the slurmdbd
+and it is highly recommended you only do it through sacctmgr if you
+completely understand what you are doing.  For slurmdbd options see
+"man slurmdbd" for more information. 
+Loading data into the database can be done from these files to either
+view old data or regenerate rolled up data. 
+
+These are the options for both dump and load of archive information.
+
+archive dump
+
+.TP
+\fIDirectory=\fP
+Directory to store the archive data.
+.TP
+\fIEvents\fP
+Archive Events.  If not specified and PurgeEventMonths is set
+all event data removed will be lost permanently.
+.TP
+\fIJobs\fP
+Archive Jobs.  If not specified and PurgeJobMonths is set
+all job data removed will be lost permanently.
+.TP
+\fIPurgeEventMonths=\fP
+Purge cluster event records older than time stated in months.
+.TP
+\fIPurgeJobMonths=\fP
+Purge job records older than time stated in months.
+.TP
+\fIPurgeStepMonths=\fP
+Purge step records older than time stated in months.
+.TP
+\fIPurgeSuspendMonths=\fP
+Purge job suspend records older than time stated in months.
+.TP
+\fIScript=\fP
+Run this script instead of the generic form of archive to flat files.
+.TP
+\fISteps\fP
+Archive Steps.  If not specified and PurgeStepMonths is set
+all step data removed will be lost permanently.
+.TP
+\fISuspend\fP
+Archive Suspend Data.  If not specified and PurgeSuspendMonths is set
+all suspend data removed will be lost permanently.
+.RE    
+                                                                       
+archive load
+.TP
+\fIFile=\fP
+File to load into database.
+.TP
+\fIInsert=\fP 
+SQL to insert directly into the database.  This should be used very
+cautiously since this is writing your sql into the database.
+.RE
+
+.SH "EXAMPLES"
+.eo
+.br
+> sacctmgr create cluster tux
+.br
+> sacctmgr create account name=science fairshare=50
+.br
+> sacctmgr create account name=chemistry parent=science fairshare=30
+.br
+> sacctmgr create account name=physics parent=science fairshare=20
+.br
+> sacctmgr create user name=adam cluster=tux account=physics fairshare=10
+.br
+> sacctmgr delete user name=adam cluster=tux account=physics
+.br
+> sacctmgr delete account name=physics cluster=tux
+.br
+> sacctmgr modify user where name=adam cluster=tux account=physics set
+  maxjobs=2 maxwall=30:00
+.br
+> sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
+.br
+> sacctmgr list transactions StartTime=11/03\-10:30:00 format=Timestamp,Action,Actor
+.br
+> sacctmgr dump cluster=tux file=tux_data_file
+.br
+> sacctmgr load tux_data_file
+.br
+
+.br
+When modifying an object placing the key words 'set' and the
+optional 'where' is critical to perform correctly below are examples to
+produce correct results.  As a rule of thumb any thing you put in front
+of the set will be used as a quantifier.  If you want to put a
+quantifier after the key word 'set' you should use the key
+word 'where'.
+.br
+
+.br
+wrong> sacctmgr modify user name=adam set fairshare=10 cluster=tux
+.br
+
+.br
+This will produce an error as the above line reads modify user adam
+set fairshare=10 and cluster=tux.  
+.br
+
+.br
+right> sacctmgr modify user name=adam cluster=tux set fairshare=10
+.br
+right> sacctmgr modify user name=adam set fairshare=10 where cluster=tux 
+.br
+
+.br
+When changing qos for something only use the '=' operator when wanting
+to explicitly set the qos to something.  In most cases you will want
+to use the '+=' or '\-=' operator to either add to or remove from the
+existing qos already in place.
+.br
+
+.br
+If a user already has qos of normal,standby for a parent or it was
+explicitly set you should use qos+=expedite to add this to the list in
+this fashion.
+.br
+
+.br
+> sacctmgr modify user name=adam set qos+=expedite
+.br
+
+.br
+If you are looking to only add the qos expedite to only a certain
+account and or cluster you can do that by specifing them in the
+sacctmgr line.
+.br
+
+.br
+> sacctmgr modify user name=adam acct=this cluster=tux set qos+=expedite
+.br
+.ec
+
+.SH "COPYING"
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBslurm.conf\fR(5)
+\fBslurmdbd\fR(8)
