@@ -313,7 +313,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 	rm_element_t *job_elem = NULL;
 	pm_partition_id_t job_block;
 	db_job_id_t job_id;
-	int i;
+	int i, rc;
 #endif
 
 	if(!job_list)
@@ -345,8 +345,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		}
 		
 		if(!job_elem) {
-			error("No Job Elem breaking out job count = %d\n", 
-			      jobs);
+			error("No Job Elem breaking out job count = %d\n", i);
 			break;
 		}
 		if ((rc = bridge_get_data(job_elem, RM_JobPartitionID, 
@@ -913,7 +912,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 	rm_job_list_t *job_list = NULL;
 	
 #ifdef HAVE_BG_FILES
-	int live_states;
+	int live_states, rc;
 	
 	debug2("getting the job info");
 	live_states = JOB_ALL_FLAG 
