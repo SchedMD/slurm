@@ -617,20 +617,24 @@ extern int unpack_job_resources(job_resources_t **job_resources_pptr,
 	safe_unpack8(&job_resources->node_req, buffer);
 
 	safe_unpack32_array(&job_resources->cpu_array_reps,
-			    &job_resources->cpu_array_cnt, buffer);
+			    &tmp32, buffer);
 	if (tmp32 == 0)
 		xfree(job_resources->cpu_array_reps);
+	job_resources->cpu_array_cnt = tmp32;
 
 	safe_unpack16_array(&job_resources->cpu_array_value,
 			    &tmp32, buffer);
 	if (tmp32 == 0)
 		xfree(job_resources->cpu_array_value);
-	else if(!job_resources->cpu_array_cnt)
-		job_resources->cpu_array_cnt = tmp32;
+
+	if (tmp32 != job_resources->cpu_array_cnt)
+		goto unpack_error;
 
 	safe_unpack16_array(&job_resources->cpus, &tmp32, buffer);
 	if (tmp32 == 0)
 		xfree(job_resources->cpus);
+	if (tmp32 != job_resources->nhosts)
+		goto unpack_error;
 	safe_unpack16_array(&job_resources->cpus_used, &tmp32, buffer);
 	if (tmp32 == 0)
 		xfree(job_resources->cpus_used);
@@ -639,8 +643,6 @@ extern int unpack_job_resources(job_resources_t **job_resources_pptr,
 			    &tmp32, buffer);
 	if (tmp32 == 0)
 		xfree(job_resources->memory_allocated);
-	else if (tmp32 != job_resources->nhosts)
-		goto unpack_error;
 	safe_unpack32_array(&job_resources->memory_used, &tmp32, buffer);
 	if (tmp32 == 0)
 		xfree(job_resources->memory_used);
@@ -667,6 +669,7 @@ extern int unpack_job_resources(job_resources_t **job_resources_pptr,
 	return SLURM_SUCCESS;
 
   unpack_error:
+	error("unpack_job_resources: unpack error");
 	free_job_resources(&job_resources);
 	xfree(bit_fmt);
 	*job_resources_pptr = NULL;

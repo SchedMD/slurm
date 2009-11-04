@@ -1060,3 +1060,14 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	return rc;
 }
 
+extern int slurm_cpus_used_on_node_inx(struct job_resources *job_resrcs_ptr,
+				       int i)
+{
+	if (job_resrcs_ptr == NULL) {
+		error("slurm_cpus_used_on_node_inx: job_resources not set");
+		return -1;
+	}
+
+	return job_resrcs_ptr->cpus_used[i];
+}
+
