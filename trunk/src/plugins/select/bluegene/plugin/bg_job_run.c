@@ -103,7 +103,7 @@ static void	_bg_list_del(void *x);
 static int	_excise_block(List block_list, 
 			      pm_partition_id_t bg_block_id, 
 			      char *nodes);
-static List	_get_all_blocks(void);
+static List	_get_all_allocated_blocks(void);
 static void *	_block_agent(void *args);
 static void	_block_op(bg_update_t *bg_update_ptr);
 static void	_start_agent(bg_update_t *bg_update_ptr);
@@ -202,6 +202,7 @@ static int _remove_job(db_job_id_t job_id)
 	error("Failed to remove job %d from MMCS", job_id);
 	return INTERNAL_ERROR;
 }
+
 #endif
 
 /* block_state_mutex should be locked before calling this function */
@@ -300,6 +301,177 @@ static void _bg_list_del(void *x)
 		xfree(bg_update_ptr->bg_block_id);
 		xfree(bg_update_ptr);
 	}
+}
+
+static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
+					    int job_cnt, char *block_id)
+{
+	bg_record_t *bg_record = NULL;
+	int job_remove_failed = 0;
+
+#ifdef HAVE_BG_FILES
+	rm_element_t *job_elem = NULL;
+	pm_partition_id_t job_block;
+	db_job_id_t job_id;
+	int i;
+#endif
+
+	if(!job_list)
+		job_cnt = 0;
+
+	if(!block_id) {
+		error("_remove_jobs_on_block_and_reset: no block name given");
+		return;
+	}
+
+#ifdef HAVE_BG_FILES
+	for (i=0; i<job_cnt; i++) {		
+		if (i) {
+			if ((rc = bridge_get_data(job_list, RM_JobListNextJob, 
+						  &job_elem)) != STATUS_OK) {
+				error("bridge_get_data"
+				      "(RM_JobListNextJob): %s", 
+				      bg_err_str(rc));
+				continue;
+			}
+		} else {
+			if ((rc = bridge_get_data(job_list, RM_JobListFirstJob,
+						  &job_elem)) != STATUS_OK) {
+				error("bridge_get_data"
+				      "(RM_JobListFirstJob): %s",
+				      bg_err_str(rc));
+				continue;
+			}
+		}
+		
+		if(!job_elem) {
+			error("No Job Elem breaking out job count = %d\n", 
+			      jobs);
+			break;
+		}
+		if ((rc = bridge_get_data(job_elem, RM_JobPartitionID, 
+					  &job_block))
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_JobPartitionID) %s: %s", 
+			      job_block, bg_err_str(rc));
+			continue;
+		}
+
+		if(!job_block) {
+			error("No blockID returned from Database");
+			continue;
+		}
+
+		debug2("looking at block %s looking for %s\n",
+		       job_block, block_id);
+			
+		if (!strcmp(job_block, block_id)) {
+			free(block_id);
+			continue;
+		}
+		
+		free(block_id);
+
+		if ((rc = bridge_get_data(job_elem, RM_JobDBJobID, &job_id))
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_JobDBJobID): %s", 
+			      bg_err_str(rc));
+			continue;
+		}
+		debug2("got job_id %d",job_id);
+		if((rc = _remove_job(job_id)) == INTERNAL_ERROR) {
+			job_remove_failed = 1;
+			break;
+		}
+	}
+#endif
+	/* remove the block's users */
+	slurm_mutex_lock(&block_state_mutex);
+	bg_record = find_bg_record_in_list(bg_lists->main, block_id);
+	if(bg_record) {
+		debug("got the record %s user is %s",
+		      bg_record->bg_block_id,
+		      bg_record->user_name);
+
+		if(job_remove_failed) {
+			char time_str[32], reason[128];
+			time_t now;
+			slurm_make_time_str(&now, time_str, sizeof(time_str));
+			snprintf(reason, sizeof(reason),
+				 "_term_agent: Couldn't remove job "
+				 "[SLURM@%s]", time_str);
+			if(bg_record->nodes)
+				slurm_drain_nodes(bg_record->nodes, 
+						  reason);
+			else
+				error("Block %s doesn't have a node list.",
+				      block_id);
+		}
+
+		_reset_block(bg_record);		
+	} else if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+		debug2("Hopefully we are destroying this block %s "
+		       "since it isn't in the bg_lists->main",
+		       block_id);
+	} else {
+		error("Could not find block %s previously assigned to job.  "
+		      "If this is happening at startup and you just changed "
+		      "your bluegene.conf this is expected.  Else you should "
+		      "probably restart your slurmctld since this shouldn't "
+		      "happen outside of that.",
+		      block_id);
+	}
+	slurm_mutex_unlock(&block_state_mutex);
+
+}
+
+static void _reset_block_list(List block_list)
+{
+	ListIterator itr = NULL;
+	bg_record_t *bg_record = NULL;
+	rm_job_list_t *job_list = NULL;
+	int jobs = 0;
+
+#ifdef HAVE_BG_FILES
+	int live_states, rc;
+#endif
+
+	if(!block_list)
+		return;
+
+#ifdef HAVE_BG_FILES
+	debug2("getting the job info");
+	live_states = JOB_ALL_FLAG 
+		& (~JOB_TERMINATED_FLAG) 
+		& (~JOB_KILLED_FLAG)
+		& (~JOB_ERROR_FLAG);
+	
+	if ((rc = bridge_get_jobs(live_states, &job_list)) != STATUS_OK) {
+		error("bridge_get_jobs(): %s", bg_err_str(rc));
+		
+		return;
+	}
+
+	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs)) 
+	    != STATUS_OK) {
+		error("bridge_get_data(RM_JobListSize): %s", bg_err_str(rc));
+		jobs = 0;
+	}
+	debug2("job count %d",jobs);
+#endif
+	itr = list_iterator_create(block_list);
+	while ((bg_record = list_next(itr))) {
+		info("Queue clearing of users of BG block %s",
+		     bg_record->bg_block_id);
+		_remove_jobs_on_block_and_reset(job_list, jobs,
+						bg_record->bg_block_id);
+	}
+	list_iterator_destroy(itr);
+
+#ifdef HAVE_BG_FILES
+	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)
+		error("bridge_free_job_list(): %s", bg_err_str(rc));
+#endif
 }
 
 /* Update block user and reboot as needed */
@@ -737,18 +909,11 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 /* Perform job termination work */
 static void _term_agent(bg_update_t *bg_update_ptr)
 {
-	bg_record_t *bg_record = NULL;
-	time_t now;
-	char reason[128];
-	int job_remove_failed = 0;
+	int jobs = 0;
+	rm_job_list_t *job_list = NULL;
 	
 #ifdef HAVE_BG_FILES
-	rm_element_t *job_elem = NULL;
-	rm_job_list_t *job_list = NULL;
-	db_job_id_t job_id;
 	int live_states;
-	pm_partition_id_t block_id;
-	int i, jobs, rc;
 	
 	debug2("getting the job info");
 	live_states = JOB_ALL_FLAG 
@@ -760,8 +925,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		error("bridge_get_jobs(): %s", bg_err_str(rc));
 		
 		return;
-	}
-	
+	}	
 			
 	if ((rc = bridge_get_data(job_list, RM_JobListSize, &jobs)) 
 	    != STATUS_OK) {
@@ -769,105 +933,9 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		jobs = 0;
 	}
 	debug2("job count %d",jobs);
-
-	for (i=0; i<jobs; i++) {		
-		if (i) {
-			if ((rc = bridge_get_data(job_list, RM_JobListNextJob, 
-						  &job_elem)) != STATUS_OK) {
-				error("bridge_get_data"
-				      "(RM_JobListNextJob): %s", 
-				      bg_err_str(rc));
-				continue;
-			}
-		} else {
-			if ((rc = bridge_get_data(job_list, RM_JobListFirstJob,
-						  &job_elem)) != STATUS_OK) {
-				error("bridge_get_data"
-				      "(RM_JobListFirstJob): %s",
-				      bg_err_str(rc));
-				continue;
-			}
-		}
-		
-		if(!job_elem) {
-			error("No Job Elem breaking out job count = %d\n", 
-			      jobs);
-			break;
-		}
-		if ((rc = bridge_get_data(job_elem, RM_JobPartitionID, 
-					  &block_id))
-		    != STATUS_OK) {
-			error("bridge_get_data(RM_JobPartitionID) %s: %s", 
-			      block_id, bg_err_str(rc));
-			continue;
-		}
-
-		if(!block_id) {
-			error("No blockID returned from Database");
-			continue;
-		}
-
-		debug2("looking at block %s looking for %s\n",
-		       block_id, bg_update_ptr->bg_block_id);
-			
-		if (strcmp(block_id, bg_update_ptr->bg_block_id) != 0) {
-			free(block_id);
-			continue;
-		}
-		
-		free(block_id);
-
-		if ((rc = bridge_get_data(job_elem, RM_JobDBJobID, &job_id))
-		    != STATUS_OK) {
-			error("bridge_get_data(RM_JobDBJobID): %s", 
-			      bg_err_str(rc));
-			continue;
-		}
-		debug2("got job_id %d",job_id);
-		if((rc = _remove_job(job_id)) == INTERNAL_ERROR) {
-			job_remove_failed = 1;
-			break;
-		}
-	}
 #endif
-	
-	/* remove the block's users */
-	slurm_mutex_lock(&block_state_mutex);
-	bg_record = find_bg_record_in_list(bg_lists->main,
-					   bg_update_ptr->bg_block_id);
-	if(bg_record) {
-		debug("got the record %s user is %s",
-		      bg_record->bg_block_id,
-		      bg_record->user_name);
-
-		if(job_remove_failed) {
-			char time_str[32];
-			slurm_make_time_str(&now, time_str, sizeof(time_str));
-			snprintf(reason, sizeof(reason),
-				 "_term_agent: Couldn't remove job "
-				 "[SLURM@%s]", time_str);
-			if(bg_record->nodes)
-				slurm_drain_nodes(bg_record->nodes, 
-						  reason);
-			else
-				error("Block %s doesn't have a node list.",
-				      bg_update_ptr->bg_block_id);
-		}
-
-		_reset_block(bg_record);		
-	} else if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
-		debug2("Hopefully we are destroying this block %s "
-		       "since it isn't in the bg_lists->main",
-		       bg_update_ptr->bg_block_id);
-	} else {
-		error("Could not find block %s previously assigned to job.  "
-		      "If this is happening at startup and you just changed "
-		      "your bluegene.conf this is expected.  Else you should "
-		      "probably restart your slurmctld since this shouldn't "
-		      "happen outside of that.",
-		      bg_update_ptr->bg_block_id);
-	}
-	slurm_mutex_unlock(&block_state_mutex);
+	_remove_jobs_on_block_and_reset(job_list, jobs,
+					bg_update_ptr->bg_block_id);
 
 #ifdef HAVE_BG_FILES
 	if ((rc = bridge_free_job_list(job_list)) != STATUS_OK)
@@ -967,7 +1035,7 @@ static void _block_op(bg_update_t *bg_update_ptr)
 
 
 /* get a list of all BG blocks with users */
-static List _get_all_blocks(void)
+static List _get_all_allocated_blocks(void)
 {
 	List ret_list = list_create(destroy_bg_record);
 	ListIterator itr;
@@ -993,7 +1061,7 @@ static List _get_all_blocks(void)
 		}
 		list_iterator_destroy(itr);
 	} else {
-		error("_get_all_blocks: no bg_lists->main");
+		error("_get_all_allocated_blocks: no bg_lists->main");
 	}
 
 	return ret_list;
@@ -1202,11 +1270,10 @@ int term_job(struct job_record *job_ptr)
  */
 extern int sync_jobs(List job_list)
 {
-	ListIterator job_iterator, block_iterator;
+	ListIterator job_iterator;
 	struct job_record  *job_ptr = NULL;
 	bg_update_t *bg_update_ptr = NULL;
-	bg_record_t *bg_record = NULL;
-	List block_list;
+	List block_list = NULL;
 	static bool run_already = false;
 
 	/* Execute only on initial startup. We don't support bgblock 
@@ -1216,7 +1283,7 @@ extern int sync_jobs(List job_list)
 	run_already = true;
 
 	/* Insure that all running jobs own the specified block */
-	block_list = _get_all_blocks();
+	block_list = _get_all_allocated_blocks();
 	if(job_list) {
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr = (struct job_record *) 
@@ -1298,18 +1365,7 @@ extern int sync_jobs(List job_list)
 	}
 	/* Insure that all other blocks are free of users */
 	if(block_list) {
-		block_iterator = list_iterator_create(block_list);
-		while ((bg_record = (bg_record_t *) 
-			list_next(block_iterator))) {
-			info("Queue clearing of users of BG block %s",
-			     bg_record->bg_block_id);
-			bg_update_ptr = xmalloc(sizeof(bg_update_t));
-			bg_update_ptr->op = TERM_OP;
-			bg_update_ptr->bg_block_id = 
-				xstrdup(bg_record->bg_block_id);
-			_block_op(bg_update_ptr);
-		}
-		list_iterator_destroy(block_iterator);
+		_reset_block_list(block_list);
 		list_destroy(block_list);
 	} else {
 		/* this should never happen, 

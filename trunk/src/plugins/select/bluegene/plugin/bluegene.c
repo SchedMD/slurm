@@ -1256,7 +1256,6 @@ extern int validate_current_blocks(char *dir)
 
 	slurm_mutex_lock(&block_state_mutex);
 	last_bg_update = time(NULL);
-	blocks_are_created = 1;
 	sort_bg_record_inc_size(bg_lists->main);
 	slurm_mutex_unlock(&block_state_mutex);
 	debug("Blocks have finished being created.");
