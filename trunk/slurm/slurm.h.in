@@ -1914,6 +1914,16 @@ void slurm_print_key_pairs PARAMS((
 \*****************************************************************************/
 
 /*
+ * slurm_cpus_used_on_node_inx - get the number of cpus a job used on a node
+ *	by node index
+ * IN job_resrcs_ptr	- pointer to job_resources structure
+ * IN i			- node index
+ * RET cpus used or -1 on error
+ */
+extern int slurm_cpus_used_on_node_inx(struct job_resources *job_resrcs_ptr,
+				       int i);
+
+/*
  * slurm_free_job_info_msg - free the job information response message
  * IN msg - pointer to job information response message
  * NOTE: buffer is loaded by slurm_load_jobs.
