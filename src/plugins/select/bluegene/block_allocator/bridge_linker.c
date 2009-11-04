@@ -737,7 +737,7 @@ extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 	/* In the libraries linked to from the bridge there are stderr
 	   messages send which we would miss unless we dup this to the
 	   log */
-	(void)dup2(fp, STDERR_FILENO);
+	(void)dup2(fileno(fp), STDERR_FILENO);
 
 	if(fp2)
 		fclose(fp2);
