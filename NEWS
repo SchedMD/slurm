@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.1.0-pre7
+=============================
+
 * Changes in SLURM 2.1.0-pre6
 =============================
  -- When getting information about nodes in hidden partitions, return a node
@@ -19,7 +22,7 @@ documents those changes that are of interest to users and admins.
     the slurmctld or slurmstepd dump core on a seg fault.
  -- Moved the errant slurm_job_node_ready() declaration from job_info.h to
     slurm.h and deleted job_info.h.
- -- Added the slurm_job_cpus_allocated_on_node_inx() 
+ -- Added the slurm_job_cpus_allocated_on_node_id() 
     slurm_job_cpus_allocated_on_node() API for working with the 
     job_resources_t structure.
  -- BLUEGENE - speed up start up for systems that have many blocks (100+)
