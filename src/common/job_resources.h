@@ -111,6 +111,10 @@ struct job_resources {
 	uint32_t *	memory_used;
 	uint32_t	nhosts;
 	bitstr_t *	node_bitmap;
+	hostlist_t      node_hl; /* will be set on unpack if
+				    nodes are given to create.
+				    Used primarily for api
+				    functions */
 	uint8_t		node_req;
 	uint32_t	nprocs;
 	uint32_t *	sock_core_rep_count;
@@ -127,23 +131,23 @@ extern job_resources_t *create_job_resources(void);
  * the total number of cores in the allocation). Call this ONLY from
  * slurmctld. Example of use:
  *
- * job_resources_t *job_resources_ptr = create_job_resources();
+ * job_resources_t *job_resrcs_ptr = create_job_resources();
  * node_name2bitmap("dummy[2,5,12,16]", true, &(job_res_ptr->node_bitmap));
- * rc = build_job_resources(job_resources_ptr, node_record_table_ptr,
+ * rc = build_job_resources(job_resrcs_ptr, node_record_table_ptr,
  *			     slurmctld_conf.fast_schedule);
  */
-extern int build_job_resources(job_resources_t *job_resources_ptr,
-			      void *node_rec_table, uint16_t fast_schedule);
+extern int build_job_resources(job_resources_t *job_resrcs_ptr,
+			       void *node_rec_table, uint16_t fast_schedule);
 
 /* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
  * values of cpus in an existing data structure
  * Return total CPU count or -1 on error */
-extern int build_job_resources_cpu_array(job_resources_t *job_resources_ptr);
+extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr);
 
 /* Rebuild cpus array based upon the values of nhosts, cpu_array_value and
  * cpu_array_reps in an existing data structure
  * Return total CPU count or -1 on error */
-extern int build_job_resources_cpus_array(job_resources_t *job_resources_ptr);
+extern int build_job_resources_cpus_array(job_resources_t *job_resrcs_ptr);
 
 /* Validate a job_resources data structure originally built using
  * build_job_resources() is still valid based upon slurmctld state.
@@ -153,74 +157,74 @@ extern int build_job_resources_cpus_array(job_resources_t *job_resources_ptr);
  * change in a node's socket or core count require that any job running on
  * that node be killed. Example of use:
  *
- * rc = valid_job_resources(job_resources_ptr, node_record_table_ptr,
+ * rc = valid_job_resources(job_resrcs_ptr, node_record_table_ptr,
  *			     slurmctld_conf.fast_schedule);
  */
-extern int valid_job_resources(job_resources_t *job_resources_ptr,
-			      void *node_rec_table, uint16_t fast_schedule);
+extern int valid_job_resources(job_resources_t *job_resrcs_ptr,
+			       void *node_rec_table, uint16_t fast_schedule);
 
 /* Make a copy of a job_resources data structure,
  * free using free_job_resources() */
-extern job_resources_t *copy_job_resources(job_resources_t *job_resources_ptr);
+extern job_resources_t *copy_job_resources(job_resources_t *job_resrcs_ptr);
 
 /* Free job_resources data structure created using copy_job_resources() or
  *	unpack_job_resources() */
-extern void free_job_resources(job_resources_t **job_resources_pptr);
+extern void free_job_resources(job_resources_t **job_resrcs_pptr);
 
 /* Log the contents of a job_resources data structure using info() */
 extern void log_job_resources(uint32_t job_id,
-			      job_resources_t *job_resources_ptr);
+			      job_resources_t *job_resrcs_ptr);
 
 /* Un/pack full job_resources data structure */
-extern void pack_job_resources(job_resources_t *job_resources_ptr, Buf buffer);
-extern int unpack_job_resources(job_resources_t **job_resources_pptr,
-				Buf buffer);
+extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer);
+extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
+				char *nodelist, Buf buffer);
 
 /* Reset the node_bitmap in a job_resources data structure
  * This is needed after a restart/reconfiguration since nodes can
  * be added or removed from the system resulting in changing in
  * the bitmap size or bit positions */
-extern void reset_node_bitmap(job_resources_t *job_resources_ptr,
+extern void reset_node_bitmap(job_resources_t *job_resrcs_ptr,
 			      bitstr_t *new_node_bitmap);
 
 /* For a given node_id, socket_id and core_id, get it's offset within
  * the core bitmap */
-extern int get_job_resources_offset(job_resources_t *job_resources_ptr,
-				   uint32_t node_id, uint16_t socket_id,
-				   uint16_t core_id);
+extern int get_job_resources_offset(job_resources_t *job_resrcs_ptr,
+				    uint32_t node_id, uint16_t socket_id,
+				    uint16_t core_id);
 
 /* Get/set bit value at specified location.
  *	node_id, socket_id and core_id are all zero origin */
-extern int get_job_resources_bit(job_resources_t *job_resources_ptr,
-				uint32_t node_id, uint16_t socket_id,
-				uint16_t core_id);
-extern int set_job_resources_bit(job_resources_t *job_resources_ptr,
-				uint32_t node_id, uint16_t socket_id,
-				uint16_t core_id);
+extern int get_job_resources_bit(job_resources_t *job_resrcs_ptr,
+				 uint32_t node_id, uint16_t socket_id,
+				 uint16_t core_id);
+extern int set_job_resources_bit(job_resources_t *job_resrcs_ptr,
+				 uint32_t node_id, uint16_t socket_id,
+				 uint16_t core_id);
 
 /* Get/set bit value at specified location for whole node allocations
  *	get is for any socket/core on the specified node
  *	set is for all sockets/cores on the specified node
  *	fully comptabable with set/get_job_resources_bit()
  *	node_id is all zero origin */
-extern int get_job_resources_node(job_resources_t *job_resources_ptr,
-				 uint32_t node_id);
-extern int set_job_resources_node(job_resources_t *job_resources_ptr,
-				 uint32_t node_id);
+extern int get_job_resources_node(job_resources_t *job_resrcs_ptr,
+				  uint32_t node_id);
+extern int set_job_resources_node(job_resources_t *job_resrcs_ptr,
+				  uint32_t node_id);
 
 /* Get socket and core count for a specific node_id (zero origin) */
-extern int get_job_resources_cnt(job_resources_t *job_resources_ptr,
-				uint32_t node_id, uint16_t *socket_cnt,
-				uint16_t *cores_per_socket_cnt);
+extern int get_job_resources_cnt(job_resources_t *job_resrcs_ptr,
+				 uint32_t node_id, uint16_t *socket_cnt,
+				 uint16_t *cores_per_socket_cnt);
 
 /* check if given job can fit into the given full-length core_bitmap */
-extern int job_fits_into_cores(job_resources_t *job_resources_ptr,
+extern int job_fits_into_cores(job_resources_t *job_resrcs_ptr,
 			       bitstr_t *full_bitmap,
 			       const uint16_t *bits_per_node,
 			       const uint32_t *bit_rep_count);
 
 /* add the given job to the given full_core_bitmap */
-extern void add_job_to_cores(job_resources_t *job_resources_ptr,
+extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			     bitstr_t **full_core_bitmap,
 			     const uint16_t *cores_per_node,
 			     const uint32_t *core_rep_count);

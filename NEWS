@@ -19,7 +19,8 @@ documents those changes that are of interest to users and admins.
     the slurmctld or slurmstepd dump core on a seg fault.
  -- Moved the errant slurm_job_node_ready() declaration from job_info.h to
     slurm.h and deleted job_info.h.
- -- Added the slurm_cpus_used_on_node_inx() API
+ -- Added the slurm_job_cpus_used_on_node_inx() slurm_job_cpus_used_on_node() 
+    API for working with the job_resources_t structure.
 
 * Changes in SLURM 2.1.0-pre5
 =============================

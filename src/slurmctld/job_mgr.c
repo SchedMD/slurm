@@ -854,7 +854,7 @@ static int _load_job_state(Buf buffer)
 
 	if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer))
 		goto unpack_error;
-	if (unpack_job_resources(&job_resources, buffer))
+	if (unpack_job_resources(&job_resources, NULL, buffer))
 		goto unpack_error;
 
 	safe_unpack16(&ckpt_interval, buffer);
@@ -2364,7 +2364,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	struct job_record *job_ptr = NULL;
-	uint32_t total_nodes, max_cpus;
+	uint32_t total_nodes;
 	acct_association_rec_t assoc_rec, *assoc_ptr;
 	List license_list = NULL;
 	bool valid;
@@ -2376,6 +2376,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t reboot;
 	uint16_t rotate;
 	uint16_t conn_type;
+	uint32_t max_cpus=0;
 #endif
 
 	*job_pptr = (struct job_record *) NULL;
@@ -2531,6 +2532,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		return error_code;
 	}
 
+#ifdef HAVE_BG
 	/* This needs to be done after the association acct policy check since
 	 * it looks at unaltered nodes for bluegene systems
 	 */
@@ -2543,7 +2545,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	debug3("after alteration asking for nodes %u-%u cpus %u-%u", 
 	       job_desc->min_nodes, job_desc->max_nodes,
 	       job_desc->num_procs, max_cpus);
-	
+#endif	
 	/* check if select partition has sufficient resources to satisfy
 	 * the request */
 

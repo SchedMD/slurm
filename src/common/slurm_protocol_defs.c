@@ -417,7 +417,7 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->req_nodes);
 		xfree(job->resv_name);
 		select_g_select_jobinfo_free(job->select_jobinfo);
-		free_job_resources(&job->job_resources);
+		free_job_resources(&job->job_resrcs);
 		xfree(job->state_desc);
 		xfree(job->wckey);
 		xfree(job->work_dir);
