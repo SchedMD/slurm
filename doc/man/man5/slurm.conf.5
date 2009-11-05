@@ -1303,29 +1303,33 @@ The following values are supported for \fBSelectType=select/cons_res\fR:
 \fBCR_CPU\fR
 CPUs are consumable resources.
 There is no notion of sockets, cores or threads; 
-do not define those values in the node specification.
+do not define those values in the node specification.  If these 
+are defined, unexpected results will happen when hyper\-threading 
+is enabled Procs= should be used instead.
 On a multi\-core system, each core will be considered a CPU.
-On a multi\-core and hyperthreaded system, each thread will be
+On a multi\-core and hyper\-threaded system, each thread will be
 considered a CPU.
 On single\-core systems, each CPUs will be considered a CPU.
 .TP
 \fBCR_CPU_Memory\fR
 CPUs and memory are consumable resources.
 There is no notion of sockets, cores or threads; 
-do not define those values in the node specification.
+do not define those values in the node specification.  If these 
+are defined, unexpected results will happen when hyper\-threading 
+is enabled Procs= should be used instead.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Core\fR
 Cores are consumable resources.
 On nodes with hyper\-threads, each thread is counted as a CPU to 
 satisfy a job's resource requirement, but multiple jobs are not 
-allocated threads on the same core.
+allocated threads on the same core.  
 .TP
 \fBCR_Core_Memory\fR
 Cores and memory are consumable resources.
 On nodes with hyper\-threads, each thread is counted as a CPU to 
 satisfy a job's resource requirement, but multiple jobs are not 
-allocated threads on the same core.
+allocated threads on the same core.  
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Socket\fR
@@ -1961,7 +1965,10 @@ resolution of a core. If your system is configured with more than
 one thread per core, execution of a different job on each thread 
 is not supported. 
 A job can execute a one task per thread from within one job step or
-execute a distinct job step on each of the threads.
+execute a distinct job step on each of the threads.  
+Note also if you are running with more than 1 thread per core and running 
+the select/cons_res plugin you will want to set the SelectTypeParameters 
+variable to something other than CR_CPU to avoid unexpected results.
 The default value is 1.
 
 .TP
