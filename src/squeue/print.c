@@ -594,9 +594,6 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_reason_list(job_info_t * job, int width, bool right, 
 		char* suffix)
 {
-	char *ionodes = NULL;
-	char tmp_char[16];
-	
 	if (job == NULL) {	/* Print the Header instead */
 #ifdef HAVE_BG
 		_print_str("BP_LIST(REASON)", width, right, false);
@@ -614,22 +611,21 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		snprintf(id, FORMAT_STRING_SIZE, "(%s)", reason);
 		_print_str(id, width, right, true);
 	} else {
-#ifdef HAVE_BG
+		char *nodes = xstrdup(job->nodes);
+		char *ionodes = NULL;
 		select_g_get_jobinfo(job->select_jobinfo, 
 				     SELECT_DATA_IONODES, 
 				     &ionodes);
-#endif
-		
-		_print_nodes(job->nodes, width, right, false);
 		if(ionodes) {
-			snprintf(tmp_char, sizeof(tmp_char), "[%s]", 
-				 ionodes);
-			_print_str(tmp_char, width, right, false);
-		}
+			xstrfmtcat(nodes, "[%s]", ionodes);
+			xfree(ionodes);
+			_print_str(nodes, width, right, false);
+		} else	
+			_print_nodes(nodes, width, right, false);
+		xfree(nodes);
 	}
 	if (suffix)
 		printf("%s", suffix);
-	xfree(ionodes);
 	return SLURM_SUCCESS;
 }
 
