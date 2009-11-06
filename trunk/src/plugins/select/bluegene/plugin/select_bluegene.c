@@ -247,34 +247,37 @@ static List _get_config(void)
 extern int init ( void )
 {
 
+	if(bg_recover != NOT_FROM_CONTROLLER) {
 #if (SYSTEM_DIMENSIONS != 3)
-	fatal("SYSTEM_DIMENSIONS value (%d) invalid for BlueGene",
-		SYSTEM_DIMENSIONS);
+		fatal("SYSTEM_DIMENSIONS value (%d) invalid for BlueGene",
+		      SYSTEM_DIMENSIONS);
 #endif
-
+	
 #ifdef HAVE_BG_FILES
 #ifdef HAVE_BGL
-	if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE")
-	    || !getenv("VWSPATH"))
-		fatal("db2profile has not been run to setup DB2 environment");
-	
-	if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
-	    || (SELECT_VIRTUAL_NODE_MODE != RM_PARTITION_VIRTUAL_NODE_MODE))
-		fatal("enum node_use_type out of sync with rm_api.h");
+	        if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE")
+		    || !getenv("VWSPATH"))
+			fatal("db2profile has not been "
+			      "run to setup DB2 environment");
+		
+		if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
+		    || (SELECT_VIRTUAL_NODE_MODE 
+			!= RM_PARTITION_VIRTUAL_NODE_MODE))
+			fatal("enum node_use_type out of sync with rm_api.h");
 #endif
-	if ((SELECT_MESH  != RM_MESH)
-	    || (SELECT_TORUS != RM_TORUS)
-	    || (SELECT_NAV   != RM_NAV))
-		fatal("enum conn_type out of sync with rm_api.h");
+		if ((SELECT_MESH  != RM_MESH)
+		    || (SELECT_TORUS != RM_TORUS)
+		    || (SELECT_NAV   != RM_NAV))
+			fatal("enum conn_type out of sync with rm_api.h");
 #endif
-
-	verbose("%s loading...", plugin_name);
-
-	/* if this is coming from something other than the controller
-	   we don't want to read the config or anything like that. */
-	if(bg_recover != NOT_FROM_CONTROLLER) 
+		
+		verbose("%s loading...", plugin_name);
+		/* if this is coming from something other than the controller
+		   we don't want to read the config or anything like that. */
 		if (init_bg() || _init_status_pthread())
 			return SLURM_ERROR;
+	}
+	verbose("%s loaded", plugin_name);
 
 	return SLURM_SUCCESS;
 }

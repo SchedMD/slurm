@@ -62,15 +62,14 @@ int main(int argc, char** argv)
 	log_opts.logfile_level = debug_level;
 	log_opts.syslog_level  = debug_level;
 	
-	log_alter(log_opts, LOG_DAEMON, 
-		  "/dev/null");
+	log_alter(log_opts, LOG_DAEMON, "/dev/null");
 	
 	DIM_SIZE[X]=0;
 	DIM_SIZE[Y]=0;
 	DIM_SIZE[Z]=0;
 
 	slurm_conf_reinit(NULL);
-	ba_init(NULL);
+	ba_init(NULL, 1);
 	init_wires(NULL);
 		
 	/* [010x831] */

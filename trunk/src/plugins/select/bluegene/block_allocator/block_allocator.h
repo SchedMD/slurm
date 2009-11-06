@@ -348,10 +348,11 @@ extern void print_ba_request(ba_request_t* ba_request);
  * 
  * IN: node_info_msg_t * can be null, 
  *     should be from slurm_load_node().
+ * IN: load_bridge: whiether or not to get bridge information
  * 
  * return: void.
  */
-extern void ba_init(node_info_msg_t *node_info_ptr);
+extern void ba_init(node_info_msg_t *node_info_ptr, bool load_bridge);
 
 /* If emulating a system set up a known configuration for wires in a
  * system of the size given.

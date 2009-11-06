@@ -868,7 +868,7 @@ extern int empty_null_destroy_list(void *arg, void *key)
  * 
  * return: void.
  */
-extern void ba_init(node_info_msg_t *node_info_ptr)
+extern void ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
 {
 	int x,y,z;
 
@@ -1043,7 +1043,7 @@ node_info_error:
 #ifdef HAVE_BG_FILES
 	/* sanity check.  We can only request part of the system, but
 	   we don't want to allow more than we have. */
-	if (have_db2) {
+	if (sanity_check && have_db2) {
 		verbose("Attempting to contact MMCS");
 		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
 			fatal("bridge_get_BG() failed.  This usually means "
@@ -1208,8 +1208,8 @@ extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state)
 
 	if (!_initialized){
 		error("Error, configuration not initialized, "
-		      "calling ba_init(NULL)");
-		ba_init(NULL);
+		      "calling ba_init(NULL, 1)");
+		ba_init(NULL, 1);
 	}
 
 #ifdef HAVE_BG
@@ -1326,7 +1326,8 @@ extern int allocate_block(ba_request_t* ba_request, List results)
 {
 	if (!_initialized){
 		error("Error, configuration not initialized, "
-		      "calling ba_init(NULL)");
+		      "calling ba_init(NULL, 1)");
+		ba_init(NULL, 1);
 	}
 
 	if (!ba_request){
@@ -2055,13 +2056,13 @@ extern int set_bp_map(void)
 	bp_map_list = list_create(_bp_map_list_del);
 
 	if (!have_db2) {
-		fatal("Can't access DB2 library, run from service node");
+		error("Can't access DB2 library, run from service node");
 		return -1;
 	}
 
 #ifdef HAVE_BGL
 	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
-		fatal("Missing DB2INSTANCE or VWSPATH env var.  "
+		error("Missing DB2INSTANCE or VWSPATH env var.  "
 		      "Execute 'db2profile'");
 		return -1;
 	}
