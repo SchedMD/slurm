@@ -284,6 +284,7 @@ documents those changes that are of interest to users and admins.
     job has been suspended.
  -- Applied patch from Mark Grondona that fixes the validation of the
     PluginDir to support the colon separated list of directories as documented.
+ -- BLUEGENE - squeue -o %R now prints more readable info for small blocks
 
 * Changes in SLURM 2.0.7
 ========================
