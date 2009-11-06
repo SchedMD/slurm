@@ -413,8 +413,8 @@ Consider which value you want to be used for scheduling purposes.
 .TP 5
 \fB1\fR (default)
 Consider the configuration of each node to be that specified in the
-configuration file and any node with less than the configured resources 
-will be set DOWN.
+slurm.conf configuration file and any node with less than the
+configured resources will be set DOWN.
 .TP
 \fB0\fR
 Base scheduling decisions upon the actual configuration of each individual 
@@ -426,9 +426,9 @@ system and must remain static, while the node's memory and disk space can
 be established later).
 .TP
 \fB2\fR
-Consider the configuration of each node to be that specified in the 
-slurm.conf configuration file and any node with less resources 
-than configured will \fBnot\fR be set DOWN. 
+Consider the configuration of each node to be that specified in the
+slurm.conf configuration file and any node with less than the
+configured resources will \fBnot\fR be set DOWN. 
 This can be useful for testing purposes.
 .RE
 
@@ -809,11 +809,10 @@ or days\-hr).  The default value is 7\-0 (7 days).
 
 .TP
 \fBPriorityFavorSmall\fR
+
 Specifies that small jobs should be given preferencial scheduling priority.
 Applicable only if PriorityType=priority/multifactor.
-Supported values are "YES" and "NO". 
-Applicable only if PriorityType=priority/multifactor.
-The default value is "NO".
+Supported values are "YES" and "NO".  The default value is "NO".
 
 .TP
 \fBPriorityMaxAge\fR
