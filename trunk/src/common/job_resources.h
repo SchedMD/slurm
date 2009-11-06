@@ -70,7 +70,10 @@
  *			  is duplicated. See NOTES below.
  * memory_allocated	- MB per node reserved for the job or step
  * memory_used		- MB per node of memory consumed by job steps
- * nhosts		- Number of nodes in the allocation
+ * nhosts		- Number of nodes in the allocation on a
+ *                        bluegene machine this represents the number
+ *                        of midplanes used.  This should always be
+ *                        the number of bits set in node_bitmap.
  * node_bitmap		- Bitmap of nodes allocated to the job. Unlike the
  *			  node_bitmap in slurmctld's job record, the bits
  *			  here do NOT get cleared as the job completes on a
@@ -112,7 +115,7 @@ struct job_resources {
 	uint32_t	nhosts;
 	bitstr_t *	node_bitmap;
 	hostlist_t      node_hl; /* will be set on unpack if
-				    nodes are given to create.
+				    a nodelist is given to create.
 				    Used primarily for api
 				    functions */
 	uint8_t		node_req;

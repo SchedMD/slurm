@@ -1309,7 +1309,8 @@ static void _build_select_struct(struct job_record *job_ptr,
 	job_resrcs_ptr->cpu_array_value = xmalloc(sizeof(uint16_t));
 	job_resrcs_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
 	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
-	job_resrcs_ptr->nhosts = node_cnt;
+/* 	job_resrcs_ptr->nhosts = node_cnt; */
+	job_resrcs_ptr->nhosts = bit_set_count(bitmap);
 	job_resrcs_ptr->nprocs = job_ptr->num_procs;
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	if (job_resrcs_ptr->node_bitmap == NULL)
