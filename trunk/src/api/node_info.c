@@ -222,9 +222,9 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		 node_ptr->tmp_disk, node_ptr->weight);
 	xstrcat(out, tmp_line);
 	if (one_liner)
-		xstrcat(out, " ");
-	else
 		xstrcat(out, "\n");
+	else
+		xstrcat(out, "\n\n");
 	return out;
 }
 
