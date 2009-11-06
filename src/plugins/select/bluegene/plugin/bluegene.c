@@ -121,7 +121,7 @@ extern int init_bg(void)
 		list_destroy(bg_conf->ramdisk_list);
 	bg_conf->ramdisk_list = list_create(destroy_image);	
 
-	ba_init(NULL);
+	ba_init(NULL, 1);
 
 	verbose("BlueGene plugin loaded successfully");
 
