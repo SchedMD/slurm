@@ -201,7 +201,7 @@ static void * _service_connection(void *arg)
 		msg_size = ntohl(nw_size);
 		if ((msg_size < 2) || (msg_size > 1000000)) {
 			error("Invalid msg_size (%u) from connection %d",
-			      conn->newsockfd);
+			      msg_size, conn->newsockfd);
 			break;
 		}
 
