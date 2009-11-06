@@ -939,8 +939,7 @@ static int _find_best_block_match(List block_list,
 	request.mloaderimage = mloaderimage;
 	request.ramdiskimage = ramdiskimage;
 	if(job_ptr->details->req_node_bitmap) 
-		request.avail_node_bitmap = 
-			job_ptr->details->req_node_bitmap;
+		request.avail_node_bitmap = job_ptr->details->req_node_bitmap;
 	else
 		request.avail_node_bitmap = slurm_block_bitmap;
 

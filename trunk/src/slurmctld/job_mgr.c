@@ -4444,8 +4444,7 @@ void reset_job_bitmaps(void)
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
-		reset_node_bitmap(job_ptr->job_resrcs,
-				  job_ptr->node_bitmap);
+		reset_node_bitmap(job_ptr->job_resrcs, job_ptr->node_bitmap);
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) && 
 		    job_ptr->job_resrcs && (cr_flag || gang_flag) && 
 		    valid_job_resources(job_ptr->job_resrcs,
