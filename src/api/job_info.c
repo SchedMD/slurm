@@ -727,7 +727,11 @@ line7:	/****** Line 7 ******/
 		xstrcat(out, tmp_line);
 	}
 #endif
-	xstrcat(out, "\n\n");
+
+	if (one_liner)
+		xstrcat(out, "\n");
+	else
+		xstrcat(out, "\n\n");
 
 	return out;
 
