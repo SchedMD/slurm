@@ -878,7 +878,7 @@ extern int get_system_stats(GtkTable *table)
 		return SLURM_ERROR;
 	}
 
-	ba_init(node_info_ptr);	
+	ba_init(node_info_ptr, 0);	
 	if(grid_button_list)
 		return SLURM_SUCCESS;
 	grid_button_list = list_create(destroy_grid_button);
