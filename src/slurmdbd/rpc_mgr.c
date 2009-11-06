@@ -185,8 +185,8 @@ static void * _service_connection(void *arg)
 	Buf buffer = NULL;
 	int rc = SLURM_SUCCESS;
 			 
-	debug2("Opened connection %d from %s", conn->newsockfd,
-		conn->ip);
+	debug2("Opened connection %d from %s", conn->newsockfd, conn->ip);
+
 	while (!fini) {
 		if (!_fd_readable(conn->newsockfd))
 			break;		/* problem with this socket */
@@ -194,14 +194,16 @@ static void * _service_connection(void *arg)
 		if (msg_read == 0)	/* EOF */
 			break;
 		if (msg_read != sizeof(nw_size)) {
-			error("Could not read msg_size from connection %d",
-			      conn->newsockfd);
+			error("Could not read msg_size from "
+			      "connection %d(%s) uid(%d)",
+			      conn->newsockfd, conn->ip, uid);
 			break;
 		}
 		msg_size = ntohl(nw_size);
 		if ((msg_size < 2) || (msg_size > 1000000)) {
-			error("Invalid msg_size (%u) from connection %d",
-			      msg_size, conn->newsockfd);
+			error("Invalid msg_size (%u) from "
+			      "connection %d(%s) uid(%d)",
+			      msg_size, conn->newsockfd, conn->ip, uid);
 			break;
 		}
 
