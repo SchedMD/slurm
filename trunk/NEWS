@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.0-pre7
 =============================
+ -- BLUEGENE - make 2.1 run correctly on a real bluegene cluster
 
 * Changes in SLURM 2.1.0-pre6
 =============================
