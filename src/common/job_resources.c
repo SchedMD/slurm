@@ -594,8 +594,8 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer)
 		pack_bit_str(job_resrcs_ptr->core_bitmap, buffer);
 		pack_bit_str(job_resrcs_ptr->core_bitmap_used, buffer);
 		/* Do not pack the node_bitmap, but rebuild it in
-		 * reset_node_bitmap() 
-		 * based upon job_ptr->nodes and the current node table */
+		 * reset_node_bitmap() based upon job_ptr->nodes and
+		 * the current node table */
 	}
 #endif
 }
