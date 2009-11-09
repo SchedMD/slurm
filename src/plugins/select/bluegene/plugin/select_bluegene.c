@@ -58,6 +58,7 @@ int bg_recover = NOT_FROM_CONTROLLER;
 List part_list = NULL;	
 int node_record_count;
 time_t last_node_update;
+time_t last_job_update;
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 void *acct_db_conn = NULL;
 char *slurmctld_cluster_name = NULL;

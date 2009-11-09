@@ -1344,6 +1344,7 @@ extern int sync_jobs(List job_list)
 				job_ptr->job_state = JOB_FAILED 
 					| JOB_COMPLETING;
 				job_ptr->end_time = time(NULL);
+				last_job_update = time(NULL);
 				_bg_list_del(bg_update_ptr);
 				continue;
 			}
@@ -1437,8 +1438,10 @@ extern int boot_block(bg_record_t *bg_record)
 	if(bg_record->state != RM_PARTITION_CONFIGURING)
 		bg_record->state = RM_PARTITION_CONFIGURING;
 	debug("Setting bootflag for %s", bg_record->bg_block_id);
-	if(bg_record->job_ptr)
+	if(bg_record->job_ptr) {
 		bg_record->job_ptr->job_state |= JOB_CONFIGURING;
+		last_job_update = time(NULL);
+	}
 	bg_record->boot_state = 1;
 	//bg_record->boot_count = 0;
 	last_bg_update = time(NULL);
