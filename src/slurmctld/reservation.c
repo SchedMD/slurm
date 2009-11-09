@@ -368,7 +368,7 @@ static bool _is_account_valid(char *account)
 
 static int _append_assoc_list(List assoc_list, acct_association_rec_t *assoc)
 {
-	int rc = ESLURM_INVALID_BANK_ACCOUNT;
+	int rc = ESLURM_INVALID_ACCOUNT;
 	acct_association_rec_t *assoc_ptr = NULL;
 	if (assoc_mgr_fill_in_assoc(
 		    acct_db_conn, assoc,
@@ -428,7 +428,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					    acct_db_conn, &assoc,
 					    accounting_enforce, assoc_list))
 				   != SLURM_SUCCESS) {
-					rc = ESLURM_INVALID_BANK_ACCOUNT;
+					rc = ESLURM_INVALID_ACCOUNT;
 					goto end_it;
 				}
 			}
@@ -612,7 +612,7 @@ static int _build_account_list(char *accounts, int *account_cnt,
 	*account_list = (char **) NULL;
 
 	if (!accounts)
-		return ESLURM_INVALID_BANK_ACCOUNT;
+		return ESLURM_INVALID_ACCOUNT;
 
 	i = strlen(accounts);
 	ac_list = xmalloc(sizeof(char *) * (i + 2));
@@ -636,7 +636,7 @@ static int _build_account_list(char *accounts, int *account_cnt,
 		xfree(ac_list[i]);
 	xfree(ac_list);
 	xfree(tmp);
-	return ESLURM_INVALID_BANK_ACCOUNT;
+	return ESLURM_INVALID_ACCOUNT;
 }
 
 /*
@@ -657,7 +657,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 	bool found_it;
 
 	if (!accounts)
-		return ESLURM_INVALID_BANK_ACCOUNT;
+		return ESLURM_INVALID_ACCOUNT;
 
 	i = strlen(accounts);
 	ac_list = xmalloc(sizeof(char *) * (i + 2));
@@ -785,7 +785,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 	xfree(ac_list);
 	xfree(ac_type);
 	xfree(ac_cpy);
-	return ESLURM_INVALID_BANK_ACCOUNT;
+	return ESLURM_INVALID_ACCOUNT;
 }
 
 /*
@@ -1183,7 +1183,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if ((resv_desc_ptr->accounts == NULL) &&
 	    (resv_desc_ptr->users == NULL)) {
 		info("Reservation request lacks users or accounts");
-		rc = ESLURM_INVALID_BANK_ACCOUNT;
+		rc = ESLURM_INVALID_ACCOUNT;
 		goto bad_parse;
 	}
 	if (resv_desc_ptr->accounts) {
@@ -1469,7 +1469,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 	if ((resv_ptr->users == NULL) && (resv_ptr->accounts == NULL)) {
 		info("Reservation request lacks users or accounts");
-		error_code = ESLURM_INVALID_BANK_ACCOUNT;
+		error_code = ESLURM_INVALID_ACCOUNT;
 		goto update_failure;
 	}
 

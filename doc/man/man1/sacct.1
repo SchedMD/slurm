@@ -306,15 +306,15 @@ operand is a comma\-separated list of these state designators.
 Space characters are not allowed in the 
 \f2state_list\fP\c
 
-NOTE: The default starttime is midnight of the current day so if you
-want to see only jobs in the state now use \-S now.
+NOTE: When specifying states and no start time is given the default
+starttime is 'now'.
 \&.
 
 .TP 
 \f3\-S \fP\f3,\fP \f3\-\-starttime\fP
 Select jobs eligible after the specified time. Default is midnight of
 current day.  If states are given with the \-s option then return jobs
-in this state at this time.
+in this state at this time, 'now' is also used as the default time.
 
 Valid time formats are...
 HH:MM[:SS] [AM|PM]

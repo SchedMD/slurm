@@ -1799,7 +1799,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	if(!(row = mysql_fetch_row(result))) {
 		debug4("Can't move a none existant association");
 		mysql_free_result(result);
-		return SLURM_SUCCESS;
+		return ESLURM_INVALID_PARENT_ACCOUNT;
 	}
 	par_left = atoi(row[0]);
 	mysql_free_result(result);
@@ -1809,7 +1809,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	if(diff == 0) {
 		debug3("Trying to move association to the same position?  "
 		       "Nothing to do.");
-		return rc;
+		return ESLURM_SAME_PARENT_ACCOUNT;
 	}
 	
 	width = (rgt - lft + 1);
@@ -1903,7 +1903,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 
 	mysql_free_result(result);
 
-	if(rc == SLURM_ERROR) 
+	if(rc != SLURM_SUCCESS) 
 		return rc;
 	
 	/* now move the one we wanted to move in the first place 
@@ -1930,9 +1930,6 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 	mysql_free_result(result);
 
-	if(rc == SLURM_ERROR) 
-		return rc;
-	
 	return rc;
 }
 
@@ -5695,6 +5692,30 @@ extern List acct_storage_p_modify_associations(
 				row[MASSOC_CLUSTER], row[MASSOC_ACCT], 
 				row[MASSOC_USER]);
 		} else {
+			if(assoc->parent_acct) {
+				if(!strcasecmp(row[MASSOC_ACCT],
+					       assoc->parent_acct)) {
+					error("You can't make an account be a "
+					      "child of it's self");
+					xfree(object);
+					continue;
+				}
+				rc = _move_parent(mysql_conn, uid,
+						  atoi(row[MASSOC_LFT]),
+						  atoi(row[MASSOC_RGT]),
+						  row[MASSOC_CLUSTER],
+						  row[MASSOC_ID],
+						  row[MASSOC_PACCT],
+						  assoc->parent_acct,
+						  now);
+				if((rc == ESLURM_INVALID_PARENT_ACCOUNT)
+				   || (rc == ESLURM_SAME_PARENT_ACCOUNT)) {
+					continue;
+				} else if(rc != SLURM_SUCCESS)
+					break;
+				
+				moved_parent = 1;
+			}
 			if(row[MASSOC_PACCT][0]) {
 				object = xstrdup_printf(
 					"C = %-10s A = %s of %s",
@@ -5704,27 +5725,6 @@ extern List acct_storage_p_modify_associations(
 				object = xstrdup_printf(
 					"C = %-10s A = %s",
 					row[MASSOC_CLUSTER], row[MASSOC_ACCT]);
-			}
-			if(assoc->parent_acct) {
-				if(!strcasecmp(row[MASSOC_ACCT],
-					       assoc->parent_acct)) {
-					error("You can't make an account be a "
-					      "child of it's self");
-					xfree(object);
-					continue;
-				}
-
-				if(_move_parent(mysql_conn, uid,
-						atoi(row[MASSOC_LFT]),
-						atoi(row[MASSOC_RGT]),
-						row[MASSOC_CLUSTER],
-						row[MASSOC_ID],
-						row[MASSOC_PACCT],
-						assoc->parent_acct,
-						now)
-				   == SLURM_ERROR)
-					break;
-				moved_parent = 1;
 			}
 			account_type = 1;
 		}
@@ -5842,6 +5842,11 @@ extern List acct_storage_p_modify_associations(
 	mysql_free_result(result);
 
 	if(assoc->parent_acct) {
+		if(((rc == ESLURM_INVALID_PARENT_ACCOUNT) 
+		    || (rc == ESLURM_SAME_PARENT_ACCOUNT))
+		   && list_count(ret_list))
+			rc = SLURM_SUCCESS;
+
 		if(rc != SLURM_SUCCESS) {
 			if(mysql_conn->rollback) {
 				mysql_db_rollback(mysql_conn->db_conn);
