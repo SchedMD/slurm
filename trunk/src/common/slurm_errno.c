@@ -210,12 +210,14 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested more tasks than available processors"	},
 	{ ESLURM_JOB_HELD,
 	  "Job is in held state, pending scheduler release"	},
-	{ ESLURM_INVALID_BANK_ACCOUNT,
-	  "Invalid bank account specified"			},
 	{ ESLURM_INVALID_TASK_MEMORY,
 	  "Memory required by task is not available"		},
 	{ ESLURM_INVALID_ACCOUNT,
-	  "Job has invalid account"				},
+	  "Invalid account specified"				},
+	{ ESLURM_INVALID_PARENT_ACCOUNT,
+	  "Invalid parent account specified"			},
+	{ ESLURM_SAME_PARENT_ACCOUNT,
+	  "Account already child of parent account specified"   },
 	{ ESLURM_INVALID_QOS,
 	  "Job has invalid qos"					},
 	{ ESLURM_INVALID_WCKEY,
@@ -226,7 +228,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "The node configuration changes that were made require restart "
 	  "of the slurmctld daemon to take effect"},
 	{ ESLURM_ACCOUNTING_POLICY,
-	  "Job violates accounting policy (job submit limit, the user's "
+	  "Job violates accounting policy (job submit limit, user's "
 	  "size and/or time limits)"},
 	{ ESLURM_INVALID_TIME_LIMIT,
 	  "Requested time limit exceeds partition limit"	},

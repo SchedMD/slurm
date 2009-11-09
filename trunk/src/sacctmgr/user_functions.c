@@ -2181,7 +2181,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 			if(regret_list) {
 				list_iterator_destroy(itr);
 				itr = list_iterator_create(regret_list);
-				printf(" Can modify because these users "
+				printf(" Can't modify because these users "
 				       "aren't associated with new "
 				       "default account '%s'...\n",
 				       user->default_acct);

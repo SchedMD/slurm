@@ -1564,10 +1564,23 @@ assoc_start:
 				"'where' options.\n");
 			goto assoc_end;
 		}
+		
+		if(assoc->parent_acct) {
+			acct_account_rec_t *acct_rec = 
+				sacctmgr_find_account(assoc->parent_acct);
+			if(!acct_rec) {
+				exit_code=1;
+				fprintf(stderr, 
+					" Parent Account %s doesn't exist.\n",
+					assoc->parent_acct);
+				rc = SLURM_ERROR;				
+				goto assoc_end;
+			}
+		}
 
 		ret_list = acct_storage_g_modify_associations(
 			db_conn, my_uid, acct_cond->assoc_cond, assoc);
-
+		
 		if(ret_list && list_count(ret_list)) {
 			char *object = NULL;
 			ListIterator itr = list_iterator_create(ret_list);

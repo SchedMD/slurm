@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.1.0-pre7
 =============================
  -- BLUEGENE - make 2.1 run correctly on a real bluegene cluster
+ -- sacctmgr - display better debug for when an admin specifies a non-existant 
+    parent account when changing parent accounts.
 
 * Changes in SLURM 2.1.0-pre6
 =============================
