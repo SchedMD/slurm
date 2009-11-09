@@ -138,7 +138,7 @@ void print_fields(type_t type, void *object)
 	while((field = list_next(print_fields_itr))) {
 		char *tmp_char = NULL;
 		int tmp_int = NO_VAL, tmp_int2 = NO_VAL;
-
+		memset(&outbuf, 0, sizeof(outbuf));
 		switch(field->type) {
 		case PRINT_ALLOC_CPUS:
 			switch(type) {
@@ -672,7 +672,7 @@ void print_fields(type_t type, void *object)
 			default:
 				tmp_int = NO_VAL;
 				break;
-			}
+			}			
 			if(tmp_int != NO_VAL)
 				convert_num_unit((float)tmp_int,
 						 outbuf, sizeof(outbuf),
