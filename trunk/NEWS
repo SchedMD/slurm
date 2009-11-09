@@ -286,7 +286,7 @@ documents those changes that are of interest to users and admins.
  -- Applied patch from Mark Grondona that fixes the validation of the
     PluginDir to support the colon separated list of directories as documented.
  -- BLUEGENE - squeue -o %R now prints more readable info for small blocks
-
+ -- sacct - fixed garbage being printed out on uninitialized variable.
 * Changes in SLURM 2.0.7
 ========================
  -- Fix bug in select/cons_res when nodes are configured in more than one 
