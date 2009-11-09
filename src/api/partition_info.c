@@ -176,7 +176,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	if (part_ptr->disable_root_jobs)
 		sprintf(tmp_line, " DisableRootJobs=YES");
 	else
-		sprintf(tmp_line, " DisableRootJobs=NO ");
+		sprintf(tmp_line, " DisableRootJobs=NO");
 	xstrcat(out, tmp_line);
 
 	if (part_ptr->hidden)
