@@ -2265,7 +2265,6 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	update_part_msg_t *part_msg = xmalloc(sizeof(update_part_msg_t));
 	char *partid = NULL;
 	char *nodelist = NULL;
-	char *state = NULL;
 	char tmp_char[100];
 	char *temp = NULL;
 	int edit_type = 0;
@@ -2281,22 +2280,26 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	gtk_tree_model_get(model, iter, SORTID_NAME, &partid, -1);
 	gtk_tree_model_get(model, iter, SORTID_NODELIST, &nodelist, -1);
-	gtk_tree_model_get(model, iter, SORTID_AVAIL, &state, -1);
 	slurm_init_part_desc_msg(part_msg);
 	
 	part_msg->name = xstrdup(partid);
 		
 	if(!strcasecmp("Change Availablity Up/Down", type)) {
+		char *state = NULL;
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
 		gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-		
-		if(!strcasecmp("down", type)) 
+		gtk_tree_model_get(model, iter, SORTID_AVAIL, &state, -1);
+		if(!strcasecmp("down", state)) {
 			temp = "up";
-		else
+			part_msg->state_up = 1;
+		} else {
 			temp = "down";
+			part_msg->state_up = 0;
+		}
+		g_free(state);
 		snprintf(tmp_char, sizeof(tmp_char), 
 			 "Are you sure you want to set partition %s %s?",
 			 partid, temp);
@@ -2360,7 +2363,6 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	}
 end_it:
 		
-	g_free(state);
 	g_free(partid);
 	g_free(nodelist);
 	slurm_free_update_part_msg(part_msg);
