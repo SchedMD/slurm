@@ -82,7 +82,7 @@ proc run_job { part_name } {
 #
 spawn $scontrol show part  
 expect {
-	-re "PartitionName=($alpha_numeric_under) " {
+	-re "PartitionName=($alpha_numeric_under)" {
 		if {[string compare $part_name ""] == 0} {
 			set part_name $expect_out(1,string)
 		}

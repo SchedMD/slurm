@@ -81,16 +81,9 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "(uid=.*\n)" {
+	-re "(uid=.*\\)\r\n)" {
 		set job_grp_info $expect_out(1,string)
 		set got_job_grps 1
-		exp_continue
-	}
-
-	-re "salloc: Relinquishing job allocation" {
-		# this needs to be here so it doesn't get latched onto 
-		# the previous check and mess the test up. 
-		# This issue appears in later versions of expect.
 		exp_continue
 	}
 	timeout {
