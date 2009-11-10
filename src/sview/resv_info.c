@@ -50,7 +50,6 @@ enum {
 	SORTID_ACTION,
 	SORTID_COLOR,
 	SORTID_DURATION,
-	SORTID_END_TIME,
 	SORTID_FEATURES,
 	SORTID_FLAGS,
 	SORTID_NAME,
@@ -58,7 +57,8 @@ enum {
 	SORTID_NODE_LIST,
 	SORTID_NODE_INX,
 	SORTID_PARTITION,
-	SORTID_START_TIME,
+	SORTID_TIME_END,
+	SORTID_TIME_START,
 	SORTID_UPDATED,
 	SORTID_USERS,
 	SORTID_CNT
@@ -74,19 +74,19 @@ static display_data_t display_data_resv[] = {
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NAME,       "Name", TRUE, EDIT_NONE, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_COLOR,    NULL, TRUE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_COLOR,      NULL, TRUE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACTION,     "Action", FALSE, EDIT_MODEL,
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_NODE_CNT,   "Nodes", TRUE, EDIT_TEXTBOX, 
+	{G_TYPE_STRING, SORTID_NODE_CNT,   "Node Count", TRUE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_NODE_LIST,  "NodeList", TRUE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_START_TIME, "StartTime", TRUE, EDIT_TEXTBOX, 
+	{G_TYPE_STRING, SORTID_TIME_START, "Time Start", TRUE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_END_TIME,   "EndTime", TRUE, EDIT_TEXTBOX, 
+	{G_TYPE_STRING, SORTID_TIME_END,   "Time End", TRUE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
-	{G_TYPE_STRING, SORTID_DURATION, "Duration", FALSE, EDIT_TEXTBOX, 
+	{G_TYPE_STRING, SORTID_DURATION,   "Duration", FALSE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_STRING, SORTID_ACCOUNTS,   "Accounts", FALSE, EDIT_TEXTBOX, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -257,7 +257,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		resv_msg->duration = temp_int;
 		type = "duration";
 		break;
-	case SORTID_END_TIME:
+	case SORTID_TIME_END:
 		resv_msg->end_time = parse_time((char *)new_text, 0);
 		type = "end time";
 		break;
@@ -292,7 +292,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		resv_msg->partition = xstrdup(new_text);
 		type = "partition";
 		break;
-	case SORTID_START_TIME:
+	case SORTID_TIME_START:
 		resv_msg->start_time = parse_time((char *)new_text, 0);
 		type = "start time";
 		break;
@@ -420,11 +420,30 @@ static void _layout_resv_record(GtkTreeView *treeview,
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 	
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_resv,
+						 SORTID_ACCOUNTS),
+				   resv_ptr->accounts);
+
+	secs2time_str((uint32_t)difftime(resv_ptr->end_time,
+					 resv_ptr->start_time),
+		      time_buf, sizeof(time_buf));
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_resv,
+						 SORTID_DURATION), 
+				   time_buf);
 
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_resv,
-						 SORTID_NAME),
-				   resv_ptr->name);
+						 SORTID_FEATURES),
+				   resv_ptr->features);
+
+	temp_char = reservation_flags_string(resv_ptr->flags);
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_resv,
+						 SORTID_FLAGS),
+				   temp_char);
+	xfree(temp_char);
 
 	convert_num_unit((float)resv_ptr->node_cnt, 
 			 time_buf, sizeof(time_buf), UNIT_NONE);
@@ -438,53 +457,28 @@ static void _layout_resv_record(GtkTreeView *treeview,
 						 SORTID_NODE_LIST),
 				   resv_ptr->node_list);
 
-	slurm_make_time_str((time_t *)&resv_ptr->start_time, time_buf,
-			    sizeof(time_buf));
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_resv,
-						 SORTID_START_TIME), 
-				   time_buf);
-	slurm_make_time_str((time_t *)&resv_ptr->end_time, time_buf,
-			    sizeof(time_buf));
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_resv,
-						 SORTID_END_TIME), 
-				   time_buf);
-
-	secs2time_str((uint32_t)difftime(resv_ptr->end_time,
-					 resv_ptr->start_time),
-		      time_buf, sizeof(time_buf));
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_resv,
-						 SORTID_DURATION), 
-				   time_buf);
-
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_resv,
-						 SORTID_ACCOUNTS),
-				   resv_ptr->accounts);
-
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_resv,
-						 SORTID_USERS),
-				   resv_ptr->users);
-
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_resv,
 						 SORTID_PARTITION),
 				   resv_ptr->partition);
 
+	slurm_make_time_str((time_t *)&resv_ptr->end_time, time_buf,
+			    sizeof(time_buf));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_resv,
-						 SORTID_FEATURES),
-				   resv_ptr->features);
+						 SORTID_TIME_END), 
+				   time_buf);
+	slurm_make_time_str((time_t *)&resv_ptr->start_time, time_buf,
+			    sizeof(time_buf));
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_resv,
+						 SORTID_TIME_START), 
+				   time_buf);
 
-	temp_char = reservation_flags_string(resv_ptr->flags);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_resv,
-						 SORTID_FLAGS),
-				   temp_char);
-	xfree(temp_char);
+						 SORTID_USERS),
+				   resv_ptr->users);
 }
 
 static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr, 
@@ -509,7 +503,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 
 	slurm_make_time_str((time_t *)&resv_ptr->end_time, tmp_char,
 			    sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_END_TIME, tmp_char, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_TIME_END, tmp_char, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_FEATURES,
 			   resv_ptr->features, -1);
@@ -537,7 +531,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 
 	slurm_make_time_str((time_t *)&resv_ptr->start_time, tmp_char,
 			    sizeof(tmp_char));
-	gtk_tree_store_set(treestore, iter, SORTID_START_TIME, tmp_char, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_TIME_START, tmp_char, -1);
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_USERS, resv_ptr->users, -1);
@@ -1004,7 +998,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, display_data_resv,
-				 SORTID_CNT, SORTID_START_TIME, SORTID_COLOR);
+				 SORTID_CNT, SORTID_TIME_START, SORTID_COLOR);
 	}
 	view = INFO_VIEW;
 	_update_info_resv(info_list, GTK_TREE_VIEW(display_widget));
@@ -1089,7 +1083,7 @@ display_it:
 		   to the treestore we don't really care about 
 		   the return value */
 		create_treestore(tree_view, popup_win->display_data,
-				 SORTID_CNT, SORTID_START_TIME, SORTID_COLOR);
+				 SORTID_CNT, SORTID_TIME_START, SORTID_COLOR);
 	}
 
 	setup_popup_grid_list(popup_win);
