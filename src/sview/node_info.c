@@ -818,6 +818,9 @@ extern int update_state_node(GtkDialog *dialog,
 	i = gtk_dialog_run(dialog);
 	if (i == GTK_RESPONSE_OK) {
 		if(entry) {
+			char *user_name;
+			char time_buf[64], time_str[32];
+			time_t now;
 			node_msg->reason = xstrdup(
 				gtk_entry_get_text(GTK_ENTRY(entry)));
 			if(!node_msg->reason ||
@@ -828,6 +831,18 @@ extern int update_state_node(GtkDialog *dialog,
 				g_free(lower);
 				goto end_it;
 			}
+			xstrcat(node_msg->reason, " [");
+			user_name = getlogin();
+			if (user_name)
+				xstrcat(node_msg->reason, user_name);
+			else {
+				sprintf(time_buf, "%d", getuid());
+				xstrcat(node_msg->reason, time_buf);
+			}
+			now = time(NULL);
+			slurm_make_time_str(&now, time_str, sizeof(time_str));
+			snprintf(time_buf, sizeof(time_buf), "@%s]", time_str);
+			xstrcat(node_msg->reason, time_buf);
 		}
 		if(slurm_update_node(node_msg) == SLURM_SUCCESS) {
 			lower = g_strdup_printf(
