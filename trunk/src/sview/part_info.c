@@ -113,10 +113,10 @@ static display_data_t display_data_part[] = {
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
 	 TRUE, EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, EDIT_NONE, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, EDIT_NONE, refresh_part,
-	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODES, "Node Count",
+	 TRUE, EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_CPUS, "CPU Count", 
+	 FALSE, EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
@@ -133,8 +133,13 @@ static display_data_t display_data_part[] = {
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_GROUPS, "Groups Allowed", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+#ifdef HAVE_BG
+	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "BPs Allowed Allocating", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+#else
 	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+#endif
 	{G_TYPE_STRING, SORTID_TMP_DISK, "Temp Disk", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MEM, "Memory", FALSE, EDIT_NONE, refresh_part,

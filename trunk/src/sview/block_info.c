@@ -53,28 +53,32 @@ typedef struct {
 	bool printed;
 	bool small_block;
 #ifdef HAVE_BGL
-	char *blrtsimage;       /* BlrtsImage for this block */
+	char *imageblrts;       /* ImageBlrts for this block */
 #endif
-	char *linuximage;       /* LinuxImage for this block */
-	char *mloaderimage;     /* mloaderImage for this block */
-	char *ramdiskimage;     /* RamDiskImage for this block */
+	char *imagelinux;       /* ImageLinux for this block */
+	char *imagemloader;     /* imagemloader for this block */
+	char *imageramdisk;     /* ImageRamDisk for this block */
 } sview_block_info_t;
 
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_BLOCK,
-#ifdef HAVE_BGL
-	SORTID_BLRTSIMAGE,
-#endif
+	SORTID_NODELIST, 
 	SORTID_COLOR,
 	SORTID_CONN,
 	SORTID_JOB,
-	SORTID_LINUXIMAGE,
-	SORTID_MLOADERIMAGE,
+#ifdef HAVE_BGL
+	SORTID_IMAGEBLRTS,
+	SORTID_IMAGELINUX,
+	SORTID_IMAGEMLOADER,
+	SORTID_IMAGERAMDISK,
+#else
+	SORTID_IMAGELINUX,
+	SORTID_IMAGERAMDISK,
+	SORTID_IMAGEMLOADER,
+#endif
 	SORTID_NODES, 
-	SORTID_NODELIST, 
 	SORTID_PARTITION, 
-	SORTID_RAMDISKIMAGE,
 	SORTID_STATE,
 	SORTID_UPDATED, 
 #ifdef HAVE_BGL
@@ -100,8 +104,8 @@ static display_data_t display_data_block[] = {
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_USER, "User", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, EDIT_NONE, refresh_block,
-	 create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_NODES, "Node Count", 
+	 TRUE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type", 
 	 FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -113,21 +117,21 @@ static display_data_t display_data_block[] = {
 #ifdef HAVE_BGL
 	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_BLRTSIMAGE, "Blrts Image",
+	{G_TYPE_STRING, SORTID_IMAGEBLRTS, "Image Blrts",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_LINUXIMAGE, "Linux Image",
+	{G_TYPE_STRING, SORTID_IMAGELINUX, "Image Linux",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_RAMDISKIMAGE, "Ramdisk Image",
+	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ramdisk",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 #else
-	{G_TYPE_STRING, SORTID_LINUXIMAGE, "Cnload Image",
+	{G_TYPE_STRING, SORTID_IMAGELINUX, "Image Cnload",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_RAMDISKIMAGE, "Ioload Image",
+	{G_TYPE_STRING, SORTID_IMAGERAMDISK, "Image Ioload",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 #endif
-	{G_TYPE_STRING, SORTID_MLOADERIMAGE, "Mloader Image",
+	{G_TYPE_STRING, SORTID_IMAGEMLOADER, "Image Mloader",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_POINTER, SORTID_NODE_INX, "NodeInx", FALSE, EDIT_NONE, 
+	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, FALSE, EDIT_NONE, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT, SORTID_SMALL_BLOCK, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -168,11 +172,11 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->nodes);
 #ifdef HAVE_BGL
-		xfree(block_ptr->blrtsimage);
+		xfree(block_ptr->imageblrts);
 #endif
-		xfree(block_ptr->linuximage);
-		xfree(block_ptr->mloaderimage);
-		xfree(block_ptr->ramdiskimage);
+		xfree(block_ptr->imagelinux);
+		xfree(block_ptr->imagemloader);
+		xfree(block_ptr->imageramdisk);
 		/* don't xfree(block_ptr->bp_inx);
 		   it isn't copied like the chars and is freed in the api
 		 */
@@ -216,20 +220,46 @@ static void _layout_block_record(GtkTreeView *treeview,
 	
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
-						 SORTID_BLOCK),
-				   block_ptr->bg_block_name);
+						 SORTID_NODELIST),
+				   block_ptr->nodes);
+
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
-						 SORTID_PARTITION),
-				   block_ptr->slurm_part_name);
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_block, 
-						 SORTID_STATE),
-				   bg_block_state_string(block_ptr->state));
+						 SORTID_CONN),
+				   conn_type_string(
+					   block_ptr->bg_conn_type));
+#ifdef HAVE_BGL
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
-						 SORTID_USER),
-				   block_ptr->bg_user_name);
+						 SORTID_IMAGEBLRTS),
+				   block_ptr->imageblrts);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_IMAGELINUX),
+				   block_ptr->imagelinux);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_IMAGEMLOADER),
+				   block_ptr->imagemloader);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_IMAGERAMDISK),
+				   block_ptr->imageramdisk);
+#else
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_IMAGELINUX),
+				   block_ptr->imagelinux);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_IMAGERAMDISK),
+				   block_ptr->imageramdisk);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_block,
+						 SORTID_IMAGEMLOADER),
+				   block_ptr->imagemloader);
+#endif
+
 	if(block_ptr->job_running > NO_JOB_RUNNING)
 		snprintf(tmp_cnt, sizeof(tmp_cnt), 
 			 "%d", block_ptr->job_running);
@@ -240,11 +270,6 @@ static void _layout_block_record(GtkTreeView *treeview,
 				   find_col_name(display_data_block,
 						 SORTID_JOB),
 				  tmp_cnt);
-	add_display_treestore_line(update, treestore, &iter, 
-				   find_col_name(display_data_block,
-						 SORTID_CONN),
-				   conn_type_string(
-					   block_ptr->bg_conn_type));
 #ifdef HAVE_BGL
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
@@ -260,26 +285,16 @@ static void _layout_block_record(GtkTreeView *treeview,
 		
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
-						 SORTID_NODELIST),
-				   block_ptr->nodes);
-#ifdef HAVE_BGL
+						 SORTID_PARTITION),
+				   block_ptr->slurm_part_name);
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_block, 
+						 SORTID_STATE),
+				   bg_block_state_string(block_ptr->state));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
-						 SORTID_BLRTSIMAGE),
-				   block_ptr->blrtsimage);
-#endif
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_LINUXIMAGE),
-				   block_ptr->linuximage);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_MLOADERIMAGE),
-				   block_ptr->mloaderimage);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_block,
-						 SORTID_RAMDISKIMAGE),
-				   block_ptr->ramdiskimage);
+						 SORTID_USER),
+				   block_ptr->bg_user_name);
 }
 
 static void _update_block_record(sview_block_info_t *block_ptr, 
@@ -322,15 +337,15 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   SORTID_NODE_INX, block_ptr->bp_inx, -1);
 
 #ifdef HAVE_BGL
-	gtk_tree_store_set(treestore, iter, SORTID_BLRTSIMAGE,
-			   block_ptr->blrtsimage, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_IMAGEBLRTS,
+			   block_ptr->imageblrts, -1);
 #endif
-	gtk_tree_store_set(treestore, iter, SORTID_LINUXIMAGE,
-			   block_ptr->linuximage, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_MLOADERIMAGE,
-			   block_ptr->mloaderimage, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_RAMDISKIMAGE,
-			   block_ptr->ramdiskimage, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_IMAGELINUX,
+			   block_ptr->imagelinux, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_IMAGEMLOADER,
+			   block_ptr->imagemloader, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_IMAGERAMDISK,
+			   block_ptr->imageramdisk, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_SMALL_BLOCK, 
 			   block_ptr->small_block, -1);
@@ -508,14 +523,14 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			= xstrdup(block_info_ptr->
 				  block_array[i].owner_name);
 #ifdef HAVE_BGL
-		block_ptr->blrtsimage = xstrdup(
+		block_ptr->imageblrts = xstrdup(
 			block_info_ptr->block_array[i].blrtsimage);
 #endif
-		block_ptr->linuximage = xstrdup(
+		block_ptr->imagelinux = xstrdup(
 			block_info_ptr->block_array[i].linuximage);
-		block_ptr->mloaderimage = xstrdup(
+		block_ptr->imagemloader = xstrdup(
 			block_info_ptr->block_array[i].mloaderimage);
-		block_ptr->ramdiskimage = xstrdup(
+		block_ptr->imageramdisk = xstrdup(
 			block_info_ptr->block_array[i].ramdiskimage);
 		
 		block_ptr->state 
