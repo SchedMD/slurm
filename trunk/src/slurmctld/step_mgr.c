@@ -1281,7 +1281,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 	/* determine cpus_per_task value by reversing what srun does */
 	if (step_specs->num_tasks < 1)
 		return ESLURM_BAD_TASK_COUNT;
-	if (step_specs->cpu_count == 0)
+
+	/* we set cpus_per_task to 0 if we can't spread them evenly
+	   over the nodes (hetergeneous systems) */
+	if (!step_specs->cpu_count 
+	    || (step_specs->cpu_count % step_specs->num_tasks))
 		cpus_per_task = 0;
 	else {
 		cpus_per_task = step_specs->cpu_count / step_specs->num_tasks;
@@ -1359,7 +1363,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
-	step_ptr->cpus_per_task = cpus_per_task;
+	step_ptr->cpus_per_task = (uint16_t)cpus_per_task;
 	step_ptr->mem_per_cpu = step_specs->mem_per_cpu;
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;
 	step_ptr->ckpt_time = now;
@@ -1475,7 +1479,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	uint32_t cpu_count_reps[node_count];
 	int cpu_inx = -1;
 	int i, usable_cpus, usable_mem;
-	int set_cpus = 0, set_nodes = 0, set_tasks = 0;
+	int set_nodes = 0, set_tasks = 0;
 	int pos = -1;
 	int first_bit, last_bit;
 	struct job_record *job_ptr = step_ptr->job_ptr;
@@ -1532,9 +1536,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			} else
 				cpu_count_reps[cpu_inx]++;
 			set_nodes++;
-			set_cpus += usable_cpus;
 			if (cpus_per_task > 0)
-				set_tasks += usable_cpus / cpus_per_task;
+				set_tasks += 
+					(uint16_t)usable_cpus / cpus_per_task;
 			else
 				set_tasks = num_tasks;
 			if (set_nodes == node_count)
@@ -1543,7 +1547,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	}
 
 	if (set_tasks < num_tasks) {
-		info("Resources only available for %u of %u tasks",
+		error("Resources only available for %u of %u tasks",
 		     set_tasks, num_tasks);
 		return NULL;
 	}
