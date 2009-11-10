@@ -960,9 +960,18 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 	/* strip off the action item from the flags */
 
 	if(resv->assocs) {
+		int start = 0;
+		int len = strlen(resv->assocs)-1;
+
+		/* strip off extra ,'s */
+		if(resv->assocs[0] == ',')
+			start = 1;
+		if(resv->assocs[len] == ',')
+			resv->assocs[len] = '\0';
+
 		xstrcat(*cols, ", assoclist");
-		xstrfmtcat(*vals, ", \"%s\"", resv->assocs);
-		xstrfmtcat(*extra, ", assoclist=\"%s\"", resv->assocs);
+		xstrfmtcat(*vals, ", \"%s\"", resv->assocs+start);
+		xstrfmtcat(*extra, ", assoclist=\"%s\"", resv->assocs+start);
 	}
 
 	if(resv->cpus != (uint32_t)NO_VAL) {
