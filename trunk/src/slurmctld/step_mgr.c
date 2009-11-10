@@ -1540,7 +1540,10 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				set_tasks += 
 					(uint16_t)usable_cpus / cpus_per_task;
 			else
-				set_tasks = num_tasks;
+				/* since cpus_per_task is 0 we just
+				   add the number of cpus available
+				   for this job */
+				set_tasks += usable_cpus;
 			if (set_nodes == node_count)
 				break;
 		}
