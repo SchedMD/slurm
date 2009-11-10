@@ -51,6 +51,7 @@ typedef struct {
 	int color_inx;
 	int job_running;
 	bool printed;
+	bool small_block;
 #ifdef HAVE_BGL
 	char *blrtsimage;       /* BlrtsImage for this block */
 #endif
@@ -80,6 +81,7 @@ enum {
 	SORTID_USE,
 #endif
 	SORTID_NODE_INX,
+	SORTID_SMALL_BLOCK,
 	SORTID_USER,
 	SORTID_CNT
 };
@@ -127,6 +129,8 @@ static display_data_t display_data_block[] = {
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_POINTER, SORTID_NODE_INX, "NodeInx", FALSE, EDIT_NONE, 
 	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_INT, SORTID_SMALL_BLOCK, NULL, FALSE, EDIT_NONE, refresh_block,
+	 create_model_block, admin_edit_block},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -328,6 +332,8 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_RAMDISKIMAGE,
 			   block_ptr->ramdiskimage, -1);
 
+	gtk_tree_store_set(treestore, iter, SORTID_SMALL_BLOCK, 
+			   block_ptr->small_block, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	
 	return;
@@ -489,6 +495,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->nodes 
 			= xstrdup(block_info_ptr->block_array[i].nodes);
 		if(block_info_ptr->block_array[i].ionodes) {
+			block_ptr->small_block = 1;
 			snprintf(tmp_nodes, sizeof(tmp_nodes),
 				 "%s[%s]",
 				 block_ptr->nodes,
@@ -1082,7 +1089,7 @@ display_it:
 		case NODE_PAGE:
 			if(!block_ptr->nodes)
 				continue;
-			
+			g_print("sending %s %s", search_info->gchar_data, block_ptr->nodes);
 			if(!(hostset = hostset_create(search_info->gchar_data)))
 				continue;
 			if(!hostset_intersects(hostset, block_ptr->nodes)) {
@@ -1275,14 +1282,20 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	case NODE_PAGE: 
 		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
-		/* strip off the ionodes part */
-		while(name[i]) {
-			if(name[i] == '[') {
-				name[i] = '\0';
-				break;
+		gtk_tree_model_get(model, iter, SORTID_SMALL_BLOCK, &i, -1);
+		g_print("got %s %d\n", name, i);
+		if(i) {
+			i=0;
+			/* strip off the ionodes part */
+			while(name[i]) {
+				if(name[i] == '[') {
+					name[i] = '\0';
+					break;
+				}
+				i++;
 			}
-			i++;
 		}
+		g_print(" %s\n", name);
 		popup_win->spec_info->search_info->gchar_data = name;
 		break;
 	case INFO_PAGE:

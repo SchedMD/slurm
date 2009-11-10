@@ -44,6 +44,9 @@ typedef struct {
 	job_info_t *job_ptr;
 	char *nodes;
 	int node_cnt;
+#ifdef HAVE_BG
+	bool small_block;
+#endif
 	List step_list;
 } sview_job_info_t;
 
@@ -148,6 +151,9 @@ enum {
 	SORTID_TIME_SUBMIT,
 	SORTID_TIME_SUSPEND,
 	SORTID_TMP_DISK,
+#ifdef HAVE_BG
+	SORTID_SMALL_BLOCK,
+#endif
 	SORTID_UPDATED,
 	SORTID_WCKEY,
 	SORTID_WORKDIR,
@@ -324,6 +330,10 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_POINTER, SORTID_NODE_INX, NULL, FALSE, EDIT_NONE, 
 	 refresh_job, create_model_job, admin_edit_job},
+#ifdef HAVE_BG
+	{G_TYPE_INT, SORTID_SMALL_BLOCK, NULL, FALSE, EDIT_NONE, refresh_job,
+	 create_model_job, admin_edit_job},
+#endif
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -1518,6 +1528,10 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
      
+#ifdef HAVE_BG
+	gtk_tree_store_set(treestore, iter, SORTID_SMALL_BLOCK, 
+			   sview_job_info_ptr->small_block, -1);
+#endif
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	if(!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(tmp_char,"00:00:00");
@@ -2267,6 +2281,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 					    SELECT_JOBDATA_NODE_CNT, 
 					    &sview_job_info_ptr->node_cnt);
 		if(ionodes) {
+			sview_job_info_ptr->small_block = 1;
 			snprintf(tmp_char, sizeof(tmp_char), "%s[%s]",
 					 job_ptr->nodes, ionodes);
 			xfree(ionodes);
@@ -3116,7 +3131,9 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	int jobid = NO_VAL;
 	int stepid = NO_VAL;
 	GError *error = NULL;
-
+#ifdef HAVE_BG
+	int i=0;
+#endif
 	gtk_tree_model_get(model, iter, SORTID_JOBID, &jobid, -1);
 	gtk_tree_model_get(model, iter, SORTID_ALLOC, &stepid, -1);
 
@@ -3208,6 +3225,20 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	switch(id) {
 	case NODE_PAGE:
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
+#ifdef HAVE_BG
+		gtk_tree_model_get(model, iter, SORTID_SMALL_BLOCK, &i, -1);
+		if(i) {
+			i=0;
+			/* strip off the ionodes part */
+			while(name[i]) {
+				if(name[i] == '[') {
+					name[i] = '\0';
+					break;
+				}
+				i++;
+			}
+		}
+#endif
 		popup_win->spec_info->search_info->gchar_data = name;
 		break;
 	case PART_PAGE:

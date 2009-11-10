@@ -1237,7 +1237,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 			if(len <= n)
 				buf[len++] = alpha_num[coord[i2]];
 		}
-		buf[len] = '0';			
+		buf[len] = '\0';			
 	} else {
 		len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
 	}
@@ -1259,7 +1259,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 				if(len <= n)
 					buf[len++] = alpha_num[coord[i2]];
 			}
-			buf[len] = '0';			
+			buf[len] = '\0';			
 		} else {
 			len2 = snprintf(buf+len, n-len, "-%0*lu", 
 					hr->width, hr->hi);
@@ -1856,7 +1856,6 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 	
 	while ((tok = _next_tok(sep, &str)) != NULL) {
 		strncpy(cur_tok, tok, 1024);
-
 		if ((p = strrchr(tok, '[')) != NULL) {
 			char *q, *prefix = tok;
 			*p++ = '\0';
@@ -1885,7 +1884,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 			}
 
 		} else 
-				hostlist_push_host(new, cur_tok);
+			hostlist_push_host(new, cur_tok);
 	}
 
 	free(orig);
@@ -1980,10 +1979,10 @@ int hostlist_push_host(hostlist_t hl, const char *str)
 
 	hn = hostname_create(str);
 
-	if (hostname_suffix_is_valid(hn)) 
+	if (hostname_suffix_is_valid(hn))
 		hr = hostrange_create(hn->prefix, hn->num, hn->num,
 				      hostname_suffix_width(hn));
-	else 
+	else
 		hr = hostrange_create_single(str);
 	
 	hostlist_push_range(hl, hr);
@@ -3240,7 +3239,7 @@ char *hostlist_next(hostlist_iterator_t i)
 				if(len <= (MAXHOSTNAMELEN + 15))
 					buf[len++] = alpha_num[coord[i2]];
 			}
-			buf[len] = '0';			
+			buf[len] = '\0';			
 		} else {
 			snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%0*lu",
 				 i->hr->width, i->hr->lo + i->depth);
