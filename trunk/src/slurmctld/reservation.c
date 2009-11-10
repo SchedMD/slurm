@@ -455,14 +455,14 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		xfree(resv_ptr->assoc_list);	/* clear for modify */
 		while((assoc_ptr = list_next(itr))) {
 			if(resv_ptr->assoc_list)
-				xstrfmtcat(resv_ptr->assoc_list, ",%u", 
+				xstrfmtcat(resv_ptr->assoc_list, "%u,", 
 					   assoc_ptr->id);
 			else
-				xstrfmtcat(resv_ptr->assoc_list, "%u",
+				xstrfmtcat(resv_ptr->assoc_list, ",%u,",
 					   assoc_ptr->id);
 		}
 		list_iterator_destroy(itr);
-	}
+	} 
 
 end_it:
 	list_destroy(assoc_list);
@@ -2472,12 +2472,20 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 	int i;
 
 	/* Determine if we have access */
-	if (/*association_enforced*/ 0) {
-		/* FIXME: add association checks
-		if (job_ptr->assoc_id in reservation association list)
+	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+		char tmp_char[30];
+
+		if(!resv_ptr->assoc_list) {
+			error("Reservation %s has no association list. "
+			      "Checking user/account lists",
+			      resv_ptr->name);
+			goto no_assocs;
+		}		
+		snprintf(tmp_char, sizeof(tmp_char), ",%u,", job_ptr->assoc_id);
+		if(strstr(resv_ptr->assoc_list, tmp_char)) 
 			return SLURM_SUCCESS;
-		*/
 	} else {
+	no_assocs:
 		for (i=0; i<resv_ptr->user_cnt; i++) {
 			if (job_ptr->user_id == resv_ptr->user_list[i])
 				return SLURM_SUCCESS;
