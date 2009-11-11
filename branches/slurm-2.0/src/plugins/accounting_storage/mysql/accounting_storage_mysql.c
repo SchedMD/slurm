@@ -10168,7 +10168,7 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf(
 		"update %s set deleted=0, mod_time=%d, "
-		"control_host='%s', control_port=%u, rpc_version=%d, "
+		"control_host='%s', control_port=%u, rpc_version=%d "
 		"where name='%s';",
 		cluster_table, now, address, port,
 		SLURMDBD_VERSION,
