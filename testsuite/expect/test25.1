@@ -56,16 +56,16 @@ if { [string compare [priority_type] multifactor] } {
 #
 make_bash_script $file_in "$bin_sleep 600"
 
-proc def_node_cnt { } {
+proc def_cpu_cnt { } {
 	global sinfo alpha_numeric_under number exit_code partition
 
-	set node_cnt 1
-	spawn $sinfo -h -o "name=%P node_cnt=%D" -p $partition --state=idle
+	set cpu_cnt 1
+	spawn $sinfo -h -o "%P %C" -p $partition --state=idle
 	expect {
-		-re "name=$partition node_cnt=($number)(K?)" {
-			set node_cnt $expect_out(1,string) 
-			if {[string compare $expect_out(2,string) ""]} {
-				set node_cnt [expr $node_cnt * 1024]
+		-re "$partition ($number)(K?)/($number)(K?)" {
+			set cpu_cnt $expect_out(3,string) 
+			if {[string compare $expect_out(4,string) ""]} {
+				set cpu_cnt [expr $cpu_cnt * 1024]
 			}
 
 			exp_continue
@@ -78,7 +78,7 @@ proc def_node_cnt { } {
 			wait
 		}
 	}
-	return $node_cnt
+	return $cpu_cnt
 }
 
 ################################################################
@@ -91,13 +91,13 @@ proc def_node_cnt { } {
 #
 ################################################################
 
-proc sub_job { node_cnt } {
+proc sub_job { cpu_cnt } {
 
 	global exit_code file_in number sbatch test_id
 	set file_in	test${test_id}.input
 
 	set job_id	0
-	spawn $sbatch --output=/dev/null --error=/dev/null -N $node_cnt --exclusive $file_in
+	spawn $sbatch --output=/dev/null --error=/dev/null -n $cpu_cnt --exclusive $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string) 
@@ -639,9 +639,9 @@ proc sprio_args { soption sargs jobid} {
 ################################################################
 # Start a group of jobs
 
-set node_cnt [def_node_cnt]
-set jobid1 [sub_job $node_cnt]
-set jobid2 [sub_job $node_cnt]
+set cpu_cnt [def_cpu_cnt]
+set jobid1 [sub_job $cpu_cnt]
+set jobid2 [sub_job $cpu_cnt]
 if {$exit_code != 0} {
 	cancel_job $jobid1
 	cancel_job $jobid2

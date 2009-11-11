@@ -94,11 +94,11 @@ expect {
 		send_user "match of JobState\n"
 		exp_continue
 	}
-	-re "MinCPUs=($number)" {
+	-re "MinCPUsNode=($number)" {
 		set read_cpus $expect_out(1,string)
 		if {$read_cpus == $cpu_cnt} {
 			incr matches
-			send_user "match of MinCPUs\n"
+			send_user "match of MinCPUsNode\n"
 		}
 		exp_continue
 	}
