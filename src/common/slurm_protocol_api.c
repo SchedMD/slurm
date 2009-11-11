@@ -3519,7 +3519,11 @@ extern void convert_num_unit(float num, char *buf, int buf_size, int orig_type)
 	if(orig_type < UNIT_NONE || orig_type > UNIT_PETA)
 		orig_type = UNIT_UNKNOWN;
 	i = (int)num;
-	if(i == num)
+	/* Here we are checking to see if these numbers are the same,
+	   meaning the float has not floating point.  If we do have
+	   floating point print as a float.
+	*/
+	if((float)i == num)
 		snprintf(buf, buf_size, "%d%c", i, unit[orig_type]);
 	else
 		snprintf(buf, buf_size, "%.2f%c", num, unit[orig_type]);
