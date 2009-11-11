@@ -91,10 +91,18 @@ static void _sprint_range(char *str, uint32_t str_size,
 {
 	char tmp[128];
 	/* Note: We don't have the size of str here */
+#ifdef HAVE_BG
 	convert_num_unit((float)lower, tmp, sizeof(tmp), UNIT_NONE);
+#else
+	snprintf(tmp, sizeof(tmp), "%u", lower);
+#endif
 	if (upper > 0) {
     		char tmp2[128];
+#ifdef HAVE_BG
 		convert_num_unit((float)upper, tmp2, sizeof(tmp2), UNIT_NONE);
+#else
+		snprintf(tmp2, sizeof(tmp2), "%u", upper);
+#endif
 		snprintf(str, str_size, "%s-%s", tmp, tmp2);
 	} else
 		snprintf(str, str_size, "%s", tmp);
@@ -440,9 +448,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 #endif
 
 line7:	/****** Line 7 ******/
+
+#ifdef HAVE_BG
 	convert_num_unit((float)job_ptr->num_procs, tmp1, sizeof(tmp1), 
 			 UNIT_NONE);
-#ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
 				    SELECT_JOBDATA_NODE_CNT, 
 				    &min_nodes);
@@ -452,6 +461,7 @@ line7:	/****** Line 7 ******/
 	} else
 		max_nodes = min_nodes;
 #else
+	snprintf(tmp1, sizeof(tmp1), "%u", job_ptr->num_procs);
 	min_nodes = job_ptr->num_nodes;
 	max_nodes = job_ptr->max_nodes;
 #endif
@@ -492,12 +502,19 @@ line7:	/****** Line 7 ******/
 		 time_str);
 	xstrcat(out, tmp_line);
 
+#ifdef HAVE_BG
 	convert_num_unit((float)job_ptr->job_min_cpus, tmp1, sizeof(tmp1), 
 			 UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line), 
-		" MinCPUs=%s", 
+		" MinCPUsPerNode=%s", 
 		tmp1);
+#else
+	snprintf(tmp_line, sizeof(tmp_line), 
+		" MinCPUsPerNode=%u", 
+		job_ptr->job_min_cpus);
+
 	xstrcat(out, tmp_line);
+#endif
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
 				    SELECT_JOBDATA_MAX_CPUS, 
