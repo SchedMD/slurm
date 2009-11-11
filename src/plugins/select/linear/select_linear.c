@@ -2270,7 +2270,8 @@ extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 			else
 				node_ptr->select_nodeinfo->alloc_cpus = 
 					node_ptr->cpus;
-		}
+		} else
+			node_ptr->select_nodeinfo->alloc_cpus = 0;
 	}
 
 	return SLURM_SUCCESS;
