@@ -1268,6 +1268,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	 * which makes it so we don't check to see the available cpus
 	 */
 	orig_cpu_count =  step_specs->cpu_count;
+	
 	if (step_specs->overcommit) {
 		if (step_specs->exclusive) {
 			/* Not really a legitimate combination, try to 
@@ -1479,7 +1480,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	uint32_t cpu_count_reps[node_count];
 	int cpu_inx = -1;
 	int i, usable_cpus, usable_mem;
-	int set_nodes = 0, set_tasks = 0;
+	int set_nodes = 0/* , set_tasks = 0 */;
 	int pos = -1;
 	int first_bit, last_bit;
 	struct job_record *job_ptr = step_ptr->job_ptr;
@@ -1515,8 +1516,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			} else
 				usable_cpus = job_resrcs_ptr->cpus[pos];
 			if (step_ptr->mem_per_cpu) {
-				usable_mem = job_resrcs_ptr->memory_allocated[pos]-
-					     job_resrcs_ptr->memory_used[pos];
+				usable_mem = 
+					job_resrcs_ptr->memory_allocated[pos]-
+					job_resrcs_ptr->memory_used[pos];
 				usable_mem /= step_ptr->mem_per_cpu;
 				usable_cpus = MIN(usable_cpus, usable_mem);
 			}
@@ -1536,24 +1538,37 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			} else
 				cpu_count_reps[cpu_inx]++;
 			set_nodes++;
-			if (cpus_per_task > 0)
-				set_tasks += 
-					(uint16_t)usable_cpus / cpus_per_task;
-			else
-				/* since cpus_per_task is 0 we just
-				   add the number of cpus available
-				   for this job */
-				set_tasks += usable_cpus;
+			/*FIX ME: on a heterogeneous system running
+			  the linear select plugin we could get a node
+			  that doesn't have as many cpus as we decided
+			  we needed for each task.  This would result
+			  in not getting a task for the node we
+			  recieved.  This is usually in error.  This
+			  only happens when the person doesn't specify
+			  how many cpus_per_task they want, and we
+			  have to come up with a number, in this case
+			  it is wrong.
+			*/
+			/* if (cpus_per_task > 0) */
+			/* 	set_tasks +=  */
+			/* 		(uint16_t)usable_cpus / cpus_per_task; */
+			/* else */
+			/* 	/\* since cpus_per_task is 0 we just */
+			/* 	   add the number of cpus available */
+			/* 	   for this job *\/ */
+			/* 	set_tasks += usable_cpus; */
+			/* info("usable_cpus is %d and set_tasks %d %d", */
+			/*      usable_cpus, set_tasks, cpus_per_task); */
 			if (set_nodes == node_count)
 				break;
 		}
 	}
 
-	if (set_tasks < num_tasks) {
-		error("Resources only available for %u of %u tasks",
-		     set_tasks, num_tasks);
-		return NULL;
-	}
+	/* if (set_tasks < num_tasks) { */
+	/* 	error("Resources only available for %u of %u tasks", */
+	/* 	     set_tasks, num_tasks); */
+	/* 	return NULL; */
+	/* } */
 
 	/* layout the tasks on the nodes */
 	return slurm_step_layout_create(step_node_list,
