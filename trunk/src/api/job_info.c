@@ -506,11 +506,11 @@ line7:	/****** Line 7 ******/
 	convert_num_unit((float)job_ptr->job_min_cpus, tmp1, sizeof(tmp1), 
 			 UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line), 
-		" MinCPUsPerNode=%s", 
+		" MinCPUsNode=%s", 
 		tmp1);
 #else
 	snprintf(tmp_line, sizeof(tmp_line), 
-		" MinCPUsPerNode=%u", 
+		" MinCPUsNode=%u", 
 		job_ptr->job_min_cpus);
 
 	xstrcat(out, tmp_line);
