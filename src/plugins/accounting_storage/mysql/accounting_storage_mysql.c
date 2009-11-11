@@ -2301,6 +2301,35 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
+/* Same as above but for things having nothing to do with associations
+ * like qos or wckey */
+static bool _check_jobs_before_remove_without_assoctable(
+	mysql_conn_t *mysql_conn, char *where_char)
+{
+	char *query = NULL;
+	bool rc = 0;
+	MYSQL_RES *result = NULL;
+
+	query = xstrdup_printf("select associd from %s where (%s) limit 1;",
+			       job_table, where_char);
+
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return rc;
+	}
+	xfree(query);
+
+	if(mysql_num_rows(result)) {
+		debug4("We have jobs for this combo");
+		rc = true;
+	}
+
+	mysql_free_result(result);
+	return rc;
+}
+
 /* Every option in assoc_char should have a 't1.' infront of it. */
 static int _remove_common(mysql_conn_t *mysql_conn,
 			  uint16_t type,
@@ -2327,6 +2356,9 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
+	} else if((table == qos_table) || (table == wckey_table)) {
+		has_jobs = _check_jobs_before_remove_without_assoctable(
+			mysql_conn, assoc_char);
 	} else if(table != assoc_table) {
 		has_jobs = _check_jobs_before_remove(mysql_conn, assoc_char);
 	} else {
@@ -7321,9 +7353,9 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		else
 			xstrfmtcat(name_char, " || id=\"%s\"", row[0]); 
 		if(!assoc_char)
-			xstrfmtcat(assoc_char, "t2.qos=\"%s\"", row[0]);
+			xstrfmtcat(assoc_char, "qos=\"%s\"", row[0]);
 		else
-			xstrfmtcat(assoc_char, " || t2.qos=\"%s\"", row[0]); 
+			xstrfmtcat(assoc_char, " || qos=\"%s\"", row[0]); 
 		xstrfmtcat(extra, 
 			   ", qos=replace(qos, ',%s', '')"
 			   ", delta_qos=replace(delta_qos, ',+%s', '')"
@@ -7427,10 +7459,9 @@ empty:
 		else
 			xstrfmtcat(name_char, " || id=\"%s\"", row[0]); 
 		if(!assoc_char)
-			xstrfmtcat(assoc_char, "t2.wckeyid=\"%s\"", row[0]);
+			xstrfmtcat(assoc_char, "wckeyid=\"%s\"", row[0]);
 		else
-			xstrfmtcat(assoc_char,
-				   " || t2.wckeyid=\"%s\"", row[0]); 
+			xstrfmtcat(assoc_char, " || wckeyid=\"%s\"", row[0]); 
 		
 		wckey_rec = xmalloc(sizeof(acct_wckey_rec_t));
 		/* we only need id when removing no real need to init */
