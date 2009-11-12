@@ -137,6 +137,9 @@ typedef struct slurmd_config {
 					   receive RPCs yet */
 	pthread_mutex_t	starting_steps_lock;
 	pthread_cond_t	starting_steps_cond;
+	List		prolog_running_jobs;
+	pthread_mutex_t	prolog_running_lock;
+	pthread_cond_t	prolog_running_cond;
 } slurmd_conf_t;
 
 extern slurmd_conf_t * conf;
