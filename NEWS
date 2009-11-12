@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
  -- sacct - fixed garbage being printed out on uninitialized variable.
  -- Fix for mysql plugin when used without slurmdbd to register the 
     slurmctld properly.
+ -- Fix for mysql plugin putting correct hostnames in for running steps.
 
 * Changes in SLURM 2.0.7
 ========================
