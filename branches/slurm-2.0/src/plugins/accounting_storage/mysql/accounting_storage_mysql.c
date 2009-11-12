@@ -10852,16 +10852,18 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	   %d */
 	query = xstrdup_printf(
 		"insert into %s (id, stepid, start, name, state, "
-		"cpus, nodes, node_inx, tasks, nodelist, task_dist) "
+		"cpus, nodes, tasks, nodelist, node_inx, task_dist) "
 		"values (%d, %d, %d, \"%s\", %d, %d, %d, %d, "
 		"\"%s\", \"%s\", %d) "
 		"on duplicate key update cpus=%d, nodes=%d, "
-		"tasks=%d, end=0, state=%d, node_inx=\"%s\", task_dist=%d",
+		"tasks=%d, end=0, state=%d, "
+		"nodelist=\"%s\", node_inx=\"%s\", task_dist=%d",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
 		JOB_RUNNING, cpus, nodes, tasks, node_list, node_inx, task_dist,
-		cpus, nodes, tasks, JOB_RUNNING, node_inx, task_dist);
+		cpus, nodes, tasks, JOB_RUNNING, 
+		node_list, node_inx, task_dist);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -10976,8 +10978,8 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"update %s set end=%d, state=%d, "
 		"kill_requid=%d, comp_code=%d, "
-		"user_sec=%ld, user_usec=%ld, "
-		"sys_sec=%ld, sys_usec=%ld, "
+		"user_sec=%u, user_usec=%u, "
+		"sys_sec=%u, sys_usec=%u, "
 		"max_vsize=%u, max_vsize_task=%u, "
 		"max_vsize_node=%u, ave_vsize=%f, "
 		"max_rss=%u, max_rss_task=%u, "
