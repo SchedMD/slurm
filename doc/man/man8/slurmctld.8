@@ -30,6 +30,13 @@ Help; print a brief summary of command options.
 \fB\-L <file>\fR
 Write log messages to the specified file.
 .TP
+\fB\-R\fR
+Recover full state from last checkpoint.  Normally the slurmctld will
+only recover information about job, and node information.  With this
+option state will be recovered for partition information
+also. (Warning: When using this option any changes to partitions in the
+slurm.conf file will be ignored on next restart or reconfig.)
+.TP
 \fB\-v\fR
 Verbose operation. Multiple \fB\-v\fR's increase verbosity.
 .TP
