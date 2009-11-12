@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     parent account when changing parent accounts.
  -- Added a mechanism to the slurmd to defer the epilog from starting until
     after a running prolog has finished.
+ -- If a node reboots inbetween checking status the node is marked down unless 
+    ReturnToService=2
 
 * Changes in SLURM 2.1.0-pre6
 =============================
