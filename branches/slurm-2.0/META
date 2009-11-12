@@ -9,8 +9,8 @@
   Name:		slurm
   Major:	2
   Minor:	0
-  Micro:	7
-  Version:	2.0.7
+  Micro:	8
+  Version:	2.0.8
   Release:	1
 ##
 #  When changing API_CURRENT update src/common/slurm_protocol_common.h

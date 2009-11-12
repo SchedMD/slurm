@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.0.9
+========================
+
 * Changes in SLURM 2.0.8
 ========================
  -- BLUEGENE - added dub2 of stderr to put error messages sent from underlying 
