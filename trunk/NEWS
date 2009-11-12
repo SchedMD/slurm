@@ -10,7 +10,9 @@ documents those changes that are of interest to users and admins.
     after a running prolog has finished.
  -- If a node reboots inbetween checking status the node is marked down unless 
     ReturnToService=2
-
+ -- Added -R option to slurmctld to recover partition state also when 
+    restarting or reconfiguring.
+ 
 * Changes in SLURM 2.1.0-pre6
 =============================
  -- When getting information about nodes in hidden partitions, return a node

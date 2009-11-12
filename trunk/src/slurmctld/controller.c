@@ -1468,7 +1468,7 @@ static void _parse_commandline(int argc, char *argv[])
 	int c = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "cdDf:hL:rvV")) != -1)
+	while ((c = getopt(argc, argv, "cdDf:hL:rRvV")) != -1)
 		switch (c) {
 		case 'c':
 			recover = 0;
@@ -1492,6 +1492,10 @@ static void _parse_commandline(int argc, char *argv[])
 			break;
 		case 'r':
 			recover = 1;
+			bg_recover = 1;
+			break;
+		case 'R':
+			recover = 2;
 			bg_recover = 1;
 			break;
 		case 'v':
@@ -1533,6 +1537,9 @@ static void _usage(char *prog_name)
 #if (DEFAULT_RECOVER == 0)
 	fprintf(stderr, "  -r      "
 			"\tRecover state from last checkpoint.\n");
+#else
+	fprintf(stderr, "  -R      "
+			"\tRecover full state from last checkpoint.\n");
 #endif
 	fprintf(stderr, "  -v      "
 			"\tVerbose mode. Multiple -v's increase verbosity.\n");
