@@ -1213,11 +1213,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	time_t now = time(NULL);
 	bool gang_flag = false;
 	static uint32_t cr_flag = NO_VAL;
+	time_t last_restart = now - reg_msg->up_time;
 
 	node_ptr = find_node_record (reg_msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
-	node_ptr->last_response = now;
 
 	config_ptr = node_ptr->config_ptr;
 	error_code = SLURM_SUCCESS;
@@ -1350,7 +1350,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					     NODE_STATE_ERROR,
 					     &err_cpus);		
 		if (IS_NODE_UNKNOWN(node_ptr)) {
-			last_node_update = time (NULL);
+			last_node_update = now;
 			reset_job_priority();
 			debug("validate_node_specs: node %s has registered", 
 				reg_msg->node_name);
@@ -1376,7 +1376,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			     (node_ptr->reason != NULL) && 
 			     (strncmp(node_ptr->reason, "Not responding", 14) 
 					== 0)))) {
-			last_node_update = time (NULL);
+			last_node_update = now;
 			if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 					node_flags;
@@ -1397,6 +1397,21 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					acct_db_conn, slurmctld_cluster_name,
 					node_ptr, now);
 			}
+		} else if (node_ptr->last_response 
+			   && (last_restart > node_ptr->last_response)
+			   && (slurmctld_conf.ret2service != 2)) {
+			char time_str[32];
+			last_node_update = now;
+			slurm_make_time_str(&now, time_str, sizeof(time_str));
+			xfree(node_ptr->reason);
+			node_ptr->reason = xstrdup_printf(
+				"Node silently failed and came back [slurm@%s]",
+				time_str);
+			info("node %s silently failed and came back",
+			     reg_msg->node_name);
+			_make_node_down(node_ptr, last_node_update);
+			kill_running_job_by_node_name(reg_msg->node_name);
+			reg_msg->job_count = 0;
 		} else if (IS_NODE_ALLOCATED(node_ptr) &&
 			   (reg_msg->job_count == 0)) {	/* job vanished */
 			last_node_update = now;
@@ -1413,6 +1428,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					   node_ptr->node_state);
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
+
+	node_ptr->last_response = now;
 
 	return error_code;
 }
