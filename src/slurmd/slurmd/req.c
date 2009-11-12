@@ -164,6 +164,11 @@ static int  _compare_starting_steps(void *s0, void *s1);
 static int  _wait_for_starting_step(uint32_t job_id, uint32_t step_id);
 static bool _step_is_starting(uint32_t job_id, uint32_t step_id);
 
+static void _add_job_running_prolog(uint32_t job_id);
+static void _remove_job_running_prolog(uint32_t job_id);
+static int  _compare_job_running_prolog(void *s0, void *s1);
+static void _wait_for_job_running_prolog(uint32_t job_id);
+
 /*
  *  List of threads waiting for jobs to complete
  */
@@ -3325,8 +3330,10 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
+	_add_job_running_prolog(jobid);
 
 	error_code = run_script("prolog", my_prolog, jobid, -1, my_env);
+	_remove_job_running_prolog(jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
 
@@ -3354,6 +3361,7 @@ _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 	my_epilog = xstrdup(conf->epilog);
 	slurm_mutex_unlock(&conf->config_mutex);
 
+	_wait_for_job_running_prolog(jobid);
 	error_code = run_script("epilog", my_epilog, jobid, -1, my_env);
 	xfree(my_epilog);
 	_destroy_env(my_env);
@@ -3736,5 +3744,77 @@ static bool _step_is_starting(uint32_t job_id, uint32_t step_id)
 	return ret;
 }
 
+/* Add this job to the list of jobs currently running their prolog */
+static void _add_job_running_prolog(uint32_t job_id)
+{
+	uint32_t *job_running_prolog;
 
+	/* Add the job to a list of jobs whose prologs are running */
+	slurm_mutex_lock(&conf->prolog_running_lock);
+	job_running_prolog = xmalloc(sizeof(uint32_t));
+	if (!job_running_prolog) {
+		error("_add_job_running_prolog failed to allocate memory");
+		goto fail;
+	}
+
+	*job_running_prolog = job_id;
+	if (!list_append(conf->prolog_running_jobs, job_running_prolog)) {
+		error("_add_job_running_prolog failed to append job to list");
+		xfree(job_running_prolog);
+	}
+
+	slurm_mutex_unlock(&conf->prolog_running_lock);
+}
+
+/* Remove this job from the list of jobs currently running their prolog */
+static void _remove_job_running_prolog(uint32_t job_id)
+{
+	ListIterator iter;
+	uint32_t *job_running_prolog;
+	bool found = false;
+
+	slurm_mutex_lock(&conf->prolog_running_lock);
+
+	iter = list_iterator_create(conf->prolog_running_jobs);
+	while ((job_running_prolog = list_next(iter))) {
+		if (*job_running_prolog  == job_id) {
+			job_running_prolog = list_remove(iter);
+			xfree(job_running_prolog);
+
+			found = true;
+			pthread_cond_broadcast(&conf->prolog_running_cond);
+			break;
+		}
+	}
+	if (!found)
+		error("_remove_job_running_prolog: job not found");
+
+	slurm_mutex_unlock(&conf->prolog_running_lock);
+}
+
+static int _compare_job_running_prolog(void *listentry, void *key)
+{
+	uint32_t *job0 = (uint32_t *)listentry; 
+	uint32_t *job1 = (uint32_t *)key;
+
+	return (*job0 == *job1);
+}
+
+/* Wait for the job's prolog to complete */
+static void _wait_for_job_running_prolog(uint32_t job_id)
+{
+	debug( "Waiting for job %d's prolog to complete", job_id);
+	slurm_mutex_lock(&conf->prolog_running_lock);
+
+	while (list_find_first( conf->prolog_running_jobs,
+				&_compare_job_running_prolog,
+				&job_id )) {
+
+		pthread_cond_wait(&conf->prolog_running_cond,
+				  &conf->prolog_running_lock);
+	}
+
+	slurm_mutex_unlock(&conf->prolog_running_lock);
+	debug( "Finished wait for job %d's prolog to complete", job_id);
+}
 

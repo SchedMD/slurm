@@ -935,6 +935,9 @@ _init_conf(void)
 	conf->starting_steps = list_create(NULL);
 	slurm_mutex_init(&conf->starting_steps_lock);
 	pthread_cond_init(&conf->starting_steps_cond, NULL);
+	conf->prolog_running_jobs = list_create(NULL);
+	slurm_mutex_init(&conf->prolog_running_lock);
+	pthread_cond_init(&conf->prolog_running_cond, NULL);
 	return;
 }
 
@@ -965,6 +968,9 @@ _destroy_conf(void)
 		list_destroy(conf->starting_steps);
 		slurm_mutex_destroy(&conf->starting_steps_lock);
 		pthread_cond_destroy(&conf->starting_steps_cond);
+		list_destroy(conf->prolog_running_jobs);
+		slurm_mutex_destroy(&conf->prolog_running_lock);
+		pthread_cond_destroy(&conf->prolog_running_cond);
 		slurm_cred_ctx_destroy(conf->vctx);
 		xfree(conf);
 	}
