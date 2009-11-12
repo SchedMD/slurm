@@ -3763,6 +3763,7 @@ static void _add_job_running_prolog(uint32_t job_id)
 		xfree(job_running_prolog);
 	}
 
+fail:
 	slurm_mutex_unlock(&conf->prolog_running_lock);
 }
 
