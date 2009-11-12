@@ -1,0 +1,414 @@
+.TH SREPORT "1" "February 2009" "sreport 2.0" "Slurm components"
+
+.SH "NAME"
+sreport \- Generate reports from the slurm accounting data.
+
+.SH "SYNOPSIS"
+\fBsreport\fR [\fIOPTIONS\fR...] [\fICOMMAND\fR...]
+
+.SH "DESCRIPTION"
+\fBsreport\fR is used to generate certain reports. It provides a view into accounting data gathered from slurm via
+the account information maintained within a database with the interface 
+being provided by the \fBslurmdbd\fR (Slurm Database daemon).
+
+.SH "OPTIONS"
+
+.TP
+\fB\-a\fR, \fB\-\-all_clusters\fR
+Use all clusters instead of only the cluster from where the command was run.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print a help message describing the usage of \fBsreport\fR.
+.TP
+\fB\-n\fR, \fB\-\-noheader\fR
+Don't display header when listing results.
+.TP
+\fB\-p\fR, \fB\-\-parsable\fR
+Output will be '|' delimited with a '|' at the end.
+.TP
+\fB\-P\fR, \fB\-\-parsable2\fR
+Output will be '|' delimited without a '|' at the end.
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+Print no warning or informational messages, only error messages.
+.TP
+\fB\-t <format>\fR
+Specify the output time format. 
+Time format options are case insensitive and may be abbreviated.
+The default format is Minutes.
+Supported time format options are listed in the \fBtime\fP command
+section below.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Print detailed event logging. 
+.TP
+\fB\-V\fR , \fB\-\-version\fR
+Print version information and exit.
+
+.SH "COMMANDS"
+
+.TP
+\<keyword\> may be omitted from the execute line and sreport will
+execute in interactive mode. sreport will process commands as entered until
+explicitly terminated.
+
+.TP
+\fBexit\fP
+Terminate the execution of sreport.
+Identical to the \fBquit\fR command.
+
+.TP
+\fBhelp\fP
+Display a description of sreport options and commands.
+
+.TP
+\fBparsable\fP
+Output will be | delimited with an ending '|'.
+
+.TP
+\fBparsable2\fP
+Output will be | delimited without an ending '|'.
+
+.TP
+\fBquiet\fP
+Print no warning or informational messages, only fatal error messages.
+
+.TP
+\fBquit\fP
+Terminate the execution of sreport.
+Identical to the \fBexit\fR command.
+
+.TP
+\fBtime <time_format>\fP
+Specify the output time format. 
+Time format options are case insensitive and may be abbreviated.
+The default format is Minutes.
+Supported time format options include:
+.RS
+.TP 10
+\fBSecPer\fR
+Seconds/Percentage of Total
+.TP
+\fBMinPer\fR
+Minutes/Percentage of Total
+.TP
+\fBHourPer\fR
+Hours/Percentage of Total
+.TP
+\fBSeconds\fR
+Seconds
+.TP
+\fBMinutes\fR
+Minutes
+.TP
+\fBHours\fR
+Hours
+.TP
+\fBPercent\fR
+Percentage of Total
+.RE
+
+.TP
+\fBverbose\fP
+Enable detailed event logging. 
+
+.TP
+\fBversion\fP
+Display the sreport version number.
+
+.TP
+\fB!!\fP
+Repeat the last command executed.
+
+.SH "REPORT TYPES"
+.TP
+Valid report types are:
+\fBcluster\fP \<REPORT\> \<OPTIONS\>
+
+\fBjob\fP \<REPORT\> \<OPTIONS\>
+
+\fBuser\fP \<REPORT\> \<OPTIONS\>
+.RE
+
+.TP
+\<REPORT\> options for each type include:
+\fBcluster\fP	  \- AccountUtilizationByUser, UserUtilizationByAccount,
+UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
+
+\fBjob\fP	  \- SizesByAccount, SizesByWckey
+
+\fBreservation\fP \- Utilization
+
+\fBuser\fP	\- TopUsage
+
+.TP
+
+
+.TP
+REPORT DESCRIPTION
+.RS
+.TP
+.B cluster AccountUtilizationByUser 
+This report will display account utilization as it appears on the
+hierarchical tree.  Starting with the specified account or the
+root account by default this report will list the underlying
+usage with a sum on each level.  Use the 'tree' option to span
+the tree for better visibility.
+.TP 
+.B cluster UserUtilizationByAccount
+This report will display users by account in order of utilization without
+grouping multiple accounts by user into one, but displaying them
+on separate lines.
+.TP
+.B cluster UserUtilizationByWCKey
+This report will display users by wckey in order of utilization without
+grouping multiple wckey by user into one, but displaying them
+on separate lines.
+.TP
+.B cluster Utilization
+This report will display total usage divided by Allocated, Down,
+Idle, and Reserved time for selected clusters.  Reserved time
+refers to time that a job was waiting for resources after the job
+had become eligible.  If the value is not of importance for you
+the number should be grouped with idle time.
+.TP
+.B cluster WCKeyUtilizationByUser
+This report will display wckey utilization sorted by WCKey name for
+each user on each cluster.  
+
+.TP
+.B job SizesByAccount
+This report will dispay the amount of time used for job ranges
+specified by the 'grouping=' option.  Only a single level in the tree
+is displayed defaulting to the root dir.  If you specify other
+accounts with the 'account=' option sreport will use those accounts as
+the root account and you will receive the sub accounts for the
+accounts listed.
+.TP
+.B job SizesByWckey
+This report will dispay the amount of time for each wckey for job ranges
+specified by the 'grouping=' option.  
+
+.TP
+.B reservation Utilization
+This report will display total usage for reservations on the systems.
+
+.TP
+.B user TopUsage
+Displays the top users on a cluster.  Use the group option to group
+accounts together.  The default is to have a different line for each
+user account combination.  
+
+.TP
+Each report type has various options...
+
+.TP
+COMMON FOR ALL TYPES
+.RS
+.TP
+.B All_Clusters
+Use all monitored clusters. Default is local cluster.
+.TP
+.B Clusters=<OPT>
+List of clusters to include in report.  Default is local cluster.
+.TP
+.B End=<OPT>
+Period ending for report. Default is 23:59:59 of previous day.
+Valid time formats are...
+HH:MM[:SS] [AM|PM]
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+MM/DD[/YY]-HH:MM[:SS]         
+YYYY-MM-DD[THH:MM[:SS]]
+.TP
+.B Format=<OPT>
+Comma separated list of fields to display in report.
+
+When using the format option for listing various fields you can put a
+%NUMBER afterwards to specify how many characters should be printed.
+
+i.e. format=name%30 will print 30 characters of field name right
+justified.  A \-30 will print 30 characters left justified.  
+
+.TP
+.B Start=<OPT>
+Period start for report.  Default is 00:00:00 of previous day.
+Valid time formats are...
+HH:MM[:SS] [AM|PM]
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+MM/DD[/YY]-HH:MM[:SS]         
+YYYY-MM-DD[THH:MM[:SS]]
+.RE
+
+.TP
+CLUSTER
+.RS
+.TP
+.B Accounts=<OPT>
+When used with the UserUtilizationByAccount, or
+AccountUtilizationByUser, List of accounts to include in report.
+Default is all. 
+.TP
+.B Tree
+When used with the AccountUtilizationByUser report will span the
+accounts as they are in the hierarchy.
+.TP
+.B Users=<OPT>
+When used with any report other than Utilization, List of users to
+include in report.  Default is all.
+.TP
+.B Wckeys=<OPT>
+When used with the UserUtilizationByWckey or WCKeyUtilizationByUser,
+List of wckeys to include in report. Default is all. 
+.RE
+
+.TP
+JOB    
+.RS
+.TP
+.B Accounts=<OPT>
+List of accounts to use for the report Default is all.  The SizesByAccount
+report only displays 1 hierarchical level. If accounts are specified
+the next layer of accounts under those specified will be displayed,
+not the accounts specified.  In the SizesByAccount reports the default
+for accounts is root.  This explanation does not apply when ran with
+the FlatView option.
+.TP
+.B FlatView
+When used with the SizesbyAccount will not group accounts in a
+hierarchical level, but print each account where jobs ran on a
+separate line without any hierarchy.
+.TP
+.B GID=<OPT>
+List of group ids to include in report.  Default is all.
+.TP
+.B Grouping=<OPT>
+Comma separated list of size groupings.   (i.e. 50,100,150 would group job cpu count 1-49, 50-99, 100-149, > 150).
+.TP
+.B Jobs=<OPT>
+List of jobs/steps to include in report.  Default is all.
+.TP
+.B Nodes=<OPT>
+Only show jobs that ran on these nodes. Default is all.
+.TP
+.B Partitions=<OPT>
+List of partitions jobs ran on to include in report.  Default is all.
+.TP
+.B PrintJobCount
+When used with the Sizes report will print number of jobs ran instead
+of time used.  
+.TP
+.B Users=<OPT>
+List of users jobs to include in report.  Default is all.
+.TP
+.B Wckeys=<OPT>
+List of wckeys to use for the report.  Default is all.  The
+SizesbyWckey report all users summed together.  If you want only
+certain users specify them them with the Users= option.
+.RE
+
+.TP
+RESERVATION
+.TP
+.B Names=<OPT>
+List of reservations to use for the report. Default is all.
+.TP
+.B Nodes=<OPT>
+Only show reservations that used these nodes. Default is all.
+.RE
+
+.TP
+USER
+.RS
+.TP
+.B Accounts=<OPT>
+List of accounts to use for the report. Default is all.
+.TP
+.B Group
+Group all accounts together for each user.  Default is a separate
+entry for each user and account reference.
+.TP
+.B TopCount=<OPT>
+Used in the TopUsage report.  Change the number of users displayed.
+Default is 10.
+.TP
+.B Users=<OPT>
+List of users jobs to include in report.  Default is all.
+.RE  
+
+.TP
+ 
+.SH "Format Options for Each Report"
+
+\fBCluster\fP
+       AccountUtilizationByUser
+       UserUtilizationByAccount
+             \- Accounts, Cluster, CPUCount, Login, Proper, Used
+       UserUtilizationByWckey
+       WCKeyUtilizationByUser
+             \- Cluster, CPUCount, Login, Proper, Used, Wckey
+       Utilization
+             \- Allocated, Cluster, CPUCount, Down, Idle, Overcommited,
+               PlannedDown, Reported, Reserved
+
+\fBJob\fP
+       SizesByAccount
+             \- Account, Cluster
+       SizesByWckey
+             \- Wckey, Cluster
+
+\fBReservation\fP
+       Utilization
+             \- Allocated, Associations, Cluster, CPUCount, CPUTime,
+                End, Idle, Name, Nodes, Start, TotalTime
+
+\fBUser\fP
+       TopUsage
+             \- Account, Cluster, Login, Proper, Used
+                                                                           
+.TP
+All commands and options are case-insensitive.
+.TP
+
+.SH "EXAMPLES"
+.TP
+\fBsreport job sizesbyaccount\fP
+.TP
+\fBsreport cluster utilization\fP
+.TP
+\fBsreport user top\fP
+.TP
+\fBsreport job sizesbyaccount All_Clusters users=gore1 account=environ PrintJobCount\fP
+Report number of jobs by user gore1 within the environ account
+.TP
+\fBsreport cluster AccountUtilizationByUser cluster=zeus user=gore1 start=2/23/08 end=2/24/09 format=Accounts,Cluster,CPU_Count,Login,Proper,Used\fP
+Report cluster account utilization with the specified fields during
+the specified 24 hour day of February 23, 2009, by user gore1
+.TP
+\fBsreport cluster AccountUtilizationByUser cluster=zeus accounts=lc start=2/23/08 end=2/24/09\fP
+Report cluster account utilization by user in the LC account on
+cluster zeus
+.TP
+\fBsreport user topusage start=2/16/09 end=2/23/09 \-t percent account=lc\fP
+Report top usage in percent of the lc account during the specified week
+.TP
+
+.SH "COPYING"
+Copyright (C) 2009 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBsacct\fR(1), \fBslurmdbd\fR(8)
