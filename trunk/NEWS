@@ -3,7 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.0-pre8
 =============================
- -- Rearranged the "scontrol show job" output into functional groupings.
+ -- Rearranged the "scontrol show job" output into functional groupings
+ -- Change the salloc/sbatch/srun -P option to -d (dependency)
+ -- Removed the srun -d option; must use srun --slurmd-debug instead
 
 * Changes in SLURM 2.1.0-pre7
 =============================

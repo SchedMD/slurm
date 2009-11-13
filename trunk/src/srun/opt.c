@@ -181,6 +181,7 @@
 #define LONG_OPT_RESERVATION     0x14c
 #define LONG_OPT_RESTART_DIR     0x14d
 #define LONG_OPT_SIGNAL          0x14e
+#define LONG_OPT_DEBUG_SLURMD    0x14f
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -714,7 +715,7 @@ static void set_options(const int argc, char **argv)
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
-		{"slurmd-debug",  required_argument, 0, 'd'},
+		{"dependency",    required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"error",         required_argument, 0, 'e'},
 		{"preserve-env",  no_argument,       0, 'E'},
@@ -735,7 +736,6 @@ static void set_options(const int argc, char **argv)
 		{"output",        required_argument, 0, 'o'},
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
-		{"dependency",    required_argument, 0, 'P'},
 		{"quit-on-interrupt", no_argument,   0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
 		{"relative",      required_argument, 0, 'r'},
@@ -804,6 +804,7 @@ static void set_options(const int argc, char **argv)
 		{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 		{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 		{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
+		{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
@@ -878,8 +879,8 @@ static void set_options(const int argc, char **argv)
 			opt.constraints = xstrdup(optarg);
 			break;
 		case (int)'d':
-			opt.slurmd_debug = 
-				_get_int(optarg, "slurmd-debug", false);
+			xfree(opt.dependency);
+			opt.dependency = xstrdup(optarg);
 			break;
 		case (int)'D':
 			opt.cwd_set = true;
@@ -994,6 +995,7 @@ static void set_options(const int argc, char **argv)
 			opt.partition = xstrdup(optarg);
 			break;
 		case (int)'P':
+			verbose("-P option is deprecated, use -d instead");
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
@@ -1186,6 +1188,10 @@ static void set_options(const int argc, char **argv)
 				error("--gid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
+			break;
+		case LONG_OPT_DEBUG_SLURMD:
+			opt.slurmd_debug =
+				_get_int(optarg, "slurmd-debug", false);
 			break;
 		case LONG_OPT_DEBUG_TS:
 			opt.debugger_test    = true;
@@ -2233,7 +2239,7 @@ static void _help(void)
 "      --comment=name          arbitrary comment\n"
 "      --core=type             change default corefile format type\n"
 "                              (type=\"list\" to list of valid formats)\n"
-"  -d, --slurmd-debug=level    slurmd debug level\n"
+"  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --chdir=path            change remote current working directory\n"
 "  -e, --error=err             location of stderr redirection\n"
 "      --epilog=program        run \"program\" after launching job step\n"
@@ -2270,7 +2276,6 @@ static void _help(void)
 #ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"
 #endif
-"  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
@@ -2278,6 +2283,7 @@ static void _help(void)
 "      --restart-dir=dir       directory of checkpoint image files to restart\n"
 "                              from\n"
 "  -s, --share                 share nodes with other jobs\n"
+"      --slurmd-debug=level    slurmd debug level\n"
 "  -t, --time=minutes          time limit\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
 "      --task-prolog=program   run \"program\" before launching task\n"

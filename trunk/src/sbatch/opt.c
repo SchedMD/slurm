@@ -625,6 +625,7 @@ static struct option long_options[] = {
 	{"extra-node-info", required_argument, 0, 'B'},
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"constraint",    required_argument, 0, 'C'},
+	{"dependency",    required_argument, 0, 'd'},
 	{"workdir",       required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
@@ -637,13 +638,12 @@ static struct option long_options[] = {
 	{"no-kill",       no_argument,       0, 'k'},
 	{"licenses",      required_argument, 0, 'L'},
 	{"distribution",  required_argument, 0, 'm'},
-	{"tasks",         required_argument, 0, 'n'},	
+	{"tasks",         required_argument, 0, 'n'},
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
 	{"overcommit",    no_argument,       0, 'O'},
 	{"partition",     required_argument, 0, 'p'},
-	{"dependency",    required_argument, 0, 'P'},
 	{"quiet",         no_argument,       0, 'Q'},
 	{"no-rotate",     no_argument,       0, 'R'},
 	{"share",         no_argument,       0, 's'},
@@ -1112,7 +1112,10 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
-/*		case 'd': See 'P' below */
+		case 'd':
+			xfree(opt.dependency);
+			opt.dependency = xstrdup(optarg);
+			break;
 		case 'D':
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
@@ -1205,9 +1208,8 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
 			break;
-		case 'd':
 		case 'P':
-			/* use -P instead of -d (deprecated) */
+			verbose("-P option is deprecated, use -d instead");
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
@@ -2612,6 +2614,7 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
+"  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
@@ -2637,7 +2640,6 @@ static void _help(void)
 "  -O, --overcommit            overcommit resources\n"
 "  -p, --partition=partition   partition requested\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
-"  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --requeue               if set, permit the job to be requeued\n"

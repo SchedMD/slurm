@@ -571,6 +571,7 @@ void set_options(const int argc, char **argv)
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
+		{"dependency",    required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
 		{"geometry",      required_argument, 0, 'g'},
@@ -587,7 +588,6 @@ void set_options(const int argc, char **argv)
 		{"nodes",         required_argument, 0, 'N'},
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
-		{"dependency",    required_argument, 0, 'P'},
 		{"quiet",         no_argument,       0, 'Q'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
@@ -694,7 +694,10 @@ void set_options(const int argc, char **argv)
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
-/* 		case 'd':	see 'P' below */
+		case 'd':
+			xfree(opt.dependency);
+			opt.dependency = xstrdup(optarg);
+			break;
 		case 'D':
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
@@ -775,8 +778,8 @@ void set_options(const int argc, char **argv)
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
 			break;
-		case 'd':
 		case 'P':
+			verbose("-P option is deprecated, use -d instead");
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
 			break;
@@ -1758,6 +1761,7 @@ static void _help(void)
 "      --bell                  ring the terminal bell when the job is allocated\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
+"  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --chdir=path            change working directory\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
@@ -1780,7 +1784,6 @@ static void _help(void)
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -O, --overcommit            overcommit resources\n"
 "  -p, --partition=partition   partition requested\n"
-"  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -s, --share                 share nodes with other jobs\n"
