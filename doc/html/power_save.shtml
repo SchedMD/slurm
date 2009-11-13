@@ -128,7 +128,7 @@ scripts.</p>
 <pre>
 #!/bin/bash
 # Example SuspendProgram
-logger "Suspend invoked $0 $*"
+echo "Suspend invoked $0 $*" >>/var/log/power_save.log
 hosts=`scontrol show hostnames $1`
 for host in "$hosts"
 do
@@ -137,7 +137,7 @@ done
 
 #!/bin/bash
 # Example ResumeProgram
-logger "Resume invoked $0 $*"
+echo "Resume invoked $0 $*" >>/var/log/power_save.log
 hosts=`scontrol show hostnames $1`
 for host in "$hosts"
 do
