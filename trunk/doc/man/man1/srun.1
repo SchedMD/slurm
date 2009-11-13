@@ -300,17 +300,42 @@ resources to the job step from the job's allocation when running
 multiple job steps with the \fB\-\-exclusive\fR option.
 
 .TP
+\fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
+Defer the start of this job until the specified dependencies have been
+satisfied completed.
+<\fIdependency_list\fR> is of the form 
+<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
+Many jobs can share the same dependency and these jobs may even belong to
+different  users. The  value may be changed after job submission using the
+scontrol command.
+.PD
+.RS
+.TP
+\fBafter:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have begun
+execution.
+.TP
+\fBafterany:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated.
+.TP
+\fBafternotok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated
+in some failed state (non-zero exit code, node failure, timed out, etc).
+.TP
+\fBafterok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have successfully
+executed (ran to completion with non-zero exit code).
+.TP
+\fBsingleton\fR
+This job can begin execution after any previously launched jobs
+sharing the same job name and user have terminated.
+.RE
+
+.TP
 \fB\-D\fR, \fB\-\-chdir\fR=<\fIpath\fR>
 have the remote processes do a chdir to \fIpath\fR before beginning
 execution. The default is to chdir to the current working directory
 of the \fBsrun\fR process.
-
-.TP
-\fB\-d\fR, \fB\-\-slurmd\-debug\fR=<\fIlevel\fR>
-Specify a debug level for slurmd(8). \fIlevel\fR may be an integer value
-between 0 [quiet, only errors are displayed] and 4 [verbose operation]. 
-The slurmd debug information is copied onto the stderr of
-the job. By default only errors are displayed. 
 
 .TP
 \fB\-e\fR, \fB\-\-error\fR=<\fImode\fR>
@@ -783,38 +808,6 @@ The default value is specified by the system configuration parameter
 \fIJobFileAppend\fR.
 
 .TP
-\fB\-P\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
-Defer the start of this job until the specified dependencies have been
-satisfied completed.
-<\fIdependency_list\fR> is of the form 
-<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
-Many jobs can share the same dependency and these jobs may even belong to
-different  users. The  value may be changed after job submission using the
-scontrol command.
-.PD
-.RS
-.TP
-\fBafter:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have begun
-execution.
-.TP
-\fBafterany:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have terminated.
-.TP
-\fBafternotok:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have terminated
-in some failed state (non-zero exit code, node failure, timed out, etc).
-.TP
-\fBafterok:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have successfully
-executed (ran to completion with non-zero exit code).
-.TP
-\fBsingleton\fR
-This job can begin execution after any previously launched jobs sharing the same
-job name and user have terminated.
-.RE
-
-.TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition name\fR>
 Request a specific partition for the resource allocation.  If not specified,
 the default behaviour is to allow the slurm controller to select the default
@@ -943,6 +936,13 @@ between zero and 65535.
 By default, no signal is sent before the job's end time. 
 If a \fIsig_num\fR is specified without any \fIsig_time\fR, 
 the default time will be 60 seconds.
+
+.TP
+\fB\-\-slurmd\-debug\fR=<\fIlevel\fR>
+Specify a debug level for slurmd(8). \fIlevel\fR may be an integer
+value between 0 [quiet, only errors are displayed] and 4 [verbose
+operation].  The slurmd debug information is copied onto the stderr of
+the job. By default only errors are displayed.
 
 .TP
 \fB\-T\fR, \fB\-\-threads\fR=<\fInthreads\fR>

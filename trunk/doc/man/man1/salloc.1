@@ -276,6 +276,38 @@ the \-\-cpus\-per\-task=3 options, the controller knows that each task requires
 of 4 nodes, one for each of the 4 tasks.
 
 .TP
+\fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
+Defer the start of this job until the specified dependencies have been
+satisfied completed.
+<\fIdependency_list\fR> is of the form 
+<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
+Many jobs can share the same dependency and these jobs may even belong to
+different  users. The  value may be changed after job submission using the
+scontrol command.
+.PD
+.RS
+.TP
+\fBafter:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have begun
+execution.
+.TP
+\fBafterany:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated.
+.TP
+\fBafternotok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated
+in some failed state (non-zero exit code, node failure, timed out, etc).
+.TP
+\fBafterok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have successfully
+executed (ran to completion with non-zero exit code).
+.TP
+\fBsingleton\fR
+This job can begin execution after any previously launched jobs
+sharing the same job name and user have terminated.
+.RE
+
+.TP
 \fB\-D\fR, \fB\-\-chdir\fR=<\fIpath\fR>
 change directory to \fIpath\fR before beginning execution.
 
@@ -673,38 +705,6 @@ Overcommit resources.  Normally, \fBsalloc\fR will allocate one task
 per processor.  By specifying \fB\-\-overcommit\fR you are explicitly
 allowing more than one task per processor.  However no more than
 \fBMAX_TASKS_PER_NODE\fR tasks are permitted to execute per node.
-
-.TP
-\fB\-P\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
-Defer the start of this job until the specified dependencies have been
-satisfied completed.
-<\fIdependency_list\fR> is of the form 
-<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
-Many jobs can share the same dependency and these jobs may even belong to
-different  users. The  value may be changed after job submission using the
-scontrol command.
-.PD
-.RS
-.TP
-\fBafter:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have begun
-execution.
-.TP
-\fBafterany:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have terminated.
-.TP
-\fBafternotok:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have terminated
-in some failed state (non-zero exit code, node failure, timed out, etc).
-.TP
-\fBafterok:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have successfully
-executed (ran to completion with non-zero exit code).
-.TP
-\fBsingleton\fR
-This job can begin execution after any previously launched jobs sharing the same
-job name and user have terminated.
-.RE
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition name\fR>
