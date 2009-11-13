@@ -932,10 +932,10 @@ _init_conf(void)
 
 	slurm_mutex_init(&conf->config_mutex);
 
-	conf->starting_steps = list_create(NULL);
+	conf->starting_steps = list_create(destroy_starting_step);
 	slurm_mutex_init(&conf->starting_steps_lock);
 	pthread_cond_init(&conf->starting_steps_cond, NULL);
-	conf->prolog_running_jobs = list_create(NULL);
+	conf->prolog_running_jobs = list_create(slurm_destroy_uint32_ptr);
 	slurm_mutex_init(&conf->prolog_running_lock);
 	pthread_cond_init(&conf->prolog_running_cond, NULL);
 	return;

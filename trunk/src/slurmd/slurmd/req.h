@@ -48,6 +48,8 @@
  */
 void slurmd_req(slurm_msg_t *msg);
 
+void destroy_starting_step(void *x);
+
 int init_gids_cache(int cache);
 
 #endif

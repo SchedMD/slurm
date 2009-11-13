@@ -3504,6 +3504,13 @@ _getgroups(void)
 	return _alloc_gids(n, gg);
 }
 
+extern void 
+destroy_starting_step(void *x)
+{
+	xfree(x);
+}
+
+
 
 extern void
 init_gids_cache(int cache)
