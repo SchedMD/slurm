@@ -525,6 +525,17 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			 alpha_num[geometry[2]],
 			 jobinfo->bg_block_id);
 		break;
+	case SELECT_PRINT_MIXED_SHORT:
+		snprintf(buf, size, 
+			 "Connection=%s Reboot=%s Rotate=%s "
+			 "Geometry=%cx%cx%c",
+			 _job_conn_type_string(jobinfo->conn_type),
+			 _yes_no_string(jobinfo->reboot),
+			 _yes_no_string(jobinfo->rotate),
+			 alpha_num[geometry[0]],
+			 alpha_num[geometry[1]],
+			 alpha_num[geometry[2]]);
+		break;
 	case SELECT_PRINT_MIXED:
 		snprintf(buf, size, 
 			 "Connection=%s Reboot=%s Rotate=%s "
