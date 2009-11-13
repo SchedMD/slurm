@@ -3,7 +3,7 @@
 <h1>Power Saving Guide</h1>
 
 <p>SLURM provides an integrated power saving mechanism for idle nodes.
-Nodes that remain idle for an configurable period of time can be placed 
+Nodes that remain idle for a configurable period of time can be placed 
 in a power saving mode. 
 The nodes will be restored to normal operation once work is assigned to them.
 Beginning with version 2.0.0, nodes can be fully powered down.
@@ -43,14 +43,14 @@ Maximum number of nodes to be placed into power saving mode
 per minute. 
 A value of zero results in no limits being imposed.
 The default value is 60.
-Use this to prevent rapid drops in power requirements.</li>
+Use this to prevent rapid drops in power consumption.</li>
 
 <li><b>ResumeRate</b>:
 Maximum number of nodes to be removed from power saving mode 
 per minute. 
 A value of zero results in no limits being imposed.
 The default value is 300.
-Use this to prevent rapid increases in power requirements.</li>
+Use this to prevent rapid increases in power consumption.</li>
 
 <li><b>SuspendProgram</b>:
 Program to be executed to place nodes into power saving mode.
@@ -121,9 +121,14 @@ no longer non-responsive to <i>slurmctld</i>) and terminate.
 Long running programs will be logged by <i>slurmctld</i>, but not
 aborted.</p>
 
+<p>Also note that the stderr/out of the suspend and resume programs
+are not logged.  If logging is desired it should be added to the
+scripts.</p>
+
 <pre>
 #!/bin/bash
 # Example SuspendProgram
+logger "Suspend invoked $0 $*"
 hosts=`scontrol show hostnames $1`
 for host in "$hosts"
 do
@@ -132,6 +137,7 @@ done
 
 #!/bin/bash
 # Example ResumeProgram
+logger "Resume invoked $0 $*"
 hosts=`scontrol show hostnames $1`
 for host in "$hosts"
 do
