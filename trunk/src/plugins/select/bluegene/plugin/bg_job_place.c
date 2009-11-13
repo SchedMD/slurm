@@ -1598,12 +1598,16 @@ preempt:
 				       bg_record->bg_block_id,
 				       bg_record->nodes);
 				
-				if (SELECT_IS_MODE_RUN_NOW(local_mode)) 
+				if (SELECT_IS_MODE_RUN_NOW(local_mode)) {
 					select_g_select_jobinfo_set(
 						job_ptr->select_jobinfo,
 						SELECT_JOBDATA_BLOCK_ID,
 						bg_record->bg_block_id);
-				else
+					select_g_select_jobinfo_set(
+						job_ptr->select_jobinfo,
+						SELECT_JOBDATA_CONN_TYPE,
+						&bg_record->conn_type);
+				} else
 					select_g_select_jobinfo_set(
 						job_ptr->select_jobinfo,
 						SELECT_JOBDATA_BLOCK_ID,

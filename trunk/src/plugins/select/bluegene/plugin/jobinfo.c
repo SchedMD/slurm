@@ -121,7 +121,9 @@ extern int free_select_jobinfo(select_jobinfo_t *jobinfo)
 		xfree(jobinfo->bg_block_id);
 		xfree(jobinfo->nodes);
 		xfree(jobinfo->ionodes);
+#ifdef HAVE_BGL
 		xfree(jobinfo->blrtsimage);
+#endif
 		xfree(jobinfo->linuximage);
 		xfree(jobinfo->mloaderimage);
 		xfree(jobinfo->ramdiskimage);
@@ -190,8 +192,10 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_JOBDATA_BLRTS_IMAGE:
 		/* we xfree() any preset value to avoid a memory leak */
+#ifdef HAVE_BGL
 		xfree(jobinfo->blrtsimage);
 		jobinfo->blrtsimage = xstrdup(tmp_char);
+#endif
 		break;
 	case SELECT_JOBDATA_LINUX_IMAGE:
 		/* we xfree() any preset value to avoid a memory leak */
@@ -285,11 +289,13 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 		*uint32 = jobinfo->max_cpus;
 		break;
 	case SELECT_JOBDATA_BLRTS_IMAGE:
+#ifdef HAVE_BGL
 		if ((jobinfo->blrtsimage == NULL)
 		    ||  (jobinfo->blrtsimage[0] == '\0'))
 			*tmp_char = NULL;
 		else
 			*tmp_char = xstrdup(jobinfo->blrtsimage);
+#endif
 		break;
 	case SELECT_JOBDATA_LINUX_IMAGE:
 		if ((jobinfo->linuximage == NULL)
@@ -349,7 +355,9 @@ extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 		rc->node_cnt = jobinfo->node_cnt;
 		rc->altered = jobinfo->altered;
 		rc->max_cpus = jobinfo->max_cpus;
+#ifdef HAVE_BGL
 		rc->blrtsimage = xstrdup(jobinfo->blrtsimage);
+#endif
 		rc->linuximage = xstrdup(jobinfo->linuximage);
 		rc->mloaderimage = xstrdup(jobinfo->mloaderimage);
 		rc->ramdiskimage = xstrdup(jobinfo->ramdiskimage);
@@ -383,7 +391,9 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer)
 		packstr(jobinfo->bg_block_id, buffer);
 		packstr(jobinfo->nodes, buffer);
 		packstr(jobinfo->ionodes, buffer);
+#ifdef HAVE_BGL
 		packstr(jobinfo->blrtsimage, buffer);
+#endif
 		packstr(jobinfo->linuximage, buffer);
 		packstr(jobinfo->mloaderimage, buffer);
 		packstr(jobinfo->ramdiskimage, buffer);
@@ -400,7 +410,9 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer)
 		packnull(buffer); //bg_block_id
 		packnull(buffer); //nodes
 		packnull(buffer); //ionodes
+#ifdef HAVE_BGL
 		packnull(buffer); //blrts
+#endif
 		packnull(buffer); //linux
 		packnull(buffer); //mloader
 		packnull(buffer); //ramdisk
@@ -436,7 +448,9 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer)
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id),  &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->nodes),        &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->ionodes),      &uint32_tmp, buffer);
+#ifdef HAVE_BGL
 	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),   &uint32_tmp, buffer);
+#endif
 	safe_unpackstr_xmalloc(&(jobinfo->linuximage),   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp, buffer);
@@ -562,9 +576,11 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		snprintf(buf, size, "%s", max_cpus_char);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
+#ifdef HAVE_BGL
 		if(jobinfo->blrtsimage)
 			tmp_image = jobinfo->blrtsimage;
 		snprintf(buf, size, "%s", tmp_image);		
+#endif
 		break;
 	case SELECT_PRINT_LINUX_IMAGE:
 		if(jobinfo->linuximage)
@@ -696,9 +712,11 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		xstrfmtcat(buf, "%s", max_cpus_char);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
+#ifdef HAVE_BGL
 		if(jobinfo->blrtsimage)
 			tmp_image = jobinfo->blrtsimage;
 		xstrfmtcat(buf, "%s", tmp_image);		
+#endif
 		break;
 	case SELECT_PRINT_LINUX_IMAGE:
 		if(jobinfo->linuximage)
