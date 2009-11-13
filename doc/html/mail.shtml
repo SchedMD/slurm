@@ -14,6 +14,9 @@ message containing the word "subscribe" followed by the list name and your e-mai
 (if not the sender). For example: <br>
 <i>subscribe slurm-announce bob@yahoo.com</i></p>
 
-<p style="text-align:center;">Last modified 13 May 2005</p>
+The archive of the <b>slurm-dev</b> list is located here:<br>
+<a href="http://groups.google.com/group/slurm-devel">groups.google.com/group/slurm-devel</a>.
+
+<p style="text-align:center;">Last modified 13 November 2009</p>
 
 <!--#include virtual="footer.txt"-->
