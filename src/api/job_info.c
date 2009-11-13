@@ -188,8 +188,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 3 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Account=%s QOS=%s Priority=%u",
-		 job_ptr->account, job_ptr->qos, job_ptr->priority);
+		 "Priority=%u Account=%s QOS=%s",
+		 job_ptr->priority, job_ptr->account, job_ptr->qos);
 	xstrcat(out, tmp_line);
 	if(slurm_get_track_wckey()) {
 		snprintf(tmp_line, sizeof(tmp_line),
@@ -222,6 +222,18 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
+	snprintf(tmp_line, sizeof(tmp_line), "TimeLimit=");
+	xstrcat(out, tmp_line);
+	if (job_ptr->time_limit == INFINITE)
+		sprintf(tmp_line, "UNLIMITED ");
+	else if (job_ptr->time_limit == NO_VAL)
+		sprintf(tmp_line, "Partition_Limit ");
+	else {
+		secs2time_str(job_ptr->time_limit * 60, tmp1, sizeof(tmp1));
+		sprintf(tmp_line, "%s ", tmp1);
+	}
+	xstrcat(out, tmp_line);
+
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Requeue=%u Restarts=%u BatchFlag=%u ",
 		 job_ptr->requeue, job_ptr->restart_cnt, job_ptr->batch_flag);
@@ -259,18 +271,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	snprintf(tmp_line, sizeof(tmp_line), "StartTime=%s ", time_str);
 	xstrcat(out, tmp_line);
 
-	snprintf(tmp_line, sizeof(tmp_line), "TimeLimit=");
-	xstrcat(out, tmp_line);
-	if (job_ptr->time_limit == INFINITE)
-		sprintf(tmp_line, "UNLIMITED ");
-	else if (job_ptr->time_limit == NO_VAL)
-		sprintf(tmp_line, "Partition_Limit ");
-	else {
-		secs2time_str(job_ptr->time_limit * 60, tmp1, sizeof(tmp1));
-		sprintf(tmp_line, "%s ", tmp1);
-	}
-	xstrcat(out, tmp_line);
-
 	snprintf(tmp_line, sizeof(tmp_line), "EndTime=");
 	xstrcat(out, tmp_line);
 	if ((job_ptr->time_limit == INFINITE) &&
@@ -295,7 +295,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		strncpy(time_str, "None", sizeof(time_str));
 	}
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "SuspendTime=%s RunTimeB4Suspend=%ld",
+		 "SuspendTime=%s SecsPreSuspend=%ld",
 		 time_str, (long int)job_ptr->pre_sus_time);
 	xstrcat(out, tmp_line);
 	if (one_liner)
@@ -354,43 +354,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 #endif
 	_sprint_range(tmp2, sizeof(tmp2), min_nodes, max_nodes);
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "NumNodes=%s NumCPUs=%s", tmp2, tmp1);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
-
-	/****** Line 13 ******/
-#ifdef HAVE_BG
-	convert_num_unit((float)job_ptr->job_min_cpus, tmp1, sizeof(tmp1),
-			 UNIT_NONE);
-	snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%s",	tmp1);
-#else
-	snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%u",
-		 job_ptr->job_min_cpus);
-#endif
-	xstrcat(out, tmp_line);
-#ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_MAX_CPUS,
-				    &max_nodes);
-	convert_num_unit((float)max_nodes, tmp1, sizeof(tmp1), UNIT_NONE);
-	snprintf(tmp_line, sizeof(tmp_line), " MaxCPUs=%s", tmp1);
-	xstrcat(out, tmp_line);
-#endif
-	snprintf(tmp_line, sizeof(tmp_line), " CPUs/Task=%u",
-		 job_ptr->cpus_per_task);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
-
-	/****** Line 14 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "ReqS:C:T=%u:%u:%u",
-		 job_ptr->min_sockets, job_ptr->min_cores,
+		 "NumNodes=%s NumCPUs=%s CPUs/Task=%u ReqS:C:T=%u:%u:%u",
+		 tmp2, tmp1, job_ptr->cpus_per_task, 
+		 job_ptr->min_sockets, 
+		 job_ptr->min_cores,
 		 job_ptr->min_threads);
 	xstrcat(out, tmp_line);
 	if (one_liner)
@@ -398,17 +365,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 15 ******/
 	if (!job_resrcs)
-		goto line16;
+		goto line13;
 
 #ifndef HAVE_BG
 	if (!job_resrcs->core_bitmap)
-		goto line16;
+		goto line13;
 
 	last  = bit_fls(job_resrcs->core_bitmap);
 	if (last == -1)
-		goto line16;
+		goto line13;
 
 	hl = hostlist_create(job_ptr->nodes);
 	if (!hl) {
@@ -557,26 +523,46 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 #endif
 
-	/****** Line 16 ******/
-line16:	if (job_ptr->job_min_memory & MEM_PER_CPU) {
+	/****** Line 13 ******/
+line13:	
+	if (job_ptr->job_min_memory & MEM_PER_CPU) {
 		job_ptr->job_min_memory &= (~MEM_PER_CPU);
 		tmp3_ptr = "CPU";
 	} else
 		tmp3_ptr = "Node";
+#ifdef HAVE_BG
+	convert_num_unit((float)job_ptr->job_min_cpus, tmp1, sizeof(tmp1),
+			 UNIT_NONE);
+	snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%s",	tmp1);
+#else
+	snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%u",
+		 job_ptr->job_min_cpus);
+#endif
+	xstrcat(out, tmp_line);
 	convert_num_unit((float)job_ptr->job_min_memory, tmp1, sizeof(tmp1),
 			 UNIT_MEGA);
 	convert_num_unit((float)job_ptr->job_min_tmp_disk, tmp2, sizeof(tmp2),
 			 UNIT_MEGA);
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "MinMemory%s=%s MinTmpDisk=%s Features=%s Reservation=%s",
-		 tmp3_ptr, tmp1, tmp2, job_ptr->features, job_ptr->resv_name);
+		 " MinMemory%s=%s MinTmpDiskNode=%s",
+		 tmp3_ptr, tmp1, tmp2);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 17 ******/
+	/****** Line 14 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "Features=%s Reservation=%s",
+		 job_ptr->features, job_ptr->resv_name);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 15 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Shared=%s Contiguous=%d Licenses=%s Network=%s",
 		 (job_ptr->shared == 0 ? "0" :
@@ -584,7 +570,7 @@ line16:	if (job_ptr->job_min_memory & MEM_PER_CPU) {
 		 job_ptr->contiguous, job_ptr->licenses, job_ptr->network);
 	xstrcat(out, tmp_line);
 
-	/****** Lines 18, 19 (optional, batch only) ******/
+	/****** Lines 16, 17 (optional, batch only) ******/
 	if (job_ptr->batch_flag) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -601,7 +587,7 @@ line16:	if (job_ptr->job_min_memory & MEM_PER_CPU) {
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 20 (optional) ******/
+	/****** Line 18 (optional) ******/
 	if (job_ptr->comment) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -612,10 +598,25 @@ line16:	if (job_ptr->job_min_memory & MEM_PER_CPU) {
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 21 (optional) ******/
+#ifdef HAVE_BG
+	/****** Line 19 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       select_buf, sizeof(select_buf),
-				       SELECT_PRINT_MIXED);
+				       SELECT_PRINT_BG_ID);
+	if (select_buf[0] != '\0') {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "Block_ID=%s", select_buf);
+		xstrcat(out, tmp_line);
+	}
+#endif
+	/****** Line 20 (optional) ******/
+	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+				       select_buf, sizeof(select_buf),
+				       SELECT_PRINT_MIXED_SHORT);
 	if (select_buf[0] != '\0') {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -625,7 +626,8 @@ line16:	if (job_ptr->job_min_memory & MEM_PER_CPU) {
 	}
 
 #ifdef HAVE_BG
-	/****** Line 22 (optional) ******/
+#ifdef HAVE_BGL
+	/****** Line 21 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       select_buf, sizeof(select_buf),
 				       SELECT_PRINT_BLRTS_IMAGE);
@@ -638,7 +640,8 @@ line16:	if (job_ptr->job_min_memory & MEM_PER_CPU) {
 			 "BlrtsImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 23 (optional) ******/
+#endif
+	/****** Line 22 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_LINUX_IMAGE);
@@ -656,7 +659,7 @@ line16:	if (job_ptr->job_min_memory & MEM_PER_CPU) {
 #endif
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 24 (optional) ******/
+	/****** Line 23 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MLOADER_IMAGE);
@@ -669,7 +672,7 @@ line16:	if (job_ptr->job_min_memory & MEM_PER_CPU) {
 			 "MloaderImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 25 (optional) ******/
+	/****** Line 24 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_RAMDISK_IMAGE);

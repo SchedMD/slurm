@@ -116,7 +116,7 @@ extern int num_unused_cpus;
 #define BITSIZE 128
 /* Change BLOCK_STATE_VERSION value when changing the state save
  * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER002"
+#define BLOCK_STATE_VERSION      "VER003"
 
 #include "bg_block_info.h"
 #include "bg_job_place.h"

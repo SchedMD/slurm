@@ -476,13 +476,25 @@ static void _reset_block_list(List block_list)
 static void _sync_agent(bg_update_t *bg_update_ptr)
 {
 	bg_record_t * bg_record = NULL;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main,
 					   bg_update_ptr->bg_block_id);
 	if(!bg_record) {
+		int rc;
 		slurm_mutex_unlock(&block_state_mutex);
 		error("No block %s", bg_update_ptr->bg_block_id);
+		lock_slurmctld(job_write_lock);
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
+			error("couldn't requeue job %u, failing it: %s",
+			      bg_update_ptr->job_ptr->job_id, 
+			      slurm_strerror(rc));
+			job_fail(bg_update_ptr->job_ptr->job_id);
+		}
+		unlock_slurmctld(job_write_lock);
+		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
 

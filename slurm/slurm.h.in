@@ -326,6 +326,7 @@ enum select_print_mode {
 	SELECT_PRINT_HEAD,	/* Print just the header */
 	SELECT_PRINT_DATA,	/* Print just the data */
 	SELECT_PRINT_MIXED,	/* Print "field=value" */
+	SELECT_PRINT_MIXED_SHORT,/* Print less "field=value" */
 	SELECT_PRINT_BG_ID,	/* Print just the BG_ID */
 	SELECT_PRINT_NODES,	/* Print the nodelist */
 	SELECT_PRINT_CONNECTION,/* Print just the CONNECTION type */
