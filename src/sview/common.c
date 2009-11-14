@@ -626,7 +626,7 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 
 extern GtkTreeView *create_treeview(display_data_t *local, List *button_list)
 {
-	signal_params_t *signal_params = xmalloc(sizeof(signal_params));
+	signal_params_t *signal_params = xmalloc(sizeof(signal_params_t));
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 	local->user_data = NULL;
 
