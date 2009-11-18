@@ -3547,7 +3547,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			slurm_msg_t_init(&req);
 			slurm_set_addr_char(&req.address, atoi(row[1]), row[0]);
 			req.msg_type = ACCOUNTING_UPDATE_MSG;
-			req.flags = SLURM_GLOBAL_AUTH_KEY;
+			if(slurmdbd_conf)
+				req.flags = SLURM_GLOBAL_AUTH_KEY;
 			req.data = &msg;			
 			slurm_msg_t_init(&resp);
 			
