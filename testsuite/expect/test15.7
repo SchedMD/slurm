@@ -110,11 +110,11 @@ expect {
 		}
 		exp_continue
 	}
-	-re "MinTmpDisk=($number)" {
+	-re "MinTmpDiskNode=($number)" {
 		set read_disk $expect_out(1,string)
 		if {$read_disk == $tmp_size} {
 			incr matches
-			send_user "match of MinTmpDisk\n"
+			send_user "match of MinTmpDiskNode\n"
 		}
 		exp_continue
 	}
