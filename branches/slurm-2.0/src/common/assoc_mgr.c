@@ -916,7 +916,18 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 				}
 			}					
 			assoc->user = user.name;
-			assoc->acct = user.default_acct;
+			if(user.default_acct)
+				assoc->acct = user.default_acct;
+			else {
+				debug3("User %s(%d) doesn't have a "
+				       "default account", assoc->user,
+				       assoc->uid);
+				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) 
+					return SLURM_ERROR;
+				else {
+					return SLURM_SUCCESS;
+				}
+			}
 		}		
 		
 		if(!assoc->cluster)
