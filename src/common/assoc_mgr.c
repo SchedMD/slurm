@@ -1452,7 +1452,8 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
 		else {
-			assoc_mgr_fill_in_user(db_conn, &user, 1, NULL);
+			assoc_mgr_fill_in_user(db_conn, &user, 
+					       ACCOUNTING_ENFORCE_ASSOCS, NULL);
 		}
 	}
 
