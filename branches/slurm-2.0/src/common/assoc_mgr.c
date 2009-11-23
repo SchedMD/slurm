@@ -909,9 +909,11 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			if(assoc_mgr_fill_in_user(db_conn, &user,
 						  enforce, NULL) 
 			   == SLURM_ERROR) {
-				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) 
+				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+					error("User %d not found", assoc->uid);
 					return SLURM_ERROR;
-				else {
+				} else {
+					debug3("User %d not found", assoc->uid);
 					return SLURM_SUCCESS;
 				}
 			}					
@@ -919,12 +921,15 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			if(user.default_acct)
 				assoc->acct = user.default_acct;
 			else {
-				debug3("User %s(%d) doesn't have a "
-				       "default account", assoc->user,
-				       assoc->uid);
-				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) 
+				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+					error("User %s(%d) doesn't have a "
+					      "default account", assoc->user,
+					      assoc->uid);
 					return SLURM_ERROR;
-				else {
+				} else {
+					debug3("User %s(%d) doesn't have a "
+					       "default account", assoc->user,
+					       assoc->uid);
 					return SLURM_SUCCESS;
 				}
 			}
@@ -1238,15 +1243,32 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			if(assoc_mgr_fill_in_user(db_conn, &user,
 						  enforce, NULL) 
 			   == SLURM_ERROR) {
-				if(enforce & ACCOUNTING_ENFORCE_WCKEYS) 
+				if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
+					error("User %d not found", wckey->uid);
 					return SLURM_ERROR;
-				else {
+				} else {
+					debug3("User %d not found", wckey->uid);
 					return SLURM_SUCCESS;
 				}
 			}
 			if(!wckey->user)
 				wckey->user = user.name;
-			wckey->name = user.default_wckey;
+			if(user.default_wckey)
+				wckey->name = user.default_wckey;
+			else {
+				if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
+					error("User %s(%d) doesn't have a "
+					      "default wckey", user.name,
+					      user.uid);
+					return SLURM_ERROR;
+				} else {
+					debug3("User %s(%d) doesn't have a "
+					       "default wckey", user.name,
+					       user.uid);
+					return SLURM_SUCCESS;
+				}
+			}
+			
 		} else if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
 			if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 				error("get_wckey_id: "
@@ -1452,8 +1474,13 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
 		else {
-			assoc_mgr_fill_in_user(db_conn, &user, 
-					       ACCOUNTING_ENFORCE_ASSOCS, NULL);
+			if(assoc_mgr_fill_in_user(
+				   db_conn, &user,
+				   ACCOUNTING_ENFORCE_ASSOCS, NULL) 
+			   == SLURM_ERROR) {
+				debug3("User %d not found", user.uid);
+				goto end_it;
+			}
 		}
 	}
 
@@ -1558,7 +1585,7 @@ extern List assoc_mgr_get_shares(void *db_conn,
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
-	
+end_it:	
 	if(user_itr) 
 		list_iterator_destroy(user_itr);
 	if(acct_itr) 
