@@ -2978,14 +2978,9 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 	if(args) {
 		enforce = args->enforce;
 		cache_level = args->cache_level;
-	}
-	
-	if(!running_cache) { 
-		debug4("No need to run assoc_mgr_refresh_lists if not running "
-		       "cache things are already synced.");
 		return SLURM_SUCCESS;
 	}
-
+	
 	if(cache_level & ASSOC_MGR_CACHE_ASSOC) {
 		if(_refresh_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
@@ -3005,6 +3000,71 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 			return SLURM_ERROR;
 
 	running_cache = 0;
+
+	return SLURM_SUCCESS;	
+}
+
+extern int assoc_mgr_set_missing_uids()
+{
+	uid_t pw_uid;
+	ListIterator itr = NULL;
+	
+	if(assoc_mgr_association_list) {
+		acct_association_rec_t *object = NULL;
+		slurm_mutex_lock(&assoc_mgr_association_lock);
+		itr = list_iterator_create(assoc_mgr_association_list);
+		while((object = list_next(itr))) {
+			if(object->user && object->uid == (uint32_t)NO_VAL) {
+				if (uid_from_string(
+					    object->user, &pw_uid) < 0) {
+					debug2("refresh association "
+					       "couldn't get a uid for user %s",
+					       object->user);
+				} else
+					object->uid = pw_uid;
+			}
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&assoc_mgr_association_lock);
+	}
+
+	if(assoc_mgr_wckey_list) {
+		acct_wckey_rec_t *object = NULL;
+		slurm_mutex_lock(&assoc_mgr_wckey_lock);
+		itr = list_iterator_create(assoc_mgr_wckey_list);
+		while((object = list_next(itr))) {
+			if(object->user && object->uid == (uint32_t)NO_VAL) {
+				if (uid_from_string(
+					    object->user, &pw_uid) < 0) {
+					debug2("refresh wckey "
+					       "couldn't get a uid for user %s",
+					       object->user);
+				} else
+					object->uid = pw_uid;
+			}
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
+	}
+
+	if(assoc_mgr_user_list) {
+		acct_user_rec_t *object = NULL;
+		slurm_mutex_lock(&assoc_mgr_user_lock);
+		itr = list_iterator_create(assoc_mgr_user_list);
+		while((object = list_next(itr))) {
+			if(object->name && object->uid == (uint32_t)NO_VAL) {
+				if (uid_from_string(
+					    object->name, &pw_uid) < 0) {
+					debug3("refresh user couldn't get "
+					       "a uid for user %s",
+					       object->name);
+				} else
+					object->uid = pw_uid;
+			}
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&assoc_mgr_user_lock);
+	}
 
 	return SLURM_SUCCESS;	
 }

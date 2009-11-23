@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
     when sending updates to slurmctlds.
  -- Check to make sure we have a default account before looking to 
     fill in default association. 
+ -- Accounting - Slurmctld and slurmdbd will now set uids of users which were 
+    created after the start of the daemons on reconfig.  Slurmdbd will 
+    attempt to set previously non-existant uids every hour.
 
 * Changes in SLURM 2.1.0-pre7
 =============================
