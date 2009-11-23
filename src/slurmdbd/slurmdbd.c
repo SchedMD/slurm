@@ -471,6 +471,9 @@ static void *_rollup_handler(void *db_conn)
 			      start_time);
 			return NULL;
 		}
+		/* Just in case some new uids were added to the system
+		   pick them up here. */
+		assoc_mgr_set_missing_uids();
 		/* repeat ;) */
 
 	}
@@ -503,6 +506,7 @@ static void *_signal_handler(void *no_data)
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
 			read_slurmdbd_conf();
+			assoc_mgr_set_missing_uids();
 			_update_logging();
 			break;
 		case SIGINT:	/* kill -2  or <CTRL-C> */

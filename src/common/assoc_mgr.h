@@ -247,7 +247,15 @@ extern int load_assoc_mgr_state(char *state_save_location);
 /*
  * Refresh the lists if when running_cache is set this will load new
  * information from the database (if any) and update the cached list.
+ * If args are set will set internal variables and return, no lists
+ * are refreshed.
  */
 extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args);
+
+/*
+ * Sets the uids of users added to the system after the start of the
+ * calling program.
+ */
+extern int assoc_mgr_set_missing_uids();
 
 #endif /* _SLURM_ASSOC_MGR_H */
