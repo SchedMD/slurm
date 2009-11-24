@@ -180,10 +180,10 @@ static void  _help(void);
 static void _opt_default(void);
 
 /* set options from batch script */
-static void _opt_batch_script(const void *body, int size);
+static void _opt_batch_script(const char *file, const void *body, int size);
 
 /* set options from pbs batch script */
-static void _opt_pbs_batch_script(const void *body, int size);
+static void _opt_pbs_batch_script(const char *file, const void *body, int size);
 
 /* set options based upon env vars  */
 static void _opt_env(void);
@@ -817,14 +817,14 @@ char *process_options_first_pass(int argc, char **argv)
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  */
-int process_options_second_pass(int argc, char *argv[],
+int process_options_second_pass(int argc, char *argv[], const char *file,
 				const void *script_body, int script_size)
 {
 	/* set options from batch script */
-	_opt_batch_script(script_body, script_size);
+	_opt_batch_script(file, script_body, script_size);
 
 	/* set options from pbs batch script */
-	_opt_pbs_batch_script(script_body, script_size);
+	_opt_pbs_batch_script(file, script_body, script_size);
 
 	/* set options from env vars */
 	_opt_env();
@@ -870,12 +870,13 @@ static char *_next_line(const void *buf, int size, void **state)
 	ptr = current = (char *)*state;
 	while ((*ptr != '\n') && (ptr < ((char *)buf+size)))
 		ptr++;
-	if (*ptr == '\n')
-		ptr++;
 	
 	line = xstrndup(current, (ptr-current));
 
-	*state = (void *)ptr;
+	/*
+	 *  Advance state past newline
+	 */
+	*state = (ptr < ((char *) buf + size)) ? ptr+1 : ptr;
 	return line;
 }
 
@@ -891,15 +892,17 @@ static char *_next_line(const void *buf, int size, void **state)
  * RET - xmalloc'ed argument string (may be shorter than "skipped")
  *       or NULL if no arguments remaining
  */
-static char *_get_argument(const char *line, int *skipped)
+static char *
+_get_argument(const char *file, int lineno, const char *line, int *skipped)
 {
-	char *ptr;
+	const char *ptr;
 	char argument[BUFSIZ];
+	char q_char = '\0';
 	bool escape_flag = false;
-	bool no_isspace_check = false;
+	bool quoted = false;
 	int i;
 
-	ptr = (char *)line;
+	ptr = line;
 	*skipped = 0;
 
 	/* skip whitespace */
@@ -909,41 +912,43 @@ static char *_get_argument(const char *line, int *skipped)
 
 	if (*ptr == '\0')
 		return NULL;
-
+	
 	/* copy argument into "argument" buffer, */
 	i = 0;
-	while ((no_isspace_check || !isspace(*ptr))
-	       && *ptr != '\n'
-	       && *ptr != '\0') {
+	while ((quoted || !isspace(*ptr)) && *ptr != '\n' && *ptr != '\0') {
 
 		if (escape_flag) {
 			escape_flag = false;
-			argument[i] = *ptr;
-			ptr++;
-			i++;
 		} else if (*ptr == '\\') {
 			escape_flag = true;
 			ptr++;
-		} else if (*ptr == '"') {
-			/* toggle the no_isspace_check flag */
-			no_isspace_check = no_isspace_check? false : true;
-			ptr++;
+			continue;
+		} else if (quoted) {
+			if (*ptr == q_char) {
+				quoted = false;
+				ptr++;
+				continue;
+			}
+		} else if (*ptr == '"' || *ptr == '\'') {
+			quoted = true;
+			q_char = *(ptr++);
+			continue;
 		} else if (*ptr == '#') {
 			/* found an un-escaped #, rest of line is a comment */
 			break;
-		} else {
-			argument[i] = *ptr;
-			ptr++;
-			i++;
 		}
+
+		argument[i++] = *(ptr++);
 	}
+	argument[i] = '\0';
+
+	if (quoted) /* Unmatched quote */
+		fatal ("%s: line %d: Unmatched `%c` in [%s]\n",
+				file, lineno, q_char, line);
 
 	*skipped = ptr - line;
-	if (i > 0) {
-		return xstrndup(argument, i);
-	} else {
-		return NULL;
-	}
+
+	return (i > 0 ? xstrdup (argument) : NULL);
 }
 
 /*
@@ -952,7 +957,7 @@ static char *_get_argument(const char *line, int *skipped)
  * Build an argv-style array of options from the script "body",
  * then pass the array to _set_options for() further parsing.
  */
-static void _opt_batch_script(const void *body, int size)
+static void _opt_batch_script(const char * file, const void *body, int size)
 {
 	char *magic_word1 = "#SBATCH";
 	char *magic_word2 = "#SLURM";
@@ -963,7 +968,7 @@ static void _opt_batch_script(const void *body, int size)
 	char *line;
 	char *option;
 	char *ptr;
-	int skipped = 0, warned = 0;
+	int skipped = 0, warned = 0, lineno = 0;
 	int i;
 
 	magic_word_len1 = strlen(magic_word1);
@@ -975,6 +980,7 @@ static void _opt_batch_script(const void *body, int size)
 	argv[0] = "sbatch";
 
 	while((line = _next_line(body, size, &state)) != NULL) {
+		lineno++;
 		if (!strncmp(line, magic_word1, magic_word_len1))
 			ptr = line + magic_word_len1;
 		else if (!strncmp(line, magic_word2, magic_word_len2)) {
@@ -991,7 +997,7 @@ static void _opt_batch_script(const void *body, int size)
 		}
 
 		/* this line starts with the magic word */
-		while ((option = _get_argument(ptr, &skipped)) != NULL) {
+		while ((option = _get_argument(file, lineno, ptr, &skipped))) {
 			debug2("Found in script, argument \"%s\"", option);
 			argc += 1;
 			xrealloc(argv, sizeof(char*) * argc);
@@ -1015,7 +1021,7 @@ static void _opt_batch_script(const void *body, int size)
  * Build an argv-style array of options from the script "body",
  * then pass the array to _set_options for() further parsing.
  */
-static void _opt_pbs_batch_script(const void *body, int size)
+static void _opt_pbs_batch_script(const char *file, const void *body, int size)
 {
 	char *magic_word = "#PBS";
 	int magic_word_len;
@@ -1026,6 +1032,7 @@ static void _opt_pbs_batch_script(const void *body, int size)
 	char *option;
 	char *ptr;
 	int skipped = 0;
+	int lineno = 0;
 	int i;
 
 	magic_word_len = strlen(magic_word);
@@ -1035,6 +1042,7 @@ static void _opt_pbs_batch_script(const void *body, int size)
 	argv[0] = "sbatch";
 
 	while((line = _next_line(body, size, &state)) != NULL) {
+		lineno++;
 		if (strncmp(line, magic_word, magic_word_len) != 0) {
 			xfree(line);
 			continue;
@@ -1042,7 +1050,7 @@ static void _opt_pbs_batch_script(const void *body, int size)
 
 		/* this line starts with the magic word */
 		ptr = line + magic_word_len;
-		while ((option = _get_argument(ptr, &skipped)) != NULL) {
+		while ((option = _get_argument(file, lineno, ptr, &skipped))) {
 			debug2("Found in script, argument \"%s\"", option);
 			argc += 1;
 			xrealloc(argv, sizeof(char*) * argc);
