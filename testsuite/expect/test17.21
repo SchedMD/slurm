@@ -43,7 +43,7 @@ set delay       10
 print_header $test_id
 
 make_bash_script $file_in "
-#SBATCH --job-name=$job_name
+#SBATCH --job-name='$job_name'
 $bin_sleep $delay
 "
 
@@ -92,11 +92,12 @@ make_bash_script $file_in "
 #SBATCH -N1000000k
 $bin_sleep $delay
 "
-
+set match 0
 set sbatch_pid [spawn $sbatch -o $file_out $file_in]
 expect {
-	-re "Node count specification invalid" {
+	-re "More processors requested than permitted" {
 		send_user "This error was expected, no worries\n\n"
+		set match 1
 		exp_continue
 	}	
 	-re "Submitted batch job ($number)" {
@@ -117,6 +118,11 @@ expect {
 	}
 }
 
+if { $match != 1 } {
+	send_user "\nFAILURE: did not get expected output from sbatch\n"
+	set exit_code 1
+}
+
 make_bash_script $file_in "
 #SBATCH -N650000
 $bin_sleep $delay
@@ -124,7 +130,7 @@ $bin_sleep $delay
 
 set sbatch_pid [spawn $sbatch -N1 -o $file_out $file_in]
 expect {
-	-re "Node count specification invalid" {
+	-re "More processors requested than permitted" {
 		send_user "\nFAILURE: sbatch read from the batch file options"
 		send_user "over writing the commandline options\n"
 		set exit_code 1
