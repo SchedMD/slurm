@@ -452,7 +452,7 @@ if {![string compare $select_type "bluegene"]} {
 	} elseif {![string compare $select_params "CR_SOCKET_MEMORY"]} {
 		set smallest [expr $inode_cores_per_socket *$inode_threads_per_core]
 	} else {
-		send_user "\nWARNING: failed to parse SelectTypeParameters\n"
+		send_user "\nWARNING: failed to parse SelectTypeParameters '$select_params'\n"
 		set smallest $inode_procs
 	}
 }
