@@ -450,9 +450,9 @@ extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
 
 extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 {
+	int first=1;
 #ifdef HAVE_BG_FILES
 	int rc;
-	int first=1;
 #endif
 	if(!bg_record) {
 		error("bg_free_block: there was no bg_record");
