@@ -570,38 +570,38 @@ plugin_handle_t
 plugrack_use_by_type( plugrack_t rack,
                       const char *full_type )
 {
-        ListIterator it;
-        plugrack_entry_t *e;
-  
-        if ( ! rack )
+	ListIterator it;
+	plugrack_entry_t *e;
+	
+	if (!rack)
 		return PLUGIN_INVALID_HANDLE;
-        if ( ! full_type )
+	if (!full_type)
 		return PLUGIN_INVALID_HANDLE;
-
-        it = list_iterator_create( rack->entries );
-        while ( ( e = list_next( it ) ) != NULL ) {
-		if ( strcmp( full_type, e->full_type ) != 0 )
+	
+	it = list_iterator_create(rack->entries);
+	while ((e = list_next(it))) {
+		if (strcmp(full_type, e->full_type) != 0)
 			continue;
 		
-                /* See if plugin is loaded. */
-                if ( e->plug == PLUGIN_INVALID_HANDLE ) 
-                        plugin_load_from_file(&e->plug, e->fq_path);
-
-                /* If load was successful, increment the reference count. */
-                if ( e->plug == PLUGIN_INVALID_HANDLE )
-                        e->refcount++;
-
-                /*
-                 * Return the plugin, even if it failed to load -- this serves
-                 * as an error return value.
-                 */
-                list_iterator_destroy( it );
+		/* See if plugin is loaded. */
+		if (e->plug == PLUGIN_INVALID_HANDLE) 
+			plugin_load_from_file(&e->plug, e->fq_path);
+		
+		/* If load was successful, increment the reference count. */
+		if (e->plug == PLUGIN_INVALID_HANDLE )
+			e->refcount++;
+		
+		/*
+		 * Return the plugin, even if it failed to load -- this serves
+		 * as an error return value.
+		 */
+		list_iterator_destroy(it);
 		return e->plug;
-        }
-
-        /* Couldn't find a suitable plugin. */
-        list_iterator_destroy( it );
-        return PLUGIN_INVALID_HANDLE;
+	}
+	
+	/* Couldn't find a suitable plugin. */
+	list_iterator_destroy(it);
+	return PLUGIN_INVALID_HANDLE;
 }
 
 
