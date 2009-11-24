@@ -112,8 +112,11 @@ int main(int argc, char *argv[])
 	if (script_body == NULL)
 		exit(error_exit);
 
-	if (process_options_second_pass((argc - opt.script_argc), argv,
-					script_body, script_size) < 0) {
+	if (process_options_second_pass(
+				(argc - opt.script_argc),
+				argv,
+				xbasename (script_name),
+				script_body, script_size) < 0) {
 		error("sbatch parameter parsing");
 		exit(error_exit);
 	}

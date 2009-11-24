@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Accounting - Slurmctld and slurmdbd will now set uids of users which were 
     created after the start of the daemons on reconfig.  Slurmdbd will 
     attempt to set previously non-existant uids every hour.
+ -- Patch from Aaron Knister and Mark Grondona, to parse correctly quoted 
+    #SBATCH options in a batch script.
 
 * Changes in SLURM 2.1.0-pre7
 =============================
