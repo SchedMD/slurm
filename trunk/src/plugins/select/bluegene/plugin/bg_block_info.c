@@ -470,7 +470,6 @@ extern int update_block_list()
 					bg_record->job_ptr->job_state |=
 						JOB_CONFIGURING;
 					last_job_update = time(NULL);
-
 				}
 				break;
 			case RM_PARTITION_ERROR:

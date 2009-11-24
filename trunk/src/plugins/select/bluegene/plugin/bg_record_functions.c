@@ -1461,12 +1461,13 @@ extern int resume_block(bg_record_t *bg_record)
 {
 	xassert(bg_record);
 
-	if(bg_record->job_running >= NO_JOB_RUNNING)
+	if(bg_record->job_running > NO_JOB_RUNNING)
 		return SLURM_SUCCESS;
 
-	info("Block %s put back into service after "
-	     "being in an error state.",
-	      bg_record->bg_block_id);
+	if(bg_record->state == RM_PARTITION_ERROR)
+		info("Block %s put back into service after "
+		     "being in an error state.",
+		     bg_record->bg_block_id);
 
 	if(remove_from_bg_list(bg_lists->job_running, bg_record)
 	   == SLURM_SUCCESS) 

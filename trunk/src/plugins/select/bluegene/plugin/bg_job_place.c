@@ -1603,10 +1603,16 @@ preempt:
 						job_ptr->select_jobinfo,
 						SELECT_JOBDATA_BLOCK_ID,
 						bg_record->bg_block_id);
+					conn_type = bg_record->conn_type;
 					select_g_select_jobinfo_set(
 						job_ptr->select_jobinfo,
 						SELECT_JOBDATA_CONN_TYPE,
-						&bg_record->conn_type);
+						&conn_type);
+					if(job_ptr) {
+						job_ptr->job_state 
+							|= JOB_CONFIGURING;
+						last_job_update = time(NULL);
+					}
 				} else
 					select_g_select_jobinfo_set(
 						job_ptr->select_jobinfo,
@@ -1642,7 +1648,7 @@ preempt:
 	if(bg_conf->layout_mode == LAYOUT_DYNAMIC) {		
 		slurm_mutex_lock(&block_state_mutex);
 		if(blocks_added) 
-			_sync_block_lists(block_list, bg_lists->main);		
+			_sync_block_lists(block_list, bg_lists->main);
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&create_dynamic_mutex);
 	}

@@ -41,37 +41,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-static char *_job_conn_type_string(uint16_t inx)
-{
-	switch(inx) {
-	case SELECT_TORUS:
-		return "torus";
-		break;
-	case SELECT_MESH:
-		return "mesh";
-		break;
-	case SELECT_SMALL:
-		return "small";
-		break;
-#ifndef HAVE_BGL
-	case SELECT_HTC_S:
-		return "htc_s";
-		break;
-	case SELECT_HTC_D:
-		return "htc_d";
-		break;
-	case SELECT_HTC_V:
-		return "htc_v";
-		break;
-	case SELECT_HTC_L:
-		return "htc_l";
-		break;
-#endif
-	default: 
-		return "n/a";
-	}
-}
-
 static char *_yes_no_string(uint16_t inx)
 {
 	if (inx == (uint16_t) NO_VAL)
@@ -471,7 +440,7 @@ unpack_error:
  * RET        - the string, same as buf
  */
 extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
-				     char *buf, size_t size, int mode)
+				   char *buf, size_t size, int mode)
 {
 	uint16_t geometry[SYSTEM_DIMENSIONS];
 	int i;
@@ -516,7 +485,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 					 UNIT_NONE);
 		snprintf(buf, size, 
 			 "%7.7s %6.6s %6.6s %8s    %cx%cx%c %-16s",
-			 _job_conn_type_string(jobinfo->conn_type),
+			 conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
 			 max_cpus_char,
@@ -529,7 +498,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		snprintf(buf, size, 
 			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%cx%cx%c",
-			 _job_conn_type_string(jobinfo->conn_type),
+			 conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
 			 alpha_num[geometry[0]],
@@ -540,7 +509,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		snprintf(buf, size, 
 			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%cx%cx%c Block_ID=%s",
-			 _job_conn_type_string(jobinfo->conn_type),
+			 conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
 			 alpha_num[geometry[0]],
@@ -560,7 +529,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_PRINT_CONNECTION:
 		snprintf(buf, size, "%s", 
-			 _job_conn_type_string(jobinfo->conn_type));
+			 conn_type_string(jobinfo->conn_type));
 		break;
 	case SELECT_PRINT_REBOOT:
 		snprintf(buf, size, "%s",
@@ -663,7 +632,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 					 UNIT_NONE);
 		xstrfmtcat(buf, 
 			   "%7.7s %6.6s %6.6s %8s    %cx%cx%c %-16s",
-			   _job_conn_type_string(jobinfo->conn_type),
+			   conn_type_string(jobinfo->conn_type),
 			   _yes_no_string(jobinfo->reboot),
 			   _yes_no_string(jobinfo->rotate),
 			   max_cpus_char,
@@ -676,7 +645,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		xstrfmtcat(buf, 
 			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%cx%cx%c Block_ID=%s",
-			 _job_conn_type_string(jobinfo->conn_type),
+			 conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
 			 alpha_num[geometry[0]],
@@ -696,21 +665,21 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		break;
 	case SELECT_PRINT_CONNECTION:
 		xstrfmtcat(buf, "%s", 
-			 _job_conn_type_string(jobinfo->conn_type));
+			   conn_type_string(jobinfo->conn_type));
 		break;
 	case SELECT_PRINT_REBOOT:
 		xstrfmtcat(buf, "%s",
-			 _yes_no_string(jobinfo->reboot));
+			   _yes_no_string(jobinfo->reboot));
 		break;
 	case SELECT_PRINT_ROTATE:
 		xstrfmtcat(buf, "%s",
-			 _yes_no_string(jobinfo->rotate));
+			   _yes_no_string(jobinfo->rotate));
 		break;
 	case SELECT_PRINT_GEOMETRY:
 		xstrfmtcat(buf, "%cx%cx%c",
-			 alpha_num[geometry[0]],
-			 alpha_num[geometry[1]],
-			 alpha_num[geometry[2]]);
+			   alpha_num[geometry[0]],
+			   alpha_num[geometry[1]],
+			   alpha_num[geometry[2]]);
 		break;
 	case SELECT_PRINT_MAX_CPUS:
 		if (jobinfo->max_cpus == NO_VAL)

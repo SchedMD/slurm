@@ -594,15 +594,16 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		return;
 	}
 	if(bg_record->state == RM_PARTITION_DEALLOCATING) {
-		slurm_mutex_unlock(&block_state_mutex);
 		debug("Block is in Deallocating state, waiting for free.");
-		bg_free_block(bg_record);
+		bg_free_block(bg_record, 1, 1);
 		/* no reason to reboot here since we are already
 		   deallocating */
 		bg_update_ptr->reboot = 0;
-		slurm_mutex_lock(&block_state_mutex);
-		if(!_make_sure_block_still_exists(bg_update_ptr, bg_record))
+		if(!_make_sure_block_still_exists(bg_update_ptr, bg_record)) {
+			slurm_mutex_unlock(&block_state_mutex);
+			slurm_mutex_unlock(&job_start_mutex);
 			return;
+		}
 	} 
 	
 	delete_list = list_create(NULL);
@@ -682,8 +683,11 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	num_block_to_free = num_block_freed = 0;
 	
 	slurm_mutex_lock(&block_state_mutex);
-	if(!_make_sure_block_still_exists(bg_update_ptr, bg_record))
+	if(!_make_sure_block_still_exists(bg_update_ptr, bg_record)) {
+		slurm_mutex_unlock(&block_state_mutex);
+		slurm_mutex_unlock(&job_start_mutex);
 		return;
+	}
 
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		// _reset_block(bg_record); should already happened
@@ -751,13 +755,14 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 
 	if(rc) {
 		bg_record->modifying = 1;
-		slurm_mutex_unlock(&block_state_mutex);
 			
-		bg_free_block(bg_record);
+		bg_free_block(bg_record, 1, 1);
 
-		slurm_mutex_lock(&block_state_mutex);
-		if(!_make_sure_block_still_exists(bg_update_ptr, bg_record))
+		if(!_make_sure_block_still_exists(bg_update_ptr, bg_record)) {
+			slurm_mutex_unlock(&block_state_mutex);
+			slurm_mutex_unlock(&job_start_mutex);
 			return;
+		}
 #ifdef HAVE_BG_FILES
 #ifdef HAVE_BGL
 		if ((rc = bridge_modify_block(bg_record->bg_block_id,
@@ -835,13 +840,14 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		bg_record->modifying = 0;		
 	} else if(bg_update_ptr->reboot) {
 		bg_record->modifying = 1;
-		slurm_mutex_unlock(&block_state_mutex);
 
-		bg_free_block(bg_record);
+		bg_free_block(bg_record, 1, 1);
 
-		slurm_mutex_lock(&block_state_mutex);
-		if(!_make_sure_block_still_exists(bg_update_ptr, bg_record))
+		if(!_make_sure_block_still_exists(bg_update_ptr, bg_record)) {
+			slurm_mutex_unlock(&block_state_mutex);
+			slurm_mutex_unlock(&job_start_mutex);
 			return;
+		}
 		bg_record->modifying = 0;		
 	}
 
@@ -871,8 +877,11 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			return;
 		}
 		slurm_mutex_lock(&block_state_mutex);		
-		if(!_make_sure_block_still_exists(bg_update_ptr, bg_record))
+		if(!_make_sure_block_still_exists(bg_update_ptr, bg_record)) {
+			slurm_mutex_unlock(&block_state_mutex);
+			slurm_mutex_unlock(&job_start_mutex);
 			return;
+		}
 	} else if (bg_record->state == RM_PARTITION_CONFIGURING) 
 		bg_record->boot_state = 1;		
 	
@@ -888,7 +897,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		
 	bg_record->boot_count = 0;
 	xfree(bg_record->target_name);
-	bg_record->target_name = uid_to_string(bg_update_ptr->job_ptr->user_id);
+	bg_record->target_name = 
+		uid_to_string(bg_update_ptr->job_ptr->user_id);
 	debug("setting the target_name for Block %s to %s",
 	      bg_record->bg_block_id, bg_record->target_name);
 	
@@ -1450,10 +1460,6 @@ extern int boot_block(bg_record_t *bg_record)
 	if(bg_record->state != RM_PARTITION_CONFIGURING)
 		bg_record->state = RM_PARTITION_CONFIGURING;
 	debug("Setting bootflag for %s", bg_record->bg_block_id);
-	if(bg_record->job_ptr) {
-		bg_record->job_ptr->job_state |= JOB_CONFIGURING;
-		last_job_update = time(NULL);
-	}
 	bg_record->boot_state = 1;
 	//bg_record->boot_count = 0;
 	last_bg_update = time(NULL);
