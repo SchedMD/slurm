@@ -580,15 +580,18 @@ plugrack_use_by_type( plugrack_t rack,
 	
 	it = list_iterator_create(rack->entries);
 	while ((e = list_next(it))) {
+               plugin_err_t err;
+
 		if (strcmp(full_type, e->full_type) != 0)
 			continue;
 		
 		/* See if plugin is loaded. */
-		if (e->plug == PLUGIN_INVALID_HANDLE) 
-			plugin_load_from_file(&e->plug, e->fq_path);
+		if (e->plug == PLUGIN_INVALID_HANDLE  &&
+		    (err = plugin_load_from_file(&e->plug, e->fq_path)))
+			error ("%s: %s\n", e->fq_path, plugin_strerror (err));
 		
 		/* If load was successful, increment the reference count. */
-		if (e->plug == PLUGIN_INVALID_HANDLE )
+		if (e->plug != PLUGIN_INVALID_HANDLE)
 			e->refcount++;
 		
 		/*
