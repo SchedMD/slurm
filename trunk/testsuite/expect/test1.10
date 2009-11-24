@@ -45,7 +45,7 @@ print_header $test_id
 #
 set debug_offset [expr $debug_set - 2]
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -d$debug_offset -t1 /invalid_executable ]
+set srun_pid [spawn $srun -N1 --slurmd-debug=$debug_offset -t1 /invalid_executable ]
 expect {
 	-re "debug level = ($number)" {
 		set debug_get $expect_out(1,string)
