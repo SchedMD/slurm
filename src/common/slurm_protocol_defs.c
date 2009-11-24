@@ -1254,11 +1254,11 @@ extern char *conn_type_string(enum connection_type conn_type)
 {
 	switch (conn_type) {
 	case (SELECT_MESH):
-		return "MESH";
+		return "Mesh";
 	case (SELECT_TORUS):
-		return "TORUS";
+		return "Torus";
 	case (SELECT_SMALL):
-		return "SMALL";
+		return "Small";
 	case (SELECT_NAV):
 		return "NAV";
 #ifndef HAVE_BGL
@@ -1272,9 +1272,9 @@ extern char *conn_type_string(enum connection_type conn_type)
 		return "HTC_L";
 #endif
 	default:
-		return "";
+		return "n/a";
 	}
-	return "";
+	return "n/a";
 }
 
 #ifdef HAVE_BGL

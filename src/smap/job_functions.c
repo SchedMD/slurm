@@ -165,7 +165,8 @@ extern void get_job(void)
 			if((count>=text_line_cnt)
 			   && (printed_jobs 
 			       < (text_win->_maxy-3))) {
-				job_ptr->nodes = "waiting...";
+				xfree(job_ptr->nodes);
+				job_ptr->nodes = xstrdup("waiting...");
 				job_ptr->num_procs = (int) letters[count%62];
 				wattron(text_win,
 					COLOR_PAIR(colors[count%6]));
@@ -175,7 +176,8 @@ extern void get_job(void)
 				printed_jobs++;
 			} 
 		} else {
-			job_ptr->nodes = "waiting...";
+			xfree(job_ptr->nodes);
+			job_ptr->nodes = xstrdup("waiting...");
 			job_ptr->num_procs = (int) letters[count%62];
 			_print_text_job(job_ptr);
 			printed_jobs++;

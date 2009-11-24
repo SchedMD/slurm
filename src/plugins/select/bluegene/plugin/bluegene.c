@@ -448,23 +448,28 @@ extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
 	return found_record;
 }
 
-extern int bg_free_block(bg_record_t *bg_record)
+extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 {
 #ifdef HAVE_BG_FILES
 	int rc;
+	int first=1;
 #endif
 	if(!bg_record) {
 		error("bg_free_block: there was no bg_record");
 		return SLURM_ERROR;
 	}
-	
+
+	if(!locked)
+		first = 0;
+
 	while (1) {
 		/* Here we don't need to check if the block is still
 		 * in exsistance since this function can't be called on
 		 * the same block twice.  It may
 		 * had already been removed at this point also.
 		 */
-		slurm_mutex_lock(&block_state_mutex);
+		if(!first)
+			slurm_mutex_lock(&block_state_mutex);
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
@@ -495,18 +500,24 @@ extern int bg_free_block(bg_record_t *bg_record)
 #endif
 		}
 		
-		if ((bg_record->state == RM_PARTITION_FREE)
+		if (!wait || (bg_record->state == RM_PARTITION_FREE)
 #ifdef HAVE_BGL
 		    ||  (bg_record->state == RM_PARTITION_ERROR)
 #endif
 			) {
 			break;
 		}
-		slurm_mutex_unlock(&block_state_mutex);			
+		/* If we were locked outside of this we need to unlock
+		   to not cause deadlock on this mutex until we are
+		   done.
+		*/
+		slurm_mutex_unlock(&block_state_mutex);
 		sleep(3);
+		first = 0;
 	}
 	remove_from_bg_list(bg_lists->booted, bg_record);
-	slurm_mutex_unlock(&block_state_mutex);			
+	if(!locked)
+		slurm_mutex_unlock(&block_state_mutex);			
 		
 	return SLURM_SUCCESS;
 }
@@ -539,7 +550,7 @@ extern void *mult_free_block(void *args)
 			term_jobs_on_block(bg_record->bg_block_id);
 		}
 		debug("freeing the block %s.", bg_record->bg_block_id);
-		bg_free_block(bg_record);	
+		bg_free_block(bg_record, 1, 0);	
 		debug("done\n");
 		slurm_mutex_lock(&freed_cnt_mutex);
 		num_block_freed++;
@@ -603,7 +614,7 @@ extern void *mult_destroy_block(void *args)
 		term_jobs_on_block(bg_record->bg_block_id);
 		
 		debug2("destroying %s", (char *)bg_record->bg_block_id);
-		if(bg_free_block(bg_record) == SLURM_ERROR) {
+		if(bg_free_block(bg_record, 1, 0) == SLURM_ERROR) {
 			debug("there was an error");
 			goto already_here;
 		}

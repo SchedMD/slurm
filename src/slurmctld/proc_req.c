@@ -2772,12 +2772,12 @@ static void _slurm_rpc_update_block(slurm_msg_t * msg)
 			name = block_desc_ptr->bg_block_id;
 		} else if(block_desc_ptr->nodes) {
 			error_code = select_g_update_sub_node(block_desc_ptr);
-			END_TIMER2("_slurm_rpc_update_subbp");			
+			END_TIMER2("_slurm_rpc_update_subbp");
 			name = block_desc_ptr->nodes;
 		} else {
 			error("Unknown update for blocks");
 			error_code = SLURM_ERROR;
-			END_TIMER2("_slurm_rpc_update_block");			
+			END_TIMER2("_slurm_rpc_update_block");
 		}
 	}
 

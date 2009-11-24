@@ -154,7 +154,7 @@ extern void *block_agent(void *args);
  * nodes, nodecards, and switches */
 extern void *state_agent(void *args);
 
-extern int bg_free_block(bg_record_t *bg_record);
+extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked);
 
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
 extern bg_record_t *find_and_remove_org_from_bg_list(List my_list, 

@@ -795,6 +795,7 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
 	} else if(block_desc_ptr->state == RM_PARTITION_FREE) {
+		bg_free_block(bg_record, 0, 1);
 		resume_block(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 	} else if (bg_conf->layout_mode == LAYOUT_DYNAMIC
