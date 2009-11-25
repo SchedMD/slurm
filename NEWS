@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     fill in default association. 
  -- Fix to make it so sched/wiki2 can modify a job's partition or hostlist of 
     non-pending jobs.
+ -- Applied slurmctld prolog bug fix from Dennis Leepow to backfill.c
 
 * Changes in SLURM 2.0.8
 ========================
