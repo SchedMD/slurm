@@ -323,10 +323,10 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		for (i = 0; i < msg->env_size; i++)
 			xfree(msg->environment[i]);
 		xfree(msg->environment);
-		xfree(msg->err);
+		xfree(msg->std_err);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
-		xfree(msg->in);
+		xfree(msg->std_in);
 		xfree(msg->licenses);
 		xfree(msg->linuximage);
 		xfree(msg->mail_user);
@@ -334,7 +334,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->mloaderimage);
 		xfree(msg->name);
 		xfree(msg->network);
-		xfree(msg->out);
+		xfree(msg->std_out);
 		xfree(msg->partition);
 		xfree(msg->ramdiskimage);
 		xfree(msg->req_nodes);
@@ -361,9 +361,9 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
 		xfree(msg->script);
-		xfree(msg->err);
-		xfree(msg->in);
-		xfree(msg->out);
+		xfree(msg->std_err);
+		xfree(msg->std_in);
+		xfree(msg->std_out);
 		xfree(msg->work_dir);
 		xfree(msg->ckpt_dir);
 		xfree(msg->restart_dir);

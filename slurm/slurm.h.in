@@ -553,7 +553,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char **environment;	/* environment variables to set for job, 
 				 *  name=value pairs, one per line */
 	uint32_t env_size;	/* element count in environment */
-	char *err;		/* pathname of stderr */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from job's allocation, default NONE */
 	char *features;		/* comma separated list of required features, 
@@ -561,7 +560,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t group_id;	/* group to assume, if run as root. */ 
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately, 
 				 * 0 if to be queued awaiting resources */
-	char *in;		/* pathname of stdin */
 	uint32_t job_id;	/* job ID, default set by SLURM */
 	uint16_t kill_on_node_fail; /* 1 if node failure to kill job, 
 				 * 0 otherwise,default=1 */
@@ -579,7 +577,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint8_t open_mode;	/* out/err open mode truncate or append,
 				 * see OPEN_MODE_* */
 	uint16_t other_port;	/* port to send various notification msg to */
-	char *out;		/* pathname of stdout */
 	uint8_t overcommit;	/* over subscribe resources, for batch only */
 	char *partition;	/* name of requested partition, 
 				 * default in SLURM config */
@@ -656,6 +653,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 
 	select_jobinfo_t *select_jobinfo; /* opaque data type,
 					  * SLURM internal use only */
+	char *std_err;		/* pathname of stderr */
+	char *std_in;		/* pathname of stdin */
+	char *std_out;		/* pathname of stdout */
 	char *wckey;            /* wckey for job */
 } job_desc_msg_t;
 

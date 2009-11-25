@@ -257,16 +257,16 @@ void delete_job_details(struct job_record *job_entry)
 	for (i=0; i<job_entry->details->env_cnt; i++)
 		xfree(job_entry->details->env_sup[i]);
 	xfree(job_entry->details->env_sup);
-	xfree(job_entry->details->err);
+	xfree(job_entry->details->std_err);
 	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
 	xfree(job_entry->details->exc_nodes);
 	if (job_entry->details->feature_list)
 		list_destroy(job_entry->details->feature_list);
 	xfree(job_entry->details->features);
-	xfree(job_entry->details->in);
+	xfree(job_entry->details->std_in);
 	xfree(job_entry->details->mc_ptr);
 	xfree(job_entry->details->mem_bind);
-	xfree(job_entry->details->out);
+	xfree(job_entry->details->std_out);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
 	xfree(job_entry->details->req_node_layout);
 	xfree(job_entry->details->req_nodes);
@@ -1157,9 +1157,9 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->features,   buffer);
 	packstr(detail_ptr->dependency, buffer);
 
-	packstr(detail_ptr->err,       buffer);
-	packstr(detail_ptr->in,        buffer);
-	packstr(detail_ptr->out,       buffer);
+	packstr(detail_ptr->std_err,       buffer);
+	packstr(detail_ptr->std_in,        buffer);
+	packstr(detail_ptr->std_out,       buffer);
 	packstr(detail_ptr->work_dir,  buffer);
 	packstr(detail_ptr->ckpt_dir,  buffer);
 	packstr(detail_ptr->restart_dir, buffer);
@@ -1258,15 +1258,15 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	xfree(job_ptr->details->argv);
 	xfree(job_ptr->details->cpu_bind);
 	xfree(job_ptr->details->dependency);
-	xfree(job_ptr->details->err);
+	xfree(job_ptr->details->std_err);
 	for (i=0; i<job_ptr->details->env_cnt; i++)
 		xfree(job_ptr->details->env_sup[i]);
 	xfree(job_ptr->details->env_sup);
 	xfree(job_ptr->details->exc_nodes);
 	xfree(job_ptr->details->features);
-	xfree(job_ptr->details->in);
+	xfree(job_ptr->details->std_in);
 	xfree(job_ptr->details->mem_bind);
-	xfree(job_ptr->details->out);
+	xfree(job_ptr->details->std_out);
 	xfree(job_ptr->details->req_nodes);
 	xfree(job_ptr->details->work_dir);
 	xfree(job_ptr->details->ckpt_dir);
@@ -1284,10 +1284,10 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->dependency = dependency;
 	job_ptr->details->env_cnt = env_cnt;
 	job_ptr->details->env_sup = env_sup;
-	job_ptr->details->err = err;
+	job_ptr->details->std_err = err;
 	job_ptr->details->exc_nodes = exc_nodes;
 	job_ptr->details->features = features;
-	job_ptr->details->in = in;
+	job_ptr->details->std_in = in;
 	job_ptr->details->job_min_cpus = job_min_cpus;
 	job_ptr->details->job_min_memory = job_min_memory;
 	job_ptr->details->job_min_tmp_disk = job_min_tmp_disk;
@@ -1300,7 +1300,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
 	job_ptr->details->num_tasks = num_tasks;
 	job_ptr->details->open_mode = open_mode;
-	job_ptr->details->out = out;
+	job_ptr->details->std_out = out;
 	job_ptr->details->overcommit = overcommit;
 	job_ptr->details->plane_size = plane_size;
 	job_ptr->details->prolog_running = prolog_running;
@@ -1748,8 +1748,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		       job_specs->spank_job_env[1],
 		       job_specs->spank_job_env[2]);
 
-	debug3("   in=%s out=%s err=%s",
-	       job_specs->in, job_specs->out, job_specs->err);
+	debug3("   stdin=%s stdout=%s stderr=%s",
+	       job_specs->std_in, job_specs->std_out, job_specs->std_err);
 
 	debug3("   work_dir=%s alloc_node:sid=%s:%u",
 	       job_specs->work_dir,
@@ -2829,9 +2829,9 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->dependency));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->err && (strlen(job_desc->err) > MAX_STR_LEN)) {
+	if (job_desc->std_err && (strlen(job_desc->std_err) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(err) too big (%d)",
-		     strlen(job_desc->err));
+		     strlen(job_desc->std_err));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->features && (strlen(job_desc->features) > MAX_STR_LEN)) {
@@ -2839,9 +2839,9 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->features));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->in && (strlen(job_desc->in) > MAX_STR_LEN)) {
+	if (job_desc->std_in && (strlen(job_desc->std_in) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(in) too big (%d)",
-		     strlen(job_desc->in));
+		     strlen(job_desc->std_in));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->linuximage && 
@@ -2876,9 +2876,9 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->network));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->out && (strlen(job_desc->out) > MAX_STR_LEN)) {
+	if (job_desc->std_out && (strlen(job_desc->std_out) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(out) too big (%d)",
-		     strlen(job_desc->out));
+		     strlen(job_desc->std_out));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->partition && (strlen(job_desc->partition) > MAX_STR_LEN)) {
@@ -3475,12 +3475,12 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->job_min_tmp_disk = job_desc->job_min_tmp_disk;
 	if (job_desc->num_tasks != NO_VAL)
 		detail_ptr->num_tasks = job_desc->num_tasks;
-	if (job_desc->err)
-		detail_ptr->err = xstrdup(job_desc->err);
-	if (job_desc->in)
-		detail_ptr->in = xstrdup(job_desc->in);
-	if (job_desc->out)
-		detail_ptr->out = xstrdup(job_desc->out);
+	if (job_desc->std_err)
+		detail_ptr->std_err = xstrdup(job_desc->std_err);
+	if (job_desc->std_in)
+		detail_ptr->std_in = xstrdup(job_desc->std_in);
+	if (job_desc->std_out)
+		detail_ptr->std_out = xstrdup(job_desc->std_out);
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	if (job_desc->begin_time > time(NULL))
@@ -7644,12 +7644,12 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->dependency        = xstrdup(details->dependency);
 	job_desc->environment       = get_job_env(job_ptr, 
 						  &job_desc->env_size);
-	job_desc->err               = xstrdup(details->err);
+	job_desc->std_err           = xstrdup(details->std_err);
 	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
 	job_desc->features          = xstrdup(details->features);
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
-	job_desc->in                = xstrdup(details->in);
+	job_desc->std_in            = xstrdup(details->std_in);
 	job_desc->job_id            = job_ptr->job_id; /* XXX */
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
 	job_desc->licenses          = xstrdup(job_ptr->licenses);
@@ -7663,7 +7663,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->num_tasks         = details->num_tasks;
 	job_desc->open_mode         = details->open_mode;
 	job_desc->other_port        = job_ptr->other_port; 
-	job_desc->out               = xstrdup(details->out);
+	job_desc->std_out           = xstrdup(details->std_out);
 	job_desc->overcommit        = details->overcommit;
 	job_desc->partition         = xstrdup(job_ptr->partition);
 	job_desc->plane_size        = details->plane_size;

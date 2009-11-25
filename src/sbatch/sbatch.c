@@ -317,9 +317,9 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->env_size = envcount (desc->environment);
 	desc->argv = opt.script_argv;
 	desc->argc = opt.script_argc;
-	desc->err  = opt.efname;
-	desc->in   = opt.ifname;
-	desc->out  = opt.ofname;
+	desc->std_err  = opt.efname;
+	desc->std_in   = opt.ifname;
+	desc->std_out  = opt.ofname;
 	desc->work_dir = opt.cwd;
 	if (opt.requeue != NO_VAL)
 		desc->requeue = opt.requeue;

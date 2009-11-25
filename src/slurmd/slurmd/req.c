@@ -929,10 +929,11 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 	char *err_name_ptr, err_name[128], path_name[MAXPATHLEN];
 	int fd;
 
-	if (req->err)
-		err_name_ptr = req->err;
+	if (req->std_err)
+		err_name_ptr = req->std_err;
 	else {
-		snprintf(err_name, sizeof(err_name), "slurm-%u.err", req->job_id);
+		snprintf(err_name, sizeof(err_name), "slurm-%u.err",
+			 req->job_id);
 		err_name_ptr = err_name;
 	}
 	if (err_name_ptr[0] == '/')

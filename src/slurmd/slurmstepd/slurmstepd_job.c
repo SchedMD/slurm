@@ -388,18 +388,18 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 
 	job->task = (slurmd_task_info_t **)
 		xmalloc(sizeof(slurmd_task_info_t *));
-	if (msg->err == NULL)
-		msg->err = xstrdup(msg->out);
+	if (msg->std_err == NULL)
+		msg->std_err = xstrdup(msg->std_out);
 
-	if (msg->in == NULL)
+	if (msg->std_in == NULL)
 		in_name = xstrdup("/dev/null");
 	else 
-		in_name = fname_create(job, msg->in, 0);
+		in_name = fname_create(job, msg->std_in, 0);
 
 	job->task[0] = task_info_create(0, 0,
 					in_name,
-					_batchfilename(job, msg->out),
-					_batchfilename(job, msg->err));
+					_batchfilename(job, msg->std_out),
+					_batchfilename(job, msg->std_err));
 	job->task[0]->argc = job->argc;
 	job->task[0]->argv = job->argv;
 
