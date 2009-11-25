@@ -367,14 +367,19 @@ with to store the job accounting data.</li>
 <p>While SLURM will create the database automatically you will need to
 make sure the StorageUser is given permissions in MySQL to do so.
 As the <i>mysql</i> user grant privileges to that user using a
-command such as 
+command such as:</p>
 
-<pre>
-GRANT ALL ON StorageLoc.* TO 'StorageUser'@'StorageHost';
-(The ticks are needed)
+<p>GRANT ALL ON StorageLoc.* TO 'StorageUser'@'StorageHost';
+(The ticks are needed)</p>
+
+<p>(You need to be root to do this. Also in the info for password
+usage there is a line that starts with '->'. This a continuation
+prompt since the previous mysql statement did not end with a ';'. It
+assumes that you wish to input more info.)</p>
 
 live example:
 
+<pre>
 mysql@snowflake:~$ mysql
 Welcome to the MySQL monitor.Commands end with ; or \g.
 Your MySQL connection id is 538
@@ -392,9 +397,86 @@ mysql> grant all on slurm_acct_db.* TO 'slurm'@'localhost'
 Query OK, 0 rows affected (0.00 sec)
 </pre>
 
-<p>This will grant user 'slurm' access to do what he needs to do on the
-local host. This should be done before the SlurmDBD will work
-properly.</p>
+<p>This will grant user 'slurm' access to do what it needs to do on
+the local host. This should be done before the SlurmDBD will work
+properly. After you grant permission to the Slurm user in mysql then
+you can start SlurmDBD and Slurm. You start SlurmDBD by typing
+'slurmdbd'. You can verify that SlurmDBD is running by typing 'ps aux
+| grep slurmdbd'. After SlurmDBD and the slurmctld start you can
+verify that the database was created by using the mysql command 'show
+databases;'. You can display the tables that slurm created in the
+database by using the mysql command 'use slurm4_db;' and then 'show
+tables;'.</p>
+
+<p>Use the mysql 'show databases;' command</p>
+
+<pre>
+mysql> show databases;
+
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| slurm4_db          |
+| test               |
++--------------------+
+
+3 rows in set (0.00 sec)
+</pre>
+
+<p>Select the database that you created.</p>
+
+<pre>
+mysql> use slurm4_db;
+
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+</pre>
+
+<p>Now do a mysql 'show tables;' command.</p>
+
+<pre>
+mysql> show tables;
+
++---------------------------+
+| Tables_in_slurm4_db       |
++---------------------------+
+| acct_coord_table          |
+| acct_table                |
+| assoc_day_usage_table     |
+| assoc_hour_usage_table    |
+| assoc_month_usage_table   |
+| assoc_table               |
+| cluster_day_usage_table   |
+| cluster_event_table       |
+| cluster_hour_usage_table  |
+| cluster_month_usage_table |
+| cluster_table             |
+| job_table                 |
+| last_ran_table            |
+| qos_table                 |
+| resv_table                |
+| step_table                |
+| suspend_table             |
+| table_defs_table          |
+| txn_table                 |
+| user_table                |
+| wckey_day_usage_table     |
+| wckey_hour_usage_table    |
+| wckey_month_usage_table   |
+| wckey_table               |
++---------------------------+
+
+24 rows in set (0.02 sec)
+
+mysql> quit
+</pre>
+
+<p>If the database is not created or SlurmDBD is not running you can
+use the -v option when you start SlurmDBD to get more detailed
+information.</p>
 
 <h2>Tools</h2>
 
