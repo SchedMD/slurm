@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
     attempt to set previously non-existant uids every hour.
  -- Patch from Aaron Knister and Mark Grondona, to parse correctly quoted 
     #SBATCH options in a batch script.
+ -- job_desc_msg_t - in, out, err have been changed to std_in, std_out, 
+    and std_err respectfully.  Needed for PySLURM, since Python sees (in) 
+    as a keyword.
 
 * Changes in SLURM 2.1.0-pre7
 =============================

@@ -3247,9 +3247,9 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 		return SLURM_ERROR;
 	}
 
-	launch_msg_ptr->err = xstrdup(job_desc_msg->err);
-	launch_msg_ptr->in = xstrdup(job_desc_msg->in);
-	launch_msg_ptr->out = xstrdup(job_desc_msg->out);
+	launch_msg_ptr->std_err = xstrdup(job_desc_msg->std_err);
+	launch_msg_ptr->std_in = xstrdup(job_desc_msg->std_in);
+	launch_msg_ptr->std_out = xstrdup(job_desc_msg->std_out);
 	launch_msg_ptr->acctg_freq = job_desc_msg->acctg_freq;
 	launch_msg_ptr->open_mode = job_desc_msg->open_mode;
 	launch_msg_ptr->work_dir = xstrdup(job_desc_msg->work_dir);

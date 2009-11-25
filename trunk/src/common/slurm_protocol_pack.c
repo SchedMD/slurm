@@ -3370,9 +3370,9 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->script, buffer);
 	packstr_array(job_desc_ptr->argv, job_desc_ptr->argc, buffer);
 
-	packstr(job_desc_ptr->err, buffer);
-	packstr(job_desc_ptr->in, buffer);
-	packstr(job_desc_ptr->out, buffer);
+	packstr(job_desc_ptr->std_err, buffer);
+	packstr(job_desc_ptr->std_in, buffer);
+	packstr(job_desc_ptr->std_out, buffer);
 	packstr(job_desc_ptr->work_dir, buffer);
 	packstr(job_desc_ptr->ckpt_dir, buffer);
 
@@ -3522,9 +3522,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->script, &uint32_tmp, buffer);
 	safe_unpackstr_array(&job_desc_ptr->argv, &job_desc_ptr->argc, buffer);
 
-	safe_unpackstr_xmalloc(&job_desc_ptr->err, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&job_desc_ptr->in, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&job_desc_ptr->out, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->std_err, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->std_in, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->std_out, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->work_dir, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->ckpt_dir, &uint32_tmp, buffer);
 
@@ -4582,9 +4582,9 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	packstr(msg->ckpt_dir, buffer);
 	packstr(msg->restart_dir, buffer);
 
-	packstr(msg->err, buffer);
-	packstr(msg->in, buffer);
-	packstr(msg->out, buffer);
+	packstr(msg->std_err, buffer);
+	packstr(msg->std_in, buffer);
+	packstr(msg->std_out, buffer);
 
 	pack32(msg->argc, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
@@ -4641,11 +4641,12 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpackstr_xmalloc(&launch_msg_ptr->script,   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->ckpt_dir, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&launch_msg_ptr->restart_dir, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->restart_dir,
+			       &uint32_tmp, buffer);
 
-	safe_unpackstr_xmalloc(&launch_msg_ptr->err, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&launch_msg_ptr->in,  &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&launch_msg_ptr->out, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->std_err, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->std_in,  &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->std_out, &uint32_tmp, buffer);
 
 	safe_unpack32(&launch_msg_ptr->argc, buffer);
 	safe_unpackstr_array(&launch_msg_ptr->argv,

@@ -723,9 +723,9 @@ typedef struct batch_job_launch_msg {
 	uint16_t cpus_per_task;	/* number of CPUs requested per task */
 	char *nodes;		/* list of nodes allocated to job_step */
 	char *script;		/* the actual job script, default NONE */
-	char *err;		/* pathname of stderr */
-	char *in;		/* pathname of stdin */
-	char *out;		/* pathname of stdout */
+	char *std_err;		/* pathname of stderr */
+	char *std_in;		/* pathname of stdin */
+	char *std_out;		/* pathname of stdout */
 	char *work_dir;		/* full pathname of working directory */
 	char *ckpt_dir;		/* location to store checkpoint image */
 	char *restart_dir;	/* retart execution from image in this dir */

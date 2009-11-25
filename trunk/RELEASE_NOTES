@@ -86,7 +86,7 @@ COMMAND CHANGES (see man pages for details)
   minimum values of -sockets-per-node, --cores-per-socket and 
   --threads-per-core for now).
 * Change scontrol show job info: ReqProcs (number of processors requested) 
-  is replaced by NumProcs (number of processors requested or actually 
+  is replaced by NumCPUs (number of cpus requested or actually 
   allocated) and ReqNodes (number of nodes requested) is replaced by NumNodes 
   (number of nodes requested or actually allocated).
 
@@ -102,6 +102,9 @@ BLUEGENE SPECIFIC CHANGES
   SLURM_JOB_CPUS_PER_NODE now reference cnode counts instead of midplane
   counts.  SLURM_NODELIST still references midplane names.
 
+API CHANGES
+* job_desc_msg_t - in, out, err have been changed to std_in, std_out, 
+  and std_err respectfully. 
 
 OTHER CHANGES
 * A mechanism has been added for SPANK plugins to set environment variables 

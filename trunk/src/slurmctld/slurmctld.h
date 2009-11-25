@@ -312,13 +312,11 @@ struct job_details {
 	uint16_t env_cnt;		/* size of env_sup (see below) */
 	char **env_sup;			/* supplemental environment variables
 					 * as set by Moab */
-	char *err;			/* pathname of job's stderr file */
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *exc_nodes;		/* excluded nodes */
 	List feature_list;		/* required features with 
 					 * node counts */
 	char *features;			/* required features */
-	char *in;			/* pathname of job's stdin file */
 	/* job constraints: */
 	uint32_t job_min_cpus;		/* minimum processors per node */
 	uint32_t job_min_memory;	/* minimum memory per node (MB) OR
@@ -336,7 +334,6 @@ struct job_details {
 	uint16_t ntasks_per_node;	/* number of tasks on each node */
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint8_t open_mode;		/* stdout/err append or trunctate */
-	char *out;			/* pathname of job's stdout file */
 	uint8_t overcommit;		/* processors being over subscribed */
 	uint16_t plane_size;		/* plane size when task_dist =
 					 * SLURM_DIST_PLANE */
@@ -354,6 +351,9 @@ struct job_details {
 					 * 0 if job cannot share nodes,
 					 * any other value accepts the default
 					 * sharing policy. */
+	char *std_err;			/* pathname of job's stderr file */
+	char *std_in;			/* pathname of job's stdin file */
+	char *std_out;			/* pathname of job's stdout file */
 	time_t submit_time;		/* time of submission */
 	uint16_t task_dist;		/* task layout for this job. Only
 					 * useful when Consumable Resources

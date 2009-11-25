@@ -559,9 +559,9 @@ extern void launch_job(struct job_record *job_ptr)
 		return;
 	}
 
-	launch_msg_ptr->err = xstrdup(job_ptr->details->err);
-	launch_msg_ptr->in = xstrdup(job_ptr->details->in);
-	launch_msg_ptr->out = xstrdup(job_ptr->details->out);
+	launch_msg_ptr->std_err = xstrdup(job_ptr->details->std_err);
+	launch_msg_ptr->std_in = xstrdup(job_ptr->details->std_in);
+	launch_msg_ptr->std_out = xstrdup(job_ptr->details->std_out);
 	launch_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
 	launch_msg_ptr->ckpt_dir = xstrdup(job_ptr->details->ckpt_dir);
 	launch_msg_ptr->restart_dir = xstrdup(job_ptr->details->restart_dir);
