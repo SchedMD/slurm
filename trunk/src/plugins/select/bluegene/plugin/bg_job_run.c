@@ -905,6 +905,10 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(bg_record->state == RM_PARTITION_READY) {
 		debug("block %s is ready.", bg_record->bg_block_id);
 		set_user_rc = set_block_user(bg_record); 
+		if(bg_update_ptr->job_ptr) {
+			bg_update_ptr->job_ptr->job_state &= (~JOB_CONFIGURING);
+			last_job_update = time(NULL);
+		}
 	}
 	slurm_mutex_unlock(&block_state_mutex);	
 
