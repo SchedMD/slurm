@@ -98,9 +98,9 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 			Perl_warn(aTHX_ "`argv' of job descriptor is not an array reference, ignored");
 		}
 	}
-	FETCH_FIELD(hv, job_desc_msg, err, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, in, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, out, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, std_err, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, std_in, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, std_out, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, user_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, group_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, work_dir, charp, FALSE);
