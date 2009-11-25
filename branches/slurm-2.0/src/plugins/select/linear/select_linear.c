@@ -1947,7 +1947,8 @@ static void _init_node_cr(void)
 				 	      node_cr_ptr[i].exclusive_jobid,
 				 	      node_record_table_ptr[i].name);
 				}
-				node_cr_ptr[i].exclusive_jobid = job_ptr->job_id;
+				node_cr_ptr[i].exclusive_jobid = 
+					job_ptr->job_id;
 			}
 			if (job_memory_cpu == 0)
 				node_cr_ptr[i].alloc_memory += job_memory_node;
