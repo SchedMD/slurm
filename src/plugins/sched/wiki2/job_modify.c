@@ -108,8 +108,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	}
 
 	if (feature_ptr) {
-		if ((job_ptr->job_state == JOB_PENDING) &&
-		    (job_ptr->details)) {
+		if (IS_JOB_PENDING(job_ptr) && (job_ptr->details)) {
 			info("wiki: change job %u features to %s", 
 				jobid, feature_ptr);
 			job_ptr->details->features = xstrdup(feature_ptr);
@@ -124,7 +123,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	if (start_ptr) {
 		char *end_ptr;
 		uint32_t begin_time = strtol(start_ptr, &end_ptr, 10);
-		if ((job_ptr->job_state == JOB_PENDING) &&
+		if (IS_JOB_PENDING(job_ptr) &&
 		    (job_ptr->details)) {
 			info("wiki: change job %u begin time to %u", 
 				jobid, begin_time);
@@ -139,7 +138,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	}
 
 	if (name_ptr) {
-		if (job_ptr->job_state == JOB_PENDING) {
+		if (IS_JOB_PENDING(job_ptr)) {
 			info("wiki: change job %u name %s", jobid, name_ptr);
 			xfree(job_ptr->name);
 			job_ptr->name = xstrdup(name_ptr);
@@ -157,11 +156,11 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		hostlist_t hl;
 		char *tasklist;
 
-		if (!job_ptr->details) {
+		if (!IS_JOB_PENDING(job_ptr) || !job_ptr->details) {
 			/* Job is done, nothing to reset */
 			if (new_hostlist == '\0')
 				goto host_fini;
-			error("wiki: MODIFYJOB tasklist of non-pending "
+			error("wiki: MODIFYJOB hostlist of non-pending "
 				"job %u", jobid);
 			return ESLURM_DISABLED;
 		}
@@ -211,12 +210,19 @@ host_fini:	if (rc) {
 
 	if (part_name_ptr) {
 		struct part_record *part_ptr;
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error("wiki: MODIFYJOB partition of non-pending "
+			      "job %u", jobid);
+			return ESLURM_DISABLED;
+		}
+
 		part_ptr = find_part_record(part_name_ptr);
 		if (part_ptr == NULL) {
 			error("wiki: MODIFYJOB has invalid partition %s",
 				part_name_ptr);
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
+
 		info("wiki: change job %u partition %s",
 			jobid, part_name_ptr);
 		xfree(job_ptr->partition);
