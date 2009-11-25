@@ -57,14 +57,13 @@ typedef struct {
 } sview_part_info_t;
 
 enum { 
-	EDIT_AVAIL = 1,
+	EDIT_PART_STATE = 1,
 	EDIT_EDIT
 };
 
 /* These need to be in alpha order (except POS and CNT) */
 enum { 
 	SORTID_POS = POS_LOC,
-	SORTID_AVAIL, 
 #ifdef HAVE_BG
 	SORTID_NODELIST, 
 	SORTID_NODES_ALLOWED, 
@@ -82,17 +81,18 @@ enum {
 	SORTID_NODELIST, 
 	SORTID_NODES_ALLOWED, 
 #endif
+	SORTID_NODE_INX,
+	SORTID_NODE_STATE,
+	SORTID_NODE_STATE_NUM,
 	SORTID_NODES, 
 	SORTID_NODES_MAX,
 	SORTID_NODES_MIN,
-	SORTID_NODE_INX,
 	SORTID_ONLY_LINE, 
+	SORTID_PART_STATE, 
 	SORTID_PRIORITY,
 	SORTID_REASON,
 	SORTID_ROOT, 
 	SORTID_SHARE, 
-	SORTID_STATE,
-	SORTID_STATE_NUM,
 	SORTID_TMP_DISK, 
 	SORTID_TIMELIMIT, 
 	SORTID_UPDATED, 
@@ -109,7 +109,7 @@ static display_data_t display_data_part[] = {
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE,
+	{G_TYPE_STRING, SORTID_PART_STATE, "Part State", TRUE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
 	 TRUE, EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
@@ -117,7 +117,8 @@ static display_data_t display_data_part[] = {
 	 TRUE, EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_CPUS, "CPU Count", 
 	 FALSE, EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_part,
+	{G_TYPE_STRING, SORTID_NODE_STATE, "Node State", 
+	 TRUE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
@@ -155,7 +156,7 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #endif
-	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_part,
+	{G_TYPE_INT, SORTID_NODE_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
@@ -185,7 +186,7 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, PART_PAGE, "Make Nodes Idle", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Update Node Features", TRUE, ADMIN_PAGE},
 #endif
-	{G_TYPE_STRING, PART_PAGE, "Change Availablity Up/Down",
+	{G_TYPE_STRING, PART_PAGE, "Change Part State Up/Down",
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Edit Part", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
@@ -269,7 +270,7 @@ static void _set_active_combo_part(GtkComboBox *combo,
 		else 
 			action = 0;
 		break;
-	case SORTID_AVAIL:
+	case SORTID_PART_STATE:
 		if(!strcmp(temp_char, "up"))
 			action = 0;
 		else if(!strcmp(temp_char, "down"))
@@ -277,7 +278,7 @@ static void _set_active_combo_part(GtkComboBox *combo,
 		else 
 			action = 0;
 		break;
-	case SORTID_STATE:
+	case SORTID_NODE_STATE:
 		if(!strcasecmp(temp_char, "drain"))
 			action = 0;
 		else if(!strcasecmp(temp_char, "resume"))
@@ -405,14 +406,14 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->nodes = xstrdup(new_text);
 		type = "nodelist";
 		break;
-	case SORTID_AVAIL:
+	case SORTID_PART_STATE:
 		if (!strcasecmp(new_text, "up"))
 			part_msg->state_up = 1;
 		else
 			part_msg->state_up = 0;
-		type = "availability";
+		type = "part state";
 		break;
-	case SORTID_STATE:
+	case SORTID_NODE_STATE:
 		type = (char *)new_text;
 		got_edit_signal = xstrdup(new_text);
 		break;
@@ -564,7 +565,7 @@ static void _subdivide_part(sview_part_info_t *sview_part_info,
 				/* search for the state number and
 				   check to see if it is in the list */
 				gtk_tree_model_get(model, sub_iter, 
-						   SORTID_STATE_NUM, 
+						   SORTID_NODE_STATE_NUM, 
 						   &state, -1);
 				if(state == sview_part_sub->node_state) {
 					/* update with new info */
@@ -635,6 +636,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 	char *temp_char = NULL;
 	int global_set = 0, i;
 	int yes_no = -1;
+	int up_down = -1;
 	uint32_t limit_set = NO_VAL;
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
@@ -684,8 +686,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 
 	for(i = 0; i < SORTID_CNT; i++) {
 		switch(i) {
-		case SORTID_AVAIL: 
-			yes_no = part_ptr->state_up;
+		case SORTID_PART_STATE: 
+			up_down = part_ptr->state_up;
 			break;
 		case SORTID_CPUS: 
 			convert_num_unit((float)part_ptr->total_cpus,
@@ -720,9 +722,6 @@ static void _layout_part_record(GtkTreeView *treeview,
 					 tmp_cnt, sizeof(tmp_cnt),
 					 UNIT_MEGA);
 			temp_char = tmp_cnt;
-			break;
-		case SORTID_NAME: 
-			temp_char = part_ptr->name;
 			break;
 		case SORTID_NODELIST: 
 			temp_char = part_ptr->nodes;
@@ -789,7 +788,13 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		}
 
-		if(yes_no != -1) {
+		if(up_down != -1) {
+			if(up_down) 
+				temp_char = "up";
+			else 
+				temp_char = "down";
+			up_down = -1;
+		} if(yes_no != -1) {
 			if(yes_no) 
 				temp_char = "yes";
 			else 
@@ -856,7 +861,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		temp_char = "up";
 	else
 		temp_char = "down";
-	gtk_tree_store_set(treestore, iter, SORTID_AVAIL, temp_char, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_PART_STATE, temp_char, -1);
 		
 	if (part_ptr->max_time == INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
@@ -944,8 +949,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	
 	gtk_tree_store_set(treestore, iter, SORTID_ONLY_LINE, 0, -1);
 	/* clear out info for the main listing */
-	gtk_tree_store_set(treestore, iter, SORTID_STATE, "", -1);
-	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM, -1, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NODE_STATE, "", -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NODE_STATE_NUM, -1, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_TMP_DISK, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_MEM, "", -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);	
@@ -979,11 +984,11 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	
 	upper = node_state_string(sview_part_sub->node_state);
 	lower = str_tolower(upper);
-	gtk_tree_store_set(treestore, iter, SORTID_STATE, 
+	gtk_tree_store_set(treestore, iter, SORTID_NODE_STATE, 
 			   lower, -1);
 	xfree(lower);
 	
-	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM,
+	gtk_tree_store_set(treestore, iter, SORTID_NODE_STATE_NUM,
 			   sview_part_sub->node_state, -1);
 
 	if((sview_part_sub->node_state & NODE_STATE_BASE) == NODE_STATE_MIXED) {
@@ -1629,30 +1634,30 @@ extern GtkListStore *create_model_part(int type)
 		break;
 	case SORTID_NODELIST:
 		break;
-	case SORTID_AVAIL:
+	case SORTID_PART_STATE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, "up",
-				   1, SORTID_AVAIL,
+				   1, SORTID_PART_STATE,
 				   -1);	
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, "down",
-				   1, SORTID_AVAIL,
+				   1, SORTID_PART_STATE,
 				   -1);	
 		break;
-	case SORTID_STATE:
+	case SORTID_NODE_STATE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, "drain",
-				   1, SORTID_STATE,
+				   1, SORTID_NODE_STATE,
 				   -1);	
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, "resume",
-				   1, SORTID_STATE,
+				   1, SORTID_NODE_STATE,
 				   -1);	
 		for(i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);
@@ -1663,7 +1668,7 @@ extern GtkListStore *create_model_part(int type)
 			lower = str_tolower(upper);
 			gtk_list_store_set(model, &iter,
 					   0, lower,
-					   1, SORTID_STATE,
+					   1, SORTID_NODE_STATE,
 					   -1);
 			xfree(lower);
 		}
@@ -1695,7 +1700,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
 
-	if(column != SORTID_STATE) {
+	if(column != SORTID_NODE_STATE) {
 		slurm_init_part_desc_msg(part_msg);
 		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, 
 				   SORTID_NAME, &temp, 
@@ -1721,7 +1726,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		goto no_input;
 	}
 	
-	if(column != SORTID_STATE && column != SORTID_FEATURES ) {
+	if(column != SORTID_NODE_STATE && column != SORTID_FEATURES ) {
 		if(old_text && !strcmp(old_text, new_text)) {
 			temp = g_strdup_printf("No change in value.");
 		} else if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
@@ -2155,7 +2160,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 				   &only_line, -1);
 		if(!only_line)
 			gtk_tree_model_get(model, iter,
-					   SORTID_STATE, &state, -1);
+					   SORTID_NODE_STATE, &state, -1);
 #ifdef HAVE_BG
 		if(!state || !strlen(state))
 			snprintf(title, 100, 
@@ -2241,7 +2246,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 			popup_win->spec_info->search_info->search_type =
 				SEARCH_NODE_STATE;
 			gtk_tree_model_get(
-				model, iter, SORTID_STATE_NUM,
+				model, iter, SORTID_NODE_STATE_NUM,
 				&popup_win->spec_info->search_info->int_data,
 				-1);
 		} else {
@@ -2289,14 +2294,14 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	
 	part_msg->name = xstrdup(partid);
 		
-	if(!strcasecmp("Change Availablity Up/Down", type)) {
+	if(!strcasecmp("Change Part State Up/Down", type)) {
 		char *state = NULL;
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
 		gtk_dialog_add_button(GTK_DIALOG(popup),
 				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
-		gtk_tree_model_get(model, iter, SORTID_AVAIL, &state, -1);
+		gtk_tree_model_get(model, iter, SORTID_PART_STATE, &state, -1);
 		if(!strcasecmp("down", state)) {
 			temp = "up";
 			part_msg->state_up = 1;
@@ -2309,7 +2314,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			 "Are you sure you want to set partition %s %s?",
 			 partid, temp);
 		label = gtk_label_new(tmp_char);
-		edit_type = EDIT_AVAIL;
+		edit_type = EDIT_PART_STATE;
 	} else if(!strcasecmp("Edit Part", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_OK, GTK_RESPONSE_OK);
