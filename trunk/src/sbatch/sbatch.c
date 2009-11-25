@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 	if (process_options_second_pass(
 				(argc - opt.script_argc),
 				argv,
-				xbasename (script_name),
+				script_name ? xbasename (script_name) : "stdin",
 				script_body, script_size) < 0) {
 		error("sbatch parameter parsing");
 		exit(error_exit);
