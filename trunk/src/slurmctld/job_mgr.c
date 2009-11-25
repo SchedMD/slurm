@@ -2664,7 +2664,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if ((part_ptr->state_up) &&  (job_desc->min_nodes > total_nodes)) {
 		info("Job requested too many nodes (%u) of partition %s(%u)", 
 		     job_desc->min_nodes, part_ptr->name, 
-		     part_ptr->total_nodes);
+		     total_nodes);
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto cleanup_fail;
 	}
@@ -2748,13 +2748,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	fail_reason= WAIT_NO_REASON;
 	if (job_desc->min_nodes > part_ptr->max_nodes) {
 		info("Job %u requested too many nodes (%u) of "
-		     "partition %s(%u)", 
+		     "partition %s(MaxNodes %u)", 
 		     job_ptr->job_id, job_desc->min_nodes, 
 		     part_ptr->name, part_ptr->max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if ((job_desc->max_nodes != 0) &&    /* no max_nodes for job */
 		   (job_desc->max_nodes < part_ptr->min_nodes)) {
-		info("Job %u requested too few nodes (%u) of partition %s(%u)",
+		info("Job %u requested too few nodes (%u) of "
+		     "partition %s(MinNodes %u)",
 		     job_ptr->job_id, job_desc->max_nodes, 
 		     part_ptr->name, part_ptr->min_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
