@@ -547,10 +547,10 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		last_job_update = time(NULL);
 		info("backfill: Started JobId=%u on %s",
 		     job_ptr->job_id, job_ptr->nodes);
-		if (job_ptr->batch_flag)
-			launch_job(job_ptr);
-		else
+		if (job_ptr->batch_flag == 0)
 			srun_allocate(job_ptr->job_id);
+		else if (job_ptr->details->prolog_running == 0)
+			launch_job(job_ptr);
 		backfilled_jobs++;
 #if __DEBUG
 		info("backfill: Jobs backfilled: %d", backfilled_jobs);
