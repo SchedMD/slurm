@@ -293,6 +293,16 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - add support for scontrol show blocks.
  -- Added support for job step time limits.
 
+* Changes in SLURM 2.0.9
+========================
+ -- When running the mysql plugin natively MUNGE errors are now eliminated 
+    when sending updates to slurmctlds.
+ -- Check to make sure we have a default account before looking to 
+    fill in default association. 
+ -- Fix to make it so sched/wiki2 can modify a job's partition or hostlist of 
+    non-pending jobs.
+ -- Applied slurmctld prolog bug fix from Dennis Leepow to backfill.c
+
 * Changes in SLURM 2.0.8
 ========================
  -- BLUEGENE - added dub2 of stderr to put error messages sent from underlying 

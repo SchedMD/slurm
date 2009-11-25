@@ -1071,7 +1071,7 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	if (cont_id == 0) {
+	if (job->cont_id == 0) {
 		debug ("step %u.%u invalid container [cont_id:%u]",
 			job->jobid, job->stepid, job->cont_id);
 		rc = -1;
