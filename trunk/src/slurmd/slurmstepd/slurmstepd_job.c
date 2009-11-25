@@ -370,6 +370,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->restart_cnt = msg->restart_cnt;
 
 	job->cpus_per_task = msg->cpus_per_node[0];
+	job->alloc_cores = format_core_allocs(msg->cred, conf->node_name);
 
 	srun = srun_info_create(NULL, NULL, NULL);
 
