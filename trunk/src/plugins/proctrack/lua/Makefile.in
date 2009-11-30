@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile for wiki2 scheduler plugin
+# Makefile for proctrack/lua plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -37,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/sched/wiki2
+subdir = src/plugins/proctrack/lua
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -104,17 +104,12 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-sched_wiki2_la_LIBADD =
-am_sched_wiki2_la_OBJECTS = cancel_job.lo crypto.lo event.lo \
-	get_jobs.lo get_nodes.lo hostlist.lo initialize.lo \
-	job_add_task.lo job_modify.lo job_notify.lo \
-	job_release_task.lo job_requeue.lo job_signal.lo \
-	job_will_run.lo msg.lo resume_job.lo sched_wiki.lo \
-	start_job.lo suspend_job.lo
-sched_wiki2_la_OBJECTS = $(am_sched_wiki2_la_OBJECTS)
-sched_wiki2_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+proctrack_lua_la_LIBADD =
+am_proctrack_lua_la_OBJECTS = proctrack_lua.lo
+proctrack_lua_la_OBJECTS = $(am_proctrack_lua_la_OBJECTS)
+proctrack_lua_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(sched_wiki2_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(proctrack_lua_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -128,8 +123,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(sched_wiki2_la_SOURCES)
-DIST_SOURCES = $(sched_wiki2_la_SOURCES)
+SOURCES = $(proctrack_lua_la_SOURCES)
+DIST_SOURCES = $(proctrack_lua_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -157,7 +152,7 @@ CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
-CXXFLAGS = -fexceptions
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -318,33 +313,12 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = sched_wiki2.la
-sched_wiki2_la_SOURCES = \
-	cancel_job.c	\
-	crypto.c	\
-	crypto.h	\
-	event.c		\
-	get_jobs.c	\
-	get_nodes.c	\
-	hostlist.c	\
-	initialize.c	\
-	job_add_task.c	\
-	job_modify.c	\
-	job_notify.c	\
-	job_release_task.c \
-	job_requeue.c	\
-	job_signal.c	\
-	job_will_run.c	\
-	msg.c		\
-	msg.h		\
-	resume_job.c	\
-	sched_wiki.c	\
-	start_job.c	\
-	suspend_job.c
-
-sched_wiki2_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+AM_CPPFLAGS = -DDEFAULT_SCRIPT_DIR=\"$(sysconfdir)\"
+PLUGIN_FLAGS = - -module -avoid-version --export-dynamic
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(lua_CFLAGS)
+pkglib_LTLIBRARIES = proctrack_lua.la
+proctrack_lua_la_SOURCES = proctrack_lua.c
+proctrack_lua_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(lua_LIBS)
 all: all-am
 
 .SUFFIXES:
@@ -358,9 +332,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/sched/wiki2/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/proctrack/lua/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/sched/wiki2/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/proctrack/lua/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -410,8 +384,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-sched_wiki2.la: $(sched_wiki2_la_OBJECTS) $(sched_wiki2_la_DEPENDENCIES) 
-	$(sched_wiki2_la_LINK) -rpath $(pkglibdir) $(sched_wiki2_la_OBJECTS) $(sched_wiki2_la_LIBADD) $(LIBS)
+proctrack_lua.la: $(proctrack_lua_la_OBJECTS) $(proctrack_lua_la_DEPENDENCIES) 
+	$(proctrack_lua_la_LINK) -rpath $(pkglibdir) $(proctrack_lua_la_OBJECTS) $(proctrack_lua_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -419,25 +393,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cancel_job.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/crypto.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/event.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_jobs.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_nodes.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/initialize.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_add_task.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_modify.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_notify.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_release_task.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_requeue.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_signal.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_will_run.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resume_job.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_wiki.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/start_job.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suspend_job.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack_lua.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

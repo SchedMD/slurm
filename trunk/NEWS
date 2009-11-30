@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- Changed the type of addr to struct sockaddr_in in _message_socket_accept()
     in sattach.c, step_launch.c, and allocate_msg.c, and moved the function 
     into a common place for all the calls since the code was very similar.
+ -- proctrack/lua support has been added see contribs/lua/protrack.lua
 
 * Changes in SLURM 2.1.0-pre7
 =============================
