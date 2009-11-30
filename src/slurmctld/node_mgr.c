@@ -1407,7 +1407,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			node_ptr->reason = xstrdup_printf(
 				"Node silently failed and came back [slurm@%s]",
 				time_str);
-			info("node %s silently failed and came back",
+			info("Node %s silently failed and came back",
 			     reg_msg->node_name);
 			_make_node_down(node_ptr, last_node_update);
 			kill_running_job_by_node_name(reg_msg->node_name);
