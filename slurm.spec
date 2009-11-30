@@ -17,6 +17,7 @@
 # --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
+# --with lua         %_with_lua         1    build SLURM lua bindings (proctrack only for now)
 # --with sun_const   %_with_sun_const   1    build for Sun Constellation system
 # --with mysql       %_with_mysql       1    require mysql support
 # --with postgres    %_with_postgres    1    require postgresql support
@@ -69,11 +70,13 @@
 # Build with sgijob plugin and mysql (for slurmdbdb) on CHAOS systems
 %if %{?chaos}0
 %slurm_with_opt mysql
+%slurm_with_opt lua
 %if %chaos < 5
 %slurm_with_opt sgijob
 %endif
 %else
 %slurm_without_opt sgijob
+%slurm_without_opt lua
 %endif
 
 Name:    See META file
@@ -282,6 +285,18 @@ BuildRequires: job
 SLURM process tracking plugin for SGI job containers.
 (See http://oss.sgi.com/projects/pagg).
 %endif
+
+%if %{slurm_with lua}
+%package lua
+Summary: SLURM lua bindings
+Group: System Environment/Base
+Requires: slurm lua
+BuildRequires: lua-devel
+%description lua
+SLURM lua bindings
+Includes the SLURM proctrack/lua plugin
+%endif
+
 
 %package sjstat
 Summary: Perl tool to print SLURM job state information.
@@ -580,6 +595,14 @@ rm -rf $RPM_BUILD_ROOT
 %files proctrack-sgi-job
 %defattr(-,root,root)
 %{_libdir}/slurm/proctrack_sgi_job.so
+%endif
+#############################################################################
+
+%if %{slurm_with lua}
+%files lua
+%defattr(-,root,root)
+%doc contribs/lua/proctrack.lua
+%{_libdir}/slurm/proctrack_lua.so
 %endif
 #############################################################################
 

@@ -225,6 +225,10 @@ dnl check for SGI job container support
 dnl
 X_AC_SGI_JOB
 
+dnl check for lua library
+dnl
+X_AC_LUA
+
 dnl check if we can use standard printf functions
 dnl
 X_AC_PRINTF_NULL
@@ -379,6 +383,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
 		 src/plugins/proctrack/rms/Makefile
 		 src/plugins/proctrack/sgi_job/Makefile
+                src/plugins/proctrack/lua/Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
