@@ -30,7 +30,7 @@
 
 #include "src/common/list.h"
 #include "src/common/macros.h"
-
+#include "src/common/slurm_protocol_defs.h"
 typedef struct eio_obj eio_obj_t;
 
 typedef struct eio_handle_components eio_handle_t;
@@ -53,11 +53,13 @@ typedef struct eio_handle_components eio_handle_t;
  */
 struct io_operations {
 	bool (*readable    )(eio_obj_t *);       
-	bool (*writable    )(eio_obj_t *);      
+	bool (*writable    )(eio_obj_t *);     
+	void (*handle_msg  )(void *arg, slurm_msg_t *msg);
 	int  (*handle_read )(eio_obj_t *, List);
 	int  (*handle_write)(eio_obj_t *, List);
 	int  (*handle_error)(eio_obj_t *, List);
 	int  (*handle_close)(eio_obj_t *, List);
+	int  timeout;
 };
 
 struct eio_obj {
@@ -95,6 +97,9 @@ void eio_new_obj(eio_handle_t *eio, eio_obj_t *obj);
  * returns -1 on error.
  */
 int eio_handle_mainloop(eio_handle_t *eio);
+
+bool eio_message_socket_readable(eio_obj_t *obj);
+int eio_message_socket_accept(eio_obj_t *obj, List objs);
 
 int eio_signal_wakeup(eio_handle_t *eio);
 int eio_signal_shutdown(eio_handle_t *eio);

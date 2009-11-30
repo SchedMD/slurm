@@ -49,6 +49,7 @@
 #include "src/common/list.h"
 #include "src/common/fd.h"
 #include "src/common/eio.h"
+#include "src/common/slurm_protocol_api.h"
 
 /*
  * outside threads can stick new objects on the new_objs List and
@@ -107,6 +108,84 @@ void eio_handle_destroy(eio_handle_t *eio)
 	/* FIXME - Destroy obj_list and new_objs */
 	xassert(eio->magic = ~EIO_MAGIC);
 	xfree(eio);
+}
+
+bool eio_message_socket_readable(eio_obj_t *obj)
+{
+	debug3("Called eio_message_socket_readable");
+	xassert(obj);
+	if (obj->shutdown == true) {
+		if (obj->fd != -1) {
+			debug2("  false, shutdown");
+			close(obj->fd);
+			obj->fd = -1;
+		} else {
+			debug2("  false");
+		}
+		return false;
+	}
+	return true;	
+}
+
+int eio_message_socket_accept(eio_obj_t *obj, List objs)
+{
+	int fd;
+	unsigned char *uc;
+	unsigned short port;
+	struct sockaddr_in addr;
+	slurm_msg_t *msg = NULL;
+	int len = sizeof(addr);
+
+	debug3("Called eio_msg_socket_accept");
+
+	xassert(obj);
+	xassert(obj->ops->handle_msg);
+
+	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
+			    (socklen_t *)&len)) < 0) {
+		if (errno == EINTR)
+			continue;
+		if (errno == EAGAIN       ||
+		    errno == ECONNABORTED ||
+		    errno == EWOULDBLOCK) {
+			return SLURM_SUCCESS;
+		}
+		error("Error on msg accept socket: %m");
+		obj->shutdown = true;
+		return SLURM_SUCCESS;
+	}
+
+	fd_set_close_on_exec(fd);
+	fd_set_blocking(fd);
+
+	/* Should not call slurm_get_addr() because the IP may not be
+	   in /etc/hosts. */
+	uc = (unsigned char *)&addr.sin_addr.s_addr;
+	port = addr.sin_port;
+	debug2("got message connection from %u.%u.%u.%u:%hu",
+	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
+	fflush(stdout);
+
+	msg = xmalloc(sizeof(slurm_msg_t));
+	slurm_msg_t_init(msg);
+again:
+	if(slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
+		if (errno == EINTR) {
+			goto again;
+		}
+		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
+		      uc[0],uc[1],uc[2],uc[3]);
+		goto cleanup;
+	}
+
+	(*obj->ops->handle_msg)(obj->arg, msg); /* handle_msg should free
+					      * msg->data */
+cleanup:
+	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
+		error ("close(%d): %m", msg->conn_fd);
+	slurm_free_msg(msg);
+
+	return SLURM_SUCCESS;
 }
 
 int eio_signal_shutdown(eio_handle_t *eio)

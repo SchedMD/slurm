@@ -70,15 +70,13 @@ struct allocation_msg_thread {
 };
 
 static uid_t slurm_uid;
-static void _handle_msg(struct allocation_msg_thread *msg_thr,
-			slurm_msg_t *msg);
-static bool _message_socket_readable(eio_obj_t *obj);
-static int _message_socket_accept(eio_obj_t *obj, List objs);
+static void _handle_msg(void *arg, slurm_msg_t *msg);
 static pthread_mutex_t msg_thr_start_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t msg_thr_start_cond = PTHREAD_COND_INITIALIZER;
 static struct io_operations message_socket_ops = {
-	readable:	&_message_socket_readable,
-	handle_read:	&_message_socket_accept
+	readable:	&eio_message_socket_readable,
+	handle_read:	&eio_message_socket_accept,
+	handle_msg:     &_handle_msg
 };
 
 static void *_msg_thr_internal(void *arg)
@@ -129,7 +127,6 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 		return NULL;
 	}
 	debug("port from net_stream_listen is %hu", *port);
-
 	obj = eio_obj_create(sock, &message_socket_ops, (void *)msg_thr);
 
 	msg_thr->handle = eio_handle_create();
@@ -167,85 +164,6 @@ extern void slurm_allocation_msg_thr_destroy(
 	eio_handle_destroy(msg_thr->handle);
 	xfree(msg_thr);
 }
-
-
-static bool _message_socket_readable(eio_obj_t *obj)
-{
-	debug3("Called _message_socket_readable");
-	if (obj->shutdown == true) {
-		if (obj->fd != -1) {
-			debug2("  false, shutdown");
-			close(obj->fd);
-			obj->fd = -1;
-			/*_wait_for_connections();*/
-		} else {
-			debug2("  false");
-		}
-		return false;
-	}
-	return true;
-}
-
-static int _message_socket_accept(eio_obj_t *obj, List objs)
-{
-	struct allocation_msg_thread *msg_thr = 
-		(struct allocation_msg_thread *)obj->arg;
-
-	int fd;
-	unsigned char *uc;
-	unsigned short port;
-	struct sockaddr_in addr;
-	slurm_msg_t *msg = NULL;
-	int len = sizeof(addr);
-
-	debug3("Called _msg_socket_accept");
-
-	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
-			    (socklen_t *)&len)) < 0) {
-		if (errno == EINTR)
-			continue;
-		if (errno == EAGAIN       ||
-		    errno == ECONNABORTED ||
-		    errno == EWOULDBLOCK) {
-			return SLURM_SUCCESS;
-		}
-		error("Error on msg accept socket: %m");
-		obj->shutdown = true;
-		return SLURM_SUCCESS;
-	}
-
-	fd_set_close_on_exec(fd);
-	fd_set_blocking(fd);
-
-	/* Should not call slurm_get_addr() because the IP may not be
-	   in /etc/hosts. */
-	uc = (unsigned char *)&addr.sin_addr.s_addr;
-	port = addr.sin_port;
-	debug2("allocation got message connection from %u.%u.%u.%u:%hu",
-	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
-	fflush(stdout);
-
-	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_msg_t_init(msg);
-again:
-	if(slurm_receive_msg(fd, msg, 0) != 0) {
-		if (errno == EINTR) {
-			goto again;
-		}
-		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
-		      uc[0],uc[1],uc[2],uc[3]);
-		goto cleanup;
-	}
-
-	_handle_msg(msg_thr, msg); /* handle_msg frees msg->data */
-cleanup:
-	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
-		error ("close(%d): %m", msg->conn_fd);
-	slurm_free_msg(msg);
-
-	return SLURM_SUCCESS;
-}
-
 
 static void _handle_node_fail(struct allocation_msg_thread *msg_thr, 
 			      slurm_msg_t *msg)
@@ -313,8 +231,10 @@ static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
 }
 
 static void
-_handle_msg(struct allocation_msg_thread *msg_thr, slurm_msg_t *msg)
+_handle_msg(void *arg, slurm_msg_t *msg)
 {
+	struct allocation_msg_thread *msg_thr = 
+		(struct allocation_msg_thread *)arg;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	uid_t uid = getuid();
 	

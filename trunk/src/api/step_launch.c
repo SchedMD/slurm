@@ -104,16 +104,15 @@ static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
 static void _exec_prog(slurm_msg_t *msg);
 static int  _msg_thr_create(struct step_launch_state *sls, int num_nodes);
-static void _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg);
-static bool _message_socket_readable(eio_obj_t *obj);
-static int  _message_socket_accept(eio_obj_t *obj, List objs);
+static void _handle_msg(void *arg, slurm_msg_t *msg);
 static int  _cr_notify_step_launch(slurm_step_ctx_t *ctx);
 static int  _start_io_timeout_thread(step_launch_state_t *sls);
 static void *_check_io_timeout(void *_sls);
 
 static struct io_operations message_socket_ops = {
-	readable:	&_message_socket_readable,
-	handle_read:	&_message_socket_accept
+	readable:	&eio_message_socket_readable,
+	handle_read:	&eio_message_socket_accept,
+	handle_msg:     &_handle_msg
 };
 
 
@@ -772,6 +771,13 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	sls->msg_handle = eio_handle_create();
 	sls->num_resp_port = _estimate_nports(num_nodes, 48);
 	sls->resp_port = xmalloc(sizeof(uint16_t) * sls->num_resp_port);
+
+	/* multiple jobs (easily induced via no_alloc) and highly
+	 * parallel jobs using PMI sometimes result in slow message 
+	 * responses and timeouts. Raise the default timeout for srun. */
+	if(!message_socket_ops.timeout)
+		message_socket_ops.timeout = slurm_get_msg_timeout() * 8000;
+
 	for (i = 0; i < sls->num_resp_port; i++) {
 		if (net_stream_listen(&sock, &port) < 0) {
 			error("unable to intialize step launch listening "
@@ -799,88 +805,6 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	}
 	slurm_attr_destroy(&attr);
 	return rc;
-}
-
-static bool _message_socket_readable(eio_obj_t *obj)
-{
-	debug3("Called _message_socket_readable");
-	if (obj->shutdown == true) {
-		if (obj->fd != -1) {
-			debug2("  false, shutdown");
-			close(obj->fd);
-			obj->fd = -1;
-			/*_wait_for_connections();*/
-		} else {
-			debug2("  false");
-		}
-		return false;
-	}
-	return true;
-}
-
-static int _message_socket_accept(eio_obj_t *obj, List objs)
-{
-	struct step_launch_state *sls = (struct step_launch_state *)obj->arg;
-
-	int fd;
-	unsigned char *uc;
-	unsigned short port;
-	struct sockaddr_in addr;
-	slurm_msg_t *msg = NULL;
-	int len = sizeof(addr);
-	int timeout = 0;	/* slurm default value */
-
-	debug3("Called _msg_socket_accept");
-
-	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
-			    (socklen_t *)&len)) < 0) {
-		if (errno == EINTR)
-			continue;
-		if (errno == EAGAIN       ||
-		    errno == ECONNABORTED ||
-		    errno == EWOULDBLOCK) {
-			return SLURM_SUCCESS;
-		}
-		error("Error on msg accept socket: %m");
-		obj->shutdown = true;
-		return SLURM_SUCCESS;
-	}
-
-	fd_set_close_on_exec(fd);
-	fd_set_blocking(fd);
-
-	/* Should not call slurm_get_addr() because the IP may not be
-	   in /etc/hosts. */
-	uc = (unsigned char *)&addr.sin_addr.s_addr;
-	port = addr.sin_port;
-	debug2("step got message connection from %u.%u.%u.%u:%hu",
-	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
-	fflush(stdout);
-
-	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_msg_t_init(msg);
-
-	/* multiple jobs (easily induced via no_alloc) and highly
-	 * parallel jobs using PMI sometimes result in slow message 
-	 * responses and timeouts. Raise the default timeout for srun. */
-	timeout = slurm_get_msg_timeout() * 8000;
-again:
-	if(slurm_receive_msg(fd, msg, timeout) != 0) {
-		if (errno == EINTR) {
-			goto again;
-		}
-		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
-		      uc[0],uc[1],uc[2],uc[3]);
-		goto cleanup;
-	}
-
-	_handle_msg(sls, msg); /* handle_msg frees msg->data */
-cleanup:
-	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
-		error ("close(%d): %m", msg->conn_fd);
-	slurm_free_msg(msg);
-
-	return SLURM_SUCCESS;
 }
 
 static void
@@ -1231,8 +1155,9 @@ _task_user_managed_io_handler(struct step_launch_state *sls,
  * Identify the incoming message and call the appropriate handler function.
  */
 static void
-_handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
+_handle_msg(void *arg, slurm_msg_t *msg)
 {
+	struct step_launch_state *sls = (struct step_launch_state *)arg;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	uid_t uid = getuid();
 	srun_user_msg_t *um;
