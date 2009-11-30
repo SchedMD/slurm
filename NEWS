@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- job_desc_msg_t - in, out, err have been changed to std_in, std_out, 
     and std_err respectfully.  Needed for PySLURM, since Python sees (in) 
     as a keyword.
+ -- Changed the type of addr to struct sockaddr_in in _message_socket_accept()
+    in sattach.c, step_launch.c, and allocate_msg.c
 
 * Changes in SLURM 2.1.0-pre7
 =============================

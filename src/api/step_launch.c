@@ -824,22 +824,21 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 
 	int fd;
 	unsigned char *uc;
-	short port;
-	struct sockaddr_un addr;
+	unsigned short port;
+	struct sockaddr_in addr;
 	slurm_msg_t *msg = NULL;
 	int len = sizeof(addr);
 	int timeout = 0;	/* slurm default value */
-	int rc = 0;
-	
+
 	debug3("Called _msg_socket_accept");
 
 	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
 			    (socklen_t *)&len)) < 0) {
 		if (errno == EINTR)
 			continue;
-		if (errno == EAGAIN
-		    || errno == ECONNABORTED
-		    || errno == EWOULDBLOCK) {
+		if (errno == EAGAIN       ||
+		    errno == ECONNABORTED ||
+		    errno == EWOULDBLOCK) {
 			return SLURM_SUCCESS;
 		}
 		error("Error on msg accept socket: %m");
@@ -852,8 +851,8 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 
 	/* Should not call slurm_get_addr() because the IP may not be
 	   in /etc/hosts. */
-	uc = (unsigned char *)&((struct sockaddr_in *)&addr)->sin_addr.s_addr;
-	port = ((struct sockaddr_in *)&addr)->sin_port;
+	uc = (unsigned char *)&addr.sin_addr.s_addr;
+	port = addr.sin_port;
 	debug2("step got message connection from %u.%u.%u.%u:%hu",
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 	fflush(stdout);
@@ -866,7 +865,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	 * responses and timeouts. Raise the default timeout for srun. */
 	timeout = slurm_get_msg_timeout() * 8000;
 again:
-	if((rc = slurm_receive_msg(fd, msg, timeout)) != 0) {
+	if(slurm_receive_msg(fd, msg, timeout) != 0) {
 		if (errno == EINTR) {
 			goto again;
 		}
@@ -875,7 +874,7 @@ again:
 		goto cleanup;
 	}
 
-	_handle_msg(sls, msg); /* handle_msg frees msg */
+	_handle_msg(sls, msg); /* handle_msg frees msg->data */
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
 		error ("close(%d): %m", msg->conn_fd);
