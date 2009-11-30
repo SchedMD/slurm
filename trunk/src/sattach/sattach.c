@@ -486,11 +486,10 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 
 	int fd;
 	unsigned char *uc;
-	short        port;
-	struct sockaddr_un addr;
+	unsigned short port;
+	struct sockaddr_in addr;
 	slurm_msg_t *msg = NULL;
 	int len = sizeof(addr);
-	int          timeout = 0;	/* slurm default value */
 
 	debug3("Called _msg_socket_accept");
 
@@ -498,9 +497,9 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 			    (socklen_t *)&len)) < 0) {
 		if (errno == EINTR)
 			continue;
-		if ((errno == EAGAIN)       ||
-		    (errno == ECONNABORTED) ||
-		    (errno == EWOULDBLOCK)) {
+		if (errno == EAGAIN       ||
+		    errno == ECONNABORTED ||
+		    errno == EWOULDBLOCK) {
 			return SLURM_SUCCESS;
 		}
 		error("Error on msg accept socket: %m");
@@ -513,18 +512,16 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 
 	/* Should not call slurm_get_addr() because the IP may not be
 	   in /etc/hosts. */
-	uc = (unsigned char *)&((struct sockaddr_in *)&addr)->sin_addr.s_addr;
-	port = ((struct sockaddr_in *)&addr)->sin_port;
+	uc = (unsigned char *)&addr.sin_addr.s_addr;
+	port = addr.sin_port;
 	debug2("got message connection from %u.%u.%u.%u:%hu",
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
-
-	timeout = slurm_get_msg_timeout() * 1000;
 again:
-	if(slurm_receive_msg(fd, msg, timeout) != 0) {
+	if(slurm_receive_msg(fd, msg, 0) != 0) {
 		if (errno == EINTR) {
 			goto again;
 		}
