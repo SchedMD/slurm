@@ -66,7 +66,7 @@ static int _task_layout_block(slurm_step_layout_t *step_layout,
 static int _task_layout_cyclic(slurm_step_layout_t *step_layout, 
 			       uint16_t *cpus);
 static int _task_layout_plane(slurm_step_layout_t *step_layout,
-			       uint16_t *cpus);
+			      uint16_t *cpus);
 #ifndef HAVE_FRONT_END
 static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 				 const char *arbitrary_nodes);
@@ -665,13 +665,13 @@ static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
  *                     12 13 14 15  etc.
  */
 static int _task_layout_plane(slurm_step_layout_t *step_layout,
-			       uint16_t *cpus)
+			      uint16_t *cpus)
 {
 	int i, j, k, taskid = 0;
 
 	debug3("_task_layout_plane plane_size %u node_cnt %u task_cnt %u",
-		step_layout->plane_size,
-		step_layout->node_cnt, step_layout->task_cnt);
+	       step_layout->plane_size,
+	       step_layout->node_cnt, step_layout->task_cnt);
 
 	if (step_layout->plane_size <= 0)
 	        return SLURM_ERROR;
@@ -681,7 +681,7 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 
 	for (i=0; i<step_layout->node_cnt; i++) {
 		step_layout->tids[i] = xmalloc(sizeof(uint32_t)
-						* step_layout->task_cnt);
+					       * step_layout->task_cnt);
 	}
 
 	taskid = 0;
@@ -743,8 +743,8 @@ extern char *slurm_step_layout_type_name(task_dist_states_t task_dist)
 		return "Plane";
 		break;
 	case SLURM_DIST_CYCLIC_CYCLIC:/* distribute tasks 1 per node:
-				   round robin: same for lowest
-				   level of logical processor (lllp) */
+					 round robin: same for lowest
+					 level of logical processor (lllp) */
 		return "CCyclic";
 		break;
 	case SLURM_DIST_CYCLIC_BLOCK: /* cyclic for node and block for lllp  */

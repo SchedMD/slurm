@@ -2842,7 +2842,7 @@ extern void pack_acct_reservation_rec(void *in, uint16_t rpc_version,
 }
 
 extern int unpack_acct_reservation_rec(void **object, uint16_t rpc_version,
-				      Buf buffer)
+				       Buf buffer)
 {
 	uint32_t uint32_tmp;
 	acct_reservation_rec_t *object_ptr = 
@@ -4370,7 +4370,7 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 		if(object->parent_acct_list 
 		   && list_count(object->parent_acct_list)) 
 			packstr(list_peek(object->parent_acct_list), 
-			       buffer);
+				buffer);
 		else 
 			packnull(buffer);
 
@@ -6225,7 +6225,7 @@ unpack_error:
 }
 
 extern void pack_acct_reservation_cond(void *in, uint16_t rpc_version,
-				      Buf buffer)
+				       Buf buffer)
 {
 	acct_reservation_cond_t *object = (acct_reservation_cond_t *)in;
 	uint32_t count = NO_VAL;
@@ -6292,7 +6292,7 @@ extern void pack_acct_reservation_cond(void *in, uint16_t rpc_version,
 }
 
 extern int unpack_acct_reservation_cond(void **object, uint16_t rpc_version,
-				      Buf buffer)
+					Buf buffer)
 {
 	uint32_t uint32_tmp, count;
 	int i = 0;
@@ -7197,7 +7197,7 @@ extern void pack_acct_archive_cond(void *in, uint16_t rpc_version, Buf buffer)
 }
 
 extern int unpack_acct_archive_cond(void **object, uint16_t rpc_version,
-				   Buf buffer)
+				    Buf buffer)
 {
 	uint32_t uint32_tmp;
 	acct_archive_cond_t *object_ptr = 
@@ -8067,7 +8067,7 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_g_add_reservation(void *db_conn,
-					   acct_reservation_rec_t *resv)
+					  acct_reservation_rec_t *resv)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NO_VAL;
@@ -8137,7 +8137,7 @@ extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_g_modify_reservation(void *db_conn,
-					   acct_reservation_rec_t *resv)
+					     acct_reservation_rec_t *resv)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NO_VAL;
@@ -8289,7 +8289,7 @@ extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_g_get_reservations(void *db_conn, uint32_t uid, 
-				      acct_reservation_cond_t *resv_cond)
+					    acct_reservation_cond_t *resv_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;

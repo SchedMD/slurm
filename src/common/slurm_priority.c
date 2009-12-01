@@ -48,7 +48,7 @@ typedef struct slurm_priority_ops {
 	int      (*set_max_usage)  (uint32_t procs, uint32_t half_life);
 	void     (*set_assoc_usage)(acct_association_rec_t *assoc);
 	List	 (*get_priority_factors)
-				   (priority_factors_request_msg_t *req_msg);
+	(priority_factors_request_msg_t *req_msg);
 
 } slurm_priority_ops_t;
 
@@ -263,8 +263,8 @@ extern void priority_g_set_assoc_usage(acct_association_rec_t *assoc)
 	if (slurm_priority_init() < 0)
 		return;
 
-       (*(g_priority_context->ops.set_assoc_usage))(assoc);
-       return;
+	(*(g_priority_context->ops.set_assoc_usage))(assoc);
+	return;
 }
 
 extern List priority_g_get_priority_factors_list(

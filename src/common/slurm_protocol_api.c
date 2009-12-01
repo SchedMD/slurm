@@ -174,7 +174,7 @@ int slurm_api_set_default_config(void)
 	}
 	proto_conf = &proto_conf_default;
 
-      cleanup:
+cleanup:
 	slurm_conf_unlock();
 	return rc;
 }
@@ -1077,9 +1077,9 @@ int slurm_get_is_association_based_accounting(void)
 	} else {
 		conf = slurm_conf_lock();
 		if(!strcasecmp(conf->accounting_storage_type, 
-			      "accounting_storage/slurmdbd")
+			       "accounting_storage/slurmdbd")
 		   || !strcasecmp(conf->accounting_storage_type,
-				 "accounting_storage/mysql")) 
+				  "accounting_storage/mysql")) 
 			enforce = 1;
 		slurm_conf_unlock();
 	}
@@ -1877,8 +1877,8 @@ slurm_fd slurm_open_controller_conn_spec(enum controller_id dest)
 void slurm_get_controller_addr_spec(enum controller_id dest, slurm_addr *addr)
 {
 	addr = (dest == PRIMARY_CONTROLLER) ? 
-		  &proto_conf->primary_controller : 
-		  &proto_conf->secondary_controller;
+		&proto_conf->primary_controller : 
+		&proto_conf->secondary_controller;
 } 
 
 /* In the bsd implmentation maps directly to a accept call 
@@ -1970,7 +1970,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		slurm_get_peer_addr(fd, &resp_addr);
 		slurm_print_slurm_addr(&resp_addr, addr_str, sizeof(addr_str));
 		error("Invalid Protocol Version %u from uid=%d at %s", 
-			header.version, uid, addr_str);
+		      header.version, uid, addr_str);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -1993,7 +1993,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
 		error( "authentication: %s ",
-			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
@@ -2136,7 +2136,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		slurm_get_peer_addr(fd, &resp_addr);
 		slurm_print_slurm_addr(&resp_addr, addr_str, sizeof(addr_str));
 		error("Invalid Protocol Version %u from uid=%d at %s", 
-			header.version, uid, addr_str);
+		      header.version, uid, addr_str);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -2159,7 +2159,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	
 	if((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
 		error( "authentication: %s ",
-			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
@@ -2323,7 +2323,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 		slurm_get_peer_addr(fd, &resp_addr);
 		slurm_print_slurm_addr(&resp_addr, addr_str, sizeof(addr_str));
 		error("Invalid Protocol Version %u from uid=%d at %s", 
-			header.version, uid, addr_str);
+		      header.version, uid, addr_str);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -2389,7 +2389,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 	
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
 		error( "authentication: %s ",
-			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
@@ -2494,7 +2494,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 		auth_cred = g_slurm_auth_create(NULL, 2, NULL);
 	if (auth_cred == NULL) {
 		error("authentication: %s",
-		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 
@@ -2519,7 +2519,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	(void) g_slurm_auth_destroy(auth_cred);
 	if (rc) {
 		error("authentication: %s",
-		       g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
 		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
@@ -2846,7 +2846,7 @@ void slurm_pack_slurm_addr_array(slurm_addr * slurm_address,
  * returns		- SLURM error code
  */
 int slurm_unpack_slurm_addr_array(slurm_addr ** slurm_address,
-			    uint32_t * size_val, Buf buffer)
+				  uint32_t * size_val, Buf buffer)
 {
 	int i = 0;
 	uint32_t nl;
@@ -3071,7 +3071,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 			break;
 	}
 			
-      cleanup:
+cleanup:
 	if (rc != 0) 
  		_remap_slurmctld_errno(); 
 		
@@ -3136,7 +3136,7 @@ int slurm_send_only_controller_msg(slurm_msg_t *req)
 		}
 	}
 
-      cleanup:
+cleanup:
 	if (rc != SLURM_SUCCESS)
 		_remap_slurmctld_errno();
 	return rc;
@@ -3203,20 +3203,20 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 	}
 	
 #ifdef HAVE_FRONT_END
-{
-        char *name = NULL;
-	/* only send to the front end node */
-	name = nodelist_nth_host(nodelist, 0);
-	if (!name) {
-		error("slurm_send_recv_msgs: "
-		      "can't get the first name out of %s",
-		      nodelist);
-		return NULL;
-	}
+	{
+		char *name = NULL;
+		/* only send to the front end node */
+		name = nodelist_nth_host(nodelist, 0);
+		if (!name) {
+			error("slurm_send_recv_msgs: "
+			      "can't get the first name out of %s",
+			      nodelist);
+			return NULL;
+		}
 /* 	info("got %s and %s", nodelist, name); */
-	hl = hostlist_create(name);
-	free(name);
-}
+		hl = hostlist_create(name);
+		free(name);
+	}
 #else
 /* 	info("total sending to %s",nodelist); */
 	hl = hostlist_create(nodelist);

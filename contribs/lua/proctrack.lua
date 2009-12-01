@@ -241,80 +241,80 @@ end
 --
 function cpumap_create ()
 
-       function cpuset_list_create (s)
-               local cpus = {}
-               for c in s:gmatch ('[^,]+') do
-                       local s, e = c:match ('([%d]+)-?([%d]*)')
-                       if e == "" then e = s end
-                       for cpu = s, e do
-                               table.insert (cpus, cpu)
-                       end
-               end
-               return cpus
-       end
+    function cpuset_list_create (s)
+        local cpus = {}
+        for c in s:gmatch ('[^,]+') do
+            local s, e = c:match ('([%d]+)-?([%d]*)')
+            if e == "" then e = s end
+            for cpu = s, e do
+                table.insert (cpus, cpu)
+            end
+        end
+        return cpus
+    end
 
-       function read_cpu_topology_member (id, name)
-               local val
-               local cpudir = "/sys/devices/system/cpu"
-               local path = string.format ("%s/cpu%d/topology/%s", cpudir, id, name)
-               local f, err = io.open (path, "r")
-               if f == nil then
-                       print (err)
-                   return f, err
-               end
-               val = f:read ("*all")
-               f:close()
-               return val
-       end
+    function read_cpu_topology_member (id, name)
+        local val
+        local cpudir = "/sys/devices/system/cpu"
+        local path = string.format ("%s/cpu%d/topology/%s", cpudir, id, name)
+        local f, err = io.open (path, "r")
+        if f == nil then
+            print (err)
+            return f, err
+        end
+        val = f:read ("*all")
+        f:close()
+        return val
+    end
 
-       function cpu_info_create (id)
-               local cpuinfo = {}
-               local cpudir = "/sys/devices/system/cpu"
-               cpuinfo.id = id
-               cpuinfo.pkgid  = read_cpu_topology_member (id, "physical_package_id")
-               cpuinfo.coreid = read_cpu_topology_member (id, "core_id")
-               return cpuinfo
-       end
+    function cpu_info_create (id)
+        local cpuinfo = {}
+        local cpudir = "/sys/devices/system/cpu"
+        cpuinfo.id = id
+        cpuinfo.pkgid  = read_cpu_topology_member (id, "physical_package_id")
+        cpuinfo.coreid = read_cpu_topology_member (id, "core_id")
+        return cpuinfo
+    end
 
-       function list_id (self, i)
-               return self.cpu_list[i+1].id
-       end
+    function list_id (self, i)
+        return self.cpu_list[i+1].id
+    end
 
-       local function cmp_cpu_info (a,b)
-               if a.pkgid == b.pkgid then
-                       return a.coreid < b.coreid
-               else
-                       return a.pkgid < b.pkgid
-               end
-       end
+    local function cmp_cpu_info (a,b)
+        if a.pkgid == b.pkgid then
+            return a.coreid < b.coreid
+        else
+            return a.pkgid < b.pkgid
+        end
+    end
 
-       local function convert_cpu_ids (self, s)
-               local l = {}
-               for i, id in ipairs (cpuset_list_create (s)) do
-                       table.insert (l, list_id (self, id))
-               end
-               return table.concat (l, ",")
-       end
+    local function convert_cpu_ids (self, s)
+        local l = {}
+        for i, id in ipairs (cpuset_list_create (s)) do
+            table.insert (l, list_id (self, id))
+        end
+        return table.concat (l, ",")
+    end
 
-       local cpu_map = {
-               cpu_list =    {},
-               ncpus =       0,
-               get_id =      list_id,
-               convert_ids = convert_cpu_ids
-       }
+    local cpu_map = {
+        cpu_list =    {},
+        ncpus =       0,
+        get_id =      list_id,
+        convert_ids = convert_cpu_ids
+    }
 
-       for i, dir in ipairs (posix.dir ("/sys/devices/system/cpu")) do
-               local id = string.match (dir, 'cpu([%d]+)')
-               if id then
-                       table.insert (cpu_map.cpu_list, cpu_info_create (id))
-               end
-       end
+    for i, dir in ipairs (posix.dir ("/sys/devices/system/cpu")) do
+        local id = string.match (dir, 'cpu([%d]+)')
+        if id then
+            table.insert (cpu_map.cpu_list, cpu_info_create (id))
+        end
+    end
 
-       cpu_map.ncpus = #cpu_map.cpu_list
+    cpu_map.ncpus = #cpu_map.cpu_list
 
-       table.sort (cpu_map.cpu_list, cmp_cpu_info)
+    table.sort (cpu_map.cpu_list, cmp_cpu_info)
 
-       return cpu_map
+    return cpu_map
 end
 
 function v_log_msg (l, fmt, ...)
