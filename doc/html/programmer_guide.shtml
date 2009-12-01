@@ -4,39 +4,39 @@
 
 <h2>Overview</h2>
 
-<p>Simple Linux Utility for Resource Management (SLURM) is an open source, fault-tolerant, 
-and highly scalable cluster management and job scheduling system for large and 
-small Linux clusters. Components include machine status, partition management, 
-job management, scheduling, and stream copy modules. SLURM requires no kernel 
-modifications for it operation and is relatively self-contained. 
-<p>There is an overview of the components and their interactions available in 
-a separate document, <a href="slurm_design.pdf"> SLURM: Simple Linux Utility for 
-Resource Management</a> [PDF]. 
+<p>Simple Linux Utility for Resource Management (SLURM) is an open source, fault-tolerant,
+and highly scalable cluster management and job scheduling system for large and
+small Linux clusters. Components include machine status, partition management,
+job management, scheduling, and stream copy modules. SLURM requires no kernel
+modifications for it operation and is relatively self-contained.
+<p>There is an overview of the components and their interactions available in
+a separate document, <a href="slurm_design.pdf"> SLURM: Simple Linux Utility for
+Resource Management</a> [PDF].
 
-<p>SLURM is written in the C language and uses a GNU <b>autoconf</b> configuration 
-engine. While initially written for Linux, other UNIX-like operating systems should 
-be easy porting targets. Code should adhere to the <a href="coding_style.pdf"> 
-Linux kernel coding style</a>. <i>(Some components of SLURM have been taken from 
-various sources. Some of these components do not conform to the Linux kernel 
+<p>SLURM is written in the C language and uses a GNU <b>autoconf</b> configuration
+engine. While initially written for Linux, other UNIX-like operating systems should
+be easy porting targets. Code should adhere to the <a href="coding_style.pdf">
+Linux kernel coding style</a>. <i>(Some components of SLURM have been taken from
+various sources. Some of these components do not conform to the Linux kernel
 coding style. However, new code written for SLURM should follow these standards.)</i>
- 
-<p>Many of these modules have been built and tested on a variety of Unix computers 
-including Red Hat Linux, IBM's AIX, Sun's Solaris, and Compaq's Tru-64. The only 
-module at this time that is operating system dependent is <span class="commandline">src/slurmd/read_proc.c</span>. 
-We will be porting and testing on additional platforms in future releases. 
+
+<p>Many of these modules have been built and tested on a variety of Unix computers
+including Red Hat Linux, IBM's AIX, Sun's Solaris, and Compaq's Tru-64. The only
+module at this time that is operating system dependent is <span class="commandline">src/slurmd/read_proc.c</span>.
+We will be porting and testing on additional platforms in future releases.
 
 <h2>Plugins</h2>
 
-<p>To make the use of different infrastructures possible, SLURM uses a general 
-purpose plugin mechanism. A SLURM plugin is a dynamically linked code object that 
-is loaded explicitly at run time by the SLURM libraries. It provides a customized 
-implementation of a well-defined API connected to tasks such as authentication, 
-interconnect fabric, task scheduling, etc. A set of functions is defined for use 
-by all of the different infrastructures of a particular variety. When a SLURM 
-daemon is initiated, it reads the configuration file to determine which of the 
-available plugins should be used. A <a href="plugins.html">plugin developer's 
-guide</a> is available with general information about plugins. Most plugin 
-types also have their own documentation available, such as 
+<p>To make the use of different infrastructures possible, SLURM uses a general
+purpose plugin mechanism. A SLURM plugin is a dynamically linked code object that
+is loaded explicitly at run time by the SLURM libraries. It provides a customized
+implementation of a well-defined API connected to tasks such as authentication,
+interconnect fabric, task scheduling, etc. A set of functions is defined for use
+by all of the different infrastructures of a particular variety. When a SLURM
+daemon is initiated, it reads the configuration file to determine which of the
+available plugins should be used. A <a href="plugins.html">plugin developer's
+guide</a> is available with general information about plugins. Most plugin
+types also have their own documentation available, such as
 <a href="authplugins.html">SLURM Authentication Plugin API</a> and
 <a href="jobcompplugins.html">SLURM Job Completion Logging API</a>.</p>
 
@@ -44,31 +44,31 @@ types also have their own documentation available, such as
 
 <h2>Directory Structure</h2>
 
-<p>The contents of the SLURM directory structure will be described below in increasing 
-detail as the structure is descended. The top level directory contains the scripts 
-and tools required to build the entire SLURM system. It also contains a variety 
+<p>The contents of the SLURM directory structure will be described below in increasing
+detail as the structure is descended. The top level directory contains the scripts
+and tools required to build the entire SLURM system. It also contains a variety
 of subdirectories for each type of file.</p>
-<p>General build tools/files include: <b>acinclude.m4</b>, <b>autogen.sh</b>, 
-<b>configure.ac</b>, <b>Makefile.am</b>, <b>Make-rpm.mk</b>, <b>META</b>, <b>README</b>, 
-<b>slurm.spec.in</b>, and the contents of the <b>auxdir</b> directory. <span class="commandline">autoconf</span> 
-and <span class="commandline">make</span> commands are used to build and install 
-SLURM in an automated fashion. NOTE: <span class="commandline">autoconf</span> 
-version 2.52 or higher is required to build SLURM. Execute 
-<span class="commandline">autoconf -V</span> to check your version number. 
-The build process is described in the README file. 
+<p>General build tools/files include: <b>acinclude.m4</b>, <b>autogen.sh</b>,
+<b>configure.ac</b>, <b>Makefile.am</b>, <b>Make-rpm.mk</b>, <b>META</b>, <b>README</b>,
+<b>slurm.spec.in</b>, and the contents of the <b>auxdir</b> directory. <span class="commandline">autoconf</span>
+and <span class="commandline">make</span> commands are used to build and install
+SLURM in an automated fashion. NOTE: <span class="commandline">autoconf</span>
+version 2.52 or higher is required to build SLURM. Execute
+<span class="commandline">autoconf -V</span> to check your version number.
+The build process is described in the README file.
 
-<p>Copyright and disclaimer information are in the files COPYING and DISCLAIMER. 
+<p>Copyright and disclaimer information are in the files COPYING and DISCLAIMER.
 All of the top-level subdirectories are described below.</p>
 
 <p style="margin-left:.2in"><b>auxdir</b>&#151;Used for building SLURM.<br>
 <b>contribs</b>&#151;Various contributed tools.<br>
 <b>doc</b>&#151;Documentation including man pages. <br>
 <b>etc</b>&#151;Sample configuration files.<br>
-<b>slurm</b>&#151;Header files for API use. These files must be installed. Placing 
+<b>slurm</b>&#151;Header files for API use. These files must be installed. Placing
 these header files in this location makes for better code portability.<br>
-<b>src</b>&#151;Contains all source code and header files not in the "slurm" subdirectory 
+<b>src</b>&#151;Contains all source code and header files not in the "slurm" subdirectory
 described above.<br>
-<b>testsuite</b>&#151;DejaGnu and Expect are used for testing all of its files 
+<b>testsuite</b>&#151;DejaGnu and Expect are used for testing all of its files
 are here.</p>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -78,21 +78,21 @@ are here.</p>
 Two directories are of particular interest:</p>
 
 <p style="margin-left:.2in">
-<b>doc/man</b>&#151; contains the man pages for the APIs, 
+<b>doc/man</b>&#151; contains the man pages for the APIs,
 configuration file, commands, and daemons.<br>
 <b>doc/html</b>&#151; contains the web pages.</p>
- 
+
 <h2>Source Code</h2>
 
-<p>Functions are divided into several categories, each in its own subdirectory. 
-The details of each directory's contents are proved below. The directories are 
+<p>Functions are divided into several categories, each in its own subdirectory.
+The details of each directory's contents are proved below. The directories are
 as follows: </p>
 
 <p style="margin-left:.2in">
-<b>api</b>&#151;Application Program Interfaces into 
-the SLURM code. Used to send and get SLURM information from the central manager. 
+<b>api</b>&#151;Application Program Interfaces into
+the SLURM code. Used to send and get SLURM information from the central manager.
 These are the functions user applications might utilize.<br>
-<b>common</b>&#151;General purpose functions for widespread use throughout 
+<b>common</b>&#151;General purpose functions for widespread use throughout
 SLURM.<br>
 <b>database</b>&#151;Various database files that support the accounting
  storage plugin.<br>
@@ -120,16 +120,16 @@ topology.<br>
 <b>sacct</b>&#151;User command to view accounting information about jobs.<br>
 <b>sacctmgr</b>&#151;User and administrator tool to manage accounting.<br>
 <b>salloc</b>&#151;User command to allocate resources for a job.<br>
-<b>sattach</b>&#151;User command to attach standard input, output and error 
+<b>sattach</b>&#151;User command to attach standard input, output and error
 files to a running job or job step.<br>
 <b>sbatch</b>&#151;User command to submit a batch job (script for later execution).<br>
-<b>sbcast</b>&#151;User command to broadcast a file to all nodes associated 
+<b>sbcast</b>&#151;User command to broadcast a file to all nodes associated
 with an existing SLURM job.<br>
 <b>scancel</b>&#151;User command to cancel (or signal) a job or job step.<br>
 <b>scontrol</b>&#151;Administrator tool to manage SLURM.<br>
 <b>sinfo</b>&#151;User command to get information on SLURM nodes and partitions.<br>
 <b>slurmctld</b>&#151;SLURM central manager daemon code.<br>
-<b>slurmd</b>&#151;SLURM daemon code to manage the compute server nodes including 
+<b>slurmd</b>&#151;SLURM daemon code to manage the compute server nodes including
 the execution of user applications.<br>
 <b>slurmdbd</b>&#151;SLURM database daemon managing access to the accounting
 storage database.<br>
@@ -141,7 +141,7 @@ calculation when the Multifactor Job Priority plugin is installed.<br>
 <b>squeue</b>&#151;User command to get information on SLURM jobs and job steps.<br>
 <b>sreport</b>&#151;User command to view various reports about past
 usage across the enterprise.<br>
-<b>srun</b>&#151;User command to submit a job, get an allocation, and/or 
+<b>srun</b>&#151;User command to submit a job, get an allocation, and/or
 initiation a parallel job step.<br>
 <b>srun_cr</b>&#151;Checkpoint/Restart wrapper for srun.<br>
 <b>sshare</b>&#151;User command to view shares and usage when the Multifactor
@@ -149,36 +149,36 @@ Job Priority plugin is installed.<br>
 <b>sstat</b>&#151;User command to view detailed statistics about running
 jobs when a Job Accounting Gather plugin is installed.<br>
 <b>strigger</b>&#151;User and administrator tool to manage event triggers.<br>
-<b>sview</b>&#151;User command to view and update node, partition, and job 
+<b>sview</b>&#151;User command to view and update node, partition, and job
 job state information.<br>
 
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Configuration</h2>
-<p>Sample configuration files are included in the <b>etc</b> subdirectory. 
-The <b>slurm.conf</b> can be built using a <a href="configurator.html">configuration tool</a>. 
-See <b>doc/man/man5/slurm.conf.5</b> and the man pages for other configuration files 
+<p>Sample configuration files are included in the <b>etc</b> subdirectory.
+The <b>slurm.conf</b> can be built using a <a href="configurator.html">configuration tool</a>.
+See <b>doc/man/man5/slurm.conf.5</b> and the man pages for other configuration files
 for more details.
-<b>init.d.slurm</b> is a script that determines which 
-SLURM daemon(s) should execute on any node based upon the configuration file contents. 
-It will also manage these daemons: starting, signalling, restarting, and stopping them.</p> 
+<b>init.d.slurm</b> is a script that determines which
+SLURM daemon(s) should execute on any node based upon the configuration file contents.
+It will also manage these daemons: starting, signalling, restarting, and stopping them.</p>
 
 <h2>Test Suite</h2>
-<p>The <b>testsuite</b> files use a DejaGnu framework for testing. These tests 
+<p>The <b>testsuite</b> files use a DejaGnu framework for testing. These tests
 are very limited in scope.</p>
 
 <p>We also have a set of Expect SLURM tests available under the <b>testsuite/expect</b>
-directory.  These tests are executed after SLURM has been installed 
-and the daemons initiated. About 250 test scripts exercise all SLURM commands 
+directory.  These tests are executed after SLURM has been installed
+and the daemons initiated. About 250 test scripts exercise all SLURM commands
 and options including stress tests.  The file <b>testsuite/expect/globals</b>
 contains default paths and procedures for all of the individual tests.  At
 the very least, you will need to set the <i>slurm_dir</i> variable to the correct
 value.  To avoid conflicts with other developers, you can override variable settings
 in a separate file named <b>testsuite/expect/globals.local</b>.</p>
 
-<p>Set your working directory to <b>testsuite/expect</b> before 
+<p>Set your working directory to <b>testsuite/expect</b> before
 starting these tests.  Tests may be executed individually by name
-(e.g.  <i>test1.1</i>) 
+(e.g.  <i>test1.1</i>)
 or the full test suite may be executed with the single command <i>regression</i>.
 See <b>testsuite/expect/README</b> for more information.</p>
 
@@ -186,20 +186,20 @@ See <b>testsuite/expect/README</b> for more information.</p>
 <h2>Adding Files and Directories</h2>
 <p>If you are adding files and directories to SLURM, it will be necessary to
 re-build configuration files before executing the <b>configure</b> command.
-Update <b>Makefile.am</b> files as needed then execute 
+Update <b>Makefile.am</b> files as needed then execute
 <b>autogen.sh</b> before executing <b>configure</b>.
 
 <h2>Tricks of the Trade</h2>
 <h3>HAVE_FRONT_END</h3>
 <p>You can make a single node appear to SLURM as a Linux cluster by running
-<i>configure</i> with the <i>--enable-front-end</i> option. This 
+<i>configure</i> with the <i>--enable-front-end</i> option. This
 defines b>HAVE_FRONT_END</b> with a non-zero value in the file <b>config.h</b>.
 All (fake) nodes should be defined in the <b>slurm.conf</b> file.
 These nodes should be configured with a single <b>NodeAddr</b> value
-indicating the node on which single <span class="commandline">slurmd</span> daemon 
-executes.  Initiate one <span class="commandline">slurmd</span> and one 
-<span class="commandline">slurmctld</span> daemon. Do not initiate too many 
-simultaneous job steps to avoid overloading the 
+indicating the node on which single <span class="commandline">slurmd</span> daemon
+executes.  Initiate one <span class="commandline">slurmd</span> and one
+<span class="commandline">slurmctld</span> daemon. Do not initiate too many
+simultaneous job steps to avoid overloading the
 <span class="commandline">slurmd</span> daemon executing them all.</p>
 
 <h3><a name="multiple_slurmd_support">Multiple slurmd support</a></h3>

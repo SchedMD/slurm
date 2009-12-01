@@ -2,130 +2,130 @@
 
 <h1>Accounting</h1>
 
-<p>NOTE: This documents accounting features available in SLURM version 
-1.3, which are far more extensive than those available in previous 
+<p>NOTE: This documents accounting features available in SLURM version
+1.3, which are far more extensive than those available in previous
 releases.</p>
 
-<p>SLURM can be configured to collect accounting information for every 
-job and job step executed. 
+<p>SLURM can be configured to collect accounting information for every
+job and job step executed.
 Accounting records can be written to a simple text file or a database.
-Information is available about both currently executing jobs and 
+Information is available about both currently executing jobs and
 jobs which have already terminated.
 The <b>sacct</b> command can report resource usage for running or terminated
-jobs including individual tasks, which can be useful to detect load imbalance 
-between the tasks. 
+jobs including individual tasks, which can be useful to detect load imbalance
+between the tasks.
 The <b>sstat</b> command can be used to status only currently running jobs.
 It also can give you valuable information about imbalance between tasks.
 The <b>sreport</b> can be used to generate reports based upon all jobs
 executed in a particular time interval.</p>
 
 <p>There are three distinct plugin types associated with resource accounting.
-The SLURM configuration parameters (in <i>slurm.conf</i>) associated with 
+The SLURM configuration parameters (in <i>slurm.conf</i>) associated with
 these plugins include:</p>
 <ul>
-<li><b>AccountingStorageType</b> controls how detailed job and job 
-step information is recorded. You can store this information in a 
-text file, <a href="http://www.mysql.com/">MySQL</a> or 
-<a href="http://www.postgresql.org/">PostgreSQL</a> 
+<li><b>AccountingStorageType</b> controls how detailed job and job
+step information is recorded. You can store this information in a
+text file, <a href="http://www.mysql.com/">MySQL</a> or
+<a href="http://www.postgresql.org/">PostgreSQL</a>
 database, optionally using SlurmDBD for added security.</li>
-<li><b>JobAcctGatherType</b> is operating system dependent and 
+<li><b>JobAcctGatherType</b> is operating system dependent and
 controls what mechanism is used to collect accounting information.
 Supported values are <i>jobacct_gather/aix</i>, <i>jobacct_gather/linux</i>
 and <i>jobacct_gather/none</i> (no information collected).</li>
-<li><b>JobCompType</b> controls how job completion information is 
+<li><b>JobCompType</b> controls how job completion information is
 recorded. This can be used to record basic job information such
-as job name, user name, allocated nodes, start time, completion 
-time, exit status, etc. If the preservation of only basic job 
+as job name, user name, allocated nodes, start time, completion
+time, exit status, etc. If the preservation of only basic job
 information is required, this plugin should satisfy your needs
-with minimal overhead. You can store this information in a 
-text file, <a href="http://www.mysql.com/">MySQL</a> or 
-<a href="http://www.postgresql.org/">PostgreSQL</a> 
+with minimal overhead. You can store this information in a
+text file, <a href="http://www.mysql.com/">MySQL</a> or
+<a href="http://www.postgresql.org/">PostgreSQL</a>
 database</li>
 </ul>
 
-<p>The use of sacct to view information about jobs 
+<p>The use of sacct to view information about jobs
 is dependent upon AccountingStorageType
 being configured to collect and store that information.
-The use of sreport is dependent upon some database being 
+The use of sreport is dependent upon some database being
 used to store that information.</p>
 
 <p>The use of sacct or sstat to view information about resource usage
   within jobs is dependent upon both JobAcctGatherType and AccountingStorageType
   being configured to collect and store that information.</p>
 
-<p>Storing the accounting information into text files is 
-very simple. Just configure the appropriate plugin (e.g. 
-<i>AccountingStorageType=accounting_storage/filetxt</i> and/or 
-<i>JobCompType=jobcomp/filetxt</i>) and then specify the 
+<p>Storing the accounting information into text files is
+very simple. Just configure the appropriate plugin (e.g.
+<i>AccountingStorageType=accounting_storage/filetxt</i> and/or
+<i>JobCompType=jobcomp/filetxt</i>) and then specify the
 pathname of the file (e.g.
-<i>AccountingStorageLoc=/var/log/slurm/accounting</i> and/or 
+<i>AccountingStorageLoc=/var/log/slurm/accounting</i> and/or
 <i>JobCompLoc=/var/log/slurm/job_completions</i>).
-Use the <i>logrotate</i> or similar tool to prevent the 
+Use the <i>logrotate</i> or similar tool to prevent the
 log files from getting too large.
-Send a SIGHUP signal to the <i>slurmctld</i> daemon 
+Send a SIGHUP signal to the <i>slurmctld</i> daemon
 after moving the files, but before compressing them so
 that new log files will be created.</p>
 
-<p>Storing the data directly into a database from SLURM may seem 
-attractive, but requires the availability of user name and 
-password data not only for the SLURM control daemon (slurmctld), 
+<p>Storing the data directly into a database from SLURM may seem
+attractive, but requires the availability of user name and
+password data not only for the SLURM control daemon (slurmctld),
 but also user commands which need to access the data (sacct, sreport, and
-sacctmgr). 
-Making possibly sensitive information available to all users makes 
+sacctmgr).
+Making possibly sensitive information available to all users makes
 database security more difficult to provide, sending the data through
 an intermediate daemon can provide better security and performance
-(through caching data) and SlurmDBD provides such services. 
-SlurmDBD (SLURM Database Daemon) is written in C, multi-threaded, 
+(through caching data) and SlurmDBD provides such services.
+SlurmDBD (SLURM Database Daemon) is written in C, multi-threaded,
 secure and fast.
 The configuration required to use SlurmDBD will be described below.
 Storing information directly into database would be similar.</p>
 
 <p>Note that SlurmDBD relies upon existing SLURM plugins
-for authentication and database use, but the other SLURM 
+for authentication and database use, but the other SLURM
 commands and daemons are not required on the host where
-SlurmDBD is installed. Install the <i>slurmdbd</i> and 
+SlurmDBD is installed. Install the <i>slurmdbd</i> and
 <i>slurm-plugins</i> RPMs on the computer when SlurmDBD
 is to execute.</p>
 
 <h2>Infrastructure</h2>
 
-<p>With the SlurmDBD, we are able to collect data from multiple 
+<p>With the SlurmDBD, we are able to collect data from multiple
 clusters in a single location.
 This does impose some constraints on the user naming and IDs.
 Accounting is maintained by user name (not user ID), but a
-given user name should refer to the same person across all 
-of the computers. 
-Authentication relies upon user ID numbers, so those must 
+given user name should refer to the same person across all
+of the computers.
+Authentication relies upon user ID numbers, so those must
 be uniform across all computers communicating with each
 SlurmDBD, at least for users requiring authentication.
 In particular, the configured <i>SlurmUser</i> must have the
 same name and ID across all clusters.
-If you plan to have administrators of user accounts, limits, 
-etc. they must also have consistent names and IDs across all 
+If you plan to have administrators of user accounts, limits,
+etc. they must also have consistent names and IDs across all
 clusters.
-If you plan to restrict access to accounting records (e.g. 
-only permit a user to view records of his jobs), then all 
+If you plan to restrict access to accounting records (e.g.
+only permit a user to view records of his jobs), then all
 users should have consistent names and IDs.</p>
 
-<p>The best way to insure security of the data is by authenticating 
-communications to the SlurmDBD and we recommend 
+<p>The best way to insure security of the data is by authenticating
+communications to the SlurmDBD and we recommend
 <a href="http://home.gna.org/munge/">Munge</a> for that purpose.
-If you have one cluster managed by SLURM and execute the SlurmDBD 
+If you have one cluster managed by SLURM and execute the SlurmDBD
 on that one cluster, the normal Munge configuration will suffice.
-Otherwise Munge should then be installed on all nodes of all 
+Otherwise Munge should then be installed on all nodes of all
 SLURM managed clusters, plus the machine where SlurmDBD executes.
-You then have a choice of either having a single Munge key for 
-all of these computers or maintaining a unique key for each of the 
+You then have a choice of either having a single Munge key for
+all of these computers or maintaining a unique key for each of the
 clusters plus a second key for communications between the clusters
 for better security.
-Munge enhancements are planned to support two keys within a single 
-configuration file, but presently two different daemons must be 
-started with different configurations to support two different keys 
-(create two key files and start the daemons with the 
+Munge enhancements are planned to support two keys within a single
+configuration file, but presently two different daemons must be
+started with different configurations to support two different keys
+(create two key files and start the daemons with the
 <i>--key-file</i> option to locate the proper key plus the
 <i>--socket</i> option to specify distinct local domain sockets for each).
-The pathname of local domain socket will be needed in the SLURM 
-and SlurmDBD configuration files (slurm.conf and slurmdbd.conf 
+The pathname of local domain socket will be needed in the SLURM
+and SlurmDBD configuration files (slurm.conf and slurmdbd.conf
 respectively, more details are provided below).</p>
 
 <p?Whether you use any authentication module or not you will need to have
@@ -176,7 +176,7 @@ the database with.</li>
 <p>While the SlurmDBD will work with a flat text file for recording
 job completions and such this configuration will not allow
 "associations" between a user and account. A database allows such
-a configuration. 
+a configuration.
 
 <p><b>MySQL is the preferred database, PostgreSQL is
 supported for job and step accounting only.</b> The infrastructure for
@@ -191,7 +191,7 @@ mysql_config and pg-config to find out the information it needs
 about installed libraries and headers. You can specify where your
 mysql_config script is with the
 </i>--with-mysql_conf=/path/to/mysql_config</i> option when configuring your
-slurm build. A similar option is also available for PostgreSQL. 
+slurm build. A similar option is also available for PostgreSQL.
 On a successful configure, output is something like this: </p>
 <pre>
 checking for mysql_config... /usr/bin/mysql_config
@@ -208,20 +208,20 @@ directly, but that offers minimal security. </p>
 archiving information in SlurmDBD. SlurmDBD has a separate configuration
 file which is documented in a separate section.
 Note that you can write accounting information to SlurmDBD
-while job completion records are written to a text file or 
-not maintained at all. 
-If you don't set the configuration parameters that begin 
+while job completion records are written to a text file or
+not maintained at all.
+If you don't set the configuration parameters that begin
 with "AccountingStorage" then accounting information will not be
 referenced or recorded.</p>
 
 <ul>
 <li><b>AccountingStorageEnforce</b>:
 This option contains a comma separated list of options you may want to
- enforce.  The valid options are 
+ enforce.  The valid options are
 <ul>
 <li>associations - This will prevent users from running jobs if
 their <i>association</i> is not in the database. This option will
-prevent users from accessing invalid accounts.  
+prevent users from accessing invalid accounts.
 </li>
 <li>limits - This will enforce limits set to associations.  By setting
   this option, the 'associations' option is also set.
@@ -237,18 +237,18 @@ each association in the database.  By setting this option, the
   set to true.
 </li>
 </ul>
-(NOTE: The association is a combination of cluster, account, 
+(NOTE: The association is a combination of cluster, account,
 user names and optional partition name.)
 <br>
-Without AccountingStorageEnforce being set (the default behavior) 
+Without AccountingStorageEnforce being set (the default behavior)
 jobs will be executed based upon policies configured in SLURM on each
 cluster.
-<br> 
+<br>
 It is advisable to run without the option 'limits' set when running a
 scheduler on top of SLURM, like Moab, that does not update in real
 time their limits per association.</li>
 
-<li><b>AccountingStorageHost</b>: The name or address of the host where 
+<li><b>AccountingStorageHost</b>: The name or address of the host where
 SlurmDBD executes</li>
 
 <li><b>AccountingStoragePass</b>: If using SlurmDBD with a second Munge
@@ -262,68 +262,68 @@ The network port that SlurmDBD accepts communication on.</li>
 Set to "accounting_storage/slurmdbd".</li>
 
 <li><b>ClusterName</b>:
-Set to a unique name for each Slurm-managed cluster so that 
+Set to a unique name for each Slurm-managed cluster so that
 accounting records from each can be identified.</li>
 <li><b>TrackWCKey</b>:
 Boolean.  If you want to track wckeys (Workload Characterization Key)
   of users.  A Wckey is an orthogonal way to do accounting against
   maybe a group of unrelated accounts. WCKeys can be defined using
-  sacctmgr add wckey 'name'.  When a job is run use srun --wckey and 
+  sacctmgr add wckey 'name'.  When a job is run use srun --wckey and
   time will be summed up for this wckey.
 </li>
 </ul>
 
 <h2>SlurmDBD Configuration</h2>
 
-<p>SlurmDBD requires its own configuration file called "slurmdbd.conf". 
-This file should be only on the computer where SlurmDBD executes and 
+<p>SlurmDBD requires its own configuration file called "slurmdbd.conf".
+This file should be only on the computer where SlurmDBD executes and
 should only be readable by the user which executes SlurmDBD (e.g. "slurm").
 This file should be protected from unauthorized access since it
 contains a database login name and password.
-See "man slurmdbd.conf" for a more complete description of the 
-configuration parameters. 
+See "man slurmdbd.conf" for a more complete description of the
+configuration parameters.
 Some of the more important parameters include:</p>
 
 <ul>
 <li><b>AuthInfo</b>:
-If using SlurmDBD with a second Munge daemon, store the pathname of 
+If using SlurmDBD with a second Munge daemon, store the pathname of
 the named socket used by Munge to provide enterprise-wide.
 Otherwise the default Munge daemon will be used.</li>
 
 <li><b>AuthType</b>:
-Define the authentication method for communications between SLURM 
+Define the authentication method for communications between SLURM
 components. A value of "auth/munge" is recommended.</li>
 
 <li><b>DbdHost</b>:
-The name of the machine where the Slurm Database Daemon is executed. 
-This should be a node name without the full domain name (e.g. "lx0001"). 
+The name of the machine where the Slurm Database Daemon is executed.
+This should be a node name without the full domain name (e.g. "lx0001").
 This defaults to <i>localhost</i> but should be supplied to avoid a
 warning message.</li>
 
 <li><b>DbdPort</b>:
-The port number that the Slurm Database Daemon (slurmdbd) listens 
-to for work. The default value is SLURMDBD_PORT as established at system 
+The port number that the Slurm Database Daemon (slurmdbd) listens
+to for work. The default value is SLURMDBD_PORT as established at system
 build time. If none is explicitly specified, it will be set to 6819.
 This value must be equal to the <i>AccountingStoragePort</i> parameter in the
 slurm.conf file.</li>
 
 <li><b>LogFile</b>:
-Fully qualified pathname of a file into which the Slurm Database Daemon's 
+Fully qualified pathname of a file into which the Slurm Database Daemon's
 logs are written.
 The default value is none (performs logging via syslog).</li>
 
 <li><b>PluginDir</b>:
-Identifies the places in which to look for SLURM plugins. 
-This is a colon-separated list of directories, like the PATH 
-environment variable. 
+Identifies the places in which to look for SLURM plugins.
+This is a colon-separated list of directories, like the PATH
+environment variable.
 The default value is the prefix given at configure time + "/lib/slurm".</li>
 
 <li><b>SlurmUser</b>:
-The name of the user that the <i>slurmctld</i> daemon executes as. 
+The name of the user that the <i>slurmctld</i> daemon executes as.
 This user must exist on the machine executing the Slurm Database Daemon
 and have the same user ID as the hosts on which <i>slurmctld</i> execute.
 For security purposes, a user other than "root" is recommended.
-The default value is "root". This name should also be the same SlurmUser 
+The default value is "root". This name should also be the same SlurmUser
 on all clusters reporting to the SlurmDBD.</li>
 
 <li><b>StorageHost</b>:
@@ -333,13 +333,13 @@ Ideally this should be the host on which SlurmDBD executes. But could
 be a different machine.</li>
 
 <li><b>StorageLoc</b>:
-Specifies the name of the database where accounting 
+Specifies the name of the database where accounting
 records are written, for databases the default database is
 slurm_acct_db. Note the name can not have a '/' in it or the
 default will be used.</li>
 
 <li><b>StoragePass</b>:
-Define the password used to gain access to the database to store 
+Define the password used to gain access to the database to store
 the job accounting data.</li>
 
 <li><b>StoragePort</b>:
@@ -347,13 +347,13 @@ Define the port on which the database is listening.</li>
 
 <li><b>StorageType</b>:
 Define the accounting storage mechanism type.
-Acceptable values at present include 
+Acceptable values at present include
 "accounting_storage/mysql" and "accounting_storage/pgsql".
 The value "accounting_storage/mysql" indicates that accounting records
-should be written to a MySQL database specified by the 
+should be written to a MySQL database specified by the
 <i>StorageLoc</i> parameter.
 The value "accounting_storage/pgsql" indicates that accounting records
-should be written to a PostgreSQL database specified by the 
+should be written to a PostgreSQL database specified by the
 <i>StorageLoc</i> parameter.
 This value must be specified.</li>
 
@@ -392,7 +392,7 @@ Query OK, 0 rows affected (0.00 sec)
 
 or with a password...
 
-mysql> grant all on slurm_acct_db.* TO 'slurm'@'localhost' 
+mysql> grant all on slurm_acct_db.* TO 'slurm'@'localhost'
     -> identified by 'some_pass' with grant option;
 Query OK, 0 rows affected (0.00 sec)
 </pre>
@@ -481,12 +481,12 @@ information.</p>
 <h2>Tools</h2>
 
 <p>There are a few tools available to work with accounting data,
-<b>sacct</b>, <b>sacctmgr</b>, and <b>sreport</b>. 
+<b>sacct</b>, <b>sacctmgr</b>, and <b>sreport</b>.
 These tools all get or set data through the SlurmDBD daemon.
 <ul>
-<li><b>sacct</b> is used to generate accounting report for both 
+<li><b>sacct</b> is used to generate accounting report for both
 running and completed jobs.</li>
-<li><b>sacctmgr</b> is used to manage associations in the database: 
+<li><b>sacctmgr</b> is used to manage associations in the database:
 add or remove clusters, add or remove users, etc.</li>
 <li><b>sreport</b> is used to generate various reports on usage collected over a
 given time period.</li>
@@ -499,7 +499,7 @@ A tool to report node state information is also under development.</p>
 
 <h2>Database Configuration</h2>
 
-<p>Accounting records are maintained based upon what we refer 
+<p>Accounting records are maintained based upon what we refer
 to as an <i>Association</i>,
 which consists of four elements: cluster, account, user names and
 an optional partition name. Use the <i>sacctmgr</i>
@@ -513,25 +513,25 @@ execute this line:</p>
 sacctmgr add cluster snowflake
 </pre>
 
-<p>Add accounts "none" and "test" to cluster "snowflake" with an execute 
+<p>Add accounts "none" and "test" to cluster "snowflake" with an execute
 line of this sort:</p>
 <pre>
 sacctmgr add account none,test Cluster=snowflake \
-  Description="none" Organization="none" 
+  Description="none" Organization="none"
 </pre>
 
 <p>If you have more clusters you want to add these accounts, to you
 can either not specify a cluster, which will add the accounts to all
 clusters in the system, or comma separate the cluster names you want
 to add to in the cluster option.
-Note that multiple accounts can be added at the same time 
-by comma separating the names. 
-Some <i>description</i> of the account and the <i>organization</i> which 
-it belongs must be specified. 
+Note that multiple accounts can be added at the same time
+by comma separating the names.
+Some <i>description</i> of the account and the <i>organization</i> which
+it belongs must be specified.
 These terms can be used later to generated accounting reports.
-Accounts may be arranged in a hierarchical fashion, for example accounts 
-<i>chemistry</i> and <i>physics</i> may be children of the account <i>science</i>. 
-The hierarchy may have an arbitrary depth. 
+Accounts may be arranged in a hierarchical fashion, for example accounts
+<i>chemistry</i> and <i>physics</i> may be children of the account <i>science</i>.
+The hierarchy may have an arbitrary depth.
 Just specify the <i>parent=''</i> option in the add account line to construct
 the hierarchy.
 For the example above execute</p>
@@ -553,9 +553,9 @@ sacctmgr add user da default=test
 the slurm.conf of the cluster <i>snowflake</i> then user <i>da</i> would be
 allowed to run in account <i>test</i> and any other accounts added
 in the future.
-Any attempt to use other accounts will result in the job being 
-aborted. 
-Account <i>test</i> will be the default if he doesn't specify one in 
+Any attempt to use other accounts will result in the job being
+aborted.
+Account <i>test</i> will be the default if he doesn't specify one in
 the job submission command.</p>
 
 <p>Partition names can also be added to an "add user" command with the
@@ -564,7 +564,7 @@ a slurm partition.</p>
 
 <h2>Cluster Options</h2>
 
-<p>When either adding or modifying a cluster, these are the options 
+<p>When either adding or modifying a cluster, these are the options
 available with sacctmgr:
 <ul>
 <li><b>Name=</b> Cluster name</li>
@@ -573,7 +573,7 @@ available with sacctmgr:
 
 <h2>Account Options</h2>
 
-<p>When either adding or modifying an account, the following sacctmgr 
+<p>When either adding or modifying an account, the following sacctmgr
 options are available:
 <ul>
 <li><b>Cluster=</b> Only add this account to these clusters.
@@ -595,27 +595,27 @@ The account is added to all defined clusters by default.</li>
 
 <h2>User Options</h2>
 
-<p>When either adding or modifying a user, the following sacctmgr 
+<p>When either adding or modifying a user, the following sacctmgr
 options are available:
 
 <ul>
 <li><b>Account=</b> Account(s) to add user to</li>
 
-<li><b>AdminLevel=</b> This field is used to allow a user to add accounting 
-privileges to this user. Valid options are 
+<li><b>AdminLevel=</b> This field is used to allow a user to add accounting
+privileges to this user. Valid options are
 <ul>
 <li>None</li>
 <li>Operator: can add, modify,and remove users, and add other operators)</li>
-<li>Admin: In addition to operator privileges these users can add, modify, 
+<li>Admin: In addition to operator privileges these users can add, modify,
 and remove accounts and clusters</li>
 </ul>
 
 <li><b>Cluster=</b> Only add to accounts on these clusters (default is all clusters)</li>
 
-<li><b>DefaultAccount=</b> Default account for the user, used when no account 
+<li><b>DefaultAccount=</b> Default account for the user, used when no account
 is specified when a job is submitted. (Required on creation)</li>
 
-<li><b>DefaultWCKey=</b> Default wckey for the user, used when no wckey 
+<li><b>DefaultWCKey=</b> Default wckey for the user, used when no wckey
 is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 
 <li><b>Name=</b> User name</li>
@@ -627,10 +627,10 @@ is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 <h2>Limit enforcement</h2>
 
 <p>When limits are developed they will work in this order.
-If a user has a limit set SLURM will read in those, 
-if not we will refer to the account associated with the job. 
-If the account doesn't have the limit set we will refer to 
-the cluster's limits. 
+If a user has a limit set SLURM will read in those,
+if not we will refer to the account associated with the job.
+If the account doesn't have the limit set we will refer to
+the cluster's limits.
 If the cluster doesn't have the limit set no limit will be enforced.
 <p>All of the above entities can include limits as described below...
 
@@ -677,7 +677,7 @@ If the cluster doesn't have the limit set no limit will be enforced.
 
 <li><b>GrpWall=</b> The maximum wall clock time any job submitted to
   this group can run for.  If this limit is reached submission requests
-  will be denied. 
+  will be denied.
 </li>
 
 <!-- For future use
@@ -704,7 +704,7 @@ If the cluster doesn't have the limit set no limit will be enforced.
   have from this association.  If this limit is reached the job will
   be denied at submission.
 </li>
- 
+
 <li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
   to the system at any given time from this association.  If
   this limit is reached new submission requests will be denied until
@@ -723,7 +723,7 @@ If the cluster doesn't have the limit set no limit will be enforced.
 
 <h2>Modifying Entities</h2>
 
-<p>When modifying entities, you can specify many different options in 
+<p>When modifying entities, you can specify many different options in
 SQL-like fashion, using key words like <i>where</i> and <i>set</i>.
 A typical execute line has the following form:
 <pre>
@@ -735,22 +735,22 @@ sacctmgr modify &lt;entity&gt; set &lt;options&gt; where &lt;options&gt;
 sacctmgr modify user set default=none where default=test
 </pre>
 <p>will change all users with a default account of "test" to account "none".
-Once an entity has been added, modified or removed, the change is 
-sent to the appropriate SLURM daemons and will be available for use 
+Once an entity has been added, modified or removed, the change is
+sent to the appropriate SLURM daemons and will be available for use
 instantly.</p>
 
 <h2>Removing Entities</h2>
 
 <p>Removing entities using an execute line similar to the modify example above,
 but without the set options.
-For example, remove all users with a default account "test" using the following 
+For example, remove all users with a default account "test" using the following
 execute line:</p>
 <pre>
 sacctmgr remove user where default=test
 </pre>
 <p>Note: In most cases, removed entities are preserved, but flagged
-as deleted. 
-If an entity has existed for less than 1 day, the entity will be removed 
+as deleted.
+If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
 <p style="text-align: center;">Last modified 2 March 2009</p>

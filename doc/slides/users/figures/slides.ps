@@ -510,15 +510,15 @@ end
 %
 % This is the encoding vector for Type1 and TrueType fonts to be used
 % with TeX.  This file is part of the PSNFSS bundle, version 9
-% 
+%
 % Authors: S. Rahtz, P. MacKay, Alan Jeffrey, B. Horn, K. Berry, W. Schmidt
 %
 % Idea is to have all the characters normally included in Type 1 fonts
 % available for typesetting. This is effectively the characters in Adobe
 % Standard Encoding + ISO Latin 1 + extra characters from Lucida + Euro.
-% 
+%
 % Character code assignments were made as follows:
-% 
+%
 % (1) the Windows ANSI characters are almost all in their Windows ANSI
 % positions, because some Windows users cannot easily reencode the
 % fonts, and it makes no difference on other systems. The only Windows
@@ -526,40 +526,40 @@ end
 % typesetting -- rubout (127 decimal), nobreakspace (160), softhyphen
 % (173). quotesingle and grave are moved just because it's such an
 % irritation not having them in TeX positions.
-% 
+%
 % (2) Remaining characters are assigned arbitrarily to the lower part
 % of the range, avoiding 0, 10 and 13 in case we meet dumb software.
-% 
+%
 % (3) Y&Y Lucida Bright includes some extra text characters; in the
 % hopes that other PostScript fonts, perhaps created for public
 % consumption, will include them, they are included starting at 0x12.
-% 
+%
 % (4) Remaining positions left undefined are for use in (hopefully)
 % upward-compatible revisions, if someday more characters are generally
 % available.
-% 
+%
 % (5) hyphen appears twice for compatibility with both ASCII and Windows.
 %
 % (6) /Euro is assigned to 128, as in Windows ANSI
-% 
+%
 /TeXBase1Encoding [
 % 0x00 (encoded characters from Adobe Standard not in Windows 3.1)
   /.notdef /dotaccent /fi /fl
   /fraction /hungarumlaut /Lslash /lslash
   /ogonek /ring /.notdef
-  /breve /minus /.notdef 
+  /breve /minus /.notdef
 % These are the only two remaining unencoded characters, so may as
 % well include them.
-  /Zcaron /zcaron 
+  /Zcaron /zcaron
 % 0x10
- /caron /dotlessi 
+ /caron /dotlessi
 % (unusual TeX characters available in, e.g., Lucida Bright)
- /dotlessj /ff /ffi /ffl 
+ /dotlessj /ff /ffi /ffl
  /.notdef /.notdef /.notdef /.notdef
  /.notdef /.notdef /.notdef /.notdef
  % very contentious; it's so painful not having quoteleft and quoteright
  % at 96 and 145 that we move the things normally found there down to here.
- /grave /quotesingle 
+ /grave /quotesingle
 % 0x20 (ASCII begins)
  /space /exclam /quotedbl /numbersign
  /dollar /percent /ampersand /quoteright
@@ -713,7 +713,7 @@ sub sub /pdf@voff exch def } def /H.R { currentpoint HyperBorder sub
 pop vsize 72 sub exch DvipsToPDF sub /pdf@voff exch def } def systemdict
 /pdfmark known not {userdict /pdfmark systemdict /cleartomark get put}
 if
- 
+
 @fedspecial end TeXDict begin
 40258431 52099146 2074 600 600 (slides.dvi) @start /Fa
 134[124 124 2[138 69 124 83 138 138 138 138 207 55 1[55
@@ -761,7 +761,7 @@ a 5073 5340 a @beginspecial @setspecial
  tx@Dict begin STP newpath 0.8 SLW 0. setgray  0.25 true -25.60728
 -25.60728 348.5461 253.94081 .5 Frame  gsave 0. setgray fill grestore
 gsave 0.8 SLW 0. setgray 0 setlinecap stroke  grestore end
- 
+
 @endspecial
 4828 2192 a @beginspecial 14 @llx 14 @lly 513 @urx 49
 @ury 3401 @rwi 99 @rhi @setspecial
@@ -3833,7 +3833,7 @@ a @beginspecial @setspecial
  tx@Dict begin STP newpath 0.8 SLW 0. setgray  0.25 true -25.60728
 -25.60728 348.5461 253.94081 .5 Frame  gsave 0. setgray fill grestore
 gsave 0.8 SLW 0. setgray 0 setlinecap stroke  grestore end
- 
+
 @endspecial 4828 2192 a
 @beginspecial 14 @llx 14 @lly 513 @urx 49 @ury 3401 @rwi
 99 @rhi @setspecial

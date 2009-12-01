@@ -5,9 +5,9 @@ slurm_hostlist_create, slurm_hostlist_shift, slurm_hostlist_destroy
 \- Slurm host list support functions
 
 .SH "SYNTAX"
-.LP 
+.LP
 #include <slurm/slurm.h>
-.LP 
+.LP
 .LP
 hostlist_t \fBslurm_hostlist_create\fR (
 .br
@@ -28,48 +28,48 @@ void \fBslurm_hostlist_destroy\fR (
 );
 
 .SH "ARGUMENTS"
-.LP 
+.LP
 .TP
 \fInode_list\fP
-A list of nodes as returned by the 
-\fBslurm_job_step_create\fR functions. The returned value may include a simple 
-range format to describe numeric ranges of values and/or multiple numeric 
+A list of nodes as returned by the
+\fBslurm_job_step_create\fR functions. The returned value may include a simple
+range format to describe numeric ranges of values and/or multiple numeric
 values (e.g. "linux[1\-3,6]" represents "linux1", "linux2", "linux3", and "linux6").
 .TP
 \fIhost_list\fP
-A hostlist created by the \fBslurm_hostlist_create\fR function. 
+A hostlist created by the \fBslurm_hostlist_create\fR function.
 
 .SH "DESCRIPTION"
 .LP
-\fBslurm_hostlist_create\fR creates a database of node names from a range format 
-describing node names. Use \fBslurm_hostlist_destroy\fR to release storage associated 
+\fBslurm_hostlist_create\fR creates a database of node names from a range format
+describing node names. Use \fBslurm_hostlist_destroy\fR to release storage associated
 with the database when no longer required.
 .LP
-\fBslurm_hostlist_shift\fR extracts the first entry from the host list database created 
+\fBslurm_hostlist_shift\fR extracts the first entry from the host list database created
 by the \fBslurm_hostlist_create\fR function.
 .LP
-\fBslurm_hostlist_destroy\fR releases storage associated with a database created by 
+\fBslurm_hostlist_destroy\fR releases storage associated with a database created by
 \fBslurm_hostlist_create\fR when no longer required.
 
 .SH "RETURN VALUE"
 .LP
-\fBslurm_hostlist_create\fR returns the host list database or NULL if memory can not be 
+\fBslurm_hostlist_create\fR returns the host list database or NULL if memory can not be
 allocated for the database.
 
 .LP
-\fBslurm_hostlist_shift\fR returns a character string or NULL if no entries remain in 
+\fBslurm_hostlist_shift\fR returns a character string or NULL if no entries remain in
 the database.
 
 .SH "EXAMPLE"
-.LP 
+.LP
 #include <stdio.h>
 .br
 #include <hostlist.h>
 .br
 #include <slurm.h>
-.LP 
+.LP
 int main (int argc, char *argv[])
-.br 
+.br
 {
 .br
 	hostlist_t my_hostlist;
@@ -92,16 +92,16 @@ int main (int argc, char *argv[])
 .LP
 	while ( (host = slurm_hostlist_shift(my_hostlist)) )
 .br
-		printf ("host = %s\\n", host); 
+		printf ("host = %s\\n", host);
 .LP
 	slurm_hostlist_destroy (my_hostlist) ;
 .br
 	exit (0);
-.br 
+.br
 }
 
 .SH "NOTE"
-These functions are included in the libslurm library, 
+These functions are included in the libslurm library,
 which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
@@ -124,5 +124,5 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-.LP 
+.LP
 \fBslurm_get_job_steps\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_partitions\fB(3)

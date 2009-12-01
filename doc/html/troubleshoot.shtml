@@ -4,7 +4,7 @@
 
 <p>This guide is meant as a tool to help system administrators
 or operators troubleshoot SLURM failures and restore services.
-The <a href="faq.html">Frequently Asked Questions</a> document 
+The <a href="faq.html">Frequently Asked Questions</a> document
 may also prove useful.</p>
 
 <ul>
@@ -27,7 +27,7 @@ state manually</a></li>
 <li><a href="#bluegene-error-state2">How to set a sub base partition
 which doesn't have a block already created in an error
 state manually</a></li>
-<li><a href="#bluegene-block-create">How to make a <i>bluegene.conf</i> 
+<li><a href="#bluegene-block-create">How to make a <i>bluegene.conf</i>
 file that will load in SLURM</a></li>
 </ul>
 </ul>
@@ -36,40 +36,40 @@ file that will load in SLURM</a></li>
 <h2><a name="resp">SLURM is not responding</a></h2>
 
 <ol>
-<li>Execute "<i>scontrol ping</i>" to determine if the primary 
+<li>Execute "<i>scontrol ping</i>" to determine if the primary
 and backup controllers are responding.
 
-<li>If it responds for you, this could be a <a href="#network">networking 
-or configuration problem</a> specific to some user or node in the 
-cluster.</li> 
+<li>If it responds for you, this could be a <a href="#network">networking
+or configuration problem</a> specific to some user or node in the
+cluster.</li>
 
 <li>If not responding, directly login to the machine and try again
 to rule out <a href="#network">network and configuration problems</a>.</li>
 
-<li>If still not responding, check if there is an active slurmctld 
+<li>If still not responding, check if there is an active slurmctld
 dameon by executing "<i>ps -el | grep slurmctld</i>".</li>
 
 <li>If slurmctld is not running, restart it (typically as user root
 using the command "<i>/etc/init.d/slurm start</i>").
-You should check the log file (<i>SlurmctldLog</i> in the 
+You should check the log file (<i>SlurmctldLog</i> in the
 <i>slurm.conf</i> file) for an indication of why it failed.
 If it keeps failing, you should contact the slurm team for help at
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
 
-<li>If slurmctld is running but not responding (a very rare situation), 
-then kill and restart it (typically as user root using the commands 
+<li>If slurmctld is running but not responding (a very rare situation),
+then kill and restart it (typically as user root using the commands
 "<i>/etc/init.d/slurm stop</i>" and then "<i>/etc/init.d/slurm start</i>").</li>
 
 <li>If it hangs again, increase the verbosity of debug messages
-(increase <i>SlurmctldDebug</i> in the <i>slurm.conf</i> file) 
-and restart.  
+(increase <i>SlurmctldDebug</i> in the <i>slurm.conf</i> file)
+and restart.
 Again check the log file for an indication of why it failed.
 At this point, you should contact the slurm team for help at
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
 
-<li>If it continues to fail without an indication as to the failure 
-mode, restart without preserving state (typically as user root 
-using the commands "<i>/etc/init.d/slurm stop</i>" 
+<li>If it continues to fail without an indication as to the failure
+mode, restart without preserving state (typically as user root
+using the commands "<i>/etc/init.d/slurm stop</i>"
 and then "<i>/etc/init.d/slurm startclean</i>").
 Note: All running jobs and other state information will be lost.</li>
 </ol>
@@ -78,34 +78,34 @@ Note: All running jobs and other state information will be lost.</li>
 
 <h2><a name="sched">Jobs are not getting scheduled</a></h2>
 
-<p>This is dependent upon the scheduler used by SLURM. 
+<p>This is dependent upon the scheduler used by SLURM.
 Executing the command "<i>scontrol show config | grep SchedulerType</i>"
 to determine this.
 For any scheduler, you can check priorities of jobs using the
 command "<i>scontrol show job</i>".</p>
 
 <ul>
-<li>If the scheduler type is <i>builtin</i>, then jobs will be executed 
+<li>If the scheduler type is <i>builtin</i>, then jobs will be executed
 in the order of submission for a given partition.
-Even if resources are available to initiate jobs immediately, 
+Even if resources are available to initiate jobs immediately,
 it will be deferred until no previously submitted job is pending.</li>
 
-<li>If the scheduler type is <i>backfill</i>, then jobs will generally 
-be executed in the order of submission for a given partition with one 
-exception: later submitted jobs will be initiated early if doing so 
-does not delay the expected execution time of an earlier submitted job. 
-In order for backfill scheduling to be effective, users jobs should 
-specify reasonable time limits. 
-If jobs do not specify time limits, then all jobs will receive the 
-same time limit (that associated with the partition), and the ability 
+<li>If the scheduler type is <i>backfill</i>, then jobs will generally
+be executed in the order of submission for a given partition with one
+exception: later submitted jobs will be initiated early if doing so
+does not delay the expected execution time of an earlier submitted job.
+In order for backfill scheduling to be effective, users jobs should
+specify reasonable time limits.
+If jobs do not specify time limits, then all jobs will receive the
+same time limit (that associated with the partition), and the ability
 to backfill schedule jobs will be limited.
-The backfill scheduler does not alter job specifications of required 
-or excluded nodes, so jobs which specify nodes will substantially 
+The backfill scheduler does not alter job specifications of required
+or excluded nodes, so jobs which specify nodes will substantially
 reduce the effectiveness of backfill scheduling.
 See the <a href="faq.html#backfill">backfill documentation</a>
 for more details.</li>
 
-<li>If the scheduler type is <i>wiki</i>, this represents 
+<li>If the scheduler type is <i>wiki</i>, this represents
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
 The Maui Scheduler</a> or
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
@@ -118,18 +118,18 @@ Please refer to its documentation for help.</li>
 <h2><a name="completing">Jobs and nodes are stuck in COMPLETING state</a></h2>
 
 <p>This is typically due to non-killable processes associated with the job.
-SLURM will continue to attempt terminating the processes with SIGKILL, but 
-some jobs may stuck performing I/O and non-killable. 
-This is typically due to a file system problem and may be addressed in 
+SLURM will continue to attempt terminating the processes with SIGKILL, but
+some jobs may stuck performing I/O and non-killable.
+This is typically due to a file system problem and may be addressed in
 a couple of ways.</p>
 <ol>
-<li>Fix the file system and/or reboot the node. <b>-OR-</b></li> 
-<li>Set the node to a DOWN state and then return it to service 
-("<i>scontrol update NodeName=&lt;node&gt; State=down Reason=hung_proc</i>" 
-and "<i>scontrol update NodeName=&lt;node&gt; State=resume</i>"). 
-This permits other jobs to use the node, but leaves the non-killable 
+<li>Fix the file system and/or reboot the node. <b>-OR-</b></li>
+<li>Set the node to a DOWN state and then return it to service
+("<i>scontrol update NodeName=&lt;node&gt; State=down Reason=hung_proc</i>"
+and "<i>scontrol update NodeName=&lt;node&gt; State=resume</i>").
+This permits other jobs to use the node, but leaves the non-killable
 process in place.
-If the process should ever complete the I/O, the pending SIGKILL 
+If the process should ever complete the I/O, the pending SIGKILL
 should terminate it immediately.</li>
 </ol>
 
@@ -140,30 +140,30 @@ should terminate it immediately.</li>
 <ol>
 <li>Check the reason why the node is down using the command
 "<i>scontrol show node &lt;name&gt;</i>".
-This will show the reason why the node was set down and the 
-time when it happened. 
-If there is insufficient disk space, memory space, etc. compared 
-to the parameters specified in the <i>slurm.conf</i> file then 
+This will show the reason why the node was set down and the
+time when it happened.
+If there is insufficient disk space, memory space, etc. compared
+to the parameters specified in the <i>slurm.conf</i> file then
 either fix the node or change <i>slurm.conf</i>.</li>
 
-<li>If the reason is "Not responding", then check communications 
+<li>If the reason is "Not responding", then check communications
 between the control machine and the DOWN node using the command
-"<i>ping &lt;address&gt;</i>" being sure to specify the 
-NodeAddr values configured in <i>slurm.conf</i>. 
+"<i>ping &lt;address&gt;</i>" being sure to specify the
+NodeAddr values configured in <i>slurm.conf</i>.
 If ping fails, then fix the network or addresses in <i>slurm.conf</i>.</li>
 
-<li>Next, login to a node that SLURM considers to be in a DOWN 
+<li>Next, login to a node that SLURM considers to be in a DOWN
 state and check if the slurmd daemon is running with the command
 "<i>ps -el | grep slurmd</i>".
 If slurmd is not running, restart it (typically as user root
 using the command "<i>/etc/init.d/slurm start</i>").
 You should check the log file (<i>SlurmdLog</i> in the
 <i>slurm.conf</i> file) for an indication of why it failed.
-You can get the status of the running slurmd daemon by 
-executing the command "<i>scontrol show slurmd</i>" on 
+You can get the status of the running slurmd daemon by
+executing the command "<i>scontrol show slurmd</i>" on
 the node of interest.
-Check the value of "Last slurmctld msg time" to determine 
-if the slurmctld is able to communicate with the slurmd. 
+Check the value of "Last slurmctld msg time" to determine
+if the slurmctld is able to communicate with the slurmd.
 If it keeps failing, you should contact the slurm team for help at
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
 
@@ -171,7 +171,7 @@ If it keeps failing, you should contact the slurm team for help at
 then kill and restart it (typically as user root using the commands
 "<i>/etc/init.d/slurm stop</i>" and then "<i>/etc/init.d/slurm start</i>").</li>
 
-<li>If still not responding, try again to rule out 
+<li>If still not responding, try again to rule out
 <a href="#network">network and configuration problems</a>.</li>
 
 <li>If still not responding, increase the verbosity of debug messages
@@ -193,27 +193,27 @@ Note: All jobs and other state information on that node will be lost.</li>
 
 <ol>
 <li>Check the controller and/or slurmd log files (<i>SlurmctldLog</i>
-and <i>SlurmdLog</i> in the <i>slurm.conf</i> file) for an indication 
+and <i>SlurmdLog</i> in the <i>slurm.conf</i> file) for an indication
 of why it is failing.</li>
 
 <li>Check for consistent <i>slurm.conf</i> and credential files on
 the node(s) experiencing problems.</li>
 
-<li>If this is user-specific problem, check that the user is 
-configured on the controller computer(s) as well as the 
+<li>If this is user-specific problem, check that the user is
+configured on the controller computer(s) as well as the
 compute nodes.
-The user doesn't need to be able to login, but his user ID 
+The user doesn't need to be able to login, but his user ID
 must exist.</li>
 
-<li>Check that a consistent version of SLURM exists on all of 
+<li>Check that a consistent version of SLURM exists on all of
 the nodes (execute "<i>sinfo -V</i>" or "<i>rpm -qa | grep slurm</i>").
-If the first two digits of the version number match it should 
-work fine, but version 1.1 commands will not work with 
-version 1.2 daemons or vise-versa.</li> 
+If the first two digits of the version number match it should
+work fine, but version 1.1 commands will not work with
+version 1.2 daemons or vise-versa.</li>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<h2><a name="bluegene-block-error">Bluegene: 
+<h2><a name="bluegene-block-error">Bluegene:
 Why is a block in an error state</a></h2>
 
 <ol>
@@ -221,12 +221,12 @@ Why is a block in an error state</a></h2>
 file) for an indication of why it is failing. (grep for update_block:)</li>
 <li>If the reason was something that happened to the system like a
 failed boot or a nodecard going bad or something like that you will
-need to fix the problem and then 
+need to fix the problem and then
 <a href="#bluegene-block-free">manually set the block to free</a>.</li>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<h2><a name="bluegene-block-norun">Bluegene: How to make it so no jobs 
+<h2><a name="bluegene-block-norun">Bluegene: How to make it so no jobs
 will run on a block</a></h2>
 
 <ol>
@@ -237,7 +237,7 @@ href="#bluegene-block-free">manually set the block to free</a>.</li>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<h2><a name="bluegene-block-check">Bluegene: Static blocks in 
+<h2><a name="bluegene-block-check">Bluegene: Static blocks in
 <i>bluegene.conf</i> file not loading</a></h2>
 
 <ol>
@@ -253,7 +253,7 @@ href="#bluegene-block-create">click here</a></li>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<h2><a name="bluegene-block-free">Bluegene: How to free a block(s) 
+<h2><a name="bluegene-block-free">Bluegene: How to free a block(s)
 manually</a></h2>
 <ul>
 <li><b>Using sfree</b></li>
@@ -268,7 +268,7 @@ manually</a></h2>
 </ul>
 <p class="footer"><a href="#top">top</a></p>
 
-<h2><a name="bluegene-error-state">Bluegene: How to set a block in 
+<h2><a name="bluegene-error-state">Bluegene: How to set a block in
 an error state manually</a></h2>
 
 <ol>
@@ -284,11 +284,11 @@ state manually</a></h2>
 <li>Run "<i>scontrol update state=ERROR subBPName=IONODE_LIST</i>".</li>
 IONODE_LIST is a list of the ionodes you want to down in a certain base
 partition i.e. bg000[0-3] will down the first 4 ionodes in base
-partition 000. 
+partition 000.
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<h2><a name="bluegene-block-create">Bluegene: How to make a 
+<h2><a name="bluegene-block-create">Bluegene: How to make a
 <i>bluegene.conf</i> file that will load in SLURM</a></h2>
 
 <ol>

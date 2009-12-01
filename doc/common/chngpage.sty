@@ -52,7 +52,7 @@
         \expandafter\expandafter\expandafter\@gobble
         \csname r@#1\endcsname\@nil
       \fi}}{}}
-      
+
 %% User level command to check for odd/even page
 \DeclareRobustCommand{\checkoddpage}{%
   \stepcounter{cp@cnt}\label{\cplabelprefix\thecp@cnt}%
@@ -138,21 +138,21 @@
 % \changetext
 %%%%%%%%%%%%%
 %     The \changetext command is for changing the size and horizontal position
-% of the text block on a page. The command takes 5 arguments, each of which 
+% of the text block on a page. The command takes 5 arguments, each of which
 % is a length or is empty. i.e.,
 %
 % \changetext{textheight}{textwidth}{evensidemargin}{oddsidemargin}{columnsep}
 %
 % The given lengths are added to the corresponding current lengths and
-% the remainder of the current page is typeset using the changed text block 
-% layout. The new layout remains in effect until another \change... command 
+% the remainder of the current page is typeset using the changed text block
+% layout. The new layout remains in effect until another \change... command
 % is issued.
 %
 %%%%%%%%%%%%%
 % \changepage
 %%%%%%%%%%%%%
 %     The \changepage command is for changing the general layout of
-% a page. The command takes 9 arguments, each of which is a length or is empty. 
+% a page. The command takes 9 arguments, each of which is a length or is empty.
 % The first 5 arguments are the same as for \changetext and have the same effect.
 % The last four arguments are:
 %
@@ -160,8 +160,8 @@
 %
 % These lengths are added to the corresponding current lengths and
 % thus modify the vertical positions of the elements of the page. The
-% remainder of the current page is typeset using the changed text block 
-% and page layout. The new layout remains in effect until another 
+% remainder of the current page is typeset using the changed text block
+% and page layout. The new layout remains in effect until another
 % \change... command is issued.
 %
 % NOTE 1: Not supplying a value for a length argument is equivalent
@@ -183,7 +183,7 @@
 % \changetext{-5\baselineskip}{10em}{-5em}{-5em}{}
 % \twocolumn
 % ... two column pages
-% \clearpage 
+% \clearpage
 % \changetext{5\baselineskip}{-10em}{5em}{5em}{}
 % \onecolumn
 % ... normal pages
@@ -210,7 +210,7 @@
 %%%%%%%%%%%%%
 %    Within an adjustwidth environment the left and right margins can be
 % adjusted. The environment takes one optional argument and two required
-% length arguments: 
+% length arguments:
 %
 % \begin{adjustwidth}[]{leftmargin}{rightmargin}
 %
@@ -262,7 +262,7 @@
 % can be turned on by putting the command \cpstricttrue before
 % the environment, and turned of by using \cpstrictfalse.
 %
-%     NOTE: In a twocolumn document, the adjustwidth environment 
+%     NOTE: In a twocolumn document, the adjustwidth environment
 % treats both columns equally. For example, if the width is meant
 % to be wider at the outer margin, then on odd pages the extra width
 % will be at the right of any column, and on even pages the extra
@@ -280,8 +280,8 @@
 %
 %    This works by the \checkoddpage command generating a label and
 % then checking the \pageref for the label (actually, a special version
-% of \pageref is required and is used internally by \checkoddpage). 
-% This mechanism requires at least two LaTeX passes to ensure that 
+% of \pageref is required and is used internally by \checkoddpage).
+% This mechanism requires at least two LaTeX passes to ensure that
 % the labels have settled (on the initial pass there will be no labels
 % in the *.aux file to be checked).
 %
@@ -290,7 +290,7 @@
 % defined as `^_', can be changed in the preamble if it will cause
 % a clash with any author-defined labels. The default labels will
 % be of the form `^_N' where N is a positive integer.
-% 
+%
 % Changes in version 1.1c (2001/02/24)
 % -----------------------
 % o Fixed problem when used with the calc package
@@ -302,17 +302,17 @@
 % -----------------------
 % o Added strict option for robust adjustwidth; checks odd/even
 %   pages via labels instead of by the page counter.
-% 
+%
 % Changes in version 1.1a (2001/01/18)
 % -----------------------
 % o Added missing {} in last 4 arguments of \changepage
-% 
+%
 % Changes in version 1.1 (2000/07/22)
 % ----------------------
 % o Empty arguments made available
 % o Added adjustwidth environment
-% 
-% 
+%
+%
 % Peter W.
 %
 %

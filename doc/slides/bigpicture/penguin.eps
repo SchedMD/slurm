@@ -17,7 +17,7 @@
 %%BeginProlog
 %%BeginResource: procset Adobe_packedarray 2.0 0
 %%Title: (Packed Array Operators)
-%%Version: 2.0 
+%%Version: 2.0
 %%CreationDate: (8/2/90) ()
 %%Copyright: ((C) 1987-1990 Adobe Systems Incorporated All Rights Reserved)
 userdict /Adobe_packedarray 5 dict dup begin put
@@ -60,7 +60,7 @@ currentdict readonly pop end
 Adobe_packedarray /initialize get exec
 %%BeginResource: procset Adobe_cshow 1.1 0
 %%Title: (cshow Operator)
-%%Version: 1.1 
+%%Version: 1.1
 %%CreationDate: (1/23/89) ()
 %%Copyright: ((C) 1987-1990 Adobe Systems Incorporated All Rights Reserved)
 currentpacking true setpacking
@@ -106,7 +106,7 @@ setpacking
 %%EndResource
 %%BeginResource: procset Adobe_customcolor 1.0 0
 %%Title: (Custom Color Operators)
-%%Version: 1.0 
+%%Version: 1.0
 %%CreationDate: (5/9/88) ()
 %%Copyright: ((C) 1987-1990 Adobe Systems Incorporated All Rights Reserved)
 currentpacking true setpacking
@@ -162,7 +162,7 @@ setpacking
 %%EndResource
 %%BeginResource: procset Adobe_IllustratorA_AI3 1.1 3
 %%Title: (Adobe Illustrator (R) Version 3.0 Abbreviated Prolog)
-%%Version: 1.1 
+%%Version: 1.1
 %%CreationDate: (3/7/1994) ()
 %%Copyright: ((C) 1987-1994 Adobe Systems Incorporated All Rights Reserved)
 currentpacking true setpacking
@@ -181,7 +181,7 @@ userdict /Adobe_IllustratorA_AI3_vars 58 dict dup begin put
 /_doClip 0 def
 /cf	currentflat def
 /_tm matrix def
-/_renderStart [/e0 /r0 /a0 /o0 /e1 /r1 /a1 /i0] def 
+/_renderStart [/e0 /r0 /a0 /o0 /e1 /r1 /a1 /i0] def
 /_renderEnd [null null null null /i1 /i1 /i1 /i1] def
 /_render -1 def
 /_rise 0 def
@@ -268,9 +268,9 @@ exch 5 -1 roll 3 index mul add
 /swj
 {
 dup 4 1 roll
-dup length exch stringwidth 
+dup length exch stringwidth
 exch 5 -1 roll 3 index mul add
-4 1 roll 3 1 roll mul add 
+4 1 roll 3 1 roll mul add
 6 2 roll /_cnt 0 ddef
 {1 index eq {/_cnt _cnt 1 add ddef} if} forall pop
 exch _cnt mul exch _cnt mul 2 index add 4 1 roll 2 index add 4 1 roll pop pop
@@ -279,7 +279,7 @@ exch _cnt mul exch _cnt mul 2 index add 4 1 roll 2 index add 4 1 roll pop pop
 {
 4 1 roll
 	{
-	2 npop 
+	2 npop
 	(0) exch 2 copy 0 exch put pop
 	gsave
 	false charpath currentpoint
@@ -295,12 +295,12 @@ exch _cnt mul exch _cnt mul 2 index add 4 1 roll 2 index add 4 1 roll pop pop
 {
 4 1 roll
 	{
-	2 npop 
-	(0) exch 2 copy 0 exch put 
+	2 npop
+	(0) exch 2 copy 0 exch put
 	gsave
-	_sp eq 
+	_sp eq
 		{
-		exch 6 index 6 index 6 index 5 -1 roll widthshow  
+		exch 6 index 6 index 6 index 5 -1 roll widthshow
 		currentpoint
 		}
 		{
@@ -326,11 +326,11 @@ exch _cnt mul exch _cnt mul 2 index add 4 1 roll 2 index add 4 1 roll pop pop
 /jsp
 {
 	{
-	2 npop 
-	(0) exch 2 copy 0 exch put 
-	_sp eq 
+	2 npop
+	(0) exch 2 copy 0 exch put
+	_sp eq
 		{
-		exch 5 index 5 index 5 index 5 -1 roll widthshow  
+		exch 5 index 5 index 5 index 5 -1 roll widthshow
 		}
 		{
 		false charpath
@@ -445,11 +445,11 @@ closepath
 } def
 /N
 {
-_pola 0 eq 
+_pola 0 eq
 	{
-	_doClip 1 eq {clip /_doClip 0 ddef} if 
+	_doClip 1 eq {clip /_doClip 0 ddef} if
 	newpath
-	} 
+	}
 	{
 	/CRender {N} ddef
 	}ifelse
@@ -458,17 +458,17 @@ _pola 0 eq
 {N} def
 /F
 {
-_pola 0 eq 
+_pola 0 eq
 	{
-	_doClip 1 eq 
+	_doClip 1 eq
 		{
-		gsave _pf grestore clip newpath /_lp /none ddef _fc 
+		gsave _pf grestore clip newpath /_lp /none ddef _fc
 		/_doClip 0 ddef
 		}
 		{
 		_pf
 		}ifelse
-	} 
+	}
 	{
 	/CRender {F} ddef
 	}ifelse
@@ -480,17 +480,17 @@ F
 } def
 /S
 {
-_pola 0 eq 
+_pola 0 eq
 	{
-	_doClip 1 eq 
+	_doClip 1 eq
 		{
-		gsave _ps grestore clip newpath /_lp /none ddef _sc 
+		gsave _ps grestore clip newpath /_lp /none ddef _sc
 		/_doClip 0 ddef
 		}
 		{
 		_ps
 		}ifelse
-	} 
+	}
 	{
 	/CRender {S} ddef
 	}ifelse
@@ -502,14 +502,14 @@ S
 } def
 /B
 {
-_pola 0 eq 
+_pola 0 eq
 	{
 	_doClip 1 eq
-	gsave F grestore 
+	gsave F grestore
 		{
 		gsave S grestore clip newpath /_lp /none ddef _sc
 		/_doClip 0 ddef
-		} 
+		}
 		{
 		S
 		}ifelse
@@ -529,10 +529,10 @@ B
 } def
 /*
 {
-count 0 ne 
+count 0 ne
 	{
 	dup type (stringtype) eq {pop} if
-	} if 
+	} if
 _pola 0 eq {newpath} if
 } def
 /u
@@ -553,7 +553,7 @@ _pola 1 add /_pola exch ddef
 } def
 /*U
 {
-_pola 1 sub /_pola exch ddef 
+_pola 1 sub /_pola exch ddef
 _pola 0 eq {CRender} if
 } def
 /D
@@ -601,7 +601,7 @@ _i restore
 {
 /_gf exch ddef
 /_fc
-{ 
+{
 _lp /fill ne
 	{
 	_of setoverprint
@@ -719,7 +719,7 @@ jss
 findcmykcustomcolor
 /_if exch ddef
 /_fc
-{ 
+{
 _lp /fill ne
 	{
 	_of setoverprint
