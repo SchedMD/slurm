@@ -99,7 +99,7 @@ static void  _intr_handler(int signo);
 #ifdef HAVE_BG
 #define POLL_SLEEP 3			/* retry interval in seconds  */
 static int _wait_bluegene_block_ready(
-			resource_allocation_response_msg_t *alloc);
+	resource_allocation_response_msg_t *alloc);
 static int _blocks_dealloc(void);
 #endif
 
@@ -179,7 +179,7 @@ static bool _retry(void)
 {
 	static int  retries = 0;
 	static char *msg = "Slurm controller not responding, "
-		           "sleeping and retrying.";
+		"sleeping and retrying.";
 
 	if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) {
 		if (retries == 0)
@@ -239,7 +239,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 	for (i=0; (cur_delay < max_delay); i++) {
 		if (i == 1)
 			debug("Waiting for block %s to become ready for job",
-			     block_id);
+			      block_id);
 		if (i) {
 			sleep(POLL_SLEEP);
 			rc = _blocks_dealloc();
@@ -474,7 +474,7 @@ existing_allocation(void)
                         error ("SLURM job %u has expired.", old_job_id);
                 else
                         error ("Unable to confirm allocation for job %u: %m",
-                              old_job_id);
+			       old_job_id);
                 info ("Check SLURM_JOB_ID environment variable "
                       "for expired or invalid job.");
                 exit(error_exit);
@@ -758,7 +758,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		break;
 	default:
 		job->ctx_params.task_dist = (job->ctx_params.task_count <= 
-			job->ctx_params.node_count) 
+					     job->ctx_params.node_count) 
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
 		opt.distribution = job->ctx_params.task_dist;
 		break;

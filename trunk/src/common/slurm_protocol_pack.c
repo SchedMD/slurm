@@ -186,9 +186,9 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 
 static void _pack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t *
-					   msg, Buf buffer);
+						  msg, Buf buffer);
 static int _unpack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t **
-					    msg_ptr, Buf buffer);
+						   msg_ptr, Buf buffer);
 
 static void _pack_cancel_tasks_msg(kill_tasks_msg_t * msg, Buf buffer);
 static int _unpack_cancel_tasks_msg(kill_tasks_msg_t ** msg_ptr, Buf buffer);
@@ -237,9 +237,9 @@ static int _unpack_job_info_request_msg(job_info_request_msg_t**
 					msg, Buf buffer);
 
 static void _pack_block_info_req_msg(block_info_request_msg_t *
-					   msg, Buf buffer);
+				     msg, Buf buffer);
 static int _unpack_block_info_req_msg(block_info_request_msg_t **
-					    msg, Buf buffer);
+				      msg, Buf buffer);
 
 static void _pack_job_step_info_req_msg(job_step_info_request_msg_t * msg,
 					Buf buffer);
@@ -320,7 +320,7 @@ static int  _unpack_srun_step_missing_msg(srun_step_missing_msg_t ** msg_ptr,
 
 static void _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer);
 static int  _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, 
-					Buf buffer);
+				     Buf buffer);
 
 static void _pack_srun_user_msg(srun_user_msg_t * msg, Buf buffer);
 static int  _unpack_srun_user_msg(srun_user_msg_t ** msg_ptr, Buf buffer);
@@ -389,7 +389,7 @@ static int  _unpack_resv_name_msg(reservation_name_msg_t ** msg, Buf buffer);
 
 static void _pack_topo_info_msg(topo_info_response_msg_t *msg, Buf buffer);
 static int  _unpack_topo_info_msg(topo_info_response_msg_t **msg,
-				 Buf buffer);
+				  Buf buffer);
 
 static void _pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t *msg, Buf buffer);
 static int  _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t **msg, 
@@ -587,7 +587,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:
 		_pack_resv_name_msg((reservation_name_msg_t *) msg->
-				     data, buffer);
+				    data, buffer);
 		break;
 	case REQUEST_UPDATE_BLOCK:
 		node_select_pack_block_info((block_info_t *)msg->data, buffer);
@@ -655,7 +655,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case RESPONSE_STEP_LAYOUT:
 		pack_slurm_step_layout((slurm_step_layout_t *)msg->data, 
-					buffer);
+				       buffer);
 		break;
 	case REQUEST_SIGNAL_JOB:
 		_pack_signal_job_msg((signal_job_msg_t *) msg->data, buffer);
@@ -753,7 +753,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_CHECKPOINT_TASK_COMP:
 		_pack_checkpoint_task_comp((checkpoint_task_comp_msg_t *)msg->data, 
-				      buffer);
+					   buffer);
 		break;
 	case RESPONSE_CHECKPOINT:
 	case RESPONSE_CHECKPOINT_COMP:
@@ -970,7 +970,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:
 		rc = _unpack_resv_name_msg((reservation_name_msg_t **)
-					     &(msg->data), buffer);
+					   &(msg->data), buffer);
 		break;
 	case REQUEST_UPDATE_BLOCK:
 		rc = node_select_unpack_block_info(
@@ -978,7 +978,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case RESPONSE_RESERVATION_INFO:
 		rc = _unpack_reserve_info_msg((reserve_info_msg_t **)
-					     &(msg->data), buffer);
+					      &(msg->data), buffer);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		rc = _unpack_launch_tasks_request_msg(
@@ -1140,7 +1140,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case SRUN_STEP_MISSING:
 		rc = _unpack_srun_step_missing_msg((srun_step_missing_msg_t **)
-						    & msg->data, buffer);
+						   & msg->data, buffer);
 		break;
 	case SRUN_TIMEOUT:
 		rc = _unpack_srun_timeout_msg((srun_timeout_msg_t **)
@@ -1148,7 +1148,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case SRUN_USER_MSG:
 		rc = _unpack_srun_user_msg((srun_user_msg_t **)
-						& msg->data, buffer);
+					   & msg->data, buffer);
 		break;
 	case REQUEST_CHECKPOINT:
 		rc = _unpack_checkpoint_msg((checkpoint_msg_t **)
@@ -1228,11 +1228,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_TRIGGER_SET:
 	case REQUEST_TRIGGER_CLEAR:
 		rc = _unpack_trigger_msg((trigger_info_msg_t **) 
-					  &msg->data, buffer);
+					 &msg->data, buffer);
 		break;
 	case RESPONSE_SLURMD_STATUS:
 		rc = _unpack_slurmd_status((slurmd_status_t **)
-					&msg->data, buffer);
+					   &msg->data, buffer);
 		break;
 	case REQUEST_JOB_NOTIFY:
 		rc =  _unpack_job_notify((job_notify_msg_t **)
@@ -1598,7 +1598,7 @@ unpack_error:
 
 static void
 _pack_priority_factors_response_msg(priority_factors_response_msg_t * msg,
-						Buf buffer)
+				    Buf buffer)
 {
 	ListIterator itr = NULL;
 	priority_factors_object_t *factors = NULL;
@@ -1623,7 +1623,7 @@ static void _priority_factors_resp_list_del(void *x)
 
 static int
 _unpack_priority_factors_response_msg(priority_factors_response_msg_t ** msg,
-						  Buf buffer)
+				      Buf buffer)
 {
 	uint32_t count = NO_VAL;
 	int i = 0;
@@ -3601,7 +3601,7 @@ _pack_job_alloc_info_msg(job_alloc_info_msg_t * job_desc_ptr, Buf buffer)
 
 static int
 _unpack_job_alloc_info_msg(job_alloc_info_msg_t **
-			 job_desc_buffer_ptr, Buf buffer)
+			   job_desc_buffer_ptr, Buf buffer)
 {
 	job_alloc_info_msg_t *job_desc_ptr;
 
@@ -4360,7 +4360,7 @@ _pack_block_info_req_msg(block_info_request_msg_t *msg, Buf buffer)
 
 static int
 _unpack_block_info_req_msg(block_info_request_msg_t **msg, 
-				 Buf buffer)
+			   Buf buffer)
 {
 	block_info_request_msg_t *node_sel_info;
 
@@ -5193,17 +5193,17 @@ static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , Buf buffer)
 
 	safe_unpack32  (&msg->record_count, buffer);
 	msg->trigger_array = xmalloc(sizeof(trigger_info_t) *
-			msg->record_count);
+				     msg->record_count);
 	for (i=0; i<msg->record_count; i++) {
 		safe_unpack32(&msg->trigger_array[i].trig_id,   buffer);
 		safe_unpack16(&msg->trigger_array[i].res_type,  buffer);
 		safe_unpackstr_xmalloc(&msg->trigger_array[i].res_id, 
-				&uint32_tmp, buffer);
+				       &uint32_tmp, buffer);
 		safe_unpack16(&msg->trigger_array[i].trig_type, buffer);
 		safe_unpack16(&msg->trigger_array[i].offset,    buffer);
 		safe_unpack32(&msg->trigger_array[i].user_id,   buffer);
 		safe_unpackstr_xmalloc(&msg->trigger_array[i].program, 
-				&uint32_tmp, buffer);
+				       &uint32_tmp, buffer);
 	}
 	*msg_ptr = msg; 
 	return SLURM_SUCCESS;
@@ -5293,7 +5293,7 @@ static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer)
 
 	safe_unpack16(&msg->host_cnt, buffer);
 	msg->kvs_host_ptr = xmalloc(sizeof(struct kvs_hosts) *
-			msg->host_cnt);
+				    msg->host_cnt);
 	for (i=0; i<msg->host_cnt; i++) {
 		if (_unpack_kvs_host_rec(&msg->kvs_host_ptr[i], buffer))
 			goto unpack_error;
@@ -5511,7 +5511,7 @@ _unpack_set_debug_level_msg(set_debug_level_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->debug_level, buffer);
 	return SLURM_SUCCESS;
 	
- unpack_error:
+unpack_error:
 	slurm_free_set_debug_level_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
@@ -5571,7 +5571,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer)
 	*msg_ptr = msg;
 	return SLURM_SUCCESS;
 
-  unpack_error:
+unpack_error:
 	slurm_free_will_run_response_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;

@@ -150,7 +150,7 @@ slurm_auth_get_ops( slurm_auth_context_t c )
 	      "looking at all files",
 	      c->auth_type);
 	
-       /* Get the plugin list, if needed. */
+	/* Get the plugin list, if needed. */
         if ( c->plugin_list == NULL ) {
 		char *plugin_dir;
                 c->plugin_list = plugrack_create();
@@ -334,13 +334,13 @@ slurm_auth_init( char *auth_type )
         
         if ( slurm_auth_get_ops( g_context ) == NULL ) {
                 error( "cannot resolve %s plugin operations", 
-				auth_type );
+		       auth_type );
                 _slurm_auth_context_destroy( g_context );
                 g_context = NULL;
                 retval = SLURM_ERROR;
         }
 
- done:
+done:
 	xfree(auth_type_local);
         slurm_mutex_unlock( &context_lock );
         return retval;

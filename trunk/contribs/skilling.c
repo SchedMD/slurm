@@ -35,57 +35,57 @@
 typedef unsigned int coord_t; // char,short,int for up to 8,16,32 bits per word
 
 static void TransposetoAxes(
-coord_t* X,            // I O  position   [n]
-int      b,            // I    # bits
-int      n)            // I    dimension
+	coord_t* X,            // I O  position   [n]
+	int      b,            // I    # bits
+	int      n)            // I    dimension
 {
-    coord_t  M, P, Q, t;
-    int      i;
+	coord_t  M, P, Q, t;
+	int      i;
 
 // Gray decode by  H ^ (H/2)
-    t = X[n-1] >> 1;
-    for( i = n-1; i; i-- )
-        X[i] ^= X[i-1];
-    X[0] ^= t;
+	t = X[n-1] >> 1;
+	for( i = n-1; i; i-- )
+		X[i] ^= X[i-1];
+	X[0] ^= t;
 
 // Undo excess work
-    M = 2 << (b - 1);
-    for( Q = 2; Q != M; Q <<= 1 )
-    {
-        P = Q - 1;
-        for( i = n-1; i; i-- )
-            if( X[i] & Q ) X[0] ^= P;                              // invert
-            else{ t = (X[0] ^ X[i]) & P;  X[0] ^= t;  X[i] ^= t; } // exchange
-        if( X[0] & Q ) X[0] ^= P;                                  // invert
-    }
+	M = 2 << (b - 1);
+	for( Q = 2; Q != M; Q <<= 1 )
+	{
+		P = Q - 1;
+		for( i = n-1; i; i-- )
+			if( X[i] & Q ) X[0] ^= P;                              // invert
+			else{ t = (X[0] ^ X[i]) & P;  X[0] ^= t;  X[i] ^= t; } // exchange
+		if( X[0] & Q ) X[0] ^= P;                                  // invert
+	}
 } 
 static void AxestoTranspose(
-coord_t* X,            // I O  position   [n]
-int      b,            // I    # bits
-int      n)            // I    dimension
+	coord_t* X,            // I O  position   [n]
+	int      b,            // I    # bits
+	int      n)            // I    dimension
 {
-    coord_t  P, Q, t;
-    int      i;
+	coord_t  P, Q, t;
+	int      i;
 
 // Inverse undo
-    for( Q = 1 << (b - 1); Q > 1; Q >>= 1 )
-    {
-        P = Q - 1;
-        if( X[0] & Q ) X[0] ^= P;                                  // invert
-        for( i = 1; i < n; i++ )
-            if( X[i] & Q ) X[0] ^= P;                              // invert
-            else{ t = (X[0] ^ X[i]) & P;  X[0] ^= t;  X[i] ^= t; } // exchange
-    }
+	for( Q = 1 << (b - 1); Q > 1; Q >>= 1 )
+	{
+		P = Q - 1;
+		if( X[0] & Q ) X[0] ^= P;                                  // invert
+		for( i = 1; i < n; i++ )
+			if( X[i] & Q ) X[0] ^= P;                              // invert
+			else{ t = (X[0] ^ X[i]) & P;  X[0] ^= t;  X[i] ^= t; } // exchange
+	}
 
 // Gray encode (inverse of decode)
-    for( i = 1; i < n; i++ )
-        X[i] ^= X[i-1];
-    t = X[n-1];
-    for( i = 1; i < b; i <<= 1 )
-        X[n-1] ^= X[n-1] >> i;
-    t ^= X[n-1];
-    for( i = n-2; i >= 0; i-- )
-        X[i] ^= t;
+	for( i = 1; i < n; i++ )
+		X[i] ^= X[i-1];
+	t = X[n-1];
+	for( i = 1; i < b; i <<= 1 )
+		X[n-1] ^= X[n-1] >> i;
+	t ^= X[n-1];
+	for( i = n-2; i >= 0; i-- )
+		X[i] ^= t;
 }
 
 /* This is an sample use of Skilling's functions above.
@@ -107,14 +107,14 @@ main(int argc, char **argv)
 
 	AxestoTranspose(X, BITS, DIMS); // Hilbert transpose for 5 bits and 3 dimensions
 	H = ((X[2]>>0 & 1) <<  0) + ((X[1]>>0 & 1) <<  1) + ((X[0]>>0 & 1) <<  2) +
-	    ((X[2]>>1 & 1) <<  3) + ((X[1]>>1 & 1) <<  4) + ((X[0]>>1 & 1) <<  5) +
-	    ((X[2]>>2 & 1) <<  6) + ((X[1]>>2 & 1) <<  7) + ((X[0]>>2 & 1) <<  8) +
-	    ((X[2]>>3 & 1) <<  9) + ((X[1]>>3 & 1) << 10) + ((X[0]>>3 & 1) << 11) +
-	    ((X[2]>>4 & 1) << 12) + ((X[1]>>4 & 1) << 13) + ((X[0]>>4 & 1) << 14);
+		((X[2]>>1 & 1) <<  3) + ((X[1]>>1 & 1) <<  4) + ((X[0]>>1 & 1) <<  5) +
+		((X[2]>>2 & 1) <<  6) + ((X[1]>>2 & 1) <<  7) + ((X[0]>>2 & 1) <<  8) +
+		((X[2]>>3 & 1) <<  9) + ((X[1]>>3 & 1) << 10) + ((X[0]>>3 & 1) << 11) +
+		((X[2]>>4 & 1) << 12) + ((X[1]>>4 & 1) << 13) + ((X[0]>>4 & 1) << 14);
 	printf("Hilbert integer  = %d (%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d)\n", H,
-		X[0]>>4 & 1, X[1]>>4 & 1, X[2]>>4 & 1, X[0]>>3 & 1, X[1]>>3 & 1,
-		X[2]>>3 & 1, X[0]>>2 & 1, X[1]>>2 & 1, X[2]>>2 & 1, X[0]>>1 & 1,
-		X[1]>>1 & 1, X[2]>>1 & 1, X[0]>>0 & 1, X[1]>>0 & 1, X[2]>>0 & 1);
+	       X[0]>>4 & 1, X[1]>>4 & 1, X[2]>>4 & 1, X[0]>>3 & 1, X[1]>>3 & 1,
+	       X[2]>>3 & 1, X[0]>>2 & 1, X[1]>>2 & 1, X[2]>>2 & 1, X[0]>>1 & 1,
+	       X[1]>>1 & 1, X[2]>>1 & 1, X[0]>>0 & 1, X[1]>>0 & 1, X[2]>>0 & 1);
 
 #if 0
 	/* Used for validation purposes */

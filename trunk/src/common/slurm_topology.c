@@ -207,7 +207,7 @@ slurm_topo_init( void )
 	g_topo_context = slurm_topo_context_create( topo_type );
 	if ( g_topo_context == NULL ) {
 		error( "cannot create topology context for %s",
-			 topo_type );
+		       topo_type );
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -219,7 +219,7 @@ slurm_topo_init( void )
 		retval = SLURM_ERROR;
 	}
 
- done:
+done:
 	slurm_mutex_unlock( &g_topo_context_lock );
 	xfree(topo_type);
 	return retval;

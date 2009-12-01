@@ -150,7 +150,7 @@ _slurm_jobacct_gather_context_destroy( slurm_jobacct_gather_context_t *c )
 	 */
 	if ( c->plugin_list ) {
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			 rc = SLURM_ERROR;
+			rc = SLURM_ERROR;
 		}
 	} else {
 		plugin_unload(c->cur_plugin);
@@ -205,7 +205,7 @@ _slurm_jobacct_gather_get_ops( slurm_jobacct_gather_context_t *c )
 	      "looking at all files",
 	      c->jobacct_gather_type);
 	
-       /* Get the plugin list, if needed. */
+	/* Get the plugin list, if needed. */
         if ( c->plugin_list == NULL ) {
 		char *plugin_dir;
                 c->plugin_list = plugrack_create();
@@ -274,7 +274,7 @@ static int _slurm_jobacct_gather_init(void)
 		retval = SLURM_ERROR;
 	}
 
-  done:
+done:
 	slurm_mutex_unlock( &g_jobacct_gather_context_lock );
 	xfree(jobacct_gather_type);
 

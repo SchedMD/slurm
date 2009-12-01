@@ -288,19 +288,19 @@ void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
 }
 
 void slurm_free_job_step_info_request_msg(
-		job_step_info_request_msg_t *msg)
+	job_step_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
 void inline slurm_free_node_info_request_msg(
-		node_info_request_msg_t *msg)
+	node_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
 void inline slurm_free_part_info_request_msg(
-		part_info_request_msg_t *msg)
+	part_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
@@ -764,56 +764,56 @@ void inline slurm_free_suspend_msg(suspend_msg_t *msg)
 extern char *job_reason_string(enum job_state_reason inx)
 {
 	switch (inx) {
-		case WAIT_NO_REASON:
-			return "None";
-		case WAIT_PRIORITY:
-			return "Priority";
-		case WAIT_DEPENDENCY:
-			return "Dependency";
-		case WAIT_RESOURCES:
-			return "Resources";
-		case WAIT_PART_NODE_LIMIT:
-			return "PartitionNodeLimit";
-		case WAIT_PART_TIME_LIMIT:
-			return "PartitionTimeLimit";
-		case WAIT_PART_STATE:
-			return "PartitionDown";
-		case WAIT_HELD:
-			return "JobHeld";
-		case WAIT_TIME:
-			return "BeginTime";
-		case WAIT_LICENSES:
-			return "Licenses";
-		case WAIT_ASSOC_JOB_LIMIT:
-			return "AssociationJobLimit";
-		case WAIT_ASSOC_RESOURCE_LIMIT:
-			return "AssociationResourceLimit";
-		case WAIT_ASSOC_TIME_LIMIT:
-			return "AssociationTimeLimit";
-		case WAIT_RESERVATION:
-			return "Reservation";
-		case WAIT_NODE_NOT_AVAIL:
-			return "ReqNodeNotAvail";
-		case FAIL_DOWN_PARTITION:
-			return "PartitionDown";
-		case FAIL_DOWN_NODE:
-			return "NodeDown";
-		case FAIL_BAD_CONSTRAINTS:
-			return "BadConstraints";
-		case FAIL_SYSTEM:
-			return "SystemFailure";
-		case FAIL_LAUNCH:
-			return "JobLaunchFailure";
-		case FAIL_EXIT_CODE:
-			return "NonZeroExitCode";
-		case FAIL_TIMEOUT:
-			return "TimeLimit";
-		case FAIL_INACTIVE_LIMIT:
-			return "InactiveLimit";
-		case FAIL_BANK_ACCOUNT:
-			return "InvalidBankAccount";
-		default:
-			return "?";
+	case WAIT_NO_REASON:
+		return "None";
+	case WAIT_PRIORITY:
+		return "Priority";
+	case WAIT_DEPENDENCY:
+		return "Dependency";
+	case WAIT_RESOURCES:
+		return "Resources";
+	case WAIT_PART_NODE_LIMIT:
+		return "PartitionNodeLimit";
+	case WAIT_PART_TIME_LIMIT:
+		return "PartitionTimeLimit";
+	case WAIT_PART_STATE:
+		return "PartitionDown";
+	case WAIT_HELD:
+		return "JobHeld";
+	case WAIT_TIME:
+		return "BeginTime";
+	case WAIT_LICENSES:
+		return "Licenses";
+	case WAIT_ASSOC_JOB_LIMIT:
+		return "AssociationJobLimit";
+	case WAIT_ASSOC_RESOURCE_LIMIT:
+		return "AssociationResourceLimit";
+	case WAIT_ASSOC_TIME_LIMIT:
+		return "AssociationTimeLimit";
+	case WAIT_RESERVATION:
+		return "Reservation";
+	case WAIT_NODE_NOT_AVAIL:
+		return "ReqNodeNotAvail";
+	case FAIL_DOWN_PARTITION:
+		return "PartitionDown";
+	case FAIL_DOWN_NODE:
+		return "NodeDown";
+	case FAIL_BAD_CONSTRAINTS:
+		return "BadConstraints";
+	case FAIL_SYSTEM:
+		return "SystemFailure";
+	case FAIL_LAUNCH:
+		return "JobLaunchFailure";
+	case FAIL_EXIT_CODE:
+		return "NonZeroExitCode";
+	case FAIL_TIMEOUT:
+		return "TimeLimit";
+	case FAIL_INACTIVE_LIMIT:
+		return "InactiveLimit";
+	case FAIL_BANK_ACCOUNT:
+		return "InvalidBankAccount";
+	default:
+		return "?";
 	}
 }
 
@@ -845,24 +845,24 @@ char *job_state_string(uint16_t inx)
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
-		case JOB_PENDING:
-			return "PENDING";
-		case JOB_RUNNING:
-			return "RUNNING";
-		case JOB_SUSPENDED:
-			return "SUSPENDED";
-		case JOB_COMPLETE:
-			return "COMPLETED";
-		case JOB_CANCELLED:
-			return "CANCELLED";
-		case JOB_FAILED:
-			return "FAILED";
-		case JOB_TIMEOUT:
-			return "TIMEOUT";
-		case JOB_NODE_FAIL:
-			return "NODE_FAIL";
-		default:
-			return "?";
+	case JOB_PENDING:
+		return "PENDING";
+	case JOB_RUNNING:
+		return "RUNNING";
+	case JOB_SUSPENDED:
+		return "SUSPENDED";
+	case JOB_COMPLETE:
+		return "COMPLETED";
+	case JOB_CANCELLED:
+		return "CANCELLED";
+	case JOB_FAILED:
+		return "FAILED";
+	case JOB_TIMEOUT:
+		return "TIMEOUT";
+	case JOB_NODE_FAIL:
+		return "NODE_FAIL";
+	default:
+		return "?";
 	}
 }
 
@@ -876,24 +876,24 @@ char *job_state_string_compact(uint16_t inx)
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
-		case JOB_PENDING:
-			return "PD";
-		case JOB_RUNNING:
-			return "R";
-		case JOB_SUSPENDED:
-			return "S";
-		case JOB_COMPLETE:
-			return "CD";
-		case JOB_CANCELLED:
-			return "CA";
-		case JOB_FAILED:
-			return "F";
-		case JOB_TIMEOUT:
-			return "TO";
-		case JOB_NODE_FAIL:
-			return "NF";
-		default:
-			return "?";
+	case JOB_PENDING:
+		return "PD";
+	case JOB_RUNNING:
+		return "R";
+	case JOB_SUSPENDED:
+		return "S";
+	case JOB_COMPLETE:
+		return "CD";
+	case JOB_CANCELLED:
+		return "CA";
+	case JOB_FAILED:
+		return "F";
+	case JOB_TIMEOUT:
+		return "TO";
+	case JOB_NODE_FAIL:
+		return "NF";
+	default:
+		return "?";
 	}
 }
 
@@ -1299,24 +1299,24 @@ extern char *bg_block_state_string(uint16_t state)
 #ifdef HAVE_BG
 	switch ((rm_partition_state_t)state) {
 #ifdef HAVE_BGL
-		case RM_PARTITION_BUSY: 
-			return "BUSY";
+	case RM_PARTITION_BUSY: 
+		return "BUSY";
 #else
-		case RM_PARTITION_REBOOTING: 
-			return "REBOOTING";
+	case RM_PARTITION_REBOOTING: 
+		return "REBOOTING";
 #endif
-		case RM_PARTITION_CONFIGURING:
-			return "CONFIG";
-		case RM_PARTITION_DEALLOCATING:
-			return "DEALLOC";
-		case RM_PARTITION_ERROR:
-			return "ERROR";
-		case RM_PARTITION_FREE:
-			return "FREE";
-		case RM_PARTITION_NAV:
-			return "NAV";
-		case RM_PARTITION_READY:
-			return "READY";
+	case RM_PARTITION_CONFIGURING:
+		return "CONFIG";
+	case RM_PARTITION_DEALLOCATING:
+		return "DEALLOC";
+	case RM_PARTITION_ERROR:
+		return "ERROR";
+	case RM_PARTITION_FREE:
+		return "FREE";
+	case RM_PARTITION_NAV:
+		return "NAV";
+	case RM_PARTITION_READY:
+		return "READY";
 	}
 #endif
 
@@ -1331,7 +1331,7 @@ extern char *bg_block_state_string(uint16_t state)
  * NOTE: buffer is loaded by slurm_allocate_resources
  */
 void slurm_free_resource_allocation_response_msg ( 
-				resource_allocation_response_msg_t * msg)
+	resource_allocation_response_msg_t * msg)
 {
 	if (msg) {
 		select_g_select_jobinfo_free(msg->select_jobinfo);
@@ -1384,7 +1384,7 @@ void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg)
  * NOTE: buffer is loaded by slurm_job_step_create
  */
 void slurm_free_job_step_create_response_msg(
-		job_step_create_response_msg_t * msg)
+	job_step_create_response_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->resv_ports);
@@ -1755,7 +1755,7 @@ extern void slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg)
 }
 
 void inline slurm_free_block_info_request_msg(
-                block_info_request_msg_t *msg)
+	block_info_request_msg_t *msg)
 {
 	xfree(msg);
 }

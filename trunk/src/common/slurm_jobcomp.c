@@ -126,7 +126,7 @@ _slurm_jobcomp_context_destroy( slurm_jobcomp_context_t c )
 	 */
 	if ( c->plugin_list ) {
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			 rc = SLURM_ERROR;
+			rc = SLURM_ERROR;
 		}
 	} else {
 		plugin_unload(c->cur_plugin);
@@ -259,7 +259,7 @@ g_slurm_jobcomp_init( char *jobcomp_loc )
 		retval = SLURM_ERROR;
 	}
 
-  done:
+done:
 	if ( g_context )
 		retval = (*(g_context->ops.set_loc))(jobcomp_loc);
 	slurm_mutex_unlock( &context_lock );
@@ -277,7 +277,7 @@ g_slurm_jobcomp_fini(void)
 	_slurm_jobcomp_context_destroy ( g_context );
 	g_context = NULL;
 
-  done:
+done:
 	slurm_mutex_unlock( &context_lock );
 	return SLURM_SUCCESS;
 }
@@ -305,7 +305,7 @@ g_slurm_jobcomp_errno(void)
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		 retval = (*(g_context->ops.sa_errno))();
+		retval = (*(g_context->ops.sa_errno))();
 	else {
 		error ("slurm_jobcomp plugin context not initialized");
 		retval = ENOENT;

@@ -122,14 +122,14 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
  */
 #ifdef WITH_LSD_FATAL_ERROR_FUNC
 #  undef lsd_fatal_error
-   extern void lsd_fatal_error(char *file, int line, char *mesg);
+extern void lsd_fatal_error(char *file, int line, char *mesg);
 #else /* !WITH_LSD_FATAL_ERROR_FUNC */
 #  ifndef lsd_fatal_error
-#    define lsd_fatal_error(file, line, mesg)                                \
-       do {                                                                  \
-           fprintf(stderr, "ERROR: [%s:%d] %s: %s\n",                        \
-           file, line, mesg, strerror(errno));                               \
-       } while (0)
+#    define lsd_fatal_error(file, line, mesg)			\
+	do {							\
+		fprintf(stderr, "ERROR: [%s:%d] %s: %s\n",	\
+			file, line, mesg, strerror(errno));	\
+	} while (0)
 #  endif /* !lsd_fatal_error */
 #endif /* !WITH_LSD_FATAL_ERROR_FUNC */
 
@@ -138,7 +138,7 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
  */
 #ifdef WITH_LSD_NOMEM_ERROR_FUNC
 #  undef lsd_nomem_error
-   extern void * lsd_nomem_error(char *file, int line, char *mesg);
+extern void * lsd_nomem_error(char *file, int line, char *mesg);
 #else /* !WITH_LSD_NOMEM_ERROR_FUNC */
 #  ifndef lsd_nomem_error
 #    define lsd_nomem_error(file, line, mesg) (NULL)
@@ -150,12 +150,12 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
  *  Automatically call lsd_nomem_error with appropriate args
  *  and set errno to ENOMEM
  */
-#define out_of_memory(mesg)                                                  \
-    do {                                                                     \
-        fatal("malloc failure");                                             \
-        errno = ENOMEM;                                                      \
-        return(lsd_nomem_error(__FILE__, __LINE__, mesg));                   \
-    } while (0)
+#define out_of_memory(mesg)						\
+	do {								\
+		fatal("malloc failure");				\
+		errno = ENOMEM;						\
+		return(lsd_nomem_error(__FILE__, __LINE__, mesg));	\
+	} while (0)
 
 /* 
  * Some constants and tunables:
@@ -180,30 +180,30 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 
 /* hostname type: A convenience structure used in parsing single hostnames */
 struct hostname_components {
-    char *hostname;         /* cache of initialized hostname        */
-    char *prefix;           /* hostname prefix                      */
-    unsigned long num;      /* numeric suffix                       */
+	char *hostname;         /* cache of initialized hostname        */
+	char *prefix;           /* hostname prefix                      */
+	unsigned long num;      /* numeric suffix                       */
 
-    /* string representation of numeric suffix
-     * points into `hostname'                                       */
-    char *suffix;
+	/* string representation of numeric suffix
+	 * points into `hostname'                                       */
+	char *suffix;
 };
 
 typedef struct hostname_components *hostname_t;
 
 /* hostrange type: A single prefix with `hi' and `lo' numeric suffix values */
 struct hostrange_components {
-    char *prefix;        /* alphanumeric prefix: */
+	char *prefix;        /* alphanumeric prefix: */
 
-    /* beginning (lo) and end (hi) of suffix range */
-    unsigned long lo, hi;
+	/* beginning (lo) and end (hi) of suffix range */
+	unsigned long lo, hi;
 
-    /* width of numeric output format
-     * (pad with zeros up to this width) */
-    int width;
+	/* width of numeric output format
+	 * (pad with zeros up to this width) */
+	int width;
 
-    /* If singlehost is 1, `lo' and `hi' are invalid */
-    unsigned singlehost:1;
+	/* If singlehost is 1, `lo' and `hi' are invalid */
+	unsigned singlehost:1;
 };
 
 typedef struct hostrange_components *hostrange_t;
@@ -212,53 +212,53 @@ typedef struct hostrange_components *hostrange_t;
 struct hostlist {
 #ifndef NDEBUG
 #define HOSTLIST_MAGIC    57005
-    int magic;
+	int magic;
 #endif
 #if    WITH_PTHREADS
-    pthread_mutex_t mutex;
+	pthread_mutex_t mutex;
 #endif                /* WITH_PTHREADS */
 
-    /* current number of elements available in array */
-    int size;
+	/* current number of elements available in array */
+	int size;
 
-    /* current number of ranges stored in array */
-    int nranges;
+	/* current number of ranges stored in array */
+	int nranges;
 
-    /* current number of hosts stored in hostlist */
-    int nhosts;
+	/* current number of hosts stored in hostlist */
+	int nhosts;
 
-    /* pointer to hostrange array */
-    hostrange_t *hr;
+	/* pointer to hostrange array */
+	hostrange_t *hr;
 
-    /* list of iterators */
-    struct hostlist_iterator *ilist;
+	/* list of iterators */
+	struct hostlist_iterator *ilist;
 
 };
 
 
 /* a hostset is a wrapper around a hostlist */
 struct hostset {
-    hostlist_t hl;
+	hostlist_t hl;
 };
 
 struct hostlist_iterator {
 #ifndef NDEBUG
-    int magic;
+	int magic;
 #endif
-    /* hostlist we are traversing */
-    hostlist_t hl;
+	/* hostlist we are traversing */
+	hostlist_t hl;
 
-    /* current index of iterator in hl->hr[] */
-    int idx;
+	/* current index of iterator in hl->hr[] */
+	int idx;
 
-    /* current hostrange object in list hl, i.e. hl->hr[idx] */
-    hostrange_t hr;
+	/* current hostrange object in list hl, i.e. hl->hr[idx] */
+	hostrange_t hr;
 
-    /* current depth we've traversed into range hr */
-    int depth;
+	/* current depth we've traversed into range hr */
+	int depth;
 
-    /* next ptr for lists of iterators */
-    struct hostlist_iterator *next;
+	/* next ptr for lists of iterators */
+	struct hostlist_iterator *next;
 };
 
 struct _range {
@@ -348,7 +348,7 @@ static int           hostname_suffix_width(hostname_t);
 static hostrange_t   hostrange_new(void);
 static hostrange_t   hostrange_create_single(const char *);
 static hostrange_t   hostrange_create(char *, unsigned long, unsigned long,
-				int);
+				      int);
 static unsigned long hostrange_count(hostrange_t);
 static hostrange_t   hostrange_copy(hostrange_t);
 static void          hostrange_destroy(hostrange_t);
@@ -364,7 +364,7 @@ static int           hostrange_join(hostrange_t, hostrange_t);
 static hostrange_t   hostrange_intersect(hostrange_t, hostrange_t);
 static int           hostrange_hn_within(hostrange_t, hostname_t);
 static size_t        hostrange_to_string(hostrange_t hr, size_t, char *, 
-				char *);
+					 char *);
 static size_t        hostrange_numstr(hostrange_t, size_t, char *);
 
 static hostlist_t  hostlist_new(void);
@@ -392,44 +392,44 @@ static int hostset_find_host(hostset_t, const char *);
 /* ------[ macros ]------ */
 
 #ifdef WITH_PTHREADS
-#  define mutex_init(mutex)                                                  \
-	do {                                                                    \
-		int e = pthread_mutex_init(mutex, NULL);                             \
-		if (e) {                                                             \
-			errno = e;                                                       \
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex init:");     \
-			abort();                                                         \
-		}                                                                    \
+#  define mutex_init(mutex)						\
+	do {								\
+		int e = pthread_mutex_init(mutex, NULL);		\
+		if (e) {						\
+			errno = e;					\
+			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex init:"); \
+			abort();					\
+		}							\
 	} while (0)
 
-#  define mutex_lock(mutex)                                                  \
-	do {                                                                    \
- 		int e = pthread_mutex_lock(mutex);                                   \
-		if (e) {                                                             \
-			errno = e;                                                        \
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex lock:");      \
- 			abort();                                                          \
-		}                                                                    \
+#  define mutex_lock(mutex)						\
+	do {								\
+ 		int e = pthread_mutex_lock(mutex);			\
+		if (e) {						\
+			errno = e;					\
+			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex lock:"); \
+ 			abort();					\
+		}							\
 	} while (0)
 
-#  define mutex_unlock(mutex)                                                \
-	do {                                                                    \
-		int e = pthread_mutex_unlock(mutex);                                 \
-		if (e) {                                                             \
-			errno = e;                                                       \
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex unlock:");   \
-			abort();                                                         \
-		}                                                                    \
+#  define mutex_unlock(mutex)						\
+	do {								\
+		int e = pthread_mutex_unlock(mutex);			\
+		if (e) {						\
+			errno = e;					\
+			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex unlock:"); \
+			abort();					\
+		}							\
 	} while (0)
 
-#  define mutex_destroy(mutex)                                               \
-	do {                                                                    \
-		int e = pthread_mutex_destroy(mutex);                                \
-		if (e) {                                                             \
-			errno = e;                                                       \
-			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex destroy:");  \
-			abort();                                                         \
-		}                                                                    \
+#  define mutex_destroy(mutex)						\
+	do {								\
+		int e = pthread_mutex_destroy(mutex);			\
+		if (e) {						\
+			errno = e;					\
+			lsd_fatal_error(__FILE__, __LINE__, "hostlist mutex destroy:");	\
+			abort();					\
+		}							\
 	} while (0)
 
 #else                /* !WITH_PTHREADS */
@@ -441,22 +441,22 @@ static int hostset_find_host(hostset_t, const char *);
 
 #endif                /* WITH_PTHREADS */
 
-#define LOCK_HOSTLIST(_hl)                                                   \
-	do {                                                                   \
-		assert(_hl != NULL);                                               \
-		mutex_lock(&(_hl)->mutex);                                         \
-		assert((_hl)->magic == HOSTLIST_MAGIC);                            \
+#define LOCK_HOSTLIST(_hl)				\
+	do {						\
+		assert(_hl != NULL);			\
+		mutex_lock(&(_hl)->mutex);		\
+		assert((_hl)->magic == HOSTLIST_MAGIC);	\
 	} while (0)
 
-#define UNLOCK_HOSTLIST(_hl)                                                 \
-	do {                                                                   \
-		mutex_unlock(&(_hl)->mutex);                                       \
+#define UNLOCK_HOSTLIST(_hl)			\
+	do {					\
+		mutex_unlock(&(_hl)->mutex);	\
 	} while (0)                       
 
-#define seterrno_ret(_errno, _rc)                                            \
-	do {                                                                   \
-		errno = _errno;                                                    \
-		return _rc;                                                        \
+#define seterrno_ret(_errno, _rc)		\
+	do {					\
+		errno = _errno;			\
+		return _rc;			\
 	} while (0)
 
 /* ------[ Function Definitions ]------ */
@@ -758,9 +758,9 @@ static hostrange_t hostrange_create_single(const char *prefix)
 
 	return new;
 
-  error2:
+error2:
 	free(new);
-  error1:
+error1:
 	out_of_memory("hostrange create single");
 }
 
@@ -788,9 +788,9 @@ hostrange_create(char *prefix, unsigned long lo, unsigned long hi, int width)
 
 	return new;
 
-  error2:
+error2:
 	free(new);
-  error1:
+error1:
 	out_of_memory("hostrange create");
 }
 
@@ -816,7 +816,7 @@ static hostrange_t hostrange_copy(hostrange_t hr)
 		return hostrange_create_single(hr->prefix);
 	else
 		return hostrange_create(hr->prefix, hr->lo, hr->hi,
-			hr->width);
+					hr->width);
 }
 
 
@@ -1023,7 +1023,7 @@ static char *hostrange_shift(hostrange_t hr)
 		}
 #else		
 		snprintf(host, size, "%s%0*lu", hr->prefix,
-			hr->width, hr->lo++);
+			 hr->width, hr->lo++);
 #endif
 	}
 
@@ -1091,8 +1091,8 @@ static hostrange_t hostrange_intersect(hostrange_t h1, hostrange_t h2)
 	assert(hostrange_cmp(h1, h2) <= 0);
 
 	if ((hostrange_prefix_cmp(h1, h2) == 0)
-	&& (h1->hi > h2->lo) 
-	&& (hostrange_width_combine(h1, h2))) {
+	    && (h1->hi > h2->lo) 
+	    && (hostrange_width_combine(h1, h2))) {
 
 		if (!(new = hostrange_copy(h1)))
 			return NULL;
@@ -1144,8 +1144,8 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 	 *   falls within the range of [hr].
 	 */
 	if (hn->num <= hr->hi && hn->num >= hr->lo) {
-			int width = hostname_suffix_width(hn);
-			int num = hn->num;
+		int width = hostname_suffix_width(hn);
+		int num = hn->num;
 		return (_width_equiv(hr->lo, &hr->width, num, &width));
 	}
 
@@ -1306,9 +1306,9 @@ static hostlist_t hostlist_new(void)
 	new->ilist = NULL;
 	return new;
 
-  fail2:
+fail2:
 	free(new);
-  fail1:
+fail1:
 	out_of_memory("hostlist_create");
 }
 
@@ -1384,7 +1384,7 @@ static int hostlist_push_range(hostlist_t hl, hostrange_t hr)
 
 	return retval;
 
-  error:
+error:
 	UNLOCK_HOSTLIST(hl);
 	return -1;
 }
@@ -1396,7 +1396,7 @@ static int hostlist_push_range(hostlist_t hl, hostrange_t hr)
  */
 static int
 hostlist_push_hr(hostlist_t hl, char *prefix, unsigned long lo,
-	unsigned long hi, int width)
+		 unsigned long hi, int width)
 {
 	hostrange_t hr = hostrange_create(prefix, lo, hi, width);
 	int retval = hostlist_push_range(hl, hr);
@@ -1613,7 +1613,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 		error = 0;
 	}
 
-  done:
+done:
 	if(orig)
 		free(orig);
 
@@ -1677,7 +1677,7 @@ static int _parse_box_range(char *str, struct _range *ranges,
 	fatal("Unsupported dimensions count %d", SYSTEM_DIMENSIONS);
 	return 0;
 #endif
- }
+}
 
 /* Grab a single range from str 
  * returns 1 if str contained a valid number or range,
@@ -1890,7 +1890,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 	free(orig);
 	return new;
 
-  error:
+error:
 	err = errno = EINVAL;
 	hostlist_destroy(new);
 	free(orig);
@@ -1925,7 +1925,7 @@ hostlist_t hostlist_copy(const hostlist_t hl)
 	for (i = 0; i < hl->nranges; i++)
 		new->hr[i] = hostrange_copy(hl->hr[i]);
 
-  done:
+done:
 	UNLOCK_HOSTLIST(hl);
 	return new;
 }
@@ -2143,7 +2143,7 @@ char *hostlist_shift_range(hostlist_t hl)
 		hostlist_push_range(hltmp, hl->hr[i]);
 		hostrange_destroy(hl->hr[i]);
 	} while ( (++i < hl->nranges) 
-		&& hostrange_within_range(hltmp->hr[0], hl->hr[i]) );
+		  && hostrange_within_range(hltmp->hr[0], hl->hr[i]) );
 
 	hostlist_shift_iterators(hl, i, 0, hltmp->nranges);
 
@@ -2289,7 +2289,7 @@ int hostlist_delete_nth(hostlist_t hl, int n)
 
 	}
 
-  done:
+done:
 	UNLOCK_HOSTLIST(hl);
 	hl->nhosts--;
 	return 1;
@@ -2330,7 +2330,7 @@ int hostlist_find(hostlist_t hl, const char *hostname)
 			count += hostrange_count(hl->hr[i]);
 	}
 
-  done:
+done:
 	UNLOCK_HOSTLIST(hl);
 	hostname_destroy(hn);
 	return ret;
@@ -2422,8 +2422,8 @@ static void hostlist_coalesce(hostlist_t hl)
 
 			while (new->lo <= new->hi) {
 				hostrange_t hr = hostrange_create( new->prefix,
-					new->lo, new->lo,
-					new->width );
+								   new->lo, new->lo,
+								   new->width );
 
 				if (new->lo > hprev->hi)
 					hostlist_insert_range(hl, hr, j++);
@@ -2858,11 +2858,11 @@ _set_box_in_grid(int dim, int curr, int start[SYSTEM_DIMENSIONS],
 }
 
 static int _add_box_ranges(int dim,  int curr,
-			    int start[SYSTEM_DIMENSIONS],
-			    int end[SYSTEM_DIMENSIONS], 
-			    int pos[SYSTEM_DIMENSIONS],
-			    struct _range *ranges,
-			    int len, int *count)
+			   int start[SYSTEM_DIMENSIONS],
+			   int end[SYSTEM_DIMENSIONS], 
+			   int pos[SYSTEM_DIMENSIONS],
+			   struct _range *ranges,
+			   int len, int *count)
 {
 	int i;
 	int start_curr = curr;
@@ -3246,7 +3246,7 @@ char *hostlist_next(hostlist_iterator_t i)
 		}
 #else
 		snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%0*lu",
-			i->hr->width, i->hr->lo + i->depth);
+			 i->hr->width, i->hr->lo + i->depth);
 #endif
 	}
 	UNLOCK_HOSTLIST(i->hl);
@@ -3292,7 +3292,7 @@ int hostlist_remove(hostlist_iterator_t i)
 	} else if (hostrange_empty(i->hr)) {
 		hostlist_delete_range(i->hl, i->idx);
 		/* i->hr = i->hl->hr[i->idx];
-		i->depth = -1; */
+		   i->depth = -1; */
 	} else
 		i->depth--;
 
@@ -3317,9 +3317,9 @@ hostset_t hostset_create(const char *hostlist)
 	hostlist_uniq(new->hl);
 	return new;
 
-  error2:
+error2:
 	free(new);
-  error1:
+error1:
 	return NULL;
 }
 
@@ -3333,9 +3333,9 @@ hostset_t hostset_copy(const hostset_t set)
 		goto error2;
 
 	return new;
-  error2:
+error2:
 	free(new);
-  error1:
+error1:
 	return NULL;
 }
 
@@ -3435,7 +3435,7 @@ static int hostset_find_host(hostset_t set, const char *host)
 			goto done;
 		}
 	}
-  done:
+done:
 	UNLOCK_HOSTLIST(set->hl);
 	hostname_destroy(hn);
 	return retval;
@@ -3474,7 +3474,7 @@ int hostset_within(hostset_t set, const char *hosts)
 	assert(set->hl->magic == HOSTLIST_MAGIC);
 
 	if (!(hl = hostlist_create(hosts)))
-        return (0);
+		return (0);
 	nhosts = hostlist_count(hl);
 	nfound = 0;
 
@@ -3609,27 +3609,27 @@ int main(int ac, char **av)
 	hostset_t set, set1;
 	hostlist_iterator_t iter, iter2;
 
-    if (ac < 2)
-        printf("Recommended usage: %s [hostlist]\n\n", av[0]);
+	if (ac < 2)
+		printf("Recommended usage: %s [hostlist]\n\n", av[0]);
 
 	if (!(hl1 = hostlist_create(ac > 1 ? av[1] : NULL))) {
 		perror("hostlist_create");
-        exit(1);
-    }
+		exit(1);
+	}
 
-    /* build a temporary hostlist, remove duplicates, 
-     * use it to make the hostset */
-    if (!(hl2 = hostlist_create(ac > 1 ? av[1] : NULL))) {
-        perror("hostlist_create");
-        exit(1);
-    }
-    hostlist_uniq(hl2);
-    hostlist_ranged_string(hl2, 102400, buf);
+	/* build a temporary hostlist, remove duplicates, 
+	 * use it to make the hostset */
+	if (!(hl2 = hostlist_create(ac > 1 ? av[1] : NULL))) {
+		perror("hostlist_create");
+		exit(1);
+	}
+	hostlist_uniq(hl2);
+	hostlist_ranged_string(hl2, 102400, buf);
 	if (!(set = hostset_create(buf))) {
 		perror("hostset_create");
-        exit(1);
-    }
-    hostlist_destroy(hl2);
+		exit(1);
+	}
+	hostlist_destroy(hl2);
 
 	hl3 = hostlist_create("f[0-5]");
 	hostlist_delete(hl3, "f[1-3]");

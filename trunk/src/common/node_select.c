@@ -62,8 +62,8 @@
 /* Define select_jobinfo_t below to avoid including extraneous slurm headers */
 #ifndef __select_jobinfo_t_defined
 #  define  __select_jobinfo_t_defined
-   typedef struct select_jobinfo select_jobinfo_t;     /* opaque data type */
-   typedef struct select_nodeinfo select_nodeinfo_t;     /* opaque data type */
+typedef struct select_jobinfo select_jobinfo_t;     /* opaque data type */
+typedef struct select_nodeinfo select_nodeinfo_t;     /* opaque data type */
 #endif
 
 /*
@@ -150,7 +150,7 @@ typedef struct slurm_select_context {
 
 static slurm_select_context_t * g_select_context = NULL;
 static pthread_mutex_t		g_select_context_lock = 
-					PTHREAD_MUTEX_INITIALIZER;
+	PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_CRAY_XT		/* node selection specific logic */
 #  define JOBINFO_MAGIC 0x8cb3
@@ -244,7 +244,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 	c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->select_type );
 	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
 		error( "cannot find node selection plugin for %s", 
-			c->select_type );
+		       c->select_type );
 		return NULL;
 	}
 
@@ -496,7 +496,7 @@ extern int node_select_block_info_msg_unpack(
 	safe_unpack32(&(buf->record_count), buffer);
 	safe_unpack_time(&(buf->last_update), buffer);
 	buf->block_array = xmalloc(sizeof(block_info_t) * 
-		buf->record_count);
+				   buf->record_count);
 	for(i=0; i<buf->record_count; i++) {
 		if (_unpack_block_info(&(buf->block_array[i]), buffer)) 
 			goto unpack_error;
@@ -528,7 +528,7 @@ extern int slurm_select_init(void)
 	g_select_context = _select_context_create(select_type);
 	if ( g_select_context == NULL ) {
 		error( "cannot create node selection context for %s",
-			 select_type );
+		       select_type );
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -540,7 +540,7 @@ extern int slurm_select_init(void)
 		retval = SLURM_ERROR;
 	}
 
- done:
+done:
 	slurm_mutex_unlock( &g_select_context_lock );
 	xfree(select_type);
 	return retval;
@@ -785,11 +785,11 @@ extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 					enum node_states state,
 					void *data)
 {
-       if (slurm_select_init() < 0)
-               return SLURM_ERROR;
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
 
-       return (*(g_select_context->ops.nodeinfo_get))
-	       (nodeinfo, dinfo, state, data);
+	return (*(g_select_context->ops.nodeinfo_get))
+		(nodeinfo, dinfo, state, data);
 }
 
 /* OK since the Cray XT could be done with either linear or cons_res
@@ -1206,10 +1206,10 @@ extern char *select_g_select_jobinfo_xstrdup(
  */
 extern int select_g_update_block (update_block_msg_t *block_desc_ptr)
 {
-       if (slurm_select_init() < 0)
-               return SLURM_ERROR;
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
 
-       return (*(g_select_context->ops.update_block))(block_desc_ptr);
+	return (*(g_select_context->ops.update_block))(block_desc_ptr);
 }
 
 /* 
@@ -1218,10 +1218,10 @@ extern int select_g_update_block (update_block_msg_t *block_desc_ptr)
  */
 extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr)
 {
-       if (slurm_select_init() < 0)
-               return SLURM_ERROR;
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
 
-       return (*(g_select_context->ops.update_sub_node))(block_desc_ptr);
+	return (*(g_select_context->ops.update_sub_node))(block_desc_ptr);
 }
 
 /* 
@@ -1234,11 +1234,11 @@ extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)
 {
-       if (slurm_select_init() < 0)
-               return SLURM_ERROR;
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
 
-       return (*(g_select_context->ops.get_info_from_plugin))
-	       (dinfo, job_ptr, data);
+	return (*(g_select_context->ops.get_info_from_plugin))
+		(dinfo, job_ptr, data);
 }
 
 /*
@@ -1265,7 +1265,7 @@ extern int select_g_update_node_config (int index)
 extern int select_g_update_node_state (int index, uint16_t state)
 {
 	if (slurm_select_init() < 0)
-               return SLURM_ERROR;
+		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.update_node_state))(index, state);
 }
@@ -1277,7 +1277,7 @@ extern int select_g_update_node_state (int index, uint16_t state)
 extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
 {
 	if (slurm_select_init() < 0)
-               return SLURM_ERROR;
+		return SLURM_ERROR;
 
 	if (type == SELECT_GET_NODE_SCALING) {
 		/* default to one, so most plugins don't have to */
