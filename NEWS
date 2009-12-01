@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
  -- replaced local gtk m4 test with AM_PATH_GTK_2_0
  -- changed AC_CHECK_LIB to AC_SEARCH_LIBS to avoid extra libs in
     compile lines.
+ -- Patch from Matthieu Hautreux to improve error message in slurmd/req.c
 
 * Changes in SLURM 2.1.0-pre7
 =============================

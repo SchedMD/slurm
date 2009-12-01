@@ -718,8 +718,10 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	}
 
 	if (!hostset_within(hset, conf->node_name)) {
-		error("job credential invalid for this host [%u.%u %ld %s]",
-		      arg.jobid, arg.stepid, (long) arg.uid, arg.hostlist);
+		error("Invalid job %u.%u credential for user %u: "
+		      "host %s not in hostset %s",
+		      arg.jobid, arg.stepid, arg.uid,
+		      conf->node_name, arg.hostlist);
 		goto fail;
 	}
 
