@@ -8,20 +8,20 @@ sacctmgr \- Used to view and modify Slurm account information.
 
 .SH "DESCRIPTION"
 \fBsacctmgr\fR is used to view or modify Slurm account information.
-The account information is maintained within a database with the interface
+The account information is maintained within a database with the interface 
 being provided by \fBslurmdbd\fR (Slurm Database daemon).
-This database can serve as a central storehouse of user and
+This database can serve as a central storehouse of user and 
 computer information for multiple computers at a single site.
 Slurm account information is recorded based upon four parameters
-that form what is referred to as an \fIassociation\fR.
-These parameters are \fIuser\fR, \fIcluster\fR, \fIpartition\fR, and
+that form what is referred to as an \fIassociation\fR. 
+These parameters are \fIuser\fR, \fIcluster\fR, \fIpartition\fR, and 
 \fIaccount\fR. \fIuser\fR is the login name.
-\fIcluster\fR is the name of a Slurm managed cluster as specified by
-the \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration file.
+\fIcluster\fR is the name of a Slurm managed cluster as specified by 
+the \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration file. 
 \fIpartition\fR is the name of a Slurm partition on that cluster.
 \fIaccount\fR is the bank account for a job.
-The intended mode of operation is to initiate the \fBsacctmgr\fR command,
-add, delete, modify, and/or list \fIassociation\fR records then
+The intended mode of operation is to initiate the \fBsacctmgr\fR command, 
+add, delete, modify, and/or list \fIassociation\fR records then 
 commit the changes and exit.
 
 .SH "OPTIONS"
@@ -68,7 +68,7 @@ This is equivalent to the \fBassociations\fR command.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Enable detailed logging.
+Enable detailed logging. 
 This is equivalent to the \fBverbose\fR command.
 
 .TP
@@ -146,7 +146,7 @@ Identical to the \fBlist\fR command.
 
 .TP
 \fBverbose\fP
-Enable detailed logging.
+Enable detailed logging. 
 This includes time\-stamps on data structures, record counts, etc.
 This is an independent command with no options meant for use in interactive mode.
 
@@ -162,11 +162,11 @@ Repeat the last command.
 
 .TP
 \fIaccount\fP
-A bank account, typically specified at job submit time using the
+A bank account, typically specified at job submit time using the 
 \fI\-\-account=\fR option.
 These may be arranged in a hierarchical fashion, for example
 accounts \fIchemistry\fR and \fIphysics\fR may be children of
-the account \fIscience\fR.
+the account \fIscience\fR. 
 The hierarchy may have an arbitrary depth.
 
 .TP
@@ -177,12 +177,12 @@ The entity used to group information consisting of four parameters:
 .TP
 \fIcluster\fP
 The \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration
-file, used to differentiate accounts from on different machines.
+file, used to differentiate accounts from on different machines. 
 
 .TP
 \fIconfiguration\fP
 Used only with the \fIlist\fR or \fIshow\fR command to report current
-system configuration.
+system configuration. 
 
 .TP
 \fIcoordinator\fR
@@ -190,7 +190,7 @@ A special privileged user usually an account manager or such that can
 add users or sub accounts to the account they are coordinator over.
 This should be a trusted person since they can change limits on
 account and user associations inside their realm.
-
+ 
 .TP
 \fIqos\fR
 Quality of Service.
@@ -215,14 +215,14 @@ Number used in conjunction with other accounts to determine job priority.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
-\fIGrpCPUMins\fP=<max cpu minutes>
-Maximum number of CPU minutes running jobs are able to be allocated in
+\fIGrpCPUMins\fP=<max cpu minutes> 
+Maximum number of CPU minutes running jobs are able to be allocated in 
 aggregate for this association and all association which are children
 of this association.
 To clear a previously set value use the modify command with a new
 value of \-1.  (NOTE: This limit is not enforced if set on the root
 association of a cluster.  So even though it may appear in sacctmgr
-output it will not be enforced.
+output it will not be enforced.  
 NOTE: This limit only applys when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  Currently when
@@ -232,7 +232,7 @@ this will change in future versions of SLURM.)
 
 .TP
 \fIGrpCPUs\fP=<max cpus>
-Maximum number of CPUs running jobs are able to be allocated in aggregate for
+Maximum number of CPUs running jobs are able to be allocated in aggregate for 
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new
 value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
@@ -241,31 +241,31 @@ before it is enforced.)
 
 .TP
 \fIGrpJobs\fP=<max jobs>
-Maximum number of running jobs in aggregate for
+Maximum number of running jobs in aggregate for 
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpNodes\fP=<max nodes>
-Maximum number of nodes running jobs are able to be allocated in aggregate for
+Maximum number of nodes running jobs are able to be allocated in aggregate for 
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpSubmitJobs\fP=<max jobs>
-Maximum number of jobs which can be in a pending or running state at any time
-in aggregate for this association and all association which are children of
+Maximum number of jobs which can be in a pending or running state at any time 
+in aggregate for this association and all association which are children of 
 this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpWall\fP=<max wall>
-Maximum wall clock time running jobs are able to be allocated in aggregate for
+Maximum wall clock time running jobs are able to be allocated in aggregate for 
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 (NOTE: This limit is not enforced if set on the root
 association of a cluster.  So even though it may appear in sacctmgr
-output it will not be enforced.
+output it will not be enforced.  
 NOTE: This limit only applys when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  Currently when
@@ -274,17 +274,17 @@ inside the limit.  No jobs will be killed if this limit is reached,
 this will change in future versions of SLURM.)
 
 .TP
-\fIMaxCPUMins\fP=<max cpu minutes>
+\fIMaxCPUMins\fP=<max cpu minutes> 
 Maximum number of CPU minutes each job is able to use in this account.
-This is overridden if set directly on a user.
+This is overridden if set directly on a user. 
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
-value of \-1.
+value of \-1. 
 
 .TP
 \fIMaxCPUs\fP=<max cpus>
 Maximum number of CPUs each job is able to use in this account.
-This is overridden if set directly on a user.
+This is overridden if set directly on a user. 
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
 value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
@@ -294,14 +294,14 @@ before it is enforced.)
 .TP
 \fIMaxJobs\fP=<max jobs>
 Maximum number of jobs each user is allowed to run at one time in this account.
-This is overridden if set directly on a user.
+This is overridden if set directly on a user. 
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIMaxNodes\fP=<max nodes>
 Maximum number of nodes each job is able to use in this account.
-This is overridden if set directly on a user.
+This is overridden if set directly on a user. 
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
 This is a c\-node limit on BlueGene systems.
@@ -316,9 +316,9 @@ To clear a previously set value use the modify command with a new value of \-1.
 .TP
 \fIMaxWall\fP=<max wall>
 Maximum wall clock time each job is able to use in this account.
-This is overridden if set directly on a user.
+This is overridden if set directly on a user. 
 Default is the cluster's limit.
-<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
+<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or 
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -326,7 +326,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .TP
 \fIQosLevel\fP<operator><comma separated list of qos names>
 Specify the default Quality of Service's that jobs are able to run at
-for this account.  To get a list of valid QOS's use 'sacctmgr list qos'.
+for this account.  To get a list of valid QOS's use 'sacctmgr list qos'. 
 This value will override it's parents value and push down to it's
 children as the new default.  Setting a QosLevel to '' (two single
 quotes with nothing between them) restores it's default setting.  You
@@ -442,7 +442,7 @@ Display information with previously deleted data.
 Display information with subaccounts.  Only really valuable when used
 with the account= option.  This will display all the subaccount
 associations along with the accounts listed in the option.
-
+              
 .TP
 \fIWOLimits\fP
 Display information without limit information. This is for a smaller
@@ -452,7 +452,7 @@ default format of Cluster,Account,User,Partition
 \fIWOPInfo\fP
 Display information without parent information. (i.e. parent id, and
 parent account name.) This option also invokes WOPLIMITS.
-
+              
 .TP
 \fIWOPLimits\fP
 Display information without hierarchical parent limits. (i.e. will
@@ -478,34 +478,34 @@ Number used in conjunction with other accounts to determine job priority.
 
 .TP
 \fIGrpCPUMins\fP
-Maximum number of CPU minutes running jobs are able to be allocated in
+Maximum number of CPU minutes running jobs are able to be allocated in 
 aggregate for this association and all association which are children
 of this association.
 
 .TP
 \fIGrpCPUs\fP
-Maximum number of CPUs running jobs are able to be allocated in aggregate for
+Maximum number of CPUs running jobs are able to be allocated in aggregate for 
 this association and all association which are children of this association.
 
 .TP
 \fIGrpJobs\fP
-Maximum number of running jobs in aggregate for
+Maximum number of running jobs in aggregate for 
 this association and all association which are children of this association.
 
 .TP
 \fIGrpNodes\fP
-Maximum number of nodes running jobs are able to be allocated in aggregate for
+Maximum number of nodes running jobs are able to be allocated in aggregate for 
 this association and all association which are children of this association.
 
 .TP
 \fIGrpSubmitJobs\fP
-Maximum number of jobs which can be in a pending or running state at any time
-in aggregate for this association and all association which are children of
+Maximum number of jobs which can be in a pending or running state at any time 
+in aggregate for this association and all association which are children of 
 this association.
 
 .TP
 \fIGrpWall\fP
-Maximum wall clock time running jobs are able to be allocated in aggregate for
+Maximum wall clock time running jobs are able to be allocated in aggregate for 
 this association and all association which are children of this association.
 
 .TP
@@ -520,7 +520,7 @@ associations with a LFT inside this LFT and before the RGT are
 childern of this association.
 
 .TP
-\fIMaxCPUMins\fP
+\fIMaxCPUMins\fP 
 Maximum number of CPU minutes each job is able to use.
 
 .TP
@@ -581,8 +581,8 @@ The name of a user in the association.
 .TP
 \fIName\fP=<name>
 The name of a cluster.
-This should be equal to the \fIClusterName\fR parameter in the \fIslurm.conf\fR
-configuration file for some Slurm\-managed cluster.
+This should be equal to the \fIClusterName\fR parameter in the \fIslurm.conf\fR 
+configuration file for some Slurm\-managed cluster. 
 
 .TP
 \fIWOLimits\fP
@@ -653,12 +653,12 @@ account or list user.
 
 .TP
 \fIGrpCPUMins\fP
-Maximum number of CPU minutes running jobs are able to be allocated in
+Maximum number of CPU minutes running jobs are able to be allocated in 
 aggregate for this QOS.
 
 .TP
 \fIGrpCPUs\fP
-Maximum number of CPUs running jobs are able to be allocated in aggregate for
+Maximum number of CPUs running jobs are able to be allocated in aggregate for 
 this QOS.
 
 .TP
@@ -667,17 +667,17 @@ Maximum number of running jobs in aggregate for this QOS.
 
 .TP
 \fIGrpNodes\fP
-Maximum number of nodes running jobs are able to be allocated in aggregate for
+Maximum number of nodes running jobs are able to be allocated in aggregate for 
 this QOS.
 
 .TP
 \fIGrpSubmitJobs\fP
-Maximum number of jobs which can be in a pending or running state at any time
+Maximum number of jobs which can be in a pending or running state at any time 
 in aggregate for this QOS.
 
 .TP
 \fIGrpWall\fP
-Maximum wall clock time running jobs are able to be allocated in aggregate for
+Maximum wall clock time running jobs are able to be allocated in aggregate for 
 this QOS.
 
 .TP
@@ -685,7 +685,7 @@ this QOS.
 The id of the QOS.
 
 .TP
-\fIMaxCPUMins\fP
+\fIMaxCPUMins\fP 
 Maximum number of CPU minutes each job is able to use.
 
 .TP
@@ -734,10 +734,10 @@ An arbitrary string describing a QOS.
 
 .TP
 \fIGrpCPUMins\fP
-Maximum number of CPU minutes running jobs are able to be allocated in
+Maximum number of CPU minutes running jobs are able to be allocated in 
 aggregate for this QOS.
 To clear a previously set value use the modify command with a new
-value of \-1.
+value of \-1. 
 NOTE: This limit only applys when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  Currently when
@@ -747,7 +747,7 @@ this will change in future versions of SLURM.)
 
 .TP
 \fIGrpCPUs\fP
-Maximum number of CPUs running jobs are able to be allocated in aggregate for
+Maximum number of CPUs running jobs are able to be allocated in aggregate for 
 this QOS.
 To clear a previously set value use the modify command with a new
 value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
@@ -761,19 +761,19 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpNodes\fP
-Maximum number of nodes running jobs are able to be allocated in aggregate for
+Maximum number of nodes running jobs are able to be allocated in aggregate for 
 this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpSubmitJobs\fP
-Maximum number of jobs which can be in a pending or running state at any time
+Maximum number of jobs which can be in a pending or running state at any time 
 in aggregate for this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIGrpWall\fP
-Maximum wall clock time running jobs are able to be allocated in aggregate for
+Maximum wall clock time running jobs are able to be allocated in aggregate for 
 this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
 NOTE: This limit only applys when using the Priority Multifactor
@@ -784,10 +784,10 @@ inside the limit.  No jobs will be killed if this limit is reached,
 this will change in future versions of SLURM.)
 
 .TP
-\fIMaxCPUMins\fP
+\fIMaxCPUMins\fP 
 Maximum number of CPU minutes each job is able to use.
 To clear a previously set value use the modify command with a new
-value of \-1.
+value of \-1. 
 
 .TP
 \fIMaxCPUs\fP
@@ -815,7 +815,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .TP
 \fIMaxWall\fP
 Maximum wall clock time each job is able to use.
-<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
+<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or 
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -899,7 +899,7 @@ Get information about which associations were affected by the transactions.
 .SH ""
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the transaction effected.  The
-Association format fields are described
+Association format fields are described 
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
 
@@ -919,7 +919,7 @@ Specific cluster to add user to the account on.  Default is all in system.
 
 .TP
 \fIDefaultAccount\fP=<account>
-Identify the default bank account name to be used for a job if none is
+Identify the default bank account name to be used for a job if none is 
 specified at submission time.
 
 .TP
@@ -951,7 +951,7 @@ ASSOCIATION BASED ENTITIES\fP section.
 
 .TP
 \fIAdminLevel\fP
-Admin level of user.
+Admin level of user. 
 
 .TP
 \fIDefaultAccount\fP
@@ -977,7 +977,7 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 .TP
 \fIWCKey\fP
-Workload Characterization Key.
+Workload Characterization Key. 
 
 .TP
 \fICluster\fP
@@ -999,7 +999,7 @@ When using the format option for listing various fields you can put a
 %NUMBER afterwards to specify how many characters should be printed.
 
 i.e. format=name%30 will print 30 characters of field name right
-justified.  A \-30 will print 30 characters left justified.
+justified.  A \-30 will print 30 characters left justified.  
 
 .SH "FLAT FILE DUMP AND LOAD"
 sacctmgr has the capability to load and dump SLURM association data to and
@@ -1071,12 +1071,12 @@ are children of this association.
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
-association which are children of this association.
+association which are children of this association. 
 .TP
 \fIGrpWall=\fP
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all association which
-are children of this association.
+are children of this association. 
 .TP
 \fIFairShare=\fP
 Number used in conjunction with other associations to determine job priority.
@@ -1111,7 +1111,7 @@ Followed by Accounts you want in this fashion...
 
 .TP
 Any of the options after a ':' can be left out and they can be in any order.
-If you want to add any sub accounts just list the Parent THAT HAS ALREADY
+If you want to add any sub accounts just list the Parent THAT HAS ALREADY 
 BEEN CREATED before the account line in this fashion...
 .TP
 All account options are
@@ -1145,12 +1145,12 @@ are children of this association.
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
-association which are children of this association.
+association which are children of this association. 
 .TP
 \fIGrpWall=\fP
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all association which
-are children of this association.
+are children of this association. 
 .TP
 \fIFairShare=\fP
 Number used in conjunction with other associations to determine job priority.
@@ -1167,7 +1167,7 @@ Maximum cpu seconds children of this accounts jobs can run.
 \fIMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) children of this accounts jobs can run.
 .TP
-\fIOrganization=
+\fIOrganization= 
 Name of organization that owns this account.
 .TP
 \fI\fIQOS(=,+=,\-=)\fP
@@ -1224,9 +1224,9 @@ Sacctmgr has the capability to archive to a flatfile and or load that
 data if needed later.  The archiving is usually done by the slurmdbd
 and it is highly recommended you only do it through sacctmgr if you
 completely understand what you are doing.  For slurmdbd options see
-"man slurmdbd" for more information.
+"man slurmdbd" for more information. 
 Loading data into the database can be done from these files to either
-view old data or regenerate rolled up data.
+view old data or regenerate rolled up data. 
 
 These are the options for both dump and load of archive information.
 
@@ -1266,14 +1266,14 @@ all step data removed will be lost permanently.
 \fISuspend\fP
 Archive Suspend Data.  If not specified and PurgeSuspendMonths is set
 all suspend data removed will be lost permanently.
-.RE
-
+.RE    
+                                                                       
 archive load
 .TP
 \fIFile=\fP
 File to load into database.
 .TP
-\fIInsert=\fP
+\fIInsert=\fP 
 SQL to insert directly into the database.  This should be used very
 cautiously since this is writing your sql into the database.
 .RE
@@ -1322,13 +1322,13 @@ wrong> sacctmgr modify user name=adam set fairshare=10 cluster=tux
 
 .br
 This will produce an error as the above line reads modify user adam
-set fairshare=10 and cluster=tux.
+set fairshare=10 and cluster=tux.  
 .br
 
 .br
 right> sacctmgr modify user name=adam cluster=tux set fairshare=10
 .br
-right> sacctmgr modify user name=adam set fairshare=10 where cluster=tux
+right> sacctmgr modify user name=adam set fairshare=10 where cluster=tux 
 .br
 
 .br

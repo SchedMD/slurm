@@ -1,30 +1,30 @@
 .TH "sattach" "1" "SLURM 2.1" "October 2009" "SLURM Commands"
 .SH "NAME"
-.LP
+.LP 
 sattach \- Attach to a SLURM job step.
 .SH "SYNOPSIS"
-.LP
+.LP 
 sattach [\fIoptions\fP] <jobid.stepid>
 .SH "DESCRIPTION"
-.LP
+.LP 
 sattach attaches to a running SLURM job step.  By attaching, it makes available
 the IO streams of all of the tasks of a running SLURM job step.  It also
 suitable for use with a parallel debugger like TotalView.
 
 .SH "OPTIONS"
-.LP
+.LP 
 
-.TP
+.TP 
 \fB\-h\fR, \fB\-\-help\fR
 Display help information and exit.
 
-.TP
+.TP 
 \fB\-\-input\-filter\fR[=]<\fItask number\fR>
 .PD 0
 .TP
 \fB\-\-output\-filter\fR[=]<\fItask number\fR>
 .PD 0
-.TP
+.TP 
 \fB\-\-error\-filter\fR[=]<\fItask number\fR>
 .PD
 Only transmit standard input to a single task, or print the standard output
@@ -50,7 +50,7 @@ Suppress informational messages from sattach. Errors will still be displayed.
 \fB\-u\fR, \fB\-\-usage\fR
 Display brief usage message and exit.
 
-.TP
+.TP 
 \fB\-V\fR, \fB\-\-version\fR
 Display SLURM version number and exit.
 
@@ -67,14 +67,14 @@ variables settings.
 
 .TP 22
 \fBSLURM_EXIT_ERROR\fR
-Specifies the exit code generated when a SLURM error occurs
+Specifies the exit code generated when a SLURM error occurs 
 (e.g. invalid options).
 This can be used by a script to distinguish application exit codes from
 various SLURM error conditions.
 
 
 .SH "EXAMPLES"
-.LP
+.LP 
 sattach 15.0
 
 sattach \-\-output\-filter 5 65386.15
@@ -99,5 +99,5 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-.LP
+.LP 
 sinfo(1), salloc(1), sbatch(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)

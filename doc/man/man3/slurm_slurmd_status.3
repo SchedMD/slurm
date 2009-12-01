@@ -6,19 +6,19 @@ slurm_free_slurmd_status, slurm_load_slurmd_status, slurm_print_slurmd_status
 \- Slurmd status functions
 
 .SH "SYNTAX"
-.LP
+.LP 
 #include <slurm/slurm.h>
 .LP
 .LP
 void \fBslurm_free_slurmd_status\fR (
 .br
-	slurmd_status_t* \fIslurmd_status_ptr\fP
+	slurmd_status_t* \fIslurmd_status_ptr\fP 
 .br
 );
 .LP
 int \fBslurm_load_slurmd_status\fR (
 .br
-	slurmd_status_t** \fIslurmd_status_ptr\fP
+	slurmd_status_t** \fIslurmd_status_ptr\fP 
 .br
 );
 .LP
@@ -26,14 +26,14 @@ void \fBslurm_print_slurmd_status\fR (
 .br
 	FILE *\fIout\fP,
 .br
-	slurmd_status_t* \fIslurmd_status_pptr\fP
+	slurmd_status_t* \fIslurmd_status_pptr\fP 
 .br
 );
 
 .SH "ARGUMENTS"
-.LP
+.LP 
 .TP
-\fIslurmd_status_ptr\fP
+\fIslurmd_status_ptr\fP 
 Slurmd status pointer.  Created by \fBslurm_load_slurmd_status\fR,
 used in subsequent function calls, and destroyed by
 \fBslurm_free_slurmd_status\fR.
@@ -41,7 +41,7 @@ used in subsequent function calls, and destroyed by
 .SH "DESCRIPTION"
 .LP
 \fBslurm_free_slurmd_status\fR free slurmd state information.
-.LP
+.LP 
 \fBslurm_load_slurmd_status\fR issue RPC to get the status of slurmd
 daemon on this machine.
 .LP

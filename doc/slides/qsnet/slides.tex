@@ -22,9 +22,9 @@
 \renewcommand{\footrulewidth}{0.2mm}
 \fancyhead[C]{\Large\textbf{QsNet Support}}
 %\fancyfoot[L]{\tiny\thedate}
-\fancyfoot[L]{\includegraphics[scale=0.075]{penguin.eps}\\\tiny LINUX}
+\fancyfoot[L]{\includegraphics[scale=0.075]{penguin.eps}\\\tiny LINUX} 
 %\fancyfoot[R]{\small LLNL}
-\fancyfoot[R]{\includegraphics[scale=0.2]{llnl.ps}\\\tiny LLNL}
+\fancyfoot[R]{\includegraphics[scale=0.2]{llnl.ps}\\\tiny LLNL} 
 \fancyfoot[C]{\tiny Page \theslide}
 
 % Create room for headers and footers
@@ -116,10 +116,10 @@
 \begin{slide}
   \slideheading{Client Side Functions}
   \small
-  Create all the interconnect information necessary to start a parallel
+  Create all the interconnect information necessary to start a parallel 
   program including Elan capability, program description number, etc..
   \begin{verbatim}
-  int qsw_setup_jobinfo(qsw_jobinfo_t job, int nprocs,
+  int qsw_setup_jobinfo(qsw_jobinfo_t job, int nprocs, 
                         bitstr_t *nodeset, int cyclic_alloc);
   \end{verbatim}
   Allocate/free a {\tt qsw\_jobinfo\_t} to represent job information.
@@ -149,7 +149,7 @@
   int qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid);
   int qsw_prog_fini(qsw_jobinfo_t jobinfo);
   \end{verbatim}
-  3: (N instances) Attach to a hardware context with {\tt qsw\_attach}.
+  3: (N instances) Attach to a hardware context with {\tt qsw\_attach}.  
   Set up environment.  Fork.  Wait.  Exit.
   \begin{verbatim}
   int qsw_attach(qsw_jobinfo_t jobinfo, int procnum);
@@ -167,7 +167,7 @@
   \item Pack/Unpack routines translate between host/network byte order.
   Macros used to permit assertions about size of incoming data types before
   type promotion.
-  \item bitstr\_t used to represent ``nodeset''.  Bit positions are elan
+  \item bitstr\_t used to represent ``nodeset''.  Bit positions are elan 
   addresses.  There is no provision for converting between Elan address and
   hostname.
   \item Elan include files are not required outside of qsw.c.
@@ -198,6 +198,6 @@
   unpack32(&ls->ls_hwcontext, &data, &len);
   \end{verbatim}
 \end{slide}
-
+ 
 
 \end{document}

@@ -1,45 +1,45 @@
 .TH "sview" "1" "SLURM 2.0" "July 2009" "SLURM Commands"
 .SH "NAME"
-.LP
+.LP 
 sview \- graphical user interface to view and modify SLURM state.
 
 .SH "SYNOPSIS"
-.LP
+.LP 
 sview
 
 .SH "DESCRIPTION"
-.LP
-sview can be used to view SLURM configuration, job,
-step, node and partitions state information.
+.LP 
+sview can be used to view SLURM configuration, job, 
+step, node and partitions state information. 
 Authorized users can also modify select information.
 .LP
 The primary display modes are \fIJobs\fR and \fIPartitions\fR, each with a selection tab.
-There is also an optional map of the nodes on the left side of the window which
+There is also an optional map of the nodes on the left side of the window which 
 will show the nodes associated with each job or partition.
-Left\-click on the tab of the display you would like to see.
+Left\-click on the tab of the display you would like to see. 
 Right\-click on the tab in order to control which fields will be displayed.
 .LP
-Within the display window, left\-click on the header to control the sort
+Within the display window, left\-click on the header to control the sort 
 order of entries (e.g. increasing or decreasing) in the diplay.
 You can also left\-click and drag the headers to move them right or left in the display.
-If a JobID has an arrow next to it, click on that arrow to display or hide
-information about that job's steps.
+If a JobID has an arrow next to it, click on that arrow to display or hide 
+information about that job's steps. 
 Right\-click on a line of the display to get more information about the record.
 .LP
-There is an \fIAdmin Mode\fR option which permits the user root to modify many of
+There is an \fIAdmin Mode\fR option which permits the user root to modify many of 
 the fields displayed, such as node state or job time limit.
 In the mode, a \fISLURM Reconfigure\fR Action is also available.
-It is recommended that \fIAdmin Mode\fR be used only while modifications are
-actively being made.
-Disable \fIAdmin Mode\fR immediately after the changes to avoid possibly making
-unintended changes.
+It is recommended that \fIAdmin Mode\fR be used only while modifications are 
+actively being made. 
+Disable \fIAdmin Mode\fR immediately after the changes to avoid possibly making 
+unintended changes. 
 
 .SH "NOTES"
-The sview command can only be build if \fIgtk+\-2.0\fR is installed.
+The sview command can only be build if \fIgtk+\-2.0\fR is installed. 
 Systems lacking these libraries will have SLURM installed without
 the sview command.
 
-On larger systems (2000+ nodes) some gtk themes can considerably slow down
+On larger systems (2000+ nodes) some gtk themes can considerably slow down 
 the grid display.  If you think this is happening you may
 try defining SVIEW_GRID_SPEEDUP=1 in your environment.  This will use
 a code path to try to avoid functions that typically take a
@@ -68,6 +68,6 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-.LP
-sinfo(1), squeue(1), scontrol(1), slurm.conf(5),
+.LP 
+sinfo(1), squeue(1), scontrol(1), slurm.conf(5), 
 sched_setaffinity(2), numa(3)

@@ -1,21 +1,21 @@
 .TH "slurmdbd.conf" "5" "February 2009" "slurmdbd.conf 2.0" "Slurm configuration file"
 .SH "NAME"
-slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
+slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file 
 
 .SH "DESCRIPTION"
-\fB/etc/slurmdb.conf\fP is an ASCII file which describes Slurm Database
+\fB/etc/slurmdb.conf\fP is an ASCII file which describes Slurm Database 
 Daemon (SlurmDBD) configuration information.
 The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter.
+DEFAULT_SLURM_CONF parameter. 
 .LP
-The contents of the file are case insensitive except for the names of nodes
-and files. Any text following a "#" in the configuration file is treated
-as a comment through the end of that line.
+The contents of the file are case insensitive except for the names of nodes 
+and files. Any text following a "#" in the configuration file is treated 
+as a comment through the end of that line. 
 The size of each line in the file is limited to 1024 characters.
-Changes to the configuration file take effect upon restart of
+Changes to the configuration file take effect upon restart of 
 SlurmDbd or daemon receipt of the SIGHUP signal unless otherwise noted.
 .LP
-This file should be only on the computer where SlurmDBD executes and
+This file should be only on the computer where SlurmDBD executes and 
 should only be readable by the user which executes SlurmDBD (e.g. "slurm").
 This file should be protected from unauthorized access since it
 contains a database password.
@@ -23,8 +23,8 @@ The overall configuration parameters available include:
 
 .TP
 \fBArchiveDir\fR
-If ArchiveScript is not set the slurmdbd will generate a text file that can be
-read in anytime with sacctmgr load filename.  This directory is where the
+If ArchiveScript is not set the slurmdbd will generate a text file that can be 
+read in anytime with sacctmgr load filename.  This directory is where the 
 file will be placed archive has ran.  Default is /tmp.
 
 .TP
@@ -38,11 +38,11 @@ Boolean, yes to archive job data, no other wise.  Default is no.
 .TP
 \fBArchiveScript\fR
 This script is executed periodically in order to transfer accounting
-records out of the database into an archive. The script is executed
+records out of the database into an archive. The script is executed 
 with a no arguments, The following environment variables are set.
 .RS
 .TP
-\fBSLURM_ARCHIVE_EVENTS\fR
+\fBSLURM_ARCHIVE_EVENTS\fR 
 1 for archive events 0 otherwise.
 .TP
 \fBSLURM_ARCHIVE_LAST_EVENT\fR
@@ -54,13 +54,13 @@ Time of last event start to archive.
 \fBSLURM_ARCHIVE_LAST_JOB\fR
 Time of last job submit to archive.
 .TP
-\fBSLURM_ARCHIVE_STEPS\fR
+\fBSLURM_ARCHIVE_STEPS\fR 
 1 for archive steps 0 otherwise.
 .TP
 \fBSLURM_ARCHIVE_LAST_STEP\fR
 Time of last step start to archive.
 .TP
-\fBSLURM_ARCHIVE_SUSPEND\fR
+\fBSLURM_ARCHIVE_SUSPEND\fR 
 1 for archive suspend data 0 otherwise.
 .TP
 \fBSLURM_ARCHIVE_LAST_SUSPEND\fR
@@ -78,126 +78,126 @@ Boolean, yes to archive suspend data, no other wise.  Default is no.
 
 .TP
 \fBAuthInfo\fR
-Additional information to be used for authentication of communications
+Additional information to be used for authentication of communications 
 with the Slurm control daemon (slurmctld) on each cluster.
 The interpretation of this option is specific to the configured \fBAuthType\fR.
-In the case of \fIauth/munge\fR, this can be configured to use a Munge daemon
-specifically configured to provide authentication between clusters while the
-default Munge daemon provides authentication within a cluster.
+In the case of \fIauth/munge\fR, this can be configured to use a Munge daemon 
+specifically configured to provide authentication between clusters while the 
+default Munge daemon provides authentication within a cluster. 
 In that case, this will specify the pathname of the socket to use.
-The default value is NULL, which results in the default authentication
+The default value is NULL, which results in the default authentication 
 mechanism being used.
 
 .TP
 \fBAuthType\fR
-Define the authentication method for communications between SLURM
-components.
-Acceptable values at present include "auth/none", "auth/authd",
+Define the authentication method for communications between SLURM 
+components. 
+Acceptable values at present include "auth/none", "auth/authd", 
 and "auth/munge".
-The default value is "auth/none", which means the UID included in
-communication messages is not verified.
-This may be fine for testing purposes, but
+The default value is "auth/none", which means the UID included in 
+communication messages is not verified. 
+This may be fine for testing purposes, but 
 \fBdo not use "auth/none" if you desire any security\fR.
 "auth/authd" indicates that Brett Chun's authd is to be used (see
 "http://www.theether.org/authd/" for more information).
 "auth/munge" indicates that LLNL's Munge system is to be used
-(this is the best supported authentication mechanism for SLURM,
+(this is the best supported authentication mechanism for SLURM, 
 see "http://home.gna.org/munge/" for more information).
-SlurmDbd must be terminated prior to changing the value of \fBAuthType\fR
+SlurmDbd must be terminated prior to changing the value of \fBAuthType\fR 
 and later restarted.
 
 .TP
 \fBDbdBackupHost\fR
-The name of the machine where the backup Slurm Database Daemon is executed.
+The name of the machine where the backup Slurm Database Daemon is executed. 
 This host must have access to the same underlying database specified by
 the 'Storage' options mentioned below.
 This should be a node name without the full domain name.  I.e., the hostname
-returned by the \fIgethostname()\fR function cut at the first dot (e.g. use
+returned by the \fIgethostname()\fR function cut at the first dot (e.g. use 
 "tux001" rather than "tux001.my.com").
 
 .TP
 \fBDbdHost\fR
-The name of the machine where the Slurm Database Daemon is executed.
+The name of the machine where the Slurm Database Daemon is executed. 
 This should be a node name without the full domain name.  I.e., the hostname
-returned by the \fIgethostname()\fR function cut at the first dot (e.g. use
+returned by the \fIgethostname()\fR function cut at the first dot (e.g. use 
 "tux001" rather than "tux001.my.com").  This value must be specified.
 
 .TP
 \fBDbdPort\fR
-The port number that the Slurm Database Daemon (slurmdbd) listens
-to for work. The default value is SLURMDBD_PORT as established at system
+The port number that the Slurm Database Daemon (slurmdbd) listens 
+to for work. The default value is SLURMDBD_PORT as established at system 
 build time. If none is explicitly specified, it will be set to 6819.
 This value must be equal to the \fBSlurmDbdPort\fR parameter in the
 slurm.conf file.
 
 .TP
 \fBDebugLevel\fR
-The level of detail to provide the Slurm Database Daemon's logs.
-Values from 0 to 9 are legal, with `0' being "quiet" operation and
+The level of detail to provide the Slurm Database Daemon's logs. 
+Values from 0 to 9 are legal, with `0' being "quiet" operation and 
 `9' being insanely verbose.
 The default value is 3.
 
 .TP
 \fBDefaultQOS\fR
-When adding a new cluster this will be used as the qos for the cluster
+When adding a new cluster this will be used as the qos for the cluster 
 unless something is explicitly set by the admin with the create.
-
+ 
 .TP
 \fBLogFile\fR
-Fully qualified pathname of a file into which the Slurm Database Daemon's
+Fully qualified pathname of a file into which the Slurm Database Daemon's 
 logs are written.
 The default value is none (performs logging via syslog).
 
 .TP
 \fBMessageTimeout\fR
 Time permitted for a round\-trip communication to complete
-in seconds. Default value is 10 seconds.
+in seconds. Default value is 10 seconds. 
 
 .TP
 \fBPidFile\fR
-Fully qualified pathname of a file into which the Slurm Database Daemon
+Fully qualified pathname of a file into which the Slurm Database Daemon 
 may write its process ID. This may be used for automated signal processing.
 The default value is "/var/run/slurmdbd.pid".
 
 .TP
 \fBPluginDir\fR
-Identifies the places in which to look for SLURM plugins.
-This is a colon\-separated list of directories, like the PATH
-environment variable.
+Identifies the places in which to look for SLURM plugins. 
+This is a colon\-separated list of directories, like the PATH 
+environment variable. 
 The default value is "/usr/local/lib/slurm".
 
 .TP
 \fBPrivateData\fR
 This controls what type of information is hidden from regular users.
 By default, all information is visible to all users.
-User \fBSlurmUser\fR, \fBroot\fR, and users with AdminLevel=Admin can always
+User \fBSlurmUser\fR, \fBroot\fR, and users with AdminLevel=Admin can always 
 view all information.
 Multiple values may be specified with a comma separator.
 Acceptable values include:
 .RS
 .TP
-\fBaccounts\fR
-prevents users from viewing any account definitions unless they are
+\fBaccounts\fR 
+prevents users from viewing any account definitions unless they are 
 coordinators of them.
 .TP
-\fBjobs\fR
+\fBjobs\fR 
 prevents users from viewing job records belonging
 to other users unless they are coordinators of the association running the job
 when using sacct.
 .TP
-\fBreservations\fR
-restricts getting reservation information to users with operator status
+\fBreservations\fR 
+restricts getting reservation information to users with operator status 
 and above.
 .TP
-\fBusage\fR
-prevents users from viewing usage of any other user.
+\fBusage\fR  
+prevents users from viewing usage of any other user.  
 This applys to sreport.
 .TP
-\fBusers\fR
-prevents users from viewing information of any user
-other than themselves, this also makes it so users can only see
-associations they deal with.
-Coordinators can see associations of all users they are coordinator of,
+\fBusers\fR  
+prevents users from viewing information of any user 
+other than themselves, this also makes it so users can only see 
+associations they deal with.  
+Coordinators can see associations of all users they are coordinator of, 
 but can only see themselves when listing users.
 .RE
 
@@ -224,7 +224,7 @@ If zero (default), then job step records are never purged.
 
 .TP
 \fBPurgeSuspendMonths\fR
-Records of individual suspend times for jobs over this age are purged from the
+Records of individual suspend times for jobs over this age are purged from the 
 database.
 Aggregated information will be preserved indefinitely.
 The time is a numeric value and is a number of months.
@@ -232,11 +232,11 @@ If zero (default), then job step records are never purged.
 
 .TP
 \fBSlurmUser\fR
-The name of the user that the \fBslurmctld\fR daemon executes as.
+The name of the user that the \fBslurmctld\fR daemon executes as. 
 This user must exist on the machine executing the Slurm Database Daemon
 and have the same user ID as the hosts on which \fBslurmctld\fR execute.
 For security purposes, a user other than "root" is recommended.
-The default value is "root".
+The default value is "root". 
 
 .TP
 \fBStorageHost\fR
@@ -247,20 +247,20 @@ Ideally this should be the host on which slurmdbd executes.
 .TP
 \fBStorageBackupHost\fR
 Define the name of the backup host the database is running where we are going
-to store the data.  This can be viewed as a backup solution when the
-StorageHost is not responding.  It is up to the backup solution to enforce the
-coherency of the accounting information between the two hosts. With clustered
+to store the data.  This can be viewed as a backup solution when the 
+StorageHost is not responding.  It is up to the backup solution to enforce the 
+coherency of the accounting information between the two hosts. With clustered 
 database solutions (acitve/passive HA), you would not need to use this feature.
 Default is none.
 
 .TP
 \fBStorageLoc\fR
-Specify the name of the database as the location where accounting
+Specify the name of the database as the location where accounting 
 records are written.
 
 .TP
 \fBStoragePass\fR
-Define the password used to gain access to the database to store
+Define the password used to gain access to the database to store 
 the job accounting data.
 
 .TP
@@ -271,7 +271,7 @@ with the database.
 .TP
 \fBStorageType\fR
 Define the accounting storage mechanism type.
-Acceptable values at present include
+Acceptable values at present include 
 "accounting_storage/gold", "accounting_storage/mysql", and
 "accounting_storage/pgsql".
 The value "accounting_storage/gold" indicates that account records
@@ -279,13 +279,13 @@ will be written to Gold
 (http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
 which maintains its own database.
 The value "accounting_storage/mysql" indicates that accounting records
-should be written to a MySQL database specified by the
+should be written to a MySQL database specified by the 
 \fStorageLoc\fR parameter.
 The value "accounting_storage/pgsql" indicates that accounting records
-should be written to a PostgreSQL database specified by the
-\fBStorageLoc\fR parameter.  This plugin is not complete and
+should be written to a PostgreSQL database specified by the 
+\fBStorageLoc\fR parameter.  This plugin is not complete and 
 should not be used if wanting to use associations.  It will however work with
-basic accounting of jobs and job steps.  If interested in
+basic accounting of jobs and job steps.  If interested in 
 completing please email slurm-dev@lists.llnl.gov.
 This value must be specified.
 
@@ -296,11 +296,11 @@ with to store the job accounting data.
 
 .TP
 \fBTrackWCKey\fR
-Boolean yes or no.  Used to set display and track of the Workload
+Boolean yes or no.  Used to set display and track of the Workload  
 Characterization Key. Must be set to track wckey usage.
 
 .SH "EXAMPLE"
-.LP
+.LP 
 #
 .br
 # Sample /etc/slurmdbd.conf

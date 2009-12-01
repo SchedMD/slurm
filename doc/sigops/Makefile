@@ -10,7 +10,7 @@
 
 REPORT = report
 
-TEX = ../common/llnlCoverPage.tex $(REPORT).tex
+TEX = ../common/llnlCoverPage.tex $(REPORT).tex 
 
 FIGDIR = ../figures
 FIGS = $(FIGDIR)/arch2.eps \
@@ -21,7 +21,7 @@ FIGS = $(FIGDIR)/arch2.eps \
 BIB = ../common/project.bib
 
 %.eps: %.dia
-	dia --nosplash -e $@ $<
+	dia --nosplash -e $@ $< 
 %.eps: %.gpl
 	gnuplot $<
 %.eps: %.fig
@@ -31,9 +31,9 @@ BIB = ../common/project.bib
 %.ps: %.dvi
 	dvips -K -t letter -o $(@F) $(<F)
 %.pdf: %.dvi
-	dvipdf $< $@
+	dvipdf $< $@ 
 
-all: $(REPORT).ps
+all: $(REPORT).ps 
 
 
 $(REPORT).dvi: $(TEX) $(FIGS) $(BIB)
@@ -48,6 +48,6 @@ $(REPORT).dvi: $(TEX) $(FIGS) $(BIB)
 view: $(REPORT).ps
 	ghostview $(REPORT) &
 
-clean:
+clean: 
 	rm -f *~ *.dvi *.log *.aux *.ps *.pdf *.blg *.bbl #*.eps #*.gif
-
+	      

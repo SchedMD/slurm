@@ -2,53 +2,53 @@
 .SH "NAME"
 slurm_complete_job \- Slurm job completion call
 .SH "SYNTAX"
-.LP
+.LP 
 #include <slurm/slurm.h>
 .LP
 int \fBslurm_complete_job\fR (
-.br
-	uint32_t \fIjob_id\fP,
+.br 
+	uint32_t \fIjob_id\fP, 
 .br
 	uint32_t \fIjob_return_code\fP
-.br
+.br 
 );
 .SH "ARGUMENTS"
-.LP
-.TP
+.LP 
+.TP 
 \fIjob_id\fP
 Slurm job id number.
-.TP
+.TP 
 \fIjob_return_code\fP
 Exit code of the program executed.
 
 .SH "DESCRIPTION"
-.LP
-\fBslurm_complete_job\fR Note the termination of a job. This function may only be
+.LP 
+\fBslurm_complete_job\fR Note the termination of a job. This function may only be 
 successfully executed by the job's owner or user root.
 
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, \-1 is returned, and Slurm error code
+On success, zero is returned. On error, \-1 is returned, and Slurm error code 
 is set appropriately.
 
 .SH "ERRORS"
 .LP
 \fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
 .LP
-\fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist.
+\fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
 .LP
-\fBESLURM_ALREADY_DONE\fR the specified job has already completed and can
-not be modified.
+\fBESLURM_ALREADY_DONE\fR the specified job has already completed and can 
+not be modified. 
 .LP
-\fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the requested action (e.g. trying to delete or modify another user's job).
+\fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the requested action (e.g. trying to delete or modify another user's job). 
 .LP
-\fBESLURM_INTERCONNECT_FAILURE\fR failed to configure the node interconnect.
+\fBESLURM_INTERCONNECT_FAILURE\fR failed to configure the node interconnect. 
 .LP
-\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with
+\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
 SLURM controller.
 
 .SH "NOTE"
-These functions are included in the libslurm library,
+These functions are included in the libslurm library, 
 which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
@@ -71,5 +71,5 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
-.LP
+.LP 
 \fBslurm_get_errno\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)

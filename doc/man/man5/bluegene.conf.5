@@ -1,47 +1,47 @@
 .TH "bluegene.conf" "5" "April 2008" "bluegene.conf 2.0" "Slurm configuration file"
 .SH "NAME"
-bluegene.conf \- Slurm configuration file for BlueGene systems
+bluegene.conf \- Slurm configuration file for BlueGene systems 
 .SH "DESCRIPTION"
-\fB/etc/bluegene.conf\fP is an ASCII file which describes BlueGene specific
-SLURM configuration information. This includes specifications for bgblock
+\fB/etc/bluegene.conf\fP is an ASCII file which describes BlueGene specific 
+SLURM configuration information. This includes specifications for bgblock 
 layout, configuration, logging, etc.
 The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter. The file will always be located in the
-same directory as the \fBslurm.conf\fP file.
+DEFAULT_SLURM_CONF parameter. The file will always be located in the 
+same directory as the \fBslurm.conf\fP file. 
 .LP
 Paramter names are case insensitive.
-Any text following a "#" in the configuration file is treated
-as a comment through the end of that line.
+Any text following a "#" in the configuration file is treated 
+as a comment through the end of that line. 
 The size of each line in the file is limited to 1024 characters.
-Changes to the configuration file take effect upon restart of
-SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+Changes to the configuration file take effect upon restart of 
+SLURM daemons, daemon receipt of the SIGHUP signal, or execution 
 of the command "scontrol reconfigure" unless otherwise noted.
 .LP
 
-There are some differences between Bluegene/L and Bluegene/P in respects to the contents of the bluegene.conf file.
+There are some differences between Bluegene/L and Bluegene/P in respects to the contents of the bluegene.conf file.  
 
 .SH "The Bluegene/L specific options are:"
 .TP
 \fBAltBlrtsImage\fR
-Alternative BlrtsImage.  This is an optional field only used for
+Alternative BlrtsImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
-the user groups allowed to use this image (i.e. Groups=da,jette) if
+the user groups allowed to use this image (i.e. Groups=da,jette) if 
 Groups= is not stated then this image will be able to be used by all
 groups. You can put as many alternative images as you want in the conf file.
 
 .TP
 \fBAltLinuxImage\fR
-Alternative LinuxImage.  This is an optional field only used for
+Alternative LinuxImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
-the user groups allowed to use this image (i.e. Groups=da,jette) if
+the user groups allowed to use this image (i.e. Groups=da,jette) if 
 Groups= is not stated then this image will be able to be used by all
 groups. You can put as many alternative images as you want in the conf file.
 
 .TP
 \fBAltRamDiskImage\fR
-Alternative RamDiskImage.  This is an optional field only used for
+Alternative RamDiskImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
-the user groups allowed to use this image (i.e. Groups=da,jette) if
+the user groups allowed to use this image (i.e. Groups=da,jette) if 
 Groups= is not stated then this image will be able to be used by all
 groups. You can put as many alternative images as you want in the conf file.
 
@@ -63,17 +63,17 @@ There is no default value and this must be specified.
 .SH "The Bluegene/P specific options are:"
 .TP
 \fBAltCnloadImage\fR
-Alternative CnloadImage.  This is an optional field only used for
+Alternative CnloadImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
-the user groups allowed to use this image (i.e. Groups=da,jette) if
+the user groups allowed to use this image (i.e. Groups=da,jette) if 
 Groups= is not stated then this image will be able to be used by all
 groups. You can put as many alternative images as you want in the conf file.
 
 .TP
 \fBAltIoloadImage\fR
-Alternative IoloadImage.  This is an optional field only used for
+Alternative IoloadImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
-the user groups allowed to use this image (i.e. Groups=da,jette) if
+the user groups allowed to use this image (i.e. Groups=da,jette) if 
 Groups= is not stated then this image will be able to be used by all
 groups. You can put as many alternative images as you want in the conf file.
 
@@ -90,9 +90,9 @@ There is no default value and this must be specified.
 .SH "All options below are common on all Bluegene systems:"
 .TP
 \fBAltMloaderImage\fR
-Alternative MloaderImage.  This is an optional field only used for
+Alternative MloaderImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
-the user groups allowed to use this image (i.e. Groups=da,jette) if
+the user groups allowed to use this image (i.e. Groups=da,jette) if 
 Groups= is not stated then this image will be able to be used by all
 groups. You can put as many alternative images as you want in the conf file.
 
@@ -104,7 +104,7 @@ is usually 512)
 
 .TP
 \fBBridgeAPILogFile\fR
-Fully qualified pathname of a into which the Bridge API logs are
+Fully qualified pathname of a into which the Bridge API logs are 
 to be written.
 There is no default value.
 
@@ -138,13 +138,13 @@ Describes how SLURM should create bgblocks.
 \fBSTATIC\fR: Create and use the defined non\-overlapping bgblocks.
 .TP
 \fBOVERLAP\fR: Create and use the defined bgblocks, which may overlap.
-It is highly recommended that none of the bgblocks have any passthroughs
-in the X\-dimension.
+It is highly recommended that none of the bgblocks have any passthroughs 
+in the X\-dimension. 
 \fBUse this mode with extreme caution.\fR
 .TP
 \fBDYNAMIC\fR: Create and use bglblocks as needed for each job.
 Bgblocks will not be defined in the bluegene.conf file.
-Dynamic partitioning may introduce fragmentation of resources
+Dynamic partitioning may introduce fragmentation of resources 
 and starvation of larger jobs.
 \fBUse this mode with caution.\fR
 .RE
@@ -157,7 +157,7 @@ There is no default value and this must be specified.
 .TP
 \fBNodeCardNodeCount\fR
 Number of c\-nodes per node card.
-There is no default value and this must be specified. (For bgl systems this
+There is no default value and this must be specified. (For bgl systems this 
 is usually 32)
 
 .TP
@@ -166,10 +166,10 @@ The Numpsets used for creation of all bgblocks.  This value really means the
 number of IOnodes on a base partition.  This number must be the smallest
 number if you have a heterogeneous system.
 There is no default value and this must be specified.  The typical settings
-for bgl systems goes as follows... For IO rich systems 64 is the value that
-should be used to create small blocks.  For systems that are not IO rich, or
+for bgl systems goes as follows... For IO rich systems 64 is the value that 
+should be used to create small blocks.  For systems that are not IO rich, or 
 you do not wish to create small blocks, 8 is usually the number to use.
-For bgp IO rich systems 32 is the value that should be used to create small
+For bgp IO rich systems 32 is the value that should be used to create small 
 blocks since you can only have 2 ionodes per nodecard instead of 4 like on bgl.
 
 .LP
@@ -177,8 +177,8 @@ Each bgblock is defined by the base partitions used to construct it.
 Ordering is very important for laying out switch wires.  Please create
 blocks with smap, and once done don't change the order of blocks created.
 A bgblock is implicitly created containing all resources on the system.
-Bgblocks must not overlap in static mode (except for implicitly
-created bgblock). This will be the case when smap is used to create
+Bgblocks must not overlap in static mode (except for implicitly 
+created bgblock). This will be the case when smap is used to create 
 a configuration file
 All Nodes defined here must also be defined in the slurm.conf file.
 Define only the numeric coordinates of the bgblocks here. The prefix
@@ -197,25 +197,25 @@ The default value is TORUS.
 \fBMESH\fR: Communication occur over a mesh.
 .TP
 \fBSMALL\fR: The base partition is divided into more than one bgblock.
-The administrator should define the number of single node cards and
-quarter base partition blocks using the options \fB32CNBlocks\fR and
-\fB128CNBlocks\fR respectively for a Bluegene L system.  \fB16CNBlocks\fR,
-\fB64CNBlocks\fR, and \fB256CNBlocks\fR are also available for
-Bluegene P systems.  Keep in mind you
+The administrator should define the number of single node cards and 
+quarter base partition blocks using the options \fB32CNBlocks\fR and 
+\fB128CNBlocks\fR respectively for a Bluegene L system.  \fB16CNBlocks\fR, 
+\fB64CNBlocks\fR, and \fB256CNBlocks\fR are also available for 
+Bluegene P systems.  Keep in mind you 
 must have enough ionodes to make all these configurations possible.
 
 The total number of c\-nodes in defined blocks must not exceed
 \fBBasePartitionNodeCnt\fR.
-If not specified, the base partition will be divided into four
+If not specified, the base partition will be divided into four 
 blocks.
 See example below.
 .TP
-\fBTORUS\fR: Communications occur over a torus (end\-points of network
+\fBTORUS\fR: Communications occur over a torus (end\-points of network 
 directly connect.
 .RE
 
 .SH "EXAMPLE"
-.LP
+.LP 
 .br
 ##################################################################
 .br

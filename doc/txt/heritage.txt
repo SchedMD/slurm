@@ -1,4 +1,4 @@
-Record below the origins of code imported into SLURM from any source.
+Record below the origins of code imported into SLURM from any source. 
 This is critical to insure SLURM can be properly licensed. A sample
 entry follows.
 
@@ -16,37 +16,37 @@ Date:           2005
 Destination:    src/api/pmi.[ch]
 License:        Open Source, see listing for details
 Imported by:    Morris Jette
-Notes:		pmi.h is taken directly from the MPICH2 code base,
+Notes:		pmi.h is taken directly from the MPICH2 code base, 
                 pmi.c is an LLNL implementation of the functions defined
                 in pmi.h
 
-Origin:		LLNL Software Development Toolbox
+Origin:		LLNL Software Development Toolbox 	
 Date:    	2002
 Destination:	src/common/cbuf.[ch]
-License:	GPL
+License:	GPL 	
 Imported by:	Mark Grondona
-Notes:
+Notes:    	
 
 Origin: 	LLNL ConMan, http://www.llnl.gov/linux/conman
 Date:    	2001
 Destination:	src/common/fd.[ch]
 License: 	GPL
 Imported by:	Mark Grondona
-Notes:
+Notes:    	
 
 Origin: 	GNU libc
 Date:    	2001
 Destination:	src/common/getopt1.c, getopt.[ch]
 License: 	GPL
 Imported by:	Morris Jette
-Notes:
+Notes:    	
 
 Origin: 	LLNL Software Development Toolbox
 Date:    	2001
 Destination:	src/common/list.[ch]
 License: 	GPL
 Imported by:	Mark Grondona
-Notes:
+Notes:    	
 
 Origin:		?????????????????
 Date:		2001
@@ -78,7 +78,7 @@ Notes:
 
 Origin:		GNU taskset command source
 Date:		2005
-Destination:	src/plugins/task/affinity/schedutils.c
+Destination:	src/plugins/task/affinity/schedutils.c	
 License:	GPL
 Imported by:	Andy Riebs
 Notes:
@@ -88,7 +88,7 @@ Date:		1/13/2006
 Destination:	testsuite/expect/globals.example
 License:	None
 Imported by:	Morris Jette
-Notes:		Just the function dec2hex16 imported from on-line code
+Notes:		Just the function dec2hex16 imported from on-line code 
 		"cookbook."
 
 Origin:

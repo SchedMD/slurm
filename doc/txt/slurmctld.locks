@@ -9,7 +9,7 @@ RPC code			Frequency	Function to service
 ============================================================================
 
 REQUEST_BUILD_INFO:		Rare		controller.c:fill_ctld_conf
-	Read	Config
+	Read	Config	
 
 
 REQUEST_NODE_INFO:		V Common	node_mgr.c:pack_all_node
@@ -26,7 +26,7 @@ REQUEST_PARTITION_INFO:		V Common	partition_mgr.c:pack_all_part
 
 REQUEST_JOB_STEP_CREATE:
 REQUEST_RESOURCE_ALLOCATION :	Common		job_mgr.c:job_allocate
-REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 	(Both use slurm_rpc_allocate_resources)
+REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 	(Both use slurm_rpc_allocate_resources)	
 	Read	Node, Partition
 	Write	Job
 

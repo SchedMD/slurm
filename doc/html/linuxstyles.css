@@ -3,7 +3,7 @@ html {
   margin-bottom: 1px;
 }
 
-body {
+body { 
   margin-top:20px;
   padding:0px;
   background-color: #FFFFFF;
@@ -71,7 +71,7 @@ pre {font-size: 90%; font-family:"Courier New", Courier, monospace}
   font-size:90%;
 }
 
-.pnav {
+.pnav {	
   font-size: 95%;
   font-weight: bold;
   color: #002280;
@@ -97,7 +97,7 @@ pre {font-size: 90%; font-family:"Courier New", Courier, monospace}
 }
 
 #footer2 #left2 {
-  clear: both;
+  clear: both; 
   float: left;
   padding-top:3px;
   background-color: #FFFFFF;
@@ -129,11 +129,11 @@ pre {font-size: 90%; font-family:"Courier New", Courier, monospace}
   padding: 0px 5px 0px 10px;
 }
 
-.figcaption {
+.figcaption {  
   font-family: Arial, Verdana, Helvetica, sans-serif;
   text-align: left;
   line-height:100%;
-  font-size: 70%;
+  font-size: 70%; 
   font-weight: bold;
   padding-top: 10px;
   color: #002280
@@ -177,14 +177,14 @@ a:active {
  text-decoration: underline
 }
 
-a.nav:link {
+a.nav:link {	
   font-size: 95%;
   color: #002280;
   font-weight: bold;
   text-decoration: none;
 }
 
-a.nav:visited {
+a.nav:visited {	
   font-size: 95%;
   color: #002280;
   font-weight: bold;
@@ -196,7 +196,7 @@ a.nav:hover {
   font-weight: bold;
   text-decoration: none;
 }
-a.nav:active {
+a.nav:active {	
   font-size: 95%;
   color: #002280;
   font-weight: bold;
@@ -209,7 +209,7 @@ a.footer:link {
   text-decoration: none;
 }
 
-a.footer:visited {
+a.footer:visited {	
   font-size: 70%;
   color: #002280;
   text-decoration: none;

@@ -1,4 +1,4 @@
-% Presenter info:
+% Presenter info: 
 % SIGOPS
 %
 % Use a two-column, 8.5" x 11" document format
@@ -68,88 +68,88 @@
 
 \maketitle
 \begin{abstract}
-While the increase in performance of individual computer
+While the increase in performance of individual computer 
 processors through the years has been impressive, the demand
-for compute resources has grown even more rapidly.
-This demand has been met over the past couple of decades by
-turning to parallel computing.
-While operating systems, compilers, libraries, and a wide
-variety of tools exist to make effective use of independent
-computers, a new class of tools is required to effectively
-utilize a parallel computer.
-One important tool is the resource manager, which can be viewed
-as the "glue" to run applications on the parallel computer.
+for compute resources has grown even more rapidly. 
+This demand has been met over the past couple of decades by 
+turning to parallel computing. 
+While operating systems, compilers, libraries, and a wide 
+variety of tools exist to make effective use of independent 
+computers, a new class of tools is required to effectively 
+utilize a parallel computer. 
+One important tool is the resource manager, which can be viewed 
+as the "glue" to run applications on the parallel computer. 
 One very popular resource manager is the Simple Linux
-Utility for Resource Management (SLURM,
-http://www.llnl.gov/linux/slurm).
-SLURM performs resource management on about 1000 parallel
-computers around the world, including many of the largest
-systems.
-This paper will describe resource management scalability
+Utility for Resource Management (SLURM, 
+http://www.llnl.gov/linux/slurm). 
+SLURM performs resource management on about 1000 parallel 
+computers around the world, including many of the largest 
+systems. 
+This paper will describe resource management scalability 
 issues and SLURM's implementation.
 \end{abstract}
 
 
 \section{Introduction}
 
-Executing a parallel program on a cluster involves several
-steps. First resources (cores, memory, nodes, etc.) suitable
-for running the program must be identified. These resources
-are then typically dedicated to the program. In some
-cases, the computer's network/interconnect must be
+Executing a parallel program on a cluster involves several 
+steps. First resources (cores, memory, nodes, etc.) suitable 
+for running the program must be identified. These resources 
+are then typically dedicated to the program. In some 
+cases, the computer's network/interconnect must be 
 configured for the program's use. The program's tasks
-are initiated on the allocated resources. The input and
-output for all of these tasks must be processed.
-Upon the program termination, it's allocated resources
-are released for use by other programs.
-All of these operations are straightforward, but performing
-resource management on clusters containing thousands of
-nodes and over 130,000 processor cores requires more
+are initiated on the allocated resources. The input and 
+output for all of these tasks must be processed. 
+Upon the program termination, it's allocated resources 
+are released for use by other programs. 
+All of these operations are straightforward, but performing 
+resource management on clusters containing thousands of 
+nodes and over 130,000 processor cores requires more 
 than a high degree of parallelism.
 In many respects, data management and fault-tolerance issues
 are paramount.
 
-SLURM is a resource manager jointly developed by Lawrence
-Livermore National Laboratory (LLNL),
+SLURM is a resource manager jointly developed by Lawrence 
+Livermore National Laboratory (LLNL), 
 Hewlett-Packard, and Linux NetworX
 ~\cite{SLURM2003,Yoo2003,SlurmWeb}.
 SLURM's general characteristics include:
 
 \begin{itemize}
-\item {\tt Simplicity}: SLURM is simple enough to allow motivated
-end users to understand its source code and add functionality.
-It supports only a few simple scheduling algorithms,
+\item {\tt Simplicity}: SLURM is simple enough to allow motivated 
+end users to understand its source code and add functionality. 
+It supports only a few simple scheduling algorithms, 
 but relies upon an external scheduler for sophisticated
 workload prioritization.
 
-\item {\tt Open Source}: SLURM is available to everyone and
+\item {\tt Open Source}: SLURM is available to everyone and 
 will remain free.
 Its source code is distributed under the GNU General Public
 License
 ~\cite{GPL2002}.
 
-\item {\tt Portability}: SLURM is written in the C language,
+\item {\tt Portability}: SLURM is written in the C language, 
 with a GNU {\em autoconf} configuration engine.
 SLURM has a fully functional skeleton of functionality with a
-wide assortment of plugins available for customization.
-A total of 30 different plugins are available and provide a
-great deal of flexibility in configuring SLURM using a
+wide assortment of plugins available for customization. 
+A total of 30 different plugins are available and provide a 
+great deal of flexibility in configuring SLURM using a 
 building block approach.
 
-\item {\tt Scalability}: SLURM is designed for scalability to clusters
+\item {\tt Scalability}: SLURM is designed for scalability to clusters 
 of thousands of nodes. Time to fully execute (allocate, launch
 tasks, process I/O, and deallocate resources) a simple program
-is only 2 seconds for 4,800 tasks on 2,400 nodes. Clusters
-containing up to 16,384 nodes have been emulated with highly
-scalable performance.
+is only 2 seconds for 4,800 tasks on 2,400 nodes. Clusters 
+containing up to 16,384 nodes have been emulated with highly 
+scalable performance. 
 
 \item {\tt Fault Tolerance}: SLURM can handle a variety of failures
-in hardward or the infrastructure without inducing failures in
+in hardward or the infrastructure without inducing failures in 
 the workload.
 
 \item {\tt Security}: SLURM employs crypto technology to authenticate
 users to services and services to each other with a variety of options
-available through the plugin mechanism.
+available through the plugin mechanism.  
 
 \item {\tt System Administrator Friendly}: SLURM utilizes
 a simple configuration file and minimizes distributed state.
@@ -169,13 +169,13 @@ interfaces are usable by scripts and its behavior is highly deterministic.
 
 SLURM's commands and daemons are illustrated in Figure~\ref{arch}.
 The main SLURM control program, {\tt slurmctld}, orchestrates
-activities throughout the cluster. While highly optimized,
-{\tt slurmctld} is best run on a dedicated node of the cluster for optimal performance.
-In addition, SLURM provides the option of running  a backup controller
+activities throughout the cluster. While highly optimized, 
+{\tt slurmctld} is best run on a dedicated node of the cluster for optimal performance. 
+In addition, SLURM provides the option of running  a backup controller 
 on another node for increased fault-tolerance.
-Each node in the cluster available for running user applications
+Each node in the cluster available for running user applications 
 has a relatively small daemon called {\tt slurmd} that monitors
-and manages resources and work within that node.
+and manages resources and work within that node. 
 Several user tools are provided:
 
 \begin{itemize}
@@ -188,7 +188,7 @@ system configuration
 
 \item {\tt scancel} can signal and/or cancel jobs or job steps
 
-\item {\tt smap} reports node, queue, and job status including
+\item {\tt smap} reports node, queue, and job status including 
 topological state information
 
 \item {\tt sacct} reports job accounting information
@@ -204,7 +204,7 @@ topological state information
 \label{entities}
 \end{figure}
 
-The entities managed by SLURM are illustrated in Figure~\ref{entities}
+The entities managed by SLURM are illustrated in Figure~\ref{entities} 
 and include:
 {\em nodes} including their processors, memory and temporary disk space,
 {\em partitions} are collections of nodes with various limits and constraints,
@@ -212,34 +212,34 @@ and include:
 to a user for a specified amount of time, and
 {\em job steps} are sets of (possibly parallel) tasks within a job.
 Each node must be capable of independent scheduling and job execution
-\footnote{On BlueGene computers, the c-nodes can not be independently
-scheduled. Each midplane or base partition is considered a SLURM node
-with 1,024 processors. SLURM supports the execution of more than one
+\footnote{On BlueGene computers, the c-nodes can not be independently 
+scheduled. Each midplane or base partition is considered a SLURM node 
+with 1,024 processors. SLURM supports the execution of more than one 
 job per BlueGene node.}.
-Each job in the priority-ordered queue is allocated nodes within a single
+Each job in the priority-ordered queue is allocated nodes within a single 
 partition.
-Since nodes can be in multiple partitions, one can think of them as
-general purpose queues for jobs.
+Since nodes can be in multiple partitions, one can think of them as 
+general purpose queues for jobs. 
 
 \section{Implementation}
 
-Very high scalability was treated as a high priority for SLURM.
-More comprehensive support for smaller clusters in fact was
+Very high scalability was treated as a high priority for SLURM. 
+More comprehensive support for smaller clusters in fact was 
 added in later revisions.
-For example, the initial implementation allocated whole nodes
+For example, the initial implementation allocated whole nodes 
 to jobs, in part to avoid the extra overhead of tracking individual
 processors.
-While allocation of entire nodes to jobs is still a recommended mode of
-operation for very large clusters, an alternate SLURM plugin provides
+While allocation of entire nodes to jobs is still a recommended mode of 
+operation for very large clusters, an alternate SLURM plugin provides 
 resource management down the the resolution of individual processors.
 
-The SLURM's {\tt srun} command and the daemons are extensively
-multi-threaded.
-{\tt slurmctld} also maintains independent read and
-write locks for critical data structures.
-The combination of these two features means that,
+The SLURM's {\tt srun} command and the daemons are extensively 
+multi-threaded. 
+{\tt slurmctld} also maintains independent read and 
+write locks for critical data structures. 
+The combination of these two features means that, 
 for example, three users can get job state information at the same
-time that a system administrator is modifying the time limit
+time that a system administrator is modifying the time limit 
 for a partition.
 
 \begin{figure}[tcb]
@@ -248,82 +248,82 @@ for a partition.
 \label{comms}
 \end{figure}
 
-Communications to large numbers of nodes are optimized in two
+Communications to large numbers of nodes are optimized in two 
 ways. The programs initiating communications are multithreaded
-and can process tens or even hundreds of simultaneous active
-communications.
-Second, the {\tt slurmd} daemon is designed to forward
+and can process tens or even hundreds of simultaneous active 
+communications. 
+Second, the {\tt slurmd} daemon is designed to forward 
 communications on a hierarchical basis as shown in Figure ~\ref{comms}.
 For example, the initiation of tasks on 1000 nodes does not require
 {\tt srun} to directly communication with all 1000 nodes. {\tt Srun}
 can communicate directly with {\tt slurmd} daemons on 32 nodes
-(the degree of fanout in communications is configurable).
+(the degree of fanout in communications is configurable). 
 Each of those {\tt slurmd} will simultaneously forward the request
-to {\tt slurmd} programs on another 32 nodes.
+to {\tt slurmd} programs on another 32 nodes. 
 This improves performance by distributing the communication workload.
-Note that every communication is authenticated and acknowleged
+Note that every communication is authenticated and acknowleged 
 for fault-tolerance.
 
 A number of interesting papers
-~\cite{Jones2003,Kerbyson2001,Petrini2003,Phillips2003,Tsafrir2005}
+~\cite{Jones2003,Kerbyson2001,Petrini2003,Phillips2003,Tsafrir2005} 
 have recently been written about
-the impact of system daemons and other system overhead on
-parallel job performance. This {\tt system noise} can have a
-dramatic impact upon the performance of highly parallel jobs.
-In a simplified example, consider a system daemon that run for
-one second out of every 100 seconds on every node in a cluster.
-For serial jobs this
-reduces throughput by one percent, but the impact is compounded
-on parallel computers if these daemons do not all execute concurrently.
-If the parallel program runs on 100 nodes and tries to synchronize
+the impact of system daemons and other system overhead on 
+parallel job performance. This {\tt system noise} can have a 
+dramatic impact upon the performance of highly parallel jobs. 
+In a simplified example, consider a system daemon that run for 
+one second out of every 100 seconds on every node in a cluster. 
+For serial jobs this 
+reduces throughput by one percent, but the impact is compounded 
+on parallel computers if these daemons do not all execute concurrently. 
+If the parallel program runs on 100 nodes and tries to synchronize 
 every second, almost every synchronization period will include a
-one second delay from the daemon running on one of the 100 nodes.
-This effectively limits job parallelism to about 50-way, orders
+one second delay from the daemon running on one of the 100 nodes. 
+This effectively limits job parallelism to about 50-way, orders 
 of magnitude smaller than the largest systems currently available.
 SLURM addresses this issue by:
 \begin{itemize}
-\item Making the {\tt slurmd} daemon resource requirements negligible
-\item Supporting configurations that let the {\tt slurmd} daemon sleep
+\item Making the {\tt slurmd} daemon resource requirements negligible 
+\item Supporting configurations that let the {\tt slurmd} daemon sleep 
 during the entire job execution period
-\item If the {\tt slurmd} daemons do perform work, it is done on a
+\item If the {\tt slurmd} daemons do perform work, it is done on a 
 highly synchronized fashion across all nodes
 \end{itemize}
-In addition, the default mode of operation is to allocate entire
-nodes with all of their processors to applications rather than
-individual processors on each node.
-This eliminates the possibility of interference between jobs,
+In addition, the default mode of operation is to allocate entire 
+nodes with all of their processors to applications rather than 
+individual processors on each node. 
+This eliminates the possibility of interference between jobs, 
 which could severely degrade performance of parallel applications.
-Allocation of resources to the resolution of individual processors
-on each node is supported by SLURM, but this comes at a higher cost
+Allocation of resources to the resolution of individual processors 
+on each node is supported by SLURM, but this comes at a higher cost 
 in terms of the data managed.
 The selection of resource resolution is provided by different plugins.
 
-Resource management of large clusters entails the processing of
-large quantities of data, both for the software and the
+Resource management of large clusters entails the processing of 
+large quantities of data, both for the software and the 
 system administrator.
-In order to ease the burden on system administrators, SLURM
+In order to ease the burden on system administrators, SLURM 
 configuration files and tools all support node naming using
 numeric ranges.
-For example, "linux[1-4096]" represents 4096 node names with
-a prefix of "linux" and numeric suffix from 1 to 4096.
-These naming convention permits even the largest clusters
-to be described in a configure file containing only a
-couple of dozen lines.
+For example, "linux[1-4096]" represents 4096 node names with 
+a prefix of "linux" and numeric suffix from 1 to 4096. 
+These naming convention permits even the largest clusters 
+to be described in a configure file containing only a 
+couple of dozen lines. 
 State information output from various SLURM commands uses
 the same convention to maintain a modest volume of output
-on even large cluster.
+on even large cluster. 
 
-Extensive use is made of bitmaps to represent nodes in the cluster.
-For example, bitmaps are maintained for each unique node configuration,
-the nodes associated with each partition, nodes allocated to
-the active jobs, nodes available for use, etc. This reduces most
+Extensive use is made of bitmaps to represent nodes in the cluster. 
+For example, bitmaps are maintained for each unique node configuration, 
+the nodes associated with each partition, nodes allocated to 
+the active jobs, nodes available for use, etc. This reduces most 
 scheduling operations to very rapid AND and OR operations on those bitmaps.
 
 \section{Application Launch}
 
-To better illustrate SLURM's operation, the execution of an
+To better illustrate SLURM's operation, the execution of an 
 application is detailed below and illustrated in Figure~\ref{launch}.
-This example is based upon a typical configuration and the
+This example is based upon a typical configuration and the 
 {\em interactive} mode, in which stdout and
 stderr are displayed on the user's terminal in real time, and stdin and
 signals may be forwarded from the terminal transparently to the remote
@@ -335,65 +335,65 @@ tasks.
 \label{launch}
 \end{figure}
 
-The task launch request is initiated by a user's execution of the
-{\tt srun} command. {\tt Srun} has a multitude of options to specify
-resource requirements such as minimum memory per node, minimum
-temporary disk space per node, features associated with nodes,
+The task launch request is initiated by a user's execution of the 
+{\tt srun} command. {\tt Srun} has a multitude of options to specify 
+resource requirements such as minimum memory per node, minimum 
+temporary disk space per node, features associated with nodes, 
 partition to use, node count, task count, etc.
-{\tt Srun} gets a credential to identify the user and his group
-then sends the request to {\tt slurmctld} (message 1).
+{\tt Srun} gets a credential to identify the user and his group 
+then sends the request to {\tt slurmctld} (message 1). 
 
-{\tt Slurmctld} authenticates the request and identifies the resources
+{\tt Slurmctld} authenticates the request and identifies the resources 
 to be allocated using a series of bitmap operations.
-First the nodes containing the appropriate resources (processors,
-memory, temporary disk space, and features) are identified through
-comparison with a node configuration table, which typically has
-a very small number of entries.
-The resulting bitmap is ANDed with the bitmap associated with the
-requested partition.
-This bitmap is ANDed with the bitmap identifying available nodes.
-The requested node and/or processor count is then satisfied from
+First the nodes containing the appropriate resources (processors, 
+memory, temporary disk space, and features) are identified through 
+comparison with a node configuration table, which typically has 
+a very small number of entries. 
+The resulting bitmap is ANDed with the bitmap associated with the 
+requested partition. 
+This bitmap is ANDed with the bitmap identifying available nodes. 
+The requested node and/or processor count is then satisfied from 
 the nodes identified with the resulting bitmap.
-This completes the job allocation process, but for interactive
-mode, a job step credential is also constructed for the allocation
+This completes the job allocation process, but for interactive 
+mode, a job step credential is also constructed for the allocation 
 and sent to {\tt srun} in the reply (message 2).
 
 The {\tt srun} command open sockets for task input and output then
-sends the job step credential directly to the {\tt slurmd} daemons
+sends the job step credential directly to the {\tt slurmd} daemons 
 (message 3) in order to launch the tasks, which is acknowledged
 (message 4).
-Note the {\tt slurmctld} and {\tt slurmd} daemons do not directly
-communicate during the task launch operation in order to minimize the
-workload on the {\tt slurmctld}, which has to manage the entire
+Note the {\tt slurmctld} and {\tt slurmd} daemons do not directly 
+communicate during the task launch operation in order to minimize the 
+workload on the {\tt slurmctld}, which has to manage the entire 
 cluster.
 
-Task termination is communicated to {\tt srun} over the same
-socket used for input and output.
-When all tasks have terminated, {\tt srun} notifies {\tt slurmctld}
+Task termination is communicated to {\tt srun} over the same 
+socket used for input and output. 
+When all tasks have terminated, {\tt srun} notifies {\tt slurmctld} 
 of the job step termination (message 5).
-{\tt Slurmctld} authenticates the request, acknowledges it
-(message 6) and sends messages to the {\tt slurmd} daemons to
-insure that all processes associated with the job have
-terminated (message 7).
-Upon receipt of job termination confirmation on each node (message 8),
+{\tt Slurmctld} authenticates the request, acknowledges it 
+(message 6) and sends messages to the {\tt slurmd} daemons to 
+insure that all processes associated with the job have 
+terminated (message 7). 
+Upon receipt of job termination confirmation on each node (message 8), 
 {\tt slurmctld} releases the resources for use by another job.
 
-The full time for execution of a simple parallel application across
-a few nodes is a few milliseconds.
-The time reaches a few seconds for jobs that span thousands of
+The full time for execution of a simple parallel application across 
+a few nodes is a few milliseconds. 
+The time reaches a few seconds for jobs that span thousands of 
 nodes.
-The times will vary with the hardware and configuration used,
+The times will vary with the hardware and configuration used, 
 but is hardly noticeable to the user at even the largest scales.
 
 \section{Conclusion}
 
 SLURM has demonstrated high reliability and scalability.
-It provides resource management on several clusters containing
-over 2,000 compute nodes and has emulated clusters containing
-up to 16,384 compute nodes, four times the size of of the
-largest parallel computer in use today.
-The cluster size is presently limited by the size of some SLURM
-data structures, but operation on larger systems is certainly
+It provides resource management on several clusters containing 
+over 2,000 compute nodes and has emulated clusters containing 
+up to 16,384 compute nodes, four times the size of of the 
+largest parallel computer in use today. 
+The cluster size is presently limited by the size of some SLURM 
+data structures, but operation on larger systems is certainly 
 feasible with minor code changes.
 
 \raggedright

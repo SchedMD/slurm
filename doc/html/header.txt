@@ -6,7 +6,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management,
+<meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="LLNL-WEB-411573">
 <meta name="LLNLRandRdate" content="26 March 2009">

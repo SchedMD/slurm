@@ -5,17 +5,17 @@ topology.conf \- Slurm configuration file for defining the network topology
 
 .SH "DESCRIPTION"
 \fB/etc/topology.conf\fP is an ASCII file which describes the
-cluster's network topology for optimized job resource allocation.
+cluster's network topology for optimized job resource allocation. 
 The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter. The file will always be located in the
-same directory as the \fBslurm.conf\fP file.
+DEFAULT_SLURM_CONF parameter. The file will always be located in the 
+same directory as the \fBslurm.conf\fP file. 
 .LP
 Paramter names are case insensitive.
-Any text following a "#" in the configuration file is treated
-as a comment through the end of that line.
+Any text following a "#" in the configuration file is treated 
+as a comment through the end of that line. 
 The size of each line in the file is limited to 1024 characters.
-Changes to the configuration file take effect upon restart of
-SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+Changes to the configuration file take effect upon restart of 
+SLURM daemons, daemon receipt of the SIGHUP signal, or execution 
 of the command "scontrol reconfigure" unless otherwise noted.
 .LP
 The network topology configuration one one line defining a switch name and
@@ -47,7 +47,7 @@ The units used are arbitrary and this information is currently not used.
 It may be used in the future to optimize resource allocations.
 
 .SH "EXAMPLE"
-.LP
+.LP 
 .br
 ##################################################################
 .br

@@ -12,37 +12,37 @@ strigger \- Used set, get or clear Slurm trigger information.
 
 .SH "DESCRIPTION"
 \fBstrigger\fR is used to set, get or clear Slurm trigger information.
-Triggers include events such as a node failing, a job reaching its
+Triggers include events such as a node failing, a job reaching its 
 time limit or a job terminating.
-These events can cause actions such as the execution of an arbitrary
-script.
-Typical uses include notifying system administrators of node failures
+These events can cause actions such as the execution of an arbitrary 
+script. 
+Typical uses include notifying system administrators of node failures 
 and gracefully terminating a job when it's time limit is approaching.
-A hostlist expression for the nodelist or job ID is passed as an argument
+A hostlist expression for the nodelist or job ID is passed as an argument 
 to the program.
 
-Trigger events are not processed instantly, but a check is performed for
-trigger events on a periodic basis (currently every 15 seconds).
-Any trigger events which occur within that interval will be compared
-against the trigger programs set at the end of the time interval.
+Trigger events are not processed instantly, but a check is performed for 
+trigger events on a periodic basis (currently every 15 seconds). 
+Any trigger events which occur within that interval will be compared 
+against the trigger programs set at the end of the time interval. 
 The trigger program will be executed once for any event occuring in
 that interval.
 The record of those events (e.g. nodes which went DOWN in the previous
 15 seconds) will then be cleared.
-The trigger program must set a new trigger before the end of the next
+The trigger program must set a new trigger before the end of the next 
 interval to insure that no trigger events are missed.
 If desired, multiple trigger programs can be set for the same event.
 
-\fBIMPORTANT NOTE:\fR This command can only set triggers if run by the
+\fBIMPORTANT NOTE:\fR This command can only set triggers if run by the 
 user \fISlurmUser\fR unless \fISlurmUser\fR is configured as user root.
 This is required for the \fIslurmctld\fR daemon to set the appropriate
-user and group IDs for the executed program.
-Also note that the program is executed on the same node that the
+user and group IDs for the executed program. 
+Also note that the program is executed on the same node that the 
 \fIslurmctld\fR daemon uses rather than some allocated compute node.
 To check the value of \fISlurmUser\fR, run the command:
 
-\fIscontrol show config | grep SlurmUser\fR
-
+\fIscontrol show config | grep SlurmUser\fR 
+ 
 .SH "ARGUMENTS"
 .TP
 \fB\-\-block_err\fP
@@ -52,7 +52,7 @@ Trigger an event when a BlueGene block enters an ERROR state.
 \fB\-\-clear\fP
 Clear or delete a previously defined event trigger.
 The \fB\-\-id\fR, \fB\-\-jobid\fR or \fB\-\-userid\fR
-option must be specified to identify the trigger(s) to
+option must be specified to identify the trigger(s) to 
 be cleared.
 
 .TP
@@ -85,28 +85,28 @@ Trigger ID number.
 \fB\-I\fR, \fB\-\-idle\fR
 Trigger an event if the specified node remains in an IDLE state
 for at least the time period specified by the \fB\-\-offset\fR
-option. This can be useful to hibernate a node that remains idle,
+option. This can be useful to hibernate a node that remains idle, 
 thus reducing power consumption.
 
 .TP
 \fB\-j\fR, \fB\-\-jobid\fR=\fIid\fR
 Job ID of interest.
-\fBNOTE:\fR The \fB\-\-jobid\fR option can not be used in conjunction
-with the \fB\-\-node\fR option. When the \fB\-\-jobid\fR option is
-used in conjunction with the \fB\-\-up\fR or \fB\-\-down\fR option,
-all nodes allocated to that job will considered the nodes used as a
+\fBNOTE:\fR The \fB\-\-jobid\fR option can not be used in conjunction 
+with the \fB\-\-node\fR option. When the \fB\-\-jobid\fR option is 
+used in conjunction with the \fB\-\-up\fR or \fB\-\-down\fR option, 
+all nodes allocated to that job will considered the nodes used as a 
 trigger event.
 
 .TP
 \fB\-n\fR, \fB\-\-node\fR[=\fIhost\fR]
-Host name(s) of interest.
-By default, all nodes associated with the job (if \fB\-\-jobid\fR
+Host name(s) of interest. 
+By default, all nodes associated with the job (if \fB\-\-jobid\fR 
 is specified) or on the system are considered for event triggers.
-\fBNOTE:\fR The \fB\-\-node\fR option can not be used in conjunction
-with the \fB\-\-jobid\fR option. When the \fB\-\-jobid\fR option is
-used in conjunction with the \fB\-\-up\fR, \fB\-\-down\fR or
-\fB\-\-drained\fR option,
-all nodes allocated to that job will considered the nodes used as a
+\fBNOTE:\fR The \fB\-\-node\fR option can not be used in conjunction 
+with the \fB\-\-jobid\fR option. When the \fB\-\-jobid\fR option is 
+used in conjunction with the \fB\-\-up\fR, \fB\-\-down\fR or 
+\fB\-\-drained\fR option, 
+all nodes allocated to that job will considered the nodes used as a 
 trigger event.
 
 .TP
@@ -114,8 +114,8 @@ trigger event.
 The specified action should follow the event by this time interval.
 Specify a negative value if action should preceded the event.
 The default value is zero if no \fB\-\-offset\fR option is specified.
-The resolution of this time is about 20 seconds, so to execute
-a script not less than five minutes prior to a job reaching its
+The resolution of this time is about 20 seconds, so to execute 
+a script not less than five minutes prior to a job reaching its 
 time limit, specify \fB\-\-offset=320\fR (5 minutes plus 20 seconds).
 
 .TP
@@ -123,12 +123,12 @@ time limit, specify \fB\-\-offset=320\fR (5 minutes plus 20 seconds).
 Execute the program at the specified fully qualified pathname
 when the event occurs.
 The program will be executed as the user who sets the trigger.
-If the program fails to terminate within 5 minutes, it will
+If the program fails to terminate within 5 minutes, it will 
 be killed along with any spawned processes.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
-Do not report non\-fatal errors.
+Do not report non\-fatal errors. 
 This can be useful to clear triggers which may have already been purged.
 
 .TP
@@ -138,9 +138,9 @@ Trigger an event when the system configuration changes.
 .TP
 \fB\-\-set\fP
 Register an event trigger based upon the supplied options.
-NOTE: An event is only triggered once. A new event trigger
-must be set established for future events of the same type
-to be processed.
+NOTE: An event is only triggered once. A new event trigger 
+must be set established for future events of the same type 
+to be processed. 
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR
@@ -159,7 +159,7 @@ Specify either a user name or user ID.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Print detailed event logging. This includes time\-stamps on data structures,
+Print detailed event logging. This includes time\-stamps on data structures, 
 record counts, etc.
 
 .TP
@@ -181,13 +181,13 @@ Resource ID: job ID or host names or "*" for any host
 
 .TP
 \fBTYPE\fP
-Trigger type: \fItime\fR or \fIfini\fR (for jobs only),
+Trigger type: \fItime\fR or \fIfini\fR (for jobs only), 
 \fIdown\fR or \fIup\fR (for jobs or nodes), or
 \fIdrained\fR, \fIidle\fR or \fIreconfig\fR (for nodes only)
 
 .TP
 \fBOFFSET\fP
-Time offset in seconds. Negative numbers indicated the action should
+Time offset in seconds. Negative numbers indicated the action should 
 occur before the event (if possible)
 
 .TP
@@ -199,7 +199,7 @@ Name of the user requesting the action
 Pathname of the program to execute when the event occurs
 
 .SH "EXAMPLES"
-Execute the program "/usr/sbin/slurm_admin_notify" whenever
+Execute the program "/usr/sbin/slurm_admin_notify" whenever 
 any node in the cluster goes down. The subject line will include
 the node names which have entered the down state (passed as an
 argument to the script by SLURM).
@@ -228,7 +228,7 @@ any node in the cluster remains in the idle state for at least
 .fi
 
 .PP
-Execute the program "/home/joe/clean_up" when job 1234 is within
+Execute the program "/home/joe/clean_up" when job 1234 is within 
 10 minutes of reaching its time limit.
 
 .nf

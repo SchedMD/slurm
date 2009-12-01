@@ -1,5 +1,5 @@
 
-EXTRA_DIST = man1 man3 man5 man8
+EXTRA_DIST = man1 man3 man5 man8 
 
 man1_MANS =            \
 	man1/sacct.1 \
