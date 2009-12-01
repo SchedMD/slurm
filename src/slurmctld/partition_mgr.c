@@ -1253,7 +1253,8 @@ uid_t *_get_group_members(char *group_name)
 	uid_cnt=0;
 #ifdef HAVE_AIX
 	setgrent_r(&fp);
-	while ((grp_result = getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
+	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
+		grp_result = &grp;
 #else
 	setgrent();
 	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
@@ -1271,7 +1272,8 @@ uid_t *_get_group_members(char *group_name)
 	j=0;
 #ifdef HAVE_AIX
 	setgrent_r(&fp);
-	while ((grp_result = getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
+	while (!getgrent_r(&grp, grp_buffer, PW_BUF_SIZE, &fp)) {
+		grp_result = &grp;
 #else
 	setgrent();
 	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
