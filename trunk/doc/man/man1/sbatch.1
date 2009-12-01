@@ -59,12 +59,12 @@ options if desired:
 When the task/affinity plugin is enabled,
 specifying an allocation in this manner also instructs SLURM to use
 a CPU affinity mask to guarantee the request is filled as specified.
-NOTE: Support for these options are configuration dependent. 
+NOTE: Support for these options are configuration dependent.
 The task/affinity plugin must be configured.
-In addition either select/linear or select/cons_res plugin must be 
+In addition either select/linear or select/cons_res plugin must be
 configured.
-If select/cons_res is configured, it must have a parameter of CR_Core, 
-CR_Core_Memory, CR_Socket, or CR_Socket_Memory. 
+If select/cons_res is configured, it must have a parameter of CR_Core,
+CR_Core_Memory, CR_Socket, or CR_Socket_Memory.
 
 .TP
 \fB\-\-begin\fR=<\fItime\fR>
@@ -113,15 +113,15 @@ already passed for that year, in which case the next year is used.
 
 .TP
 \fB\-\-checkpoint\fR=<\fItime\fR>
-Specifies the interval between creating checkpoints of the job step. 
+Specifies the interval between creating checkpoints of the job step.
 By default, the job step will no checkpoints created.
-Acceptable time formats include "minutes", "minutes:seconds", 
-"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
 "days\-hours:minutes:seconds".
 
 .TP
 \fB\-\-checkpoint\-dir\fR=<\fIdirectory\fR>
-Specifies the directory into which the job or job step's checkpoint should 
+Specifies the directory into which the job or job step's checkpoint should
 be written (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
 The default value is the current working directory.
 Checkpoint files will be of the form "<job_id>.ckpt" for jobs
@@ -133,30 +133,30 @@ An arbitrary comment.
 
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR=<\fIlist\fR>
-Specify a list of constraints. 
-The constraints are features that have been assigned to the nodes by 
-the slurm administrator. 
-The \fIlist\fR of constraints may include multiple features separated 
+Specify a list of constraints.
+The constraints are features that have been assigned to the nodes by
+the slurm administrator.
+The \fIlist\fR of constraints may include multiple features separated
 by ampersand (AND) and/or vertical bar (OR) operators.
-For example: \fB\-\-constraint="opteron&video"\fR or 
+For example: \fB\-\-constraint="opteron&video"\fR or
 \fB\-\-constraint="fast|faster"\fR.
 In the first example, only nodes having both the feature "opteron" AND
 the feature "video" will be used.
 There is no mechanism to specify that you want one node with feature
 "opteron" and another node with feature "video" in that case that no
 node has both features.
-If only one of a set of possible options should be used for all allocated 
-nodes, then use the OR operator and enclose the options within square brackets. 
-For example: "\fB\-\-constraint=[rack1|rack2|rack3|rack4]"\fR might 
-be used to specify that all nodes must be allocated on a single rack of 
+If only one of a set of possible options should be used for all allocated
+nodes, then use the OR operator and enclose the options within square brackets.
+For example: "\fB\-\-constraint=[rack1|rack2|rack3|rack4]"\fR might
+be used to specify that all nodes must be allocated on a single rack of
 the cluster, but any of those four racks can be used.
 A request can also specify the number of nodes needed with some feature
-by appending an asterisk and count after the feature name. 
-For example "\fBsbatch \-\-nodes=16 \-\-constraint=graphics*4 ..."\fR 
+by appending an asterisk and count after the feature name.
+For example "\fBsbatch \-\-nodes=16 \-\-constraint=graphics*4 ..."\fR
 indicates that the job requires 16 nodes at that at least four of those
 nodes must have the feature "graphics."
 Constraints with node counts may only be combined with AND operators.
-If no nodes have the requested features, then the job will be rejected 
+If no nodes have the requested features, then the job will be rejected
 by the slurm job manager.
 
 .TP
@@ -271,7 +271,7 @@ Show this help message
 
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
-Advise the SLURM controller that ensuing job steps will require \fIncpus\fR 
+Advise the SLURM controller that ensuing job steps will require \fIncpus\fR
 number of processors per task.  Without this option, the controller will
 just try to allocate one processor per task.
 
@@ -287,7 +287,7 @@ of 4 nodes, one for each of the 4 tasks.
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
 satisfied completed.
-<\fIdependency_list\fR> is of the form 
+<\fIdependency_list\fR> is of the form
 <\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
 Many jobs can share the same dependency and these jobs may even belong to
 different  users. The  value may be changed after job submission using the
@@ -322,7 +322,7 @@ it it executed.
 
 .TP
 \fB\-e\fR, \fB\-\-error\fR=<\fIfilename pattern\fR>
-Instruct SLURM to connect the batch script's standard error directly to the 
+Instruct SLURM to connect the batch script's standard error directly to the
 file name specified in the "\fIfilename pattern\fR".
 See the \fB\-\-input\fR option for filename specification options.
 
@@ -366,8 +366,8 @@ This option was originally created for use by Moab.
 
 .TP
 \fB\-\-gid\fR=<\fIgroup\fR>
-If \fBsbatch\fR is run as root, and the \fB\-\-gid\fR option is used, 
-submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR 
+If \fBsbatch\fR is run as root, and the \fB\-\-gid\fR option is used,
+submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR
 may be the group name or the numerical group ID.
 
 .TP
@@ -454,9 +454,9 @@ range of allocated nodes.
 
 .TP
 \fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
-Specification of licenses (or other resources available on all 
+Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.
-License names can be followed by an asterisk and count 
+License names can be followed by an asterisk and count
 (the default count is one).
 Multiple license names should be comma separated (e.g.
 "\-\-licenses=foo*4,bar").
@@ -471,13 +471,13 @@ subsequent srun requests.
 .TP
 .B block
 The block method of distribution will allocate processes in\-order to
-the cpus on a node. If the number of processes exceeds the number of 
-cpus on all of the nodes in the allocation then all nodes will be 
-utilized. For example, consider an allocation of three nodes each with 
-two cpus. A four\-process block distribution request will distribute 
-those processes to the nodes with processes one and two on the first 
-node, process three on the second node, and process four on the third node.  
-Block distribution is the default behavior if the number of tasks 
+the cpus on a node. If the number of processes exceeds the number of
+cpus on all of the nodes in the allocation then all nodes will be
+utilized. For example, consider an allocation of three nodes each with
+two cpus. A four\-process block distribution request will distribute
+those processes to the nodes with processes one and two on the first
+node, process three on the second node, and process four on the third node.
+Block distribution is the default behavior if the number of tasks
 exceeds the number of nodes requested.
 .TP
 .B cyclic
@@ -489,7 +489,7 @@ if the number of tasks is no larger than the number of nodes requested.
 .B plane
 The tasks are distributed in blocks of a specified size.
 The options include a number representing the size of the task block.
-This is followed by an optional specification of the task distribution 
+This is followed by an optional specification of the task distribution
 scheme within a block of tasks and between the blocks of tasks.
 For more details (including examples and diagrams), please see
 .br
@@ -500,9 +500,9 @@ and
 https://computing.llnl.gov/linux/slurm/dist_plane.html.
 .TP
 .B arbitrary
-The arbitrary method of distribution will allocate processes in\-order as 
+The arbitrary method of distribution will allocate processes in\-order as
 listed in file designated by the environment variable SLURM_HOSTFILE.  If
-this variable is listed it will over ride any other method specified. 
+this variable is listed it will over ride any other method specified.
 If not set the method will default to block.  Inside the hostfile must
 contain at minimum the number of hosts requested.  If requesting tasks
 (\-n) your tasks will be laid out on the nodes in the order of the file.
@@ -510,13 +510,13 @@ contain at minimum the number of hosts requested.  If requesting tasks
 
 .TP
 \fB\-\-mail\-type\fR=<\fItype\fR>
-Notify user by email when certain event types occur. 
-Valid \fItype\fR values are BEGIN, END, FAIL, ALL (any state change). 
-The user to be notified is indicated with \fB\-\-mail\-user\fR. 
+Notify user by email when certain event types occur.
+Valid \fItype\fR values are BEGIN, END, FAIL, ALL (any state change).
+The user to be notified is indicated with \fB\-\-mail\-user\fR.
 
 .TP
 \fB\-\-mail\-user\fR=<\fIuser\fR>
-User to receive email notification of state changes as defined by 
+User to receive email notification of state changes as defined by
 \fB\-\-mail\-type\fR.
 The default value is the submitting user.
 
@@ -535,7 +535,7 @@ Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
 Mimimum memory required per allocated CPU in MegaBytes.
 Default value is \fBDefMemPerCPU\fR and the maximum value is
-\fBMaxMemPerCPU\fR. If configured, both of parameters can be 
+\fBMaxMemPerCPU\fR. If configured, both of parameters can be
 seen using the \fBscontrol show config\fR command.
 This parameter would generally be used of individual processors
 are allocated to jobs (\fBSelectType=select/cons_res\fR).
@@ -544,16 +544,16 @@ Also see \fB\-\-mem\fR.
 
 .TP
 \fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
-Bind tasks to memory. Used only when the task/affinity plugin is enabled 
+Bind tasks to memory. Used only when the task/affinity plugin is enabled
 and the NUMA memory functions are available.
-\fBNote that the resolution of CPU and memory binding 
-may differ on some architectures.\fR For example, CPU binding may be performed 
-at the level of the cores within a processor while memory binding will 
-be performed at the level of nodes, where the definition of "nodes" 
-may differ from system to system. \fBThe use of any type other than 
+\fBNote that the resolution of CPU and memory binding
+may differ on some architectures.\fR For example, CPU binding may be performed
+at the level of the cores within a processor while memory binding will
+be performed at the level of nodes, where the definition of "nodes"
+may differ from system to system. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
-If you want greater control, try running a simple test code with the 
-options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine 
+If you want greater control, try running a simple test code with the
+options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine
 the specific configuration.
 
 NOTE: To have SLURM always report on the selected memory binding for
@@ -632,16 +632,16 @@ A limit on the maximum node count may be specified with \fImaxnodes\fR
 (e.g. "\-\-nodes=2\-4").  The minimum and maximum node count may be the
 same to specify a specific number of nodes (e.g. "\-\-nodes=2\-2" will ask
 for two and ONLY two nodes).
-The partition's node limits supersede those of the job. 
-If a job's node limits are outside of the range permitted for its 
-associated partition, the job will be left in a PENDING state. 
-This permits possible execution at a later time, when the partition 
+The partition's node limits supersede those of the job.
+If a job's node limits are outside of the range permitted for its
+associated partition, the job will be left in a PENDING state.
+This permits possible execution at a later time, when the partition
 limit is changed.
-If a job node limit exceeds the number of nodes configured in the 
+If a job node limit exceeds the number of nodes configured in the
 partition, the job will be rejected.
-Note that the environment 
-variable \fBSLURM_NNODES\fR will be set to the count of nodes actually 
-allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section 
+Note that the environment
+variable \fBSLURM_NNODES\fR will be set to the count of nodes actually
+allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section
 for more information.  If \fB\-N\fR is not specified, the default
 behavior is to allocate enough nodes to satisfy the requirements of
 the \fB\-n\fR and \fB\-c\fR options.
@@ -650,28 +650,28 @@ and without delaying the initiation of the job.
 
 .TP
 \fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
-sbatch does not launch tasks, it requests an allocation of resources and 
-submits a batch script. This option advises the SLURM controller that job 
+sbatch does not launch tasks, it requests an allocation of resources and
+submits a batch script. This option advises the SLURM controller that job
 steps run within this allocation will launch a maximum of \fInumber\fR
-tasks and sufficient resources are allocated to accomplish this.  
-The default is one task per socket or core (depending upon the value 
-of the \fISelectTypeParameters\fR parameter in slurm.conf), but note 
+tasks and sufficient resources are allocated to accomplish this.
+The default is one task per socket or core (depending upon the value
+of the \fISelectTypeParameters\fR parameter in slurm.conf), but note
 that the \fB\-\-cpus\-per\-task\fR option will change this default.
 
 .TP
 \fB\-\-network\fR=<\fItype\fR>
-Specify the communication protocol to be used. 
+Specify the communication protocol to be used.
 This option is supported on AIX systems.
-Since POE is used to launch tasks, this option is not normally used or 
+Since POE is used to launch tasks, this option is not normally used or
 is specified using the \fBSLURM_NETWORK\fR environment variable.
 The interpretation of \fItype\fR is system dependent.
-For systems with an IBM Federation switch, the following 
+For systems with an IBM Federation switch, the following
 comma\-separated and case insensitive types are recognized:
-\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR, 
-\fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR). 
+\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR,
+\fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR).
 For more information, on IBM systems see \fIpoe\fR documentation on
 the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
-Note that only four jobs steps may be active at once on a node with the 
+Note that only four jobs steps may be active at once on a node with the
 \fBBULK_XFER\fR option due to limitations in the Federation switch driver.
 
 .TP
@@ -681,17 +681,17 @@ With no adjustment value the scheduling priority is decreased
 by 100. The adjustment range is from \-10000 (highest priority)
 to 10000 (lowest priority). Only privileged users can specify
 a negative adjustment. NOTE: This option is presently
-ignored if \fISchedulerType=sched/wiki\fR or 
+ignored if \fISchedulerType=sched/wiki\fR or
 \fISchedulerType=sched/wiki2\fR.
 
 .TP
 \fB\-\-no\-requeue\fR
 Specifies that the batch job should not be requeued after node failure.
-Setting this option will prevent system administrators from being able 
+Setting this option will prevent system administrators from being able
 to restart the job (for example, after a scheduled downtime).
 When a job is requeued, the batch script is initiated from its beginning.
 Also see the \fB\-\-requeue\fR option.
-The \fIJobRequeue\fR configuration parameter controls the default 
+The \fIJobRequeue\fR configuration parameter controls the default
 behavior on the cluster.
 
 .TP
@@ -739,7 +739,7 @@ allowing more than one task per processor.  However no more than
 
 .TP
 \fB\-o\fR, \fB\-\-output\fR=<\fIfilename pattern\fR>
-Instruct SLURM to connect the batch script's standard output directly to the 
+Instruct SLURM to connect the batch script's standard output directly to the
 file name specified in the "\fIfilename pattern\fR".
 See the \fB\-\-input\fR option for filename specification options.
 
@@ -816,7 +816,7 @@ the SLURM configuration parameter, AccountingStorageEnforce, includes
 Specifies that the batch job should be requeued after node failure.
 When a job is requeued, the batch script is initiated from its beginning.
 Also see the \fB\-\-no\-requeue\fR option.
-The \fIJobRequeue\fR configuration parameter controls the default 
+The \fIJobRequeue\fR configuration parameter controls the default
 behavior on the cluster.
 
 .TP
@@ -833,14 +833,14 @@ performance will likely suffer due to competition for resources within a node.
 
 .TP
 \fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
-When a job is within \fIsig_time\fR seconds of its end time, 
-send it the signal \fIsig_num\fR. 
-Due to the resolution of event handling by SLURM, the signal may 
+When a job is within \fIsig_time\fR seconds of its end time,
+send it the signal \fIsig_num\fR.
+Due to the resolution of event handling by SLURM, the signal may
 be sent up to 60 seconds earlier than specified.
 Both \fIsig_time\fR and \fIsig_num\fR must have integer values
 between zero and 65535.
-By default, no signal is sent before the job's end time. 
-If a \fIsig_num\fR is specified without any \fIsig_time\fR, 
+By default, no signal is sent before the job's end time.
+If a \fIsig_num\fR is specified without any \fIsig_time\fR,
 the default time will be 60 seconds.
 
 .TP
@@ -929,8 +929,8 @@ Default from \fIblugene.conf\fR if not set.
 
 .TP
 \fB\-\-conn\-type\fR=<\fItype\fR>
-Require the partition connection type to be of a certain type.  
-On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.  
+Require the partition connection type to be of a certain type.
+On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.
 If NAV, or if not set, then SLURM will try to fit a TORUS else MESH.
 You should not normally set this option.
 SLURM will normally allocate a TORUS if possible for a given geometry.
@@ -940,10 +940,10 @@ for virtual node mode, and HTC_L for Linux mode.
 
 .TP
 \fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR>
-Specify the geometry requirements for the job. The three numbers 
-represent the required geometry giving dimensions in the X, Y and 
-Z directions. For example "\-\-geometry=2x3x4", specifies a block 
-of nodes having 2 x 3 x 4 = 24 nodes (actually base partitions on 
+Specify the geometry requirements for the job. The three numbers
+represent the required geometry giving dimensions in the X, Y and
+Z directions. For example "\-\-geometry=2x3x4", specifies a block
+of nodes having 2 x 3 x 4 = 24 nodes (actually base partitions on
 Blue Gene).
 
 .TP
@@ -963,7 +963,7 @@ Default from \fIblugene.conf\fR if not set.
 
 .TP
 \fB\-R\fR, \fB\-\-no\-rotate\fR
-Disables rotation of the job's requested geometry in order to fit an 
+Disables rotation of the job's requested geometry in order to fit an
 appropriate partition.
 By default the specified geometry can rotate in three dimensions.
 
@@ -1012,7 +1012,7 @@ Same as \fB\-m, \-\-distribution\fR
 Same as \fB\-\-exclusive\fR
 .TP
 \fBSLURM_EXIT_ERROR\fR
-Specifies the exit code generated when a SLURM error occurs 
+Specifies the exit code generated when a SLURM error occurs
 (e.g. invalid options).
 This can be used by a script to distinguish application exit codes from
 various SLURM error conditions.
@@ -1138,7 +1138,7 @@ The block name on Blue Gene systems only.
 .LP
 Specify a batch script by filename on the command line.
 The batch script specifies a 1 minute time limit for the job.
-.IP 
+.IP
 $ cat myscript
 .br
 #!/bin/sh
@@ -1165,9 +1165,9 @@ host3
 .br
 host4
 
-.LP 
+.LP
 Pass a batch script to sbatch on standard input:
-.IP 
+.IP
 $ sbatch \-N4 <<EOF
 .br
 > #!/bin/sh
@@ -1210,5 +1210,5 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-.LP 
+.LP
 sinfo(1), sattach(1), salloc(1), squeue(1), scancel(1), scontrol(1), slurm.conf(5), sched_setaffinity(2), numa(3)

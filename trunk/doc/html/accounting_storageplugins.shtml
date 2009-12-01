@@ -27,7 +27,7 @@ for the type of accounting package. We currently use
 <li><b>pgsql</b>&#151; Store information in a postgresql database.
 <li><b>none</b>&#151; Information is not stored anywhere.
 </ul>
-<p>The programmer is urged to study 
+<p>The programmer is urged to study
 <span class="commandline">src/plugins/accounting_storage/mysql</span>
 for a sample implementation of a SLURM Accounting Storage plugin.
 <p> The Accounting Storage plugin was written to be a interface
@@ -35,7 +35,7 @@ to storage data collected by the Job Accounting Gather plugin.  When
 adding a new database you may want to add common functions in a common
 file in the src/database dir.  Refer to src/database/mysql_common.c|.h for an
 example so other plugins can also use that database type to write out
-information. 
+information.
 <p class="footer"><a href="#top">top</a>
 
 
@@ -44,12 +44,12 @@ information.
 The Job Accounting Storage API uses hooks in the slurmctld.
 
 <p>All of the following functions are required. Functions which are not
-implemented must be stubbed. 
+implemented must be stubbed.
 
 <h4>Functions called by the accounting_storage plugin</h4>
 
 <p class="commandline">void *acct_storage_p_get_connection(bool
-  make_agent, int conn_num, bool rollback, char *location) 
+  make_agent, int conn_num, bool rollback, char *location)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 acct_storage_p_get_connection() is called to get a connection to the
   storage medium. acct_storage_p_close_connection() should be used to
@@ -69,7 +69,7 @@ happen or not (in use with databases that support rollback).<br>
 used inside the plugin to connection to the storage type on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
-<p class="commandline">int acct_storage_p_close_connection(void **db_conn) 
+<p class="commandline">int acct_storage_p_close_connection(void **db_conn)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 acct_storage_p_close_connection() is called at the end of the program that has
 called acct_storage_p_get_connection this function closes the connection to
@@ -77,7 +77,7 @@ the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input/output) connection to
 the storage type, all memory will be freed inside this function and
-set to NULL. 
+set to NULL.
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -103,9 +103,9 @@ Called to add users to the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">user_list</span> (input) list of
-acct_user_rec_t *'s containing information about the users being added.<br> 
+acct_user_rec_t *'s containing information about the users being added.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -117,7 +117,7 @@ Called to link specified users to the specified accounts as coordinators.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">acct_list</span> (input) list of
 acct_account_rec_t *'s containing information about the accounts to
 add the coordinators to. <br>
@@ -148,7 +148,7 @@ Called to add clusters to the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">cluster_list</span> (input) list of
 acct_cluster_rec_t *'s containing information about the clusters to add. <br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -162,7 +162,7 @@ Called to add associations to the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">association_list</span> (input) list of
 acct_association_rec_t *'s containing information about the
 associations to add. <br>
@@ -177,7 +177,7 @@ Called to add QOS' to the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">qos_list</span> (input) list of
 acct_qos_rec_t *'s containing information about the qos to add. <br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -191,7 +191,7 @@ Called to add wckeys to the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">wckey_list</span> (input) list of
 acct_wckey_rec_t *'s containing information about the wckeys to add. <br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -223,7 +223,7 @@ Used to modify existing users in the storage type.  The condition
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">user_cond</span> (input) conditional about
 which users need to change.  User names or ids should not need to be stated.<br>
 <span class="commandline">user</span> (input) what the changes
@@ -245,7 +245,7 @@ Used to modify existing accounts in the storage type.  The condition
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">acct_cond</span> (input) conditional about
 which accounts need to change.  Account names should not need to be stated.<br>
 <span class="commandline">acct</span> (input) what the changes
@@ -267,7 +267,7 @@ Used to modify existing clusters in the storage type.  The condition
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">cluster_cond</span> (input) conditional about
 which clusters need to change.  Cluster names should not need to be stated.<br>
 <span class="commandline">cluster</span> (input) what the changes
@@ -289,7 +289,7 @@ Used to modify existing associations in the storage type.  The condition
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">assoc_cond</span> (input) conditional about
 which associations need to change.  Association ids should not need to be stated.<br>
 <span class="commandline">assoc</span> (input) what the changes
@@ -311,7 +311,7 @@ Used to modify existing qos in the storage type.  The condition
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">qos_cond</span> (input) conditional about
 which qos need to change.  Qos names should not need to be stated.<br>
 <span class="commandline">qos</span> (input) what the changes
@@ -333,7 +333,7 @@ Used to modify existing wckeys in the storage type.  The condition
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">wckey_cond</span> (input) conditional about
 which wckeys need to change.  Wckey names should not need to be stated.<br>
 <span class="commandline">wckey</span> (input) what the changes
@@ -367,7 +367,7 @@ Used to remove users from the storage type.  This will remove all
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">user_cond</span> (input) conditional about
 which users to be removed.  User names or ids should not need to be stated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -376,16 +376,16 @@ removed on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
-List acct_storage_p_remove_coord(void *db_conn, uint32_t uid, 
+List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 List acct_list, acct_user_cond_t *user_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to remove coordinators from the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">acct_list</span> (input) list of accounts
-associated with the users.<br> 
+associated with the users.<br>
 <span class="commandline">user_cond</span> (input) conditional about
 which users to be removed as coordinators.  User names or ids should be stated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -394,7 +394,7 @@ removed as coordinators on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
-List acct_storage_p_remove_accounts(void *db_conn, uint32_t uid, 
+List acct_storage_p_remove_accounts(void *db_conn, uint32_t uid,
 acct_account_cond_t *acct_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to remove accounts from the storage type. This will remove all
@@ -405,7 +405,7 @@ Used to remove accounts from the storage type. This will remove all
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">acct_cond</span> (input) conditional about
 which accounts to be removed.  Account names should not need to be stated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -414,16 +414,16 @@ removed on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
-List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid, 
+List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 acct_cluster_cond_t *cluster_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to remove clusters from the storage type. This will remove all
   associations from these clusters.  You need to make sure no jobs are
-  running with any association that is to be removed. 
+  running with any association that is to be removed.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">cluster_cond</span> (input) conditional about
 which clusters to be removed.  Cluster names should not need to be stated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -436,11 +436,11 @@ List acct_storage_p_remove_associations(void *db_conn, uint32_t uid,
 acct_association_cond_t *assoc_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to remove associations from the storage type.  You need to make
-  sure no jobs are running with any association that is to be removed. 
+  sure no jobs are running with any association that is to be removed.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">assoc_cond</span> (input) conditional about
 which associations to be removed.  Association ids should not need to be stated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -456,7 +456,7 @@ Used to remove qos from the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">qos_cond</span> (input) conditional about
 which qos to be removed.  Qos names should not need to be stated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -472,7 +472,7 @@ Used to remove wckeys from the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">wckey_cond</span> (input) conditional about
 which wckeys to be removed.  Wckey names should not need to be stated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -503,7 +503,7 @@ Get a list of acct_user_rec_t *'s based on the conditional sent.
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
 <span class="commandline">uid</span> (input) uid of user calling the
-function.<br> 
+function.<br>
 <span class="commandline">user_cond</span> (input) conditional about
 which users are to be returned.  User names or ids should not need to
 be stated.<br>
@@ -521,7 +521,7 @@ Get a list of acct_account_rec_t *'s based on the conditional sent.
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
 <span class="commandline">uid</span> (input) uid of user calling the
-function.<br> 
+function.<br>
 <span class="commandline">acct_cond</span> (input) conditional about
 which accounts are to be returned.  Account names should not need to
 be stated.<br>
@@ -539,7 +539,7 @@ Get a list of acct_cluster_rec_t *'s based on the conditional sent.
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
 <span class="commandline">uid</span> (input) uid of user calling the
-function.<br> 
+function.<br>
 <span class="commandline">cluster_cond</span> (input) conditional about
 which clusters are to be returned.  Cluster names should not need to
 be stated.<br>
@@ -557,7 +557,7 @@ Get a list of acct_association_rec_t *'s based on the conditional sent.
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
 <span class="commandline">uid</span> (input) uid of user calling the
-function.<br> 
+function.<br>
 <span class="commandline">assoc_cond</span> (input) conditional about
 which associations are to be returned.  Association names should not need to
 be stated.<br>
@@ -575,7 +575,7 @@ Get a list of acct_qos_rec_t *'s based on the conditional sent.
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
 <span class="commandline">uid</span> (input) uid of user calling the
-function.<br> 
+function.<br>
 <span class="commandline">qos_cond</span> (input) conditional about
 which qos are to be returned.  Qos names should not need to
 be stated.<br>
@@ -593,7 +593,7 @@ Get a list of acct_wckey_rec_t *'s based on the conditional sent.
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
 <span class="commandline">uid</span> (input) uid of user calling the
-function.<br> 
+function.<br>
 <span class="commandline">wckey_cond</span> (input) conditional about
 which wckeys are to be returned.  Wckey names should not need to
 be stated.<br>
@@ -611,7 +611,7 @@ Get a list of acct_txn_rec_t *'s (transactions) based on the conditional sent.
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
 <span class="commandline">uid</span> (input) uid of user calling the
-function.<br> 
+function.<br>
 <span class="commandline">txn_cond</span> (input) conditional about
 which transactions are to be returned.  Transaction ids should not need to
 be stated.<br>
@@ -629,14 +629,14 @@ Get usage for a specific association or wckey.
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
 <span class="commandline">uid</span> (input) uid of user calling the
-function.<br> 
+function.<br>
 <span class="commandline">in</span> (input/out) can be anything that
-gathers usage like acct_association_rec_t * or acct_wckey_rec_t *.<br> 
+gathers usage like acct_association_rec_t * or acct_wckey_rec_t *.<br>
 <span class="commandline">type</span> (input) really
 slurmdbd_msg_type_t should let the plugin know what the structure is
-that was sent in some how.<br> 
-<span class="commandline">start</span> (input) start time of the usage.<br> 
-<span class="commandline">end</span> (input) end time of the usage.<br> 
+that was sent in some how.<br>
+<span class="commandline">start</span> (input) start time of the usage.<br>
+<span class="commandline">end</span> (input) end time of the usage.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -648,7 +648,7 @@ roll up association, cluster, and wckey usage in the storage.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
-<span class="commandline">start</span> (input) start time of the rollup.<br> 
+<span class="commandline">start</span> (input) start time of the rollup.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -665,7 +665,7 @@ the storage type.<br>
 is on.<br>
 <span class="commandline">node_ptr</span> (input) pointer to the node
 structure marked down.<br>
-<span class="commandline">event_time</span> (input) time event happened.<br> 
+<span class="commandline">event_time</span> (input) time event happened.<br>
 <span class="commandline">reason</span> (input) if different from what
 is set in the node_ptr, the reason the node is down.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -684,7 +684,7 @@ the storage type.<br>
 is on.<br>
 <span class="commandline">node_ptr</span> (input) pointer to the node
 structure marked up.<br>
-<span class="commandline">event_time</span> (input) time event happened.<br> 
+<span class="commandline">event_time</span> (input) time event happened.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -716,18 +716,18 @@ Get usage for a specific cluster.
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
 <span class="commandline">uid</span> (input) uid of user calling the
-function.<br> 
+function.<br>
 <span class="commandline">cluster_rec</span> (input/out)
 acct_cluster_rec_t * already set with the cluster name.  Usage will be
-filled in.<br> 
+filled in.<br>
 <span class="commandline">type</span> (input) really
 slurmdbd_msg_type_t should let the plugin know what the structure is
-that was sent in some how for this it is just DBD_GET_CLUSTER_USAGE.<br> 
-<span class="commandline">start</span> (input) start time of the usage.<br> 
-<span class="commandline">end</span> (input) end time of the usage.<br> 
+that was sent in some how for this it is just DBD_GET_CLUSTER_USAGE.<br>
+<span class="commandline">start</span> (input) start time of the usage.<br>
+<span class="commandline">end</span> (input) end time of the usage.<br>
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
-the storage type. 
+the storage type.
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -749,35 +749,35 @@ running on the host is grabbed from the connection.<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_job_start(void *db_conn, struct job_record *job_ptr) 
+int jobacct_storage_p_job_start(void *db_conn, struct job_record *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_storage_p_job_start() is called in the jobacct plugin when a
 job starts, inserting information into the database about the new job.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
-<span class="commandline">job_ptr</span> (input) information about the job in 
+<span class="commandline">job_ptr</span> (input) information about the job in
 slurmctld.
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_job_complete(void *db_conn, struct job_record *job_ptr) 
+int jobacct_storage_p_job_complete(void *db_conn, struct job_record *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_storage_p_job_complete() is called in the jobacct plugin when
 a job completes, this updates info about end of a job.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
-<span class="commandline">job_ptr</span> (input) information about the job in 
+<span class="commandline">job_ptr</span> (input) information about the job in
 slurmctld.
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_step_start(void *db_conn, struct step_record *step_ptr) 
+int jobacct_storage_p_step_start(void *db_conn, struct step_record *step_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_storage_p_step_start() is called in the jobacct plugin at the
 allocation of a new step in the slurmctld, this inserts info about the
@@ -792,12 +792,12 @@ slurmctld.
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_step_complete(void *db_conn, struct step_record *step_ptr) 
+int jobacct_storage_p_step_complete(void *db_conn, struct step_record *step_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_storage_p_step_complete() is called in the jobacct plugin at
 the end of a step in the slurmctld, this updates the ending
 information about a step.
-<p style="margin-left:.2in"><b>Arguments</b>:<br> 
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
 <span class="commandline">step_ptr</span> (input) information about the step in
@@ -807,29 +807,29 @@ slurmctld.
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_job_suspend(void *db_conn, struct job_record *job_ptr) 
+int jobacct_storage_p_job_suspend(void *db_conn, struct job_record *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_storage_p_suspend() is called in the jobacct plugin when a
 job is suspended or resumed in the slurmctld, this updates the
-database about the suspended time of the job. 
+database about the suspended time of the job.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
-<span class="commandline">job_ptr</span> (input) information about the job in 
+<span class="commandline">job_ptr</span> (input) information about the job in
 slurmctld.
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">none</span>
 
 <p class="commandline">
 List jobacct_storage_p_get_jobs_cond(void *db_conn, uint32_t uid,
-acct_job_cond_t *job_cond) 
+acct_job_cond_t *job_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_storage_p_get_jobs_cond() is called to get a list of jobs from the
-database given the conditional. 
+database given the conditional.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
-<span class="commandline">uid</span> (input) uid of user calling the function.<br> 
+<span class="commandline">uid</span> (input) uid of user calling the function.<br>
 <span class="commandline">job_cond</span> (input) conditional about
 which jobs to get.  Job ids should not need to be stated.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -837,7 +837,7 @@ which jobs to get.  Job ids should not need to be stated.<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_archive(void *db_conn, acct_archive_cond_t *arch_cond) 
+int jobacct_storage_p_archive(void *db_conn, acct_archive_cond_t *arch_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 used to archive old data.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
@@ -850,7 +850,7 @@ what to archive.<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_archive_load(void *db_conn, acct_archive_rect *arch_rec) 
+int jobacct_storage_p_archive_load(void *db_conn, acct_archive_rect *arch_rec)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 used to load old archive data.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
@@ -869,13 +869,13 @@ Used to update shares used in the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type.<br>
-<span class="commandline">acct_list</span> (input) List of shares_used_object_t.<br> 
+<span class="commandline">acct_list</span> (input) List of shares_used_object_t.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int acct_storage_p_flush_jobs_on_cluster(void *db_conn, char *cluster, time_t event_time) 
+int acct_storage_p_flush_jobs_on_cluster(void *db_conn, char *cluster, time_t event_time)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 used to mark all jobs in the storage type as finished.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
@@ -917,7 +917,7 @@ database with.
 </dl>
 
 <h2>Versioning</h2>
-<p> This document describes version 1 of the SLURM Accounting Storage API. Future 
+<p> This document describes version 1 of the SLURM Accounting Storage API. Future
 releases of SLURM may revise this API. An Accounting Storage plugin conveys its
 ability to implement a particular API version using the mechanism outlined
 for SLURM plugins.

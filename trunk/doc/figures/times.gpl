@@ -25,7 +25,7 @@ set yrange [0.05:20]
 set mytics 2
 
 set logscale y
-set grid noxtics ytics mytics 
+set grid noxtics ytics mytics
 
 plot [0:12]	"figures/slurm.dat" title "SLURM" with linespoint, \
 		"figures/rms.dat"   title "RMS" with linespoint, \

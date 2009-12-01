@@ -7,7 +7,7 @@
 %% of this license or (at your option) any later version.
 %% The latest version of this license is in
 %%   http://www.latex-project.org/lppl.txt
-%% and version 1.2 or later is part of all distributions of LaTeX 
+%% and version 1.2 or later is part of all distributions of LaTeX
 %% version 1999/12/01 or later.
 %%
 %% This program consists of the files listed in manifest.txt
@@ -107,9 +107,9 @@
 % Add a bookmark for each master slide
 \def\@addBookmarkOnSlide#1#2{%
   \ifnum#1=0
-  \def\Hy@temp{#2}% 
+  \def\Hy@temp{#2}%
     \pdfmark{pdfmark=/OUT,
-      Raw={/Page \thetrueSlideCounter 
+      Raw={/Page \thetrueSlideCounter
         /View [ /XYZ null null null ]
         /Title (\expandafter\strip@prefix\meaning\Hy@temp)}
     }%
@@ -119,9 +119,9 @@
   \ifcollapsedBookmarks
     \@tempoLimit=-\@tempoLimit
   \fi
-  \def\Hy@temp{#2}% 
+  \def\Hy@temp{#2}%
     \pdfmark{pdfmark=/OUT,
-      Raw={/Count \number\@tempoLimit /Page \thetrueSlideCounter 
+      Raw={/Count \number\@tempoLimit /Page \thetrueSlideCounter
         /View [ /XYZ null null null ]
         /Title (\expandafter\strip@prefix\meaning\Hy@temp)}
     }%
@@ -189,13 +189,13 @@
     no font specified for text in B\string&W}{Use macro \string\FontText}}
 \def\@colorFoot{\black}
 \newcommand{\FontTitle}[2]{%
-  \gdef\@fontTitleColor{#1}% 
+  \gdef\@fontTitleColor{#1}%
   \gdef\@fontTitleBW{#2}}
 \newcommand{\FontSubtitle}[2]{%
   \gdef\@fontSubtitleColor{#1}%
   \gdef\@fontSubtitleBW{#2}}
 \newcommand{\FontText}[2]{%
-  \gdef\@fontTextColor{#1}% 
+  \gdef\@fontTextColor{#1}%
   \gdef\@fontTextBW{#2}}
 \newcommand{\ColorFoot}[1]{\gdef\@colorFoot{#1}}
 
@@ -252,12 +252,12 @@
        \slidetitle{#2}%
     \fi
     \begin{posit@Box}%
-      \begin{minipage}{\slideWidth}%    
+      \begin{minipage}{\slideWidth}%
         \begin{raggedright}%
         \@DefMyItem
         \ifinColor\@fontTextColor\else\@fontTextBW\fi
         }{%
-      \par\end{raggedright}% 
+      \par\end{raggedright}%
     \end{minipage}
   \end{posit@Box}\end{slide@seminar}}
 % Slides in overlays
@@ -290,7 +290,7 @@
             \@DefMyItem
             \ifinColor\@fontTextColor\else\@fontTextBW\fi
             {\overlay{1}}%
-  \fi    
+  \fi
   }{%
   \ifDVItoPS
         \par\end{raggedright}%
@@ -321,7 +321,7 @@
 \def\@prosperItemiii{{\scriptsize\green%
       \raisebox{2pt}{\ensuremath{\bullet}}}}
 \newcommand{\myitem}[2]{%
-  \ifnum#1=1 
+  \ifnum#1=1
     \gdef\@prosperItemi{#2}%
   \else
     \ifnum#1=2
@@ -393,7 +393,7 @@
 \let\Itemize=\itemize
 \let\endItemize=\enditemize
 \let\orig@item=\item
-\renewenvironment{itemize}{\global\let\cur@item=\item 
+\renewenvironment{itemize}{\global\let\cur@item=\item
   \global\let\item=\orig@item%
   \begin{Itemize}\begin{raggedright}}{%
       \end{raggedright}\end{Itemize}\global\let\item=\cur@item}
@@ -450,7 +450,7 @@
 \renewcommand{\maketitle}{%
   %% Tests whether the 'french' style from B. Gaulle is loaded
   \expandafter\ifx\csname frenchTeXmods\endcsname\relax%
-  \else 
+  \else
   \PackageWarning{prosper}{This page intentionnally left blank to overcome an incompatibility bug between B. Gaulle 'french' package and the seminar class.}
   \begin{center}
     {\black\small
@@ -504,7 +504,7 @@
 
 
 % fromSlide, onlySlide, untilSlide
-% Masks or not the parameter. 
+% Masks or not the parameter.
 % The stared version does not advance the position pointer and does not
 % interpret its argument (to be used for graphics and commands containing
 % PStricks links)
@@ -517,7 +517,7 @@
 % [2001/07/16] PMN: The grouping and \ignorespaces around the argument
 %   is necessary for downwards compatibility.
 %     \ignorespaces is as found in \overlays from seminar and
-%     the grouping changes the spacing behavour in TeX.  
+%     the grouping changes the spacing behavour in TeX.
 
 \long\def\fromSlide{%
   \@ifstar\fromSlide@E\fromSlide@NE}
@@ -655,7 +655,7 @@
 \newif\ifInOverlays
 \InOverlaysfalse
 \long\def\overlays#1#2{%
-  \bgroup  
+  \bgroup
   \aftergroup\@cleanupOverlay
   \global\InOverlaystrue
   \setcounter{limitOverlays}{#1}%
@@ -664,8 +664,8 @@
     #2
   \else
     \begin{Overlays}%
-    \bgroup  
-    \loop 
+    \bgroup
+    \loop
       \@everyOverlay
       #2
     \ifnum\value{overlaysCount}<\value{limitOverlays}%
@@ -762,7 +762,7 @@
 }
 
 \def\@prepareResetCounters{%
-  \ifnum\value{nbAffected}>0 
+  \ifnum\value{nbAffected}>0
      \setcounter{savecountAffected}{1}
      \loop
        \csname @sac\the\c@savecountAffected\endcsname
@@ -795,7 +795,7 @@
   \prosper@next}
 % #1 appears on the slide only on PS mode
 \newcommand{\onlyInPS}{%
-  \ifDVItoPS 
+  \ifDVItoPS
     \let\prosper@next\@iden
    \else
     \let\prosper@next\@gobble
@@ -844,7 +844,7 @@
 
 \endinput
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
-%%% End: 
+%%% End:

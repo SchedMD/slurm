@@ -19,12 +19,12 @@ FIGS = $(FIGDIR)/arch.eps \
        $(FIGDIR)/interactive-job-init.eps \
        $(FIGDIR)/slurm-arch.eps
 
-PLOTS = $(FIGDIR)/times.eps 
+PLOTS = $(FIGDIR)/times.eps
 
 BIB = ../common/project.bib
 
 %.eps: %.dia
-	dia --nosplash -e $@ $< 
+	dia --nosplash -e $@ $<
 %.eps: %.gpl
 	gnuplot $<
 %.eps: %.fig
@@ -34,9 +34,9 @@ BIB = ../common/project.bib
 %.ps: %.dvi
 	dvips -K -t letter -o $(@F) $(<F)
 %.pdf: %.dvi
-	dvipdf $< $@ 
+	dvipdf $< $@
 
-all: $(REPORT).ps 
+all: $(REPORT).ps
 
 
 $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB) smap.output
@@ -51,6 +51,6 @@ $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB) smap.output
 view: $(REPORT).ps
 	ghostview $(REPORT) &
 
-clean: 
+clean:
 	rm -f *~ *.dvi *.log *.aux $(REPORT).pdf $(REPORT).ps *.blg *.bbl #*.eps #*.gif *.ps
-	      
+

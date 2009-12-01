@@ -1,5 +1,5 @@
 Quadrics Elan Runtime Requirements
-December 31, 2001 
+December 31, 2001
 By Jim Garlick
 
 Abstract
@@ -8,19 +8,19 @@ SLURM runs parallel programs that utilize the Quadrics Elan3 interconnect.
 In order for the processes in a job to communicate, they must present an Elan
 capability to the Elan device driver.  The SLURM partition manager allocates
 capabilities, and the SLURM job manager sets up the user environment and
-makes appropriate calls into the kernel on each node to facilitate 
+makes appropriate calls into the kernel on each node to facilitate
 communication.
 
 Quadrics Terminology
 
-program		A parallel application consisting of set of processes run 
+program		A parallel application consisting of set of processes run
 		in parallel on one or more nodes.
 
 process		A UNIX process.
 
-capability	The ELAN_CAPABILITY data structure is defined in 
-		<elan3/elanvp.h>.  A capability is uniquely constructed for a 
-		program.  Each process must present the program's capability 
+capability	The ELAN_CAPABILITY data structure is defined in
+		<elan3/elanvp.h>.  A capability is uniquely constructed for a
+		program.  Each process must present the program's capability
 		to the Elan3 device driver via elan3_attach() in order to
 		communicate.  ELAN_CAPABILITY includes:
 		- 128-bit secret key
@@ -37,8 +37,8 @@ program description
 		An abstraction added to the kernel by Quadrics, similar to
 		a process group, but impossible for an application to detach
 		from.  Using the calls prototyped in <rms/rmscall.h>, it is
-		possible to signal programs, collect aggregate accounting 
-		information for programs, and assign Elan capabilities and 
+		possible to signal programs, collect aggregate accounting
+		information for programs, and assign Elan capabilities and
 		contexts to programs.
 
 
@@ -48,41 +48,41 @@ The Partition Manager (PM) allocates node resources to parallel jobs for
 SLURM.  In the presense of a Quadrics Elan3 interconnect, it also allocates
 program descriptions and Elan contexts.
 
-A program description is allocated for each parallel job.  Program 
-descriptions are managed by the PM as a monotonically increasing integer 
+A program description is allocated for each parallel job.  Program
+descriptions are managed by the PM as a monotonically increasing integer
 value greater than zero.
 
-A range of Elan context numbers is allocated to each parallel program.  The 
-number of contexts in the range is the number of processes per node that will 
+A range of Elan context numbers is allocated to each parallel program.  The
+number of contexts in the range is the number of processes per node that will
 be making Elan communications calls.  Elan contexts are managed by the PM as
 a monotonically increasing integer value in the range of
-ELAN_RMS_BASE_CONTEXT_NUM to ELAN_RMS_TOP_CONTEXT_NUM (inclusive), 
+ELAN_RMS_BASE_CONTEXT_NUM to ELAN_RMS_TOP_CONTEXT_NUM (inclusive),
 defined in <elan3/elanvp.h>.
 
 On selecting nodes for a job: only contiguous nodes can utilize the hardware
 broadcast feature so preference should be given to contiguous ranges of nodes.
-This is a hardware limitation.  Broadcast packets on the switch are 
-routed using a data structure that includes the tree depth and link range.      
-The tree depth targets all the leaf nodes "below" the node at the specified     
+This is a hardware limitation.  Broadcast packets on the switch are
+routed using a data structure that includes the tree depth and link range.
+The tree depth targets all the leaf nodes "below" the node at the specified
 depth, and the range trims links off each side of the range.  One can't mask
-out nodes in the middle, and a broadcast or flood DMA will fail if any of       
-the destinations fail.  The same limitation should apply to federated switches 
+out nodes in the middle, and a broadcast or flood DMA will fail if any of
+the destinations fail.  The same limitation should apply to federated switches
 as they are simply a degenerate fat tree with additional depth (not as fat
 at the top as the 128-way building blocks).
-                                                                                
-I'll put this in the elan design document in slurm-doc. 
+
+I'll put this in the elan design document in slurm-doc.
 
 
 SLURM Job Manager Support
 
-The Job Manager (JM) manages the setup and execution of parallel jobs for 
+The Job Manager (JM) manages the setup and execution of parallel jobs for
 SLURM.  When running a job that uses the Elan interconnect, the job manager
-must initialize and distribute Elan capabilities and manage program 
-descriptions.  Additional environment setup is necessary to support Quadrics 
+must initialize and distribute Elan capabilities and manage program
+descriptions.  Additional environment setup is necessary to support Quadrics
 MPI jobs.
 
 When JM initializes the ELAN_CAPABILITY data structure for a job, it should
-first call the elan3_nullcap() function to set all structure members to known 
+first call the elan3_nullcap() function to set all structure members to known
 values.  The following members are then initialized:
 
 cap.Type	Set to either ELAN_CAP_TYPE_BLOCK or ELAN_CAP_TYPE_CYCLIC
@@ -97,7 +97,7 @@ cap.UserKey	This is a 128-bit secret key, unique to the program.  A rogue
 		user who knows this key could "dummy up" a capability on
 		one of the nodes running the program and perform remote DMA's
 		into the address space of the program's processes.  The key
-		is generated in some non-deterministic way, such as an MD5 
+		is generated in some non-deterministic way, such as an MD5
 		algorithm seeded by /dev/random.  Values are assigned in
 		32-bit blocks by addressing cap.UserKey.Values[0-3].
 
@@ -121,26 +121,26 @@ cap.Bitmap	The bitmap includes a bit for each possible process in the
 		on LowNode; two and three the two tasks on LowNode+1, etc..
 		the BT_SET macro is used to set the bits in the bitmap.
 		If a node in the LowNode - HighNode range is not allocated to
-		the program, its bits are clear.  
+		the program, its bits are clear.
 
 The capability and the program description are passed to each node running
-the parallel program in such a way as to avoid exposing the UserKey to 
+the parallel program in such a way as to avoid exposing the UserKey to
 rogue users.  The portion of the job manger that runs on each node must
 then execute a sequence of calls to prepare to execute the processes for
 this parallel program.
 
-First, the job manager forks.  The parent waits for the child to terminate 
+First, the job manager forks.  The parent waits for the child to terminate
 and then calls rms_prgdestroy().  The parent could call rms_prgsignal() to
 signal all processes in the program (on the node) when a program is to be
 aborted.  The child calls rms_prgcreate() to create the program description,
 and rms_prgaddcap() to make the capability available to processes that are
-members of the program description.  The child then forks each process in turn 
+members of the program description.  The child then forks each process in turn
 and waits for all processes to terminate.
 
 Next, in each process, rms_setcap() is called with the program's capability
 index (assigned in rms_prgaddcap() and this process's context number index,
 relative to the LowContext - HighContext range in the capability.
-The MPI runtime will subsequently call rms_ncaps() and rms_getcap() to 
+The MPI runtime will subsequently call rms_ncaps() and rms_getcap() to
 retrieve the capability for presentation to elan3_attach().
 Each process also sets several environment variables that are referenced by
 the elan/MPI runtime:
@@ -150,29 +150,29 @@ RMS_NNODES	Set to the number of nodes assigned to the program.
 RMS_NPROCS	Set to the number of processes in the program.
 
 RMS_NODEID	Set to the node ID for this node, indexed relative to the
-		program , e.g. an eight node program would run on nodes 0 
-		through 7 regardless of the Elan ID of the nodes and whether 
-		or not they are contiguous. 
+		program , e.g. an eight node program would run on nodes 0
+		through 7 regardless of the Elan ID of the nodes and whether
+		or not they are contiguous.
 
-RMS_PROCID	Set to the process ID of this process, indexed relative 
+RMS_PROCID	Set to the process ID of this process, indexed relative
 		to the program, e.g. a 16 process program would consist of
 		processes 0 through 15.  (If running two tasks per node
-		under block allocation, processes 0 and 1 would be allocated 
+		under block allocation, processes 0 and 1 would be allocated
 		to node 0; if cyclic allocation, processes 0 and 8 would be
 		allocated to node 0).
 
 RMS_RANK	Set to the MPI rank for the process.  Same as RMS_PROCID.
 
 Finally, the process forks once more, and the parent waits for the child,
-while the child execs the MPI process.  
+while the child execs the MPI process.
 (XXX This fork was determined experimentally to be necessary, reason unknown).
 (XXX Are RMS_MACHINE, RMS_RESOURCEID, RMS_JOBID useful or necessary?)
 
 
 SLURM Switch Manager Support
 
-The Switch Manager (SM) monitors the state of any networking equipment and 
-should be consulted by the partition manager to determine Elan/Elite link 
+The Switch Manager (SM) monitors the state of any networking equipment and
+should be consulted by the partition manager to determine Elan/Elite link
 status before allocating a set of nodes to a parallel program.
 
 Elite switch status is available via a JTAG connection.  Inside the Elite
@@ -191,11 +191,11 @@ program.
 
 Support for multi-rail is omitted.  This should not be difficult to add, but
 until we have test hardware, I suggest we leave it.  Infrastructure should
-be designed so it is possible to send >1 capability per program to nodes 
+be designed so it is possible to send >1 capability per program to nodes
 running multirail.
 
 Pdsh 1.5+/qshell implements the above runtime for single rail as a test.
-as a test.  (XXX Need to test with more complex applications than "mping".  
+as a test.  (XXX Need to test with more complex applications than "mping".
 See pdsh/qswutil.c for details).
 
 How does execution of TotalView impact this design?

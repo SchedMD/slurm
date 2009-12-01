@@ -226,7 +226,7 @@ Where:
   seconds or days as appropriate for each site.  The measurement
   period is nominally 5 minutes.  The decay factor, D, is assigned the
   value that will achieve the half-life decay rate specified by
-  the <i>PriorityDecayHalfLife</i> parameter.</P> 
+  the <i>PriorityDecayHalfLife</i> parameter.</P>
 
 <P> The historical resources a machine has available could be similarly aggregated with the same decay factor:</P>
 
@@ -438,9 +438,9 @@ factor as it is currently configured.</P>
   composite usage value.  The higher the number, the longer past usage
   affects fair-share.  If set to 0 no decay will be applied.  This is helpful if
   you want to enforce hard time limits per association.  If set to 0
-  PriorityUsageResetPeriod must be set to some interval. 
+  PriorityUsageResetPeriod must be set to some interval.
   The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
-  days-hr).  The default value is 7-0 (7 days). 
+  days-hr).  The default value is 7-0 (7 days).
 <DT> PriorityUsageResetPeriod
 <DD> At this interval the usage of associations will be reset to 0.
   This is used if you want to enforce hard limits of time usage per
@@ -451,7 +451,7 @@ factor as it is currently configured.</P>
   running on your cluster, but if your schema is set up to only allow
   certain amounts of time on your system this is the way to do it.
   The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
-  days-hr). The default value is not set (turned off). 
+  days-hr). The default value is not set (turned off).
 
 <DT> PriorityFavorSmall
 <DD> A boolean that sets the polarity of the job size factor.  The
@@ -461,7 +461,7 @@ factor as it is currently configured.</P>
 <DT> PriorityMaxAge
 <DD> Specifies the queue wait time at which the age factor maxes out.
   The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
-  days-hr).  The default value is 7-0 (7 days). 
+  days-hr).  The default value is 7-0 (7 days).
 <DT> PriorityWeightAge
 <DD> An unsigned integer that scales the contribution of the age factor.
 <DT> PriorityWeightFairshare
@@ -486,7 +486,7 @@ factor as it is currently configured.</P>
 <P> The first example is for running the plugin applying decay over
   time to reduce usage.  Hard limits can be used in this
   configuration, but will have less effect since usage will decay
-  over time instead of having no decay over time.</P> 
+  over time instead of having no decay over time.</P>
 <PRE>
 # Activate the Multi-factor Job Priority Plugin with decay
 PriorityType=priority/multifactor

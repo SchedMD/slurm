@@ -18,5 +18,5 @@ slides.ps: slides.dvi
 	tgif -print -eps $<
 
 %.pdf: %.dvi
-	dvipdf $< $@ 
+	dvipdf $< $@
 
