@@ -648,7 +648,7 @@ extern int trigger_state_restore(void)
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	if (strcmp(ver_str, TRIGGER_STATE_VERSION) != 0) {
-		error("Can't recover trigger state, data version incompatable");
+		error("Can't recover trigger state, data version incompatible");
 		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;

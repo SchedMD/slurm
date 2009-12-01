@@ -41,7 +41,7 @@ set exit_code   0
 print_header $test_id
 
 if { [test_front_end] } {
-	send_user "\nWARNING: This test is incompatable with front end systems\n"
+	send_user "\nWARNING: This test is incompatible with front end systems\n"
 	exit 0
 }
 
@@ -88,7 +88,7 @@ if {[string compare $expected_layout $tested_layout] != 0} {
 }
 
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
+	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
 	exit $exit_code
 }
 

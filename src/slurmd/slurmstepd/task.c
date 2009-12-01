@@ -511,7 +511,7 @@ _make_tmpdir(slurmd_job_t *job)
 /*
  * Return a string representation of an array of uint32_t elements.
  * Each value in the array is printed in decimal notation and elements
- * are seperated by a comma.  
+ * are separated by a comma.  
  * 
  * Returns an xmalloc'ed string.  Free with xfree().
  */

@@ -1327,7 +1327,7 @@ _log_task_exit(unsigned long taskid, unsigned long pid, int status)
  * If waitflag is false, do repeated non-blocking waits until
  * there are no more processes to reap (waitpid returns 0).
  *
- * Returns the number of tasks for which a wait3() was succesfully
+ * Returns the number of tasks for which a wait3() was successfully
  * performed, or -1 if there are no child tasks.
  */
 static int

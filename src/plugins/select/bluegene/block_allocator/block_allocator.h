@@ -169,7 +169,7 @@ typedef struct {
 #endif
 } blockreq_t;
 
-/* structure filled in from reading bluegene.conf file for specifing
+/* structure filled in from reading bluegene.conf file for specifying
  * images */
 typedef struct {
 	bool def;                      /* Whether image is the default

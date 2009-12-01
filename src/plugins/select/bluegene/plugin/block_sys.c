@@ -1043,7 +1043,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	}
 	if (ver_str && (strcmp(ver_str, BLOCK_STATE_VERSION) != 0)) {
 		error("Can not recover block state, "
-		      "data version incompatable");
+		      "data version incompatible");
 		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;
@@ -1109,7 +1109,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		while(bg_info_record->bp_inx[j] >= 0) {
 			if (bg_info_record->bp_inx[j+1]
 			    >= node_record_count) {
-				fatal("Job state recovered incompatable with "
+				fatal("Job state recovered incompatible with "
 					"bluegene.conf. bp=%u state=%d",
 					node_record_count,
 					bg_info_record->bp_inx[j+1]);
@@ -1124,7 +1124,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 		while(bg_info_record->ionode_inx[j] >= 0) {
 			if (bg_info_record->ionode_inx[j+1]
 			    >= bg_conf->numpsets) {
-				fatal("Job state recovered incompatable with "
+				fatal("Job state recovered incompatible with "
 					"bluegene.conf. ionodes=%u state=%d",
 					bg_conf->numpsets,
 					bg_info_record->ionode_inx[j+1]);

@@ -870,7 +870,7 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'e':
 			if (opt.pty) {
-				fatal("--error incompatable with --pty "
+				fatal("--error incompatible with --pty "
 				      "option");
 			}
 			xfree(opt.efname);
@@ -891,7 +891,7 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'i':
 			if (opt.pty) {
-				fatal("--input incompatable with "
+				fatal("--input incompatible with "
 				      "--pty option");
 			}
 			xfree(opt.ifname);
@@ -956,7 +956,7 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'o':
 			if (opt.pty)
-				fatal("--output incompatable with --pty option");
+				fatal("--output incompatible with --pty option");
 			xfree(opt.ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ofname = xstrdup("/dev/null");
@@ -1301,11 +1301,11 @@ static void set_options(const int argc, char **argv)
 			opt.pty = true;
 			opt.unbuffered = true;	/* implicit */
 			if (opt.ifname)
-				fatal("--input incompatable with --pty option");
+				fatal("--input incompatible with --pty option");
 			if (opt.ofname)
-				fatal("--output incompatable with --pty option");
+				fatal("--output incompatible with --pty option");
 			if (opt.efname)
-				fatal("--error incompatable with --pty option");
+				fatal("--error incompatible with --pty option");
 #else
 			error("--pty not currently supported on this system type");
 #endif

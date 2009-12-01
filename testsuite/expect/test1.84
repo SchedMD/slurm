@@ -45,11 +45,11 @@ set file_in     "test$test_id.input"
 print_header $test_id
 
 if { [test_front_end] } {
-	send_user "\nWARNING: This test is incompatable with FRONT_END systems\n"
+	send_user "\nWARNING: This test is incompatible with FRONT_END systems\n"
 	exit 0
 }
 if {[test_multiple_slurmd] != 0} {
-	send_user "\nWARNING: This test is incompatable with multiple slurmd systems\n"
+	send_user "\nWARNING: This test is incompatible with multiple slurmd systems\n"
 	exit 0
 }
 
