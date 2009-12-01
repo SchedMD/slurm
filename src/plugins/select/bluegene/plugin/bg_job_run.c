@@ -194,7 +194,7 @@ static int _remove_job(db_job_id_t job_id)
 				debug("job %d is in an INCOMPATIBLE_STATE",
 				      job_id);
 			else
-				error("bridge_cancel_job(%d): %s", job_id,
+				error("bridge_signal_job(%d): %s", job_id,
 				      bg_err_str(rc));
 		}
 	}
