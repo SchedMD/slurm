@@ -46,7 +46,6 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <grp.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,6 +67,17 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
+
+/* needed for getgrent_r */
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+#ifndef   __USE_GNU
+#define   __USE_GNU
+#endif
+
+#include <grp.h>
+
 
 /* Change PART_STATE_VERSION value when changing the state save format */
 #define PART_STATE_VERSION      "VER002"
@@ -1238,27 +1248,64 @@ uid_t *_get_group_members(char *group_name)
 
 	my_gid = grp_result->gr_gid;
 
-	for (uid_cnt=0; ; uid_cnt++) {
-		if (grp_result->gr_mem[uid_cnt] == NULL)
-			break;
+	/* MH-CEA workaround to handle different group entries with
+	 * the same gid */
+	uid_cnt=0;
+#ifdef HAVE_AIX
+	setgrent_r(&fp);
+	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
+			  &grp_result, &fp) == 0 && grp_result != NULL) {
+#else
+	setgrent();
+	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
+			  &grp_result) == 0 && grp_result != NULL) {
+#endif
+	        if (grp_result->gr_gid == my_gid) {
+		        for (i=0 ; grp_result->gr_mem[i] != NULL ; i++) {
+				uid_cnt++;
+			}
+		}
 	}
 
 	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
 
-	j = 0;
-	for (i=0; i<uid_cnt; i++) {
-		if (uid_from_string (grp_result->gr_mem[i], &my_uid) < 0)
-			error("Could not find user %s in configured group %s",
-			      grp_result->gr_mem[i], group_name);
-		else if (my_uid)
-			group_uids[j++] = my_uid;
-	}
-
+	j=0;
 #ifdef HAVE_AIX
+	setgrent_r(&fp);
+	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
+			  &grp_result, &fp) == 0 && grp_result != NULL) {
+#else
+	setgrent();
+	while (getgrent_r(&grp, grp_buffer, PW_BUF_SIZE,
+			  &grp_result) == 0 && grp_result != NULL) {
+#endif
+	        if (grp_result->gr_gid == my_gid) {
+			if (strcmp(grp_result->gr_name, group_name))
+				debug("including members of group '%s' as it "
+				      "corresponds to the same gid as group"
+				      " '%s'",grp_result->gr_name,group_name);
+
+		        for (i=0; j < uid_cnt; i++) {
+			        if (grp_result->gr_mem[i] == NULL)
+			                break;
+				if (uid_from_string(grp_result->gr_mem[i], 
+						    &my_uid) < 0)
+				        error("Could not find user %s in "
+					      "configured group %s",
+					      grp_result->gr_mem[i],
+					      group_name);
+				else if (my_uid)
+				        group_uids[j++] = my_uid; 
+			}
+		}
+	}
+#ifdef HAVE_AIX
+	endgrent_r(&fp);
 	setpwent_r(&fp);
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &fp)) {
 		pwd_result = &pw;
 #else
+	endgrent();
 	setpwent();
 #if defined (__sun)
 	while ((pwd_result = getpwent_r(&pw, pw_buffer, PW_BUF_SIZE)) != NULL) {

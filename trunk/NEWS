@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
  -- changed AC_CHECK_LIB to AC_SEARCH_LIBS to avoid extra libs in
     compile lines.
  -- Patch from Matthieu Hautreux to improve error message in slurmd/req.c
+ -- Added support for split groups from (Matthiu Hautreux CEA)
 
 * Changes in SLURM 2.1.0-pre7
 =============================
