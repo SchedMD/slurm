@@ -79,13 +79,13 @@ sstat [<OPTION>] -j <job(.stepid)>                                          \n\
                    or comma-separated list of job steps. This option is     \n\
                    required.  The step portion will default to step 0 if not\n\
                    specified, unless the --allsteps flag is set where not   \n\
-                   specifing a step will result in all running steps to be  \n\
+                   specifying a step will result in all running steps to be  \n\
                    displayed.                                               \n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header.                        \n\
      -o, --format:                                                          \n\
-	           Comma seperated list of fields. (use \"--helpformat\"    \n\
+	           Comma separated list of fields. (use \"--helpformat\"    \n\
                    for a list of available fields).                         \n\
      -p, --parsable: output will be '|' delimited with a '|' at the end     \n\
      -P, --parsable2: output will be '|' delimited without a '|' at the end \n\

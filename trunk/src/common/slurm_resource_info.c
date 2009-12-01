@@ -545,7 +545,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (task_plugin_param & 
 			    (CPU_BIND_NONE | CPU_BIND_TO_CORES | 
 			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS)) {
-				error("--cpu_bind=sockets incompatable with "
+				error("--cpu_bind=sockets incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
 				return -1;
@@ -557,7 +557,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (task_plugin_param & 
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
 			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS)) {
-				error("--cpu_bind=cores incompatable with "
+				error("--cpu_bind=cores incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
 				return -1;
@@ -569,7 +569,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (task_plugin_param & 
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
 			     CPU_BIND_TO_CORES | CPU_BIND_TO_LDOMS)) {
-				error("--cpu_bind=threads incompatable with "
+				error("--cpu_bind=threads incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
 				return -1;
@@ -581,7 +581,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (task_plugin_param & 
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
 			     CPU_BIND_TO_CORES | CPU_BIND_TO_THREADS)) {
-				error("--cpu_bind=threads incompatable with "
+				error("--cpu_bind=threads incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
 				return -1;

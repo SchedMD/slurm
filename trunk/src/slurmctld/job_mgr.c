@@ -553,7 +553,7 @@ extern int load_all_job_state(void)
 	debug3("Version string in job_state header is %s", ver_str);
 	if ((!ver_str) || (strcmp(ver_str, JOB_STATE_VERSION) != 0)) {
 		error("***********************************************");
-		error("Can not recover job state, incompatable version");
+		error("Can not recover job state, incompatible version");
 		error("***********************************************");
 		xfree(ver_str);
 		free_buf(buffer);
@@ -643,7 +643,7 @@ extern int load_last_job_id( void )
 	debug3("Version string in job_state header is %s", ver_str);
 	if ((!ver_str) || (strcmp(ver_str, JOB_STATE_VERSION) != 0)) {
 		debug("*************************************************");
-		debug("Can not recover last job ID, incompatable version");
+		debug("Can not recover last job ID, incompatible version");
 		debug("*************************************************");
 		xfree(ver_str);
 		free_buf(buffer);
@@ -7016,7 +7016,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		    (assoc_ptr->used_submit_jobs 
 		     >= assoc_ptr->grp_submit_jobs)) {
 			info("job submit for user %s(%u): "
-			     "group max submit job limit exceded %u "
+			     "group max submit job limit exceeded %u "
 			     "for account '%s'",
 			     user_name,
 			     job_desc->user_id, 
@@ -7092,7 +7092,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		    (assoc_ptr->used_submit_jobs 
 		     >= assoc_ptr->max_submit_jobs)) {
 			info("job submit for user %s(%u): "
-			     "account max submit job limit exceded %u",
+			     "account max submit job limit exceeded %u",
 			     user_name,
 			     job_desc->user_id, 
 			     assoc_ptr->max_submit_jobs);
@@ -7780,7 +7780,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd)
 	debug3("Version string in job_ckpt header is %s", ver_str);
 	if ((!ver_str) || (strcmp(ver_str, JOB_CKPT_VERSION) != 0)) {
 		error("***************************************************");
-		error("Can not restart from job ckpt, incompatable version");
+		error("Can not restart from job ckpt, incompatible version");
 		error("***************************************************");
 		rc = EINVAL;
 		goto unpack_error;

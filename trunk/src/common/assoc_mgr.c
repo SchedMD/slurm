@@ -2661,7 +2661,7 @@ extern int load_assoc_usage(char *state_save_location)
 	debug3("Version in assoc_mgr_state header is %u", ver);
 	if (ver != ASSOC_USAGE_VERSION) {
 		error("***********************************************");
-		error("Can not recover usage_mgr state, incompatable version, "
+		error("Can not recover usage_mgr state, incompatible version, "
 		      "got %u need %u", ver, ASSOC_USAGE_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
@@ -2863,7 +2863,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	debug3("Version in assoc_mgr_state header is %u", ver);
 	if (ver > SLURMDBD_VERSION || ver < SLURMDBD_VERSION_MIN) {
 		error("***********************************************");
-		error("Can not recover assoc_mgr state, incompatable version, "
+		error("Can not recover assoc_mgr state, incompatible version, "
 		      "got %u need > %u <= %u", ver,
 		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
 		error("***********************************************");

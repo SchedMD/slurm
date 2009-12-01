@@ -194,7 +194,7 @@ static int _remove_job(db_job_id_t job_id)
 				debug("job %d is in an INCOMPATIBLE_STATE",
 				      job_id);
 			else
-				error("bridge_cancel_job(%d): %s", job_id,
+				error("bridge_signal_job(%d): %s", job_id,
 				      bg_err_str(rc));
 		}
 	}
@@ -1432,7 +1432,7 @@ extern int boot_block(bg_record_t *bg_record)
 			slurm_make_time_str(&now, time_str, sizeof(time_str));
 			snprintf(reason, sizeof(reason),
 				 "boot_block: "
-				 "Block %s is in an incompatable state.  "
+				 "Block %s is in an incompatible state.  "
 				 "This usually means hardware is allocated "
 				 "by another block (maybe outside of SLURM). "
 				 "[SLURM@%s]", 

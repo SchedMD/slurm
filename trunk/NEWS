@@ -311,6 +311,12 @@ documents those changes that are of interest to users and admins.
  -- Fix to make it so sched/wiki2 can modify a job's partition or hostlist of 
     non-pending jobs.
  -- Applied slurmctld prolog bug fix from Dennis Leepow to backfill.c
+ -- fixed quite a few typos (needed for debian packages)
+ -- make it so slurmctld will core dump without --enable-debug set
+ -- Fix issue when doing a rollup on reservations before a cluster has been 
+    added. 
+ -- MySQL plugin - When doing archiving end time is now decreased by 1 
+    which should be more correct.
 
 * Changes in SLURM 2.0.8
 ========================

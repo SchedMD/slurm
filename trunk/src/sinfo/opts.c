@@ -784,7 +784,7 @@ Usage: sinfo [OPTIONS]\n\
   -r, --responding           report only responding nodes\n\
   -R, --list-reasons         list reason nodes are down or drained\n\
   -s, --summarize            report state summary only\n\
-  -S, --sort=fields          comma seperated list of fields to sort on\n\
+  -S, --sort=fields          comma separated list of fields to sort on\n\
   -t, --states=node_state    specify the what states of nodes to view\n\
   -v, --verbose              verbosity level\n\
   -V, --version              output version information and exit\n\

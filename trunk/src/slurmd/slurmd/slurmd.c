@@ -1049,7 +1049,7 @@ _create_msg_socket(void)
 
 	conf->lfd = ld;
 
-	debug3("succesfully opened slurm listen port %s:%d",
+	debug3("successfully opened slurm listen port %s:%d",
 	       node_addr, conf->port);
 
 	return;

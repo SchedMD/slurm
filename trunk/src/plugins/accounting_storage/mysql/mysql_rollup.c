@@ -436,7 +436,14 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					}
 				}				
 			}
-			if(row_flags & RESERVE_FLAG_MAINT)
+
+			/* only record time for the clusters that have
+			   registered.  This continue should rarely if
+			   ever happen.
+			*/
+			if(!c_usage) 
+				continue;
+			else if(row_flags & RESERVE_FLAG_MAINT)
 				c_usage->pd_cpu += r_usage->total_time;
 			else
 				c_usage->a_cpu += r_usage->total_time;
