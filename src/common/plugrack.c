@@ -416,8 +416,8 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		
                 /* Check only regular files. */
 		if ( (strncmp(e->d_name, ".", 1) == 0)
-		||   (stat( fq_path, &st ) < 0)
-		||   (! S_ISREG(st.st_mode)) )
+		     ||   (stat( fq_path, &st ) < 0)
+		     ||   (! S_ISREG(st.st_mode)) )
 			continue;
 
 		/* Check only shared object files */
@@ -580,7 +580,7 @@ plugrack_use_by_type( plugrack_t rack,
 	
 	it = list_iterator_create(rack->entries);
 	while ((e = list_next(it))) {
-               plugin_err_t err;
+		plugin_err_t err;
 
 		if (strcmp(full_type, e->full_type) != 0)
 			continue;
