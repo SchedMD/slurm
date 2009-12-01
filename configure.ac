@@ -60,16 +60,17 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
+PKG_PROG_PKG_CONFIG([0.9.0])
 
 AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
 
 
 dnl Checks for libraries
 dnl
-AC_CHECK_LIB(socket,socket,LIBS="$LIBS -lsocket",)
-AC_CHECK_LIB(nsl,gethostbyname,LIBS="$LIBS -lnsl",)
-AC_CHECK_LIB(resolv,hstrerror,LIBS="$LIBS -lresolv",)
-AC_CHECK_LIB(kstat,kstat_open,LIBS="$LIBS -lkstat",)
+AC_SEARCH_LIBS([socket],        [socket])
+AC_SEARCH_LIBS([gethostbyname], [nsl])
+AC_SEARCH_LIBS([hstrerror],     [resolv])
+AC_SEARCH_LIBS([kstat_open],    [kstat])
 
 dnl Checks for header files.
 dnl
@@ -173,8 +174,16 @@ X_AC_NCURSES
 AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
 AC_SUBST(HAVE_SOME_CURSES)
 
-X_AC_GTK
+#
+#  Tests for GTK+
+#
+AM_PATH_GTK_2_0([2.7.1], [ac_have_gtk="yes"], [ac_have_gtk="no"], [gthread])
 AM_CONDITIONAL(HAVE_GTK, test "x$ac_have_gtk" = "xyes")
+
+if test ${gtk_config_minor_version=0} -gt 12 ; then
+       AC_DEFINE([GTK2_USE_TOOLTIP], 1, [Define to 1 if using gtk+-2.12.0 or higher])
+fi
+
 
 X_AC_DATABASES
 
