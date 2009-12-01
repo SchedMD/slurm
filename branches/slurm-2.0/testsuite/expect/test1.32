@@ -46,7 +46,7 @@ set usr2cnt     0
 print_header $test_id
 
 if { [test_xcpu] } {
-	send_user "\nWARNING: This test is incompatable with XCPU systems\n"
+	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit $exit_code
 }
 

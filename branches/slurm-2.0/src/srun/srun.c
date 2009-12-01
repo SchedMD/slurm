@@ -524,7 +524,7 @@ static int _slurm_debug_env_val (void)
 /*
  * Return a string representation of an array of uint32_t elements.
  * Each value in the array is printed in decimal notation and elements
- * are seperated by a comma.  If sequential elements in the array
+ * are separated by a comma.  If sequential elements in the array
  * contain the same value, the value is written out just once followed
  * by "(xN)", where "N" is the number of times the value is repeated.
  *

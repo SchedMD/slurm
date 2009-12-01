@@ -476,7 +476,7 @@ extern int load_all_node_state ( bool state_only )
 	debug3("Version string in node_state header is %s", ver_str);
 	if ((!ver_str) || (strcmp(ver_str, NODE_STATE_VERSION) != 0)) {
 		error("*****************************************************");
-		error("Can not recover node state, data version incompatable");
+		error("Can not recover node state, data version incompatible");
 		error("*****************************************************");
 		xfree(ver_str);
 		free_buf(buffer);

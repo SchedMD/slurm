@@ -1302,7 +1302,7 @@ extern int boot_block(bg_record_t *bg_record)
 			slurm_make_time_str(&now, time_str, sizeof(time_str));
 			snprintf(reason, sizeof(reason),
 				 "boot_block: "
-				 "Block %s is in an incompatable state.  "
+				 "Block %s is in an incompatible state.  "
 				 "This usually means hardware is allocated "
 				 "by another block (maybe outside of SLURM). "
 				 "[SLURM@%s]", 

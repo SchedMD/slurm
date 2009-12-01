@@ -1950,7 +1950,7 @@ extern int load_all_resv_state(int recover)
 	debug3("Version string in resv_state header is %s", ver_str);
 	if ((!ver_str) || (strcmp(ver_str, RESV_STATE_VERSION) != 0)) {
 		error("************************************************************");
-		error("Can not recover reservation state, data version incompatable");
+		error("Can not recover reservation state, data version incompatible");
 		error("************************************************************");
 		xfree(ver_str);
 		free_buf(buffer);

@@ -47,7 +47,7 @@ if {[is_super_user] == 0} {
 }
 
 if {[test_bluegene] == 1} {
-	send_user "\nWARNING: This test is incompatable with BlueGene systems\n"
+	send_user "\nWARNING: This test is incompatible with BlueGene systems\n"
 	exit 0
 }
 

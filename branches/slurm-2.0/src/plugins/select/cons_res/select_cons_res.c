@@ -1017,7 +1017,7 @@ extern int init(void)
 	fatal("Use SelectType=select/linear");
 #endif
 #ifdef HAVE_BG
-	error("%s is incompatable with BlueGene", plugin_name);
+	error("%s is incompatible with BlueGene", plugin_name);
 	fatal("Use SelectType=select/bluegene");
 #endif
 	cr_type = (select_type_plugin_info_t)

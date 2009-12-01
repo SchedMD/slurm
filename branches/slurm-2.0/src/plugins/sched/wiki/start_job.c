@@ -200,7 +200,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 			goto fini;
 		}
 
-		/* User excluded node list incompatable with Wiki
+		/* User excluded node list incompatible with Wiki
 		 * Exclude all nodes not explicitly requested */
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = bit_copy(new_bitmap);

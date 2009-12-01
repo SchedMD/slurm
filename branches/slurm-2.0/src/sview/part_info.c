@@ -111,7 +111,7 @@ static display_data_t display_data_part[] = {
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE,
+	{G_TYPE_STRING, SORTID_AVAIL, "Availability", TRUE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
 	 TRUE, EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
@@ -183,7 +183,7 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, PART_PAGE, "Make Nodes Idle", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Update Node Features", TRUE, ADMIN_PAGE},
 #endif
-	{G_TYPE_STRING, PART_PAGE, "Change Availablity Up/Down",
+	{G_TYPE_STRING, PART_PAGE, "Change Availability Up/Down",
 	 TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, PART_PAGE, "Edit Part", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Jobs", TRUE, PART_PAGE},
@@ -2419,7 +2419,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	
 	part_msg->name = xstrdup(partid);
 		
-	if(!strcasecmp("Change Availablity Up/Down", type)) {
+	if(!strcasecmp("Change Availability Up/Down", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);

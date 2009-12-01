@@ -73,7 +73,7 @@ if {[string compare $nodelist_name ""] == 0} {
 	exit 1
 }
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
+	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
 	exit $exit_code
 }
 
@@ -136,7 +136,7 @@ if {$waited == 0} {
 	spawn $scontrol show partition
 	expect {
 		-re "Shared=FORCE" {
-			send_user "\nWARNING: Test incompatable with Shared=FORCE\n"
+			send_user "\nWARNING: Test incompatible with Shared=FORCE\n"
 			set waited 1
 			exp_continue
 		}

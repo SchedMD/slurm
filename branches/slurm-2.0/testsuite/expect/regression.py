@@ -54,10 +54,10 @@ def main(argv=None):
                       dest='time_individual', default=False)
     parser.add_option('-e', '--exclude', type='string', dest='exclude_tests',
                       action='callback', callback=test_parser,
-                      help='comma or space seperated string of tests to skip')
+                      help='comma or space separated string of tests to skip')
     parser.add_option('-i', '--include', type='string', dest='include_tests',
                       action='callback', callback=test_parser,
-                      help='comma or space seperated string of tests to include')
+                      help='comma or space separated string of tests to include')
     parser.add_option('-k', '--keep-logs', action='store_true', default=False)
     (options, args) = parser.parse_args(args=argv)
 
