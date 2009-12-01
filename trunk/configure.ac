@@ -392,7 +392,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
 		 src/plugins/proctrack/rms/Makefile
 		 src/plugins/proctrack/sgi_job/Makefile
-                src/plugins/proctrack/lua/Makefile
+		 src/plugins/proctrack/lua/Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile

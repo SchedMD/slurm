@@ -19462,8 +19462,8 @@ fi
 
 
 
-   x_ac_lua_pkg_name="lua"
-   if test -n "$PKG_CONFIG" && \
+	x_ac_lua_pkg_name="lua"
+	if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.1\""; } >&5
   ($PKG_CONFIG --exists --print-errors "lua5.1") 2>&5
   ac_status=$?
@@ -19543,9 +19543,9 @@ $as_echo "yes" >&6; }
 	x_ac_have_lua="yes"
 fi
 
-   if test "x$x_ac_have_lua" = "xyes"; then
-      x_ac_lua_saved_LIBS="$LIBS"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing luaL_newstate" >&5
+	if test "x$x_ac_have_lua" = "xyes"; then
+		x_ac_lua_saved_LIBS="$LIBS"
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing luaL_newstate" >&5
 $as_echo_n "checking for library containing luaL_newstate... " >&6; }
 if test "${ac_cv_search_luaL_newstate+set}" = set; then :
   $as_echo_n "(cached) " >&6
@@ -19603,9 +19603,9 @@ else
   x_ac_have_lua="no"
 fi
 
-      LIBS="$x_ac_lua_saved_LIBS"
-   fi
-    if test "x$x_ac_have_lua" = "xyes"; then
+		LIBS="$x_ac_lua_saved_LIBS"
+	fi
+	 if test "x$x_ac_have_lua" = "xyes"; then
   HAVE_LUA_TRUE=
   HAVE_LUA_FALSE='#'
 else
