@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     non-pending jobs.
  -- Applied slurmctld prolog bug fix from Dennis Leepow to backfill.c
  -- fixed quite a few typos (needed for debian packages)
+ -- make it so slurmctld will core dump without --enable-debug set
 
 * Changes in SLURM 2.0.8
 ========================
