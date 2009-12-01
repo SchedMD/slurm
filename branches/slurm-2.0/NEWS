@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- make it so slurmctld will core dump without --enable-debug set
  -- Fix issue when doing a rollup on reservations before a cluster has been 
     added. 
+ -- MySQL plugin - When doing archiving end time is now decreased by 1 
+    which should be more correct.
 
 * Changes in SLURM 2.0.8
 ========================

@@ -1650,6 +1650,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		time_tm.tm_mon -= arch_cond->purge_event;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
+		curr_end--;
 
 		debug4("from %d - %d months purging events from before %d", 
 		       last_submit, arch_cond->purge_event, curr_end);
@@ -1737,6 +1738,7 @@ exit_events:
 		time_tm.tm_mon -= arch_cond->purge_suspend;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
+		curr_end--;
 
 		debug4("from %d - %d months purging suspend from before %d", 
 		       last_submit, arch_cond->purge_suspend, curr_end);
@@ -1823,6 +1825,7 @@ exit_suspend:
 		time_tm.tm_mon -= arch_cond->purge_step;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
+		curr_end--;
 
 		debug4("from %d - %d months purging steps from before %d", 
 		       last_submit, arch_cond->purge_step, curr_end);
@@ -1911,6 +1914,7 @@ exit_steps:
 		time_tm.tm_mon -= arch_cond->purge_job;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
+		curr_end--;
 
 		debug4("from %d - %d months purging jobs from before %d", 
 		       last_submit, arch_cond->purge_job, curr_end);
