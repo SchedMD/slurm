@@ -819,8 +819,9 @@ static void set_options(const int argc, char **argv)
 	};
 	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
 		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
+#ifdef HAVE_PTY_H
 	char *tmp_str;
-
+#endif
 	struct option *optz = spank_option_table_create (long_options);
 
 	if (!optz) {
