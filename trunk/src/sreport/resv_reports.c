@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -105,12 +105,12 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 					       MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 		} else if(!end
-			  || !strncasecmp (argv[i], "Names", 
+			  || !strncasecmp (argv[i], "Names",
 					 MAX(command_len, 1))) {
 			if(!resv_cond->name_list)
-				resv_cond->name_list = 
+				resv_cond->name_list =
 					list_create(slurm_destroy_char);
-			slurm_addto_char_list(resv_cond->name_list, 
+			slurm_addto_char_list(resv_cond->name_list,
 					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters",
@@ -126,19 +126,19 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 			/* FIX ME: make flags work here */
 			//resv_cond->flags = parse_resv_flags(argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format", 
+		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 2))) {
 			if(format_list)
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Ids", 
+		} else if (!strncasecmp (argv[i], "Ids",
 					 MAX(command_len, 1))) {
 			if(!resv_cond->id_list)
-				resv_cond->id_list = 
+				resv_cond->id_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(resv_cond->id_list, argv[i]+end);
 			set = 1;
-		} else if(!strncasecmp (argv[i], "Nodes", 
+		} else if(!strncasecmp (argv[i], "Nodes",
 					 MAX(command_len, 1))) {
 			if(resv_cond->nodes) {
 				error("You already specified nodes '%s' "
@@ -201,16 +201,16 @@ static int _setup_print_fields_list(List format_list)
 		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
-		
+
 		if((tmp_char = strstr(object, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
-		} 
+		}
 
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("allocated", object, 
+		if(!strncasecmp("allocated", object,
 				MAX(command_len, 2))) {
 			field->type = PRINT_RESV_ACPU;
 			field->name = xstrdup("Allocated");
@@ -227,13 +227,13 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Associations");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object, 
+		} else if(!strncasecmp("Cluster", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("cpucount", object, 
+		} else if(!strncasecmp("cpucount", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_CPUS;
 			field->name = xstrdup("CPU count");
@@ -264,31 +264,31 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Nodes");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Name", object, 
+		} else if(!strncasecmp("Name", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_NAME;
 			field->name = xstrdup("Name");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Start", object, 
+		} else if(!strncasecmp("Start", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_START;
 			field->name = xstrdup("Start");
 			field->len = 19;
 			field->print_routine = print_fields_date;
-		} else if(!strncasecmp("End", object, 
+		} else if(!strncasecmp("End", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_END;
 			field->name = xstrdup("End");
 			field->len = 19;
 			field->print_routine = print_fields_date;
-		} else if(!strncasecmp("TotalTime", object, 
+		} else if(!strncasecmp("TotalTime", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_TIME;
 			field->name = xstrdup("TotalTime");
 			field->len = 9;
 			field->print_routine = print_fields_time_from_secs;
-		} else if(!strncasecmp("CPUTime", object, 
+		} else if(!strncasecmp("CPUTime", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_CPUTIME;
 			field->name = xstrdup("CPUTime");
@@ -301,10 +301,10 @@ static int _setup_print_fields_list(List format_list)
 			continue;
 		}
 
-		if(newlen) 
+		if(newlen)
 			field->len = newlen;
-		
-		list_append(print_fields_list, field);		
+
+		list_append(print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
 
@@ -322,7 +322,7 @@ static List _get_resv_list(int argc, char *argv[],
 	resv_cond->with_usage = 1;
 
 	_set_resv_cond(&i, argc, argv, resv_cond, format_list);
-	
+
 	resv_list = acct_storage_g_get_reservations(db_conn, my_uid,
 						    resv_cond);
 	if(!resv_list) {
@@ -337,18 +337,18 @@ static List _get_resv_list(int argc, char *argv[],
 		time_t my_start = resv_cond->time_start;
 		time_t my_end = resv_cond->time_end-1;
 
-		slurm_make_time_str(&my_start, 
+		slurm_make_time_str(&my_start,
 				    start_char, sizeof(start_char));
 		slurm_make_time_str(&my_end,
 				    end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
-		printf("%s %s - %s\n", 
+		printf("%s %s - %s\n",
 		       report_name, start_char, end_char);
 		switch(time_format) {
 		case SREPORT_TIME_PERCENT:
 			printf("Time reported in %s\n", time_format_string);
-			break; 
+			break;
 		default:
 			printf("Time reported in CPU %s\n", time_format_string);
 			break;
@@ -358,7 +358,7 @@ static List _get_resv_list(int argc, char *argv[],
 	}
 
 	destroy_acct_reservation_cond(resv_cond);
-	
+
 	return resv_list;
 }
 
@@ -374,8 +374,8 @@ extern int resv_utilization(int argc, char *argv[])
 	print_field_t *field = NULL;
 	int32_t total_time = 0;
 
-	List resv_list = NULL; 
-	List tot_resv_list = NULL; 
+	List resv_list = NULL;
+	List tot_resv_list = NULL;
 
 	List format_list = list_create(slurm_destroy_char);
 	int field_count = 0;
@@ -385,10 +385,10 @@ extern int resv_utilization(int argc, char *argv[])
 
 	if(!(resv_list = _get_resv_list(argc, argv,
 					"Reservation Utilization",
-					format_list))) 
+					format_list)))
 		goto end_it;
 
-	if(!list_count(format_list)) 
+	if(!list_count(format_list))
 		slurm_addto_char_list(format_list,
 				      "Cl,name,start,end,al,i");
 
@@ -396,7 +396,7 @@ extern int resv_utilization(int argc, char *argv[])
 	list_destroy(format_list);
 
 	/* we will just use the pointers returned from the
-	   get_resv_list here, so don't remove them 
+	   get_resv_list here, so don't remove them
 	*/
 	tot_resv_list = list_create(NULL);
 
@@ -431,18 +431,18 @@ extern int resv_utilization(int argc, char *argv[])
 				break;
 			}
 		}
-		if(!tot_resv) 
+		if(!tot_resv)
 			list_append(tot_resv_list, resv);
-		
+
 		list_iterator_reset(tot_itr);
 	}
-	
+
 	list_sort(tot_resv_list, (ListCmpF)sort_reservations_dec);
 	list_iterator_reset(tot_itr);
 	while((tot_resv = list_next(tot_itr))) {
 		uint64_t idle_secs = 0, total_reported = 0;
 		int curr_inx = 1;
-	
+
 		total_time = tot_resv->time_end - tot_resv->time_start;
 		if(total_time <= 0)
 			continue;
@@ -456,76 +456,76 @@ extern int resv_utilization(int argc, char *argv[])
 			case PRINT_RESV_NAME:
 				field->print_routine(field,
 						     tot_resv->name,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_CLUSTER:
 				field->print_routine(field,
 						     tot_resv->cluster,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_CPUS:
 				field->print_routine(field,
 						     tot_resv->cpus,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_ACPU:
 				field->print_routine(field,
 						     tot_resv->alloc_secs,
 						     total_reported,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_DCPU:
 				field->print_routine(field,
 						     tot_resv->down_secs,
 						     total_reported,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_ICPU:
 				field->print_routine(field,
 						     idle_secs,
 						     total_reported,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_NODES:
 				field->print_routine(field,
 						     tot_resv->nodes,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_ASSOCS:
 				field->print_routine(field,
 						     tot_resv->assocs,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_START:
 				field->print_routine(field,
 						     tot_resv->time_start,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_END:
 				field->print_routine(field,
 						     tot_resv->time_end,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_TIME:
 				field->print_routine(field,
 						     total_time,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			case PRINT_RESV_CPUTIME:
 				field->print_routine(field,
 						     total_reported,
-						     (curr_inx == 
+						     (curr_inx ==
 						      field_count));
 				break;
 			default:

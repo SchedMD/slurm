@@ -16,15 +16,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -37,7 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-/*  This implementation relies on "overloading" the libc errno by 
+/*  This implementation relies on "overloading" the libc errno by
  *  partitioning its domain into system (<1000) and SLURM (>=1000) values.
  *  SLURM API functions should call slurm_seterrno() to set errno to a value.
  *  API users should call slurm_strerror() to convert all errno values to
@@ -47,7 +47,7 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
- 
+
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
@@ -71,13 +71,13 @@ static slurm_errtab_t slurm_errtab[] = {
 	{EINPROGRESS, "Operation now in progress"},
 
 	/* General Message error codes */
-	{ SLURM_UNEXPECTED_MSG_ERROR, 
+	{ SLURM_UNEXPECTED_MSG_ERROR,
 	  "Unexpected message received" 			},
 	{ SLURM_COMMUNICATIONS_CONNECTION_ERROR,
 	  "Communication connection failure"   			},
-	{ SLURM_COMMUNICATIONS_SEND_ERROR, 
+	{ SLURM_COMMUNICATIONS_SEND_ERROR,
 	  "Message send failure"				},
-	{ SLURM_COMMUNICATIONS_RECEIVE_ERROR, 
+	{ SLURM_COMMUNICATIONS_RECEIVE_ERROR,
 	  "Message receive failure"				},
 	{ SLURM_COMMUNICATIONS_SHUTDOWN_ERROR,
 	  "Communication shutdown failure"			},
@@ -119,7 +119,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid partition name specified"			},
 	{ ESLURM_DEFAULT_PARTITION_NOT_SET,
 	  "No partition specified or system default partition"	},
-	{ ESLURM_ACCESS_DENIED, 
+	{ ESLURM_ACCESS_DENIED,
 	  "Access/permission denied"				},
 	{ ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP,
 	  "User's group not permitted to use this partition"	},
@@ -133,11 +133,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Unable to create job record, try again"		},
 	{ ESLURM_JOB_MISSING_SIZE_SPECIFICATION,
 	  "Job size specification needs to be provided"		},
-	{ ESLURM_JOB_SCRIPT_MISSING, 
+	{ ESLURM_JOB_SCRIPT_MISSING,
 	  "Job script not specified"				},
-	{ ESLURM_USER_ID_MISSING, 
+	{ ESLURM_USER_ID_MISSING,
 	  "Invalid user id"					},
-	{ ESLURM_DUPLICATE_JOB_ID, 
+	{ ESLURM_DUPLICATE_JOB_ID,
 	  "Duplicate job id"					},
 	{ ESLURM_PATHNAME_TOO_LONG,
 	  "Pathname of a file, directory or other parameter too long" },
@@ -147,33 +147,33 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested node configuration is not available"	},
 	{ ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE,
 	  "Requested partition configuration not available now" },
-	{ ESLURM_NODES_BUSY, 
+	{ ESLURM_NODES_BUSY,
 	  "Requested nodes are busy"				},
-	{ ESLURM_INVALID_JOB_ID, 
+	{ ESLURM_INVALID_JOB_ID,
 	  "Invalid job id specified"				},
-	{ ESLURM_INVALID_NODE_NAME, 
+	{ ESLURM_INVALID_NODE_NAME,
 	  "Invalid node name specified"				},
 	{ ESLURM_WRITING_TO_FILE,
 	  "I/O error writing script/environment to file"	},
 	{ ESLURM_TRANSITION_STATE_NO_UPDATE,
 	  "Job can not be altered now, try again later"		},
-	{ ESLURM_ALREADY_DONE, 
+	{ ESLURM_ALREADY_DONE,
 	  "Job/step already completing or completed"		},
-	{ ESLURM_INTERCONNECT_FAILURE, 
+	{ ESLURM_INTERCONNECT_FAILURE,
 	  "Error configuring interconnect"			},
-	{ ESLURM_BAD_DIST, 
+	{ ESLURM_BAD_DIST,
 	  "Task distribution specification invalid"		},
-	{ ESLURM_JOB_PENDING, 
+	{ ESLURM_JOB_PENDING,
 	  "Job is pending execution"				},
-	{ ESLURM_BAD_TASK_COUNT, 
+	{ ESLURM_BAD_TASK_COUNT,
 	  "Task count specification invalid"			},
-	{ ESLURM_INVALID_JOB_CREDENTIAL, 
+	{ ESLURM_INVALID_JOB_CREDENTIAL,
 	  "Error generating job credential"			},
 	{ ESLURM_IN_STANDBY_MODE,
 	  "Slurm backup controller in standby mode"		},
-	{ ESLURM_INVALID_NODE_STATE, 
+	{ ESLURM_INVALID_NODE_STATE,
 	  "Invalid node state specified"			},
-	{ ESLURM_INVALID_FEATURE, 
+	{ ESLURM_INVALID_FEATURE,
 	  "Invalid feature specification"			},
 	{ ESLURM_INVALID_AUTHTYPE_CHANGE,
 	  "AuthType change requires restart of all SLURM daemons and "
@@ -238,11 +238,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested reservation is invalid"			},
 	{ ESLURM_INVALID_TIME_VALUE,
 	  "Invalid time specified"				},
-	{ ESLURM_RESERVATION_BUSY, 
+	{ ESLURM_RESERVATION_BUSY,
 	  "Requested reservation is in use"			},
-	{ ESLURM_RESERVATION_NOT_USABLE, 
+	{ ESLURM_RESERVATION_NOT_USABLE,
 	  "Requested reservation not usable now"		},
-	{ ESLURM_RESERVATION_OVERLAP, 
+	{ ESLURM_RESERVATION_OVERLAP,
 	  "Requested reservation overlaps with another reservation"	},
 	{ ESLURM_PORTS_BUSY,
 	  "Requires ports are in use"				},
@@ -252,11 +252,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "SlurmctldProlog is still running"			},
 	{ ESLURM_NO_STEPS,
 	  "Job steps can not be run on this cluster"		},
-	{ ESLURM_INVALID_BLOCK_STATE, 
+	{ ESLURM_INVALID_BLOCK_STATE,
 	  "Invalid block state specified"			},
-	{ ESLURM_INVALID_BLOCK_LAYOUT, 
+	{ ESLURM_INVALID_BLOCK_LAYOUT,
 	  "Functionality not available with current block layout mode"},
-	{ ESLURM_INVALID_BLOCK_NAME, 
+	{ ESLURM_INVALID_BLOCK_NAME,
 	  "Invalid block name specified"			},
 	{ ESLURM_QOS_PREEMPTION_LOOP,
 	  "QOS Preemption loop detected"                	},
@@ -265,21 +265,21 @@ static slurm_errtab_t slurm_errtab[] = {
 
 	/* slurmd error codes */
 
-	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN, 
+	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
 	  "Pipe error on task spawn"				},
-	{ ESLURMD_KILL_TASK_FAILED, 
+	{ ESLURMD_KILL_TASK_FAILED,
 	  "Kill task failed"					},
 	{ ESLURMD_UID_NOT_FOUND,
 	  "User not found on host"                              },
 	{ ESLURMD_GID_NOT_FOUND,
 	  "Group ID not found on host"                          },
-	{ ESLURMD_INVALID_JOB_CREDENTIAL, 
+	{ ESLURMD_INVALID_JOB_CREDENTIAL,
 	  "Invalid job credential"				},
-	{ ESLURMD_CREDENTIAL_REVOKED, 
+	{ ESLURMD_CREDENTIAL_REVOKED,
 	  "Job credential revoked"                              },
-	{ ESLURMD_CREDENTIAL_EXPIRED, 
+	{ ESLURMD_CREDENTIAL_EXPIRED,
 	  "Job credential expired"                              },
-	{ ESLURMD_CREDENTIAL_REPLAYED, 
+	{ ESLURMD_CREDENTIAL_REPLAYED,
 	  "Job credential replayed"                             },
 	{ ESLURMD_CREATE_BATCH_DIR_ERROR,
 	  "Slurmd could not create a batch directory"		},
@@ -357,10 +357,10 @@ static slurm_errtab_t slurm_errtab[] = {
 
 	/* accounting errors */
 	{ ESLURM_DB_CONNECTION,
-	  "Unable to connect to database"			}	
+	  "Unable to connect to database"			}
 };
 
-/* 
+/*
  * Linear search through table of errno values and strings,
  * returns NULL on error, string on success.
  */
@@ -376,14 +376,14 @@ static char *_lookup_slurm_api_errtab(int errnum)
 		}
 	}
 
-	if ((res == NULL) && 
+	if ((res == NULL) &&
 	    (errnum >= ESLURM_JOBCOMP_MIN) &&
 	    (errnum <= ESLURM_JOBCOMP_MAX))
 		res = g_slurm_jobcomp_strerror(errnum);
 
-#if 0	
+#if 0
 	/* If needed, re-locate slurmctld/sched_plugin.[ch] into common */
-	if ((res == NULL) && 
+	if ((res == NULL) &&
 	    (errnum >= ESLURM_SCHED_MIN) &&
 	    (errnum <= ESLURM_SCHED_MAX))
 		res = sched_strerror(errnum);
@@ -408,7 +408,7 @@ char *slurm_strerror(int errnum)
 }
 
 /*
- * Get errno 
+ * Get errno
  */
 int slurm_get_errno()
 {

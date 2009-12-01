@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -86,8 +86,8 @@
  * only load authentication plugins if the plugin_type string has a prefix
  * of "auth/".
  *
- * plugin_version   - specifies the version number of the plugin.  
- * min_plug_version - specifies the minumum version number of incomming 
+ * plugin_version   - specifies the version number of the plugin.
+ * min_plug_version - specifies the minumum version number of incomming
  *                    messages that this plugin can accept
  */
 const char plugin_name[]        = "Brent Chun's authd authentication plugin";
@@ -126,7 +126,7 @@ enum {
 int init( void )
 {
 	const arg_desc_t *desc;
-	
+
 	verbose( "authd authentication module initializing" );
 
 	if ( ( desc = slurm_auth_get_arg_desc() ) == NULL ) {
@@ -138,7 +138,7 @@ int init( void )
 		error( "Required argument 'Timeout' not provided" );
 		return SLURM_ERROR;
 	}
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -150,7 +150,7 @@ extern int fini ( void )
 slurm_auth_credential_t *
 slurm_auth_create( void *argv[], char *auth_info )
 {
-	int ttl;	
+	int ttl;
 	int rc;
 	slurm_auth_credential_t *cred;
 
@@ -191,7 +191,7 @@ slurm_auth_create( void *argv[], char *auth_info )
 		xfree( cred );
 		return NULL;
 	}
-	
+
 	return cred;
 }
 
@@ -229,7 +229,7 @@ slurm_auth_verify( slurm_auth_credential_t *cred, char *auth_info )
 	}
 
 	/* XXX check to see if user is valid on the system. */
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -273,7 +273,7 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 	 */
 	packmem( (char *) plugin_type, strlen( plugin_type ) + 1, buf );
 	pack32( plugin_version, buf );
-	
+
 	pack32( (uint32_t) cred->cred.uid, buf );
 	pack32( (uint32_t) cred->cred.gid, buf );
 	pack_time( cred->cred.valid_from, buf );
@@ -289,7 +289,7 @@ slurm_auth_unpack( Buf buf )
 {
 	slurm_auth_credential_t *cred = NULL;
 	uint16_t sig_size; /* ignored */
-	uint32_t version, tmpint;	
+	uint32_t version, tmpint;
 	char *data;
 
 	if ( buf == NULL ) {
@@ -297,7 +297,7 @@ slurm_auth_unpack( Buf buf )
 		return NULL;
 	}
 
-	
+
 	/* Check the plugin type. */
 	safe_unpackmem_ptr( &data, &sig_size, buf );
 	if ( strcmp( data, plugin_type ) != 0 ) {
@@ -352,7 +352,7 @@ slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 			 cred->sig.data[ 2 ], cred->sig.data[ 3 ] );
 	verbose( "END AUTHD CREDENTIAL\n" );
 
-	return SLURM_SUCCESS;	
+	return SLURM_SUCCESS;
 }
 
 

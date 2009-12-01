@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -61,7 +61,7 @@
 /* external functions available for SPANK plugins to modify the environment
  * exported to the SLURM Prolog and Epilog programs */
 extern char *spank_get_job_env(const char *name);
-extern int   spank_set_job_env(const char *name, const char *value, 
+extern int   spank_set_job_env(const char *name, const char *value,
 			       int overwrite);
 extern int   spank_unset_job_env(const char *name);
 #include "src/common/xsignal.h"
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 	callbacks.user_msg = _user_msg_handler;
 	callbacks.node_fail = _node_fail_handler;
 	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port, 
+	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port,
 						  &callbacks);
 
 	xsignal(SIGHUP, _signal_while_allocating);
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
 	xsignal(SIGTERM, _signal_while_allocating);
 	xsignal(SIGUSR1, _signal_while_allocating);
 	xsignal(SIGUSR2, _signal_while_allocating);
-	
+
 	before = time(NULL);
 	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.immediate,
 					_pending_callback)) == NULL) {
@@ -244,8 +244,8 @@ int main(int argc, char *argv[])
 		} else if (errno == EINTR) {
 			error("Interrupted by signal."
 			      "  Allocation request rescinded.");
-		} else if (opt.immediate && 
-			   ((errno == ETIMEDOUT) || 
+		} else if (opt.immediate &&
+			   ((errno == ETIMEDOUT) ||
 			    (errno == ESLURM_NODES_BUSY))) {
 			error("Unable to allocate resources: %s",
 			      slurm_strerror(ESLURM_NODES_BUSY));
@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
 				     opt.cpus_per_task);
 	}
 	if (opt.overcommit) {
-		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d", 
+		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d",
 			opt.overcommit);
 	}
 	if (opt.acctg_freq >= 0) {
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
 	}
 	if (opt.network)
 		env_array_append_fmt(&env, "SLURM_NETWORK", "%s", opt.network);
-	
+
 	env_array_set_environment(env);
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);
@@ -382,7 +382,7 @@ relinquish:
 	 */
 	rc = 1;
 	if (rc_pid != -1) {
-		
+
 		if (WIFEXITED(status)) {
 			rc = WEXITSTATUS(status);
 		} else if (WIFSIGNALED(status)) {
@@ -433,7 +433,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	desc->features = opt.constraints;
-	if (opt.immediate == 1)	
+	if (opt.immediate == 1)
 		desc->immediate = 1;
 	desc->name = xstrdup(opt.job_name);
 	desc->reservation = xstrdup(opt.reservation);
@@ -646,18 +646,18 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 }
 
 /*
- * Job has been notified of it's approaching time limit. 
+ * Job has been notified of it's approaching time limit.
  * Job will be killed shortly after timeout.
  * This RPC can arrive multiple times with the same or updated timeouts.
  * FIXME: We may want to signal the job or perform other action for this.
- * FIXME: How much lead time do we want for this message? Some jobs may 
+ * FIXME: How much lead time do we want for this message? Some jobs may
  *	require tens of minutes to gracefully terminate.
  */
 static void _timeout_handler(srun_timeout_msg_t *msg)
 {
 	if (msg->timeout != last_timeout) {
 		last_timeout = msg->timeout;
-		verbose("Job allocation time limit to be reached at %s", 
+		verbose("Job allocation time limit to be reached at %s",
 			ctime(&msg->timeout));
 	}
 }
@@ -667,7 +667,7 @@ static void _user_msg_handler(srun_user_msg_t *msg)
 	info("%s", msg->msg);
 }
 
-static void _ping_handler(srun_ping_msg_t *msg) 
+static void _ping_handler(srun_ping_msg_t *msg)
 {
 	/* the api will respond so there really isn't anything to do
 	   here */
@@ -701,7 +701,7 @@ static void _set_rlimits(char **env)
 		}
 		env_num = strtol(env_value, &p, 10);
 		if (p && (p[0] != '\0')) {
-			error("Invalid environment %s value %s", 
+			error("Invalid environment %s value %s",
 			      env_name, env_value);
 			continue;
 		}
@@ -729,7 +729,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 	select_g_select_jobinfo_get(alloc->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &block_id);
-	
+
 	for (i=0; (cur_delay < max_delay); i++) {
 		if (i == 1)
 			info("Waiting for block %s to become ready for job",
@@ -737,7 +737,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 		if (i) {
 			sleep(POLL_SLEEP);
 			rc = _blocks_dealloc();
-			if ((rc == 0) || (rc == -1)) 
+			if ((rc == 0) || (rc == -1))
 				cur_delay += POLL_SLEEP;
 			debug("still waiting");
 		}
@@ -781,9 +781,9 @@ static int _blocks_dealloc(void)
 {
 	static block_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
 	int rc = 0, error_code = 0, i;
-	
+
 	if (bg_info_ptr) {
-		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
+		error_code = slurm_load_block_info(bg_info_ptr->last_update,
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&bg_info_ptr);
@@ -801,7 +801,7 @@ static int _blocks_dealloc(void)
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->block_array[i].state 
+		if(new_bg_ptr->block_array[i].state
 		   == RM_PARTITION_DEALLOCATING) {
 			rc = 1;
 			break;

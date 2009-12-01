@@ -11,7 +11,7 @@ sacct_LDADD = 	$(top_builddir)/src/api/libslurm.o -ldl
 
 sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
-noinst_HEADERS = sacct.c 
+noinst_HEADERS = sacct.c
 sacct_SOURCES = sacct.c process.c print.c options.c
 
 force:

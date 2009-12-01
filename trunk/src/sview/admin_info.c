@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  admin_info.c - Functions related to admin display 
+ *  admin_info.c - Functions related to admin display
  *  mode of sview.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -8,21 +8,21 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
@@ -32,13 +32,13 @@
 
 #define _DEBUG 0
 
-enum { 
+enum {
 	SORTID_POS = POS_LOC,
-	SORTID_PARTITION, 
-	SORTID_AVAIL, 
-	SORTID_TIMELIMIT, 
-	SORTID_NODES, 
-	SORTID_NODELIST, 
+	SORTID_PARTITION,
+	SORTID_AVAIL,
+	SORTID_TIMELIMIT,
+	SORTID_NODES,
+	SORTID_NODELIST,
 	SORTID_CNT
 };
 
@@ -67,11 +67,11 @@ static display_data_t *local_display_data = NULL;
 
 extern void get_info_admin(GtkTable *table, display_data_t *display_data)
 {
-	local_display_data = display_data;	
+	local_display_data = display_data;
 }
 
 
-extern void set_menus_admin(void *arg, GtkTreePath *path, 
+extern void set_menus_admin(void *arg, GtkTreePath *path,
 			    GtkMenu *menu, int type)
 {
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
@@ -107,7 +107,7 @@ extern void row_clicked_admin(GtkTreeView *tree_view,
 		g_error("problem getting line number");
 		return;
 	}
-	
+
 /* 	part_ptr = &new_part_ptr->partition_array[line]; */
 	/* if(!(info = slurm_sprint_partition_info(part_ptr, 0))) { */
 /* 		info = xmalloc(100); */
@@ -118,12 +118,12 @@ extern void row_clicked_admin(GtkTreeView *tree_view,
 	popup = gtk_dialog_new();
 
 	label = gtk_label_new(info);
-	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox), 
+	gtk_box_pack_end(GTK_BOX(GTK_DIALOG(popup)->vbox),
 			   label, TRUE, TRUE, 0);
 	xfree(info);
 	gtk_widget_show(label);
-	
+
 	gtk_widget_show(popup);
-	
+
 }
 

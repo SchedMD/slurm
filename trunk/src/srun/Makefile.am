@@ -28,7 +28,7 @@ convenience_libs = \
 	$(top_builddir)/src/api/libslurm.o -ldl
 
 srun_LDADD = \
-	$(convenience_libs) 
+	$(convenience_libs)
 
 srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
@@ -36,10 +36,10 @@ force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-# debugging information is required for symbols in the debugger 
+# debugging information is required for symbols in the debugger
 # module so that a debugger can debugger to spawned tasks
 debugger.o : debugger.c
-	$(COMPILE) -c -g -o debugger.o $(srcdir)/debugger.c 
+	$(COMPILE) -c -g -o debugger.o $(srcdir)/debugger.c
 
 install-exec-local:
 	umask 022; \

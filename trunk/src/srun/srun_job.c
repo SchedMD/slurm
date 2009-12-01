@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -93,7 +93,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *info);
 static char *     _normalize_hostlist(const char *hostlist);
 
 
-/* 
+/*
  * Create an srun job structure w/out an allocation response msg.
  * (i.e. use the command line options)
  */
@@ -111,23 +111,23 @@ job_create_noalloc(void)
 	}
 	srand48(getpid());
 	ai->jobid          = MIN_NOALLOC_JOBID +
-				((uint32_t) lrand48() % 
+				((uint32_t) lrand48() %
 				(MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
 	ai->stepid         = (uint32_t) (lrand48());
 	ai->nodelist       = opt.nodelist;
 	ai->nnodes         = hostlist_count(hl);
 
 	hostlist_destroy(hl);
-	
+
 	cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
 	ai->cpus_per_node  = &cpn;
 	ai->cpu_count_reps = &ai->nnodes;
-	
-	/* 
+
+	/*
 	 * Create job, then fill in host addresses
 	 */
 	job = _job_create_structure(ai);
-	
+
 	job_update_io_fnames(job);
 
    error:
@@ -136,7 +136,7 @@ job_create_noalloc(void)
 
 }
 
-/* 
+/*
  * Create an srun job structure for a step w/out an allocation response msg.
  * (i.e. inside an allocation)
  */
@@ -150,7 +150,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	char buf[8192];
 	int count = 0;
 	uint32_t alloc_count = 0;
-	
+
 	ai->jobid          = job_id;
 	ai->stepid         = NO_VAL;
 	ai->nodelist = opt.alloc_nodelist;
@@ -159,12 +159,12 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	alloc_count = hostlist_count(hl);
 	ai->nnodes = alloc_count;
 	hostlist_destroy(hl);
-	
+
 	if (opt.exc_nodes) {
 		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
 		hostlist_t inc_hl = NULL;
 		char *node_name = NULL;
-		
+
 		hl = hostlist_create(ai->nodelist);
 		if(opt.nodelist) {
 			inc_hl = hostlist_create(opt.nodelist);
@@ -249,7 +249,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				/* remove more nodes than needed for
 				   allocation */
 				int i=0;
-				for(i=count; i>ai->nnodes; i--) 
+				for(i=count; i>ai->nnodes; i--)
 					hostlist_delete_nth(hl, i);
 			}
 			hostlist_ranged_string(hl, sizeof(buf), buf);
@@ -257,7 +257,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			opt.nodelist = xstrdup(buf);
 		}
 
-		hostlist_destroy(hl);			
+		hostlist_destroy(hl);
 	} else {
 		if (!opt.nodes_set) {
 			/* we don't want to set the number of nodes =
@@ -282,9 +282,9 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		/* xfree(ai->nodelist); */
 /* 		ai->nodelist = xstrdup(buf); */
 	}
-	
+
 	/* get the correct number of hosts to run tasks on */
-	if(opt.nodelist) { 
+	if(opt.nodelist) {
 		hl = hostlist_create(opt.nodelist);
 		if(opt.distribution != SLURM_DIST_ARBITRARY)
 			hostlist_uniq(hl);
@@ -293,7 +293,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			hostlist_destroy(hl);
 			goto error;
 		}
-		
+
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		count = hostlist_count(hl);
 		hostlist_destroy(hl);
@@ -305,8 +305,8 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 /* 		ai->nodelist = xstrdup(buf); */
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
-	} 
-	
+	}
+
 	if(opt.distribution == SLURM_DIST_ARBITRARY) {
 		if(count != opt.nprocs) {
 			error("You asked for %d tasks but specified %d nodes",
@@ -326,7 +326,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 
 /* 	info("looking for %d nodes out of %s with a must list of %s", */
 /* 	     ai->nnodes, ai->nodelist, opt.nodelist); */
-	/* 
+	/*
 	 * Create job
 	 */
 	job = _job_create_structure(ai);
@@ -369,13 +369,13 @@ update_job_state(srun_job_t *job, srun_job_state_t state)
 	if (job->state < state) {
 		job->state = state;
 		pthread_cond_signal(&job->state_cond);
-		
+
 	}
 	pthread_mutex_unlock(&job->state_mutex);
 	return;
 }
 
-srun_job_state_t 
+srun_job_state_t
 job_state(srun_job_t *job)
 {
 	srun_job_state_t state;
@@ -386,7 +386,7 @@ job_state(srun_job_t *job)
 }
 
 
-void 
+void
 job_force_termination(srun_job_t *job)
 {
 	static int kill_sent = 0;
@@ -458,9 +458,9 @@ _job_create_structure(allocation_info_t *ainfo)
 	pthread_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
- 	job->nodelist = xstrdup(ainfo->nodelist); 
+ 	job->nodelist = xstrdup(ainfo->nodelist);
 	job->stepid  = ainfo->stepid;
-	
+
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 	opt.overcommit = true;
 	job->nhosts = 1;
@@ -479,7 +479,7 @@ _job_create_structure(allocation_info_t *ainfo)
 		}
 		return NULL;
 	}
-	if ((ainfo->cpus_per_node == NULL) || 
+	if ((ainfo->cpus_per_node == NULL) ||
 	    (ainfo->cpu_count_reps == NULL)) {
 		error("cpus_per_node array is not set");
 		return NULL;
@@ -487,7 +487,7 @@ _job_create_structure(allocation_info_t *ainfo)
 #endif
 	job->select_jobinfo = ainfo->select_jobinfo;
 	job->jobid   = ainfo->jobid;
-	
+
 	job->ntasks  = opt.nprocs;
 	for (i=0; i<ainfo->num_cpu_groups; i++) {
 		job->cpu_count += ainfo->cpus_per_node[i] *
@@ -495,10 +495,10 @@ _job_create_structure(allocation_info_t *ainfo)
 	}
 
 	job->rc       = -1;
-	
+
 	job_update_io_fnames(job);
-	
-	return (job);	
+
+	return (job);
 }
 
 void

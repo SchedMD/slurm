@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir)
 slurmstepd_LDADD = 				   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o -ldl\
-	$(PLPA_LIBS) $(PAM_LIBS) $(UTIL_LIBS) 
+	$(PLPA_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
 
 slurmstepd_SOURCES = 	        	\
 	slurmstepd.c slurmstepd.h	\

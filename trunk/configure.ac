@@ -37,11 +37,11 @@ dnl Check to see if this architecture should use slurm_* prefix function
 dnl aliases for plugins.
 dnl
 case "$host" in
-	*-*-aix*) AC_DEFINE(USE_ALIAS, 0, 
+	*-*-aix*) AC_DEFINE(USE_ALIAS, 0,
                  	[Define slurm_ prefix function aliases for plusins]) ;;
 	*darwin*) AC_DEFINE(USE_ALIAS, 0,
                   	[Define slurm_ prefix function aliases for plusins]) ;;
-	*)        AC_DEFINE(USE_ALIAS, 1, 
+	*)        AC_DEFINE(USE_ALIAS, 1,
 			[Define slurm_ prefix function aliases for plugins]) ;;
 esac
 
@@ -141,7 +141,7 @@ AC_CHECK_FUNCS( \
    mtrace    \
    strndup   \
    strlcpy   \
-   strsignal \ 
+   strsignal \
    inet_aton \
    inet_ntop \
    inet_pton \
@@ -243,10 +243,10 @@ dnl
 X_AC_PRINTF_NULL
 
 dnl Check for whether to include readline support
-dnl 
+dnl
 X_AC_READLINE
 
-dnl 
+dnl
 dnl
 X_AC_SLURM_WITH_SSL
 AM_CONDITIONAL(HAVE_OPENSSL, test "x$ac_have_openssl" = "xyes")
@@ -309,7 +309,7 @@ X_AC_BLCR
 dnl All slurm Makefiles:
 
 AC_CONFIG_FILES([Makefile
-		 config.xml 
+		 config.xml
 		 auxdir/Makefile
 		 contribs/Makefile
 		 contribs/pam/Makefile
@@ -319,8 +319,8 @@ AC_CONFIG_FILES([Makefile
 		 contribs/phpext/Makefile
 		 contribs/phpext/slurm_php/config.m4
 		 contribs/slurmdb-direct/Makefile
-		 src/Makefile 
-		 src/api/Makefile 
+		 src/Makefile
+		 src/api/Makefile
 		 src/common/Makefile
 		 src/database/Makefile
 		 src/sacct/Makefile
@@ -328,18 +328,18 @@ AC_CONFIG_FILES([Makefile
 		 src/sreport/Makefile
 		 src/sstat/Makefile
 		 src/sshare/Makefile
-		 src/salloc/Makefile 
-		 src/sbatch/Makefile 
+		 src/salloc/Makefile
+		 src/sbatch/Makefile
 		 src/sattach/Makefile
 		 src/sprio/Makefile
-		 src/srun/Makefile 
-		 src/srun_cr/Makefile 
-		 src/slurmd/Makefile 
-		 src/slurmd/slurmd/Makefile 
-		 src/slurmd/slurmstepd/Makefile 
+		 src/srun/Makefile
+		 src/srun_cr/Makefile
+		 src/slurmd/Makefile
+		 src/slurmd/slurmd/Makefile
+		 src/slurmd/slurmstepd/Makefile
 		 src/slurmdbd/Makefile
 		 src/slurmctld/Makefile
-		 src/sbcast/Makefile 
+		 src/sbcast/Makefile
 		 src/scontrol/Makefile
 		 src/scancel/Makefile
 		 src/squeue/Makefile

@@ -6,8 +6,8 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
- *  Much of this code was derived or adapted from the log.c component of 
+ *
+ *  Much of this code was derived or adapted from the log.c component of
  *  openssh which contains the following notices:
  *****************************************************************************
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -84,8 +84,8 @@
 #endif
 
 /*
-** Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
-** for details. 
+** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+** for details.
  */
 strong_alias(log_init,		slurm_log_init);
 strong_alias(log_reinit,	slurm_log_reinit);
@@ -109,7 +109,7 @@ strong_alias(debug,		slurm_debug);
 strong_alias(debug2,		slurm_debug2);
 strong_alias(debug3,		slurm_debug3);
 
-/* 
+/*
 ** struct defining a "log" type
 */
 typedef struct {
@@ -135,16 +135,16 @@ static log_t            *log = NULL;
 
 /* define a default argv0 */
 #if HAVE_PROGRAM_INVOCATION_NAME
-/* This used to use program_invocation_short_name, but on some systems 
+/* This used to use program_invocation_short_name, but on some systems
  * that gets truncated at 16 bytes, too short for our needs. */
 extern char * program_invocation_name;
 #  define default_name	program_invocation_name
-#else 
+#else
 #  define default_name ""
 #endif
 
 
-/* 
+/*
  * pthread_atfork handlers:
  */
 #ifdef WITH_PTHREADS
@@ -157,31 +157,31 @@ static bool at_forked = false;
                 pthread_atfork(_atfork_prep, _atfork_parent, _atfork_child);  \
 		at_forked = true;                                             \
 	  }
-#else 
+#else
 #  define atfork_install_handlers() (NULL)
 #endif
 static void _log_flush();
 
 /*
- * Initialize log with 
+ * Initialize log with
  * prog = program name to tag error messages with
  * opt  = log_options_t specifying max log levels for syslog, stderr, and file
  * fac  = log facility for syslog (unused if syslog level == LOG_QUIET)
  * logfile =
  *        logfile name if logfile level > LOG_QUIET
  */
-static int 
+static int
 _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 {
 	int rc = 0;
-	
+
 	if (!log)  {
 		log = (log_t *)xmalloc(sizeof(log_t));
 		log->logfp = NULL;
 		log->argv0 = NULL;
 		log->buf   = NULL;
 		log->fbuf  = NULL;
-		log->fpfx  = NULL; 
+		log->fpfx  = NULL;
 		atfork_install_handlers();
 	}
 
@@ -203,7 +203,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 
 	log->opt = opt;
 
-	if (log->buf) 
+	if (log->buf)
 		cbuf_destroy(log->buf);
 	if (log->fbuf)
 		cbuf_destroy(log->fbuf);
@@ -217,7 +217,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->facility = fac;
 
 	if (logfile && (log->opt.logfile_level > LOG_LEVEL_QUIET)) {
-		FILE *fp; 
+		FILE *fp;
 
 		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
 
@@ -225,13 +225,13 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 			char *errmsg = NULL;
 			slurm_mutex_unlock(&log_lock);
 			xslurm_strerrorcat(errmsg);
-			fprintf(stderr, 
+			fprintf(stderr,
 				"%s: log_init(): Unable to open logfile"
 			        "`%s': %s\n", prog, logfile, errmsg);
 			xfree(errmsg);
 			rc = errno;
 			goto out;
-		} 
+		}
 
 		if (log->logfp)
 			fclose(log->logfp); /* Ignore errors */
@@ -310,7 +310,7 @@ void log_set_argv0(char *argv0)
 		xfree(log->argv0);
 	if (!argv0)
 		log->argv0 = xstrdup("");
-	else 
+	else
 		log->argv0 = xstrdup(argv0);
 	slurm_mutex_unlock(&log_lock);
 }
@@ -319,7 +319,7 @@ void log_set_argv0(char *argv0)
  * the log mutex
  */
 int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
-{	
+{
 	int rc = 0;
 	slurm_mutex_lock(&log_lock);
 	rc = _log_init(NULL, opt, fac, logfile);
@@ -343,13 +343,13 @@ FILE *log_fp(void)
 
 /* return a heap allocated string formed from fmt and ap arglist
  * returned string is allocated with xmalloc, so must free with xfree.
- * 
+ *
  * args are like printf, with the addition of the following format chars:
  * - %m expands to strerror(errno)
  * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
  * - %T expands to rfc822 date time  [ "dd Mon yyyy hh:mm:ss GMT offset" ]
  *
- * simple format specifiers are handled explicitly to avoid calls to 
+ * simple format specifiers are handled explicitly to avoid calls to
  * vsnprintf and allow dynamic sizing of the message buffer. If a call
  * is made to vsnprintf, however, the message will be limited to 1024 bytes.
  * (inc. newline)
@@ -366,7 +366,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 
 	while (*fmt != '\0') {
 
-		if ((p = (char *)strchr(fmt, '%')) == NULL) {  
+		if ((p = (char *)strchr(fmt, '%')) == NULL) {
 			/* no more format chars */
 			xstrcat(buf, fmt);
 			break;
@@ -376,7 +376,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			/* take difference from fmt to just before `%' */
 			len = (size_t) ((long)(p) - (long)fmt);
 
-			/* append from fmt to p into buf if there's 
+			/* append from fmt to p into buf if there's
 			 * anythere there
 			 */
 			if (len > 0) {
@@ -394,11 +394,11 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				xslurm_strerrorcat(buf);
 				break;
 
-			case 't': 	/* "%t" => locally preferred date/time*/ 
+			case 't': 	/* "%t" => locally preferred date/time*/
 				xstrftimecat(buf, "%x %X");
 				break;
 			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off" */
-				xstrftimecat(buf, "%a %d %b %Y %H:%M:%S %z");   
+				xstrftimecat(buf, "%a %d %b %Y %H:%M:%S %z");
 				break;
 #ifdef USE_ISO_8601
 			case 'M':       /* "%M" => "yyyy-mm-ddThh:mm:ss"          */
@@ -411,7 +411,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 #endif
 			case 's':	/* "%s" => append string */
 				/* we deal with this case for efficiency */
-				if (unprocessed == 0) 
+				if (unprocessed == 0)
 					xstrcat(buf, va_arg(ap, char *));
 				else
 					xstrcat(buf, "%s");
@@ -446,15 +446,15 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					long_long = 1;
 					p++;
 				}
-				
+
 				if ((unprocessed == 0) && (*(p+1) == 'u')) {
 					if(long_long) {
 						snprintf(tmp, sizeof(tmp),
-							"%llu", 
+							"%llu",
 							 va_arg(ap,
 								long long unsigned));
 						long_long = 0;
-					} else 
+					} else
 						snprintf(tmp, sizeof(tmp),
 							 "%lu",
 							 va_arg(ap,
@@ -464,7 +464,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				} else if ((unprocessed==0) && (*(p+1)=='d')) {
 					if(long_long) {
 						snprintf(tmp, sizeof(tmp),
-							"%lld", 
+							"%lld",
 							 va_arg(ap,
 								long long int));
 						long_long = 0;
@@ -478,7 +478,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					if(long_long) {
 						xstrcat(buf, "%llf");
 						long_long = 0;
-					} else 
+					} else
 						snprintf(tmp, sizeof(tmp),
 							 "%lf",
 							 va_arg(ap, double));
@@ -487,7 +487,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				} else if ((unprocessed==0) && (*(p+1)=='x')) {
 					if(long_long) {
 						snprintf(tmp, sizeof(tmp),
-							 "%llx", 
+							 "%llx",
 							 va_arg(ap,
 								long long int));
 						long_long = 0;
@@ -502,10 +502,10 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					long_long = 0;
 				} else
 					xstrcat(buf, "%l");
-				break; 
+				break;
 			case 'L':
 				if ((unprocessed==0) && (*(p+1)=='f')) {
-					snprintf(tmp, sizeof(tmp), "%Lf", 
+					snprintf(tmp, sizeof(tmp), "%Lf",
 						 va_arg(ap, long double));
 					xstrcat(buf, tmp);
 					p++;
@@ -552,7 +552,7 @@ static void xlogfmtcat(char **dst, const char *fmt, ...)
 }
 
 static void
-_log_printf(cbuf_t cb, FILE *stream, const char *fmt, ...) 
+_log_printf(cbuf_t cb, FILE *stream, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -563,7 +563,7 @@ _log_printf(cbuf_t cb, FILE *stream, const char *fmt, ...)
 		char *buf = vxstrfmt(fmt, ap);
 		int   len = strlen(buf);
 		int   dropped;
-		cbuf_write(cb, buf, len, &dropped); 
+		cbuf_write(cb, buf, len, &dropped);
 		cbuf_read_to_fd(cb, fileno(stream), -1);
 		xfree(buf);
 	} else  {
@@ -574,7 +574,7 @@ _log_printf(cbuf_t cb, FILE *stream, const char *fmt, ...)
 }
 
 /*
- * log a message at the specified level to facilities that have been 
+ * log a message at the specified level to facilities that have been
  * configured to receive messages at that level
  */
 static void log_msg(log_level_t level, const char *fmt, va_list args)
@@ -590,8 +590,8 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 		_log_init(NULL, opts, 0, NULL);
 	}
 
-	if (level > log->opt.syslog_level  && 
-	    level > log->opt.logfile_level && 
+	if (level > log->opt.syslog_level  &&
+	    level > log->opt.logfile_level &&
 	    level > log->opt.stderr_level) {
 		slurm_mutex_unlock(&log_lock);
 		return;
@@ -653,16 +653,16 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	if (level <= log->opt.stderr_level) {
 		fflush(stdout);
 		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
-			_log_printf( log->buf, stderr, "%s: %s%s", 
+			_log_printf( log->buf, stderr, "%s: %s%s",
 				     log->argv0, pfx, buf);
 		else
-			_log_printf( log->buf, stderr, "%s: %s%s\n", 
+			_log_printf( log->buf, stderr, "%s: %s%s\n",
 				     log->argv0, pfx, buf);
 		fflush(stderr);
 	}
 
 	if (level <= log->opt.logfile_level && log->logfp != NULL) {
-		xlogfmtcat(&msgbuf, "[%M] %s%s%s", 
+		xlogfmtcat(&msgbuf, "[%M] %s%s%s",
 				    log->fpfx, pfx, buf);
 
 		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
@@ -706,7 +706,7 @@ _log_flush()
 	if (!log->opt.buffered)
 		return;
 
-	if (log->opt.stderr_level) 
+	if (log->opt.stderr_level)
 		cbuf_read_to_fd(log->buf, fileno(stderr), -1);
 	else if (log->logfp && (fileno(log->logfp) > 0))
 		cbuf_read_to_fd(log->fbuf, fileno(log->logfp), -1);
@@ -846,13 +846,13 @@ struct fatal_cleanup {
 
 /* static variables */
 #ifdef WITH_PTHREADS
-  static pthread_mutex_t  fatal_lock = PTHREAD_MUTEX_INITIALIZER;    
+  static pthread_mutex_t  fatal_lock = PTHREAD_MUTEX_INITIALIZER;
 #else
   static int	fatal_lock;
 #endif /* WITH_PTHREADS */
 static struct fatal_cleanup *fatal_cleanups = NULL;
 
-/* Registers a cleanup function to be called by fatal() for this thread 
+/* Registers a cleanup function to be called by fatal() for this thread
 ** before exiting. */
 void
 fatal_add_cleanup(void (*proc) (void *), void *context)
@@ -869,7 +869,7 @@ fatal_add_cleanup(void (*proc) (void *), void *context)
 	slurm_mutex_unlock(&fatal_lock);
 }
 
-/* Registers a cleanup function to be called by fatal() for all threads 
+/* Registers a cleanup function to be called by fatal() for all threads
 ** of the job. */
 void
 fatal_add_cleanup_job(void (*proc) (void *), void *context)
@@ -897,7 +897,7 @@ fatal_remove_cleanup(void (*proc) (void *context), void *context)
 	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
 		cu = *cup;
 		if (cu->thread_id == my_thread_id &&
-		    cu->proc == proc && 
+		    cu->proc == proc &&
 		    cu->context == context) {
 			*cup = cu->next;
 			xfree(cu);
@@ -910,7 +910,7 @@ fatal_remove_cleanup(void (*proc) (void *context), void *context)
 	    (u_long) proc, (u_long) context);
 }
 
-/* Removes a cleanup frunction to be called at fatal() for all threads of 
+/* Removes a cleanup frunction to be called at fatal() for all threads of
 ** the job. */
 void
 fatal_remove_cleanup_job(void (*proc) (void *context), void *context)
@@ -921,7 +921,7 @@ fatal_remove_cleanup_job(void (*proc) (void *context), void *context)
 	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
 		cu = *cup;
 		if (cu->thread_id == 0 &&
-		    cu->proc == proc && 
+		    cu->proc == proc &&
 		    cu->context == context) {
 			*cup = cu->next;
 			xfree(cu);
@@ -934,7 +934,7 @@ fatal_remove_cleanup_job(void (*proc) (void *context), void *context)
 	      "0x%lx 0x%lx", (u_long) proc, (u_long) context);
 }
 
-/* Execute cleanup functions, first thread-specific then those for the 
+/* Execute cleanup functions, first thread-specific then those for the
 ** whole job */
 void
 fatal_cleanup(void)
@@ -976,7 +976,7 @@ dump_cleanup_list(void)
 	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
 		cu = *cup;
 		info ("loc=%ld thread_id=%ld proc=%ld, context=%ld, next=%ld",
-			(long)cu, (long)cu->thread_id, (long)cu->proc, 
+			(long)cu, (long)cu->thread_id, (long)cu->proc,
 			(long)cu->context, (long)cu->next);
 	}
 	slurm_mutex_unlock(&fatal_lock);

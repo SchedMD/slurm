@@ -1,33 +1,33 @@
 /*****************************************************************************\
- *  select_cons_res.c - node selection plugin supporting consumable 
+ *  select_cons_res.c - node selection plugin supporting consumable
  *  resources policies.
  *****************************************************************************\
  *
  *  The following example below illustrates how four jobs are allocated
  *  across a cluster using when a processor consumable resource approach.
- * 
- *  The example cluster is composed of 4 nodes (10 cpus in total):
- *  linux01 (with 2 processors), 
- *  linux02 (with 2 processors), 
- *  linux03 (with 2 processors), and
- *  linux04 (with 4 processors). 
  *
- *  The four jobs are the following: 
+ *  The example cluster is composed of 4 nodes (10 cpus in total):
+ *  linux01 (with 2 processors),
+ *  linux02 (with 2 processors),
+ *  linux03 (with 2 processors), and
+ *  linux04 (with 4 processors).
+ *
+ *  The four jobs are the following:
  *  1. srun -n 4 -N 4  sleep 120 &
  *  2. srun -n 3 -N 3 sleep 120 &
  *  3. srun -n 1 sleep 120 &
  *  4. srun -n 3 sleep 120 &
  *  The user launches them in the same order as listed above.
- * 
+ *
  *  Using a processor consumable resource approach we get the following
  *  job allocation and scheduling:
- * 
+ *
  *  The output of squeue shows that we have 3 out of the 4 jobs allocated
  *  and running. This is a 2 running job increase over the default SLURM
  *  approach.
- * 
+ *
  *  Job 2, Job 3, and Job 4 are now running concurrently on the cluster.
- * 
+ *
  *  [<snip>]# squeue
  *  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
  *     5        lsf    sleep     root  PD       0:00      1 (Resources)
@@ -35,19 +35,19 @@
  *     3        lsf    sleep     root   R       0:09      3 linux[01-03]
  *     4        lsf    sleep     root   R       0:05      1 linux04
  *  [<snip>]#
- * 
+ *
  *  Once Job 2 finishes, Job 5, which was pending, is allocated
  *  available resources and is then running as illustrated below:
- * 
+ *
  *  [<snip>]# squeue4
  *   JOBID PARTITION    NAME     USER  ST       TIME  NODES NODELIST(REASON)
  *     3        lsf    sleep     root   R       1:58      3 linux[01-03]
  *     4        lsf    sleep     root   R       1:54      1 linux04
  *     5        lsf    sleep     root   R       0:02      3 linux[01-03]
  *  [<snip>]#
- * 
+ *
  *  Job 3, Job 4, and Job 5 are now running concurrently on the cluster.
- * 
+ *
  *  [<snip>]#  squeue4
  *  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
  *     5        lsf    sleep     root   R       1:52      3 xc14n[13-15]
@@ -59,33 +59,33 @@
  *****************************************************************************
  *  Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.
  *  Written by Susanne M. Balle <susanne.balle@hp.com>, who borrowed heavily
- *  from select/linear 
- *  
+ *  from select/linear
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -114,15 +114,15 @@
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
- * overwritten when linking with the slurmctld. 
+ * overwritten when linking with the slurmctld.
  */
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
-List part_list;	
-List job_list;	
+List part_list;
+List job_list;
 int node_record_count;
 time_t last_node_update;
-struct switch_record *switch_record_table; 
+struct switch_record *switch_record_table;
 int switch_record_cnt;
 bitstr_t *avail_node_bitmap;
 bitstr_t *idle_node_bitmap;
@@ -147,7 +147,7 @@ List slurm_find_preemptable_jobs(struct job_record *job_ptr);
  * where <application> is a description of the intended application of
  * the plugin (e.g., "select" for SLURM node selection) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load select plugins if the plugin_type string has a 
+ * only load select plugins if the plugin_type string has a
  * prefix of "select/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
@@ -194,7 +194,7 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
  		      uint32_t req_nodes, uint16_t job_node_req);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			uint32_t min_nodes, uint32_t max_nodes, 
+			uint32_t min_nodes, uint32_t max_nodes,
 			uint32_t req_nodes, uint16_t job_node_req,
 			List preemptee_candidates, List *preemptee_job_list);
 
@@ -209,11 +209,11 @@ static void _dump_job_res(job_resources_t job) {
 		sprintf(str, "[no core_bitmap]");
 	info("DEBUG: Dump job_resources: nhosts %u cb %s", job->nhosts, str);
 }
- 
+
 static void _dump_nodes()
 {
 	int i;
-	
+
 	for (i=0; i<select_node_cnt; i++) {
 		info("node:%s cpus:%u c:%u s:%u t:%u mem:%u a_mem:%u state:%d",
 			select_node_record[i].node_ptr->name,
@@ -223,7 +223,7 @@ static void _dump_nodes()
 			select_node_record[i].vpus,
 			select_node_record[i].real_memory,
 			select_node_usage[i].alloc_memory,
-			select_node_usage[i].node_state);	
+			select_node_usage[i].node_state);
 	}
 }
 
@@ -281,7 +281,7 @@ extern bool cr_preemption_killing(void)
 {
 	(void) cr_preemption_enabled();
 	return job_preemption_killing;
-	
+
 }
 
 #define CR_NUM_CORE_ARRAY_INCREMENT 8
@@ -344,7 +344,7 @@ extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 		return cindex;
 	n -= cr_num_core_count[i];
 
-	cindex += cr_node_num_cores[i] * (node_index-n);	
+	cindex += cr_node_num_cores[i] * (node_index-n);
 	return cindex;
 }
 
@@ -370,12 +370,12 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
 
 	if (num_rows == 0 || !orig_row)
 		return NULL;
-	
+
 	new_row = xmalloc(num_rows * sizeof(struct part_row_data));
 	for (i = 0; i < num_rows; i++) {
 		new_row[i].num_jobs = orig_row[i].num_jobs;
 		new_row[i].job_list_size = orig_row[i].job_list_size;
-		if (orig_row[i].row_bitmap) 
+		if (orig_row[i].row_bitmap)
 			new_row[i].row_bitmap= bit_copy(orig_row[i].
 							row_bitmap);
 		if (new_row[i].job_list_size == 0)
@@ -405,7 +405,7 @@ static struct part_res_record *_dup_part_data(struct part_res_record *orig_ptr)
 	while (orig_ptr) {
 		new_ptr->part_ptr = orig_ptr->part_ptr;
 		new_ptr->num_rows = orig_ptr->num_rows;
-		new_ptr->row = _dup_row_data(orig_ptr->row, 
+		new_ptr->row = _dup_row_data(orig_ptr->row,
 					     orig_ptr->num_rows);
 		if (orig_ptr->next) {
 			new_ptr->next = xmalloc(sizeof(struct part_res_record));
@@ -426,7 +426,7 @@ static struct node_use_record *_dup_node_usage(struct node_use_record *orig_ptr)
 	if (orig_ptr == NULL)
 		return NULL;
 
-	new_use_ptr = xmalloc(select_node_cnt * 
+	new_use_ptr = xmalloc(select_node_cnt *
 			      sizeof(struct node_use_record));
 	new_ptr = new_use_ptr;
 
@@ -541,7 +541,7 @@ static void _add_job_to_row(struct job_resources *job,
 	}
 	add_job_to_cores(job, &(r_ptr->row_bitmap), cr_node_num_cores,
 				cr_num_core_count);
-	
+
 	/*  add the job to the job_list */
 	if (r_ptr->num_jobs >= r_ptr->job_list_size) {
 		r_ptr->job_list_size += 8;
@@ -572,17 +572,17 @@ static void _swap_rows(struct part_row_data *a, struct part_row_data *b)
 	tmprow.num_jobs      = a->num_jobs;
 	tmprow.job_list      = a->job_list;
 	tmprow.job_list_size = a->job_list_size;
-	
+
 	a->row_bitmap    = b->row_bitmap;
 	a->num_jobs      = b->num_jobs;
 	a->job_list      = b->job_list;
 	a->job_list_size = b->job_list_size;
-	
+
 	b->row_bitmap    = tmprow.row_bitmap;
 	b->num_jobs      = tmprow.num_jobs;
 	b->job_list      = tmprow.job_list;
 	b->job_list_size = tmprow.job_list_size;
-	
+
 	return;
 }
 
@@ -594,7 +594,7 @@ extern void cr_sort_part_rows(struct part_res_record *p_ptr)
 
 	if (!p_ptr->row)
 		return;
-		
+
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		if (p_ptr->row[i].row_bitmap)
 			a = bit_set_count(p_ptr->row[i].row_bitmap);
@@ -618,7 +618,7 @@ extern void cr_sort_part_rows(struct part_res_record *p_ptr)
  *                     so the row_bitmap(s) need to be reconstructed.
  *                     Optimize the jobs into the least number of rows,
  *                     and make the lower rows as dense as possible.
- * 
+ *
  * IN/OUT: p_ptr   - the partition that has jobs to be optimized
  */
 static void _build_row_bitmaps(struct part_res_record *p_ptr)
@@ -627,7 +627,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 	int x, *jstart;
 	struct part_row_data *this_row, *orig_row;
 	struct job_resources **tmpjobs, *job;
-	
+
 	if (!p_ptr->row)
 		return;
 
@@ -640,7 +640,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 			}
 			return;
 		}
-		
+
 		/* rebuild the row bitmap */
 		num_jobs = this_row->num_jobs;
 		tmpjobs = xmalloc(num_jobs * sizeof(struct job_resources *));
@@ -667,7 +667,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		size = bit_size(p_ptr->row[0].row_bitmap);
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (p_ptr->row[i].row_bitmap) {
-				bit_nclear(p_ptr->row[i].row_bitmap, 0, 
+				bit_nclear(p_ptr->row[i].row_bitmap, 0,
 					   size-1);
 			}
 		}
@@ -684,13 +684,13 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 	orig_row = _dup_row_data(p_ptr->row, p_ptr->num_rows);
 	if (orig_row == NULL)
 		return;
-	
+
 	/* get row_bitmap size from first row (we can safely assume that the
 	 * first row_bitmap exists because there exists at least one job. */
 	size = bit_size(p_ptr->row[0].row_bitmap);
-	
+
 	/* create a master job list and clear out ALL row data */
-	tmpjobs = xmalloc(num_jobs * sizeof(struct job_resources *));	
+	tmpjobs = xmalloc(num_jobs * sizeof(struct job_resources *));
 	jstart  = xmalloc(num_jobs * sizeof(int));
 	x = 0;
 	for (i = 0; i < p_ptr->num_rows; i++) {
@@ -707,7 +707,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 			bit_nclear(p_ptr->row[i].row_bitmap, 0, size-1);
 		}
 	}
-	
+
 	/* VERY difficult: Optimal placement of jobs in the matrix
 	 * - how to order jobs to be added to the matrix?
 	 *   - "by size" does not guarantee optimal placement
@@ -735,12 +735,12 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 	for (i = 0; i < num_jobs; i++) {
 		char cstr[64], nstr[64];
 		if (tmpjobs[i]->core_bitmap) {
-			bit_fmt(cstr, (sizeof(cstr)-1) , 
+			bit_fmt(cstr, (sizeof(cstr)-1) ,
 				tmpjobs[i]->core_bitmap);
 		} else
 			sprintf(cstr, "[no core_bitmap]");
 		if (tmpjobs[i]->node_bitmap) {
-			bit_fmt(nstr, (sizeof(nstr)-1), 
+			bit_fmt(nstr, (sizeof(nstr)-1),
 				tmpjobs[i]->node_bitmap);
 		} else
 			sprintf(nstr, "[no node_bitmap]");
@@ -762,7 +762,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		/* job should have been added, so shuffle the rows */
 		cr_sort_part_rows(p_ptr);
 	}
-	
+
 	/* test for dangling jobs */
 	for (j = 0; j < num_jobs; j++) {
 		if (tmpjobs[j])
@@ -780,11 +780,11 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 		_destroy_row_data(p_ptr->row, p_ptr->num_rows);
 		p_ptr->row = orig_row;
 		orig_row = NULL;
-		
+
 		/* still need to rebuild row_bitmaps */
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (p_ptr->row[i].row_bitmap)
-				bit_nclear(p_ptr->row[i].row_bitmap, 0, 
+				bit_nclear(p_ptr->row[i].row_bitmap, 0,
 					   size-1);
 			if (p_ptr->row[i].num_jobs == 0)
 				continue;
@@ -810,22 +810,22 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 	return;
 
 	/* LEFTOVER DESIGN THOUGHTS, PRESERVED HERE */
-	
+
 	/* 1. sort jobs by size
 	 * 2. only load core bitmaps with largest jobs that conflict
-	 * 3. sort rows by set count 
+	 * 3. sort rows by set count
 	 * 4. add remaining jobs, starting with fullest rows
 	 * 5. compute  set count: if disparity between rows got closer, then
 	 *    switch non-conflicting jobs that were added
 	 */
 
-	/* 
+	/*
 	 *  Step 1: remove empty rows between non-empty rows
 	 *  Step 2: try to collapse rows
 	 *  Step 3: sort rows by size
 	 *  Step 4: try to swap jobs from different rows to pack rows
 	 */
-	
+
 	/* WORK IN PROGRESS - more optimization should go here, such as:
 	 *
 	 * - try collapsing jobs from higher rows to lower rows
@@ -858,7 +858,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		error("job %u has no select data", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	
+
 	debug3("cons_res: _add_job_to_res: job %u act %d ", job_ptr->job_id,
 		action);
 
@@ -880,12 +880,12 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				      select_node_record[i].node_ptr->name,
 				      select_node_usage[i].alloc_memory,
 				      job_ptr->job_id);
-				
+
 			}
 			n++;
 		}
 	}
-	
+
 	/* add cores */
 	if (action != 1) {
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
@@ -901,7 +901,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			p_ptr->row = xmalloc(p_ptr->num_rows *
 						sizeof(struct part_row_data));
 		}
-		
+
 		/* find a row to add this job */
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (!_can_job_fit_in_row(job, &(p_ptr->row[i])))
@@ -954,13 +954,13 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		error("job %u has no select data", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	
+
 	debug3("cons_res: _rm_job_from_res: job %u act %d", job_ptr->job_id,
 		action);
 #if (CR_DEBUG)
 	_dump_job_res(job);
 #endif
-	
+
 	/* subtract memory */
 	if (action != 2) {
 		for (i = 0, n = 0; i < select_node_cnt; i++) {
@@ -972,7 +972,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				      "(%u-%u) for job %u",
 				      select_node_record[i].node_ptr->name,
 				      node_usage[i].alloc_memory,
-				      job->memory_allocated[n], 
+				      job->memory_allocated[n],
 				      job_ptr->job_id);
 				node_usage[i].alloc_memory = 0;
 			} else {
@@ -982,17 +982,17 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			n++;
 		}
 	}
-	
+
 	/* subtract cores */
 	if (action != 1) {
 		/* reconstruct rows with remaining jobs */
 		struct part_res_record *p_ptr;
-		
+
 		if(!job_ptr->part_ptr) {
 			error("error: 'rm' job %u does not have a "
 			      "partition assigned",
 			      job_ptr->job_id);
-			return SLURM_ERROR;			
+			return SLURM_ERROR;
 		}
 
 		for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
@@ -1004,11 +1004,11 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				job_ptr->part_ptr->name);
 			return SLURM_ERROR;
 		}
-		
+
 		if (!p_ptr->row) {
 			return SLURM_SUCCESS;
 		}
-		
+
 		/* remove the job from the job_list */
 		n = 0;
 		for (i = 0; i < p_ptr->num_rows; i++) {
@@ -1032,7 +1032,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				break;
 			}
 		}
-		
+
 		if (n) {
 			/* job was found and removed, so refresh the bitmaps */
 			_build_row_bitmaps(p_ptr);
@@ -1083,7 +1083,7 @@ static struct multi_core_data * _create_default_mc(void)
 static uint16_t _get_job_node_req(struct job_record *job_ptr)
 {
 	int max_share = job_ptr->part_ptr->max_share;
-	
+
 	if (max_share == 0)
 		return NODE_CR_RESERVED;
 
@@ -1111,7 +1111,7 @@ static int _find_job (void *x, void *key)
 	return 0;
 }
 
-static bool _is_preemptable(struct job_record *job_ptr, 
+static bool _is_preemptable(struct job_record *job_ptr,
 			    List preemptee_candidates)
 {
 	if (!preemptee_candidates)
@@ -1128,9 +1128,9 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	int rc;
 
-	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes, 
+	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_TEST_ONLY, cr_type, job_node_req,
-			 select_node_cnt, select_part_record, 
+			 select_node_cnt, select_part_record,
 			 select_node_usage);
 	return rc;
 }
@@ -1152,12 +1152,12 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (!orig_map)
 		fatal("bit_copy: malloc failure");
 
-	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes, 
+	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_RUN_NOW, cr_type, job_node_req,
-			 select_node_cnt, select_part_record, 
+			 select_node_cnt, select_part_record,
 			 select_node_usage);
 
-	if ((rc != SLURM_SUCCESS) && cr_preemption_killing() && 
+	if ((rc != SLURM_SUCCESS) && cr_preemption_killing() &&
 	    preemptee_candidates) {
 		/* Remove preemptable jobs from simulated environment */
 		future_part = _dup_part_data(select_part_record);
@@ -1173,21 +1173,21 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 
 		job_iterator = list_iterator_create(job_list);
-		while ((tmp_job_ptr = (struct job_record *) 
+		while ((tmp_job_ptr = (struct job_record *)
 				list_next(job_iterator))) {
-			if (!IS_JOB_RUNNING(tmp_job_ptr) && 
+			if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 			    !IS_JOB_SUSPENDED(tmp_job_ptr))
 				continue;
-			if (_is_preemptable(tmp_job_ptr, 
+			if (_is_preemptable(tmp_job_ptr,
 					    preemptee_candidates)) {
 				/* Remove preemptable job now */
 				_rm_job_from_res(future_part, future_usage,
 						 tmp_job_ptr, 2);
 				bit_or(bitmap, orig_map);
-				rc = cr_job_test(job_ptr, bitmap, min_nodes, 
-						 max_nodes, req_nodes, 
-						 SELECT_MODE_WILL_RUN, 
-						 cr_type, job_node_req, 
+				rc = cr_job_test(job_ptr, bitmap, min_nodes,
+						 max_nodes, req_nodes,
+						 SELECT_MODE_WILL_RUN,
+						 cr_type, job_node_req,
 						 select_node_cnt,
 						 future_part, future_usage);
 				if (rc == SLURM_SUCCESS)
@@ -1198,7 +1198,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 
 		if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 		    preemptee_candidates && cr_preemption_killing()) {
-			/* Build list of preemptee jobs whose resources are 
+			/* Build list of preemptee jobs whose resources are
 			 * actually used */
 			if (*preemptee_job_list == NULL) {
 				*preemptee_job_list = list_create(
@@ -1210,11 +1210,11 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 						preemptee_candidates);
 			while ((tmp_job_ptr = (struct job_record *)
 					list_next(preemptee_iterator))) {
-				if (bit_overlap(bitmap, 
+				if (bit_overlap(bitmap,
 						tmp_job_ptr->node_bitmap) == 0)
 					continue;
 
-				list_append(*preemptee_job_list, 
+				list_append(*preemptee_job_list,
 					    tmp_job_ptr);
 			}
 			list_iterator_destroy(preemptee_iterator);
@@ -1228,11 +1228,11 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	return rc;
 }
 
-/* _will_run_test - determine when and where a pending job can start, removes 
- *	jobs from node table at termination time and run _test_job() after 
+/* _will_run_test - determine when and where a pending job can start, removes
+ *	jobs from node table at termination time and run _test_job() after
  *	each one. Used by SLURM's sched/backfill plugin and Moab. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			  uint32_t min_nodes, uint32_t max_nodes, 
+			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t job_node_req,
 			  List preemptee_candidates, List *preemptee_job_list)
 {
@@ -1250,9 +1250,9 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
-	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes, 
+	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_WILL_RUN, cr_type, job_node_req,
-			 select_node_cnt, select_part_record, 
+			 select_node_cnt, select_part_record,
 			 select_node_usage);
 	if (rc == SLURM_SUCCESS) {
 		bit_free(orig_map);
@@ -1260,7 +1260,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		return SLURM_SUCCESS;
 	}
 
-	/* Job is still pending. Simulate termination of jobs one at a time 
+	/* Job is still pending. Simulate termination of jobs one at a time
 	 * to determine when and where the job can start. */
 	future_part = _dup_part_data(select_part_record);
 	if (future_part == NULL) {
@@ -1295,7 +1295,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* Remove preemptable job now */
 			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, action);
-		} else 
+		} else
 			list_append(cr_job_list, tmp_job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
@@ -1303,7 +1303,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Test with all preemptable jobs gone */
 	if (preemptee_candidates) {
 		bit_or(bitmap, orig_map);
-		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, 
+		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
 				 req_nodes, SELECT_MODE_WILL_RUN, cr_type,
 				 job_node_req, select_node_cnt, future_part,
 				 future_usage);
@@ -1317,13 +1317,13 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
 		while ((tmp_job_ptr = list_next(job_iterator))) {
-			_rm_job_from_res(future_part, future_usage, 
+			_rm_job_from_res(future_part, future_usage,
 					 tmp_job_ptr, 0);
 			bit_or(bitmap, orig_map);
-			rc = cr_job_test(job_ptr, bitmap, min_nodes, 
-					 max_nodes, req_nodes, 
-					 SELECT_MODE_WILL_RUN, cr_type, 
-					 job_node_req, select_node_cnt, 
+			rc = cr_job_test(job_ptr, bitmap, min_nodes,
+					 max_nodes, req_nodes,
+					 SELECT_MODE_WILL_RUN, cr_type,
+					 job_node_req, select_node_cnt,
 					 future_part, future_usage);
 			if (rc == SLURM_SUCCESS) {
 				if (tmp_job_ptr->end_time <= now)
@@ -1339,7 +1339,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 	    preemptee_candidates) {
-		/* Build list of preemptee jobs whose resources are 
+		/* Build list of preemptee jobs whose resources are
 		 * actually used. List returned even if not killed
 		 * in selected plugin, but by Moab or something else. */
 		if (*preemptee_job_list == NULL) {
@@ -1350,7 +1350,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = (struct job_record *)
 				list_next(preemptee_iterator))) {
-			if (bit_overlap(bitmap, 
+			if (bit_overlap(bitmap,
 					tmp_job_ptr->node_bitmap) == 0)
 				continue;
 			list_append(*preemptee_job_list, tmp_job_ptr);
@@ -1373,7 +1373,7 @@ static bool _is_node_avail(struct part_res_record *p_ptr, uint32_t node_i)
 
 	cpu_begin = cr_get_coremap_offset(node_i);
 	cpu_end   = cr_get_coremap_offset(node_i+1);
-	
+
 	if (select_node_usage[node_i].node_state >= NODE_CR_RESERVED)
 		return false;
 
@@ -1424,7 +1424,7 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 
 	if (!job_ptr)
 		fatal("cons_res: error: don't know what job I'm sync'ing");
-		
+
 	for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
 		if (p_ptr->part_ptr == job_ptr->part_ptr)
 			break;
@@ -1438,7 +1438,7 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 			bit_set(bitmap, i);
 			continue;
 		}
-		
+
 		if(!p_ptr || _is_node_avail(p_ptr, i))
 			bit_set(bitmap, i);
 	}
@@ -1502,7 +1502,7 @@ extern int fini(void)
 }
 
 /*
- * The remainder of this file implements the standard SLURM 
+ * The remainder of this file implements the standard SLURM
  * node selection API.
  */
 
@@ -1561,12 +1561,12 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	/* initial global core data structures */
 	select_fast_schedule = slurm_get_fast_schedule();
 	_init_global_core_data(node_ptr, node_cnt);
-	
+
 	_destroy_node_data(select_node_usage, select_node_record);
 	select_node_cnt  = node_cnt;
-	select_node_record = xmalloc(node_cnt * 
+	select_node_record = xmalloc(node_cnt *
 				     sizeof(struct node_res_record));
-	select_node_usage  = xmalloc(node_cnt * 
+	select_node_usage  = xmalloc(node_cnt *
 				     sizeof(struct node_use_record));
 
 	for (i = 0; i < select_node_cnt; i++) {
@@ -1602,13 +1602,13 @@ extern int select_p_block_init(List part_list)
 
 
 /*
- * select_p_job_test - Given a specification of scheduling requirements, 
+ * select_p_job_test - Given a specification of scheduling requirements,
  *	identify the nodes which "best" satisfy the request.
  * 	"best" is defined as either a minimal number of consecutive nodes
  *	or if sharing resources then sharing them with a job of similar size.
  * IN/OUT job_ptr - pointer to job being considered for initiation,
  *                  set's start_time when job expected to start
- * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
  * IN req_nodes - requested (or desired) count of nodes
@@ -1617,22 +1617,22 @@ extern int select_p_block_init(List part_list)
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
  * IN preemptee_candidates - List of pointers to jobs which can be preempted.
- * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the 
- *		jobs to be preempted to initiate the pending job. Not set 
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
+ *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * RET zero on success, EINVAL otherwise
- * globals (passed via select_p_node_init): 
+ * globals (passed via select_p_node_init):
  *	node_record_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
  * NOTE: the job information that is considered for scheduling includes:
  *	req_node_bitmap: bitmap of specific nodes required by the job
  *	contiguous: allocated nodes must be sequentially located
  *	num_procs: minimum number of processors required by the job
- * NOTE: bitmap must be a superset of req_nodes at the time that 
+ * NOTE: bitmap must be a superset of req_nodes at the time that
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
-			     uint32_t min_nodes, uint32_t max_nodes, 
+			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
 			     List *preemptee_job_list)
@@ -1673,7 +1673,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				req_nodes, job_node_req);
 	} else if (mode == SELECT_MODE_RUN_NOW) {
 		rc = _run_now(job_ptr, bitmap, min_nodes, max_nodes,
-			      req_nodes, job_node_req, 
+			      req_nodes, job_node_req,
 			      preemptee_candidates, preemptee_job_list);
 	} else
 		fatal("select_p_job_test: Mode %d is invalid", mode);
@@ -1682,7 +1682,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	if (job_ptr->job_resrcs)
 		log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
 	else
-		info("no job_resources info for job %u", 
+		info("no job_resources info for job %u",
 		     job_ptr->job_id);
 #else
 	if (debug_cpu_bind && job_ptr->job_resrcs)
@@ -1706,13 +1706,13 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
-	
+
 	_rm_job_from_res(select_part_record, select_node_usage, job_ptr, 0);
 
 	return SLURM_SUCCESS;
 }
 
-/* NOTE: This function is not called with gang scheduling because it 
+/* NOTE: This function is not called with gang scheduling because it
  * needs to track how many jobs are running or suspended on each node.
  * This sum is compared with the partition's Shared parameter */
 extern int select_p_job_suspend(struct job_record *job_ptr)
@@ -1727,7 +1727,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 extern int select_p_job_resume(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
-	
+
 	return _add_job_to_res(job_ptr, 2);
 }
 
@@ -1738,7 +1738,7 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
 	return SLURM_ERROR;
 }
 
-extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, 
+extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer)
 {
 	pack16(nodeinfo->alloc_cpus, buffer);
@@ -1746,7 +1746,7 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, 
+extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   Buf buffer)
 {
 	select_nodeinfo_t *nodeinfo_ptr = NULL;
@@ -1782,7 +1782,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 			error("select_p_select_nodeinfo_free: "
 			      "nodeinfo magic bad");
 			return EINVAL;
-		} 
+		}
 		nodeinfo->magic = 0;
 		xfree(nodeinfo);
 	}
@@ -1802,9 +1802,9 @@ extern int select_p_select_nodeinfo_set_all(void)
 	   the last time we set things up. */
 	if(last_set_all && (last_node_update < last_set_all)) {
 		debug2("Node select info for set all hasn't "
-		       "changed since %d", 
+		       "changed since %d",
 		       last_set_all);
-		return SLURM_NO_CHANGE_IN_DATA;	
+		return SLURM_NO_CHANGE_IN_DATA;
 	}
 	last_set_all = last_node_update;
 
@@ -1858,7 +1858,7 @@ extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 
 	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 		return SLURM_SUCCESS;
-	
+
 	return _add_job_to_res(job_ptr, 0);
 }
 
@@ -1874,7 +1874,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		error("get_nodeinfo: nodeinfo not set");
 		return SLURM_ERROR;
 	}
-	
+
 	if (nodeinfo->magic != NODEINFO_MAGIC) {
 		error("get_nodeinfo: jobinfo magic bad");
 		return SLURM_ERROR;
@@ -1892,7 +1892,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
 		rc = SLURM_ERROR;
 		break;
-	}	
+	}
 	return rc;
 }
 
@@ -1929,7 +1929,7 @@ extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo, 
+extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo,
 					  Buf buffer)
 {
 	return SLURM_SUCCESS;
@@ -1962,7 +1962,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 }
 
 extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
-					 struct job_record *job_ptr, 
+					 struct job_record *job_ptr,
 					 void *data)
 {
 	int rc = SLURM_SUCCESS;
@@ -1978,8 +1978,8 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 			FREE_NULL_BITMAP(tmp_bitmap);
 			return rc;
 		}
-		*bitmap = tmp_bitmap;	/* Ownership transfer, 
-					 * Remember to free bitmap 
+		*bitmap = tmp_bitmap;	/* Ownership transfer,
+					 * Remember to free bitmap
 					 * using FREE_NULL_BITMAP(bitmap);*/
 		tmp_bitmap = 0;
 		break;
@@ -1988,7 +1988,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 		break;
 	case SELECT_CONFIG_INFO:
 		*tmp_list = NULL;
-		break;		
+		break;
 	default:
 		error("select_p_get_info_from_plugin info %d invalid",
 		      info);
@@ -2041,7 +2041,7 @@ extern int select_p_reconfigure(void)
 	rc = select_p_node_init(node_record_table_ptr, node_record_count);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	
+
 	/* reload job data */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {

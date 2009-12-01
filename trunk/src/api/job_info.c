@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- *  details. 
- *  
+ *  details.
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -64,25 +64,25 @@
 #include "src/common/xstring.h"
 
 /*
- * slurm_print_job_info_msg - output information about all Slurm 
+ * slurm_print_job_info_msg - output information about all Slurm
  *	jobs based upon message as loaded using slurm_load_jobs
  * IN out - file to write to
  * IN job_info_msg_ptr - job information message pointer
  * IN one_liner - print as a single line if true
  */
-extern void 
+extern void
 slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 {
 	int i;
 	job_info_t *job_ptr = jinfo->job_array;
 	char time_str[32];
 
-	slurm_make_time_str ((time_t *)&jinfo->last_update, time_str, 
+	slurm_make_time_str ((time_t *)&jinfo->last_update, time_str,
 		sizeof(time_str));
 	fprintf( out, "Job data as of %s, record count %d\n",
 		 time_str, jinfo->record_count);
 
-	for (i = 0; i < jinfo->record_count; i++) 
+	for (i = 0; i < jinfo->record_count; i++)
 		slurm_print_job_info(out, &job_ptr[i], one_liner);
 }
 
@@ -110,7 +110,7 @@ static void _sprint_range(char *str, uint32_t str_size,
 }
 
 /*
- * slurm_print_job_info - output information about a specific Slurm 
+ * slurm_print_job_info - output information about a specific Slurm
  *	job based upon message as loaded using slurm_load_jobs
  * IN out - file to write to
  * IN job_ptr - an individual job information record pointer
@@ -125,7 +125,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 }
 
 /*
- * slurm_sprint_job_info - output information about a specific Slurm 
+ * slurm_sprint_job_info - output information about a specific Slurm
  *	job based upon message as loaded using slurm_load_jobs
  * IN job_ptr - an individual job information record pointer
  * IN one_liner - print as a single line if true
@@ -147,8 +147,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 #ifdef HAVE_BG
 	char *nodelist = "BP_List";
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
-				    SELECT_JOBDATA_IONODES, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_IONODES,
 				    &ionodes);
 #else
 	bitstr_t *core_bitmap;
@@ -355,8 +355,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	_sprint_range(tmp2, sizeof(tmp2), min_nodes, max_nodes);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "NumNodes=%s NumCPUs=%s CPUs/Task=%u ReqS:C:T=%u:%u:%u",
-		 tmp2, tmp1, job_ptr->cpus_per_task, 
-		 job_ptr->min_sockets, 
+		 tmp2, tmp1, job_ptr->cpus_per_task,
+		 job_ptr->min_sockets,
 		 job_ptr->min_cores,
 		 job_ptr->min_threads);
 	xstrcat(out, tmp_line);
@@ -524,7 +524,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 #endif
 
 	/****** Line 13 ******/
-line13:	
+line13:
 	if (job_ptr->job_min_memory & MEM_PER_CPU) {
 		job_ptr->job_min_memory &= (~MEM_PER_CPU);
 		tmp3_ptr = "CPU";
@@ -593,7 +593,7 @@ line13:
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		snprintf(tmp_line, sizeof(tmp_line), "Comment=%s ", 
+		snprintf(tmp_line, sizeof(tmp_line), "Comment=%s ",
 			 job_ptr->comment);
 		xstrcat(out, tmp_line);
 	}
@@ -702,8 +702,8 @@ line13:
 }
 
 /*
- * slurm_load_jobs - issue RPC to get all job configuration  
- *	information if changed since update_time 
+ * slurm_load_jobs - issue RPC to get all job configuration
+ *	information if changed since update_time
  * IN update_time - time of current configuration data
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
@@ -736,8 +736,8 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);	
-		if (rc) 
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
 			slurm_seterrno_ret(rc);
 		break;
 	default:
@@ -751,7 +751,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 /*
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer
- * IN job_id -  ID of job we want information about 
+ * IN job_id -  ID of job we want information about
  * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
@@ -781,8 +781,8 @@ slurm_load_job (job_info_msg_t **resp, uint32_t job_id, uint16_t show_flags)
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);	
-		if (rc) 
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
 			slurm_seterrno_ret(rc);
 		break;
 	default:
@@ -794,7 +794,7 @@ slurm_load_job (job_info_msg_t **resp, uint32_t job_id, uint16_t show_flags)
 }
 
 /*
- * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id 
+ * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id
  *	on this machine
  * IN job_pid     - process_id of interest on this machine
  * OUT job_id_ptr - place to store a slurm job_id
@@ -819,14 +819,14 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	this_addr = slurm_conf_get_nodeaddr(this_host);
 	if (this_addr == NULL)
 		this_addr = xstrdup("localhost");
-	slurm_set_addr(&req_msg.address, (uint16_t)slurm_get_slurmd_port(), 
+	slurm_set_addr(&req_msg.address, (uint16_t)slurm_get_slurmd_port(),
 		       this_addr);
 	xfree(this_addr);
 
 	req.job_pid      = job_pid;
 	req_msg.msg_type = REQUEST_JOB_ID;
 	req_msg.data     = &req;
-	
+
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
 	if(rc != 0 || !resp_msg.auth_cred) {
@@ -836,7 +836,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		return SLURM_ERROR;
 	}
 	if(resp_msg.auth_cred)
-		g_slurm_auth_destroy(resp_msg.auth_cred);	
+		g_slurm_auth_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
 		*jobid = ((job_id_response_msg_t *) resp_msg.data)->job_id;
@@ -844,8 +844,8 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		break;
 	case RESPONSE_SLURM_RC:
 	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);	
-		if (rc) 
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
 			slurm_seterrno_ret(rc);
 		break;
 	default:
@@ -859,7 +859,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 /*
  * slurm_get_rem_time - get the expected time remaining for a given job
  * IN jobid     - slurm job id
- * RET remaining time in seconds or -1 on error 
+ * RET remaining time in seconds or -1 on error
  */
 extern long slurm_get_rem_time(uint32_t jobid)
 {
@@ -907,7 +907,7 @@ extern int32_t islurm_get_rem_time2__()
 /*
  * slurm_get_end_time - get the expected end time for a given slurm job
  * IN jobid     - slurm job id
- * end_time_ptr - location in which to store scheduled end time for job 
+ * end_time_ptr - location in which to store scheduled end time for job
  * RET 0 or -1 on error
  */
 extern int
@@ -1013,7 +1013,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 		rc = ((return_code_msg_t *) resp.data)->return_code;
 		slurm_free_return_code_msg(resp.data);
 	} else if (resp.msg_type == RESPONSE_SLURM_RC) {
-		int job_rc = ((return_code_msg_t *) resp.data) -> 
+		int job_rc = ((return_code_msg_t *) resp.data) ->
 				return_code;
 		if ((job_rc == ESLURM_INVALID_PARTITION_NAME)
 		||  (job_rc == ESLURM_INVALID_JOB_ID))
@@ -1041,7 +1041,7 @@ extern int slurm_job_cpus_allocated_on_node_id(
 
 	for (i = 0; i < job_resrcs_ptr->cpu_array_cnt; i++) {
 		start_node += job_resrcs_ptr->cpu_array_reps[i];
-		if(start_node >= node_id) 
+		if(start_node >= node_id)
 			break;
 	}
 
@@ -1066,10 +1066,10 @@ extern int slurm_job_cpus_allocated_on_node(
 	} else if((node_id = hostlist_find(job_resrcs_ptr->node_hl, node))
 		  == -1) {
 		error("slurm_cpus_used_on_node: "
-		      "node %s is not in this allocation", node);		
+		      "node %s is not in this allocation", node);
 		return -1;
 	}
-	
+
 	return slurm_job_cpus_allocated_on_node_id(job_resrcs_ptr, node_id);
 }
 

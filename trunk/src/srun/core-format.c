@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -48,7 +48,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-//#include "src/common/env.h" 
+//#include "src/common/env.h"
 #include "src/srun/core-format.h"
 #include "src/common/log.h"
 #include "src/common/env.h"
@@ -70,7 +70,7 @@ struct core_format_info {
  */
 struct core_format_info core_types[] = {
 	{ CORE_NORMAL,
-	  "normal", 
+	  "normal",
 	  "Default full corefile (do nothing)"
         },
 	{ CORE_LIGHT,
@@ -81,7 +81,7 @@ struct core_format_info core_types[] = {
 	  "lcb",
 	  "liblwcf Lightweight Corefile Browser compliant"
 	},
-	{ CORE_LIST, 
+	{ CORE_LIST,
 	  "list",
 	  "list valid core format types"
 	},
@@ -117,7 +117,7 @@ static void _print_valid_core_types (void)
 			    (stat("/usr/local/lib/" LIB_LIGHT, &buf) < 0))
 				continue;
 		}
-		if (ci->type != CORE_LIST) 
+		if (ci->type != CORE_LIST)
 			info (" %-8s -- %s", ci->name, ci->descr);
 	}
 	return;

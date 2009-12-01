@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -127,8 +127,8 @@ int main(int argc, char *argv[])
 	}
 
 	if (opt.get_user_env_time < 0) {
-		/* Moab does not propage the user's resource limits, so 
-		 * slurmd determines the values at the same time that it 
+		/* Moab does not propage the user's resource limits, so
+		 * slurmd determines the values at the same time that it
 		 * gets the user's default environment variables. */
 		(void) _set_rlimit_env();
 	}
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 
 	while (slurm_submit_batch_job(&desc, &resp) < 0) {
 		static char *msg;
-		
+
 		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY)
 			msg = "Slurm job queue full, sleeping and retrying.";
 		else if (errno == ESLURM_NODES_BUSY) {
@@ -385,13 +385,13 @@ static int _set_umask_env(void)
 	mask = (int)umask(0);
 	umask(mask);
 
-	sprintf(mask_char, "0%d%d%d", 
+	sprintf(mask_char, "0%d%d%d",
 		((mask>>6)&07), ((mask>>3)&07), mask&07);
 	if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
 		error ("unable to set SLURM_UMASK in environment");
 		return SLURM_FAILURE;
 	}
-	debug ("propagating UMASK=%s", mask_char); 
+	debug ("propagating UMASK=%s", mask_char);
 	return SLURM_SUCCESS;
 }
 
@@ -564,7 +564,7 @@ static char *script_wrap(char *command_string)
 	return script;
 }
 
-/* Set SLURM_RLIMIT_* environment variables with current resource 
+/* Set SLURM_RLIMIT_* environment variables with current resource
  * limit values, reset RLIMIT_NOFILE to maximum possible value */
 static int _set_rlimit_env(void)
 {
@@ -594,7 +594,7 @@ static int _set_rlimit_env(void)
 			rc = SLURM_FAILURE;
 			continue;
 		}
-		
+
 		cur = (unsigned long) rlim->rlim_cur;
 		snprintf(name, sizeof(name), "SLURM_RLIMIT_%s", rli->name);
 		if (opt.propagate && rli->propagate_flag == PROPAGATE_RLIMITS)
@@ -604,17 +604,17 @@ static int _set_rlimit_env(void)
 			format = "U%lu";
 		else
 			format = "%lu";
-		
+
 		if (setenvf (NULL, name, format, cur) < 0) {
 			error ("unable to set %s in environment", name);
 			rc = SLURM_FAILURE;
 			continue;
 		}
-		
+
 		debug ("propagating RLIMIT_%s=%lu", rli->name, cur);
 	}
 
-	/* 
+	/*
 	 *  Now increase NOFILE to the max available for this srun
 	 */
 	if (getrlimit (RLIMIT_NOFILE, rlim) < 0)
@@ -622,7 +622,7 @@ static int _set_rlimit_env(void)
 
 	if (rlim->rlim_cur < rlim->rlim_max) {
 		rlim->rlim_cur = rlim->rlim_max;
-		if (setrlimit (RLIMIT_NOFILE, rlim) < 0) 
+		if (setrlimit (RLIMIT_NOFILE, rlim) < 0)
 			return (error("Unable to increase max no. files: %m"));
 	}
 

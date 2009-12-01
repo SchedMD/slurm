@@ -1,4 +1,4 @@
-# Makefile for database library 
+# Makefile for database library
 
 AUTOMAKE_OPTIONS = foreign
 
@@ -18,7 +18,7 @@ endif
 if WITH_PGSQL
 PGSQL_LIB = libslurm_pgsql.la
 libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
-libslurm_pgsql_la_LIBADD   = $(PGSQL_LIBS) 
+libslurm_pgsql_la_LIBADD   = $(PGSQL_LIBS)
 libslurm_pgsql_la_LDFLAGS  = $(LIB_LDFLAGS)
 libslurm_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
 else

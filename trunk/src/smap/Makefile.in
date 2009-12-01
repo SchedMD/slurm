@@ -184,7 +184,7 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
-LIBS = $(NCURSES) 
+LIBS = $(NCURSES)
 LIBTOOL = @LIBTOOL@
 LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
@@ -312,12 +312,12 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES) 
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @HAVE_SOME_CURSES_TRUE@smap_LDADD = \
 @HAVE_SOME_CURSES_TRUE@	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la \
 @HAVE_SOME_CURSES_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl
 
-@HAVE_SOME_CURSES_TRUE@noinst_HEADERS = smap.h 
+@HAVE_SOME_CURSES_TRUE@noinst_HEADERS = smap.h
 @HAVE_SOME_CURSES_TRUE@smap_SOURCES = smap.c \
 @HAVE_SOME_CURSES_TRUE@	job_functions.c partition_functions.c \
 @HAVE_SOME_CURSES_TRUE@	configure_functions.c grid_functions.c \

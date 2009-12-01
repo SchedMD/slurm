@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -85,7 +85,7 @@ extern int free_select_jobinfo(select_jobinfo_t *jobinfo)
 		if (jobinfo->magic != JOBINFO_MAGIC) {
 			error("free_jobinfo: jobinfo magic bad");
 			return EINVAL;
-		} 
+		}
 		jobinfo->magic = 0;
 		xfree(jobinfo->bg_block_id);
 		xfree(jobinfo->nodes);
@@ -125,7 +125,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 
 	switch (data_type) {
 	case SELECT_JOBDATA_GEOMETRY:
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) 
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			jobinfo->geometry[i] = uint16[i];
 		break;
 	case SELECT_JOBDATA_REBOOT:
@@ -180,9 +180,9 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 		/* we xfree() any preset value to avoid a memory leak */
 		xfree(jobinfo->ramdiskimage);
 		jobinfo->ramdiskimage = xstrdup(tmp_char);
-		break;	
+		break;
 	default:
-		debug("set_jobinfo data_type %d invalid", 
+		debug("set_jobinfo data_type %d invalid",
 		      data_type);
 	}
 
@@ -192,8 +192,8 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 /* get data from a select job credential
  * IN jobinfo  - updated select job credential
  * IN data_type - type of data to enter into job credential
- * OUT data - the data to get from job credential, caller must xfree 
- *	data for data_tyep == SELECT_JOBDATA_BLOCK_ID 
+ * OUT data - the data to get from job credential, caller must xfree
+ *	data for data_tyep == SELECT_JOBDATA_BLOCK_ID
  */
 extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 		enum select_jobdata_type data_type, void *data)
@@ -288,7 +288,7 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 			*tmp_char = xstrdup(jobinfo->ramdiskimage);
 		break;
 	default:
-		debug2("get_jobinfo data_type %d invalid", 
+		debug2("get_jobinfo data_type %d invalid",
 		       data_type);
 	}
 
@@ -304,7 +304,7 @@ extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 {
 	struct select_jobinfo *rc = NULL;
 	int i;
-		
+
 	if (jobinfo == NULL)
 		;
 	else if (jobinfo->magic != JOBINFO_MAGIC)
@@ -345,7 +345,7 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer)
 	int i;
 
 	if (jobinfo) {
-		/* NOTE: If new elements are added here, make sure to 
+		/* NOTE: If new elements are added here, make sure to
 		 * add equivalant pack of zeros below for NULL pointer */
 		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 			pack16(jobinfo->geometry[i], buffer);
@@ -423,7 +423,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer)
 	safe_unpackstr_xmalloc(&(jobinfo->linuximage),   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp, buffer);
-	
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -446,7 +446,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 	int i;
 	char max_cpus_char[8];
 	char *tmp_image = "default";
-		
+
 	if (buf == NULL) {
 		error("sprint_jobinfo: buf is null");
 		return NULL;
@@ -480,10 +480,10 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		if (jobinfo->max_cpus == NO_VAL)
 			sprintf(max_cpus_char, "None");
 		else
-			convert_num_unit((float)jobinfo->max_cpus, 
+			convert_num_unit((float)jobinfo->max_cpus,
 					 max_cpus_char, sizeof(max_cpus_char),
 					 UNIT_NONE);
-		snprintf(buf, size, 
+		snprintf(buf, size,
 			 "%7.7s %6.6s %6.6s %8s    %cx%cx%c %-16s",
 			 conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
@@ -495,7 +495,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			 jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED_SHORT:
-		snprintf(buf, size, 
+		snprintf(buf, size,
 			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%cx%cx%c",
 			 conn_type_string(jobinfo->conn_type),
@@ -506,7 +506,7 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			 alpha_num[geometry[2]]);
 		break;
 	case SELECT_PRINT_MIXED:
-		snprintf(buf, size, 
+		snprintf(buf, size,
 			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%cx%cx%c Block_ID=%s",
 			 conn_type_string(jobinfo->conn_type),
@@ -521,14 +521,14 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 		snprintf(buf, size, "%s", jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_NODES:
-		if(jobinfo->ionodes && jobinfo->ionodes[0]) 
+		if(jobinfo->ionodes && jobinfo->ionodes[0])
 			snprintf(buf, size, "%s[%s]",
 				 jobinfo->nodes, jobinfo->ionodes);
 		else
 			snprintf(buf, size, "%s", jobinfo->nodes);
 		break;
 	case SELECT_PRINT_CONNECTION:
-		snprintf(buf, size, "%s", 
+		snprintf(buf, size, "%s",
 			 conn_type_string(jobinfo->conn_type));
 		break;
 	case SELECT_PRINT_REBOOT:
@@ -552,37 +552,37 @@ extern char *sprint_select_jobinfo(select_jobinfo_t *jobinfo,
 			convert_num_unit((float)jobinfo->max_cpus,
 					 max_cpus_char, sizeof(max_cpus_char),
 					 UNIT_NONE);
-		
+
 		snprintf(buf, size, "%s", max_cpus_char);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
 #ifdef HAVE_BGL
 		if(jobinfo->blrtsimage)
 			tmp_image = jobinfo->blrtsimage;
-		snprintf(buf, size, "%s", tmp_image);		
+		snprintf(buf, size, "%s", tmp_image);
 #endif
 		break;
 	case SELECT_PRINT_LINUX_IMAGE:
 		if(jobinfo->linuximage)
 			tmp_image = jobinfo->linuximage;
-		snprintf(buf, size, "%s", tmp_image);		
+		snprintf(buf, size, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_MLOADER_IMAGE:
 		if(jobinfo->mloaderimage)
 			tmp_image = jobinfo->mloaderimage;
-		snprintf(buf, size, "%s", tmp_image);		
+		snprintf(buf, size, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_RAMDISK_IMAGE:
 		if(jobinfo->ramdiskimage)
 			tmp_image = jobinfo->ramdiskimage;
-		snprintf(buf, size, "%s", tmp_image);		
-		break;		
+		snprintf(buf, size, "%s", tmp_image);
+		break;
 	default:
 		error("sprint_jobinfo: bad mode %d", mode);
 		if (size > 0)
 			buf[0] = '\0';
 	}
-	
+
 	return buf;
 }
 
@@ -598,7 +598,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 	char max_cpus_char[8];
 	char *tmp_image = "default";
 	char *buf = NULL;
-		
+
 	if ((mode != SELECT_PRINT_DATA)
 	    && jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
 		error("xstrdup_jobinfo: jobinfo magic bad");
@@ -620,17 +620,17 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
-		xstrcat(buf, 
+		xstrcat(buf,
 			"CONNECT REBOOT ROTATE MAX_CPUS GEOMETRY BLOCK_ID");
 		break;
 	case SELECT_PRINT_DATA:
 		if (jobinfo->max_cpus == NO_VAL)
 			sprintf(max_cpus_char, "None");
 		else
-			convert_num_unit((float)jobinfo->max_cpus, 
+			convert_num_unit((float)jobinfo->max_cpus,
 					 max_cpus_char, sizeof(max_cpus_char),
 					 UNIT_NONE);
-		xstrfmtcat(buf, 
+		xstrfmtcat(buf,
 			   "%7.7s %6.6s %6.6s %8s    %cx%cx%c %-16s",
 			   conn_type_string(jobinfo->conn_type),
 			   _yes_no_string(jobinfo->reboot),
@@ -642,7 +642,7 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 			   jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
-		xstrfmtcat(buf, 
+		xstrfmtcat(buf,
 			 "Connection=%s Reboot=%s Rotate=%s "
 			 "Geometry=%cx%cx%c Block_ID=%s",
 			 conn_type_string(jobinfo->conn_type),
@@ -657,14 +657,14 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 		xstrfmtcat(buf, "%s", jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_NODES:
-		if(jobinfo->ionodes && jobinfo->ionodes[0]) 
+		if(jobinfo->ionodes && jobinfo->ionodes[0])
 			xstrfmtcat(buf, "%s[%s]",
 				 jobinfo->nodes, jobinfo->ionodes);
 		else
 			xstrfmtcat(buf, "%s", jobinfo->nodes);
 		break;
 	case SELECT_PRINT_CONNECTION:
-		xstrfmtcat(buf, "%s", 
+		xstrfmtcat(buf, "%s",
 			   conn_type_string(jobinfo->conn_type));
 		break;
 	case SELECT_PRINT_REBOOT:
@@ -688,34 +688,34 @@ extern char *xstrdup_select_jobinfo(select_jobinfo_t *jobinfo, int mode)
 			convert_num_unit((float)jobinfo->max_cpus,
 					 max_cpus_char, sizeof(max_cpus_char),
 					 UNIT_NONE);
-		
+
 		xstrfmtcat(buf, "%s", max_cpus_char);
 		break;
 	case SELECT_PRINT_BLRTS_IMAGE:
 #ifdef HAVE_BGL
 		if(jobinfo->blrtsimage)
 			tmp_image = jobinfo->blrtsimage;
-		xstrfmtcat(buf, "%s", tmp_image);		
+		xstrfmtcat(buf, "%s", tmp_image);
 #endif
 		break;
 	case SELECT_PRINT_LINUX_IMAGE:
 		if(jobinfo->linuximage)
 			tmp_image = jobinfo->linuximage;
-		xstrfmtcat(buf, "%s", tmp_image);		
+		xstrfmtcat(buf, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_MLOADER_IMAGE:
 		if(jobinfo->mloaderimage)
 			tmp_image = jobinfo->mloaderimage;
-		xstrfmtcat(buf, "%s", tmp_image);		
+		xstrfmtcat(buf, "%s", tmp_image);
 		break;
 	case SELECT_PRINT_RAMDISK_IMAGE:
 		if(jobinfo->ramdiskimage)
 			tmp_image = jobinfo->ramdiskimage;
-		xstrfmtcat(buf, "%s", tmp_image);		
-		break;		
+		xstrfmtcat(buf, "%s", tmp_image);
+		break;
 	default:
 		error("xstrdup_jobinfo: bad mode %d", mode);
 	}
-	
+
 	return buf;
 }

@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -83,10 +83,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 							 argv[i]+end))
 					set = 1;
 			}
-		} else if (!strncasecmp (argv[i], "Classification", 
+		} else if (!strncasecmp (argv[i], "Classification",
 					 MAX(command_len, 3))) {
 			if(classification) {
-				*classification = 
+				*classification =
 					str_2_classification(argv[i]+end);
 				if(*classification)
 					set = 1;
@@ -129,34 +129,34 @@ static int _set_rec(int *start, int argc, char *argv[],
 				end++;
 			}
 		}
-		
+
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i--;
 			break;
-		} else if(!end && !strncasecmp(argv[i], "set", 
+		} else if(!end && !strncasecmp(argv[i], "set",
 					       MAX(command_len, 3))) {
 			continue;
 		} else if(!end
 			  || !strncasecmp (argv[i], "Names",
-					   MAX(command_len, 1)) 
-			  || !strncasecmp (argv[i], "Clusters", 
+					   MAX(command_len, 1))
+			  || !strncasecmp (argv[i], "Clusters",
 					   MAX(command_len, 3))) {
 			if(name_list)
 				slurm_addto_char_list(name_list,
 						      argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Classification", 
+		} else if (!strncasecmp (argv[i], "Classification",
 					 MAX(command_len, 3))) {
 			if(classification) {
-				*classification = 
+				*classification =
 					str_2_classification(argv[i]+end);
 				if(*classification)
 					set = 1;
 			}
-		} else if (!strncasecmp (argv[i], "FairShare", 
+		} else if (!strncasecmp (argv[i], "FairShare",
 					 MAX(command_len, 1))
 			   || !strncasecmp (argv[i], "Shares",
 					 MAX(command_len, 1))) {
-			if (get_uint(argv[i]+end, &assoc->shares_raw, 
+			if (get_uint(argv[i]+end, &assoc->shares_raw,
 			    "FairShare") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCPUMins",
@@ -164,13 +164,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 			exit_code=1;
 			fprintf(stderr, "GrpCPUMins is not a valid option "
 				"for the root association of a cluster.\n");
-			break;			
+			break;
 		} else if (!strncasecmp (argv[i], "GrpCpus",
 					 MAX(command_len, 7))) {
 			if (get_uint(argv[i]+end, &assoc->grp_cpus,
 			    "GrpCpus") == SLURM_SUCCESS)
 				set = 1;
-		} else if (!strncasecmp (argv[i], "GrpJobs", 
+		} else if (!strncasecmp (argv[i], "GrpJobs",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &assoc->grp_jobs,
 			    "GrpJobs") == SLURM_SUCCESS)
@@ -192,11 +192,11 @@ static int _set_rec(int *start, int argc, char *argv[],
 				"for the root association of a cluster.\n");
 		} else if (!strncasecmp (argv[i], "MaxCPUMinsPerJob",
 					 MAX(command_len, 7))) {
-			if (get_uint64(argv[i]+end, 
-				       &assoc->max_cpu_mins_pj, 
+			if (get_uint64(argv[i]+end,
+				       &assoc->max_cpu_mins_pj,
 				       "MaxCPUMins") == SLURM_SUCCESS)
 				set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCpusPerJob", 
+		} else if (!strncasecmp (argv[i], "MaxCpusPerJob",
 					 MAX(command_len, 7))) {
 			if (get_uint(argv[i]+end, &assoc->max_cpus_pj,
 			    "MaxCpus") == SLURM_SUCCESS)
@@ -208,7 +208,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodesPerJob",
 					 MAX(command_len, 4))) {
-			if (get_uint(argv[i]+end, 
+			if (get_uint(argv[i]+end,
 			    &assoc->max_nodes_pj,
 			    "MaxNodes") == SLURM_SUCCESS)
 				set = 1;
@@ -217,7 +217,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end, &assoc->max_submit_jobs,
 			    "MaxSubmitJobs") == SLURM_SUCCESS)
 				set = 1;
-		} else if (!strncasecmp (argv[i], "MaxWallDurationPerJob", 
+		} else if (!strncasecmp (argv[i], "MaxWallDurationPerJob",
 					 MAX(command_len, 4))) {
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
@@ -225,20 +225,20 @@ static int _set_rec(int *start, int argc, char *argv[],
 				set = 1;
 			} else {
 				exit_code=1;
-				fprintf(stderr, 
-					" Bad MaxWall time format: %s\n", 
+				fprintf(stderr,
+					" Bad MaxWall time format: %s\n",
 					argv[i]);
 			}
-		} else if (!strncasecmp (argv[i], "QOSLevel", 
+		} else if (!strncasecmp (argv[i], "QOSLevel",
 					 MAX(command_len, 1))) {
-			if(!assoc->qos_list) 
-				assoc->qos_list = 
+			if(!assoc->qos_list)
+				assoc->qos_list =
 					list_create(slurm_destroy_char);
-						
-			if(!g_qos_list) 
+
+			if(!g_qos_list)
 				g_qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
-						
+
 			if(addto_qos_char_list(assoc->qos_list,
 					       g_qos_list, argv[i]+end, option))
 				set = 1;
@@ -277,8 +277,8 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
-			i++;		
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
+			i++;
 		limit_set += _set_rec(&i, argc, argv,
 				     name_list, &start_assoc, &class);
 	}
@@ -288,7 +288,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	} else if(!list_count(name_list)) {
 		list_destroy(name_list);
 		exit_code=1;
-		fprintf(stderr, " Need name of cluster to add.\n"); 
+		fprintf(stderr, " Need name of cluster to add.\n");
 		return SLURM_ERROR;
 	} else {
 		List temp_list = NULL;
@@ -339,7 +339,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
 		cluster = xmalloc(sizeof(acct_cluster_rec_t));
-		
+
 		list_append(cluster_list, cluster);
 		cluster->name = xstrdup(name);
 		cluster->classification = class;
@@ -351,14 +351,14 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			       get_classification_str(cluster->classification));
 
 		cluster->root_assoc->shares_raw = start_assoc.shares_raw;
-		
+
 		cluster->root_assoc->grp_cpus = start_assoc.grp_cpus;
 		cluster->root_assoc->grp_jobs = start_assoc.grp_jobs;
 		cluster->root_assoc->grp_nodes = start_assoc.grp_nodes;
 		cluster->root_assoc->grp_submit_jobs =
 			start_assoc.grp_submit_jobs;
 
-		cluster->root_assoc->max_cpu_mins_pj = 
+		cluster->root_assoc->max_cpu_mins_pj =
 			start_assoc.max_cpu_mins_pj;
 		cluster->root_assoc->max_cpus_pj = start_assoc.max_cpus_pj;
 		cluster->root_assoc->max_jobs = start_assoc.max_jobs;
@@ -367,7 +367,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			start_assoc.max_submit_jobs;
 		cluster->root_assoc->max_wall_pj = start_assoc.max_wall_pj;
 
-		cluster->root_assoc->qos_list = 
+		cluster->root_assoc->qos_list =
 			copy_char_list(start_assoc.qos_list);
 	}
 	list_iterator_destroy(itr);
@@ -401,7 +401,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	}
 end_it:
 	list_destroy(cluster_list);
-	
+
 	return rc;
 }
 
@@ -447,7 +447,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_NODES,
 		PRINT_QOS,
 		PRINT_QOS_RAW,
-		PRINT_RPC_VERSION		
+		PRINT_RPC_VERSION
 	};
 
 
@@ -455,9 +455,9 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
 			i++;
-		_set_cond(&i, argc, argv, cluster_cond->cluster_list, 
+		_set_cond(&i, argc, argv, cluster_cond->cluster_list,
 			  format_list,
 			  &cluster_cond->classification);
 	}
@@ -471,10 +471,10 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	print_fields_list = list_create(destroy_print_field);
 
 	if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, 
+		slurm_addto_char_list(format_list,
 				      "Cl,Controlh,Controlp,RPC");
-		if(!without_limits) 
-			slurm_addto_char_list(format_list, 
+		if(!without_limits)
+			slurm_addto_char_list(format_list,
 					      "F,GrpJ,GrpN,GrpS,MaxJ,MaxN,"
 					      "MaxS,MaxW,QOS");
 	}
@@ -484,11 +484,11 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
-		
+
 		if((tmp_char = strstr(object, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
-		} 
+		}
 
 		command_len = strlen(object);
 
@@ -523,13 +523,13 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("CPUCount");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("FairShare", object, 
+		} else if(!strncasecmp("FairShare", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_FAIRSHARE;
 			field->name = xstrdup("FairShare");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpCPUs", object, 
+		} else if(!strncasecmp("GrpCPUs", object,
 				       MAX(command_len, 8))) {
 			field->type = PRINT_GRPC;
 			field->name = xstrdup("GrpCPUs");
@@ -571,7 +571,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("MaxJobs");
 			field->len = 7;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxNodesPerJob", object, 
+		} else if(!strncasecmp("MaxNodesPerJob", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXN;
 			field->name = xstrdup("MaxNodes");
@@ -583,7 +583,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("MaxSubmit");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxWallDurationPerJob", object, 
+		} else if(!strncasecmp("MaxWallDurationPerJob", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXW;
 			field->name = xstrdup("MaxWall");
@@ -601,7 +601,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("NodeNames");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("QOSRAWLevel", object, 
+		} else if(!strncasecmp("QOSRAWLevel", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_QOS_RAW;
 			field->name = xstrdup("QOS_RAW");
@@ -618,7 +618,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("RPC");
 			field->len = 3;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Shares", object, 
+		} else if(!strncasecmp("Shares", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_FAIRSHARE;
 			field->name = xstrdup("Shares");
@@ -630,11 +630,11 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			xfree(field);
 			continue;
 		}
-		
-		if(newlen) 
+
+		if(newlen)
 			field->len = newlen;
-		
-		list_append(print_fields_list, field);		
+
+		list_append(print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
@@ -648,7 +648,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	cluster_list = acct_storage_g_get_clusters(db_conn, my_uid,
 						   cluster_cond);
 	destroy_acct_cluster_cond(cluster_cond);
-	
+
 	if(!cluster_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
@@ -712,7 +712,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_GRPJ:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     assoc->grp_jobs,
 						     (curr_inx == field_count));
 				break;
@@ -722,7 +722,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_GRPS:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     assoc->grp_submit_jobs,
 						     (curr_inx == field_count));
 				break;
@@ -738,7 +738,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXJ:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     assoc->max_jobs,
 						     (curr_inx == field_count));
 				break;
@@ -748,7 +748,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXS:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     assoc->max_submit_jobs,
 						     (curr_inx == field_count));
 				break;
@@ -758,7 +758,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					assoc->max_wall_pj,
 					(curr_inx == field_count));
 				break;
-				
+
 			case PRINT_NODECNT:
 			{
 				hostlist_t hl = hostlist_create(cluster->nodes);
@@ -772,19 +772,19 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					cnt,
 					(curr_inx == field_count));
 				break;
-			}				
+			}
 			case PRINT_NODES:
 				field->print_routine(
 					field,
 					cluster->nodes,
 					(curr_inx == field_count));
 				break;
-				
+
 			case PRINT_QOS:
-				if(!g_qos_list) 
+				if(!g_qos_list)
 					g_qos_list = acct_storage_g_get_qos(
 						db_conn, my_uid, NULL);
-				
+
 				field->print_routine(field,
 						     g_qos_list,
 						     assoc->qos_list,
@@ -870,13 +870,13 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			destroy_acct_association_rec(assoc);
 			destroy_acct_association_cond(assoc_cond);
 			return SLURM_SUCCESS;
-		}		
+		}
 	} else if(exit_code) {
 		destroy_acct_association_rec(assoc);
 		destroy_acct_association_cond(assoc_cond);
-		return SLURM_ERROR;		
+		return SLURM_ERROR;
 	}
-	
+
 	if(class_cond) {
 		List temp_list = NULL;
 		acct_cluster_cond_t cluster_cond;
@@ -884,7 +884,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 		cluster_cond.cluster_list = assoc_cond->cluster_list;
 		cluster_cond.classification = class_cond;
-		
+
 		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
 							&cluster_cond);
 		if(!temp_list) {
@@ -898,7 +898,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		} else if(!list_count(temp_list)) {
 			fprintf(stderr,
 				" The class you gave %s didn't "
-				"return any clusters.\n", 
+				"return any clusters.\n",
 				get_classification_str(class_cond));
 			destroy_acct_association_rec(assoc);
 			destroy_acct_association_cond(assoc_cond);
@@ -912,13 +912,13 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			list_destroy(assoc_cond->cluster_list);
 		assoc_cond->cluster_list = temp_list;
 	}
-	
+
 	printf(" Setting\n");
 	if(rec_set) {
 		printf(" Default Limits =\n");
 		sacctmgr_print_assoc_limits(assoc);
-		if(class_rec) 
-			printf(" Cluster Classification = %s\n", 
+		if(class_rec)
+			printf(" Cluster Classification = %s\n",
 			       get_classification_str(class_rec));
 	}
 
@@ -926,7 +926,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	notice_thread_init();
 	ret_list = acct_storage_g_modify_associations(
 		db_conn, my_uid, assoc_cond, assoc);
-	
+
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
@@ -950,7 +950,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	if(class_rec) {
 		acct_cluster_cond_t cluster_cond;
 		acct_cluster_rec_t cluster_rec;
-		
+
 		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 		memset(&cluster_rec, 0, sizeof(acct_cluster_rec_t));
 		/* the class has already returned these clusters so
@@ -961,7 +961,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 
 		ret_list = acct_storage_g_modify_clusters(
 			db_conn, my_uid, &cluster_cond, &cluster_rec);
-	
+
 		if(ret_list && list_count(ret_list)) {
 			char *object = NULL;
 			ListIterator itr = list_iterator_create(ret_list);
@@ -978,7 +978,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			fprintf(stderr, " Error with request\n");
 			rc = SLURM_ERROR;
 		}
-		
+
 		if(ret_list)
 			list_destroy(ret_list);
 	}
@@ -986,7 +986,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	notice_thread_fini();
 
 	if(set) {
-		if(commit_check("Would you like to commit changes?")) 
+		if(commit_check("Would you like to commit changes?"))
 			acct_storage_g_commit(db_conn, 1);
 		else {
 			printf(" Changes Discarded\n");
@@ -1009,14 +1009,14 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	int cond_set = 0;
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
-	
+
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
 			i++;
 		cond_set += _set_cond(&i, argc, argv,
-				      cluster_cond->cluster_list, 
+				      cluster_cond->cluster_list,
 				      NULL,
 				      &cluster_cond->classification);
 	}
@@ -1026,16 +1026,16 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else if(!cond_set) {
 		exit_code=1;
-		fprintf(stderr, 
+		fprintf(stderr,
 			" No conditions given to remove, not executing.\n");
 		destroy_acct_cluster_cond(cluster_cond);
 		return SLURM_ERROR;
 	}
 
-	if(!list_count(cluster_cond->cluster_list) 
+	if(!list_count(cluster_cond->cluster_list)
 	   && !cluster_cond->classification) {
 		exit_code=1;
-		fprintf(stderr, 
+		fprintf(stderr,
 			"problem with delete request.  "
 			"Nothing given to delete.\n");
 		destroy_acct_cluster_cond(cluster_cond);
@@ -1112,7 +1112,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 					 MAX(command_len, 1))) {
 			if(cluster_name) {
 				exit_code=1;
-				fprintf(stderr, 
+				fprintf(stderr,
 					" Can only do one cluster at a time.  "
 				       "Already doing %s\n", cluster_name);
 				continue;
@@ -1122,16 +1122,16 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 					 MAX(command_len, 1))) {
 			if(file_name) {
 				exit_code=1;
-				fprintf(stderr, 
+				fprintf(stderr,
 					" File name already set to %s\n",
 					file_name);
 				continue;
-			}		
+			}
 			file_name = xstrdup(argv[i]+end);
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
-		}		
+		}
 	}
 
 	if(!cluster_name) {
@@ -1202,7 +1202,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 			list_destroy(user_list);
 		list_destroy(assoc_cond.cluster_list);
 		return SLURM_ERROR;
-		
+
 	} else {
 		if(my_uid != slurm_get_slurm_user_id() && my_uid != 0
 		    && user->admin_level < ACCT_ADMIN_SUPER_USER) {
@@ -1241,7 +1241,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	acct_hierarchical_rec_list = get_acct_hierarchical_rec_list(assoc_list);
 
 	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
-	
+
 	fd = fopen(file_name, "w");
 	/* Add header */
 	if(fprintf(fd,
@@ -1277,17 +1277,17 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	line = xstrdup_printf("Cluster - %s", cluster_name);
 
-	if(class_str) 
+	if(class_str)
 		xstrfmtcat(line, ":Classification=%s", class_str);
 
 	acct_hierarchical_rec = list_peek(acct_hierarchical_rec_list);
 	assoc = acct_hierarchical_rec->assoc;
-	if(strcmp(assoc->acct, "root")) 
+	if(strcmp(assoc->acct, "root"))
 		fprintf(stderr, "Root association not on the top it was %s\n",
 			assoc->acct);
-	else 
+	else
 		print_file_add_limits_to_line(&line, assoc);
-	
+
 	if(fprintf(fd, "%s\n", line) < 0) {
 		exit_code=1;
 		fprintf(stderr, " Can't write to file");
@@ -1297,7 +1297,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	print_file_acct_hierarchical_rec_list(
 		fd, acct_hierarchical_rec_list, user_list, acct_list);
-	
+
 	xfree(cluster_name);
 	xfree(file_name);
 	list_destroy(acct_hierarchical_rec_list);

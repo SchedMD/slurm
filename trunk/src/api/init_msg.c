@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -50,8 +50,8 @@
 #include "src/common/forward.h"
 
 /*
- * slurm_init_job_desc_msg - initialize job descriptor with 
- *	default values 
+ * slurm_init_job_desc_msg - initialize job descriptor with
+ *	default values
  * IN/OUT job_desc_msg - user defined job descriptor
  */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
@@ -101,8 +101,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 }
 
 /*
- * slurm_init_part_desc_msg - initialize partition descriptor with 
- *	default values 
+ * slurm_init_part_desc_msg - initialize partition descriptor with
+ *	default values
  * IN/OUT update_part_msg - user defined partition descriptor
  */
 void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
@@ -121,8 +121,8 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 }
 
 /*
- * slurm_init_resv_desc_msg - initialize reservation descriptor with 
- *	default values 
+ * slurm_init_resv_desc_msg - initialize reservation descriptor with
+ *	default values
  * OUT job_desc_msg - user defined partition descriptor
  */
 void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
@@ -158,5 +158,5 @@ void slurm_init_update_block_msg (update_block_msg_t *update_block_msg)
 	update_block_msg->node_cnt = NO_VAL;
 	update_block_msg->node_use = (uint16_t)NO_VAL;
 	update_block_msg->state = (uint16_t)NO_VAL;
-	
+
 }

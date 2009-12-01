@@ -324,7 +324,7 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @HAVE_GTK_TRUE@	block_info.c node_info.c resv_info.c \
 @HAVE_GTK_TRUE@	submit_info.c admin_info.c common.c
 
-@HAVE_GTK_TRUE@sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK_LIBS) 
+@HAVE_GTK_TRUE@sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK_LIBS)
 @HAVE_GTK_TRUE@sview_CFLAGS = $(GTK_CFLAGS)
 @HAVE_GTK_FALSE@EXTRA_sview_SOURCES = sview.h sview.c popups.c grid.c part_info.c job_info.c \
 @HAVE_GTK_FALSE@	block_info.c node_info.c resv_info.c \

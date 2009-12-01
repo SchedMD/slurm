@@ -14,15 +14,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -40,8 +40,8 @@
 #include "src/common/xassert.h"
 
 /*
- * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
- * for details. 
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+ * for details.
  */
 strong_alias(arg_count,		slurm_arg_count);
 strong_alias(arg_idx_by_name,	slurm_arg_idx_by_name);
@@ -68,7 +68,7 @@ arg_idx_by_name( const arg_desc_t *desc, const char *name )
 
 	if ( desc == NULL ) return -1;
 	if ( name == NULL ) return -1;
-	
+
 	for ( i = 0; desc[ i ].name != NULL; ++i ) {
 		if ( strcmp( desc[ i ].name, name ) == 0 ) {
 			return i;

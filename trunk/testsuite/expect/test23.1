@@ -11,21 +11,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -61,7 +61,7 @@ proc sstat_job { soption } {
 
 	if { $soption == "e" || $soption == "-helpformat" } {
 
-	spawn $sstat -$soption 
+	spawn $sstat -$soption
 	expect {
 		-re "AveCPU *AvePages *AveRSS *AveVMSize" {
 			if {$debug} {send_user "\nmatch1\n"}
@@ -106,7 +106,7 @@ proc sstat_job { soption } {
 
 	if { $soption == "h" || $soption == "-help" } {
 
-	spawn $sstat -$soption 
+	spawn $sstat -$soption
 	expect {
 		-re "sstat...OPTION" {
 			if {$debug} {send_user "\nmatch6\n"}
@@ -141,7 +141,7 @@ proc sstat_job { soption } {
 
 	if { $soption == "-usage" } {
 
-	spawn $sstat -$soption 
+	spawn $sstat -$soption
 	expect {
 		-re "Usage: sstat .options. -j .job..stepid." {
 			if {$debug} {send_user "\nmatch9\n"}
@@ -171,7 +171,7 @@ proc sstat_job { soption } {
 
 	if { $soption == "V" || $soption == "-version" } {
 
-	spawn $sstat -$soption 
+	spawn $sstat -$soption
 	expect {
 		-re "slurm ($number).($number)." {
 			if {$debug} {send_user "\nmatch11\n"}

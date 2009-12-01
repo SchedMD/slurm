@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -69,7 +69,7 @@ static char * _get_conf_path(void);
 static time_t boot_time;
 
 /*
- * free_slurmdbd_conf - free storage associated with the global variable 
+ * free_slurmdbd_conf - free storage associated with the global variable
  *	slurmdbd_conf
  */
 extern void free_slurmdbd_conf(void)
@@ -119,8 +119,8 @@ static void _clear_slurmdbd_conf(void)
 }
 
 /*
- * read_slurmdbd_conf - load the SlurmDBD configuration from the slurmdbd.conf  
- *	file. Store result into global variable slurmdbd_conf. 
+ * read_slurmdbd_conf - load the SlurmDBD configuration from the slurmdbd.conf
+ *	file. Store result into global variable slurmdbd_conf.
  *	This function can be called more than once.
  * RET SLURM_SUCCESS if no error, otherwise an error code
  */
@@ -223,16 +223,16 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->plugindir, "PluginDir", tbl);
 		if (s_p_get_string(&temp_str, "PrivateData", tbl)) {
 			if (strstr(temp_str, "account"))
-				slurmdbd_conf->private_data 
+				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_ACCOUNTS;
 			if (strstr(temp_str, "job"))
-				slurmdbd_conf->private_data 
+				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_JOBS;
 			if (strstr(temp_str, "node"))
-				slurmdbd_conf->private_data 
+				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_NODES;
 			if (strstr(temp_str, "partition"))
-				slurmdbd_conf->private_data 
+				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_PARTITIONS;
 			if (strstr(temp_str, "reservation"))
 				slurmdbd_conf->private_data
@@ -241,7 +241,7 @@ extern int read_slurmdbd_conf(void)
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_USAGE;
 			if (strstr(temp_str, "user"))
-				slurmdbd_conf->private_data 
+				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_USERS;
 			if (strstr(temp_str, "all"))
 				slurmdbd_conf->private_data = 0xffff;
@@ -275,8 +275,8 @@ extern int read_slurmdbd_conf(void)
 			       "StorageType", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_user,
 			       "StorageUser", tbl);
-		
-		if(!s_p_get_boolean((bool *)&slurmdbd_conf->track_wckey, 
+
+		if(!s_p_get_boolean((bool *)&slurmdbd_conf->track_wckey,
 				    "TrackWCKey", tbl))
 			slurmdbd_conf->track_wckey = false;
 
@@ -311,17 +311,17 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->slurm_user_name = xstrdup("root");
 		slurmdbd_conf->slurm_user_id = 0;
 	}
-	
+
 	if (slurmdbd_conf->storage_type == NULL)
 		fatal("StorageType must be specified");
 
 	if (!slurmdbd_conf->storage_host)
 		slurmdbd_conf->storage_host = xstrdup(DEFAULT_STORAGE_HOST);
 
-	if (!slurmdbd_conf->storage_user) 		
+	if (!slurmdbd_conf->storage_user)
 		slurmdbd_conf->storage_user = xstrdup(getlogin());
-	
-	if(!strcmp(slurmdbd_conf->storage_type, 
+
+	if(!strcmp(slurmdbd_conf->storage_type,
 			  "accounting_storage/mysql")) {
 		if(!slurmdbd_conf->storage_port)
 			slurmdbd_conf->storage_port = DEFAULT_MYSQL_PORT;
@@ -344,32 +344,32 @@ extern int read_slurmdbd_conf(void)
 	}
 
 	if (slurmdbd_conf->archive_dir) {
-		if(stat(slurmdbd_conf->archive_dir, &buf) < 0) 
+		if(stat(slurmdbd_conf->archive_dir, &buf) < 0)
 			fatal("Failed to stat the archive directory %s: %m",
 			      slurmdbd_conf->archive_dir);
-		if (!(buf.st_mode & S_IFDIR)) 
+		if (!(buf.st_mode & S_IFDIR))
 			fatal("rchive directory %s isn't a directory",
 			      slurmdbd_conf->archive_script);
-		
-		if (access(slurmdbd_conf->archive_dir, W_OK) < 0) 
+
+		if (access(slurmdbd_conf->archive_dir, W_OK) < 0)
 			fatal("rchive directory %s is not writable",
 			      slurmdbd_conf->archive_dir);
 	}
 
 	if (slurmdbd_conf->archive_script) {
-		if(stat(slurmdbd_conf->archive_script, &buf) < 0) 
+		if(stat(slurmdbd_conf->archive_script, &buf) < 0)
 			fatal("Failed to stat the archive script %s: %m",
 			      slurmdbd_conf->archive_dir);
 
-		if (!(buf.st_mode & S_IFREG)) 
+		if (!(buf.st_mode & S_IFREG))
 			fatal("archive script %s isn't a regular file",
 			      slurmdbd_conf->archive_script);
-		
-		if (access(slurmdbd_conf->archive_script, X_OK) < 0) 
+
+		if (access(slurmdbd_conf->archive_script, X_OK) < 0)
 			fatal("archive script %s is not executable",
 			      slurmdbd_conf->archive_script);
 	}
-		
+
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;
 }
@@ -409,26 +409,26 @@ extern void log_config(void)
 		       slurmdbd_conf->purge_job);
 	else
 		debug2("PurgeJobMonths    = NONE");
-		
+
 	if(slurmdbd_conf->purge_event)
 		debug2("PurgeEventMonths  = %u months",
 		       slurmdbd_conf->purge_event);
 	else
 		debug2("PurgeEventMonths  = NONE");
-		
+
 	if(slurmdbd_conf->purge_step)
 		debug2("PurgeStepMonths   = %u months",
 		       slurmdbd_conf->purge_step);
 	else
 		debug2("PurgeStepMonths   = NONE");
-		
+
 	if(slurmdbd_conf->purge_suspend)
 		debug2("PurgeSuspendMonths= %u months",
 		       slurmdbd_conf->purge_suspend);
 	else
 		debug2("PurgeSuspendMonths= NONE");
-		
-	debug2("SlurmUser         = %s(%u)", 
+
+	debug2("SlurmUser         = %s(%u)",
 	       slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
 
 	debug2("StorageBackupHost = %s", slurmdbd_conf->storage_backup_host);
@@ -489,7 +489,7 @@ static char * _get_conf_path(void)
 	return path;
 }
 
-/* Dump the configuration in name,value pairs for output to 
+/* Dump the configuration in name,value pairs for output to
  *	"sacctmgr show config", caller must call list_destroy() */
 extern List dump_config(void)
 {
@@ -613,7 +613,7 @@ extern List dump_config(void)
 	key_pair->name = xstrdup("PurgeEventMonths");
 	if(slurmdbd_conf->purge_event) {
 		key_pair->value = xmalloc(32);
-		snprintf(key_pair->value, 32, "%u months", 
+		snprintf(key_pair->value, 32, "%u months",
 			 slurmdbd_conf->purge_event);
 	} else
 		key_pair->value = xstrdup("NONE");
@@ -623,7 +623,7 @@ extern List dump_config(void)
 	key_pair->name = xstrdup("PurgeJobMonths");
 	if(slurmdbd_conf->purge_job) {
 		key_pair->value = xmalloc(32);
-		snprintf(key_pair->value, 32, "%u months", 
+		snprintf(key_pair->value, 32, "%u months",
 			 slurmdbd_conf->purge_job);
 	} else
 		key_pair->value = xstrdup("NONE");
@@ -633,7 +633,7 @@ extern List dump_config(void)
 	key_pair->name = xstrdup("PurgeStepMonths");
 	if(slurmdbd_conf->purge_step) {
 		key_pair->value = xmalloc(32);
-		snprintf(key_pair->value, 32, "%u months", 
+		snprintf(key_pair->value, 32, "%u months",
 			 slurmdbd_conf->purge_step);
 	} else
 		key_pair->value = xstrdup("NONE");
@@ -643,7 +643,7 @@ extern List dump_config(void)
 	key_pair->name = xstrdup("PurgeSuspendMonths");
 	if(slurmdbd_conf->purge_suspend) {
 		key_pair->value = xmalloc(32);
-		snprintf(key_pair->value, 32, "%u months", 
+		snprintf(key_pair->value, 32, "%u months",
 			 slurmdbd_conf->purge_suspend);
 	} else
 		key_pair->value = xstrdup("NONE");

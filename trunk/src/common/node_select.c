@@ -1,12 +1,12 @@
 /*****************************************************************************\
  *  node_select.c - node selection plugin wrapper.
  *
- *  NOTE: The node selection plugin itself is intimately tied to slurmctld 
- *  functions and data structures. Some related functions (e.g. data structure 
- *  un/packing, environment variable setting) are required by most SLURM 
+ *  NOTE: The node selection plugin itself is intimately tied to slurmctld
+ *  functions and data structures. Some related functions (e.g. data structure
+ *  un/packing, environment variable setting) are required by most SLURM
  *  commands. Since some of these commands must be executed on the BlueGene
- *  front-end nodes, the functions they require are here rather than within 
- *  the plugin. This is because functions required by the plugin can not be 
+ *  front-end nodes, the functions they require are here rather than within
+ *  the plugin. This is because functions required by the plugin can not be
  *  resolved on the front-end nodes, so we can't load the plugins there.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -14,32 +14,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -78,8 +78,8 @@ typedef struct slurm_select_ops {
 					        int node_cnt);
 	int 		(*block_init)	       (List block_list);
 	int		(*job_test)	       (struct job_record *job_ptr,
-						bitstr_t *bitmap, 
-						uint32_t min_nodes, 
+						bitstr_t *bitmap,
+						uint32_t min_nodes,
 						uint32_t max_nodes,
 						uint32_t req_nodes,
 						uint16_t mode,
@@ -92,9 +92,9 @@ typedef struct slurm_select_ops {
 	int		(*job_resume)	       (struct job_record *job_ptr);
 	int		(*pack_select_info)    (time_t last_query_time,
 						Buf *buffer_ptr);
-        int	        (*nodeinfo_pack)       (select_nodeinfo_t *nodeinfo, 
+        int	        (*nodeinfo_pack)       (select_nodeinfo_t *nodeinfo,
 						Buf buffer);
-        int	        (*nodeinfo_unpack)     (select_nodeinfo_t **nodeinfo, 
+        int	        (*nodeinfo_unpack)     (select_nodeinfo_t **nodeinfo,
 						Buf buffer);
 	select_nodeinfo_t *(*nodeinfo_alloc)   (uint32_t size);
 	int	        (*nodeinfo_free)       (select_nodeinfo_t *nodeinfo);
@@ -102,13 +102,13 @@ typedef struct slurm_select_ops {
 	int             (*nodeinfo_set)        (struct job_record *job_ptr);
 	int             (*nodeinfo_get)        (select_nodeinfo_t *nodeinfo,
 						enum
-						select_nodedata_type dinfo, 
+						select_nodedata_type dinfo,
 						enum node_states state,
 						void *data);
 	select_jobinfo_t *(*jobinfo_alloc)     ();
 	int             (*jobinfo_free)        (select_jobinfo_t *jobinfo);
 	int             (*jobinfo_set)         (select_jobinfo_t *jobinfo,
-						enum 
+						enum
 						select_jobdata_type data_type,
 						void *data);
 	int             (*jobinfo_get)         (select_jobinfo_t *jobinfo,
@@ -125,11 +125,11 @@ typedef struct slurm_select_ops {
 						int mode);
 	char *          (*jobinfo_xstrdup)     (select_jobinfo_t *jobinfo,
 						int mode);
-        int             (*update_block)        (update_block_msg_t 
+        int             (*update_block)        (update_block_msg_t
 						*block_desc_ptr);
         int             (*update_sub_node)     (update_block_msg_t
 						*block_desc_ptr);
-	int             (*get_info_from_plugin)(enum 
+	int             (*get_info_from_plugin)(enum
 						select_plugindata_info dinfo,
 						struct job_record *job_ptr,
 						void *data);
@@ -149,7 +149,7 @@ typedef struct slurm_select_context {
 } slurm_select_context_t;
 
 static slurm_select_context_t * g_select_context = NULL;
-static pthread_mutex_t		g_select_context_lock = 
+static pthread_mutex_t		g_select_context_lock =
 	PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_CRAY_XT		/* node selection specific logic */
@@ -217,13 +217,13 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 	/* Find the correct plugin. */
         c->cur_plugin = plugin_load_and_link(c->select_type, n_syms, syms,
 					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE ) 
+        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return &c->ops;
 
 	error("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      c->select_type);
-	
+
 	/* Get plugin list. */
 	if ( c->plugin_list == NULL ) {
 		char *plugin_dir;
@@ -243,7 +243,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 
 	c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->select_type );
 	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		error( "cannot find node selection plugin for %s", 
+		error( "cannot find node selection plugin for %s",
 		       c->select_type );
 		return NULL;
 	}
@@ -321,19 +321,19 @@ static void _free_block_info(block_info_t *block_info)
 	}
 }
 
-/* NOTE: The matching pack functions are directly in the select/bluegene 
- * plugin. The unpack functions can not be there since the plugin is 
- * dependent upon libraries which do not exist on the BlueGene front-end 
+/* NOTE: The matching pack functions are directly in the select/bluegene
+ * plugin. The unpack functions can not be there since the plugin is
+ * dependent upon libraries which do not exist on the BlueGene front-end
  * nodes. */
 static int _unpack_block_info(block_info_t *block_info, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	char *bp_inx_str = NULL;
-	
+
 	safe_unpackstr_xmalloc(&block_info->bg_block_id,
 			       &uint32_tmp, buffer);
 #ifdef HAVE_BGL
-	safe_unpackstr_xmalloc(&block_info->blrtsimage,  
+	safe_unpackstr_xmalloc(&block_info->blrtsimage,
 			       &uint32_tmp, buffer);
 #endif
 	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
@@ -344,7 +344,7 @@ static int _unpack_block_info(block_info_t *block_info, Buf buffer)
 		xfree(bp_inx_str);
 	}
 	safe_unpack16(&block_info->conn_type, buffer);
-	safe_unpackstr_xmalloc(&(block_info->ionodes), 
+	safe_unpackstr_xmalloc(&(block_info->ionodes),
 			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
 	if (bp_inx_str == NULL) {
@@ -368,7 +368,7 @@ static int _unpack_block_info(block_info_t *block_info, Buf buffer)
 	safe_unpackstr_xmalloc(&block_info->ramdiskimage,
 			       &uint32_tmp, buffer);
 	safe_unpack16(&block_info->state, buffer);
-	
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -392,7 +392,7 @@ extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer)
 		packnull(buffer);
 #ifdef HAVE_BGL
 		packnull(buffer);
-#endif		
+#endif
 		pack16((uint16_t)NO_VAL, buffer);
 		packnull(buffer);
 
@@ -407,7 +407,7 @@ extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer)
 		pack32(NO_VAL, buffer);
 #ifdef HAVE_BGL
 		pack16((uint16_t)NO_VAL, buffer);
-#endif		
+#endif
 
 		packnull(buffer);
 		packnull(buffer);
@@ -416,7 +416,7 @@ extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer)
 		packstr(block_info->bg_block_id, buffer);
 #ifdef HAVE_BGL
 		packstr(block_info->blrtsimage, buffer);
-#endif		
+#endif
 
 		if(block_info->bp_inx) {
 			char *bitfmt = inx2bitfmt(block_info->bp_inx);
@@ -424,11 +424,11 @@ extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer)
 			xfree(bitfmt);
 		} else
 			packnull(buffer);
-		
+
 		pack16(block_info->conn_type, buffer);
 
 		packstr(block_info->ionodes, buffer);
-		
+
 		if(block_info->ionode_inx) {
 			char *bitfmt = inx2bitfmt(block_info->ionode_inx);
 			packstr(bitfmt, buffer);
@@ -437,13 +437,13 @@ extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer)
 			packnull(buffer);
 
 		pack32(block_info->job_running, buffer);
-		
+
 		packstr(block_info->linuximage, buffer);
 		packstr(block_info->mloaderimage, buffer);
 		packstr(block_info->nodes, buffer);
 		pack32(block_info->node_cnt, buffer);
 #ifdef HAVE_BGL
-		pack16(block_info->node_use, buffer);	
+		pack16(block_info->node_use, buffer);
 #endif
 		packstr(block_info->owner_name, buffer);
 		packstr(block_info->ramdiskimage, buffer);
@@ -495,10 +495,10 @@ extern int node_select_block_info_msg_unpack(
 	buf = xmalloc(sizeof(block_info_msg_t));
 	safe_unpack32(&(buf->record_count), buffer);
 	safe_unpack_time(&(buf->last_update), buffer);
-	buf->block_array = xmalloc(sizeof(block_info_t) * 
+	buf->block_array = xmalloc(sizeof(block_info_t) *
 				   buf->record_count);
 	for(i=0; i<buf->record_count; i++) {
-		if (_unpack_block_info(&(buf->block_array[i]), buffer)) 
+		if (_unpack_block_info(&(buf->block_array[i]), buffer))
 			goto unpack_error;
 	}
 	*block_info_msg_pptr = buf;
@@ -506,7 +506,7 @@ extern int node_select_block_info_msg_unpack(
 
 unpack_error:
 	node_select_block_info_msg_free(&buf);
-	*block_info_msg_pptr = NULL;	
+	*block_info_msg_pptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -518,7 +518,7 @@ extern int slurm_select_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *select_type = NULL;
-	
+
 	slurm_mutex_lock( &g_select_context_lock );
 
 	if ( g_select_context )
@@ -634,30 +634,30 @@ extern int select_g_block_init(List block_list)
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
  * IN preemptee_candidates - List of pointers to jobs which can bee preempted
- * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the 
- *		jobs to be preempted to initiate the pending job. Not set 
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
+ *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
  * RET zero on success, EINVAL otherwise
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			     uint32_t min_nodes, uint32_t max_nodes, 
-			     uint32_t req_nodes, uint16_t mode, 
+			     uint32_t min_nodes, uint32_t max_nodes,
+			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
 			     List *preemptee_job_list)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_select_context->ops.job_test))(job_ptr, bitmap, 
-						   min_nodes, max_nodes, 
+	return (*(g_select_context->ops.job_test))(job_ptr, bitmap,
+						   min_nodes, max_nodes,
 						   req_nodes, mode,
 						   preemptee_candidates,
 						   preemptee_job_list);
 }
 
 /*
- * Note initiation of job is about to begin. Called immediately 
+ * Note initiation of job is about to begin. Called immediately
  * after select_g_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated
  */
@@ -672,7 +672,7 @@ extern int select_g_job_begin(struct job_record *job_ptr)
 /*
  * determine if job is ready to execute per the node select plugin
  * IN job_ptr - pointer to job being tested
- * RET: -2 fatal error, -1 try again, 1 if ready to execute, 
+ * RET: -2 fatal error, -1 try again, 1 if ready to execute,
  *	0 not ready to execute
  */
 extern int select_g_job_ready(struct job_record *job_ptr)
@@ -725,26 +725,26 @@ extern int select_g_pack_select_info(time_t last_query_time, Buf *buffer)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.pack_select_info))
 		(last_query_time, buffer);
 }
 
-extern int select_g_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, 
+extern int select_g_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.nodeinfo_pack))(nodeinfo, buffer);
 }
 
-extern int select_g_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, 
+extern int select_g_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   Buf buffer)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.nodeinfo_unpack))(nodeinfo, buffer);
 }
 
@@ -752,7 +752,7 @@ extern select_nodeinfo_t *select_g_select_nodeinfo_alloc(uint32_t size)
 {
 	if (slurm_select_init() < 0)
 		return NULL;
-	
+
 	return (*(g_select_context->ops.nodeinfo_alloc))(size);
 }
 
@@ -760,7 +760,7 @@ extern int select_g_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.nodeinfo_free))(nodeinfo);
 }
 
@@ -768,7 +768,7 @@ extern int select_g_select_nodeinfo_set_all(time_t last_query_time)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.nodeinfo_set_all))(last_query_time);
 }
 
@@ -776,12 +776,12 @@ extern int select_g_select_nodeinfo_set(struct job_record *job_ptr)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.nodeinfo_set))(job_ptr);
 }
 
-extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
-					enum select_nodedata_type dinfo, 
+extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
+					enum select_nodedata_type dinfo,
 					enum node_states state,
 					void *data)
 {
@@ -861,7 +861,7 @@ extern int select_g_select_jobinfo_set (select_jobinfo_t *jobinfo,
 			jobinfo->reservation_id = xstrdup(tmp_char);
 		break;
 	default:
-		debug("select_g_select_jobinfo_set data_type %d invalid", 
+		debug("select_g_select_jobinfo_set data_type %d invalid",
 		      data_type);
 	}
 
@@ -871,11 +871,11 @@ extern int select_g_select_jobinfo_set (select_jobinfo_t *jobinfo,
 /* get data from a select job credential
  * IN jobinfo  - updated select job credential
  * IN data_type - type of data to enter into job credential
- * OUT data - the data to get from job credential, caller must xfree 
- *	data for data_tyep == SELECT_DATA_BLOCK_ID 
+ * OUT data - the data to get from job credential, caller must xfree
+ *	data for data_tyep == SELECT_DATA_BLOCK_ID
  */
 extern int select_g_select_jobinfo_get (select_jobinfo_t *jobinfo,
-					enum select_jobdata_type data_type, 
+					enum select_jobdata_type data_type,
 					void *data)
 {
 	int rc = SLURM_SUCCESS;
@@ -899,10 +899,10 @@ extern int select_g_select_jobinfo_get (select_jobinfo_t *jobinfo,
 			*tmp_char = xstrdup(jobinfo->reservation_id);
 		break;
 	default:
-		/* There is some use of BlueGene specific params that 
+		/* There is some use of BlueGene specific params that
 		 * are not supported on the Cray, but requested on
 		 * all systems */
-		debug2("select_g_select_jobinfo_get data_type %d invalid", 
+		debug2("select_g_select_jobinfo_get data_type %d invalid",
 		       data_type);
 		return SLURM_ERROR;
 	}
@@ -918,7 +918,7 @@ extern int select_g_select_jobinfo_get (select_jobinfo_t *jobinfo,
 extern select_jobinfo_t *select_g_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 {
 	struct select_jobinfo *rc = NULL;
-		
+
 	if (jobinfo == NULL)
 		;
 	else if (jobinfo->magic != JOBINFO_MAGIC)
@@ -940,7 +940,7 @@ extern select_jobinfo_t *select_g_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 extern int  select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
 {
 	if (jobinfo) {
-		/* NOTE: If new elements are added here, make sure to 
+		/* NOTE: If new elements are added here, make sure to
 		 * add equivalant pack of zeros below for NULL pointer */
 		packstr(jobinfo->reservation_id, buffer);
 	} else {
@@ -986,7 +986,7 @@ unpack_error:
 extern char *select_g_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 					    char *buf, size_t size, int mode)
 {
-		
+
 	if (buf == NULL) {
 		error("select_g_select_jobinfo_sprint: buf is null");
 		return NULL;
@@ -1011,25 +1011,25 @@ extern char *select_g_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 			 "RESV_ID");
 		break;
 	case SELECT_PRINT_DATA:
-		snprintf(buf, size, 
+		snprintf(buf, size,
 			 "%7s",
 			 jobinfo->reservation_id);
 		break;
 	case SELECT_PRINT_MIXED:
-		snprintf(buf, size, 
+		snprintf(buf, size,
 			 "Resv_ID=%s",
 			 jobinfo->reservation_id);
 		break;
 	case SELECT_PRINT_RESV_ID:
 		snprintf(buf, size, "%s", jobinfo->reservation_id);
-		break;	
+		break;
 	default:
 		/* likely a BlueGene specific mode */
 		error("select_g_select_jobinfo_sprint: bad mode %d", mode);
 		if (size > 0)
 			buf[0] = '\0';
 	}
-	
+
 	return buf;
 }
 
@@ -1042,7 +1042,7 @@ extern char *select_g_select_jobinfo_xstrdup(
 	select_jobinfo_t *jobinfo, int mode)
 {
 	char *buf = NULL;
-		
+
 	if ((mode != SELECT_PRINT_DATA) &&
 	    jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
 		error("select_g_select_jobinfo_xstrdup: jobinfo magic bad");
@@ -1058,16 +1058,16 @@ extern char *select_g_select_jobinfo_xstrdup(
 
 	switch (mode) {
 	case SELECT_PRINT_HEAD:
-		xstrcat(buf, 
+		xstrcat(buf,
 			"RESV_ID");
 		break;
 	case SELECT_PRINT_DATA:
-		xstrfmtcat(buf, 
+		xstrfmtcat(buf,
 			   "%7s",
 			   jobinfo->reservation_id);
 		break;
 	case SELECT_PRINT_MIXED:
-		xstrfmtcat(buf, 
+		xstrfmtcat(buf,
 			   "Resv_ID=%s",
 			   jobinfo->reservation_id);
 		break;
@@ -1077,7 +1077,7 @@ extern char *select_g_select_jobinfo_xstrdup(
 	default:
 		error("select_g_select_jobinfo_xstrdup: bad mode %d", mode);
 	}
-	
+
 	return buf;
 }
 
@@ -1087,7 +1087,7 @@ extern select_jobinfo_t *select_g_select_jobinfo_alloc()
 {
 	if (slurm_select_init() < 0)
 		return NULL;
-	
+
 	return (*(g_select_context->ops.jobinfo_alloc))();
 }
 
@@ -1098,7 +1098,7 @@ extern int select_g_select_jobinfo_free(select_jobinfo_t *jobinfo)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.jobinfo_free))(jobinfo);
 }
 
@@ -1108,7 +1108,7 @@ extern int select_g_select_jobinfo_set(select_jobinfo_t *jobinfo,
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.jobinfo_set))(jobinfo, data_type, data);
 }
 
@@ -1118,12 +1118,12 @@ extern int select_g_select_jobinfo_set(select_jobinfo_t *jobinfo,
  * IN/OUT data - the data to enter into job credential
  */
 extern int select_g_select_jobinfo_get(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type, 
+				       enum select_jobdata_type data_type,
 				       void *data)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.jobinfo_get))(jobinfo, data_type, data);
 }
 
@@ -1136,7 +1136,7 @@ extern select_jobinfo_t *select_g_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 {
 	if (slurm_select_init() < 0)
 		return NULL;
-	
+
 	return (*(g_select_context->ops.jobinfo_copy))(jobinfo);
 }
 
@@ -1149,7 +1149,7 @@ extern int select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.jobinfo_pack))(jobinfo, buffer);
 }
 
@@ -1164,7 +1164,7 @@ extern int select_g_select_jobinfo_unpack(
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.jobinfo_unpack))(jobinfo, buffer);
 }
 
@@ -1180,7 +1180,7 @@ extern char *select_g_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 {
 	if (slurm_select_init() < 0)
 		return NULL;
-	
+
 	return (*(g_select_context->ops.jobinfo_sprint))
 		(jobinfo, buf, size, mode);
 }
@@ -1194,14 +1194,14 @@ extern char *select_g_select_jobinfo_xstrdup(
 {
 	if (slurm_select_init() < 0)
 		return NULL;
-	
+
 	return (*(g_select_context->ops.jobinfo_xstrdup))(jobinfo, mode);
 }
 
 #endif	/* HAVE_CRAY_XT */
 
-/* 
- * Update specific block (usually something has gone wrong)  
+/*
+ * Update specific block (usually something has gone wrong)
  * IN block_desc_ptr - information about the block
  */
 extern int select_g_update_block (update_block_msg_t *block_desc_ptr)
@@ -1212,8 +1212,8 @@ extern int select_g_update_block (update_block_msg_t *block_desc_ptr)
 	return (*(g_select_context->ops.update_block))(block_desc_ptr);
 }
 
-/* 
- * Update specific sub nodes (usually something has gone wrong)  
+/*
+ * Update specific sub nodes (usually something has gone wrong)
  * IN block_desc_ptr - information about the block
  */
 extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr)
@@ -1224,13 +1224,13 @@ extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr)
 	return (*(g_select_context->ops.update_sub_node))(block_desc_ptr);
 }
 
-/* 
+/*
  * Get select data from a plugin
- * IN dinfo     - type of data to get from the node record 
+ * IN dinfo     - type of data to get from the node record
  *                (see enum select_plugindata_info)
  * IN/OUT data  - the data to get from node record
  */
-extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo, 
+extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)
 {
@@ -1255,7 +1255,7 @@ extern int select_g_update_node_config (int index)
 	return (*(g_select_context->ops.update_node_config))(index);
 }
 
-/* 
+/*
  * Updated a node state in the plugin, this should happen when a node is
  * drained or put into a down state then changed back.
  * IN index  - index into the node record list
@@ -1270,7 +1270,7 @@ extern int select_g_update_node_state (int index, uint16_t state)
 	return (*(g_select_context->ops.update_node_state))(index, state);
 }
 
-/* 
+/*
  * Alter the node count for a job given the type of system we are on
  * IN/OUT job_desc  - current job desc
  */
@@ -1283,7 +1283,7 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
 		/* default to one, so most plugins don't have to */
 		uint32_t *nodes = (uint32_t *)data;
 		*nodes = 1;
-	}	
+	}
 	return (*(g_select_context->ops.alter_node_cnt))(type, data);
 }
 
@@ -1294,7 +1294,7 @@ extern int select_g_reconfigure (void)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
-	
+
 	return (*(g_select_context->ops.reconfigure))();
 }
 

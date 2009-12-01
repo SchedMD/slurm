@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -123,8 +123,8 @@ extern int  switch_alloc_jobinfo (switch_jobinfo_t **jobinfo);
  * IN  network  - plugin-specific network info (e.g. protocol)
  * NOTE: storage must be freed using g_switch_free_jobinfo
  */
-extern int  switch_build_jobinfo (switch_jobinfo_t *jobinfo, 
-		char *nodelist, uint16_t *tasks_per_node, 
+extern int  switch_build_jobinfo (switch_jobinfo_t *jobinfo,
+		char *nodelist, uint16_t *tasks_per_node,
 		int cyclic_alloc, char *network);
 
 /* copy a switch job credential
@@ -160,11 +160,11 @@ extern int  switch_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer);
  * OUT data - the desired data from the credential
  * RET         - slurm error code
  */
-extern int  switch_g_get_jobinfo(switch_jobinfo_t *jobinfo, 
+extern int  switch_g_get_jobinfo(switch_jobinfo_t *jobinfo,
 	int data_type, void *data);
 
 /*
- * Note that the job step associated with the specified nodelist 
+ * Note that the job step associated with the specified nodelist
  * has completed execution.
  */
 extern int switch_g_job_step_complete(switch_jobinfo_t *jobinfo,
@@ -172,17 +172,17 @@ extern int switch_g_job_step_complete(switch_jobinfo_t *jobinfo,
 
 /*
  * Note that the job step has completed execution on the specified
- * nodelist. The job step is not necessarily completed on all 
- * nodes, but switch resources associated with it on the specified 
- * nodes are no longer in use. 
+ * nodelist. The job step is not necessarily completed on all
+ * nodes, but switch resources associated with it on the specified
+ * nodes are no longer in use.
  */
 extern int switch_g_job_step_part_comp(switch_jobinfo_t *jobinfo,
 	char *nodelist);
 
 /*
- * Return TRUE if the switch plugin processes partial job step 
- * completion calls (i.e. switch_g_job_step_part_comp). Support 
- * of partition completions is compute intensive, so it should 
+ * Return TRUE if the switch plugin processes partial job step
+ * completion calls (i.e. switch_g_job_step_part_comp). Support
+ * of partition completions is compute intensive, so it should
  * be avoided unless switch resources are in short supply (e.g.
  * switch/federation). Otherwise return FALSE.
  */
@@ -226,7 +226,7 @@ extern char *switch_sprint_jobinfo( switch_jobinfo_t *jobinfo,
 extern int interconnect_node_init(void);
 
 /*
- * Finalize interconnect on node. 
+ * Finalize interconnect on node.
  *
  * This function is called once as slurmd exits (slurmd will wait for
  * this function to return before continuing the exit process)
@@ -248,24 +248,24 @@ extern int interconnect_node_fini(void);
  *                          fork N procs -----------+--- interconnect_attach
  *                          wait all                |    exec mpi process
  *                          interconnect_fini*      |
- *  interconnect_postfini                           |    
+ *  interconnect_postfini                           |
  *                                                  |
  *
  * [ *Note: interconnect_fini() is run as the uid of the job owner, not root ]
  */
 
 /*
- * Prepare node for job. 
+ * Prepare node for job.
  *
  * pre is run as root in the first slurmd process, the so called job
  * manager. This function can be used to perform any initialization
  * that needs to be performed in the same process as interconnect_fini()
- * 
+ *
  */
 extern int interconnect_preinit(switch_jobinfo_t *jobinfo);
 
-/* 
- * initialize interconnect on node for job. This function is run from the 
+/*
+ * initialize interconnect on node for job. This function is run from the
  * 2nd slurmd process (some interconnect implementations may require
  * interconnect init functions to be executed from a separate process
  * than the process executing interconnect_fini() [e.g. QsNet])
@@ -289,16 +289,16 @@ extern int interconnect_fini(switch_jobinfo_t *jobinfo);
  * that need to be run with root privileges should be run from this
  * function.
  */
-extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid, 
+extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 				uint32_t job_id, uint32_t step_id );
 
-/* 
+/*
  * attach process to interconnect
- * (Called from within the process, so it is appropriate to set 
+ * (Called from within the process, so it is appropriate to set
  * interconnect specific environment variables here)
  */
 extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
-		uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
+		uint32_t nodeid, uint32_t procid, uint32_t nnodes,
 		uint32_t nprocs, uint32_t rank);
 
 /*
@@ -307,7 +307,7 @@ extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
 extern int switch_g_clear_node_state(void);
 
 /*
- * Initialize slurmd step switch state 
+ * Initialize slurmd step switch state
  */
 extern int switch_g_slurmd_step_init(void);
 
@@ -317,20 +317,20 @@ extern int switch_g_slurmd_step_init(void);
 extern int switch_g_alloc_node_info(switch_node_info_t **switch_node);
 
 /*
- * Fill in a previously allocated switch state record for the node on which 
- * this function is executed. 
+ * Fill in a previously allocated switch state record for the node on which
+ * this function is executed.
  */
 extern int switch_g_build_node_info(switch_node_info_t *switch_node);
 
-/* 
- * Pack the data associated with a node's switch state into a buffer 
+/*
+ * Pack the data associated with a node's switch state into a buffer
  * for network transmission.
  */
-extern int switch_g_pack_node_info(switch_node_info_t *switch_node, 
+extern int switch_g_pack_node_info(switch_node_info_t *switch_node,
 	Buf buffer);
 
 /*
- * Unpack the data associated with a node's switch state record 
+ * Unpack the data associated with a node's switch state record
  * from a buffer.
  */
 extern int switch_g_unpack_node_info(switch_node_info_t *switch_node,

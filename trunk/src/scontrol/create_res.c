@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by David Bremer <dbremer@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -76,7 +76,7 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 
 /*
  *  _parse_flags  is used to parse the Flags= option.  It handles
- *  daily, weekly, and maint, optionally preceded by + or -, 
+ *  daily, weekly, and maint, optionally preceded by + or -,
  *  separated by a comma but no spaces.
  */
 static uint32_t _parse_flags(const char *flagstr, const char *msg)
@@ -102,33 +102,33 @@ static uint32_t _parse_flags(const char *flagstr, const char *msg)
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_MAINT;
-			else 
+			else
 				outflags |= RESERVE_FLAG_MAINT;
-		} else if ((strncasecmp(curr, "Overlap", MAX(taglen,1)) 
+		} else if ((strncasecmp(curr, "Overlap", MAX(taglen,1))
 			    == 0) && (!flip)) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_OVERLAP;
-			/* "-OVERLAP" is not supported since that's the 
-			 * default behavior and the option only applies 
+			/* "-OVERLAP" is not supported since that's the
+			 * default behavior and the option only applies
 			 * for reservation creation, not updates */
-		} else if (strncasecmp(curr, "Ignore_Jobs", MAX(taglen,1)) 
+		} else if (strncasecmp(curr, "Ignore_Jobs", MAX(taglen,1))
 			   == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_IGN_JOB;
-			else 
+			else
 				outflags |= RESERVE_FLAG_IGN_JOBS;
 		} else if (strncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_DAILY;
-			else 
+			else
 				outflags |= RESERVE_FLAG_DAILY;
 		} else if (strncasecmp(curr, "Weekly", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_WEEKLY;
-			else 
+			else
 				outflags |= RESERVE_FLAG_WEEKLY;
 		} else {
 			error("Error parsing flags %s.  %s", flagstr, msg);
@@ -144,21 +144,21 @@ static uint32_t _parse_flags(const char *flagstr, const char *msg)
 
 
 
-/* 
- * scontrol_parse_res_options   parse options for creating or updating a 
+/*
+ * scontrol_parse_res_options   parse options for creating or updating a
                                 reservation
  * IN argc - count of arguments
  * IN argv - list of arguments
  * IN msg  - a string to append to any error message
  * OUT resv_msg_ptr - struct holding reservation parameters
  * OUT free_user_str - bool indicating that resv_msg_ptr->users should be freed
- * OUT free_acct_str - bool indicating that resv_msg_ptr->accounts should be 
- *		       freed 
+ * OUT free_acct_str - bool indicating that resv_msg_ptr->accounts should be
+ *		       freed
  * RET 0 on success, -1 on err and prints message
  */
 extern int
-scontrol_parse_res_options(int argc, char *argv[], const char *msg, 
-			   resv_desc_msg_t  *resv_msg_ptr, 
+scontrol_parse_res_options(int argc, char *argv[], const char *msg,
+			   resv_desc_msg_t  *resv_msg_ptr,
 			   int *free_user_str, int *free_acct_str)
 {
 	int i;
@@ -195,7 +195,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			time_t  t = parse_time(val, 0);
 			if (t == 0) {
 				exit_code = 1;
-				error("Invalid start time %s.  %s", 
+				error("Invalid start time %s.  %s",
 				      argv[i], msg);
 				return -1;
 			}
@@ -235,15 +235,15 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			} else {
 				resv_msg_ptr->flags = f;
 			}
-		} else if (strncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 || 
+		} else if (strncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
 			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 			char *endptr = NULL;
 			resv_msg_ptr->node_cnt = strtol(val, &endptr, 10);
 
-			if (endptr == NULL || *endptr != '\0' || 
+			if (endptr == NULL || *endptr != '\0' ||
                             *val == '\0') {
 				exit_code = 1;
-				error("Invalid node count %s.  %s", 
+				error("Invalid node count %s.  %s",
 				      argv[i], msg);
 				return -1;
 			}
@@ -256,13 +256,13 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		} else if (strncasecmp(tag, "Licenses", MAX(taglen, 2)) == 0) {
 			resv_msg_ptr->licenses = val;
 
-		} else if (strncasecmp(tag, "PartitionName", MAX(taglen, 1)) 
+		} else if (strncasecmp(tag, "PartitionName", MAX(taglen, 1))
 			   == 0) {
 			resv_msg_ptr->partition = val;
 
 		} else if (strncasecmp(tag, "Users", MAX(taglen, 1)) == 0) {
 			if (plus_minus) {
-				resv_msg_ptr->users = 
+				resv_msg_ptr->users =
 					_process_plus_minus(plus_minus, val);
 				*free_user_str = 1;
 			} else {
@@ -270,7 +270,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			}
 		} else if (strncasecmp(tag, "Accounts", MAX(taglen, 1)) == 0) {
 			if (plus_minus) {
-				resv_msg_ptr->accounts = 
+				resv_msg_ptr->accounts =
 					_process_plus_minus(plus_minus, val);
 				*free_acct_str = 1;
 			} else {
@@ -289,12 +289,12 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 
 
 
-/* 
- * scontrol_update_res - update the slurm reservation configuration per the 
- *     supplied arguments 
+/*
+ * scontrol_update_res - update the slurm reservation configuration per the
+ *     supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
  *     error message and returns 0.
  */
 extern int
@@ -306,7 +306,7 @@ scontrol_update_res(int argc, char *argv[])
 
 	slurm_init_resv_desc_msg (&resv_msg);
 	err = scontrol_parse_res_options(argc, argv, "No reservation update.",
-					 &resv_msg, &free_user_str, 
+					 &resv_msg, &free_user_str,
 					 &free_acct_str);
 	if (err)
 		goto SCONTROL_UPDATE_RES_CLEANUP;
@@ -336,12 +336,12 @@ SCONTROL_UPDATE_RES_CLEANUP:
 
 
 
-/* 
- * scontrol_create_res - create the slurm reservation configuration per the 
- *     supplied arguments 
+/*
+ * scontrol_create_res - create the slurm reservation configuration per the
+ *     supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
  *     error message and returns 0.
  */
 extern int
@@ -354,7 +354,7 @@ scontrol_create_res(int argc, char *argv[])
 
 	slurm_init_resv_desc_msg (&resv_msg);
 	err = scontrol_parse_res_options(argc, argv, "No reservation created.",
-					 &resv_msg, &free_user_str, 
+					 &resv_msg, &free_user_str,
 					 &free_acct_str);
 	if (err)
 		goto SCONTROL_CREATE_RES_CLEANUP;
@@ -364,29 +364,29 @@ scontrol_create_res(int argc, char *argv[])
 		error("A start time must be given.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
-	if (resv_msg.end_time == (time_t)NO_VAL && 
+	if (resv_msg.end_time == (time_t)NO_VAL &&
 	    resv_msg.duration == (uint32_t)NO_VAL) {
 		exit_code = 1;
 		error("An end time or duration must be given.  "
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
-	if (resv_msg.end_time != (time_t)NO_VAL && 
-	    resv_msg.duration != (uint32_t)NO_VAL && 
+	if (resv_msg.end_time != (time_t)NO_VAL &&
+	    resv_msg.duration != (uint32_t)NO_VAL &&
             resv_msg.start_time + resv_msg.duration*60 != resv_msg.end_time) {
 		exit_code = 1;
 		error("StartTime + Duration does not equal EndTime.  "
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
-	if (resv_msg.start_time > resv_msg.end_time && 
+	if (resv_msg.start_time > resv_msg.end_time &&
 	    resv_msg.end_time != (time_t)NO_VAL) {
 		exit_code = 1;
 		error("Start time cannot be after end time.  "
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
-	if (resv_msg.node_cnt == NO_VAL && 
+	if (resv_msg.node_cnt == NO_VAL &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0')) {
 		exit_code = 1;
@@ -394,7 +394,7 @@ scontrol_create_res(int argc, char *argv[])
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
-	if ((resv_msg.users == NULL    || resv_msg.users[0] == '\0') && 
+	if ((resv_msg.users == NULL    || resv_msg.users[0] == '\0') &&
 	    (resv_msg.accounts == NULL || resv_msg.accounts[0] == '\0')) {
 		exit_code = 1;
 		error("Either Users or Accounts must be specified.  "
@@ -413,9 +413,9 @@ scontrol_create_res(int argc, char *argv[])
 	}
 
 SCONTROL_CREATE_RES_CLEANUP:
-	if (free_user_str)  
+	if (free_user_str)
 		xfree(resv_msg.users);
-	if (free_acct_str)  
+	if (free_acct_str)
 		xfree(resv_msg.accounts);
 	return ret;
 }

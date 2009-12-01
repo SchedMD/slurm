@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -95,7 +95,7 @@ static void _rebuild_port_array(struct step_record *step_ptr)
 	if (hl == NULL)
 		fatal("malloc failure: hostlist_create");
 
-	step_ptr->resv_port_array = xmalloc(sizeof(int) * 
+	step_ptr->resv_port_array = xmalloc(sizeof(int) *
 					    step_ptr->resv_port_cnt);
 	step_ptr->resv_port_cnt = 0;
 	while ((tmp_char = hostlist_shift(hl))) {
@@ -107,7 +107,7 @@ static void _rebuild_port_array(struct step_record *step_ptr)
 	hostlist_destroy(hl);
 	if (step_ptr->resv_port_cnt == 0) {
 		error("Problem recovering resv_port_array for step %u.%u: %s",
-		      step_ptr->job_ptr->job_id, step_ptr->step_id, 
+		      step_ptr->job_ptr->job_id, step_ptr->step_id,
 		      step_ptr->resv_ports);
 		xfree(step_ptr->resv_ports);
 	}
@@ -129,14 +129,14 @@ static void _make_step_resv(struct step_record *step_ptr)
 
 	for (i=0; i<step_ptr->resv_port_cnt; i++) {
 		if ((step_ptr->resv_port_array[i] < port_resv_min) ||
-		    (step_ptr->resv_port_array[i] > port_resv_max)) 
+		    (step_ptr->resv_port_array[i] > port_resv_max))
 			continue;
 		j = step_ptr->resv_port_array[i] - port_resv_min;
 		bit_or(port_resv_table[j], step_ptr->step_node_bitmap);
 	}
 }
 
-/* Identify every job step with a port reservation and put the 
+/* Identify every job step with a port reservation and put the
  * reservation into the local reservation table. */
 static void _make_all_resv(void)
 {
@@ -147,7 +147,7 @@ static void _make_all_resv(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = (struct step_record *) 
+		while ((step_ptr = (struct step_record *)
 				   list_next(step_iterator))) {
 			_make_step_resv(step_ptr);
 		}
@@ -198,7 +198,7 @@ extern int reserve_port_config(char *mpi_params)
 	port_resv_min = p_min;
 	port_resv_max = p_max;
 	port_resv_cnt = p_max - p_min + 1;
-	debug("Ports available for reservation %u-%u", 
+	debug("Ports available for reservation %u-%u",
 	      port_resv_min, port_resv_max);
 
 	xfree(port_resv_table);
@@ -257,9 +257,9 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 	if (hl == NULL)
 		fatal("malloc: hostlist_create");
 	for (i=0; i<port_inx; i++) {
-		/* NOTE: We give the port a name like "[1234]" rather than 
+		/* NOTE: We give the port a name like "[1234]" rather than
 		 * just "1234" to avoid hostlists of the form "1[234-236]" */
-		bit_or(port_resv_table[port_array[i]], 
+		bit_or(port_resv_table[port_array[i]],
 		       step_ptr->step_node_bitmap);
 		port_array[i] += port_resv_min;
 		snprintf(port_str, sizeof(port_str), "[%d]", port_array[i]);
@@ -304,11 +304,11 @@ extern void resv_port_free(struct step_record *step_ptr)
 	bit_not(step_ptr->step_node_bitmap);
 	for (i=0; i<step_ptr->resv_port_cnt; i++) {
 		if ((step_ptr->resv_port_array[i] < port_resv_min) ||
-		    (step_ptr->resv_port_array[i] > port_resv_max)) 
+		    (step_ptr->resv_port_array[i] > port_resv_max))
 			continue;
 		j = step_ptr->resv_port_array[i] - port_resv_min;
 		bit_and(port_resv_table[j], step_ptr->step_node_bitmap);
-		
+
 	}
 	bit_not(step_ptr->step_node_bitmap);
 	xfree(step_ptr->resv_port_array);

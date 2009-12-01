@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -40,8 +40,8 @@
 #include "src/scontrol/scontrol.h"
 
 extern int
-scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr, 
-			     update_part_msg_t *part_msg_ptr) 
+scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
+			     update_part_msg_t *part_msg_ptr)
 {
 	int i, min, max;
 	char *tag, *val;
@@ -51,13 +51,13 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 		error("scontrol_parse_part_options internal error, "
 		      "update_cnt_ptr == NULL");
 		exit_code = 1;
-		return -1; 
+		return -1;
 	}
 	if (!part_msg_ptr) {
 		error("scontrol_parse_part_options internal error, "
 		      "part_msg_ptr == NULL");
 		exit_code = 1;
-		return -1; 
+		return -1;
 	}
 
 	for (i=0; i<argc; i++) {
@@ -166,28 +166,28 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0) {
 				part_msg_ptr->max_share = 1;
 
-			} else if (strncasecmp(val, "EXCLUSIVE", 
+			} else if (strncasecmp(val, "EXCLUSIVE",
 				   MAX(vallen, 1)) == 0) {
 				part_msg_ptr->max_share = 0;
 
-			} else if (strncasecmp(val, "YES", MAX(vallen, 1)) 
+			} else if (strncasecmp(val, "YES", MAX(vallen, 1))
 				   == 0) {
 				if (colon_pos) {
-					part_msg_ptr->max_share = 
-						(uint16_t) strtol(colon_pos+1, 
+					part_msg_ptr->max_share =
+						(uint16_t) strtol(colon_pos+1,
 							(char **) NULL, 10);
 				} else {
 					part_msg_ptr->max_share = (uint16_t) 4;
 				}
-			} else if (strncasecmp(val, "FORCE", MAX(vallen, 1)) 
+			} else if (strncasecmp(val, "FORCE", MAX(vallen, 1))
 				   == 0) {
 				if (colon_pos) {
-					part_msg_ptr->max_share = 
+					part_msg_ptr->max_share =
 						(uint16_t) strtol(colon_pos+1,
-							(char **) NULL, 10) | 
+							(char **) NULL, 10) |
 							SHARED_FORCE;
 				} else {
-					part_msg_ptr->max_share = 
+					part_msg_ptr->max_share =
 						(uint16_t) 4 |SHARED_FORCE;
 				}
 			} else {
@@ -200,7 +200,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "Priority", MAX(taglen, 2)) == 0) {
-			part_msg_ptr->priority = (uint16_t) strtol(val, 
+			part_msg_ptr->priority = (uint16_t) strtol(val,
 					(char **) NULL, 10);
 			(*update_cnt_ptr)++;
 		}
@@ -243,16 +243,16 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 
 
 
-/* 
- * scontrol_update_part - update the slurm partition configuration per the 
- *	supplied arguments 
+/*
+ * scontrol_update_part - update the slurm partition configuration per the
+ *	supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
 extern int
-scontrol_update_part (int argc, char *argv[]) 
+scontrol_update_part (int argc, char *argv[])
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;
@@ -280,16 +280,16 @@ scontrol_update_part (int argc, char *argv[])
 
 
 
-/* 
- * scontrol_create_part - create a slurm partition configuration per the 
- *	supplied arguments 
+/*
+ * scontrol_create_part - create a slurm partition configuration per the
+ *	supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
 extern int
-scontrol_create_part (int argc, char *argv[]) 
+scontrol_create_part (int argc, char *argv[])
 {
 	int update_cnt = 0;
 	update_part_msg_t part_msg;

@@ -311,7 +311,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-PLUGIN_FLAGS = - -module -avoid-version --export-dynamic 
+PLUGIN_FLAGS = - -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = proctrack_sgi_job.la
 proctrack_sgi_job_la_SOURCES = proctrack_sgi_job.c
@@ -620,7 +620,7 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
-# Don't need to add -ljob because we dlopen the .so to avoid 
+# Don't need to add -ljob because we dlopen the .so to avoid
 #  symbol collisions with slurm functions
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

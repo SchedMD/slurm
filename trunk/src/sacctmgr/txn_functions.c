@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -79,10 +79,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 			uint32_t id = 0;
 
 			if(!txn_cond->id_list)
-				txn_cond->id_list = 
+				txn_cond->id_list =
 					list_create(slurm_destroy_char);
-			
-			if(slurm_addto_char_list(txn_cond->id_list, 
+
+			if(slurm_addto_char_list(txn_cond->id_list,
 						 argv[i]+end))
 				set = 1;
 
@@ -138,7 +138,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 1))) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Start", 
+		} else if (!strncasecmp (argv[i], "Start",
 					 MAX(command_len, 1))) {
 			txn_cond->time_start = parse_time(argv[i]+end, 1);
 			set = 1;
@@ -194,8 +194,8 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
-			i++;		
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
+			i++;
 		_set_cond(&i, argc, argv, txn_cond, format_list);
 	}
 
@@ -209,8 +209,8 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 
 	if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "T,Action,Actor,Where,Info");
-		if(txn_cond->with_assoc_info) 
-			slurm_addto_char_list(format_list, 
+		if(txn_cond->with_assoc_info)
+			slurm_addto_char_list(format_list,
 					      "User,Account,Cluster");
 	}
 
@@ -219,11 +219,11 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
-		
+
 		if((tmp_char = strstr(object, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
-		} 
+		}
 
 		command_len = strlen(object);
 
@@ -233,13 +233,13 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			field->name = xstrdup("Accounts");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("ActionRaw", object, 
+		} else if(!strncasecmp("ActionRaw", object,
 				       MAX(command_len, 7))) {
 			field->type = PRINT_ACTIONRAW;
 			field->name = xstrdup("ActionRaw");
 			field->len = 10;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("ActionRaw", object, 
+		} else if(!strncasecmp("ActionRaw", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_ACTION;
 			field->name = xstrdup("Action");
@@ -251,7 +251,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			field->name = xstrdup("Actor");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Clusters", object, 
+		} else if(!strncasecmp("Clusters", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Clusters");
@@ -267,7 +267,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			field->name = xstrdup("Info");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("TimeStamp", object, 
+		} else if(!strncasecmp("TimeStamp", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_TS;
 			field->name = xstrdup("Time");
@@ -290,10 +290,10 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			continue;
 		}
 
-		if(newlen) 
+		if(newlen)
 			field->len = newlen;
-		
-		list_append(print_fields_list, field);		
+
+		list_append(print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
@@ -328,13 +328,13 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 				break;
 			case PRINT_ACTIONRAW:
 				field->print_routine(
-					field, 
+					field,
 					txn->action,
 					(curr_inx == field_count));
 				break;
 			case PRINT_ACTION:
 				field->print_routine(
-					field, 
+					field,
 					slurmdbd_msg_type_2_str(txn->action,
 								0),
 					(curr_inx == field_count));
@@ -354,7 +354,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_INFO:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     txn->set_info,
 						     (curr_inx == field_count));
 				break;
@@ -368,7 +368,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_WHERE:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     txn->where_query,
 						     (curr_inx == field_count));
 				break;
@@ -382,7 +382,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 		list_iterator_reset(itr2);
 		printf("\n");
 	}
-			
+
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	list_destroy(txn_list);

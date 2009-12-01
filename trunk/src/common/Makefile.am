@@ -1,21 +1,21 @@
-# Makefile for common library 
-# If you are linking to this lib any know you are not linking to 
-# anything else that will need variables here link to 
+# Makefile for common library
+# If you are linking to this lib any know you are not linking to
+# anything else that will need variables here link to
 # $(top_builddir)/src/common/libcommon.la
 # if you are linking to a stand alone program that needs all symbols link to
-# $(top_builddir)/src/common/libcommon.o with -ldl added 
-# This avoids having multiple symbols running around when there should 
+# $(top_builddir)/src/common/libcommon.o with -ldl added
+# This avoids having multiple symbols running around when there should
 # only be 1 address per symbol.  If you link to the libcommon.la in
 # a plugin you will get 2 addresses for one symbol which could lead to problems.
 
 AUTOMAKE_OPTIONS = foreign
 
 if HAVE_UNSETENV
-build_unsetenv_src = 
+build_unsetenv_src =
 extra_unsetenv_src = unsetenv.c unsetenv.h
 else
 build_unsetenv_src = unsetenv.c unsetenv.h
-extra_unsetenv_src = 
+extra_unsetenv_src =
 endif
 
 INCLUDES     = -I$(top_srcdir) $(BG_INCLUDES)
@@ -123,27 +123,27 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD   = -ldl 
+libcommon_la_LIBADD   = -ldl
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
 
-# This was made so we could export all symbols from libcommon 
+# This was made so we could export all symbols from libcommon
 # on multiple platforms
-libcommon_o_SOURCES = 
-libcommon.o :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES) 
-	$(LINK)  $(libcommon_la_OBJECTS) 
+libcommon_o_SOURCES =
+libcommon.o :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES)
+	$(LINK)  $(libcommon_la_OBJECTS)
 
-# This was made so we could export all symbols from libeio 
+# This was made so we could export all symbols from libeio
 # on multiple platforms
-libeio_o_SOURCES = 
-libeio.o :  $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES) 
-	$(LINK)  $(libeio_la_OBJECTS) 
+libeio_o_SOURCES =
+libeio.o :  $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES)
+	$(LINK)  $(libeio_la_OBJECTS)
 
-# This was made so we could export all symbols from libspank 
+# This was made so we could export all symbols from libspank
 # on multiple platforms
-libspank_o_SOURCES = 
-libspank.o :  $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES) 
-	$(LINK)  $(libspank_la_OBJECTS) 
+libspank_o_SOURCES =
+libspank.o :  $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES)
+	$(LINK)  $(libspank_la_OBJECTS)
 
 
 global_defaults.c : $(top_builddir)/config.h Makefile

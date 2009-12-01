@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -189,18 +189,18 @@ static int _get_trigger(void)
 	for (i=0; i<trig_msg->record_count; i++) {
 		/* perform filtering */
 		if (params.block_err) {
-			if (trig_msg->trigger_array[i].trig_type 
+			if (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_BLOCK_ERR)
 				continue;
 		}
 		if (params.job_fini) {
-			if (trig_msg->trigger_array[i].trig_type 
+			if (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_FINI)
 				continue;
 		}
 		if (params.job_id) {
 			long jid;
-			if (trig_msg->trigger_array[i].res_type 
+			if (trig_msg->trigger_array[i].res_type
 					!= TRIGGER_RES_TYPE_JOB)
 				continue;
 			jid = atol(trig_msg->trigger_array[i].res_id);
@@ -208,28 +208,28 @@ static int _get_trigger(void)
 				continue;
 		}
 		if (params.node_down) {
-			if ((trig_msg->trigger_array[i].res_type  
+			if ((trig_msg->trigger_array[i].res_type
 					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type 
+			||  (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_DOWN))
 				continue;
 		}
 		if (params.node_drained) {
-			if ((trig_msg->trigger_array[i].res_type  
+			if ((trig_msg->trigger_array[i].res_type
 					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type 
+			||  (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_DRAINED))
 				continue;
 		}
 		if (params.node_fail) {
-			if ((trig_msg->trigger_array[i].res_type  
+			if ((trig_msg->trigger_array[i].res_type
 					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type 
+			||  (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_FAIL))
 				continue;
 		}
 		if (params.node_id) {
-			if (trig_msg->trigger_array[i].res_type  
+			if (trig_msg->trigger_array[i].res_type
 					!= TRIGGER_RES_TYPE_NODE)
 				continue;
 		}
@@ -241,21 +241,21 @@ static int _get_trigger(void)
 				continue;
 		}
 		if (params.node_up) {
-			if ((trig_msg->trigger_array[i].res_type 
+			if ((trig_msg->trigger_array[i].res_type
 					!= TRIGGER_RES_TYPE_NODE)
-			||  (trig_msg->trigger_array[i].trig_type 
+			||  (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_UP))
 				continue;
 		}
 		if (params.time_limit) {
-			if ((trig_msg->trigger_array[i].res_type  
+			if ((trig_msg->trigger_array[i].res_type
 					!= TRIGGER_RES_TYPE_JOB)
-			||  (trig_msg->trigger_array[i].trig_type 
+			||  (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_TIME))
 				continue;
 		}
 		if (params.trigger_id) {
-			if (params.trigger_id != 
+			if (params.trigger_id !=
 			    trig_msg->trigger_array[i].trig_id)
 				continue;
 		}

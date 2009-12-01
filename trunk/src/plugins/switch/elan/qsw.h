@@ -1,36 +1,36 @@
 /*****************************************************************************\
- *  qsw.h - Library routines for initiating jobs on QsNet. 
+ *  qsw.h - Library routines for initiating jobs on QsNet.
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -68,7 +68,7 @@ typedef struct qsw_libstate 	*qsw_libstate_t;
 #define QSW_MAX_TASKS		ELAN_MAX_VPS
 #define QSW_PACK_SIZE		(4 * (2+4+1+8+ELAN_BITMAPSIZE))
 
-/* NOTE: error codes should be between ESLURM_SWITCH_MIN and 
+/* NOTE: error codes should be between ESLURM_SWITCH_MIN and
  * ESLURM_SWITCH MAX as defined in slurm/slurm_errno.h */
 enum {
 	/* Quadrics Elan specific error codes */
@@ -110,7 +110,7 @@ int         qsw_restore_jobinfo(struct qsw_jobinfo *jobinfo);
 int		qsw_pack_jobinfo(qsw_jobinfo_t j, Buf buffer);
 int		qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer);
 
-int 		qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, 
+int 		qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks,
 			bitstr_t *nodeset, uint16_t *tasks_per_node,
 			int cyclic_alloc);
 void		qsw_teardown_jobinfo(qsw_jobinfo_t j);
@@ -120,10 +120,10 @@ void 		qsw_prog_fini(qsw_jobinfo_t jobinfo);
 
 int 		qsw_prgdestroy(qsw_jobinfo_t jobinfo); /* was qsw_prog_reap */
 
-int 		qsw_setcap(qsw_jobinfo_t jobinfo, int procnum); 
+int 		qsw_setcap(qsw_jobinfo_t jobinfo, int procnum);
 		/* was qsw_attach */
 
-int		qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum); 
+int		qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum);
 		/* was qsw_signal_job */
 
 		/* return max ElanID in configuration */

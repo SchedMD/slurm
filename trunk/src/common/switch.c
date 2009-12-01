@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -53,7 +53,7 @@
 /*
  * WARNING:  Do not change the order of these fields or add additional
  * fields at the beginning of the structure.  If you do, job completion
- * logging plugins will stop working.  If you need to add fields, add them 
+ * logging plugins will stop working.  If you need to add fields, add them
  * at the end of the structure.
  */
 typedef struct slurm_switch_ops {
@@ -63,20 +63,20 @@ typedef struct slurm_switch_ops {
 	int          (*alloc_jobinfo)     ( switch_jobinfo_t **jobinfo );
 	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
 						char *nodelist,
-						uint16_t *tasks_per_node, 
-						int cyclic_alloc, 
+						uint16_t *tasks_per_node,
+						int cyclic_alloc,
 						char *network);
 	switch_jobinfo_t *(*copy_jobinfo)  ( switch_jobinfo_t *jobinfo );
 	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
-	int          (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo, 
+	int          (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo,
 						Buf buffer );
-	int          (*unpack_jobinfo)    ( switch_jobinfo_t *jobinfo, 
+	int          (*unpack_jobinfo)    ( switch_jobinfo_t *jobinfo,
 						Buf buffer );
 	int          (*get_jobinfo)       ( switch_jobinfo_t *switch_job,
 						int key, void *data);
-	void         (*print_jobinfo)     ( FILE *fp, 
+	void         (*print_jobinfo)     ( FILE *fp,
 						switch_jobinfo_t *jobinfo );
-	char *       (*string_jobinfo)    ( switch_jobinfo_t *jobinfo, 
+	char *       (*string_jobinfo)    ( switch_jobinfo_t *jobinfo,
 						char *buf, size_t size);
 	int          (*node_init)         ( void );
 	int          (*node_fini)         ( void );
@@ -85,12 +85,12 @@ typedef struct slurm_switch_ops {
 						uid_t uid );
 	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
 	int          (*job_postfini)      ( switch_jobinfo_t *jobinfo,
-						uid_t pgid, 
-						uint32_t job_id, 
+						uid_t pgid,
+						uint32_t job_id,
 						uint32_t step_id );
-	int          (*job_attach)        ( switch_jobinfo_t *jobinfo, 
-						char ***env, uint32_t nodeid, 
-						uint32_t procid, uint32_t nnodes, 
+	int          (*job_attach)        ( switch_jobinfo_t *jobinfo,
+						char ***env, uint32_t nodeid,
+						uint32_t procid, uint32_t nnodes,
 						uint32_t nprocs, uint32_t rank);
 	char *	     (*switch_strerror)   ( int errnum );
 	int          (*switch_errno)      ( void );
@@ -183,7 +183,7 @@ _slurm_switch_context_destroy( slurm_switch_context_t *c )
 /*
  * Resolve the operations from the plugin.
  */
-static slurm_switch_ops_t * 
+static slurm_switch_ops_t *
 _slurm_switch_get_ops( slurm_switch_context_t *c )
 {
 	/*
@@ -232,20 +232,20 @@ _slurm_switch_get_ops( slurm_switch_context_t *c )
 	/* Find the correct plugin. */
         c->cur_plugin = plugin_load_and_link(c->switch_type, n_syms, syms,
 					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE ) 
+        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return &c->ops;
 
 	error("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      c->switch_type);
-	
+
 	/* Get the plugin list, if needed. */
 	if ( c->plugin_list == NULL ) {
 		char *plugin_dir;
 		c->plugin_list = plugrack_create();
 		if ( c->plugin_list == NULL ) {
 			verbose( "Unable to create a plugin manager" );
-			return NULL; 
+			return NULL;
 		}
 
 		plugrack_set_major_type( c->plugin_list, "switch" );
@@ -351,14 +351,14 @@ extern int  switch_alloc_jobinfo(switch_jobinfo_t **jobinfo)
 	return (*(g_context->ops.alloc_jobinfo))( jobinfo );
 }
 
-extern int  switch_build_jobinfo(switch_jobinfo_t *jobinfo, 
-		char *nodelist, uint16_t *tasks_per_node, 
+extern int  switch_build_jobinfo(switch_jobinfo_t *jobinfo,
+		char *nodelist, uint16_t *tasks_per_node,
 		int cyclic_alloc, char *network)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.build_jobinfo))( jobinfo, nodelist, 
+	return (*(g_context->ops.build_jobinfo))( jobinfo, nodelist,
 			tasks_per_node, cyclic_alloc, network );
 }
 
@@ -394,7 +394,7 @@ extern int switch_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
 	return (*(g_context->ops.unpack_jobinfo))( jobinfo, buffer );
 }
 
-extern int  switch_g_get_jobinfo(switch_jobinfo_t *jobinfo, 
+extern int  switch_g_get_jobinfo(switch_jobinfo_t *jobinfo,
 	int data_type, void *data)
 {
 	if ( switch_init() < 0 )
@@ -460,18 +460,18 @@ extern int interconnect_fini(switch_jobinfo_t *jobinfo)
 	return (*(g_context->ops.job_fini)) (jobinfo);
 }
 
-extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid, 
+extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 				uint32_t job_id, uint32_t step_id )
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.job_postfini)) (jobinfo, pgid, 
+	return (*(g_context->ops.job_postfini)) (jobinfo, pgid,
 		job_id, step_id);
 }
 
 extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
-		uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
+		uint32_t nodeid, uint32_t procid, uint32_t nnodes,
 		uint32_t nprocs, uint32_t gid)
 {
 	if ( switch_init() < 0 )
@@ -500,7 +500,7 @@ extern char *switch_strerror(int errnum)
 
 /*
  * node switch state monitoring functions
- * required for IBM Federation switch 
+ * required for IBM Federation switch
  */
 extern int switch_g_clear_node_state(void)
 {
@@ -526,7 +526,7 @@ extern int switch_g_build_node_info(switch_node_info_t *switch_node)
 	return (*(g_context->ops.build_nodeinfo))( switch_node );
 }
 
-extern int switch_g_pack_node_info(switch_node_info_t *switch_node, 
+extern int switch_g_pack_node_info(switch_node_info_t *switch_node,
 	Buf buffer)
 {
 	if ( switch_init() < 0 )

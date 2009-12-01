@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -86,14 +86,14 @@
  * where <application> is a description of the intended application of
  * the plugin (e.g., "jobcomp" for SLURM job completion logging) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load job completion logging plugins if the plugin_type string has a 
+ * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobcomp/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job completion logging API 
+ * minimum versions for their plugins as the job completion logging API
  * matures.
  */
 const char plugin_name[]       	= "Priority MULTIFACTOR plugin";
@@ -164,7 +164,7 @@ static int _apply_decay(double decay_factor)
 }
 
 /*
- * reset usage_raw, and grp_used_wall on all associations 
+ * reset usage_raw, and grp_used_wall on all associations
  * This should be called every PriorityUsageResetPeriod
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
@@ -235,7 +235,7 @@ static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 				if (errno == EINTR)
 					continue;
 				else {
-					error("Read error on %s: %m", 
+					error("Read error on %s: %m",
 					      state_file);
 					break;
 				}
@@ -338,7 +338,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
  * calculate all the non-user associations now.  When a user submits a
  * job, that norm_fairshare is calculated.  Here we will set the
  * usage_efctv to NO_VAL for users to not have to calculate a bunch
- * of things that will never be used. 
+ * of things that will never be used.
  *
  * NOTE: acct_mgr_association_lock must be locked before this is called.
  */
@@ -347,7 +347,7 @@ static int _set_children_usage_efctv(List childern_list)
 	acct_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 
-	if(!childern_list || !list_count(childern_list)) 
+	if(!childern_list || !list_count(childern_list))
 		return SLURM_SUCCESS;
 
 	itr = list_iterator_create(childern_list);
@@ -448,7 +448,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 		 * Also the variable total_cpus doesn't exist
 		 * yet so that would need to be defined.
 		 */
-		
+
 		if(favor_small) {
 			factors->priority_js = (double)(node_record_count
 					   - job_ptr->details->min_nodes)
@@ -673,7 +673,7 @@ static void *_decay_thread(void *no_data)
 				decay_factor = 1 - (0.693 / decay_hl);
 			else
 				decay_factor = 1;
-			
+
 			reconfig = 0;
 		}
 
@@ -694,18 +694,18 @@ static void *_decay_thread(void *no_data)
 			case PRIORITY_RESET_QUARTERLY:
 			case PRIORITY_RESET_YEARLY:
 				if(next_reset == 0) {
-					next_reset = _next_reset(reset_period, 
+					next_reset = _next_reset(reset_period,
 								 last_reset);
 				}
 				if(now >= next_reset) {
 					_reset_usage();
 					last_reset = next_reset;
-					next_reset = _next_reset(reset_period, 
+					next_reset = _next_reset(reset_period,
 								 last_reset);
 				}
 		}
 
-		if(!last_ran) 
+		if(!last_ran)
 			goto get_usage;
 		else
 			run_delta = (start_time - last_ran);
@@ -732,39 +732,39 @@ static void *_decay_thread(void *no_data)
 			/* apply new usage */
 			if(!IS_JOB_PENDING(job_ptr) &&
 			   job_ptr->start_time && job_ptr->assoc_ptr) {
-				acct_qos_rec_t *qos = 
+				acct_qos_rec_t *qos =
 					(acct_qos_rec_t *)job_ptr->qos_ptr;
-				acct_association_rec_t *assoc =	
+				acct_association_rec_t *assoc =
 					(acct_association_rec_t *)
 					job_ptr->assoc_ptr;
 				time_t start_period = last_ran;
 				time_t end_period = start_time;
 				double run_decay = 0;
 
-				if(job_ptr->start_time > start_period) 
+				if(job_ptr->start_time > start_period)
 					start_period = job_ptr->start_time;
 
-				if(job_ptr->end_time 
-				   && (end_period > job_ptr->end_time)) 
+				if(job_ptr->end_time
+				   && (end_period > job_ptr->end_time))
 					end_period = job_ptr->end_time;
 
 				run_delta = (int)end_period - (int)start_period;
 
 				/* job already has been accounted for
 				   go to next */
-				if(run_delta < 1) 
+				if(run_delta < 1)
 					continue;
 
 				debug4("job %u ran for %d seconds",
 				       job_ptr->job_id, run_delta);
 
 				/* get the time in decayed fashion */
-				run_decay = run_delta 
+				run_decay = run_delta
 					* pow(decay_factor, (double)run_delta);
 
 				real_decay = run_decay
 					* (double)job_ptr->total_procs;
-	
+
 				/* now apply the usage factor for this
 				   qos */
 				if(qos) {
@@ -783,8 +783,8 @@ static void *_decay_thread(void *no_data)
 				while(assoc) {
 					/* we don't want to make the
 					   root assoc responsible for
-					   keeping track of time 
-					*/ 
+					   keeping track of time
+					*/
 					if (assoc == assoc_mgr_root_assoc)
 						break;
 					assoc->grp_used_wall += run_decay;
@@ -794,29 +794,29 @@ static void *_decay_thread(void *no_data)
 					       "assoc %u (user='%s' acct='%s') "
 					       "raw usage is now %Lf.  Group "
 					       "wall added %d making it %d.",
-					       real_decay, assoc->id, 
+					       real_decay, assoc->id,
 					       assoc->user, assoc->acct,
 					       assoc->usage_raw, run_delta,
 					       assoc->grp_used_wall);
-				
+
 					assoc = assoc->parent_assoc_ptr;
 				}
 				slurm_mutex_unlock(&assoc_mgr_association_lock);
 			}
 
-			/* 
+			/*
 			 * This means the job is held, 0, or a system
 			 * hold, 1. Continue also if the job is not
 			 * pending.  There is no reason to set the
 			 * priority if the job isn't pending.
-			 */ 
+			 */
 			if((job_ptr->priority <= 1) || !IS_JOB_PENDING(job_ptr))
 				continue;
-	
+
 			job_ptr->priority =
 				_get_priority_internal(start_time, job_ptr);
 
-			debug2("priority for job %u is now %u", 
+			debug2("priority for job %u is now %u",
 			       job_ptr->job_id, job_ptr->priority);
 		}
 		list_iterator_destroy(itr);
@@ -827,7 +827,7 @@ static void *_decay_thread(void *no_data)
 		slurm_mutex_lock(&assoc_mgr_association_lock);
 		_set_children_usage_efctv(assoc_mgr_root_assoc->childern_list);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
-	
+
 		last_ran = start_time;
 
 		_write_last_decay_ran(last_ran, last_reset);
@@ -950,7 +950,7 @@ int init ( void )
 		if (pthread_create(&decay_handler_thread, &thread_attr,
 				   _decay_thread, NULL))
 			fatal("pthread_create error %m");
-		
+
 		/* This is here to join the decay thread so we don't core
 		   dump if in the sleep, since there is no other place to join
 		   we have to create another thread to do it.
@@ -959,7 +959,7 @@ int init ( void )
 		if (pthread_create(&cleanup_handler_thread, &thread_attr,
 				   _cleanup_thread, NULL))
 			fatal("pthread_create error %m");
-		
+
 		slurm_attr_destroy(&thread_attr);
 	} else {
 		if(weight_fs)
@@ -968,7 +968,7 @@ int init ( void )
 			      "The priority/multifactor plugin requires "
 			      "this information to run correctly.  Please "
 			      "check your database connection and try again.");
-		
+
 		calc_fairshare = 0;
 	}
 
@@ -985,7 +985,7 @@ int fini ( void )
 		debug("Waiting for decay thread to finish.");
 
 	slurm_mutex_lock(&decay_lock);
-	
+
 	/* cancel the decay thread and then join the cleanup thread */
 	if(decay_handler_thread)
 		pthread_cancel(decay_handler_thread);
@@ -1011,7 +1011,7 @@ extern void priority_p_reconfig()
 	reconfig = 1;
 	_internal_setup();
 	debug2("%s reconfigured", plugin_name);
-	
+
 	return;
 }
 
@@ -1058,7 +1058,7 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
 	xassert(assoc_mgr_root_assoc);
 	xassert(assoc_mgr_root_assoc->usage_raw);
 	xassert(assoc->parent_assoc_ptr);
-	
+
 	assoc->usage_norm = assoc->usage_raw / assoc_mgr_root_assoc->usage_raw;
 	debug4("Normalized usage for %s %s off %s %Lf / %Lf = %Lf",
 	       child, child_str, assoc->parent_assoc_ptr->acct,
@@ -1067,9 +1067,9 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
 	/* This is needed in case someone changes the half-life on the
 	   fly and now we have used more time than is available under
 	   the new config */
-	if (assoc->usage_norm > 1.0) 
+	if (assoc->usage_norm > 1.0)
 		assoc->usage_norm = 1.0;
-	
+
 	if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
 		assoc->usage_efctv = assoc->usage_norm;
 		debug4("Effective usage for %s %s off %s %Lf %Lf",
@@ -1079,7 +1079,7 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
 		assoc->usage_efctv = assoc->usage_norm +
 			((assoc->parent_assoc_ptr->usage_efctv -
 			  assoc->usage_norm) *
-			 assoc->shares_raw / 
+			 assoc->shares_raw /
 			 (long double)assoc->level_shares);
 		debug4("Effective usage for %s %s off %s "
 		       "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
@@ -1116,7 +1116,7 @@ extern List priority_p_get_priority_factors_list(
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
 			/*
-			 * We are only looking for pending jobs 
+			 * We are only looking for pending jobs
 			 */
 			if(!IS_JOB_PENDING(job_ptr))
 				continue;
@@ -1132,12 +1132,12 @@ extern List priority_p_get_priority_factors_list(
 			 */
 			if(job_ptr->priority <= 1)
 				continue;
-			
+
 			if (_filter_job(job_ptr, req_job_list, req_user_list))
 				continue;
-			
+
 			obj = xmalloc(sizeof(priority_factors_object_t));
-			
+
 			_get_priority_factors(start_time, job_ptr, obj, true);
 			obj->job_id = job_ptr->job_id;
 			obj->user_id = job_ptr->user_id;

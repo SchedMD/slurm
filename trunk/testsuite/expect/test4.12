@@ -11,21 +11,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -48,7 +48,7 @@ set node_scaling 0
 
 proc scontrol_test { node proc_cnt } {
 	global scontrol number prompt
-	upvar spawn_id spawn_id 
+	upvar spawn_id spawn_id
 
 	set found 0
 	set rc 0
@@ -88,13 +88,13 @@ proc scontrol_test { node proc_cnt } {
 
 proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 	global sinfo number prompt
-	upvar spawn_id spawn_id 
+	upvar spawn_id spawn_id
 
 	set found 0
 	set rc 0
 
 	send "$sinfo -o \"%C %A %N\" -h -n $node\r"
-	# make sure we get by the sinfo command so we don't 
+	# make sure we get by the sinfo command so we don't
 	# think the %'s are a prompt
 	expect {
 		"%C %A %N" {
@@ -119,7 +119,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 			if {[string compare $expect_out(8,string) ""]} {
 				set num_total [expr $num_total * 1024]
 			}
-			
+
 			if { $num_alloc != $proc_cnt } {
 				send_user "\nFAILURE: sinfo 1 allocated cpus wrong, got $num_alloc but needed $proc_cnt\n"
 				set rc 1
@@ -143,7 +143,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 		}
 		eof {
 			wait
-		}		
+		}
 	}
 
 	if {!$found} {
@@ -156,14 +156,14 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 
 proc sinfo_test_2 { node proc_cnt total_procs } {
 	global sinfo number prompt node_scaling
-	upvar spawn_id spawn_id 
+	upvar spawn_id spawn_id
 
 	set rc 0
 	set num_alloc 0
 	set num_idle 0
 	set alloc_nodes 1
 	set total_nodes 1
-	
+
 	if {$node_scaling} {
 		set alloc_nodes [expr $proc_cnt / $node_scaling]
 		set total_nodes [expr $total_procs / $node_scaling]
@@ -171,7 +171,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	set idle_nodes [expr $total_nodes - $alloc_nodes]
 
 	send "$sinfo -o \"%t %D %N\" -h -n $node\r"
-	# make sure we get by the sinfo command so we don't 
+	# make sure we get by the sinfo command so we don't
 	# think the %'s are a prompt
 	expect {
 		"%t %D %N" {
@@ -203,7 +203,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 			wait
 		}
 	}
-			 
+
 	if { $num_alloc != $alloc_nodes } {
 		send_user "\nFAILURE: sinfo 2 allocated nodes wrong, got $num_alloc but needed $alloc_nodes\n"
 		set rc 1
@@ -211,22 +211,22 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 		send_user "\nFAILURE: sinfo 2 idle nodes wrong, got $num_idle but needed $idle_nodes\n"
 		set rc 1
 	}
-		
+
 	return $rc
 }
 
 # allocate a set of nodes (node_cnt) and the quit right after
 proc allocate_and_quit { node proc_cnt total_procs } {
-	global salloc scontrol sinfo number alpha_numeric_under 
+	global salloc scontrol sinfo number alpha_numeric_under
 	global prompt select_type procs_per_node
-       
+
 	set job_id 0
 	set num_alloc 0
 	set block ""
 	set rc 0
 	set timeout 60
 	set idle_cpus [expr $total_procs - $proc_cnt]
-	
+
 	set mypid [spawn $salloc -w $node -N1 -n $proc_cnt bash]
 	expect {
 		-re "Granted job allocation ($number)" {
@@ -240,7 +240,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 				send "exit\r"
 				return 1
 			}
-			
+
 
 			# test for sinfo to give me the correct cpu count
 			if { [sinfo_test_1 $node $proc_cnt $total_procs $idle_cpus] } {
@@ -277,7 +277,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 }
 
 ############################################################################
-# test starts here 
+# test starts here
 ############################################################################
 
 print_header $test_id
@@ -289,7 +289,7 @@ set def_part_found 0
 spawn $sinfo
 expect {
 	-re "($alpha_numeric_under)\\\* " {
-		set def_part $expect_out(1,string) 
+		set def_part $expect_out(1,string)
 		set def_part_found 1
 		exp_continue
 	}
@@ -318,7 +318,7 @@ expect {
 		exp_continue
 	}
 	-re " Nodes=($alpha_numeric_nodelist)"  {
-		set def_hostlist $expect_out(1,string) 
+		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
 	-re " BasePartitions=($alpha_numeric_nodelist)" {
@@ -337,7 +337,7 @@ set host_cnt 0
 spawn $scontrol show hostnames $def_hostlist
 expect {
 	-re "($alpha_numeric_under)"  {
-		set host_name($host_cnt) $expect_out(1,string) 
+		set host_name($host_cnt) $expect_out(1,string)
 		incr host_cnt
 		exp_continue
 	}
@@ -361,7 +361,7 @@ set inode_procs 0
 spawn $scontrol -o show node $def_hostlist
 expect {
 	-re "NodeName=($alpha_numeric_under) .*CoresPerSocket=($number) .*CPUTot=($number)(K?).* Sockets=($number) State=IDLE ThreadsPerCore=($number)"  {
-		set inode_name $expect_out(1,string) 
+		set inode_name $expect_out(1,string)
 		set inode_cores_per_socket $expect_out(2,string)
 		set inode_procs $expect_out(3,string)
 		if {[string compare $expect_out(4,string) ""]} {
@@ -397,18 +397,18 @@ if {![string compare $select_type "bluegene"]} {
 		exit 1
 	}
 	set psets [get_bluegene_psets]
-	
+
 	if {$psets == 0} {
 		send_user "\nFAILURE: No psets are set on this system\n"
 		exit 1
 	}
 	set type [get_bluegene_type]
-	
+
 	if {$type == 0} {
 		send_user "\nFAILURE: No bluegene type found \n"
 		exit 1
-	}	
-	
+	}
+
 	if {![string compare $type "P"]} {
 		if {$psets >= 32} {
 			set smallest 16
@@ -428,7 +428,7 @@ if {![string compare $select_type "bluegene"]} {
 	} else {
 		send_user "\nFAILURE: unknown bluegene system type '$type'\n";
 		exit 1
-	}	
+	}
 	set node_scaling [get_bluegene_procs_per_cnode]
 	set smallest [expr $smallest * $node_scaling]
 } elseif {![string compare $select_type "linear"]} {

@@ -1,7 +1,7 @@
 /* We can not include IBM's attach_bgl.h or attach_bg.h file due to problems
  * in compiling it with gcc and missing externals in that file, so we define
- * our own version of the header here and define critical variable. We also 
- * "#define ATTACH_BGL_H" and "define ATTACH_BG_H" to avoid having IBM's 
+ * our own version of the header here and define critical variable. We also
+ * "#define ATTACH_BGL_H" and "define ATTACH_BG_H" to avoid having IBM's
  * header files loaded for BGL and BGP systems respectively.*/
 
 #ifndef ATTACH_BGL_H	/* Test for attach_bgl.h on BGL */
@@ -37,7 +37,7 @@
   typedef int      rm_BP_state_t;
   typedef char *   rm_job_list_t;
 
-  /* these are the typedefs that we will need to have 
+  /* these are the typedefs that we will need to have
    * if we want the states on the Front End Node of a BG system
    * make certain they match the rm_api.h values on the Service Node */
   enum rm_partition_state {RM_PARTITION_FREE,

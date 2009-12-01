@@ -9,36 +9,36 @@
 #  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 #  Written by Danny Auble <auble1@llnl.gov>.
 #  CODE-OCEC-09-009. All rights reserved.
-#  
+#
 #  This file is part of SLURM, a resource management program.
 #  For details, see <https://computing.llnl.gov/linux/slurm/>.
 #  Please also read the included file: DISCLAIMER.
-#  
+#
 #  SLURM is free software; you can redistribute it and/or modify it under
 #  the terms of the GNU General Public License as published by the Free
 #  Software Foundation; either version 2 of the License, or (at your option)
 #  any later version.
 #
-#  In addition, as a special exception, the copyright holders give permission 
+#  In addition, as a special exception, the copyright holders give permission
 #  to link the code of portions of this program with the OpenSSL library under
-#  certain conditions as described in each individual source file, and 
-#  distribute linked combinations including the two. You must obey the GNU 
-#  General Public License in all respects for all of the code used other than 
-#  OpenSSL. If you modify file(s) with this exception, you may extend this 
-#  exception to your version of the file(s), but you are not obligated to do 
+#  certain conditions as described in each individual source file, and
+#  distribute linked combinations including the two. You must obey the GNU
+#  General Public License in all respects for all of the code used other than
+#  OpenSSL. If you modify file(s) with this exception, you may extend this
+#  exception to your version of the file(s), but you are not obligated to do
 #  so. If you do not wish to do so, delete this exception statement from your
-#  version.  If you delete this exception statement from all source files in 
+#  version.  If you delete this exception statement from all source files in
 #  the program, then also delete it here.
-#  
+#
 #  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 #  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 #  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 #  details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with SLURM; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
-#  
+#
 ###############################################################################
 
 use strict;
@@ -138,7 +138,7 @@ my %node_opts;
 
 if($resource_list) {
 	%res_opts = %{parse_resource_list($resource_list)};
-		
+
 # 	while((my $key, my $val) = each(%res_opts)) {
 # 		print "$key = ";
 # 		if($val) {
@@ -147,7 +147,7 @@ if($resource_list) {
 # 			print "\n";
 # 		}
 # 	}
-	
+
 	if($res_opts{nodes}) {
 		%node_opts =  %{parse_node_opts($res_opts{nodes})};
 	}
@@ -157,10 +157,10 @@ my $command;
 
 if($interactive) {
 	$command = "$salloc";
-	
+
 } else {
 	$command = "$sbatch";
-	
+
 	$command .= " -D $directive_prefix" if $directive_prefix;
 	$command .= " -e $err_path" if $err_path;
 	$command .= " -o $out_path" if $out_path;
@@ -223,11 +223,11 @@ sub parse_resource_list {
 		   'walltime' => ""
 		   );
 	my @keys = keys(%opt);
-	
+
 	foreach my $key (@keys) {
 		#print "$rl\n";
 		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
-		
+
 	}
 	if($opt{cput}) {
 		$opt{cput} = get_minutes($opt{cput});
@@ -240,7 +240,7 @@ sub parse_resource_list {
 	if($opt{file}) {
 		$opt{file} = convert_mb_format($opt{file});
 	}
-	
+
 	return \%opt;
 }
 
@@ -271,24 +271,24 @@ sub parse_node_opts {
 			}
 		}
 	}
-	
+
 	$opt{hostlist} = Slurm::Hostlist::ranged_string($hl);
 
 	my $hl_cnt = Slurm::Hostlist::count($hl);
 	$opt{node_cnt} = $hl_cnt if $hl_cnt > $opt{node_cnt};
-	
-	# we always want at least one here 
+
+	# we always want at least one here
 	if(!$opt{node_cnt}) {
-		
+
 		$opt{node_cnt} = 1;
 	}
-	
-	# figure out the amount of tasks based of the node cnt and the amount 
+
+	# figure out the amount of tasks based of the node cnt and the amount
 	# of ppn's in the request
 	if($opt{task_cnt}) {
 		$opt{task_cnt} *= $opt{node_cnt};
 	}
-	
+
 	return \%opt;
 }
 
@@ -318,7 +318,7 @@ sub convert_mb_format {
 	my ($value) = @_;
 	my ($amount, $suffix) = $value =~ /(\d+)($|[KMGT])/i;
 	return if !$amount;
-	$suffix = lc($suffix); 
+	$suffix = lc($suffix);
 
 	if (!$suffix) {
 		$amount /= 1048576;
@@ -330,7 +330,7 @@ sub convert_mb_format {
 		$amount *= 1024;
 	} elsif ($suffix eq "t") {
 		$amount *= 1048576;
-	} else { 
+	} else {
 		print "don't know what to do with suffix $suffix\n";
 		return;
 	}
@@ -349,13 +349,13 @@ B<qsub> - submit a batch job in a familiar pbs format
 
 =head1 SYNOPSIS
 
-qsub  [-a date_time] [-A account_string] [-b secs] [-c interval] 
+qsub  [-a date_time] [-A account_string] [-b secs] [-c interval]
       [-C directive_prefix] [-e path] [-h] [-I]
       [-j join] [-k keep] [-l resource_list] [-m mail_options]
       [-M  user_list] [-N name] [-o path] [-p priority] [-q destination]
       [-r c] [-S path_list] [-u user_list] [-v variable_list] [-V]
       [-W additional_attributes] [-z] [script]
-    
+
 =head1 DESCRIPTION
 
 The B<qsub> command displays information about nodes.

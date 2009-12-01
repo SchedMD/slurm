@@ -40,7 +40,7 @@ static void _load_mask(cpu_set_t *mask)
 	int rc;
 
 #ifdef SCHED_GETAFFINITY_THREE_ARGS
-	rc = sched_getaffinity((pid_t) 0, (unsigned int) sizeof(cpu_set_t), 
+	rc = sched_getaffinity((pid_t) 0, (unsigned int) sizeof(cpu_set_t),
 		mask);
 #else
 	rc = sched_getaffinity((pid_t) 0, mask);
@@ -61,8 +61,8 @@ static int _mask_to_int(cpu_set_t *mask)
 	}
 	return rc;
 }
-	
-	
+
+
 main (int argc, char **argv)
 {
 	char *task_str;

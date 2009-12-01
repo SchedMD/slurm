@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -119,7 +119,7 @@ void _do_help(void)
 		_usage();
 		break;
 	default:
-		fprintf(stderr, "sacct bug: params.opt_help=%d\n", 
+		fprintf(stderr, "sacct bug: params.opt_help=%d\n",
 			params.opt_help);
 	}
 }
@@ -136,7 +136,7 @@ static int _addto_job_list(List job_list, char *names)
 	char *name = NULL, *dot = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	jobacct_selected_step_t *curr_step = NULL;
-	
+
 	ListIterator itr = NULL;
 	char quote_c = '\0';
 	int quote = 0;
@@ -182,9 +182,9 @@ static int _addto_job_list(List job_list, char *names)
 					xfree(name);
 
 					while((curr_step = list_next(itr))) {
-						if((curr_step->jobid 
+						if((curr_step->jobid
 						    == selected_step->jobid)
-						   && (curr_step->stepid 
+						   && (curr_step->stepid
 						       == selected_step->
 						       stepid))
 							break;
@@ -194,7 +194,7 @@ static int _addto_job_list(List job_list, char *names)
 						list_append(job_list,
 							    selected_step);
 						count++;
-					} else 
+					} else
 						destroy_jobacct_selected_step(
 							selected_step);
 					list_iterator_reset(itr);
@@ -223,7 +223,7 @@ static int _addto_job_list(List job_list, char *names)
 
 			while((curr_step = list_next(itr))) {
 				if((curr_step->jobid == selected_step->jobid)
-				   && (curr_step->stepid 
+				   && (curr_step->stepid
 				       == selected_step->stepid))
 					break;
 			}
@@ -231,14 +231,14 @@ static int _addto_job_list(List job_list, char *names)
 			if(!curr_step) {
 				list_append(job_list, selected_step);
 				count++;
-			} else 
+			} else
 				destroy_jobacct_selected_step(
 					selected_step);
 		}
-	}	
+	}
 	list_iterator_destroy(itr);
 	return count;
-} 
+}
 
 int decode_state_char(char *state)
 {
@@ -260,7 +260,7 @@ int decode_state_char(char *state)
 		return JOB_NODE_FAIL;
 	else
 		return -1; // unknown
-} 
+}
 
 void parse_command_line(int argc, char **argv)
 {
@@ -309,7 +309,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'j':
 			if ((strspn(optarg, "0123456789, ") < strlen(optarg))
-			    && (strspn(optarg, ".0123456789, ") 
+			    && (strspn(optarg, ".0123456789, ")
 				< strlen(optarg))) {
 				fprintf(stderr, "Invalid jobs list: %s\n",
 					optarg);
@@ -327,11 +327,11 @@ void parse_command_line(int argc, char **argv)
 			xstrfmtcat(params.opt_field_list, "%s,", optarg);
 			break;
 		case 'p':
-			print_fields_parsable_print = 
+			print_fields_parsable_print =
 				PRINT_FIELDS_PARSABLE_ENDING;
 			break;
 		case 'P':
-			print_fields_parsable_print = 
+			print_fields_parsable_print =
 				PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case 'v':
@@ -350,7 +350,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case ':':
 		case '?':	/* getopt() has explained it */
-			exit(1); 
+			exit(1);
 		}
 	}
 
@@ -362,7 +362,7 @@ void parse_command_line(int argc, char **argv)
 	if (optind < argc) {
 		optarg = argv[optind];
 		if ((strspn(optarg, "0123456789, ") < strlen(optarg))
-		    && (strspn(optarg, ".0123456789, ") 
+		    && (strspn(optarg, ".0123456789, ")
 			< strlen(optarg))) {
 			fprintf(stderr, "Invalid jobs list: %s\n",
 				optarg);
@@ -374,7 +374,7 @@ void parse_command_line(int argc, char **argv)
 		_addto_job_list(params.opt_job_list, optarg);
 	}
 
-	if(!params.opt_field_list) 
+	if(!params.opt_field_list)
 		xstrfmtcat(params.opt_field_list, "%s,", STAT_FIELDS);
 
 	if (params.opt_verbose) {
@@ -385,16 +385,16 @@ void parse_command_line(int argc, char **argv)
 
 	/* specific jobs requested? */
 	if (params.opt_verbose && params.opt_job_list
-	    && list_count(params.opt_job_list)) { 
+	    && list_count(params.opt_job_list)) {
 		debug("Jobs requested:\n");
 		itr = list_iterator_create(params.opt_job_list);
 		while((selected_step = list_next(itr))) {
-			if(selected_step->stepid != NO_VAL) 
+			if(selected_step->stepid != NO_VAL)
 				debug("\t: %d.%d\n",
 					selected_step->jobid,
 					selected_step->stepid);
-			else	
-				debug("\t: %d\n", 
+			else
+				debug("\t: %d\n",
 					selected_step->jobid);
 		}
 		list_iterator_destroy(itr);

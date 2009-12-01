@@ -4,33 +4,33 @@
  *****************************************************************************
  *  Copyright (C) 2007 Hewlett-Packard Development Company, L.P.
  *  Written by Christopher Holmes <cholmes@hp.com>, who borrowed heavily
- *  from existing SLURM source code, particularly src/srun/opt.c 
- *  
+ *  from existing SLURM source code, particularly src/srun/opt.c
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -86,7 +86,7 @@ void print_slurm_version(void)
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
-/* 
+/*
  * verify that a distribution type in arg is of a known form
  * returns the task_dist_states, or -1 if state is unknown
  */
@@ -290,7 +290,7 @@ _str_to_nodes(const char *num_str, char **leftover)
 	if (endptr == num_str) { /* no valid digits */
 		*leftover = (char *)num_str;
 		return 0;
-	} 
+	}
 	if (*endptr != '\0' && (*endptr == 'k' || *endptr == 'K')) {
 		num *= 1024;
 		endptr++;
@@ -300,7 +300,7 @@ _str_to_nodes(const char *num_str, char **leftover)
 	return (int)num;
 }
 
-/* 
+/*
  * verify that a node count in arg is of a known form (count or min-max)
  * OUT min, max specified minimum and maximum node counts
  * RET true if valid
@@ -309,7 +309,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 {
 	char *ptr, *min_str, *max_str;
 	char *leftover;
-	
+
 	/* Does the string contain a "-" character?  If so, treat as a range.
 	 * otherwise treat as an absolute node count. */
 	if ((ptr = index(arg, '-')) != NULL) {
@@ -356,7 +356,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 }
 
 /*
- * If the node list supplied is a file name, translate that into 
+ * If the node list supplied is a file name, translate that into
  *	a list of nodes, we orphan the data pointed to
  * RET true if the node list is a valid one
  */
@@ -364,7 +364,7 @@ bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
 		      int task_count)
 {
 	char *nodelist = NULL;
-	
+
 	xassert (node_list_pptr);
 	xassert (*node_list_pptr);
 
@@ -374,12 +374,12 @@ bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
 	/* If we are using Arbitrary grab count out of the hostfile
 	   using them exactly the way we read it in since we are
 	   saying, lay it out this way! */
-	if(dist == SLURM_DIST_ARBITRARY) 
+	if(dist == SLURM_DIST_ARBITRARY)
 		nodelist = slurm_read_hostfile(*node_list_pptr, task_count);
         else
 		nodelist = slurm_read_hostfile(*node_list_pptr, NO_VAL);
-		
-	if (!nodelist) 
+
+	if (!nodelist)
 		return false;
 
 	xfree(*node_list_pptr);
@@ -389,7 +389,7 @@ bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
 	return true;
 }
 
-/* 
+/*
  * get either 1 or 2 integers for a resource count in the form of either
  * (count, min-max, or '*')
  * A partial error message is passed in via the 'what' param.
@@ -400,7 +400,7 @@ bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
  * IN isFatal - if set, exit on error
  * RET true if valid
  */
-bool get_resource_arg_range(const char *arg, const char *what, int* min, 
+bool get_resource_arg_range(const char *arg, const char *what, int* min,
 			    int *max, bool isFatal)
 {
 	char *p;
@@ -450,7 +450,7 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 		result *= 1048576;
 		p++;
 	}
-	
+
 	if (((*p != '\0') && (*p != '-')) || (result <= 0L)) {
 		error ("Invalid numeric value \"%s\" for %s.", arg, what);
 		if (isFatal)
@@ -469,13 +469,13 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 	return true;
 }
 
-/* 
- * verify that a resource counts in arg are of a known form X, X:X, X:X:X, or 
+/*
+ * verify that a resource counts in arg are of a known form X, X:X, X:X:X, or
  * X:X:X:X, where X is defined as either (count, min-max, or '*')
  * RET true if valid
  */
-bool verify_socket_core_thread_count(const char *arg, int *min_sockets, 
-				     int *min_cores, int *min_threads, 
+bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
+				     int *min_cores, int *min_threads,
 				     cpu_bind_type_t *cpu_bind_type)
 {
 	bool tmp_val,ret_val;
@@ -486,7 +486,7 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 	buf[1][0] = '\0';
 	buf[2][0] = '\0';
 
- 	for (j=0;j<3;j++) {	
+ 	for (j=0;j<3;j++) {
 		for (i=0;i<47;i++) {
 			if (*cur_ptr == '\0' || *cur_ptr ==':')
 				break;
@@ -515,24 +515,24 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 	buf[j][i] = '\0';
 
 	ret_val = true;
-	tmp_val = get_resource_arg_range(&buf[0][0], "first arg of -B", 
+	tmp_val = get_resource_arg_range(&buf[0][0], "first arg of -B",
 					 min_sockets, NULL, true);
 	ret_val = ret_val && tmp_val;
-	tmp_val = get_resource_arg_range(&buf[1][0], "second arg of -B", 
+	tmp_val = get_resource_arg_range(&buf[1][0], "second arg of -B",
 					 min_cores, NULL, true);
 	ret_val = ret_val && tmp_val;
-	tmp_val = get_resource_arg_range(&buf[2][0], "third arg of -B", 
+	tmp_val = get_resource_arg_range(&buf[2][0], "third arg of -B",
 					 min_threads, NULL, true);
 	ret_val = ret_val && tmp_val;
 
 	return ret_val;
 }
 
-/* 
+/*
  * verify that a hint is valid and convert it into the implied settings
  * RET true if valid
  */
-bool verify_hint(const char *arg, int *min_sockets, int *min_cores, 
+bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 		 int *min_threads, cpu_bind_type_t *cpu_bind_type)
 {
 	char *buf, *p, *tok;
@@ -667,7 +667,7 @@ search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode)
 	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
 
-	if (  (cmd[0] == '.' || cmd[0] == '/') 
+	if (  (cmd[0] == '.' || cmd[0] == '/')
            && (access(cmd, access_mode) == 0 ) ) {
 		if (cmd[0] == '.')
 			xstrfmtcat(fullpath, "%s/", cwd);
@@ -679,7 +679,7 @@ search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode)
 	if (l == NULL)
 		return NULL;
 
-	if (check_current_dir) 
+	if (check_current_dir)
 		list_prepend(l, xstrdup(cwd));
 
 	i = list_iterator_create(l);
@@ -734,7 +734,7 @@ char *print_geometry(const uint16_t *geometry)
 	return rc;
 }
 
-/* Translate a signal option string "--signal=<int>[@<time>]" into 
+/* Translate a signal option string "--signal=<int>[@<time>]" into
  * it's warn_signal and warn_time components.
  * RET 0 on success, -1 on failure */
 int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time)

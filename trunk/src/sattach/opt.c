@@ -6,21 +6,21 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
@@ -167,7 +167,7 @@ static void argerror(const char *msg, ...)
  *  Get a POSITIVE decimal integer from arg.
  *
  *  Returns the integer on success, exits program on failure.
- * 
+ *
  */
 static int
 _get_pos_int(const char *arg, const char *what)
@@ -214,7 +214,7 @@ static void _opt_default()
 
 	opt.euid = (uid_t) -1;
 	opt.egid = (gid_t) -1;
-	
+
 	opt.labelio = false;
 	opt.ctrl_comm_ifhn  = xshort_hostname();
 	memcpy(&opt.fds, &fds, sizeof(fds));
@@ -231,8 +231,8 @@ static void _opt_default()
 /*---[ env var processing ]-----------------------------------------------*/
 
 /*
- * try to use a similar scheme as popt. 
- * 
+ * try to use a similar scheme as popt.
+ *
  * in order to add a new env var (to be processed like an option):
  *
  * define a new entry into env_vars[], if the option is a simple int
@@ -262,7 +262,7 @@ static void _opt_env(void)
 	env_vars_t *e   = env_vars;
 
 	while (e->var) {
-		if ((val = getenv(e->var)) != NULL) 
+		if ((val = getenv(e->var)) != NULL)
 			_process_env_var(e, val);
 		e++;
 	}
@@ -305,11 +305,11 @@ void set_options(const int argc, char **argv)
 	char *opt_string = "+hlQuvV";
 
 	opt.progname = xbasename(argv[0]);
-	optind = 0;		
+	optind = 0;
 	while((opt_char = getopt_long(argc, argv, opt_string,
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
-			
+
 		case '?':
 			fprintf(stderr, "Try \"sattach --help\" for more "
 				"information\n");
@@ -437,7 +437,7 @@ static void _opt_args(int argc, char **argv)
 		exit(error_exit);
 }
 
-/* 
+/*
  * _opt_verify : perform some post option processing verification
  *
  */

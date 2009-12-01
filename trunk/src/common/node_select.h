@@ -6,38 +6,38 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _NODE_SELECT_H 
+#ifndef _NODE_SELECT_H
 #define _NODE_SELECT_H
 
 #include <slurm/slurm.h>
@@ -70,7 +70,7 @@ extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer);
 extern int node_select_unpack_block_info(block_info_t **block_info, Buf buffer);
 
 /*
- * node_select_block_info_msg_free - free buffer returned by 
+ * node_select_block_info_msg_free - free buffer returned by
  *	slurm_load_node_select
  * IN block_info_msg_pptr - data is freed and pointer is set to NULL
  * RET 0 or a slurm error code
@@ -105,8 +105,8 @@ extern int select_g_state_save(char *dir_name);
  */
 extern int select_g_state_restore(char *dir_name);
 
-/* 
- * Note the initialization of job records, issued upon restart of 
+/*
+ * Note the initialization of job records, issued upon restart of
  * slurmctld and used to synchronize any job state.
  */
 extern int select_g_job_init(List job_list);
@@ -124,39 +124,39 @@ extern int select_g_node_init(struct node_record *node_ptr, int node_cnt);
  */
 extern int select_g_block_init(List part_list);
 
-/* 
- * Update specific block (usually something has gone wrong)  
+/*
+ * Update specific block (usually something has gone wrong)
  * IN block_desc_ptr - information about the block
  */
 extern int select_g_update_block (update_block_msg_t *block_desc_ptr);
 
-/* 
- * Update specific sub nodes (usually something has gone wrong)  
+/*
+ * Update specific sub nodes (usually something has gone wrong)
  * IN block_desc_ptr - information about the block
  */
 extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr);
 
-/* 
+/*
  * Get select data from a plugin
  * IN node_pts  - current node record
- * IN dinfo   - type of data to get from the node record 
+ * IN dinfo   - type of data to get from the node record
  *                (see enum select_plugindata_info)
  * IN job_ptr   - pointer to the job that's related to this query (may be NULL)
  * IN/OUT data  - the data to get from node record
  */
-extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo, 
+extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data);
 
-/* 
- * Updated a node configuration. This happens when a node registers with 
+/*
+ * Updated a node configuration. This happens when a node registers with
  *	more resources than originally configured (e.g. memory).
  * IN index  - index into the node record list
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
 extern int select_g_update_node_config (int index);
 
-/* 
+/*
  * Updated a node state in the plugin, this should happen when a node is
  * drained or put into a down state then changed back.
  * IN index  - index into the node record list
@@ -165,7 +165,7 @@ extern int select_g_update_node_config (int index);
  */
 extern int select_g_update_node_state (int index, uint16_t state);
 
-/* 
+/*
  * Alter the node count for a job given the type of system we are on
  * IN/OUT job_desc  - current job desc
  */
@@ -219,20 +219,20 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data);
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
  * IN preemptee_candidates - List of pointers to jobs which can bee preempted
- * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the 
- *		jobs to be preempted to initiate the pending job. Not set 
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
+ *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
  * RET zero on success, EINVAL otherwise
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			     uint32_t min_nodes, uint32_t max_nodes, 
-			     uint32_t req_nodes, uint16_t mode, 
+			     uint32_t min_nodes, uint32_t max_nodes,
+			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
 			     List *preemptee_job_list);
 
 /*
- * Note initiation of job is about to begin. Called immediately 
+ * Note initiation of job is about to begin. Called immediately
  * after select_g_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated
  */
@@ -283,7 +283,7 @@ extern int select_g_select_jobinfo_free(select_jobinfo_t *jobinfo);
  * IN data - the data to enter into job credential
  */
 extern int select_g_select_jobinfo_set(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type, 
+				       enum select_jobdata_type data_type,
 				       void *data);
 
 /* get data from a select job credential
@@ -357,9 +357,9 @@ extern int select_g_select_nodeinfo_set_all(time_t last_query_time);
 
 extern int select_g_select_nodeinfo_set(struct job_record *job_ptr);
 
-extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
+extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 					enum select_nodedata_type dinfo,
-					enum node_states state, 
+					enum node_states state,
 					void *data);
 
 
@@ -367,7 +367,7 @@ extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
  * NODE-SELECT PLUGIN SPECIFIC INFORMATION FUNCTIONS  *
 \******************************************************/
 
-/* pack node-select plugin specific information into a buffer in 
+/* pack node-select plugin specific information into a buffer in
  *	machine independent form
  * IN last_update_time - time of latest information consumer has
  * OUT buffer - location to hold the data, consumer must free

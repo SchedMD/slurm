@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -49,7 +49,7 @@
 # include <ntbl.h>
 #else
 # error "Must have libntbl to compile this module!"
-#endif 
+#endif
 
 #include <sys/stat.h>
 #include <slurm/slurm_errno.h>
@@ -58,7 +58,7 @@
 #include "src/plugins/switch/federation/federation.h"
 #include "src/plugins/switch/federation/federation_keys.h"
 
-/* 
+/*
  * Definitions local to this module
  */
 #define FED_NODEINFO_MAGIC	0xc00cc00d
@@ -83,20 +83,20 @@ extern bool fed_need_state_save;
 mode_t fed_umask;
 
 /*
- * Data structures specific to Federation 
+ * Data structures specific to Federation
  *
  * We are going to some trouble to keep these defs private so slurm
  * hackers not interested in the interconnect details can just pass around
  * the opaque types.  All use of the data structure internals is local to this
  * module.
  */
- 
+
 typedef struct fed_window {
 	uint16_t id;
 	uint32_t status;
 	uint16_t job_key;
 } fed_window_t;
-	
+
 typedef struct fed_adapter {
 	char name[FED_ADAPTERNAME_LEN];
 	uint16_t lid;
@@ -155,7 +155,7 @@ typedef struct {
 	uint16_t network_id;
 } fed_cache_entry_t;
 
-/* 
+/*
  * Globals
  */
 fed_libstate_t *fed_state = NULL;
@@ -192,15 +192,15 @@ static int _parse_fed_file(hostlist_t *adapter_list);
 static void _init_adapter_cache(void);
 static int _fill_in_adapter_cache(void);
 
-/* The _lock() and _unlock() functions are used to lock/unlock a 
- * global mutex.  Used to serialize access to the global library 
- * state variable fed_state. 
+/* The _lock() and _unlock() functions are used to lock/unlock a
+ * global mutex.  Used to serialize access to the global library
+ * state variable fed_state.
  */
 static void
 _lock(void)
 {
 	int err = 1;
-	
+
 	while(err) {
 		err = pthread_mutex_lock(&global_lock);
 	}
@@ -210,7 +210,7 @@ static void
 _unlock(void)
 {
 	int err = 1;
-	
+
 	while(err) {
 		err = pthread_mutex_unlock(&global_lock);
 	}
@@ -266,17 +266,17 @@ _lookup_fed_status_tab(int status)
 {
 	char *res = NULL;
 	int i;
-	
+
 	for(i = 0; i < sizeof(fed_status_tab) / sizeof(fed_status_t); i++) {
 		if(fed_status_tab[i].status_number == status) {
 			res = fed_status_tab[i].status_msg;
 			break;
 		}
 	}
-	
+
 	if(!res)
 		res = fed_status_tab[FED_STATUS_UNKNOWN].status_msg;
-		
+
 	return res;
 }
 
@@ -284,7 +284,7 @@ _lookup_fed_status_tab(int status)
 void fed_print_jobinfo(FILE *fp, fed_jobinfo_t *jobinfo)
 {
 	assert(jobinfo->magic == FED_JOBINFO_MAGIC);
-	
+
 	/* stubbed out */
 }
 
@@ -295,7 +295,7 @@ char *fed_sprint_jobinfo(fed_jobinfo_t *j, char *buf,
 	int count;
 	char *tmp = buf;
 	int remaining = size;
-	
+
 	assert(buf);
 	assert(j);
 	assert(j->magic == FED_JOBINFO_MAGIC);
@@ -323,7 +323,7 @@ char *fed_sprint_jobinfo(fed_jobinfo_t *j, char *buf,
 
 /* The lid caching functions were created to avoid unnecessary
  * function calls each time we need to load network tables on a node.
- * _init_cache() simply initializes the cache to sane values and 
+ * _init_cache() simply initializes the cache to sane values and
  * needs to be called before any other cache functions are called.
  *
  * Used by: slurmd/slurmstepd
@@ -332,7 +332,7 @@ static void
 _init_adapter_cache(void)
 {
 	int i;
-	
+
 	for(i = 0; i < FED_MAXADAPTERS; i++) {
 		lid_cache[i].name[0] = 0;
 		lid_cache[i].lid = -1;
@@ -353,7 +353,7 @@ _fill_in_adapter_cache(void)
 	int num;
 	int rc;
 	int i;
-	
+
 	adapters = hostlist_iterator_create(adapter_list);
 	for (i = 0; (adapter_name = hostlist_next(adapters)); i++) {
 		rc = ntbl_adapter_resources(NTBL_VERSION, adapter_name, &res);
@@ -385,16 +385,16 @@ static void
 _cache_lid(fed_adapter_t *ap)
 {
 	assert(ap);
-	
+
 	int adapter_num = ap->name[3] - (int) '0';
 
 	lid_cache[adapter_num].lid = ap->lid;
 	lid_cache[adapter_num].network_id = ap->network_id;
-	strncpy(lid_cache[adapter_num].name, ap->name, FED_ADAPTERNAME_LEN);		
+	strncpy(lid_cache[adapter_num].name, ap->name, FED_ADAPTERNAME_LEN);
 }
 
 
-/* Check lid cache for an adapter name and return the network id. 
+/* Check lid cache for an adapter name and return the network id.
  *
  * Used by: slurmd
  */
@@ -413,7 +413,7 @@ _get_network_id_from_adapter(char *adapter_name)
 }
 
 
-/* Check lid cache for an adapter name and return the lid. 
+/* Check lid cache for an adapter name and return the lid.
  *
  * Used by: slurmd
  */
@@ -442,14 +442,14 @@ static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 	int error_code;
 
 	info("adapter_name is %s", adapter_name);
-	
-	error_code = ntbl_adapter_resources(NTBL_VERSION, 
-					    adapter_name, 
+
+	error_code = ntbl_adapter_resources(NTBL_VERSION,
+					    adapter_name,
 					    &res);
-	if(error_code != NTBL_SUCCESS) 
+	if(error_code != NTBL_SUCCESS)
 		return SLURM_ERROR;
-	strncpy(fed_adapter->name, 
-		adapter_name, 
+	strncpy(fed_adapter->name,
+		adapter_name,
 		FED_ADAPTERNAME_LEN);
 	fed_adapter->lid = res.lid;
 	fed_adapter->network_id = res.network_id;
@@ -462,14 +462,14 @@ static int _set_up_adapter(fed_adapter_t *fed_adapter, char *adapter_name)
 	fed_adapter->window_count = res.window_count;
 	free(res.window_list);
 	_cache_lid(fed_adapter);
-	error_code = ntbl_status_adapter(NTBL_VERSION, 
-					 adapter_name, 
-					 &win_count, 
+	error_code = ntbl_status_adapter(NTBL_VERSION,
+					 adapter_name,
+					 &win_count,
 					 &status);
 	umask(fed_umask);
 	if(error_code)
 		slurm_seterrno_ret(ESTATUS);
-	tmp_winlist = (fed_window_t *)xmalloc(sizeof(fed_window_t) * 
+	tmp_winlist = (fed_window_t *)xmalloc(sizeof(fed_window_t) *
 					     res.window_count);
 	if(!tmp_winlist)
 		slurm_seterrno_ret(ENOMEM);
@@ -520,7 +520,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 	if(s_p_parse_file(tbl, fed_conf) == SLURM_ERROR)
 		fatal("something wrong with opening/reading federation "
 		      "conf file");
-	
+
 	if (s_p_get_string(&adapter_name, "AdapterName", tbl)) {
 		int rc;
 		rc = hostlist_push(*adapter_list, adapter_name);
@@ -530,7 +530,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
 	}
 
 	s_p_hashtbl_destroy(tbl);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -540,7 +540,7 @@ static int _parse_fed_file(hostlist_t *adapter_list)
  *
  * Used by: slurmd
  */
-static int 
+static int
 _get_adapters(fed_adapter_t *list, int *count)
 {
 	hostlist_iterator_t adapter_iter;
@@ -549,7 +549,7 @@ _get_adapters(fed_adapter_t *list, int *count)
 
 	assert(list != NULL);
 	assert(adapter_list != NULL);
-		
+
 	adapter_iter = hostlist_iterator_create(adapter_list);
 	for (i = 0; (adapter = hostlist_next(adapter_iter)); i++) {
 		if(_set_up_adapter(list + i, adapter) == SLURM_ERROR)
@@ -561,11 +561,11 @@ _get_adapters(fed_adapter_t *list, int *count)
 	assert(i > 0);
 	*count = i;
 	info("Number of adapters is = %d", *count);
-	
+
 	if(!*count)
 		slurm_seterrno_ret(ENOADAPTER);
-	
-	return 0;		
+
+	return 0;
 }
 
 /* Used by: slurmd, slurmctld */
@@ -584,7 +584,7 @@ fed_alloc_jobinfo(fed_jobinfo_t **j)
 	new->tables_per_task = 0;
 	new->tableinfo = NULL;
 	*j = new;
-	
+
 	return 0;
 }
 
@@ -599,7 +599,7 @@ fed_alloc_nodeinfo(fed_nodeinfo_t **n)
 	new = (fed_nodeinfo_t *)xmalloc(sizeof(fed_nodeinfo_t));
 	if(!new)
 		slurm_seterrno_ret(ENOMEM);
-	new->adapter_list = (fed_adapter_t *)xmalloc(sizeof(fed_adapter_t) 
+	new->adapter_list = (fed_adapter_t *)xmalloc(sizeof(fed_adapter_t)
 		* FED_MAXADAPTERS);
 	if(!new->adapter_list) {
 		xfree(new);
@@ -608,7 +608,7 @@ fed_alloc_nodeinfo(fed_nodeinfo_t **n)
 	new->magic = FED_NODEINFO_MAGIC;
 	new->adapter_count = 0;
 	new->next = NULL;
-	
+
 	*n = new;
 
 	return 0;
@@ -626,7 +626,7 @@ fed_build_nodeinfo(fed_nodeinfo_t *n, char *name)
 {
 	int count;
 	int err;
-	
+
 	assert(n);
 	assert(n->magic == FED_NODEINFO_MAGIC);
 	assert(name);
@@ -645,11 +645,11 @@ static int
 _print_adapter_resources(ADAPTER_RESOURCES *r, char *buf, size_t size)
 {
 	int count;
-	
+
 	assert(r);
 	assert(buf);
 	assert(size > 0);
-	
+
 	count = snprintf(buf, size,
 			"--Begin Adapter Resources--\n"
 			"  device_type = %x\n"
@@ -681,7 +681,7 @@ _print_adapter_resources(ADAPTER_RESOURCES *r, char *buf, size_t size)
 #else
 			r->rcontext_block_count);
 #endif
-	
+
 	return count;
 }
 
@@ -689,11 +689,11 @@ static int
 _print_window_status(struct NTBL_STATUS *s, char *buf, size_t size)
 {
 	int count;
-	
+
 	assert(s);
 	assert(buf);
 	assert(size > 0);
-	
+
 	switch(s->rc) {
 	case NTBL_UNLOADED_STATE:
 		count = snprintf(buf, size,
@@ -710,8 +710,8 @@ _print_window_status(struct NTBL_STATUS *s, char *buf, size_t size)
 			s->window_id, s->adapter);
 #else
 			"window %u on %s: %s\n",
-			s->window_id, s->adapter, 
-			_lookup_fed_status_tab(s->rc));			
+			s->window_id, s->adapter,
+			_lookup_fed_status_tab(s->rc));
 #endif
 		break;
 	case NTBL_LOADED_STATE:
@@ -747,24 +747,24 @@ _print_window_status(struct NTBL_STATUS *s, char *buf, size_t size)
 #else
 			"window %u on %s: %s\n",
 			s->window_id, s->adapter,
-			_lookup_fed_status_tab(s->rc));			
-#endif			
+			_lookup_fed_status_tab(s->rc));
+#endif
 		break;
 	default:
 		count = snprintf(buf, size,
 			"Uknown NTBL Return Code For Window %d: %s\n",
-			 s->window_id, 
+			 s->window_id,
 			 _lookup_fed_status_tab(s->rc));
-	}					
-	
-	return count;		
+	}
+
+	return count;
 }
 #endif
 static int
 _print_window_struct(fed_window_t *w, char *buf, size_t size)
 {
 	int count;
-	
+
 	assert(w);
 	assert(buf);
 	assert(size > 0);
@@ -779,8 +779,8 @@ _print_window_struct(fed_window_t *w, char *buf, size_t size)
 }
 
 /* Writes out nodeinfo structure to a buffer.  Maintains the
- * snprintf semantics by only filling the buffer up to the value 
- * of size.  If FED_VERBOSE_PRINT is defined this function will 
+ * snprintf semantics by only filling the buffer up to the value
+ * of size.  If FED_VERBOSE_PRINT is defined this function will
  * dump the entire structure, otherwise only the "useful" part.
  *
  * Used by: slurmd, slurmctld
@@ -794,13 +794,13 @@ fed_print_nodeinfo(fed_nodeinfo_t *n, char *buf, size_t size)
 	int remaining = size;
 	int count;
 	char *tmp = buf;
-	
+
 	assert(n);
 	assert(buf);
 	assert(size > 0);
 	assert(n->magic == FED_NODEINFO_MAGIC);
 
-	count = snprintf(tmp, remaining, 
+	count = snprintf(tmp, remaining,
 			 "Node: %s\n",
 			 n->name);
 	if(count < 0)
@@ -840,15 +840,15 @@ fed_print_nodeinfo(fed_nodeinfo_t *n, char *buf, size_t size)
 		tmp += count;
 		if(remaining < 1)
 			return buf;
-			
+
 		w = a->window_list;
 		for(j = 0; j < a->window_count; j++) {
 #if FED_VERBOSE_PRINT
 			count = _print_window_struct(&w[j], tmp, remaining);
 #else
-			
+
 			if(w[j].status != NTBL_UNLOADED_STATE)
-				count = _print_window_struct(&w[j], tmp, 
+				count = _print_window_struct(&w[j], tmp,
 						remaining);
 			else
 				count = 0;
@@ -859,16 +859,16 @@ fed_print_nodeinfo(fed_nodeinfo_t *n, char *buf, size_t size)
 			tmp += count;
 			if(remaining < 1)
 				return buf;
-		}			
+		}
 	}
-	
+
 	return buf;
 }
 
 /* Note that when collecting max_winmem, min_winmem and avail_mem
- * we convert these values from 64 to 32 bit unisgned integers.  This 
- * was to make the pack/unpack implementation easier.  I am taking a 
- * chance here that IBM will not release Federation adapters with more 
+ * we convert these values from 64 to 32 bit unisgned integers.  This
+ * was to make the pack/unpack implementation easier.  I am taking a
+ * chance here that IBM will not release Federation adapters with more
  * than 4GB of memory.
  *
  * Used by: all
@@ -879,11 +879,11 @@ fed_pack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	int i,j;
 	fed_adapter_t *a;
 	int offset;
-	
+
 	assert(n);
 	assert(n->magic == FED_NODEINFO_MAGIC);
 	assert(buf);
-	
+
 	offset = get_buf_offset(buf);
 	pack32(n->magic, buf);
 	packmem(n->name, FED_HOSTLEN, buf);
@@ -914,7 +914,7 @@ _copy_node(fed_nodeinfo_t *dest, fed_nodeinfo_t *src)
 	int i,j;
 	fed_adapter_t *sa = NULL;
 	fed_adapter_t *da = NULL;
-	
+
 	assert(dest);
 	assert(src);
 	assert(dest->magic == FED_NODEINFO_MAGIC);
@@ -940,18 +940,18 @@ _copy_node(fed_nodeinfo_t *dest, fed_nodeinfo_t *src)
 		for(j = 0; j < da->window_count; j++)
 			da->window_list[j] = sa->window_list[j];
 	}
-	
+
 	return SLURM_SUCCESS;
 }
 
 /* The idea behind keeping the hash table was to avoid a linear
- * search of the node list each time we want to retrieve or 
+ * search of the node list each time we want to retrieve or
  * modify a node's data.  The _hash_index function translates
  * a node name to an index into the hash table.
  *
  * Used by: slurmctld
  */
-static int 
+static int
 _hash_index (char *name)
 {
 	int index = 0;
@@ -966,7 +966,7 @@ _hash_index (char *name)
 	for (j = 1; *name; name++, j++)
 		index += (int)*name * j;
 	index %= fed_state->hash_max;
-	
+
 	return index;
 }
 
@@ -979,7 +979,7 @@ _find_node(fed_libstate_t *lp, char *name)
 {
 	int i;
 	fed_nodeinfo_t *n;
-	
+
 	assert(name);
 	assert(lp);
 
@@ -1025,9 +1025,9 @@ static void
 _hash_rebuild(fed_libstate_t *state)
 {
 	int i;
-	
+
 	assert(state);
-	
+
 	if(state->hash_table)
 		xfree(state->hash_table);
 	if (state->node_count > state->hash_max || state->hash_max == 0)
@@ -1041,9 +1041,9 @@ _hash_rebuild(fed_libstate_t *state)
 }
 
 /* If the node is already in the node list then simply return
- * a pointer to it, otherwise dynamically allocate memory to the 
+ * a pointer to it, otherwise dynamically allocate memory to the
  * node list if necessary.
- * 
+ *
  * Used by: slurmctld
  */
 static fed_nodeinfo_t *
@@ -1077,7 +1077,7 @@ _alloc_node(fed_libstate_t *lp, char *name)
 		slurm_seterrno(ENOMEM);
 		return NULL;
 	}
-	
+
 	n = lp->node_list + (lp->node_count++);
 	n->magic = FED_NODEINFO_MAGIC;
 	n->name[0] = '\0';
@@ -1101,9 +1101,9 @@ _print_libstate(const fed_libstate_t *l)
 {
 	int i;
 	char buf[3000];
-	
+
 	assert(l);
-	
+
 	printf("--Begin libstate--\n");
 	printf("  magic = %u\n", l->magic);
 	printf("  node_count = %u\n", l->node_count);
@@ -1179,9 +1179,9 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 
 	/* NOTE!  We don't care at this point whether n is valid.
 	 * If it's NULL, we will just forego the copy at the end.
-	 */	
+	 */
 	assert(buf);
-	
+
 	/* Extract node name from buffer
 	 */
 	safe_unpack32(&magic, buf);
@@ -1199,7 +1199,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	 * the slurmctld only unpacks RPCs to find out their identity.
 	 * Most of the RPCs, including the one calling this function, are
 	 * simply ignored.
-	 * 
+	 *
 	 * So, here we just do a fake unpack to advance the buffer pointer.
 	 */
 	if (fed_state == NULL) {
@@ -1245,7 +1245,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		safe_unpack32(&tmp_a->min_winmem, buf);
 		safe_unpack32(&tmp_a->avail_mem, buf);
 		safe_unpack32(&tmp_a->window_count, buf);
-		tmp_w = (fed_window_t *)xmalloc(sizeof(fed_window_t) * 
+		tmp_w = (fed_window_t *)xmalloc(sizeof(fed_window_t) *
 			tmp_a->window_count);
 		if(!tmp_w)
 			slurm_seterrno_ret(ENOMEM);
@@ -1261,7 +1261,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		tmp_a->window_list = tmp_w;
 		tmp_w = NULL;	/* don't free on unpack error of next adapter */
 	}
-	
+
 copy_node:
 	/* Only copy the node_info structure if the caller wants it */
 	if(n != NULL)
@@ -1273,7 +1273,7 @@ copy_node:
 #endif
 
 	return SLURM_SUCCESS;
-	
+
 unpack_error:
 	xfree(tmp_w);
 	slurm_seterrno_ret(EUNPACK);
@@ -1301,12 +1301,12 @@ fed_free_nodeinfo(fed_nodeinfo_t *n, bool ptr_into_array)
 {
 	fed_adapter_t *adapter;
 	int i;
-	
+
 	if(!n)
 		return;
-	
+
 	assert(n->magic == FED_NODEINFO_MAGIC);
-	
+
 	if(n->adapter_list) {
 		adapter = n->adapter_list;
 		for (i = 0; i < n->adapter_count; i++) {
@@ -1318,7 +1318,7 @@ fed_free_nodeinfo(fed_nodeinfo_t *n, bool ptr_into_array)
 		xfree(n);
 }
 
-/* Assign a unique key to each job.  The key is used later to 
+/* Assign a unique key to each job.  The key is used later to
  * gain access to the network table loaded on each node of a job.
  *
  * Federation documentation states that the job key must be greater
@@ -1330,16 +1330,16 @@ static uint16_t
 _next_key(void)
 {
 	uint16_t key;
-	
+
 	assert(fed_state);
-	
+
 	_lock();
 	key = fed_state->key_index % 0xFFF0;
 	if (key == 0)
 		key++;
 	fed_state->key_index = key + 1;
 	_unlock();
-	
+
 	return key;
 }
 
@@ -1392,16 +1392,16 @@ _allocate_windows_all(int adapter_cnt, fed_tableinfo_t *tableinfo,
 	fed_window_t *window;
 	NTBL *table;
 	int i;
-	
+
 	assert(tableinfo);
 	assert(hostname);
-	
+
 	node = _find_node(fed_state, hostname);
 	if(node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
 		return SLURM_ERROR;
 	}
-	
+
 	/* Reserve a window on each adapter for this task */
 	for (i = 0; i < adapter_cnt; i++) {
 		adapter = &node->adapter_list[i];
@@ -1422,7 +1422,7 @@ _allocate_windows_all(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		strncpy(tableinfo[i].adapter_name, adapter->name,
 			FED_ADAPTERNAME_LEN);
 	}
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -1443,17 +1443,17 @@ _allocate_window_single(char *adapter_name, fed_tableinfo_t *tableinfo,
 	fed_window_t *window;
 	NTBL *table;
 	int i;
-	
+
 	assert(tableinfo);
 	assert(hostname);
-	
+
 	debug("in _allocate_window_single");
 	node = _find_node(fed_state, hostname);
 	if(node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
 		return SLURM_ERROR;
 	}
-	
+
 	/* find the adapter */
 	for (i = 0; i < node->adapter_count; i++) {
 		debug("adapter %s at index %d", node->adapter_list[i].name, i);
@@ -1487,12 +1487,12 @@ _allocate_window_single(char *adapter_name, fed_tableinfo_t *tableinfo,
 
 	strncpy(tableinfo[0].adapter_name, adapter_name,
 		FED_ADAPTERNAME_LEN);
-	
+
 	return SLURM_SUCCESS;
 }
 
 
-/* Find the correct NTBL structs and set the state 
+/* Find the correct NTBL structs and set the state
  * of the switch windows for the specified task_id.
  *
  * Used by: slurmctld
@@ -1508,11 +1508,11 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 	NTBL *table = NULL;
 	int i, j;
 	bool adapter_found;
-	
+
 	assert(tableinfo);
 	assert(hostname);
 	assert(adapter_cnt <= FED_MAXADAPTERS);
-	
+
 	node = _find_node(fed_state, hostname);
 	if (node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
@@ -1522,7 +1522,7 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 		error("Found node, but adapter_list is NULL");
 		return SLURM_ERROR;
 	}
-	
+
 	for (i = 0; i < adapter_cnt; i++) {
 		if (tableinfo[i].table == NULL) {
 			error("tableinfo[%d].table is NULL", i);
@@ -1565,7 +1565,7 @@ _window_state_set(int adapter_cnt, fed_tableinfo_t *tableinfo,
 				(state == NTBL_UNLOADED_STATE) ? 0 : job_key;
 		}
 	}
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -1576,10 +1576,10 @@ static void
 _print_table(NTBL **table, int size)
 {
 	int i;
-	
+
 	assert(table);
 	assert(size > 0);
-	
+
 	printf("--Begin NTBL table--\n");
 	for(i = 0; i < size; i++) {
 		printf("  task_id: %u\n", table[i]->task_id);
@@ -1594,10 +1594,10 @@ static void
 _print_index(char *index, int size)
 {
 	int i;
-	
+
 	assert(index);
 	assert(size > 0);
-	
+
 	printf("--Begin lid index--\n");
 	for(i = 0; i < size; i++) {
 		printf("  task_id: %u\n", i);
@@ -1627,7 +1627,7 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 	int full_node_cnt;
 	int min_procs_per_node;
 	int max_procs_per_node;
-	
+
 	xassert(!hostlist_is_empty(hl));
 	xassert(jp);
 	xassert(jp->magic == FED_JOBINFO_MAGIC);
@@ -1651,19 +1651,19 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 	full_node_cnt = nprocs % nnodes;
 	min_procs_per_node = nprocs / nnodes;
 	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
-	
+
 	proc_cnt = 0;
 	_lock();
 	for  (i = 0; i < nnodes; i++) {
 		host = hostlist_next(hi);
 		if(!host)
 			error("Failed to get next host");
-		
+
 		if(i < full_node_cnt)
 			task_cnt = max_procs_per_node;
 		else
 			task_cnt = min_procs_per_node;
-		
+
 		for (j = 0; j < task_cnt; j++) {
 			rc = _window_state_set(jp->tables_per_task,
 					       jp->tableinfo,
@@ -1674,7 +1674,7 @@ _job_step_window_state(fed_jobinfo_t *jp, hostlist_t hl, enum NTBL_RC state)
 		free(host);
 	}
 	_unlock();
-	
+
 	hostlist_iterator_destroy(hi);
 	return SLURM_SUCCESS;
 }
@@ -1778,7 +1778,7 @@ fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
 		debug("fed_job_step_complete called when fed_state == NULL");
 	}
 	_unlock();
-	
+
 	hostlist_iterator_destroy(hi);
 	hostlist_destroy(uniq_hl);
 	return SLURM_SUCCESS;
@@ -1881,12 +1881,12 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		host = hostlist_next(hi);
 		if(!host)
 			error("Failed to get next host");
-		
+
 		if(i < full_node_cnt)
 			task_cnt = max_procs_per_node;
 		else
 			task_cnt = min_procs_per_node;
-		
+
 		for (j = 0; j < task_cnt; j++) {
 			if (adapter_name == NULL) {
 				rc = _allocate_windows_all(jp->tables_per_task,
@@ -1908,12 +1908,12 @@ fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs,
 		free(host);
 	}
 	_unlock();
-	
+
 
 #if FED_DEBUG
 	_print_table(jp->tableinfo[i].table, jp->tableinfo[i].table_length);
 #endif
-			
+
 	hostlist_iterator_destroy(hi);
 	return SLURM_SUCCESS;
 
@@ -1947,7 +1947,7 @@ fed_pack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	assert(j);
 	assert(j->magic == FED_JOBINFO_MAGIC);
 	assert(buf);
-	
+
 	pack32(j->magic, buf);
 	pack16(j->job_key, buf);
 	packmem(j->job_desc, DESCLEN, buf);
@@ -1991,16 +1991,16 @@ unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
 }
 
 /* Used by: all */
-int 
+int
 fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 {
 	uint32_t size;
 	int i, k;
-	
+
 	assert(j);
 	assert(j->magic == FED_JOBINFO_MAGIC);
 	assert(buf);
-	
+
 	safe_unpack32(&j->magic, buf);
 	assert(j->magic == FED_JOBINFO_MAGIC);
 	safe_unpack16(&j->job_key, buf);
@@ -2021,7 +2021,7 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	}
 
 	return SLURM_SUCCESS;
-	
+
 unpack_error:
 	error("fed_unpack_jobinfo error");
 	if (j->tableinfo) {
@@ -2063,7 +2063,7 @@ fed_copy_jobinfo(fed_jobinfo_t *job)
 			goto cleanup2;
 		memcpy(new->tableinfo, job->tableinfo,
 		       sizeof(fed_tableinfo_t) * job->tables_per_task);
-		
+
 		for (i = 0; i < job->tables_per_task; i++) {
 			new->tableinfo[i].table =
 				(NTBL **) xmalloc(job->tableinfo[i].table_length
@@ -2137,11 +2137,11 @@ fed_free_jobinfo(fed_jobinfo_t *jp)
 			xfree(tableinfo->table);
 		}
 		xfree(jp->tableinfo);
-	}	
+	}
 
 	xfree(jp);
 	jp = NULL;
-	
+
 	return;
 }
 
@@ -2155,7 +2155,7 @@ fed_get_jobinfo(fed_jobinfo_t *jp, int key, void *data)
 	fed_tableinfo_t **tableinfo = (fed_tableinfo_t **)data;
 	int *tables_per = (int *)data;
 	int *job_key = (int *)data;
-	
+
 	assert(jp);
 	assert(jp->magic == FED_JOBINFO_MAGIC);
 
@@ -2172,14 +2172,14 @@ fed_get_jobinfo(fed_jobinfo_t *jp, int key, void *data)
 	default:
 		slurm_seterrno_ret(EINVAL);
 	}
-	
+
 	return SLURM_SUCCESS;
 }
 
 
 /*
  * Check up to "retry" times for "window_id" on "adapter_name"
- * to switch to the NTBL_UNLOADED_STATE.  Sleep one second between 
+ * to switch to the NTBL_UNLOADED_STATE.  Sleep one second between
  * each retry.
  *
  * Used by: slurmd
@@ -2235,7 +2235,7 @@ _wait_for_all_windows(fed_tableinfo_t *tableinfo)
 			if (err != SLURM_SUCCESS) {
 				error("Window %hu adapter %s did not become"
 				      " free within %d seconds",
-				      lid, tableinfo->table[i]->window_id, 
+				      lid, tableinfo->table[i]->window_id,
 				      retry);
 				rc = err;
 				retry = 2;
@@ -2346,13 +2346,13 @@ fed_load_table(fed_jobinfo_t *jp, int uid, int pid)
 				jp->tableinfo[i].table);
 		}
 		if(err != NTBL_SUCCESS) {
-			error("unable to load table: [%d] %s\n", 
+			error("unable to load table: [%d] %s\n",
 			      err, _lookup_fed_status_tab(err));
 			return SLURM_ERROR;
 		}
 	}
 	umask(fed_umask);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -2384,7 +2384,7 @@ _unload_window(char *adapter, unsigned short job_key, unsigned short window_id,
 
 		sleep(1);
 	}
-	
+
 	return SLURM_FAILURE;
 }
 
@@ -2438,7 +2438,7 @@ static fed_libstate_t *
 _alloc_libstate(void)
 {
 	fed_libstate_t *tmp;
-	
+
 	tmp = (fed_libstate_t *)xmalloc(sizeof(fed_libstate_t));
 	if(!tmp) {
 		slurm_seterrno(ENOMEM);
@@ -2451,7 +2451,7 @@ _alloc_libstate(void)
 	tmp->hash_max = 0;
 	tmp->hash_table = NULL;
 	tmp->key_index = 1;
-	
+
 	return tmp;
 }
 
@@ -2471,7 +2471,7 @@ fed_init(void)
 	assert(!fed_state);
 	fed_state = tmp;
 	_unlock();
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -2504,10 +2504,10 @@ _pack_libstate(fed_libstate_t *lp, Buf buffer)
 {
 	int offset;
 	int i;
-	
+
 	assert(lp);
 	assert(lp->magic == FED_LIBSTATE_MAGIC);
-	
+
 	offset = get_buf_offset(buffer);
 	pack32(lp->magic, buffer);
 	pack32(lp->node_count, buffer);
@@ -2515,7 +2515,7 @@ _pack_libstate(fed_libstate_t *lp, Buf buffer)
 		(void)fed_pack_nodeinfo(&lp->node_list[i], buffer);
 	/* don't pack hash_table, we'll just rebuild on restore */
 	pack16(lp->key_index, buffer);
-	
+
 	return(get_buf_offset(buffer) - offset);
 }
 
@@ -2528,7 +2528,7 @@ fed_libstate_save(Buf buffer, bool free_flag)
 	if (fed_state != NULL)
                 _pack_libstate(fed_state, buffer);
 
-	/* Clean up fed_state since backup slurmctld can repeatedly 
+	/* Clean up fed_state since backup slurmctld can repeatedly
 	 * save and restore state */
 	if (free_flag) {
 		_free_libstate(fed_state);
@@ -2544,11 +2544,11 @@ _unpack_libstate(fed_libstate_t *lp, Buf buffer)
 	int offset;
 	int node_count;
 	int i;
-	
+
 	assert(lp->magic == FED_LIBSTATE_MAGIC);
-	
+
 	offset = get_buf_offset(buffer);
-	
+
 	safe_unpack32(&lp->magic, buffer);
 	safe_unpack32(&node_count, buffer);
 	for(i = 0; i < node_count; i++) {
@@ -2561,7 +2561,7 @@ _unpack_libstate(fed_libstate_t *lp, Buf buffer)
 		return SLURM_ERROR;
 	}
 	safe_unpack16(&lp->key_index, buffer);
-	
+
 	return SLURM_SUCCESS;
 
 unpack_error:

@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -139,11 +139,11 @@ static void _job_complete_handler(srun_job_complete_msg_t *msg)
 }
 
 /*
- * Job has been notified of it's approaching time limit. 
+ * Job has been notified of it's approaching time limit.
  * Job will be killed shortly after timeout.
  * This RPC can arrive multiple times with the same or updated timeouts.
  * FIXME: We may want to signal the job or perform other action for this.
- * FIXME: How much lead time do we want for this message? Some jobs may 
+ * FIXME: How much lead time do we want for this message? Some jobs may
  *	require tens of minutes to gracefully terminate.
  */
 static void _timeout_handler(srun_timeout_msg_t *msg)
@@ -152,7 +152,7 @@ static void _timeout_handler(srun_timeout_msg_t *msg)
 
 	if (msg->timeout != last_timeout) {
 		last_timeout = msg->timeout;
-		verbose("job time limit to be reached at %s", 
+		verbose("job time limit to be reached at %s",
 			ctime(&msg->timeout));
 	}
 }
@@ -162,7 +162,7 @@ static void _user_msg_handler(srun_user_msg_t *msg)
 	info("%s", msg->msg);
 }
 
-static void _ping_handler(srun_ping_msg_t *msg) 
+static void _ping_handler(srun_ping_msg_t *msg)
 {
 	/* the api will respond so there really isn't anything to do
 	   here */
@@ -192,13 +192,13 @@ static bool _retry(void)
 	} else if (errno == EINTR) {
 		/* srun may be interrupted by the BLCR checkpoint signal */
 		/*
-		 * XXX: this will cause the old job cancelled and a new 
+		 * XXX: this will cause the old job cancelled and a new
 		 * job allocated
 		 */
 		debug("Syscall interrupted while allocating resources, "
 		      "retrying.");
 		return true;
-	} else if (opt.immediate && 
+	} else if (opt.immediate &&
 		   ((errno == ETIMEDOUT) || (errno == ESLURM_NODES_BUSY))) {
 		error("Unable to allocate resources: %s",
 		      slurm_strerror(ESLURM_NODES_BUSY));
@@ -243,7 +243,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 		if (i) {
 			sleep(POLL_SLEEP);
 			rc = _blocks_dealloc();
-			if ((rc == 0) || (rc == -1)) 
+			if ((rc == 0) || (rc == -1))
 				cur_delay += POLL_SLEEP;
 			debug2("still waiting");
 		}
@@ -287,9 +287,9 @@ static int _blocks_dealloc(void)
 {
 	static block_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
 	int rc = 0, error_code = 0, i;
-	
+
 	if (bg_info_ptr) {
-		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
+		error_code = slurm_load_block_info(bg_info_ptr->last_update,
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&bg_info_ptr);
@@ -307,7 +307,7 @@ static int _blocks_dealloc(void)
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->block_array[i].state 
+		if(new_bg_ptr->block_array[i].state
 		   == RM_PARTITION_DEALLOCATING) {
 			rc = 1;
 			break;
@@ -344,7 +344,7 @@ allocate_test(void)
 	job_desc_msg_t *j = job_desc_msg_create_from_opts();
 	if(!j)
 		return SLURM_ERROR;
-	
+
 	rc = slurm_job_will_run(j);
 	job_desc_msg_destroy(j);
 	return rc;
@@ -359,7 +359,7 @@ allocate_nodes(void)
 
 	if (!j)
 		return NULL;
-	
+
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
 	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
@@ -394,10 +394,10 @@ allocate_nodes(void)
 			/* cancelled by signal */
 			break;
 		} else if(!resp && !_retry()) {
-			break;		
+			break;
 		}
 	}
-	
+
 	if (resp && !destroy_job) {
 		/*
 		 * Allocation granted!
@@ -449,7 +449,7 @@ ignore_signal(int signo)
 	/* do nothing */
 }
 
-int 
+int
 cleanup_allocation()
 {
 	slurm_allocation_msg_thr_destroy(msg_thr);
@@ -525,9 +525,9 @@ job_desc_msg_create_from_opts ()
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 	char buf[8192];
 	hostlist_t hl = NULL;
-	
+
 	slurm_init_job_desc_msg(j);
-	
+
 	j->contiguous     = opt.contiguous;
 	j->features       = opt.constraints;
 	if (opt.immediate == 1)
@@ -538,10 +538,10 @@ job_desc_msg_create_from_opts ()
 		j->name   = xstrdup(opt.cmd_name);
 	j->reservation    = xstrdup(opt.reservation);
 	j->wckey          = xstrdup(opt.wckey);
-	
+
 	j->req_nodes      = xstrdup(opt.nodelist);
-	
-	/* simplify the job allocation nodelist, 
+
+	/* simplify the job allocation nodelist,
 	 * not laying out tasks until step */
 	if(j->req_nodes) {
 		hl = hostlist_create(j->req_nodes);
@@ -555,7 +555,7 @@ job_desc_msg_create_from_opts ()
 		xfree(j->req_nodes);
 		j->req_nodes = xstrdup(buf);
 	}
-	
+
 	if(opt.distribution == SLURM_DIST_ARBITRARY
 	   && !j->req_nodes) {
 		error("With Arbitrary distribution you need to "
@@ -627,7 +627,7 @@ job_desc_msg_create_from_opts ()
 
 	if (opt.conn_type != (uint16_t) NO_VAL)
 		j->conn_type = opt.conn_type;
-			
+
 	if (opt.reboot)
 		j->reboot = 1;
 	if (opt.no_rotate)
@@ -729,7 +729,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		job->ctx_params.cpu_count = job->ctx_params.node_count;
 	else
 		job->ctx_params.cpu_count = opt.nprocs*opt.cpus_per_task;
-	
+
 	job->ctx_params.relative = (uint16_t)opt.relative;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
 	job->ctx_params.ckpt_dir = opt.ckpt_dir;
@@ -757,8 +757,8 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		job->ctx_params.plane_size = opt.plane_size;
 		break;
 	default:
-		job->ctx_params.task_dist = (job->ctx_params.task_count <= 
-					     job->ctx_params.node_count) 
+		job->ctx_params.task_dist = (job->ctx_params.task_count <=
+					     job->ctx_params.node_count)
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
 		opt.distribution = job->ctx_params.task_dist;
 		break;
@@ -767,18 +767,18 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	job->ctx_params.overcommit = opt.overcommit ? 1 : 0;
 
 	job->ctx_params.node_list = opt.nodelist;
-	
+
 	job->ctx_params.network = opt.network;
 	job->ctx_params.no_kill = opt.no_kill;
 	if (opt.job_name_set_cmd && opt.job_name)
 		job->ctx_params.name = opt.job_name;
 	else
 		job->ctx_params.name = opt.cmd_name;
-	
-	debug("requesting job %u, user %u, nodes %u including (%s)", 
+
+	debug("requesting job %u, user %u, nodes %u including (%s)",
 	      job->ctx_params.job_id, job->ctx_params.uid,
 	      job->ctx_params.node_count, job->ctx_params.node_list);
-	debug("cpus %u, tasks %u, name %s, relative %u", 
+	debug("cpus %u, tasks %u, name %s, relative %u",
 	      job->ctx_params.cpu_count, job->ctx_params.task_count,
 	      job->ctx_params.name, job->ctx_params.relative);
 	begin_time = time(NULL);
@@ -793,21 +793,21 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		if (job->step_ctx != NULL) {
 			if (i > 0)
 				info("Job step created");
-			
+
 			break;
 		}
 		rc = slurm_get_errno();
 
-		if (((opt.immediate != 0) && 
+		if (((opt.immediate != 0) &&
 		     ((opt.immediate == 1) ||
 		      (difftime(time(NULL), begin_time) > opt.immediate))) ||
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
-		     (rc != ESLURM_PROLOG_RUNNING) && 
+		     (rc != ESLURM_PROLOG_RUNNING) &&
 		     (rc != ESLURM_DISABLED))) {
 			error ("Unable to create job step: %m");
 			return -1;
 		}
-		
+
 		if (i == 0) {
 			info("Job step creation temporarily disabled, "
 			     "retrying");
@@ -833,13 +833,13 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	}
 
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, &job->stepid);
-	/*  Number of hosts in job may not have been initialized yet if 
+	/*  Number of hosts in job may not have been initialized yet if
 	 *    --jobid was used or only SLURM_JOB_ID was set in user env.
 	 *    Reset the value here just in case.
 	 */
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NUM_HOSTS,
 			   &job->nhosts);
-	
+
 	/*
 	 * Recreate filenames which may depend upon step id
 	 */

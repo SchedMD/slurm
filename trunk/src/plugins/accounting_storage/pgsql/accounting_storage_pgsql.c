@@ -7,32 +7,32 @@
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -61,14 +61,14 @@
  * where <application> is a description of the intended application of
  * the plugin (e.g., "jobacct" for SLURM job completion logging) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load job completion logging plugins if the plugin_type string has a 
+ * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobacct/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job accounting API 
+ * minimum versions for their plugins as the job accounting API
  * matures.
  */
 const char plugin_name[] = "Accounting storage PGSQL plugin";
@@ -80,7 +80,7 @@ typedef void PGconn;
 
 static pgsql_db_info_t *pgsql_db_info = NULL;
 static char *pgsql_db_name = NULL;
-		
+
 char *acct_coord_table = "acct_coord_table";
 char *acct_table = "acct_table";
 char *assoc_day_table = "assoc_day_usage_table";
@@ -115,7 +115,7 @@ static int _get_db_index(PGconn *acct_pgsql_db,
 	}
 
 	xfree(query);
-	
+
 	if(!PQntuples(result)) {
 		PQclear(result);
 		error("We can't get a db_index for this combo, "
@@ -123,9 +123,9 @@ static int _get_db_index(PGconn *acct_pgsql_db,
 		      (int)submit, jobid, associd);
 		return -1;
 	}
-	db_index = atoi(PQgetvalue(result, 0, 0));	
+	db_index = atoi(PQgetvalue(result, 0, 0));
 	PQclear(result);
-	
+
 	return db_index;
 }
 
@@ -143,8 +143,8 @@ static pgsql_db_info_t *_pgsql_acct_create_db_info()
 	db_info->host = slurm_get_accounting_storage_host();
 	if(!db_info->host)
 		db_info->host = xstrdup("localhost");
-	db_info->user = slurm_get_accounting_storage_user();	
-	db_info->pass = slurm_get_accounting_storage_pass();	
+	db_info->user = slurm_get_accounting_storage_user();
+	db_info->pass = slurm_get_accounting_storage_pass();
 	return db_info;
 }
 
@@ -157,7 +157,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "deleted", "smallint default 0" },
 		{ "acct", "text not null" },
 		{ "user_name", "text not null" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t acct_table_fields[] = {
@@ -168,7 +168,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "description", "text not null" },
 		{ "organization", "text not null" },
 		{ "qos", "text not null" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t assoc_table_fields[] = {
@@ -188,7 +188,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "max_nodes_per_job", "int default NULL" },
 		{ "max_wall_duration_per_job", "int default NULL" },
 		{ "max_cpu_seconds_per_job", "int default NULL" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t assoc_usage_table_fields[] = {
@@ -198,7 +198,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "associd", "int not null" },
 		{ "period_start", "bigint not null" },
 		{ "alloc_cpu_secs", "bigint default 0" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t cluster_table_fields[] = {
@@ -208,7 +208,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "name", "text not null" },
 		{ "control_host", "text not null" },
 		{ "control_port", "int not null" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t cluster_usage_table_fields[] = {
@@ -223,7 +223,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "idle_cpu_secs", "bigint default 0" },
 		{ "resv_cpu_secs", "bigint default 0" },
 		{ "over_cpu_secs", "bigint default 0" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t event_table_fields[] = {
@@ -233,7 +233,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "period_start", "bigint not null" },
 		{ "period_end", "bigint default 0 not null" },
 		{ "reason", "text not null" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t job_table_fields[] = {
@@ -252,13 +252,13 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "start", "bigint default 0 not null" },
 		{ "endtime", "bigint default 0 not null" },
 		{ "suspended", "bigint default 0 not null" },
-		{ "name", "text not null" }, 
+		{ "name", "text not null" },
 		{ "track_steps", "smallint not null" },
-		{ "state", "smallint not null" }, 
+		{ "state", "smallint not null" },
 		{ "comp_code", "int default 0 not null" },
 		{ "priority", "bigint not null" },
-		{ "req_cpus", "int not null" }, 
-		{ "alloc_cpus", "int not null" }, 
+		{ "req_cpus", "int not null" },
+		{ "alloc_cpus", "int not null" },
 		{ "nodelist", "text" },
 		{ "kill_requid", "integer default -1 not null" },
 		{ "qos", "smallint default 0" },
@@ -269,7 +269,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "hourly_rollup", "bigint default 0 not null" },
 		{ "daily_rollup", "bigint default 0 not null" },
 		{ "monthly_rollup", "bigint default 0 not null" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t qos_table_fields[] = {
@@ -277,9 +277,9 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "mod_time", "bigint default 0" },
 		{ "deleted", "smallint default 0" },
 		{ "id", "serial" },
-		{ "name", "text not null" }, 
-		{ "description", "text" }, 
-		{ NULL, NULL}		
+		{ "name", "text not null" },
+		{ "description", "text" },
+		{ NULL, NULL}
 	};
 
 	storage_field_t step_table_fields[] = {
@@ -322,7 +322,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "associd", "bigint not null" },
 		{ "start", "bigint default 0 not null" },
 		{ "endtime", "bigint default 0 not null" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t txn_table_fields[] = {
@@ -332,7 +332,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "name", "text not null" },
 		{ "actor", "text not null" },
 		{ "info", "text not null" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	storage_field_t user_table_fields[] = {
@@ -343,7 +343,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "default_acct", "text not null" },
 		{ "qos", "smallint default 1 not null" },
 		{ "admin_level", "smallint default 1 not null" },
-		{ NULL, NULL}		
+		{ NULL, NULL}
 	};
 
 	int i = 0, job_found = 0;
@@ -369,84 +369,84 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 
 	for (i = 0; i < PQntuples(result); i++) {
 		if(!acct_coord_found &&
-		   !strcmp(acct_coord_table, PQgetvalue(result, i, 0))) 
+		   !strcmp(acct_coord_table, PQgetvalue(result, i, 0)))
 			acct_coord_found = 1;
 		else if(!acct_found &&
-			!strcmp(acct_table, PQgetvalue(result, i, 0))) 
+			!strcmp(acct_table, PQgetvalue(result, i, 0)))
 			acct_found = 1;
 		else if(!assoc_found &&
-			!strcmp(assoc_table, PQgetvalue(result, i, 0))) 
+			!strcmp(assoc_table, PQgetvalue(result, i, 0)))
 			assoc_found = 1;
 		else if(!assoc_day_found &&
-			!strcmp(assoc_day_table, PQgetvalue(result, i, 0))) 
+			!strcmp(assoc_day_table, PQgetvalue(result, i, 0)))
 			assoc_day_found = 1;
 		else if(!assoc_hour_found &&
-			!strcmp(assoc_hour_table, PQgetvalue(result, i, 0))) 
+			!strcmp(assoc_hour_table, PQgetvalue(result, i, 0)))
 			assoc_hour_found = 1;
 		else if(!assoc_month_found &&
-			!strcmp(assoc_month_table, PQgetvalue(result, i, 0))) 
+			!strcmp(assoc_month_table, PQgetvalue(result, i, 0)))
 			assoc_month_found = 1;
 		else if(!cluster_found &&
-			!strcmp(cluster_table, PQgetvalue(result, i, 0))) 
+			!strcmp(cluster_table, PQgetvalue(result, i, 0)))
 			cluster_found = 1;
 		else if(!cluster_day_found &&
-			!strcmp(cluster_day_table, PQgetvalue(result, i, 0))) 
+			!strcmp(cluster_day_table, PQgetvalue(result, i, 0)))
 			cluster_day_found = 1;
 		else if(!cluster_hour_found &&
-			!strcmp(cluster_hour_table, PQgetvalue(result, i, 0))) 
+			!strcmp(cluster_hour_table, PQgetvalue(result, i, 0)))
 			cluster_hour_found = 1;
 		else if(!cluster_month_found &&
-			!strcmp(cluster_month_table, PQgetvalue(result, i, 0))) 
+			!strcmp(cluster_month_table, PQgetvalue(result, i, 0)))
 			cluster_month_found = 1;
 		else if(!event_found &&
-			!strcmp(event_table, PQgetvalue(result, i, 0))) 
+			!strcmp(event_table, PQgetvalue(result, i, 0)))
 			event_found = 1;
 		else if(!job_found &&
-			!strcmp(job_table, PQgetvalue(result, i, 0))) 
+			!strcmp(job_table, PQgetvalue(result, i, 0)))
 			job_found = 1;
 		else if(!last_ran_found &&
-			!strcmp(last_ran_table, PQgetvalue(result, i, 0))) 
+			!strcmp(last_ran_table, PQgetvalue(result, i, 0)))
 			last_ran_found = 1;
 		else if(!qos_found &&
-			!strcmp(qos_table, PQgetvalue(result, i, 0))) 
+			!strcmp(qos_table, PQgetvalue(result, i, 0)))
 			qos_found = 1;
 		else if(!step_found &&
-			!strcmp(step_table, PQgetvalue(result, i, 0))) 
+			!strcmp(step_table, PQgetvalue(result, i, 0)))
 			step_found = 1;
 		else if(!suspend_found &&
-			!strcmp(suspend_table, PQgetvalue(result, i, 0))) 
+			!strcmp(suspend_table, PQgetvalue(result, i, 0)))
 			suspend_found = 1;
 		else if(!txn_found &&
-			!strcmp(txn_table, PQgetvalue(result, i, 0))) 
+			!strcmp(txn_table, PQgetvalue(result, i, 0)))
 			txn_found = 1;
 		else if(!user_found &&
-			!strcmp(user_table, PQgetvalue(result, i, 0))) 
+			!strcmp(user_table, PQgetvalue(result, i, 0)))
 			user_found = 1;
 	}
 	PQclear(result);
 
 	if(!acct_coord_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
-					 acct_coord_table, 
+		if(pgsql_db_create_table(acct_pgsql_db,
+					 acct_coord_table,
 					 acct_coord_table_fields,
 					 ", unique (acct, user_name))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       acct_coord_table,
 					       acct_coord_table_fields))
 			return SLURM_ERROR;
 	}
 
 	if(!acct_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 acct_table, acct_table_fields,
-					 ", unique (name))") 
+					 ", unique (name))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       acct_table,
 					       acct_table_fields))
 			return SLURM_ERROR;
@@ -454,14 +454,14 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 
 	if(!assoc_day_found) {
 		if(pgsql_db_create_table(
-			   acct_pgsql_db, 
+			   acct_pgsql_db,
 			   assoc_day_table,
 			   assoc_usage_table_fields,
 			   ", unique (associd, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       assoc_day_table,
 					       assoc_usage_table_fields))
 			return SLURM_ERROR;
@@ -469,14 +469,14 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 
 	if(!assoc_hour_found) {
 		if(pgsql_db_create_table(
-			   acct_pgsql_db, 
+			   acct_pgsql_db,
 			   assoc_hour_table,
 			   assoc_usage_table_fields,
 			   ", unique (associd, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       assoc_hour_table,
 					       assoc_usage_table_fields))
 			return SLURM_ERROR;
@@ -484,14 +484,14 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 
 	if(!assoc_month_found) {
 		if(pgsql_db_create_table(
-			   acct_pgsql_db, 
+			   acct_pgsql_db,
 			   assoc_month_table,
 			   assoc_usage_table_fields,
 			   ", unique (associd, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       assoc_month_table,
 					       assoc_usage_table_fields))
 			return SLURM_ERROR;
@@ -499,13 +499,13 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 
 	if(!assoc_found) {
 		if(pgsql_db_create_table(
-			   acct_pgsql_db, 
+			   acct_pgsql_db,
 			   assoc_table, assoc_table_fields,
-			   ", unique (user_name, acct, cluster, partition))") 
+			   ", unique (user_name, acct, cluster, partition))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       assoc_table,
 					       assoc_table_fields))
 			return SLURM_ERROR;
@@ -513,14 +513,14 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 
 	if(!cluster_day_found) {
 		if(pgsql_db_create_table(
-			   acct_pgsql_db, 
-			   cluster_day_table, 
+			   acct_pgsql_db,
+			   cluster_day_table,
 			   cluster_usage_table_fields,
 			   ", unique (cluster, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       cluster_day_table,
 					       cluster_usage_table_fields))
 			return SLURM_ERROR;
@@ -528,14 +528,14 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 
 	if(!cluster_hour_found) {
 		if(pgsql_db_create_table(
-			   acct_pgsql_db, 
-			   cluster_hour_table, 
+			   acct_pgsql_db,
+			   cluster_hour_table,
 			   cluster_usage_table_fields,
 			   ", unique (cluster, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       cluster_hour_table,
 					       cluster_usage_table_fields))
 			return SLURM_ERROR;
@@ -543,135 +543,135 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 
 	if(!cluster_month_found) {
 		if(pgsql_db_create_table(
-			   acct_pgsql_db, 
-			   cluster_month_table, 
+			   acct_pgsql_db,
+			   cluster_month_table,
 			   cluster_usage_table_fields,
 			   ", unique (cluster, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       cluster_month_table,
 					       cluster_usage_table_fields))
 			return SLURM_ERROR;
 	}
 
 	if(!cluster_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 cluster_table, cluster_table_fields,
 					 ", unique (name))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       cluster_table,
 					       cluster_table_fields))
 			return SLURM_ERROR;
 	}
 
 	if(!event_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 event_table, event_table_fields,
 					 ", unique (node_name, "
 					 "cluster, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       event_table,
 					       event_table_fields))
 			return SLURM_ERROR;
 	}
 
 	if(!job_found) {
-		if(pgsql_db_create_table(acct_pgsql_db,  
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 job_table, job_table_fields,
 					 ", unique (jobid, associd, submit))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       job_table,
 					       job_table_fields))
 			return SLURM_ERROR;
 	}
-	
+
 	if(!last_ran_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 last_ran_table, last_ran_table_fields,
 					 ")")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       last_ran_table,
 					       last_ran_table_fields))
 			return SLURM_ERROR;
 	}
 
 	if(!qos_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 qos_table, qos_table_fields,
 					 ", unique (name))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       step_table,
 					       step_table_fields))
 			return SLURM_ERROR;
 	}
 
 	if(!step_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 step_table, step_table_fields,
 					 ", unique (id, stepid))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       step_table,
 					       step_table_fields))
 			return SLURM_ERROR;
 	}
 
 	if(!suspend_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 suspend_table, suspend_table_fields,
 					 ")")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       suspend_table,
 					       suspend_table_fields))
 			return SLURM_ERROR;
 	}
 
 	if(!txn_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 txn_table, txn_table_fields,
 					 ", unique (id))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       txn_table,
 					       txn_table_fields))
 			return SLURM_ERROR;
 	}
 
 	if(!user_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
+		if(pgsql_db_create_table(acct_pgsql_db,
 					 user_table, user_table_fields,
 					 ", unique (name))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
+		if(pgsql_db_make_table_current(acct_pgsql_db,
 					       user_table,
 					       user_table_fields))
 			return SLURM_ERROR;
@@ -695,7 +695,7 @@ extern int init ( void )
 #else
 	fatal("No Postgres database was found on the machine. "
 	      "Please check the config.log from the run of configure "
-	      "and run again.");	
+	      "and run again.");
 #endif
 	/* since this can be loaded from many different places
 	   only tell us once. */
@@ -727,7 +727,7 @@ extern int init ( void )
 	}
 
 #ifdef HAVE_PGSQL
-	pgsql_db_info = _pgsql_acct_create_db_info();		
+	pgsql_db_info = _pgsql_acct_create_db_info();
 
 	location = slurm_get_accounting_storage_loc();
 	if(!location)
@@ -751,9 +751,9 @@ extern int init ( void )
 	}
 
 	debug2("pgsql_connect() called for db %s", pgsql_db_name);
-		
+
 	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
-		
+
 	rc = _pgsql_acct_check_tables(acct_pgsql_db, pgsql_db_info->user);
 	pgsql_close_db_connection(&acct_pgsql_db);
 #endif
@@ -761,16 +761,16 @@ extern int init ( void )
 	   only tell us once. */
 	if(rc == SLURM_SUCCESS)
 		verbose("%s loaded", plugin_name);
-	else 
+	else
 		verbose("%s failed", plugin_name);
-	
+
 	return rc;
 }
 
 extern int fini ( void )
 {
 #ifdef HAVE_PGSQL
-	destroy_pgsql_db_info(pgsql_db_info);		
+	destroy_pgsql_db_info(pgsql_db_info);
 	xfree(pgsql_db_name);
 	return SLURM_SUCCESS;
 #else
@@ -783,12 +783,12 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 {
 #ifdef HAVE_PGSQL
 	PGconn *acct_pgsql_db = NULL;
-	
+
 	if(!pgsql_db_info)
 		init();
-	
+
 	debug2("acct_storage_p_get_connection: request new connection");
-	
+
 	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
 	if(acct_pgsql_db)
 		errno = SLURM_SUCCESS;
@@ -803,7 +803,7 @@ extern int acct_storage_p_close_connection(PGconn **acct_pgsql_db)
 #ifdef HAVE_PGSQL
 	if(acct_pgsql_db && *acct_pgsql_db)
 		pgsql_close_db_connection(acct_pgsql_db);
-	
+
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -833,7 +833,7 @@ extern int acct_storage_p_add_accts(PGconn *acct_pgsql_db, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_clusters(PGconn *acct_pgsql_db, uint32_t uid, 
+extern int acct_storage_p_add_clusters(PGconn *acct_pgsql_db, uint32_t uid,
 				       List cluster_list)
 {
 	return SLURM_SUCCESS;
@@ -845,19 +845,19 @@ extern int acct_storage_p_add_associations(PGconn *acct_pgsql_db, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_qos(PGconn *acct_pgsql_db, uint32_t uid, 
+extern int acct_storage_p_add_qos(PGconn *acct_pgsql_db, uint32_t uid,
 				  List qos_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_wckeys(PGconn *acct_pgsql_db, uint32_t uid, 
+extern int acct_storage_p_add_wckeys(PGconn *acct_pgsql_db, uint32_t uid,
 				     List wckey_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_reservation(PGconn *acct_pgsql_db, 
+extern int acct_storage_p_add_reservation(PGconn *acct_pgsql_db,
 					   acct_reservation_rec_t *resv)
 {
 	return SLURM_SUCCESS;
@@ -906,7 +906,7 @@ extern List acct_storage_p_modify_wckeys(PGconn *acct_pgsql_db, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_reservation(PGconn *acct_pgsql_db, 
+extern int acct_storage_p_modify_reservation(PGconn *acct_pgsql_db,
 					     acct_reservation_rec_t *resv)
 {
 	return SLURM_SUCCESS;
@@ -944,19 +944,19 @@ extern List acct_storage_p_remove_associations(
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid, 
+extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 				      acct_qos_cond_t *qos_cond)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_remove_wckeys(void *db_conn, uint32_t uid, 
+extern List acct_storage_p_remove_wckeys(void *db_conn, uint32_t uid,
 				      acct_wckey_cond_t *wckey_cond)
 {
 	return NULL;
 }
 
-extern int acct_storage_p_remove_reservation(PGconn *acct_pgsql_db, 
+extern int acct_storage_p_remove_reservation(PGconn *acct_pgsql_db,
 					     acct_reservation_rec_t *resv)
 {
 	return SLURM_SUCCESS;
@@ -1030,7 +1030,7 @@ extern int acct_storage_p_get_usage(PGconn *acct_pgsql_db, uid_t uid,
 	return rc;
 }
 
-extern int acct_storage_p_roll_usage(PGconn *acct_pgsql_db, 
+extern int acct_storage_p_roll_usage(PGconn *acct_pgsql_db,
 				     time_t sent_start, time_t sent_end,
 				     uint16_t archive_data)
 {
@@ -1059,7 +1059,7 @@ extern int clusteracct_storage_p_node_down(PGconn *acct_pgsql_db,
 		my_reason = reason;
 	else
 		my_reason = node_ptr->reason;
-	
+
 	query = xstrdup_printf(
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s'",
@@ -1073,7 +1073,7 @@ extern int clusteracct_storage_p_node_down(PGconn *acct_pgsql_db,
 		"insert into %s "
 		"(node_name, cluster, cpu_count, period_start, reason) "
 		"values ('%s', '%s', %u, %d, '%s')",
-		event_table, node_ptr->name, cluster, 
+		event_table, node_ptr->name, cluster,
 		cpus, event_time, my_reason);
 	rc = pgsql_db_query(acct_pgsql_db, query);
 	xfree(query);
@@ -1134,7 +1134,7 @@ extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
 	/* Record the processor count */
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
-	info("cluster_acct_procs: %s has %u total CPUs at %s", 
+	info("cluster_acct_procs: %s has %u total CPUs at %s",
 	     cluster, procs, tmp_buff);
 #endif
 	query = xstrdup_printf(
@@ -1192,10 +1192,10 @@ extern int clusteracct_storage_p_get_usage(
 	return SLURM_SUCCESS;
 }
 
-/* 
+/*
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db, 
+extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 				       char *cluster_name,
 				       struct job_record *job_ptr)
 {
@@ -1224,7 +1224,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	priority = (job_ptr->priority == NO_VAL) ?
 		-1L : (long) job_ptr->priority;
 
-	if (job_ptr->name && job_ptr->name[0]) 
+	if (job_ptr->name && job_ptr->name[0])
 		jname = xstrdup(job_ptr->name);
 	else {
 		jname = xstrdup("allocation");
@@ -1242,8 +1242,8 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	if(slurmdbd_conf) {
 		block_id = xstrdup(job_ptr->comment);
 	} else {
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
-				     SELECT_JOBDATA_BLOCK_ID, 
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				     SELECT_JOBDATA_BLOCK_ID,
 				     &block_id);
 	}
 
@@ -1253,36 +1253,36 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 			"(jobid, associd, uid, gid, nodelist, ",
 			job_table);
 
-		if(cluster_name) 
+		if(cluster_name)
 			xstrcat(query, "cluster, ");
-		if(job_ptr->account) 
+		if(job_ptr->account)
 			xstrcat(query, "account, ");
-		if(job_ptr->partition) 
+		if(job_ptr->partition)
 			xstrcat(query, "partition, ");
-		if(block_id) 
+		if(block_id)
 			xstrcat(query, "blockid, ");
-		if(job_ptr->wckey) 
+		if(job_ptr->wckey)
 			xstrcat(query, "wckey, ");
-		
-		xstrfmtcat(query, 
+
+		xstrfmtcat(query,
 			   "eligible, submit, start, name, track_steps, "
 			   "state, priority, req_cpus, alloc_cpus) "
 			   "values (%u, %u, %u, %u, '%s', ",
 			   job_ptr->job_id, job_ptr->assoc_id,
 			   job_ptr->user_id, job_ptr->group_id, nodes);
-		
-		if(cluster_name) 
+
+		if(cluster_name)
 			xstrfmtcat(query, "'%s', ", cluster_name);
-		if(job_ptr->account) 
+		if(job_ptr->account)
 			xstrfmtcat(query, "'%s', ", job_ptr->account);
-		if(job_ptr->partition) 
+		if(job_ptr->partition)
 			xstrfmtcat(query, "'%s', ", job_ptr->partition);
-		if(block_id) 
+		if(block_id)
 			xstrfmtcat(query, "'%s', ", block_id);
-		if(job_ptr->wckey) 
+		if(job_ptr->wckey)
 			xstrfmtcat(query, "\"%s\", ", job_ptr->wckey);
-		
-		xstrfmtcat(query, 
+
+		xstrfmtcat(query,
 			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u)",
 			   (int)job_ptr->details->begin_time,
 			   (int)job_ptr->details->submit_time,
@@ -1292,7 +1292,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 			   priority, job_ptr->num_procs,
 			   job_ptr->total_procs);
 	try_again:
-		if(!(job_ptr->db_index = pgsql_insert_ret_id(acct_pgsql_db,  
+		if(!(job_ptr->db_index = pgsql_insert_ret_id(acct_pgsql_db,
 							     "job_table_id_seq",
 							     query))) {
 			if(!reinit) {
@@ -1308,18 +1308,18 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 				rc = SLURM_ERROR;
 		}
 	} else {
-		query = xstrdup_printf("update %s set nodelist='%s', ", 
+		query = xstrdup_printf("update %s set nodelist='%s', ",
 				       job_table, nodes);
 
-		if(job_ptr->account) 
+		if(job_ptr->account)
 			xstrfmtcat(query, "account='%s', ",
 				   job_ptr->account);
-		if(job_ptr->partition) 
+		if(job_ptr->partition)
 			xstrfmtcat(query, "partition='%s', ",
 				   job_ptr->partition);
 		if(block_id)
 			xstrfmtcat(query, "blockid='%s', ", block_id);
-		if(job_ptr->wckey) 
+		if(job_ptr->wckey)
 			xstrfmtcat(query, ", wckey=\"%s\"", job_ptr->wckey);
 
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
@@ -1333,14 +1333,14 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	xfree(block_id);
 	xfree(jname);
 	xfree(query);
-	
+
 	return rc;
 #else
 	return SLURM_ERROR;
 #endif
 }
 
-/* 
+/*
  * load into the storage the end of a job
  */
 extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
@@ -1349,8 +1349,8 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 #ifdef HAVE_PGSQL
 	char *query = NULL, *nodes = NULL;
 	int rc=SLURM_SUCCESS;
-	
-	if (!job_ptr->db_index 
+
+	if (!job_ptr->db_index
 	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
 		error("jobacct_storage_p_job_complete: "
 		      "Not inputing this job, it has no submit time.");
@@ -1362,18 +1362,18 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 					    pgsql_db_name, pgsql_db_info))
 			return SLURM_ERROR;
 	}
-	
+
 	debug3("pgsql_jobacct_job_complete() called");
 	if (job_ptr->end_time == 0) {
 		debug("pgsql_jobacct: job %u never started", job_ptr->job_id);
 		return SLURM_ERROR;
-	}	
-	
+	}
+
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
 		nodes = "None assigned";
-	
+
 	if(!job_ptr->db_index) {
 		if(!(job_ptr->db_index =
 		     _get_db_index(acct_pgsql_db,
@@ -1396,7 +1396,7 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 			       "nodelist='%s', comp_code=%d, "
 			       "kill_requid=%d where id=%d",
 			       job_table, (int)job_ptr->start_time,
-			       (int)job_ptr->end_time, 
+			       (int)job_ptr->end_time,
 			       job_ptr->job_state & JOB_STATE_BASE,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
@@ -1409,7 +1409,7 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 #endif
 }
 
-/* 
+/*
  * load into the storage the start of a job step
  */
 extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
@@ -1423,8 +1423,8 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	char *ionodes = NULL;
 #endif
 	char *query = NULL;
-	
-	if (!step_ptr->job_ptr->db_index 
+
+	if (!step_ptr->job_ptr->db_index
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
 		error("jobacct_storage_p_step_start: "
@@ -1445,17 +1445,17 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	} else {
 #ifdef HAVE_BG
 		cpus = step_ptr->job_ptr->num_procs;
-		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
-				     SELECT_JOBDATA_IONODES, 
+		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
+				     SELECT_JOBDATA_IONODES,
 				     &ionodes);
 		if(ionodes) {
-			snprintf(node_list, BUFFER_SIZE, 
+			snprintf(node_list, BUFFER_SIZE,
 				 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
 			xfree(ionodes);
 		} else
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
-		
+
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 			cpus = step_ptr->job_ptr->total_procs;
@@ -1463,19 +1463,19 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 				 step_ptr->job_ptr->nodes);
 		} else {
 			cpus = step_ptr->step_layout->task_cnt;
-			snprintf(node_list, BUFFER_SIZE, "%s", 
+			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->step_layout->node_list);
 		}
 #endif
 	}
 
 	if(!step_ptr->job_ptr->db_index) {
-		step_ptr->job_ptr->db_index = 
+		step_ptr->job_ptr->db_index =
 			_get_db_index(acct_pgsql_db,
 				      step_ptr->job_ptr->details->submit_time,
 				      step_ptr->job_ptr->job_id,
 				      step_ptr->job_ptr->assoc_id);
-		if(step_ptr->job_ptr->db_index == -1) 
+		if(step_ptr->job_ptr->db_index == -1)
 			return SLURM_ERROR;
 	}
 	/* we want to print a -1 for the requid so leave it a
@@ -1485,7 +1485,7 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 		"cpus, nodelist) "
 		"values (%d, %u, %u, 0, '%s', %d, %u, '%s')",
 		step_table, step_ptr->job_ptr->db_index,
-		step_ptr->step_id, 
+		step_ptr->step_id,
 		(int)step_ptr->start_time, step_ptr->name,
 		JOB_RUNNING, cpus, node_list);
 	rc = pgsql_db_query(acct_pgsql_db, query);
@@ -1497,7 +1497,7 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 #endif
 }
 
-/* 
+/*
  * load into the storage the end of a job step
  */
 extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
@@ -1516,7 +1516,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 	int rc =SLURM_SUCCESS;
 	uint32_t exit_code;
 
-	if (!step_ptr->job_ptr->db_index 
+	if (!step_ptr->job_ptr->db_index
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
 		error("jobacct_storage_p_step_complete: "
@@ -1529,7 +1529,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 					    pgsql_db_name, pgsql_db_info))
 			return SLURM_ERROR;
 	}
-	
+
 	if (jobacct == NULL) {
 		/* JobAcctGather=jobacct_gather/none, no data to process */
 		memset(&dummy_jobacct, 0, sizeof(dummy_jobacct));
@@ -1544,11 +1544,11 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		now = time(NULL);
 #ifdef HAVE_BG
 		cpus = step_ptr->job_ptr->num_procs;
-		
+
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 			cpus = step_ptr->job_ptr->total_procs;
-		else 
+		else
 			cpus = step_ptr->step_layout->task_cnt;
 #endif
 	}
@@ -1574,22 +1574,22 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		ave_pages = jobacct->tot_pages;
 		ave_pages /= cpus;
 		ave_cpu = jobacct->tot_cpu;
-		ave_cpu /= cpus;	
+		ave_cpu /= cpus;
 		ave_cpu /= 100;
 	}
- 
+
 	if(jobacct->min_cpu != (uint32_t)NO_VAL) {
 		ave_cpu2 = jobacct->min_cpu;
 		ave_cpu2 /= 100;
 	}
 
 	if(!step_ptr->job_ptr->db_index) {
-		step_ptr->job_ptr->db_index = 
+		step_ptr->job_ptr->db_index =
 			_get_db_index(acct_pgsql_db,
 				      step_ptr->job_ptr->details->submit_time,
 				      step_ptr->job_ptr->job_id,
 				      step_ptr->job_ptr->assoc_id);
-		if(step_ptr->job_ptr->db_index == -1) 
+		if(step_ptr->job_ptr->db_index == -1)
 			return SLURM_ERROR;
 	}
 
@@ -1609,10 +1609,10 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		"where id=%u and stepid=%u",
 		step_table, (int)now,
 		comp_status,
-		step_ptr->requid, 
-		exit_code, 
+		step_ptr->requid,
+		exit_code,
 		/* user seconds */
-		jobacct->user_cpu_sec,	
+		jobacct->user_cpu_sec,
 		/* user microseconds */
 		jobacct->user_cpu_usec,
 		/* system seconds */
@@ -1638,14 +1638,14 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
 	rc = pgsql_db_query(acct_pgsql_db, query);
 	xfree(query);
-		 
+
 	return rc;
 #else
 	return SLURM_ERROR;
 #endif
 }
 
-/* 
+/*
  * load into the storage a suspention of a job
  */
 extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
@@ -1654,26 +1654,26 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
 #ifdef HAVE_PGSQL
 	char query[1024];
 	int rc = SLURM_SUCCESS;
-	
+
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
 		if(!pgsql_get_db_connection(&acct_pgsql_db,
 					    pgsql_db_name, pgsql_db_info))
 			return SLURM_ERROR;
 	}
-	
+
 	if(!job_ptr->db_index) {
 		job_ptr->db_index = _get_db_index(acct_pgsql_db,
 						  job_ptr->details->submit_time,
 						  job_ptr->job_id,
 						  job_ptr->assoc_id);
-		if(job_ptr->db_index == -1) 
+		if(job_ptr->db_index == -1)
 			return SLURM_ERROR;
 	}
 
 	snprintf(query, sizeof(query),
 		 "update %s set suspended=%u-suspended, state=%d "
 		 "where id=%u",
-		 job_table, (int)job_ptr->suspend_time, 
+		 job_table, (int)job_ptr->suspend_time,
 		 job_ptr->job_state & JOB_STATE_BASE,
 		 job_ptr->db_index);
 	rc = pgsql_db_query(acct_pgsql_db, query);
@@ -1681,23 +1681,23 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
 		snprintf(query, sizeof(query),
 			 "update %s set suspended=%u-suspended, "
 			 "state=%d where id=%u and endtime=0",
-			 step_table, (int)job_ptr->suspend_time, 
+			 step_table, (int)job_ptr->suspend_time,
 			 job_ptr->job_state, job_ptr->db_index);
-		rc = pgsql_db_query(acct_pgsql_db, query);			
+		rc = pgsql_db_query(acct_pgsql_db, query);
 	}
-	
+
 	return rc;
 #else
 	return SLURM_ERROR;
 #endif
 }
 
-/* 
- * get info from the storage 
+/*
+ * get info from the storage
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs_cond(PGconn *acct_pgsql_db, uid_t uid, 
+extern List jobacct_storage_p_get_jobs_cond(PGconn *acct_pgsql_db, uid_t uid,
 					    acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
@@ -1708,13 +1708,13 @@ extern List jobacct_storage_p_get_jobs_cond(PGconn *acct_pgsql_db, uid_t uid,
 			return job_list;
 	}
 
-	job_list = pgsql_jobacct_process_get_jobs(acct_pgsql_db, job_cond);	
+	job_list = pgsql_jobacct_process_get_jobs(acct_pgsql_db, job_cond);
 #endif
 	return job_list;
 }
 
-/* 
- * expire old info from the storage 
+/*
+ * expire old info from the storage
  */
 extern int jobacct_storage_p_archive(PGconn *acct_pgsql_db,
 				      acct_archive_cond_t *arch_cond)
@@ -1731,10 +1731,10 @@ extern int jobacct_storage_p_archive(PGconn *acct_pgsql_db,
 	return SLURM_ERROR;
 }
 
-/* 
- * load old info into the storage 
+/*
+ * load old info into the storage
  */
-extern int jobacct_storage_p_archive_load(void *db_conn, 
+extern int jobacct_storage_p_archive_load(void *db_conn,
 					  acct_archive_rec_t *arch_rec)
 {
 	return SLURM_SUCCESS;

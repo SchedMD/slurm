@@ -14,21 +14,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -107,15 +107,15 @@ expect {
 #
 if {[string compare $host_0 ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
+	set exit_code   1
 }
 if {[string compare $host_1 ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 1\n"
-	set exit_code   1	
+	set exit_code   1
 }
 if {[string compare $host_2 ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 2\n"
-	set exit_code   1	
+	set exit_code   1
 }
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
@@ -124,19 +124,19 @@ if {[test_front_end] != 0} {
 }
 if {[string compare $host_3 ""] != 0} {
 	send_user "\nFAILURE: Started more than three tasks\n"
-	set exit_code   1	
+	set exit_code   1
 }
 
 set dup_hostname 0
 if {[string compare $host_0 $host_1] == 0} {
-	incr dup_hostname 	
+	incr dup_hostname
 }
 if {[string compare $host_0 $host_2] == 0} {
-	incr dup_hostname 1	
+	incr dup_hostname 1
 }
 if {$dup_hostname == 1} {
 	send_user "\nFAILURE: Re-used a node in the allocation\n"
-	set exit_code   1	
+	set exit_code   1
 }
 set exclude_node $host_0
 set include_node $host_2
@@ -148,15 +148,15 @@ set host_0      ""
 set host_1      ""
 set host_2      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_printenv SLURMD_NODENAME]  
+set srun_pid [spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "
 		send_user "multiple slurmd testing.\n"
 		send_user "This test won't work in that fashion.\n"
-		exit 0	
+		exit 0
 	}
-		
+
 	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
@@ -184,26 +184,26 @@ expect {
 #
 if {[string compare $host_0 ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
+	set exit_code   1
 }
 if {[string compare $host_1 ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 1\n"
-	set exit_code   1	
+	set exit_code   1
 }
 if {[string compare $host_2 ""] != 0} {
 	send_user "\nFAILURE: Started more than two tasks\n"
-	set exit_code   1	
+	set exit_code   1
 }
 set dup_hostname 0
 if {[string compare $host_0 $exclude_node] == 0} {
-	set dup_hostname 1	
+	set dup_hostname 1
 }
 if {[string compare $host_1 $exclude_node] == 0} {
-	set dup_hostname 1	
+	set dup_hostname 1
 }
 if {$dup_hostname == 1} {
 	send_user "\nFAILURE: Allocated an excluded node\n"
-	set exit_code   1	
+	set exit_code   1
 }
 
 #
@@ -238,19 +238,19 @@ expect {
 #
 if {[string compare $host_0 ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
+	set exit_code   1
 }
 if {[string compare $host_1 ""] != 0} {
 	send_user "\nFAILURE: Started more than one task\n"
-	set exit_code   1	
+	set exit_code   1
 }
 set dup_hostname 0
 if {[string compare $host_0 $include_node] == 0} {
-	set dup_hostname 1	
+	set dup_hostname 1
 }
 if {$dup_hostname == 0} {
 	send_user "\nFAILURE: Allocation lacked an included node\n"
-	set exit_code   1	
+	set exit_code   1
 }
 
 if {$exit_code == 0} {

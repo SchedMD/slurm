@@ -297,7 +297,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 sstat_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
-noinst_HEADERS = sstat.c 
+noinst_HEADERS = sstat.c
 sstat_SOURCES = sstat.c process.c print.c options.c
 sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am

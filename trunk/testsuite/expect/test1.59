@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test of srun functionality
 #          Test of hostfile option (-hostfile) inside of an allocation.
-#          
+#
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -13,21 +13,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # UCRL-CODE-217948.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -52,7 +52,7 @@ if { [test_front_end] } {
 if {[string compare [switch_type] "elan"] == 0} {
 	send_user "\nWARNING: This test incompatible with Elan switch\n"
 	exit $exit_code
-} 
+}
 #find out if we have enough nodes to test functionality
 set partition [default_partition]
 spawn $scontrol show partition $partition
@@ -70,7 +70,7 @@ expect {
 			exit $exit_code
 		}
 		exp_continue
-	}	
+	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		exit 1
@@ -121,7 +121,7 @@ for {set i 0} {$i<4} {incr i} {
 		expect {
 			-re $prompt {
 				#send_user "srun completed\n"
-			}		
+			}
 		}
 		set 1node0 $node0
 		set 1node1 $node1
@@ -260,13 +260,13 @@ send "unset SLURM_HOSTFILE\r"
 expect {
 	-re $prompt {
 		#send_user "srun completed\n"
-	}		
+	}
 }
-		
+
 # try with commandline -w option
 for {set i 0} {$i<5} {incr i} {
 	set extra ""
-	
+
 	if { $i==1 } {
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
 			send_user "\nFAILURE: node names not set from \
@@ -316,7 +316,7 @@ for {set i 0} {$i<5} {incr i} {
 		set 4node4 0
 		set extra " -m arbitrary -w $node1,$node0,$node0,$node0,$node0 -n4"
 	}
-	
+
 	set node0 0
 	set node1 0
 	set node2 0
@@ -326,9 +326,9 @@ for {set i 0} {$i<5} {incr i} {
 	#
 	# execute srun with a specific node count
 	#
-	
+
 	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\r"
-	
+
 	expect {
 		-re "($number): ($alpha_numeric_under)" {
 			set task_id $expect_out(1,string)
@@ -354,7 +354,7 @@ for {set i 0} {$i<5} {incr i} {
 				set exit_code 1
 			}
 			exp_continue
-		}	
+		}
 		-re $prompt {
 			#send_user "srun completed\n"
 		}
@@ -402,7 +402,7 @@ for {set i 0} {$i<5} {incr i} {
 		if { [string compare $node2 $4node0] } {
 			send_user "\nFAILURE: we only asked for 1 node in the allocation and we were unable to get it\n"
 			set exit_code 1
-		} 
+		}
 	}
 }
 

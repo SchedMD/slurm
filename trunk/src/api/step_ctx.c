@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -93,7 +93,7 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 static job_step_create_request_msg_t *_create_step_request(
 	const slurm_step_ctx_params_t *step_params)
 {
-	job_step_create_request_msg_t *step_req = 
+	job_step_create_request_msg_t *step_req =
 		xmalloc(sizeof(job_step_create_request_msg_t));
 	step_req->job_id = step_params->job_id;
 	step_req->user_id = (uint32_t)step_params->uid;
@@ -120,7 +120,7 @@ static job_step_create_request_msg_t *_create_step_request(
 }
 
 /*
- * slurm_step_ctx_create - Create a job step and its context. 
+ * slurm_step_ctx_create - Create a job step and its context.
  * IN step_params - job step parameters
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
@@ -134,7 +134,7 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	int sock = -1;
 	short port = 0;
 	int errnum = 0;
-	
+
 	/* First copy the user's step_params into a step request
 	 * struct */
 	step_req = _create_step_request(step_params);
@@ -158,7 +158,7 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 		slurm_free_job_step_create_request_msg(step_req);
 		goto fail;
 	}
-	
+
 	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
 	ctx->launch_state = NULL;
 	ctx->magic	= STEP_CTX_MAGIC;
@@ -177,7 +177,7 @@ fail:
 
 /*
  * slurm_step_ctx_create_no_alloc - Create a job step and its context without
- *                                  getting an allocation. 
+ *                                  getting an allocation.
  * IN step_params - job step parameters
  * IN step_id     - since we are faking it give me the id to use
  * RET the step context or NULL on failure with slurm errno set
@@ -194,7 +194,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	short port = 0;
 	int errnum = 0;
 	int cyclic = (step_params->task_dist == SLURM_DIST_CYCLIC);
-	
+
 	/* First copy the user's step_params into a step request struct */
 	step_req = _create_step_request(step_params);
 
@@ -216,16 +216,16 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 		xmalloc(sizeof(job_step_create_response_msg_t));
 
 	step_resp->step_layout = fake_slurm_step_layout_create(
-		step_req->node_list, 
+		step_req->node_list,
 		NULL, NULL,
 		step_req->node_count,
 		step_req->num_tasks);
-	
+
 	if (switch_alloc_jobinfo(&step_resp->switch_job) < 0)
 		fatal("switch_alloc_jobinfo: %m");
-	if (switch_build_jobinfo(step_resp->switch_job, 
-				 step_resp->step_layout->node_list, 
-				 step_resp->step_layout->tasks, 
+	if (switch_build_jobinfo(step_resp->switch_job,
+				 step_resp->step_layout->node_list,
+				 step_resp->step_layout->tasks,
 				 cyclic, step_req->network) < 0)
 		fatal("switch_build_jobinfo: %m");
 
@@ -244,9 +244,9 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 
 	ctx->launch_state = step_launch_state_create(ctx);
 	ctx->launch_state->slurmctld_socket_fd = sock;
-	
+
 	_job_fake_cred(ctx);
-	
+
 fail:
 	errno = errnum;
 	return (slurm_step_ctx_t *)ctx;
@@ -272,7 +272,7 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 	switch_jobinfo_t **switch_job;
 	int *int_ptr;
 	int **int_array_pptr = (int **) NULL;
-	
+
 	if ((ctx == NULL) || (ctx->magic != STEP_CTX_MAGIC)) {
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
@@ -292,7 +292,7 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 		uint16_array_pptr = (uint16_t **) va_arg(ap, void *);
 		*uint16_array_pptr = ctx->step_resp->step_layout->tasks;
 		break;
-		
+
 	case SLURM_STEP_CTX_TID:
 		node_inx = va_arg(ap, uint32_t);
 		if ((node_inx < 0)
@@ -305,9 +305,9 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 		*uint32_array_pptr =
 			ctx->step_resp->step_layout->tids[node_inx];
 		break;
-		
+
 	case SLURM_STEP_CTX_RESP:
-		step_resp_pptr = (job_step_create_response_msg_t **) 
+		step_resp_pptr = (job_step_create_response_msg_t **)
 			va_arg(ap, void *);
 		*step_resp_pptr = ctx->step_resp;
 		break;
@@ -430,9 +430,9 @@ slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx_t *ctx)
 	new_layout->task_cnt = old_layout->node_cnt;
 	new_layout->node_list = xstrdup(old_layout->node_list);
 	slurm_step_layout_destroy(old_layout);
-	new_layout->tasks = (uint16_t *) xmalloc(sizeof(uint16_t) * 
+	new_layout->tasks = (uint16_t *) xmalloc(sizeof(uint16_t) *
 						 new_layout->node_cnt);
-	new_layout->tids = (uint32_t **) xmalloc(sizeof(uint32_t *) * 
+	new_layout->tids = (uint32_t **) xmalloc(sizeof(uint32_t *) *
 						 new_layout->node_cnt);
 	for (i = 0; i < new_layout->node_cnt; i++) {
 		new_layout->tasks[i] = 1;
@@ -449,7 +449,7 @@ slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx_t *ctx)
 	return SLURM_SUCCESS;
 }
 
-/* 
+/*
  * slurm_step_ctx_params_t_init - This initializes parameters
  *	in the structure that you will pass to slurm_step_ctx_create().
  *	This function will NOT allocate any new memory.

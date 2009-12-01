@@ -6,10 +6,10 @@ AUTOMAKE_OPTIONS = foreign
 if HAVE_FEDERATION
 federation_lib = switch_federation.la
 else
-federation_lib = 
+federation_lib =
 endif
 
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
@@ -20,7 +20,7 @@ if HAVE_FEDERATION
 switch_federation_la_SOURCES = \
 	federation.c federation.h \
 	federation_keys.h \
-	switch_federation.c 
+	switch_federation.c
 switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
 	 $(FEDERATION_LDFLAGS)
 

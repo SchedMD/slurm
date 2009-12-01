@@ -17,21 +17,21 @@
 # Written by Morris Jette <jette1@llnl.gov>
 # Additions by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
  # Please also read the supplied file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -81,8 +81,8 @@ cset qdel        "${slurm_dir}/bin/qdel"
 cset qstat       "${slurm_dir}/bin/qstat"
 cset qsub        "${slurm_dir}/bin/qsub"
 
-# If length of string partition is zero, use output of function 
-#	default_partition, otherwise use the partition explicitly 
+# If length of string partition is zero, use output of function
+#	default_partition, otherwise use the partition explicitly
 #	named in your globals.local file (or below) for poe commands
 cset partition ""
 
@@ -142,8 +142,8 @@ cset bin_wc	"wc"
 cset bin_printenv "printenv"
 
 #
-# Let the commands complete without expect timing out waiting for a 
-# response. Single node jobs submitted to the default partition should 
+# Let the commands complete without expect timing out waiting for a
+# response. Single node jobs submitted to the default partition should
 # be initiated within this number of seconds.
 # for interactive slurm jobs: cset timeout $max_job_delay
 #
@@ -290,7 +290,7 @@ proc get_my_nuid {  } {
 		}
 	}
 	log_user 1
-	
+
 	return $nuid
 }
 
@@ -322,7 +322,7 @@ proc get_my_uid {  } {
 		}
 	}
 	log_user 1
-	
+
 	return $uid
 }
 
@@ -354,7 +354,7 @@ proc get_my_gid {  } {
 		}
 	}
 	log_user 1
-	
+
 	return $gid
 }
 
@@ -368,7 +368,7 @@ proc get_my_gid {  } {
 #
 # Returns: A non-zero return code indicates a failure.
 #
-# NOTE: Use slow_kill instead of kill_salloc if you can capture 
+# NOTE: Use slow_kill instead of kill_salloc if you can capture
 #       the process id
 #
 ################################################################
@@ -404,7 +404,7 @@ proc kill_salloc {  } {
 #
 # Returns: A non-zero return code indicates a failure.
 #
-# NOTE: Use slow_kill instead of kill_srun if you can capture 
+# NOTE: Use slow_kill instead of kill_srun if you can capture
 #       the process id
 #
 ################################################################
@@ -452,8 +452,8 @@ proc print_header { test_id } {
 #
 # Proc: wait_for_file
 #
-# Purpose:  Wait for the specified file to exist and have a 
-#           non-zero size. Note that if JobFileAppend=0 is 
+# Purpose:  Wait for the specified file to exist and have a
+#           non-zero size. Note that if JobFileAppend=0 is
 #           configured, a file can exist and be purged then
 #           be re-created.
 #
@@ -483,7 +483,7 @@ proc wait_for_file { file_name } {
 #
 # Proc: wait_for_job
 #
-# Purpose:  Wait for a previously submitted SLURM job to reach 
+# Purpose:  Wait for a previously submitted SLURM job to reach
 # the desired state, exponential back-off 1 to 10 seconds
 #
 # Returns: A non-zero return code indicates a failure.
@@ -495,7 +495,7 @@ proc wait_for_file { file_name } {
 #                            DONE any terminated state
 #                            RUNNING job is running
 #
-# NOTE: We sleep for two seconds before replying that a job is 
+# NOTE: We sleep for two seconds before replying that a job is
 # done to give time for I/O completion (stdout/stderr files)
 #
 ################################################################
@@ -573,7 +573,7 @@ proc wait_for_job { job_id desired_state } {
 #
 # Proc: wait_for_step
 #
-# Purpose: Wait for a job step to be found, exponential back-off 
+# Purpose: Wait for a job step to be found, exponential back-off
 # 1 to 10 seconds
 #
 # Returns: A non-zero return code indicates a failure.
@@ -614,8 +614,8 @@ proc wait_for_step { step_id } {
 #
 # Proc: test_assoc_enforced
 #
-# Purpose: Determine if we need an association to run a job. 
-# This is based upon 
+# Purpose: Determine if we need an association to run a job.
+# This is based upon
 # the value of AccountingStorageEnforce in the slurm.conf.
 #
 # Returns level of association enforcement, 0 if none
@@ -733,7 +733,7 @@ proc test_topology { } {
 #
 # Proc: test_track_wckey
 #
-# Purpose: Determine if we track workload characterization keys. 
+# Purpose: Determine if we track workload characterization keys.
 # This is based upon the value of TrackWCKey in the slurm.conf.
 #
 # Returns value of TrackWCKey
@@ -790,8 +790,8 @@ proc test_wiki_sched { } {
 # Proc: test_account_storage
 #
 # Purpose: Determine if we are using a usable accounting storage
-# package. 
-# This is based upon 
+# package.
+# This is based upon
 # the value of AccountingStorageType in the slurm.conf.
 #
 # Returns 1 if the system is running an accounting storage type
@@ -815,7 +815,7 @@ proc test_account_storage { } {
 		}
 	}
 	log_user 1
-	
+
 	return $account_storage
 }
 
@@ -867,7 +867,7 @@ proc get_default_acct { user } {
 
 	if { !$user } {
 		spawn $bin_id -un
-		expect {      
+		expect {
 	       	       -re "($alpha_numeric_under)" {
 		       	   set user $expect_out(1,string)
 		       }
@@ -888,7 +888,7 @@ proc get_default_acct { user } {
 		}
 	}
 	log_user 1
-	
+
 	return $def_acct
 }
 
@@ -897,8 +897,8 @@ proc get_default_acct { user } {
 # Proc: test_front_end
 #
 # Purpose: Determine if the execution host is one in which the
-# slurmd daemon executes on a front-end node rather than the 
-# compute hosts (e.g. Blue Gene systems). This is based upon 
+# slurmd daemon executes on a front-end node rather than the
+# compute hosts (e.g. Blue Gene systems). This is based upon
 # the value of SelectType in the slurm.conf.
 #
 # Returns 1 if the system uses a front-end, 0 otherwise
@@ -929,7 +929,7 @@ proc test_front_end { } {
 		}
 	}
 	log_user 1
-	
+
 	return $front_end
 }
 
@@ -1018,7 +1018,7 @@ proc test_bluegene { } {
 		}
 	}
 	log_user 1
-	
+
 	return $bluegene
 }
 
@@ -1048,7 +1048,7 @@ proc test_select_type { } {
 		}
 	}
 	log_user 1
-	
+
 	return $type
 }
 
@@ -1078,7 +1078,7 @@ proc test_select_type_params { } {
 		}
 	}
 	log_user 1
-	
+
 	return $params
 }
 
@@ -1107,7 +1107,7 @@ proc test_aix {} {
 #
 # Proc: test_super_user
 #
-# Purpose: Determine if user is a SLURM super user (i.e. user 
+# Purpose: Determine if user is a SLURM super user (i.e. user
 # root or configured SlurmUser)
 #
 ################################################################
@@ -1389,9 +1389,9 @@ proc is_super_user { } {
 }
 
 ################################################################
-# 
 #
-# 
+#
+#
 ################################################################
 proc check_acct_associations { } {
         global sacctmgr number
@@ -1407,9 +1407,9 @@ proc check_acct_associations { } {
      	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt]
      	expect {
 	       -re "($number)\\|($number)\\|" {
-	       	      # Here we are checking if we have duplicates and 
+	       	      # Here we are checking if we have duplicates and
 		      # setting up an array to check for holes later
-			      
+
 	    	      set num1 $expect_out(1,string)
 		      set num2 $expect_out(2,string)
 		      set first [info exists found($num1)]
@@ -1417,10 +1417,10 @@ proc check_acct_associations { } {
 		      #send_user "$first=$num1 $sec=$num2\n";
 		      if { $first } {
 			     send_user "FAILURE: found lft $num1 again\n"
-			     set rc 0	
+			     set rc 0
 		      } elseif { $sec } {
 			     send_user "FAILURE: found rgt $num2 again\n"
-			     set rc 0	
+			     set rc 0
 		      } else {
 			     set found($num1) 1
 			     set found($num2) 1
@@ -1455,9 +1455,9 @@ proc check_acct_associations { } {
 }
 
 ################################################################
-# 
 #
-# 
+#
+#
 ################################################################
 proc check_accounting_admin_level { } {
 	global sacctmgr alpha alpha_numeric_under bin_id
@@ -1507,9 +1507,9 @@ proc check_accounting_admin_level { } {
 }
 
 ################################################################
-# 
 #
-# 
+#
+#
 ################################################################
 proc get_cluster_name { } {
 	global scontrol alpha_numeric_under
@@ -1569,7 +1569,7 @@ proc get_bluegene_layout { } {
 		}
 	}
 	log_user 1
-	
+
 	return $layout
 }
 
@@ -1604,7 +1604,7 @@ proc get_bluegene_psets { } {
 		}
 	}
 	log_user 1
-	
+
 	return $psets
 }
 
@@ -1642,7 +1642,7 @@ proc get_bluegene_type { } {
 		}
 	}
 	log_user 1
-	
+
 	return $type
 }
 
@@ -1677,7 +1677,7 @@ proc get_bluegene_procs_per_cnode { } {
 		}
 	}
 	log_user 1
-	
+
 	return $cpu_cnt
 }
 
@@ -1712,7 +1712,7 @@ proc get_bluegene_cnodes_per_mp { } {
 		}
 	}
 	log_user 1
-	
+
 	return $node_cnt
 }
 
@@ -1747,6 +1747,6 @@ proc get_node_cnt { } {
 		}
 	}
 	log_user 1
-	
+
 	return $node_cnt
 }

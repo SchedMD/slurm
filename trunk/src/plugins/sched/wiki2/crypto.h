@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  crypto.h - DES cryptographic routines.
  *****************************************************************************
- *  Produced by Cluster Resources, Inc., no rights reserved. 
+ *  Produced by Cluster Resources, Inc., no rights reserved.
 \*****************************************************************************/
 #include <stdint.h>
 

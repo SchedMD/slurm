@@ -11,7 +11,7 @@
 #include "msg.h"
 
 #include "const-c.inc"
-		
+
 /* these declaration are not in slurm.h */
 extern void slurm_api_set_conf_file(char *pathname);
 extern void slurm_api_clear_config(void);
@@ -31,7 +31,7 @@ typedef struct slurm * slurm_t;
 static struct slurm slurm;
 #define SINGLETON (&slurm)
 
-static void 
+static void
 free_slurm(void)
 {
 	if(slurm.node_info_msg) {
@@ -61,19 +61,19 @@ static signo_t
 signame_to_no(char* signame)
 {
 	int i = 0;
-	struct { 
-		char * name; 
+	struct {
+		char * name;
 		signo_t no;
 	} map [] = {
-		{"SIGHUP", SIGHUP}, {"SIGINT", SIGINT}, {"SIGQUIT", SIGQUIT}, {"SIGILL", SIGILL}, {"SIGTRAP", SIGTRAP}, 
-		{"SIGABRT", SIGABRT}, {"SIGBUS", SIGBUS}, {"SIGFPE", SIGFPE}, {"SIGKILL", SIGKILL}, {"SIGUSR1", SIGUSR1}, 
-		{"SIGSEGV", SIGSEGV}, {"SIGUSR2", SIGUSR2}, {"SIGPIPE", SIGPIPE}, {"SIGALRM", SIGALRM}, {"SIGTERM", SIGTERM}, 
-		{"SIGCHLD", SIGCHLD}, {"SIGCONT", SIGCONT}, {"SIGSTOP", SIGSTOP}, {"SIGTSTP", SIGTSTP}, {"SIGTTIN", SIGTTIN}, 
-		{"SIGTTOU", SIGTTOU}, {"SIGURG", SIGURG}, {"SIGXCPU", SIGXCPU}, {"SIGXFSZ", SIGXFSZ}, {"SIGVTALRM", SIGVTALRM}, 
-		{"SIGPROF", SIGPROF}, {"SIGWINCH", SIGWINCH}, {"SIGIO", SIGIO}, {"SIGPWR", SIGPWR}, {"SIGSYS", SIGSYS}, 
+		{"SIGHUP", SIGHUP}, {"SIGINT", SIGINT}, {"SIGQUIT", SIGQUIT}, {"SIGILL", SIGILL}, {"SIGTRAP", SIGTRAP},
+		{"SIGABRT", SIGABRT}, {"SIGBUS", SIGBUS}, {"SIGFPE", SIGFPE}, {"SIGKILL", SIGKILL}, {"SIGUSR1", SIGUSR1},
+		{"SIGSEGV", SIGSEGV}, {"SIGUSR2", SIGUSR2}, {"SIGPIPE", SIGPIPE}, {"SIGALRM", SIGALRM}, {"SIGTERM", SIGTERM},
+		{"SIGCHLD", SIGCHLD}, {"SIGCONT", SIGCONT}, {"SIGSTOP", SIGSTOP}, {"SIGTSTP", SIGTSTP}, {"SIGTTIN", SIGTTIN},
+		{"SIGTTOU", SIGTTOU}, {"SIGURG", SIGURG}, {"SIGXCPU", SIGXCPU}, {"SIGXFSZ", SIGXFSZ}, {"SIGVTALRM", SIGVTALRM},
+		{"SIGPROF", SIGPROF}, {"SIGWINCH", SIGWINCH}, {"SIGIO", SIGIO}, {"SIGPWR", SIGPWR}, {"SIGSYS", SIGSYS},
 		{NULL, 0}
 	};
-	
+
 	for( i = 0; map[i].name != NULL; i ++) {
 		if (strcasecmp (map[i].name, signame) == 0)
 			return map[i].no;
@@ -132,7 +132,7 @@ PROTOTYPES: ENABLE
 ######################################################################
 # 	MISC FUNCTIONS
 ######################################################################
-slurm_t 
+slurm_t
 get_slurm(slurm_t self = NULL, char *conf_file=NULL)
 		slurm_t	RETVAL = NULL;
 	CODE:
@@ -207,7 +207,7 @@ slurm_allocate_resources_blocking(slurm_t self, HV* job_req = NULL, time_t timeo
 			XSRETURN_UNDEF;
 		}
 		sarb_cb_sv = callback;
-		resp_msg = slurm_allocate_resources_blocking(&job_desc_msg, timeout, 
+		resp_msg = slurm_allocate_resources_blocking(&job_desc_msg, timeout,
 				callback == NULL ? NULL : sarb_cb);
 		free_job_desc_msg_memory(&job_desc_msg);
 		if (resp_msg != NULL) {
@@ -297,7 +297,7 @@ slurm_submit_batch_job(slurm_t self, HV* job_req = NULL)
 		slurm_free_submit_response_response_msg(resp_msg);
 	OUTPUT:
 		RETVAL
-	
+
 int
 slurm_job_will_run(slurm_t self, HV* job_req = NULL)
 	PREINIT:
@@ -328,7 +328,7 @@ int
 slurm_signal_job(slurm_t self, U32 jobid, signo_t signal = 0)
 	C_ARGS:
 		jobid, signal
-		
+
 int
 slurm_signal_job_step(slurm_t self, U32 jobid, U32 stepid, signo_t signal = 0)
 	C_ARGS:
@@ -417,7 +417,7 @@ slurm_load_jobs(slurm_t self = NULL, U16 show_flags = 0)
 	OUTPUT:
 		RETVAL
 
-# To be implemented in perl code		
+# To be implemented in perl code
 #slurm_print_job_info_msg()
 #slurm_print_job_info()
 #slurm_sprint_job_info()
@@ -435,12 +435,12 @@ slurm_get_end_time(slurm_t self, U32 jobid)
 			RETVAL = end_time;
 	OUTPUT:
 		RETVAL
-	
+
 long
 slurm_get_rem_time(slurm_t self, U32 jobid)
 	C_ARGS:
 		jobid
-		
+
 U32
 slurm_pid2jobid(slurm_t self, U32 pid)
 	PREINIT:
@@ -503,7 +503,7 @@ slurm_get_job_steps(slurm_t self = NULL, U16 show_flags = 0, U32 jobid = 0, U32 
 # slurm_print_job_step_info_response_msg
 # slurm_print_job_step_info_msg
 # slurm_sprint_job_step_info
-		
+
 HV*
 slurm_job_step_layout_get(slurm_t self, U32 jobid, U32 stepid)
 	PREINIT:
@@ -520,9 +520,9 @@ slurm_job_step_layout_get(slurm_t self, U32 jobid, U32 stepid)
 		}
 	OUTPUT:
 		RETVAL
-	
 
-	
+
+
 ######################################################################
 #	SLURM NODE CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
@@ -562,7 +562,7 @@ slurm_update_node(slurm_t self, HV* update_req = NULL)
 		}
 	C_ARGS:
 		&node_msg
-		
+
 ######################################################################
 #	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
@@ -602,7 +602,7 @@ slurm_update_partition(slurm_t self, HV* part_info = NULL)
 		}
 	C_ARGS:
 		&update_msg
-		
+
 int
 slurm_delete_partition(slurm_t self, char* part_name)
 	PREINIT:
@@ -625,7 +625,7 @@ slurm_ping(slurm_t self, U16 primary = 1)
 int
 slurm_reconfigure(slurm_t self)
 	C_ARGS:
-	
+
 int
 slurm_shutdown(slurm_t self, U16 core = 0)
 	C_ARGS:
@@ -753,7 +753,7 @@ int
 slurm_hostlist_count(hostlist_t hl = NULL)
 	OUTPUT:
 		RETVAL
-	
+
 hostlist_t
 slurm_hostlist_create(char* hostlist)
 
@@ -787,7 +787,7 @@ slurm_hostlist_ranged_string(hostlist_t hl = NULL)
 		RETVAL
 
 char*
-slurm_hostlist_shift(hostlist_t hl = NULL)		
+slurm_hostlist_shift(hostlist_t hl = NULL)
 	PREINIT:
 		char *host = NULL;
 	CODE:

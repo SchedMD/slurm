@@ -6,32 +6,32 @@
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -61,11 +61,11 @@ extern void print_bg_record(bg_record_t* bg_record)
 	if (bg_record->bg_block_id)
 		info("\tbg_block_id: %s", bg_record->bg_block_id);
 	info("\tnodes: %s", bg_record->nodes);
-	info("\tsize: %d BPs %u Nodes %d cpus", 
+	info("\tsize: %d BPs %u Nodes %d cpus",
 	     bg_record->bp_count,
 	     bg_record->node_cnt,
 	     bg_record->cpu_cnt);
-	info("\tgeo: %ux%ux%u", bg_record->geo[X], bg_record->geo[Y], 
+	info("\tgeo: %ux%ux%u", bg_record->geo[X], bg_record->geo[Y],
 	     bg_record->geo[Z]);
 	info("\tconn_type: %s", conn_type_string(bg_record->conn_type));
 #ifdef HAVE_BGL
@@ -138,7 +138,7 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 				       "is already in the list %s",
 				       bg_record->nodes,
 				       found_record->bg_block_id);
-				
+
 			rc = 1;
 			break;
 		}
@@ -179,8 +179,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	bool start_set=0;
 	ListIterator itr;
 	ba_node_t* ba_node = NULL;
-	
-	if(!bg_record->bg_block_list 
+
+	if(!bg_record->bg_block_list
 	   || !list_count(bg_record->bg_block_list)) {
 		if(!bg_record->bg_block_list) {
 			bg_record->bg_block_list =
@@ -196,7 +196,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		while (bg_record->nodes[j] != '\0') {
 			if ((bg_record->nodes[j] == '['
 			     || bg_record->nodes[j] == ',')
-			    && (bg_record->nodes[j+8] == ']' 
+			    && (bg_record->nodes[j+8] == ']'
 				|| bg_record->nodes[j+8] == ',')
 			    && (bg_record->nodes[j+4] == 'x'
 				|| bg_record->nodes[j+4] == '-')) {
@@ -204,9 +204,9 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 				number = xstrntol(bg_record->nodes + j,
 						  NULL, BA_SYSTEM_DIMENSIONS,
 						  HOSTLIST_BASE);
-				start[X] = number / 
+				start[X] = number /
 					(HOSTLIST_BASE * HOSTLIST_BASE);
-				start[Y] = (number % 
+				start[Y] = (number %
 					    (HOSTLIST_BASE * HOSTLIST_BASE))
 					/ HOSTLIST_BASE;
 				start[Z] = (number % HOSTLIST_BASE);
@@ -215,7 +215,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 						NULL, 3, HOSTLIST_BASE);
 				end[X] = number /
 					(HOSTLIST_BASE * HOSTLIST_BASE);
-				end[Y] = (number 
+				end[Y] = (number
 					  % (HOSTLIST_BASE * HOSTLIST_BASE))
 					/ HOSTLIST_BASE;
 				end[Z] = (number % HOSTLIST_BASE);
@@ -233,8 +233,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 					largest_diff = diff;
 				}
 				bg_record->bp_count += _addto_node_list(
-					bg_record, 
-					start, 
+					bg_record,
+					start,
 					end);
 				if(bg_record->nodes[j] != ',')
 					break;
@@ -243,13 +243,13 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 				   && bg_record->nodes[j] <= '9')
 				  || (bg_record->nodes[j] >= 'A'
 				      && bg_record->nodes[j] <= 'Z')) {
-				
+
 				number = xstrntol(bg_record->nodes + j,
 						  NULL, BA_SYSTEM_DIMENSIONS,
 						  HOSTLIST_BASE);
-				start[X] = number / 
+				start[X] = number /
 					(HOSTLIST_BASE * HOSTLIST_BASE);
-				start[Y] = (number % 
+				start[Y] = (number %
 					    (HOSTLIST_BASE * HOSTLIST_BASE))
 					/ HOSTLIST_BASE;
 				start[Z] = (number % HOSTLIST_BASE);
@@ -267,8 +267,8 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 					largest_diff = diff;
 				}
 				bg_record->bp_count += _addto_node_list(
-					bg_record, 
-					start, 
+					bg_record,
+					start,
 					start);
 				if(bg_record->nodes[j] != ',')
 					break;
@@ -276,7 +276,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 			}
 			j++;
 		}
-		if(largest_diff == -1) 
+		if(largest_diff == -1)
 			fatal("No hostnames given here");
 
 		bg_record->start[X] = best_start[X];
@@ -289,7 +289,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		       bg_record->start[Y],
 		       bg_record->start[Z]);
 	}
-	
+
 	bg_record->geo[X] = 0;
 	bg_record->geo[Y] = 0;
 	bg_record->geo[Z] = 0;
@@ -313,7 +313,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		       alpha_num[ba_node->coord[X]],
 		       alpha_num[ba_node->coord[Y]],
 		       alpha_num[ba_node->coord[Z]]);
-		       
+
 		if(ba_node->coord[X]>end[X]) {
 			bg_record->geo[X]++;
 			end[X] = ba_node->coord[X];
@@ -356,39 +356,39 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		if ((bg_record->geo[X] == DIM_SIZE[X])
 		    && (bg_record->geo[Y] == DIM_SIZE[Y])
 		    && (bg_record->geo[Z] == DIM_SIZE[Z])) {
-			bg_record->full_block = 1;	
-		}	
+			bg_record->full_block = 1;
+		}
 	} else if(bg_record->node_cnt == bg_conf->bp_node_cnt)
 		bg_record->full_block = 1;
-	
+
 /* #ifndef HAVE_BG_FILES */
 /* 	max_dim[X] = MAX(max_dim[X], end[X]); */
 /* 	max_dim[Y] = MAX(max_dim[Y], end[Y]); */
 /* 	max_dim[Z] = MAX(max_dim[Z], end[Z]); */
 /* #endif */
-   
-	if (node_name2bitmap(bg_record->nodes, 
-			     false, 
+
+	if (node_name2bitmap(bg_record->nodes,
+			     false,
 			     &bg_record->bitmap)) {
 		fatal("process_nodes: "
-		      "1 Unable to convert nodes %s to bitmap", 
+		      "1 Unable to convert nodes %s to bitmap",
 		      bg_record->nodes);
 	}
 	return;
 }
 
-/* 
+/*
  * NOTE: This function does not do a mutex lock so if you are copying the
  * main bg_list you need to lock 'block_state_mutex' before calling
  */
-extern List copy_bg_list(List in_list) 
+extern List copy_bg_list(List in_list)
 {
 	bg_record_t *bg_record = NULL;
 	bg_record_t *new_record = NULL;
 	List out_list = list_create(destroy_bg_record);
 	ListIterator itr = list_iterator_create(in_list);
 
-	while ((bg_record = (bg_record_t *) list_next(itr))) { 
+	while ((bg_record = (bg_record_t *) list_next(itr))) {
 		new_record = xmalloc(sizeof(bg_record_t));
 		new_record->original = bg_record;
 		copy_bg_record(bg_record, new_record);
@@ -396,8 +396,8 @@ extern List copy_bg_list(List in_list)
 	}
 
 	list_iterator_destroy(itr);
-	
-	return out_list;	
+
+	return out_list;
 }
 
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
@@ -405,7 +405,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	int i;
 	ListIterator itr = NULL;
 	ba_node_t *ba_node = NULL, *new_ba_node = NULL;
-	
+
 	if(!fir_record || !sec_record) {
 		error("copy_bg_record: "
 		      "given a null for either first record or second record");
@@ -452,13 +452,13 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	}
 
 	FREE_NULL_BITMAP(sec_record->bitmap);
-	if(fir_record->bitmap 
+	if(fir_record->bitmap
 	   && (sec_record->bitmap = bit_copy(fir_record->bitmap)) == NULL) {
 		error("Unable to copy bitmap for %s", fir_record->nodes);
 		sec_record->bitmap = NULL;
 	}
 	FREE_NULL_BITMAP(sec_record->ionode_bitmap);
-	if(fir_record->ionode_bitmap 
+	if(fir_record->ionode_bitmap
 	   && (sec_record->ionode_bitmap
 	       = bit_copy(fir_record->ionode_bitmap)) == NULL) {
 		error("Unable to copy ionode_bitmap for %s",
@@ -482,11 +482,11 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->node_cnt = fir_record->node_cnt;
 }
 
-/* 
+/*
  * Comparator used for sorting blocks smallest to largest
- * 
+ *
  * returns: -1: rec_a > rec_b   0: rec_a == rec_b   1: rec_a < rec_b
- * 
+ *
  */
 extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 {
@@ -524,12 +524,12 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 {
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
-		
+
 	xassert(my_list);
 
 	if(!bg_block_id)
 		return NULL;
-			
+
 	itr = list_iterator_create(my_list);
 	while((bg_record = list_next(itr))) {
 		if(bg_record->bg_block_id)
@@ -544,12 +544,12 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 		return NULL;
 }
 
-/* All changes to the bg_list target_name must 
-   be done before this function is called. 
+/* All changes to the bg_list target_name must
+   be done before this function is called.
    also slurm_conf_lock() must be called before calling this
-   function along with slurm_conf_unlock() afterwards.		
+   function along with slurm_conf_unlock() afterwards.
 */
-extern int update_block_user(bg_record_t *bg_record, int set) 
+extern int update_block_user(bg_record_t *bg_record, int set)
 {
 	if(!bg_record->target_name) {
 		error("Must set target_name to run update_block_user.");
@@ -560,38 +560,38 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 		bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	}
 #ifdef HAVE_BG_FILES
-	int rc=0;	
+	int rc=0;
 	if(set) {
-		if((rc = remove_all_users(bg_record->bg_block_id, 
+		if((rc = remove_all_users(bg_record->bg_block_id,
 					  bg_record->target_name))
 		   == REMOVE_USER_ERR) {
 			error("1 Something happened removing "
-			      "users from block %s", 
+			      "users from block %s",
 			      bg_record->bg_block_id);
 			return -1;
 		} else if (rc == REMOVE_USER_NONE) {
-			if (strcmp(bg_record->target_name, 
+			if (strcmp(bg_record->target_name,
 				   bg_conf->slurm_user_name)) {
 				info("Adding user %s to Block %s",
-				     bg_record->target_name, 
+				     bg_record->target_name,
 				     bg_record->bg_block_id);
-				
+
 				if ((rc = bridge_add_block_user(
-					     bg_record->bg_block_id, 
-					     bg_record->target_name)) 
+					     bg_record->bg_block_id,
+					     bg_record->target_name))
 				    != STATUS_OK) {
 					error("bridge_add_block_user"
-					      "(%s,%s): %s", 
-					      bg_record->bg_block_id, 
+					      "(%s,%s): %s",
+					      bg_record->bg_block_id,
 					      bg_record->target_name,
 					      bg_err_str(rc));
 					return -1;
-				} 
+				}
 			}
 		}
 	}
 #endif
-	
+
 	if(strcmp(bg_record->target_name, bg_record->user_name)) {
 		uid_t pw_uid;
 		xfree(bg_record->user_name);
@@ -600,18 +600,18 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 			error("No such user: %s", bg_record->user_name);
 			return -1;
 		} else {
-			bg_record->user_uid = pw_uid; 
-		}		
+			bg_record->user_uid = pw_uid;
+		}
 		return 1;
 	}
-	
+
 	return 0;
 }
 
-/* If any nodes in node_list are drained, draining, or down, 
+/* If any nodes in node_list are drained, draining, or down,
  *   then just return
  *   else drain all of the nodes
- * This function lets us drain an entire bgblock only if 
+ * This function lets us drain an entire bgblock only if
  * we have not already identified a specific node as bad. */
 extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 {
@@ -627,13 +627,13 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 		debug2("Trying to requeue job %d", bg_record->job_running);
 		if((rc = job_requeue(0, bg_record->job_running, -1))) {
 			error("couldn't requeue job %u, failing it: %s",
-			      bg_record->job_running, 
+			      bg_record->job_running,
 			      slurm_strerror(rc));
 			job_fail(bg_record->job_running);
 		}
 		unlock_slurmctld(job_write_lock);
 		slurm_mutex_lock(&block_state_mutex);
-		if(remove_from_bg_list(bg_lists->job_running, bg_record) 
+		if(remove_from_bg_list(bg_lists->job_running, bg_record)
 		   == SLURM_SUCCESS) {
 			num_unused_cpus += bg_record->cpu_cnt;
 		}
@@ -645,7 +645,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 		debug2("small block");
 		goto end_it;
 	}
-	
+
 	/* at least one base partition */
 	hl = hostlist_create(bg_record->nodes);
 	if (!hl) {
@@ -661,7 +661,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 		free(host);
 	}
 	hostlist_destroy(hl);
-	
+
 	if (needed) {
 		slurm_drain_nodes(bg_record->nodes, reason);
 	}
@@ -671,7 +671,7 @@ end_it:
 		       bg_record->bg_block_id, bg_record->job_running);
 		sleep(1);
 	}
-	
+
 	put_block_in_error_state(bg_record, BLOCK_ERROR_STATE, reason);
 	return;
 }
@@ -682,7 +682,7 @@ extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
 
 	if(!bg_record)
 		return SLURM_ERROR;
-	
+
 	bg_record->ionode_bitmap = bit_alloc(bg_conf->numpsets);
 	/* Set the correct ionodes being used in this block */
 	bit_nset(bg_record->ionode_bitmap, io_start, io_start+io_nodes);
@@ -706,11 +706,11 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	if(!records) {
 		fatal("add_bg_record: no records list given");
 	}
-	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));	
-	
+	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
+
 	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
-	
+
 	if (uid_from_string (bg_record->user_name, &pw_uid) < 0)
 		error("add_bg_record: No such user: %s", bg_record->user_name);
 	else
@@ -727,14 +727,14 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
 #ifdef HAVE_BGL
-	debug2("add_bg_record: asking for %s %d %d %s", 
+	debug2("add_bg_record: asking for %s %d %d %s",
 	       blockreq->block, blockreq->small32, blockreq->small128,
 	       conn_type_string(blockreq->conn_type));
 #else
-	debug2("add_bg_record: asking for %s %d %d %d %d %d %s", 
-	       blockreq->block, blockreq->small256, 
+	debug2("add_bg_record: asking for %s %d %d %d %d %d %s",
+	       blockreq->block, blockreq->small256,
 	       blockreq->small128, blockreq->small64,
-	       blockreq->small32, blockreq->small16, 
+	       blockreq->small32, blockreq->small16,
 	       conn_type_string(blockreq->conn_type));
 #endif
 	/* Set the bitmap blank here if it is a full node we don't
@@ -744,25 +744,25 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 
 	len = strlen(blockreq->block);
 	i=0;
-	while(i<len 
-	      && blockreq->block[i] != '[' 
+	while(i<len
+	      && blockreq->block[i] != '['
 	      && (blockreq->block[i] < '0' || blockreq->block[i] > 'Z'
 		  || (blockreq->block[i] > '9' && blockreq->block[i] < 'A')))
 		i++;
-	
+
 	if(i<len) {
 		len -= i;
-		
+
 		len += strlen(bg_conf->slurm_node_prefix)+1;
 		bg_record->nodes = xmalloc(len);
-		snprintf(bg_record->nodes, len, "%s%s", 
+		snprintf(bg_record->nodes, len, "%s%s",
 			bg_conf->slurm_node_prefix, blockreq->block+i);
-	} else 
+	} else
 		fatal("add_bg_record: BPs=%s is in a weird format",
-		      blockreq->block); 
-	
+		      blockreq->block);
+
 	process_nodes(bg_record, false);
-	
+
 #ifdef HAVE_BGL
 	bg_record->node_use = SELECT_COPROCESSOR_MODE;
 #endif
@@ -793,7 +793,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	else
 		bg_record->ramdiskimage =
 			xstrdup(bg_conf->default_ramdiskimage);
-		
+
 	if(bg_record->conn_type != SELECT_SMALL) {
 		/* this needs to be an append so we keep things in the
 		   order we got them, they will be sorted later */
@@ -812,10 +812,10 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		if(no_check)
 			goto no_check;
 		/* if the ionode cnt for small32 is 0 then don't
-		   allow a sub quarter allocation 
+		   allow a sub quarter allocation
 		*/
 		if(bg_conf->nodecard_ionode_cnt < 2) {
-			if(!bg_conf->nodecard_ionode_cnt && blockreq->small32) 
+			if(!bg_conf->nodecard_ionode_cnt && blockreq->small32)
 				fatal("add_bg_record: "
 				      "There is an error in your "
 				      "bluegene.conf file.\n"
@@ -824,7 +824,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 				      "to at least 16)",
 				      bg_conf->numpsets);
 #ifndef HAVE_BGL
-			if(blockreq->small16) 
+			if(blockreq->small16)
 				fatal("add_bg_record: "
 				      "There is an error in your "
 				      "bluegene.conf file.\n"
@@ -832,7 +832,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 				      "Numpsets=%u. (Try setting it to "
 				      "at least 32)",
 				      bg_conf->numpsets);
-			if((bg_conf->io_ratio < 0.5) && blockreq->small64) 
+			if((bg_conf->io_ratio < 0.5) && blockreq->small64)
 				fatal("add_bg_record: "
 				      "There is an error in your "
 				      "bluegene.conf file.\n"
@@ -849,32 +849,32 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 			     "No specs given for this small block, "
 			     "I am spliting this block into 4 128CnBlocks");
 			blockreq->small128=4;
-		}		
+		}
 
-		i = (blockreq->small32*bg_conf->nodecard_node_cnt) + 
+		i = (blockreq->small32*bg_conf->nodecard_node_cnt) +
 			(blockreq->small128*bg_conf->quarter_node_cnt);
 		if(i != bg_conf->bp_node_cnt)
 			fatal("add_bg_record: "
 			      "There is an error in your bluegene.conf file.\n"
 			      "I am unable to request %d nodes consisting of "
 			      "%u 32CnBlocks and\n%u 128CnBlocks in one "
-			      "base partition with %u nodes.", 
+			      "base partition with %u nodes.",
 			      i, blockreq->small32, blockreq->small128,
 			      bg_conf->bp_node_cnt);
-		small_count = blockreq->small32+blockreq->small128; 
+		small_count = blockreq->small32+blockreq->small128;
 #else
-		if(!blockreq->small16 && !blockreq->small32 
-		   && !blockreq->small64 && !blockreq->small128 
+		if(!blockreq->small16 && !blockreq->small32
+		   && !blockreq->small64 && !blockreq->small128
 		   && !blockreq->small256) {
 			info("add_bg_record: "
 			     "No specs given for this small block, "
 			     "I am spliting this block into 2 256CnBlocks");
 			blockreq->small256=2;
-		}		
+		}
 
-		i = (blockreq->small16*16) 
-			+ (blockreq->small32*32) 
-			+ (blockreq->small64*64) 
+		i = (blockreq->small16*16)
+			+ (blockreq->small32*32)
+			+ (blockreq->small64*64)
 			+ (blockreq->small128*128)
 			+ (blockreq->small256*256);
 		if(i != bg_conf->bp_node_cnt)
@@ -884,18 +884,18 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 			      "%u 16CNBlocks, %u 32CNBlocks,\n"
 			      "%u 64CNBlocks, %u 128CNBlocks, "
 			      "and %u 256CNBlocks\n"
-			      "in one base partition with %u nodes.", 
-			      i, blockreq->small16, blockreq->small32, 
-			      blockreq->small64, blockreq->small128, 
+			      "in one base partition with %u nodes.",
+			      i, blockreq->small16, blockreq->small32,
+			      blockreq->small64, blockreq->small128,
 			      blockreq->small256, bg_conf->bp_node_cnt);
 		small_count = blockreq->small16
 			+ blockreq->small32
 			+ blockreq->small64
 			+ blockreq->small128
-			+ blockreq->small256; 
+			+ blockreq->small256;
 #endif
 	no_check:
-		/* Automatically create 2-way split if 
+		/* Automatically create 2-way split if
 		 * conn_type == SELECT_SMALL in bluegene.conf
 		 * Here we go through each node listed and do the same thing
 		 * for each node.
@@ -907,8 +907,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		}
 		list_iterator_destroy(itr);
 		destroy_bg_record(bg_record);
-	} 
-	
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -950,7 +950,7 @@ extern int handle_small_record_request(List records, blockreq_t *blockreq,
 		bit_nclear(ionodes, start, start+ionode_cnt);
 		start+=ionode_cnt+1;
 	}
-	
+
 #ifndef HAVE_BGL
 	if((ionode_cnt = bg_conf->nodecard_ionode_cnt * 2))
 		ionode_cnt--;
@@ -1022,16 +1022,16 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	int bp_bit = 0;
 	static int io_cnt = NO_VAL;
 	static int create_size = NO_VAL;
-	static blockreq_t blockreq; 
+	static blockreq_t blockreq;
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	char reason[128], time_str[32];
-	
+
 	xassert(bp_name);
-	
+
 	slurm_make_time_str(&now, time_str, sizeof(time_str));
-	snprintf(reason, sizeof(reason), 
-		 "select_bluegene: nodecard down [SLURM@%s]", time_str); 
+	snprintf(reason, sizeof(reason),
+		 "select_bluegene: nodecard down [SLURM@%s]", time_str);
 
 	if(io_cnt == NO_VAL) {
 		io_cnt = 1;
@@ -1056,7 +1056,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 
 	/* this is here for sanity check to make sure we don't core on
 	   these bits when we set them below. */
-	if(io_start >= bg_conf->numpsets 
+	if(io_start >= bg_conf->numpsets
 	   || (io_start+io_cnt) >= bg_conf->numpsets) {
 		debug("io %d-%d not configured on this "
 		      "system, only %d ionodes per midplane",
@@ -1064,14 +1064,14 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		return EINVAL;
 	}
 	bp_bit = (node_ptr - node_record_table_ptr);
-	
+
 	memset(&blockreq, 0, sizeof(blockreq_t));
-	
+
 	blockreq.conn_type = SELECT_SMALL;
 	blockreq.block = bp_name;
 
 	debug3("here setting node %d of %d and ionodes %d-%d of %d",
-	       bp_bit, node_record_count, io_start, 
+	       bp_bit, node_record_count, io_start,
 	       io_start+io_cnt, bg_conf->numpsets);
 
 	memset(&tmp_record, 0, sizeof(bg_record_t));
@@ -1088,11 +1088,11 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	while ((bg_record = list_next(itr))) {
 		if(!bit_test(bg_record->bitmap, bp_bit))
 			continue;
-		
-		if(!blocks_overlap(bg_record, &tmp_record)) 
+
+		if(!blocks_overlap(bg_record, &tmp_record))
 			continue;
 
-		if(bg_record->job_running > NO_JOB_RUNNING) 
+		if(bg_record->job_running > NO_JOB_RUNNING)
 			slurm_fail_job(bg_record->job_running);
 
 		/* If Running Dynamic mode and the the block is
@@ -1108,35 +1108,35 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 
 		/* keep track of the smallest size that is at least
 		   the size of create_size. */
-		if(!smallest_bg_record || 
+		if(!smallest_bg_record ||
 		   (smallest_bg_record->node_cnt > bg_record->node_cnt))
 			smallest_bg_record = bg_record;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
-	
+
 	if(bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		debug3("running non-dynamic mode");
 		/* This should never happen, but just in case... */
-		if(delete_list) 
+		if(delete_list)
 			list_destroy(delete_list);
 
 		/* If we found a block that is smaller or equal to a
 		   midplane we will just mark it in an error state as
-		   opposed to draining the node.  
+		   opposed to draining the node.
 		*/
-		if(smallest_bg_record 
+		if(smallest_bg_record
 		   && (smallest_bg_record->node_cnt < bg_conf->bp_node_cnt)){
 			if(smallest_bg_record->state == RM_PARTITION_ERROR) {
 				rc = SLURM_NO_CHANGE_IN_DATA;
 				goto cleanup;
 			}
-			
+
 			rc = put_block_in_error_state(
 				smallest_bg_record, BLOCK_ERROR_STATE, reason);
 			goto cleanup;
-		} 
-		
+		}
+
 		debug("No block under 1 midplane available for this nodecard.  "
 		      "Draining the whole node.");
 		if(!node_already_down(bp_name)) {
@@ -1144,10 +1144,10 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		}
 		rc = SLURM_SUCCESS;
 		goto cleanup;
-	} 
+	}
 
 	/* below is only for Dynamic mode */
-	
+
 	if(delete_list) {
 		int cnt_set = 0;
 		bitstr_t *iobitmap = bit_alloc(bg_conf->numpsets);
@@ -1177,17 +1177,17 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		   block) set io_start = 0. */
 		if((io_start = bit_ffs(iobitmap)) == -1) {
 			io_start = 0;
-			if(create_size > bg_conf->nodecard_node_cnt) 
+			if(create_size > bg_conf->nodecard_node_cnt)
 				blockreq.small128 = 4;
 			else
 				blockreq.small32 = 16;
-		} else if(create_size <= bg_conf->nodecard_node_cnt) 
+		} else if(create_size <= bg_conf->nodecard_node_cnt)
 			blockreq.small32 = 1;
 		else
 			/* this should never happen */
 			blockreq.small128 = 1;
-		
-		FREE_NULL_BITMAP(iobitmap);		
+
+		FREE_NULL_BITMAP(iobitmap);
 	} else if(smallest_bg_record) {
 		debug2("smallest dynamic block is %s",
 		       smallest_bg_record->bg_block_id);
@@ -1195,7 +1195,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			rc = SLURM_NO_CHANGE_IN_DATA;
 			goto cleanup;
 		}
-		
+
 		while(smallest_bg_record->job_running > NO_JOB_RUNNING)
 			sleep(1);
 
@@ -1203,7 +1203,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			rc = put_block_in_error_state(
 				smallest_bg_record, BLOCK_ERROR_STATE, reason);
 			goto cleanup;
-		} 
+		}
 
 		if(create_size > smallest_bg_record->node_cnt) {
 			/* we should never get here.  This means we
@@ -1225,7 +1225,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			break;
 #endif
 		case 128:
-			blockreq.small32 = 4;			
+			blockreq.small32 = 4;
 			break;
 		case 512:
 		default:
@@ -1264,10 +1264,10 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 				char reason[128], time_str[32];
 				slurm_make_time_str(&now, time_str,
 						    sizeof(time_str));
-				snprintf(reason, sizeof(reason), 
+				snprintf(reason, sizeof(reason),
 					 "select_bluegene: "
-					 "nodecard down [SLURM@%s]", 
-					 time_str); 
+					 "nodecard down [SLURM@%s]",
+					 time_str);
 				slurm_drain_nodes(bp_name, reason);
 			}
 			rc = SLURM_SUCCESS;
@@ -1283,15 +1283,15 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		/* we also need a bg_block to pretend to be the
 		   smallest block that takes up the entire midplane. */
 	}
-		
-	
+
+
 	/* Here we need to add blocks that take up nodecards on this
 	   midplane.  Since Slurm only keeps track of midplanes
 	   natively this is the only want to handle this case.
 	*/
 	requests = list_create(destroy_bg_record);
 	add_bg_record(requests, NULL, &blockreq, 1, io_start);
-		
+
 	delete_list = list_create(NULL);
 	while((bg_record = list_pop(requests))) {
 		slurm_mutex_lock(&block_state_mutex);
@@ -1320,7 +1320,7 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		slurm_mutex_lock(&block_state_mutex);
 		list_append(bg_lists->main, bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
-		if(bit_overlap(bg_record->ionode_bitmap, 
+		if(bit_overlap(bg_record->ionode_bitmap,
 			       tmp_record.ionode_bitmap)) {
 			/* here we know the error block doesn't exist
 			   so just set the state here */
@@ -1329,20 +1329,20 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		}
 	}
 	list_destroy(requests);
-	
+
 	slurm_mutex_lock(&block_state_mutex);
 	free_block_list(delete_list);
 	list_destroy(delete_list);
 	sort_bg_record_inc_size(bg_lists->main);
 	slurm_mutex_unlock(&block_state_mutex);
-	last_bg_update = time(NULL);	
+	last_bg_update = time(NULL);
 
 cleanup:
 	FREE_NULL_BITMAP(tmp_record.bitmap);
 	FREE_NULL_BITMAP(tmp_record.ionode_bitmap);
 
 	return rc;
-	
+
 }
 
 extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap)
@@ -1363,7 +1363,7 @@ extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap)
 		return EINVAL;
 	}
 	bp_bit = (node_ptr - node_record_table_ptr);
-	
+
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while((bg_record = list_next(itr))) {
@@ -1371,15 +1371,15 @@ extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap)
 			continue;
 		if(!bit_test(bg_record->bitmap, bp_bit))
 			continue;
-		
+
 		if(!bit_overlap(bg_record->ionode_bitmap, ionode_bitmap)) {
 			continue;
 		}
-		resume_block(bg_record);			
+		resume_block(bg_record);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
-	
+
 	/* FIX ME: This needs to call the opposite of
 	   slurm_drain_nodes which does not yet exist.
 	*/
@@ -1401,7 +1401,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 	uid_t pw_uid;
 
 	xassert(bg_record);
-	
+
 	/* only check this if the blocks are created, meaning this
 	   isn't at startup.
 	*/
@@ -1413,7 +1413,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 		while(bg_record->job_running > NO_JOB_RUNNING)
 			sleep(1);
 	}
-	
+
 	slurm_mutex_lock(&block_state_mutex);
 	if(!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
 		slurm_mutex_unlock(&block_state_mutex);
@@ -1421,7 +1421,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 		      "error state it disappeared");
 		return SLURM_ERROR;
 	}
-	
+
 	info("Setting Block %s to ERROR state. (reason: '%s')",
 	     bg_record->bg_block_id, reason);
 	/* we add the block to these lists so we don't try to schedule
@@ -1430,9 +1430,9 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 		list_push(bg_lists->job_running, bg_record);
 		num_unused_cpus -= bg_record->cpu_cnt;
 	}
-	if(!block_ptr_exist_in_list(bg_lists->booted, bg_record)) 
+	if(!block_ptr_exist_in_list(bg_lists->booted, bg_record))
 		list_push(bg_lists->booted, bg_record);
-	
+
 	bg_record->job_running = state;
 	bg_record->state = RM_PARTITION_ERROR;
 
@@ -1440,7 +1440,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record,
 	xfree(bg_record->target_name);
 	bg_record->user_name = xstrdup(bg_conf->slurm_user_name);
 	bg_record->target_name = xstrdup(bg_conf->slurm_user_name);
-	
+
 	if (uid_from_string (bg_record->user_name, &pw_uid) < 0)
 		error("No such user: %s", bg_record->user_name);
 	else
@@ -1470,7 +1470,7 @@ extern int resume_block(bg_record_t *bg_record)
 		     bg_record->bg_block_id);
 
 	if(remove_from_bg_list(bg_lists->job_running, bg_record)
-	   == SLURM_SUCCESS) 
+	   == SLURM_SUCCESS)
 		num_unused_cpus += bg_record->cpu_cnt;
 	remove_from_bg_list(bg_lists->booted, bg_record);
 
@@ -1496,7 +1496,7 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 	int rc = SLURM_SUCCESS;
 
 	xassert(node_inx <= node_record_count);
-	
+
 	memset(&send_node, 0, sizeof(struct node_record));
 	memset(&config_rec, 0, sizeof(struct config_record));
 	send_node.name = node_record_table_ptr[node_inx].name;
@@ -1529,12 +1529,12 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 		rc = clusteracct_storage_g_node_down(acct_db_conn,
 						     slurmctld_cluster_name,
 						     &send_node, event_time,
-						     reason);	
+						     reason);
 	} else {
 		send_node.node_state = NODE_STATE_IDLE;
 		rc = clusteracct_storage_g_node_up(acct_db_conn,
 						   slurmctld_cluster_name,
-						   &send_node, event_time);	
+						   &send_node, event_time);
 	}
 
 	return rc;
@@ -1553,7 +1553,7 @@ static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason)
 			continue;
 		rc = _check_all_blocks_error(i, now, reason);
 	}
-	
+
 	return rc;
 }
 
@@ -1570,12 +1570,12 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	}
 	if ((end[X] >= DIM_SIZE[X]) || (end[Y] >= DIM_SIZE[Y])
 	||  (end[Z] >= DIM_SIZE[Z])) {
-		fatal("bluegene.conf matrix size exceeds space defined in " 
+		fatal("bluegene.conf matrix size exceeds space defined in "
 		      "slurm.conf %c%c%cx%d%d%d => %c%c%c",
 		      alpha_num[start[X]], alpha_num[start[Y]],
-		      alpha_num[start[Z]], 
-		      end[X], end[Y], end[Z], 
-		      alpha_num[DIM_SIZE[X]], alpha_num[DIM_SIZE[Y]], 
+		      alpha_num[start[Z]],
+		      end[X], end[Y], end[Z],
+		      alpha_num[DIM_SIZE[X]], alpha_num[DIM_SIZE[Y]],
 		      alpha_num[DIM_SIZE[Z]]);
 	}
 	debug3("adding bps: %c%c%cx%c%c%c",
@@ -1583,18 +1583,18 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	       alpha_num[end[X]], alpha_num[end[Y]], alpha_num[end[Z]]);
 	debug3("slurm.conf:    %c%c%c",
 	       alpha_num[DIM_SIZE[X]], alpha_num[DIM_SIZE[Y]],
-	       alpha_num[DIM_SIZE[Z]]); 
-	
+	       alpha_num[DIM_SIZE[Z]]);
+
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
-				
+
 				snprintf(node_name_tmp, sizeof(node_name_tmp),
-					 "%s%c%c%c", 
+					 "%s%c%c%c",
 					 bg_conf->slurm_node_prefix,
 					 alpha_num[x], alpha_num[y],
-					 alpha_num[z]);		
-				
+					 alpha_num[z]);
+
 				ba_node = ba_copy_node(
 					&ba_system_ptr->grid[x][y][z]);
 				ba_node->used = 1;
@@ -1612,7 +1612,7 @@ static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b)
 		return -1;
 	else if (node_a->coord[X] > node_b->coord[X])
 		return 1;
-	
+
 	if (node_a->coord[Y] < node_b->coord[Y])
 		return -1;
 	else if (node_a->coord[Y] > node_b->coord[Y])
@@ -1626,7 +1626,7 @@ static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b)
 	error("You have the node %c%c%c in the list twice",
 	      alpha_num[node_a->coord[X]],
 	      alpha_num[node_a->coord[Y]],
-	      alpha_num[node_a->coord[Z]]); 
+	      alpha_num[node_a->coord[Z]]);
 	return 0;
 }
 

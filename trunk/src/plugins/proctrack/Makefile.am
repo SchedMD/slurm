@@ -1,7 +1,7 @@
 # Makefile for proctrack plugins
 
 if HAVE_AIX_PROCTRACK
-AIX_PROCTRACK = aix 
+AIX_PROCTRACK = aix
 endif
 
 if HAVE_SGI_JOB

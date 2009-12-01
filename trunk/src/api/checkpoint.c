@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -103,7 +103,7 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
  * OUT start_time - time at which checkpoint request was issued
  * RET 0 (can be checkpoined) or a slurm error code
  */
-extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id, 
+extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id,
 		time_t *start_time)
 {
 	int rc;
@@ -172,10 +172,10 @@ extern int slurm_checkpoint_enable (uint32_t job_id, uint32_t step_id)
  * IN image_dir - directory used to get/put checkpoint images
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id, 
+extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id,
 		uint16_t max_wait, char *image_dir)
 {
-	return _checkpoint_op (CHECK_CREATE, max_wait, job_id, step_id, 
+	return _checkpoint_op (CHECK_CREATE, max_wait, job_id, step_id,
 			       image_dir);
 }
 
@@ -188,10 +188,10 @@ extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id,
  * IN image_dir - directory used to get/put checkpoint images
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id, 
+extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id,
 		uint16_t max_wait, char *image_dir)
 {
-	return _checkpoint_op (CHECK_VACATE, max_wait, job_id, step_id, 
+	return _checkpoint_op (CHECK_VACATE, max_wait, job_id, step_id,
 			       image_dir);
 }
 
@@ -241,7 +241,7 @@ extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id,
 }
 
 /*
- * slurm_checkpoint_error - gather error information for the last checkpoint 
+ * slurm_checkpoint_error - gather error information for the last checkpoint
  *	operation for some job step
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
@@ -249,11 +249,11 @@ extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id,
  *	this value is dependent upon the checkpoint plugin used and may be
  *	completely unrelated to slurm error codes, the highest value for all
  *	complete calls is preserved
- * OUT error_msg - error message, preserved for highest error_code, value 
+ * OUT error_msg - error message, preserved for highest error_code, value
  *	must be freed by the caller to prevent memory leak
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id, 
+extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 		uint32_t *error_code, char **error_msg)
 {
 	int rc;
@@ -279,7 +279,7 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 
 	rc = slurm_send_recv_controller_msg(&msg, &resp_msg);
 
-	if (rc == SLURM_SOCKET_ERROR) 
+	if (rc == SLURM_SOCKET_ERROR)
 		return rc;
 
 	switch (resp_msg.msg_type) {
@@ -306,7 +306,7 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 }
 
 /*
- *  Handle a return code message type. 
+ *  Handle a return code message type.
  *    Sets errno to return code and returns it
  */
 static int
@@ -331,7 +331,7 @@ _handle_rc_msg(slurm_msg_t *msg)
  */
 extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
 					   uint32_t task_id, time_t begin_time,
-					   uint32_t error_code, 
+					   uint32_t error_code,
 					   char *error_msg)
 {
 	int rc;

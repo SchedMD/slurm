@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -144,7 +144,7 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 extern int get_uint16(char *in_value, uint16_t *out_value, char *type);
 extern int get_uint64(char *in_value, uint64_t *out_value, char *type);
 extern int get_double(char *in_value, double *out_value, char *type);
-extern int addto_qos_char_list(List char_list, List qos_list, char *names, 
+extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			       int option);
 extern int addto_action_char_list(List char_list, char *names);
 extern List copy_char_list(List qos_list);
@@ -173,11 +173,11 @@ extern acct_account_rec_t *sacctmgr_find_account(char *name);
 extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name);
 
 /* do not free any of the object returned from these functions since
- * they are pointing to an object in the list given 
+ * they are pointing to an object in the list given
  */
 
 extern acct_association_rec_t *sacctmgr_find_association_from_list(
-	List assoc_list, char *user, char *account, 
+	List assoc_list, char *user, char *account,
 	char *cluster, char *partition);
 extern acct_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
 	List assoc_list, char *account, char *cluster);
@@ -197,7 +197,7 @@ extern acct_wckey_rec_t *sacctmgr_find_wckey_from_list(
 extern int print_file_add_limits_to_line(char **line,
 					 acct_association_rec_t *assoc);
 
-extern int print_file_acct_hierarchical_rec_list(FILE *fd, 
+extern int print_file_acct_hierarchical_rec_list(FILE *fd,
 					  List acct_hierarchical_rec_list,
 					  List user_list,
 					  List acct_list);

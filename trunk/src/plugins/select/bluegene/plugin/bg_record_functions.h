@@ -6,32 +6,32 @@
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -62,15 +62,15 @@ typedef struct bg_record {
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */
 	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
 	List bg_block_list;             /* node list of blocks in block */
-	bitstr_t *bitmap;               /* bitmap to check the name 
+	bitstr_t *bitmap;               /* bitmap to check the name
 					   of block */
 #ifdef HAVE_BGL
 	char *blrtsimage;               /* BlrtsImage for this block */
 #endif
 	int boot_count;                 /* number of attemts boot attempts */
-	int boot_state;                 /* check to see if boot failed. 
-					   -1 = fail, 
-					   0 = not booting, 
+	int boot_state;                 /* check to see if boot failed.
+					   -1 = fail,
+					   0 = not booting,
 					   1 = booting */
 	int bp_count;                   /* size */
 	rm_connection_type_t conn_type;  /* MESH or Torus or NAV */
@@ -106,8 +106,8 @@ typedef struct bg_record {
 	rm_partition_state_t state;     /* Current state of the block */
 	int start[BA_SYSTEM_DIMENSIONS];/* start node */
 	int switch_count;               /* number of switches used. */
-	char *target_name;		/* when a block is freed this 
-					   is the name of the user we 
+	char *target_name;		/* when a block is freed this
+					   is the name of the user we
 					   want on the block */
 	char *user_name;		/* user using the block */
 	uid_t user_uid;   		/* Owner of block uid	*/
@@ -126,10 +126,10 @@ extern int bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
 /* return bg_record from a bg_list */
 extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id);
 
-/* change username of a block bg_record_t target_name needs to be 
-   updated before call of function. 
+/* change username of a block bg_record_t target_name needs to be
+   updated before call of function.
 */
-extern int update_block_user(bg_record_t *bg_block_id, int set); 
+extern int update_block_user(bg_record_t *bg_block_id, int set);
 extern void drain_as_needed(bg_record_t *bg_record, char *reason);
 
 extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes);

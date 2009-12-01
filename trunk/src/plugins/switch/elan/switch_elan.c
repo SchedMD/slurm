@@ -1,37 +1,37 @@
 /*****************************************************************************\
- *  switch_elan.c - Library routines for initiating jobs on QsNet. 
+ *  switch_elan.c - Library routines for initiating jobs on QsNet.
  *****************************************************************************
  *  Copyright (C) 2003-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -87,39 +87,39 @@ static slurm_errtab_t slurm_errtab[] = {
 
 	{ ENOSLURM, 	/* oh no! */
 	  "Out of slurm"					},
-	{ EBADMAGIC_QSWLIBSTATE, 
+	{ EBADMAGIC_QSWLIBSTATE,
 	  "Bad magic in QSW libstate"				},
-	{ EBADMAGIC_QSWJOBINFO, 
+	{ EBADMAGIC_QSWJOBINFO,
 	  "Bad magic in QSW jobinfo"				},
 	{ EINVAL_PRGCREATE,
 	  "Program identifier in use or CPU count invalid, try again" },
 	{ ECHILD_PRGDESTROY,
 	  "Processes belonging to this program are still running" },
-	{ EEXIST_PRGDESTROY, 
+	{ EEXIST_PRGDESTROY,
 	  "Program identifier does not exist"			},
-	{ EELAN3INIT, 
+	{ EELAN3INIT,
 	  "Too many processes using Elan or mapping failure"	},
-	{ EELAN3CONTROL, 
+	{ EELAN3CONTROL,
 	  "Could not open elan3 control device"			},
-	{ EELAN3CREATE, 
+	{ EELAN3CREATE,
 	  "Could not create elan capability"			},
-	{ ESRCH_PRGADDCAP, 
+	{ ESRCH_PRGADDCAP,
 	  "Program does not exist (addcap)"			},
-	{ EFAULT_PRGADDCAP, 
+	{ EFAULT_PRGADDCAP,
 	  "Capability has invalid address (addcap)"		},
-	{ EINVAL_SETCAP, 
+	{ EINVAL_SETCAP,
 	  "Invalid context number (setcap)" 		 	},
-	{ EFAULT_SETCAP, 
+	{ EFAULT_SETCAP,
 	  "Capability has invalid address (setcap)"		},
-	{ EGETNODEID, 
+	{ EGETNODEID,
 	  "Cannot determine local elan address"			},
-	{ EGETNODEID_BYHOST, 
+	{ EGETNODEID_BYHOST,
 	  "Cannot translate hostname to elan address"		},
-	{ EGETHOST_BYNODEID, 
+	{ EGETHOST_BYNODEID,
 	  "Cannot translate elan address to hostname"		},
-	{ ESRCH_PRGSIGNAL, 
+	{ ESRCH_PRGSIGNAL,
 	  "No such program identifier"				},
-	{ EINVAL_PRGSIGNAL, 
+	{ EINVAL_PRGSIGNAL,
 	  "Invalid signal number"				}
 };
 
@@ -140,7 +140,7 @@ static slurm_errtab_t slurm_errtab[] = {
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "switch" for SLURM switch) and <method> is a description 
+ * the plugin (e.g., "switch" for SLURM switch) and <method> is a description
  * of how this plugin satisfies that application.  SLURM will only load
  * a switch plugin if the plugin_type string has a prefix of "switch/".
  *
@@ -238,7 +238,7 @@ int switch_p_libstate_restore (char *dir_name, bool recover)
 
 	if (!recover)	/* clean start, no recovery */
 		return qsw_init(NULL);
-	
+
 	file_name = xstrdup(dir_name);
 	xstrcat(file_name, "/qsw_state");
 	state_fd = open (file_name, O_RDONLY);
@@ -272,13 +272,13 @@ int switch_p_libstate_restore (char *dir_name, bool recover)
 	if (error_code == SLURM_SUCCESS) {
 		buffer = create_buf (data, data_size);
 		data = NULL;    /* now in buffer, don't xfree() */
-		if (buffer && (size_buf(buffer) >= sizeof(uint32_t) + 
+		if (buffer && (size_buf(buffer) >= sizeof(uint32_t) +
 				strlen(QSW_STATE_VERSION))) {
 			char *ptr = get_buf_data(buffer);
 
-			if (!memcmp(&ptr[sizeof(uint32_t)], 
+			if (!memcmp(&ptr[sizeof(uint32_t)],
 					QSW_STATE_VERSION, 3)) {
-				unpackstr_xmalloc(&ver_str, &ver_str_len, 
+				unpackstr_xmalloc(&ver_str, &ver_str_len,
 						buffer);
 				debug3("qsw_state file version: %s", ver_str);
 			}
@@ -289,7 +289,7 @@ int switch_p_libstate_restore (char *dir_name, bool recover)
 		if ((qsw_alloc_libstate(&old_state))
 		||  (qsw_unpack_libstate(old_state, buffer) < 0))
 			error_code = SLURM_ERROR;
-	} else 
+	} else
 		error("qsw_state file is in an unsupported format, ignored");
 
 	if (buffer)
@@ -327,12 +327,12 @@ int switch_p_build_jobinfo ( switch_jobinfo_t *switch_job, char *nodelist,
 	bitstr_t *nodeset;
 	int node_id, error_code = SLURM_SUCCESS;
 	int i, nnodes, ntasks = 0;
-	
+
 	if (!tasks_per_node) {
 		slurm_seterrno(ENOMEM);
 		return SLURM_ERROR;
 	}
-	
+
 	if ((host_list = hostlist_create(nodelist)) == NULL)
 		fatal("hostlist_create(%s): %m", nodelist);
 
@@ -354,7 +354,7 @@ int switch_p_build_jobinfo ( switch_jobinfo_t *switch_job, char *nodelist,
 		if (node_id >= 0)
 			bit_set(nodeset, node_id);
 		else {
-			error("qsw_getnodeid_byhost(%s) failure", 
+			error("qsw_getnodeid_byhost(%s) failure",
 					this_node_name);
 			slurm_seterrno(ESLURM_INTERCONNECT_FAILURE);
 			error_code = SLURM_ERROR;
@@ -365,8 +365,8 @@ int switch_p_build_jobinfo ( switch_jobinfo_t *switch_job, char *nodelist,
 
 	if (error_code == SLURM_SUCCESS) {
 		qsw_jobinfo_t j = (qsw_jobinfo_t) switch_job;
-		error_code = qsw_setup_jobinfo(j, ntasks, nodeset, 
-				tasks_per_node, cyclic_alloc); 
+		error_code = qsw_setup_jobinfo(j, ntasks, nodeset,
+				tasks_per_node, cyclic_alloc);
 				/* allocs hw context */
 	}
 
@@ -423,9 +423,9 @@ static int _have_elan3 (void)
 	return (1);
 #endif /* HAVE_LIBELAN3 */
 	return (0);
-}	
+}
 
-/*  Initialize node for use of the Elan interconnect by loading 
+/*  Initialize node for use of the Elan interconnect by loading
  *   elanid/hostname pairs then spawning the Elan network error
  *   resolver thread.
  *
@@ -442,7 +442,7 @@ int switch_p_node_init ( void )
 	if (!_have_elan3 ()) return SLURM_SUCCESS;
 
 	/*
-	 *  Load neterr elanid/hostname values into kernel 
+	 *  Load neterr elanid/hostname values into kernel
 	 */
 	if (_set_elan_ids() < 0)
 		return SLURM_ERROR;
@@ -526,7 +526,7 @@ static int _elan3_load_neterr_svc (int i, char *host)
 }
 
 static void *_neterr_thr(void *arg)
-{	
+{
 	debug3("Starting Elan network error resolver thread");
 
 	if (!(elan3h = dlopen ("libelan3.so", RTLD_LAZY))) {
@@ -539,8 +539,8 @@ static void *_neterr_thr(void *arg)
 		goto fail;
 	}
 
-	/* 
-	 *  Attempt to register the neterr svc thread. If the address 
+	/*
+	 *  Attempt to register the neterr svc thread. If the address
 	 *   cannot be bound, then there is already a thread running, and
 	 *   we should just exit with success.
 	 */
@@ -552,7 +552,7 @@ static void *_neterr_thr(void *arg)
 		info("Warning: Elan error resolver thread already running");
 	}
 
-	/* 
+	/*
 	 *  Signal main thread that we've successfully initialized
 	 */
 	slurm_mutex_lock(&neterr_mutex);
@@ -611,14 +611,14 @@ int switch_p_job_preinit ( switch_jobinfo_t *jobinfo )
 	return SLURM_SUCCESS;
 }
 
-/* 
+/*
  * prepare node for interconnect use
  */
 int switch_p_job_init ( switch_jobinfo_t *jobinfo, uid_t uid )
 {
 	char buf[4096];
 
-	debug2("calling qsw_prog_init from process %lu", 
+	debug2("calling qsw_prog_init from process %lu",
 		(unsigned long) getpid());
 	verbose("ELAN: %s", qsw_capability_string(
 		(qsw_jobinfo_t)jobinfo, buf, 4096));
@@ -637,55 +637,55 @@ int switch_p_job_init ( switch_jobinfo_t *jobinfo, uid_t uid )
 		qsw_print_jobinfo(log_fp(), (qsw_jobinfo_t)jobinfo);
 		return SLURM_ERROR;
 	}
-	
-	return SLURM_SUCCESS; 
+
+	return SLURM_SUCCESS;
 }
 
 int switch_p_job_fini ( switch_jobinfo_t *jobinfo )
 {
-	qsw_prog_fini((qsw_jobinfo_t)jobinfo); 
+	qsw_prog_fini((qsw_jobinfo_t)jobinfo);
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_postfini ( switch_jobinfo_t *jobinfo, uid_t pgid, 
+int switch_p_job_postfini ( switch_jobinfo_t *jobinfo, uid_t pgid,
 				uint32_t job_id, uint32_t step_id )
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_attach ( switch_jobinfo_t *jobinfo, char ***env, 
-			uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
+int switch_p_job_attach ( switch_jobinfo_t *jobinfo, char ***env,
+			uint32_t nodeid, uint32_t procid, uint32_t nnodes,
 			uint32_t nprocs, uint32_t rank )
 {
 	int id = -1;
-	debug3("nodeid=%lu nnodes=%lu procid=%lu nprocs=%lu rank=%lu", 
-		(unsigned long) nodeid, (unsigned long) nnodes, 
-		(unsigned long) procid, (unsigned long) nprocs, 
+	debug3("nodeid=%lu nnodes=%lu procid=%lu nprocs=%lu rank=%lu",
+		(unsigned long) nodeid, (unsigned long) nnodes,
+		(unsigned long) procid, (unsigned long) nprocs,
 		(unsigned long) rank);
-	debug3("setting capability in process %lu", 
+	debug3("setting capability in process %lu",
 		(unsigned long) getpid());
 	if (qsw_setcap((qsw_jobinfo_t) jobinfo, (int) procid) < 0) {
 		error("qsw_setcap: %m");
 		return SLURM_ERROR;
 	}
 
-	if (slurm_setenvpf(env, "RMS_RANK",   "%lu", (unsigned long) rank  ) 
+	if (slurm_setenvpf(env, "RMS_RANK",   "%lu", (unsigned long) rank  )
 	    < 0)
 		return SLURM_ERROR;
-	if (slurm_setenvpf(env, "RMS_NODEID", "%lu", (unsigned long) nodeid) 
+	if (slurm_setenvpf(env, "RMS_NODEID", "%lu", (unsigned long) nodeid)
 	    < 0)
 		return SLURM_ERROR;
-	if (slurm_setenvpf(env, "RMS_PROCID", "%lu", (unsigned long) rank  ) 
+	if (slurm_setenvpf(env, "RMS_PROCID", "%lu", (unsigned long) rank  )
 	    < 0)
 		return SLURM_ERROR;
-	if (slurm_setenvpf(env, "RMS_NNODES", "%lu", (unsigned long) nnodes) 
+	if (slurm_setenvpf(env, "RMS_NNODES", "%lu", (unsigned long) nnodes)
 	    < 0)
 		return SLURM_ERROR;
-	if (slurm_setenvpf(env, "RMS_NPROCS", "%lu", (unsigned long) nprocs) 
+	if (slurm_setenvpf(env, "RMS_NPROCS", "%lu", (unsigned long) nprocs)
 	    < 0)
 		return SLURM_ERROR;
 
-	/* 
+	/*
 	 * Tell libelan the key to use for Elan state shmem segment
 	 */
 	if (qsw_statkey ((qsw_jobinfo_t) jobinfo, &id) >= 0)
@@ -701,16 +701,16 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 	return SLURM_ERROR;
 }
 
-static int 
+static int
 _set_elan_ids(void)
 {
 	int i;
 
 	for (i = 0; i <= qsw_maxnodeid(); i++) {
-		char host[256]; 
+		char host[256];
 		if (qsw_gethost_bynodeid(host, 256, i) < 0)
 			continue;
-			
+
 		if (_elan3_load_neterr_svc(i, host) < 0)
 			error("elan3_load_neterr_svc(%d, %s): %m", i, host);
 	}
@@ -719,7 +719,7 @@ _set_elan_ids(void)
 }
 
 
-/* 
+/*
  * Linear search through table of errno values and strings,
  * returns NULL on error, string on success.
  */

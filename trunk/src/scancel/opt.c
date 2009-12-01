@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library unde
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -97,7 +97,7 @@ struct signv {
 	{ "TTOU",	SIGTTOU }
 };
 
-/* forward declarations of static functions 
+/* forward declarations of static functions
  *
  */
 
@@ -150,7 +150,7 @@ int initialize_and_process_args(int argc, char *argv[])
 
 }
 
-static uint16_t 
+static uint16_t
 _xlate_state_name(const char *state_name, bool env_var)
 {
 	enum job_states i;
@@ -161,15 +161,15 @@ _xlate_state_name(const char *state_name, bool env_var)
 			return i;
 		}
 	}
-	if ((strcasecmp(state_name, 
+	if ((strcasecmp(state_name,
 			job_state_string(JOB_COMPLETING)) == 0) ||
-	    (strcasecmp(state_name, 
+	    (strcasecmp(state_name,
 			job_state_string_compact(JOB_COMPLETING)) == 0)) {
 		return JOB_COMPLETING;
 	}
-	if ((strcasecmp(state_name, 
+	if ((strcasecmp(state_name,
 			job_state_string(JOB_CONFIGURING)) == 0) ||
-	    (strcasecmp(state_name, 
+	    (strcasecmp(state_name,
 			job_state_string_compact(JOB_CONFIGURING)) == 0)) {
 		return JOB_CONFIGURING;
 	}
@@ -195,7 +195,7 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 	sig_num = (uint16_t) strtol(signal_name, &end_ptr, 10);
 	if ((*end_ptr == '\0') || (sig_num != 0))
 		return sig_num;
-	
+
 	for (i=0; i<SIZE(sig_name_num); i++) {
 		if (strcasecmp(sig_name_num[i].name, signal_name) == 0) {
 			xfree(sig_names);
@@ -206,7 +206,7 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 		else {
 			xstrcat(sig_names, ",");
 			xstrcat(sig_names, sig_name_num[i].name);
-		}			
+		}
 	}
 	fprintf (stderr, "Invalid job signal: %s\n", signal_name);
 	fprintf (stderr, "Valid signals include: %s\n", sig_names);
@@ -331,7 +331,7 @@ static void _opt_args(int argc, char **argv)
 {
 	int opt_char;
 	int option_index;
-	static struct option long_options[] = { 
+	static struct option long_options[] = {
 		{"account",	required_argument, 0, 'A'},
 		{"batch",	no_argument,       0, 'b'},
 		{"ctld",	no_argument,	   0, OPT_LONG_CTLD},
@@ -356,7 +356,7 @@ static void _opt_args(int argc, char **argv)
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
-				fprintf(stderr, 
+				fprintf(stderr,
 					"Try \"scancel --help\" for more "
 					"information\n");
 				exit(1);
@@ -456,7 +456,7 @@ _xlate_job_step_ids(char **rest)
 				exit (1);
 			}
 			opt.step_id[i] = tmp_l;
-		} else 
+		} else
 			opt.step_id[i] = SLURM_BATCH_SCRIPT;
 
 		if (next_str[0] != '\0') {
@@ -467,7 +467,7 @@ _xlate_job_step_ids(char **rest)
 }
 
 
-/* 
+/*
  * opt_verify : perform some post option processing verification
  *
  */

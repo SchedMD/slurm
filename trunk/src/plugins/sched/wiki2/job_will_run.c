@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -49,20 +49,20 @@
 #define MAX_JOB_QUEUE 20
 
 static void	_preempt_list_del(void *x);
-static char *	_will_run_test(uint32_t jobid, time_t start_time, 
+static char *	_will_run_test(uint32_t jobid, time_t start_time,
 			       char *node_list, int *err_code, char **err_msg);
-static char *	_will_run_test2(uint32_t jobid, time_t start_time, 
-				char *node_list, 
+static char *	_will_run_test2(uint32_t jobid, time_t start_time,
+				char *node_list,
 				uint32_t *preemptee, int preemptee_cnt,
 				int *err_code, char **err_msg);
 /*
  * job_will_run - Determine if, when and where a priority ordered list of jobs
- *		  can be initiated with the currently running jobs as a 
+ *		  can be initiated with the currently running jobs as a
  *		  backgorund
  * cmd_ptr IN   - CMD=JOBWILLRUN ARG=JOBID=<JOBID>[@<TIME>],<AVAIL_NODES>
  * err_code OUT - 0 on success or some error code
  * err_msg OUT  - error message if any of the specified jobs can not be started
- *		  at the specified time (if given) on the available nodes. 
+ *		  at the specified time (if given) on the available nodes.
  *		  Otherwise information on when and where the pending jobs
  *		  will be initiated
  *                ARG=<JOBID>:<PROCS>@<TIME>,<USED_NODES>
@@ -109,7 +109,7 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	avail_nodes = tmp_char + 1;
 
 	lock_slurmctld(job_write_lock);
-	buf = _will_run_test(jobid, start_time, avail_nodes, 
+	buf = _will_run_test(jobid, start_time, avail_nodes,
 			     err_code, err_msg);
 	unlock_slurmctld(job_write_lock);
 
@@ -124,7 +124,7 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
-static char *	_will_run_test(uint32_t jobid, time_t start_time, 
+static char *	_will_run_test(uint32_t jobid, time_t start_time,
 			       char *node_list, int *err_code, char **err_msg)
 {
 	struct job_record *job_ptr = NULL;
@@ -195,7 +195,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 	else {
 		*err_code = -730;
 		*err_msg = "Job's partition has no nodes";
-		error("wiki: no nodes in partition %s for job %u", 
+		error("wiki: no nodes in partition %s for job %u",
 			part_ptr->name, jobid);
 		FREE_NULL_BITMAP(avail_bitmap);
 		return NULL;
@@ -206,7 +206,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		*err_code = -730;
 		*err_msg = "Job's required features not available "
 			   "on selected nodes";
-		error("wiki: job %u not runnable on hosts=%s", 
+		error("wiki: job %u not runnable on hosts=%s",
 		      jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
 		return NULL;
@@ -217,11 +217,11 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		bit_not(job_ptr->details->exc_node_bitmap);
 	}
 	if ((job_ptr->details->req_node_bitmap) &&
-	    (!bit_super_set(job_ptr->details->req_node_bitmap, 
+	    (!bit_super_set(job_ptr->details->req_node_bitmap,
 			    avail_bitmap))) {
 		*err_code = -730;
 		*err_msg = "Job's required nodes not available";
-		error("wiki: job %u not runnable on hosts=%s", 
+		error("wiki: job %u not runnable on hosts=%s",
 		      jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
 		return NULL;
@@ -231,7 +231,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 	if (job_ptr->details->max_nodes == 0)
 		max_nodes = part_ptr->max_nodes;
 	else
-		max_nodes = MIN(job_ptr->details->max_nodes, 
+		max_nodes = MIN(job_ptr->details->max_nodes,
 				part_ptr->max_nodes);
 	max_nodes = MIN(max_nodes, 500000); /* prevent overflows */
 	if (job_ptr->details->max_nodes)
@@ -242,7 +242,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		/* job's min_nodes exceeds partitions max_nodes */
 		*err_code = -730;
 		*err_msg = "Job's min_nodes > max_nodes";
-		error("wiki: job %u not runnable on hosts=%s", 
+		error("wiki: job %u not runnable on hosts=%s",
 		      jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
 		return NULL;
@@ -251,9 +251,9 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 
 	orig_start_time = job_ptr->start_time;
-	rc = select_g_job_test(job_ptr, avail_bitmap, 
-			       min_nodes, max_nodes, req_nodes, 
-			       SELECT_MODE_WILL_RUN, 
+	rc = select_g_job_test(job_ptr, avail_bitmap,
+			       min_nodes, max_nodes, req_nodes,
+			       SELECT_MODE_WILL_RUN,
 			       preemptee_candidates, NULL);
 	if (preemptee_candidates)
 		list_destroy(preemptee_candidates);
@@ -266,7 +266,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		xstrcat(reply_msg, "STARTINFO=");
 #ifdef HAVE_BG
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-                             		    SELECT_JOBDATA_NODE_CNT, 
+                             		    SELECT_JOBDATA_NODE_CNT,
 					    &proc_cnt);
 
 #else
@@ -290,14 +290,14 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 }
 
 /*
- * job_will_run2 - Determine if, when and where a pending job can be 
+ * job_will_run2 - Determine if, when and where a pending job can be
  *		   initiated with the currently running jobs either preempted
  *		   or left running as on other resources
  * cmd_ptr IN   - CMD=JOBWILLRUN ARG=<JOBID> [STARTTIME=<TIME>]
  *		  NODES=<AVAIL_NODES> [PREEMPT=<JOBID1>[,<JOBID2> ..]]
  * err_code OUT - 0 on success or some error code
  * err_msg OUT  - error message if any of the specified jobs can not be started
- *		  at the specified time (if given) on the available nodes. 
+ *		  at the specified time (if given) on the available nodes.
  *		  Otherwise information on when and where the pending jobs
  *		  will be initiated
  *                ARG=<JOBID> TASKS=<CPU_COUNT> STARTTIME=<TIME>
@@ -387,8 +387,8 @@ extern int	job_will_run2(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 
 	lock_slurmctld(job_write_lock);
-	buf = _will_run_test2(jobid, start_time, avail_nodes, 
-			      preemptee, preemptee_cnt, 
+	buf = _will_run_test2(jobid, start_time, avail_nodes,
+			      preemptee, preemptee_cnt,
 			      err_code, err_msg);
 	unlock_slurmctld(job_write_lock);
 
@@ -405,8 +405,8 @@ extern int	job_will_run2(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
-static char *	_will_run_test2(uint32_t jobid, time_t start_time, 
-				char *node_list, 
+static char *	_will_run_test2(uint32_t jobid, time_t start_time,
+				char *node_list,
 				uint32_t *preemptee, int preemptee_cnt,
 				int *err_code, char **err_msg)
 {
@@ -477,7 +477,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 	else {
 		*err_code = -730;
 		*err_msg = "Job's partition has no nodes";
-		error("wiki: no nodes in partition %s for job %u", 
+		error("wiki: no nodes in partition %s for job %u",
 			part_ptr->name, jobid);
 		FREE_NULL_BITMAP(avail_bitmap);
 		return NULL;
@@ -488,7 +488,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		*err_code = -730;
 		*err_msg = "Job's required features not available "
 			   "on selected nodes";
-		error("wiki: job %u not runnable on hosts=%s", 
+		error("wiki: job %u not runnable on hosts=%s",
 			jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
 		return NULL;
@@ -499,11 +499,11 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		bit_not(job_ptr->details->exc_node_bitmap);
 	}
 	if ((job_ptr->details->req_node_bitmap) &&
-	    (!bit_super_set(job_ptr->details->req_node_bitmap, 
+	    (!bit_super_set(job_ptr->details->req_node_bitmap,
 			    avail_bitmap))) {
 		*err_code = -730;
 		*err_msg = "Job's required nodes not available";
-		error("wiki: job %u not runnable on hosts=%s", 
+		error("wiki: job %u not runnable on hosts=%s",
 			jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
 		return NULL;
@@ -513,7 +513,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 	if (job_ptr->details->max_nodes == 0)
 		max_nodes = part_ptr->max_nodes;
 	else
-		max_nodes = MIN(job_ptr->details->max_nodes, 
+		max_nodes = MIN(job_ptr->details->max_nodes,
 				part_ptr->max_nodes);
 	max_nodes = MIN(max_nodes, 500000); /* prevent overflows */
 	if (job_ptr->details->max_nodes)
@@ -524,7 +524,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		/* job's min_nodes exceeds partitions max_nodes */
 		*err_code = -730;
 		*err_msg = "Job's min_nodes > max_nodes";
-		error("wiki: job %u not runnable on hosts=%s", 
+		error("wiki: job %u not runnable on hosts=%s",
 			jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
 		return NULL;
@@ -535,7 +535,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		for (i=0; i<preemptee_cnt; i++) {
 			pre_ptr = find_job_record(preemptee[i]);
 			if (pre_ptr) {
-				pre_pptr = xmalloc(sizeof(struct 
+				pre_pptr = xmalloc(sizeof(struct
 							  job_record *));
 				pre_pptr[0] = pre_ptr;
 				list_append(preemptee_candidates, pre_pptr);
@@ -544,8 +544,8 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 	}
 
 	orig_start_time = job_ptr->start_time;
-	rc = select_g_job_test(job_ptr, avail_bitmap, min_nodes, max_nodes, 
-			       req_nodes, SELECT_MODE_WILL_RUN, 
+	rc = select_g_job_test(job_ptr, avail_bitmap, min_nodes, max_nodes,
+			       req_nodes, SELECT_MODE_WILL_RUN,
 			       preemptee_candidates, &preempted_jobs);
 	if (preemptee_candidates)
 		list_destroy(preemptee_candidates);
@@ -555,12 +555,12 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		uint32_t pre_cnt = 0, proc_cnt = 0;
 
 #ifdef HAVE_BG
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				     SELECT_JOBDATA_NODE_CNT, &proc_cnt);
 #else
 		proc_cnt = job_ptr->total_procs;
 #endif
-		snprintf(tmp_str, sizeof(tmp_str), 
+		snprintf(tmp_str, sizeof(tmp_str),
 			 "STARTINFO=%u TASKS=%u STARTTIME=%u NODES=",
 			 job_ptr->job_id, proc_cnt,
 			 (uint32_t) job_ptr->start_time);
@@ -575,7 +575,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 					sep = ",";
 				else
 					sep = " PREEMPT=";
-				snprintf(tmp_str, sizeof(tmp_str), "%s%u", 
+				snprintf(tmp_str, sizeof(tmp_str), "%s%u",
 					 sep, pre_pptr[0]->job_id);
 				xstrcat(reply_msg, tmp_str);
 				xfree(pre_pptr);
@@ -600,12 +600,12 @@ static void _preempt_list_del(void *x)
 }
 
 /*
- * bitmap2wiki_node_name  - given a bitmap, build a list of colon separated 
- *	node names (if we can't use node range expressions), or the 
+ * bitmap2wiki_node_name  - given a bitmap, build a list of colon separated
+ *	node names (if we can't use node range expressions), or the
  *	normal slurm node name expression
  *
  * IN bitmap - bitmap pointer
- * RET pointer to node list or NULL on error 
+ * RET pointer to node list or NULL on error
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the returned pointer when no longer required
  */
@@ -616,7 +616,7 @@ extern char *	bitmap2wiki_node_name(bitstr_t *bitmap)
 
 	if (use_host_exp)
 		return bitmap2node_name(bitmap);
-		
+
 	if (bitmap == NULL)
 		return xstrdup("");
 

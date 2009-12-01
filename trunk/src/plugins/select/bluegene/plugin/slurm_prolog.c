@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  slurm_ prolog.c - Wait until the specified partition is ready and owned by 
- *	this user. This is executed via SLURM to synchronize the user's job 
+ *  slurm_ prolog.c - Wait until the specified partition is ready and owned by
+ *	this user. This is executed via SLURM to synchronize the user's job
  *	execution with slurmctld configuration of partitions.
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
@@ -17,15 +17,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -59,9 +59,9 @@
 #define POLL_SLEEP 3			/* retry interval in seconds  */
 
 int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT;
-int cur_delay = 0; 
-  
-enum rm_partition_state {RM_PARTITION_FREE, 
+int cur_delay = 0;
+
+enum rm_partition_state {RM_PARTITION_FREE,
 			 RM_PARTITION_CONFIGURING,
 			 RM_PARTITION_READY,
 			 RM_PARTITION_BUSY,
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 static int _wait_part_ready(uint32_t job_id)
 {
 	int is_ready = 0, i, rc;
-	
+
 	max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
 		   (BG_INCR_BLOCK_BOOT * _get_job_size(job_id));
 
@@ -112,7 +112,7 @@ static int _wait_part_ready(uint32_t job_id)
 		if (i) {
 			sleep(POLL_SLEEP);
 			rc = _partitions_dealloc();
-			if ((rc == 0) || (rc == -1)) 
+			if ((rc == 0) || (rc == -1))
 				cur_delay += POLL_SLEEP;
 #if _DEBUG
 			printf(".");
@@ -188,9 +188,9 @@ static int _partitions_dealloc()
 {
 	static block_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
 	int rc = 0, error_code = 0, i;
-	
+
 	if (bg_info_ptr) {
-		error_code = slurm_load_block_info(bg_info_ptr->last_update, 
+		error_code = slurm_load_block_info(bg_info_ptr->last_update,
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&bg_info_ptr);
@@ -208,7 +208,7 @@ static int _partitions_dealloc()
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->block_array[i].state 
+		if(new_bg_ptr->block_array[i].state
 		   == RM_PARTITION_DEALLOCATING) {
 			rc = 1;
 			break;

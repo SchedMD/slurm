@@ -15,15 +15,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -55,7 +55,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xassert.h"
 
-/* 
+/*
  * Max zero-padding width allowed
  */
 #define MAX_WIDTH 10
@@ -89,11 +89,11 @@ fname_create(srun_job_t *job, char *format)
 	}
 
 	if (strncasecmp(format, "none", (size_t) 4) == 0) {
-		/* 
+		/*
 		 * Set type to IO_PER_TASK so that /dev/null is opened
 		 *  on every node, which should be more efficient
 		 */
-		fname->type = IO_PER_TASK; 
+		fname->type = IO_PER_TASK;
 		fname->name = xstrdup ("/dev/null");
 		return fname;
 	}
@@ -140,7 +140,7 @@ fname_create(srun_job_t *job, char *format)
 				 xmemcat(name, q, p - 1);
 				 xstrfmtcat(name, "%0*d", wid, job->jobid);
 
-				 if ((*p == 'J') && (job->stepid != NO_VAL)) 
+				 if ((*p == 'J') && (job->stepid != NO_VAL))
 					 xstrfmtcat(name, ".%d", job->stepid);
 				 q = ++p;
 				 break;
@@ -159,14 +159,14 @@ fname_create(srun_job_t *job, char *format)
 			p++;
 	}
 
-	if (q != p) 
+	if (q != p)
 		xmemcat(name, q, p);
 
 	fname->name = name;
 	return fname;
 }
 
-void 
+void
 fname_destroy(fname_t *f)
 {
 	if (f->name)
@@ -174,7 +174,7 @@ fname_destroy(fname_t *f)
 	xfree(f);
 }
 
-char * 
+char *
 fname_remote_string (fname_t *f)
 {
 	if ((f->type == IO_PER_TASK) || (f->type == IO_ONE))

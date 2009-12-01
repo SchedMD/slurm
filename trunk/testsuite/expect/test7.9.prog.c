@@ -5,21 +5,21 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
@@ -36,7 +36,7 @@
 #define _DEBUG         0
 #define _EXTREME_DEBUG 0
 
-main (int argc, char **argv) 
+main (int argc, char **argv)
 {
 	int i;
 	struct stat buf;
@@ -44,7 +44,7 @@ main (int argc, char **argv)
 	/* sleep for 0 to 100 msec to induce some randomness
 	 * and better detect any synchronization issues */
 	usleep(time(NULL) % 100000);
- 
+
 	/* start at fd=3
 	 * skip stdin, stdout, and stderr */
 	for (i=3; i<256; i++) {

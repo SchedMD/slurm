@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -69,7 +69,7 @@
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "task" for task control) and <method> is a description 
+ * the plugin (e.g., "task" for task control) and <method> is a description
  * of how this plugin satisfies that application.  SLURM will only load
  * a task plugin if the plugin_type string has a prefix of "task/".
  *
@@ -117,7 +117,7 @@ extern int init(void)
 }
 
 /*
- * fini() is called when the plugin is removed. Clear any allocated 
+ * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
  */
 extern int fini(void)
@@ -139,7 +139,7 @@ extern int topo_build_config(void)
 
 
 /*
- * topo_get_node_addr - build node address and the associated pattern 
+ * topo_get_node_addr - build node address and the associated pattern
  *      based on the topology information
  *
  * example of output :
@@ -174,7 +174,7 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 		if ( switch_record_table[i].level > s_max_level )
 			s_max_level = switch_record_table[i].level;
 	}
-	
+
 	/* initialize output parameters */
 	*paddr = xstrdup("");
 	*ppattern = xstrdup("");
@@ -184,7 +184,7 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 		for (i=0; i<switch_record_cnt; i++) {
 			if ( switch_record_table[i].level != j )
 				continue;
-			if ( !bit_test(switch_record_table[i]. node_bitmap, 
+			if ( !bit_test(switch_record_table[i]. node_bitmap,
 				       node_inx) )
 				continue;
 			if ( sl == NULL ) {
@@ -233,7 +233,7 @@ static void _validate_switches(void)
 		return;
 	}
 
-	switch_record_table = xmalloc(sizeof(struct switch_record) * 
+	switch_record_table = xmalloc(sizeof(struct switch_record) *
 				      switch_record_cnt);
 	multi_homed_bitmap = bit_alloc(node_record_count);
 	switch_ptr = switch_record_table;
@@ -244,10 +244,10 @@ static void _validate_switches(void)
 		if (ptr->nodes) {
 			switch_ptr->level = 0;	/* leaf switch */
 			switch_ptr->nodes = xstrdup(ptr->nodes);
-			if (node_name2bitmap(ptr->nodes, true, 
+			if (node_name2bitmap(ptr->nodes, true,
 					     &switch_ptr->node_bitmap)) {
 				fatal("Invalid node name (%s) in switch "
-				      "config (%s)", 
+				      "config (%s)",
 				      ptr->nodes, ptr->switch_name);
 			}
 			if (switches_bitmap) {
@@ -255,7 +255,7 @@ static void _validate_switches(void)
 				bit_and(tmp_bitmap, switches_bitmap);
 				bit_or(multi_homed_bitmap, tmp_bitmap);
 				bit_free(tmp_bitmap);
-				bit_or(switches_bitmap, 
+				bit_or(switches_bitmap,
 				       switch_ptr->node_bitmap);
 			} else {
 				switches_bitmap = bit_copy(switch_ptr->
@@ -298,11 +298,11 @@ static void _validate_switches(void)
 				if (switch_ptr->level == -1) {
 					switch_ptr->level = 1 +
 						switch_record_table[j].level;
-					switch_ptr->node_bitmap = 
+					switch_ptr->node_bitmap =
 						bit_copy(switch_record_table[j].
 							 node_bitmap);
 				} else {
-					switch_ptr->level = 
+					switch_ptr->level =
 						MAX(switch_ptr->level,
 						     (switch_record_table[j].
 						      level + 1));
@@ -328,7 +328,7 @@ static void _validate_switches(void)
 		i = bit_set_count(switches_bitmap);
 		if (i > 0) {
 			child = bitmap2node_name(switches_bitmap);
-			error("WARNING: switches lack access to %d nodes: %s", 
+			error("WARNING: switches lack access to %d nodes: %s",
 			      i, child);
 			xfree(child);
 		}
@@ -336,12 +336,12 @@ static void _validate_switches(void)
 	} else
 		fatal("switches contain no nodes");
 
-	/* Report nodes on multiple leaf switches, 
+	/* Report nodes on multiple leaf switches,
 	 * possibly due to bad configuration file */
 	i = bit_set_count(multi_homed_bitmap);
 	if (i > 0) {
 		child = bitmap2node_name(multi_homed_bitmap);
-		error("WARNING: Multiple leaf switches contain nodes: %s", 
+		error("WARNING: Multiple leaf switches contain nodes: %s",
 		      child);
 		xfree(child);
 	}
@@ -438,7 +438,7 @@ extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 
 	conf_hashtbl = s_p_hashtbl_create(switch_options);
 	if (s_p_parse_file(conf_hashtbl, topo_conf) == SLURM_ERROR) {
-		fatal("something wrong with opening/reading %s: %m", 
+		fatal("something wrong with opening/reading %s: %m",
 		      topo_conf);
 	}
 

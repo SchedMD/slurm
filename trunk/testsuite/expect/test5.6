@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test squeue filtering (--jobs, --node, --states, --steps and 
+#          Test squeue filtering (--jobs, --node, --states, --steps and
 #          --user options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -12,21 +12,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -99,7 +99,7 @@ if {$job_id2 == 0} {
 # Check the squeue job filter option
 #
 set job_found 0
-spawn $squeue --format=%i --jobs $job_id2 
+spawn $squeue --format=%i --jobs $job_id2
 expect {
 	-re "($number)" {
 		set tmp_id $expect_out(1,string)
@@ -127,7 +127,7 @@ if {$job_found == 0} {
 #
 # Check the squeue state filter option
 #
-spawn $squeue --format=%t --noheader --states=PD 
+spawn $squeue --format=%t --noheader --states=PD
 expect {
 	-re "($alpha_cap)" {
 		if {[string compare $expect_out(1,string) "PD"]} {
@@ -148,7 +148,7 @@ expect {
 #
 # Check the squeue user filter option with name
 #
-spawn $bin_id -un 
+spawn $bin_id -un
 expect {
 	-re "($alpha_numeric_under)" {
 		set this_user $expect_out(1,string)
@@ -158,7 +158,7 @@ expect {
 		wait
 	}
 }
-spawn $squeue --format=%u --noheader --user=$this_user 
+spawn $squeue --format=%u --noheader --user=$this_user
 expect {
 	-re "($alpha_numeric_under)" {
 		if {[string compare $expect_out(1,string) $this_user]} {
@@ -268,7 +268,7 @@ if {$node_name_set == 1} {
 # First get partition name(s)
 set partition1 ""
 set partition2 ""
-spawn $squeue --format=%P --noheader 
+spawn $squeue --format=%P --noheader
 expect {
 	-re "($alpha_numeric_under)" {
 		if {![string compare $partition1 ""]} {
@@ -316,7 +316,7 @@ expect {
 wait_for_job $job_id1 "RUNNING"
 exec $bin_sleep 10
 set job_found 0
-spawn $squeue --format=%i --steps $job_id1.0 
+spawn $squeue --format=%i --steps $job_id1.0
 expect {
 	-re "($number).($number)" {
 		set tmp_id $expect_out(1,string)

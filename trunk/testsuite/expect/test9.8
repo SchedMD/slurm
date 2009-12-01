@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Stress test with maximum slurmctld message concurrency.
-#          We start a large number of job steps, the simultaneously 
+#          We start a large number of job steps, the simultaneously
 #          cancel them all. Message can get lost/restransmitted, so
 #          there is a delayed test for job step removal.
 #
@@ -14,21 +14,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -47,7 +47,7 @@ set task_cnt     60
 print_header $test_id
 
 #
-# A single slurmd can't handle a large task count without 
+# A single slurmd can't handle a large task count without
 # running out of memory and pthreads
 #
 if {[test_front_end] != 0} {
@@ -56,7 +56,7 @@ if {[test_front_end] != 0} {
 
 #
 # Build input script file
-# NOTE: The initial sleep is so that all of the submissions have time 
+# NOTE: The initial sleep is so that all of the submissions have time
 #   to occur before contending with a multitude of job step creations.
 #   This is especially important on very slow systems (e.g. AIX).
 #
@@ -102,7 +102,7 @@ if {$start_cnt < $job_cnt} {
 }
 
 #
-# Give the jobs a few seconds to get initiated, check for steps, 
+# Give the jobs a few seconds to get initiated, check for steps,
 # then kill them all
 #
 set user_name ""
@@ -116,13 +116,13 @@ expect {
 	eof {
 		wait
 	}
-	
+
 }
 #
 # There could be hundreds of job steps, we don't want to see
 # the details, but want to make sure that we did start a bunch
 #
-# Determine if this is AIX (for task count, federation switch 
+# Determine if this is AIX (for task count, federation switch
 # prevents each node from running more than 16 tasks)
 #
 if {[test_aix]} {
@@ -206,7 +206,7 @@ expect {
 # due to a very busy system (reports FAILURE above)
 #
 # Increasing the MessageTimeout configuration parameter
-# should fix this problem. 
+# should fix this problem.
 #
 if {$running_jobs != 0} {
 	send_user "\nFAILURE: jobs not all cancelled\n"
@@ -258,7 +258,7 @@ if {$completing_jobs != 0} {
 }
 if {$completing_jobs != 0} {
 	send_user "\nFAILURE: Jobs not completing. Subsequent tests may fail!\n"
-}		
+}
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * prog6.7.prog.c - Simple signal catching test program for Moab regression 
+ * prog6.7.prog.c - Simple signal catching test program for Moab regression
  *****************************************************************************
  * Copyright (C) 2002-2007 The Regents of the University of California.
  * Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -30,7 +30,7 @@ void sig_handler(int sig)
 	}
 }
 
-main (int argc, char **argv) 
+main (int argc, char **argv)
 {
 	struct sigaction act;
 	time_t begin_time = time(NULL);

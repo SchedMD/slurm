@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -79,7 +79,7 @@ extern int _addto_uid_char_list(List char_list, char *names)
 					if (!isdigit((int) *name)) {
 						struct passwd *pwd;
 						if (!(pwd=getpwnam(name))) {
-							fprintf(stderr, 
+							fprintf(stderr,
 								"Invalid user "
 								"id: %s\n",
 								name);
@@ -89,7 +89,7 @@ extern int _addto_uid_char_list(List char_list, char *names)
 						name = xstrdup_printf(
 							"%d", pwd->pw_uid);
 					}
-					
+
 					while((tmp_char = list_next(itr))) {
 						if(!strcasecmp(tmp_char, name))
 							break;
@@ -98,7 +98,7 @@ extern int _addto_uid_char_list(List char_list, char *names)
 					if(!tmp_char) {
 						list_append(char_list, name);
 						count++;
-					} else 
+					} else
 						xfree(name);
 					list_iterator_reset(itr);
 				}
@@ -116,11 +116,11 @@ extern int _addto_uid_char_list(List char_list, char *names)
 		if((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
-			
+
 			if (!isdigit((int) *name)) {
 				struct passwd *pwd;
 				if (!(pwd=getpwnam(name))) {
-					fprintf(stderr, 
+					fprintf(stderr,
 						"Invalid user id: %s\n",
 						name);
 					exit(1);
@@ -128,22 +128,22 @@ extern int _addto_uid_char_list(List char_list, char *names)
 				xfree(name);
 				name = xstrdup_printf("%d", pwd->pw_uid);
 			}
-			
+
 			while((tmp_char = list_next(itr))) {
 				if(!strcasecmp(tmp_char, name))
 					break;
 			}
-			
+
 			if(!tmp_char) {
 				list_append(char_list, name);
 				count++;
-			} else 
+			} else
 				xfree(name);
 		}
-	}	
+	}
 	list_iterator_destroy(itr);
 	return count;
-} 
+}
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_archive_cond_t *arch_cond)
@@ -194,13 +194,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 					  MAX(command_len, 1))) {
 			arch_cond->archive_suspend = 1;
 			set = 1;
-		} else if(!end 
+		} else if(!end
 			  || !strncasecmp (argv[i], "Clusters",
 					   MAX(command_len, 1))) {
 			slurm_addto_char_list(job_cond->cluster_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Accounts", 
+		} else if (!strncasecmp (argv[i], "Accounts",
 					 MAX(command_len, 2))) {
 			if(!job_cond->acct_list)
 				job_cond->acct_list =
@@ -240,7 +240,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				job_cond->step_list =
 					list_create(slurm_destroy_char);
 
-			while ((end_char = strstr(start_char, ",")) 
+			while ((end_char = strstr(start_char, ","))
 			       && start_char) {
 				*end_char = 0;
 				while (isspace(*start_char))
@@ -250,7 +250,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				selected_step = xmalloc(
 					sizeof(jobacct_selected_step_t));
 				list_append(job_cond->step_list, selected_step);
-				
+
 				dot = strstr(start_char, ".");
 				if (dot == NULL) {
 					debug2("No jobstep requested");
@@ -262,7 +262,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				selected_step->jobid = atoi(start_char);
 				start_char = end_char + 1;
 			}
-			
+
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Partitions",
 					 MAX(command_len, 2))) {
@@ -310,7 +310,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Script",
 					 MAX(command_len, 2))) {
-			arch_cond->archive_script = 
+			arch_cond->archive_script =
 				strip_quotes(argv[i]+end, NULL, 0);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Users",
@@ -325,7 +325,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
 		}
-	}	
+	}
 
 	(*start) = i;
 
@@ -351,16 +351,16 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
-		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3))) 
-			i++;		
+		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
+			i++;
 		_set_cond(&i, argc, argv, arch_cond);
 	}
 
 	if(exit_code) {
 		destroy_acct_archive_cond(arch_cond);
 		return SLURM_ERROR;
-	} 
-		
+	}
+
 	if (arch_cond->archive_dir) {
 		if(stat(arch_cond->archive_dir, &st) < 0) {
 			exit_code = errno;
@@ -379,7 +379,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 				arch_cond->archive_dir);
 			return SLURM_ERROR;
 		}
-		
+
 		if (access(arch_cond->archive_dir, W_OK) < 0) {
 			errno = EACCES;
 			fprintf(stderr, " dump: "
@@ -405,7 +405,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 				arch_cond->archive_script);
 			return SLURM_ERROR;
 		}
-		
+
 		if (access(arch_cond->archive_script, X_OK) < 0) {
 			errno = EACCES;
 			fprintf(stderr, " dump: "
@@ -429,7 +429,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 	destroy_acct_archive_cond(arch_cond);
-	
+
 	return rc;
 }
 
@@ -451,39 +451,39 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 				end++;
 			}
 		}
-		
+
 		if(!end
 		   || !strncasecmp (argv[i], "File", MAX(command_len, 1))) {
 			arch_rec->archive_file =
 				strip_quotes(argv[i]+end, NULL, 0);
-		} else if (!strncasecmp (argv[i], "Insert", 
+		} else if (!strncasecmp (argv[i], "Insert",
 					 MAX(command_len, 2))) {
 			arch_rec->insert = strip_quotes(argv[i]+end, NULL, 1);
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
-		}		
+		}
 	}
-	
+
 	if(exit_code) {
 		destroy_acct_archive_rec(arch_rec);
 		return SLURM_ERROR;
-	} 
-	
+	}
+
 	if (arch_rec->archive_file) {
 		char *fullpath;
 		char cwd[MAXPATHLEN + 1];
 		int  mode = R_OK;
 
-		if ((getcwd(cwd, MAXPATHLEN)) == NULL) 
-			fatal("getcwd failed: %m");		
-		
+		if ((getcwd(cwd, MAXPATHLEN)) == NULL)
+			fatal("getcwd failed: %m");
+
 		if ((fullpath = search_path(cwd, arch_rec->archive_file,
 					    true, mode))) {
 			xfree(arch_rec->archive_file);
 			arch_rec->archive_file = fullpath;
-		} 
-		
+		}
+
 		if(stat(arch_rec->archive_file, &st) < 0) {
 			exit_code = errno;
 			fprintf(stderr, " load: Failed to stat %s: %m\n "
@@ -509,6 +509,6 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 	}
 
 	destroy_acct_archive_rec(arch_rec);
-	
+
 	return rc;
 }

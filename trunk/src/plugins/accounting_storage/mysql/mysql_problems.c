@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -58,7 +58,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "acct=\"%s\"", object);
 			set = 1;
@@ -72,7 +72,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->cluster_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "cluster=\"%s\"", object);
 			set = 1;
@@ -86,7 +86,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->user_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "user=\"%s\"", object);
 			set = 1;
@@ -99,13 +99,13 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		xstrcat(*extra, " && (user!='')");
 	}
 
-	if(assoc_cond->partition_list 
+	if(assoc_cond->partition_list
 	   && list_count(assoc_cond->partition_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->partition_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "partition=\"%s\"", object);
 			set = 1;
@@ -113,7 +113,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		list_iterator_destroy(itr);
 		xstrcat(*extra, ")");
 	}
-	
+
 	return set;
 }
 
@@ -131,7 +131,7 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf("select name from %s where deleted=0",
 			       acct_table);
-	if(assoc_cond && 
+	if(assoc_cond &&
 	   assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		int set = 0;
 		ListIterator itr = NULL;
@@ -139,7 +139,7 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 		xstrcat(query, " && (");
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(query, " || ");
 			xstrfmtcat(query, "name=\"%s\"", object);
 			set = 1;
@@ -162,7 +162,7 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 		/* See if we have at least 1 association in the system */
 		query = xstrdup_printf("select distinct id from %s "
 				       "where deleted=0 && "
-				       "acct='%s' limit 1;", 
+				       "acct='%s' limit 1;",
 				       assoc_table, row[0]);
 		if(!(result2 = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
@@ -171,18 +171,18 @@ extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 			break;
 		}
 		xfree(query);
-		
+
 		cnt = mysql_num_rows(result2);
 		mysql_free_result(result2);
 
-		if(cnt) 
+		if(cnt)
 			continue;
-			
+
 		assoc =	xmalloc(sizeof(acct_association_rec_t));
 		list_append(ret_list, assoc);
 
 		assoc->id = ACCT_PROBLEM_ACCT_NO_ASSOC;
-		assoc->acct = xstrdup(row[0]);		
+		assoc->acct = xstrdup(row[0]);
 	}
 	mysql_free_result(result);
 
@@ -232,7 +232,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	/* only get the account associations */
 	query = xstrdup_printf("select distinct %s from %s %s "
 			       "&& user='' && lft=(rgt-1)"
-			       "order by cluster,acct;", 
+			       "order by cluster,acct;",
 			       tmp, assoc_table, extra);
 	xfree(tmp);
 	xfree(extra);
@@ -249,7 +249,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 			xmalloc(sizeof(acct_association_rec_t));
 
 		list_append(ret_list, assoc);
-		
+
 		assoc->id = ACCT_PROBLEM_ACCT_NO_USERS;
 
 		if(row[ASSOC_REQ_USER][0])
@@ -257,9 +257,9 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
 
-		if(row[ASSOC_REQ_PARENT][0]) 
+		if(row[ASSOC_REQ_PARENT][0])
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
-		
+
 		if(row[ASSOC_REQ_PART][0])
 			assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
 	}
@@ -280,7 +280,7 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf("select name from %s where deleted=0",
 			       user_table);
-	if(assoc_cond && 
+	if(assoc_cond &&
 	   assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		int set = 0;
 		ListIterator itr = NULL;
@@ -288,7 +288,7 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 		xstrcat(query, " && (");
 		itr = list_iterator_create(assoc_cond->user_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(query, " || ");
 			xstrfmtcat(query, "name=\"%s\"", object);
 			set = 1;
@@ -313,17 +313,17 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 		if (uid_from_string (row[0], &pw_uid) < 0) {
 			assoc =	xmalloc(sizeof(acct_association_rec_t));
 			list_append(ret_list, assoc);
-			
+
 			assoc->id = ACCT_PROBLEM_USER_NO_UID;
-			assoc->user = xstrdup(row[0]);		
-			
+			assoc->user = xstrdup(row[0]);
+
 			continue;
 		}
 
 		/* See if we have at least 1 association in the system */
 		query = xstrdup_printf("select distinct id from %s "
 				       "where deleted=0 && "
-				       "user='%s' limit 1;", 
+				       "user='%s' limit 1;",
 				       assoc_table, row[0]);
 		if(!(result2 = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
@@ -332,18 +332,18 @@ extern int mysql_user_no_assocs_or_no_uid(mysql_conn_t *mysql_conn,
 			break;
 		}
 		xfree(query);
-		
+
 		cnt = mysql_num_rows(result2);
 		mysql_free_result(result2);
 
-		if(cnt) 
+		if(cnt)
 			continue;
-		
+
 		assoc =	xmalloc(sizeof(acct_association_rec_t));
 		list_append(ret_list, assoc);
 
 		assoc->id = ACCT_PROBLEM_USER_NO_ASSOC;
-		assoc->user = xstrdup(row[0]);		
+		assoc->user = xstrdup(row[0]);
 	}
 	mysql_free_result(result);
 

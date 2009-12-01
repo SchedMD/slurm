@@ -5,21 +5,21 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -69,7 +69,7 @@ typedef struct env_options {
 	int ntasks_per_core;	/* --ntasks-per-core=n		*/
 	int cpus_on_node;
 	pid_t task_pid;
-	char *sgtids;		/* global ranks array of integers */	
+	char *sgtids;		/* global ranks array of integers */
 	uint16_t pty_port;	/* used to communicate window size changes */
 	uint8_t ws_col;		/* window size, columns */
 	uint8_t ws_row;		/* window size, row count */
@@ -133,7 +133,7 @@ int env_array_for_job(char ***dest,
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
-extern int env_array_for_batch_job(char ***dest, 
+extern int env_array_for_batch_job(char ***dest,
 				   const batch_job_launch_msg_t *batch,
 				   const char* node_name);
 
@@ -184,8 +184,8 @@ char **env_array_create(void);
  */
 void env_array_merge(char ***dest_array, const char **src_array);
 
-/* 
- * Copy env_array must be freed by env_array_free 
+/*
+ * Copy env_array must be freed by env_array_free
  */
 char **env_array_copy(const char **array);
 
@@ -267,7 +267,7 @@ char **env_array_user_default(const char *username, int timeout, int mode);
 /*
  * The cpus-per-node representation in SLURM (and perhaps tasks-per-node
  * in the future) is stored in a compressed format comprised of two
- * equal-length arrays, and an integer holding the array length. In one 
+ * equal-length arrays, and an integer holding the array length. In one
  * array an element represents a count (number of cpus, number of tasks,
  * etc.), and the corresponding element in the other array contains the
  * number of times the count is repeated sequentially in the uncompressed

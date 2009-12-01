@@ -5,32 +5,32 @@
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -110,7 +110,7 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 
 	while(!storage_init) {
 		*pgsql_db = PQconnectdb(connect_line);
-		
+
 		if(PQstatus(*pgsql_db) != CONNECTION_OK) {
 			if(!strcmp(PQerrorMessage(*pgsql_db),
 				   "no password supplied")) {
@@ -118,14 +118,14 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 				fatal("This Postgres connection needs "
 				      "a password.  It doesn't appear to "
 				      "like blank ones");
-			} 
-			
+			}
+
 			info("Database %s not created. Creating", db_name);
 			pgsql_close_db_connection(pgsql_db);
-			_create_db(db_name, db_info);		
+			_create_db(db_name, db_info);
 		} else {
 			storage_init = true;
-		} 
+		}
 	}
 	xfree(connect_line);
 	return rc;
@@ -136,27 +136,27 @@ extern int pgsql_close_db_connection(PGconn **pgsql_db)
 	if(pgsql_db && *pgsql_db) {
 		PQfinish(*pgsql_db);
 		*pgsql_db = NULL;
-	}	      
+	}
 	return SLURM_SUCCESS;
 }
 
 extern int pgsql_db_query(PGconn *pgsql_db, char *query)
 {
 	PGresult *result = NULL;
-	
+
 	if(!pgsql_db)
 		fatal("You haven't inited this storage yet.");
-	
-	if(!(result = pgsql_db_query_ret(pgsql_db, query))) 
+
+	if(!(result = pgsql_db_query_ret(pgsql_db, query)))
 		return SLURM_ERROR;
-	
+
 	PQclear(result);
 	return SLURM_SUCCESS;
 }
 
 extern int pgsql_db_commit(PGconn *pgsql_db)
 {
-	return pgsql_db_query(pgsql_db, "COMMIT WORK");	
+	return pgsql_db_query(pgsql_db, "COMMIT WORK");
 }
 
 extern int pgsql_db_rollback(PGconn *pgsql_db)
@@ -168,7 +168,7 @@ extern int pgsql_db_rollback(PGconn *pgsql_db)
 extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, char *query)
 {
 	PGresult *result = NULL;
-	
+
 	if(!pgsql_db)
 		fatal("You haven't inited this storage yet.");
 
@@ -176,7 +176,7 @@ extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, char *query)
 
 	if(PQresultStatus(result) != PGRES_COMMAND_OK
 	   && PQresultStatus(result) != PGRES_TUPLES_OK) {
-		error("PQexec failed: %d %s", PQresultStatus(result), 
+		error("PQexec failed: %d %s", PQresultStatus(result),
 		      PQerrorMessage(pgsql_db));
 		info("query was %s", query);
 		PQclear(result);
@@ -195,25 +195,25 @@ extern int pgsql_insert_ret_id(PGconn *pgsql_db, char *sequence_name,
 	if(pgsql_db_query(pgsql_db, query) != SLURM_ERROR)  {
 		char *new_query = xstrdup_printf(
 			"select last_value from %s", sequence_name);
-		
+
 		if((result = pgsql_db_query_ret(pgsql_db, new_query))) {
 			new_id = atoi(PQgetvalue(result, 0, 0));
-			PQclear(result);		
+			PQclear(result);
 		}
 		xfree(new_query);
 		if(!new_id) {
 			/* should have new id */
-			error("We should have gotten a new id: %s", 
+			error("We should have gotten a new id: %s",
 			      PQerrorMessage(pgsql_db));
 		}
 	}
 	slurm_mutex_unlock(&pgsql_lock);
-	
+
 	return new_id;
-	
+
 }
 
-extern int pgsql_db_create_table(PGconn *pgsql_db,  
+extern int pgsql_db_create_table(PGconn *pgsql_db,
 				 char *table_name, storage_field_t *fields,
 				 char *ending)
 {
@@ -226,9 +226,9 @@ extern int pgsql_db_create_table(PGconn *pgsql_db,
 	i=0;
 	while(fields && fields->name) {
 		next = xstrdup_printf(" %s %s",
-				      fields->name, 
+				      fields->name,
 				      fields->options);
-		if(i) 
+		if(i)
 			xstrcat(tmp, ",");
 		xstrcat(tmp, next);
 		xfree(next);
@@ -288,7 +288,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 		if(!strcmp("serial", fields[i].options)) {
 			i++;
 			continue;
-		} 
+		}
 		opt_part = xstrdup(fields[i].options);
 		original_ptr = opt_part;
 		opt_part = strtok_r(opt_part, " ", &temp_char);
@@ -326,17 +326,17 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 				break;
 			}
 		}
-		
+
 		temp_char = NULL;
 		if(!found) {
 			info("adding column %s", fields[i].name);
-			if(default_str) 
+			if(default_str)
 				xstrfmtcat(temp_char,
 					   " default %s", default_str);
-						
-			if(not_null) 
+
+			if(not_null)
 				xstrcat(temp_char, " not null");
-			
+
 			xstrfmtcat(query,
 				   " add %s %s",
 				   fields[i].name, type);
@@ -344,20 +344,20 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 				xstrcat(query, temp_char);
 			xstrcat(query, ",");
 		} else {
-			if(default_str) 
+			if(default_str)
 				xstrfmtcat(temp_char,
 					   " alter %s set default %s,",
 					   fields[i].name, default_str);
-			else 
+			else
 				xstrfmtcat(temp_char,
 					   " alter %s drop default,",
 					   fields[i].name);
-			
-			if(not_null) 
+
+			if(not_null)
 				xstrfmtcat(temp_char,
 					   " alter %s set not null,",
 					   fields[i].name);
-			else 
+			else
 				xstrfmtcat(temp_char,
 					   " alter %s drop not null,",
 					   fields[i].name);
@@ -367,7 +367,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 		xfree(temp_char);
 		xfree(default_str);
 		xfree(type);
-	
+
 		i++;
 	}
 	list_iterator_destroy(itr);
@@ -379,7 +379,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 		return SLURM_ERROR;
 	}
 	xfree(query);
-		
+
 	END_TIMER2("make table current");
 	return SLURM_SUCCESS;
 }

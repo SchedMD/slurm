@@ -18,21 +18,21 @@
 # Written by Morris Jette <jette1@llnl.gov>
 # Additions by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
  # Please also read the supplied file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -44,7 +44,7 @@ set timeout 60
 
 #
 # Use sacctmgr to create a cluster
-#	
+#
 proc add_cluster {name qos fairshare grpcpu grpjob grpnode grpsubmit maxcpumin maxcpu maxjob maxnode maxsubmit maxwall} {
         global sacctmgr timeout
 
@@ -162,7 +162,7 @@ proc add_cluster {name qos fairshare grpcpu grpjob grpnode grpsubmit maxcpumin m
 		send_user "\nFAILURE:  Our associations don't line up\n"
 		incr exit_code 1
 	}
-	
+
 	return $exit_code
 }
 
@@ -475,7 +475,7 @@ proc remove_acct { cluster name } {
 #
 proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall parent desc org } {
 	global sacctmgr timeout
-	
+
 	set exit_code 0
 	set matches 0
 	set expected 0
@@ -641,7 +641,7 @@ proc mod_acct { cluster wparent name wdesc worg qos fairshare grpcpumin grpcpu g
 	got $matches needed $expected\n"
 		incr exit_code 1
 	}
-	
+
 	if { ![check_acct_associations] } {
 		send_user "\nFAILURE:  Our associations don't line up\n"
 		incr exit_code 1
@@ -904,7 +904,7 @@ proc remove_user { cluster acct user } {
 #
 proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey } {
 	global sacctmgr timeout
-	
+
 	set exit_code 0
 	set matches 0
 	set expected 0
@@ -1078,7 +1078,7 @@ proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare gr
 	got $matches needed $expected\n"
 		incr exit_code 1
 	}
-	
+
 	if { ![check_acct_associations] } {
 		send_user "\nFAILURE:  Our associations don't line up\n"
 		incr exit_code 1
@@ -1088,7 +1088,7 @@ proc mod_user { cluster account name part wadmin wdacct wdwckey qos fairshare gr
 
 #
 # Use sacctmgr to create a QoS
-#	
+#
 proc add_qos {name} {
         global sacctmgr timeout
 
@@ -1141,7 +1141,7 @@ proc add_qos {name} {
 		send_user "\nFAILURE:  Our associations don't line up\n"
 		incr exit_code 1
 	}
-	
+
 	return $exit_code
 }
 
@@ -1397,7 +1397,7 @@ proc archive_load { file } {
 			wait
 		}
 	}
-	
+
 	if {$matches != 1} {
 		send_user "\nFAILURE:  sacctmgr didn't load archive correctly.\n"
 		incr exit_code 1

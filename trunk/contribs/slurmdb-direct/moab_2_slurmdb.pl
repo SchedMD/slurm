@@ -12,35 +12,35 @@
 #  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 #  Written by Danny Auble <da@llnl.gov>
 #  CODE-OCEC-09-009. All rights reserved.
-#  
+#
 #  This file is part of SLURM, a resource management program.
 #  For details, see <http://www.llnl.gov/linux/slurm/>.
-#  
+#
 #  SLURM is free software; you can redistribute it and/or modify it under
 #  the terms of the GNU General Public License as published by the Free
 #  Software Foundation; either version 2 of the License, or (at your option)
 #  any later version.
 #
-#  In addition, as a special exception, the copyright holders give permission 
+#  In addition, as a special exception, the copyright holders give permission
 #  to link the code of portions of this program with the OpenSSL library under
-#  certain conditions as described in each individual source file, and 
-#  distribute linked combinations including the two. You must obey the GNU 
-#  General Public License in all respects for all of the code used other than 
-#  OpenSSL. If you modify file(s) with this exception, you may extend this 
-#  exception to your version of the file(s), but you are not obligated to do 
+#  certain conditions as described in each individual source file, and
+#  distribute linked combinations including the two. You must obey the GNU
+#  General Public License in all respects for all of the code used other than
+#  OpenSSL. If you modify file(s) with this exception, you may extend this
+#  exception to your version of the file(s), but you are not obligated to do
 #  so. If you do not wish to do so, delete this exception statement from your
-#  version.  If you delete this exception statement from all source files in 
+#  version.  If you delete this exception statement from all source files in
 #  the program, then also delete it here.
-#  
+#
 #  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 #  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 #  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 #  details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with SLURM; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
-#  
+#
 ###############################################################################
 
 use strict;
@@ -148,21 +148,21 @@ foreach my $line (<STDIN>) {
 	my $gid = getgrnam($group);
 	$uid = -2 if !$uid;
 	$gid = -2 if !$gid;
-	
-	# figure out the wckey 
+
+	# figure out the wckey
 	my $wckey = "";
 	if ($rm_ext =~ /wckey:(\w*)/) {
 		$wckey = $1;
 	}
-	
+
 	if($partition =~ /\[(\w*)/) {
 		$partition = $1;
 	}
 
-	# Only pick out a number at the beginning if it is something else 
-	# we should skip it and make comp_code 0.  If we want something 
-	# else just change it to whatever you would think would be best.  
-	# Dispite the Moab documentation the comp code could contain 
+	# Only pick out a number at the beginning if it is something else
+	# we should skip it and make comp_code 0.  If we want something
+	# else just change it to whatever you would think would be best.
+	# Dispite the Moab documentation the comp code could contain
 	# characters like ,SID= afterwards,  without knowing what that means
 	# we just skip it.  We haven't seen a case where comp_code isn't an
 	# int at the first so the 0 "should" never happen.
@@ -184,7 +184,7 @@ foreach my $line (<STDIN>) {
 			$cluster = "";
 		}
 	}
-	
+
 	if($message =~ /job\\20exceeded\\20wallclock\\20limit/) {
 		$event = "JOBTIMEOUT";
 	}
@@ -194,25 +194,25 @@ foreach my $line (<STDIN>) {
 		Slurm::Hostlist::uniq($alloc_hl);
 		$alloc_hl = Slurm::Hostlist::ranged_string($alloc_hl);
 	}
-	
+
 	if($event eq "JOBSUBMIT") {
 		$submit_sql .= ", " if $submit_set;
 		$submit_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
 			"\"$account\", \"$partition\", \"$wckey\", " .
 			"\"$executable\", 0, $req_tasks, $submit_time)";
-		$submit_set = 1;		
-		$set = 1;		
+		$submit_set = 1;
+		$set = 1;
 	} elsif ($event eq "JOBMIGRATE") {
 		$migrate_sql .= ", " if $migrate_set;
-		# here for some reason the eligible time is really the 
-		# elgible time, so we use the end time which appears 
+		# here for some reason the eligible time is really the
+		# elgible time, so we use the end time which appears
 		# to be the best guess.
 		$migrate_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
 			"\"$account\", \"$partition\", \"$wckey\", " .
 			"\"$executable\", 0, $req_tasks, $submit_time, " .
 			"$end_time)";
-		$migrate_set = 1;		
-		$set = 1;		
+		$migrate_set = 1;
+		$set = 1;
 	} elsif ($event eq "JOBSTART") {
 		$start_sql .= ", " if $start_set;
 
@@ -223,8 +223,8 @@ foreach my $line (<STDIN>) {
 			"\"$executable\", 1, $req_tasks, $submit_time, " .
 			"$eligible_time, $start_time, \"$alloc_hl\", " .
 			"$req_tasks)";
-		$start_set = 1;		
-		$set = 1;		
+		$start_set = 1;
+		$set = 1;
 	} elsif (($event eq "JOBEND") || ($event eq "JOBCANCEL")
 		|| ($event eq "JOBFAILURE") || ($event eq "JOBTIMEOUT"))  {
 		if($event eq "JOBEND") {
@@ -243,8 +243,8 @@ foreach my $line (<STDIN>) {
 			"\"$executable\", $state, $req_tasks, $submit_time, " .
 			"$eligible_time, $start_time, \"$alloc_hl\", " .
 			"$req_tasks, $end_time, $comp_code)";
-		$end_set = 1;		
-		$set = 1;		
+		$end_set = 1;
+		$set = 1;
 	} else {
 		print "ERROR: unknown event of $event\n";
 		next;

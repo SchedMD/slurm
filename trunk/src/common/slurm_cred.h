@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -68,7 +68,7 @@
 
 /*
  * The incomplete slurm_cred_t type is also defined in slurm_protocol_defs.h
- * so check to ensure that this header has not been included after 
+ * so check to ensure that this header has not been included after
  * slurm_protocol_defs.h:
  */
 #ifndef __sbcast_cred_t_defined
@@ -76,7 +76,7 @@
    typedef struct sbcast_cred *sbcast_cred_t;		/* opaque data type */
 #endif
 
-/* 
+/*
  * The slurm_cred_ctx_t incomplete type
  */
 typedef struct slurm_cred_context   * slurm_cred_ctx_t;
@@ -86,7 +86,7 @@ typedef struct slurm_cred_context   * slurm_cred_ctx_t;
  * Initialize current process for slurm credential creation.
  *
  * `privkey' contains the absolute path to the slurmctld private
- * key, which needs to be readable by the current process. 
+ * key, which needs to be readable by the current process.
  *
  * Returns 0 for success, -1 on failure and sets errno to reason.
  *
@@ -119,16 +119,16 @@ int slurm_cred_ctx_get(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...);
 int slurm_cred_ctx_key_update(slurm_cred_ctx_t ctx, const char *keypath);
 
 
-/* 
+/*
  * Destroy a credential context, freeing associated memory.
  */
 void slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx);
 
 /*
- * Pack and unpack slurm credential context. 
+ * Pack and unpack slurm credential context.
  *
  * On pack() ctx is packed in machine-independent format into the
- * buffer, on unpack() the contents of the buffer are used to 
+ * buffer, on unpack() the contents of the buffer are used to
  * intialize the state of the context ctx.
  */
 int  slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, Buf buffer);
@@ -138,7 +138,7 @@ int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);
 /*
  * Container for SLURM credential create and verify arguments
  *
- * The core_bitmap, cores_per_socket, sockets_per_node, and 
+ * The core_bitmap, cores_per_socket, sockets_per_node, and
  * sock_core_rep_count is based upon the nodes allocated to the
  * JOB, but the bits set in core_bitmap are those cores allocated
  * to this STEP
@@ -206,7 +206,7 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg);
  *   - Credential has not been revoked
  *   - Credential has not been replayed
  */
-int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred, 
+int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 		      slurm_cred_arg_t *arg);
 
 /*
@@ -232,11 +232,11 @@ void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time);
 
 /*
- * Report if a all credentials for a give job id have been 
+ * Report if a all credentials for a give job id have been
  * revoked (i.e. has the job been killed)
- * 
+ *
  * If we are re-running the job, the new job credential is newer
- * than the revoke time, see "scontrol requeue", purge the old 
+ * than the revoke time, see "scontrol requeue", purge the old
  * job record and make like it never existed
  */
 bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
@@ -252,7 +252,7 @@ bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
  *
  *  ESRCH  if jobid is not cached
  *  EEXIST if expiration period has already begun for jobid.
- * 
+ *
  */
 int slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid);
 
@@ -289,7 +289,7 @@ slurm_cred_t *slurm_cred_unpack(Buf buffer);
  * Get a pointer to the slurm credential signature
  * (used by slurm IO connections to verify connecting agent)
  */
-int slurm_cred_get_signature(slurm_cred_t *cred, char **datap, 
+int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
 			     uint32_t *len);
 
 /*
@@ -309,11 +309,11 @@ void slurm_cred_print(slurm_cred_t *cred);
  * Functions to create, delete, pack, and unpack an sbcast credential
  * Caller of extract_sbcast_cred() must xfree returned node string
  */
-sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx, 
+sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 				 uint32_t job_id, char *nodes);
 sbcast_cred_t *copy_sbcast_cred(sbcast_cred_t *sbcast_cred);
 void          delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
-int           extract_sbcast_cred(slurm_cred_ctx_t ctx, 
+int           extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				  sbcast_cred_t *sbcast_cred, uint16_t block_no,
 				  uint32_t *job_id, char **nodes);
 void          pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer);

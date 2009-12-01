@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Check partition information, both long and short (--long and 
+#          Check partition information, both long and short (--long and
 #          --summarize options) and partition filtering (--partition option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -12,21 +12,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -43,13 +43,13 @@ print_header $test_id
 
 #
 # Check the sinfo summarize format
-# Just looking for the regular expression "\*" causes errors in 
-# looking for the default partition, so the logic looks for an 
-# alpha-numeric partition name followed by the state (up|down) 
+# Just looking for the regular expression "\*" causes errors in
+# looking for the default partition, so the logic looks for an
+# alpha-numeric partition name followed by the state (up|down)
 # then looks for the partition name suffix of "*"
 #
- 
-spawn $sinfo --summarize  
+
+spawn $sinfo --summarize
 expect {
 	-re "PARTITION" {
 		incr matches
@@ -107,7 +107,7 @@ if {$def_part == 0} {
 #
 # Check the sinfo summarize format with partition filter
 #
- 
+
 set matches     0
 spawn $sinfo --summarize --partition=$def_part_name
 expect {
@@ -136,9 +136,9 @@ if {$matches != 1} {
 #
 # Check the sinfo regular format
 #
- 
+
 set matches     0
-spawn $sinfo  
+spawn $sinfo
 expect {
 	-re "PARTITION" {
 		incr matches
@@ -197,9 +197,9 @@ if {$matches != 6} {
 #
 # Check the sinfo long format
 #
- 
+
 set matches     0
-spawn $sinfo --long  
+spawn $sinfo --long
 expect {
 	-re "PARTITION" {
 		incr matches

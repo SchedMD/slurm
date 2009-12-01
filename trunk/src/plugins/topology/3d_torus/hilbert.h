@@ -1,8 +1,8 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Filename:  hilbert.h
-// 
+//
 // Purpose:   Hilbert and Linked-list utility procedures for BayeSys3.
-// 
+//
 // History:   TreeSys.c   17 Apr 1996 - 31 Dec 2002
 //            Peano.c     10 Apr 2001 - 11 Jan 2003
 //            merged       1 Feb 2003

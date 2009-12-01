@@ -11,21 +11,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -54,7 +54,7 @@ proc run_job { part_name } {
 	expect {
 		-re "Unable to contact" {
 			send_user "\nFAILURE: slurm appears to be down\n"
-			return 1  
+			return 1
 		}
 		-re "uid" {
 			set rc 0
@@ -80,7 +80,7 @@ proc run_job { part_name } {
 #
 # Identify a partition and its state
 #
-spawn $scontrol show part  
+spawn $scontrol show part
 expect {
 	-re "PartitionName=($alpha_numeric_under)" {
 		if {[string compare $part_name ""] == 0} {
@@ -96,7 +96,7 @@ expect {
 		wait
 	}
 }
-	
+
 spawn $scontrol show part $part_name
 expect {
 	-re "State=($alpha_cap) " {
@@ -151,7 +151,7 @@ if {$job_runable == 0} {
 #
 # Change that partition's state
 #
-spawn $scontrol update PartitionName=$part_name State=$part_new_state  
+spawn $scontrol update PartitionName=$part_name State=$part_new_state
 expect {
 	-re "slurm_update error: ($alpha_numeric_under) ($alpha_numeric_under)" {
 		set access_err 0
@@ -217,7 +217,7 @@ if {$job_runable == 1} {
 #
 # Return that partition's state to its old value
 #
-spawn $scontrol update PartitionName=$part_name State=$part_old_state  
+spawn $scontrol update PartitionName=$part_name State=$part_old_state
 expect {
 	-re "slurm_update error: Invalid user id" {
 		exp_continue

@@ -5,32 +5,32 @@
  *  Written by Andy Riebs, <andy.riebs@hp.com>, who borrowed heavily
  *  from other parts of SLURM, and Danny Auble, <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -67,14 +67,14 @@
  * where <application> is a description of the intended application of
  * the plugin (e.g., "jobacct" for SLURM job completion logging) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load job completion logging plugins if the plugin_type string has a 
+ * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobacct/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job accounting API 
+ * minimum versions for their plugins as the job accounting API
  * matures.
  */
 const char plugin_name[] = "Job accounting gather LINUX plugin";
@@ -106,7 +106,7 @@ static int _get_process_data_line(int in, prec_t *prec);
 static void *_watch_tasks(void *arg);
 static void _destroy_prec(void *object);
 
-/* 
+/*
  * _get_offspring_data() -- collect memory usage data for the offspring
  *
  * For each process that lists <pid> as its parent, add its memory
@@ -118,7 +118,7 @@ static void _destroy_prec(void *object);
  * 			should be added. Even as we recurse, this will
  * 			always be the prec for the base of the family
  * 			tree.
- * 	pid		The process for which we are currently looking 
+ * 	pid		The process for which we are currently looking
  * 			for offspring.
  *
  * OUT:	none.
@@ -129,7 +129,7 @@ static void _destroy_prec(void *object);
  */
 static void
 _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
-	
+
 	ListIterator itr;
 	prec_t *prec = NULL;
 
@@ -137,7 +137,7 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
 	while((prec = list_next(itr))) {
 		if (prec->ppid == pid) {
 #if _DEBUG
-			info("pid:%u ppid:%u rss:%d KB", 
+			info("pid:%u ppid:%u rss:%d KB",
 			     prec->pid, prec->ppid, prec->rss);
 #endif
 			_get_offspring_data(prec_list, ancestor, prec->pid);
@@ -186,7 +186,7 @@ static void _get_process_data() {
 
 	if(!pgid_plugin && cont_id == (uint32_t)NO_VAL) {
 		debug("cont_id hasn't been set yet not running poll");
-		return;	
+		return;
 	}
 
 	if(processing) {
@@ -215,22 +215,22 @@ static void _get_process_data() {
 			 * fopen() above and before the fcntl() below,
 			 * then the user task may have this extra file
 			 * open, which can cause problems for
-			 * checkpoint/restart, but this should be a very rare 
+			 * checkpoint/restart, but this should be a very rare
 			 * problem in practice.
-			 */ 
+			 */
 			fd = fileno(stat_fp);
 			fcntl(fd, F_SETFD, FD_CLOEXEC);
-			
+
 			prec = xmalloc(sizeof(prec_t));
 			if (_get_process_data_line(fd, prec))
 				list_append(prec_list, prec);
-			else 
+			else
 				xfree(prec);
 			fclose(stat_fp);
 		}
 	} else {
 		slurm_mutex_lock(&reading_mutex);
-	
+
 		if (slash_proc_open) {
 			rewinddir(slash_proc);
 		} else {
@@ -243,9 +243,9 @@ static void _get_process_data() {
 			slash_proc_open=1;
 		}
 		strcpy(proc_stat_file, "/proc/");
-		
+
 		while ((slash_proc_entry = readdir(slash_proc))) {
-			
+
 			/* Save a few cyles by simulating
 			   strcat(statFileName, slash_proc_entry->d_name);
 			   strcat(statFileName, "/stat");
@@ -256,22 +256,22 @@ static void _get_process_data() {
 			iptr = slash_proc_entry->d_name;
 			i = 0;
 			do {
-				if((*iptr < '0') 
+				if((*iptr < '0')
 				   || ((*optr++ = *iptr++) > '9')) {
 					i = -1;
 					break;
 				}
 			} while (*iptr);
-			
+
 			if(i == -1)
 				continue;
 			iptr = (char*)"/stat";
-			
+
 			do {
 				*optr++ = *iptr++;
 			} while (*iptr);
 			*optr = 0;
-			
+
 			if ((stat_fp = fopen(proc_stat_file,"r"))==NULL)
 				continue;  /* Assume the process went away */
 			/*
@@ -281,27 +281,27 @@ static void _get_process_data() {
 			 * fopen() above and before the fcntl() below,
 			 * then the user task may have this extra file
 			 * open, which can cause problems for
-			 * checkpoint/restart, but this should be a very rare 
+			 * checkpoint/restart, but this should be a very rare
 			 * problem in practice.
-			 */ 
+			 */
 			fd = fileno(stat_fp);
 			fcntl(fd, F_SETFD, FD_CLOEXEC);
 
 			prec = xmalloc(sizeof(prec_t));
 			if (_get_process_data_line(fd, prec))
 				list_append(prec_list, prec);
-			else 
+			else
 				xfree(prec);
 			fclose(stat_fp);
 		}
 		slurm_mutex_unlock(&reading_mutex);
-	
+
 	}
 
 	if (!list_count(prec_list)) {
 		goto finished;	/* We have no business being here! */
 	}
-	
+
 	slurm_mutex_lock(&jobacct_lock);
 	if(!task_list || !list_count(task_list)) {
 		slurm_mutex_unlock(&jobacct_lock);
@@ -314,25 +314,25 @@ static void _get_process_data() {
 		while((prec = list_next(itr2))) {
 			if (prec->pid == jobacct->pid) {
 #if _DEBUG
-				info("pid:%u ppid:%u rss:%d KB", 
+				info("pid:%u ppid:%u rss:%d KB",
 				     prec->pid, prec->ppid, prec->rss);
 #endif
 				/* find all my descendents */
-				_get_offspring_data(prec_list, 
+				_get_offspring_data(prec_list,
 						    prec, prec->pid);
 				/* tally their usage */
-				jobacct->max_rss = jobacct->tot_rss = 
+				jobacct->max_rss = jobacct->tot_rss =
 					MAX(jobacct->max_rss, prec->rss);
 				total_job_mem += prec->rss;
-				jobacct->max_vsize = jobacct->tot_vsize = 
+				jobacct->max_vsize = jobacct->tot_vsize =
 					MAX(jobacct->max_vsize, prec->vsize);
 				jobacct->max_pages = jobacct->tot_pages =
 					MAX(jobacct->max_pages, prec->pages);
-				jobacct->min_cpu = jobacct->tot_cpu = 
-					MAX(jobacct->min_cpu, 
+				jobacct->min_cpu = jobacct->tot_cpu =
+					MAX(jobacct->min_cpu,
 					    (prec->usec + prec->ssec));
 				debug2("%d mem size %u %u time %u",
-				      jobacct->pid, jobacct->max_rss, 
+				      jobacct->pid, jobacct->max_rss,
 				      jobacct->max_vsize, jobacct->tot_cpu);
 				break;
 			}
@@ -343,10 +343,10 @@ static void _get_process_data() {
 	slurm_mutex_unlock(&jobacct_lock);
 
 	if (job_mem_limit) {
-		debug("Job %u memory used:%u limit:%u KB", 
+		debug("Job %u memory used:%u limit:%u KB",
 		      acct_job_id, total_job_mem, job_mem_limit);
 	}
-	if (acct_job_id && job_mem_limit && 
+	if (acct_job_id && job_mem_limit &&
 	    (total_job_mem > job_mem_limit)) {
 		error("Job %u exceeded %u KB memory limit, being killed",
 		       acct_job_id, job_mem_limit);
@@ -355,7 +355,7 @@ static void _get_process_data() {
 
 finished:
 	list_destroy(prec_list);
-	processing = 0;	
+	processing = 0;
 	return;
 }
 
@@ -366,7 +366,7 @@ static void _acct_kill_job(void)
 	job_step_kill_msg_t req;
 
 	slurm_msg_t_init(&msg);
-	/* 
+	/*
 	 * Request message:
 	 */
 	req.job_id      = acct_job_id;
@@ -387,9 +387,9 @@ static void _acct_kill_job(void)
  * RETVAL:	==0 - no valid data
  * 		!=0 - data are valid
  *
- * Based upon stat2proc() from the ps command. It can handle arbitrary executable 
- * file basenames for `cmd', i.e. those with embedded whitespace or embedded ')'s.  
- * Such names confuse %s (see scanf(3)), so the string is split and %39c is used 
+ * Based upon stat2proc() from the ps command. It can handle arbitrary executable
+ * file basenames for `cmd', i.e. those with embedded whitespace or embedded ')'s.
+ * Such names confuse %s (see scanf(3)), so the string is split and %39c is used
  * instead. (except for embedded ')' "(%[^)]c)" would work.
  */
 static int _get_process_data_line(int in, prec_t *prec) {
@@ -449,19 +449,19 @@ static void _task_sleep(int rem)
 
 static void *_watch_tasks(void *arg)
 {
-	/* Give chance for processes to spawn before starting 
-	 * the polling. This should largely eliminate the 
-	 * the chance of having /proc open when the tasks are 
+	/* Give chance for processes to spawn before starting
+	 * the polling. This should largely eliminate the
+	 * the chance of having /proc open when the tasks are
 	 * spawned, which would prevent a valid checkpoint/restart
 	 * with some systems */
 	_task_sleep(1);
 
 	while(!jobacct_shutdown) {  /* Do this until shutdown is requested */
 		if(!jobacct_suspended) {
-			_get_process_data();	/* Update the data */ 
+			_get_process_data();	/* Update the data */
 		}
 		_task_sleep(freq);
-	} 
+	}
 	return NULL;
 }
 
@@ -515,14 +515,14 @@ extern void jobacct_gather_p_destroy(struct jobacctinfo *jobacct)
 	jobacct_common_free_jobacct(jobacct);
 }
 
-extern int jobacct_gather_p_setinfo(struct jobacctinfo *jobacct, 
+extern int jobacct_gather_p_setinfo(struct jobacctinfo *jobacct,
 				    enum jobacct_data_type type, void *data)
 {
 	return jobacct_common_setinfo(jobacct, type, data);
-	
+
 }
 
-extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct, 
+extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct,
 				    enum jobacct_data_type type, void *data)
 {
 	return jobacct_common_getinfo(jobacct, type, data);
@@ -553,18 +553,18 @@ extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
 extern int jobacct_gather_p_startpoll(uint16_t frequency)
 {
 	int rc = SLURM_SUCCESS;
-	
+
 	pthread_attr_t attr;
 	pthread_t _watch_tasks_thread_id;
-	 
+
 	debug("%s loaded", plugin_name);
 
 	debug("jobacct-gather: frequency = %d", frequency);
-		
+
 	jobacct_shutdown = false;
 
 	task_list = list_create(jobacct_common_free_jobacct);
-	
+
 	if (frequency == 0) {	/* don't want dynamic monitoring? */
 		debug2("jobacct-gather LINUX dynamic logging disabled");
 		return rc;
@@ -575,17 +575,17 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 	slurm_attr_init(&attr);
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
-	
+
 	if  (pthread_create(&_watch_tasks_thread_id, &attr,
 			    &_watch_tasks, NULL)) {
 		debug("jobacct-gather failed to create _watch_tasks "
 		      "thread: %m");
 		frequency = 0;
 	}
-	else 
+	else
 		debug3("jobacct-gather LINUX dynamic logging enabled");
 	slurm_attr_destroy(&attr);
-	
+
 	return rc;
 }
 
@@ -596,7 +596,7 @@ extern int jobacct_gather_p_endpoll()
 		list_destroy(task_list);
 	task_list = NULL;
 	slurm_mutex_unlock(&jobacct_lock);
-	
+
 	if (slash_proc) {
 		slurm_mutex_lock(&reading_mutex);
 		(void) closedir(slash_proc);
@@ -604,7 +604,7 @@ extern int jobacct_gather_p_endpoll()
 	}
 
 	jobacct_shutdown = true;
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -651,7 +651,7 @@ extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)
 	return jobacct_common_remove_task(pid);
 }
 
-extern void jobacct_gather_p_2_sacct(sacct_t *sacct, 
+extern void jobacct_gather_p_2_sacct(sacct_t *sacct,
 				     struct jobacctinfo *jobacct)
 {
 	jobacct_common_2_sacct(sacct, jobacct);

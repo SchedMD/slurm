@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  crypto.c - DES cryptographic routines.
  *****************************************************************************
- *  Produced by Cluster Resources, Inc., no rights reserved. 
+ *  Produced by Cluster Resources, Inc., no rights reserved.
 \*****************************************************************************/
 #include <stdint.h>
 #include <stdio.h>
@@ -16,14 +16,14 @@
  * DESCRIPTION
  * Compute a DES digest for a CRC according to a particular
  * key.
- *  
+ *
  * ARGUMENTS
  * lword (in/out) - The CRC to encode, which becomes the first
  *		lexical segment of the checksum.
  * irword (in/out ) - The key with which to encode the CRC,
  *		which becomes the second lexical segment of
  *		the checksum.
- *  
+ *
  * RETURNS
  * None.
  *
@@ -68,11 +68,11 @@ static void des( uint32_t *lword, uint32_t *irword )
  **************************************************************
  * DESCRIPTION
  * Compute a cyclic redundancy check (CRC) character-wise.
- *  
+ *
  * ARGUMENTS
  * crc (in) - The CRC computed thus far.
  * onech (in) - The character to be added to the CRC.
- * 
+ *
  * RETURNS
  * The new CRC value.
  *
@@ -102,7 +102,7 @@ static uint16_t compute_crc( uint16_t crc, uint8_t onech )
  * DESCRIPTION
  * Compute a Wiki checksum for the current message contents
  * and return the result as a Wiki name-value pair.
- * 
+ *
  * ARGUMENTS
  * sum (out) - The string in which to store the resulting
  *		checksum.
@@ -110,7 +110,7 @@ static uint16_t compute_crc( uint16_t crc, uint8_t onech )
  *		coordinated with the scheduler so that they
  *		both use the same value.  It is a string of
  *		ASCII decimal digits.
- *  
+ *
  * RETURNS
  * None.
  **************************************************************/

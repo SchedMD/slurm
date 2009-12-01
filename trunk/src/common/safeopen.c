@@ -15,15 +15,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -39,7 +39,7 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#endif 
+#endif
 
 #if HAVE_UNISTD_H
 #  include <unistd.h>
@@ -80,7 +80,7 @@ FILE * safeopen(const char *path, const char *mode, int flags)
 		fstat(fd,   &fb2);
 
 		if (fb2.st_ino != fb1.st_ino) {
-			fprintf(stderr, "safeopen(): refusing to open `%s', " 
+			fprintf(stderr, "safeopen(): refusing to open `%s', "
 					"which is a soft link\n", path);
 			close(fd);
 			return NULL;

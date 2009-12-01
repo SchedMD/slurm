@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -144,7 +144,7 @@ static void
 plugrack_entry_destructor( void *v )
 {
         plugrack_entry_t *victim = v;
-  
+
         if ( victim == NULL ) return;
 
         /*
@@ -155,7 +155,7 @@ plugrack_entry_destructor( void *v )
         xassert( victim->refcount == 0 );
         xfree( victim->full_type );
         xfree( victim->fq_path );
-        if ( victim->plug != PLUGIN_INVALID_HANDLE ) 
+        if ( victim->plug != PLUGIN_INVALID_HANDLE )
 		plugin_unload( victim->plug );
         xfree( victim );
 }
@@ -181,12 +181,12 @@ accept_path_paranoia( plugrack_t rack,
         /* Internal function, so assert rather than fail gracefully. */
         xassert( rack );
         xassert( fq_path );
-  
+
         if ( stat( fq_path, &st ) < 0 ) {
 		debug3( "accept_path_paranoia: stat(%s) failed", fq_path );
                 return 0;
         }
-  
+
         /* Is path owned by authorized user? */
         if ( check_own ) {
                 if ( st.st_uid != rack->uid ) {
@@ -198,9 +198,9 @@ accept_path_paranoia( plugrack_t rack,
 
         /* Is path writable by others? */
         if ( check_write ) {
-                if (  ( st.st_mode & S_IWGRP ) 
+                if (  ( st.st_mode & S_IWGRP )
 		      || ( st.st_mode & S_IWOTH ) ) {
-			debug3( "accept_path_paranoia: %s writable by others", 
+			debug3( "accept_path_paranoia: %s writable by others",
 				fq_path );
 			return 0;
 		}
@@ -231,7 +231,7 @@ plugrack_destroy( plugrack_t rack )
 {
         ListIterator it;
         plugrack_entry_t *e;
-  
+
         if ( ! rack ) return SLURM_ERROR;
 
         /*
@@ -276,7 +276,7 @@ plugrack_set_major_type( plugrack_t rack, const char *type )
 			return SLURM_ERROR;
 		}
         }
-  
+
         return SLURM_SUCCESS;
 }
 
@@ -304,7 +304,7 @@ plugrack_add_plugin_path( plugrack_t rack,
 			  const char *fq_path )
 {
         plugrack_entry_t *e;
-	
+
         if ( ! rack ) return SLURM_ERROR;
         if ( ! fq_path ) return SLURM_ERROR;
 
@@ -319,7 +319,7 @@ plugrack_add_plugin_path( plugrack_t rack,
         return SLURM_SUCCESS;
 }
 
-  
+
 /* test for the plugin in the various colon separated directories */
 int
 plugrack_read_dir( plugrack_t rack, const char *dir )
@@ -381,18 +381,18 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
         tail = &fq_path[ strlen( dir ) ];
         *tail = '/';
         ++tail;
-	
+
         /* Check whether we should be paranoid about this directory. */
         if ( ! accept_path_paranoia( rack,
                                      dir,
-                                     rack->paranoia & 
+                                     rack->paranoia &
 				     PLUGRACK_PARANOIA_DIR_OWN,
-                                     rack->paranoia & 
+                                     rack->paranoia &
 				     PLUGRACK_PARANOIA_DIR_WRITABLE ) ) {
 		xfree( fq_path );
                 return SLURM_ERROR;
         }
-  
+
         /* Open the directory. */
         dirp = opendir( dir );
         if ( dirp == NULL ) {
@@ -400,20 +400,20 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		xfree( fq_path );
 		return SLURM_ERROR;
 	}
-  
+
         while ( 1 ) {
                 e = readdir( dirp );
                 if ( e == NULL )
 			break;
 
                 /*
-                 * Compose file name.  Where NAME_MAX is defined it represents 
+                 * Compose file name.  Where NAME_MAX is defined it represents
 		 * the largest file name given in a dirent.  This macro is used
-		 * in the  allocation of "tail" above, so this unbounded copy 
+		 * in the  allocation of "tail" above, so this unbounded copy
 		 * should work.
                  */
                 strcpy( tail, e->d_name );
-		
+
                 /* Check only regular files. */
 		if ( (strncmp(e->d_name, ".", 1) == 0)
 		     ||   (stat( fq_path, &st ) < 0)
@@ -425,25 +425,25 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 			continue;
 
 		/* file's prefix must match specified major_type
-		 * to avoid having some program try to open a 
-		 * plugin designed for a different program and 
+		 * to avoid having some program try to open a
+		 * plugin designed for a different program and
 		 * discovering undefined symbols */
-		if ((rack->major_type) && 
-		    (!_match_major(e->d_name, rack->major_type))) 
+		if ((rack->major_type) &&
+		    (!_match_major(e->d_name, rack->major_type)))
 			continue;
-				
+
                 /* See if we should be paranoid about this file. */
                 if (!accept_path_paranoia( rack,
                                            fq_path,
-                                           rack->paranoia & 
+                                           rack->paranoia &
                                            PLUGRACK_PARANOIA_FILE_OWN,
-                                           rack->paranoia & 
+                                           rack->paranoia &
                                            PLUGRACK_PARANOIA_FILE_WRITABLE )) {
 			debug3( "plugin_read_dir: skipping %s for security "
 				"reasons", fq_path );
                         continue;
                 }
-		
+
                 /* Test the type. */
 		if ( plugin_peek( fq_path,
 				  plugin_type,
@@ -451,14 +451,14 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 				  NULL ) == SLURM_ERROR ) {
 			continue;
 		}
-		
-		if (   rack->major_type 
+
+		if (   rack->major_type
 		       && ( strncmp( rack->major_type,
 				     plugin_type,
 				     strlen( rack->major_type ) ) != 0 ) ) {
 			continue;
 		}
-		
+
                 /* Add it to the list. */
                 (void) plugrack_add_plugin_path( rack, plugin_type, fq_path );
         }
@@ -469,25 +469,25 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
         return SLURM_SUCCESS;
 }
 
-/* Return TRUE if the specified pathname is recognized as that of a shared 
+/* Return TRUE if the specified pathname is recognized as that of a shared
  * object (i.e. containing ".so\0") */
 static bool
 _so_file ( char *file_name )
 {
 	int i;
 
-	if (file_name == NULL) 
+	if (file_name == NULL)
 		return false;
 
 	for (i=0; file_name[i] ;i++) {
-		if ( (file_name[i]   == '.') && (file_name[i+1] == 's') && 
+		if ( (file_name[i]   == '.') && (file_name[i+1] == 's') &&
 		     (file_name[i+2] == 'o') && (file_name[i+3] == '\0') )
 			return true;
 	}
 	return false;
 }
 
-/* Return TRUE of the specified major_type is a prefix of the shared object 
+/* Return TRUE of the specified major_type is a prefix of the shared object
  * pathname (i.e. either "<major_name>..." or "lib<major_name>...") */
 static bool
 _match_major ( const char *path_name, const char *major_type )
@@ -510,7 +510,7 @@ plugrack_read_cache( plugrack_t rack,
                      const char *cache_file )
 {
         /* Don't care for now. */
-  
+
         return SLURM_ERROR;
 }
 
@@ -520,7 +520,7 @@ plugrack_purge_idle( plugrack_t rack )
 {
         ListIterator it;
         plugrack_entry_t *e;
-  
+
         if ( ! rack ) return SLURM_ERROR;
 
         it = list_iterator_create( rack->entries );
@@ -562,7 +562,7 @@ plugrack_write_cache( plugrack_t rack,
                       const char *cache )
 {
         /* Not implemented. */
-  
+
         return SLURM_SUCCESS;
 }
 
@@ -572,28 +572,28 @@ plugrack_use_by_type( plugrack_t rack,
 {
 	ListIterator it;
 	plugrack_entry_t *e;
-	
+
 	if (!rack)
 		return PLUGIN_INVALID_HANDLE;
 	if (!full_type)
 		return PLUGIN_INVALID_HANDLE;
-	
+
 	it = list_iterator_create(rack->entries);
 	while ((e = list_next(it))) {
 		plugin_err_t err;
 
 		if (strcmp(full_type, e->full_type) != 0)
 			continue;
-		
+
 		/* See if plugin is loaded. */
 		if (e->plug == PLUGIN_INVALID_HANDLE  &&
 		    (err = plugin_load_from_file(&e->plug, e->fq_path)))
 			error ("%s: %s\n", e->fq_path, plugin_strerror (err));
-		
+
 		/* If load was successful, increment the reference count. */
 		if (e->plug != PLUGIN_INVALID_HANDLE)
 			e->refcount++;
-		
+
 		/*
 		 * Return the plugin, even if it failed to load -- this serves
 		 * as an error return value.
@@ -601,7 +601,7 @@ plugrack_use_by_type( plugrack_t rack,
 		list_iterator_destroy(it);
 		return e->plug;
 	}
-	
+
 	/* Couldn't find a suitable plugin. */
 	list_iterator_destroy(it);
 	return PLUGIN_INVALID_HANDLE;

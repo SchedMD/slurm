@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  reservation_functions.c - Functions related to reservation display mode 
+ *  reservation_functions.c - Functions related to reservation display mode
  *  of smap.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -72,7 +72,7 @@ extern void get_reservation(void)
 			if(!params.commandline) {
 				mvwprintw(text_win,
 					  main_ycord, 1,
-					  "slurm_load_reservations: %s", 
+					  "slurm_load_reservations: %s",
 					  slurm_strerror(slurm_get_errno()));
 				main_ycord++;
 			} else {
@@ -91,7 +91,7 @@ extern void get_reservation(void)
 		recs = 0;
 
 	if (!params.commandline) {
-		if((text_line_cnt+printed_resv) > count) 
+		if((text_line_cnt+printed_resv) > count)
 			text_line_cnt--;
 	}
 	printed_resv = 0;
@@ -106,7 +106,7 @@ extern void get_reservation(void)
 			inx2bitstr(loc_bitmap, resv.node_inx);
 			overlap = bit_overlap(loc_bitmap, nodes_req);
 			FREE_NULL_BITMAP(loc_bitmap);
-			if(!overlap) 
+			if(!overlap)
 				continue;
 		}
 
@@ -139,13 +139,13 @@ extern void get_reservation(void)
 					wattroff(text_win,
 						 COLOR_PAIR(colors[count%6]));
 					printed_resv++;
-				} 
+				}
 			} else {
 				/* put the letter code into "flags" field */
 				resv.flags = (int)letters[count%62];
 				_print_text_resv(&resv);
 			}
-			count++;			
+			count++;
 		}
 		if (count==128)
 			count=0;
@@ -156,7 +156,7 @@ extern void get_reservation(void)
 
 	if (!params.commandline)
 		main_ycord++;
-	
+
 	resv_info_ptr = new_resv_ptr;
 	return;
 }
@@ -180,7 +180,7 @@ static void _print_header_resv(void)
 			  main_xcord, "%5.5s  ", "NODES");
 		main_xcord += 7;
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%30.30s  ", 
+			  main_xcord, "%30.30s  ",
 			  "ACCESS_CONTROL(Accounts,Users)");
 		main_xcord += 32;
 		mvwprintw(text_win, main_ycord,
@@ -201,9 +201,9 @@ static void _print_text_resv(reserve_info_t * resv_ptr)
 {
 	char start_str[32], end_str[32], acl[32];
 
-	slurm_make_time_str(&resv_ptr->start_time, start_str, 
+	slurm_make_time_str(&resv_ptr->start_time, start_str,
 			    sizeof(start_str));
-	slurm_make_time_str(&resv_ptr->end_time, end_str, 
+	slurm_make_time_str(&resv_ptr->end_time, end_str,
 			    sizeof(end_str));
 
 	if (resv_ptr->accounts && resv_ptr->accounts[0] &&
@@ -257,7 +257,7 @@ static void _print_text_resv(reserve_info_t * resv_ptr)
 		printf("%s ",       resv_ptr->node_list);
 
 		printf("\n");
-		
+
 	}
 }
 

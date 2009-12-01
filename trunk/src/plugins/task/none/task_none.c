@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  task_none.c - Library for task pre-launch and post_termination functions 
+ *  task_none.c - Library for task pre-launch and post_termination functions
  *	with no actions
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -66,7 +66,7 @@
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "task" for task control) and <method> is a description 
+ * the plugin (e.g., "task" for task control) and <method> is a description
  * of how this plugin satisfies that application.  SLURM will only load
  * a task plugin if the plugin_type string has a prefix of "task/".
  *
@@ -91,7 +91,7 @@ extern int init (void)
 }
 
 /*
- * fini() is called when the plugin is removed. Clear any allocated 
+ * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
  */
 extern int fini (void)
@@ -102,7 +102,7 @@ extern int fini (void)
 /*
  * task_slurmd_batch_request()
  */
-extern int task_slurmd_batch_request (uint32_t job_id, 
+extern int task_slurmd_batch_request (uint32_t job_id,
 				      batch_job_launch_msg_t *req)
 {
 	debug("task_slurmd_batch_request: %u", job_id);
@@ -112,8 +112,8 @@ extern int task_slurmd_batch_request (uint32_t job_id,
 /*
  * task_slurmd_launch_request()
  */
-extern int task_slurmd_launch_request (uint32_t job_id, 
-				       launch_tasks_request_msg_t *req, 
+extern int task_slurmd_launch_request (uint32_t job_id,
+				       launch_tasks_request_msg_t *req,
 				       uint32_t node_id)
 {
 	debug("task_slurmd_launch_request: %u %u", job_id, node_id);
@@ -123,7 +123,7 @@ extern int task_slurmd_launch_request (uint32_t job_id,
 /*
  * task_slurmd_reserve_resources()
  */
-extern int task_slurmd_reserve_resources (uint32_t job_id, 
+extern int task_slurmd_reserve_resources (uint32_t job_id,
 					  launch_tasks_request_msg_t *req,
 					  uint32_t node_id)
 {
@@ -175,7 +175,7 @@ extern int task_pre_setuid (slurmd_job_t *job)
  */
 extern int task_pre_launch (slurmd_job_t *job)
 {
-	debug("task_pre_launch: %u.%u, task %d", 
+	debug("task_pre_launch: %u.%u, task %d",
 		job->jobid, job->stepid, job->envtp->procid);
 	return SLURM_SUCCESS;
 }

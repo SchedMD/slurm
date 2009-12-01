@@ -7,32 +7,32 @@
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -50,9 +50,9 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 					   acct_job_cond_t *job_cond)
 {
 
-	char *query = NULL;	
-	char *extra = NULL;	
-	char *tmp = NULL;	
+	char *query = NULL;
+	char *extra = NULL;
+	char *tmp = NULL;
 	char *object = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
@@ -64,8 +64,8 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 	jobacct_step_rec_t *step = NULL;
 	time_t now = time(NULL);
 	List job_list = list_create(destroy_jobacct_job_rec);
-		
-	/* if this changes you will need to edit the corresponding 
+
+	/* if this changes you will need to edit the corresponding
 	 * enum below also t1 is job_table */
 	char *job_req_inx[] = {
 		"t1.id",
@@ -97,7 +97,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		"t2.lft"
 	};
 
-	/* if this changes you will need to edit the corresponding 
+	/* if this changes you will need to edit the corresponding
 	 * enum below also t1 is step_table */
 	char *step_req_inx[] = {
 		"t1.stepid",
@@ -160,7 +160,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		JOB_REQ_USER_NAME,
 		JOB_REQ_CLUSTER,
 		JOB_REQ_LFT,
-		JOB_REQ_COUNT		
+		JOB_REQ_COUNT
 	};
 	enum {
 		STEP_REQ_STEPID,
@@ -205,7 +205,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		xstrfmtcat(extra, ", %s as t3 where (");
 		itr = list_iterator_create(job_cond->associd_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "t1.associd=%s", object);
 			set = 1;
@@ -214,7 +214,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		xstrcat(extra, ")");
 		table_level="t3";
 		/* just incase the association is gone */
-		if(set) 
+		if(set)
 			xstrcat(extra, " or ");
 		xstrfmtcat(extra, "t3.id is null) and "
 			   "(t2.lft between t3.lft and t3.rgt "
@@ -229,7 +229,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(job_cond->acct_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "t1.acct='%s'", object);
 			set = 1;
@@ -246,7 +246,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(job_cond->groupid_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "t1.gid=", object);
 			set = 1;
@@ -264,7 +264,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 
 		itr = list_iterator_create(job_cond->userid_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "t1.uid='%s'", object);
 			set = 1;
@@ -281,7 +281,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(job_cond->partition_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "t1.partition='%s'", object);
 			set = 1;
@@ -298,7 +298,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(job_cond->step_list);
 		while((selected_step = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "t1.jobid=%u", selected_step->jobid);
 			set = 1;
@@ -315,7 +315,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
-		xstrfmtcat(extra, 
+		xstrfmtcat(extra,
 			   "(t1.eligible < %d and (endtime >= %d "
 			   "or endtime = 0)))",
 			   job_cond->usage_end, job_cond->usage_start);
@@ -330,7 +330,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 
 		itr = list_iterator_create(job_cond->state_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "t1.state='%s'", object);
 			set = 1;
@@ -349,24 +349,24 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 
 		itr = list_iterator_create(job_cond->cluster_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(extra, " or ");
 			xstrfmtcat(extra,
-				   "(t1.cluster='%s' or %s.cluster='%s')", 
+				   "(t1.cluster='%s' or %s.cluster='%s')",
 				   object, table_level, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 	}
 
-no_cond:	
+no_cond:
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
 	for(i=1; i<JOB_REQ_COUNT; i++) {
 		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
 	}
-	
+
 	query = xstrdup_printf("select %s from %s as t1 left join %s as t2 "
 			       "on t1.associd=t2.id",
 			       tmp, job_table, assoc_table);
@@ -376,9 +376,9 @@ no_cond:
 		xfree(extra);
 	}
 	/* Here we want to order them this way in such a way so it is
-	   easy to look for duplicates 
+	   easy to look for duplicates
 	*/
-	if(job_cond && !job_cond->duplicates) 
+	if(job_cond && !job_cond->duplicates)
 		xstrcat(query, " order by jobid, submit desc");
 
 	debug3("query\n%s", query);
@@ -397,12 +397,12 @@ no_cond:
 
 		if(job_cond && !job_cond->duplicates && curr_id == last_id)
 			continue;
-		
+
 		last_id = curr_id;
 
 		job = create_jobacct_job_rec();
 
-		job->alloc_cpus = atoi(PQgetvalue(result, i, 
+		job->alloc_cpus = atoi(PQgetvalue(result, i,
 						  JOB_REQ_ALLOC_CPUS));
 		job->associd = atoi(PQgetvalue(result, i, JOB_REQ_ASSOCID));
 		job->cluster = xstrdup(PQgetvalue(result, i, JOB_REQ_CLUSTER));
@@ -410,11 +410,11 @@ no_cond:
 			xfree(job->cluster);
 			job->cluster = xstrdup(
 				PQgetvalue(result, i, JOB_REQ_CLUSTER1));
-			if(job->cluster && !job->cluster[0]) 
+			if(job->cluster && !job->cluster[0])
 				xfree(job->cluster);
 		}
 		job->user =  xstrdup(PQgetvalue(result, i, JOB_REQ_USER_NAME));
-		if(!job->user || !job->user[0]) 
+		if(!job->user || !job->user[0])
 			job->uid = atoi(PQgetvalue(result, i, JOB_REQ_UID));
 
 		job->lft = atoi(PQgetvalue(result, i, JOB_REQ_LFT));
@@ -423,12 +423,12 @@ no_cond:
 			job->lft = (uint32_t)NO_VAL;
 
 		job->account = xstrdup(PQgetvalue(result, i, JOB_REQ_ACCOUNT));
-		if(job->account && !job->account[0]) 
+		if(job->account && !job->account[0])
 			xfree(job->account);
 
 		job->blockid = xstrdup(PQgetvalue(result, i,
 						  JOB_REQ_BLOCKID));
-		if(!job->blockid || !job->blockid[0]) 
+		if(!job->blockid || !job->blockid[0])
 			xfree(job->blockid);
 		job->eligible = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
 		job->submit = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
@@ -447,12 +447,12 @@ no_cond:
 			if(job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
 
-			if(!job->end || job->end > job_cond->usage_end) 
+			if(!job->end || job->end > job_cond->usage_end)
 				job->end = job_cond->usage_end;
 
 			if(!job->start && job->end)
 				job->start = job->end;
-			
+
 			job->elapsed = job->end - job->start;
 
 			if(atoi(PQgetvalue(result, i, JOB_REQ_SUSPENDED))) {
@@ -465,10 +465,10 @@ no_cond:
 					"and end = 0)) && id=%s "
 					"order by start",
 					suspend_table,
-					job_cond->usage_end, 
+					job_cond->usage_end,
 					job_cond->usage_start,
 					id);
-				
+
 				debug4("query\n%s", query);
 				if(!(result2 = pgsql_db_query_ret(
 					     acct_pgsql_db, query))) {
@@ -480,23 +480,23 @@ no_cond:
 				for (i2 = 0; i2 < PQntuples(result2); i2++) {
 					int local_start =
 						atoi(PQgetvalue(result, i2, 0));
-					int local_end = 
+					int local_end =
 						atoi(PQgetvalue(result, i2, 1));
-					
+
 					if(!local_start)
 						continue;
-					
+
 					if(job->start > local_start)
 						local_start = job->start;
 					if(job->end < local_end)
 						local_end = job->end;
-					
+
 					if((local_end - local_start) < 1)
 						continue;
-					
-					job->elapsed -= 
+
+					job->elapsed -=
 						(local_end - local_start);
-					job->suspended += 
+					job->suspended +=
 						(local_end - local_start);
 				}
 				PQclear(result2);
@@ -542,7 +542,7 @@ no_cond:
 
 		list_append(job_list, job);
 
-		if(job_cond && job_cond->step_list && 
+		if(job_cond && job_cond->step_list &&
 		   list_count(job_cond->step_list)) {
 			set = 0;
 			itr = list_iterator_create(job_cond->step_list);
@@ -554,12 +554,12 @@ no_cond:
 					job->show_full = 1;
 					break;
 				}
-				
-				if(set) 
+
+				if(set)
 					xstrcat(extra, " or ");
-				else 
+				else
 					xstrcat(extra, " and (");
-			
+
 				xstrfmtcat(extra, "t1.stepid=%u",
 					   selected_step->stepid);
 				set = 1;
@@ -570,20 +570,20 @@ no_cond:
 				xstrcat(extra, ")");
 		}
 		for(j=0; j<STEP_REQ_COUNT; j++) {
-			if(j) 
+			if(j)
 				xstrcat(tmp, ", ");
 			xstrcat(tmp, step_req_inx[j]);
 		}
-		
+
 		query =	xstrdup_printf("select %s from %s t1 where t1.id=%s",
 				       tmp, step_table, id);
 		xfree(tmp);
-		
+
 		if(extra) {
 			xstrcat(query, extra);
 			xfree(extra);
 		}
-		
+
 		//info("query = %s", query);
 		if(!(step_result = pgsql_db_query_ret(acct_pgsql_db, query))) {
 			xfree(query);
@@ -621,15 +621,15 @@ no_cond:
 
 			if(job_cond && !job_cond->without_usage_truncation
 			   && job_cond->usage_start) {
-				if(step->start 
+				if(step->start
 				   && (step->start < job_cond->usage_start))
 					step->start = job_cond->usage_start;
-				
+
 				if(!step->start && step->end)
 					step->start = step->end;
-				
-				if(!step->end 
-				   || (step->end > job_cond->usage_end)) 
+
+				if(!step->end
+				   || (step->end > job_cond->usage_end))
 					step->end = job_cond->usage_end;
 			}
 
@@ -654,11 +654,11 @@ no_cond:
 				PQgetvalue(step_result, j, STEP_REQ_SYS_SEC));
 			step->sys_cpu_usec = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_SYS_USEC));
-			job->tot_cpu_sec += 
-				step->tot_cpu_sec += 
+			job->tot_cpu_sec +=
+				step->tot_cpu_sec +=
 				step->user_cpu_sec + step->sys_cpu_sec;
-			job->tot_cpu_usec += 
-				step->tot_cpu_usec += 
+			job->tot_cpu_usec +=
+				step->tot_cpu_usec +=
 				step->user_cpu_usec + step->sys_cpu_usec;
 			step->sacct.max_vsize = atoi(
 				PQgetvalue(step_result, j,
@@ -716,7 +716,7 @@ no_cond:
 			step->sacct.min_cpu_id.nodeid =	atoi(
 				PQgetvalue(step_result, j,
 					   STEP_REQ_MIN_CPU_NODE));
-	
+
 			step->requid = atoi(PQgetvalue(step_result, j,
 						       STEP_REQ_KILL_REQUID));
 		}
@@ -730,7 +730,7 @@ no_cond:
 			   different.  If it is different print out
 			   the step separate.
 			*/
-			if(list_count(job->steps) > 1) 
+			if(list_count(job->steps) > 1)
 				job->track_steps = 1;
 			else if(step && step->stepname && job->jobname) {
 				if(strcmp(step->stepname, job->jobname))
@@ -741,7 +741,7 @@ no_cond:
 		step = NULL;
 	}
 	PQclear(result);
-	
+
 	return job_list;
 }
 
@@ -753,8 +753,8 @@ extern int pgsql_jobacct_process_archive(PGconn *acct_pgsql_db,
 
 extern int pgsql_jobacct_process_archive_load(PGconn *acct_pgsql_db,
 					      acct_archive_rec_t *arch_rec)
-{	
+{
 	return SLURM_SUCCESS;
 }
 
-#endif	
+#endif

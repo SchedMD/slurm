@@ -8,32 +8,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -168,7 +168,7 @@ _guess_nodename()
 	char host[256];
 	char *nodename = NULL;
 
-	if (gethostname_short(host, 256) != 0) 
+	if (gethostname_short(host, 256) != 0)
 		return NULL;
 
 	nodename = slurm_conf_get_nodename(host);
@@ -188,7 +188,7 @@ _guess_nodename()
  * slurmd on one node (unusual outside of development environments), you
  * will get one of the local NodeNames more-or-less at random.
  *
- * Returns a socket descriptor for the opened socket on success, 
+ * Returns a socket descriptor for the opened socket on success,
  * and -1 on error.
  */
 int
@@ -497,7 +497,7 @@ _sockname_regex(regex_t *re, const char *filename,
 	free(match);
 
 	return 0;
-}		     
+}
 
 /*
  * Scan for available running slurm step daemons by checking
@@ -613,11 +613,11 @@ stepd_cleanup_sockets(const char *directory, const char *nodename)
 
 			path = NULL;
 			xstrfmtcat(path, "%s/%s", directory, ent->d_name);
-			verbose("Cleaning up stray job step %u.%u", 
+			verbose("Cleaning up stray job step %u.%u",
 				jobid, stepid);
 
 			/* signal the slurmstepd to terminate its step */
-			fd = stepd_connect((char *) directory, (char *) nodename, 
+			fd = stepd_connect((char *) directory, (char *) nodename,
 					jobid, stepid);
 			if (fd == -1) {
 				debug("Unable to connect to socket %s", path);
@@ -827,25 +827,25 @@ rwfail:
 
 /*
  *
- * Returns jobacctinfo_t struct on success, NULL on error.  
+ * Returns jobacctinfo_t struct on success, NULL on error.
  * jobacctinfo_t must be freed after calling this function.
  */
-int 
+int
 stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, stat_jobacct_msg_t *resp)
 {
 	int req = MESSAGE_STAT_JOBACCT;
 	int rc = SLURM_SUCCESS;
 	//jobacctinfo_t *jobacct = NULL;
 	int tasks = 0;
-	debug("Entering stepd_stat_jobacct for job %u.%u", 
+	debug("Entering stepd_stat_jobacct for job %u.%u",
 	      sent->job_id, sent->step_id);
 	safe_write(fd, &req, sizeof(int));
-	
+
 	/* Receive the jobacct struct and return */
 	resp->jobacct = jobacct_gather_g_create(NULL);
-	
+
 	rc = jobacct_gather_g_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);
-	
+
 	safe_read(fd, &tasks, sizeof(int));
 	resp->num_tasks = tasks;
 	return rc;

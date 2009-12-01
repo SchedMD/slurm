@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -89,7 +89,7 @@ static char *_get_qos_list_str(List qos_list)
 
 	itr = list_iterator_create(qos_list);
 	while((qos = list_next(itr))) {
-		if(qos_char) 
+		if(qos_char)
 			xstrfmtcat(qos_char, ",%s", qos->name);
 		else
 			xstrcat(qos_char, qos->name);
@@ -111,7 +111,7 @@ extern int parse_option_end(char *option)
 		   || (option[end] == '+' && option[end+1] == '=')
 		   || (option[end] == '-' && option[end+1] == '='))
 			break;
-		end++;		
+		end++;
 	}
 
 	if(!option[end])
@@ -152,7 +152,7 @@ extern char *strip_quotes(char *option, int *increased, bool make_lower)
 			if(lower != option[i])
 				option[i] = lower;
 		}
-		
+
 		i++;
 	}
 	end += i;
@@ -169,7 +169,7 @@ extern char *strip_quotes(char *option, int *increased, bool make_lower)
 extern int notice_thread_init()
 {
 	pthread_attr_t attr;
-	
+
 	slurm_attr_init(&attr);
 	if(pthread_create(&lock_warning_thread, &attr, &_print_lock_warn, NULL))
 		error ("pthread_create error %m");
@@ -182,7 +182,7 @@ extern int notice_thread_fini()
 	return pthread_cancel(lock_warning_thread);
 }
 
-extern int commit_check(char *warning) 
+extern int commit_check(char *warning)
 {
 	int ans = 0;
 	char c = '\0';
@@ -210,16 +210,16 @@ extern int commit_check(char *warning)
 		tv.tv_usec = 0;
 		if((ans = select(fd+1, &rfds, NULL, NULL, &tv)) <= 0)
 			break;
-		
+
 		c = getchar();
 		printf("\n");
 	}
 	_nonblock(0);
-	if(ans <= 0) 
+	if(ans <= 0)
 		printf("timeout\n");
-	else if(c == 'Y' || c == 'y') 
-		return 1;			
-	
+	else if(c == 'Y' || c == 'y')
+		return 1;
+
 	return 0;
 }
 
@@ -251,20 +251,20 @@ extern acct_association_rec_t *sacctmgr_find_association(char *user,
 	}
 
 	assoc_cond.user_list = list_create(NULL);
-	if(user) 
+	if(user)
 		list_append(assoc_cond.user_list, user);
 	else
 		list_append(assoc_cond.user_list, "");
-	
+
 	assoc_cond.partition_list = list_create(NULL);
-	if(partition) 
+	if(partition)
 		list_append(assoc_cond.partition_list, partition);
 	else
 		list_append(assoc_cond.partition_list, "");
-	
+
 	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
 						     &assoc_cond);
-	
+
 	list_destroy(assoc_cond.acct_list);
 	list_destroy(assoc_cond.cluster_list);
 	list_destroy(assoc_cond.user_list);
@@ -274,7 +274,7 @@ extern acct_association_rec_t *sacctmgr_find_association(char *user,
 		assoc = list_pop(assoc_list);
 
 	list_destroy(assoc_list);
-	
+
 	return assoc;
 }
 
@@ -326,10 +326,10 @@ extern acct_user_rec_t *sacctmgr_find_user(char *name)
 	acct_user_cond_t user_cond;
 	acct_association_cond_t assoc_cond;
 	List user_list = NULL;
-	
+
 	if(!name)
 		return NULL;
-	
+
 	memset(&user_cond, 0, sizeof(acct_user_cond_t));
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	assoc_cond.user_list = list_create(NULL);
@@ -355,7 +355,7 @@ extern acct_account_rec_t *sacctmgr_find_account(char *name)
 	acct_account_cond_t account_cond;
 	acct_association_cond_t assoc_cond;
 	List account_list = NULL;
-	
+
 	if(!name)
 		return NULL;
 
@@ -367,7 +367,7 @@ extern acct_account_rec_t *sacctmgr_find_account(char *name)
 
 	account_list = acct_storage_g_get_accounts(db_conn, my_uid,
 						   &account_cond);
-	
+
 	list_destroy(assoc_cond.acct_list);
 
 	if(account_list)
@@ -396,44 +396,44 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name)
 
 	list_destroy(cluster_cond.cluster_list);
 
-	if(cluster_list) 
+	if(cluster_list)
 		cluster = list_pop(cluster_list);
 
 	list_destroy(cluster_list);
-	
+
 	return cluster;
 }
 
 extern acct_association_rec_t *sacctmgr_find_association_from_list(
-	List assoc_list, char *user, char *account, 
+	List assoc_list, char *user, char *account,
 	char *cluster, char *partition)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t * assoc = NULL;
-	
+
 	if(!assoc_list)
 		return NULL;
-	
+
 	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
 		if(((!user && assoc->user)
 		    || (user && (!assoc->user
 				 || strcasecmp(user, assoc->user))))
 		   || ((!account && assoc->acct)
-		       || (account && (!assoc->acct 
+		       || (account && (!assoc->acct
 				       || strcasecmp(account, assoc->acct))))
 		   || ((!cluster && assoc->cluster)
-		       || (cluster && (!assoc->cluster 
+		       || (cluster && (!assoc->cluster
 				       || strcasecmp(cluster, assoc->cluster))))
 		   || ((!partition && assoc->partition)
-		       || (partition && (!assoc->partition 
-					 || strcasecmp(partition, 
+		       || (partition && (!assoc->partition
+					 || strcasecmp(partition,
 						       assoc->partition)))))
 			continue;
 		break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	return assoc;
 }
 
@@ -472,7 +472,7 @@ extern acct_qos_rec_t *sacctmgr_find_qos_from_list(
 	ListIterator itr = NULL;
 	acct_qos_rec_t *qos = NULL;
 	char *working_name = NULL;
-	
+
 	if(!name || !qos_list)
 		return NULL;
 
@@ -480,14 +480,14 @@ extern acct_qos_rec_t *sacctmgr_find_qos_from_list(
 		working_name = name+1;
 	else
 		working_name = name;
-	
+
 	itr = list_iterator_create(qos_list);
 	while((qos = list_next(itr))) {
 		if(!strcasecmp(working_name, qos->name))
 			break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	return qos;
 
 }
@@ -497,17 +497,17 @@ extern acct_user_rec_t *sacctmgr_find_user_from_list(
 {
 	ListIterator itr = NULL;
 	acct_user_rec_t *user = NULL;
-	
+
 	if(!name || !user_list)
 		return NULL;
-	
+
 	itr = list_iterator_create(user_list);
 	while((user = list_next(itr))) {
 		if(!strcasecmp(name, user->name))
 			break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	return user;
 
 }
@@ -517,7 +517,7 @@ extern acct_account_rec_t *sacctmgr_find_account_from_list(
 {
 	ListIterator itr = NULL;
 	acct_account_rec_t *account = NULL;
-	
+
 	if(!name || !acct_list)
 		return NULL;
 
@@ -527,7 +527,7 @@ extern acct_account_rec_t *sacctmgr_find_account_from_list(
 			break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	return account;
 
 }
@@ -547,7 +547,7 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
 			break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	return cluster;
 }
 
@@ -556,27 +556,27 @@ extern acct_wckey_rec_t *sacctmgr_find_wckey_from_list(
 {
 	ListIterator itr = NULL;
 	acct_wckey_rec_t * wckey = NULL;
-	
+
 	if(!wckey_list)
 		return NULL;
-	
+
 	itr = list_iterator_create(wckey_list);
 	while((wckey = list_next(itr))) {
 		if(((!user && wckey->user)
 		    || (user && (!wckey->user
 				 || strcasecmp(user, wckey->user))))
 		   || ((!name && wckey->name)
-		       || (name && (!wckey->name 
+		       || (name && (!wckey->name
 				    || strcasecmp(name, wckey->name))))
 		   || ((!cluster && wckey->cluster)
-		       || (cluster && (!wckey->cluster 
+		       || (cluster && (!wckey->cluster
 				       || strcasecmp(cluster,
 						     wckey->cluster)))))
 			continue;
 		break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	return wckey;
 }
 
@@ -584,7 +584,7 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 {
 	char *ptr = NULL, *meat = NULL;
 	long num;
-	
+
 	if(!(meat = strip_quotes(in_value, NULL, 1))) {
 		error("Problem with strip_quotes");
 		return SLURM_ERROR;
@@ -596,7 +596,7 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 		return SLURM_ERROR;
 	}
 	xfree(meat);
-	
+
 	if (num < 0)
 		*out_value = INFINITE;		/* flag to clear */
 	else
@@ -608,7 +608,7 @@ extern int get_uint16(char *in_value, uint16_t *out_value, char *type)
 {
 	char *ptr = NULL, *meat = NULL;
 	long num;
-	
+
 	if(!(meat = strip_quotes(in_value, NULL, 1))) {
 		error("Problem with strip_quotes");
 		return SLURM_ERROR;
@@ -621,7 +621,7 @@ extern int get_uint16(char *in_value, uint16_t *out_value, char *type)
 		return SLURM_ERROR;
 	}
 	xfree(meat);
-	
+
 	if (num < 0)
 		*out_value = (uint16_t) INFINITE; /* flag to clear */
 	else
@@ -633,7 +633,7 @@ extern int get_uint64(char *in_value, uint64_t *out_value, char *type)
 {
 	char *ptr = NULL, *meat = NULL;
 	long long num;
-	
+
 	if(!(meat = strip_quotes(in_value, NULL, 1))) {
 		error("Problem with strip_quotes");
 		return SLURM_ERROR;
@@ -646,7 +646,7 @@ extern int get_uint64(char *in_value, uint64_t *out_value, char *type)
 		return SLURM_ERROR;
 	}
 	xfree(meat);
-	
+
 	if (num < 0)
 		*out_value = INFINITE;		/* flag to clear */
 	else
@@ -658,7 +658,7 @@ extern int get_double(char *in_value, double *out_value, char *type)
 {
 	char *ptr = NULL, *meat = NULL;
 	double num;
-	
+
 	if(!(meat = strip_quotes(in_value, NULL, 1))) {
 		error("Problem with strip_quotes");
 		return SLURM_ERROR;
@@ -670,7 +670,7 @@ extern int get_double(char *in_value, double *out_value, char *type)
 		return SLURM_ERROR;
 	}
 	xfree(meat);
-	
+
 	if (num < 0)
 		*out_value = (double) INFINITE;		/* flag to clear */
 	else
@@ -678,7 +678,7 @@ extern int get_double(char *in_value, double *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
-extern int addto_qos_char_list(List char_list, List qos_list, char *names, 
+extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			       int option)
 {
 	int i=0, start=0;
@@ -718,14 +718,14 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			else if(names[i] == ',') {
 				if((i-start) > 0) {
 					int tmp_option = option;
-					if(names[start] == '+' 
+					if(names[start] == '+'
 					   || names[start] == '-') {
 						tmp_option = names[start];
 						start++;
 					}
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
-					
+
 					id = str_2_acct_qos(qos_list, name);
 					if(id == NO_VAL) {
 						char *tmp = _get_qos_list_str(
@@ -740,7 +740,7 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 						break;
 					}
 					xfree(name);
-					
+
 					if(tmp_option) {
 						if(equal_set) {
 							error("You can't set "
@@ -780,7 +780,7 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 					if(!tmp_char) {
 						list_append(char_list, name);
 						count++;
-					} else 
+					} else
 						xfree(name);
 				} else if (!(i-start)) {
 					list_append(char_list, xstrdup(""));
@@ -807,7 +807,7 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			}
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
-			
+
 			id = str_2_acct_qos(qos_list, name);
 			if(id == NO_VAL) {
 				char *tmp = _get_qos_list_str(qos_list);
@@ -853,17 +853,17 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 				if(!strcasecmp(tmp_char, name))
 					break;
 			}
-			
+
 			if(!tmp_char) {
 				list_append(char_list, name);
 				count++;
-			} else 
+			} else
 				xfree(name);
 		} else if (!(i-start)) {
 			list_append(char_list, xstrdup(""));
 			count++;
 		}
-	}	
+	}
 	if(!count) {
 		error("You gave me an empty qos list");
 		exit_code = 1;
@@ -873,7 +873,7 @@ end_it:
 	list_iterator_destroy(itr);
 	return count;
 }
- 
+
 extern int addto_action_char_list(List char_list, char *names)
 {
 	int i=0, start=0;
@@ -906,7 +906,7 @@ extern int addto_action_char_list(List char_list, char *names)
 				if((i-start) > 0) {
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
-					
+
 					id = str_2_slurmdbd_msg_type(name);
 					if(id == NO_VAL) {
 						error("You gave a bad action "
@@ -926,7 +926,7 @@ extern int addto_action_char_list(List char_list, char *names)
 					if(!tmp_char) {
 						list_append(char_list, name);
 						count++;
-					} else 
+					} else
 						xfree(name);
 				}
 
@@ -944,7 +944,7 @@ extern int addto_action_char_list(List char_list, char *names)
 		if((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
-			
+
 			id = str_2_slurmdbd_msg_type(name);
 			if(id == NO_VAL)  {
 				error("You gave a bad action '%s'.",
@@ -953,26 +953,26 @@ extern int addto_action_char_list(List char_list, char *names)
 				goto end_it;
 			}
 			xfree(name);
-			
+
 			name = xstrdup_printf("%u", id);
 			while((tmp_char = list_next(itr))) {
 				if(!strcasecmp(tmp_char, name))
 					break;
 			}
-			
+
 			if(!tmp_char) {
 				list_append(char_list, name);
 				count++;
-			} else 
+			} else
 				xfree(name);
 		}
-	}	
+	}
 end_it:
 	list_iterator_destroy(itr);
 	return count;
 }
- 
-extern List copy_char_list(List char_list) 
+
+extern List copy_char_list(List char_list)
 {
 	List ret_list = NULL;
 	char *tmp_char = NULL;
@@ -983,12 +983,12 @@ extern List copy_char_list(List char_list)
 
 	itr = list_iterator_create(char_list);
 	ret_list = list_create(slurm_destroy_char);
-	
-	while((tmp_char = list_next(itr))) 
+
+	while((tmp_char = list_next(itr)))
 		list_append(ret_list, xstrdup(tmp_char));
-	
+
 	list_iterator_destroy(itr);
-	
+
 	return ret_list;
 }
 
@@ -999,7 +999,7 @@ extern void sacctmgr_print_coord_list(
 	ListIterator itr = NULL;
 	char *print_this = NULL;
 	acct_coord_rec_t *object = NULL;
-	
+
 	if(!value || !list_count(value)) {
 		if(print_fields_parsable_print)
 			print_this = xstrdup("");
@@ -1009,15 +1009,15 @@ extern void sacctmgr_print_coord_list(
 		list_sort(value, (ListCmpF)sort_coord_list);
 		itr = list_iterator_create(value);
 		while((object = list_next(itr))) {
-			if(print_this) 
-				xstrfmtcat(print_this, ",%s", 
+			if(print_this)
+				xstrfmtcat(print_this, ",%s",
 					   object->name);
-			else 
+			else
 				print_this = xstrdup(object->name);
 		}
 		list_iterator_destroy(itr);
 	}
-	
+
 	if(print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
 	   && last)
 		printf("%s", print_this);
@@ -1026,7 +1026,7 @@ extern void sacctmgr_print_coord_list(
 	else {
 		if(strlen(print_this) > abs_len)
 			print_this[abs_len-1] = '+';
-		
+
 		if(field->len == abs_len)
 			printf("%*.*s ", abs_len, abs_len, print_this);
 		else
@@ -1042,16 +1042,16 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 	char *print_this = NULL;
 
 	print_this = get_qos_complete_str(qos_list, value);
-	
+
 	if(print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
 	   && last)
 		printf("%s", print_this);
 	else if(print_fields_parsable_print)
 		printf("%s|", print_this);
 	else {
-		if(strlen(print_this) > abs_len) 
+		if(strlen(print_this) > abs_len)
 			print_this[abs_len-1] = '+';
-		
+
 		if(field->len == abs_len)
 			printf("%*.*s ", abs_len, abs_len, print_this);
 		else
@@ -1067,16 +1067,16 @@ extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 	char *print_this = NULL;
 
 	print_this = get_qos_complete_str_bitstr(qos_list, value);
-	
+
 	if(print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
 	   && last)
 		printf("%s", print_this);
 	else if(print_fields_parsable_print)
 		printf("%s|", print_this);
 	else {
-		if(strlen(print_this) > abs_len) 
+		if(strlen(print_this) > abs_len)
 			print_this[abs_len-1] = '+';
-		
+
 		if(field->len == abs_len)
 			printf("%*.*s ", abs_len, abs_len, print_this);
 		else
@@ -1092,92 +1092,92 @@ extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 
 	if(assoc->shares_raw == INFINITE)
 		printf("  Fairshare     = NONE\n");
-	else if(assoc->shares_raw != NO_VAL) 
+	else if(assoc->shares_raw != NO_VAL)
 		printf("  Fairshare     = %u\n", assoc->shares_raw);
 
 	if(assoc->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins    = NONE\n");
-	else if(assoc->grp_cpu_mins != NO_VAL) 
-		printf("  GrpCPUMins    = %llu\n", 
+	else if(assoc->grp_cpu_mins != NO_VAL)
+		printf("  GrpCPUMins    = %llu\n",
 		       (long long unsigned)assoc->grp_cpu_mins);
-		
+
 	if(assoc->grp_cpus == INFINITE)
 		printf("  GrpCPUs       = NONE\n");
-	else if(assoc->grp_cpus != NO_VAL) 
+	else if(assoc->grp_cpus != NO_VAL)
 		printf("  GrpCPUs       = %u\n", assoc->grp_cpus);
-				
-	if(assoc->grp_jobs == INFINITE) 
+
+	if(assoc->grp_jobs == INFINITE)
 		printf("  GrpJobs       = NONE\n");
-	else if(assoc->grp_jobs != NO_VAL) 
+	else if(assoc->grp_jobs != NO_VAL)
 		printf("  GrpJobs       = %u\n", assoc->grp_jobs);
-		
+
 	if(assoc->grp_nodes == INFINITE)
 		printf("  GrpNodes      = NONE\n");
 	else if(assoc->grp_nodes != NO_VAL)
 		printf("  GrpNodes      = %u\n", assoc->grp_nodes);
-		
-	if(assoc->grp_submit_jobs == INFINITE) 
+
+	if(assoc->grp_submit_jobs == INFINITE)
 		printf("  GrpSubmitJobs = NONE\n");
-	else if(assoc->grp_submit_jobs != NO_VAL) 
-		printf("  GrpSubmitJobs = %u\n", 
+	else if(assoc->grp_submit_jobs != NO_VAL)
+		printf("  GrpSubmitJobs = %u\n",
 		       assoc->grp_submit_jobs);
-		
-	if(assoc->grp_wall == INFINITE) 
-		printf("  GrpWall       = NONE\n");		
+
+	if(assoc->grp_wall == INFINITE)
+		printf("  GrpWall       = NONE\n");
 	else if(assoc->grp_wall != NO_VAL) {
 		char time_buf[32];
-		mins2time_str((time_t) assoc->grp_wall, 
+		mins2time_str((time_t) assoc->grp_wall,
 			      time_buf, sizeof(time_buf));
 		printf("  GrpWall       = %s\n", time_buf);
 	}
 
 	if(assoc->max_cpu_mins_pj == INFINITE)
 		printf("  MaxCPUMins    = NONE\n");
-	else if(assoc->max_cpu_mins_pj != NO_VAL) 
-		printf("  MaxCPUMins    = %llu\n", 
+	else if(assoc->max_cpu_mins_pj != NO_VAL)
+		printf("  MaxCPUMins    = %llu\n",
 		       (long long unsigned)assoc->max_cpu_mins_pj);
-		
+
 	if(assoc->max_cpus_pj == INFINITE)
 		printf("  MaxCPUs       = NONE\n");
-	else if(assoc->max_cpus_pj != NO_VAL) 
+	else if(assoc->max_cpus_pj != NO_VAL)
 		printf("  MaxCPUs       = %u\n", assoc->max_cpus_pj);
-				
-	if(assoc->max_jobs == INFINITE) 
+
+	if(assoc->max_jobs == INFINITE)
 		printf("  MaxJobs       = NONE\n");
-	else if(assoc->max_jobs != NO_VAL) 
+	else if(assoc->max_jobs != NO_VAL)
 		printf("  MaxJobs       = %u\n", assoc->max_jobs);
-		
+
 	if(assoc->max_nodes_pj == INFINITE)
 		printf("  MaxNodes      = NONE\n");
 	else if(assoc->max_nodes_pj != NO_VAL)
 		printf("  MaxNodes      = %u\n", assoc->max_nodes_pj);
-		
-	if(assoc->max_submit_jobs == INFINITE) 
+
+	if(assoc->max_submit_jobs == INFINITE)
 		printf("  MaxSubmitJobs = NONE\n");
-	else if(assoc->max_submit_jobs != NO_VAL) 
-		printf("  MaxSubmitJobs = %u\n", 
+	else if(assoc->max_submit_jobs != NO_VAL)
+		printf("  MaxSubmitJobs = %u\n",
 		       assoc->max_submit_jobs);
-		
-	if(assoc->max_wall_pj == INFINITE) 
-		printf("  MaxWall       = NONE\n");		
+
+	if(assoc->max_wall_pj == INFINITE)
+		printf("  MaxWall       = NONE\n");
 	else if(assoc->max_wall_pj != NO_VAL) {
 		char time_buf[32];
-		mins2time_str((time_t) assoc->max_wall_pj, 
+		mins2time_str((time_t) assoc->max_wall_pj,
 			      time_buf, sizeof(time_buf));
 		printf("  MaxWall       = %s\n", time_buf);
 	}
 
 	if(assoc->qos_list) {
 		if(!g_qos_list)
-			g_qos_list = 
+			g_qos_list =
 				acct_storage_g_get_qos(db_conn, my_uid, NULL);
 		char *temp_char = get_qos_complete_str(g_qos_list,
 						       assoc->qos_list);
-		if(temp_char) {		
+		if(temp_char) {
 			printf("  QOS           = %s\n", temp_char);
 			xfree(temp_char);
 		}
-	} 
+	}
 }
 
 extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
@@ -1190,72 +1190,72 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 
 	if(qos->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins     = NONE\n");
-	else if(qos->grp_cpu_mins != NO_VAL) 
-		printf("  GrpCPUMins     = %llu\n", 
+	else if(qos->grp_cpu_mins != NO_VAL)
+		printf("  GrpCPUMins     = %llu\n",
 		       (long long unsigned)qos->grp_cpu_mins);
-		
+
 	if(qos->grp_cpus == INFINITE)
 		printf("  GrpCPUs        = NONE\n");
-	else if(qos->grp_cpus != NO_VAL) 
+	else if(qos->grp_cpus != NO_VAL)
 		printf("  GrpCPUs        = %u\n", qos->grp_cpus);
-				
-	if(qos->grp_jobs == INFINITE) 
+
+	if(qos->grp_jobs == INFINITE)
 		printf("  GrpJobs        = NONE\n");
-	else if(qos->grp_jobs != NO_VAL) 
+	else if(qos->grp_jobs != NO_VAL)
 		printf("  GrpJobs        = %u\n", qos->grp_jobs);
-		
+
 	if(qos->grp_nodes == INFINITE)
 		printf("  GrpNodes       = NONE\n");
 	else if(qos->grp_nodes != NO_VAL)
 		printf("  GrpNodes       = %u\n", qos->grp_nodes);
-		
-	if(qos->grp_submit_jobs == INFINITE) 
+
+	if(qos->grp_submit_jobs == INFINITE)
 		printf("  GrpSubmitJobs  = NONE\n");
-	else if(qos->grp_submit_jobs != NO_VAL) 
-		printf("  GrpSubmitJobs  = %u\n", 
+	else if(qos->grp_submit_jobs != NO_VAL)
+		printf("  GrpSubmitJobs  = %u\n",
 		       qos->grp_submit_jobs);
-		
-	if(qos->grp_wall == INFINITE) 
-		printf("  GrpWall        = NONE\n");		
+
+	if(qos->grp_wall == INFINITE)
+		printf("  GrpWall        = NONE\n");
 	else if(qos->grp_wall != NO_VAL) {
 		char time_buf[32];
-		mins2time_str((time_t) qos->grp_wall, 
+		mins2time_str((time_t) qos->grp_wall,
 			      time_buf, sizeof(time_buf));
 		printf("  GrpWall        = %s\n", time_buf);
 	}
 
 	if(qos->max_cpu_mins_pj == INFINITE)
 		printf("  MaxCPUMins     = NONE\n");
-	else if(qos->max_cpu_mins_pj != NO_VAL) 
-		printf("  MaxCPUMins     = %llu\n", 
+	else if(qos->max_cpu_mins_pj != NO_VAL)
+		printf("  MaxCPUMins     = %llu\n",
 		       (long long unsigned)qos->max_cpu_mins_pj);
-		
+
 	if(qos->max_cpus_pj == INFINITE)
 		printf("  MaxCPUs        = NONE\n");
-	else if(qos->max_cpus_pj != NO_VAL) 
+	else if(qos->max_cpus_pj != NO_VAL)
 		printf("  MaxCPUs        = %u\n", qos->max_cpus_pj);
-				
-	if(qos->max_jobs_pu == INFINITE) 
+
+	if(qos->max_jobs_pu == INFINITE)
 		printf("  MaxJobs        = NONE\n");
-	else if(qos->max_jobs_pu != NO_VAL) 
+	else if(qos->max_jobs_pu != NO_VAL)
 		printf("  MaxJobs        = %u\n", qos->max_jobs_pu);
-		
+
 	if(qos->max_nodes_pj == INFINITE)
 		printf("  MaxNodes       = NONE\n");
 	else if(qos->max_nodes_pj != NO_VAL)
 		printf("  MaxNodes       = %u\n", qos->max_nodes_pj);
-		
-	if(qos->max_submit_jobs_pu == INFINITE) 
+
+	if(qos->max_submit_jobs_pu == INFINITE)
 		printf("  MaxSubmitJobs  = NONE\n");
-	else if(qos->max_submit_jobs_pu != NO_VAL) 
-		printf("  MaxSubmitJobs  = %u\n", 
+	else if(qos->max_submit_jobs_pu != NO_VAL)
+		printf("  MaxSubmitJobs  = %u\n",
 		       qos->max_submit_jobs_pu);
-		
-	if(qos->max_wall_pj == INFINITE) 
-		printf("  MaxWall        = NONE\n");		
+
+	if(qos->max_wall_pj == INFINITE)
+		printf("  MaxWall        = NONE\n");
 	else if(qos->max_wall_pj != NO_VAL) {
 		char time_buf[32];
-		mins2time_str((time_t) qos->max_wall_pj, 
+		mins2time_str((time_t) qos->max_wall_pj,
 			      time_buf, sizeof(time_buf));
 		printf("  MaxWall        = %s\n", time_buf);
 	}
@@ -1263,15 +1263,15 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 	if(qos->preempt_list) {
 		char *temp_char = get_qos_complete_str(g_qos_list,
 						       qos->preempt_list);
-		if(temp_char) {		
+		if(temp_char) {
 			printf("  Preempt        = %s\n", temp_char);
 			xfree(temp_char);
 		}
-	} 
+	}
 
 	if(qos->priority == INFINITE)
 		printf("  Priority       = NONE\n");
-	else if(qos->priority != NO_VAL) 
+	else if(qos->priority != NO_VAL)
 		printf("  Priority       = %d\n", qos->priority);
 
 }
@@ -1284,6 +1284,6 @@ extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)
 		return -1;
 	else if (diff > 0)
 		return 1;
-	
+
 	return 0;
 }

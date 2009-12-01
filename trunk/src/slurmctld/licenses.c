@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -72,7 +72,7 @@ static inline void _licenses_print(char *header, List licenses)
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
-		info("name:%s total:%u used:%u", license_entry->name, 
+		info("name:%s total:%u used:%u", license_entry->name,
 		     license_entry->total, license_entry->used);
 	}
 	list_iterator_destroy(iter);
@@ -192,7 +192,7 @@ extern int license_update(char *licenses)
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
-		match = list_find_first(new_list, _license_find_rec, 
+		match = list_find_first(new_list, _license_find_rec,
 			license_entry->name);
 		if (!match) {
 			info("license %s removed with %u in use",
@@ -200,7 +200,7 @@ extern int license_update(char *licenses)
 		} else {
 			match->used = license_entry->used;
 			if (match->used > match->total) {
-				info("license %s count decreased", 
+				info("license %s count decreased",
 				     match->name);
 			}
 		}
@@ -231,7 +231,7 @@ extern void license_free(void)
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
- */ 
+ */
 extern List license_validate(char *licenses, bool *valid)
 {
 	ListIterator iter;
@@ -280,7 +280,7 @@ extern List license_validate(char *licenses, bool *valid)
  * IN job_ptr - job identification
  * IN when    - time to check
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
- */ 
+ */
 extern int license_job_test(struct job_record *job_ptr, time_t when)
 {
 	ListIterator iter;
@@ -295,7 +295,7 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
-		match = list_find_first(license_list, _license_find_rec, 
+		match = list_find_first(license_list, _license_find_rec,
 			license_entry->name);
 		if (!match) {
 			error("could not find license %s for job %u",
@@ -307,7 +307,7 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 			     job_ptr->job_id, match->name);
 			rc = SLURM_ERROR;
 			break;
-		} else if ((license_entry->total + match->used) > 
+		} else if ((license_entry->total + match->used) >
 			   match->total) {
 			rc = EAGAIN;
 			break;
@@ -315,7 +315,7 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 			resv_licenses = job_test_lic_resv(job_ptr,
 							  license_entry->name,
 							  when);
-			if ((license_entry->total + match->used + 
+			if ((license_entry->total + match->used +
 			     resv_licenses) > match->total) {
 				rc = EAGAIN;
 				break;
@@ -331,7 +331,7 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
- */ 
+ */
 extern int license_job_get(struct job_record *job_ptr)
 {
 	ListIterator iter;
@@ -346,7 +346,7 @@ extern int license_job_get(struct job_record *job_ptr)
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
-		match = list_find_first(license_list, _license_find_rec, 
+		match = list_find_first(license_list, _license_find_rec,
 			license_entry->name);
 		if (match) {
 			match->used += license_entry->total;
@@ -367,7 +367,7 @@ extern int license_job_get(struct job_record *job_ptr)
  * license_job_return - Return the licenses allocated to a job
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
- */ 
+ */
 extern int license_job_return(struct job_record *job_ptr)
 {
 	ListIterator iter;
@@ -382,7 +382,7 @@ extern int license_job_return(struct job_record *job_ptr)
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
-		match = list_find_first(license_list, _license_find_rec, 
+		match = list_find_first(license_list, _license_find_rec,
 			license_entry->name);
 		if (match) {
 			if (match->used >= license_entry->total)
@@ -396,7 +396,7 @@ extern int license_job_return(struct job_record *job_ptr)
 			license_entry->used = 0;
 		} else {
 			/* This can happen after a reconfiguration */
-			error("job returning unknown license %s", 
+			error("job returning unknown license %s",
 			      license_entry->name);
 		}
 	}
@@ -423,7 +423,7 @@ extern bool license_list_overlap(List list_1, List list_2)
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
-		if (list_find_first(list_2, _license_find_rec, 
+		if (list_find_first(list_2, _license_find_rec,
 				    license_entry->name)) {
 			match = true;
 			break;

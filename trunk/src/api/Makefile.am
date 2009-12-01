@@ -16,10 +16,10 @@ PMI_OTHER_FLAGS = \
 	-Wl,--version-script=$(PMI_VERSION_SCRIPT)
 endif
 
-# libslurm version information : 
+# libslurm version information :
 #
 # Update META file information before a public release only!
-# 
+#
 # Note that libtool builds libslurm.so.<major>.<age>.<rev>
 # where major = API_MAJOR = (API_CURRENT - API_AGE)
 # and   age   = API_AGE
@@ -31,13 +31,13 @@ endif
 # If any interfaces have been added: increment API_CURRENT, increment API_AGE,
 # and set API_REVISION = 0 (e.g. libslurm.so.2.4.6 -> libslurm.so.2.5.0)
 #
-# If any interfaces have been removed: increment API_CURRENT, set API_AGE = 0, 
+# If any interfaces have been removed: increment API_CURRENT, set API_AGE = 0,
 # and set API_REVISION = 0 (e.g. libslurm.so.2.4.6 -> libslurm.so.7.0.0)
 #
 # If any interfaces have changed: increment API_CURRENT only
 # (e.g. libslurm.so.2.4.6 -> libslurm.so.3.4.6)
 #
-# If the interfaces have not changed, but underlying code has changed at all: 
+# If the interfaces have not changed, but underlying code has changed at all:
 # increment API_REVISION only (e.g. libslurm.so.2.4.6 -> libslurm.so.2.4.7)
 #
 current = $(SLURM_API_CURRENT)
@@ -54,10 +54,10 @@ BUILT_SOURCES = $(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols used by the process, libcommon, libeio, etc.
-# Only link with libslurmhelper if you are sure you are not going to be 
-# loading a plugin that could use something you yourself are not 
+# Only link with libslurmhelper if you are sure you are not going to be
+# loading a plugin that could use something you yourself are not
 # calling from here.
-# libslurm.o only contains all the api symbols and will export 
+# libslurm.o only contains all the api symbols and will export
 # them to plugins that are loaded.
 # Also, libslurmhelper, libslurm.o are for convenience, they are not installed.
 noinst_LTLIBRARIES = libslurmhelper.la
@@ -108,7 +108,7 @@ libslurmhelper_la_LDFLAGs = \
 convenience_libs = \
 	$(top_builddir)/src/api/libslurmhelper.la
 
-libslurm_la_SOURCES = 
+libslurm_la_SOURCES =
 libslurm_la_LIBADD = $(convenience_libs)
 libslurm_la_LDFLAGS        = \
         $(LIB_LDFLAGS) \
@@ -126,9 +126,9 @@ libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         -version-info $(current):$(rev):$(age) \
         $(PMI_OTHER_FLAGS)
 
-# This was made so we chould export all symbols from libcommon 
+# This was made so we chould export all symbols from libcommon
 # on multiple platforms
-libslurm_o_SOURCES = 
+libslurm_o_SOURCES =
 
 libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libspank.o	\

@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -47,7 +47,7 @@
 #define _DEBUG 0
 
 /* When a remote socket closes on AIX, we have seen poll() return EAGAIN
- * indefinitely for a pending write request. Rather than locking up 
+ * indefinitely for a pending write request. Rather than locking up
  * slurmctld's wiki interface, abort after MAX_RETRIES poll() failures. */
 #define MAX_RETRIES 10
 
@@ -98,7 +98,7 @@ extern int spawn_msg_thread(void)
 
 	parse_wiki_config();
 	slurm_attr_init(&thread_attr_msg);
-	if (pthread_create(&msg_thread_id, &thread_attr_msg, 
+	if (pthread_create(&msg_thread_id, &thread_attr_msg,
 			_msg_thread, NULL))
 		fatal("pthread_create %m");
 
@@ -191,8 +191,8 @@ static void *_msg_thread(void *no_data)
 			close(new_fd);
 			break;
 		}
-		/* It would be nice to create a pthread for each new 
-		 * RPC, but that leaks memory on some systems when 
+		/* It would be nice to create a pthread for each new
+		 * RPC, but that leaks memory on some systems when
 		 * done from a plugin.
 		 * FIXME: Maintain a pool of pthreads and reuse them. */
 		err_code = 0;
@@ -241,7 +241,7 @@ static char * _get_wiki_conf_path(void)
 /*****************************************************************************\
  * parse_wiki_config - Results go into global variables
  * RET SLURM_SUCCESS or error code
- * 
+ *
  * See "man wiki.conf" for details.
 \*****************************************************************************/
 extern int parse_wiki_config(void)
@@ -274,7 +274,7 @@ extern int parse_wiki_config(void)
 	if (conf->backup_addr) {
 		strncpy(e_host_bu, conf->backup_addr,
 			sizeof(e_host));
-	} 
+	}
 	kill_wait = conf->kill_wait;
 	first_job_id = conf->first_job_id;
 	slurm_conf_unlock();
@@ -307,7 +307,7 @@ extern int parse_wiki_config(void)
 		xfree(key);
 	}
 	s_p_get_uint16(&e_port, "EPort", tbl);
-	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl); 
+	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl);
 
 	if (s_p_get_string(&exclude_partitions, "ExcludePartitions", tbl)) {
 		char *tok = NULL, *tok_p = NULL;
@@ -318,7 +318,7 @@ extern int parse_wiki_config(void)
 				error("ExcludePartitions has too many entries "
 				      "skipping %s and later entries");
 				break;
-			}	
+			}
 			exclude_part_ptr[i] = find_part_record(tok);
 			if (exclude_part_ptr[i])
 				i++;
@@ -337,7 +337,7 @@ extern int parse_wiki_config(void)
 				error("HidePartitionJobs has too many entries "
 				      "skipping %s and later entries");
 				break;
-			}	
+			}
 			hide_part_ptr[i] = find_part_record(tok);
 			if (hide_part_ptr[i])
 				i++;
@@ -353,7 +353,7 @@ extern int parse_wiki_config(void)
 		else if (strcasecmp(priority_mode, "run") == 0)
 			init_prio_mode = PRIO_DECREMENT;
 		else
-			error("Invalid value for JobPriority in wiki.conf");	
+			error("Invalid value for JobPriority in wiki.conf");
 		xfree(priority_mode);
 	}
 
@@ -386,7 +386,7 @@ extern int parse_wiki_config(void)
 }
 
 /*
- * Return a string containing any scheduling plugin configuration information 
+ * Return a string containing any scheduling plugin configuration information
  * that we want to expose via "scontrol show configuration".
  * NOTE: the caller must xfree the returned pointer
  */
@@ -446,7 +446,7 @@ static size_t	_read_bytes(int fd, char *buf, size_t size)
 			continue;
 		if ((ufds.revents & POLLIN) == 0) /* some poll error */
 			break;
-	
+
 		bytes_read = read(fd, ptr, bytes_remaining);
 		if (bytes_read <= 0)
 			break;
@@ -454,7 +454,7 @@ static size_t	_read_bytes(int fd, char *buf, size_t size)
 		size += bytes_read;
 		ptr += bytes_read;
 	}
-	
+
 	return size;
 }
 
@@ -498,9 +498,9 @@ static size_t	_write_bytes(int fd, char *buf, size_t size)
 }
 
 /*****************************************************************************\
- * Read a message (request) from specified file descriptor 
+ * Read a message (request) from specified file descriptor
  *
- * RET - The message which must be xfreed or 
+ * RET - The message which must be xfreed or
  *       NULL on error
 \*****************************************************************************/
 static char *	_recv_msg(slurm_fd new_fd)
@@ -539,7 +539,7 @@ static char *	_recv_msg(slurm_fd new_fd)
 }
 
 /*****************************************************************************\
- * Send a message (response) to specified file descriptor 
+ * Send a message (response) to specified file descriptor
  *
  * RET - Number of data bytes written (excludes header)
 \*****************************************************************************/
@@ -581,7 +581,7 @@ static int	_parse_msg(char *msg, char **req)
 	char *cmd_ptr = strstr(msg, "CMD=");
 	time_t ts, now = time(NULL);
 	uint32_t delta_t;
-	
+
 	if ((auth_key[0] == '\0') && cmd_ptr) {
 		/* No authentication required */
 		*req = cmd_ptr;
@@ -608,7 +608,7 @@ static int	_parse_msg(char *msg, char **req)
 		error("wiki: request lacks TS=");
 		return -1;
 	}
-	ts = strtoul((ts_ptr+3), NULL, 10); 
+	ts = strtoul((ts_ptr+3), NULL, 10);
 	if (ts < now)
 		delta_t = (uint32_t) difftime(now, ts);
 	else
@@ -616,7 +616,7 @@ static int	_parse_msg(char *msg, char **req)
 	if (delta_t > 300) {
 		err_code = -350;
 		err_msg = "TS value too far from NOW";
-		error("wiki: TimeStamp too far from NOW (%u secs)", 
+		error("wiki: TimeStamp too far from NOW (%u secs)",
 			delta_t);
 		return -1;
 	}
@@ -662,7 +662,7 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	cmd_ptr = strstr(req, "CMD=");
 	if (cmd_ptr == NULL) {
 		err_code = -300;
-		err_msg = "request lacks CMD"; 
+		err_msg = "request lacks CMD";
 		error("wiki: request lacks CMD");
 		goto resp_msg;
 	}
@@ -757,7 +757,7 @@ static void	_send_reply(slurm_fd new_fd, char *response)
 		xfree(tmp);
 	}
 
-	snprintf(buf, i, "CK=dummy67890123456 TS=%u AUTH=%s DT=%s", 
+	snprintf(buf, i, "CK=dummy67890123456 TS=%u AUTH=%s DT=%s",
 		(uint32_t) time(NULL), uname, response);
 	checksum(sum, auth_key, (buf+20));   /* overwrite "CK=dummy..." above */
 	memcpy(buf, sum, 19);
