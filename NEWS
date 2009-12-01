@@ -22,6 +22,9 @@ documents those changes that are of interest to users and admins.
     in sattach.c, step_launch.c, and allocate_msg.c, and moved the function 
     into a common place for all the calls since the code was very similar.
  -- proctrack/lua support has been added see contribs/lua/protrack.lua
+ -- replaced local gtk m4 test with AM_PATH_GTK_2_0
+ -- changed AC_CHECK_LIB to AC_SEARCH_LIBS to avoid extra libs in
+    compile lines.
 
 * Changes in SLURM 2.1.0-pre7
 =============================
