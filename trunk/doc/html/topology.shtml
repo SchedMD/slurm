@@ -9,7 +9,7 @@ systems with a three-dimensional torus interconnect and another for
 a hierarchical interconnect.</p>
 
 <p>SLURM's native mode of resource selection is to consider the nodes
-as a one-dimensional array.
+as a one-dimensional array. 
 Jobs are allocated resources on a best-fit basis.
 For larger jobs, this minimizes the number of sets of consecutive nodes
 allocated to the job.</p>
@@ -18,18 +18,18 @@ allocated to the job.</p>
 
 <p>Some larger computers rely upon a three-dimensional torus interconnect.
 The IBM BlueGene computers is one example of this which has highly
-constrained resource allocation scheme, essentially requiring that
+constrained resource allocation scheme, essentially requiring that 
 jobs be allocated a set of nodes logically having a rectangular shape.
 SLURM has a plugin specifically written for BlueGene to select appropriate
 nodes for jobs, change network switch routing, boot nodes, etc as described
 in the <a href="bluegene.html">BlueGene User and Administrator Guide</a>.</p>
 
-<p>The Sun Constellation and Cray XT systems also have three-dimensional
+<p>The Sun Constellation and Cray XT systems also have three-dimensional 
 torus interconnects, but do not require that jobs execute in adjacent nodes.
-On those systems, SLURM only needs to allocate resources to a job which
-are nearby on the network.
-SLURM accomplishes this using a
-<a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>
+On those systems, SLURM only needs to allocate resources to a job which 
+are nearby on the network. 
+SLURM accomplishes this using a 
+<a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a> 
 to map the nodes from a three-dimensional space into a one-dimensional
 space.
 SLURM's native best-fit algorithm is thus able to achieve a high degree
@@ -40,21 +40,21 @@ For more information, see SLURM's documentation for
 
 <h2>Hierarchical Networks</h2>
 
-<p>SLURM can also be configured to allocate resources to jobs on a
+<p>SLURM can also be configured to allocate resources to jobs on a 
 hierarchical network to minimize network contention.
 The basic algorithm is to identify the lowest level switch in the
 hierarchy that can satisfy a job's request and then allocate resources
 on its underlying leaf switches using a best-fit algorithm.
-Use of this logic requires a configuration setting of
+Use of this logic requires a configuration setting of 
 <i>TopologyPlugin=topology/tree</i>.</p>
 
-<p>At some point in the future SLURM code may be provided to
+<p>At some point in the future SLURM code may be provided to 
 gather network topology information directly.
-Now the network topology information must be included
-in a <i>topology.conf</i> configuration file as shown in the
+Now the network topology information must be included 
+in a <i>topology.conf</i> configuration file as shown in the 
 examples below.
-The first example describes a three level switch in which
-each switch has two children.
+The first example describes a three level switch in which 
+each switch has two children. 
 Note that the <i>SwitchName</i> values are arbitrary and only
 used to bookkeeping purposes, but a name must be specified on
 each line.
@@ -68,14 +68,14 @@ names need not be consecutive (e.g. "Nodes=tux[0-3,12,18-20]"
 and "Switches=s[0-2,4-8,12]" will parse fine).
 </p>
 
-<p>An optional LinkSpeed option can be used to indicate the
-relative performance of the link.
+<p>An optional LinkSpeed option can be used to indicate the 
+relative performance of the link. 
 The units used are arbitrary and this information is currently not used.
 It may be used in the future to optimize resource allocations.</p>
 
 <p>The first example shows what a topology would look like for an
 eight node cluster in which all switches have only two children as
-shown in the diagram (not a very realistic configuration, but
+shown in the diagram (not a very realistic configuration, but 
 useful for an example).</p>
 
 <pre>
@@ -91,7 +91,7 @@ SwitchName=s6 Switches=s[4-5]
 </pre>
 <img src=topo_ex1.gif width=600>
 
-<p>The next example is for a network with two levels and
+<p>The next example is for a network with two levels and 
 each switch has four connections.</p>
 <pre>
 # topology.conf
@@ -107,8 +107,8 @@ SwitchName=s7 Switches=s[0-3]  LinkSpeed=1800
 </pre>
 <img src=topo_ex2.gif width=600>
 
-<p>As a practical matter, listing every switch connection
-definitely results in a slower scheduling algorithm for SLURM
+<p>As a practical matter, listing every switch connection 
+definitely results in a slower scheduling algorithm for SLURM 
 to optimize job placement.
 The application performance may achieve little benefit from such optimization.
 Listing the leaf switches with their nodes plus one top level switch

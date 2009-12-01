@@ -10,7 +10,7 @@
 <div id="center2"><a href="https://www.llnl.gov/" target="_blank" class="footer">Lawrence Livermore National Laboratory</a><br />
 <span class="smalltextblue">7000 East Avenue &#8226; Livermore, CA 94550</span></div>
 <div id="right2"><span class="smalltextblue">Operated by
-Lawrence Livermore National Security, LLC, for the</span>
+Lawrence Livermore National Security, LLC, for the</span> 
 <a href="http://www.energy.gov/" target="_blank" class="footer">
 Department of Energy's</a><br />
 <a href="http://www.nnsa.doe.gov/" target="_blank" class="footer">

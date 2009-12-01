@@ -4,22 +4,22 @@ slurmctld \- The central management daemon of Slurm.
 .SH "SYNOPSIS"
 \fBslurmctld\fR [\fIOPTIONS\fR...]
 .SH "DESCRIPTION"
-\fBslurmctld\fR is the central management daemon of Slurm. It monitors
-all other Slurm daemons and resources, accepts work (jobs), and allocates
-resources to those jobs. Given the critical functionality of \fBslurmctld\fR,
-there may be a backup server to assume these functions in the event that
-the primary server fails.
+\fBslurmctld\fR is the central management daemon of Slurm. It monitors 
+all other Slurm daemons and resources, accepts work (jobs), and allocates 
+resources to those jobs. Given the critical functionality of \fBslurmctld\fR, 
+there may be a backup server to assume these functions in the event that 
+the primary server fails. 
 .TP
 OPTIONS
 .TP
 \fB\-c\fR
-Clear all previous \fBslurmctld\fR state from its last checkpoint.
-If not specified, previously running jobs will be preserved along
-with the state of DOWN, DRAINED and DRAINING nodes and the associated
+Clear all previous \fBslurmctld\fR state from its last checkpoint. 
+If not specified, previously running jobs will be preserved along 
+with the state of DOWN, DRAINED and DRAINING nodes and the associated 
 reason field for those nodes.
 .TP
 \fB\-D\fR
-Debug mode. Execute \fBslurmctld\fR in the foreground with logging to stdout.
+Debug mode. Execute \fBslurmctld\fR in the foreground with logging to stdout. 
 .TP
 \fB\-f <file>\fR
 Read configuration from the specified file. See \fBNOTES\fR below.

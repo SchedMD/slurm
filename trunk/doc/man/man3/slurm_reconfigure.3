@@ -1,286 +1,286 @@
 .TH "Slurm API" "3" "May 2009" "Morris Jette" "Slurm administrative calls"
 .SH "NAME"
-slurm_create_partition, slurm_create_reservation,
-slurm_delete_partition, slurm_delete_reservation,
+slurm_create_partition, slurm_create_reservation, 
+slurm_delete_partition, slurm_delete_reservation, 
 slurm_init_part_desc_msg, slurm_init_resv_desc_msg,
-slurm_reconfigure, slurm_shutdown, slurm_takeover, slurm_update_job,
+slurm_reconfigure, slurm_shutdown, slurm_takeover, slurm_update_job, 
 ,slurm_init_update_node_msg slurm_update_node, slurm_update_partition,
 slurm_update_reservation
-\- Slurm administrative functions
+\- Slurm administrative functions 
 .SH "SYNTAX"
-.LP
+.LP 
 #include <slurm/slurm.h>
 .LP
-int \fBslurm_create_partition\fR (
-.br
-	update_part_msg_t *\fIupdate_part_msg_ptr\fP
-.br
+int \fBslurm_create_partition\fR ( 
+.br 
+	update_part_msg_t *\fIupdate_part_msg_ptr\fP 
+.br 
 );
 .LP
-int \fBslurm_create_reservation\fR (
-.br
-	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP
-.br
+int \fBslurm_create_reservation\fR ( 
+.br 
+	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP 
+.br 
 );
 .LP
-int \fBslurm_delete_partition\fR (
-.br
-	delete_part_msg_t *\fIdelete_part_msg_ptr\fP
-.br
+int \fBslurm_delete_partition\fR ( 
+.br 
+	delete_part_msg_t *\fIdelete_part_msg_ptr\fP 
+.br 
 );
 .LP
-int \fBslurm_delete_reservation\fR (
-.br
-	reservation_name_msg_t *\fIdelete_resv_msg_ptr\fP
-.br
+int \fBslurm_delete_reservation\fR ( 
+.br 
+	reservation_name_msg_t *\fIdelete_resv_msg_ptr\fP 
+.br 
 );
 .LP
 void \fBslurm_init_part_desc_msg\fR (
 .br
-	update_part_msg_t *\fIupdate_part_msg_ptr\fP
-.br
+	update_part_msg_t *\fIupdate_part_msg_ptr\fP 
+.br 
 );
 .LP
 void \fBslurm_init_resv_desc_msg\fR (
 .br
-	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP
-.br
+	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP 
+.br 
 );
-.LP
+.LP 
 int \fBslurm_reconfigure\fR ( );
-.LP
-int \fBslurm_shutdown\fR (
+.LP 
+int \fBslurm_shutdown\fR ( 
 .br
 	uint16_t \fIshutdown_options\fP
 .br
 );
-.LP
+.LP 
 int \fBslurm_takeover\fR ( );
 .LP
 int \fBslurm_update_job\fR (
-.br
+.br 
 	job_desc_msg_t *\fIupdate_job_msg_ptr\fP
-.br
+.br 
 );
 .LP
 void \fBslurm_init_update_node_msg\fR(
 .br
-	update_node_msg_t *\fIupdate_node_msg_ptr\fP
-.br
+	update_node_msg_t *\fIupdate_node_msg_ptr\fP 
+.br 
 );
 .LP
-int \fBslurm_update_node\fR (
-.br
-	update_node_msg_t *\fIupdate_node_msg_ptr\fP
-.br
+int \fBslurm_update_node\fR ( 
+.br 
+	update_node_msg_t *\fIupdate_node_msg_ptr\fP 
+.br 
 );
 .LP
-int \fBslurm_update_partition\fR (
-.br
-	update_part_msg_t *\fIupdate_part_msg_ptr\fP
-.br
+int \fBslurm_update_partition\fR ( 
+.br 
+	update_part_msg_t *\fIupdate_part_msg_ptr\fP 
+.br 
 );
 .LP
-int \fBslurm_update_reservation\fR (
-.br
-	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP
-.br
+int \fBslurm_update_reservation\fR ( 
+.br 
+	reserve_request_msg_t *\fIupdate_resv_msg_ptr\fP 
+.br 
 );
 .SH "ARGUMENTS"
-.LP
-.TP
+.LP 
+.TP 
 \fIshutdown_options\fP
 0: all slurm daemons are shutdown
 .br
 1: slurmctld generates a core file
 .br
 2: only the slurmctld is shutdown (no core file)
-.TP
+.TP 
 \fIdelete_part_msg_ptr\fP
-Specifies the pointer to a partition delete request specification.
-See slurm.h for full details on the data structure's contents.
-.TP
+Specifies the pointer to a partition delete request specification. 
+See slurm.h for full details on the data structure's contents. 
+.TP 
 \fIdelete_resv_msg_ptr\fP
-Specifies the pointer to a reservation delete request specification.
-See slurm.h for full details on the data structure's contents.
+Specifies the pointer to a reservation delete request specification. 
+See slurm.h for full details on the data structure's contents. 
 .TP
 \fIupdate_job_msg_ptr\fP
-Specifies the pointer to a job update request specification. See slurm.h
-for full details on the data structure's contents.
-.TP
+Specifies the pointer to a job update request specification. See slurm.h 
+for full details on the data structure's contents. 
+.TP 
 \fIupdate_node_msg_ptr\fP
-Specifies the pointer to a node update request specification. See slurm.h
-for full details on the data structure's contents.
-.TP
+Specifies the pointer to a node update request specification. See slurm.h 
+for full details on the data structure's contents. 
+.TP 
 \fIupdate_part_msg_ptr\fP
-Specifies the pointer to a partition create or update request specification.
-See slurm.h for full details on the data structure's contents.
-.TP
+Specifies the pointer to a partition create or update request specification. 
+See slurm.h for full details on the data structure's contents. 
+.TP 
 \fIupdate_resv_msg_ptr\fP
-Specifies the pointer to a reservation create or update request specification.
-See slurm.h for full details on the data structure's contents.
+Specifies the pointer to a reservation create or update request specification. 
+See slurm.h for full details on the data structure's contents. 
 .SH "DESCRIPTION"
-.LP
-\fBslurm_create_partition\fR Request that a new partition be created.
-Initialize the data structure using the \fBslurm_init_part_desc_msg\fR
+.LP 
+\fBslurm_create_partition\fR Request that a new partition be created. 
+Initialize the data structure using the \fBslurm_init_part_desc_msg\fR 
 function prior to setting values of the parameters to be changed.
-Note: \fBslurm_init_part_desc_msg\fR is not equivalent to setting the data
+Note: \fBslurm_init_part_desc_msg\fR is not equivalent to setting the data 
 structure values to zero.  A partition name must be set for the call to
 succeed.
 This function may only be successfully executed by user root.
-.LP
-\fBslurm_create_reservation\fR Request that a new reservation be created.
-Initialize the data structure using the \fBslurm_init_resv_desc_msg\fR
+.LP 
+\fBslurm_create_reservation\fR Request that a new reservation be created. 
+Initialize the data structure using the \fBslurm_init_resv_desc_msg\fR 
 function prior to setting values of the parameters to be changed.
-Note: \fBslurm_init_resv_desc_msg\fR is not equivalent to setting the data
-structure values to zero.  The reservation's time limits, user or
+Note: \fBslurm_init_resv_desc_msg\fR is not equivalent to setting the data 
+structure values to zero.  The reservation's time limits, user or 
 account restrictions, and node names or a node count must be specified for
 the call to succeed.
 This function may only be successfully executed by user root.
-.LP
-\fBslurm_delete_partition\fR Request that the specified partition be deleted.
-All jobs associated with the identified partition will be terminated and
+.LP 
+\fBslurm_delete_partition\fR Request that the specified partition be deleted. 
+All jobs associated with the identified partition will be terminated and 
 purged.  This function may only be successfully executed by user root.
-.LP
-\fBslurm_delete_reservation\fR Request that the specified reservation be
+.LP 
+\fBslurm_delete_reservation\fR Request that the specified reservation be 
 deleted. This function may only be successfully executed by user root.
-.LP
-\fBslurm_init_part_desc_msg\fR Initialize the contents of a partition
-descriptor with default values. Note: \fBslurm_init_part_desc_msg\fR is
-not equivalent to setting the data structure values to zero. Execute
-this function before executing \fBslurm_create_partition\fR or
+.LP 
+\fBslurm_init_part_desc_msg\fR Initialize the contents of a partition 
+descriptor with default values. Note: \fBslurm_init_part_desc_msg\fR is 
+not equivalent to setting the data structure values to zero. Execute 
+this function before executing \fBslurm_create_partition\fR or 
 \fBslurm_update_partition\fR.
-.LP
-\fBslurm_init_resv_desc_msg\fR Initialize the contents of a reservation
-descriptor with default values. Note: \fBslurm_init_resv_desc_msg\fR is
-not equivalent to setting the data structure values to zero. Execute this
-function before executing \fBslurm_create_reservation\fR or
+.LP 
+\fBslurm_init_resv_desc_msg\fR Initialize the contents of a reservation 
+descriptor with default values. Note: \fBslurm_init_resv_desc_msg\fR is 
+not equivalent to setting the data structure values to zero. Execute this 
+function before executing \fBslurm_create_reservation\fR or 
 \fBslurm_update_reservation\fR.
-.LP
-\fBslurm_reconfigure\fR Request that the Slurm controller re\-read its
-configuration file. The new configuration parameters take effect
+.LP 
+\fBslurm_reconfigure\fR Request that the Slurm controller re\-read its 
+configuration file. The new configuration parameters take effect 
 immediately. This function may only be successfully executed by user root.
-.LP
-\fBslurm_shutdown\fR Request that the Slurm controller terminate. This
+.LP 
+\fBslurm_shutdown\fR Request that the Slurm controller terminate. This 
 function may only be successfully executed by user root.
-.LP
-\fBslurm_takeover\fR Request that the Slurm primary controller shutdown
+.LP 
+\fBslurm_takeover\fR Request that the Slurm primary controller shutdown 
 immediately and the backup controller take over.
 This function may only be successfully executed by user root.
-.LP
-\fBslurm_update_job\fR Request that the configuration of a job be updated. Note
-that most, but not all parameters of a job may be changed by this function.
-Initialize the data structure using the \fBslurm_init_job_desc_msg\fR function
-prior to setting values of the parameters to be changed. Note:
-\fBslurm_init_job_desc_msg\fR is not equivalent to setting the data structure
-values to zero. This function may only be successfully executed by user root.
-Note the job priority of zero represents a job that will not be scheduled.
-Slurm uses the priority one to represent jobs that can not be scheduled until
-additional nodes are returned to service (i.e. not DOWN, DRAINED, or FAILED).
+.LP 
+\fBslurm_update_job\fR Request that the configuration of a job be updated. Note 
+that most, but not all parameters of a job may be changed by this function. 
+Initialize the data structure using the \fBslurm_init_job_desc_msg\fR function 
+prior to setting values of the parameters to be changed. Note: 
+\fBslurm_init_job_desc_msg\fR is not equivalent to setting the data structure 
+values to zero. This function may only be successfully executed by user root. 
+Note the job priority of zero represents a job that will not be scheduled. 
+Slurm uses the priority one to represent jobs that can not be scheduled until 
+additional nodes are returned to service (i.e. not DOWN, DRAINED, or FAILED). 
 This permits lower priority jobs to utilize those resources which are available.
-.LP
-\fBslurm_init_update_node_msg\fR Initialize the contents of an update mpde
-descriptor with default values. Note: \fBslurm_init_update_node_msg\fR is
-not equivalent to setting the data structure values to zero. Execute
+.LP 
+\fBslurm_init_update_node_msg\fR Initialize the contents of an update mpde 
+descriptor with default values. Note: \fBslurm_init_update_node_msg\fR is 
+not equivalent to setting the data structure values to zero. Execute 
 this function before executing \fBslurm_update_node\fR.
-.LP
-\fBslurm_update_node\fR Request that the state of one or more nodes be updated.
-Note that the state of a node (e.g. DRAINING, IDLE, etc.) may be changed, but
-its hardware configuration may not be changed by this function. If the hardware
+.LP 
+\fBslurm_update_node\fR Request that the state of one or more nodes be updated. 
+Note that the state of a node (e.g. DRAINING, IDLE, etc.) may be changed, but 
+its hardware configuration may not be changed by this function. If the hardware 
 configuration of a node changes, update the Slurm configuration file and execute
-the \fBslurm_reconfigure\fR function. This function may only be successfully
-executed by user root. If used by some autonomous program, the state value
-most likely to be used is \fBNODE_STATE_DRAIN\fR or \fBNODE_STATE_FAILING\fR.
-The node state flag \fBNODE_STATE_NO_RESPOND\fR may be specified without
-changing the underlying node state. Note that the node's
-\fBNODE_STATE_NO_RESPOND\fR flag will be cleared as soon as the slurmd
+the \fBslurm_reconfigure\fR function. This function may only be successfully 
+executed by user root. If used by some autonomous program, the state value 
+most likely to be used is \fBNODE_STATE_DRAIN\fR or \fBNODE_STATE_FAILING\fR. 
+The node state flag \fBNODE_STATE_NO_RESPOND\fR may be specified without 
+changing the underlying node state. Note that the node's 
+\fBNODE_STATE_NO_RESPOND\fR flag will be cleared as soon as the slurmd 
 daemon on that node communicates with the slurmctld daemon.
-Likewise the state \fBNODE_STATE_DOWN\fR indicates that the slurmd daemon
-is not responding (and has not responded for an interval at least as long
-as the \fBSlurmdTimeout\fR configuration parameter). The node will leave the
+Likewise the state \fBNODE_STATE_DOWN\fR indicates that the slurmd daemon 
+is not responding (and has not responded for an interval at least as long 
+as the \fBSlurmdTimeout\fR configuration parameter). The node will leave the 
 \fBNODE_STATE_DOWN\fR state as soon as  the slurmd daemon communicates.
-.LP
-\fBslurm_update_partition\fR Request that the configuration of a
-partition be updated.  Note that most, but not all parameters of a
-partition may be changed by this function. Initialize the data
-structure using the \fBslurm_init_part_desc_msg\fR function prior
-to setting values of the parameters to be changed. Note:
-\fBslurm_init_part_desc_msg\fR is not equivalent to setting the
-data structure values to zero. This function may only be
+.LP 
+\fBslurm_update_partition\fR Request that the configuration of a 
+partition be updated.  Note that most, but not all parameters of a 
+partition may be changed by this function. Initialize the data 
+structure using the \fBslurm_init_part_desc_msg\fR function prior 
+to setting values of the parameters to be changed. Note: 
+\fBslurm_init_part_desc_msg\fR is not equivalent to setting the 
+data structure values to zero. This function may only be 
 successfully executed by user root.
-.LP
-\fBslurm_update_reservation\fR Request that the configuration of a
-reservation be updated.  Initialize the data structure using the
-\fBslurm_init_resv_desc_msg\fR function prior to setting values of
-the parameters to be changed. Note:  \fBslurm_init_resv_desc_msg\fR
-is not equivalent to setting the data structure values to zero. This
+.LP 
+\fBslurm_update_reservation\fR Request that the configuration of a 
+reservation be updated.  Initialize the data structure using the 
+\fBslurm_init_resv_desc_msg\fR function prior to setting values of 
+the parameters to be changed. Note:  \fBslurm_init_resv_desc_msg\fR 
+is not equivalent to setting the data structure values to zero. This 
 function may only be successfully executed by user root.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, \-1 is returned, and the Slurm error
+On success, zero is returned. On error, \-1 is returned, and the Slurm error 
 code is set appropriately.
 .LP
-Exception:  A successful slurm_create_reservation call returns a string
+Exception:  A successful slurm_create_reservation call returns a string 
 containing the name of the reservation, in memory to be freed by the caller.
 A failed call returns NULL and sets the Slurm error code.
 .SH "ERRORS"
 .LP
-\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your 
 code.
 .LP
-\fBESLURM_INVALID_NODE_NAME\fR The requested node name(s) is/are not valid.
+\fBESLURM_INVALID_NODE_NAME\fR The requested node name(s) is/are not valid. 
 .LP
-\fBESLURM_INVALID_NODE_STATE\fR The specified state node state or requested
-node state transition is not valid.
+\fBESLURM_INVALID_NODE_STATE\fR The specified state node state or requested 
+node state transition is not valid. 
 .LP
-\fBESLURM_INVALID_PARTITION_NAME\fR The requested partition name is not valid.
+\fBESLURM_INVALID_PARTITION_NAME\fR The requested partition name is not valid. 
 .LP
 \fBESLURM_INVALID_AUTHTYPE_CHANGE\fR The \fBAuthType\fR parameter can
 not be changed using the \fBslurm_reconfigure\fR function, but all SLURM
-daemons and commands must be restarted. See \fBslurm.conf\fR(5) for more
+daemons and commands must be restarted. See \fBslurm.conf\fR(5) for more 
 information.
 .LP
-\fBESLURM_INVALID_SCHEDTYPE_CHANGE\fR The \fBSchedulerType\fR parameter can
-not be changed using the \fBslurm_reconfigure\fR function, but the
-\fBslurmctld\fR daemon must be restarted. Manual changes to existing job
+\fBESLURM_INVALID_SCHEDTYPE_CHANGE\fR The \fBSchedulerType\fR parameter can 
+not be changed using the \fBslurm_reconfigure\fR function, but the 
+\fBslurmctld\fR daemon must be restarted. Manual changes to existing job 
 parameters may also be required. See \fBslurm.conf\fR(5) for more information.
 .LP
 \fBESLURM_INVALID_SWITCHTYPE_CHANGE\fR The \fBSwitchType\fR parameter can
 not be changed using the \fBslurm_reconfigure\fR function, but all
-SLURM daemons and commands must be restarted. All previously running
+SLURM daemons and commands must be restarted. All previously running 
 jobs will be lost. See \fBslurm.conf\fR(5) for more information.
 .LP
-\fBESLURM_ACCESS_DENIED\fR The requesting user lacks authorization for
-the requested action (e.g. trying to delete or modify another user's job).
+\fBESLURM_ACCESS_DENIED\fR The requesting user lacks authorization for 
+the requested action (e.g. trying to delete or modify another user's job). 
 .LP
-\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with
+\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
 SLURM controller.
 .LP
-\fBESLURM_RESERVATION_ACCESS\fR  Requestor is not authorized to access the
+\fBESLURM_RESERVATION_ACCESS\fR  Requestor is not authorized to access the 
 reservation.
 .LP
-\fBESLURM_RESERVATION_INVALID\fR  Invalid reservation parameter given,
+\fBESLURM_RESERVATION_INVALID\fR  Invalid reservation parameter given, 
 e.g. wrong name given.
 .LP
 \fBESLURM_INVALID_TIME_VALUE\fR  Invalid time value.
 .LP
-\fBESLURM_RESERVATION_BUSY\fR  Reservation is busy, e.g. trying to delete a
+\fBESLURM_RESERVATION_BUSY\fR  Reservation is busy, e.g. trying to delete a 
 reservation while in use.
 .LP
-\fBESLURM_RESERVATION_NOT_USABLE\fR  Reservation not usable, e.g. trying to
+\fBESLURM_RESERVATION_NOT_USABLE\fR  Reservation not usable, e.g. trying to 
 use an expired reservation.
 .SH "EXAMPLE"
-.LP
+.LP 
 #include <stdio.h>
 .br
 #include <slurm/slurm.h>
 .br
 #include <slurm/slurm_errno.h>
-.LP
+.LP 
 int main (int argc, char *argv[])
-.br
+.br 
 {
-.br
+.br 
 	job_desc_msg_t          update_job_msg;
 .br
 	update_node_msg_t       update_node_msg;
@@ -292,105 +292,105 @@ int main (int argc, char *argv[])
 	reserve_request_msg_t   resv_msg;
 .br
 	char                   *resv_name = NULL;
-.LP
+.LP 
 	if (slurm_reconfigure ( )) {
 .br
 		slurm_perror ("slurm_reconfigure error");
-.br
+.br 
 		exit (1);
 .br
 	}
-.LP
+.LP 
 	slurm_init_job_desc_msg( &update_job_msg );
-.br
+.br 
 	update_job_msg.job_id = 1234;
-.br
+.br 
 	update_job_msg time_limit = 200;
-.br
-	if (slurm_update_job (&update_job_msg)) {
+.br 
+	if (slurm_update_job (&update_job_msg)) { 
 .br
 		slurm_perror ("slurm_update_job error");
-.br
+.br 
 		exit (1);
 .br
 	}
-.LP
+.LP 
 	slurm_init_part_desc_msg ( &update_part_msg );
 .br
 	update_part_msg.name = "test.partition";
 .br
 	update_part_msg.state_up = 0;  /* partition down */
-.br
-	if (slurm_create_partition (&update_part_msg)) {
+.br 
+	if (slurm_create_partition (&update_part_msg)) { 
 .br
 		slurm_perror ("slurm_create_partition error");
-.br
+.br 
 		exit (1);
 .br
 	}
-.LP
+.LP 
 	update_part_msg.state_up = 1;  /* partition up */
-.br
-	if (slurm_update_partition (&update_part_msg)) {
+.br 
+	if (slurm_update_partition (&update_part_msg)) { 
 .br
 		slurm_perror ("slurm_update_partition error");
-.br
+.br 
 		exit (1);
 .br
 	}
-.LP
+.LP 
 	delete_part_msg.name = "test.partition";
-.br
-	if (slurm_delete_partition (&delete_part_msg)) {
+.br 
+	if (slurm_delete_partition (&delete_part_msg)) { 
 .br
 		slurm_perror ("slurm_delete_partition error");
-.br
+.br 
 		exit (1);
 .br
 	}
-.LP
+.LP 
 	slurm_init_update_node_msg (&update_node_msg);
 .br
 	update_node_msg.node_names = "lx[10\-12]";
 .br
 	update_node_msg.node_state = NODE_STATE_DRAINING ;
-.br
-	if (slurm_update_node (&update_node_msg)) {
+.br 
+	if (slurm_update_node (&update_node_msg)) { 
 .br
 		slurm_perror ("slurm_update_node error");
-.br
+.br 
 		exit (1);
-.br
+.br 
 	}
-.LP
+.LP 
 	slurm_init_resv_desc_msg ( &resv_msg );
 .br
-	resv_msg.start_time = time(NULL) + 60*60;  /* One hour from now */
+	resv_msg.start_time = time(NULL) + 60*60;  /* One hour from now */ 
 .br
 	resv_msg.duration = 720;  /* 12 hours/720 minutes */
 .br
-	resv_msg.node_cnt = 10;
+	resv_msg.node_cnt = 10; 
 .br
 	resv_msg.accounts = "admin";
-.br
-	resv_name = slurm_create_reservation (&resv_msg);
+.br 
+	resv_name = slurm_create_reservation (&resv_msg); 
 .br
 	if (!resv_name) {
 .br
 		slurm_perror ("slurm_create_reservation error");
-.br
+.br 
 		exit (1);
 .br
 	}
 .br
 	free(resv_name);
-.br
+.br 
 	exit (0);
-.br
+.br 
 }
 
 .SH "NOTE"
-These functions are included in the libslurm library,
+These functions are included in the libslurm library, 
 which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
@@ -412,6 +412,6 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
-.LP
+.LP 
 \fBscontrol\fR(1), \fBslurm_get_errno\fR(3), \fBslurm_init_job_desc_msg\fR(3),
 \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3), \fBslurm.conf\fR(5)

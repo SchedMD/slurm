@@ -234,15 +234,15 @@ the job.</TD>
 </TABLE>
 <P>Users can specify their job's memory requirements one of two ways. The
 <CODE>srun --mem=&lt;num&gt;</CODE> option can be used to specify the jobs
-memory requirement on a per allocated node basis. This option is recommended
-for use with the <CODE>select/linear</CODE> plugin, which allocates
+memory requirement on a per allocated node basis. This option is recommended 
+for use with the <CODE>select/linear</CODE> plugin, which allocates 
 whole nodes to jobs. The
 <CODE>srun --mem-per-cpu=&lt;num&gt;</CODE> option can be used to specify the
 jobs memory requirement on a per allocated CPU basis. This is recommended
-for use with the <CODE>select/cons_res</CODE> plugin which can
+for use with the <CODE>select/cons_res</CODE> plugin which can 
 allocate individual CPUs to jobs.</P>
 
-<P>Default and maximum values for memory on a per node or per CPU basis can
+<P>Default and maximum values for memory on a per node or per CPU basis can 
 be configured by the system administrator using the following
 <CODE>slurm.conf</CODE> options: <CODE>DefMemPerCPU</CODE>,
 <CODE>DefMemPerNode</CODE>, <CODE>MaxMemPerCPU</CODE> and
@@ -254,8 +254,8 @@ the maximum value.
 Enforcement of a jobs memory allocation is performed by setting the "maximum
 data segment size" and the "maximum virtual memory size" system limits to the
 appropriate values before launching the tasks. Enforcement is also managed by
-the accounting plugin, which periodically gathers data about running jobs. Set
-<CODE>JobAcctGather</CODE> and <CODE>JobAcctFrequency</CODE> to
+the accounting plugin, which periodically gathers data about running jobs. Set 
+<CODE>JobAcctGather</CODE> and <CODE>JobAcctFrequency</CODE> to 
 values suitable for your system.</P>
 
 <p class="footer"><a href="#top">top</a></p>

@@ -2,39 +2,39 @@ SLURM Testing Intrastructure
 ----------------------------
 
 The testing infrastructure for SLURM is based on Dejagnu, and consequently on
-expect/tcl.
+expect/tcl.  
 
 Directory Structure
 -------------------
-The entire testing infrastructure is located under the slurm/testsuite
-directory.
+The entire testing infrastructure is located under the slurm/testsuite 
+directory.  
 
-testsuite/config
+testsuite/config 
 	contains the default config files for dejagnu.
 
-testsuite/slurm_unit
-	Has a directory structure that mirrors slurm/src, and
-	contains the unit test cases for them.  For example, the directory
-	slurm_unit/common will contain unit test cases for modules located in
-	src/common.
+testsuite/slurm_unit 
+	Has a directory structure that mirrors slurm/src, and 
+	contains the unit test cases for them.  For example, the directory 
+	slurm_unit/common will contain unit test cases for modules located in 
+	src/common.  
 
 testsuite/slurm*
 	any directory starting with slurm may contain testcases to run.  Dejagnu
-	will find and execute an ".exp" files that are located in the slurm*
+	will find and execute an ".exp" files that are located in the slurm* 
 	directories, and any of it's subdirectories.
 
 
 Testing Scripts
 ---------------
-Drop in a .exp file into a testsuite/slurm[*] directory.  Dejagnu will
+Drop in a .exp file into a testsuite/slurm[*] directory.  Dejagnu will 
 automagically run it when either "make check" or "runtest" are executed.
 By using the functions pass, fail, untested, unresolved, and note to express
 the results of test cases, DejaGNU records these results and prints out
-summaries of all test cases.
+summaries of all test cases. 
 
 Unit Testing
 ------------
-To unit test using our infrastructure,
+To unit test using our infrastructure, 
 
 #include <testsuite/dejagnu.h>
 
@@ -44,12 +44,12 @@ untested( char*, ... )
 unresolved( char*, ... )
 note( char*, ... )
 
-totals()
+totals() 
 
 Note: All of the funtctions, except totals, behave like printf.
 
 There is a runall.exp that will be placed in every unit testing directory,
-that will run all programs that end with "test".  If you have special needs
+that will run all programs that end with "test".  If you have special needs 
 from the launching test script, you must write your own.  If you write your
 own .exp file to launch your scipts, please use names that do not end in
 "test" to avoid strange resluts.

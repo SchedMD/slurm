@@ -96,9 +96,9 @@
   \begin{center}
   Overall Design Goals\\
   \begin{itemize}
-     \item Scalable
+     \item Scalable 
      \item Fault Tolerant
-     \item Simplified
+     \item Simplified 
      \item Administrator Friendly
      \item Secure
   \end{itemize}
@@ -159,15 +159,15 @@
   \slideheading{\slurmd\ Initialization}
   \begin{center}
   \begin{itemize}
-  \item On startup, \slurmd\ will generate a private key  and
+  \item On startup, \slurmd\ will generate a private key  and 
         attempt to contact slurm controller to join the cluster.
-  \item If slurm controller is not up at time of \slurmd\ intialization,
-        \slurmd\ will sleep and listen on a well-defined mongo-port for status
-	requests from controller, or other entity.
+  \item If slurm controller is not up at time of \slurmd\ intialization, 
+        \slurmd\ will sleep and listen on a well-defined mongo-port for status 
+	requests from controller, or other entity. 
   \item On first contact with controller, \slurmd\ will exchange secret key
         by setting flag {\tt REFRESH\_KEY} in the corresponding message.
   \item After private key has been exchanged, \slurmd\ will wait for
-        further work
+        further work 
   \end{itemize}
   \end{center}
 \end{slide}
@@ -177,8 +177,8 @@
   \begin{center}
   \begin{itemize}
   \item For an interactive job, \srun\ will build an allocate request
-        to send to the controller, based upon user options.
-  \item the {\tt MSG\_ALLOCATE\_REQ} message will contain the
+        to send to the controller, based upon user options. 
+  \item the {\tt MSG\_ALLOCATE\_REQ} message will contain the 
         following information:
   \begin{itemize}
     \item immediate or block (flag)
@@ -189,7 +189,7 @@
   \end{itemize}
     optional:
   \begin{itemize}
-    \item requested time limit
+    \item requested time limit 
     \item constraint and requested feature list
   \end{itemize}
   \end{itemize}
@@ -208,7 +208,7 @@
     \item return and error code
     \item node list
     \item credential list (1 per node)
-    \item cpus per node
+    \item cpus per node 
   \end{itemize}
   \item if return code indicates an error, \srun\ will print
         text representation of error code on stderr and exit
@@ -259,13 +259,13 @@
   \slideheading{Interactive Job Initiation: cont'd ... }
   \begin{center}
   \begin{itemize}
-    \item One job run request message is built per node - \srun\
+    \item One job run request message is built per node - \srun\ 
           sends these messages to all nodes using a {\tt mongo\_sendto:}\\
-	  \begin{verbatim} md = mongo_sendto <host>:<mongo_port>, &addr
+	  \begin{verbatim} md = mongo_sendto <host>:<mongo_port>, &addr 
 	  \end{verbatim}
     \item \srun\ then waits for reply messages from all \slurmd 's
           with {\tt mongo\_recvfrom} or {\tt mongo\_select}
-    \item After a timeout, \srun\ sends status update to \slurmctld\
+    \item After a timeout, \srun\ sends status update to \slurmctld\ 
   \end{itemize}
   \end{center}
 \end{slide}
@@ -274,16 +274,16 @@
   \slideheading{Interactive Job Initiation: \slurmd}
   \begin{center}
   \begin{itemize}
-    \item \slurmd\ receives a message from \srun\ and spawns a
+    \item \slurmd\ receives a message from \srun\ and spawns a 
           request thread ({\tt req\_thr})
-    \item {\tt req\_thr} reads message header, sees that the message is
+    \item {\tt req\_thr} reads message header, sees that the message is 
           of type MSG\_JOB\_RUN\_REQUEST and executes the {\tt job\_thr()}
 	  function.
-    \item {\tt job\_thr} unpacks message body, then:
-    \begin{itemize}
+    \item {\tt job\_thr} unpacks message body, then:  
+    \begin{itemize} 
       \item if credential is non-null, decrypt credential to authorize job
       \item null credential: fall through to PAM
-      \item if job and user are authorized, instantiate a task thread for
+      \item if job and user are authorized, instantiate a task thread for 
             each task requested and send MSG\_JOB\_RUN\_REPLY.
     \end{itemize}
  \end{itemize}
@@ -308,7 +308,7 @@
     \item {\tt job\_thr} continues to listen for job control information
           over original connection (signals, cancel, etc.)
     \item {\tt job\_thr} on node 0 of job will monitor connection to
-          \srun\ and will initiate a new \srun\ on local node if
+          \srun\ and will initiate a new \srun\ on local node if 
 	  necessary.
   \end{itemize}
   \end{center}
@@ -335,7 +335,7 @@
   \begin{center}
   \begin{itemize}
     \item a batch submission consists of a script that will be invoked
-          on only one node in the allocation
+          on only one node in the allocation 
     \item \srun\ sends MSG\_BATCH\_SUBMIT\_REQ to \slurmctld , which contains
     \begin{itemize}
       \item user info
@@ -384,13 +384,13 @@
     \item \srun\ must query \slurmctld , however, for two reasons:
     \begin{itemize}
       \item \srun\ doesn't know number of cpus for each node
-      \item safer for \srun\ to obtain switch resources from controller
+      \item safer for \srun\ to obtain switch resources from controller 
     \end{itemize}
     \item Therefore, \srun\ will first query \slurmctld\ for details of
           its allocation
     \item \srun\ will then process command line options relative to this
           allocation. If a subset of nodes is specified, \srun\ will need
-	  to requery the controller for switch resources. (We may be
+	  to requery the controller for switch resources. (We may be 
 	  able to get away without doing this $2^{nd}$ query)
   \end{itemize}
   \end{center}
@@ -418,10 +418,10 @@
 %    \item User specifies job name or jobid on command line
 %    \item \srun\ connects to \slurmctld\ and sends a MSG\_JOB\_ATTACH\_REQ:
 %    \begin{itemize}
-%      \item job id
+%      \item job id 
 %      \item job name
 %    \end{itemize}
-%    \item MSG\_JOB\_ATTACH\_REPLY contains similar information as
+%    \item MSG\_JOB\_ATTACH\_REPLY contains similar information as 
 %          MSG\_ALLOCATE\_REPLY
 %    \item \srun\ now has credentials to contact \slurmds\ in job
 %  \end{itemize}

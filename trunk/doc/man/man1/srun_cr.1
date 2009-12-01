@@ -9,7 +9,7 @@ srun_cr \- run parallel jobs with checkpoint/restart support
 .SH DESCRIPTION
 The design of \fBsrun_cr\fR is inspired by \fBmpiexec_cr\fR from MVAPICH2 and
 \fBcr_restart\fR form BLCR.
-It is a wrapper around the \fBsrun\fR command to enable batch job
+It is a wrapper around the \fBsrun\fR command to enable batch job 
 checkpoint/restart support when used with SLURM's \fBcheckpoint/blcr\fR plugin.
 
 .SH "OPTIONS"
@@ -22,12 +22,12 @@ See "man srun" for details.
 After initialization, \fBsrun_cr\fR registers a thread context callback
 function.
 Then it forks a process and executes "cr_run \-\-omit srun" with its arguments.
-\fBcr_run\fR is employed to exclude the \fBsrun\fR process from being dumped
+\fBcr_run\fR is employed to exclude the \fBsrun\fR process from being dumped 
 upon checkpoint.
-All catchable signals except SIGCHLD sent to \fBsrun_cr\fR will be forwarded
+All catchable signals except SIGCHLD sent to \fBsrun_cr\fR will be forwarded 
 to the child \fBsrun\fR process.
 SIGCHLD will be captured to mimic the exit status of \fBsrun\fR when it exits.
-Then \fBsrun_cr\fR loops waiting for termination of tasks being launched
+Then \fBsrun_cr\fR loops waiting for termination of tasks being launched 
 from \fBsrun\fR.
 
 The step launch logic of SLURM is augmented to check if \fBsrun\fR is running
@@ -39,16 +39,16 @@ After launching the tasks, \fBsrun\fR tires to connect to the socket and sends
 the job ID, step ID and the nodes allocated to the step to \fBsrun_cr\fR.
 
 Upon checkpoint, \fRsrun_cr\fR checks to see if the tasks have been launched.
-If not \fRsrun_cr\fR first forwards the checkpoint request to the tasks by
+If not \fRsrun_cr\fR first forwards the checkpoint request to the tasks by 
 calling the SLURM API \fBslurm_checkpoint_tasks()\fR before dumping its process
 context.
 
-Upon restart, \fBsrun_cr\fR checks to see if the tasks have been previously
-launched and checkpointed.
+Upon restart, \fBsrun_cr\fR checks to see if the tasks have been previously 
+launched and checkpointed. 
 If true, the environment variable \fRSLURM_RESTART_DIR\fR is set to the directory
 of the checkpoint image files of the tasks.
-Then \fBsrun\fR is forked and executed again.
-The environment variable will be used by the \fBsrun\fR command to restart
+Then \fBsrun\fR is forked and executed again. 
+The environment variable will be used by the \fBsrun\fR command to restart 
 execution of the tasks from the previous checkpoint.
 
 .SH "COPYING"

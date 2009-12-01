@@ -460,7 +460,7 @@
 \def\footnoterule{\kern-3\p@
   \hrule width .4\columnwidth
   \kern 2.6\p@}                 % The \hrule has default height of .4pt .
-\long\def\@makefntext#1{\noindent
+\long\def\@makefntext#1{\noindent 
 \hbox to .5em{\hss\textsuperscript{\@thefnmark}}#1}  % C. Clifton / GM Oct. 2nd. 2002
 \long\def\@maketntext#1{\noindent
 #1}

@@ -5,10 +5,10 @@
 %     \makeLLNLCover{UCRL}{Title}{Authors}{Journal}{Date}{hShift}{vShift}
 %  and
 %     \makeLLNLBackCover
-%
+%      
 % where
 %
-%  UCRL: The UCRL (6 digit) number (which you probably won't know before the document
+%  UCRL: The UCRL (6 digit) number (which you probably won't know before the document 
 %        is released so just make up a number)
 %  Title: title of the article
 %  Authors: Authors separated by \\
@@ -20,9 +20,9 @@
 % Here is an example:
 %  \makeLLNLCover{123456}{An adaptive numerical method for high-speed reactive flows}{William D. Henshaw\\%
 %   Donald W. Schwendeman}{Journal of Computational Physics}{January 1, 2003}{0in}{0in}
-%
+% 
 % *****************************************************************************************************************
-%
+% 
 \newcommand{\setPageForLLNLCover}[2]{%
 \newlength{\textwidthOld}%
 \setlength{\textwidthOld}{\textwidth}%
@@ -55,7 +55,7 @@
 \newcommand{\makeLLNLCover}[7]{%
 \setPageForLLNLCover{#6}{#7}%
 \thispagestyle{empty}% no number of this page
-\newcommand{\logoWidth}{1.65in}%
+\newcommand{\logoWidth}{1.65in}% 
 \psset{xunit=1.cm,yunit=1.cm,runit=1.cm}%
 \begin{pspicture}(0,0)(17,24.)
 % turn on the grid for placement
@@ -104,7 +104,7 @@ Approved for public release; further dissemination unlimited}}
 \end{pspicture}
 % }
 %
-\clearpage
+\clearpage 
 % -------------- back of front cover -------------------------
 \changetext{.625in}{}{}{}{}
 \thispagestyle{empty}% no number of this page
@@ -149,15 +149,15 @@ Laboratory under Contract No. W-7405-Eng-48.
 \newcommand{\makeLLNLBackCover}{%
 \clearpage
 \setPageForLLNLBackCover
-% jg - suppress printing of essentially blank page here
+% jg - suppress printing of essentially blank page here 
 %\changetext{.625in}{}{}{}{}
 %\thispagestyle{empty}% no number of this page
-\ \
+\ \ 
 %\vfill
 %\begin{center}
 %Approved for public release; further dissemination unlimited
 %\end{center}
-%\clearpage
+%\clearpage 
 %\clearpage
 %\changetext{-.625in}{}{}{}{}
 % ---------------------------------------------------------------------------

@@ -1,16 +1,16 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Mailing Lists</h1>
-<p>We maintain two SLURM mailing lists:</p>
+<p>We maintain two SLURM mailing lists:</p> 
 <ul>
 <li><b>slurm-announce</b> is designated for communications about SLURM releases
 [low traffic].</li>
 <li><b>slurm-dev</b> is designated for communications to SLURM developers
 [high traffic at times].</li>
 </ul>
-<p>To subscribe to either list, send a message to
-<a href="mailto:majordomo@lists.llnl.gov">majordomo@lists.llnl.gov</a> with the body of the
-message containing the word "subscribe" followed by the list name and your e-mail address
+<p>To subscribe to either list, send a message to 
+<a href="mailto:majordomo@lists.llnl.gov">majordomo@lists.llnl.gov</a> with the body of the 
+message containing the word "subscribe" followed by the list name and your e-mail address 
 (if not the sender). For example: <br>
 <i>subscribe slurm-announce bob@yahoo.com</i></p>
 

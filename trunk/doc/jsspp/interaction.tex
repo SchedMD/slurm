@@ -1,24 +1,24 @@
 \section{Scheduling Infrastructure}
 
-Scheduling parallel computers is a very complex matter.
-Several good public domain schedulers exist with the most
-popular being the Maui Scheduler\cite{Jackson2001,Maui2002}.
-The scheduler used at our site, DPCS\cite{DPCS2002}, is quite
-sophisticated and has over 150,000 lines of code.
-We felt no need to address scheduling issues within SLURM, but
-have instead developed a resource manager with a rich set of
-application programming interfaces (APIs) and the flexibility
-to satisfy the needs of others working on scheduling issues.
-SLURM's default scheduler implements First-In First-Out (FIFO).
-An external entity can establish a job's initial priority
+Scheduling parallel computers is a very complex matter.  
+Several good public domain schedulers exist with the most 
+popular being the Maui Scheduler\cite{Jackson2001,Maui2002}. 
+The scheduler used at our site, DPCS\cite{DPCS2002}, is quite 
+sophisticated and has over 150,000 lines of code. 
+We felt no need to address scheduling issues within SLURM, but 
+have instead developed a resource manager with a rich set of 
+application programming interfaces (APIs) and the flexibility 
+to satisfy the needs of others working on scheduling issues.  
+SLURM's default scheduler implements First-In First-Out (FIFO). 
+An external entity can establish a job's initial priority 
 through a plugin.
-An external scheduler may also submit, signal, hold, reorder and
+An external scheduler may also submit, signal, hold, reorder and 
 terminate jobs via the API.
 
 \subsection{Resource Specification}
 
-The \srun\ command and corresponding API have a wide of resource
-specifications available. The \srun\ resource specification options
+The \srun\ command and corresponding API have a wide of resource 
+specifications available. The \srun\ resource specification options 
 are described below.
 
 \subsubsection{Geometry Specification}
@@ -27,64 +27,64 @@ These options describe how many nodes and tasks are needed as
 well as describing the distribution of tasks across the nodes.
 
 \begin{itemize}
-\item {\tt cpus-per-task=<number>}:
-Specifies the number of processors cpus) required for each task
-(or process) to run.
-This may be useful if the job is multithreaded and requires more
-than one cpu per task for optimal performance.
+\item {\tt cpus-per-task=<number>}: 
+Specifies the number of processors cpus) required for each task 
+(or process) to run. 
+This may be useful if the job is multithreaded and requires more 
+than one cpu per task for optimal performance. 
 The default is one cpu per process.
 
-\item {\tt nodes=<number>[-<number>]}:
-Specifies the number of nodes required by this job.
-The node count may be either a specific value or a minimum and maximum
-node count separated by a hyphen.
-The partition's node limits supersede those of the job.
-If a job's node limits are completely outside of the range permitted
-for it's associated partition, the job will be left in a PENDING state.
-The default is to allocate one cpu per process, such that nodes with
+\item {\tt nodes=<number>[-<number>]}: 
+Specifies the number of nodes required by this job. 
+The node count may be either a specific value or a minimum and maximum 
+node count separated by a hyphen. 
+The partition's node limits supersede those of the job. 
+If a job's node limits are completely outside of the range permitted 
+for it's associated partition, the job will be left in a PENDING state. 
+The default is to allocate one cpu per process, such that nodes with 
 one cpu will run one task, nodes with 2 cpus will run two tasks, etc.
-The distribution of processes across nodes may be controlled using
+The distribution of processes across nodes may be controlled using 
 this option along with the {\tt nproc} and {\tt cpus-per-task} options.
 
-\item {\tt nprocs=<number>}:
-Specifies the number of processes to run.
-Specification of the number of processes per node may be achieved
-with the {\tt cpus-per-task} and {\tt nodes} options.
-The default is one process per node unless {\tt cpus-per-task}
+\item {\tt nprocs=<number>}: 
+Specifies the number of processes to run. 
+Specification of the number of processes per node may be achieved 
+with the {\tt cpus-per-task} and {\tt nodes} options. 
+The default is one process per node unless {\tt cpus-per-task} 
 explicitly specifies otherwise.
 
 \end{itemize}
 
 \subsubsection{Constraint Specification}
 
-These options describe what configuration requirements of the nodes
+These options describe what configuration requirements of the nodes 
 which can be used.
 
 \begin{itemize}
 
-\item {\tt constraint=list}:
+\item {\tt constraint=list}: 
 Specify a list of constraints. The list of constraints is
 a comma separated list of features that have been assigned to the
 nodes by the slurm administrator. If no nodes have the requested
 feature, then the job will be rejected.
 
-\item {\tt contiguous=[yes|no]}:
-demand a contiguous range of nodes. The default is "yes".
+\item {\tt contiguous=[yes|no]}: 
+demand a contiguous range of nodes. The default is "yes". 
 
-\item {\tt mem=<number>}:
+\item {\tt mem=<number>}: 
 Specify a minimum amount of real memory per node (in megabytes).
 
-\item {\tt mincpus=<number>}:
+\item {\tt mincpus=<number>}: 
 Specify minimum number of cpus per node.
 
-\item {\tt partition=name}:
-Specifies the partition to be used.
+\item {\tt partition=name}: 
+Specifies the partition to be used. 
 There will be a default partition specified in the SLURM configuration file.
 
-\item {\tt tmp=<number>}:
+\item {\tt tmp=<number>}: 
 Specify a minimum amount of temporary disk space per node (in megabytes).
 
-\item {\tt vmem=<number>}:
+\item {\tt vmem=<number>}: 
 Specify a minimum amount of virtual memory per node (in megabytes).
 
 \end{itemize}
@@ -93,139 +93,139 @@ Specify a minimum amount of virtual memory per node (in megabytes).
 
 \begin{itemize}
 
-\item {\tt batch}:
-Submit in "batch mode."
+\item {\tt batch}: 
+Submit in "batch mode." 
 srun will make a copy of the executable file (a script) and submit therequest for execution when resouces are available.
-srun will terminate after the request has been submitted.
-The executable file will run on the first node allocated to the
+srun will terminate after the request has been submitted. 
+The executable file will run on the first node allocated to the 
 job and must contain srun commands to initiate parallel tasks.
 
-\item {\tt exclude=[filename|node\_list]}:
-Request that a specific list of hosts not be included in the resources
-allocated to this job. The host list will be assumed to be a filename
-if it contains a "/"character. If some nodes are suspect, this option
+\item {\tt exclude=[filename|node\_list]}: 
+Request that a specific list of hosts not be included in the resources 
+allocated to this job. The host list will be assumed to be a filename 
+if it contains a "/"character. If some nodes are suspect, this option 
 may be used to avoid using them.
 
-\item {\tt immediate}:
-Exit if resources are not immediately available.
+\item {\tt immediate}: 
+Exit if resources are not immediately available. 
 By default, the request will block until resources become available.
 
-\item {\tt nodelist=[filename|node\_list]}:
+\item {\tt nodelist=[filename|node\_list]}: 
 Request a specific list of hosts. The job will contain at least
 these hosts. The list may be specified as a comma-separated list of
 hosts, a range of hosts (host[1-5,7,...] for example), or a filename.
 The host list will be assumed to be a filename if it contains a "/"
 character.
 
-\item {\tt overcommit}:
-Overcommit resources.
-Normally the job will not be allocated more than one process per cpu.
+\item {\tt overcommit}: 
+Overcommit resources. 
+Normally the job will not be allocated more than one process per cpu. 
 By specifying this option, you are explicitly allowing more than one process
-per cpu.
+per cpu. 
 
-\item {\tt share}:
-The job can share nodes with other running jobs. This may result in faster job
+\item {\tt share}: 
+The job can share nodes with other running jobs. This may result in faster job 
 initiation and higher system utilization, but lower application performance.
 
-\item {\tt time=<number>}:
-Establish a time limit to terminate the job after the specified number of
-minutes. If the job's time limit exceed's the partition's time limit, the
-job will be left in a PENDING state. The default value is the partition's
-time limit. When the time limit is reached, the job's processes are sent
+\item {\tt time=<number>}: 
+Establish a time limit to terminate the job after the specified number of 
+minutes. If the job's time limit exceed's the partition's time limit, the 
+job will be left in a PENDING state. The default value is the partition's 
+time limit. When the time limit is reached, the job's processes are sent 
 SIGXCPU followed by SIGKILL. The interval between signals is configurable.
 
 \end{itemize}
 
-All parameters may be specified using single letter abbreviations
-("-n" instead of "--nprocs=4").
-Environment variable can also be used to specify many parameters.
-Environment variable will be set to the actual number of nodes and
+All parameters may be specified using single letter abbreviations 
+("-n" instead of "--nprocs=4"). 
+Environment variable can also be used to specify many parameters. 
+Environment variable will be set to the actual number of nodes and 
 processors allocated
-In the event that the node count specification is a range, the
-application could inspect the environment variables to scale the
+In the event that the node count specification is a range, the 
+application could inspect the environment variables to scale the 
 problem appropriately.
-To request four processes with one cpu per task the command line would
+To request four processes with one cpu per task the command line would 
 look like this: {\em srun --nprocs=4 --cpus-per-task=1 hostname}.
-Note that if multiple resource specifications are provided, resources
-will be allocated so as to satisfy the all specifications.
-For example a request with the specification {\tt nodelist=dev[0-1]}
+Note that if multiple resource specifications are provided, resources 
+will be allocated so as to satisfy the all specifications. 
+For example a request with the specification {\tt nodelist=dev[0-1]} 
 and {\tt nodes=4} may be satisfied with nodes {\tt dev[0-3]}.
 
 \subsection{The Maui Scheduler and SLURM}
 
-{\em The integration of the Maui Scheduler with SLURM was
-just beginning at the time this paper was written. Full
+{\em The integration of the Maui Scheduler with SLURM was 
+just beginning at the time this paper was written. Full 
 integration is anticipated by the time of the conference.
-This section will be modified as needed based upon that
+This section will be modified as needed based upon that 
 experience.}
 
-The Maui Scheduler is integrated with SLURM through the
-previously described plugin mechanism.
-The previously described SLURM commands are used for
-all job submissions and interactions.
-When a job is submitted to SLURM, a Maui Scheduler module
-is called to establish its initial priority.
-Another Maui Scheduler module is called at the beginning
-of each SLURM scheduling cycle.
-Maui can use this opportunity to change priorities of
+The Maui Scheduler is integrated with SLURM through the 
+previously described plugin mechanism. 
+The previously described SLURM commands are used for 
+all job submissions and interactions. 
+When a job is submitted to SLURM, a Maui Scheduler module 
+is called to establish its initial priority. 
+Another Maui Scheduler module is called at the beginning 
+of each SLURM scheduling cycle. 
+Maui can use this opportunity to change priorities of 
 pending jobs or take other actions.
 
 \subsection{DPCS and SLURM}
 
-DPCS is a meta-batch system designed for use within a single
-administrative domain (all computers have a common user ID
-space and exist behind a firewall).
-DPCS presents users with a uniform set of commands for a wide
-variety of computers and underlying resource managers (e.g.
-LoadLeveler on IBM SP systems, SLURM on Linux clusters, NQS,
-etc.).
-It was developed in 1991 and has been in production use since
-1992.
-While Globus\cite{Globus2002} has the ability to span administrative
+DPCS is a meta-batch system designed for use within a single 
+administrative domain (all computers have a common user ID 
+space and exist behind a firewall). 
+DPCS presents users with a uniform set of commands for a wide 
+variety of computers and underlying resource managers (e.g. 
+LoadLeveler on IBM SP systems, SLURM on Linux clusters, NQS, 
+etc.). 
+It was developed in 1991 and has been in production use since 
+1992. 
+While Globus\cite{Globus2002} has the ability to span administrative 
 domains, both systems could interface with SLURM in a similar fashion.
 
 Users submit jobs directly to DPCS.
-The job consists of a script and an assortment of constraints.
-Unless specified by constraints, the script can execute on
-a variety of different computers with various architectures
-and resource managers.
-DPCS monitors the state of these computers and performs backfill
-scheduling across the computers with jobs under its management.
-When DPCS decides that resources are available to immediately
-initiate some job of its choice, it takes the following
+The job consists of a script and an assortment of constraints. 
+Unless specified by constraints, the script can execute on 
+a variety of different computers with various architectures 
+and resource managers. 
+DPCS monitors the state of these computers and performs backfill 
+scheduling across the computers with jobs under its management. 
+When DPCS decides that resources are available to immediately 
+initiate some job of its choice, it takes the following 
 actions:
 \begin{itemize}
-\item Transfers the job script and assorted state information to
+\item Transfers the job script and assorted state information to 
 the computer upon which the job is to execute.
 
-\item Allocates resources for the job.
-The resource allocation is performed as user {\em root} and SLURM
-is configured to restrict resource allocations in the relevent
+\item Allocates resources for the job. 
+The resource allocation is performed as user {\em root} and SLURM 
+is configured to restrict resource allocations in the relevent 
 partitions to user {\em root}.
 This prevents user resource allocations to that partition
-except through DPCS, which has complete control over job
+except through DPCS, which has complete control over job 
 scheduling there.
-The allocation request specifies the target user ID, job ID
+The allocation request specifies the target user ID, job ID 
 (to match DPCS' own numbering scheme) and specific nodes to use.
 
 \item Spawns the job script as the desired user.
-This script may contain multiple instantiations of \srun\
-to initiate multiple job steps.
+This script may contain multiple instantiations of \srun\ 
+to initiate multiple job steps. 
 
-\item Monitor the job's state and resource consumption.
-This is performed using DPCS daemons on each compute node
-recording CPU time, real memory and virtual memory consumed.
+\item Monitor the job's state and resource consumption. 
+This is performed using DPCS daemons on each compute node 
+recording CPU time, real memory and virtual memory consumed. 
 
-\item Cancel the job as needed when it has reached its time limit.
-The SLURM job is initiated with an infinite time limit.
-DPCS mechanisms are used exclusively to manage job time limits.
+\item Cancel the job as needed when it has reached its time limit. 
+The SLURM job is initiated with an infinite time limit. 
+DPCS mechanisms are used exclusively to manage job time limits. 
 
 \end{itemize}
 
-Much of the SLURM functionality is left unused in the DPCS
-controlled environment.
-It should be noted that DPCS is typically configured to not
-control all partitions.
-A small (debug) partition is typically configured for smaller
-jobs and users may directly use SLURM commands to access that
+Much of the SLURM functionality is left unused in the DPCS 
+controlled environment. 
+It should be noted that DPCS is typically configured to not 
+control all partitions. 
+A small (debug) partition is typically configured for smaller 
+jobs and users may directly use SLURM commands to access that 
 partition.

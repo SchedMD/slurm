@@ -10,7 +10,7 @@
 
 REPORT = jsspp
 
-TEX = ../common/llnlCoverPage.tex $(REPORT).tex
+TEX = ../common/llnlCoverPage.tex $(REPORT).tex 
 
 FIGDIR = ../figures
 FIGS = $(FIGDIR)/allocate-init.eps \
@@ -21,12 +21,12 @@ FIGS = $(FIGDIR)/allocate-init.eps \
        $(FIGDIR)/queued-job-init.eps \
        $(FIGDIR)/slurm-arch.eps
 
-PLOTS = $(FIGDIR)/times.eps
+PLOTS = $(FIGDIR)/times.eps 
 
 BIB = ../common/project.bib references.bib
 
 %.eps: %.dia
-	dia --nosplash -e $@ $<
+	dia --nosplash -e $@ $< 
 %.eps: %.gpl
 	gnuplot $<
 %.eps: %.fig
@@ -36,9 +36,9 @@ BIB = ../common/project.bib references.bib
 %.ps: %.dvi
 	dvips -K -t letter -o $(@F) $(<F)
 %.pdf: %.dvi
-	dvipdf $< $@
+	dvipdf $< $@ 
 
-all: $(REPORT).ps
+all: $(REPORT).ps 
 
 
 $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
@@ -51,6 +51,6 @@ $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 view: $(REPORT).ps
 	ghostview $(REPORT) &
 
-clean:
+clean: 
 	rm -f *~ *% *.dvi *.log *.aux $(REPORT).ps *.blg *.bbl #*.eps #*.gif *.ps
-
+	      

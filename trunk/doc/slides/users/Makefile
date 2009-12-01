@@ -4,7 +4,7 @@ all: slides
 clean:
 	rm -f slides.dvi slides.aux slides.log slides.ps slides.pdf slides.out
 
-slides: slides.tex
+slides: slides.tex 
 	(TEXINPUTS=.:./tex:./figures:../../common::; export TEXINPUTS; \
 	 latex slides; latex slides; \
 	 dvips -K -Ppdf -G0 slides.dvi -o slides.ps; \

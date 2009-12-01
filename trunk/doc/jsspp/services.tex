@@ -2,160 +2,160 @@
 \subsection{Command Line Utilities}
 
 The command line utilities are the user interface to SLURM functionality.
-They offer users access to remote execution and job control. They also
-permit administrators to dynamically change the system configuration.
-These commands all use SLURM APIs which are directly available for
+They offer users access to remote execution and job control. They also 
+permit administrators to dynamically change the system configuration. 
+These commands all use SLURM APIs which are directly available for 
 more sophisticated applications.
 
 \begin{itemize}
-\item {\tt scancel}: Cancel a running or a pending job or job step,
-subject to authentication and authorization. This command can also
-be used to send an arbitrary signal to all processes on all nodes
+\item {\tt scancel}: Cancel a running or a pending job or job step, 
+subject to authentication and authorization. This command can also 
+be used to send an arbitrary signal to all processes on all nodes 
 associated with a job or job step.
 
 \item {\tt scontrol}: Perform privileged administrative commands
-such as draining a node or partition in preparation for maintenance.
+such as draining a node or partition in preparation for maintenance. 
 Many \scontrol\ functions can only be executed by privileged users.
 
 \item {\tt sinfo}: Display a summary of partition and node information.
 A assortment of filtering and output format options are available.
 
-\item {\tt squeue}: Display the queue of running and waiting jobs
-and/or job steps. A wide assortment of filtering, sorting, and output
+\item {\tt squeue}: Display the queue of running and waiting jobs 
+and/or job steps. A wide assortment of filtering, sorting, and output 
 format options are available.
 
 \item {\tt srun}: Allocate resources, submit jobs to the SLURM queue,
-and initiate parallel tasks (job steps).
-Every set of executing parallel tasks has an associated \srun\ which
-initiated it and, if the \srun\ persists, managing it.
-Jobs may be submitted for batch execution, in which case
-\srun\ terminates after job submission.
-Jobs may also be submitted for interactive execution, where \srun\ keeps
-running to shepherd the running job. In this case,
-\srun\ negotiates connections with remote {\tt slurmd}'s
+and initiate parallel tasks (job steps). 
+Every set of executing parallel tasks has an associated \srun\ which 
+initiated it and, if the \srun\ persists, managing it. 
+Jobs may be submitted for batch execution, in which case 
+\srun\ terminates after job submission. 
+Jobs may also be submitted for interactive execution, where \srun\ keeps 
+running to shepherd the running job. In this case, 
+\srun\ negotiates connections with remote {\tt slurmd}'s 
 for job initiation and to
 get stdout and stderr, forward stdin, and respond to signals from the user.
 The \srun\ may also be instructed to allocate a set of resources and
 spawn a shell with access to those resources.
-\srun\ has a total of 13 parameters to control where and when the job
+\srun\ has a total of 13 parameters to control where and when the job 
 is initiated.
 
 \end{itemize}
 
 \subsection{Plugins}
 
-In order to make the use of different infrastructures possible,
-SLURM uses a general purpose plugin mechanism.
-A SLURM plugin is a dynamically linked code object which is
-loaded explicitly at run time by the SLURM libraries.
+In order to make the use of different infrastructures possible, 
+SLURM uses a general purpose plugin mechanism. 
+A SLURM plugin is a dynamically linked code object which is 
+loaded explicitly at run time by the SLURM libraries. 
 A plugin provides a customized implemenation of a well-defined
-API connected to tasks such as authentication, interconnect fabric,
+API connected to tasks such as authentication, interconnect fabric, 
 task scheduling.
-A common set of functions is defined for use by all of the different
-infrastructures of a particular variety.
-For example, the authentication plugin must define functions
-such as:
+A common set of functions is defined for use by all of the different 
+infrastructures of a particular variety. 
+For example, the authentication plugin must define functions 
+such as: 
 {\tt slurm\_auth\_activate} to create a credential,
-{\tt slurm\_auth\_verify} to verify a credential to
-approve or deny authentication,
-{\tt slurm\_auth\_get\_uid} to get the user ID associated with
+{\tt slurm\_auth\_verify} to verify a credential to 
+approve or deny authentication, 
+{\tt slurm\_auth\_get\_uid} to get the user ID associated with 
 a specific credential, etc.
-It also must define the data structure used, a plugin type,
+It also must define the data structure used, a plugin type, 
 a plugin version number.
 The available plugins are defined in the configuration file.
-%When a slurm daemon is initiated, it reads the configuration
-%file to determine which of the available plugins should be used.
-%For example {\em AuthType=auth/authd} says to use the plugin for
-%authd based authentication and {\em PluginDir=/usr/local/lib}
+%When a slurm daemon is initiated, it reads the configuration 
+%file to determine which of the available plugins should be used. 
+%For example {\em AuthType=auth/authd} says to use the plugin for 
+%authd based authentication and {\em PluginDir=/usr/local/lib} 
 %identifies the directory in which to find the plugin.
 
 \subsection{Communications Layer}
 
-SLURM presently uses Berkeley sockets for communications.
-However, we anticipate using the plugin mechanism to easily
-permit use of other communications layers.
-At LLNL we are using an Ethernet for SLURM communications and
-the Quadrics Elan switch exclusively for user applications.
-The SLURM configuration file permits the identification of each
-node's hostname as well as its name to be used for communications.
-%In the case of a control machine known as {\em mcri} to be
-%communicated with using the name {\em emcri} (say to indicate
-%an ethernet communications path), this is represented in the
+SLURM presently uses Berkeley sockets for communications. 
+However, we anticipate using the plugin mechanism to easily 
+permit use of other communications layers. 
+At LLNL we are using an Ethernet for SLURM communications and 
+the Quadrics Elan switch exclusively for user applications. 
+The SLURM configuration file permits the identification of each 
+node's hostname as well as its name to be used for communications. 
+%In the case of a control machine known as {\em mcri} to be 
+%communicated with using the name {\em emcri} (say to indicate 
+%an ethernet communications path), this is represented in the 
 %configuration file as {\em ControlMachine=mcri ControlAddr=emcri}.
-%The name used for communication is the same as the hostname unless
+%The name used for communication is the same as the hostname unless 
 %%otherwise specified.
 
-While SLURM is able to manage 1000 nodes without difficulty using
-sockets and Ethernet, we are reviewing other communication
-mechanisms which may offer improved scalability.
-One possible alternative is STORM\cite{STORM01}.
-STORM uses the cluster interconnect and Network Interface Cards to
-provide high-speed communications including a broadcast capability.
-STORM only supports the Quadrics Elan interconnnect at present,
-but does offer the promise of improved performance and scalability.
+While SLURM is able to manage 1000 nodes without difficulty using 
+sockets and Ethernet, we are reviewing other communication 
+mechanisms which may offer improved scalability. 
+One possible alternative is STORM\cite{STORM01}. 
+STORM uses the cluster interconnect and Network Interface Cards to 
+provide high-speed communications including a broadcast capability. 
+STORM only supports the Quadrics Elan interconnnect at present, 
+but does offer the promise of improved performance and scalability. 
 
 \subsection{Security}
 
-SLURM has a simple security model:
+SLURM has a simple security model: 
 Any user of the cluster may submit parallel jobs to execute and cancel
 his own jobs.  Any user may view SLURM configuration and state
-information.
+information.  
 Only privileged users may modify the SLURM configuration,
-cancel any jobs, or perform other restricted activities.
-Privileged users in SLURM include the users {\em root}
-and {\tt SlurmUser} (as defined in the SLURM configuration file).
-If permission to modify SLURM configuration is
+cancel any jobs, or perform other restricted activities.  
+Privileged users in SLURM include the users {\em root} 
+and {\tt SlurmUser} (as defined in the SLURM configuration file). 
+If permission to modify SLURM configuration is 
 required by others, set-uid programs may be used to grant specific
 permissions to specific users.
 
-We presently support three authentication mechanisms via plugins:
-{\tt authd}\cite{Authd02}, {\tt munged} and {\tt none}.
-A plugin can easily be developed for Kerberos or authentication
+We presently support three authentication mechanisms via plugins: 
+{\tt authd}\cite{Authd02}, {\tt munged} and {\tt none}. 
+A plugin can easily be developed for Kerberos or authentication 
 mechanisms as desired.
 The \munged\ implementation is described below.
-A \munged\ daemon running as user {\em root} on each node confirms the
-identify of the user making the request using the {\tt getpeername}
-function and generates a credential.
-The credential contains a user ID,
-group ID, time-stamp, lifetime, some pseudo-random information, and
-any user supplied information. The \munged\ uses a private key to
+A \munged\ daemon running as user {\em root} on each node confirms the 
+identify of the user making the request using the {\tt getpeername} 
+function and generates a credential. 
+The credential contains a user ID, 
+group ID, time-stamp, lifetime, some pseudo-random information, and 
+any user supplied information. The \munged\ uses a private key to 
 generate a Message Authentication Code (MAC) for the credential.
-The \munged\ then uses a public key to symmetrically encrypt
-the credential including the MAC.
-SLURM daemons and programs transmit this encrypted
-credential with communications. The SLURM daemon receiving the message
-sends the credential to \munged\ on that node.
-The \munged\ decrypts the credential using its private key, validates it
-and returns the user ID and group ID of the user originating the
+The \munged\ then uses a public key to symmetrically encrypt 
+the credential including the MAC. 
+SLURM daemons and programs transmit this encrypted 
+credential with communications. The SLURM daemon receiving the message 
+sends the credential to \munged\ on that node. 
+The \munged\ decrypts the credential using its private key, validates it 
+and returns the user ID and group ID of the user originating the 
 credential.
-The \munged\ prevents replay of a credential on any single node
+The \munged\ prevents replay of a credential on any single node 
 by recording credentials that have already been authenticated.
-In SLURM's case, the user supplied information includes node
-identification information to prevent a credential from being
+In SLURM's case, the user supplied information includes node 
+identification information to prevent a credential from being 
 used on nodes it is not destined for.
 
-When resources are allocated to a user by the controller, a
-{\em job step credential} is generated by combining the user ID, job ID,
+When resources are allocated to a user by the controller, a 
+{\em job step credential} is generated by combining the user ID, job ID, 
 step ID, the list of resources allocated (nodes), and the credential
-lifetime. This job step credential is encrypted with
-a \slurmctld\ private key. This credential
+lifetime. This job step credential is encrypted with 
+a \slurmctld\ private key. This credential 
 is returned to the requesting agent ({\tt srun}) along with the
-allocation response, and must be forwarded to the remote {\tt slurmd}'s
+allocation response, and must be forwarded to the remote {\tt slurmd}'s 
 upon job step initiation. \slurmd\ decrypts this credential with the
 \slurmctld 's public key to verify that the user may access
-resources on the local node. \slurmd\ also uses this job step credential
-to authenticate standard input, output, and error communication streams.
+resources on the local node. \slurmd\ also uses this job step credential 
+to authenticate standard input, output, and error communication streams. 
 
-%Access to partitions may be restricted via a {\em RootOnly} flag.
-%If this flag is set, job submit or allocation requests to this
-%partition are only accepted if the effective user ID originating
-%the request is a privileged user.
-%The request from such a user may submit a job as any other user.
+%Access to partitions may be restricted via a {\em RootOnly} flag.  
+%If this flag is set, job submit or allocation requests to this 
+%partition are only accepted if the effective user ID originating 
+%the request is a privileged user. 
+%The request from such a user may submit a job as any other user. 
 %This may be used, for example, to provide specific external schedulers
-%with exclusive access to partitions.  Individual users will not be
-%permitted to directly submit jobs to such a partition, which would
-%prevent the external scheduler from effectively managing it.
-%Access to partitions may also be restricted to users who are
+%with exclusive access to partitions.  Individual users will not be 
+%permitted to directly submit jobs to such a partition, which would 
+%prevent the external scheduler from effectively managing it.  
+%Access to partitions may also be restricted to users who are 
 %members of specific Unix groups using a {\em AllowGroups} specification.
 
 \subsection{Job Initiation}

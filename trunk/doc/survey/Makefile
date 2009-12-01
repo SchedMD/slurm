@@ -11,8 +11,8 @@
 REPORT = report
 
 TEX = $(REPORT).tex
-FIGS =
-PLOTS =
+FIGS = 
+PLOTS = 
 BIB = project.bib
 
 %.eps: %.gnuplot %.data
@@ -24,7 +24,7 @@ BIB = project.bib
 %.ps: %.dvi
 	dvips -t letter -o $(@F) $(<F)
 %.pdf: %.dvi
-	dvipdf $< $@
+	dvipdf $< $@ 
 
 all: $(REPORT).ps
 
@@ -38,5 +38,5 @@ $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 view: $(REPORT).ps
 	ghostview $(REPORT) &
 
-clean:
+clean: 
 	rm -f *~ *.dvi *.log *.aux report.ps *.blg *.bbl #*.eps #*.gif
