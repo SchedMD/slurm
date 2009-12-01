@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -89,7 +89,7 @@ static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate);
  * where <application> is a description of the intended application of
  * the plugin (e.g., "checkpoint" for SLURM checkpoint) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load checkpoint plugins if the plugin_type string has a 
+ * only load checkpoint plugins if the plugin_type string has a
  * prefix of "checkpoint/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
@@ -123,9 +123,9 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
 
-extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, 
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 			  struct step_record *step_ptr, uint16_t op,
-			  uint16_t data, char *image_dir, time_t * event_time, 
+			  uint16_t data, char *image_dir, time_t * event_time,
 			  uint32_t *error_code, char **error_msg )
 {
 	int rc = SLURM_SUCCESS;
@@ -192,7 +192,7 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 extern int slurm_ckpt_comp (struct step_record * step_ptr, time_t event_time,
 		uint32_t error_code, char *error_msg)
 {
-/* FIXME: How do we tell when checkpoint completes? 
+/* FIXME: How do we tell when checkpoint completes?
  * Add another RPC from srun to slurmctld?
  * Where is this called from? */
 	struct check_job_info *check_ptr;
@@ -208,7 +208,7 @@ extern int slurm_ckpt_comp (struct step_record * step_ptr, time_t event_time,
 		return ESLURM_ALREADY_DONE;
 
 	if (error_code > check_ptr->error_code) {
-		info("slurm_ckpt_comp for step %u.%u error %u: %s", 
+		info("slurm_ckpt_comp for step %u.%u error %u: %s",
 			step_ptr->job_ptr->job_id, step_ptr->step_id,
 			error_code, error_msg);
 		check_ptr->error_code = error_code;
@@ -228,7 +228,7 @@ extern int slurm_ckpt_comp (struct step_record * step_ptr, time_t event_time,
 	check_ptr->reply_cnt++;
 	check_ptr->time_stamp = now;
 
-	return SLURM_SUCCESS; 
+	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)
@@ -245,9 +245,9 @@ extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 
 extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
-	struct check_job_info *check_ptr = 
+	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
- 
+
 	pack16(check_ptr->disabled, buffer);
 	pack16(check_ptr->reply_cnt, buffer);
 	pack16(check_ptr->wait_time, buffer);
@@ -272,8 +272,8 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack32(&check_ptr->error_code, buffer);
 	safe_unpackstr_xmalloc(&check_ptr->error_msg, &uint32_tmp, buffer);
 	safe_unpack_time(&check_ptr->time_stamp, buffer);
-	
-	return SLURM_SUCCESS; 
+
+	return SLURM_SUCCESS;
 
     unpack_error:
 	xfree(check_ptr->error_msg);
@@ -307,12 +307,12 @@ static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate)
 	srun_exec(step_ptr, argv);
 	check_ptr->time_stamp = time(NULL);
 	check_ptr->wait_time  = wait;
-	info("checkpoint requested for job %u.%u", 
+	info("checkpoint requested for job %u.%u",
 		job_ptr->job_id, step_ptr->step_id);
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, 
+extern int slurm_ckpt_task_comp ( struct step_record * step_ptr,
 				  uint32_t task_id, time_t event_time,
 				  uint32_t error_code, char *error_msg )
 {

@@ -1,5 +1,5 @@
 /***************************************************************************** \
- *  switch_federation.c - Library routines for initiating jobs on IBM 
+ *  switch_federation.c - Library routines for initiating jobs on IBM
  *	Federation
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -75,7 +75,7 @@ static slurm_errtab_t slurm_errtab[] = {
 
 	{ ESTATUS,
 	  "Cannot get adapter status" },
-	{ EADAPTER, 
+	{ EADAPTER,
 	  "Open of adapter failed" },
 	{ ENOADAPTER,
 	  "No adapters found" },
@@ -116,7 +116,7 @@ static slurm_errtab_t slurm_errtab[] = {
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "switch" for SLURM switch) and <method> is a description 
+ * the plugin (e.g., "switch" for SLURM switch) and <method> is a description
  * of how this plugin satisfies that application.  SLURM will only load
  * a switch plugin if the plugin_type string has a prefix of "switch/".
  *
@@ -163,7 +163,7 @@ int switch_p_slurmd_step_init( void )
 
 /*
  * Switch functions for global state save
- * NOTE: Clears current switch state as needed for backup 
+ * NOTE: Clears current switch state as needed for backup
  * controller to repeatedly assume control primary server
  */
 int switch_p_libstate_save ( char * dir_name )
@@ -178,7 +178,7 @@ static int _switch_p_libstate_save ( char * dir_name, bool free_flag )
 	char *file_name;
 	int ret = SLURM_SUCCESS;
 	int state_fd;
-	
+
 	buffer = init_buf(FED_LIBSTATE_LEN);
 	(void)fed_libstate_save(buffer, free_flag);
 	file_name = xstrdup(dir_name);
@@ -209,10 +209,10 @@ static int _switch_p_libstate_save ( char * dir_name, bool free_flag )
 		close(state_fd);
 	}
 	xfree(file_name);
-	
+
 	if(buffer)
 		free_buf(buffer);
-		
+
 	return ret;
 }
 
@@ -289,7 +289,7 @@ int switch_p_libstate_clear(void)
 /*
  * switch state monitoring functions
  */
-/* NOTE:  we assume that once the switch state is cleared, 
+/* NOTE:  we assume that once the switch state is cleared,
  * notification of this will be forwarded to slurmctld.  We do not
  * enforce that in this function.
  */
@@ -303,18 +303,18 @@ int switch_p_clear_node_state(void)
 	ADAPTER_RESOURCES res;
 	char name[] = "sniN";
 	int err;
-	
+
 	for(i = 0; i < FED_MAXADAPTERS; i++) {
 		name[3] = i + ZERO;
 		err = ntbl_adapter_resources(NTBL_VERSION, name, &res);
 		if(err != NTBL_SUCCESS)
 			continue;
 		for(j = 0; j < res.window_count; j++)
-			ntbl_clean_window(NTBL_VERSION, name, 
+			ntbl_clean_window(NTBL_VERSION, name,
 				ALWAYS_KILL, res.window_list[j]);
 		free(res.window_list);
 	}
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -353,7 +353,7 @@ void switch_p_free_node_info(switch_node_info_t **switch_node)
 		fed_free_nodeinfo((fed_nodeinfo_t *)*switch_node, false);
 }
 
-char * switch_p_sprintf_node_info(switch_node_info_t *switch_node, 
+char * switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 		char *buf, size_t size)
 {
 	return fed_print_nodeinfo((fed_nodeinfo_t *)switch_node, buf, size);
@@ -386,13 +386,13 @@ static char *adapter_name_check(char *network)
 	name = strndup(network + pmatch[1].rm_so,
 		       (size_t)(pmatch[1].rm_eo - pmatch[1].rm_so));
 	regfree(&re);
-	
+
 	return name;
 }
 
-int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist, 
-			uint16_t *tasks_per_node, int cyclic_alloc, 
-			char *network) 
+int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
+			uint16_t *tasks_per_node, int cyclic_alloc,
+			char *network)
 {
 	hostlist_t list = NULL;
 	bool sn_all;
@@ -469,12 +469,12 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 	return fed_unpack_jobinfo((fed_jobinfo_t *)switch_job, buffer);
 }
 
-extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key, 
+extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key,
 				void *resulting_data)
 {
 	return fed_get_jobinfo((fed_jobinfo_t *)switch_job, key,
 			       resulting_data);
-} 
+}
 
 static inline int _make_step_comp(switch_jobinfo_t *jobinfo, char *nodelist)
 {
@@ -493,7 +493,7 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
 	return _make_step_comp(jobinfo, nodelist);
 }
 
-extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo, 
+extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
 {
 	return _make_step_comp(jobinfo, nodelist);
@@ -543,7 +543,7 @@ int switch_p_node_init(void)
 	if(!_ntbl_version_ok()) {
 		slurm_seterrno_ret(EVERSION);
 	}
-		
+
 	return SLURM_SUCCESS;
 }
 
@@ -560,7 +560,7 @@ int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
 int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid)
 {
 	pid_t pid;
-	
+
 	pid = getpid();
 	return fed_load_table((fed_jobinfo_t *)jobinfo, uid, pid);
 }
@@ -570,7 +570,7 @@ int switch_p_job_fini (switch_jobinfo_t *jobinfo)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid, 
+int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 				uint32_t job_id, uint32_t step_id)
 {
 	int err;
@@ -579,11 +579,11 @@ int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 	 *  Kill all processes in the job's session
 	 */
 	if(pgid) {
-		debug2("Sending SIGKILL to pgid %lu", 
-			(unsigned long) pgid); 
+		debug2("Sending SIGKILL to pgid %lu",
+			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("Job %u.%u: Bad pid valud %lu", job_id, 
+		debug("Job %u.%u: Bad pid valud %lu", job_id,
 		      step_id, (unsigned long) pgid);
 
 	err = fed_unload_table((fed_jobinfo_t *)jobinfo);
@@ -593,8 +593,8 @@ int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env, 
-			uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
+int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
+			uint32_t nodeid, uint32_t procid, uint32_t nnodes,
 			uint32_t nprocs, uint32_t rank)
 {
 #if 0
@@ -611,7 +611,7 @@ int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
  * switch functions for other purposes
  */
 
-/* 
+/*
  * Linear search through table of errno values and strings,
  * returns NULL on error, string on success.
  */

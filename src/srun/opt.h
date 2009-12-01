@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -82,7 +82,7 @@ extern enum modes mode;
 
 typedef struct srun_options {
 
-	char *progname;		/* argv[0] of this program or 
+	char *progname;		/* argv[0] of this program or
 				 * configuration file if multi_prog */
 	bool multi_prog;	/* multiple programs to execute */
 	char user[MAX_USERNAME];/* local username		*/
@@ -92,14 +92,14 @@ typedef struct srun_options {
 	gid_t egid;		/* effective group --gid=group	*/
 	char *cwd;		/* current working directory	*/
 	bool cwd_set;		/* true if cwd is explicitly set */
-	
+
 	int  nprocs;		/* --nprocs=n,      -n n	*/
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	int32_t max_threads;	/* --threads, -T (threads in srun) */
-	int32_t min_nodes;	/* --nodes=n,       -N n	*/ 
-	int32_t max_nodes;	/* --nodes=x-n,       -N x-n	*/ 
+	int32_t min_nodes;	/* --nodes=n,       -N n	*/
+	int32_t max_nodes;	/* --nodes=x-n,       -N x-n	*/
 	int32_t min_sockets_per_node; /* --sockets-per-node=n      */
 	int32_t min_cores_per_socket; /* --cores-per-socket=n      */
 	int32_t min_threads_per_core; /* --threads-per-core=n      */
@@ -124,7 +124,7 @@ typedef struct srun_options {
 	        distribution;	/* --distribution=, -m dist	*/
         uint32_t plane_size;    /* lllp distribution -> plane_size for
 				 * when -m plane=<# of lllp per
-				 * plane> */      
+				 * plane> */
 	char *cmd_name;		/* name of command to execute	*/
 	char *job_name;		/* --job-name=,     -J name	*/
 	bool job_name_set_cmd;	/* true if job_name set by cmd line option */
@@ -146,7 +146,7 @@ typedef struct srun_options {
 	bool join;		/* --join, 	    -j		*/
 
 	/* no longer need these, they are set globally : 	*/
-	/*int verbose;*/	/* -v, --verbose		*/	
+	/*int verbose;*/	/* -v, --verbose		*/
 	/*int debug;*/		/* -d, --debug			*/
 
 	int immediate;		/* -I, --immediate=secs      	*/
@@ -227,7 +227,7 @@ extern opt_t opt;
 extern int error_exit;		/* exit code for slurm errors */
 extern int immediate_exit;	/* exit code for --imediate option & busy */
 
-/* return whether any constraints were specified by the user 
+/* return whether any constraints were specified by the user
  * (if new constraints are added above, might want to add them to this
  *  macro or move this to a function if it gets a little complicated)
  */
@@ -251,7 +251,7 @@ int initialize_and_process_args(int argc, char *argv[]);
 /* external functions available for SPANK plugins to modify the environment
  * exported to the SLURM Prolog and Epilog programs */
 extern char *spank_get_job_env(const char *name);
-extern int   spank_set_job_env(const char *name, const char *value, 
+extern int   spank_set_job_env(const char *name, const char *value,
 			       int overwrite);
 extern int   spank_unset_job_env(const char *name);
 

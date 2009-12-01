@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  agent.h - data structures and function definitions for parallel 
+ *  agent.h - data structures and function definitions for parallel
  *	background communications
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -8,32 +8,32 @@
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  Derived from dsh written by Jim Garlick <garlick1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -44,18 +44,18 @@
 
 #include "src/slurmctld/slurmctld.h"
 
-#define AGENT_IS_THREAD  	 1	/* set if agent itself a thread of 
+#define AGENT_IS_THREAD  	 1	/* set if agent itself a thread of
 					 * slurmctld, 0 for function call */
 #define AGENT_THREAD_COUNT	10	/* maximum active threads per agent */
 #define COMMAND_TIMEOUT 	30	/* command requeue or error, seconds */
 #define MAX_AGENT_CNT		(MAX_SERVER_THREADS / (AGENT_THREAD_COUNT + 2))
-					/* maximum simultaneous agents, note 
+					/* maximum simultaneous agents, note
 					 *   total thread count is product of
 					 *   MAX_AGENT_CNT and
-					 *   (AGENT_THREAD_COUNT + 2) */ 
+					 *   (AGENT_THREAD_COUNT + 2) */
 
 typedef struct agent_arg {
-	uint32_t	node_count;	/* number of nodes to communicate 
+	uint32_t	node_count;	/* number of nodes to communicate
 					 * with */
 	uint16_t	retry;		/* if set, keep trying */
 	slurm_addr      *addr;          /* if set will send to this
@@ -67,8 +67,8 @@ typedef struct agent_arg {
 } agent_arg_t;
 
 /*
- * agent - party responsible for transmitting an common RPC in parallel 
- *	across a set of nodes. agent_queue_request() if immediate 
+ * agent - party responsible for transmitting an common RPC in parallel
+ *	across a set of nodes. agent_queue_request() if immediate
  *	execution is not essential.
  * IN pointer to agent_arg_t, which is xfree'd (including addr,
  *	hostlist and msg_args) upon completion if AGENT_IS_THREAD is set
@@ -84,11 +84,11 @@ extern void *agent (void *args);
 extern void agent_queue_request(agent_arg_t *agent_arg_ptr);
 
 /*
- * agent_retry - Agent for retrying pending RPCs. One pending request is 
+ * agent_retry - Agent for retrying pending RPCs. One pending request is
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
- * IN mai_too - Send pending email too, note this performed using a 
- *		fork/waitpid, so it can take longer than just creating 
+ * IN mai_too - Send pending email too, note this performed using a
+ *		fork/waitpid, so it can take longer than just creating
  *		a pthread to send RPCs
  * RET count of queued requests remaining
  */
@@ -104,7 +104,7 @@ extern int get_agent_count(void);
  * mail_job_info - Send e-mail notice of job state change
  * IN job_ptr - job identification
  * IN state_type - job transition type, see MAIL_JOB in slurm.h
- */ 
+ */
 extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type);
 
 #endif /* !_AGENT_H */

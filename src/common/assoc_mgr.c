@@ -5,32 +5,32 @@
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -70,18 +70,18 @@ pthread_mutex_t assoc_mgr_file_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t assoc_mgr_wckey_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
-/* 
+/*
  * Comparator used for sorting assocs largest cpu to smallest cpu
- * 
+ *
  * returns: 1: assoc_a > assoc_b  -1: assoc_a < assoc_b
- * 
+ *
  */
 static int _sort_assoc_dec(acct_association_rec_t *assoc_a,
 			   acct_association_rec_t *assoc_b)
 {
 	if (assoc_a->lft > assoc_b->lft)
 		return 1;
-	
+
 	return -1;
 }
 
@@ -107,7 +107,7 @@ static int _addto_used_info(acct_association_rec_t *assoc1,
 	assoc1->grp_used_cpus += assoc2->grp_used_cpus;
 	assoc1->grp_used_nodes += assoc2->grp_used_nodes;
 	assoc1->grp_used_wall += assoc2->grp_used_wall;
-	
+
 	assoc1->used_jobs += assoc2->used_jobs;
 	assoc1->used_submit_jobs += assoc2->used_submit_jobs;
 	assoc1->usage_raw += assoc2->usage_raw;
@@ -122,7 +122,7 @@ static int _clear_used_info(acct_association_rec_t *assoc)
 
 	assoc->grp_used_cpus = 0;
 	assoc->grp_used_nodes = 0;
-	
+
 	assoc->used_jobs  = 0;
 	assoc->used_submit_jobs = 0;
 	/* do not reset usage_raw or grp_used_wall.
@@ -150,18 +150,18 @@ static int _grab_parents_qos(acct_association_rec_t *assoc)
 	parent_assoc = assoc->parent_assoc_ptr;
 
 	if(!parent_assoc || !parent_assoc->qos_list
-	   || !list_count(parent_assoc->qos_list)) 
+	   || !list_count(parent_assoc->qos_list))
 		return SLURM_SUCCESS;
-	
+
 	itr = list_iterator_create(parent_assoc->qos_list);
-	while((qos_char = list_next(itr))) 
+	while((qos_char = list_next(itr)))
 		list_append(assoc->qos_list, xstrdup(qos_char));
 	list_iterator_destroy(itr);
 
 	return SLURM_SUCCESS;
 }
 
-static int _local_update_assoc_qos_list(acct_association_rec_t *assoc, 
+static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 					List new_qos_list)
 {
 	ListIterator new_qos_itr = NULL, curr_qos_itr = NULL;
@@ -172,11 +172,11 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 		error("need both new qos_list and an association to update");
 		return SLURM_ERROR;
 	}
-	
+
 	if(!list_count(new_qos_list)) {
 		_grab_parents_qos(assoc);
 		return SLURM_SUCCESS;
-	}			
+	}
 
 	/* Even though we only use the valid_qos bitstr for things we
 	   need to keep the list around for now since we don't pack the
@@ -184,7 +184,7 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 	*/
 	new_qos_itr = list_iterator_create(new_qos_list);
 	curr_qos_itr = list_iterator_create(assoc->qos_list);
-	
+
 	while((new_qos = list_next(new_qos_itr))) {
 		if(new_qos[0] == '-') {
 			while((curr_qos = list_next(curr_qos_itr))) {
@@ -196,10 +196,10 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 
 			list_iterator_reset(curr_qos_itr);
 		} else if(new_qos[0] == '+') {
-			while((curr_qos = list_next(curr_qos_itr))) 
-				if(!strcmp(curr_qos, new_qos+1)) 
+			while((curr_qos = list_next(curr_qos_itr)))
+				if(!strcmp(curr_qos, new_qos+1))
 					break;
-			
+
 			if(!curr_qos) {
 				list_append(assoc->qos_list,
 					    xstrdup(new_qos+1));
@@ -214,13 +214,13 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 			if(!flushed)
 				list_flush(assoc->qos_list);
 			list_append(assoc->qos_list, xstrdup(new_qos));
-			flushed = 1;			
+			flushed = 1;
 		}
 	}
 	list_iterator_destroy(curr_qos_itr);
 	list_iterator_destroy(new_qos_itr);
 
-	return SLURM_SUCCESS;	
+	return SLURM_SUCCESS;
 }
 
 /* locks should be put in place before calling this function */
@@ -234,7 +234,7 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 		last_acct_parent = NULL;
 		last_parent = NULL;
 	}
-	
+
 	if(!assoc || !assoc_list) {
 		error("you didn't give me an association");
 		return SLURM_ERROR;
@@ -247,11 +247,11 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 		   for.  Then if that isn't panning out look at the
 		   last account parent.  If still we don't have it we
 		   will look for it in the list.  If it isn't there we
-		   will just add it to the parent and call it good 
+		   will just add it to the parent and call it good
 		*/
 		if(last_parent && assoc->parent_id == last_parent->id) {
 			assoc->parent_assoc_ptr = last_parent;
-		} else if(last_acct_parent 
+		} else if(last_acct_parent
 			  && assoc->parent_id == last_acct_parent->id) {
 			assoc->parent_assoc_ptr = last_acct_parent;
 		} else {
@@ -260,7 +260,7 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 			while((assoc2 = list_next(itr))) {
 				if(assoc2->id == assoc->parent_id) {
 					assoc->parent_assoc_ptr = assoc2;
-					if(assoc->user) 
+					if(assoc->user)
 						last_parent = assoc2;
 					else
 						last_acct_parent = assoc2;
@@ -270,31 +270,31 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 			list_iterator_destroy(itr);
 		}
 		if(assoc->parent_assoc_ptr && setup_childern) {
-			if(!assoc->parent_assoc_ptr->childern_list) 
-				assoc->parent_assoc_ptr->childern_list = 
+			if(!assoc->parent_assoc_ptr->childern_list)
+				assoc->parent_assoc_ptr->childern_list =
 					list_create(NULL);
 			list_append(assoc->parent_assoc_ptr->childern_list,
 				    assoc);
-		}	
-			
+		}
+
 		if(assoc == assoc->parent_assoc_ptr) {
 			assoc->parent_assoc_ptr = NULL;
 			error("association %u was pointing to "
 			      "itself as it's parent");
 		}
-	} else 
+	} else
 		assoc_mgr_root_assoc = assoc;
-		
+
 	if(assoc->user) {
 		uid_t pw_uid;
 		if (uid_from_string (assoc->user, &pw_uid) < 0)
 			assoc->uid = (uint32_t)NO_VAL;
 		else
-			assoc->uid = pw_uid;	
+			assoc->uid = pw_uid;
 
 		/* get the qos bitmap here */
 		if(g_qos_count > 0) {
-			if(!assoc->valid_qos 
+			if(!assoc->valid_qos
 			   || (bit_size(assoc->valid_qos) != g_qos_count)) {
 				FREE_NULL_BITMAP(assoc->valid_qos);
 				assoc->valid_qos = bit_alloc(g_qos_count);
@@ -305,13 +305,13 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 						 assoc->qos_list);
 		}
 	} else {
-		assoc->uid = (uint32_t)NO_VAL;	
+		assoc->uid = (uint32_t)NO_VAL;
 	}
 	//log_assoc_rec(assoc);
 
 	return SLURM_SUCCESS;
 }
-	
+
 static int _post_association_list(List assoc_list)
 {
 	acct_association_rec_t *assoc = NULL;
@@ -321,7 +321,7 @@ static int _post_association_list(List assoc_list)
 
 	if(!assoc_list)
 		return SLURM_ERROR;
-	
+
 	itr = list_iterator_create(assoc_list);
 	//START_TIMER;
 	while((assoc = list_next(itr))) {
@@ -340,16 +340,16 @@ static int _post_association_list(List assoc_list)
 			   || !list_count(assoc->childern_list))
 				continue;
 			itr2 = list_iterator_create(assoc->childern_list);
-			while((assoc2 = list_next(itr2))) 
+			while((assoc2 = list_next(itr2)))
 				count += assoc2->shares_raw;
 			list_iterator_reset(itr2);
-			while((assoc2 = list_next(itr2))) 
+			while((assoc2 = list_next(itr2)))
 				assoc2->level_shares = count;
 			list_iterator_destroy(itr2);
-		}	
+		}
 		/* Now normalize the static shares */
 		list_iterator_reset(itr);
-		while((assoc = list_next(itr))) 
+		while((assoc = list_next(itr)))
 			_normalize_assoc_shares(assoc);
 	}
 	list_iterator_destroy(itr);
@@ -423,11 +423,11 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 
 	if(assoc_q.cluster_list)
 		list_destroy(assoc_q.cluster_list);
-	
+
 	if(!assoc_mgr_association_list) {
 		/* create list so we don't keep calling this if there
 		   isn't anything there */
-		assoc_mgr_association_list = 
+		assoc_mgr_association_list =
 			list_create(destroy_acct_association_rec);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
@@ -439,7 +439,7 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 			       "list was given so we are giving a blank list");
 			return SLURM_SUCCESS;
 		}
-	} 
+	}
 
 	_post_association_list(assoc_mgr_association_list);
 
@@ -464,7 +464,7 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 			return SLURM_ERROR;
 		} else {
 			return SLURM_SUCCESS;
-		}		
+		}
 	} else {
 		ListIterator itr = list_iterator_create(assoc_mgr_qos_list);
 		acct_qos_rec_t *qos = NULL;
@@ -474,7 +474,7 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 			if(qos->id > g_qos_count)
 				g_qos_count = qos->id;
 
-			if(qos->priority > g_qos_max_priority) 
+			if(qos->priority > g_qos_max_priority)
 				g_qos_max_priority = qos->priority;
 		}
 		/* Since in the database id's don't start at 1
@@ -486,9 +486,9 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 
 		if(g_qos_max_priority) {
 			list_iterator_reset(itr);
-			
+
 			while((qos = list_next(itr))) {
-				qos->norm_priority = (double)qos->priority 
+				qos->norm_priority = (double)qos->priority
 					/ (double)g_qos_max_priority;
 			}
 		}
@@ -506,7 +506,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 
 	memset(&user_q, 0, sizeof(acct_user_cond_t));
 	user_q.with_coords = 1;
-	
+
 	slurm_mutex_lock(&assoc_mgr_user_lock);
 	if(assoc_mgr_user_list)
 		list_destroy(assoc_mgr_user_list);
@@ -520,11 +520,11 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 			return SLURM_ERROR;
 		} else {
 			return SLURM_SUCCESS;
-		}		
-	} 
+		}
+	}
 
 	_post_user_list(assoc_mgr_user_list);
-	
+
 	slurm_mutex_unlock(&assoc_mgr_user_lock);
 	return SLURM_SUCCESS;
 }
@@ -554,10 +554,10 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 	assoc_mgr_wckey_list =
 		acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
 //	END_TIMER2("get_wckeys");
-	
+
 	if(wckey_q.cluster_list)
 		list_destroy(wckey_q.cluster_list);
-	
+
 	if(!assoc_mgr_wckey_list) {
 		/* create list so we don't keep calling this if there
 		   isn't anything there */
@@ -572,10 +572,10 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 			       "list was given so we are giving a blank list");
 			return SLURM_SUCCESS;
 		}
-	} 
+	}
 
 	_post_wckey_list(assoc_mgr_wckey_list);
-	
+
 	slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 
 	return SLURM_SUCCESS;
@@ -606,39 +606,39 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 	current_assocs = assoc_mgr_association_list;
 
 //	START_TIMER;
-	assoc_mgr_association_list = 
+	assoc_mgr_association_list =
 		acct_storage_g_get_associations(db_conn, uid, &assoc_q);
 //	END_TIMER2("get_associations");
 
 	if(assoc_q.cluster_list)
 		list_destroy(assoc_q.cluster_list);
-	
+
 	if(!assoc_mgr_association_list) {
 		assoc_mgr_association_list = current_assocs;
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
-		
+
 		error("_refresh_assoc_mgr_association_list: "
 		      "no new list given back keeping cached one.");
 		return SLURM_ERROR;
 	}
 
 	_post_association_list(assoc_mgr_association_list);
-	
+
 	if(!current_assocs) {
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 		return SLURM_SUCCESS;
 	}
-	
+
 	curr_itr = list_iterator_create(current_assocs);
 	assoc_mgr_itr = list_iterator_create(assoc_mgr_association_list);
-	
+
 	/* add used limits We only look for the user associations to
 	 * do the parents since a parent may have moved */
 	while((curr_assoc = list_next(curr_itr))) {
 		if(!curr_assoc->user)
 			continue;
 		while((assoc = list_next(assoc_mgr_itr))) {
-			if(assoc->id == curr_assoc->id) 
+			if(assoc->id == curr_assoc->id)
 				break;
 		}
 
@@ -648,12 +648,12 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 			   different than the one we are updating from */
 			assoc = assoc->parent_assoc_ptr;
 		}
-		list_iterator_reset(assoc_mgr_itr);			
+		list_iterator_reset(assoc_mgr_itr);
 	}
-	
+
 	list_iterator_destroy(curr_itr);
 	list_iterator_destroy(assoc_mgr_itr);
-		
+
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
 	if(current_assocs)
@@ -690,7 +690,7 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 }
 
 /* This only gets a new list if available dropping the old one if
- * needed 
+ * needed
  */
 static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 {
@@ -700,7 +700,7 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 
 	memset(&user_q, 0, sizeof(acct_user_cond_t));
 	user_q.with_coords = 1;
-	
+
 	current_users = acct_storage_g_get_users(db_conn, uid, &user_q);
 
 	if(!current_users) {
@@ -712,11 +712,11 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 
 	slurm_mutex_lock(&assoc_mgr_user_lock);
 
-	if(assoc_mgr_user_list) 
+	if(assoc_mgr_user_list)
 		list_destroy(assoc_mgr_user_list);
 
 	assoc_mgr_user_list = current_users;
-	
+
 	slurm_mutex_unlock(&assoc_mgr_user_lock);
 
 	return SLURM_SUCCESS;
@@ -769,9 +769,9 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 
 	if(!checked_prio) {
 		char *prio = slurm_get_priority_type();
-		if(prio && !strcmp(prio, "priority/multifactor")) 
+		if(prio && !strcmp(prio, "priority/multifactor"))
 			setup_childern = 1;
-		
+
 		xfree(prio);
 		checked_prio = 1;
 	}
@@ -781,10 +781,10 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		if(args->remove_assoc_notify)
 			remove_assoc_notify = args->remove_assoc_notify;
 		cache_level = args->cache_level;
-		assoc_mgr_refresh_lists(db_conn, args);	
+		assoc_mgr_refresh_lists(db_conn, args);
 	}
-	
-	if(running_cache) { 
+
+	if(running_cache) {
 		debug4("No need to run assoc_mgr_init, "
 		       "we probably don't have a connection.  "
 		       "If we do use assoc_mgr_refresh_lists instead.");
@@ -799,18 +799,18 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 	/* check if we can't talk to the db yet */
 	if(errno == ESLURM_ACCESS_DENIED)
 		return SLURM_ERROR;
-	
+
 	/* get qos before association since it is used there */
 	if((!assoc_mgr_qos_list) && (cache_level & ASSOC_MGR_CACHE_QOS))
 		if(_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if((!assoc_mgr_association_list)
-	   && (cache_level & ASSOC_MGR_CACHE_ASSOC)) 
+	   && (cache_level & ASSOC_MGR_CACHE_ASSOC))
 		if(_get_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
-		
+
 	if((!assoc_mgr_user_list) && (cache_level & ASSOC_MGR_CACHE_USER))
 		if(_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -835,7 +835,7 @@ extern int assoc_mgr_fini(char *state_save_location)
 	if(state_save_location)
 		dump_assoc_mgr_state(state_save_location);
 
-	if(assoc_mgr_association_list) 
+	if(assoc_mgr_association_list)
 		list_destroy(assoc_mgr_association_list);
 	if(assoc_mgr_qos_list)
 		list_destroy(assoc_mgr_qos_list);
@@ -854,7 +854,7 @@ extern int assoc_mgr_fini(char *state_save_location)
 
 extern int assoc_mgr_get_user_assocs(void *db_conn,
 				     acct_association_rec_t *assoc,
-				     int enforce, 
+				     int enforce,
 				     List assoc_list)
 {
 	ListIterator itr = NULL;
@@ -866,14 +866,14 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	xassert(assoc_list);
 
 	if(!assoc_mgr_association_list) {
-		if(_get_assoc_mgr_association_list(db_conn, enforce) 
+		if(_get_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	}
 
 	if((!assoc_mgr_association_list
 	    || !list_count(assoc_mgr_association_list))
-	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) 
+	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
@@ -900,7 +900,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 }
 
 extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
-				   int enforce, 
+				   int enforce,
 				   acct_association_rec_t **assoc_pptr)
 {
 	ListIterator itr = NULL;
@@ -910,13 +910,13 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	if (assoc_pptr)
 		*assoc_pptr = NULL;
 	if(!assoc_mgr_association_list) {
-		if(_get_assoc_mgr_association_list(db_conn, enforce) 
+		if(_get_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	}
 	if((!assoc_mgr_association_list
 	    || !list_count(assoc_mgr_association_list))
-	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) 
+	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
 
 	if(!assoc->id) {
@@ -936,7 +936,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			memset(&user, 0, sizeof(acct_user_rec_t));
 			user.uid = assoc->uid;
 			if(assoc_mgr_fill_in_user(db_conn, &user,
-						  enforce, NULL) 
+						  enforce, NULL)
 			   == SLURM_ERROR) {
 				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 					error("User %d not found", assoc->uid);
@@ -945,7 +945,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 					debug3("User %d not found", assoc->uid);
 					return SLURM_SUCCESS;
 				}
-			}					
+			}
 			assoc->user = user.name;
 			if(user.default_acct)
 				assoc->acct = user.default_acct;
@@ -962,8 +962,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 					return SLURM_SUCCESS;
 				}
 			}
-		}		
-		
+		}
+
 		if(!assoc->cluster)
 			assoc->cluster = assoc_mgr_cluster_name;
 	}
@@ -991,8 +991,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 				       assoc->uid, found_assoc->uid);
 				continue;
 			}
-			
-			if(found_assoc->acct 
+
+			if(found_assoc->acct
 			   && strcasecmp(assoc->acct, found_assoc->acct)) {
 				debug4("not the right account %s != %s",
 				       assoc->acct, found_assoc->acct);
@@ -1006,10 +1006,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 				debug4("not the right cluster");
 				continue;
 			}
-	
+
 			if(assoc->partition
-			   && (!found_assoc->partition 
-			       || strcasecmp(assoc->partition, 
+			   && (!found_assoc->partition
+			       || strcasecmp(assoc->partition,
 					     found_assoc->partition))) {
 				ret_assoc = found_assoc;
 				debug3("found association for no partition");
@@ -1020,10 +1020,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	if(!ret_assoc) {
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
-		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) 
+		if(enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
@@ -1036,7 +1036,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 
 	if(!assoc->acct)
 		assoc->acct    = ret_assoc->acct;
-	
+
 	if(!assoc->childern_list)
 		assoc->childern_list = ret_assoc->childern_list;
 
@@ -1068,7 +1068,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	if(assoc->parent_acct) {
 		xfree(assoc->parent_acct);
 		assoc->parent_acct       = xstrdup(ret_assoc->parent_acct);
-	} else 
+	} else
 		assoc->parent_acct       = ret_assoc->parent_acct;
 	assoc->parent_assoc_ptr          = ret_assoc->parent_assoc_ptr;
 	assoc->parent_id                 = ret_assoc->parent_id;
@@ -1116,12 +1116,12 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 
 	if(user_pptr)
 		*user_pptr = NULL;
-	if(!assoc_mgr_user_list) 
-		if(_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR) 
+	if(!assoc_mgr_user_list)
+		if(_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if((!assoc_mgr_user_list || !list_count(assoc_mgr_user_list))
-	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) 
+	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&assoc_mgr_user_lock);
@@ -1130,7 +1130,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 		if(user->uid != NO_VAL) {
 			if(user->uid == found_user->uid)
 				break;
-		} else if(user->name 
+		} else if(user->name
 			  && !strcasecmp(user->name, found_user->name))
 			break;
 	}
@@ -1138,13 +1138,13 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 
 	if(!found_user) {
 		slurm_mutex_unlock(&assoc_mgr_user_lock);
-		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) 
+		if(enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
 	}
 
-	debug3("found correct user");	
+	debug3("found correct user");
 	if(user_pptr)
 		*user_pptr = found_user;
 
@@ -1181,27 +1181,27 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 
 	if(qos_pptr)
 		*qos_pptr = NULL;
-	if(!assoc_mgr_qos_list) 
+	if(!assoc_mgr_qos_list)
 		if(_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if((!assoc_mgr_qos_list || !list_count(assoc_mgr_qos_list))
-	   && !(enforce & ACCOUNTING_ENFORCE_QOS)) 
+	   && !(enforce & ACCOUNTING_ENFORCE_QOS))
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((found_qos = list_next(itr))) {
-		if(qos->id == found_qos->id) 
+		if(qos->id == found_qos->id)
 			break;
 		else if(qos->name && !strcasecmp(qos->name, found_qos->name))
 			break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	if(!found_qos) {
 		slurm_mutex_unlock(&assoc_mgr_qos_lock);
-		if(enforce & ACCOUNTING_ENFORCE_QOS) 
+		if(enforce & ACCOUNTING_ENFORCE_QOS)
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
@@ -1239,7 +1239,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
 	qos->max_wall_pj     = found_qos->max_wall_pj;
 
-	if(!qos->name) 
+	if(!qos->name)
 		qos->name = found_qos->name;
 
 	qos->norm_priority = found_qos->norm_priority;
@@ -1263,7 +1263,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 }
 
 extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
-				   int enforce, 
+				   int enforce,
 				   acct_wckey_rec_t **wckey_pptr)
 {
 	ListIterator itr = NULL;
@@ -1277,7 +1277,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			return SLURM_ERROR;
 	}
 	if((!assoc_mgr_wckey_list || !list_count(assoc_mgr_wckey_list))
-	   && !(enforce & ACCOUNTING_ENFORCE_WCKEYS)) 
+	   && !(enforce & ACCOUNTING_ENFORCE_WCKEYS))
 		return SLURM_SUCCESS;
 
 	if(!wckey->id) {
@@ -1298,7 +1298,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			user.uid = wckey->uid;
 			user.name = wckey->user;
 			if(assoc_mgr_fill_in_user(db_conn, &user,
-						  enforce, NULL) 
+						  enforce, NULL)
 			   == SLURM_ERROR) {
 				if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 					error("User %d not found", wckey->uid);
@@ -1325,7 +1325,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 					return SLURM_SUCCESS;
 				}
 			}
-			
+
 		} else if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
 			if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 				error("get_wckey_id: "
@@ -1336,8 +1336,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 				return SLURM_SUCCESS;
 			}
 		}
-			
-		
+
+
 		if(!wckey->cluster)
 			wckey->cluster = assoc_mgr_cluster_name;
 	}
@@ -1364,9 +1364,9 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			} else if(wckey->user && strcasecmp(wckey->user,
 							    found_wckey->user))
 				continue;
-			
+
 			if(wckey->name
-			   && (!found_wckey->name 
+			   && (!found_wckey->name
 			       || strcasecmp(wckey->name, found_wckey->name))) {
 				debug4("not the right name %s != %s",
 				       wckey->name, found_wckey->name);
@@ -1381,9 +1381,9 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 					      "we need one to get a wckey.");
 					continue;
 				}
-				
+
 				if(found_wckey->cluster
-				   && strcasecmp(wckey->cluster, 
+				   && strcasecmp(wckey->cluster,
 						 found_wckey->cluster)) {
 					debug4("not the right cluster");
 					continue;
@@ -1394,10 +1394,10 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 		break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	if(!ret_wckey) {
 		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
-		if(enforce & ACCOUNTING_ENFORCE_WCKEYS) 
+		if(enforce & ACCOUNTING_ENFORCE_WCKEYS)
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
@@ -1410,7 +1410,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 		wckey->cluster = ret_wckey->cluster;
 
 	wckey->id = ret_wckey->id;
-	
+
 	if(!wckey->name)
 		wckey->name = ret_wckey->name;
 
@@ -1429,26 +1429,26 @@ extern acct_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 	ListIterator itr = NULL;
 	acct_user_rec_t * found_user = NULL;
 
-	if(!assoc_mgr_user_list) 
+	if(!assoc_mgr_user_list)
 		if(_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
 			return ACCT_ADMIN_NOTSET;
 
-	if(!assoc_mgr_user_list) 
+	if(!assoc_mgr_user_list)
 		return ACCT_ADMIN_NOTSET;
 
 	slurm_mutex_lock(&assoc_mgr_user_lock);
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while((found_user = list_next(itr))) {
-		if(uid == found_user->uid) 
+		if(uid == found_user->uid)
 			break;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_user_lock);
-		
-	if(found_user) 
+
+	if(found_user)
 		return found_user->admin_level;
-		
-	return ACCT_ADMIN_NOTSET;	
+
+	return ACCT_ADMIN_NOTSET;
 }
 
 extern int assoc_mgr_is_user_acct_coord(void *db_conn,
@@ -1459,21 +1459,21 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	acct_coord_rec_t *acct = NULL;
 	acct_user_rec_t * found_user = NULL;
 
-	if(!assoc_mgr_user_list) 
+	if(!assoc_mgr_user_list)
 		if(_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
 			return ACCT_ADMIN_NOTSET;
 
-	if(!assoc_mgr_user_list) 
+	if(!assoc_mgr_user_list)
 		return ACCT_ADMIN_NOTSET;
 
 	slurm_mutex_lock(&assoc_mgr_user_lock);
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while((found_user = list_next(itr))) {
-		if(uid == found_user->uid) 
+		if(uid == found_user->uid)
 			break;
 	}
 	list_iterator_destroy(itr);
-		
+
 	if(!found_user || !found_user->coord_accts) {
 		slurm_mutex_unlock(&assoc_mgr_user_lock);
 		return 0;
@@ -1484,14 +1484,14 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 			break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	if(acct) {
 		slurm_mutex_unlock(&assoc_mgr_user_lock);
 		return 1;
 	}
 	slurm_mutex_unlock(&assoc_mgr_user_lock);
 
-	return 0;	
+	return 0;
 }
 
 extern List assoc_mgr_get_shares(void *db_conn,
@@ -1514,11 +1514,11 @@ extern List assoc_mgr_get_shares(void *db_conn,
 
 	memset(&user, 0, sizeof(acct_user_rec_t));
 	user.uid = uid;
-	
-	if(user_list && list_count(user_list)) 
+
+	if(user_list && list_count(user_list))
 		user_itr = list_iterator_create(user_list);
 
-	if(acct_list && list_count(acct_list)) 
+	if(acct_list && list_count(acct_list))
 		acct_itr = list_iterator_create(acct_list);
 
 	if (private_data & PRIVATE_DATA_USAGE) {
@@ -1527,13 +1527,13 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		/* Check permissions of the requesting user.
 		 */
 		if((uid == slurm_uid || uid == 0)
-		   || assoc_mgr_get_admin_level(db_conn, uid) 
-		   >= ACCT_ADMIN_OPERATOR) 
-			is_admin = 1;	
+		   || assoc_mgr_get_admin_level(db_conn, uid)
+		   >= ACCT_ADMIN_OPERATOR)
+			is_admin = 1;
 		else {
 			if(assoc_mgr_fill_in_user(
 				   db_conn, &user,
-				   ACCOUNTING_ENFORCE_ASSOCS, NULL) 
+				   ACCOUNTING_ENFORCE_ASSOCS, NULL)
 			   == SLURM_ERROR) {
 				debug3("User %d not found", user.uid);
 				goto end_it;
@@ -1545,7 +1545,7 @@ extern List assoc_mgr_get_shares(void *db_conn,
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
-	while((assoc = list_next(itr))) {		
+	while((assoc = list_next(itr))) {
 		if(user_itr && assoc->user) {
 			while((tmp_char = list_next(user_itr))) {
 				if(!strcasecmp(tmp_char, assoc->user))
@@ -1553,7 +1553,7 @@ extern List assoc_mgr_get_shares(void *db_conn,
 			}
 			list_iterator_reset(user_itr);
 			/* not correct user */
-			if(!tmp_char) 
+			if(!tmp_char)
 				continue;
 		}
 
@@ -1564,7 +1564,7 @@ extern List assoc_mgr_get_shares(void *db_conn,
 			}
 			list_iterator_reset(acct_itr);
 			/* not correct account */
-			if(!tmp_char) 
+			if(!tmp_char)
 				continue;
 		}
 
@@ -1573,10 +1573,10 @@ extern List assoc_mgr_get_shares(void *db_conn,
 				ListIterator itr = NULL;
 				acct_coord_rec_t *coord = NULL;
 
-				if(assoc->user && 
-				   !strcmp(assoc->user, user.name)) 
+				if(assoc->user &&
+				   !strcmp(assoc->user, user.name))
 					goto is_user;
-				
+
 				if(!user.coord_accts) {
 					debug4("This user isn't a coord.");
 					goto bad_user;
@@ -1585,20 +1585,20 @@ extern List assoc_mgr_get_shares(void *db_conn,
 				if(!assoc->acct) {
 					debug("No account name given "
 					      "in association.");
-					goto bad_user;				
+					goto bad_user;
 				}
-				
+
 				itr = list_iterator_create(user.coord_accts);
 				while((coord = list_next(itr))) {
-					if(!strcasecmp(coord->name, 
+					if(!strcasecmp(coord->name,
 						       assoc->acct))
 						break;
 				}
 				list_iterator_destroy(itr);
-				
-				if(coord) 
+
+				if(coord)
 					goto is_user;
-				
+
 			bad_user:
 				continue;
 			}
@@ -1611,9 +1611,9 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		share->assoc_id = assoc->id;
 		share->cluster = xstrdup(assoc->cluster);
 
-		if(assoc == assoc_mgr_root_assoc) 
+		if(assoc == assoc_mgr_root_assoc)
 			share->shares_raw = NO_VAL;
-		else 
+		else
 			share->shares_raw = assoc->shares_raw;
 
 		share->shares_norm = assoc->shares_norm;
@@ -1623,16 +1623,16 @@ extern List assoc_mgr_get_shares(void *db_conn,
 			/* We only calculate user effective usage when
 			 * we need it
 			 */
-			if(assoc->usage_efctv == (long double)NO_VAL) 
+			if(assoc->usage_efctv == (long double)NO_VAL)
 				priority_g_set_assoc_usage(assoc);
-			
+
 			share->name = xstrdup(assoc->user);
 			share->parent = xstrdup(assoc->acct);
 			share->user = 1;
 		} else {
 			share->name = xstrdup(assoc->acct);
 			if(!assoc->parent_acct && assoc->parent_assoc_ptr)
-				share->parent = 
+				share->parent =
 					xstrdup(assoc->parent_assoc_ptr->acct);
 			else
 				share->parent = xstrdup(assoc->parent_acct);
@@ -1642,12 +1642,12 @@ extern List assoc_mgr_get_shares(void *db_conn,
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
-end_it:	
-	if(user_itr) 
+end_it:
+	if(user_itr)
 		list_iterator_destroy(user_itr);
-	if(acct_itr) 
+	if(acct_itr)
 		list_iterator_destroy(acct_itr);
-		
+
 	return ret_list;
 }
 
@@ -1668,9 +1668,9 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 	while((object = list_pop(update->objects))) {
 		if(object->cluster && assoc_mgr_cluster_name) {
 			/* only update the local clusters assocs */
-			if(strcasecmp(object->cluster, 
+			if(strcasecmp(object->cluster,
 				      assoc_mgr_cluster_name)) {
-				destroy_acct_association_rec(object);	
+				destroy_acct_association_rec(object);
 				continue;
 			}
 		}
@@ -1690,18 +1690,18 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 					debug4("not the right user");
 					continue;
 				}
-				
+
 				if(object->acct
-				   && (!rec->acct 
+				   && (!rec->acct
 				       || strcasecmp(object->acct,
 						     rec->acct))) {
 					debug4("not the right account");
 					continue;
 				}
-				
+
 				if(object->partition
-				   && (!rec->partition 
-				       || strcasecmp(object->partition, 
+				   && (!rec->partition
+				       || strcasecmp(object->partition,
 						     rec->partition))) {
 					debug4("not the right partition");
 					continue;
@@ -1716,7 +1716,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 					continue;
 				}
 				break;
-			}			
+			}
 		}
 		//info("%d assoc %u", update->type, object->id);
 		switch(update->type) {
@@ -1731,38 +1731,38 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				if(setup_childern) {
 					/* we need to update the shares on
 					   each sibling and child
-					   association now 
+					   association now
 					*/
 					parents_changed = 1;
 				}
 			}
 
-			if(object->grp_cpu_mins != NO_VAL) 
+			if(object->grp_cpu_mins != NO_VAL)
 				rec->grp_cpu_mins = object->grp_cpu_mins;
-			if(object->grp_cpus != NO_VAL) 
+			if(object->grp_cpus != NO_VAL)
 				rec->grp_cpus = object->grp_cpus;
-			if(object->grp_jobs != NO_VAL) 
+			if(object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
-			if(object->grp_nodes != NO_VAL) 
+			if(object->grp_nodes != NO_VAL)
 				rec->grp_nodes = object->grp_nodes;
-			if(object->grp_submit_jobs != NO_VAL) 
+			if(object->grp_submit_jobs != NO_VAL)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
-			if(object->grp_wall != NO_VAL) 
+			if(object->grp_wall != NO_VAL)
 				rec->grp_wall = object->grp_wall;
-			
-			if(object->max_cpu_mins_pj != NO_VAL) 
+
+			if(object->max_cpu_mins_pj != NO_VAL)
 				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
-			if(object->max_cpus_pj != NO_VAL) 
+			if(object->max_cpus_pj != NO_VAL)
 				rec->max_cpus_pj = object->max_cpus_pj;
-			if(object->max_jobs != NO_VAL) 
+			if(object->max_jobs != NO_VAL)
 				rec->max_jobs = object->max_jobs;
-			if(object->max_nodes_pj != NO_VAL) 
+			if(object->max_nodes_pj != NO_VAL)
 				rec->max_nodes_pj = object->max_nodes_pj;
-			if(object->max_submit_jobs != NO_VAL) 
+			if(object->max_submit_jobs != NO_VAL)
 				rec->max_submit_jobs = object->max_submit_jobs;
-			if(object->max_wall_pj != NO_VAL) 
+			if(object->max_wall_pj != NO_VAL)
 				rec->max_wall_pj = object->max_wall_pj;
-			
+
 
 			if(object->parent_acct) {
 				xfree(rec->parent_acct);
@@ -1790,9 +1790,9 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 					       != g_qos_count)) {
 						FREE_NULL_BITMAP(
 							rec->valid_qos);
-						rec->valid_qos = 
+						rec->valid_qos =
 							bit_alloc(g_qos_count);
-					} 
+					}
 					set_qos_bitstr_from_list(
 						rec->valid_qos, rec->qos_list);
 				}
@@ -1829,7 +1829,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 			if(remove_assoc_notify) {
 				/* since there are some deadlock
 				   issues while inside our lock here
-				   we have to process a notify later 
+				   we have to process a notify later
 				*/
 				if(!remove_list)
 					remove_list = list_create(
@@ -1842,16 +1842,16 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 		default:
 			break;
 		}
-		
-		destroy_acct_association_rec(object);			
+
+		destroy_acct_association_rec(object);
 	}
-		
+
 	/* We have to do this after the entire list is processed since
 	 * we may have added the parent which wasn't in the list before
 	 */
 	if(parents_changed) {
 		int reset = 1;
-		list_sort(assoc_mgr_association_list, 
+		list_sort(assoc_mgr_association_list,
 			  (ListCmpF)_sort_assoc_dec);
 
 		list_iterator_reset(itr);
@@ -1894,10 +1894,10 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 					goto is_user;
 				itr2 = list_iterator_create(
 					object->childern_list);
-				while((rec = list_next(itr2))) 
+				while((rec = list_next(itr2)))
 					count += rec->shares_raw;
 				list_iterator_reset(itr2);
-				while((rec = list_next(itr2))) 
+				while((rec = list_next(itr2)))
 					rec->level_shares = count;
 				list_iterator_destroy(itr2);
 			}
@@ -1932,20 +1932,20 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
-	
+
 	/* This needs to happen outside of the
 	   assoc_mgr_association_lock */
 	if(remove_list) {
 		itr = list_iterator_create(remove_list);
 
-		while((rec = list_next(itr))) 
+		while((rec = list_next(itr)))
 			remove_assoc_notify(rec);
-		
+
 		list_iterator_destroy(itr);
 		list_destroy(remove_list);
 	}
 
-	return rc;	
+	return rc;
 }
 
 extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
@@ -1966,7 +1966,7 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 			/* only update the local clusters assocs */
 			if(strcasecmp(object->cluster,
 				      assoc_mgr_cluster_name)) {
-				destroy_acct_wckey_rec(object);	
+				destroy_acct_wckey_rec(object);
 				continue;
 			}
 		}
@@ -1982,15 +1982,15 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 					debug4("not the right user");
 					continue;
 				}
-				
+
 				if(object->name
-				   && (!rec->name 
+				   && (!rec->name
 				       || strcasecmp(object->name,
 						     rec->name))) {
 					debug4("not the right wckey");
 					continue;
 				}
-				
+
 				/* only check for on the slurmdbd */
 				if(!assoc_mgr_cluster_name && object->cluster
 				   && (!rec->cluster
@@ -2000,7 +2000,7 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 					continue;
 				}
 				break;
-			}			
+			}
 		}
 		//info("%d WCKEY %u", update->type, object->id);
 		switch(update->type) {
@@ -2036,20 +2036,20 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 		default:
 			break;
 		}
-		
-		destroy_acct_wckey_rec(object);			
+
+		destroy_acct_wckey_rec(object);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 
-	return rc;	
+	return rc;
 }
 
 extern int assoc_mgr_update_users(acct_update_object_t *update)
 {
 	acct_user_rec_t * rec = NULL;
 	acct_user_rec_t * object = NULL;
-		
+
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
@@ -2062,7 +2062,7 @@ extern int assoc_mgr_update_users(acct_update_object_t *update)
 	while((object = list_pop(update->objects))) {
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
-			if(!strcasecmp(object->name, rec->name)) 
+			if(!strcasecmp(object->name, rec->name))
 				break;
 		}
 
@@ -2086,7 +2086,7 @@ extern int assoc_mgr_update_users(acct_update_object_t *update)
 				object->default_wckey = NULL;
 			}
 
-			if(object->admin_level != ACCT_ADMIN_NOTSET) 
+			if(object->admin_level != ACCT_ADMIN_NOTSET)
 				rec->admin_level = object->admin_level;
 
 			break;
@@ -2132,13 +2132,13 @@ extern int assoc_mgr_update_users(acct_update_object_t *update)
 		default:
 			break;
 		}
-		
-		destroy_acct_user_rec(object);			
+
+		destroy_acct_user_rec(object);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_user_lock);
 
-	return rc;	
+	return rc;
 }
 
 extern int assoc_mgr_update_qos(acct_update_object_t *update)
@@ -2152,9 +2152,9 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 	int rc = SLURM_SUCCESS;
 	bool resize_qos_bitstr = 0;
 
-	if(!assoc_mgr_qos_list) 
+	if(!assoc_mgr_qos_list)
 		return SLURM_SUCCESS;
-	
+
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((object = list_pop(update->objects))) {
@@ -2176,11 +2176,11 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 /* 			char *tmp = get_qos_complete_str_bitstr( */
 /* 				assoc_mgr_qos_list, */
 /* 				object->preempt_bitstr); */
-			
+
 /* 			info("new qos %s(%d) now preempts %s",  */
 /* 			     object->name, object->id, tmp); */
 /* 			xfree(tmp); */
-			
+
 			/* Since in the database id's don't start at 1
 			   instead of 0 we need to ignore the 0 bit and start
 			   with 1 so increase the count by 1.
@@ -2189,7 +2189,7 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 				resize_qos_bitstr = 1;
 				g_qos_count = object->id+1;
 			}
-			object = NULL;	
+			object = NULL;
 			break;
 		case ACCT_MODIFY_QOS:
 			if(!rec) {
@@ -2197,57 +2197,57 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 				break;
 			}
 
-			if(object->grp_cpu_mins != NO_VAL) 
+			if(object->grp_cpu_mins != NO_VAL)
 				rec->grp_cpu_mins = object->grp_cpu_mins;
-			if(object->grp_cpus != NO_VAL) 
+			if(object->grp_cpus != NO_VAL)
 				rec->grp_cpus = object->grp_cpus;
-			if(object->grp_jobs != NO_VAL) 
+			if(object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
-			if(object->grp_nodes != NO_VAL) 
+			if(object->grp_nodes != NO_VAL)
 				rec->grp_nodes = object->grp_nodes;
-			if(object->grp_submit_jobs != NO_VAL) 
+			if(object->grp_submit_jobs != NO_VAL)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
-			if(object->grp_wall != NO_VAL) 
+			if(object->grp_wall != NO_VAL)
 				rec->grp_wall = object->grp_wall;
-			
-			if(object->max_cpu_mins_pj != NO_VAL) 
+
+			if(object->max_cpu_mins_pj != NO_VAL)
 				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
-			if(object->max_cpus_pj != NO_VAL) 
+			if(object->max_cpus_pj != NO_VAL)
 				rec->max_cpus_pj = object->max_cpus_pj;
-			if(object->max_jobs_pu != NO_VAL) 
+			if(object->max_jobs_pu != NO_VAL)
 				rec->max_jobs_pu = object->max_jobs_pu;
-			if(object->max_nodes_pj != NO_VAL) 
+			if(object->max_nodes_pj != NO_VAL)
 				rec->max_nodes_pj = object->max_nodes_pj;
-			if(object->max_submit_jobs_pu != NO_VAL) 
+			if(object->max_submit_jobs_pu != NO_VAL)
 				rec->max_submit_jobs_pu =
 					object->max_submit_jobs_pu;
-			if(object->max_wall_pj != NO_VAL) 
+			if(object->max_wall_pj != NO_VAL)
 				rec->max_wall_pj = object->max_wall_pj;
-			
+
 			if(object->preempt_bitstr) {
-				if(rec->preempt_bitstr) 
+				if(rec->preempt_bitstr)
 					FREE_NULL_BITMAP(rec->preempt_bitstr);
-				
+
 				rec->preempt_bitstr = object->preempt_bitstr;
 				object->preempt_bitstr = NULL;
 	/* 			char *tmp = get_qos_complete_str_bitstr( */
 /* 					assoc_mgr_qos_list, */
 /* 					rec->preempt_bitstr); */
-				
+
 /* 				info("qos %s(%d) now preempts %s",  */
 /* 				     rec->name, rec->id, tmp); */
 /* 				xfree(tmp); */
 			}
 
-			if(object->priority != NO_VAL) 
+			if(object->priority != NO_VAL)
 				rec->priority = object->priority;
 
-			if(object->usage_factor != (double)NO_VAL) 
+			if(object->usage_factor != (double)NO_VAL)
 				rec->usage_factor = object->usage_factor;
-			
+
 			break;
 		case ACCT_REMOVE_QOS:
-			if(rec) 
+			if(rec)
 				list_delete_item(itr);
 
 			if(!assoc_mgr_association_list)
@@ -2267,12 +2267,12 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 			}
 			list_iterator_destroy(assoc_itr);
 			slurm_mutex_unlock(&assoc_mgr_association_lock);
-			
+
 			break;
 		default:
 			break;
 		}
-		destroy_acct_qos_rec(object);			
+		destroy_acct_qos_rec(object);
 	}
 
 	if(resize_qos_bitstr) {
@@ -2280,10 +2280,10 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 		   qos' */
 		list_iterator_reset(itr);
 		while((object = list_next(itr))) {
-			if(!object->preempt_bitstr) 
+			if(!object->preempt_bitstr)
 				continue;
 
-			object->preempt_bitstr = 
+			object->preempt_bitstr =
 				bit_realloc(object->preempt_bitstr,
 					    g_qos_count);
 		}
@@ -2303,10 +2303,10 @@ extern int assoc_mgr_update_qos(acct_update_object_t *update)
 		}
 	}
 	list_iterator_destroy(itr);
-	
+
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
-	
-	return rc;	
+
+	return rc;
 }
 
 extern int assoc_mgr_validate_assoc_id(void *db_conn,
@@ -2316,20 +2316,20 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	ListIterator itr = NULL;
 	acct_association_rec_t * found_assoc = NULL;
 
-	if(!assoc_mgr_association_list) 
-		if(_get_assoc_mgr_association_list(db_conn, enforce) 
+	if(!assoc_mgr_association_list)
+		if(_get_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if((!assoc_mgr_association_list
 	    || !list_count(assoc_mgr_association_list))
-	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) 
+	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
-	
+
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((found_assoc = list_next(itr))) {
-		if(assoc_id == found_assoc->id) 
+		if(assoc_id == found_assoc->id)
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -2358,7 +2358,7 @@ extern void assoc_mgr_clear_used_info(void)
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 }
 
-extern int dump_assoc_mgr_state(char *state_save_location) 
+extern int dump_assoc_mgr_state(char *state_save_location)
 {
 	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, log_fd;
@@ -2378,41 +2378,41 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_association_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_ASSOCS, buffer);
-		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
+		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
 				       DBD_ADD_ASSOCS, &msg, buffer);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	}
-	
+
 	if(assoc_mgr_user_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
 		slurm_mutex_lock(&assoc_mgr_user_lock);
 		msg.my_list = assoc_mgr_user_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_USERS, buffer);
-		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
+		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
 				       DBD_ADD_USERS, &msg, buffer);
 		slurm_mutex_unlock(&assoc_mgr_user_lock);
 	}
 
-	if(assoc_mgr_qos_list) {		
+	if(assoc_mgr_qos_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
 		slurm_mutex_lock(&assoc_mgr_qos_lock);
 		msg.my_list = assoc_mgr_qos_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_QOS, buffer);
-		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
-				       DBD_ADD_QOS, &msg, buffer);	
+		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
+				       DBD_ADD_QOS, &msg, buffer);
 		slurm_mutex_unlock(&assoc_mgr_qos_lock);
 	}
 
-	if(assoc_mgr_wckey_list) {		
+	if(assoc_mgr_wckey_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
 		slurm_mutex_lock(&assoc_mgr_wckey_lock);
 		msg.my_list = assoc_mgr_wckey_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_WCKEYS, buffer);
-		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
-				       DBD_ADD_WCKEYS, &msg, buffer);	
+		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
+				       DBD_ADD_WCKEYS, &msg, buffer);
 		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 	}
 
@@ -2420,7 +2420,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	reg_file = xstrdup_printf("%s/assoc_mgr_state", state_save_location);
 	old_file = xstrdup_printf("%s.old", reg_file);
 	new_file = xstrdup_printf("%s.new", reg_file);
-	
+
 	slurm_mutex_lock(&assoc_mgr_file_lock);
 	log_fd = creat(new_file, 0600);
 	if (log_fd < 0) {
@@ -2477,10 +2477,10 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		while((assoc = list_next(itr))) {
 			if(!assoc->user)
 				continue;
-			
+
 			pack32(assoc->id, buffer);
 			/* we only care about the main part here so
-			   anything under 1 we are dropping 
+			   anything under 1 we are dropping
 			*/
 			pack64((uint64_t)assoc->usage_raw, buffer);
 			pack32(assoc->grp_used_wall, buffer);
@@ -2492,7 +2492,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	reg_file = xstrdup_printf("%s/assoc_usage", state_save_location);
 	old_file = xstrdup_printf("%s.old", reg_file);
 	new_file = xstrdup_printf("%s.new", reg_file);
-	
+
 	log_fd = creat(new_file, 0600);
 	if (log_fd < 0) {
 		error("Can't save state, create file %s error %m",
@@ -2548,7 +2548,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		while((qos = list_next(itr))) {
 			pack32(qos->id, buffer);
 			/* we only care about the main part here so
-			   anything under 1 we are dropping 
+			   anything under 1 we are dropping
 			*/
 			pack64((uint64_t)qos->usage_raw, buffer);
 			pack32(qos->grp_used_wall, buffer);
@@ -2560,7 +2560,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	reg_file = xstrdup_printf("%s/qos_usage", state_save_location);
 	old_file = xstrdup_printf("%s.old", reg_file);
 	new_file = xstrdup_printf("%s.new", reg_file);
-	
+
 	log_fd = creat(new_file, 0600);
 	if (log_fd < 0) {
 		error("Can't save state, create file %s error %m",
@@ -2600,7 +2600,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	xfree(reg_file);
 	xfree(new_file);
 	slurm_mutex_unlock(&assoc_mgr_file_lock);
-	
+
 	free_buf(buffer);
 	END_TIMER2("dump_assoc_mgr_state");
 	return error_code;
@@ -2640,7 +2640,7 @@ extern int load_assoc_usage(char *state_save_location)
 				if (errno == EINTR)
 					continue;
 				else {
-					error("Read error on %s: %m", 
+					error("Read error on %s: %m",
 					      state_file);
 					break;
 				}
@@ -2669,7 +2669,7 @@ extern int load_assoc_usage(char *state_save_location)
 	}
 
 	safe_unpack_time(&buf_time, buffer);
-	
+
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while (remaining_buf(buffer) > 0) {
@@ -2681,10 +2681,10 @@ extern int load_assoc_usage(char *state_save_location)
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack64(&usage_raw, buffer);
 		safe_unpack32(&grp_used_wall, buffer);
-		while((assoc = list_next(itr))) 
+		while((assoc = list_next(itr)))
 			if(assoc->id == assoc_id)
 				break;
-		
+
 		while(assoc) {
 			assoc->grp_used_wall += grp_used_wall;
 			assoc->usage_raw += (long double)usage_raw;
@@ -2697,7 +2697,7 @@ extern int load_assoc_usage(char *state_save_location)
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
-			
+
 	free_buf(buffer);
 	return SLURM_SUCCESS;
 
@@ -2744,7 +2744,7 @@ extern int load_qos_usage(char *state_save_location)
 				if (errno == EINTR)
 					continue;
 				else {
-					error("Read error on %s: %m", 
+					error("Read error on %s: %m",
 					      state_file);
 					break;
 				}
@@ -2773,7 +2773,7 @@ extern int load_qos_usage(char *state_save_location)
 	}
 
 	safe_unpack_time(&buf_time, buffer);
-	
+
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while (remaining_buf(buffer) > 0) {
@@ -2785,19 +2785,19 @@ extern int load_qos_usage(char *state_save_location)
 		safe_unpack32(&qos_id, buffer);
 		safe_unpack64(&usage_raw, buffer);
 		safe_unpack32(&grp_used_wall, buffer);
-		while((qos = list_next(itr))) 
+		while((qos = list_next(itr)))
 			if(qos->id == qos_id)
 				break;
 		if(qos) {
 			qos->grp_used_wall += grp_used_wall;
 			qos->usage_raw += (long double)usage_raw;
 		}
-			
+
 		list_iterator_reset(itr);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
-			
+
 	free_buf(buffer);
 	return SLURM_SUCCESS;
 
@@ -2822,7 +2822,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	Buf buffer;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
-	
+
 	/* read the file */
 	state_file = xstrdup(state_save_location);
 	xstrcat(state_file, "/assoc_mgr_state"); /* Always ignore .old file */
@@ -2842,7 +2842,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				if (errno == EINTR)
 					continue;
 				else {
-					error("Read error on %s: %m", 
+					error("Read error on %s: %m",
 					      state_file);
 					break;
 				}
@@ -2890,7 +2890,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			assoc_mgr_association_list = msg->my_list;
 			_post_association_list(assoc_mgr_association_list);
 
-			debug("Recovered %u associations", 
+			debug("Recovered %u associations",
 			      list_count(assoc_mgr_association_list));
 			slurm_mutex_unlock(&assoc_mgr_association_lock);
 			msg->my_list = NULL;
@@ -2910,7 +2910,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				list_destroy(assoc_mgr_user_list);
 			assoc_mgr_user_list = msg->my_list;
 			_post_user_list(assoc_mgr_user_list);
-			debug("Recovered %u users", 
+			debug("Recovered %u users",
 			      list_count(assoc_mgr_user_list));
 			slurm_mutex_unlock(&assoc_mgr_user_lock);
 			msg->my_list = NULL;
@@ -2929,11 +2929,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			if(assoc_mgr_qos_list)
 				list_destroy(assoc_mgr_qos_list);
 			assoc_mgr_qos_list = msg->my_list;
-			debug("Recovered %u qos", 
+			debug("Recovered %u qos",
 			      list_count(assoc_mgr_qos_list));
 			slurm_mutex_unlock(&assoc_mgr_qos_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);	
+			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
 			break;
 		case DBD_ADD_WCKEYS:
 			error_code = slurmdbd_unpack_list_msg(
@@ -2948,11 +2948,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			if(assoc_mgr_wckey_list)
 				list_destroy(assoc_mgr_wckey_list);
 			assoc_mgr_wckey_list = msg->my_list;
-			debug("Recovered %u wckeys", 
+			debug("Recovered %u wckeys",
 			      list_count(assoc_mgr_wckey_list));
 			slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);	
+			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
 			break;
 		default:
 			error("unknown type %u given", type);
@@ -2968,7 +2968,7 @@ unpack_error:
 	if(buffer)
 		free_buf(buffer);
 	return SLURM_ERROR;
-} 
+}
 
 extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 {
@@ -2980,7 +2980,7 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 		cache_level = args->cache_level;
 		return SLURM_SUCCESS;
 	}
-	
+
 	if(cache_level & ASSOC_MGR_CACHE_ASSOC) {
 		if(_refresh_assoc_mgr_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
@@ -3001,14 +3001,14 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 
 	running_cache = 0;
 
-	return SLURM_SUCCESS;	
+	return SLURM_SUCCESS;
 }
 
 extern int assoc_mgr_set_missing_uids()
 {
 	uid_t pw_uid;
 	ListIterator itr = NULL;
-	
+
 	if(assoc_mgr_association_list) {
 		acct_association_rec_t *object = NULL;
 		slurm_mutex_lock(&assoc_mgr_association_lock);
@@ -3066,7 +3066,7 @@ extern int assoc_mgr_set_missing_uids()
 		slurm_mutex_unlock(&assoc_mgr_user_lock);
 	}
 
-	return SLURM_SUCCESS;	
+	return SLURM_SUCCESS;
 }
 
 

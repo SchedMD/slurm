@@ -400,21 +400,21 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 @BLUEGENE_LOADED_TRUE@				../wrap_rm_api.h
 
 @BLUEGENE_LOADED_TRUE@select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@BLUEGENE_LOADED_TRUE@select_bluegene_la_LIBADD = ../block_allocator/libbluegene_block_allocator.la 
+@BLUEGENE_LOADED_TRUE@select_bluegene_la_LIBADD = ../block_allocator/libbluegene_block_allocator.la
 
 # MPIRUN dynamic lib.
-@BLUEGENE_LOADED_TRUE@libsched_if64_la_SOURCES = libsched_if64.c 
+@BLUEGENE_LOADED_TRUE@libsched_if64_la_SOURCES = libsched_if64.c
 @BLUEGENE_LOADED_TRUE@libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 @BLUEGENE_LOADED_TRUE@sfree_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 @BLUEGENE_LOADED_TRUE@slurm_prolog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 @BLUEGENE_LOADED_TRUE@slurm_epilog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 @BLUEGENE_LOADED_TRUE@sfree_SOURCES = sfree.c sfree.h opts.c \
 @BLUEGENE_LOADED_TRUE@		../block_allocator/bridge_linker.c \
-@BLUEGENE_LOADED_TRUE@		../block_allocator/bridge_linker.h 
+@BLUEGENE_LOADED_TRUE@		../block_allocator/bridge_linker.h
 
 @BLUEGENE_LOADED_TRUE@slurm_prolog_SOURCES = slurm_prolog.c
 @BLUEGENE_LOADED_TRUE@slurm_epilog_SOURCES = slurm_epilog.c
-@BLUEGENE_LOADED_TRUE@sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) 
+@BLUEGENE_LOADED_TRUE@sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @BLUEGENE_LOADED_TRUE@slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 @BLUEGENE_LOADED_FALSE@EXTRA_select_bluegene_la_SOURCES = select_bluegene.c \

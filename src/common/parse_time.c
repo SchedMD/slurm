@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -118,7 +118,7 @@ static int _get_delta(char *time_str, int *pos, long *delta)
  * hour, minute, second (out): numberic values
  * RET: -1 on error, 0 otherwise
  */
-static int 
+static int
 _get_time(char *time_str, int *pos, int *hour, int *minute, int * second)
 {
 	int hr, min, sec;
@@ -229,9 +229,9 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
 		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
 			goto prob;
 		yr = (yr * 10) + time_str[offset++] - '0';
-		
+
 		offset++; // for the -
-		
+
 		/* get month */
 		mon = time_str[offset++] - '0';
 		if ((time_str[offset] >= '0') && (time_str[offset] <= '9'))
@@ -240,9 +240,9 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
 			offset -= 2;
 			goto prob;
 		}
-		
+
 		offset++; // for the -
-		
+
 		/* get day */
 		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
 			goto prob;
@@ -253,7 +253,7 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
 			offset -= 2;
 			goto prob;
 		}
-		
+
 		*pos = offset - 1;
 		*month = mon - 1;	/* zero origin */
 		*mday  = day;
@@ -261,7 +261,7 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
 					   happy 1900 == "00" */
 		return 0;
 	}
-	
+
 	/* get month */
 	mon = time_str[offset++] - '0';
 	if ((time_str[offset] >= '0') && (time_str[offset] <= '9'))
@@ -317,7 +317,7 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
  *   YYYY-MM-DD[THH:MM[:SS]]
  *
  *   now + count [minutes | hours | days | weeks]
- * 
+ *
  * Invalid input results in message to stderr and return value of zero
  * NOTE: not thread safe
  * NOTE: by default this will look into the future for the next time.
@@ -334,7 +334,7 @@ extern time_t parse_time(char *time_str, int past)
 	time_now_tm = localtime(&time_now);
 
 	for (pos=0; ((time_str[pos] != '\0')&&(time_str[pos] != '\n')); pos++) {
-		if (isblank(time_str[pos]) || (time_str[pos] == '-') 
+		if (isblank(time_str[pos]) || (time_str[pos] == '-')
 		    || (time_str[pos] == 'T'))
 			continue;
 		if (strncasecmp(time_str+pos, "today", 5) == 0) {
@@ -381,14 +381,14 @@ extern time_t parse_time(char *time_str, int past)
 			struct tm *later_tm;
 			for (i=(pos+3); ; i++) {
 				if (time_str[i] == '+') {
-					pos += i; 
+					pos += i;
 					if (_get_delta(time_str, &pos, &delta))
 						goto prob;
 					break;
 				}
 				if (isblank(time_str[i]))
 					continue;
-				if ((time_str[i] == '\0') 
+				if ((time_str[i] == '\0')
 				    || (time_str[i] == '\n')) {
 					pos += (i-1);
 					break;
@@ -416,7 +416,7 @@ extern time_t parse_time(char *time_str, int past)
 				goto prob;
 			continue;
 		}
-		
+
 		if (_get_date(time_str, &pos, &month, &mday, &year))
 			goto prob;
 	}
@@ -429,10 +429,10 @@ extern time_t parse_time(char *time_str, int past)
 		hour = 0;
 		minute = 0;
 	}
-	else if ((hour != -1) && (month == -1)) {	
+	else if ((hour != -1) && (month == -1)) {
 		/* time, no date implies soonest day */
 		if (past || (hour >  time_now_tm->tm_hour)
-		    ||  ((hour == time_now_tm->tm_hour) 
+		    ||  ((hour == time_now_tm->tm_hour)
 			 && (minute > time_now_tm->tm_min))) {
 			/* today */
 			month = time_now_tm->tm_mon;
@@ -456,14 +456,14 @@ extern time_t parse_time(char *time_str, int past)
 				year = time_now_tm->tm_year;
 			}
 		} else if ((month  >  time_now_tm->tm_mon)
-			   ||  ((month == time_now_tm->tm_mon) 
+			   ||  ((month == time_now_tm->tm_mon)
 				&& (mday >  time_now_tm->tm_mday))
-			   ||  ((month == time_now_tm->tm_mon) 
+			   ||  ((month == time_now_tm->tm_mon)
 				&& (mday == time_now_tm->tm_mday)
-				&& (hour >  time_now_tm->tm_hour)) 
-			   ||  ((month == time_now_tm->tm_mon) 
+				&& (hour >  time_now_tm->tm_hour))
+			   ||  ((month == time_now_tm->tm_mon)
 				&& (mday == time_now_tm->tm_mday)
-				&& (hour == time_now_tm->tm_hour) 
+				&& (hour == time_now_tm->tm_hour)
 				&& (minute > time_now_tm->tm_min))) {
 			/* this year */
 			year = time_now_tm->tm_year;
@@ -515,7 +515,7 @@ int main(int argc, char *argv[])
  *
  * IN time - a time stamp
  * OUT string - pointer user defined buffer
- * IN size - length of string buffer, we recommend a size of 32 bytes to 
+ * IN size - length of string buffer, we recommend a size of 32 bytes to
  *	easily support different site-specific formats
  */
 extern void
@@ -533,8 +533,8 @@ slurm_make_time_str (time_t *time, char *string, int size)
 		 * schedulers management of SLURM. */
 		snprintf(string, size,
 			"%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
-			(time_tm.tm_year + 1900), (time_tm.tm_mon+1), 
-			time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min, 
+			(time_tm.tm_year + 1900), (time_tm.tm_mon+1),
+			time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
 			time_tm.tm_sec);
 #else
 		/* Format MM/DD-HH:MM:SS */
@@ -636,7 +636,7 @@ extern void secs2time_str(time_t time, char *string, int size)
 				days, hours, minutes, seconds);
 		else
 			snprintf(string, size,
-				"%2.2ld:%2.2ld:%2.2ld", 
+				"%2.2ld:%2.2ld:%2.2ld",
 				hours, minutes, seconds);
 	}
 }
@@ -658,7 +658,7 @@ extern void mins2time_str(uint32_t time, char *string, int size)
 				days, hours, minutes, seconds);
 		else
 			snprintf(string, size,
-				"%2.2ld:%2.2ld:%2.2ld", 
+				"%2.2ld:%2.2ld:%2.2ld",
 				hours, minutes, seconds);
 	}
 }

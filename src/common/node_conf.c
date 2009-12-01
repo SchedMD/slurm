@@ -1,9 +1,9 @@
 /*****************************************************************************\
  *  node_conf.c - partially manage the node records of slurm
- *                (see src/slurmctld/node_mgr.c for the set of functionalities 
+ *                (see src/slurmctld/node_mgr.c for the set of functionalities
  *                 related to slurmctld usage of nodes)
- *	Note: there is a global node table (node_record_table_ptr), its 
- *	hash table (node_hash_table), time stamp (last_node_update) and 
+ *	Note: there is a global node table (node_record_table_ptr), its
+ *	hash table (node_hash_table), time stamp (last_node_update) and
  *	configuration list (config_list)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -11,32 +11,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -110,7 +110,7 @@ static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
 	feature_iter = list_iterator_create(feature_list);
 	if (feature_iter == NULL)
 		fatal("list_iterator_create malloc failure");
-	while ((feature_ptr = (struct features_record *) 
+	while ((feature_ptr = (struct features_record *)
 			list_next(feature_iter))) {
 		if (strcmp(feature, feature_ptr->name))
 			continue;
@@ -130,7 +130,7 @@ static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
 }
 
 
-/* 
+/*
  * _build_single_nodeline_info - From the slurm.conf reader, build table,
  * 	and set values
  * RET 0 if no error, error code otherwise
@@ -244,7 +244,7 @@ cleanup:
  * RET 0 if no error, errno otherwise
  * global: config_list - list of all configuration records
  */
-static int _delete_config_record (void) 
+static int _delete_config_record (void)
 {
 	last_node_update = time (NULL);
 	(void) list_delete_all (config_list,  &_list_find_config,  NULL);
@@ -254,13 +254,13 @@ static int _delete_config_record (void)
 
 
 #if _DEBUG
-/* 
+/*
  * _dump_hash - print the node_hash_table contents, used for debugging
- *	or analysis of hash technique 
+ *	or analysis of hash technique
  * global: node_record_table_ptr - pointer to global node table
  *         node_hash_table - table of hash indecies
  */
-static void _dump_hash (void) 
+static void _dump_hash (void)
 {
 	int i, inx;
 	struct node_record *node_ptr;
@@ -279,36 +279,36 @@ static void _dump_hash (void)
 }
 #endif
 
-/* 
+/*
  * _find_alias_node_record - find a record for node with the alias of
  * the specified name supplied
- * input: name - name to be aliased of the desired node 
+ * input: name - name to be aliased of the desired node
  * output: return pointer to node record or NULL if not found
  * global: node_record_table_ptr - pointer to global node table
  *         node_hash_table - table of hash indecies
  */
-static struct node_record *_find_alias_node_record (char *name) 
+static struct node_record *_find_alias_node_record (char *name)
 {
 	int i;
 	char *alias = NULL;
-	
+
 	if ((name == NULL) || (name[0] == '\0')) {
 		info("_find_alias_node_record: passed NULL name");
 		return NULL;
 	}
 	/* Get the alias we have just to make sure the user isn't
 	 * trying to use the real hostname to run on something that has
-	 * been aliased.  
+	 * been aliased.
 	 */
 	alias = slurm_conf_get_nodename(name);
-	
+
 	if (!alias)
 		return NULL;
-	
+
 	/* try to find via hash table, if it exists */
 	if (node_hash_table) {
 		struct node_record *node_ptr;
-			
+
 		i = _hash_index (alias);
 		node_ptr = node_hash_table[i];
 		while (node_ptr) {
@@ -320,7 +320,7 @@ static struct node_record *_find_alias_node_record (char *name)
 			node_ptr = node_ptr->node_next;
 		}
 		error ("_find_alias_node_record: lookup failure for %s", name);
-	} 
+	}
 
 	/* revert to sequential search */
 	else {
@@ -328,7 +328,7 @@ static struct node_record *_find_alias_node_record (char *name)
 			if (!strcmp (alias, node_record_table_ptr[i].name)) {
 				xfree(alias);
 				return (&node_record_table_ptr[i]);
-			} 
+			}
 		}
 	}
 
@@ -336,12 +336,12 @@ static struct node_record *_find_alias_node_record (char *name)
 	return (struct node_record *) NULL;
 }
 
-/* 
- * _hash_index - return a hash table index for the given node name 
+/*
+ * _hash_index - return a hash table index for the given node name
  * IN name = the node's name
  * RET the hash table index
  */
-static int _hash_index (char *name) 
+static int _hash_index (char *name)
 {
 	int index = 0;
 	int j;
@@ -357,15 +357,15 @@ static int _hash_index (char *name)
 	for (j = 1; *name; name++, j++)
 		index += (int)*name * j;
 	index %= node_record_count;
-	
+
 	return index;
 }
 
-/* _list_delete_config - delete an entry from the config list, 
+/* _list_delete_config - delete an entry from the config list,
  *	see list.h for documentation */
-static void _list_delete_config (void *config_entry) 
+static void _list_delete_config (void *config_entry)
 {
-	struct config_record *config_ptr = (struct config_record *) 
+	struct config_record *config_ptr = (struct config_record *)
 					   config_entry;
 
 	xassert(config_ptr);
@@ -377,11 +377,11 @@ static void _list_delete_config (void *config_entry)
 	xfree (config_ptr);
 }
 
-/* _list_delete_feature - delete an entry from the feature list, 
+/* _list_delete_feature - delete an entry from the feature list,
  *	see list.h for documentation */
-static void _list_delete_feature (void *feature_entry) 
+static void _list_delete_feature (void *feature_entry)
 {
-	struct features_record *feature_ptr = (struct features_record *) 
+	struct features_record *feature_ptr = (struct features_record *)
 					     feature_entry;
 
 	xassert(feature_ptr);
@@ -391,13 +391,13 @@ static void _list_delete_feature (void *feature_entry)
 	xfree (feature_ptr);
 }
 
-/* 
- * _list_find_config - find an entry in the config list, see list.h for   
- *	documentation 
+/*
+ * _list_find_config - find an entry in the config list, see list.h for
+ *	documentation
  * IN key - is NULL for all config
  * RET 1 if key == NULL, 0 otherwise
  */
-static int _list_find_config (void *config_entry, void *key) 
+static int _list_find_config (void *config_entry, void *key)
 {
 	if (key == NULL)
 		return 1;
@@ -405,14 +405,14 @@ static int _list_find_config (void *config_entry, void *key)
 }
 
 /*
- * bitmap2node_name - given a bitmap, build a list of comma separated node 
+ * bitmap2node_name - given a bitmap, build a list of comma separated node
  *	names. names may include regular expressions (e.g. "lx[01-10]")
  * IN bitmap - bitmap pointer
- * RET pointer to node list or NULL on error 
+ * RET pointer to node list or NULL on error
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-char * bitmap2node_name (bitstr_t *bitmap) 
+char * bitmap2node_name (bitstr_t *bitmap)
 {
 	int i, first, last;
 	hostlist_t hl;
@@ -441,13 +441,13 @@ char * bitmap2node_name (bitstr_t *bitmap)
 	return xstrdup(buf);
 }
 
-/* 
- * _list_find_feature - find an entry in the feature list, see list.h for   
- *	documentation 
+/*
+ * _list_find_feature - find an entry in the feature list, see list.h for
+ *	documentation
  * IN key - is feature name or NULL for all features
  * RET 1 if found, 0 otherwise
  */
-static int _list_find_feature (void *feature_entry, void *key) 
+static int _list_find_feature (void *feature_entry, void *key)
 {
 	struct features_record *feature_ptr;
 
@@ -460,7 +460,7 @@ static int _list_find_feature (void *feature_entry, void *key)
 	return 0;
 }
 
-/* 
+/*
  * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
@@ -503,7 +503,7 @@ extern int build_all_nodeline_info (bool set_bitmap)
 			fatal ("memory allocation failure");
 		while ((config_ptr = (struct config_record *)
 				list_next(config_iterator))) {
-			node_name2bitmap(config_ptr->nodes, true, 
+			node_name2bitmap(config_ptr->nodes, true,
 					 &config_ptr->node_bitmap);
 		}
 		list_iterator_destroy(config_iterator);
@@ -526,7 +526,7 @@ extern void  build_config_feature_list(struct config_record *config_ptr)
 	if (feature_iter == NULL)
 		fatal("list_iterator_create malloc failure");
 	bit_not(config_ptr->node_bitmap);
-	while ((feature_ptr = (struct features_record *) 
+	while ((feature_ptr = (struct features_record *)
 			list_next(feature_iter))) {
 		bit_and(feature_ptr->node_bitmap, config_ptr->node_bitmap);
 	}
@@ -553,15 +553,15 @@ extern void  build_config_feature_list(struct config_record *config_ptr)
 }
 
 /*
- * create_config_record - create a config_record entry and set is values to 
- *	the defaults. each config record corresponds to a line in the  
- *	slurm.conf file and typically describes the configuration of a 
+ * create_config_record - create a config_record entry and set is values to
+ *	the defaults. each config record corresponds to a line in the
+ *	slurm.conf file and typically describes the configuration of a
  *	large number of nodes
  * RET pointer to the config_record
- * NOTE: memory allocated will remain in existence until 
+ * NOTE: memory allocated will remain in existence until
  *	_delete_config_record() is called to delete all configuration records
  */
-extern struct config_record * create_config_record (void) 
+extern struct config_record * create_config_record (void)
 {
 	struct config_record *config_ptr;
 
@@ -579,34 +579,34 @@ extern struct config_record * create_config_record (void)
 	return config_ptr;
 }
 
-/* 
+/*
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
  * RET pointer to the record or NULL if error
- * NOTE: allocates memory at node_record_table_ptr that must be xfreed when  
+ * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
 extern struct node_record *create_node_record (
-			struct config_record *config_ptr, char *node_name) 
+			struct config_record *config_ptr, char *node_name)
 {
 	struct node_record *node_ptr;
 	int old_buffer_size, new_buffer_size;
 
 	last_node_update = time (NULL);
 	xassert(config_ptr);
-	xassert(node_name); 
+	xassert(node_name);
 
 	/* round up the buffer size to reduce overhead of xrealloc */
 	old_buffer_size = (node_record_count) * sizeof (struct node_record);
-	old_buffer_size = 
+	old_buffer_size =
 		((int) ((old_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
-	new_buffer_size = 
+	new_buffer_size =
 		(node_record_count + 1) * sizeof (struct node_record);
-	new_buffer_size = 
+	new_buffer_size =
 		((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
 	if (!node_record_table_ptr) {
-		node_record_table_ptr = 
+		node_record_table_ptr =
 			(struct node_record *) xmalloc (new_buffer_size);
 	} else if (old_buffer_size != new_buffer_size)
 		xrealloc (node_record_table_ptr, new_buffer_size);
@@ -626,24 +626,24 @@ extern struct node_record *create_node_record (
 }
 
 
-/* 
+/*
  * find_node_record - find a record for node with specified name
- * input: name - name of the desired node 
+ * input: name - name of the desired node
  * output: return pointer to node record or NULL if not found
  */
-extern struct node_record *find_node_record (char *name) 
+extern struct node_record *find_node_record (char *name)
 {
 	int i;
-	
+
 	if ((name == NULL) || (name[0] == '\0')) {
 		info("find_node_record passed NULL name");
 		return NULL;
 	}
-	
+
 	/* try to find via hash table, if it exists */
 	if (node_hash_table) {
 		struct node_record *node_ptr;
-			
+
 		i = _hash_index (name);
 		node_ptr = node_hash_table[i];
 		while (node_ptr) {
@@ -657,32 +657,32 @@ extern struct node_record *find_node_record (char *name)
 		if ((node_record_count == 1) &&
 		    (strcmp(node_record_table_ptr[0].name, "localhost") == 0))
 			return (&node_record_table_ptr[0]);
-	       
+
 		error ("find_node_record: lookup failure for %s", name);
-	} 
+	}
 
 	/* revert to sequential search */
 	else {
 		for (i = 0; i < node_record_count; i++) {
 			if (!strcmp (name, node_record_table_ptr[i].name)) {
 				return (&node_record_table_ptr[i]);
-			} 
+			}
 		}
 	}
-	
+
 	/* look for the alias node record if the user put this in
 	   instead of what slurm sees the node name as */
 	return _find_alias_node_record (name);
 }
 
 
-/* 
- * init_node_conf - initialize the node configuration tables and values. 
- *	this should be called before creating any node or configuration 
+/*
+ * init_node_conf - initialize the node configuration tables and values.
+ *	this should be called before creating any node or configuration
  *	entries.
  * RET 0 if no error, otherwise an error code
  */
-extern int init_node_conf (void) 
+extern int init_node_conf (void)
 {
 	last_node_update = time (NULL);
 	int i;
@@ -733,16 +733,16 @@ extern void node_fini2 (void)
 
 
 /*
- * node_name2bitmap - given a node name regular expression, build a bitmap 
+ * node_name2bitmap - given a node name regular expression, build a bitmap
  *	representation
  * IN node_names  - list of nodes
- * IN best_effort - if set don't return an error on invalid node name entries 
- * OUT bitmap     - set to bitmap, may not have all bits set on error 
+ * IN best_effort - if set don't return an error on invalid node name entries
+ * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  * NOTE: the caller must bit_free() memory at bitmap when no longer required
  */
-extern int node_name2bitmap (char *node_names, bool best_effort, 
-			     bitstr_t **bitmap) 
+extern int node_name2bitmap (char *node_names, bool best_effort,
+			     bitstr_t **bitmap)
 {
 	int rc = SLURM_SUCCESS;
 	char *this_node_name;
@@ -753,7 +753,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 	if (my_bitmap == NULL)
 		fatal("bit_alloc malloc failure");
 	*bitmap = my_bitmap;
-	
+
 	if (node_names == NULL) {
 		info("node_name2bitmap: node_names is NULL");
 		return rc;
@@ -771,7 +771,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 		struct node_record *node_ptr;
 		node_ptr = find_node_record (this_node_name);
 		if (node_ptr) {
-			bit_set (my_bitmap, (bitoff_t) (node_ptr - 
+			bit_set (my_bitmap, (bitoff_t) (node_ptr -
 						node_record_table_ptr));
 		} else {
 			error ("node_name2bitmap: invalid node specified %s",
@@ -801,17 +801,17 @@ extern void purge_node_rec (struct node_record *node_ptr)
 }
 
 
-/* 
- * rehash_node - build a hash table of the node_record entries. 
+/*
+ * rehash_node - build a hash table of the node_record entries.
  * NOTE: manages memory for node_hash_table
  */
-extern void rehash_node (void) 
+extern void rehash_node (void)
 {
 	int i, inx;
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	xfree (node_hash_table);
-	node_hash_table = xmalloc (sizeof (struct node_record *) * 
+	node_hash_table = xmalloc (sizeof (struct node_record *) *
 				   node_record_count);
 
 	for (i = 0; i < node_record_count; i++, node_ptr++) {

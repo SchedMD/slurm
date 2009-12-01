@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -119,7 +119,7 @@ extern int init ( void )
 }
 
 /*
- * fini() is called when the plugin is unloaded, 
+ * fini() is called when the plugin is unloaded,
  * free any global memory allocations here to avoid memory leaks.
  */
 extern int fini ( void )
@@ -153,7 +153,7 @@ crypto_read_private_key(const char *path)
 	 *   as non-privileged users cannot get at the contents of job
 	 *   credentials.
 	 */
-	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, 
+	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
 			    slurm_get_slurmd_user_id());
 
 	if (err != EMUNGE_SUCCESS) {
@@ -192,8 +192,8 @@ crypto_str_error(int errnum)
 
 /* NOTE: Caller must xfree the signature returned by sig_pp */
 extern int
-crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp, 
-	    unsigned int *sig_size_p) 
+crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
+	    unsigned int *sig_size_p)
 {
 	char *cred;
 	munge_err_t err;
@@ -206,12 +206,12 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 
 	*sig_size_p = strlen(cred) + 1;
 	*sig_pp = xstrdup(cred);
-	free(cred); 
+	free(cred);
 	return 0;
 }
 
 extern int
-crypto_verify_sign(void * key, char *buffer, unsigned int buf_size, 
+crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 		   char *signature, unsigned int sig_size)
 {
 	uid_t uid;
@@ -222,7 +222,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 	munge_err_t err;
 
 	err = munge_decode(signature, (munge_ctx_t) key,
-			   &buf_out, &buf_out_size, 
+			   &buf_out, &buf_out_size,
 			   &uid, &gid);
 
 	if (err != EMUNGE_SUCCESS) {

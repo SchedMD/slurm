@@ -13,7 +13,7 @@ sshare_LDADD =  \
 
 sshare_SOURCES =	\
 	process.c               \
-	sshare.c sshare.h	
+	sshare.c sshare.h
 
 sshare_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 

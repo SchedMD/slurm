@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -70,7 +70,7 @@
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
- * overwritten when linking with the slurmctld. 
+ * overwritten when linking with the slurmctld.
  */
 struct node_record *node_record_table_ptr = NULL;
 int node_record_count = 0;
@@ -87,7 +87,7 @@ struct check_job_info {
 
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 		char *node_name, slurm_addr node_addr);
-static int  _step_sig(struct step_record * step_ptr, uint16_t wait, 
+static int  _step_sig(struct step_record * step_ptr, uint16_t wait,
 		uint16_t signal, uint16_t sig_timeout);
 
 /* checkpoint request timeout processing */
@@ -130,7 +130,7 @@ static void  _ckpt_signal_step(struct ckpt_timeout_info *rec);
  * where <application> is a description of the intended application of
  * the plugin (e.g., "checkpoint" for SLURM checkpoint) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load checkpoint plugins if the plugin_type string has a 
+ * only load checkpoint plugins if the plugin_type string has a
  * prefix of "checkpoint/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
@@ -186,9 +186,9 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
 
-extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, 
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 			  struct step_record *step_ptr, uint16_t op,
-			  uint16_t data, char *image_dir, time_t * event_time, 
+			  uint16_t data, char *image_dir, time_t * event_time,
 			  uint32_t *error_code, char **error_msg )
 {
 	int rc = SLURM_SUCCESS;
@@ -275,7 +275,7 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		return ESLURM_ALREADY_DONE;
 
 	if (error_code > check_ptr->error_code) {
-		info("slurm_ckpt_comp for step %u.%u error %u: %s", 
+		info("slurm_ckpt_comp for step %u.%u error %u: %s",
 			step_ptr->job_ptr->job_id, step_ptr->step_id,
 			error_code, error_msg);
 		check_ptr->error_code = error_code;
@@ -284,7 +284,7 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		return SLURM_SUCCESS;
 	}
 
-	/* We need an error-free reply from each compute node, 
+	/* We need an error-free reply from each compute node,
 	 * plus POE itself to note completion */
 	if (check_ptr->reply_cnt++ == check_ptr->node_cnt) {
 		time_t now = time(NULL);
@@ -296,7 +296,7 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		_ckpt_dequeue_timeout(step_ptr->job_ptr->job_id,
 			step_ptr->step_id, event_time);
 	}
-	return SLURM_SUCCESS; 
+	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)
@@ -313,9 +313,9 @@ extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 
 extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
-	struct check_job_info *check_ptr = 
+	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
- 
+
 	pack16(check_ptr->disabled, buffer);
 	pack16(check_ptr->node_cnt, buffer);
 	pack16(check_ptr->reply_cnt, buffer);
@@ -342,8 +342,8 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack32(&check_ptr->error_code, buffer);
 	safe_unpackstr_xmalloc(&check_ptr->error_msg, &uint32_tmp, buffer);
 	safe_unpack_time(&check_ptr->time_stamp, buffer);
-	
-	return SLURM_SUCCESS; 
+
+	return SLURM_SUCCESS;
 
     unpack_error:
 	xfree(check_ptr->error_msg);
@@ -351,7 +351,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 }
 
 /* Send a signal RPC to a specific node */
-static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal, 
+static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 		char *node_name, slurm_addr node_addr)
 {
 	agent_arg_t *agent_args;
@@ -372,9 +372,9 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	agent_queue_request(agent_args);
 }
 
-/* Send specified signal only to the process launched on node 0. 
+/* Send specified signal only to the process launched on node 0.
  * If the request times out, send sig_timeout. */
-static int _step_sig(struct step_record * step_ptr, uint16_t wait, 
+static int _step_sig(struct step_record * step_ptr, uint16_t wait,
 		uint16_t signal, uint16_t sig_timeout)
 {
 	struct check_job_info *check_ptr;
@@ -402,10 +402,10 @@ static int _step_sig(struct step_record * step_ptr, uint16_t wait,
 		_send_sig(step_ptr->job_ptr->job_id, step_ptr->step_id,
 			signal, node_record_table_ptr[i].name,
 			node_record_table_ptr[i].slurm_addr);
-		_ckpt_enqueue_timeout(step_ptr->job_ptr->job_id, 
-			step_ptr->step_id, check_ptr->time_stamp, 
+		_ckpt_enqueue_timeout(step_ptr->job_ptr->job_id,
+			step_ptr->step_id, check_ptr->time_stamp,
 			sig_timeout, wait, node_record_table_ptr[i].name,
-			node_record_table_ptr[i].slurm_addr);  
+			node_record_table_ptr[i].slurm_addr);
 	}
 
 	if (!check_ptr->node_cnt) {
@@ -442,7 +442,7 @@ static void *_ckpt_agent_thr(void *arg)
 		while ((rec = list_next(iter))) {
 			if (rec->end_time > now)
 				continue;
-			info("checkpoint timeout for %u.%u", 
+			info("checkpoint timeout for %u.%u",
 				rec->job_id, rec->step_id);
 			_ckpt_signal_step(rec);
 			list_delete_item(iter);
@@ -460,7 +460,7 @@ static void _ckpt_signal_step(struct ckpt_timeout_info *rec)
 }
 
 /* Queue a checkpoint request timeout */
-static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id, 
+static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id,
 		time_t start_time, uint16_t signal, uint16_t wait_time,
 		char *node_name, slurm_addr node_addr)
 {
@@ -488,7 +488,7 @@ static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id,
 static void _ckpt_timeout_free(void *rec)
 {
 	struct ckpt_timeout_info *ckpt_rec = (struct ckpt_timeout_info *)rec;
-	
+
 	if (ckpt_rec) {
 		xfree(ckpt_rec->node_name);
 		xfree(ckpt_rec);
@@ -519,7 +519,7 @@ static void _ckpt_dequeue_timeout(uint32_t job_id, uint32_t step_id,
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 }
 
-extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, 
+extern int slurm_ckpt_task_comp ( struct step_record * step_ptr,
 				  uint32_t task_id, time_t event_time,
 				  uint32_t error_code, char *error_msg )
 {

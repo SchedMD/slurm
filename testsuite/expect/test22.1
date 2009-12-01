@@ -11,21 +11,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -65,7 +65,7 @@ set midnight 1201766400
 # Mon Dec 31 23:00:00 2007
 set period_start 1199170800
 # Thu Jan 31 23:59:59 2008
-set period_end 1201852799 
+set period_end 1201852799
 
 set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
 set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
@@ -387,15 +387,15 @@ set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
 set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
 
 set reported [expr ($period_end - $period_start) * $cluster_cpus]
-set down [expr ($period_end-$node0_down_start) * $node0_cpus] 
+set down [expr ($period_end-$node0_down_start) * $node0_cpus]
 set alloc_sec [expr ($period_end-$job1_start) * $node1_cpus]
 set resv 0
 set idle [expr $reported - ($down + $alloc_sec + $resv)]
 
-set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]] 
-set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]] 
+set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]]
+set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]]
 set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
-set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]] 
+set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
 set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
 
 send_user "\nTesting sreport for first hour\n"
@@ -602,7 +602,7 @@ set down [expr ($node0_down_end-$period_start) * $node0_cpus]
 set alloc_sec [expr ($job1_end-$period_start) * $job1_cpus]
 set resv [expr ($period_end - $job2_elig) * $job2_cpus]
 set idle [expr $reported - ($down + $alloc_sec + $resv)]
-# do the same logic inside the plugin to figure out the correct 
+# do the same logic inside the plugin to figure out the correct
 # idle time and resv time
 if {$idle < 0 } {
 	set resv [expr $resv + $idle]
@@ -611,10 +611,10 @@ if {$idle < 0 } {
 		set resv 0
 	}
 }
-set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]] 
-set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]] 
+set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]]
+set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]]
 set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
-set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]] 
+set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
 set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
 
 send_user "\nTesting sreport for second hour\n"
@@ -827,7 +827,7 @@ set resv [expr $resv + (($job3_start - $job3_elig) * $job3_cpus)]
 set over 9000
 set resv [expr $resv - $over]
 set idle [expr $reported - ($down + $alloc_sec + $resv)]
-# do the same logic inside the plugin to figure out the correct 
+# do the same logic inside the plugin to figure out the correct
 # idle time and resv time
 if {$idle < 0 } {
 	set resv [expr $resv + $idle]
@@ -836,19 +836,19 @@ if {$idle < 0 } {
 		set resv 0
 	}
 }
-set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]] 
-set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]] 
+set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]]
+set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]]
 set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
-set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]] 
-set over [format "%d\\\(%.2f%%\\\)" $over [expr double($over * 100)/$reported]] 
+set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
+set over [format "%d\\\(%.2f%%\\\)" $over [expr double($over * 100)/$reported]]
 
-set job1_alloc_str [format "%d\\\(%.2f%%\\\)" $job1_alloc [expr double($job1_alloc * 100)/$reported]] 
-set job2_alloc_str [format "%d\\\(%.2f%%\\\)" $job2_alloc [expr double($job2_alloc * 100)/$reported]] 
-set job3_alloc_str [format "%d\\\(%.2f%%\\\)" $job3_alloc [expr double($job3_alloc * 100)/$reported]] 
-set total_alloc_str [format "%d\\\(%.2f%%\\\)" $total_alloc [expr double($total_alloc * 100)/$reported]] 
-set acct1_alloc_str [format "%d\\\(%.2f%%\\\)" $acct1_alloc [expr double($acct1_alloc * 100)/$reported]] 
-set acct2_alloc_str [format "%d\\\(%.2f%%\\\)" $acct2_alloc [expr double($acct2_alloc * 100)/$reported]] 
-set acct3_alloc_str [format "%d\\\(%.2f%%\\\)" $acct3_alloc [expr double($acct3_alloc * 100)/$reported]] 
+set job1_alloc_str [format "%d\\\(%.2f%%\\\)" $job1_alloc [expr double($job1_alloc * 100)/$reported]]
+set job2_alloc_str [format "%d\\\(%.2f%%\\\)" $job2_alloc [expr double($job2_alloc * 100)/$reported]]
+set job3_alloc_str [format "%d\\\(%.2f%%\\\)" $job3_alloc [expr double($job3_alloc * 100)/$reported]]
+set total_alloc_str [format "%d\\\(%.2f%%\\\)" $total_alloc [expr double($total_alloc * 100)/$reported]]
+set acct1_alloc_str [format "%d\\\(%.2f%%\\\)" $acct1_alloc [expr double($acct1_alloc * 100)/$reported]]
+set acct2_alloc_str [format "%d\\\(%.2f%%\\\)" $acct2_alloc [expr double($acct2_alloc * 100)/$reported]]
+set acct3_alloc_str [format "%d\\\(%.2f%%\\\)" $acct3_alloc [expr double($acct3_alloc * 100)/$reported]]
 set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
 
 send_user "\nTesting sreport for 3 days\n"
@@ -1114,7 +1114,7 @@ if {$exit_code == 0} {
 	incr exit_code [remove_user "" "" $users]
 	incr exit_code [remove_acct "" $accounts]
 	incr exit_code [remove_cluster "$cluster"]
-	
+
  	exec $bin_rm -f $sql_in
  	exec $bin_rm -f $sql_rem
         if {$exit_code == 0} {

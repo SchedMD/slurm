@@ -1,37 +1,37 @@
 /*****************************************************************************\
- *  state_save.c - Keep saved slurmctld state current 
+ *  state_save.c - Keep saved slurmctld state current
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -56,19 +56,19 @@ static int save_jobs = 0, save_nodes = 0, save_parts = 0;
 static int save_triggers = 0, save_resv = 0;
 static bool run_save_thread = true;
 
-/* fsync() and close() a file, 
+/* fsync() and close() a file,
  * Execute fsync() and close() multiple times if necessary and log failures
  * RET 0 on success or -1 on error */
 extern int fsync_and_close(int fd, char *file_type)
 {
 	int rc = 0, retval, pos;
 
-	/* SLURM state save files are typically stored on shared filesystems, 
+	/* SLURM state save files are typically stored on shared filesystems,
 	 * so lets give fysync() three tries to sync the data to disk. */
 	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
 		retval = fsync(fd);
 		if (retval && (errno != EINTR)) {
-			error("fsync() error writing %s state save file: %m", 
+			error("fsync() error writing %s state save file: %m",
 			      file_type);
 		}
 	}
@@ -78,7 +78,7 @@ extern int fsync_and_close(int fd, char *file_type)
 	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
 		retval = close(fd);
 		if (retval && (errno != EINTR)) {
-			error("close () error on %s state save file: %m", 
+			error("close () error on %s state save file: %m",
 			      file_type);
 		}
 	}
@@ -145,7 +145,7 @@ extern void shutdown_state_save(void)
 /*
  * Run as pthread to keep saving slurmctld state information as needed,
  * Use schedule_job_save(),  schedule_node_save(), and schedule_part_save()
- * to queue state save of each data structure 
+ * to queue state save of each data structure
  * no_data IN - unused
  * RET - NULL
  */
@@ -157,7 +157,7 @@ extern void *slurmctld_state_save(void *no_data)
 		/* wait for work to perform */
 		slurm_mutex_lock(&state_save_lock);
 		while (1) {
-			if (save_jobs + save_nodes + save_parts + 
+			if (save_jobs + save_nodes + save_parts +
 			    save_resv + save_triggers)
 				break;		/* do the work */
 			else if (!run_save_thread) {
@@ -165,7 +165,7 @@ extern void *slurmctld_state_save(void *no_data)
 				slurm_mutex_unlock(&state_save_lock);
 				return NULL;	/* shutdown */
 			} else 			/* wait for more work */
-				pthread_cond_wait(&state_save_cond, 
+				pthread_cond_wait(&state_save_cond,
 				                  &state_save_lock);
 		}
 

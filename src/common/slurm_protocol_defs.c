@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  slurm_protocol_defs.c - functions for initializing and releasing 
- *	storage for RPC data structures. these are the functions used by 
+ *  slurm_protocol_defs.c - functions for initializing and releasing
+ *	storage for RPC data structures. these are the functions used by
  *	the slurm daemons directly, not for user client use.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -8,32 +8,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -79,7 +79,7 @@ static void _slurm_free_job_step_info_members (job_step_info_t * msg);
 static void _make_lower(char *change);
 
 /*
- * slurm_msg_t_init - initialize a slurm message 
+ * slurm_msg_t_init - initialize a slurm message
  * OUT msg - pointer to the slurm_msg_t structure which will be initialized
  */
 extern void slurm_msg_t_init(slurm_msg_t *msg)
@@ -91,7 +91,7 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 
 	forward_init(&msg->forward, NULL);
 
-	return;	
+	return;
 }
 
 /*
@@ -108,8 +108,8 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 	dest->forward = src->forward;
 	dest->ret_list = src->ret_list;
 	dest->forward_struct = src->forward_struct;
-	dest->orig_addr.sin_addr.s_addr = 0; 
-	return;	
+	dest->orig_addr.sin_addr.s_addr = 0;
+	return;
 }
 
 extern void slurm_destroy_char(void *object)
@@ -157,7 +157,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 				name = xmalloc((i-start+1));
 				memcpy(name, names+start, (i-start));
 				//info("got %s %d", name, i-start);
-				
+
 				while((tmp_char = list_next(itr))) {
 					if(!strcasecmp(tmp_char, name))
 						break;
@@ -167,16 +167,16 @@ extern int slurm_addto_char_list(List char_list, char *names)
 				   This is needed for get associations
 				   with qos.
 				*/
-				if(tmp_char) 
+				if(tmp_char)
 					list_delete_item(itr);
-				else 
+				else
 					count++;
-				
+
 				_make_lower(name);
 				list_append(char_list, name);
-				
+
 				list_iterator_reset(itr);
-				
+
 				i++;
 				start = i;
 				if(!names[i]) {
@@ -195,23 +195,23 @@ extern int slurm_addto_char_list(List char_list, char *names)
 			if(!strcasecmp(tmp_char, name))
 				break;
 		}
-		
+
 		/* If we get a duplicate remove the
 		   first one and tack this on the end.
 		   This is needed for get associations
 		   with qos.
 		*/
-		if(tmp_char) 
+		if(tmp_char)
 			list_delete_item(itr);
-		else 
+		else
 			count++;
-		
+
 		_make_lower(name);
 		list_append(char_list, name);
-	}	
+	}
 	list_iterator_destroy(itr);
 	return count;
-} 
+}
 
 extern int slurm_sort_char_list_asc(char *name_a, char *name_b)
 {
@@ -221,7 +221,7 @@ extern int slurm_sort_char_list_asc(char *name_a, char *name_b)
 		return -1;
 	else if (diff > 0)
 		return 1;
-	
+
 	return 0;
 }
 
@@ -233,7 +233,7 @@ extern int slurm_sort_char_list_desc(char *name_a, char *name_b)
 		return -1;
 	else if (diff < 0)
 		return 1;
-	
+
 	return 0;
 }
 
@@ -566,7 +566,7 @@ void slurm_free_task_exit_msg(task_exit_msg_t * msg)
 void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 {
 	int i;
-	
+
 	if (msg == NULL)
 		return;
 
@@ -1281,10 +1281,10 @@ extern char *conn_type_string(enum connection_type conn_type)
 extern char* node_use_string(enum node_use_type node_use)
 {
 	switch (node_use) {
-	case (SELECT_COPROCESSOR_MODE): 
-		return "COPROCESSOR"; 
-	case (SELECT_VIRTUAL_NODE_MODE): 
-		return "VIRTUAL"; 
+	case (SELECT_COPROCESSOR_MODE):
+		return "COPROCESSOR";
+	case (SELECT_VIRTUAL_NODE_MODE):
+		return "VIRTUAL";
 	default:
 		break;
 	}
@@ -1299,10 +1299,10 @@ extern char *bg_block_state_string(uint16_t state)
 #ifdef HAVE_BG
 	switch ((rm_partition_state_t)state) {
 #ifdef HAVE_BGL
-	case RM_PARTITION_BUSY: 
+	case RM_PARTITION_BUSY:
 		return "BUSY";
 #else
-	case RM_PARTITION_REBOOTING: 
+	case RM_PARTITION_REBOOTING:
 		return "REBOOTING";
 #endif
 	case RM_PARTITION_CONFIGURING:
@@ -1330,7 +1330,7 @@ extern char *bg_block_state_string(uint16_t state)
  * IN msg - pointer to allocation response message
  * NOTE: buffer is loaded by slurm_allocate_resources
  */
-void slurm_free_resource_allocation_response_msg ( 
+void slurm_free_resource_allocation_response_msg (
 	resource_allocation_response_msg_t * msg)
 {
 	if (msg) {
@@ -1343,7 +1343,7 @@ void slurm_free_resource_allocation_response_msg (
 }
 
 /*
- * slurm_free_sbcast_cred_msg - free slurm resource allocation response 
+ * slurm_free_sbcast_cred_msg - free slurm resource allocation response
  *	message including an sbcast credential
  * IN msg - pointer to response message from slurm_sbcast_lookup()
  * NOTE: buffer is loaded by slurm_allocate_resources
@@ -1378,7 +1378,7 @@ void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg)
 
 
 /*
- * slurm_free_job_step_create_response_msg - free slurm 
+ * slurm_free_job_step_create_response_msg - free slurm
  *	job step create response message
  * IN msg - pointer to job step create response message
  * NOTE: buffer is loaded by slurm_job_step_create
@@ -1400,7 +1400,7 @@ void slurm_free_job_step_create_response_msg(
 
 
 /*
- * slurm_free_submit_response_response_msg - free slurm 
+ * slurm_free_submit_response_response_msg - free slurm
  *	job submit response message
  * IN msg - pointer to job submit response message
  * NOTE: buffer is loaded by slurm_submit_batch_job
@@ -1463,7 +1463,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->sched_params);
 		xfree(config_ptr->schedtype);
 		xfree(config_ptr->select_type);
-		if(config_ptr->select_conf_key_pairs) 
+		if(config_ptr->select_conf_key_pairs)
 			list_destroy((List)config_ptr->select_conf_key_pairs);
 		xfree(config_ptr->slurm_conf);
 		xfree(config_ptr->slurm_user_name);
@@ -1536,7 +1536,7 @@ static void _free_all_job_info(job_info_msg_t *msg)
 }
 
 /*
- * slurm_free_job_step_info_response_msg - free the job step 
+ * slurm_free_job_step_info_response_msg - free the job step
  *	information response message
  * IN msg - pointer to job step information response message
  * NOTE: buffer is loaded by slurm_get_job_steps.
@@ -1602,8 +1602,8 @@ static void _free_all_node_info(node_info_msg_t *msg)
 	if ((msg == NULL) ||
 	    (msg->node_array == NULL))
 		return;
-	
-	for (i = 0; i < msg->record_count; i++) 
+
+	for (i = 0; i < msg->record_count; i++)
 		_slurm_free_node_info_members(&msg->node_array[i]);
 }
 
@@ -1621,7 +1621,7 @@ static void _slurm_free_node_info_members(node_info_t * node)
 
 
 /*
- * slurm_free_partition_info_msg - free the partition information 
+ * slurm_free_partition_info_msg - free the partition information
  *	response message
  * IN msg - pointer to partition information response message
  * NOTE: buffer is loaded by slurm_load_partitions
@@ -1663,7 +1663,7 @@ static void _slurm_free_partition_info_members(partition_info_t * part)
 }
 
 /*
- * slurm_free_reserve_info_msg - free the reservation information 
+ * slurm_free_reserve_info_msg - free the reservation information
  *	response message
  * IN msg - pointer to reservation information response message
  * NOTE: buffer is loaded by slurm_load_reservation
@@ -1708,7 +1708,7 @@ static void _slurm_free_reserve_info_members(reserve_info_t * resv)
 }
 
 /*
- * slurm_free_topo_info_msg - free the switch topology configuration 
+ * slurm_free_topo_info_msg - free the switch topology configuration
  *	information response message
  * IN msg - pointer to switch topology configuration response message
  * NOTE: buffer is loaded by slurm_load_topo.
@@ -1776,11 +1776,11 @@ void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg)
 	xfree(msg);
 }
 
-void inline slurm_destroy_association_shares_object(void *object) 
+void inline slurm_destroy_association_shares_object(void *object)
 {
-	association_shares_object_t *obj_ptr = 
+	association_shares_object_t *obj_ptr =
 		(association_shares_object_t *)object;
-	
+
 	if(obj_ptr) {
 		xfree(obj_ptr->cluster);
 		xfree(obj_ptr->name);
@@ -1904,7 +1904,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_PARTITION:
 		slurm_free_update_part_msg(data);
 		break;
-	case REQUEST_DELETE_PARTITION:		
+	case REQUEST_DELETE_PARTITION:
 		slurm_free_delete_part_msg(data);
 		break;
 	case REQUEST_CREATE_RESERVATION:
@@ -1912,7 +1912,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_resv_desc_msg(data);
 		break;
 	case REQUEST_DELETE_RESERVATION:
-	case RESPONSE_CREATE_RESERVATION:		
+	case RESPONSE_CREATE_RESERVATION:
 		slurm_free_resv_name_msg(data);
 		break;
 	case REQUEST_RESERVATION_INFO:
@@ -1977,13 +1977,13 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_KILL_TIMELIMIT:
 		slurm_free_timelimit_msg(data);
-		break; 
+		break;
 	case REQUEST_REATTACH_TASKS:
 		slurm_free_reattach_tasks_request_msg(data);
 		break;
 	case RESPONSE_REATTACH_TASKS:
 		slurm_free_reattach_tasks_response_msg(data);
-		break;		
+		break;
 	case REQUEST_SIGNAL_JOB:
 		slurm_free_signal_job_msg(data);
 		break;
@@ -2006,8 +2006,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SET_DEBUG_LEVEL:
 		slurm_free_set_debug_level_msg(data);
 		break;
-	case SLURM_SUCCESS:		
-	case REQUEST_PING:		
+	case SLURM_SUCCESS:
+	case REQUEST_PING:
 	case REQUEST_RECONFIGURE:
 	case REQUEST_CONTROL:
 	case REQUEST_TAKEOVER:
@@ -2027,7 +2027,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);
-		break; 
+		break;
 	}
 	return SLURM_SUCCESS;
 }
@@ -2060,7 +2060,7 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		break;
 	default:
 		error("don't know the rc for type %u returning %u", type, rc);
-		break; 
+		break;
 	}
 	return rc;
 }
@@ -2089,7 +2089,7 @@ static void _make_lower(char *change)
 
 /* Validate SPANK specified job environment does not contain any invalid
  * names. Log failures using info() */
-extern bool valid_spank_job_env(char **spank_job_env, 
+extern bool valid_spank_job_env(char **spank_job_env,
 			        uint32_t spank_job_env_size, uid_t uid)
 {
 	int i;

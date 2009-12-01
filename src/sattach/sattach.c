@@ -6,21 +6,21 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
@@ -67,7 +67,7 @@ static void _mpir_cleanup(void);
 static void _mpir_dump_proctable(void);
 static void print_layout_info(slurm_step_layout_t *layout);
 static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
-					uid_t uid, char *nodelist, 
+					uid_t uid, char *nodelist,
 					uint32_t node_cnt);
 static uint32_t _nodeid_from_layout(slurm_step_layout_t *layout,
 				    uint32_t taskid);
@@ -154,7 +154,7 @@ int sattach(int argc, char *argv[])
 	fake_cred = _generate_fake_cred(opt.jobid, opt.stepid,
 					opt.uid, layout->node_list,
 					layout->node_cnt);
-	
+
 	mts = _msg_thr_create(layout->node_cnt, layout->task_cnt);
 
 	io = client_io_handler_create(opt.fds, layout->task_cnt,
@@ -166,7 +166,7 @@ int sattach(int argc, char *argv[])
 			 mts->num_resp_port, mts->resp_port,
 			 io->num_listen, io->listenport,
 			 mts->tasks_started);
-	
+
 	MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 	MPIR_Breakpoint();
 	if (opt.debugger_test)
@@ -318,7 +318,7 @@ void _handle_response_msg_list(List other_nodes_resp, bitstr_t *tasks_started)
 					       ret_data_info->data);
 		debug("Attach returned msg_rc=%d err=%d type=%d",
 		      msg_rc, ret_data_info->err, ret_data_info->type);
-		if (msg_rc != SLURM_SUCCESS) 
+		if (msg_rc != SLURM_SUCCESS)
 			errno = ret_data_info->err;
 		_handle_response_msg(ret_data_info->type,
 				     ret_data_info->data,
@@ -348,7 +348,7 @@ static int _attach_to_tasks(uint32_t jobid,
 	reattach_tasks_request_msg_t reattach_msg;
 
 	slurm_msg_t_init(&msg);
-	
+
 	timeout = slurm_get_msg_timeout() * 1000; /* sec to msec */
 
 	reattach_msg.job_id = jobid;
@@ -361,8 +361,8 @@ static int _attach_to_tasks(uint32_t jobid,
 
 	msg.msg_type = REQUEST_REATTACH_TASKS;
 	msg.data = &reattach_msg;
-	
-	nodes_resp = slurm_send_recv_msgs(layout->node_list, &msg, 
+
+	nodes_resp = slurm_send_recv_msgs(layout->node_list, &msg,
 					  timeout, false);
 	if (nodes_resp == NULL) {
 		error("slurm_send_recv_msgs failed: %m");
@@ -371,7 +371,7 @@ static int _attach_to_tasks(uint32_t jobid,
 
 	_handle_response_msg_list(nodes_resp, tasks_started);
 	list_destroy(nodes_resp);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -480,7 +480,7 @@ _launch_handler(message_thread_state_t *mts, slurm_msg_t *resp)
 
 }
 
-static void 
+static void
 _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
@@ -532,14 +532,14 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 	static uid_t slurm_uid;
 	static bool slurm_uid_set = false;
 	uid_t uid = getuid();
-	
+
 	if (!slurm_uid_set) {
 		slurm_uid = slurm_get_slurm_user_id();
 		slurm_uid_set = true;
 	}
 
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
-		error ("Security violation, slurm message from uid %u", 
+		error ("Security violation, slurm message from uid %u",
 		       (unsigned int) req_uid);
 		return;
 	}
@@ -609,4 +609,4 @@ _mpir_dump_proctable()
 		     i, tv->host_name, tv->pid, tv->executable_name);
 	}
 }
-	
+

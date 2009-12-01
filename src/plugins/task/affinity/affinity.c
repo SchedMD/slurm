@@ -3,32 +3,32 @@
  *  $Id: affinity.c,v 1.2 2005/11/04 02:46:51 palermo Exp $
  *****************************************************************************
  *  Copyright (C) 2005-2006 Hewlett-Packard Development Company, L.P.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -143,7 +143,7 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	char buftype[1024];
 
 	slurm_sprint_cpu_bind_type(buftype, job->cpu_bind_type);
-	debug3("get_cpuset (%s[%d]) %s\n", buftype, job->cpu_bind_type, 
+	debug3("get_cpuset (%s[%d]) %s\n", buftype, job->cpu_bind_type,
 		job->cpu_bind);
 	CPU_ZERO(mask);
 
@@ -156,7 +156,7 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 		CPU_SET(job->envtp->localid % (job->cpus*threads), mask);
 		return true;
 	}
-	
+
 	if (job->cpu_bind_type & CPU_BIND_LDRANK) {
 		/* if HAVE_NUMA then bind this task ID to it's corresponding
 		 * locality domain ID. Otherwise, bind this task ID to it's
@@ -227,7 +227,7 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 		CPU_SET(mycpu, mask);
 		return true;
 	}
-	
+
 	if (job->cpu_bind_type & CPU_BIND_LDMASK) {
 		/* if HAVE_NUMA bind this task to the locality domains
 		 * identified in mstr. Otherwise bind this task to the
@@ -258,7 +258,7 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 		}
 		return true;
 	}
-	
+
 	if (job->cpu_bind_type & CPU_BIND_LDMAP) {
 		/* if HAVE_NUMA bind this task to the given locality
 		 * domain. Otherwise bind this task to the given

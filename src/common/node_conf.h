@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  node_conf.h - definitions for reading the node part of slurm configuration 
+ *  node_conf.h - definitions for reading the node part of slurm configuration
  *  file and work with the corresponding structures
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -71,7 +71,7 @@ struct config_record {
 	uint16_t threads;	/* number of threads per core */
 	uint32_t real_memory;	/* MB real memory on the node */
 	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
-	uint32_t weight;	/* arbitrary priority of node for 
+	uint32_t weight;	/* arbitrary priority of node for
 				 * scheduling work on */
 	char *feature;		/* arbitrary list of features associated */
 	char **feature_array;	/* array of feature names */
@@ -90,10 +90,10 @@ extern List feature_list;	/* list of features_record entries */
 struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 	char *name;			/* name of the node. NULL==defunct */
-	uint16_t node_state;		/* enum node_states, ORed with 
-					 * NODE_STATE_NO_RESPOND if not 
+	uint16_t node_state;		/* enum node_states, ORed with
+					 * NODE_STATE_NO_RESPOND if not
 					 * responding */
-	bool not_responding;		/* set if fails to respond, 
+	bool not_responding;		/* set if fails to respond,
 					 * clear after logging this */
 	time_t last_response;		/* last response from the node */
 	time_t last_idle;		/* time node last become idle */
@@ -106,7 +106,7 @@ struct node_record {
 	uint32_t up_time;		/* seconds since node boot */
 	struct config_record *config_ptr;  /* configuration spec ptr */
 	uint16_t part_cnt;		/* number of associated partitions */
-	struct part_record **part_pptr;	/* array of pointers to partitions 
+	struct part_record **part_pptr;	/* array of pointers to partitions
 					 * associated with this node*/
 	char *comm_name;		/* communications path name to node */
 	uint16_t port;			/* TCP port number of the slurmd */
@@ -140,16 +140,16 @@ extern time_t last_node_update;		/* time of last node record update */
 
 
 /*
- * bitmap2node_name - given a bitmap, build a list of comma separated node 
+ * bitmap2node_name - given a bitmap, build a list of comma separated node
  *	names. names may include regular expressions (e.g. "lx[01-10]")
  * IN bitmap - bitmap pointer
- * RET pointer to node list or NULL on error 
+ * RET pointer to node list or NULL on error
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
 char * bitmap2node_name (bitstr_t *bitmap);
 
-/* 
+/*
  * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
@@ -161,38 +161,38 @@ extern int build_all_nodeline_info (bool set_bitmap);
 extern void  build_config_feature_list (struct config_record *config_ptr);
 
 /*
- * create_config_record - create a config_record entry and set is values to 
- *	the defaults. each config record corresponds to a line in the  
- *	slurm.conf file and typically describes the configuration of a 
+ * create_config_record - create a config_record entry and set is values to
+ *	the defaults. each config record corresponds to a line in the
+ *	slurm.conf file and typically describes the configuration of a
  *	large number of nodes
  * RET pointer to the config_record
- * NOTE: memory allocated will remain in existence until 
+ * NOTE: memory allocated will remain in existence until
  *	_delete_config_record() is called to delete all configuration records
  */
 extern struct config_record *create_config_record (void);
 
-/* 
+/*
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
  * RET pointer to the record or NULL if error
- * NOTE: allocates memory at node_record_table_ptr that must be xfreed when  
+ * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
 extern struct node_record *create_node_record (
 			struct config_record *config_ptr, char *node_name);
 
-/* 
+/*
  * find_node_record - find a record for node with specified name
- * input: name - name of the desired node 
+ * input: name - name of the desired node
  * output: return pointer to node record or NULL if not found
  *         node_hash_table - table of hash indecies
  */
 extern struct node_record *find_node_record (char *name);
 
-/* 
- * init_node_conf - initialize the node configuration tables and values. 
- *	this should be called before creating any node or configuration 
+/*
+ * init_node_conf - initialize the node configuration tables and values.
+ *	this should be called before creating any node or configuration
  *	entries.
  * RET 0 if no error, otherwise an error code
  */
@@ -202,22 +202,22 @@ extern int init_node_conf (void);
 extern void node_fini2 (void);
 
 /*
- * node_name2bitmap - given a node name regular expression, build a bitmap 
+ * node_name2bitmap - given a node name regular expression, build a bitmap
  *	representation
  * IN node_names  - list of nodes
- * IN best_effort - if set don't return an error on invalid node name entries 
- * OUT bitmap     - set to bitmap, may not have all bits set on error 
+ * IN best_effort - if set don't return an error on invalid node name entries
+ * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  * NOTE: the caller must bit_free() memory at bitmap when no longer required
  */
-extern int node_name2bitmap (char *node_names, bool best_effort, 
+extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap);
 
 /* Purge the contents of a node record */
 extern void purge_node_rec (struct node_record *node_ptr);
 
-/* 
- * rehash_node - build a hash table of the node_record entries. 
+/*
+ * rehash_node - build a hash table of the node_record entries.
  * NOTE: manages memory for node_hash_table
  */
 extern void rehash_node (void);

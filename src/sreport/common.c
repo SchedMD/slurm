@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -45,24 +45,24 @@ extern void sreport_print_time(print_field_t *field,
 {
 	int abs_len = abs(field->len);
 
-	if(!total_time) 
+	if(!total_time)
 		total_time = 1;
 
 	/* (value == unset)  || (value == cleared) */
 	if((value == NO_VAL) || (value == INFINITE)) {
-		if(print_fields_parsable_print 
+		if(print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
 			;
 		else if(print_fields_parsable_print)
-			printf("|");	
-		else				
+			printf("|");
+		else
 			printf("%-*s ", abs_len, " ");
 	} else {
 		char *output = NULL;
 		double percent = (double)value;
 		double temp_d = (double)value;
-		
+
 		switch(time_format) {
 		case SREPORT_TIME_SECS:
 			output = xstrdup_printf("%llu", value);
@@ -79,7 +79,7 @@ extern void sreport_print_time(print_field_t *field,
 			percent /= total_time;
 			percent *= 100;
 			output = xstrdup_printf("%.2lf%%", percent);
-			break; 
+			break;
 		case SREPORT_TIME_SECS_PER:
 			percent /= total_time;
 			percent *= 100;
@@ -105,13 +105,13 @@ extern void sreport_print_time(print_field_t *field,
 			output = xstrdup_printf("%.0lf", temp_d);
 			break;
 		}
-		
-		if(print_fields_parsable_print 
+
+		if(print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
 			printf("%s", output);
 		else if(print_fields_parsable_print)
-			printf("%s|", output);	
+			printf("%s|", output);
 		else if(field->len == abs_len)
 			printf("%*.*s ", abs_len, abs_len, output);
 		else
@@ -124,7 +124,7 @@ extern void sreport_print_time(print_field_t *field,
 extern int parse_option_end(char *option)
 {
 	int end = 0;
-	
+
 	if(!option)
 		return 0;
 
@@ -200,7 +200,7 @@ extern void addto_char_list(List char_list, char *names)
 
 					if(!tmp_char)
 						list_append(char_list, name);
-					else 
+					else
 						xfree(name);
 					list_iterator_reset(itr);
 				}
@@ -216,15 +216,15 @@ extern void addto_char_list(List char_list, char *names)
 				if(!strcasecmp(tmp_char, name))
 					break;
 			}
-			
+
 			if(!tmp_char)
 				list_append(char_list, name);
-			else 
+			else
 				xfree(name);
 		}
-	}	
+	}
 	list_iterator_destroy(itr);
-} 
+}
 
 extern int set_start_end_time(time_t *start, time_t *end)
 {
@@ -243,7 +243,7 @@ extern int set_start_end_time(time_t *start, time_t *end)
 			return SLURM_ERROR;
 		}
 		end_tm.tm_hour = 0;
-		//(*end) = mktime(&end_tm);		
+		//(*end) = mktime(&end_tm);
 	} else {
 		temp_time = sent_end;
 		if(!localtime_r(&temp_time, &end_tm)) {
@@ -256,11 +256,11 @@ extern int set_start_end_time(time_t *start, time_t *end)
 		if(end_tm.tm_min >= 30)
 			end_tm.tm_hour++;
 	}
-	
+
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_isdst = -1;
-	(*end) = mktime(&end_tm);		
+	(*end) = mktime(&end_tm);
 
 	if(!sent_start) {
 		if(!localtime_r(&my_time, &start_tm)) {
@@ -270,7 +270,7 @@ extern int set_start_end_time(time_t *start, time_t *end)
 		}
 		start_tm.tm_hour = 0;
 		start_tm.tm_mday--;
-		//(*start) = mktime(&start_tm);		
+		//(*start) = mktime(&start_tm);
 	} else {
 		temp_time = sent_start;
 		if(!localtime_r(&temp_time, &start_tm)) {
@@ -286,16 +286,16 @@ extern int set_start_end_time(time_t *start, time_t *end)
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
 	start_tm.tm_isdst = -1;
-	(*start) = mktime(&start_tm);		
+	(*start) = mktime(&start_tm);
 
-	if((*end)-(*start) < 3600) 
+	if((*end)-(*start) < 3600)
 		(*end) = (*start) + 3600;
 /* 	info("now got %d and %d sent", (*start), (*end)); */
 /* 	char start_char[20]; */
 /* 	char end_char[20]; */
 /* 	time_t my_start = (*start); */
 /* 	time_t my_end = (*end); */
-	
+
 /* 	slurm_make_time_str(&my_start,  */
 /* 			    start_char, sizeof(start_char)); */
 /* 	slurm_make_time_str(&my_end, */
@@ -330,7 +330,7 @@ extern void destroy_sreport_user_rec(void *object)
 
 extern void destroy_sreport_cluster_rec(void *object)
 {
-	sreport_cluster_rec_t *sreport_cluster = 
+	sreport_cluster_rec_t *sreport_cluster =
 		(sreport_cluster_rec_t *)object;
 	if(sreport_cluster) {
 		if(sreport_cluster->assoc_list)
@@ -342,11 +342,11 @@ extern void destroy_sreport_cluster_rec(void *object)
 	}
 }
 
-/* 
+/*
  * Comparator used for sorting users largest cpu to smallest cpu
- * 
+ *
  * returns: 1: user_a > user_b   0: user_a == user_b   -1: user_a < user_b
- * 
+ *
  */
 extern int sort_user_dec(sreport_user_rec_t *user_a, sreport_user_rec_t *user_b)
 {
@@ -368,17 +368,17 @@ extern int sort_user_dec(sreport_user_rec_t *user_a, sreport_user_rec_t *user_b)
 		return 1;
 	else if (diff < 0)
 		return -1;
-	
+
 	return 0;
 }
 
-/* 
+/*
  * Comparator used for sorting clusters alphabetically
- * 
- * returns: 1: cluster_a > cluster_b   
+ *
+ * returns: 1: cluster_a > cluster_b
  *           0: cluster_a == cluster_b
  *           -1: cluster_a < cluster_b
- * 
+ *
  */
 extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
 			    sreport_cluster_rec_t *cluster_b)
@@ -394,19 +394,19 @@ extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
 		return 1;
 	else if (diff < 0)
 		return -1;
-	
+
 	return 0;
 }
 
-/* 
+/*
  * Comparator used for sorting assocs alphabetically by acct and then
  * by user.  The association with a total count of time is at the top
  * of the accts.
- * 
- * returns: -1: assoc_a > assoc_b   
+ *
+ * returns: -1: assoc_a > assoc_b
  *           0: assoc_a == assoc_b
  *           1: assoc_a < assoc_b
- * 
+ *
  */
 extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
 			  sreport_assoc_rec_t *assoc_b)
@@ -422,7 +422,7 @@ extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
 		return 1;
 	else if (diff < 0)
 		return -1;
-	
+
 	if(!assoc_a->user && assoc_b->user)
 		return 1;
 	else if(!assoc_b->user)
@@ -434,18 +434,18 @@ extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
 		return 1;
 	else if (diff < 0)
 		return -1;
-	
+
 
 	return 0;
 }
 
-/* 
+/*
  * Comparator used for sorting resvs largest cpu to smallest cpu
- * 
+ *
  * returns: 1: resv_a > resv_b   0: resv_a == resv_b   -1: resv_a < resv_b
- * 
+ *
  */
-extern int sort_reservations_dec(acct_reservation_rec_t *resv_a, 
+extern int sort_reservations_dec(acct_reservation_rec_t *resv_a,
 				 acct_reservation_rec_t *resv_b)
 {
 	int diff = 0;
@@ -469,7 +469,7 @@ extern int sort_reservations_dec(acct_reservation_rec_t *resv_a,
 		return 1;
 	else if (diff < 0)
 		return -1;
-	
+
 	if(resv_a->time_start < resv_b->time_start)
 		return 1;
 	else if(resv_a->time_start > resv_b->time_start)
@@ -482,7 +482,7 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 {
 	char *ptr = NULL, *meat = NULL;
 	long num;
-	
+
 	if(!(meat = strip_quotes(in_value, NULL))) {
 		error("Problem with strip_quotes");
 		return SLURM_ERROR;
@@ -494,7 +494,7 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 		return SLURM_ERROR;
 	}
 	xfree(meat);
-	
+
 	if (num < 0)
 		*out_value = INFINITE;		/* flag to clear */
 	else

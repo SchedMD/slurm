@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -47,7 +47,7 @@
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
 
-#ifdef HAVE_BG			     
+#ifdef HAVE_BG
 # include "src/plugins/select/bluegene/wrap_rm_api.h"
 # include "src/plugins/select/bluegene/plugin/bluegene.h"
 #endif
@@ -67,17 +67,17 @@ static int cpus_per_node = 1;
  * Funtions *
  ************/
 static int  _bg_report(block_info_msg_t *block_ptr);
-static int  _build_sinfo_data(List sinfo_list, 
+static int  _build_sinfo_data(List sinfo_list,
 			      partition_info_msg_t *partition_msg,
 			      node_info_msg_t *node_msg);
-static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr, 
+static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 				   uint16_t part_inx, node_info_t *node_ptr,
 				   uint32_t node_scaling);
 static bool _filter_out(node_info_t *node_ptr);
 static void _sinfo_list_delete(void *data);
-static bool _match_node_data(sinfo_data_t *sinfo_ptr, 
+static bool _match_node_data(sinfo_data_t *sinfo_ptr,
                              node_info_t *node_ptr);
-static bool _match_part_data(sinfo_data_t *sinfo_ptr, 
+static bool _match_part_data(sinfo_data_t *sinfo_ptr,
                              partition_info_t* part_ptr);
 static int  _query_server(partition_info_msg_t ** part_pptr,
 			  node_info_msg_t ** node_pptr,
@@ -171,10 +171,10 @@ static char *_part_state_str(int state)
 #ifdef HAVE_BG
 	switch (state) {
 #ifdef HAVE_BGL
-		case RM_PARTITION_BUSY: 
+		case RM_PARTITION_BUSY:
 			return "BUSY";
 #else
-		case RM_PARTITION_REBOOTING: 
+		case RM_PARTITION_REBOOTING:
 			return "REBOOTING";
 #endif
 		case RM_PARTITION_CONFIGURING:
@@ -230,7 +230,7 @@ static int _bg_report(block_info_msg_t *block_ptr)
 /*
  * _query_server - download the current server state
  * part_pptr IN/OUT - partition information message
- * node_pptr IN/OUT - node information message 
+ * node_pptr IN/OUT - node information message
  * RET zero or error code
  */
 static int
@@ -248,7 +248,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
-		
+
 	if (old_part_ptr) {
 		error_code =
 		    slurm_load_partitions(old_part_ptr->last_update,
@@ -270,21 +270,21 @@ _query_server(partition_info_msg_t ** part_pptr,
 
 	old_part_ptr = new_part_ptr;
 	*part_pptr = new_part_ptr;
-	
+
 	if (old_node_ptr) {
 		error_code =
 		    slurm_load_node(old_node_ptr->last_update,
 				    &new_node_ptr, show_flags);
-		if (error_code == SLURM_SUCCESS) 
+		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_node_ptr = old_node_ptr;
 		}
-	} else 
+	} else
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
 				show_flags);
-	
+
 	if (error_code) {
 		slurm_perror("slurm_load_node");
 		return error_code;
@@ -294,7 +294,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 
 #ifdef HAVE_BG
 	if (old_bg_ptr) {
-		error_code = slurm_load_block_info(old_bg_ptr->last_update, 
+		error_code = slurm_load_block_info(old_bg_ptr->last_update,
 						   &new_bg_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_block_info_msg(&old_bg_ptr);
@@ -303,7 +303,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 			new_bg_ptr = old_bg_ptr;
 		}
 	} else {
-		error_code = slurm_load_block_info((time_t) NULL, 
+		error_code = slurm_load_block_info((time_t) NULL,
 						   &new_bg_ptr);
 	}
 	if (error_code) {
@@ -317,36 +317,36 @@ _query_server(partition_info_msg_t ** part_pptr,
 }
 
 /*
- * _build_sinfo_data - make a sinfo_data entry for each unique node 
+ * _build_sinfo_data - make a sinfo_data entry for each unique node
  *	configuration and add it to the sinfo_list for later printing.
  * sinfo_list IN/OUT - list of unique sinfo_data records to report
  * partition_msg IN - partition info message
  * node_msg IN - node info message
- * RET zero or error code 
+ * RET zero or error code
  */
-static int _build_sinfo_data(List sinfo_list, 
-			     partition_info_msg_t *partition_msg, 
+static int _build_sinfo_data(List sinfo_list,
+			     partition_info_msg_t *partition_msg,
 			     node_info_msg_t *node_msg)
 {
 	node_info_t *node_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
 	int j, j2;
-	
+
 	g_node_scaling = node_msg->node_scaling;
 
 #ifdef HAVE_BG
 	cpus_per_node = node_msg->node_array[0].cpus / g_node_scaling;
 #endif
-       
+
 	/* by default every partition is shown, even if no nodes */
 	if ((!params.node_flag) && params.match_flags.partition_flag) {
 		part_ptr = partition_msg->partition_array;
 		for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
-			if ((!params.partition) || 
+			if ((!params.partition) ||
 			    (_strcmp(params.partition, part_ptr->name) == 0)) {
 				list_append(sinfo_list, _create_sinfo(
 						    part_ptr, (uint16_t) j,
-						    NULL, 
+						    NULL,
 						    node_msg->node_scaling));
 			}
 		}
@@ -355,11 +355,11 @@ static int _build_sinfo_data(List sinfo_list,
 	/* make sinfo_list entries for every node in every partition */
 	for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
 		part_ptr = &(partition_msg->partition_array[j]);
-		
+
 		if (params.filtering && params.partition &&
 		    _strcmp(part_ptr->name, params.partition))
 			continue;
-		
+
 		j2 = 0;
 		while(part_ptr->node_inx[j2] >= 0) {
 			int i2 = 0;
@@ -368,19 +368,19 @@ static int _build_sinfo_data(List sinfo_list,
 			    i2 <= part_ptr->node_inx[j2+1];
 			    i2++) {
 				node_ptr = &(node_msg->node_array[i2]);
-				
+
 				if (node_ptr->name == NULL ||
 				    (params.filtering &&
 				     _filter_out(node_ptr)))
 					continue;
 
 				if(select_g_select_nodeinfo_get(
-					   node_ptr->select_nodeinfo, 
+					   node_ptr->select_nodeinfo,
 					   SELECT_NODEDATA_SUBGRP_SIZE,
 					   0,
 					   &subgrp_size) == SLURM_SUCCESS
 				   && subgrp_size)
-					_handle_subgrps(sinfo_list, 
+					_handle_subgrps(sinfo_list,
 							(uint16_t) j,
 							part_ptr,
 							node_ptr,
@@ -402,7 +402,7 @@ static int _build_sinfo_data(List sinfo_list,
 }
 
 /*
- * _filter_out - Determine if the specified node should be filtered out or 
+ * _filter_out - Determine if the specified node should be filtered out or
  *	reported.
  * node_ptr IN - node to consider filtering out
  * RET - true if node should not be reported, false otherwise
@@ -433,7 +433,7 @@ static bool _filter_out(node_info_t *node_ptr)
 
 		iterator = list_iterator_create(params.state_list);
 		while ((node_state = list_next(iterator))) {
-			if (*node_state == 
+			if (*node_state ==
 			    (NODE_STATE_DRAIN | NODE_STATE_ALLOCATED)) {
 				/* We search for anything that gets mapped to
 				 * DRAINING in node_state_string */
@@ -444,7 +444,7 @@ static bool _filter_out(node_info_t *node_ptr)
 					match = true;
 					break;
 				}
-			} else if (*node_state == 
+			} else if (*node_state ==
 				   (NODE_STATE_DRAIN | NODE_STATE_IDLE)) {
 				/* We search for anything that gets mapped to
 				 * DRAINED in node_state_string */
@@ -462,7 +462,7 @@ static bool _filter_out(node_info_t *node_ptr)
 				}
 			} else if (*node_state == NODE_STATE_ERROR) {
 				slurm_get_select_nodeinfo(
-					node_ptr->select_nodeinfo, 
+					node_ptr->select_nodeinfo,
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ERROR,
 					&cpus);
@@ -472,7 +472,7 @@ static bool _filter_out(node_info_t *node_ptr)
 				}
 			} else if (*node_state == NODE_STATE_ALLOCATED) {
 				slurm_get_select_nodeinfo(
-					node_ptr->select_nodeinfo, 
+					node_ptr->select_nodeinfo,
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ALLOCATED,
 					&cpus);
@@ -488,9 +488,9 @@ static bool _filter_out(node_info_t *node_ptr)
 					break;
 				}
 			} else {
-				base_state = 
+				base_state =
 					node_ptr->node_state & NODE_STATE_BASE;
-				if (base_state == *node_state) { 
+				if (base_state == *node_state) {
 					match = true;
 					break;
 				}
@@ -515,7 +515,7 @@ static void _sort_hostlist(List sinfo_list)
 	list_iterator_destroy(i);
 }
 
-static bool _match_node_data(sinfo_data_t *sinfo_ptr, 
+static bool _match_node_data(sinfo_data_t *sinfo_ptr,
                              node_info_t *node_ptr)
 {
 	if (sinfo_ptr->nodes &&
@@ -536,7 +536,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 			return false;
 	}
 
-	/* If no need to exactly match sizes, just return here 
+	/* If no need to exactly match sizes, just return here
 	 * otherwise check cpus, disk, memory and weigth individually */
 	if (!params.exact_match)
 		return true;
@@ -571,7 +571,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 	return true;
 }
 
-static bool _match_part_data(sinfo_data_t *sinfo_ptr, 
+static bool _match_part_data(sinfo_data_t *sinfo_ptr,
                              partition_info_t* part_ptr)
 {
 	if (part_ptr == sinfo_ptr->part_info) /* identical partition */
@@ -582,9 +582,9 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	if (params.match_flags.avail_flag &&
 	    (part_ptr->state_up != sinfo_ptr->part_info->state_up))
 		return false;
-			
+
 	if (params.match_flags.groups_flag &&
-	    (_strcmp(part_ptr->allow_groups, 
+	    (_strcmp(part_ptr->allow_groups,
 	             sinfo_ptr->part_info->allow_groups)))
 		return false;
 
@@ -696,11 +696,11 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	total_cpus = node_ptr->cpus;
 	total_nodes = node_scaling;
 
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
 				     &used_cpus);
-	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &error_cpus);
@@ -718,7 +718,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 		sinfo_ptr->nodes_alloc += used_cpus;
 		sinfo_ptr->nodes_other += error_cpus;
-		sinfo_ptr->nodes_idle += 
+		sinfo_ptr->nodes_idle +=
 			(total_nodes - (used_cpus + error_cpus));
 		used_cpus *= cpus_per_node;
 		error_cpus *= cpus_per_node;
@@ -749,7 +749,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->nodes_alloc += total_nodes;
 	else if (base_state == NODE_STATE_IDLE)
 		sinfo_ptr->nodes_idle += total_nodes;
-	else 
+	else
 		sinfo_ptr->nodes_other += total_nodes;
 #endif
 	sinfo_ptr->nodes_total += total_nodes;
@@ -765,22 +765,22 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	} else if (IS_NODE_DRAIN(node_ptr) ||
 		   (base_state == NODE_STATE_DOWN)) {
 		sinfo_ptr->cpus_other += total_cpus;
-	} else 
+	} else
 		sinfo_ptr->cpus_idle += total_cpus;
-	
+
 /* 	info("count is now %d %d %d %d",  */
 /* 	     sinfo_ptr->cpus_alloc, sinfo_ptr->cpus_idle, */
 /* 	     sinfo_ptr->cpus_other, sinfo_ptr->cpus_total); */
 }
 
-static int _insert_node_ptr(List sinfo_list, uint16_t part_num, 
+static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 			    partition_info_t *part_ptr,
 			    node_info_t *node_ptr, uint32_t node_scaling)
 {
 	int rc = SLURM_SUCCESS;
 	sinfo_data_t *sinfo_ptr = NULL;
-	ListIterator itr = NULL;	
-	
+	ListIterator itr = NULL;
+
 	itr = list_iterator_create(sinfo_list);
 	while ((sinfo_ptr = list_next(itr))) {
 		if (!_match_part_data(sinfo_ptr, part_ptr))
@@ -792,16 +792,16 @@ static int _insert_node_ptr(List sinfo_list, uint16_t part_num,
 		break;
 	}
 	list_iterator_destroy(itr);
-	
+
 	/* if no match, create new sinfo_data entry */
-	if (!sinfo_ptr) 
+	if (!sinfo_ptr)
 		list_append(sinfo_list,
 			    _create_sinfo(part_ptr, part_num,
-					  node_ptr, node_scaling));	
+					  node_ptr, node_scaling));
 	return rc;
 }
 
-static int _handle_subgrps(List sinfo_list, uint16_t part_num, 
+static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 			   partition_info_t *part_ptr,
 			   node_info_t *node_ptr, uint32_t node_scaling)
 {
@@ -820,9 +820,9 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 /* 					0, */
 /* 					&size) != SLURM_SUCCESS) */
 /* 		return SLURM_ERROR; */
-	
+
 /* 	bitmap = bit_alloc(size); */
-	
+
 	/* If we ever update the hostlist stuff to support this stuff
 	 * then we can use this to tack on the end of the node name
 	 * the subgrp stuff.  On bluegene systems this would be nice
@@ -830,20 +830,20 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 	 */
 /* 	orig_name = node_ptr->name; */
 /* 	node_ptr->name = NULL; */
-	if (params.state_list) 
+	if (params.state_list)
 		iterator = list_iterator_create(params.state_list);
 
 	for(i=0; i<state_cnt; i++) {
 		if(iterator) {
 			while ((node_state = list_next(iterator))) {
-				if(*node_state == state[i]) 
+				if(*node_state == state[i])
 					break;
 			}
 			list_iterator_reset(iterator);
-			if(!node_state) 
+			if(!node_state)
 				continue;
 		}
-		if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo, 
+		if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 						SELECT_NODEDATA_SUBCNT,
 						state[i],
 						&size) == SLURM_SUCCESS
@@ -854,7 +854,7 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 /* 				   state[i], */
 /* 				   &tmp_bitmap) != SLURM_SUCCESS) */
 /* 				continue; */
-			
+
 /* 			if(select_g_select_nodeinfo_get( */
 /* 				   node_ptr->select_nodeinfo,  */
 /* 				   SELECT_NODEDATA_STR, */
@@ -903,7 +903,7 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 			return SLURM_SUCCESS;
 	}
 	node_ptr->node_state &= NODE_STATE_FLAGS;
-	node_ptr->node_state |= NODE_STATE_IDLE; 
+	node_ptr->node_state |= NODE_STATE_IDLE;
 /* 	info("%s got %s of %u", node_ptr->name, */
 /* 	     node_state_string(node_ptr->node_state), size); */
 	if((int)node_scaling > 0)
@@ -918,14 +918,14 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 	return SLURM_SUCCESS;
 }
 
-/* 
+/*
  * _create_sinfo - create an sinfo record for the given node and partition
  * sinfo_list IN/OUT - table of accumulated sinfo records
  * part_ptr IN       - pointer to partition record to add
  * part_inx IN       - index of partition record (0-origin)
  * node_ptr IN       - pointer to node record to add
  */
-static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr, 
+static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 				   uint16_t part_inx, node_info_t *node_ptr,
 				   uint32_t node_scaling)
 {
@@ -937,9 +937,9 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 	sinfo_ptr->part_inx = part_inx;
 	sinfo_ptr->nodes = hostlist_create("");
 
-	if (node_ptr) 
+	if (node_ptr)
 		_update_sinfo(sinfo_ptr, node_ptr, node_scaling);
-	
+
 	return sinfo_ptr;
 }
 
@@ -952,7 +952,7 @@ static void _sinfo_list_delete(void *data)
 }
 
 /* like strcmp, but works with NULL pointers */
-static int _strcmp(char *data1, char *data2) 
+static int _strcmp(char *data1, char *data2)
 {
 	static char null_str[] = "(null)";
 

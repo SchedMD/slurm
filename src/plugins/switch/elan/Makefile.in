@@ -319,7 +319,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 @HAVE_ELAN_FALSE@elan_lib = 
 @HAVE_ELAN_TRUE@elan_lib = switch_elan.la
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = $(elan_lib)
 

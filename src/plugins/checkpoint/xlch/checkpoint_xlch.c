@@ -6,32 +6,32 @@
  *  Copyright (C) 2007-2009 National University of Defense Technology, China.
  *  Written by Hongia Cao.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -85,10 +85,10 @@ struct check_job_info {
 	pthread_mutex_t mutex;
 };
 
-static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal, 
+static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 		      char *nodelist);
 
-static int _step_ckpt(struct step_record * step_ptr, uint16_t wait, 
+static int _step_ckpt(struct step_record * step_ptr, uint16_t wait,
 		      char *image_dir, uint16_t sig_timeout);
 
 /* checkpoint request timeout processing */
@@ -104,7 +104,7 @@ struct ckpt_timeout_info {
 	char*      nodelist;
 };
 static void *_ckpt_agent_thr(void *arg);
-static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id, 
+static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id,
 				  time_t start_time, uint16_t signal,
 				  uint16_t wait_time, char *nodelist);
 static void  _ckpt_dequeue_timeout(uint32_t job_id, uint32_t step_id,
@@ -135,7 +135,7 @@ static char *scch_path = SLURM_PREFIX "/sbin/scch";
  * where <application> is a description of the intended application of
  * the plugin (e.g., "checkpoint" for SLURM checkpoint) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load checkpoint plugins if the plugin_type string has a 
+ * only load checkpoint plugins if the plugin_type string has a
  * prefix of "checkpoint/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
@@ -191,9 +191,9 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
 
-extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, 
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 			  struct step_record *step_ptr, uint16_t op,
-			  uint16_t data, char *image_dir, time_t * event_time, 
+			  uint16_t data, char *image_dir, time_t * event_time,
 			  uint32_t *error_code, char **error_msg )
 {
 	int rc = SLURM_SUCCESS;
@@ -202,14 +202,14 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 	/* checkpoint/xlch does not support checkpoint batch jobs */
 	if (step_id == SLURM_BATCH_SCRIPT)
 		return ESLURM_NOT_SUPPORTED;
-	
+
 	xassert(step_ptr);
 	check_ptr = (struct check_job_info *) step_ptr->check_job;
 	check_ptr->task_cnt = step_ptr->step_layout->task_cnt; /* set it early */
 	xassert(check_ptr);
 
 	slurm_mutex_lock (&check_ptr->mutex);
-	
+
 	switch (op) {
 		case CHECK_ABLE:
 			if (check_ptr->disabled)
@@ -277,7 +277,7 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		uint32_t error_code, char *error_msg )
 {
 	error("checkpoint/xlch: slurm_ckpt_comp not implemented");
-	return ESLURM_NOT_SUPPORTED; 
+	return ESLURM_NOT_SUPPORTED;
 }
 
 extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_id,
@@ -298,7 +298,7 @@ extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_i
 	slurm_mutex_lock (&check_ptr->mutex);
 
 	/*
-	 * for now we do not use event_time to identify operation and always 
+	 * for now we do not use event_time to identify operation and always
 	 * set it 0
 	 * TODO: consider send event_time to the task via sigqueue().
 	 */
@@ -311,9 +311,9 @@ extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_i
 		rc = ESLURM_ALREADY_DONE;
 		goto out;
 	}
-	
+
 	if ((uint16_t)task_id >= check_ptr->task_cnt) {
-		error("invalid task_id %u, task_cnt: %hu", task_id, 
+		error("invalid task_id %u, task_cnt: %hu", task_id,
 		      check_ptr->task_cnt);
 		rc = EINVAL;
 		goto out;
@@ -343,11 +343,11 @@ extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_i
 		FREE_NULL_BITMAP (check_ptr->replied);
 
 		if (check_ptr->sig_done) {
-			info ("checkpoint step %u.%hu done, sending signal %hu", 
+			info ("checkpoint step %u.%hu done, sending signal %hu",
 			      step_ptr->job_ptr->job_id,
 			      step_ptr->step_id, check_ptr->sig_done);
 			_send_sig(step_ptr->job_ptr->job_id, step_ptr->step_id,
-				  check_ptr->sig_done, 
+				  check_ptr->sig_done,
 				  step_ptr->step_layout->node_list);
 		}
 
@@ -358,7 +358,7 @@ extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_i
 
  out:
 	slurm_mutex_unlock (&check_ptr->mutex);
-	return rc; 
+	return rc;
 }
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)
@@ -384,9 +384,9 @@ extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 
 extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
-	struct check_job_info *check_ptr = 
+	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
- 
+
 	pack16(check_ptr->disabled, buffer);
 	pack16(check_ptr->task_cnt, buffer);
 	pack16(check_ptr->reply_cnt, buffer);
@@ -423,8 +423,8 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack32(&check_ptr->error_code, buffer);
 	safe_unpackstr_xmalloc(&check_ptr->error_msg, &uint32_tmp, buffer);
 	safe_unpack_time(&check_ptr->time_stamp, buffer);
-	
-	return SLURM_SUCCESS; 
+
+	return SLURM_SUCCESS;
 
     unpack_error:
 	xfree(check_ptr->error_msg);
@@ -432,7 +432,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 }
 
 /* Send a signal RPC to a list of nodes */
-static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal, 
+static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 		      char *nodelist)
 {
 	agent_arg_t *agent_args;
@@ -474,7 +474,7 @@ static int _step_ckpt(struct step_record * step_ptr, uint16_t wait,
 		return ESLURM_DISABLED;
 
 	if (!check_ptr->task_cnt) {
-		error("_step_ckpt: job %u.%u has no tasks to checkpoint", 
+		error("_step_ckpt: job %u.%u has no tasks to checkpoint",
 			job_ptr->job_id,
 			step_ptr->step_id);
 		return ESLURM_INVALID_NODE_NAME;
@@ -484,11 +484,11 @@ static int _step_ckpt(struct step_record * step_ptr, uint16_t wait,
 
 	checkpoint_tasks(step_ptr->job_ptr->job_id, step_ptr->step_id,
 			 check_ptr->time_stamp, image_dir, wait, nodelist);
-	
-	_ckpt_enqueue_timeout(step_ptr->job_ptr->job_id, 
-			      step_ptr->step_id, check_ptr->time_stamp, 
-			      sig_timeout, check_ptr->wait_time, nodelist);  
-	
+
+	_ckpt_enqueue_timeout(step_ptr->job_ptr->job_id,
+			      step_ptr->step_id, check_ptr->time_stamp,
+			      sig_timeout, check_ptr->wait_time, nodelist);
+
 	info("checkpoint requested for job %u.%u", job_ptr->job_id,
 	     step_ptr->step_id);
 	xfree (nodelist);
@@ -522,7 +522,7 @@ static void *_ckpt_agent_thr(void *arg)
 		while ((rec = list_next(iter))) {
 			if (rec->end_time > now)
 				continue;
-			info("checkpoint timeout for %u.%u", 
+			info("checkpoint timeout for %u.%u",
 				rec->job_id, rec->step_id);
 			_ckpt_signal_step(rec);
 			list_delete_item(iter);
@@ -534,7 +534,7 @@ static void *_ckpt_agent_thr(void *arg)
 }
 
 /* Queue a checkpoint request timeout */
-static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id, 
+static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id,
 				  time_t start_time, uint16_t signal,
 				  uint16_t wait_time, char *nodelist)
 {
@@ -561,7 +561,7 @@ static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id,
 static void _ckpt_timeout_free(void *rec)
 {
 	struct ckpt_timeout_info *ckpt_rec = (struct ckpt_timeout_info *)rec;
-	
+
 	if (ckpt_rec) {
 		xfree(ckpt_rec->nodelist);
 		xfree(ckpt_rec);
@@ -608,11 +608,11 @@ static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code)
 		error ("_on_ckpt_complete: fork: %m");
 		return SLURM_ERROR;
 	}
-	
+
 	if (cpid == 0) {
 		/*
-		 * We don't fork and wait the child process because the job 
-		 * read lock is held. It could take minutes to delete/move 
+		 * We don't fork and wait the child process because the job
+		 * read lock is held. It could take minutes to delete/move
 		 * the checkpoint image files. So there is a race condition
 		 * of the user requesting another checkpoint before SCCH
 		 * finishes.
@@ -628,7 +628,7 @@ static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code)
 			char str_job[11];
 			char str_step[11];
 			char str_err[11];
-		
+
 			/*
 			 * XXX: if slurmctld is running as root, we must setuid here.
 			 * But what if slurmctld is running as SlurmUser?
@@ -646,11 +646,11 @@ static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code)
 					exit(127);
 				}
 			}
-			snprintf(str_job,  sizeof(str_job),  "%u",  
+			snprintf(str_job,  sizeof(str_job),  "%u",
 				 step_ptr->job_ptr->job_id);
-			snprintf(str_step, sizeof(str_step), "%hu", 
+			snprintf(str_step, sizeof(str_step), "%hu",
 				 step_ptr->step_id);
-			snprintf(str_err,  sizeof(str_err),  "%u",  
+			snprintf(str_err,  sizeof(str_err),  "%u",
 				 error_code);
 
 			args[0] = scch_path;
@@ -691,7 +691,7 @@ extern int slurm_ckpt_signal_tasks(void *slurmd_job)
 extern int slurm_ckpt_restart_task(void *slurmd_job, char *image_dir, int gtid)
 {
 	char buf[256];
-	
+
 	if (snprintf(buf, sizeof(buf), "%s/task.%d.ckpt", image_dir, gtid) >= sizeof(buf)) {
 		error("slurm buffer size too small");
 		return SLURM_FAILURE;

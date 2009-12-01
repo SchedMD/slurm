@@ -1,39 +1,39 @@
 /*****************************************************************************\
  *  bitstring.c - bitmap manipulation functions
  *****************************************************************************
- *  See comments about origin, limitations, and internal structure in 
+ *  See comments about origin, limitations, and internal structure in
  *  bitstring.h.
  *
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -51,8 +51,8 @@
 #include "src/common/xstring.h"
 
 /*
- * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
- * for details. 
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+ * for details.
  */
 strong_alias(bit_alloc,		slurm_bit_alloc);
 strong_alias(bit_test,		slurm_bit_test);
@@ -95,7 +95,7 @@ strong_alias(bit_copybits,	slurm_bit_copybits);
 strong_alias(bit_get_bit_num,	slurm_bit_get_bit_num);
 strong_alias(bit_get_pos_num,	slurm_bit_get_pos_num);
 
-/* 
+/*
  * Allocate a bitstring.
  *   nbits (IN)		valid bits in new bitstring, initialized to all clear
  *   RETURN		new bitstring
@@ -113,9 +113,9 @@ bit_alloc(bitoff_t nbits)
 	return new;
 }
 
-/* 
+/*
  * Reallocate a bitstring (expand or contract size).
- *   b (IN)		pointer to old bitstring 
+ *   b (IN)		pointer to old bitstring
  *   nbits (IN)		valid bits in new bitstr
  *   RETURN		new bitstring
  */
@@ -124,7 +124,7 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 {
 	bitoff_t obits;
 	bitstr_t *new = NULL;
-       
+
 	_assert_bitstr_valid(b);
 	obits = _bitstr_bits(b);
 	new = realloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
@@ -137,10 +137,10 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 	return new;
 }
 
-/* 
+/*
  * Free a bitstr.
  *   b (IN/OUT)	bitstr to be freed
- */ 
+ */
 void
 bit_free(bitstr_t *b)
 {
@@ -162,8 +162,8 @@ bit_size(bitstr_t *b)
 	return _bitstr_bits(b);
 }
 
-/* 
- * Is bit N of bitstring b set? 
+/*
+ * Is bit N of bitstring b set?
  *   b (IN)		bitstring to test
  *   bit (IN)		bit position to test
  *   RETURN		1 if bit set, 0 if clear
@@ -176,7 +176,7 @@ bit_test(bitstr_t *b, bitoff_t bit)
 	return ((b[_bit_word(bit)] & _bit_mask(bit)) ? 1 : 0);
 }
 
-/* 
+/*
  * Set bit N of bitstring.
  *   b (IN)		target bitstring
  *   bit (IN)		bit position to set
@@ -189,7 +189,7 @@ bit_set(bitstr_t *b, bitoff_t bit)
 	b[_bit_word(bit)] |= _bit_mask(bit);
 }
 
-/* 
+/*
  * Clear bit N of bitstring
  *   b (IN)		target bitstring
  *   bit (IN)		bit position to clear
@@ -202,7 +202,7 @@ bit_clear(bitstr_t *b, bitoff_t bit)
 	b[_bit_word(bit)] &= ~_bit_mask(bit);
 }
 
-/* 
+/*
  * Set bits start ... stop in bitstring
  *   b (IN)		target bitstring
  *   start (IN)		starting (low numbered) bit position
@@ -225,7 +225,7 @@ bit_nset(bitstr_t *b, bitoff_t start, bitoff_t stop)
 	}
 }
 
-/* 
+/*
  * Clear bits start ... stop in bitstring
  *   b (IN)		target bitstring
  *   start (IN)		starting (low numbered) bit position
@@ -248,7 +248,7 @@ bit_nclear(bitstr_t *b, bitoff_t start, bitoff_t stop)
 	}
 }
 
-/* 
+/*
  * Find first bit clear in bitstring.
  *   b (IN)		bitstring to search
  *   nbits (IN)		number of bits to search
@@ -388,12 +388,12 @@ bit_nffs(bitstr_t *b, int n)
 	return value;
 }
 
-/* 
+/*
  * Find first bit set in b.
  *   b (IN)		bitstring to search
  *   RETURN 		resulting bit position (-1 if none found)
  */
-bitoff_t 
+bitoff_t
 bit_ffs(bitstr_t *b)
 {
 	bitoff_t bit = 0, value = -1;
@@ -418,12 +418,12 @@ bit_ffs(bitstr_t *b)
 	return value;
 }
 
-/* 
+/*
  * Find last bit set in b.
  *   b (IN)		bitstring to search
  *   RETURN 		resulting bit position (-1 if none found)
  */
-bitoff_t 
+bitoff_t
 bit_fls(bitstr_t *b)
 {
 	bitoff_t bit, value = -1;
@@ -435,7 +435,7 @@ bit_fls(bitstr_t *b)
 		return -1;
 
 	bit = _bitstr_bits(b) - 1;	/* zero origin */
-			
+
 	while (bit >= 0 && 		/* test partitial words */
 		(_bit_word(bit) == _bit_word(bit + 1))) {
 		if (bit_test(b, bit)) {
@@ -461,8 +461,8 @@ bit_fls(bitstr_t *b)
 	return value;
 }
 
-/* 
- * set all bits between the first and last bits set (i.e. fill in the gaps 
+/*
+ * set all bits between the first and last bits set (i.e. fill in the gaps
  *	to make set bits contiguous)
  */
 void
@@ -493,7 +493,7 @@ bit_super_set(bitstr_t *b1, bitstr_t *b2)  {
 	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
 
 	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) {
-		if (b1[_bit_word(bit)] != (b1[_bit_word(bit)] & 
+		if (b1[_bit_word(bit)] != (b1[_bit_word(bit)] &
 		                           b2[_bit_word(bit)]))
 			return 0;
 	}
@@ -542,7 +542,7 @@ bit_and(bitstr_t *b1, bitstr_t *b2) {
 		b1[_bit_word(bit)] &= b2[_bit_word(bit)];
 }
 
-/* 
+/*
  * b1 = ~b1		one's complement
  *   b1 (IN/OUT)	first bitmap
  */
@@ -556,7 +556,7 @@ bit_not(bitstr_t *b) {
 		b[_bit_word(bit)] = ~b[_bit_word(bit)];
 }
 
-/* 
+/*
  * b1 |= b2
  *   b1 (IN/OUT)	first bitmap
  *   b2 (IN)		second bitmap
@@ -575,7 +575,7 @@ bit_or(bitstr_t *b1, bitstr_t *b2) {
 
 
 
-/* 
+/*
  * return a copy of the supplied bitmap
  */
 bitstr_t *
@@ -618,7 +618,7 @@ static uint32_t
 hweight(uint32_t w)
 {
 	uint32_t res;
-       
+
 	res = (w   & 0x55555555) + ((w >> 1)    & 0x55555555);
 	res = (res & 0x33333333) + ((res >> 2)  & 0x33333333);
 	res = (res & 0x0F0F0F0F) + ((res >> 4)  & 0x0F0F0F0F);
@@ -635,7 +635,7 @@ static uint64_t
 hweight(uint64_t w)
 {
 	uint64_t res;
-       
+
 	res = (w   & 0x5555555555555555) + ((w >> 1)    & 0x5555555555555555);
 	res = (res & 0x3333333333333333) + ((res >> 2)  & 0x3333333333333333);
 	res = (res & 0x0F0F0F0F0F0F0F0F) + ((res >> 4)  & 0x0F0F0F0F0F0F0F0F);
@@ -650,7 +650,7 @@ hweight(uint64_t w)
 /*
  * Count the number of bits set in bitstring.
  *   b (IN)		bitstring to check
- *   RETURN		count of set bits 
+ *   RETURN		count of set bits
  */
 int
 bit_set_count(bitstr_t *b)
@@ -706,7 +706,7 @@ bit_overlap(bitstr_t *b1, bitstr_t *b2)
 /*
  * Count the number of bits clear in bitstring.
  *   b (IN)		bitstring to check
- *   RETURN		count of clear bits 
+ *   RETURN		count of clear bits
  */
 int
 bit_clear_count(bitstr_t *b)
@@ -769,7 +769,7 @@ int_and_set_count(int *i1, int ilen, bitstr_t *b2) {
 	return(sum);
 }
 
-/* 
+/*
  * rotate b1 by n bits returning a rotated copy
  *   b1 (IN)		bitmap to rotate
  *   n  (IN)		rotation distance (+ = rotate left, - = rotate right)
@@ -816,7 +816,7 @@ bit_rotate_copy(bitstr_t *b1, int n, bitoff_t nbits) {
 	return(new);
 }
 
-/* 
+/*
  * rotate b1 by n bits
  *   b1 (IN/OUT)	bitmap to rotate
  *   n  (IN)		rotation distance (+ = rotate left, - = rotate right)
@@ -864,7 +864,7 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits) {
 		}
 
 		new_bits = hweight(b[word]);
-		if (((count + new_bits) <= nbits) && 
+		if (((count + new_bits) <= nbits) &&
 		    ((bit + word_size - 1) < _bitstr_bits(b))) {
 			new[word] = b[word];
 			count += new_bits;
@@ -887,7 +887,7 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits) {
 	return new;
 }
 
-/* 
+/*
  * XXX the relationship between stdint types and "unsigned [long] long"
  * types is architecture/compiler dependent, so this may have to be tweaked.
  */
@@ -926,11 +926,11 @@ bit_fmt(char *str, int len, bitstr_t *b)
 				count++;
 			}
 			if (bit == start)	/* add single bit position */
-				ret = snprintf(str+strlen(str), 
+				ret = snprintf(str+strlen(str),
 				               len-strlen(str),
 				               BITSTR_SINGLE_FMT, start);
 			else 			/* add bit position range */
-				ret = snprintf(str+strlen(str), 
+				ret = snprintf(str+strlen(str),
 				               len-strlen(str),
 				               BITSTR_RANGE_FMT, start, bit);
 			assert(ret != -1);
@@ -951,13 +951,13 @@ bit_fmt(char *str, int len, bitstr_t *b)
 int
 bit_unfmt(bitstr_t *b, char *str)
 {
-	int *intvec, rc = 0; 
+	int *intvec, rc = 0;
 
 	_assert_bitstr_valid(b);
 	if (str[0] == '\0')	/* no bits set */
 		return rc;
 	intvec = bitfmt2int(str);
-	if (intvec == NULL) 
+	if (intvec == NULL)
 		return -1;
 	rc = inx2bitstr(b, intvec);
 	xfree(intvec);
@@ -965,22 +965,22 @@ bit_unfmt(bitstr_t *b, char *str)
 }
 
 /*
- * bitfmt2int - convert a string describing bitmap (output from bit_fmt, 
- *	e.g. "0-30,45,50-60") into an array of integer (start/end) pairs 
+ * bitfmt2int - convert a string describing bitmap (output from bit_fmt,
+ *	e.g. "0-30,45,50-60") into an array of integer (start/end) pairs
  *	terminated by -1 (e.g. "0, 30, 45, 45, 50, 60, -1")
  * input: bitmap string as produced by bitstring.c : bitfmt
  * output: an array of integers
  * NOTE: the caller must xfree the returned memory
  */
 int *
-bitfmt2int (char *bit_str_ptr) 
+bitfmt2int (char *bit_str_ptr)
 {
 	int *bit_int_ptr, i, bit_inx, size, sum, start_val;
 
-	if (bit_str_ptr == NULL) 
+	if (bit_str_ptr == NULL)
 		return NULL;
 	size = strlen (bit_str_ptr) + 1;
-	bit_int_ptr = xmalloc ( sizeof (int) * 
+	bit_int_ptr = xmalloc ( sizeof (int) *
 			(size * 2 + 1));	/* more than enough space */
 
 	bit_inx = sum = 0;
@@ -996,7 +996,7 @@ bitfmt2int (char *bit_str_ptr)
 			sum = 0;
 		}
 
-		else if (bit_str_ptr[i] == ',' || 
+		else if (bit_str_ptr[i] == ',' ||
 		         bit_str_ptr[i] == '\0') {
 			if (i == 0)
 				break;
@@ -1016,20 +1016,20 @@ bitfmt2int (char *bit_str_ptr)
 /*
  * intbitfmt - convert a array of interger (start/end) pairs
  *	terminated by -1 (e.g. "0, 30, 45, 45, 50, 60, -1") to a
- *	string describing bitmap (output from bit_fmt, e.g. "0-30,45,50-60") 
+ *	string describing bitmap (output from bit_fmt, e.g. "0-30,45,50-60")
  * input: int array
  * output: char *
  * NOTE: the caller must xfree the returned memory
  */
 char *
-inx2bitfmt (int *inx) 
+inx2bitfmt (int *inx)
 {
 	int j=0;
 	char *bit_char_ptr = NULL;
 
-	if (inx == NULL) 
+	if (inx == NULL)
 		return NULL;
-	
+
 	while (inx[j] >= 0) {
 		if(bit_char_ptr)
 			xstrfmtcat(bit_char_ptr, ",%d-%d", inx[j], inx[j+1]);
@@ -1041,10 +1041,10 @@ inx2bitfmt (int *inx)
 	return bit_char_ptr;
 }
 
-int inx2bitstr(bitstr_t *b, int *inx) 
+int inx2bitstr(bitstr_t *b, int *inx)
 {
 	int *p, rc=0;
-	
+
 	assert(b);
 	assert(inx);
 
@@ -1055,7 +1055,7 @@ int inx2bitstr(bitstr_t *b, int *inx)
 			rc = -1;
 			break;
 		}
-		bit_nset(b, *p, *(p + 1));		
+		bit_nset(b, *p, *(p + 1));
 	}
 	return rc;
 }
@@ -1082,8 +1082,8 @@ char * bit_fmt_hexmask(bitstr_t * bitmap)
 
 	retstr = xmalloc(charsize + 3);
 
-	retstr[0] = '0';  
-	retstr[1] = 'x';  
+	retstr[0] = '0';
+	retstr[1] = 'x';
 	retstr[charsize + 2] = '\0';
 	ptr = &retstr[charsize + 1];
 	for (i=0; i < bitsize;) {
@@ -1112,7 +1112,7 @@ char * bit_fmt_hexmask(bitstr_t * bitmap)
  *   bitmap (OUT)  bitmap to update
  *   str (IN)      hex mask string to unformat
  */
-int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str) 
+int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 {
 	int bit_index = 0, len = strlen(str);
 	int rc = 0;
@@ -1126,7 +1126,7 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 	}
 
 	while(curpos >= str) {
-		current = (int) *curpos; 
+		current = (int) *curpos;
 		if (isxdigit(current)) {	/* valid hex digit */
 			if (isdigit(current)) {
 				current -= '0';
@@ -1142,7 +1142,7 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 		if ((current & 1) && (bit_index   < bitsize))
 			bit_set(bitmap, bit_index);
 		if ((current & 2) && (bit_index+1 < bitsize))
-			bit_set(bitmap, bit_index+1); 
+			bit_set(bitmap, bit_index+1);
 		if ((current & 4) && (bit_index+2 < bitsize))
 			bit_set(bitmap, bit_index+2);
 		if ((current & 8) && (bit_index+3 < bitsize))
@@ -1197,7 +1197,7 @@ char * bit_fmt_binmask(bitstr_t * bitmap)
  *   bitmap (OUT)  bitmap to update
  *   str (IN)      hex mask string to unformat
  */
-int bit_unfmt_binmask(bitstr_t * bitmap, const char* str) 
+int bit_unfmt_binmask(bitstr_t * bitmap, const char* str)
 {
 	int bit_index = 0, len = strlen(str);
 	const char *curpos = str + len - 1;
@@ -1205,7 +1205,7 @@ int bit_unfmt_binmask(bitstr_t * bitmap, const char* str)
 	bitoff_t bitsize = bit_size(bitmap);
 
 	while(curpos >= str) {
-		current = (int) *curpos; 
+		current = (int) *curpos;
 		current -= '0';
 		if ((current & 1) && (bit_index   < bitsize))
 			bit_set(bitmap, bit_index);
@@ -1228,7 +1228,7 @@ bit_get_bit_num(bitstr_t *b, int pos)
 	bitoff_t bit;
 	int cnt = 0;
 	bitoff_t bit_cnt;
-	
+
 	_assert_bitstr_valid(b);
 	bit_cnt = _bitstr_bits(b);
 	assert(pos <= bit_cnt);
@@ -1236,8 +1236,8 @@ bit_get_bit_num(bitstr_t *b, int pos)
 	for (bit = 0; bit < bit_cnt; bit++) {
 		if (bit_test(b, bit)) {	/* we got one */
 			if(cnt == pos)
-				break;			
-			cnt++;			
+				break;
+			cnt++;
 		}
 	}
 
@@ -1259,18 +1259,18 @@ bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 	bitoff_t bit;
 	int cnt = -1;
 	bitoff_t bit_cnt;
-	
+
 	_assert_bitstr_valid(b);
 	bit_cnt = _bitstr_bits(b);
 	assert(pos <= bit_cnt);
-	
+
 	if (!bit_test(b, pos)) {
 		error("bit %d not set", pos);
 		return cnt;
 	}
 	for (bit = 0; bit <= pos; bit++) {
 		if (bit_test(b, bit)) {	/* we got one */
-			cnt++;			
+			cnt++;
 		}
 	}
 

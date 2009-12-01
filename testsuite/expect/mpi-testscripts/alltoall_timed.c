@@ -22,7 +22,7 @@ int main(int argc, char **argv)
    }
 
    MPI_Comm_rank(MPI_COMM_WORLD,&me);
-   
+
    out=(int *)calloc(tasks, sizeof(int));
    in=(int *)calloc(tasks,sizeof(int));
    for(i=0;i<tasks;i++)  out[i] = me;

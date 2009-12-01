@@ -4,32 +4,32 @@
  *  Copyright (C) 2009 National University of Defense Technology, China.
  *  Written by Hongia Cao.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -117,9 +117,9 @@ signal_child (int sig, siginfo_t *siginfo, void *context)
 		signal_self(sig);
 		return;
 	}
-	
+
 	if ((siginfo->si_code > 0) &&	/* si_code > 0 indicates sent by kernel */
-	    (sig == SIGILL || sig == SIGFPE || 
+	    (sig == SIGILL || sig == SIGFPE ||
 	     sig == SIGBUS || sig == SIGSEGV )) {
 		/* This signal is OUR error, so we don't forward */
 		signal_self(sig);
@@ -144,7 +144,7 @@ mimic_exit(int status)
 		struct rlimit r;
 		r.rlim_cur = r.rlim_max = 0;
 		(void)setrlimit(RLIMIT_CORE, &r);
-		
+
 		/* now raise the signal */
 		signal_self(WTERMSIG(status));
 	} else {
@@ -158,8 +158,8 @@ on_child_exit(int signum)
 {
 	int status;
 
-	/* 
-  	 * if srun_cr is checkpoint/restart-ed after srun exited, 
+	/*
+  	 * if srun_cr is checkpoint/restart-ed after srun exited,
   	 * srun_pid will be the pid of the new srun.
 	 */
 	cr_enter_cs(cr_id);
@@ -203,7 +203,7 @@ static int
 init_srun_argv(int argc, char **argv)
 {
 	int i;
-	
+
 	srun_argv = (char **)xmalloc(sizeof(char *) * (argc + 3));
 
 	srun_argv[0] = cr_run_path;
@@ -238,7 +238,7 @@ create_listen_socket(void)
 
 
 	close (listen_fd);	/* close possible old socket */
-	
+
 	sprintf(cr_sock_addr, "/tmp/sock.srun_cr.%u", (unsigned int)getpid());
 
 	listen_fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -246,14 +246,14 @@ create_listen_socket(void)
 		error("failed to create listen socket: %m");
 		return -1;
 	}
-	
+
 	sa.sun_family = AF_UNIX;
 	strcpy(sa.sun_path, cr_sock_addr);
 	sa_len = strlen(sa.sun_path) + sizeof(sa.sun_family);
 
 	unlink(sa.sun_path);	/* remove possible old socket */
 
-	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, 
+	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
 		   (void*)&re_use_addr, sizeof(int));
 
 	if (bind(listen_fd, (struct sockaddr *)&sa, sa_len) < 0) {
@@ -269,7 +269,7 @@ create_listen_socket(void)
 	}
 
 	fd_set_nonblocking(listen_fd);
-	
+
 	return listen_fd;
 }
 
@@ -299,7 +299,7 @@ fork_exec_srun(void)
 		 * or Ctrl-C will cause SIGINT duplicated
 		 */
 		setpgrp();
-		
+
 		update_env("SLURM_SRUN_CR_SOCKET", cr_sock_addr);
 
 		/*
@@ -307,7 +307,7 @@ fork_exec_srun(void)
 		 */
 		sigemptyset(&sigset);
 		pthread_sigmask(SIG_SETMASK, &sigset, NULL);
-		
+
 		execv(srun_argv[0], srun_argv);
 		perror("failed execv srun");
 		exit(-1);
@@ -334,7 +334,7 @@ get_step_image_dir(int cr)
 	if (cr) {		/* checkpoint */
 		ckpt_info = cr_get_checkpoint_info();
 		if (!ckpt_info) {
-			error("failed to get checkpoint info: %s", 
+			error("failed to get checkpoint info: %s",
 			      cr_strerror(errno));
 			return NULL;
 		}
@@ -342,7 +342,7 @@ get_step_image_dir(int cr)
 	} else {		/* retart */
 		rstrt_info = cr_get_restart_info();
 		if (!rstrt_info) {
-			error("failed to get restart info: %s", 
+			error("failed to get restart info: %s",
 			      cr_strerror(errno));
 			return NULL;
 		}
@@ -382,7 +382,7 @@ cr_callback(void *unused)
 		xfree(step_image_dir);
 	}
 	rc = cr_checkpoint(rc);	/* dump */
-	
+
 	if (rc < 0) {
 		fatal("checkpoint failed: %s", cr_strerror(errno));
 	} else if (rc == 0) {
@@ -406,7 +406,7 @@ cr_callback(void *unused)
 
 		/* XXX: step_launched => listen_fd valid */
 		step_launched = 0;
-		
+
 		debug2("step not launched.");
 
 		pthread_cond_broadcast(&step_launch_cond);
@@ -415,7 +415,7 @@ cr_callback(void *unused)
 	return 0;
 }
 
-int 
+int
 main(int argc, char **argv)
 {
 	int debug_level, sig, srun_fd;
@@ -425,7 +425,7 @@ main(int argc, char **argv)
 	unsigned int ca_len = sizeof(ca);
 
 	atexit(remove_listen_socket);
-	
+
 	/* copied from srun */
 	debug_level = _slurm_debug_env_val();
 	logopt.stderr_level += debug_level;
@@ -434,12 +434,12 @@ main(int argc, char **argv)
 	if (init_srun_argv(argc, argv)) {
 		fatal("failed to initialize arguments for running srun");
 	}
-	
+
 	if ((cr_id = cr_init()) < 0) {
 		fatal("failed to initialize libcr: %s", cr_strerror(errno));
 	}
 	(void)cr_register_callback(cr_callback, NULL, CR_THREAD_CONTEXT);
-	
+
 	/* forward signals. copied from cr_restart */
 	sa.sa_sigaction = signal_child;
 	sa.sa_flags = SA_RESTART | SA_NODEFER | SA_SIGINFO;
@@ -465,7 +465,7 @@ main(int argc, char **argv)
 		pthread_mutex_lock(&step_launch_mutex);
 		while (step_launched) {
 			/* just avoid busy waiting */
-			pthread_cond_wait(&step_launch_cond, 
+			pthread_cond_wait(&step_launch_cond,
 					  &step_launch_mutex);
 		}
 		pthread_mutex_unlock(&step_launch_mutex);
@@ -478,7 +478,7 @@ main(int argc, char **argv)
 		srun_fd = accept(listen_fd, (struct sockaddr*)&ca, &ca_len);
 		if (srun_fd < 0) {
 			/* restarted before enter CS. socket will not be restored */
-			if (errno == EBADF) { 
+			if (errno == EBADF) {
 				cr_leave_cs(cr_id);
 				continue;
 			} else {
@@ -488,7 +488,7 @@ main(int argc, char **argv)
 
 		_read_info_from_srun(srun_fd);
 		close(srun_fd);
-		
+
 		step_launched = 1;
 		debug2("step launched");
 
@@ -529,7 +529,7 @@ static void
 _read_info_from_srun(int srun_fd)
 {
 	int len;
-	
+
 	if (read(srun_fd, &jobid, sizeof(uint32_t)) != sizeof(uint32_t)) {
 		fatal("failed to read jobid: %m");
 	}

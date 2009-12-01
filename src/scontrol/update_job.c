@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -45,17 +45,17 @@ static int _parse_checkpoint_args(int argc, char **argv,
 static int _parse_restart_args(int argc, char **argv,
 			       uint16_t *stick, char **image_dir);
 
-/* 
+/*
  * scontrol_checkpoint - perform some checkpoint/resume operation
  * IN op - checkpoint operation
- * IN job_step_id_str - either a job name (for all steps of the given job) or 
+ * IN job_step_id_str - either a job name (for all steps of the given job) or
  *			a step name: "<jid>.<step_id>"
  * IN argc - argument count
  * IN argv - arguments of the operation
- * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
-extern int 
+extern int
 scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -70,7 +70,7 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
 		if (next_str[0] == '.') {
-			step_id = (uint32_t) strtol (&next_str[1], &next_str, 
+			step_id = (uint32_t) strtol (&next_str[1], &next_str,
 						     10);
 			step_id_set = 1;
 		} else
@@ -116,25 +116,25 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)){
 			return 0;
 		}
-		rc = slurm_checkpoint_create (job_id, step_id, max_wait, 
+		rc = slurm_checkpoint_create (job_id, step_id, max_wait,
 					      image_dir);
 
 	} else if (strncasecmp(op, "vacate", MAX(oplen, 2)) == 0) {
 		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)){
 			return 0;
 		}
-		rc = slurm_checkpoint_vacate (job_id, step_id, max_wait, 
+		rc = slurm_checkpoint_vacate (job_id, step_id, max_wait,
 					      image_dir);
 
 	} else if (strncasecmp(op, "restart", MAX(oplen, 2)) == 0) {
 		if (_parse_restart_args(argc, argv, &stick, &image_dir)) {
 			return 0;
 		}
-		rc = slurm_checkpoint_restart (job_id, step_id, stick, 
+		rc = slurm_checkpoint_restart (job_id, step_id, stick,
 					       image_dir);
 
 	} else if (strncasecmp(op, "error", MAX(oplen, 2)) == 0) {
-		rc = slurm_checkpoint_error (job_id, step_id, 
+		rc = slurm_checkpoint_error (job_id, step_id,
 			&ckpt_errno, &ckpt_strerror);
 		if (rc == SLURM_SUCCESS) {
 			printf("error(%u): %s\n", ckpt_errno, ckpt_strerror);
@@ -151,14 +151,14 @@ scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 }
 
 static int
-_parse_checkpoint_args(int argc, char **argv, uint16_t *max_wait, 
+_parse_checkpoint_args(int argc, char **argv, uint16_t *max_wait,
 		       char **image_dir)
 {
 	int i;
-	
+
 	for (i=0; i< argc; i++) {
 		if (strncasecmp(argv[i], "MaxWait=", 8) == 0) {
-			*max_wait = (uint16_t) strtol(&argv[i][8], 
+			*max_wait = (uint16_t) strtol(&argv[i][8],
 						      (char **) NULL, 10);
 		} else if (strncasecmp(argv[i], "ImageDir=", 9) == 0) {
 			*image_dir = &argv[i][9];
@@ -176,7 +176,7 @@ static int
 _parse_restart_args(int argc, char **argv, uint16_t *stick, char **image_dir)
 {
 	int i;
-	
+
 	for (i=0; i< argc; i++) {
 		if (strncasecmp(argv[i], "StickToNodes", 5) == 0) {
 			*stick = 1;
@@ -199,7 +199,7 @@ _parse_restart_args(int argc, char **argv, uint16_t *stick, char **image_dir)
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *		error message and returns 0
  */
-extern int 
+extern int
 scontrol_suspend(char *op, char *job_id_str)
 {
 	int rc = SLURM_SUCCESS;
@@ -233,7 +233,7 @@ scontrol_suspend(char *op, char *job_id_str)
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *              error message and returns 0
  */
-extern int 
+extern int
 scontrol_requeue(char *job_id_str)
 {
 	int rc = SLURM_SUCCESS;
@@ -258,23 +258,23 @@ scontrol_requeue(char *job_id_str)
 }
 
 
-/* 
- * scontrol_update_job - update the slurm job configuration per the supplied 
- *	arguments 
+/*
+ * scontrol_update_job - update the slurm job configuration per the supplied
+ *	arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
 extern int
-scontrol_update_job (int argc, char *argv[]) 
+scontrol_update_job (int argc, char *argv[])
 {
 	int i, update_cnt = 0;
 	char *tag, *val;
 	int taglen, vallen;
 	job_desc_msg_t job_msg;
 
-	slurm_init_job_desc_msg (&job_msg);	
+	slurm_init_job_desc_msg (&job_msg);
 
 	for (i=0; i<argc; i++) {
 		tag = argv[i];
@@ -284,7 +284,7 @@ scontrol_update_job (int argc, char *argv[])
 			val++;
 			vallen = strlen(val);
 		} else if (strncasecmp(tag, "Nice", MAX(strlen(tag), 2)) == 0){
-			/* "Nice" is the only tag that might not have an 
+			/* "Nice" is the only tag that might not have an
 			   equal sign, so it is handled specially. */
 			job_msg.nice = NICE_OFFSET + 100;
 			update_cnt++;
@@ -297,13 +297,13 @@ scontrol_update_job (int argc, char *argv[])
 		}
 
 		if (strncasecmp(tag, "JobId", MAX(taglen, 1)) == 0) {
-			job_msg.job_id = 
+			job_msg.job_id =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 		}
 		else if (strncasecmp(tag, "Comment", MAX(taglen, 3)) == 0) {
 			job_msg.comment = val;
 			update_cnt++;
-		} 
+		}
 		else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 2)) == 0) {
 			int time_limit = time_str2mins(val);
 			if ((time_limit < 0) && (time_limit != INFINITE)) {
@@ -315,7 +315,7 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Priority", MAX(taglen, 2)) == 0) {
-			job_msg.priority = 
+			job_msg.priority =
 				(uint32_t) strtoll(val, (char **) NULL, 10);
 			update_cnt++;
 		}
@@ -324,7 +324,7 @@ scontrol_update_job (int argc, char *argv[])
 			nice = strtoll(val, (char **) NULL, 10);
 			if (abs(nice) > NICE_OFFSET) {
 				error("Invalid nice value, must be between "
-					"-%d and %d", NICE_OFFSET, 
+					"-%d and %d", NICE_OFFSET,
 					NICE_OFFSET);
 				exit_code = 1;
 				return 0;
@@ -335,12 +335,12 @@ scontrol_update_job (int argc, char *argv[])
 		/* ReqProcs was replaced by NumProcs in SLURM version 2.1 */
 		else if ((strncasecmp(tag, "ReqProcs", MAX(taglen, 4)) == 0) ||
 			 (strncasecmp(tag, "NumProcs", MAX(taglen, 8)) == 0)) {
-			job_msg.num_procs = 
+			job_msg.num_procs =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Requeue", MAX(taglen, 4)) == 0) {
-			job_msg.requeue = 
+			job_msg.requeue =
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
@@ -348,7 +348,7 @@ scontrol_update_job (int argc, char *argv[])
 		else if ((strncasecmp(tag, "ReqNodes", MAX(taglen, 8)) == 0) ||
 		         (strncasecmp(tag, "NumNodes", MAX(taglen, 8)) == 0)) {
 			int rc = get_resource_arg_range(
-				val, 
+				val,
 				"requested node count",
 				(int *)&job_msg.min_nodes,
 				(int *)&job_msg.max_nodes,
@@ -358,12 +358,12 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ReqSockets", MAX(taglen, 4)) == 0) {
-			job_msg.min_sockets = 
+			job_msg.min_sockets =
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ReqCores", MAX(taglen, 4)) == 0) {
-			job_msg.min_cores = 
+			job_msg.min_cores =
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
@@ -373,22 +373,22 @@ scontrol_update_job (int argc, char *argv[])
                         update_cnt++;
                 }
 		else if (strncasecmp(tag, "ReqThreads", MAX(taglen, 4)) == 0) {
-			job_msg.min_threads = 
+			job_msg.min_threads =
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinCPUs", MAX(taglen, 4)) == 0) {
-			job_msg.job_min_cpus = 
+			job_msg.job_min_cpus =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "MinMemoryNode", 
+		else if (strncasecmp(tag, "MinMemoryNode",
 				     MAX(taglen, 10)) == 0) {
-			job_msg.job_min_memory = 
+			job_msg.job_min_memory =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "MinMemoryCPU", 
+		else if (strncasecmp(tag, "MinMemoryCPU",
 				     MAX(taglen, 10)) == 0) {
 			job_msg.job_min_memory =
 				(uint32_t) strtol(val, (char **) NULL, 10);
@@ -396,16 +396,16 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinTmpDisk", MAX(taglen, 5)) == 0) {
-			job_msg.job_min_tmp_disk = 
+			job_msg.job_min_tmp_disk =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "PartitionName", 
+		else if (strncasecmp(tag, "PartitionName",
 				     MAX(taglen, 2)) == 0) {
 			job_msg.partition = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "ReservationName", 
+		else if (strncasecmp(tag, "ReservationName",
 				     MAX(taglen, 3)) == 0) {
 			job_msg.reservation = val;
 			update_cnt++;
@@ -424,8 +424,8 @@ scontrol_update_job (int argc, char *argv[])
 			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.shared = 0;
 			else
-				job_msg.shared = 
-					(uint16_t) strtol(val, 
+				job_msg.shared =
+					(uint16_t) strtol(val,
 							(char **) NULL, 10);
 			update_cnt++;
 		}
@@ -435,8 +435,8 @@ scontrol_update_job (int argc, char *argv[])
 			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.contiguous = 0;
 			else
-				job_msg.contiguous = 
-					(uint16_t) strtol(val, 
+				job_msg.contiguous =
+					(uint16_t) strtol(val,
 							(char **) NULL, 10);
 			update_cnt++;
 		}
@@ -482,7 +482,7 @@ scontrol_update_job (int argc, char *argv[])
 					break;
 				}
 				geometry_tmp = next_ptr;
-				token = strtok_r(geometry_tmp, delimiter, 
+				token = strtok_r(geometry_tmp, delimiter,
 					&next_ptr);
 			}
 			if (token != NULL) {
@@ -508,7 +508,7 @@ scontrol_update_job (int argc, char *argv[])
 			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				rotate = 0;
 			else
-				rotate = (uint16_t) strtol(val, 
+				rotate = (uint16_t) strtol(val,
 							   (char **) NULL, 10);
 			job_msg.rotate = rotate;
 			update_cnt++;

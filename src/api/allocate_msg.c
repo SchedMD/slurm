@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- * 
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -165,7 +165,7 @@ extern void slurm_allocation_msg_thr_destroy(
 	xfree(msg_thr);
 }
 
-static void _handle_node_fail(struct allocation_msg_thread *msg_thr, 
+static void _handle_node_fail(struct allocation_msg_thread *msg_thr,
 			      slurm_msg_t *msg)
 {
 	srun_node_fail_msg_t *nf = (srun_node_fail_msg_t *)msg->data;
@@ -177,36 +177,36 @@ static void _handle_node_fail(struct allocation_msg_thread *msg_thr,
 }
 
 /*
- * Job has been notified of it's approaching time limit. 
+ * Job has been notified of it's approaching time limit.
  * Job will be killed shortly after timeout.
  * This RPC can arrive multiple times with the same or updated timeouts.
  */
-static void _handle_timeout(struct allocation_msg_thread *msg_thr, 
+static void _handle_timeout(struct allocation_msg_thread *msg_thr,
 			    slurm_msg_t *msg)
 {
 	srun_timeout_msg_t *to = (srun_timeout_msg_t *)msg->data;
 
 	debug3("received timeout message");
-	
+
 	if (msg_thr->callback.timeout != NULL)
 		(msg_thr->callback.timeout)(to);
 
 	slurm_free_srun_timeout_msg(msg->data);
 }
 
-static void _handle_user_msg(struct allocation_msg_thread *msg_thr, 
+static void _handle_user_msg(struct allocation_msg_thread *msg_thr,
 			     slurm_msg_t *msg)
 {
 	srun_user_msg_t *um = (srun_user_msg_t *)msg->data;
 	debug3("received user message");
-	
+
 	if (msg_thr->callback.user_msg != NULL)
 		(msg_thr->callback.user_msg)(um);
-	
+
 	slurm_free_srun_user_msg(msg->data);
 }
 
-static void _handle_ping(struct allocation_msg_thread *msg_thr, 
+static void _handle_ping(struct allocation_msg_thread *msg_thr,
 			     slurm_msg_t *msg)
 {
 	srun_ping_msg_t *ping = (srun_ping_msg_t *)msg->data;
@@ -215,10 +215,10 @@ static void _handle_ping(struct allocation_msg_thread *msg_thr,
 
 	if (msg_thr->callback.ping != NULL)
 		(msg_thr->callback.ping)(ping);
-	
+
 	slurm_free_srun_ping_msg(msg->data);
 }
-static void _handle_job_complete(struct allocation_msg_thread *msg_thr, 
+static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
 				 slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *comp = (srun_job_complete_msg_t *)msg->data;
@@ -226,20 +226,20 @@ static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
 
 	if (msg_thr->callback.job_complete != NULL)
 		(msg_thr->callback.job_complete)(comp);
-	
+
 	slurm_free_srun_job_complete_msg(msg->data);
 }
 
 static void
 _handle_msg(void *arg, slurm_msg_t *msg)
 {
-	struct allocation_msg_thread *msg_thr = 
+	struct allocation_msg_thread *msg_thr =
 		(struct allocation_msg_thread *)arg;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	uid_t uid = getuid();
-	
+
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
-		error ("Security violation, slurm message from uid %u", 
+		error ("Security violation, slurm message from uid %u",
 		       (unsigned int) req_uid);
 		return;
 	}

@@ -30,11 +30,11 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-select_bluegene_la_LIBADD  = ../block_allocator/libbluegene_block_allocator.la 
+select_bluegene_la_LIBADD  = ../block_allocator/libbluegene_block_allocator.la
 
 
 # MPIRUN dynamic lib.
-libsched_if64_la_SOURCES = libsched_if64.c 
+libsched_if64_la_SOURCES = libsched_if64.c
 libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 
@@ -45,10 +45,10 @@ slurm_prolog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 slurm_epilog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 sfree_SOURCES = sfree.c sfree.h opts.c \
 		../block_allocator/bridge_linker.c \
-		../block_allocator/bridge_linker.h 
+		../block_allocator/bridge_linker.h
 slurm_prolog_SOURCES = slurm_prolog.c
 slurm_epilog_SOURCES = slurm_epilog.c
-sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) 
+sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 

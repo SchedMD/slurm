@@ -7,32 +7,32 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -46,7 +46,7 @@ typedef struct {
 	int color;
 	char letter;
 	List nodes;
-	ba_request_t *request; 
+	ba_request_t *request;
 } allocated_block_t;
 
 static void	_delete_allocated_blocks(List allocated_blocks);
@@ -75,7 +75,7 @@ char *layout_mode = "STATIC";
 static void _delete_allocated_blocks(List allocated_blocks)
 {
 	allocated_block_t *allocated_block = NULL;
-	
+
 	while ((allocated_block = list_pop(allocated_blocks)) != NULL) {
 		remove_block(allocated_block->nodes,0);
 		list_destroy(allocated_block->nodes);
@@ -88,14 +88,14 @@ static void _delete_allocated_blocks(List allocated_blocks)
 static allocated_block_t *_make_request(ba_request_t *request)
 {
 	List results = list_create(NULL);
-	ListIterator results_i;		
+	ListIterator results_i;
 	allocated_block_t *allocated_block = NULL;
 	ba_node_t *current = NULL;
-	
+
 	if (!allocate_block(request, results)){
 		memset(error_string,0,255);
-		sprintf(error_string,"allocate failure for %dx%dx%d", 
-			  request->geometry[0], request->geometry[1], 
+		sprintf(error_string,"allocate failure for %dx%dx%d",
+			  request->geometry[0], request->geometry[1],
 			  request->geometry[2]);
 		return NULL;
 	} else {
@@ -105,7 +105,7 @@ static allocated_block_t *_make_request(ba_request_t *request)
 				"THIS ALLOCATION DIM %s!!!!!!!", pass);
 			xfree(pass);
 		}
-		
+
 		allocated_block = (allocated_block_t *)xmalloc(
 			sizeof(allocated_block_t));
 		allocated_block->request = request;
@@ -127,7 +127,7 @@ static int _set_layout(char *com)
 {
 	int i=0;
 	int len = strlen(com);
-	
+
 	while(i<len) {
 		if(!strncasecmp(com+i, "dynamic", 7)) {
 			layout_mode = "DYNAMIC";
@@ -143,12 +143,12 @@ static int _set_layout(char *com)
 		}
 	}
 	if(i>=len) {
-		sprintf(error_string, 
+		sprintf(error_string,
 			"You didn't put in a mode that I recognized. \n"
 			"Please use (STATIC, OVERLAP, or DYNAMIC)\n");
 		return 0;
 	}
-	sprintf(error_string, 
+	sprintf(error_string,
 		"LayoutMode set to %s\n", layout_mode);
 	return 1;
 }
@@ -165,15 +165,15 @@ static int _set_base_part_cnt(char *com)
 			i++;
 		}
 	}
-	if(i>=len) {		
-		sprintf(error_string, 
+	if(i>=len) {
+		sprintf(error_string,
 			"I didn't notice the number you typed in\n");
 		return 0;
 	}
 	base_part_node_cnt = atoi(&com[i]);
-	sprintf(error_string, 
+	sprintf(error_string,
 		"BasePartitionNodeCnt set to %d\n", base_part_node_cnt);
-		
+
 	return 1;
 }
 
@@ -189,15 +189,15 @@ static int _set_nodecard_cnt(char *com)
 			i++;
 		}
 	}
-	if(i>=len) {		
-		sprintf(error_string, 
+	if(i>=len) {
+		sprintf(error_string,
 			"I didn't notice the number you typed in\n");
 		return 0;
 	}
 	nodecard_node_cnt = atoi(&com[i]);
-	sprintf(error_string, 
+	sprintf(error_string,
 		"NodeCardNodeCnt set to %d\n", nodecard_node_cnt);
-		
+
 	return 1;
 }
 
@@ -206,7 +206,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	int i=6, geoi=-1, starti=-1, i2=0, small32=-1, small128=-1;
 	int len = strlen(com);
 	allocated_block_t *allocated_block = NULL;
-	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
+	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t));
 	int diff=0;
 #ifndef HAVE_BGL
 	int small16=-1, small64=-1, small256=-1;
@@ -222,7 +222,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->deny_pass = 0;
 	request->avail_node_bitmap = NULL;
 
-	while(i<len) {				
+	while(i<len) {
 		if(!strncasecmp(com+i, "mesh", 4)) {
 			request->conn_type=SELECT_MESH;
 			i+=4;
@@ -231,13 +231,13 @@ static int _create_allocation(char *com, List allocated_blocks)
 			i+=5;
 		} else if(!strncasecmp(com+i, "deny", 4)) {
 			i+=4;
-			if(strstr(com+i, "X")) 
+			if(strstr(com+i, "X"))
 				request->deny_pass |= PASS_DENY_X;
-			if(strstr(com+i, "Y")) 
+			if(strstr(com+i, "Y"))
 				request->deny_pass |= PASS_DENY_Y;
-			if(strstr(com+i, "Z")) 
+			if(strstr(com+i, "Z"))
 				request->deny_pass |= PASS_DENY_Z;
-			if(!strcasecmp(com+i, "ALL")) 
+			if(!strcasecmp(com+i, "ALL"))
 				request->deny_pass |= PASS_DENY_ALL;
 		} else if(!strncasecmp(com+i, "nodecard", 8)) {
 			small32=0;
@@ -259,9 +259,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 			i+=8;
 		} else if(!strncasecmp(com+i, "start", 5)) {
 			request->start_req=1;
-			i+=5;					
-		} else if(request->start_req 
-			  && starti<0 
+			i+=5;
+		} else if(request->start_req
+			  && starti<0
 			  && ((com[i] >= '0' && com[i] <= '9')
 			      || (com[i] >= 'A' && com[i] <= 'Z'))) {
 			starti=i;
@@ -272,7 +272,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 		} else if(small128 == 0 && (com[i] >= '0' && com[i] <= '9')) {
 			small128=i;
 			i++;
-		} 
+		}
 #ifndef HAVE_BGL
 		else if(!strncasecmp(com+i, "16CN", 4)) {
 			small16=0;
@@ -292,7 +292,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 		} else if(small256 == 0 && (com[i] >= '0' && com[i] <= '9')) {
 			small256=i;
 			i++;
-		} 
+		}
 #endif
 		else if(geoi<0 && ((com[i] >= '0' && com[i] <= '9')
 				     || (com[i] >= 'A' && com[i] <= 'Z'))) {
@@ -301,9 +301,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 		} else {
 			i++;
 		}
-		
-	}		
-	
+
+	}
+
 	if(request->conn_type == SELECT_SMALL) {
 		int total = 512;
 #ifndef HAVE_BGL
@@ -333,12 +333,12 @@ static int _create_allocation(char *com, List allocated_blocks)
 			total -= request->small128 * 128;
 		}
 		if(total < 0) {
-			sprintf(error_string, 
+			sprintf(error_string,
 				"You asked for %d more nodes than "
 				"are in a Midplane\n", total * 2);
 			geoi = -1;
 
-		} 
+		}
 
 #ifndef HAVE_BGL
 		while(total > 0) {
@@ -382,7 +382,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 
 	if(geoi<0 && !request->size) {
 		memset(error_string,0,255);
-		sprintf(error_string, 
+		sprintf(error_string,
 			"No size or dimension specified, please re-enter");
 	} else {
 		i2=geoi;
@@ -399,18 +399,18 @@ static int _create_allocation(char *com, List allocated_blocks)
 				/* for geometery */
 				if(diff>1) {
 					request->geometry[X] =
-						xstrntol(&com[geoi], 
-							 NULL, diff, 
+						xstrntol(&com[geoi],
+							 NULL, diff,
 							 10);
 				} else {
 					request->geometry[X] =
-						xstrntol(&com[geoi], 
-							 NULL, diff, 
+						xstrntol(&com[geoi],
+							 NULL, diff,
 							 HOSTLIST_BASE);
 				}
 				geoi += diff;
 				diff = geoi;
-				
+
 				while(com[geoi-1]!='x' && geoi<len)
 					geoi++;
 				if(geoi==len)
@@ -418,13 +418,13 @@ static int _create_allocation(char *com, List allocated_blocks)
 				diff = geoi - diff;
 				if(diff>1) {
 					request->geometry[Y] =
-						xstrntol(&com[geoi], 
-							 NULL, diff, 
+						xstrntol(&com[geoi],
+							 NULL, diff,
 							 10);
 				} else {
-					request->geometry[Y] = 
-						xstrntol(&com[geoi], 
-							 NULL, diff, 
+					request->geometry[Y] =
+						xstrntol(&com[geoi],
+							 NULL, diff,
 							 HOSTLIST_BASE);
 				}
 				geoi += diff;
@@ -434,15 +434,15 @@ static int _create_allocation(char *com, List allocated_blocks)
 				if(geoi==len)
 					goto geo_error_message;
 				diff = geoi - diff;
-				
+
 				if(diff>1) {
 					request->geometry[Z] =
-						xstrntol(&com[geoi], 
-							 NULL, diff, 
+						xstrntol(&com[geoi],
+							 NULL, diff,
 							 10);
 				} else {
-					request->geometry[Z] = 
-						xstrntol(&com[geoi], 
+					request->geometry[Z] =
+						xstrntol(&com[geoi],
 							 NULL, diff,
 							 HOSTLIST_BASE);
 				}
@@ -467,15 +467,15 @@ static int _create_allocation(char *com, List allocated_blocks)
 							     HOSTLIST_BASE);
 			}
 			starti += diff;
-			if(starti==len) 
+			if(starti==len)
 				goto start_request;
-			
+
 			starti++;
 			i2 = starti;
 			while(com[i2]!='x' && i2<len)
 				i2++;
 			diff = i2-starti;
-			
+
 			if(diff>1) {
 				request->start[Y] = xstrntol(&com[starti],
 							     NULL, diff,
@@ -486,15 +486,15 @@ static int _create_allocation(char *com, List allocated_blocks)
 							     HOSTLIST_BASE);
 			}
 			starti += diff;
-			if(starti==len) 
+			if(starti==len)
 				goto start_request;
-			
+
 			starti++;
 			i2 = starti;
 			while(com[i2]!=' ' && i2<len)
 				i2++;
 			diff = i2-starti;
-						
+
 			if(diff>1) {
 				request->start[Z] = xstrntol(&com[starti],
 							     NULL, diff,
@@ -508,35 +508,35 @@ static int _create_allocation(char *com, List allocated_blocks)
 	start_request:
 		if(!strcasecmp(layout_mode,"OVERLAP"))
 			reset_ba_system(true);
-	
+
 		/*
-		  Here is where we do the allocating of the partition. 
+		  Here is where we do the allocating of the partition.
 		  It will send a request back which we will throw into
-		  a list just incase we change something later.		   
+		  a list just incase we change something later.
 		*/
 		if(!new_ba_request(request)) {
 			memset(error_string,0,255);
 			if(request->size!=-1) {
-				sprintf(error_string, 
+				sprintf(error_string,
 					"Problems with request for %d\n"
 					"Either you put in something "
 					"that doesn't work,\n"
 					"or we are unable to process "
-					"your request.", 
+					"your request.",
 					request->size);
 			} else
-				sprintf(error_string, 
+				sprintf(error_string,
 					"Problems with request for %dx%dx%d\n"
 					"Either you put in something "
 					"that doesn't work,\n"
 					"or we are unable to process "
-					"your request.", 
-					request->geometry[0], 
-					request->geometry[1], 
+					"your request.",
+					request->geometry[0],
+					request->geometry[1],
 					request->geometry[2]);
 		} else {
 			if((allocated_block = _make_request(request)) != NULL)
-				list_append(allocated_blocks, 
+				list_append(allocated_blocks,
 					    allocated_block);
 			else {
 				i2 = strlen(error_string);
@@ -544,23 +544,23 @@ static int _create_allocation(char *com, List allocated_blocks)
 					"\nGeo requested was %d (%dx%dx%d)\n"
 					"Start position was %dx%dx%d",
 					request->size,
-					request->geometry[0], 
-					request->geometry[1], 
+					request->geometry[0],
+					request->geometry[1],
 					request->geometry[2],
-					request->start[0], 
-					request->start[1], 
+					request->start[0],
+					request->start[1],
 					request->start[2]);
 			}
 		}
 	}
 	return 1;
-	
+
 geo_error_message:
 	memset(error_string,0,255);
-	sprintf(error_string, 
+	sprintf(error_string,
 		"Error in geo dimension "
 		"specified, please re-enter");
-	
+
 	return 0;
 }
 
@@ -572,7 +572,7 @@ static int _resolve(char *com)
 	char *rack_mid = NULL;
 	int *coord = NULL;
 #endif
-	
+
 	while(com[i] != '\0') {
 		if((i>0) && (com[i-1] != ' '))
 			break;
@@ -580,11 +580,11 @@ static int _resolve(char *com)
 	}
 	if(com[i] == 'r')
 		com[i] = 'R';
-		
-	memset(error_string,0,255);		
+
+	memset(error_string,0,255);
 #ifdef HAVE_BG_FILES
 	if (!have_db2) {
-		sprintf(error_string, "Must be on BG SN to resolve\n"); 
+		sprintf(error_string, "Must be on BG SN to resolve\n");
 		goto resolve_error;
 	}
 
@@ -594,31 +594,31 @@ static int _resolve(char *com)
 	}
 	if(com[i] != 'R') {
 		rack_mid = find_bp_rack_mid(com+i);
-		
+
 		if(rack_mid)
-			sprintf(error_string, 
+			sprintf(error_string,
 				"X=%c Y=%c Z=%c resolves to %s\n",
 				com[X+i],com[Y+i],com[Z+i], rack_mid);
 		else
-			sprintf(error_string, 
+			sprintf(error_string,
 				"X=%c Y=%c Z=%c has no resolve\n",
 				com[X+i],com[Y+i],com[Z+i]);
-		
+
 	} else {
 		coord = find_bp_loc(com+i);
-		
+
 		if(coord)
-			sprintf(error_string, 
+			sprintf(error_string,
 				"%s resolves to X=%d Y=%d Z=%d\n",
 				com+i,coord[X],coord[Y],coord[Z]);
 		else
-			sprintf(error_string, "%s has no resolve.\n", 
-				com+i);	
+			sprintf(error_string, "%s has no resolve.\n",
+				com+i);
 	}
 resolve_error:
 #else
-			sprintf(error_string, 
-				"Must be on BG SN to resolve.\n"); 
+			sprintf(error_string,
+				"Must be on BG SN to resolve.\n");
 #endif
 	wnoutrefresh(text_win);
 	doupdate();
@@ -629,17 +629,17 @@ static int _change_state_all_bps(char *com, int state)
 {
 	char allnodes[50];
 	memset(allnodes,0,50);
-		
+
 #ifdef HAVE_3D
-	sprintf(allnodes, "000x%c%c%c", 
+	sprintf(allnodes, "000x%c%c%c",
 		alpha_num[DIM_SIZE[X]-1], alpha_num[DIM_SIZE[Y]-1],
 		alpha_num[DIM_SIZE[Z]-1]);
 #else
-	sprintf(allnodes, "0-%d", 
+	sprintf(allnodes, "0-%d",
 		DIM_SIZE[X]);
 #endif
 	return _change_state_bps(allnodes, state);
-	
+
 }
 static int _change_state_bps(char *com, int state)
 {
@@ -660,19 +660,19 @@ static int _change_state_bps(char *com, int state)
 		used = true;
 		c_state = "down";
 	}
-	while(i<len 
+	while(i<len
 	      && (com[i] < '0' || com[i] > 'Z'
 		  || (com[i] > '9' && com[i] < 'A')))
 		i++;
 	if(i>(len-1)) {
 		memset(error_string,0,255);
-		sprintf(error_string, 
+		sprintf(error_string,
 			"You didn't specify any nodes to make %s. "
-			"in statement '%s'", 
+			"in statement '%s'",
 			c_state, com);
 		return 0;
 	}
-		
+
 #ifdef HAVE_3D
 	if ((com[i+3] == 'x')
 	    || (com[i+3] == '-')) {
@@ -681,7 +681,7 @@ static int _change_state_bps(char *com, int state)
 			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
 			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z'))))
 				continue;
-			goto error_message2; 
+			goto error_message2;
 
 		}
 		number = xstrntol(com + i, NULL,
@@ -690,13 +690,13 @@ static int _change_state_bps(char *com, int state)
 		start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 			/ HOSTLIST_BASE;
 		start[Z] = (number % HOSTLIST_BASE);
-		
+
 		i += 4;
 		for(j=0; j<3; j++) {
 			if (((i+j) <= len) &&
 			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
 			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z'))))
-				continue; 
+				continue;
 			goto error_message2;
 		}
 		number = xstrntol(com + i, NULL,
@@ -704,7 +704,7 @@ static int _change_state_bps(char *com, int state)
 		end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 		end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 			/ HOSTLIST_BASE;
-		end[Z] = (number % HOSTLIST_BASE);			
+		end[Z] = (number % HOSTLIST_BASE);
 	} else {
 		for(j=0; j<3; j++) {
 			if (((i+j) <= len) &&
@@ -730,11 +730,11 @@ static int _change_state_bps(char *com, int state)
 	       || end[Y]>DIM_SIZE[Y]-1
 	       || end[Z]>DIM_SIZE[Z]-1))
 		goto error_message;
-	
+
 	for(x=start[X];x<=end[X];x++) {
 		for(y=start[Y];y<=end[Y];y++) {
 			for(z=start[Z];z<=end[Z];z++) {
-				if(ba_system_ptr->grid[x][y][z].letter 
+				if(ba_system_ptr->grid[x][y][z].letter
 				   != opposite)
 					continue;
 				ba_system_ptr->grid[x][y][z].color = 0;
@@ -749,14 +749,14 @@ static int _change_state_bps(char *com, int state)
 		start[X] =  xstrntol(com + i, NULL,
 				    BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 		i += 4;
-		end[X] =  xstrntol(com + i, NULL, 
+		end[X] =  xstrntol(com + i, NULL,
 				   BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 	} else {
-		start[X] = end[X] =  xstrntol(com + i, NULL, 
-					      BA_SYSTEM_DIMENSIONS, 
+		start[X] = end[X] =  xstrntol(com + i, NULL,
+					      BA_SYSTEM_DIMENSIONS,
 					      HOSTLIST_BASE);
 	}
-	
+
 	if((start[X]>end[X])
 	   || (start[X]<0)
 	   || (end[X]>DIM_SIZE[X]-1))
@@ -766,27 +766,27 @@ static int _change_state_bps(char *com, int state)
 		ba_system_ptr->grid[x].color = 0;
 		ba_system_ptr->grid[x].letter = letter;
 		ba_system_ptr->grid[x].used = used;
-	}	
+	}
 #endif
 	return 1;
 error_message:
 	memset(error_string,0,255);
 #ifdef HAVE_BG
-	sprintf(error_string, 
+	sprintf(error_string,
 		"Problem with base partitions, "
 		"specified range was %d%d%dx%d%d%d",
 		alpha_num[start[X]],alpha_num[start[Y]],alpha_num[start[Z]],
 		alpha_num[end[X]],alpha_num[end[Y]],alpha_num[end[Z]]);
 #else
-	sprintf(error_string, 
+	sprintf(error_string,
 		"Problem with nodes,  specified range was %d-%d",
 		start[X],end[X]);
-#endif	
+#endif
 	return 0;
 #ifdef HAVE_3D
 error_message2:
 	memset(error_string,0,255);
-	sprintf(error_string, 
+	sprintf(error_string,
 		"There was a problem with '%s'\nIn your request '%s'"
 		"You need to specify XYZ or XYZxXYZ",
 		com+i,com);
@@ -801,14 +801,14 @@ static int _remove_allocation(char *com, List allocated_blocks)
 	int len = strlen(com);
 	char letter;
 
-	int color_count = 0;		
+	int color_count = 0;
 	while(com[i-1]!=' ' && i<len) {
 		i++;
 	}
-	
+
 	if(i>(len-1)) {
 		memset(error_string,0,255);
-		sprintf(error_string, 
+		sprintf(error_string,
 			"You need to specify which letter to delete.");
 		return 0;
 	} else {
@@ -816,22 +816,22 @@ static int _remove_allocation(char *com, List allocated_blocks)
 		results_i = list_iterator_create(allocated_blocks);
 		while((allocated_block = list_next(results_i)) != NULL) {
 			if(found) {
-				if(redo_block(allocated_block->nodes, 
+				if(redo_block(allocated_block->nodes,
 					      allocated_block->
 					      request->geometry,
 					      allocated_block->
-					      request->conn_type, 
+					      request->conn_type,
 					      color_count) == SLURM_ERROR) {
 					memset(error_string,0,255);
-					sprintf(error_string, 
+					sprintf(error_string,
 						"problem redoing the part.");
 					return 0;
 				}
-				allocated_block->letter = 
+				allocated_block->letter =
 					letters[color_count%62];
 				allocated_block->color =
 					colors[color_count%6];
-				
+
 			} else if(allocated_block->letter == letter) {
 				found=1;
 				remove_block(allocated_block->nodes,
@@ -845,7 +845,7 @@ static int _remove_allocation(char *com, List allocated_blocks)
 		}
 		list_iterator_destroy(results_i);
 	}
-		
+
 	return 1;
 }
 
@@ -857,9 +857,9 @@ static int _alter_allocation(char *com, List allocated_blocks)
 /* 	int len = strlen(com); */
 /* 	bool rotate = false; */
 /* 	bool elongate = false; */
-		
+
 /* 	while(i<len) { */
-		
+
 /* 		while(com[i-1]!=' ' && i<len) { */
 /* 			i++; */
 /* 		} */
@@ -878,7 +878,7 @@ static int _alter_allocation(char *com, List allocated_blocks)
 /* 		} else { */
 /* 			i++; */
 /* 		} */
-		
+
 /* 	} */
 	return 1;
 }
@@ -888,22 +888,22 @@ static int _copy_allocation(char *com, List allocated_blocks)
 	ListIterator results_i;
 	allocated_block_t *allocated_block = NULL;
 	allocated_block_t *temp_block = NULL;
-	ba_request_t *request = NULL; 
-	
+	ba_request_t *request = NULL;
+
 	int i=1;
 	int len = strlen(com);
 	char letter = '\0';
 	int count = 1;
 	int *geo = NULL, *geo_ptr = NULL;
-			
+
 	/* look for the space after copy */
-	while(com[i-1]!=' ' && i<len) 
+	while(com[i-1]!=' ' && i<len)
 		i++;
-	
+
 	if(i<=len) {
 		/* Here we are looking for a real number for the count
 		   instead of the HOSTLIST_BASE so atoi is ok
-		*/ 
+		*/
 		if(com[i]>='0' && com[i]<='9')
 			count = atoi(com+i);
 		else {
@@ -912,7 +912,7 @@ static int _copy_allocation(char *com, List allocated_blocks)
 			if(com[i]!='\n') {
 				while(com[i-1]!=' ' && i<len)
 					i++;
-				
+
 				if(com[i]>='0' && com[i]<='9')
 					count = atoi(com+i);
 			}
@@ -927,20 +927,20 @@ static int _copy_allocation(char *com, List allocated_blocks)
 		break;
 	}
 	list_iterator_destroy(results_i);
-	
+
 	if(!letter)
 		allocated_block = temp_block;
-	
+
 	if(!allocated_block) {
 		memset(error_string,0,255);
-		sprintf(error_string, 
+		sprintf(error_string,
 			"Could not find requested record to copy");
 		return 0;
 	}
-	
+
 	for(i=0;i<count;i++) {
-		request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
-		
+		request = (ba_request_t*) xmalloc(sizeof(ba_request_t));
+
 		request->geometry[X] = allocated_block->request->geometry[X];
 		request->geometry[Y] = allocated_block->request->geometry[Y];
 		request->geometry[Z] = allocated_block->request->geometry[Z];
@@ -956,7 +956,7 @@ static int _copy_allocation(char *com, List allocated_blocks)
 #endif
 		request->small32 = allocated_block->request->small32;
 		request->small128 = allocated_block->request->small128;
-				
+
 		request->rotate_count= 0;
 		request->elongate_count = 0;
 	       	request->elongate_geos = list_create(NULL);
@@ -968,24 +968,24 @@ static int _copy_allocation(char *com, List allocated_blocks)
 			geo[X] = geo_ptr[X];
 			geo[Y] = geo_ptr[Y];
 			geo[Z] = geo_ptr[Z];
-			
+
 			list_append(request->elongate_geos, geo);
 		}
 		list_iterator_destroy(results_i);
-		
+
 		if((allocated_block = _make_request(request)) == NULL) {
 			memset(error_string,0,255);
-			sprintf(error_string, 
+			sprintf(error_string,
 				"Problem with the copy\n"
 				"Are you sure there is enough room for it?");
 			xfree(request);
 			return 0;
 		}
 		list_append(allocated_blocks, allocated_block);
-		
+
 	}
 	return 1;
-	
+
 }
 
 static int _save_allocation(char *com, List allocated_blocks)
@@ -999,12 +999,12 @@ static int _save_allocation(char *com, List allocated_blocks)
 	char *conn_type = NULL;
 	char *extra = NULL;
 
-	ListIterator results_i;		
-	
+	ListIterator results_i;
+
 	memset(filename,0,50);
 	if(len>5)
 		while(i<len) {
-			
+
 			while(com[i-1]!=' ' && i<len) {
 				i++;
 			}
@@ -1015,7 +1015,7 @@ static int _save_allocation(char *com, List allocated_blocks)
 			}
 		}
 	if(filename[0]=='\0') {
-		time_t now_time = time(NULL);		
+		time_t now_time = time(NULL);
 		sprintf(filename,"bluegene.conf.%ld",
 			(long int) now_time);
 	}
@@ -1052,13 +1052,13 @@ static int _save_allocation(char *com, List allocated_blocks)
 		while((allocated_block = list_next(results_i)) != NULL) {
 			if(allocated_block->request->conn_type == SELECT_TORUS)
 				conn_type = "TORUS";
-			else if(allocated_block->request->conn_type 
+			else if(allocated_block->request->conn_type
 				== SELECT_MESH)
 				conn_type = "MESH";
 			else {
 				conn_type = "SMALL";
 #ifndef HAVE_BGL
-				xstrfmtcat(extra, 
+				xstrfmtcat(extra,
 					   " 16CNBlocks=%d 32CNBlocks=%d "
 					   "64CNBlocks=%d 128CNBlocks=%d "
 					   "256CNBlocks=%d",
@@ -1068,22 +1068,22 @@ static int _save_allocation(char *com, List allocated_blocks)
 					   allocated_block->request->small128,
 					   allocated_block->request->small256);
 #else
-				xstrfmtcat(extra, 
+				xstrfmtcat(extra,
 					   " 32CNBlocks=%d 128CNBlocks=%d",
 					   allocated_block->request->small32,
 					   allocated_block->request->small128);
 
 #endif
 			}
-			xstrfmtcat(save_string, "BPs=%s Type=%s", 
-				   allocated_block->request->save_name, 
+			xstrfmtcat(save_string, "BPs=%s Type=%s",
+				   allocated_block->request->save_name,
 				   conn_type);
 			if(extra) {
 				xstrfmtcat(save_string, "%s\n", extra);
 				xfree(extra);
-			} else 
+			} else
 				xstrcat(save_string, "\n");
-			
+
 		}
 		list_iterator_destroy(results_i);
 		fputs(save_string, file_ptr);
@@ -1110,15 +1110,15 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 	int j = 0, number;
 	int len = 0;
 	int x,y,z;
-	
+
 	geo[X] = 0;
 	geo[Y] = 0;
 	geo[Z] = 0;
-	
+
 	start1[X] = -1;
 	start1[Y] = -1;
 	start1[Z] = -1;
-	
+
 	end1[X] = -1;
 	end1[Y] = -1;
 	end1[Z] = -1;
@@ -1135,7 +1135,7 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 		conn_type = "torus";
 		break;
 	}
-	
+
 	nodes = blockreq->block;
 	if(!nodes)
 		return SLURM_SUCCESS;
@@ -1147,15 +1147,15 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 		    && (nodes[j+8] == ']' || nodes[j+8] == ',')
 		    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
 			j++;
-			number = xstrntol(nodes + j, NULL, 
+			number = xstrntol(nodes + j, NULL,
 					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
 			start[Z] = (number % HOSTLIST_BASE);
-			
+
 			j += 4;
-			number = xstrntol(nodes + j, NULL, 
+			number = xstrntol(nodes + j, NULL,
 					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
@@ -1169,8 +1169,8 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 				start1[Y] = start[Y];
 				start1[Z] = start[Z];
 			}
-			for (x = start[X]; x <= end[X]; x++) 
-				for (y = start[Y]; y <= end[Y]; y++) 
+			for (x = start[X]; x <= end[X]; x++)
+				for (y = start[Y]; y <= end[Y]; y++)
 					for (z = start[Z]; z <= end[Z]; z++) {
 						if(x>end1[X]) {
 						        geo[X]++;
@@ -1191,13 +1191,13 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 			j--;
 		} else if((nodes[j] >= '0' && nodes[j] <= '9')
 			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
-			number = xstrntol(nodes + j, NULL, 
+			number = xstrntol(nodes + j, NULL,
 					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
 			start[Z] = (number % HOSTLIST_BASE);
-			
+
 			j+=3;
 			diff = 0;
 			if(diff > largest_diff) {
@@ -1227,16 +1227,16 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 	memset(com,0,255);
 	sprintf(com,"create %dx%dx%d %s start %dx%dx%d "
 		"small32=%d small128=%d",
-		geo[X], geo[Y], geo[Z], conn_type, 
+		geo[X], geo[Y], geo[Z], conn_type,
 		start1[X], start1[Y], start1[Z],
 		blockreq->small32, blockreq->small128);
-	if(!strcasecmp(layout_mode, "OVERLAP")) 
+	if(!strcasecmp(layout_mode, "OVERLAP"))
 		reset_ba_system(false);
-	
+
 	set_all_bps_except(nodes);
 	_create_allocation(com, allocated_blocks);
 	reset_all_removed_bps();
-	
+
 #endif
 	return SLURM_SUCCESS;
 }
@@ -1255,7 +1255,7 @@ static int _load_configuration(char *com, List allocated_blocks)
 
 	memset(filename,0,100);
 	if(len>5)
-		while(i<len) {			
+		while(i<len) {
 			while(com[i-1]!=' ' && i<len) {
 				i++;
 			}
@@ -1265,14 +1265,14 @@ static int _load_configuration(char *com, List allocated_blocks)
 				j++;
 				if(j>100) {
 					memset(error_string,0,255);
-					sprintf(error_string, 
+					sprintf(error_string,
 						"filename is too long needs "
 						"to be under 100 chars");
 					return 0;
 				}
 			}
 		}
-		
+
 	if(filename[0]=='\0') {
 		sprintf(filename,"bluegene.conf");
 	}
@@ -1287,28 +1287,28 @@ static int _load_configuration(char *com, List allocated_blocks)
 
 	if (!s_p_get_string(&layout, "LayoutMode", tbl)) {
 		memset(error_string,0,255);
-		sprintf(error_string, 
+		sprintf(error_string,
 			"Warning: LayoutMode was not specified in "
 			"bluegene.conf defaulting to STATIC partitioning");
 	} else {
 		_set_layout(layout);
 		xfree(layout);
 	}
-		
+
 	if(strcasecmp(layout_mode, "DYNAMIC")) {
-		if (!s_p_get_array((void ***)&blockreq_array, 
+		if (!s_p_get_array((void ***)&blockreq_array,
 				   &count, "BPs", tbl)) {
 			memset(error_string,0,255);
-			sprintf(error_string, 
+			sprintf(error_string,
 				"WARNING: no blocks defined in "
 				"bluegene.conf");
 		}
-		
+
 		for (i = 0; i < count; i++) {
 			_add_bg_record(blockreq_array[i], allocated_blocks);
 		}
 	}
-			
+
 	s_p_hashtbl_destroy(tbl);
 	return 1;
 }
@@ -1373,21 +1373,21 @@ static void _print_text_command(allocated_block_t *allocated_block)
 {
 	wattron(text_win,
 		COLOR_PAIR(allocated_block->color));
-			
+
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "%c", allocated_block->letter);
 	main_xcord += 4;
-	if(allocated_block->request->conn_type==SELECT_TORUS) 
+	if(allocated_block->request->conn_type==SELECT_TORUS)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "TORUS");
 	else if (allocated_block->request->conn_type==SELECT_MESH)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "MESH");
-	else 
+	else
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "SMALL");
 	main_xcord += 7;
-				
+
 	if(allocated_block->request->rotate)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "Y");
@@ -1395,7 +1395,7 @@ static void _print_text_command(allocated_block_t *allocated_block)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "N");
 	main_xcord += 7;
-				
+
 	if(allocated_block->request->elongate)
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "Y");
@@ -1407,41 +1407,41 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "%d", allocated_block->request->size);
 	main_xcord += 10;
-	
+
 	if(allocated_block->request->conn_type == SELECT_SMALL) {
 #ifndef HAVE_BGL
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%d", 
+			  main_xcord, "%d",
 			  allocated_block->request->small16);
 		main_xcord += 5;
 #endif
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%d", 
+			  main_xcord, "%d",
 			  allocated_block->request->small32);
 		main_xcord += 5;
 #ifndef HAVE_BGL
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%d", 
+			  main_xcord, "%d",
 			  allocated_block->request->small64);
 		main_xcord += 5;
 #endif
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%d", 
+			  main_xcord, "%d",
 			  allocated_block->request->small128);
 		main_xcord += 6;
 #ifndef HAVE_BGL
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%d", 
+			  main_xcord, "%d",
 			  allocated_block->request->small256);
 		main_xcord += 6;
 #endif
-		
+
 	} else
 #ifndef HAVE_BGL
 		main_xcord += 27;
 #else
 		main_xcord += 11;
-#endif	
+#endif
 
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "%s",
@@ -1456,16 +1456,16 @@ static void _print_text_command(allocated_block_t *allocated_block)
 void get_command(void)
 {
 	char com[255];
-	
+
 	int text_width, text_startx;
 	allocated_block_t *allocated_block = NULL;
 	int i=0;
 	int count=0;
-	
+
 	WINDOW *command_win;
         List allocated_blocks;
 	ListIterator results_i;
-		
+
 	if(params.commandline) {
 		printf("Configure won't work with commandline mode.\n");
 		printf("Please remove the -c from the commandline.\n");
@@ -1474,19 +1474,19 @@ void get_command(void)
 	}
 	init_wires();
 	allocated_blocks = list_create(NULL);
-				
-	text_width = text_win->_maxx;	
+
+	text_width = text_win->_maxx;
 	text_startx = text_win->_begx;
 	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
 	echo();
-	
+
 	while (strcmp(com, "quit")) {
 		clear_window(grid_win);
 		print_grid(0);
 		clear_window(text_win);
 		box(text_win, 0, 0);
 		box(grid_win, 0, 0);
-		
+
 		if (!params.no_header)
 			_print_header_command();
 
@@ -1498,22 +1498,22 @@ void get_command(void)
 					main_xcord=1;
 					i++;
 				}
-				mvwprintw(text_win, 
+				mvwprintw(text_win,
 					  main_ycord,
-					  main_xcord, 
+					  main_xcord,
 					  "%c",
 					  error_string[i++]);
 				main_xcord++;
 			}
 			main_ycord++;
-			main_xcord=1;	
-			memset(error_string,0,255);			
+			main_xcord=1;
+			memset(error_string,0,255);
 		}
 		results_i = list_iterator_create(allocated_blocks);
-		
-		count = list_count(allocated_blocks) 
-			- (LINES-(main_ycord+5)); 
-		
+
+		count = list_count(allocated_blocks)
+			- (LINES-(main_ycord+5));
+
 		if(count<0)
 			count=0;
 		i=0;
@@ -1522,27 +1522,27 @@ void get_command(void)
 				_print_text_command(allocated_block);
 			i++;
 		}
-		list_iterator_destroy(results_i);		
-		
+		list_iterator_destroy(results_i);
+
 		wnoutrefresh(text_win);
 		wnoutrefresh(grid_win);
 		doupdate();
 		clear_window(command_win);
-		
+
 		box(command_win, 0, 0);
 		mvwprintw(command_win, 0, 3,
 			  "Input Command: (type quit to change view, "
 			  "exit to exit)");
 		wmove(command_win, 1, 1);
 		wgetstr(command_win, com);
-		
+
 		if (!strcmp(com, "exit")) {
 			endwin();
 			_delete_allocated_blocks(allocated_blocks);
 			ba_fini();
 			exit(0);
-		} 
-		
+		}
+
 		if (!strcmp(com, "quit") || !strcmp(com, "\\q")) {
 			break;
 		} else if (!strncasecmp(com, "layout", 6)) {
@@ -1559,8 +1559,8 @@ void get_command(void)
 				main_ycord,
 				main_xcord, "%s", com);
 		} else if (!strncasecmp(com, "drain", 5)) {
-			mvwprintw(text_win, 
-				main_ycord, 
+			mvwprintw(text_win,
+				main_ycord,
 				main_xcord, "%s", com);
 		} else if (!strncasecmp(com, "alldown", 7)) {
 			_change_state_all_bps(com, NODE_STATE_DOWN);
@@ -1571,7 +1571,7 @@ void get_command(void)
 		} else if (!strncasecmp(com, "up", 2)) {
 			_change_state_bps(com, NODE_STATE_IDLE);
 		} else if (!strncasecmp(com, "remove", 6)
-			|| !strncasecmp(com, "delete", 6) 
+			|| !strncasecmp(com, "delete", 6)
 			|| !strncasecmp(com, "drop", 4)) {
 			_remove_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "alter", 5)) {
@@ -1579,7 +1579,7 @@ void get_command(void)
 		} else if (!strncasecmp(com, "create", 6)) {
 			_create_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "copy", 4)
-			|| !strncasecmp(com, "c ", 2) 
+			|| !strncasecmp(com, "c ", 2)
 			|| !strncasecmp(com, "c\0", 2)) {
 			_copy_allocation(com, allocated_blocks);
 		} else if (!strncasecmp(com, "save", 4)) {
@@ -1598,7 +1598,7 @@ void get_command(void)
 	_delete_allocated_blocks(allocated_blocks);
 	params.display = 0;
 	noecho();
-	
+
 	clear_window(text_win);
 	main_xcord = 1;
 	main_ycord = 1;

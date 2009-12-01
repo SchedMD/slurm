@@ -6,21 +6,21 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -63,7 +63,7 @@ static int _conn_wiki_port(char *host, int port)
 	wiki_addr.sin_port   = htons(port);
 	memcpy(&wiki_addr.sin_addr.s_addr, hptr->h_addr, hptr->h_length);
 	sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (connect(sock_fd, (struct sockaddr *) &wiki_addr, 
+	if (connect(sock_fd, (struct sockaddr *) &wiki_addr,
 			sizeof(wiki_addr))) {
 		perror("connect");
 		exit(1);
@@ -98,7 +98,7 @@ static int _conn_event_port(char *host, int port)
 		if (rc == 0)
 			break;
 		if ((errno != EINVAL) || (i > 5)) {
-			printf("WARNING: bind to port %i; %s\n", 
+			printf("WARNING: bind to port %i; %s\n",
 			       port, strerror(errno));
 			return -1;
 		}
@@ -187,7 +187,7 @@ static char *_recv_msg(int fd)
 		exit(1);
 	}
 	return buf;
-}	
+}
 
 static int _xmit(char *msg)
 {
@@ -274,7 +274,7 @@ static void _get_nodes(void)
 
 	/* Dump all data */
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=%s", 
+		"TS=%u AUTH=root DT=%s",
 		(uint32_t) now, "CMD=GETNODES ARG=0:ALL");
 	if (_xmit(out_msg))
 		exit(1);
@@ -367,9 +367,9 @@ static void _modify_job(long my_job_id)
 		/* "JOBNAME=foo " */
 		/* "RFEATURES=big " */
 		/* "PARTITION=pdebug " */
-		/* "NODES=2 " */ 
+		/* "NODES=2 " */
 		/* "DEPEND=afterany:3 " */
-		/* "INVALID=123 " */ 
+		/* "INVALID=123 " */
 		/* "VARIABLELIST=TEST_ENV1=test_val1 " */
 		"VARIABLELIST=TEST_ENV1=test_val1,TEST_ENV2=test_val2 "
 		"TIMELIMIT=10 BANK=test_bank",
@@ -447,7 +447,7 @@ static void _single_msg(void)
 
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=%s",
-		(uint32_t) now, 
+		(uint32_t) now,
 		"JOBWILLRUN ARG=JOBID=65537,bgl[000x733] "
 		"JOBID=65539,bgl[000x733] JOBID=65538,bgl[000x733]");
 	if (_xmit(out_msg))
@@ -469,7 +469,7 @@ int main(int argc, char * argv[])
 	sched_port   = atoi(argv[5]);
 	is_bluegene  = atoi(argv[6]);
 	printf("auth_key=%s control_addr=%s e_port=%d job_id=%d sched_port=%d "
-		"is_bluegene=%d\n", 
+		"is_bluegene=%d\n",
 		auth_key, control_addr, e_port, job_id, sched_port, is_bluegene);
 
 #if _DEBUG

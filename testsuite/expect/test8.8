@@ -12,21 +12,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -207,7 +207,7 @@ proc is_block_in_state { block state } {
 
 proc check_node { node error_cnt alloc_cnt } {
 	global scontrol sinfo procs_per_cnode number prompt
-	upvar spawn_id spawn_id 
+	upvar spawn_id spawn_id
 
 	set error_procs [expr $error_cnt * $procs_per_cnode]
 	set alloc_procs [expr $alloc_cnt * $procs_per_cnode]
@@ -217,15 +217,15 @@ proc check_node { node error_cnt alloc_cnt } {
 	send "$scontrol show node $node\r"
 	expect {
 		-nocase -re "CPUAlloc=$alloc_procs" {
-			incr match 
+			incr match
 			exp_continue
 		}
 		-nocase -re "CPUErr=$error_procs" {
-			incr match 
+			incr match
 			exp_continue
 		}
 		-nocase -re "CPUTot=($number)" {
-			incr match 
+			incr match
 			set total_procs $expect_out(1,string)
 			exp_continue
 		}
@@ -254,7 +254,7 @@ proc check_node { node error_cnt alloc_cnt } {
 	set match 0
 	send "$sinfo -h --format \"%C %A\" -n $node\r"
 
-	# make sure we get by the sinfo command so we don't 
+	# make sure we get by the sinfo command so we don't
 	# think the %'s are a prompt
 	expect {
 		"%C %A" {
@@ -279,17 +279,17 @@ proc check_node { node error_cnt alloc_cnt } {
 			if {[string compare $expect_out(8,string) ""]} {
 				set num_total [expr $num_total * 1024]
 			}
-			
+
 			set num_nodes_alloc $expect_out(9,string)
 			if {[string compare $expect_out(10,string) ""]} {
 				set num_nodes_alloc [expr $num_nodes_alloc * 1024]
 			}
-			
+
 			set num_nodes_idle $expect_out(11,string)
 			if {[string compare $expect_out(12,string) ""]} {
 				set num_nodes_idle [expr $num_nodes_idle * 1024]
 			}
-			
+
 			if { $num_alloc != $alloc_procs } {
 				send_user "\nFAILURE: sinfo 1 allocated cpus wrong, got $num_alloc but needed $alloc_procs\n"
 				set rc 1
@@ -335,9 +335,9 @@ proc check_node { node error_cnt alloc_cnt } {
 # set a block in a error state
 proc change_block_state { block state} {
 	global scontrol
- 
+
 	set exit_code 0
-		
+
 	set my_pid [spawn $scontrol update blockname=$block state=$state]
 	expect {
 		-re "slurm_update error:" {
@@ -361,14 +361,14 @@ proc change_block_state { block state} {
 	if { $exit_code } {
 		return $exit_code
 	}
-	
+
 	return [is_block_in_state $block $state]
 }
 
 # set a block in a error state
 proc change_subbp_state { node ionodes state } {
 	global scontrol smap
- 
+
 	set exit_code 0
 
 	set my_pid [spawn $scontrol update subbpname=$node\[$ionodes\] state=$state]
@@ -394,16 +394,16 @@ proc change_subbp_state { node ionodes state } {
 	if { $exit_code } {
 		return $exit_code
 	}
-	
+
 	set match 0
 	set my_pid [spawn $smap -Db -c -h -n $node -I $ionodes]
 	expect {
 		-nocase -re "$state" {
-			incr match 
+			incr match
 			exp_continue
 		}
 		-re "$node" {
-			incr match 
+			incr match
 			exp_continue
 		}
 		-re "Unable to contact" {
@@ -424,7 +424,7 @@ proc change_subbp_state { node ionodes state } {
 		send_user "\nFAILURE: Subbp did not go into $state state. $match\n"
 		set exit_code 1
 	}
-	
+
 	return $exit_code
 }
 
@@ -453,7 +453,7 @@ if {$psets == 0} {
 	exit 1
 }
 
-set num_nodes [expr [get_node_cnt] * [get_bluegene_cnodes_per_mp]] 
+set num_nodes [expr [get_node_cnt] * [get_bluegene_cnodes_per_mp]]
 if {$num_nodes == 0} {
 	send_user "\nFAILURE: No nodes are found on this system\n"
 	exit 1
@@ -501,7 +501,7 @@ if {$smallest > 32} {
 	set error_block 32
 }
 
-# allocate the entire system. this should work on all layout types since a 
+# allocate the entire system. this should work on all layout types since a
 # full block is always makable unless they aren't using the entire system.
 # however it may not work with all configurations.
 set block [allocate_and_quit $num_nodes "" 0 0]
@@ -526,7 +526,7 @@ if {$exit_code} {
 if {![string compare $layout "Dynamic"]} {
 	# lets make 1 ionode in an error state
 	set exit_code [change_subbp_state $first_node "0" "error"]
-	#allocate something with that node	
+	#allocate something with that node
 	set block [allocate_and_quit $smallest $first_node $error_block 1]
 
 	#free the block no matter what for rest of tests

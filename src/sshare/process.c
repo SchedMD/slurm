@@ -1,36 +1,36 @@
 /*****************************************************************************\
- *  process.c -  process the return from get_share_info. 
+ *  process.c -  process the return from get_share_info.
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -150,7 +150,7 @@ extern int process(shares_response_msg_t *resp)
 		}
 		if((tmp_char = strstr(object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
-			if(newlen) 
+			if(newlen)
 				field->len = newlen;
 		}
 		list_append(print_fields_list, field);
@@ -180,18 +180,18 @@ extern int process(shares_response_msg_t *resp)
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_ACCOUNT:
-				if(assoc->user) 
+				if(assoc->user)
 					local_acct = xstrdup_printf(
 						"|%s", assoc->name);
-				else 
+				else
 					local_acct = xstrdup(assoc->name);
-				
+
 				print_acct = get_tree_acct_name(
 					local_acct,
 					assoc->parent, tree_list);
 				xfree(local_acct);
 				field->print_routine(
-					field, 
+					field,
 					print_acct,
 					(curr_inx == field_count));
 				break;
@@ -202,7 +202,7 @@ extern int process(shares_response_msg_t *resp)
 					(curr_inx == field_count));
 				break;
 			case PRINT_EUSED:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     assoc->usage_efctv,
 						     (curr_inx == field_count));
 				break;
@@ -214,12 +214,12 @@ extern int process(shares_response_msg_t *resp)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     assoc->assoc_id,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NORMS:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     assoc->shares_norm,
 						     (curr_inx == field_count));
 				break;
@@ -234,14 +234,14 @@ extern int process(shares_response_msg_t *resp)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_RAWU:
-				field->print_routine(field, 
+				field->print_routine(field,
 						     assoc->usage_raw,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:
 				if(assoc->user)
 					tmp_char = assoc->name;
-				field->print_routine(field, 
+				field->print_routine(field,
 						     tmp_char,
 						     (curr_inx == field_count));
 				break;
@@ -257,9 +257,9 @@ extern int process(shares_response_msg_t *resp)
 		printf("\n");
 	}
 
-	if(tree_list) 
+	if(tree_list)
 		list_destroy(tree_list);
-			
+
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	list_destroy(print_fields_list);

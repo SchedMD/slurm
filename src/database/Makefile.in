@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile for database library 
+# Makefile for database library
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -327,7 +327,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @WITH_PGSQL_FALSE@PGSQL_LIB = 
 @WITH_PGSQL_TRUE@PGSQL_LIB = libslurm_pgsql.la
 @WITH_PGSQL_TRUE@libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
-@WITH_PGSQL_TRUE@libslurm_pgsql_la_LIBADD = $(PGSQL_LIBS) 
+@WITH_PGSQL_TRUE@libslurm_pgsql_la_LIBADD = $(PGSQL_LIBS)
 @WITH_PGSQL_TRUE@libslurm_pgsql_la_LDFLAGS = $(LIB_LDFLAGS)
 @WITH_PGSQL_TRUE@libslurm_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
 @WITH_PGSQL_FALSE@EXTRA_libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h

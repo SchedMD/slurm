@@ -5,32 +5,32 @@
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -58,13 +58,13 @@ static MYSQL_RES *_get_first_result(MYSQL *mysql_db)
 		/* did current statement return data? */
 		if((result = mysql_store_result(mysql_db)))
 			return result;
-		
+
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
 			debug3("error: Could not execute statement %d\n", rc);
-		
+
 	} while (rc == 0);
-	
+
 	return NULL;
 }
 
@@ -84,7 +84,7 @@ static MYSQL_RES *_get_last_result(MYSQL *mysql_db)
 		if ((rc = mysql_next_result(mysql_db)) > 0)
 			debug3("error: Could not execute statement %d\n", rc);
 	} while (rc == 0);
-	
+
 	return last_result;
 }
 
@@ -108,7 +108,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	char *temp = NULL;
 
 	DEF_TIMERS;
-	
+
 	/* figure out the keys in the table */
 	query = xstrdup_printf("show index from %s", table_name);
 	if(!(result = mysql_db_query_ret(mysql_db, query, 0))) {
@@ -199,10 +199,10 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		info("dropping column %s from table %s", col, table_name);
 		xstrfmtcat(query, " drop %s,", col);
 	}
-	
+
 	list_iterator_destroy(itr);
 	list_destroy(columns);
-	
+
 	if((temp = strstr(ending, "primary key ("))) {
 		int open = 0, close =0;
 		int end = 0;
@@ -225,7 +225,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 			}
 			xstrfmtcat(query, " add %s,",  primary_key);
 			xstrfmtcat(correct_query, " add %s,",  primary_key);
-			
+
 			xfree(primary_key);
 		}
 	}
@@ -270,9 +270,9 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 					      table_defs_table, query);
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
-		
+
 		run_update = 1;
-		
+
 		if((result = mysql_db_query_ret(mysql_db, query2, 0))) {
 			if((row = mysql_fetch_row(result)))
 				run_update = 0;
@@ -285,14 +285,14 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	if(run_update || adding) {
 		time_t now = time(NULL);
 		char *query2 = NULL;
-	
+
 		debug("Table %s has changed.  Updating...", table_name);
 
 		if(mysql_db_query(mysql_db, query)) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
-		
+
 		query2 = xstrdup_printf("insert into %s (creation_time, "
 					"mod_time, table_name, definition) "
 					"values (%d, %d, \"%s\", \"%s\") "
@@ -321,7 +321,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 	char create_line[50];
 	MYSQL *mysql_db = NULL;
 	int rc = SLURM_ERROR;
-	
+
 	MYSQL *db_ptr = NULL;
 	char *db_host = NULL;
 
@@ -332,7 +332,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 #endif
 		if(!(mysql_db = mysql_init(mysql_db)))
 			fatal("mysql_init failed: %s", mysql_error(mysql_db));
-		
+
 		db_host = db_info->host;
 		db_ptr = mysql_real_connect(mysql_db,
 					    db_host, db_info->user,
@@ -343,7 +343,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 			info("Connection failed to host = %s "
 			     "user = %s port = %u",
 			     db_host, db_info->user,
-			     db_info->port);  
+			     db_info->port);
 			db_host = db_info->backup;
 			db_ptr = mysql_real_connect(mysql_db, db_host,
 						    db_info->user,
@@ -399,7 +399,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 {
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
-	
+
 	char *db_host = db_info->host;
 
 	if(!(*mysql_db = mysql_init(*mysql_db)))
@@ -432,7 +432,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 						db_host = db_info->backup;
 						continue;
 					}
-					
+
 					rc = ESLURM_DB_CONNECTION;
 					break;
 				}
@@ -442,7 +442,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 		}
 	}
 
-	errno = rc;	
+	errno = rc;
 	return rc;
 }
 
@@ -480,7 +480,7 @@ extern int mysql_clear_results(MYSQL *mysql_db)
 		/* did current statement return data? */
 		if((result = mysql_store_result(mysql_db)))
 			mysql_free_result(result);
-		
+
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
 			error("Could not execute statement %d %s\n",
@@ -491,7 +491,7 @@ extern int mysql_clear_results(MYSQL *mysql_db)
 	if(rc > 0) {
 		errno = rc;
 		return SLURM_ERROR;
-	} 
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -504,7 +504,7 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	slurm_mutex_lock(&mysql_lock);
 #endif
 	/* clear out the old results so we don't get a 2014 error */
-	mysql_clear_results(mysql_db);		
+	mysql_clear_results(mysql_db);
 //try_again:
 	if(mysql_query(mysql_db, query)) {
 		error("mysql_query failed: %d %s\n%s",
@@ -519,7 +519,7 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 		the calling program is the only way to handle this.
 		If anyone in the future figures out a way to handle
 		this, super.  Until then we will need to restart the
-		calling program if you ever get this error. 
+		calling program if you ever get this error.
 		*/
 
 		return SLURM_ERROR;
@@ -534,7 +534,7 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 extern int mysql_db_ping(MYSQL *mysql_db)
 {
 	/* clear out the old results so we don't get a 2014 error */
-	mysql_clear_results(mysql_db);		
+	mysql_clear_results(mysql_db);
 	return mysql_ping(mysql_db);
 }
 
@@ -544,7 +544,7 @@ extern int mysql_db_commit(MYSQL *mysql_db)
 	slurm_mutex_lock(&mysql_lock);
 #endif
 	/* clear out the old results so we don't get a 2014 error */
-	mysql_clear_results(mysql_db);		
+	mysql_clear_results(mysql_db);
 	if(mysql_commit(mysql_db)) {
 		error("mysql_commit failed: %d %s",
 		      mysql_errno(mysql_db),
@@ -567,7 +567,7 @@ extern int mysql_db_rollback(MYSQL *mysql_db)
 	slurm_mutex_lock(&mysql_lock);
 #endif
 	/* clear out the old results so we don't get a 2014 error */
-	mysql_clear_results(mysql_db);		
+	mysql_clear_results(mysql_db);
 	if(mysql_rollback(mysql_db)) {
 		error("mysql_commit failed: %d %s",
 		      mysql_errno(mysql_db),
@@ -589,7 +589,7 @@ extern int mysql_db_rollback(MYSQL *mysql_db)
 extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last)
 {
 	MYSQL_RES *result = NULL;
-	
+
 	if(mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
 		if(last)
 			result = _get_last_result(mysql_db);
@@ -597,7 +597,7 @@ extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last)
 			result = _get_first_result(mysql_db);
 		if(!result && mysql_field_count(mysql_db)) {
 			/* should have returned data */
-			error("We should have gotten a result: %s", 
+			error("We should have gotten a result: %s",
 			      mysql_error(mysql_db));
 		}
 	}
@@ -608,28 +608,28 @@ extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last)
 extern int mysql_db_query_check_after(MYSQL *mysql_db, char *query)
 {
 	int rc = SLURM_SUCCESS;
-		
-	if((rc = mysql_db_query(mysql_db, query)) != SLURM_ERROR)  
+
+	if((rc = mysql_db_query(mysql_db, query)) != SLURM_ERROR)
 		rc = mysql_clear_results(mysql_db);
-	
+
 	return rc;
 }
 
 extern int mysql_insert_ret_id(MYSQL *mysql_db, char *query)
 {
 	int new_id = 0;
-	
+
 	if(mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
 		new_id = mysql_insert_id(mysql_db);
 		if(!new_id) {
 			/* should have new id */
-			error("We should have gotten a new id: %s", 
+			error("We should have gotten a new id: %s",
 			      mysql_error(mysql_db));
 		}
 	}
 
 	return new_id;
-	
+
 }
 
 extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
@@ -661,13 +661,13 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 		xfree(query);
 		return SLURM_ERROR;
 	}
-	xfree(query);	
+	xfree(query);
 
 	query = xstrdup_printf("create table if not exists %s (%s %s",
 			       table_name, fields->name, fields->options);
 	i=1;
 	fields++;
-		
+
 	while(fields && fields->name) {
 		xstrfmtcat(query, ", %s %s", fields->name, fields->options);
 		fields++;
@@ -682,8 +682,8 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 		xfree(query);
 		return SLURM_ERROR;
 	}
-	xfree(query);	
-	
+	xfree(query);
+
 	return _mysql_make_table_current(mysql_db, table_name,
 					 first_field, ending);
 }

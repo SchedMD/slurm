@@ -7,21 +7,21 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
@@ -53,8 +53,8 @@ typedef struct {
 
 struct step_launch_state {
 	/* This lock protects tasks_started, tasks_exited, node_io_error,
-	   io_deadline, abort, and abort_action_taken.  The main thread 
-	   blocks on cond, waking when a tast starts or exits, or the abort 
+	   io_deadline, abort, and abort_action_taken.  The main thread
+	   blocks on cond, waking when a tast starts or exits, or the abort
 	   flag is set. */
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
@@ -124,8 +124,8 @@ void record_ppid(void);
 int step_launch_notify_io_failure(step_launch_state_t *sls, int node_id);
 
 /*
- * Just in case the node was marked questionable very early in the 
- * job step setup, clear this flag when the node makes its initial 
+ * Just in case the node was marked questionable very early in the
+ * job step setup, clear this flag when the node makes its initial
  * connection.
  */
 int step_launch_clear_questionable_state(step_launch_state_t *sls, int node_id);

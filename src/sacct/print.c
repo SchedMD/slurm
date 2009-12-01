@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -52,8 +52,8 @@ char *_elapsed_time(long secs, long usecs)
 
 	if(secs < 0 || secs == NO_VAL)
 		return NULL;
-	
-	
+
+
 	while (usecs >= 1E6) {
 		secs++;
 		usecs -= 1E6;
@@ -67,7 +67,7 @@ char *_elapsed_time(long secs, long usecs)
 	hours   = (secs / 3600) % 24;
 	days    =  secs / 86400;
 
-	if (days) 
+	if (days)
 		str = xstrdup_printf("%ld-%2.2ld:%2.2ld:%2.2ld",
 				     days, hours, minutes, seconds);
 	else if (hours)
@@ -87,10 +87,10 @@ static char *_find_qos_name_from_list(
 {
 	ListIterator itr = NULL;
 	acct_qos_rec_t *qos = NULL;
-	
+
 	if(!qos_list || qosid == NO_VAL)
 		return NULL;
-	
+
 	itr = list_iterator_create(qos_list);
 	while((qos = list_next(itr))) {
 		if(qosid == qos->id)
@@ -116,19 +116,19 @@ void print_fields(type_t type, void *object)
 	struct passwd *pw = NULL;
 	struct	group *gr = NULL;
 	char outbuf[FORMAT_STRING_SIZE];
-	
+
 	switch(type) {
 	case JOB:
 		step = NULL;
-		if(!job->track_steps) 
+		if(!job->track_steps)
 			step = (jobacct_step_rec_t *)job->first_step_ptr;
 		/* set this to avoid printing out info for things that
 		   don't mean anything.  Like an allocation that never
 		   ran anything.
 		*/
-		if(!step) 
-			job->track_steps = 1;		
-		
+		if(!step)
+			job->track_steps = 1;
+
 		break;
 	default:
 		break;
@@ -145,7 +145,7 @@ void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_int = job->alloc_cpus;
 				// we want to use the step info
-				if(!step) 
+				if(!step)
 					break;
 			case JOBSTEP:
 				tmp_int = step->ncpus;
@@ -196,7 +196,7 @@ void print_fields(type_t type, void *object)
 		case PRINT_AVECPU:
 			switch(type) {
 			case JOB:
-				if(!job->track_steps) 
+				if(!job->track_steps)
 					tmp_int = job->sacct.ave_cpu;
 				break;
 			case JOBSTEP:
@@ -207,7 +207,7 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			tmp_char = _elapsed_time((int)tmp_int, 0);
-			
+
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
@@ -230,7 +230,7 @@ void print_fields(type_t type, void *object)
 				convert_num_unit((float)tmp_int,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
-			
+
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -252,7 +252,7 @@ void print_fields(type_t type, void *object)
 				convert_num_unit((float)tmp_int,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
-			
+
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -274,7 +274,7 @@ void print_fields(type_t type, void *object)
 				convert_num_unit((float)tmp_int,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
-			
+
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -355,7 +355,7 @@ void print_fields(type_t type, void *object)
 				tmp_int = step->elapsed;
 				break;
 			case JOBCOMP:
-				tmp_int = job_comp->end_time 
+				tmp_int = job_comp->end_time
 					- job_comp->start_time;
 				break;
 			default:
@@ -418,7 +418,7 @@ void print_fields(type_t type, void *object)
 			}
 			if (WIFSIGNALED(tmp_int))
 				tmp_int2 = WTERMSIG(tmp_int);
-			
+
 			snprintf(outbuf, sizeof(outbuf), "%d:%d",
 				 WEXITSTATUS(tmp_int), tmp_int2);
 
@@ -514,7 +514,7 @@ void print_fields(type_t type, void *object)
 			case JOB:
 				/* below really should be step.  It is
 				   not a typo */
-				if(!job->track_steps) 
+				if(!job->track_steps)
 					tmp_char = slurm_step_layout_type_name(
 						step->task_dist);
 				break;
@@ -549,7 +549,7 @@ void print_fields(type_t type, void *object)
 				convert_num_unit((float)tmp_int,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
-			
+
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -581,7 +581,7 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = 
+					tmp_int =
 						job->sacct.max_pages_id.taskid;
 				break;
 			case JOBSTEP:
@@ -613,7 +613,7 @@ void print_fields(type_t type, void *object)
 				convert_num_unit((float)tmp_int,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
-			
+
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -672,12 +672,12 @@ void print_fields(type_t type, void *object)
 			default:
 				tmp_int = NO_VAL;
 				break;
-			}			
+			}
 			if(tmp_int != NO_VAL)
 				convert_num_unit((float)tmp_int,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
-			
+
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -819,13 +819,13 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			
+
 			if(!tmp_int) {
 				hostlist_t hl = hostlist_create(tmp_char);
 				tmp_int = hostlist_count(hl);
 				hostlist_destroy(hl);
 			}
-			convert_num_unit((float)tmp_int, 
+			convert_num_unit((float)tmp_int,
 					 outbuf, sizeof(outbuf), UNIT_NONE);
 			field->print_routine(field,
 					     outbuf,
@@ -837,7 +837,7 @@ void print_fields(type_t type, void *object)
 				if(!job->track_steps && !step)
 					tmp_int = job->alloc_cpus;
 				// we want to use the step info
-				if(!step) 
+				if(!step)
 					break;
 			case JOBSTEP:
 				tmp_int = step->ntasks;
@@ -904,10 +904,10 @@ void print_fields(type_t type, void *object)
 
 				break;
 			}
-			if(!qos_list) 
+			if(!qos_list)
 				qos_list = acct_storage_g_get_qos(
 					acct_db_conn, getuid(), NULL);
-		
+
 			tmp_char = _find_qos_name_from_list(qos_list,
 							    tmp_int);
 			field->print_routine(field,
@@ -1055,9 +1055,9 @@ void print_fields(type_t type, void *object)
 
 				break;
 			}
-			
-			if (((tmp_int & JOB_STATE_BASE) == JOB_CANCELLED) && 
-			    (tmp_int2 != NO_VAL)) 
+
+			if (((tmp_int & JOB_STATE_BASE) == JOB_CANCELLED) &&
+			    (tmp_int2 != NO_VAL))
 				snprintf(outbuf, FORMAT_STRING_SIZE,
 					 "%s by %d",
 					 job_state_string(tmp_int),
@@ -1070,7 +1070,7 @@ void print_fields(type_t type, void *object)
 				snprintf(outbuf, FORMAT_STRING_SIZE,
 					 "%s",
 					 tmp_char);
-			
+
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -1141,7 +1141,7 @@ void print_fields(type_t type, void *object)
 		case PRINT_TIMELIMIT:
 			switch(type) {
 			case JOB:
-				
+
 				break;
 			case JOBSTEP:
 
@@ -1187,7 +1187,7 @@ void print_fields(type_t type, void *object)
 				if(job->user) {
 					if ((pw=getpwnam(job->user)))
 						tmp_int = pw->pw_uid;
-				} else 
+				} else
 					tmp_int = job->uid;
 				break;
 			case JOBSTEP:
@@ -1199,7 +1199,7 @@ void print_fields(type_t type, void *object)
 
 				break;
 			}
-			
+
 			field->print_routine(field,
 					     tmp_int,
 					     (curr_inx == field_count));
@@ -1211,8 +1211,8 @@ void print_fields(type_t type, void *object)
 					tmp_char = job->user;
 				else if(job->uid != -1) {
 					if ((pw=getpwuid(job->uid)))
-						tmp_char = pw->pw_name;	
-				}				
+						tmp_char = pw->pw_name;
+				}
 				break;
 			case JOBSTEP:
 

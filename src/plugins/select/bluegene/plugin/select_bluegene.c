@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -50,12 +50,12 @@
 #define NOT_FROM_CONTROLLER -2
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
- * overwritten when linking with the slurmctld. 
+ * overwritten when linking with the slurmctld.
  */
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr = NULL;
 int bg_recover = NOT_FROM_CONTROLLER;
-List part_list = NULL;	
+List part_list = NULL;
 int node_record_count;
 time_t last_node_update;
 time_t last_job_update;
@@ -82,7 +82,7 @@ char *slurmctld_cluster_name = NULL;
  * where <application> is a description of the intended application of
  * the plugin (e.g., "select" for SLURM node selection) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load select plugins if the plugin_type string has a 
+ * only load select plugins if the plugin_type string has a
  * prefix of "select/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
@@ -253,16 +253,16 @@ extern int init ( void )
 		fatal("SYSTEM_DIMENSIONS value (%d) invalid for BlueGene",
 		      SYSTEM_DIMENSIONS);
 #endif
-	
+
 #ifdef HAVE_BG_FILES
 #ifdef HAVE_BGL
 	        if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE")
 		    || !getenv("VWSPATH"))
 			fatal("db2profile has not been "
 			      "run to setup DB2 environment");
-		
+
 		if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
-		    || (SELECT_VIRTUAL_NODE_MODE 
+		    || (SELECT_VIRTUAL_NODE_MODE
 			!= RM_PARTITION_VIRTUAL_NODE_MODE))
 			fatal("enum node_use_type out of sync with rm_api.h");
 #endif
@@ -271,7 +271,7 @@ extern int init ( void )
 		    || (SELECT_NAV   != RM_NAV))
 			fatal("enum conn_type out of sync with rm_api.h");
 #endif
-		
+
 		verbose("%s loading...", plugin_name);
 		/* if this is coming from something other than the controller
 		   we don't want to read the config or anything like that. */
@@ -305,7 +305,7 @@ extern int fini ( void )
 }
 
 /*
- * The remainder of this file implements the standard SLURM 
+ * The remainder of this file implements the standard SLURM
  * node selection API.
  */
 
@@ -340,7 +340,7 @@ extern int select_p_state_save(char *dir_name)
 			continue;
 #endif
 		xassert(bg_record->bg_block_id != NULL);
-				
+
 		pack_block(bg_record, buffer);
 		blocks_packed++;
 	}
@@ -410,7 +410,7 @@ extern int select_p_state_save(char *dir_name)
 extern int select_p_state_restore(char *dir_name)
 {
 	debug("bluegene: select_p_state_restore");
-	
+
 	return validate_current_blocks(dir_name);
 }
 
@@ -418,7 +418,7 @@ extern int select_p_state_restore(char *dir_name)
 extern int select_p_job_init(List job_list)
 {
 	int rc = sync_jobs(job_list);
-	
+
 	/* after we have synced the blocks then we say they are
 	   created. */
 	blocks_are_created = 1;
@@ -430,9 +430,9 @@ extern int select_p_job_init(List job_list)
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 	if(node_cnt>0 && bg_conf)
-		if(node_ptr->cpus >= bg_conf->bp_node_cnt) 
+		if(node_ptr->cpus >= bg_conf->bp_node_cnt)
 			bg_conf->cpus_per_bp = node_ptr->cpus;
-		
+
 	return SLURM_SUCCESS;
 }
 
@@ -449,14 +449,14 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		fatal("Error, could not read the file");
 		return SLURM_ERROR;
 	}
-	
+
 	if(part_list) {
 		struct part_record *part_ptr = NULL;
 		ListIterator itr = list_iterator_create(part_list);
 		while((part_ptr = list_next(itr))) {
 			part_ptr->max_nodes = part_ptr->max_nodes_orig;
 			part_ptr->min_nodes = part_ptr->min_nodes_orig;
-			select_p_alter_node_cnt(SELECT_SET_BP_CNT, 
+			select_p_alter_node_cnt(SELECT_SET_BP_CNT,
 						&part_ptr->max_nodes);
 			select_p_alter_node_cnt(SELECT_SET_BP_CNT,
 						&part_ptr->min_nodes);
@@ -464,18 +464,18 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		list_iterator_destroy(itr);
 	}
 
-	return SLURM_SUCCESS; 
+	return SLURM_SUCCESS;
 }
 
 
 /*
- * select_p_job_test - Given a specification of scheduling requirements, 
- *	identify the nodes which "best" satify the request. The specified 
- *	nodes may be DOWN or BUSY at the time of this test as may be used 
+ * select_p_job_test - Given a specification of scheduling requirements,
+ *	identify the nodes which "best" satify the request. The specified
+ *	nodes may be DOWN or BUSY at the time of this test as may be used
  *	to deterime if a job could ever run.
  * IN/OUT job_ptr - pointer to job being scheduled start_time is set
  *	when we can possibly start job.
- * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
  * IN max_nodes - maximum count of nodes (0==don't care)
@@ -484,15 +484,15 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
  * IN preemptee_candidates - List of pointers to jobs which can be preempted.
- * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the 
- *		jobs to be preempted to initiate the pending job. Not set 
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
+ *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  * RET zero on success, EINVAL otherwise
- * NOTE: bitmap must be a superset of req_nodes at the time that 
+ * NOTE: bitmap must be a superset of req_nodes at the time that
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			     uint32_t min_nodes, uint32_t max_nodes, 
+			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
 			     List *preemptee_job_list)
@@ -501,13 +501,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * 1) geometry requested
 	 * 2) min/max nodes (BPs) requested
 	 * 3) type: TORUS or MESH or NAV (torus else mesh)
-	 * 
+	 *
 	 * note: we don't have to worry about security at this level
 	 * as the SLURM block logic will handle access rights.
 	 */
 
-	return submit_job(job_ptr, bitmap, min_nodes, max_nodes, 
-			  req_nodes, mode, preemptee_candidates, 
+	return submit_job(job_ptr, bitmap, min_nodes, max_nodes,
+			  req_nodes, mode, preemptee_candidates,
 			  preemptee_job_list);
 }
 
@@ -545,7 +545,7 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
 
 	/* check to see if data has changed */
 	if (last_query_time >= last_bg_update) {
-		debug2("Node select info hasn't changed since %d", 
+		debug2("Node select info hasn't changed since %d",
 			last_bg_update);
 		return SLURM_NO_CHANGE_IN_DATA;
 	} else if(blocks_are_created) {
@@ -574,21 +574,21 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
 		if(bg_lists->freeing) {
 			slurm_mutex_lock(&block_state_mutex);
 			itr = list_iterator_create(bg_lists->freeing);
-			while ((bg_record = (bg_record_t *) list_next(itr)) 
+			while ((bg_record = (bg_record_t *) list_next(itr))
 			       != NULL) {
 				xassert(bg_record->bg_block_id != NULL);
-				
+
 				pack_block(bg_record, buffer);
 				blocks_packed++;
 			}
 			list_iterator_destroy(itr);
 			slurm_mutex_unlock(&block_state_mutex);
-		} 
+		}
 		tmp_offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, 0);
 		pack32(blocks_packed, buffer);
 		set_buf_offset(buffer, tmp_offset);
-		
+
 		*buffer_ptr = buffer;
 	} else {
 		error("select_p_pack_node_info: bg_lists->main not ready yet");
@@ -598,13 +598,13 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, 
+extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer)
 {
 	return select_nodeinfo_pack(nodeinfo, buffer);
 }
 
-extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, 
+extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 					   Buf buffer)
 {
 	return select_nodeinfo_unpack(nodeinfo, buffer);
@@ -630,7 +630,7 @@ extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 	return select_nodeinfo_set(job_ptr);
 }
 
-extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
+extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 					enum select_nodedata_type dinfo,
 					enum node_states state,
 					void *data)
@@ -717,55 +717,55 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
 				 "Admin removing block %s %s",
-				 bg_record->bg_block_id, tmp); 
+				 bg_record->bg_block_id, tmp);
 		else
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
 				 "Removing all blocks on midplane %s %s",
-				 bg_record->nodes, tmp); 
-			
+				 bg_record->nodes, tmp);
+
 	} else {
 		snprintf(reason, sizeof(reason),
 			 "update_block: "
 			 "Admin set block %s state to %s %s",
-			 bg_record->bg_block_id, 
-			 bg_block_state_string(block_desc_ptr->state), tmp); 
+			 bg_record->bg_block_id,
+			 bg_block_state_string(block_desc_ptr->state), tmp);
 	}
 	/* First fail any job running on this block */
 	if(bg_record->job_running > NO_JOB_RUNNING) {
-		slurm_fail_job(bg_record->job_running);	
+		slurm_fail_job(bg_record->job_running);
 		/* need to set the job_ptr to NULL
 		   here or we will get error message
 		   about us trying to free this block
 		   with a job in it.
 		*/
 		bg_record->job_ptr = NULL;
-	} 
-	
+	}
+
 	/* Free all overlapping blocks and kill any jobs only
-	 * if we are going into an error state */ 
+	 * if we are going into an error state */
 	if (bg_conf->layout_mode != LAYOUT_DYNAMIC
 	    && (block_desc_ptr->state == RM_PARTITION_ERROR)) {
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
 		List delete_list = list_create(NULL);
-		
+
 		itr = list_iterator_create(bg_lists->main);
 		while ((found_record = list_next(itr))) {
 			if (bg_record == found_record)
 				continue;
-			
+
 			if(!blocks_overlap(bg_record, found_record)) {
 				debug2("block %s isn't part of errored %s",
-				       found_record->bg_block_id, 
+				       found_record->bg_block_id,
 				       bg_record->bg_block_id);
 				continue;
 			}
 			if(found_record->job_running > NO_JOB_RUNNING) {
 				info("Failing job %u block %s "
 				     "failed because overlapping block %s "
-				     "is in an error state.", 
-				     found_record->job_running, 
+				     "is in an error state.",
+				     found_record->job_running,
 				     found_record->bg_block_id,
 				     bg_record->bg_block_id);
 				/* We need to fail this job first to
@@ -781,11 +781,11 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 			} else {
 				debug2("block %s is part of errored %s "
 				       "but no running job",
-				       found_record->bg_block_id, 
-				       bg_record->bg_block_id);	
+				       found_record->bg_block_id,
+				       bg_record->bg_block_id);
 			}
 			list_push(delete_list, found_record);
-		}		
+		}
 		list_iterator_destroy(itr);
 		free_block_list(delete_list);
 		list_destroy(delete_list);
@@ -818,19 +818,19 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 		while ((found_record = list_next(itr))) {
 			if (bg_record == found_record)
 				continue;
-			
+
 			if(!bit_equal(bg_record->bitmap,
 				      found_record->bitmap)) {
 				debug2("block %s isn't part of to be freed %s",
-				       found_record->bg_block_id, 
+				       found_record->bg_block_id,
 				       bg_record->bg_block_id);
 				continue;
 			}
 			if(found_record->job_running > NO_JOB_RUNNING) {
 				info("Failing job %u block %s "
 				     "failed because overlapping block %s "
-				     "is in an error state.", 
-				     found_record->job_running, 
+				     "is in an error state.",
+				     found_record->job_running,
 				     found_record->bg_block_id,
 				     bg_record->bg_block_id);
 				/* We need to fail this job first to
@@ -846,16 +846,16 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 			} else {
 				debug2("block %s is part of to be freed %s "
 				       "but no running job",
-				       found_record->bg_block_id, 
-				       bg_record->bg_block_id);	
+				       found_record->bg_block_id,
+				       bg_record->bg_block_id);
 			}
 			list_push(delete_list, found_record);
-		}		
+		}
 		list_iterator_destroy(itr);
 
 	large_block:
 		free_block_list(delete_list);
-		list_destroy(delete_list);		
+		list_destroy(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
 	} else {
 		slurm_mutex_unlock(&block_state_mutex);
@@ -863,7 +863,7 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 		      bg_block_state_string(block_desc_ptr->state));
 		return ESLURM_INVALID_NODE_STATE;
 	}
-				
+
 	info("%s", reason);
 	last_bg_update = time(NULL);
 
@@ -896,7 +896,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 		goto end_it;
 	}
 	name = block_desc_ptr->nodes;
-	
+
 	while (name[j] != '\0') {
 		if (name[j] == '[') {
 			if(set<1) {
@@ -906,14 +906,14 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 			i = j++;
 			if((name[j] < '0'
 			    || name[j] > 'Z'
-			    || (name[j] > '9' 
+			    || (name[j] > '9'
 				&& name[j] < 'A'))) {
 				error("update_sub_node: sub block is empty");
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			while(name[i] != '\0') {
-				if(name[i] == ']') 
+				if(name[i] == ']')
 					break;
 				i++;
 			}
@@ -923,8 +923,8 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
-			
-			strncpy(ionodes, name+j, i-j); 
+
+			strncpy(ionodes, name+j, i-j);
 			set++;
 			break;
 		} else if((name[j] >= '0'
@@ -940,24 +940,24 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 				if((name[j+i] >= '0'
 				    && name[j+i] <= '9')
 				   || (name[j+i] >= 'A'
-				      && name[j+i] <= 'Z')) 
+				      && name[j+i] <= 'Z'))
 					continue;
-				
+
 				error("update_sub_node: "
 				      "misformatted name given %s",
 				      name);
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
-			
+
 			strncpy(coord, name+j,
-				BA_SYSTEM_DIMENSIONS); 
+				BA_SYSTEM_DIMENSIONS);
 			j += BA_SYSTEM_DIMENSIONS-1;
 			set++;
 		}
 		j++;
 	}
-	
+
 	if(set != 2) {
 		error("update_sub_node: "
 		      "I didn't get the base partition and the sub part.");
@@ -970,7 +970,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 		error("update_sub_node: Invalid ionode '%s' given.", ionodes);
 		rc = SLURM_ERROR;
 		FREE_NULL_BITMAP(ionode_bitmap);
-		goto end_it;		
+		goto end_it;
 	}
 	node_name = xstrdup_printf("%s%s", bg_conf->slurm_node_prefix, coord);
 	/* find out how many nodecards to get for each ionode */
@@ -981,7 +981,7 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 			if(bit_test(ionode_bitmap, i)) {
 				if((int)nc_pos != (int)last_pos) {
 					/* find first bit in nc */
-					int start_io = 
+					int start_io =
 						(int)nc_pos * bg_conf->io_ratio;
 					down_nodecard(node_name, start_io);
 					last_pos = nc_pos;
@@ -994,20 +994,20 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 		     node_name, ionodes);
 		up_nodecard(node_name, ionode_bitmap);
 	} else {
-		error("update_sub_node: Unknown state %s", 
+		error("update_sub_node: Unknown state %s",
 		      bg_block_state_string(block_desc_ptr->state));
 		rc = ESLURM_INVALID_BLOCK_STATE;
 	}
-	
+
 	FREE_NULL_BITMAP(ionode_bitmap);
 	xfree(node_name);
-	
+
 	last_bg_update = time(NULL);
 end_it:
 	return rc;
 }
 
-extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo, 
+extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)
 {
@@ -1026,7 +1026,7 @@ extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 		else
 			*tmp16 = 0;
 		break;
-	
+
 	case SELECT_CONFIG_INFO:
 		*tmp_list = _get_config();
 		break;
@@ -1051,7 +1051,7 @@ extern int select_p_update_node_state (int index, uint16_t state)
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
-				if (ba_system_ptr->grid[x][y][z].index 
+				if (ba_system_ptr->grid[x][y][z].index
 				     == index) {
 					ba_update_node_state(
 						&ba_system_ptr->grid[x][y][z],
@@ -1088,16 +1088,16 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		else if((*nodes) > bg_conf->bp_node_cnt) {
 			tmp = (*nodes);
 			tmp /= bg_conf->bp_node_cnt;
-			if(tmp < 1) 
+			if(tmp < 1)
 				tmp = 1;
-		} else 
+		} else
 			tmp = 1;
 		(*nodes) = tmp;
 		break;
 	case SELECT_APPLY_NODE_MIN_OFFSET:
 		if((*nodes) == 1) {
-			/* Job will actually get more than one c-node, 
-			 * but we can't be sure exactly how much so we 
+			/* Job will actually get more than one c-node,
+			 * but we can't be sure exactly how much so we
 			 * don't scale up this value. */
 			break;
 		}
@@ -1118,30 +1118,30 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				   SELECT_JOBDATA_ALTERED, &tmp);
 		tmp = NO_VAL;
 		set_select_jobinfo(job_desc->select_jobinfo,
-				   SELECT_JOBDATA_MAX_CPUS, 
+				   SELECT_JOBDATA_MAX_CPUS,
 				   &tmp);
-	
+
 		if(job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
 
 		get_select_jobinfo(job_desc->select_jobinfo,
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
 
-		if(req_geometry[0] != 0 
+		if(req_geometry[0] != 0
 		   && req_geometry[0] != (uint16_t)NO_VAL) {
 			job_desc->min_nodes = 1;
 			for (i=0; i<BA_SYSTEM_DIMENSIONS; i++)
-				job_desc->min_nodes *= 
+				job_desc->min_nodes *=
 					(uint16_t)req_geometry[i];
 			job_desc->min_nodes *= bg_conf->bp_node_cnt;
 			job_desc->max_nodes = job_desc->min_nodes;
 		}
-		
+
 		/* make sure if the user only specified num_procs to
 		   set min_nodes correctly
 		*/
 		if(job_desc->num_procs > job_desc->min_nodes)
-			job_desc->min_nodes = 
+			job_desc->min_nodes =
 				job_desc->num_procs / bg_conf->cpu_ratio;
 
 		/* initialize num_procs to the min_nodes */
@@ -1154,17 +1154,17 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		/* See if min_nodes is greater than one base partition */
 		if(job_desc->min_nodes > bg_conf->bp_node_cnt) {
 			/*
-			 * if it is make sure it is a factor of 
-			 * bg_conf->bp_node_cnt, if it isn't make it 
-			 * that way 
+			 * if it is make sure it is a factor of
+			 * bg_conf->bp_node_cnt, if it isn't make it
+			 * that way
 			 */
 			tmp = job_desc->min_nodes % bg_conf->bp_node_cnt;
 			if(tmp > 0)
-				job_desc->min_nodes += 
+				job_desc->min_nodes +=
 					(bg_conf->bp_node_cnt-tmp);
-		}				
+		}
 		tmp = job_desc->min_nodes / bg_conf->bp_node_cnt;
-		
+
 		/* this means it is greater or equal to one bp */
 		if(tmp > 0) {
 			set_select_jobinfo(job_desc->select_jobinfo,
@@ -1172,26 +1172,26 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					     &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
 			job_desc->num_procs = bg_conf->cpus_per_bp * tmp;
-		} else { 
+		} else {
 #ifdef HAVE_BGL
 			if(job_desc->min_nodes <= bg_conf->nodecard_node_cnt
 			   && bg_conf->nodecard_ionode_cnt)
-				job_desc->min_nodes = 
+				job_desc->min_nodes =
 					bg_conf->nodecard_node_cnt;
-			else if(job_desc->min_nodes 
+			else if(job_desc->min_nodes
 				<= bg_conf->quarter_node_cnt)
-				job_desc->min_nodes = 
+				job_desc->min_nodes =
 					bg_conf->quarter_node_cnt;
-			else 
-				job_desc->min_nodes = 
+			else
+				job_desc->min_nodes =
 					bg_conf->bp_node_cnt;
-			
+
 			set_select_jobinfo(job_desc->select_jobinfo,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 
 			tmp = bg_conf->bp_node_cnt/job_desc->min_nodes;
-			
+
 			job_desc->num_procs = bg_conf->cpus_per_bp/tmp;
 			job_desc->min_nodes = 1;
 #else
@@ -1203,12 +1203,12 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				}
 				i *= 2;
 			}
-			
+
 			set_select_jobinfo(job_desc->select_jobinfo,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 
-			job_desc->num_procs = job_desc->min_nodes 
+			job_desc->num_procs = job_desc->min_nodes
 				* bg_conf->cpu_ratio;
 			job_desc->min_nodes = 1;
 #endif
@@ -1218,7 +1218,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		if(job_desc->max_nodes > bg_conf->bp_node_cnt) {
 			tmp = job_desc->max_nodes % bg_conf->bp_node_cnt;
 			if(tmp > 0)
-				job_desc->max_nodes += 
+				job_desc->max_nodes +=
 					(bg_conf->bp_node_cnt-tmp);
 		}
 		tmp = job_desc->max_nodes / bg_conf->bp_node_cnt;
@@ -1227,28 +1227,28 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = tmp;
 			tmp *= bg_conf->cpus_per_bp;
 			set_select_jobinfo(job_desc->select_jobinfo,
-					   SELECT_JOBDATA_MAX_CPUS, 
+					   SELECT_JOBDATA_MAX_CPUS,
 					   &tmp);
 			tmp = NO_VAL;
 		} else {
 #ifdef HAVE_BGL
 			if(job_desc->max_nodes <= bg_conf->nodecard_node_cnt
 			   && bg_conf->nodecard_ionode_cnt)
-				job_desc->max_nodes = 
+				job_desc->max_nodes =
 					bg_conf->nodecard_node_cnt;
-			else if(job_desc->max_nodes 
+			else if(job_desc->max_nodes
 				<= bg_conf->quarter_node_cnt)
-				job_desc->max_nodes = 
+				job_desc->max_nodes =
 					bg_conf->quarter_node_cnt;
-			else 
-				job_desc->max_nodes = 
+			else
+				job_desc->max_nodes =
 					bg_conf->bp_node_cnt;
-		
+
 			tmp = bg_conf->bp_node_cnt/job_desc->max_nodes;
 			tmp = bg_conf->cpus_per_bp/tmp;
-			
+
 			set_select_jobinfo(job_desc->select_jobinfo,
-					   SELECT_JOBDATA_MAX_CPUS, 
+					   SELECT_JOBDATA_MAX_CPUS,
 					   &tmp);
 			job_desc->max_nodes = 1;
 #else
@@ -1269,19 +1269,19 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 #endif
 		}
 		tmp = NO_VAL;
-			
+
 		break;
 	default:
 		error("unknown option %d for alter_node_cnt",type);
 	}
-	
+
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_reconfigure(void)
 {
 	slurm_conf_lock();
-	if(!slurmctld_conf.slurm_user_name 
+	if(!slurmctld_conf.slurm_user_name
 	   || strcmp(bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name))
 		error("The slurm user has changed from '%s' to '%s'.  "
 		      "If this is really what you "
@@ -1295,7 +1295,7 @@ extern int select_p_reconfigure(void)
 		      "want you will need to restart slurm for this "
 		      "change to be enforced in the bluegene plugin.",
 		      bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix);
-	slurm_conf_unlock();	
+	slurm_conf_unlock();
 
 	return SLURM_SUCCESS;
 }

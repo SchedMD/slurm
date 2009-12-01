@@ -5,35 +5,35 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>, 
+ *  Written by Morris Jette <jette1@llnl.gov>,
  *             Joey Ekstrom <ekstrom1@llnl.gov>,  et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -55,42 +55,42 @@
 #include "src/common/xstring.h"
 
 /*
- * slurm_print_job_step_info_msg - output information about all Slurm 
+ * slurm_print_job_step_info_msg - output information about all Slurm
  *	job steps based upon message as loaded using slurm_get_job_steps
  * IN out - file to write to
  * IN job_step_info_msg_ptr - job step information message pointer
  * IN one_liner - print as a single line if true
  */
-void 
-slurm_print_job_step_info_msg ( FILE* out, 
-		job_step_info_response_msg_t * job_step_info_msg_ptr, 
+void
+slurm_print_job_step_info_msg ( FILE* out,
+		job_step_info_response_msg_t * job_step_info_msg_ptr,
 		int one_liner )
 {
 	int i;
 	job_step_info_t *job_step_ptr = job_step_info_msg_ptr->job_steps ;
 	char time_str[32];
 
-	slurm_make_time_str ((time_t *)&job_step_info_msg_ptr->last_update, 
+	slurm_make_time_str ((time_t *)&job_step_info_msg_ptr->last_update,
 			time_str, sizeof(time_str));
 	fprintf( out, "Job step data as of %s, record count %d\n",
 		time_str, job_step_info_msg_ptr->job_step_count);
 
-	for (i = 0; i < job_step_info_msg_ptr-> job_step_count; i++) 
+	for (i = 0; i < job_step_info_msg_ptr-> job_step_count; i++)
 	{
-		slurm_print_job_step_info ( out, & job_step_ptr[i], 
+		slurm_print_job_step_info ( out, & job_step_ptr[i],
 					    one_liner ) ;
 	}
 }
 
 /*
- * slurm_print_job_step_info - output information about a specific Slurm 
+ * slurm_print_job_step_info - output information about a specific Slurm
  *	job step based upon message as loaded using slurm_get_job_steps
  * IN out - file to write to
  * IN job_ptr - an individual job step information record pointer
  * IN one_liner - print as a single line if true
  */
 void
-slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr, 
+slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr,
 			    int one_liner )
 {
 	char *print_this = slurm_sprint_job_step_info(job_step_ptr, one_liner);
@@ -99,7 +99,7 @@ slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr,
 }
 
 /*
- * slurm_sprint_job_step_info - output information about a specific Slurm 
+ * slurm_sprint_job_step_info - output information about a specific Slurm
  *	job step based upon message as loaded using slurm_get_job_steps
  * IN job_ptr - an individual job step information record pointer
  * IN one_liner - print as a single line if true
@@ -107,7 +107,7 @@ slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr,
  *           NULL is returned on failure.
  */
 char *
-slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr, 
+slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			    int one_liner )
 {
 	char time_str[32];
@@ -124,8 +124,8 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		secs2time_str ((time_t)job_step_ptr->time_limit * 60,
 				limit_str, sizeof(limit_str));
 	snprintf(tmp_line, sizeof(tmp_line),
-		"StepId=%u.%u UserId=%u StartTime=%s TimeLimit=%s", 
-		job_step_ptr->job_id, job_step_ptr->step_id, 
+		"StepId=%u.%u UserId=%u StartTime=%s TimeLimit=%s",
+		job_step_ptr->job_id, job_step_ptr->step_id,
 		job_step_ptr->user_id, time_str, limit_str);
 	out = xstrdup(tmp_line);
 	if (one_liner)
@@ -135,7 +135,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 2 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Partition=%s Nodes=%s Tasks=%u Name=%s Network=%s", 
+		"Partition=%s Nodes=%s Tasks=%u Name=%s Network=%s",
 		job_step_ptr->partition, job_step_ptr->nodes,
 		job_step_ptr->num_tasks, job_step_ptr->name,
 		job_step_ptr->network);
@@ -147,7 +147,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 3 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"ResvPorts=%s Checkpoint=%u CheckpointDir=%s\n\n", 
+		"ResvPorts=%s Checkpoint=%u CheckpointDir=%s\n\n",
 		 job_step_ptr->resv_ports,
 		 job_step_ptr->ckpt_interval, job_step_ptr->ckpt_dir);
 	xstrcat(out, tmp_line);
@@ -156,13 +156,13 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 }
 
 /*
- * slurm_get_job_steps - issue RPC to get specific slurm job step   
+ * slurm_get_job_steps - issue RPC to get specific slurm job step
  *	configuration information if changed since update_time.
- *	a job_id value of NO_VAL implies all jobs, a step_id value of 
+ *	a job_id value of NO_VAL implies all jobs, a step_id value of
  *	NO_VAL implies all steps
  * IN update_time - time of current configuration data
  * IN job_id - get information for specific job id, NO_VAL for all jobs
- * IN step_id - get information for specific job step id, NO_VAL for all 
+ * IN step_id - get information for specific job step id, NO_VAL for all
  *	job steps
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags - job step filtering options
@@ -170,7 +170,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
 int
-slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, 
+slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 		     job_step_info_response_msg_t **resp, uint16_t show_flags)
 {
 	int rc;
@@ -197,8 +197,8 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);	
-		if (rc) 
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
 			slurm_seterrno_ret(rc);
 		*resp = NULL;
 		break;

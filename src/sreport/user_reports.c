@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -71,12 +71,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 	user_cond->with_deleted = 1;
 	user_cond->with_assocs = 1;
 	if(!user_cond->assoc_cond) {
-		user_cond->assoc_cond = 
+		user_cond->assoc_cond =
 			xmalloc(sizeof(acct_association_cond_t));
 		user_cond->assoc_cond->with_usage = 1;
 	}
 	assoc_cond = user_cond->assoc_cond;
-	
+
 	if(!assoc_cond->cluster_list)
 		assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	for (i=(*start); i<argc; i++) {
@@ -86,7 +86,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		else
 			command_len=end-1;
 
-		if(!end && !strncasecmp(argv[i], "all_clusters", 
+		if(!end && !strncasecmp(argv[i], "all_clusters",
 					       MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 			continue;
@@ -94,10 +94,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 						MAX(command_len, 1))) {
 			group_accts = 1;
 		} else if(!end
-			  || !strncasecmp (argv[i], "Users", 
+			  || !strncasecmp (argv[i], "Users",
 					   MAX(command_len, 1))) {
 			if(!assoc_cond->user_list)
-				assoc_cond->user_list = 
+				assoc_cond->user_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->user_list,
 					      argv[i]+end);
@@ -118,7 +118,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			assoc_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format", 
+		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
@@ -129,7 +129,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "TopCount",
 					 MAX(command_len, 1))) {
 			if (get_uint(argv[i]+end, &top_limit, "TopCount")
-			    != SLURM_SUCCESS) 
+			    != SLURM_SUCCESS)
 				exit_code = 1;
 		} else {
 			exit_code=1;
@@ -166,7 +166,7 @@ static int _setup_print_fields_list(List format_list)
 
 	if(!format_list || !list_count(format_list)) {
 		exit_code=1;
-		fprintf(stderr, 
+		fprintf(stderr,
 			" We need a format list to set up the print.\n");
 		return SLURM_ERROR;
 	}
@@ -179,11 +179,11 @@ static int _setup_print_fields_list(List format_list)
 		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
-		
+
 		if((tmp_char = strstr(object, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
-		} 
+		}
 
 		command_len = strlen(object);
 
@@ -226,10 +226,10 @@ static int _setup_print_fields_list(List format_list)
 			continue;
 		}
 
-		if(newlen) 
+		if(newlen)
 			field->len = newlen;
-		
-		list_append(print_fields_list, field);		
+
+		list_append(print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
 
@@ -267,7 +267,7 @@ extern int user_top(int argc, char *argv[])
 
 	user_cond->assoc_cond->without_parent_info = 1;
 
-	if(!list_count(format_list)) 
+	if(!list_count(format_list))
 		slurm_addto_char_list(format_list, "Cl,L,P,A,U");
 
 	_setup_print_fields_list(format_list);
@@ -312,21 +312,21 @@ extern int user_top(int argc, char *argv[])
 		list_append(cluster_list, sreport_cluster);
 
 		sreport_cluster->name = xstrdup(cluster->name);
-		sreport_cluster->user_list = 
+		sreport_cluster->user_list =
 			list_create(destroy_sreport_user_rec);
 
 		/* get the amount of time and the average cpu count
 		   during the time we are looking at */
 		cluster_itr = list_iterator_create(cluster->accounting_list);
 		while((accting = list_next(cluster_itr))) {
-			sreport_cluster->cpu_secs += accting->alloc_secs 
-				+ accting->down_secs + accting->idle_secs 
+			sreport_cluster->cpu_secs += accting->alloc_secs
+				+ accting->down_secs + accting->idle_secs
 				+ accting->resv_secs;
 			sreport_cluster->cpu_count += accting->cpu_count;
 		}
 		list_iterator_destroy(cluster_itr);
 
-		sreport_cluster->cpu_count /= 
+		sreport_cluster->cpu_count /=
 			list_count(cluster->accounting_list);
 	}
 	list_iterator_destroy(itr);
@@ -342,15 +342,15 @@ extern int user_top(int argc, char *argv[])
 		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
-		printf("Top %u Users %s - %s (%d secs)\n", 
-		       top_limit, start_char, end_char, 
-		       (int)(user_cond->assoc_cond->usage_end 
+		printf("Top %u Users %s - %s (%d secs)\n",
+		       top_limit, start_char, end_char,
+		       (int)(user_cond->assoc_cond->usage_end
 			- user_cond->assoc_cond->usage_start));
-		
+
 		switch(time_format) {
 		case SREPORT_TIME_PERCENT:
 			printf("Time reported in %s\n", time_format_string);
-			break; 
+			break;
 		default:
 			printf("Time reported in CPU %s\n", time_format_string);
 			break;
@@ -365,22 +365,22 @@ extern int user_top(int argc, char *argv[])
 		struct passwd *passwd_ptr = NULL;
 		if(!user->assoc_list || !list_count(user->assoc_list))
 			continue;
-		
+
 		passwd_ptr = getpwnam(user->name);
-		if(passwd_ptr) 
+		if(passwd_ptr)
 			user->uid = passwd_ptr->pw_uid;
 		else
-			user->uid = (uint32_t)NO_VAL;	
-		
+			user->uid = (uint32_t)NO_VAL;
+
 		itr2 = list_iterator_create(user->assoc_list);
 		while((assoc = list_next(itr2))) {
 
 			if(!assoc->accounting_list
 			   || !list_count(assoc->accounting_list))
 				continue;
-	
+
 			while((sreport_cluster = list_next(cluster_itr))) {
-				if(!strcmp(sreport_cluster->name, 
+				if(!strcmp(sreport_cluster->name,
 					   assoc->cluster)) {
 					ListIterator user_itr = NULL;
 					if(!group_accts) {
@@ -388,20 +388,20 @@ extern int user_top(int argc, char *argv[])
 						goto new_user;
 					}
 					user_itr = list_iterator_create
-						(sreport_cluster->user_list); 
-					while((sreport_user 
+						(sreport_cluster->user_list);
+					while((sreport_user
 					       = list_next(user_itr))) {
-						if(sreport_user->uid 
+						if(sreport_user->uid
 						   != NO_VAL) {
-							if(sreport_user->uid 
+							if(sreport_user->uid
 							   == user->uid)
 								break;
-						} else if(sreport_user->name 
+						} else if(sreport_user->name
 							  && !strcasecmp(
 								  sreport_user->
 								  name,
 								  user->name))
-							break;		
+							break;
 					}
 					list_iterator_destroy(user_itr);
 				new_user:
@@ -417,7 +417,7 @@ extern int user_top(int argc, char *argv[])
 							list_create
 							(slurm_destroy_char);
 						list_append(sreport_cluster->
-							    user_list, 
+							    user_list,
 							    sreport_user);
 					}
 					break;
@@ -427,20 +427,20 @@ extern int user_top(int argc, char *argv[])
 				error("This cluster '%s' hasn't "
 				      "registered yet, but we have jobs "
 				      "that ran?", assoc->cluster);
-				sreport_cluster = 
+				sreport_cluster =
 					xmalloc(sizeof(sreport_cluster_rec_t));
 				list_append(cluster_list, sreport_cluster);
 
 				sreport_cluster->name = xstrdup(assoc->cluster);
-				sreport_cluster->user_list = 
+				sreport_cluster->user_list =
 					list_create(destroy_sreport_user_rec);
-				sreport_user = 
+				sreport_user =
 					xmalloc(sizeof(sreport_user_rec_t));
 				sreport_user->name = xstrdup(assoc->user);
 				sreport_user->uid = user->uid;
-				sreport_user->acct_list = 
+				sreport_user->acct_list =
 					list_create(slurm_destroy_char);
-				list_append(sreport_cluster->user_list, 
+				list_append(sreport_cluster->user_list,
 					    sreport_user);
 			}
 			list_iterator_reset(cluster_itr);
@@ -453,11 +453,11 @@ extern int user_top(int argc, char *argv[])
 			list_iterator_destroy(itr3);
 
 			if(!object)
-				list_append(sreport_user->acct_list, 
+				list_append(sreport_user->acct_list,
 					    xstrdup(assoc->acct));
 			itr3 = list_iterator_create(assoc->accounting_list);
 			while((assoc_acct = list_next(itr3))) {
-				sreport_user->cpu_secs += 
+				sreport_user->cpu_secs +=
 					(uint64_t)assoc_acct->alloc_secs;
 /* 				sreport_cluster->cpu_secs +=  */
 /* 					(uint64_t)assoc_acct->alloc_secs; */
@@ -465,7 +465,7 @@ extern int user_top(int argc, char *argv[])
 			list_iterator_destroy(itr3);
 		}
 		list_iterator_destroy(itr2);
-	}	
+	}
 	list_iterator_destroy(itr);
 
 	itr2 = list_iterator_create(print_fields_list);
@@ -477,7 +477,7 @@ extern int user_top(int argc, char *argv[])
 	while((sreport_cluster = list_next(cluster_itr))) {
 		int count = 0;
 		list_sort(sreport_cluster->user_list, (ListCmpF)sort_user_dec);
-		
+
 		itr = list_iterator_create(sreport_cluster->user_list);
 		while((sreport_user = list_next(itr))) {
 			int curr_inx = 1;
@@ -513,7 +513,7 @@ extern int user_top(int argc, char *argv[])
 				case PRINT_USER_LOGIN:
 					field->print_routine(field,
 							     sreport_user->name,
-							     (curr_inx == 
+							     (curr_inx ==
 							      field_count));
 					break;
 				case PRINT_USER_PROPER:
@@ -522,12 +522,12 @@ extern int user_top(int argc, char *argv[])
 						tmp_char = strtok(pwd->pw_gecos,
 								  ",");
 						if(!tmp_char)
-							tmp_char = 
+							tmp_char =
 								pwd->pw_gecos;
 					}
 					field->print_routine(field,
 							     tmp_char,
-							     (curr_inx == 
+							     (curr_inx ==
 							      field_count));
 					break;
 				case PRINT_USER_USED:
@@ -560,17 +560,17 @@ end_it:
 	 */
 	group_accts = 0;
 	destroy_acct_user_cond(user_cond);
-	
+
 	if(user_list) {
 		list_destroy(user_list);
 		user_list = NULL;
 	}
-	
+
 	if(cluster_list) {
 		list_destroy(cluster_list);
 		cluster_list = NULL;
 	}
-	
+
 	if(print_fields_list) {
 		list_destroy(print_fields_list);
 		print_fields_list = NULL;

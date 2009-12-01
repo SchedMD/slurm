@@ -8,32 +8,32 @@
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -70,7 +70,7 @@
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "task" for task control) and <method> is a description 
+ * the plugin (e.g., "task" for task control) and <method> is a description
  * of how this plugin satisfies that application.  SLURM will only load
  * a task plugin if the plugin_type string has a prefix of "task/".
  *
@@ -95,7 +95,7 @@ extern int init (void)
 }
 
 /*
- * fini() is called when the plugin is removed. Clear any allocated 
+ * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
  */
 extern int fini (void)
@@ -155,7 +155,7 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 	if (set_bind) {
 		char bind_str[128];
 		slurm_sprint_cpu_bind_type(bind_str, req->cpu_bind_type);
-		info("task affinity : enforcing '%s' cpu bind method", 
+		info("task affinity : enforcing '%s' cpu bind method",
 		     bind_str);
 	}
 }
@@ -163,7 +163,7 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 /*
  * task_slurmd_batch_request()
  */
-extern int task_slurmd_batch_request (uint32_t job_id, 
+extern int task_slurmd_batch_request (uint32_t job_id,
 				      batch_job_launch_msg_t *req)
 {
 	info("task_slurmd_batch_request: %u", job_id);
@@ -174,16 +174,16 @@ extern int task_slurmd_batch_request (uint32_t job_id,
 /*
  * task_slurmd_launch_request()
  */
-extern int task_slurmd_launch_request (uint32_t job_id, 
-				       launch_tasks_request_msg_t *req, 
+extern int task_slurmd_launch_request (uint32_t job_id,
+				       launch_tasks_request_msg_t *req,
 				       uint32_t node_id)
 {
 	char buf_type[100];
 
 	debug("task_slurmd_launch_request: %u %u", job_id, node_id);
 
-	if (((conf->sockets >= 1) 
-	     && ((conf->cores > 1) || (conf->threads > 1))) 
+	if (((conf->sockets >= 1)
+	     && ((conf->cores > 1) || (conf->threads > 1)))
 	    || (!(req->cpu_bind_type & CPU_BIND_NONE))) {
 		_update_bind_type(req);
 
@@ -192,19 +192,19 @@ extern int task_slurmd_launch_request (uint32_t job_id,
 		     "method is '%s' (%s)", buf_type, req->cpu_bind);
 
 		lllp_distribution(req, node_id);
-		  
+
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		debug("task affinity : after lllp distribution cpu bind "
 		     "method is '%s' (%s)", buf_type, req->cpu_bind);
 	}
-	
+
 	return SLURM_SUCCESS;
 }
 
 /*
  * task_slurmd_reserve_resources()
  */
-extern int task_slurmd_reserve_resources (uint32_t job_id, 
+extern int task_slurmd_reserve_resources (uint32_t job_id,
 					  launch_tasks_request_msg_t *req,
 					  uint32_t node_id)
 {
@@ -282,7 +282,7 @@ extern int task_slurmd_release_resources (uint32_t job_id)
 }
 
 /*
- * task_pre_setuid() is called before setting the UID for the 
+ * task_pre_setuid() is called before setting the UID for the
  * user to launch his jobs. Use this to create the CPUSET directory
  * and set the owner appropriately.
  */
@@ -311,7 +311,7 @@ extern int task_pre_launch (slurmd_job_t *job)
 	char base[PATH_MAX], path[PATH_MAX];
 	int rc = SLURM_SUCCESS;
 
-	debug("affinity task_pre_launch:%u.%u, task:%u bind:%u", 
+	debug("affinity task_pre_launch:%u.%u, task:%u bind:%u",
 	      job->jobid, job->stepid, job->envtp->procid,
 	      job->cpu_bind_type);
 
@@ -332,7 +332,7 @@ extern int task_pre_launch (slurmd_job_t *job)
 		info("Using sched_affinity for tasks");
 
 	/*** CPU binding support ***/
-	if (job->cpu_bind_type) {	
+	if (job->cpu_bind_type) {
 		cpu_set_t new_mask, cur_mask;
 		pid_t mypid  = job->envtp->task_pid;
 
@@ -342,21 +342,21 @@ extern int task_pre_launch (slurmd_job_t *job)
 		    (!(job->cpu_bind_type & CPU_BIND_NONE))) {
 			if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
 				rc = slurm_set_cpuset(base, path, mypid,
-						sizeof(new_mask), 
+						sizeof(new_mask),
 						&new_mask);
 				slurm_get_cpuset(path, mypid,
-						 sizeof(cur_mask), 
+						 sizeof(cur_mask),
 						 &cur_mask);
 			} else {
 				rc = slurm_setaffinity(mypid,
-						       sizeof(new_mask), 
+						       sizeof(new_mask),
 						       &new_mask);
 				slurm_getaffinity(mypid,
-						  sizeof(cur_mask), 
+						  sizeof(cur_mask),
 						  &cur_mask);
 			}
 		}
-		slurm_chkaffinity(rc ? &cur_mask : &new_mask, 
+		slurm_chkaffinity(rc ? &cur_mask : &new_mask,
 				  job, rc);
 	} else if (job->mem_bind_type &&
 		   (conf->task_plugin_param & CPU_BIND_CPUSETS)) {
@@ -365,13 +365,13 @@ extern int task_pre_launch (slurmd_job_t *job)
 
 		/* Establish cpuset just for the memory binding */
 		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
-		rc = slurm_set_cpuset(base, path, 
-				      (pid_t) job->envtp->task_pid, 
+		rc = slurm_set_cpuset(base, path,
+				      (pid_t) job->envtp->task_pid,
 				      sizeof(cur_mask), &cur_mask);
 	}
 
 #ifdef HAVE_NUMA
-	if ((conf->task_plugin_param & CPU_BIND_CPUSETS) && 
+	if ((conf->task_plugin_param & CPU_BIND_CPUSETS) &&
 	    (slurm_memset_available() >= 0)) {
 		nodemask_t new_mask, cur_mask;
 

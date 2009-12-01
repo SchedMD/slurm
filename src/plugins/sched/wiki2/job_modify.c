@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -58,9 +58,9 @@ extern void	null_term(char *str)
 	}
 }
 
-static int	_job_modify(uint32_t jobid, char *bank_ptr, 
+static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			char *depend_ptr, char *new_hostlist,
-			uint32_t new_node_cnt, char *part_name_ptr, 
+			uint32_t new_node_cnt, char *part_name_ptr,
 			uint32_t new_time_limit, char *name_ptr,
 			char *start_ptr, char *feature_ptr, char *env_ptr)
 {
@@ -81,10 +81,10 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	if (depend_ptr) {
 		int rc = update_job_dependency(job_ptr, depend_ptr);
 		if (rc == SLURM_SUCCESS) {
-			info("wiki: changed job %u dependency to %s", 
+			info("wiki: changed job %u dependency to %s",
 				jobid, depend_ptr);
 		} else {
-			error("wiki: changing job %u dependency to %s", 
+			error("wiki: changing job %u dependency to %s",
 				jobid, depend_ptr);
 			return EINVAL;
 		}
@@ -105,7 +105,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			if (env_ptr[i] == '=') {
 				if (have_equal) {
 					error("wiki: setting job %u invalid "
-					      "environment variables: %s", 
+					      "environment variables: %s",
 					      jobid, env_ptr);
 					return EINVAL;
 				}
@@ -115,7 +115,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 						if (env_ptr[i] == '\0') {
 							error("wiki: setting job %u "
 							      "invalid environment "
-							      "variables: %s", 
+							      "variables: %s",
 					 		     jobid, env_ptr);
 							return EINVAL;
 						}
@@ -132,7 +132,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 						if (env_ptr[i] == '\0') {
 							error("wiki: setting job %u "
 							      "invalid environment "
-							      "variables: %s", 
+							      "variables: %s",
 					 		     jobid, env_ptr);
 							return EINVAL;
 						}
@@ -149,19 +149,19 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			if (isspace(env_ptr[i]) || (env_ptr[i] == ',')) {
 				if (!have_equal) {
 					error("wiki: setting job %u invalid "
-					      "environment variables: %s", 
+					      "environment variables: %s",
 					      jobid, env_ptr);
 					return EINVAL;
 				}
 				old_sep[0] = env_ptr[i];
 				env_ptr[i] = '\0';
-				xrealloc(job_ptr->details->env_sup, 
+				xrealloc(job_ptr->details->env_sup,
 					 sizeof(char *) *
 					 (job_ptr->details->env_cnt+1));
 				job_ptr->details->env_sup
 						[job_ptr->details->env_cnt++] =
 						xstrdup(&env_ptr[begin]);
-				info("wiki: for job %u add env: %s", 
+				info("wiki: for job %u add env: %s",
 				     jobid, &env_ptr[begin]);
 				env_ptr[i] = old_sep[0];
 				if (isspace(old_sep[0]))
@@ -192,7 +192,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 
 	if (feature_ptr) {
 		if (IS_JOB_PENDING(job_ptr) && (job_ptr->details)) {
-			info("wiki: change job %u features to %s", 
+			info("wiki: change job %u features to %s",
 				jobid, feature_ptr);
 			job_ptr->details->features = xstrdup(feature_ptr);
 			last_job_update = now;
@@ -207,7 +207,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		char *end_ptr;
 		uint32_t begin_time = strtol(start_ptr, &end_ptr, 10);
 		if (IS_JOB_PENDING(job_ptr) && (job_ptr->details)) {
-			info("wiki: change job %u begin time to %u", 
+			info("wiki: change job %u begin time to %u",
 				jobid, begin_time);
 			job_ptr->details->begin_time = begin_time;
 			last_job_update = now;
@@ -279,12 +279,12 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		}
 
 host_fini:	if (rc) {
-			info("wiki: change job %u invalid hostlist %s", 
+			info("wiki: change job %u invalid hostlist %s",
 				jobid, new_hostlist);
 			xfree(job_ptr->details->req_nodes);
 			return EINVAL;
 		} else {
-			info("wiki: change job %u hostlist %s", 
+			info("wiki: change job %u hostlist %s",
 				jobid, new_hostlist);
 			update_accounting = true;
 		}
@@ -316,13 +316,13 @@ host_fini:	if (rc) {
 
 	if (new_node_cnt) {
 		job_desc_msg_t job_desc;
-	
+
 		memset(&job_desc, 0, sizeof(job_desc_msg_t));
-		
+
 		job_desc.min_nodes = new_node_cnt;
 		job_desc.max_nodes = NO_VAL;
 		job_desc.select_jobinfo = select_g_select_jobinfo_alloc();
-		
+
 		select_g_alter_node_cnt(SELECT_SET_NODE_CNT, &job_desc);
 
 		select_g_select_jobinfo_free(job_desc.select_jobinfo);
@@ -331,7 +331,7 @@ host_fini:	if (rc) {
 			job_ptr->details->min_nodes = job_desc.min_nodes;
 			if (job_ptr->details->max_nodes
 			&&  (job_ptr->details->max_nodes < job_desc.min_nodes))
-				job_ptr->details->max_nodes = 
+				job_ptr->details->max_nodes =
 					job_desc.min_nodes;
 			info("wiki: change job %u min_nodes to %u",
 				jobid, new_node_cnt);
@@ -350,7 +350,7 @@ host_fini:	if (rc) {
 
 	if (update_accounting) {
 		if (job_ptr->details && job_ptr->details->begin_time) {
-			/* Update job record in accounting to reflect 
+			/* Update job record in accounting to reflect
 			 * the changes */
 			jobacct_storage_g_job_start(
 				acct_db_conn, slurmctld_cluster_name, job_ptr);
@@ -456,7 +456,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		start_ptr[12] = ':';
 		start_ptr += 13;
 		null_term(start_ptr);
-	}	
+	}
 	if (nodes_ptr) {
 		nodes_ptr[5] = ':';
 		nodes_ptr += 6;

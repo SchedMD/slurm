@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  xstring.h - "safe" string processing functions with automatic memory 
+ *  xstring.h - "safe" string processing functions with automatic memory
  *	        management
  ******************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -16,15 +16,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -58,21 +58,21 @@
 **
 ** space is allocated with xmalloc/xrealloc, so caller must use
 ** xfree to free.
-** 
+**
 */
 
-/* 
+/*
 ** cat str2 onto str1, expanding str1 as necessary
 */
 void _xstrcat(char **str1, const char *str2);
 
-/* 
-** concatenate one char, `c', onto str1, expanding str1 as needed	
+/*
+** concatenate one char, `c', onto str1, expanding str1 as needed
 */
 void _xstrcatchar(char **str1, char c);
 
 /*
-** concatenate stringified errno onto str 
+** concatenate stringified errno onto str
 */
 void _xslurm_strerrorcat(char **str);
 
@@ -90,7 +90,7 @@ int _xstrfmtcat(char **str, const char *fmt, ...);
 
 /*
 ** concatenate range of memory from start to end (not including end)
-** onto str. 
+** onto str.
 */
 void _xmemcat(char **str, char *start, char *end);
 
@@ -125,7 +125,7 @@ char *xbasename(char *path);
 */
 void _xstrsubstitute(char **str, const char *pattern, const char *replacement);
 
-/* 
+/*
  * Remove all quotes that surround a string in the string "str",
  *   str (IN)	        target string (pointer to in case of expansion)
  *   increased (IN/OUT)	current position in "str"
@@ -137,13 +137,13 @@ char *xstrstrip(char *str);
  *   Returns an xmalloc'd string containing the hostname
  *   of the local machine.  The hostname contains only
  *   the short version of the hostname (e.g. "linux123.foo.bar"
- *   becomes "linux123") 
+ *   becomes "linux123")
  *
  *   Returns NULL on error.
  */
 char *xshort_hostname(void);
 
-/* 
+/*
  * Return true if all characters in a string are whitespace characters,
  * otherwise return false.  ("str" must be terminated by a null character)
  */

@@ -20,7 +20,7 @@ all-local:
 		fi \
 	fi && \
 	$(MAKE) $(add_flags); \
-	cd ..;	
+	cd ..;
 
 install-exec-local:
 	@cd $(php_dir) && \

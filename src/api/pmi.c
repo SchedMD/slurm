@@ -60,15 +60,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -120,7 +120,7 @@ struct kvs_rec {
 static void _del_kvs_rec( struct kvs_rec *kvs_ptr );
 static void _init_kvs( char kvsname[] );
 static void inline _kvs_dump(void);
-static int  _kvs_put( const char kvsname[], const char key[], 
+static int  _kvs_put( const char kvsname[], const char key[],
 		const char value[], int local);
 static void _kvs_swap(struct kvs_rec *kvs_ptr, int inx1, int inx2);
 
@@ -163,7 +163,7 @@ Return values:
 
 Notes:
 Initialize PMI for this process group. The value of spawned indicates whether
-this process was created by 'PMI_Spawn_multiple'.  'spawned' will be 'PMI_TRUE' 
+this process was created by 'PMI_Spawn_multiple'.  'spawned' will be 'PMI_TRUE'
 if this process group has a parent and 'PMI_FALSE' if it does not.
 
 @*/
@@ -342,7 +342,7 @@ int PMI_Get_size( int *size )
 		if (!pmi_init)
 			return PMI_FAIL;
 	}
- 
+
 	*size = pmi_size;
 	return PMI_SUCCESS;
 }
@@ -383,7 +383,7 @@ int PMI_Get_rank( int *rank )
 
 /*@
 PMI_Get_universe_size - obtain the universe size
-(NOTE: "universe size" indicates the maximum recommended 
+(NOTE: "universe size" indicates the maximum recommended
 process count for the job.)
 
 Output Parameters:
@@ -457,7 +457,7 @@ int PMI_Get_appnum( int *appnum )
 }
 
 /*@
-PMI_Publish_name - publish a name 
+PMI_Publish_name - publish a name
 
 Input parameters:
 . service_name - string representing the service being published
@@ -568,7 +568,7 @@ int PMI_Get_id( char id_str[], int length )
 	if (pmi_init == 0)
 		return PMI_FAIL;
 
-	snprintf(id_str, length, "%ld.%ld", pmi_jobid, pmi_stepid); 
+	snprintf(id_str, length, "%ld.%ld", pmi_jobid, pmi_stepid);
 	return PMI_SUCCESS;
 }
 
@@ -659,7 +659,7 @@ int PMI_Barrier( void )
 		fprintf(stderr, "In: PMI_Barrier\n");
 
 	/* Issue the RPC */
-	if (slurm_get_kvs_comm_set(&kvs_set_ptr, pmi_rank, pmi_size) 
+	if (slurm_get_kvs_comm_set(&kvs_set_ptr, pmi_rank, pmi_size)
 			!= SLURM_SUCCESS)
 		return PMI_FAIL;
 	if (kvs_set_ptr == NULL)
@@ -670,8 +670,8 @@ int PMI_Barrier( void )
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++) {
 		kvs_ptr = kvs_set_ptr->kvs_comm_ptr[i];
 		for (j=0; j<kvs_ptr->kvs_cnt; j++) {
-			k = _kvs_put(kvs_ptr->kvs_name, 
-				kvs_ptr->kvs_keys[j], 
+			k = _kvs_put(kvs_ptr->kvs_name,
+				kvs_ptr->kvs_keys[j],
 				kvs_ptr->kvs_values[j],
 				0);
 			if (k != PMI_SUCCESS)
@@ -806,7 +806,7 @@ int PMI_Abort(int exit_code, const char error_msg[])
 
 /* PMI Keymap functions */
 /*@
-PMI_KVS_Get_my_name - obtain the name of the keyval space the local process 
+PMI_KVS_Get_my_name - obtain the name of the keyval space the local process
 group has access to
 
 Input Parameters:
@@ -885,7 +885,7 @@ This function returns the string length required to store a keyval space name.
 
 A routine is used rather than setting a maximum value in 'pmi.h' to allow
 different implementations of PMI to be used with the same executable.  These
-different implementations may allow different maximum lengths; by using a 
+different implementations may allow different maximum lengths; by using a
 routine here, we can interface with a variety of implementations of PMI.
 
 @*/
@@ -992,7 +992,7 @@ int PMI_KVS_Create( char kvsname[], int length )
 		return PMI_FAIL;
 
 	pthread_mutex_lock(&kvs_mutex);
-	size = snprintf(kvsname, length, "%ld.%ld.%d.%d", pmi_jobid, 
+	size = snprintf(kvsname, length, "%ld.%ld.%d.%d", pmi_jobid,
 			pmi_stepid, pmi_rank, kvs_name_sequence);
 	if (size >= length)	/* truncated */
 		rc = PMI_ERR_INVALID_LENGTH;
@@ -1062,7 +1062,7 @@ Return values:
 
 Notes:
 This function puts the key/value pair in the specified keyval space.  The
-value is not visible to other processes until 'PMI_KVS_Commit()' is called.  
+value is not visible to other processes until 'PMI_KVS_Commit()' is called.
 The function may complete locally.  After 'PMI_KVS_Commit()' is called, the
 value may be retrieved by calling 'PMI_KVS_Get()'.  All keys put to a keyval
 space must be unique to the keyval space.  You may not put more than once
@@ -1084,7 +1084,7 @@ int PMI_KVS_Put( const char kvsname[], const char key[], const char value[])
 	return _kvs_put(kvsname, key, value, 1);
 }
 
-static int _kvs_put( const char kvsname[], const char key[], const char value[], 
+static int _kvs_put( const char kvsname[], const char key[], const char value[],
 		int local)
 {
 	int i, j, rc;
@@ -1096,7 +1096,7 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 			continue;
 		/* search for duplicate key */
 		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
-			if (strncmp(kvs_recs[i].kvs_keys[j], key, 
+			if (strncmp(kvs_recs[i].kvs_keys[j], key,
 					PMI_MAX_KEY_LEN))
 				continue;
 			if (local)
@@ -1110,7 +1110,7 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 				rc = PMI_FAIL;	/* malloc error */
 			else {
 				rc = PMI_SUCCESS;
-				strncpy(kvs_recs[i].kvs_values[j], value, 
+				strncpy(kvs_recs[i].kvs_values[j], value,
 					PMI_MAX_VAL_LEN);
 			}
 			goto fini;
@@ -1119,7 +1119,7 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 		kvs_recs[i].kvs_cnt++;
 		kvs_recs[i].kvs_key_states = realloc(kvs_recs[i].kvs_key_states,
 			(sizeof (uint16_t) * kvs_recs[i].kvs_cnt));
-		kvs_recs[i].kvs_values = realloc(kvs_recs[i].kvs_values, 
+		kvs_recs[i].kvs_values = realloc(kvs_recs[i].kvs_values,
 			(sizeof (char *) * kvs_recs[i].kvs_cnt));
 		kvs_recs[i].kvs_keys = realloc(kvs_recs[i].kvs_keys,
 			(sizeof (char *) * kvs_recs[i].kvs_cnt));
@@ -1141,7 +1141,7 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 			rc = PMI_FAIL;	/* malloc error */
 		else {
 			rc = PMI_SUCCESS;
-			strncpy(kvs_recs[i].kvs_values[j], value, 
+			strncpy(kvs_recs[i].kvs_values[j], value,
 				PMI_MAX_VAL_LEN);
 			strncpy(kvs_recs[i].kvs_keys[j], key, PMI_MAX_KEY_LEN);
 		}
@@ -1184,7 +1184,7 @@ int PMI_KVS_Commit( const char kvsname[] )
 	/* Pack records into RPC for sending to slurmd_step
 	 * NOTE: For performance reasons, we only send key-pairs
 	 * which have been locally set rather than the full key-pair
-	 * space. We do this by moving the local key-pairs to the 
+	 * space. We do this by moving the local key-pairs to the
 	 * head of the list and sending the count of local entries
 	 * rather than the full set. */
 	kvs_set.host_cnt      = 1;
@@ -1201,7 +1201,7 @@ int PMI_KVS_Commit( const char kvsname[] )
 			continue;
 		local_pairs = 0;
 		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
-			if (kvs_recs[i].kvs_key_states[j] == 
+			if (kvs_recs[i].kvs_key_states[j] ==
 					KVS_KEY_STATE_GLOBAL)
 				continue;
 			if (local_pairs != j)
@@ -1211,10 +1211,10 @@ int PMI_KVS_Commit( const char kvsname[] )
 		if (local_pairs == 0)
 			continue;
 
-		kvs_set.kvs_comm_ptr = realloc(kvs_set.kvs_comm_ptr, 
+		kvs_set.kvs_comm_ptr = realloc(kvs_set.kvs_comm_ptr,
 			(sizeof(struct kvs_comm *) *
 			(kvs_set.kvs_comm_recs+1)));
-		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs] = 
+		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs] =
 			malloc(sizeof(struct kvs_comm));
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_name   =
 			kvs_recs[i].kvs_name;
@@ -1228,7 +1228,7 @@ int PMI_KVS_Commit( const char kvsname[] )
 	}
 
 	/* Send the RPC */
-	if (slurm_send_kvs_comm_set(&kvs_set, pmi_rank, pmi_size) 
+	if (slurm_send_kvs_comm_set(&kvs_set, pmi_rank, pmi_size)
 			!= SLURM_SUCCESS)
 		rc = PMI_FAIL;
 	else
@@ -1292,7 +1292,7 @@ int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int lengt
 
 	if (pmi_debug)
 		fprintf(stderr, "In: PMI_KVS_Get(%s)\n", key);
-	
+
 	if ((kvsname == NULL) || (strlen(kvsname) > PMI_MAX_KVSNAME_LEN))
 		return PMI_ERR_INVALID_KVS;
 	if ((key == NULL) || (strlen(key) >PMI_MAX_KEY_LEN))
@@ -1314,7 +1314,7 @@ int PMI_KVS_Get( const char kvsname[], const char key[], char value[], int lengt
 			if (strlen(kvs_recs[i].kvs_values[j]) > (length-1))
 				rc = PMI_ERR_INVALID_LENGTH;
 			else {
-				strncpy(value, kvs_recs[i].kvs_values[j], 
+				strncpy(value, kvs_recs[i].kvs_values[j],
 					length);
 				rc = PMI_SUCCESS;
 			}
@@ -1391,7 +1391,7 @@ int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[]
 				(val_len-1)) {
 			rc = PMI_ERR_INVALID_VAL_LENGTH;
 		} else {
-			strncpy(key, kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx], 
+			strncpy(key, kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx],
 				key_len);
 			strncpy(val,
 				kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
@@ -1399,7 +1399,7 @@ int PMI_KVS_Iter_first(const char kvsname[], char key[], int key_len, char val[]
 			rc = PMI_SUCCESS;
 		}
 		goto fini;
-	} 
+	}
 	rc = PMI_ERR_INVALID_KVS;
 
 fini:	pthread_mutex_unlock(&kvs_mutex);
@@ -1428,14 +1428,14 @@ Return values:
 - PMI_FAIL - failed to get the next keyval pair
 
 Notes:
-This function retrieves the next keyval pair from the specified keyval space.  
+This function retrieves the next keyval pair from the specified keyval space.
 'PMI_KVS_Iter_first()' must have been previously called.  The end of the keyval
 space is specified by returning an empty key string.  The output parameters,
 key and val, must be at least as long as the values returned by
 'PMI_KVS_Get_key_length_max()' and 'PMI_KVS_Get_value_length_max()'.
 
 @*/
-int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len, 
+int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 		char val[], int val_len)
 {
 	int i, rc;
@@ -1471,7 +1471,7 @@ int PMI_KVS_Iter_next(const char kvsname[], char key[], int key_len,
 		} else {
 			strncpy(key, kvs_recs[i].kvs_keys[kvs_recs[i].kvs_inx],
 				key_len);
-			strncpy(val, 
+			strncpy(val,
 				kvs_recs[i].kvs_values[kvs_recs[i].kvs_inx],
 				val_len);
 			rc = PMI_SUCCESS;
@@ -1494,7 +1494,7 @@ Input Parameters:
 . cmds - array of command strings
 . argvs - array of argv arrays for each command string
 . maxprocs - array of maximum processes to spawn for each command string
-. info_keyval_sizes - array giving the number of elements in each of the 
+. info_keyval_sizes - array giving the number of elements in each of the
   'info_keyval_vectors'
 . info_keyval_vectors - array of keyval vector arrays
 . preput_keyval_size - Number of elements in 'preput_keyval_vector'
@@ -1515,7 +1515,7 @@ field refers to the size of the array parameters - 'cmd', 'argvs', 'maxprocs',
 to the size of the 'preput_keyval_vector' array.  The 'preput_keyval_vector'
 contains keyval pairs that will be put in the keyval space of the newly
 created process group before the processes are started.  The 'maxprocs' array
-specifies the desired number of processes to create for each 'cmd' string.  
+specifies the desired number of processes to create for each 'cmd' string.
 The actual number of processes may be less than the numbers specified in
 maxprocs.  The acceptable number of processes spawned may be controlled by
 ``soft'' keyvals in the info arrays.  The ``soft'' option is specified by
@@ -1567,14 +1567,14 @@ Notes:
 This function removes one PMI specific argument from the command line and
 creates the corresponding 'PMI_keyval_t' structure for it.  It returns
 an array and size to the caller.  The array must be freed by 'PMI_Free_keyvals()'.
-If the first element of the args array is not a PMI specific argument, the 
-function returns success and sets num_parsed to zero.  If there are multiple PMI 
-specific arguments in the args array, this function may parse more than one 
+If the first element of the args array is not a PMI specific argument, the
+function returns success and sets num_parsed to zero.  If there are multiple PMI
+specific arguments in the args array, this function may parse more than one
 argument as long as the options are contiguous in the args array.
 
 @*/
 int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
-		     PMI_keyval_t **keyvalp, 
+		     PMI_keyval_t **keyvalp,
 		int *size)
 {
 	int i, n, s, len;
@@ -1645,7 +1645,7 @@ int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
 	*keyvalp = temp;
 	*num_parsed = n;
 	*size = s;
-	
+
 	return PMI_SUCCESS;
 }
 
@@ -1669,7 +1669,7 @@ Notes:
 This function removes PMI specific arguments from the command line and
 creates the corresponding 'PMI_keyval_t' structures for them.  It returns
 an array and size to the caller that can then be passed to 'PMI_Spawn_multiple()'.
-The array can be freed by 'PMI_Free_keyvals()'.  The routine 'free()' should 
+The array can be freed by 'PMI_Free_keyvals()'.  The routine 'free()' should
 not be used to free this array as there is no requirement that the array be
 allocated with 'malloc()'.
 
@@ -1682,7 +1682,7 @@ allocated with 'malloc()'.
 
 */
 
-int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp, 
+int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 		int *size)
 {
 	int i, j, cnt;
@@ -1720,7 +1720,7 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 
 	while (cnt) {
 		if (argv[i][0] == '-') {
-			temp[j].key = (char *) malloc((strlen(argv[i])+1) * 
+			temp[j].key = (char *) malloc((strlen(argv[i])+1) *
 					sizeof (char));
 			if (temp[j].key == NULL)
 				return PMI_FAIL;
@@ -1729,7 +1729,7 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 			--cnt;
 			if ((cnt) && (argv[i][0] != '-')){
 				temp[j].val = (char *) malloc(
-						(strlen(argv[i])+1) * 
+						(strlen(argv[i])+1) *
 						sizeof (char));
 				if (temp[j].val == NULL)
 					return PMI_FAIL;
@@ -1764,7 +1764,7 @@ Return values:
 
 Notes:
  This function frees the data returned by 'PMI_Args_to_keyval' and 'PMI_Parse_option'.
- Using this routine instead of 'free' allows the PMI package to track 
+ Using this routine instead of 'free' allows the PMI package to track
  allocation of storage or to use interal storage as it sees fit.
 @*/
 int PMI_Free_keyvals(PMI_keyval_t keyvalp[], int size)
@@ -1794,7 +1794,7 @@ int PMI_Free_keyvals(PMI_keyval_t keyvalp[], int size)
 }
 
 /*@
-PMI_Get_options - get a string of command line argument descriptions that may be printed 
+PMI_Get_options - get a string of command line argument descriptions that may be printed
 	to the user
 
 Input Parameters:

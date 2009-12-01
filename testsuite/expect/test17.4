@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Confirm that as sbatch job executes as the appropriate user and 
+#          Confirm that as sbatch job executes as the appropriate user and
 #          group.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -12,21 +12,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
@@ -74,7 +74,7 @@ make_bash_script $file_in "
   $bin_id
 "
 
-spawn $sbatch -N1 -t1 --output=$file_out $file_in  
+spawn $sbatch -N1 -t1 --output=$file_out $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -123,9 +123,9 @@ if {$got_job_grps == 0} {
 	send_user "\nFAILURE: Did not get user info from slurm job\n"
 	exit 1
 }
-  
+
 #
-# Confirm the user id and group id in the slurm job matches that  
+# Confirm the user id and group id in the slurm job matches that
 # of the local 'id' execution.
 #
 if {[string compare $login_grp_info $job_grp_info] != 0} {

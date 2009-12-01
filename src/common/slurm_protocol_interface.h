@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -81,20 +81,20 @@
  **  Data Types  **
  \****************/
 
-typedef enum slurm_socket_type { 
-	SLURM_MESSAGE , 
-	SLURM_STREAM 
+typedef enum slurm_socket_type {
+	SLURM_MESSAGE ,
+	SLURM_STREAM
 } slurm_socket_type_t;
 
 /*******************************\
  **  MIDDLE LAYER FUNCTIONS  **
  \*******************************/
 
-/* The must have funtions are required to implement a low level plugin 
- * for the slurm protocol the general purpose functions just wrap 
- * standard socket calls, so if the underlying layer implements a 
- * socket like interface, it can be used as a low level transport 
- * plugin with slurm the _slurm_recv and _slurm_send functions are 
+/* The must have funtions are required to implement a low level plugin
+ * for the slurm protocol the general purpose functions just wrap
+ * standard socket calls, so if the underlying layer implements a
+ * socket like interface, it can be used as a low level transport
+ * plugin with slurm the _slurm_recv and _slurm_send functions are
  * also needed
  */
 
@@ -113,7 +113,7 @@ slurm_fd _slurm_create_socket (slurm_socket_type_t type)  ;
 /*****************/
 
 /* _slurm_init_msg_engine
- * In the socket implementation it creates a socket, binds to it, and 
+ * In the socket implementation it creates a socket, binds to it, and
  *	listens for connections.
  * IN slurm_address - address to bind to
  * RET file descriptor
@@ -121,10 +121,10 @@ slurm_fd _slurm_create_socket (slurm_socket_type_t type)  ;
 slurm_fd _slurm_init_msg_engine ( slurm_addr * slurm_address ) ;
 
 /* _slurm_open_msg_conn
- * In the bsd socket implementation it creates a SOCK_STREAM socket  
- *	and calls connect on it a SOCK_DGRAM socket called with connect   
- *	is defined to only receive messages from the address/port pair  
- *	argument of the connect call slurm_address - for now it is  
+ * In the bsd socket implementation it creates a SOCK_STREAM socket
+ *	and calls connect on it a SOCK_DGRAM socket called with connect
+ *	is defined to only receive messages from the address/port pair
+ *	argument of the connect call slurm_address - for now it is
  *	really just a sockaddr_in
  * IN slurm_address - address to bind to
  * RET file descriptor
@@ -141,14 +141,14 @@ slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address ) ;
  *
  * RET number of bytes read
  */
-ssize_t _slurm_msg_recvfrom(slurm_fd fd, char **pbuf, size_t *buflen, 
+ssize_t _slurm_msg_recvfrom(slurm_fd fd, char **pbuf, size_t *buflen,
 		            uint32_t flags);
 
 /* _slurm_msg_recvfrom_timeout reads len bytes from file descriptor fd
  * timing out after `timeout' milliseconds.
  *
- */ 
-ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **buf, size_t *len, 
+ */
+ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **buf, size_t *len,
 		                    uint32_t flags, int timeout);
 
 /* _slurm_msg_sendto
@@ -159,25 +159,25 @@ ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **buf, size_t *len,
  * IN flags - communication specific flags
  * RET number of bytes written
  */
-ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , 
+ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer ,
 			size_t size , uint32_t flags ) ;
 /* _slurm_msg_sendto_timeout is identical to _slurm_msg_sendto except
  * IN timeout - maximum time to wait for a message in milliseconds */
-ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , 
+ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer ,
 			size_t size , uint32_t flags, int timeout ) ;
 
 /* _slurm_accept_msg_conn
- * In the bsd implmentation maps directly to a accept call 
+ * In the bsd implmentation maps directly to a accept call
  * IN open_fd		- file descriptor to accept connection on
  * OUT slurm_address 	- slurm_addr of the accepted connection
  * RET slurm_fd		- file descriptor of the connection created
  */
-slurm_fd _slurm_accept_msg_conn ( slurm_fd open_fd , 
+slurm_fd _slurm_accept_msg_conn ( slurm_fd open_fd ,
 			slurm_addr * slurm_address ) ;
 
 
 /* _slurm_close_accepted_conn
- * In the bsd implmentation maps directly to a close call, to close 
+ * In the bsd implmentation maps directly to a close call, to close
  *	the socket that was accepted
  * IN open_fd		- an open file descriptor to close
  * RET int		- the return code
@@ -196,12 +196,12 @@ int _slurm_close_accepted_conn ( slurm_fd open_fd ) ;
 slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address ) ;
 
 /* _slurm_accept_stream
- * accepts a incomming stream connection on a stream server slurm_fd 
+ * accepts a incomming stream connection on a stream server slurm_fd
  * IN open_fd		- file descriptor to accept connection on
  * OUT slurm_address 	- slurm_addr of the accepted connection
- * RET slurm_fd		- file descriptor of the accepted connection 
+ * RET slurm_fd		- file descriptor of the accepted connection
  */
-slurm_fd _slurm_accept_stream ( slurm_fd open_fd , 
+slurm_fd _slurm_accept_stream ( slurm_fd open_fd ,
 			slurm_addr * slurm_address ) ;
 
 /* _slurm_open_stream
@@ -214,11 +214,11 @@ slurm_fd _slurm_accept_stream ( slurm_fd open_fd ,
 slurm_fd _slurm_open_stream ( slurm_addr * slurm_address, bool retry ) ;
 
 /* _slurm_get_stream_addr
- * esentially a encapsilated get_sockname  
+ * esentially a encapsilated get_sockname
  * IN open_fd 		- file descriptor to retreive slurm_addr for
  * OUT address		- address that open_fd to bound to
  */
-extern int _slurm_get_stream_addr ( slurm_fd open_fd , 
+extern int _slurm_get_stream_addr ( slurm_fd open_fd ,
 			slurm_addr * address ) ;
 
 /* _slurm_close_stream
@@ -236,33 +236,33 @@ extern int _slurm_close_stream ( slurm_fd open_fd ) ;
 extern inline int _slurm_set_stream_non_blocking ( slurm_fd open_fd ) ;
 extern inline int _slurm_set_stream_blocking ( slurm_fd open_fd ) ;
 
-int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , 
+int _slurm_send_timeout ( slurm_fd open_fd, char *buffer ,
 			size_t size , uint32_t flags, int timeout ) ;
-int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , 
+int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer ,
 			size_t size , uint32_t flags, int timeout ) ;
-	
+
 /***************************/
 /* slurm address functions */
 /***************************/
 /* build a slurm address bassed upon ip address and port number
  * OUT slurm_address - the constructed slurm_address
- * IN port - port to be used 
+ * IN port - port to be used
  * IN ip_address - the IP address to connect with
  */
-extern void _slurm_set_addr_uint ( slurm_addr * slurm_address , 
+extern void _slurm_set_addr_uint ( slurm_addr * slurm_address ,
 			uint16_t port , uint32_t ip_address ) ;
 
 /* resets the address field of a slurm_addr, port and family are unchanged */
-extern void _reset_slurm_addr ( slurm_addr * slurm_address , 
+extern void _reset_slurm_addr ( slurm_addr * slurm_address ,
 			slurm_addr new_address );
 
 
 /* build a slurm address bassed upon host name and port number
  * OUT slurm_address - the constructed slurm_address
- * IN port - port to be used 
+ * IN port - port to be used
  * IN host - name of host to connect with
  */
-extern void _slurm_set_addr_char ( slurm_addr * slurm_address , 
+extern void _slurm_set_addr_char ( slurm_addr * slurm_address ,
 			uint16_t port , char * host ) ;
 
 /* given a slurm_address it returns its port and hostname
@@ -271,8 +271,8 @@ extern void _slurm_set_addr_char ( slurm_addr * slurm_address ,
  * OUT host		- hostname
  * IN buf_len		- length of hostname buffer
  */
-extern void _slurm_get_addr ( slurm_addr * slurm_address , 
-			uint16_t * port , char * host , 
+extern void _slurm_get_addr ( slurm_addr * slurm_address ,
+			uint16_t * port , char * host ,
 			uint32_t buf_len ) ;
 
 /* prints a slurm_addr into a buf
@@ -280,15 +280,15 @@ extern void _slurm_get_addr ( slurm_addr * slurm_address ,
  * IN buf		- space for string representation of slurm_addr
  * IN n			- max number of bytes to write (including NUL)
  */
-extern void _slurm_print_slurm_addr ( slurm_addr * address, 
+extern void _slurm_print_slurm_addr ( slurm_addr * address,
 			char *buf, size_t n ) ;
 
 /*****************************/
 /* slurm addr pack functions */
 /*****************************/
-extern void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , 
+extern void _slurm_pack_slurm_addr ( slurm_addr * slurm_address ,
 			Buf buffer ) ;
-extern int _slurm_unpack_slurm_addr_no_alloc ( 
+extern int _slurm_unpack_slurm_addr_no_alloc (
 			slurm_addr * slurm_address , Buf buffer ) ;
 
 
@@ -309,14 +309,14 @@ extern int _slurm_socketpair (int __domain, int __type, int __protocol,
 			int __fds[2]) ;
 
 /* Give the socket FD the local address ADDR (which is LEN bytes long).  */
-extern int _slurm_bind (int __fd, struct sockaddr const * __addr, 
+extern int _slurm_bind (int __fd, struct sockaddr const * __addr,
 			socklen_t __len) ;
 
 /* Open a connection on socket FD to peer at ADDR (which LEN bytes long).
  * For connectionless socket types, just set the default address to send to
  * and the only address from which to accept transmissions.
  * Return 0 on success, -1 for errors.  */
-extern int _slurm_connect (int __fd, struct sockaddr const * __addr, 
+extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 			socklen_t __len) ;
 
 /* Prepare to accept connections on socket FD.
@@ -329,20 +329,20 @@ extern int _slurm_listen (int __fd, int __n) ;
  * set *ADDR (which is *ADDR_LEN bytes long) to the address of the connecting
  * peer and *ADDR_LEN to the address's actual length, and return the
  * new socket's descriptor, or -1 for errors.  */
-extern int _slurm_accept (int __fd, struct sockaddr * __addr, 
+extern int _slurm_accept (int __fd, struct sockaddr * __addr,
 			socklen_t *__restrict __addr_len) ;
 
 /* Put the local address of FD into *ADDR and its length in *LEN.  */
-extern int _slurm_getsockname (int __fd, struct sockaddr * __addr, 
+extern int _slurm_getsockname (int __fd, struct sockaddr * __addr,
 			socklen_t *__restrict __len) ;
 
 /* Put the address of the peer connected to socket FD into *ADDR
  * (which is *LEN bytes long), and its actual length into *LEN.  */
-extern int _slurm_getpeername (int __fd, struct sockaddr * __addr, 
+extern int _slurm_getpeername (int __fd, struct sockaddr * __addr,
 			socklen_t *__restrict __len) ;
 
 /* Send N bytes of BUF to socket FD.  Returns the number sent or -1.  */
-extern ssize_t _slurm_send (int __fd, __const void *__buf, 
+extern ssize_t _slurm_send (int __fd, __const void *__buf,
 			size_t __n, int __flags) ;
 extern ssize_t _slurm_write (int __fd, __const void *__buf, size_t __n) ;
 
@@ -353,39 +353,39 @@ extern ssize_t _slurm_read (int __fd, void *__buf, size_t __n) ;
 
 /* Send N bytes of BUF on socket FD to peer at address ADDR (which is
  * ADDR_LEN bytes long).  Returns the number sent, or -1 for errors.  */
-extern ssize_t _slurm_sendto (int __fd, __const void *__buf, size_t __n, 
-			int __flags, struct sockaddr const * __addr, 
+extern ssize_t _slurm_sendto (int __fd, __const void *__buf, size_t __n,
+			int __flags, struct sockaddr const * __addr,
 			socklen_t __addr_len) ;
 
 /* Send a msg described MESSAGE on socket FD.
  * Returns the number of bytes sent, or -1 for errors.  */
-extern ssize_t _slurm_sendmsg (int __fd, __const struct msghdr *__msg, 
+extern ssize_t _slurm_sendmsg (int __fd, __const struct msghdr *__msg,
 			int __flags)  ;
 
 /* Read N bytes into BUF through socket FD.
  * If ADDR is not NULL, fill in *ADDR_LEN bytes of it with tha address of
  * the sender, and store the actual size of the address in *ADDR_LEN.
  * Returns the number of bytes read or -1 for errors.  */
-extern ssize_t _slurm_recvfrom (int __fd, void *__restrict __buf, 
-			size_t __n, int __flags, struct sockaddr * __addr, 
+extern ssize_t _slurm_recvfrom (int __fd, void *__restrict __buf,
+			size_t __n, int __flags, struct sockaddr * __addr,
 			socklen_t *__restrict __addr_len) ;
 
 /* Send a msg described MESSAGE on socket FD.
  * Returns the number of bytes read or -1 for errors.  */
-extern ssize_t _slurm_recvmsg (int __fd, struct msghdr *__msg, 
+extern ssize_t _slurm_recvmsg (int __fd, struct msghdr *__msg,
 			int __flags)  ;
 
 /* Put the current value for socket FD's option OPTNAME at protocol level LEVEL
  * into OPTVAL (which is *OPTLEN bytes long), and set *OPTLEN to the value's
  * actual length.  Returns 0 on success, -1 for errors.  */
-extern int _slurm_getsockopt (int __fd, int __level, int __optname, 
-			void *__restrict __optval, 
+extern int _slurm_getsockopt (int __fd, int __level, int __optname,
+			void *__restrict __optval,
 			socklen_t *__restrict __optlen) ;
 
 /* Set socket FD's option OPTNAME at protocol level LEVEL
  * to *OPTVAL (which is OPTLEN bytes long).
  * Returns 0 on success, -1 for errors.  */
-extern int _slurm_setsockopt (int __fd, int __level, int __optname, 
+extern int _slurm_setsockopt (int __fd, int __level, int __optname,
 			__const void *__optval, socklen_t __optlen) ;
 
 /* Shut down all or part of the connection open on socket FD.

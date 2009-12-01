@@ -1,37 +1,37 @@
 /*****************************************************************************\
- *  wire_test.c - used to debug and test wires on any given system.  
+ *  wire_test.c - used to debug and test wires on any given system.
  *
  *  $Id: block_allocator.c 17495 2009-05-14 16:49:52Z da $
  *****************************************************************************
  *  Copyright (C) 2004 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -51,7 +51,7 @@
 /** */
 int main(int argc, char** argv)
 {
-	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
+	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t));
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	int debug_level = 5;
 
@@ -61,9 +61,9 @@ int main(int argc, char** argv)
 	log_opts.stderr_level  = debug_level;
 	log_opts.logfile_level = debug_level;
 	log_opts.syslog_level  = debug_level;
-	
+
 	log_alter(log_opts, LOG_DAEMON, "/dev/null");
-	
+
 	DIM_SIZE[X]=0;
 	DIM_SIZE[Y]=0;
 	DIM_SIZE[Z]=0;
@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 	slurm_conf_reinit(NULL);
 	ba_init(NULL, 1);
 	init_wires(NULL);
-		
+
 	/* [010x831] */
 /* 	results = list_create(NULL); */
 /* 	request->geometry[0] = 9; */
@@ -141,7 +141,7 @@ int main(int argc, char** argv)
 	}
 	list_destroy(results);
 
-	
+
 	int dim,j;
 	int x,y,z;
 	int startx=0;
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 	for(x=startx;x<endx;x++) {
 		for(y=starty;y<endy;y++) {
 			for(z=startz;z<endz;z++) {
-				ba_node_t *curr_node = 
+				ba_node_t *curr_node =
 					&(ba_system_ptr->grid[x][y][z]);
 				info("Node %c%c%c Used = %d Letter = %c",
 				     alpha_num[x],alpha_num[y],alpha_num[z],
@@ -195,6 +195,6 @@ int main(int argc, char** argv)
 /* 	ba_fini(); */
 
 /* 	delete_ba_request(request); */
-	
+
 	return 0;
 }

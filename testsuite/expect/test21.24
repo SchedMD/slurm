@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          sacctmgr dump test
-#          
+#
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -12,21 +12,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -289,7 +289,7 @@ if { $exit_code } {
 }
 
 #add users
-# cluster account name part adminlevel defaultaccount defaultwckey wckeys qoslevel Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob 
+# cluster account name part adminlevel defaultaccount defaultwckey wckeys qoslevel Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob
 incr exit_code [add_user "$tc3" "$nm4" "$us3" "" "$ala" "$nm3" "$wk3" "$wk1,$wk2,$wk4" "$qs2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3" ]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3,$us4"
@@ -316,7 +316,7 @@ if { $exit_code } {
 	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
-	
+
 exec $bin_rm -f $file_out4
 
 set matches 0

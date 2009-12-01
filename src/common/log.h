@@ -5,8 +5,8 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
- *  Much of this code was derived or adapted from the log.c component of 
+ *
+ *  Much of this code was derived or adapted from the log.c component of
  *  openssh which contains the following notices:
  *****************************************************************************
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -53,7 +53,7 @@
 #  include <sys/syslog.h>
 #endif
 
-#include <syslog.h> 	
+#include <syslog.h>
 #include <stdio.h>
 
 #include "src/common/macros.h"
@@ -66,7 +66,7 @@ typedef enum {
 	SYSLOG_FACILITY_AUTH = 		LOG_AUTH,
 #ifdef LOG_AUTHPRIV
 	SYSLOG_FACILITY_AUTHPRIV =	LOG_AUTHPRIV,
-#endif 
+#endif
 	SYSLOG_FACILITY_LOCAL0 =	LOG_LOCAL0,
 	SYSLOG_FACILITY_LOCAL1 =	LOG_LOCAL1,
 	SYSLOG_FACILITY_LOCAL2 =	LOG_LOCAL2,
@@ -74,7 +74,7 @@ typedef enum {
 	SYSLOG_FACILITY_LOCAL4 =	LOG_LOCAL4,
 	SYSLOG_FACILITY_LOCAL5 =	LOG_LOCAL5,
 	SYSLOG_FACILITY_LOCAL6 =	LOG_LOCAL6,
-	SYSLOG_FACILITY_LOCAL7 =	LOG_LOCAL7 
+	SYSLOG_FACILITY_LOCAL7 =	LOG_LOCAL7
 } 	log_facility_t;
 
 /*
@@ -113,12 +113,12 @@ typedef struct {
 	{ LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_INFO, 1, 0 }
 
 #define LOG_OPTS_SYSLOG_DEFAULT	\
-	{ LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET, 1, 0 }  
+	{ LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET, 1, 0 }
 
 #define LOG_OPTS_STDERR_ONLY	\
 	{ LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 1, 0 }
 
-/* 
+/*
  * initialize log module (called only once)
  *
  * example:
@@ -134,7 +134,7 @@ typedef struct {
  *
  * log function automatically takes the basename() of argv0.
  */
-int log_init(char *argv0, log_options_t opts, 
+int log_init(char *argv0, log_options_t opts,
               log_facility_t fac, char *logfile);
 
 /* reinitialize log module.
@@ -144,13 +144,13 @@ int log_init(char *argv0, log_options_t opts,
  */
 void log_reinit(void);
 
-/* 
+/*
  * Close log and free associated memory
  */
 void log_fini(void);
 
 /* Alter log facility, options are like log_init() above, except that
- * an argv0 argument is not passed. 
+ * an argv0 argument is not passed.
  *
  * This function may be called multiple times.
  */
@@ -161,7 +161,7 @@ int log_alter(log_options_t opts, log_facility_t fac, char *logfile);
  */
 void log_set_fpfx(char *pfx);
 
-/* 
+/*
  * (re)set argv0 string prepended to all log messages
  */
 void log_set_argv0(char *pfx);
@@ -171,10 +171,10 @@ void log_set_argv0(char *pfx);
  */
 FILE *log_fp(void);
 
-/* 
+/*
  * Buffered log functions:
- * 
- * log_has_data() returns true if there is data in the 
+ *
+ * log_has_data() returns true if there is data in the
  * internal log buffer
  */
 bool log_has_data(void);
@@ -185,7 +185,7 @@ bool log_has_data(void);
  */
 void log_flush(void);
 
-/* 
+/*
  * the following log a message to the log facility at the appropriate level:
  *
  * Messages do not need a newline!
@@ -195,7 +195,7 @@ void log_flush(void);
  * fmt     expands to
  * ~~~~    ~~~~~~~~~~~
  * "%m" => strerror(errno)
- * "%t" => strftime "%x %X"  (locally preferred short date/time) 
+ * "%t" => strftime "%x %X"  (locally preferred short date/time)
  * "%T" => strftime "%a %d %b %Y %H:%M:%S %z" (rfc822 date/time)
  */
 

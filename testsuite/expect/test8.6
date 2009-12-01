@@ -12,21 +12,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -45,7 +45,7 @@ set sleep_time  5
 # make a bunch of blocks of the specified size (node_cnt)
 proc run_batch_jobs { node_cnt job_cnt } {
 	global sbatch number file_in
-	set start_cnt 0	
+	set start_cnt 0
 	for {set inx 0} {$inx < $job_cnt} {incr inx} {
 		set sbatch_pid [spawn $sbatch --output=/dev/null -t5 -N$node_cnt-$node_cnt $file_in]
 		expect {
@@ -79,7 +79,7 @@ proc run_batch_jobs { node_cnt job_cnt } {
 			}
 		}
 	}
-	
+
 	return $start_cnt
 }
 
@@ -111,13 +111,13 @@ proc wait_for_all_jobs { } {
 			}
 		}
 		log_user 1
-		if {$matches == 0} { 
+		if {$matches == 0} {
 			send_user "All jobs complete\n"
 			break
 		}
 		if {$matches > 0} {
 			send_user "  $matches jobs remaining\n"
-#			Moab can slow throughput down a lot, 
+#			Moab can slow throughput down a lot,
 #			so don't return here
 #			if {$matches == $last_matches} {
 #				send_user "Running jobs hung\n"
@@ -146,10 +146,10 @@ proc run_bgl_test { } {
 	if {$psets >= 16} {
 		incr started [run_batch_jobs 32 $32node_block_cnt]
 	}
-	
-	incr started [run_batch_jobs 128 $128node_block_cnt]	
-	incr started [run_batch_jobs 512 $512node_block_cnt]	
-	
+
+	incr started [run_batch_jobs 128 $128node_block_cnt]
+	incr started [run_batch_jobs 512 $512node_block_cnt]
+
 	if {$num_nodes >= 1024} {
 		incr started [run_batch_jobs 1k $1knode_block_cnt]
 		if {$num_nodes >= 4096} {
@@ -167,7 +167,7 @@ proc run_bgl_test { } {
 		incr started [run_batch_jobs 1k $1knode_block_cnt]
 	}
 
-	incr started [run_batch_jobs 512 $512node_block_cnt]	
+	incr started [run_batch_jobs 512 $512node_block_cnt]
 
 	incr started [run_batch_jobs 128 $128node_block_cnt]
 
@@ -175,7 +175,7 @@ proc run_bgl_test { } {
 		incr started [run_batch_jobs 32 $32node_block_cnt]
 	}
 
-	incr started [run_batch_jobs 512 $512node_block_cnt]	
+	incr started [run_batch_jobs 512 $512node_block_cnt]
 
 	return $started;
 }
@@ -207,11 +207,11 @@ proc run_bgp_test { } {
 	if {$psets >= 8} {
 		incr started [run_batch_jobs 64 $64node_block_cnt]
 	}
-	
-	incr started [run_batch_jobs 128 $128node_block_cnt]	
-	incr started [run_batch_jobs 256 $256node_block_cnt]	
-	incr started [run_batch_jobs 512 $512node_block_cnt]	
-	
+
+	incr started [run_batch_jobs 128 $128node_block_cnt]
+	incr started [run_batch_jobs 256 $256node_block_cnt]
+	incr started [run_batch_jobs 512 $512node_block_cnt]
+
 	if {$num_nodes >= 1024} {
 		incr started [run_batch_jobs 1k $1knode_block_cnt]
 		if {$num_nodes >= 4096} {
@@ -229,8 +229,8 @@ proc run_bgp_test { } {
 		incr started [run_batch_jobs 1k $1knode_block_cnt]
 	}
 
-	incr started [run_batch_jobs 512 $512node_block_cnt]	
-	incr started [run_batch_jobs 256 $256node_block_cnt]	
+	incr started [run_batch_jobs 512 $512node_block_cnt]
+	incr started [run_batch_jobs 256 $256node_block_cnt]
 	incr started [run_batch_jobs 128 $128node_block_cnt]
 	if {$psets >= 8} {
 		incr started [run_batch_jobs 64 $64node_block_cnt]
@@ -244,7 +244,7 @@ proc run_bgp_test { } {
 		incr started [run_batch_jobs 16 $16node_block_cnt]
 	}
 
-	incr started [run_batch_jobs 512 $512node_block_cnt]	
+	incr started [run_batch_jobs 512 $512node_block_cnt]
 
 	return $started;
 }
@@ -271,7 +271,7 @@ if {$psets == 0} {
 	exit 1
 }
 
-set num_nodes [expr [get_node_cnt] * [get_bluegene_cnodes_per_mp]] 
+set num_nodes [expr [get_node_cnt] * [get_bluegene_cnodes_per_mp]]
 if {$num_nodes == 0} {
 	send_user "\nFAILURE: No nodes are found on this system\n"
 	exit 1

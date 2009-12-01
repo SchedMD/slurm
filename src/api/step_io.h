@@ -6,21 +6,21 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
@@ -55,10 +55,10 @@ struct client_io {
 	uint16_t *listenport;	/* Array of stdio listen port numbers */
 
 	eio_handle_t *eio;      /* Event IO handle for stdio traffic */
-	pthread_mutex_t ioservers_lock; /* This lock protects 
-				   ioservers_ready_bits, ioservers_ready, 
+	pthread_mutex_t ioservers_lock; /* This lock protects
+				   ioservers_ready_bits, ioservers_ready,
 				   pointers in ioserver, all the msg_queues
-				   in each ioserver's server_io_info, and 
+				   in each ioserver's server_io_info, and
 				   the free_incoming list.  The queues
 				   are used both for normal writes
 				   and writes that verify a connection to
@@ -124,12 +124,12 @@ void client_io_handler_downnodes(client_io_t *cio,
 				 const int *node_ids, int num_node_ids);
 
 /*
- * Tell the client IO handler to test the communication path to a 
+ * Tell the client IO handler to test the communication path to a
  * node suspected to be down by sending a message, which will be
  * ignored by the slurmstepd.  If the write fails the step_launch_state
  * will be notified.
  */
-int client_io_handler_send_test_message(client_io_t *cio, int node_id, 
+int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 					bool *sent_message);
 
 /*

@@ -1,37 +1,37 @@
 /*****************************************************************************\
- *  qsw.c - Library routines for initiating jobs on QsNet. 
+ *  qsw.c - Library routines for initiating jobs on QsNet.
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -72,13 +72,13 @@
  *  (XXX: What is the equivalent in libelanctrl?)
  *
  * slurm/482: the elan USER context range is now split
- *  into two segments, regular user context and RMS 
+ *  into two segments, regular user context and RMS
  *  context ranges. Do not allow a context range
  *  (lowcontext -- highcontext) to span these two segments,
  *  as this will generate and elan initialization error
  *  when MPI tries to attach to the capability. For now,
  *  restrict SLURM's range to the RMS one (starting at 0x400)
- * 
+ *
  */
 # define ELAN_USER_BASE_CONTEXT_NUM    0x400 /* act. RMS_BASE_CONTEXT_NUM */
 # define ELAN_USER_TOP_CONTEXT_NUM     0x7ff
@@ -94,7 +94,7 @@
 # define UserKey      cap_userkey
 # define RailMask     cap_railmask
 # define Values       key_values
-#elif HAVE_LIBELAN3 
+#elif HAVE_LIBELAN3
 # include <elan3/elan3.h>
 # include <elan3/elanvp.h>
 #else
@@ -126,14 +126,14 @@
 /* we allocate elan hardware context numbers in this range */
 #define QSW_CTX_START		ELAN_USER_BASE_CONTEXT_NUM
 
-/* XXX: Temporary workaround for slurm/222 (qws sw-kernel/5478) 
+/* XXX: Temporary workaround for slurm/222 (qws sw-kernel/5478)
  *      (sys_validate_cap does not allow ELAN_USER_TOP_CONTEXT_NUM)
  */
-#define QSW_CTX_END		ELAN_USER_TOP_CONTEXT_NUM - 1 
+#define QSW_CTX_END		ELAN_USER_TOP_CONTEXT_NUM - 1
 #define QSW_CTX_INVAL		(-1)
 
 
-/* 
+/*
  * We are going to some trouble to keep these defs private so slurm
  * hackers not interested in the interconnect details can just pass around
  * the opaque types.  All use of the data structure internals is local to this
@@ -174,7 +174,7 @@ struct qsw_jobinfo {
 /*
  * Globals
  */
-static inline void _dump_step_ctx(const char *head, 
+static inline void _dump_step_ctx(const char *head,
 		struct step_ctx *step_ctx_p);
 static qsw_libstate_t qsw_internal_state = NULL;
 static pthread_mutex_t qsw_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -236,7 +236,7 @@ static inline void _dump_step_ctx(const char *head, struct step_ctx *step_ctx_p)
 #endif
 }
 
-static void 
+static void
 _pack_step_ctx(struct step_ctx *step_ctx_p, Buf buffer)
 {
 	_dump_step_ctx("_pack_step_ctx", step_ctx_p);
@@ -326,12 +326,12 @@ qsw_unpack_libstate(qsw_libstate_t ls, Buf buffer)
 			goto unpack_error;
 		}
 		list_push(ls->step_ctx_list, step_ctx_p);
-	}	
+	}
 
 	if (ls->ls_magic != QSW_LIBSTATE_MAGIC)
 		goto unpack_error;
 
-	return SLURM_SUCCESS; 
+	return SLURM_SUCCESS;
 
     unpack_error:
 	slurm_seterrno_ret(EBADMAGIC_QSWLIBSTATE); /* corrupted libstate */
@@ -372,7 +372,7 @@ _copy_libstate(qsw_libstate_t dest, qsw_libstate_t src)
 		dest_step_ctx_p->st_high_node = src_step_ctx_p->st_high_node;
 		list_push(dest->step_ctx_list, dest_step_ctx_p);
 	}
-	list_iterator_destroy(iter);	
+	list_iterator_destroy(iter);
 }
 
 /*
@@ -392,7 +392,7 @@ qsw_init(qsw_libstate_t oldstate)
 	if (oldstate)
 		_copy_libstate(new, oldstate);
 	else {
-		new->ls_prognum = QSW_PRG_START + 
+		new->ls_prognum = QSW_PRG_START +
 			(lrand48() % (QSW_PRG_END - QSW_PRG_START + 1));
 	}
 	qsw_internal_state = new;
@@ -451,14 +451,14 @@ done:	_unlock_qsw();
 int
 qsw_alloc_jobinfo(qsw_jobinfo_t *jp)
 {
-	qsw_jobinfo_t new; 
+	qsw_jobinfo_t new;
 
 	assert(jp != NULL);
 	new = (qsw_jobinfo_t)xmalloc(sizeof(struct qsw_jobinfo));
 	if (!new)
 		slurm_seterrno_ret(ENOMEM);
 	new->j_magic = QSW_JOBINFO_MAGIC;
-	
+
 	*jp = new;
 	return 0;
 }
@@ -471,7 +471,7 @@ qsw_alloc_jobinfo(qsw_jobinfo_t *jp)
 qsw_jobinfo_t
 qsw_copy_jobinfo(qsw_jobinfo_t j)
 {
-	qsw_jobinfo_t new; 
+	qsw_jobinfo_t new;
 	if (qsw_alloc_jobinfo(&new))
 		return NULL;
 	memcpy(new, j, sizeof(struct qsw_jobinfo));
@@ -520,11 +520,11 @@ qsw_pack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 #  else
 	j->j_cap.cap_spare = ELAN_CAP_UNINITIALISED;
 	pack16(j->j_cap.cap_spare,      buffer);
-#  endif 
+#  endif
 #endif
 #if HAVE_LIBELAN3
 	pack16(j->j_cap.padding, 	buffer);
-#endif 
+#endif
 	pack32(j->j_cap.Version,	buffer);
 	pack32(j->j_cap.LowContext, 	buffer);
 	pack32(j->j_cap.HighContext, 	buffer);
@@ -533,7 +533,7 @@ qsw_pack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 	pack32(j->j_cap.HighNode, 	buffer);
 #if HAVE_LIBELAN3
 	pack32(j->j_cap.Entries, 	buffer);
-#endif 
+#endif
 	pack32(j->j_cap.RailMask, 	buffer);
 	for (i = 0; i < ELAN_BITMAPSIZE; i++)
 		pack32(j->j_cap.Bitmap[i], buffer);
@@ -554,7 +554,7 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
 	offset = get_buf_offset(buffer);
- 
+
 	safe_unpack32(&j->j_magic, 		buffer);
 	safe_unpack32(&j->j_prognum, 		buffer);
 	for (i = 0; i < 4; i++)
@@ -567,8 +567,8 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 	safe_unpack16(&j->j_cap.cap_spare,      buffer);
 #  endif
 #endif
-#if HAVE_LIBELAN3  
-	safe_unpack16(&j->j_cap.padding, 	buffer);	    
+#if HAVE_LIBELAN3
+	safe_unpack16(&j->j_cap.padding, 	buffer);
 #endif
 {
 	uint32_t tmp32;
@@ -579,7 +579,7 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 	safe_unpack32(&tmp32,	buffer);
 	j->j_cap.HighContext	= (int) tmp32;
 	safe_unpack32(&tmp32,	buffer);
-	j->j_cap.MyContext	= (int) tmp32; 
+	j->j_cap.MyContext	= (int) tmp32;
 	safe_unpack32(&tmp32,	buffer);
 	j->j_cap.LowNode	= (int) tmp32;
 	safe_unpack32(&tmp32,	buffer);
@@ -591,7 +591,7 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 	safe_unpack32(&j->j_cap.RailMask, 	buffer);
 	for (i = 0; i < ELAN_BITMAPSIZE; i++)
 		safe_unpack32(&j->j_cap.Bitmap[i], buffer);
-	
+
 	if (j->j_magic != QSW_JOBINFO_MAGIC)
 		goto unpack_error;
 
@@ -608,9 +608,9 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer)
  * more than once simultaneously on a single node.  We allocate one to each
  * parallel job which more than meets this requirement.  A program description
  * can be compared to a process group, except there is no way for a process to
- * disassociate itself or its children from the program description.  
- * If the library is initialized, we allocate these consecutively, otherwise 
- * we generate a random one, assuming we are being called by a transient 
+ * disassociate itself or its children from the program description.
+ * If the library is initialized, we allocate these consecutively, otherwise
+ * we generate a random one, assuming we are being called by a transient
  * program like pdsh.  Ref: rms_prgcreate(3).
  */
 static int
@@ -637,11 +637,11 @@ _generate_prognum(void)
 /*
  * Elan hardware context numbers are an adapter resource that must not be used
  * more than once on a single node.  One is allocated to each process on the
- * node that will be communicating over Elan.  In order for processes on the 
+ * node that will be communicating over Elan.  In order for processes on the
  * same node to communicate with one another and with other nodes across QsNet,
  * they must use contexts in the hi-lo range of a common capability.
- * If the library state is initialized, we allocate/free these, otherwise 
- * we generate a random one, assuming we are being called by a transient 
+ * If the library state is initialized, we allocate/free these, otherwise
+ * we generate a random one, assuming we are being called by a transient
  * program like pdsh.  Ref: rms_setcap(3).
  *
  * Returns -1 on allocation error.
@@ -659,7 +659,7 @@ _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 		uint16_t low_node  = bit_ffs(nodeset);
 		uint16_t high_node = bit_fls(nodeset);
 		struct step_ctx *step_ctx_p;
-		bitstr_t *busy_context = bit_alloc(QSW_CTX_END - 
+		bitstr_t *busy_context = bit_alloc(QSW_CTX_END -
 				QSW_CTX_START + 1);
 
 		assert(busy_context);
@@ -683,14 +683,14 @@ _alloc_hwcontext(bitstr_t *nodeset, uint32_t prognum, int num)
 			step_ctx_p->st_low_node  = low_node;
 			step_ctx_p->st_high_node = high_node;
 			_dump_step_ctx("_alloc_hwcontext", step_ctx_p);
-			list_push(qsw_internal_state->step_ctx_list, step_ctx_p); 
+			list_push(qsw_internal_state->step_ctx_list, step_ctx_p);
 			new = bit + QSW_CTX_START;
 		}
 		_unlock_qsw();
 		bit_free(busy_context);
 	} else {
 		_srand_if_needed();
-		new = lrand48() % 
+		new = lrand48() %
 		      (QSW_CTX_END - (QSW_CTX_START + num - 1) - 1);
 		new +=  QSW_CTX_START;
 	}
@@ -702,7 +702,7 @@ extern int qsw_restore_jobinfo(struct qsw_jobinfo *jobinfo)
 {
 	struct step_ctx *step_ctx_p;
 	ListIterator iter;
-	int duplicate = 0; 
+	int duplicate = 0;
 
 	assert(qsw_internal_state);
 	if (!jobinfo)
@@ -765,7 +765,7 @@ _free_hwcontext(uint32_t prog_num)
  * Returns -1 on failure to allocate hw context.
  */
 static int
-_init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks, 
+_init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks,
 		int nnodes, bitstr_t *nodeset, uint16_t *tasks_per_node,
 		int cyclic_alloc, int max_tasks_per_node)
 {
@@ -794,7 +794,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks,
 #  else
 	cap->cap_spare = ELAN_CAP_UNINITIALISED;
 #  endif
-#endif 
+#endif
 
 	/* UserKey is 128 bits of randomness which should be kept private */
         for (i = 0; i < 4; i++)
@@ -827,14 +827,14 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks,
 	cap->Type |= ELAN_CAP_TYPE_BROADCASTABLE;
 #endif
 	/*
-	 * Set up cap->Bitmap, which describes the mapping of processes to 
+	 * Set up cap->Bitmap, which describes the mapping of processes to
 	 * the nodes in the range of cap->LowNode - cap->Highnode.
-	 * There are (ntasks * nnodes) significant bits in the mask, each 
- 	 * representing a process slot.  Bits are off for process slots 
-	 * corresponding to unallocated nodes.  For example, if nodes 4 and 6 
-	 * are running two processes per node, bits 0,1 (corresponding to the 
-	 * two processes on node 4) and bits 4,5 (corresponding to the two 
-	 * processes running on node 6) are set.  
+	 * There are (ntasks * nnodes) significant bits in the mask, each
+ 	 * representing a process slot.  Bits are off for process slots
+	 * corresponding to unallocated nodes.  For example, if nodes 4 and 6
+	 * are running two processes per node, bits 0,1 (corresponding to the
+	 * two processes on node 4) and bits 4,5 (corresponding to the two
+	 * processes running on node 6) are set.
 	 */
 	node_index = 0;
 	for (i = cap->LowNode; i <= cap->HighNode; i++) {
@@ -844,7 +844,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks,
 
 			for (j = 0; j < task_cnt; j++) {
 				if (cyclic_alloc)
-					bit = (i-cap->LowNode) + ( j * 
+					bit = (i-cap->LowNode) + ( j *
 					 (cap->HighNode - cap->LowNode + 1));
 				else
 					bit = ((i-cap->LowNode)
@@ -861,11 +861,11 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks,
 
 /*
  * Create all the QsNet related information needed to set up a QsNet parallel
- * program and store it in the qsw_jobinfo struct.  
+ * program and store it in the qsw_jobinfo struct.
  * Call this on the "client" process, e.g. pdsh, srun, slurmctld, etc..
  */
 int
-qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, bitstr_t *nodeset, 
+qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, bitstr_t *nodeset,
 		uint16_t *tasks_per_node, int cyclic_alloc)
 {
 	int i, max_tasks_per_node = 0;
@@ -875,7 +875,7 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, bitstr_t *nodeset,
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
 	assert(nodeset);
 	assert(tasks_per_node);
-	
+
 	/* sanity check on args */
 	if ((ntasks <= 0) || (nnodes <= 0))
 		slurm_seterrno_ret(EINVAL);
@@ -886,11 +886,11 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, bitstr_t *nodeset,
 	/* Note: ELAN_MAX_VPS is 512 on "old" Elan driver, 16384 on new. */
 	if ((max_tasks_per_node * nnodes) > ELAN_MAX_VPS)
 		slurm_seterrno_ret(EINVAL);
-      
+
 	/* initialize jobinfo */
 	j->j_prognum = _generate_prognum();
-	if (_init_elan_capability(&j->j_cap, j->j_prognum, ntasks, nnodes, 
-			nodeset, tasks_per_node, cyclic_alloc, 
+	if (_init_elan_capability(&j->j_cap, j->j_prognum, ntasks, nnodes,
+			nodeset, tasks_per_node, cyclic_alloc,
 			max_tasks_per_node) == -1) {
 		slurm_seterrno_ret(EAGAIN); /* failed to allocate hw ctx */
 	}
@@ -915,18 +915,18 @@ qsw_teardown_jobinfo(qsw_jobinfo_t j)
  * waitpid 	elan3_create	|
  * 		rms_prgaddcap	|
  *		fork N procs ---+------	rms_setcap
- *		wait all	|	setup RMS_ env	
+ *		wait all	|	setup RMS_ env
  *				|	setuid, etc.
  *				|	exec mpi process
- *				|	
+ *				|
  *		exit		|
  * rms_prgdestroy		|
  * exit				|     (one pair of processes per mpi proc!)
  *
- * - The first fork is required because rms_prgdestroy can't occur in the 
+ * - The first fork is required because rms_prgdestroy can't occur in the
  *   process that calls rms_prgcreate (since it is a member, ECHILD).
- * - The second fork is required when running multiple processes per node 
- *   because each process must announce its use of one of the hw contexts 
+ * - The second fork is required when running multiple processes per node
+ *   because each process must announce its use of one of the hw contexts
  *   in the range allocated in the capability.
  */
 
@@ -939,7 +939,7 @@ qsw_prog_fini(qsw_jobinfo_t jobinfo)
 		debug2("qsw_prog_fini shmctl IPC_RMID complete");
 	}
 	/* Do nothing... apparently this will be handled by
-	 *  callbacks in the kernel exit handlers ... 
+	 *  callbacks in the kernel exit handlers ...
 	 */
 #if 0
 	if (jobinfo->j_ctx) {
@@ -982,7 +982,7 @@ _qsw_shmem_create (qsw_jobinfo_t jobinfo, uid_t uid)
 	key_t key = elan_statkey (jobinfo->j_prognum);
 	int maxLocal = cap->HighContext - cap->LowContext + 1;
 	int pgsize = getpagesize ();
-	
+
 	/* 8KB minimum stats page size */
 	if (pgsize < 8192)
 		pgsize = 8192;
@@ -998,7 +998,7 @@ _qsw_shmem_create (qsw_jobinfo_t jobinfo, uid_t uid)
 
 	if (shmctl (shmid, IPC_SET, &shm) < 0)
 		return (error ("Failed to set perms on Elan state shm: %m"));
-	
+
 	return (0);
 }
 
@@ -1045,7 +1045,7 @@ _prg_destructor_fork()
 		waitpid(pid, (int *)NULL, 0);
 		return fdpair[1];
 	}
-	
+
 	/****************************************/
 	/*
 	 * fork again so the destructor process
@@ -1117,7 +1117,7 @@ _prg_destructor_send(int fd, int prgid)
 {
 	debug3("_prg_destructor_send %d", prgid);
 	if (write (fd, &prgid, sizeof(prgid)) != sizeof(prgid)) {
-		error ("_prg_destructor_send failed: %m"); 
+		error ("_prg_destructor_send failed: %m");
 	}
 	/* Deliberately avoid closing fd.  When this process exits, it
 	   will close fd signalling to the child process that it is
@@ -1134,7 +1134,7 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 {
 	int err;
 	int i, nrails;
-	int fd; 
+	int fd;
 
 	if ((fd = _prg_destructor_fork()) == -1)
 		goto fail;
@@ -1173,21 +1173,21 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		ELAN3_CTX *ctx;
 
 		/* see qsw gnat sw-elan/4334: elan3_control_open can ret -1 */
-		if ((ctx = elan3_control_open(i)) == NULL 
+		if ((ctx = elan3_control_open(i)) == NULL
 				|| ctx == (void *)-1) {
 			slurm_seterrno(EELAN3CONTROL);
 			_prg_destructor_send(fd, -1);
 			goto fail;
 		}
-		
-	
-		/* make cap known via rms_getcap/rms_ncaps to members 
+
+
+		/* make cap known via rms_getcap/rms_ncaps to members
 		 * of this prgnum */
 		if (elan3_create(ctx, &jobinfo->j_cap) < 0) {
-			/* XXX masking errno value better than not knowing 
+			/* XXX masking errno value better than not knowing
 			 * which function failed? */
 		        error("elan3_create(%d): %m", i);
-			slurm_seterrno(EELAN3CREATE); 
+			slurm_seterrno(EELAN3CREATE);
 			_prg_destructor_send(fd, -1);
 			goto fail;
 		}
@@ -1229,14 +1229,14 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 	 *  Failure to create shared memory is not a fatal error.
 	 */
 	_qsw_shmem_create (jobinfo, uid);
-		
+
 
 	/* note: _elan3_fini() destroys context and makes capability unavail */
 	/* do it in qsw_prog_fini() after app terminates */
 	return 0;
 fail:
 	err = errno; /* presrve errno in case _elan3_fini touches it */
-	qsw_prog_fini(jobinfo); 
+	qsw_prog_fini(jobinfo);
 	slurm_seterrno(err);
 	return -1;
 }
@@ -1249,7 +1249,7 @@ qsw_setcap(qsw_jobinfo_t jobinfo, int procnum)
 {
 	/*
 	 * Assign elan hardware context to current process.
-	 * - arg1 (0 below) is an index into the kernel's list of caps for this 
+	 * - arg1 (0 below) is an index into the kernel's list of caps for this
 	 *   program desc (added by rms_prgaddcap).  There will be
 	 *   one per rail.
 	 * - arg2 indexes the hw ctxt range in the capability
@@ -1285,7 +1285,7 @@ qsw_getnodeid(void)
 	ELANCTRL_HANDLE handle;
 	ELAN_POSITION   position;
 
-	if (elanctrl_open(&handle) != 0) 
+	if (elanctrl_open(&handle) != 0)
 		slurm_seterrno_ret(EGETNODEID);
 
 	if (elanctrl_get_position(handle, devidx, &position) != 0) {
@@ -1309,7 +1309,7 @@ qsw_getnodeid(void)
 
 }
 
-static int 
+static int
 _read_elanhost_config (void)
 {
 	int rc;
@@ -1318,7 +1318,7 @@ _read_elanhost_config (void)
 		return (-1);
 
 	if ((rc = elanhost_config_read (elanconf, NULL)) < 0) {
-		error ("Unable to read Elan config: %s", 
+		error ("Unable to read Elan config: %s",
 		       elanhost_config_err (elanconf));
 		elanhost_config_destroy (elanconf);
 		elanconf = NULL;
@@ -1345,7 +1345,7 @@ qsw_maxnodeid(void)
 }
 
 /*
- * Given a hostname, return the elanid or -1 on error.  
+ * Given a hostname, return the elanid or -1 on error.
  *  Initializes the elanconfig from the default /etc/elanhosts
  *  config file.
  */
@@ -1372,7 +1372,7 @@ qsw_getnodeid_byhost(char *host)
 
 /*
  * Given an elanid, determine the hostname.  Returns -1 on error or the number
- * of characters copied on success.  
+ * of characters copied on success.
  * XXX - assumes RMS style hostnames (see above)
  */
 int
@@ -1391,7 +1391,7 @@ qsw_gethost_bynodeid(char *buf, int len, int id)
 		slurm_seterrno (EGETHOST_BYNODEID);
 		goto done;
 	}
-	
+
 	rc = slurm_strlcpy (buf, hostp, len);
 
     done:
@@ -1453,15 +1453,15 @@ qsw_capability_string(struct qsw_jobinfo *j, char *buf, size_t size)
 
 #if HAVE_LIBELANCTRL
 	snprintf(buf, size, "prg=%d ctx=%x.%x nodes=%d.%d",
-	         j->j_prognum, cap->LowContext, cap->HighContext, 
+	         j->j_prognum, cap->LowContext, cap->HighContext,
 		 cap->LowNode, cap->HighNode);
-#else 
+#else
 	snprintf(buf, size, "prg=%d ctx=%x.%x nodes=%d.%d entries=%d",
-	         j->j_prognum, cap->LowContext, cap->HighContext, 
-		 cap->LowNode, cap->HighNode, 
+	         j->j_prognum, cap->LowContext, cap->HighContext,
+		 cap->LowNode, cap->HighNode,
 	         cap->Entries);
 #endif
-         
+
 	return buf;
 }
 
@@ -1484,7 +1484,7 @@ qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 #  else
 	fprintf(fp, "%s\n", elan3_capability_string(cap, str));
 #  endif
-#else 
+#else
 	fprintf(fp, "cap.UserKey=%8.8x.%8.8x.%8.8x.%8.8x\n",
 			cap->UserKey.Values[0], cap->UserKey.Values[1],
 			cap->UserKey.Values[2], cap->UserKey.Values[3]);

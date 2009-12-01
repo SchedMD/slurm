@@ -5,35 +5,35 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Jim Garlick <garlick@llnl.gov>, 
+ *  Written by Jim Garlick <garlick@llnl.gov>,
  *             Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -63,8 +63,8 @@
 #define MAX_PACK_STR_LEN	(16 * 1024 * 1024)
 
 /*
- * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
- * for details. 
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+ * for details.
  */
 strong_alias(create_buf,	slurm_create_buf);
 strong_alias(free_buf,		slurm_free_buf);
@@ -218,7 +218,7 @@ void 	packdouble(double val, Buf buffer)
 						  this is here to
 						  correct it. */
 	uint64_t nl =  HTON_uint64(nl1);
-	
+
 	if (remaining_buf(buffer) < sizeof(nl)) {
 		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
 			error("pack64: buffer size too large");
@@ -235,7 +235,7 @@ void 	packdouble(double val, Buf buffer)
 
 /*
  * Given a buffer containing a network byte order 64-bit integer,
- * typecast as double, and  divide by FLOAT_MULT 
+ * typecast as double, and  divide by FLOAT_MULT
  * store a host double at 'valp', and adjust buffer counters.
  */
 int	unpackdouble(double *valp, Buf buffer)
@@ -243,7 +243,7 @@ int	unpackdouble(double *valp, Buf buffer)
 	uint64_t nl;
 	if (remaining_buf(buffer) < sizeof(nl))
 		return SLURM_ERROR;
-	
+
 	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
 
 	*valp = (double)NTOH_uint64(nl) / (double)FLOAT_MULT;
@@ -281,7 +281,7 @@ int unpack64(uint64_t * valp, Buf buffer)
 	uint64_t nl;
 	if (remaining_buf(buffer) < sizeof(nl))
 		return SLURM_ERROR;
-	
+
 	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
 	*valp = NTOH_uint64(nl);
 	buffer->processed += sizeof(nl);
@@ -318,7 +318,7 @@ int unpack32(uint32_t * valp, Buf buffer)
 	uint32_t nl;
 	if (remaining_buf(buffer) < sizeof(nl))
 		return SLURM_ERROR;
-	
+
 	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
 	*valp = ntohl(nl);
 	buffer->processed += sizeof(nl);
@@ -455,8 +455,8 @@ int unpack8(uint8_t * valp, Buf buffer)
 }
 
 /*
- * Given a pointer to memory (valp) and a size (size_val), convert 
- * size_val to network byte order and store at buffer followed by 
+ * Given a pointer to memory (valp) and a size (size_val), convert
+ * size_val to network byte order and store at buffer followed by
  * the data at valp. Adjust buffer counters.
  */
 void packmem(char *valp, uint32_t size_val, Buf buffer)
@@ -484,10 +484,10 @@ void packmem(char *valp, uint32_t size_val, Buf buffer)
 
 /*
  * Given a buffer containing a network byte order 16-bit integer,
- * and an arbitrary data string, return a pointer to the 
- * data string in 'valp'.  Also return the sizes of 'valp' in bytes. 
+ * and an arbitrary data string, return a pointer to the
+ * data string in 'valp'.  Also return the sizes of 'valp' in bytes.
  * Adjust buffer counters.
- * NOTE: valp is set to point into the buffer bufp, a copy of 
+ * NOTE: valp is set to point into the buffer bufp, a copy of
  *	the data is not made
  */
 int unpackmem_ptr(char **valp, uint32_t * size_valp, Buf buffer)
@@ -508,7 +508,7 @@ int unpackmem_ptr(char **valp, uint32_t * size_valp, Buf buffer)
 			return SLURM_ERROR;
 		*valp = &buffer->head[buffer->processed];
 		buffer->processed += *size_valp;
-	} else 
+	} else
 		*valp = NULL;
 	return SLURM_SUCCESS;
 }
@@ -516,10 +516,10 @@ int unpackmem_ptr(char **valp, uint32_t * size_valp, Buf buffer)
 
 /*
  * Given a buffer containing a network byte order 16-bit integer,
- * and an arbitrary data string, copy the data string into the location 
- * specified by valp.  Also return the sizes of 'valp' in bytes. 
+ * and an arbitrary data string, copy the data string into the location
+ * specified by valp.  Also return the sizes of 'valp' in bytes.
  * Adjust buffer counters.
- * NOTE: The caller is responsible for the management of valp and 
+ * NOTE: The caller is responsible for the management of valp and
  * insuring it has sufficient size
  */
 int unpackmem(char *valp, uint32_t * size_valp, Buf buffer)
@@ -540,17 +540,17 @@ int unpackmem(char *valp, uint32_t * size_valp, Buf buffer)
 			return SLURM_ERROR;
 		memcpy(valp, &buffer->head[buffer->processed], *size_valp);
 		buffer->processed += *size_valp;
-	} else 
+	} else
 		*valp = 0;
 	return SLURM_SUCCESS;
 }
 
 /*
  * Given a buffer containing a network byte order 16-bit integer,
- * and an arbitrary data string, copy the data string into the location 
- * specified by valp.  Also return the sizes of 'valp' in bytes. 
+ * and an arbitrary data string, copy the data string into the location
+ * specified by valp.  Also return the sizes of 'valp' in bytes.
  * Adjust buffer counters.
- * NOTE: valp is set to point into a newly created buffer, 
+ * NOTE: valp is set to point into a newly created buffer,
  *	the caller is responsible for calling xfree() on *valp
  *	if non-NULL (set to NULL on zero size buffer value)
  */
@@ -581,10 +581,10 @@ int unpackmem_xmalloc(char **valp, uint32_t * size_valp, Buf buffer)
 
 /*
  * Given a buffer containing a network byte order 16-bit integer,
- * and an arbitrary data string, copy the data string into the location 
- * specified by valp.  Also return the sizes of 'valp' in bytes. 
+ * and an arbitrary data string, copy the data string into the location
+ * specified by valp.  Also return the sizes of 'valp' in bytes.
  * Adjust buffer counters.
- * NOTE: valp is set to point into a newly created buffer, 
+ * NOTE: valp is set to point into a newly created buffer,
  *	the caller is responsible for calling free() on *valp
  *	if non-NULL (set to NULL on zero size buffer value)
  */
@@ -613,9 +613,9 @@ int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 }
 
 /*
- * Given a pointer to array of char * (char ** or char *[] ) and a size  
- * (size_val), convert size_val to network byte order and store in the  
- * buffer followed by the data at valp. Adjust buffer counters. 
+ * Given a pointer to array of char * (char ** or char *[] ) and a size
+ * (size_val), convert size_val to network byte order and store in the
+ * buffer followed by the data at valp. Adjust buffer counters.
  */
 void packstr_array(char **valp, uint32_t size_val, Buf buffer)
 {
@@ -644,7 +644,7 @@ void packstr_array(char **valp, uint32_t size_val, Buf buffer)
  * Given 'buffer' pointing to a network byte order 16-bit integer
  * (size) and a array of strings  store the number of strings in
  * 'size_valp' and the array of strings in valp
- * NOTE: valp is set to point into a newly created buffer, 
+ * NOTE: valp is set to point into a newly created buffer,
  *	the caller is responsible for calling xfree on *valp
  *	if non-NULL (set to NULL on zero size buffer value)
  */
@@ -678,7 +678,7 @@ int unpackstr_array(char ***valp, uint32_t * size_valp, Buf buffer)
 
 /*
  * Given a pointer to memory (valp), size (size_val), and buffer,
- * store the memory contents into the buffer 
+ * store the memory contents into the buffer
  */
 void packmem_array(char *valp, uint32_t size_val, Buf buffer)
 {
@@ -697,7 +697,7 @@ void packmem_array(char *valp, uint32_t size_val, Buf buffer)
 
 /*
  * Given a pointer to memory (valp), size (size_val), and buffer,
- * store the buffer contents into memory 
+ * store the buffer contents into memory
  */
 int unpackmem_array(char *valp, uint32_t size_valp, Buf buffer)
 {

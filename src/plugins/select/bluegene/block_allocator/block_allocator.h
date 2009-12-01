@@ -1,36 +1,36 @@
 /*****************************************************************************\
  *  block_allocator.h
- * 
+ *
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov>, Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -69,28 +69,28 @@ enum {X, Y, Z};
 
 /* */
 
-/* 
- * structure that holds switch path information for finding the wiring 
+/*
+ * structure that holds switch path information for finding the wiring
  * path without setting the configuration.
  *
  * - dim      - Which Axis it is on
  * - geometry - node location
  * - in       - ingress port.
  * - out      - egress port.
- * 
+ *
  */
 typedef struct {
 	int dim;
 	int geometry[BA_SYSTEM_DIMENSIONS];
-	int in; 
+	int in;
 	int out;
-} ba_path_switch_t; 
+} ba_path_switch_t;
 
-/* 
+/*
  * structure that holds the configuration settings for each request
  */
 typedef struct {
-	bitstr_t *avail_node_bitmap;   /* pointer to available nodes */	
+	bitstr_t *avail_node_bitmap;   /* pointer to available nodes */
 #ifdef HAVE_BGL
 	char *blrtsimage;              /* BlrtsImage for this block */
 #endif
@@ -136,7 +136,7 @@ typedef struct {
 					    block */
 	int start_req;                 /* state there was a start
 					  request */
-} ba_request_t; 
+} ba_request_t;
 
 /* structure filled in from reading bluegene.conf file for block
  * creation */
@@ -185,9 +185,9 @@ typedef struct {
 	gid_t gid;
 } image_group_t;
 
-/* 
+/*
  * structure that holds the configuration settings for each connection
- * 
+ *
  * - node_tar - coords of where the next hop is externally
  *              interanlly - nothing.
  *              exteranlly - location of next hop.
@@ -195,25 +195,25 @@ typedef struct {
  *              interanlly - always going to something within the switch.
  *              exteranlly - always going to the next hop outside the switch.
  * - used     - weather or not the connection is used.
- * 
+ *
  */
-typedef struct 
+typedef struct
 {
 	/* target label */
 	int node_tar[BA_SYSTEM_DIMENSIONS];
-	/* target port */ 
+	/* target port */
 	int port_tar;
-	bool used;	
+	bool used;
 } ba_connection_t;
 
-/* 
+/*
  * structure that holds the configuration settings for each switch
- * which pretty much means the wiring information 
+ * which pretty much means the wiring information
  * - int_wire - keeps details of where the wires are attached
  *   interanlly.
  * - ext_wire - keeps details of where the wires are attached
  *   exteranlly.
- * 
+ *
  */
 typedef struct
 {
@@ -226,7 +226,7 @@ typedef struct
  */
 typedef struct {
 	/* a switch for each dimensions */
-	ba_switch_t axis_switch[BA_SYSTEM_DIMENSIONS]; 
+	ba_switch_t axis_switch[BA_SYSTEM_DIMENSIONS];
 	/* coordinates of midplane */
 	int coord[BA_SYSTEM_DIMENSIONS];
 	/* color of letter used in smap */
@@ -234,8 +234,8 @@ typedef struct {
 	/* midplane index used for easy look up of the miplane */
 	int index;
 	/* letter used in smap */
-	char letter;                    
-//	int phys_x;	// no longer needed 
+	char letter;
+//	int phys_x;	// no longer needed
 	int state;
 	/* set if using this midplane in a block */
 	uint16_t used;
@@ -259,7 +259,7 @@ typedef struct {
 */
 typedef struct {
 	char *bp_id;
-	int coord[BA_SYSTEM_DIMENSIONS];	
+	int coord[BA_SYSTEM_DIMENSIONS];
 } ba_bp_map_t;
 
 /* Global */
@@ -280,14 +280,14 @@ extern char *ba_passthroughs_string(uint16_t passthrough);
 
 /* Parse a block request from the bluegene.conf file */
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
-			  const char *key, const char *value, 
+			  const char *key, const char *value,
 			  const char *line, char **leftover);
 
 extern void destroy_blockreq(void *ptr);
 
 /* Parse imagine information from blugene.conf file */
 extern int parse_image(void **dest, slurm_parser_enum_t type,
-		       const char *key, const char *value, 
+		       const char *key, const char *value,
 		       const char *line, char **leftover);
 
 extern void destroy_image_group_list(void *ptr);
@@ -298,10 +298,10 @@ extern void destroy_ba_node(void *ptr);
  * create a block request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try
  * to fit that a block of cubic shape and then it will try other
- * elongated geometries.  (ie, 2x2x2 -> 4x2x1 -> 8x1x1). 
- * 
- * IN/OUT - ba_request: structure to allocate and fill in.  
- * 
+ * elongated geometries.  (ie, 2x2x2 -> 4x2x1 -> 8x1x1).
+ *
+ * IN/OUT - ba_request: structure to allocate and fill in.
+ *
  * ALL below IN's need to be set within the ba_request before the call
  * if you want them to be used.
  * ALL below OUT's are set and returned within the ba_request.
@@ -327,7 +327,7 @@ extern void destroy_ba_node(void *ptr);
 extern int new_ba_request(ba_request_t* ba_request);
 
 /*
- * delete a block request 
+ * delete a block request
  */
 extern void delete_ba_request(void *arg);
 
@@ -338,18 +338,18 @@ extern void delete_ba_request(void *arg);
 extern int empty_null_destroy_list(void *arg, void *key);
 
 /*
- * print a block request 
+ * print a block request
  */
 extern void print_ba_request(ba_request_t* ba_request);
 
 /*
  * Initialize internal structures by either reading previous block
  * configurations from a file or by running the graph solver.
- * 
- * IN: node_info_msg_t * can be null, 
+ *
+ * IN: node_info_msg_t * can be null,
  *     should be from slurm_load_node().
  * IN: load_bridge: whiether or not to get bridge information
- * 
+ *
  * return: void.
  */
 extern void ba_init(node_info_msg_t *node_info_ptr, bool load_bridge);
@@ -361,31 +361,31 @@ extern void ba_init(node_info_msg_t *node_info_ptr, bool load_bridge);
  */
 extern void init_wires();
 
-/* 
+/*
  * destroy all the internal (global) data structs.
  */
 extern void ba_fini();
 
-/* 
+/*
  * set the node in the internal configuration as in, or not in use,
  * along with the current state of the node.
- * 
+ *
  * IN ba_node: ba_node_t to update state
  * IN state: new state of ba_node_t
  */
 extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state);
 
-/* 
+/*
  * copy info from a ba_node, a direct memcpy of the ba_node_t
- * 
+ *
  * IN ba_node: node to be copied
  * Returned ba_node_t *: copied info must be freed with destroy_ba_node
  */
 extern ba_node_t *ba_copy_node(ba_node_t *ba_node);
 
-/* 
+/*
  * copy the path of the nodes given
- * 
+ *
  * IN nodes List of ba_node_t *'s: nodes to be copied
  * OUT dest_nodes List of ba_node_t *'s: filled in list of nodes
  * wiring.
@@ -393,33 +393,33 @@ extern ba_node_t *ba_copy_node(ba_node_t *ba_node);
  */
 extern int copy_node_path(List nodes, List *dest_nodes);
 
-/* 
+/*
  * Try to allocate a block.
- * 
+ *
  * IN - ba_request: allocation request
  * OUT - results: List of results of the allocation request.  Each
  * list entry will be a coordinate.  allocate_block will create the
  * list, but the caller must destroy it.
- * 
+ *
  * return: success or error of request
  */
 extern int allocate_block(ba_request_t* ba_request, List results);
 
-/* 
+/*
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
 extern int remove_block(List nodes, int new_count);
 
-/* 
- * Admin wants to change something about a previous allocation. 
- * will allow Admin to change previous allocation by giving the 
+/*
+ * Admin wants to change something about a previous allocation.
+ * will allow Admin to change previous allocation by giving the
  * letter code for the allocation and the variable to alter
  * (Not currently used in the system, update this if it is)
  */
 extern int alter_block(List nodes, int conn_type);
 
-/* 
+/*
  * After a block is deleted or altered following allocations must
  * be redone to make sure correct path will be used in the real system
  * (Not currently used in the system, update this if it is)
@@ -443,8 +443,8 @@ extern int check_and_set_node_list(List nodes);
 
 /*
  * Used to find, and set up midplanes and the wires in the virtual
- * system and return them in List results 
- * 
+ * system and return them in List results
+ *
  * IN/OUT results - a list with a NULL destroyer filled in with
  *        midplanes and wires set to create the block with the api. If
  *        only interested in the hostlist NULL can be excepted also.
@@ -454,7 +454,7 @@ extern int check_and_set_node_list(List nodes);
  * RET char * - hostlist of midplanes results represent must be
  *     xfreed.  NULL on failure
  */
-extern char *set_bg_block(List results, int *start, 
+extern char *set_bg_block(List results, int *start,
 			  int *geometry, int conn_type);
 
 /*
@@ -471,7 +471,7 @@ extern int reset_ba_system(bool track_down_nodes);
  * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
  *
  * Note: Need to call reset_all_removed_bps before starting another
- * allocation attempt after 
+ * allocation attempt after
  */
 extern int removable_set_bps(char *bps);
 
@@ -521,7 +521,7 @@ extern int *find_bp_loc(char* bp_id);
 extern char *find_bp_rack_mid(char* xyz);
 
 /*
- * set the used wires in the virtual system for a block from the real system 
+ * set the used wires in the virtual system for a block from the real system
  */
 extern int load_block_wiring(char *bg_block_id);
 

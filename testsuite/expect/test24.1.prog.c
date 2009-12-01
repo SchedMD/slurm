@@ -1,27 +1,27 @@
 /*****************************************************************************\
  *  test24.1.prog.c - link and test algo of the multifactor plugin.
- *  
- *  Usage: test24.1.prog 
+ *
+ *  Usage: test24.1.prog
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -73,7 +73,7 @@ int _setup_assoc_list()
 	acct_association_rec_t *assoc = NULL;
 	/* make the main list */
 	assoc_mgr_association_list = list_create(destroy_acct_association_rec);
-	
+
 	/* we just want make it so we setup_childern so just pretend
 	   we are running off cache */
 	running_cache = 1;
@@ -86,7 +86,7 @@ int _setup_assoc_list()
 	memset(&update, 0, sizeof(acct_update_object_t));
 	update.type = ACCT_ADD_ASSOC;
 	update.objects = list_create(destroy_acct_association_rec);
-	
+
 	/* Since we don't want to worry about lft and rgt's here we
 	 * need to put the assocs in hierarchical order using push
 	 * not append. */
@@ -213,7 +213,7 @@ int main (int argc, char **argv)
 	log_alter(logopt, 0, NULL);
 	print_fields_have_header = 0;
 	print_fields_parsable_print = PRINT_FIELDS_PARSABLE_ENDING;
-	
+
 	conf = slurm_conf_lock();
 	/* force priority type to be multifactor */
 	xfree(conf->priority_type);

@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -40,7 +40,7 @@
 #ifndef _SLURM_PROTOCOL_DEFS_H
 #define _SLURM_PROTOCOL_DEFS_H
 
-#if HAVE_CONFIG_H 
+#if HAVE_CONFIG_H
 #  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>
@@ -162,7 +162,7 @@ typedef enum {
 	REQUEST_SET_DEBUG_LEVEL,
 	REQUEST_HEALTH_CHECK,
 	REQUEST_TAKEOVER,
-	
+
 	REQUEST_BUILD_INFO = 2001,
 	RESPONSE_BUILD_INFO,
 	REQUEST_JOB_INFO,
@@ -299,7 +299,7 @@ typedef enum {
 } slurm_credential_type_t;
 
 /*****************************************************************************\
- * core api configuration struct 
+ * core api configuration struct
 \*****************************************************************************/
 typedef struct forward {
 	uint16_t   cnt;		/* number of nodes to forward to */
@@ -318,7 +318,7 @@ typedef struct slurm_protocol_header {
 	uint32_t body_length;
 	uint16_t ret_cnt;
 	forward_t forward;
-	slurm_addr orig_addr;       
+	slurm_addr orig_addr;
 	List ret_list;
 } header_t;
 
@@ -352,7 +352,7 @@ typedef struct slurm_msg {
 	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
 			    * this way for packing purposes.  message type */
 	uint16_t flags;
-	slurm_addr address;       
+	slurm_addr address;
 	slurm_fd conn_fd;
 	void *auth_cred;
 	void *data;
@@ -361,7 +361,7 @@ typedef struct slurm_msg {
 	/* The following were all added for the forward.c code */
 	forward_t forward;
 	forward_struct_t *forward_struct;
-	slurm_addr orig_addr;       
+	slurm_addr orig_addr;
 	List ret_list;
 } slurm_msg_t;
 
@@ -370,7 +370,7 @@ typedef struct ret_data_info {
 			* this way for packing purposes.  message type */
 	uint32_t err;
 	char *node_name;
-	void *data; /* used to hold the return message data (i.e. 
+	void *data; /* used to hold the return message data (i.e.
 		       return_code_msg_t */
 } ret_data_info_t;
 
@@ -574,10 +574,10 @@ typedef struct job_step_specs {
 typedef struct job_step_create_response_msg {
 	uint32_t job_step_id;		/* assigned job step id */
 	char *resv_ports;		/* reserved ports */
-	slurm_step_layout_t *step_layout; /* information about how the 
+	slurm_step_layout_t *step_layout; /* information about how the
                                            * step is laid out */
 	slurm_cred_t *cred;    	  /* slurm job credential */
-	switch_jobinfo_t *switch_job;	/* switch context, opaque 
+	switch_jobinfo_t *switch_job;	/* switch context, opaque
                                          * data structure */
 } job_step_create_response_msg_t;
 
@@ -611,8 +611,8 @@ typedef struct launch_tasks_request_msg {
 	uint16_t task_dist;  /* --distribution=, -m dist	*/
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;
-	slurm_addr orig_addr;	  /* where message really came from for io */ 
-	
+	slurm_addr orig_addr;	  /* where message really came from for io */
+
 	uint16_t user_managed_io; /* 0 for "normal" IO,
 				     1 for "user manged" IO */
 	uint8_t open_mode;	/* stdout/err append or truncate */
@@ -657,10 +657,10 @@ typedef struct return_code_msg {
 
 /* Note: We include the node list here for reliable cleanup on XCPU systems.
  *
- * Note: We include select_jobinfo here in addition to the job launch 
+ * Note: We include select_jobinfo here in addition to the job launch
  * RPC in order to insure reliable clean-up of a BlueGene partition in
- * the event of some launch failure or race condition preventing slurmd 
- * from getting the MPIRUN_PARTITION at that time. It is needed for 
+ * the event of some launch failure or race condition preventing slurmd
+ * from getting the MPIRUN_PARTITION at that time. It is needed for
  * the job epilog. */
 #define SIG_TIME_LIMIT	996	/* Dummy signal value i time limit reached */
 #define SIG_ABORT	997	/* Dummy signal value to abort a job */
@@ -732,7 +732,7 @@ typedef struct batch_job_launch_msg {
 	uint32_t argc;
 	char **argv;
 	uint32_t envc;		/* element count in environment */
-	char **environment;	/* environment variables to set for job, 
+	char **environment;	/* environment variables to set for job,
 				 *   name=value pairs, one per line */
 	select_jobinfo_t *select_jobinfo;	/* opaque data type */
 	slurm_cred_t *cred;
@@ -766,7 +766,7 @@ typedef struct checkpoint_msg {
 	uint16_t data;		/* operation specific data */
 	uint32_t job_id;	/* slurm job_id */
 	uint32_t step_id;	/* slurm step_id */
-	char *image_dir;	/* locate to store the context images. 
+	char *image_dir;	/* locate to store the context images.
 				 * NULL for default */
 } checkpoint_msg_t;
 
@@ -818,7 +818,7 @@ typedef struct file_bcast_msg {
 	sbcast_cred_t *cred;	/* credential for the RPC */
 	uint32_t block_len;	/* length of this data block */
 	char *block;		/* data for this block */
-} file_bcast_msg_t; 
+} file_bcast_msg_t;
 
 typedef struct multi_core_data {
 	uint16_t min_sockets;	/* minimum number of sockets per node required
@@ -885,7 +885,7 @@ typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
 \*****************************************************************************/
 
 /*
- * slurm_msg_t_init - initialize a slurm message 
+ * slurm_msg_t_init - initialize a slurm message
  * OUT msg - pointer to the slurm_msg_t structure which will be initialized
  */
 extern void slurm_msg_t_init (slurm_msg_t *msg);
@@ -959,19 +959,19 @@ void inline
 slurm_free_job_step_create_request_msg(job_step_create_request_msg_t * msg);
 void inline
 slurm_free_job_step_create_response_msg(job_step_create_response_msg_t *msg);
-void inline 
+void inline
 slurm_free_complete_job_allocation_msg(complete_job_allocation_msg_t * msg);
 void inline
 slurm_free_complete_batch_script_msg(complete_batch_script_msg_t * msg);
-void inline 
+void inline
 slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg);
-void inline 
+void inline
 slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t * msg);
 void inline slurm_free_task_user_managed_io_stream_msg(
 	task_user_managed_io_msg_t *msg);
 void inline slurm_free_task_exit_msg(task_exit_msg_t * msg);
 void inline slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg);
-void inline 
+void inline
 slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg);
 void inline
 slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg);
@@ -1037,7 +1037,7 @@ extern char *bg_block_state_string(uint16_t state);
 
 /* Validate SPANK specified job environment does not contain any invalid
  * names. Log failures using info() */
-extern bool valid_spank_job_env(char **spank_job_env, 
+extern bool valid_spank_job_env(char **spank_job_env,
 			        uint32_t spank_job_env_size, uid_t uid);
 
 /* user needs to xfree after */

@@ -1,7 +1,7 @@
-if WITH_BLCR 
+if WITH_BLCR
 SRUN_CR = srun_cr
 else
-SRUN_CR = 
+SRUN_CR =
 endif
 
 SUBDIRS = common api database \

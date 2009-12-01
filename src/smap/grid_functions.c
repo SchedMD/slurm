@@ -7,32 +7,32 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -75,16 +75,16 @@ extern int set_grid_name(char *nodes, int count)
 			y = _coord(node[i-2]);
 			z = _coord(node[i-1]);
 		}
-		if ((ba_system_ptr->grid[x][y][z].state 
+		if ((ba_system_ptr->grid[x][y][z].state
 				!= NODE_STATE_DOWN) &&
-		    (!(ba_system_ptr->grid[x][y][z].state 
+		    (!(ba_system_ptr->grid[x][y][z].state
 				& NODE_STATE_DRAIN)) &&
-		    (x >= 0) && (x < DIM_SIZE[X]) && 
-		    (y >= 0) && (y < DIM_SIZE[Y]) && 
+		    (x >= 0) && (x < DIM_SIZE[X]) &&
+		    (y >= 0) && (y < DIM_SIZE[Y]) &&
 		    (z >= 0) && (z < DIM_SIZE[Z])) {
-			ba_system_ptr->grid[x][y][z].letter = 
+			ba_system_ptr->grid[x][y][z].letter =
 				letters[count%62];
-			ba_system_ptr->grid[x][y][z].color = 
+			ba_system_ptr->grid[x][y][z].color =
 				colors[count%6];
 		}
 		free(node);
@@ -102,20 +102,20 @@ extern int set_grid_inx(int start, int end, int count)
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			for (x = 0; x < DIM_SIZE[X]; x++) {
-				if ((ba_system_ptr->grid[x][y][z].index 
+				if ((ba_system_ptr->grid[x][y][z].index
 				     < start)
-				||  (ba_system_ptr->grid[x][y][z].index 
-				     > end)) 
+				||  (ba_system_ptr->grid[x][y][z].index
+				     > end))
 					continue;
-				if ((ba_system_ptr->grid[x][y][z].state 
+				if ((ba_system_ptr->grid[x][y][z].state
 				     == NODE_STATE_DOWN)
-				    ||  (ba_system_ptr->grid[x][y][z].state 
+				    ||  (ba_system_ptr->grid[x][y][z].state
 					 & NODE_STATE_DRAIN))
 					continue;
 
-				ba_system_ptr->grid[x][y][z].letter = 
+				ba_system_ptr->grid[x][y][z].letter =
 					letters[count%62];
-				ba_system_ptr->grid[x][y][z].color = 
+				ba_system_ptr->grid[x][y][z].color =
 					colors[count%6];
 			}
 		}
@@ -123,7 +123,7 @@ extern int set_grid_inx(int start, int end, int count)
 #else
 	for (x = 0; x < DIM_SIZE[X]; x++) {
 		if ((ba_system_ptr->grid[x].index < start)
-		    ||  (ba_system_ptr->grid[x].index > end)) 
+		    ||  (ba_system_ptr->grid[x].index > end))
 			continue;
 		if ((ba_system_ptr->grid[x].state == NODE_STATE_DOWN)
 		    ||  (ba_system_ptr->grid[x].state & NODE_STATE_DRAIN))
@@ -154,7 +154,7 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 	assert(start[Y] >= 0);
 	assert(end[Z] < DIM_SIZE[Z]);
 	assert(start[Z] >= 0);
-	
+
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
@@ -162,19 +162,19 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 				   block if the set flag is specified
 				   or if the letter hasn't been set yet
 				*/
-				if(set 
+				if(set
 				   || ((ba_system_ptr->grid[x][y][z].letter
 					== '.')
-				       && (ba_system_ptr->grid[x][y][z].letter 
+				       && (ba_system_ptr->grid[x][y][z].letter
 					   != '#'))) {
-					
+
 						ba_system_ptr->
-							grid[x][y][z].letter = 
+							grid[x][y][z].letter =
 							letters[count%62];
 						ba_system_ptr->
-							grid[x][y][z].color = 
+							grid[x][y][z].color =
 							colors[count%6];
-				} 
+				}
 				i++;
 			}
 		}
@@ -182,14 +182,14 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 #else
 	for (x = start[X]; x <= end[X]; x++) {
 		if(!set) {
-			ba_system_ptr->grid[x].letter = 
+			ba_system_ptr->grid[x].letter =
 				letters[count%62];
-			ba_system_ptr->grid[x].color = 
+			ba_system_ptr->grid[x].color =
 				colors[count%6];
 		}
 		i++;
 	}
-	
+
 #endif
 
 	return i;
@@ -219,7 +219,7 @@ extern void print_grid(int dir)
 					init_pair(ba_system_ptr->
 						  grid[x][y][z].color,
 						  ba_system_ptr->
-						  grid[x][y][z].color, 
+						  grid[x][y][z].color,
                                                   7);
 
 				wattron(grid_win,
@@ -250,18 +250,18 @@ extern void print_grid(int dir)
 				  COLOR_BLACK);
 		else
 			init_pair(ba_system_ptr->grid[x].color,
-				  ba_system_ptr->grid[x].color, 
+				  ba_system_ptr->grid[x].color,
 				  7);
-		
+
 		wattron(grid_win,
 			COLOR_PAIR(ba_system_ptr->grid[x].color));
-		
+
 		mvwprintw(grid_win,
 			  grid_ycord, grid_xcord, "%c",
 			  ba_system_ptr->grid[x].letter);
 		wattroff(grid_win,
 			 COLOR_PAIR(ba_system_ptr->grid[x].color));
-		
+
 		grid_xcord++;
 		if(grid_xcord==grid_win->_maxx) {
 			grid_xcord=1;
@@ -292,8 +292,8 @@ bitstr_t *get_requested_node_bitmap()
 					&new_node_ptr, SHOW_ALL);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) 
-			return bitmap;		
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA)
+			return bitmap;
 	} else
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
 					     SHOW_ALL);

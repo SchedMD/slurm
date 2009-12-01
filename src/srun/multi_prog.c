@@ -2,7 +2,7 @@
  *  multi_prog.c - executing program according to task rank
  *                 set MPIR_PROCDESC accordingly
  *
- *  NOTE: The logic could be eliminated if slurmstepd kept track of the 
+ *  NOTE: The logic could be eliminated if slurmstepd kept track of the
  *  executable name for each task and returned that inforatmion in a new
  *  launch response message (with multiple executable names).
  *****************************************************************************
@@ -22,15 +22,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -155,7 +155,7 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 			low_num = MAX(0, num);
 			num = strtol(ptrptr+1, &ptrptr, 10);
 			if ((ptrptr[0] != ',') && (ptrptr[0] != '\0'))
-				goto invalid; 
+				goto invalid;
 			high_num = MIN((ntasks-1), num);
 			_set_range(low_num, high_num, exec_path);
 		} else
@@ -193,15 +193,15 @@ mpir_set_multi_name(int ntasks, const char *config_fname)
 	while (fgets(line, sizeof(line), config_fd)) {
 		line_num ++;
 		if (strlen (line) >= (sizeof(line) - 1)) {
-			error ("Line %d of configuration file %s too long", 
+			error ("Line %d of configuration file %s too long",
 				line_num, config_fname);
 			fclose(config_fd);
 			return -1;
-		} 
+		}
 		p = line;
 		while (*p != '\0' && isspace (*p)) /* remove leading spaces */
 			p ++;
-		
+
 		if (*p == '#') /* only whole-line comments handled */
 			continue;
 
@@ -211,7 +211,7 @@ mpir_set_multi_name(int ntasks, const char *config_fname)
 		ranks = strtok_r(p, " \t\n", &ptrptr);
 		exec_name = strtok_r(NULL, " \t\n", &ptrptr);
 		if (!ranks || !exec_name) {
-			error("Line %d of configuration file %s is invalid", 
+			error("Line %d of configuration file %s is invalid",
 				line_num, config_fname);
 			fclose(config_fd);
 			return -1;
@@ -376,15 +376,15 @@ verify_multi_name(char *config_fname, int ntasks)
 	while (fgets(line, sizeof(line), config_fd)) {
 		line_num ++;
 		if (strlen (line) >= (sizeof(line) - 1)) {
-			error ("Line %d of configuration file %s too long", 
+			error ("Line %d of configuration file %s too long",
 				line_num, config_fname);
 			rc = -1;
 			goto fini;
-		} 
+		}
 		p = line;
 		while (*p != '\0' && isspace (*p)) /* remove leading spaces */
 			p ++;
-		
+
 		if (*p == '#') /* only whole-line comments handled */
 			continue;
 
@@ -394,13 +394,13 @@ verify_multi_name(char *config_fname, int ntasks)
 		ranks = strtok_r(p, " \t\n", &ptrptr);
 		exec_name = strtok_r(NULL, " \t\n", &ptrptr);
 		if (!ranks || !exec_name) {
-			error("Line %d of configuration file %s invalid", 
+			error("Line %d of configuration file %s invalid",
 				line_num, config_fname);
 			rc = -1;
 			goto fini;
 		}
 		if (_validate_ranks(ranks, ntasks, task_mask)) {
-			error("Line %d of configuration file %s invalid", 
+			error("Line %d of configuration file %s invalid",
 				line_num, config_fname);
 			rc = -1;
 			goto fini;
@@ -410,7 +410,7 @@ verify_multi_name(char *config_fname, int ntasks)
 	for (i=0; i<ntasks; i++) {
 		if (!bit_test(task_mask, i)) {
 			error("Configuration file %s invalid, "
-				"no record for task id %d", 
+				"no record for task id %d",
 				config_fname, i);
 			rc = -1;
 			goto fini;

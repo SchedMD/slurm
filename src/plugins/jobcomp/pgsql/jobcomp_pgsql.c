@@ -7,32 +7,32 @@
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -65,14 +65,14 @@
  * where <application> is a description of the intended application of
  * the plugin (e.g., "jobacct" for SLURM job completion logging) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load job completion logging plugins if the plugin_type string has a 
+ * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobacct/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job accounting API 
+ * minimum versions for their plugins as the job accounting API
  * matures.
  */
 const char plugin_name[] = "Job completion POSTGRESQL plugin";
@@ -90,11 +90,11 @@ storage_field_t jobcomp_table_fields[] = {
 	{ "group_name", "text not null" },
 	{ "name", "text not null" },
 	{ "state", "smallint not null" },
-	{ "partition", "text not null" }, 
+	{ "partition", "text not null" },
 	{ "timelimit", "text not null" },
-	{ "starttime", "bigint default 0 not null" }, 
+	{ "starttime", "bigint default 0 not null" },
 	{ "endtime", "bigint default 0 not null" },
-	{ "nodelist", "text" }, 
+	{ "nodelist", "text" },
 	{ "nodecnt", "integer not null" },
 	{ "proc_cnt", "integer not null" },
 	{ "connect_type", "text" },
@@ -135,8 +135,8 @@ static pgsql_db_info_t *_pgsql_jobcomp_create_db_info()
 		slurm_set_jobcomp_port(db_info->port);
 	}
 	db_info->host = slurm_get_jobcomp_host();
-	db_info->user = slurm_get_jobcomp_user();	
-	db_info->pass = slurm_get_jobcomp_pass();	
+	db_info->user = slurm_get_jobcomp_user();
+	db_info->pass = slurm_get_jobcomp_pass();
 	return db_info;
 }
 
@@ -157,8 +157,8 @@ static int _pgsql_jobcomp_check_tables(char *user)
 	xfree(query);
 
 	for (i = 0; i < PQntuples(result); i++) {
-		if(!job_found 
-		   && !strcmp(jobcomp_table, PQgetvalue(result, i, 0))) 
+		if(!job_found
+		   && !strcmp(jobcomp_table, PQgetvalue(result, i, 0)))
 			job_found = 1;
 	}
 	PQclear(result);
@@ -213,7 +213,7 @@ static char *_get_group_name(uint32_t group_id)
 	return ret_name;
 }
 
-/* 
+/*
  * Linear search through table of errno values and strings,
  * returns NULL on error, string on success.
  */
@@ -266,10 +266,10 @@ extern int slurm_jobcomp_set_location(char *location)
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
 	int i = 0;
-	
-	if(jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK) 
+
+	if(jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK)
 		return SLURM_SUCCESS;
-	
+
 	if(!location)
 		db_name = DEFAULT_JOB_COMP_DB;
 	else {
@@ -282,21 +282,21 @@ extern int slurm_jobcomp_set_location(char *location)
 			}
 			i++;
 		}
-		if(location[i]) 
+		if(location[i])
 			db_name = DEFAULT_JOB_COMP_DB;
 		else
 			db_name = location;
 	}
-		
+
 	debug2("pgsql_connect() called for db %s", db_name);
-	
+
 	pgsql_get_db_connection(&jobcomp_pgsql_db, db_name, db_info);
-	
+
 	rc = _pgsql_jobcomp_check_tables(db_info->user);
 
 	destroy_pgsql_db_info(db_info);
 
-	if(rc == SLURM_SUCCESS) 
+	if(rc == SLURM_SUCCESS)
 		debug("Jobcomp database init finished");
 	else
 		debug("Jobcomp database init failed");
@@ -327,14 +327,14 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	if (job_ptr->time_limit == INFINITE)
 		strcpy(lim_str, "UNLIMITED");
 	else
-		snprintf(lim_str, sizeof(lim_str), "%lu", 
+		snprintf(lim_str, sizeof(lim_str), "%lu",
 			 (unsigned long) job_ptr->time_limit);
 
-	/* Job will typically be COMPLETING when this is called. 
+	/* Job will typically be COMPLETING when this is called.
 	 * We remove the flags to get the eventual completion state:
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
 	job_state = job_ptr->job_state & JOB_STATE_BASE;
-	
+
 	connect_type = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						       SELECT_PRINT_CONNECTION);
 	reboot = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
@@ -361,7 +361,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		jobcomp_table);
 
 	if(job_ptr->nodes)
-		xstrcat(query, ", nodelist");		
+		xstrcat(query, ", nodelist");
 	if(connect_type)
 		xstrcat(query, ", connect_type");
 	if(reboot)
@@ -384,9 +384,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		   job_state, job_ptr->total_procs, job_ptr->partition, lim_str,
 		   (int)job_ptr->start_time, (int)job_ptr->end_time,
 		   job_ptr->node_cnt);
-	
+
 	if(job_ptr->nodes)
-		xstrfmtcat(query, ", '%s'", job_ptr->nodes);		
+		xstrfmtcat(query, ", '%s'", job_ptr->nodes);
 
 	if(connect_type) {
 		xstrfmtcat(query, ", '%s'", connect_type);
@@ -436,8 +436,8 @@ extern char *slurm_jobcomp_strerror(int errnum)
 	return (res ? res : strerror(errnum));
 }
 
-/* 
- * get info from the storage 
+/*
+ * get info from the storage
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
@@ -454,13 +454,13 @@ extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 		xfree(loc);
 	}
 
-	job_list = pgsql_jobcomp_process_get_jobs(job_cond);	
+	job_list = pgsql_jobcomp_process_get_jobs(job_cond);
 
 	return job_list;
 }
 
-/* 
- * expire old info from the storage 
+/*
+ * expire old info from the storage
  */
 extern int slurm_jobcomp_archive(acct_archive_cond_t *arch_cond)
 {

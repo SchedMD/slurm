@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -64,7 +64,7 @@ const char plugin_name[]      = "Process tracking via SGI job module";
 const char plugin_type[]      = "proctrack/sgi_job";
 const uint32_t plugin_version = 90;
 
-/* 
+/*
  * We can't include <job.h> since its prototypes conflict with some
  *  of SLURM's. Instead, put important function protypes and
  *  the jid_t typedef here:
@@ -81,7 +81,7 @@ typedef int   (*getpidlist_f)(jid_t jid, pid_t *pid, int bufsize);
 typedef int   (*getpidcnt_f) (jid_t jid);
 
 /*
- *  Handle to libjob.so 
+ *  Handle to libjob.so
  */
 static void *libjob_handle = NULL;
 
@@ -205,7 +205,7 @@ int slurm_container_create (slurmd_job_t *job)
 		return SLURM_ERROR;
 	}
 	debug ("created jid 0x%08lx\n", jid);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -227,7 +227,7 @@ int slurm_container_add (slurmd_job_t *job, pid_t pid)
 
 int slurm_container_signal (uint32_t id, int sig)
 {
-	if ( (_job_killjid ((jid_t) id, sig) < 0) 
+	if ( (_job_killjid ((jid_t) id, sig) < 0)
 	   && (errno != ENODATA) && (errno != EBADF) )
 		return (SLURM_ERROR);
 	return (SLURM_SUCCESS);
@@ -249,7 +249,7 @@ uint32_t slurm_container_find (pid_t pid)
 
 	if ((jid = _job_getjid (pid)) == (jid_t) -1)
 		return ((uint32_t) 0);
-	
+
 	return ((uint32_t) jid);
 }
 
@@ -281,7 +281,7 @@ int slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
 
 	pidcnt = _job_getpidcnt((jid_t)cont_id);
 	if (pidcnt > 0) {
-		/* 
+		/*
 		 * FIXME - The "+ 128" is a rough attempt to allow for
 		 * the fact that _job_getpidcnt() followed by _job_get_pidlist
 		 * is not atomic.

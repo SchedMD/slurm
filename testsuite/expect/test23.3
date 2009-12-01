@@ -11,21 +11,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -41,25 +41,25 @@ set test_acct   "test_acct"
 set timeout 60
 print_header $test_id
 
-set ac		AveCPU        
-set ap		AvePages      
-set ar		AveRSS        
+set ac		AveCPU
+set ap		AvePages
+set ar		AveRSS
 set av		AveVMSize
-set ji		JobID         
-set mp		MaxPages      
-set mpn		MaxPagesNode  
+set ji		JobID
+set mp		MaxPages
+set mpn		MaxPagesNode
 set mpt		MaxPagesTask
-set mr		MaxRSS        
-set mrn		MaxRSSNode    
-set mrt		MaxRSSTask    
+set mr		MaxRSS
+set mrn		MaxRSSNode
+set mrt		MaxRSSTask
 set mvs		MaxVMSize
-set mvn		MaxVMSizeNode  
-set mvt		MaxVMSizeTask  
-set mc		MinCPU        
+set mvn		MaxVMSizeNode
+set mvt		MaxVMSizeTask
+set mc		MinCPU
 set mn		MinCPUNode
-set mt		MinCPUTask    
-set nt		NTasks        
-set sc		SystemCPU     
+set mt		MinCPUTask
+set nt		NTasks
+set sc		SystemCPU
 set tc		TotalCPU
 #
 # Check accounting config and bail if not found.
@@ -311,7 +311,7 @@ proc sstat_job { soption job_id} {
 		-re "JobID|MaxVMSize|MaxVMSizeNode|MaxVMSizeTask|	\
 			AveVMSize|MaxRSS|MaxRSSNode|MaxRSSTask|AveRSS|	\
 			MaxPages|MaxPagesNode|MaxPagesTask|AvePages|	\
-			MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks" {	
+			MinCPU|MinCPUNode|MinCPUTask|AveCPU|NTasks" {
 			if {$debug} {send_user "\nmatch4\n"}
 			incr matches
 			exp_continue

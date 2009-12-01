@@ -322,7 +322,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 @HAVE_FEDERATION_FALSE@federation_lib = 
 @HAVE_FEDERATION_TRUE@federation_lib = switch_federation.la
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = $(federation_lib)
 
@@ -330,7 +330,7 @@ pkglib_LTLIBRARIES = $(federation_lib)
 @HAVE_FEDERATION_TRUE@switch_federation_la_SOURCES = \
 @HAVE_FEDERATION_TRUE@	federation.c federation.h \
 @HAVE_FEDERATION_TRUE@	federation_keys.h \
-@HAVE_FEDERATION_TRUE@	switch_federation.c 
+@HAVE_FEDERATION_TRUE@	switch_federation.c
 
 @HAVE_FEDERATION_TRUE@switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
 @HAVE_FEDERATION_TRUE@	 $(FEDERATION_LDFLAGS)

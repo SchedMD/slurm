@@ -4,32 +4,32 @@
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -80,7 +80,7 @@ extern int fini (void)
 
 
 /*
- * When proctrack/rms is used in conjunction with switch/elan, 
+ * When proctrack/rms is used in conjunction with switch/elan,
  * slurm_container_create will not normally create the program description.
  * It just retrieves the prgid created in switch/elan.
  *
@@ -302,7 +302,7 @@ _prg_destructor_fork()
 		waitpid(pid, (int *)NULL, 0);
 		return fdpair[1];
 	}
-	
+
 	/****************************************/
 	/* fork again so the destructor process
          * will not be a child of the slurmd
@@ -373,7 +373,7 @@ _prg_destructor_send(int fd, int prgid)
 {
 	debug3("_prg_destructor_send %d", prgid);
 	if (write (fd, &prgid, sizeof(prgid)) != sizeof(prgid)) {
-		error ("_prg_destructor_send failed: %m"); 
+		error ("_prg_destructor_send failed: %m");
 	}
 	/* Deliberately avoid closing fd.  When this process exits, it
 	   will close fd signalling to the child process that it is

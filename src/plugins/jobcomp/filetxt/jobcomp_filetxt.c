@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -78,14 +78,14 @@
  * where <application> is a description of the intended application of
  * the plugin (e.g., "jobcomp" for SLURM job completion logging) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load job completion logging plugins if the plugin_type string has a 
+ * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobcomp/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job completion logging API 
+ * minimum versions for their plugins as the job completion logging API
  * matures.
  */
 const char plugin_name[]       	= "Job completion text file logging plugin";
@@ -95,7 +95,7 @@ const uint32_t plugin_version	= 100;
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) GroupId=%s(%lu) Name=%s JobState=%s Partition=%s "\
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u ProcCnt=%u "\
 		"WorkDir=%s %s\n"
- 
+
 /* Type for error string table entries */
 typedef struct {
 	int xe_number;
@@ -147,7 +147,7 @@ _get_group_name(uint32_t group_id, char *group_name, int buf_size)
 	snprintf(group_name, buf_size, "%s", cache_name);
 }
 
-/* 
+/*
  * Linear search through table of errno values and strings,
  * returns NULL on error, string on success.
  */
@@ -228,8 +228,8 @@ static void _make_time_str (time_t *time, char *string, int size)
 		 * schedulers management of SLURM. */
 		snprintf(string, size,
 			"%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
-			(time_tm.tm_year + 1900), (time_tm.tm_mon+1), 
-			time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min, 
+			(time_tm.tm_year + 1900), (time_tm.tm_mon+1),
+			time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
 			time_tm.tm_sec);
 #else
 		/* Format MM/DD-HH:MM:SS */
@@ -262,10 +262,10 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	if (job_ptr->time_limit == INFINITE)
 		strcpy(lim_str, "UNLIMITED");
 	else
-		snprintf(lim_str, sizeof(lim_str), "%lu", 
+		snprintf(lim_str, sizeof(lim_str), "%lu",
 				(unsigned long) job_ptr->time_limit);
 
-	/* Job will typically be COMPLETING when this is called. 
+	/* Job will typically be COMPLETING when this is called.
 	 * We remove the flags to get the eventual completion state:
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
 	job_state = job_ptr->job_state & JOB_STATE_BASE;
@@ -282,11 +282,11 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
 
 	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,
-		 (unsigned long) job_ptr->job_id, usr_str, 
-		 (unsigned long) job_ptr->user_id, grp_str, 
-		 (unsigned long) job_ptr->group_id, job_ptr->name, 
-		 job_state_string(job_state), 
-		 job_ptr->partition, lim_str, start_str, 
+		 (unsigned long) job_ptr->job_id, usr_str,
+		 (unsigned long) job_ptr->user_id, grp_str,
+		 (unsigned long) job_ptr->group_id, job_ptr->name,
+		 job_state_string(job_state),
+		 job_ptr->partition, lim_str, start_str,
 		 end_str, job_ptr->nodes, job_ptr->node_cnt,
 		 job_ptr->total_procs, work_dir,
 		 select_buf);
@@ -321,20 +321,20 @@ extern char *slurm_jobcomp_strerror( int errnum )
 	return (res ? res : strerror(errnum));
 }
 
-/* 
- * get info from the database 
+/*
+ * get info from the database
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
 extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 {
-	return filetxt_jobcomp_process_get_jobs(job_cond);	
+	return filetxt_jobcomp_process_get_jobs(job_cond);
 }
 
-/* 
- * expire old info from the database 
+/*
+ * expire old info from the database
  */
 extern int slurm_jobcomp_archive(acct_archive_cond_t *arch_cond)
 {
-	return filetxt_jobcomp_process_archive(arch_cond);	
+	return filetxt_jobcomp_process_archive(arch_cond);
 }

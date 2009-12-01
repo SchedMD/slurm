@@ -16,15 +16,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -72,7 +72,7 @@ static int   _parse_format( char* );
 static bool  _node_state_equal (int state_id, const char *state_str);
 static int   _node_state_id (char *str);
 static const char * _node_state_list (void);
-static void  _parse_token( char *token, char *field, int *field_size, 
+static void  _parse_token( char *token, char *field, int *field_size,
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
 static void  _print_version( void );
@@ -126,7 +126,7 @@ extern void parse_command_line(int argc, char *argv[])
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
-			fprintf(stderr, 
+			fprintf(stderr,
 				"Try \"sinfo --help\" for more information\n");
 			exit(1);
 			break;
@@ -240,15 +240,15 @@ extern void parse_command_line(int argc, char *argv[])
 			  "%N %.6D %.9P %6t";
 
 		} else if (params.list_reasons) {
-			params.format = params.long_output ?  
-			  "%50R %6t %N" : 
+			params.format = params.long_output ?
+			  "%50R %6t %N" :
 			  "%50R %N";
 
 		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
 			params.format = xstrdup(env_val);
 
 		} else {
-			params.format = params.long_output ? 
+			params.format = params.long_output ?
 			  "%9P %.5a %.10l %.10s %.4r %.5h %.10g %.6D %.11T %N" :
 			  "%9P %.5a %.10l %.6D %.6t %N";
 		}
@@ -261,7 +261,7 @@ extern void parse_command_line(int argc, char *argv[])
 			fatal ("Unable to build state list for -R!");
 	}
 
-	if (params.dead_nodes || params.nodes || params.partition || 
+	if (params.dead_nodes || params.nodes || params.partition ||
 			params.responding_nodes ||params.state_list)
 		params.filtering = true;
 
@@ -300,7 +300,7 @@ _next_tok (char *sep, char **str)
  * IN str - comma separated list of job states
  * RET List of enum job_states values
  */
-static List 
+static List
 _build_state_list (char *state_str)
 {
 	List state_ids;
@@ -331,7 +331,7 @@ _build_state_list (char *state_str)
  * _build_all_states_list - build a list containing all possible node states
  * RET List of enum job_states values
  */
-static List 
+static List
 _build_all_states_list( void )
 {
 	List my_list;
@@ -360,7 +360,7 @@ static const char *
 _node_state_list (void)
 {
 	int i;
-	static char *all_states = NULL; 
+	static char *all_states = NULL;
 
 	if (all_states)
 		return (all_states);
@@ -394,7 +394,7 @@ _node_state_equal (int i, const char *str)
 	int len = strlen (str);
 
 	if ((strncasecmp(node_state_string_compact(i), str, len) == 0) ||
-	    (strncasecmp(node_state_string(i),         str, len) == 0)) 
+	    (strncasecmp(node_state_string(i),         str, len) == 0))
 		return (true);
 	return (false);
 }
@@ -405,9 +405,9 @@ _node_state_equal (int i, const char *str)
  * OUT states - node_state value corresponding to str
  * RET 0 or error code
  */
-static int 
+static int
 _node_state_id (char *str)
-{	
+{
 	int i;
 	int len = strlen (str);
 
@@ -439,9 +439,9 @@ _node_state_id (char *str)
 	return (-1);
 }
 
-/* Take the user's format specification and use it to build build the 
+/* Take the user's format specification and use it to build build the
  *	format specifications (internalize it to print.c data structures) */
-static int 
+static int
 _parse_format( char* format )
 {
 	int field_size;
@@ -457,31 +457,31 @@ _parse_format( char* format )
 
 	params.format_list = list_create( NULL );
 	if ((prefix = _get_prefix(format)))
-		format_add_prefix( params.format_list, 0, 0, prefix); 
+		format_add_prefix( params.format_list, 0, 0, prefix);
 
 	tmp_format = xstrdup( format );
 	token = strtok_r( tmp_format, "%", &tmp_char);
 	if (token && (format[0] != '%'))	/* toss header */
 		token = strtok_r( NULL, "%", &tmp_char );
 	while (token) {
-		_parse_token( token, field, &field_size, &right_justify, 
+		_parse_token( token, field, &field_size, &right_justify,
 			      &suffix);
 		if        (field[0] == 'a') {
 			params.match_flags.avail_flag = true;
 			format_add_avail( params.format_list,
-					field_size, 
-					right_justify, 
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'A') {
-			format_add_nodes_ai( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_nodes_ai( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'c') {
 			params.match_flags.cpus_flag = true;
-			format_add_cpus( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_cpus( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'C') {
 			params.match_flags.cpus_flag = true;
@@ -491,142 +491,142 @@ _parse_format( char* format )
 					suffix );
 		} else if (field[0] == 'd') {
 			params.match_flags.disk_flag = true;
-			format_add_disk( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_disk( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'D') {
-			format_add_nodes( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_nodes( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		}
 /*		else if (field[0] == 'E') see 'R' below */
 		else if (field[0] == 'f') {
 			params.match_flags.features_flag = true;
-			format_add_features( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_features( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'F') {
-			format_add_nodes_aiot( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_nodes_aiot( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'g') {
 			params.match_flags.groups_flag = true;
-			format_add_groups( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_groups( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'h') {
 			params.match_flags.share_flag = true;
-			format_add_share( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_share( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'l') {
 			params.match_flags.max_time_flag = true;
-			format_add_time( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_time( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'L') {
 			params.match_flags.default_time_flag = true;
-			format_add_default_time( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_default_time( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'm') {
 			params.match_flags.memory_flag = true;
-			format_add_memory( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_memory( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'N') {
-			format_add_node_list( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_node_list( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'p') {
 			params.match_flags.priority_flag = true;
-			format_add_priority( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_priority( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'P') {
 			params.match_flags.partition_flag = true;
-			format_add_partition( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_partition( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'r') {
 			params.match_flags.root_flag = true;
-			format_add_root( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_root( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if ((field[0] == 'E') || (field[0] == 'R')) {
 			params.match_flags.reason_flag = true;
-			format_add_reason( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_reason( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 's') {
 			params.match_flags.job_size_flag = true;
-			format_add_size( params.format_list, 
-					 field_size, 
-					 right_justify, 
+			format_add_size( params.format_list,
+					 field_size,
+					 right_justify,
 					 suffix );
 		} else if (field[0] == 'S') {
-			format_add_alloc_nodes( params.format_list, 
-						field_size, 
-						right_justify, 
+			format_add_alloc_nodes( params.format_list,
+						field_size,
+						right_justify,
 						suffix );
 		} else if (field[0] == 't') {
 			params.match_flags.state_flag = true;
-			format_add_state_compact( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_state_compact( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'T') {
 			params.match_flags.state_flag = true;
-			format_add_state_long( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_state_long( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'w') {
 			params.match_flags.weight_flag = true;
-			format_add_weight( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_weight( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'X') {
 			params.match_flags.sockets_flag = true;
-			format_add_sockets( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_sockets( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'Y') {
 			params.match_flags.cores_flag = true;
-			format_add_cores( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_cores( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'Z') {
 			params.match_flags.threads_flag = true;
-			format_add_threads( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_threads( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else if (field[0] == 'z') {
 			params.match_flags.sct_flag = true;
-			format_add_sct( params.format_list, 
-					field_size, 
-					right_justify, 
+			format_add_sct( params.format_list,
+					field_size,
+					right_justify,
 					suffix );
 		} else
-			fprintf(stderr, "Invalid node format specification: %c\n", 
+			fprintf(stderr, "Invalid node format specification: %c\n",
 			        field[0] );
 		token = strtok_r( NULL, "%", &tmp_char);
 	}
@@ -644,7 +644,7 @@ _get_prefix( char *token )
 {
 	char *pos, *prefix;
 
-	if (token == NULL) 
+	if (token == NULL)
 		return NULL;
 
 	pos = strchr(token, (int) '%');
@@ -668,7 +668,7 @@ _get_prefix( char *token )
  * OUT suffix - tring containing everthing after the field specification
  */
 static void
-_parse_token( char *token, char *field, int *field_size, bool *right_justify, 
+_parse_token( char *token, char *field, int *field_size, bool *right_justify,
 	      char **suffix)
 {
 	int i = 0;
@@ -701,11 +701,11 @@ void _print_options( void )
 	printf("iterate     = %d\n", params.iterate );
 	printf("long        = %s\n", params.long_output ? "true" : "false");
 	printf("no_header   = %s\n", params.no_header   ? "true" : "false");
-	printf("node_field  = %s\n", params.node_field_flag ? 
+	printf("node_field  = %s\n", params.node_field_flag ?
 					"true" : "false");
 	printf("node_format = %s\n", params.node_flag   ? "true" : "false");
 	printf("nodes       = %s\n", params.nodes ? params.nodes : "n/a");
-	printf("partition   = %s\n", params.partition ? 
+	printf("partition   = %s\n", params.partition ?
 					params.partition: "n/a");
 	printf("responding  = %s\n", params.responding_nodes ?
 					"true" : "false");

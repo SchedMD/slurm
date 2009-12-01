@@ -5,21 +5,21 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -55,9 +55,9 @@ static int _conn_wiki_port(char *host, int port)
 	bzero((char *) &wiki_addr, sizeof(wiki_addr));
 	wiki_addr.sin_family = AF_INET;
 	wiki_addr.sin_port   = htons(port);
-	memcpy(&wiki_addr.sin_addr.s_addr, hptr->h_addr, hptr->h_length);		
+	memcpy(&wiki_addr.sin_addr.s_addr, hptr->h_addr, hptr->h_length);
 	sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (connect(sock_fd, (struct sockaddr *) &wiki_addr, 
+	if (connect(sock_fd, (struct sockaddr *) &wiki_addr,
 			sizeof(wiki_addr))) {
 		perror("connect");
 		exit(1);
@@ -144,7 +144,7 @@ static char *_recv_msg(int fd)
 		exit(1);
 	}
 	return buf;
-}	
+}
 
 static void _xmit(char *msg)
 {
@@ -163,7 +163,7 @@ static void _xmit(char *msg)
 	if (sc != 0) {
 		fprintf(stderr, "RPC failure\n");
 		exit(1);
-	} 
+	}
 	free(in_msg);
 	close(wiki_fd);
 }
@@ -187,7 +187,7 @@ static void _get_nodes(void)
 
 	/* Dump all data */
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=%s", 
+		"TS=%u AUTH=root DT=%s",
 		(uint32_t) now, "CMD=GETNODES ARG=0:ALL");
 	_xmit(out_msg);
 }
@@ -211,7 +211,7 @@ static void _modify_job(long my_job_id)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=MODIFYJOB ARG=%ld "
 		/* "PARTITION=pdebug " */
-		/* "NODES=2 " */ 
+		/* "NODES=2 " */
 		/* "DEPEND=afterany:3 " */
 		/* "INVALID=123 " */
 		"TIMELIMIT=10 BANK=test_bank",
@@ -256,7 +256,7 @@ static void _suspend_job(long my_job_id)
 int main(int argc, char * argv[])
 {
 	if (argc != 6) {
-		printf("Usage: %s, control_addr job_id1 job_id2 sched_port is_bluegene\n", 
+		printf("Usage: %s, control_addr job_id1 job_id2 sched_port is_bluegene\n",
 			argv[0]);
 		exit(1);
 	}
@@ -266,7 +266,7 @@ int main(int argc, char * argv[])
 	job_id2      = atoi(argv[3]);
 	sched_port   = atoi(argv[4]);
 	is_bluegene  = atoi(argv[5]);
-	printf("control_addr=%s job_id=%ld,%ld sched_port=%d is_bluegene=%d\n", 
+	printf("control_addr=%s job_id=%ld,%ld sched_port=%d is_bluegene=%d\n",
 		control_addr, job_id1, job_id2, sched_port, is_bluegene);
 
 	_get_jobs();

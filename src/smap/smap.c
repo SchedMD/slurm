@@ -7,32 +7,32 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -88,10 +88,10 @@ int main(int argc, char *argv[])
 	int i;
 	int rc;
 #ifdef HAVE_BG
-	int mapset = 0;	
+	int mapset = 0;
 #endif
 	//char *name;
-       
+
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 	if (params.verbose) {
@@ -110,11 +110,11 @@ int main(int argc, char *argv[])
 			exit(1);
 		sleep(10);	/* keep trying to reconnect */
 	}
-	
+
 	ba_init(new_node_ptr, 0);
-			
+
 	if(params.resolve) {
-			
+
 #ifdef HAVE_BG_FILES
 		if (!have_db2) {
 			printf("Required libraries can not be found "
@@ -138,14 +138,14 @@ int main(int argc, char *argv[])
 				printf("X=%c Y=%c Z=%c resolves to %s\n",
 				       params.resolve[X+i],
 				       params.resolve[Y+i],
-				       params.resolve[Z+i], 
+				       params.resolve[Z+i],
 				       rack_mid);
 			else
 				printf("X=%c Y=%c Z=%c has no resolve\n",
 				       params.resolve[X+i],
 				       params.resolve[Y+i],
 				       params.resolve[Z+i]);
-			
+
 		} else {
 			int *coord = find_bp_loc(params.resolve);
 			if(coord)
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 				       params.resolve,
 				       coord[X], coord[Y], coord[Z]);
 			else
-				printf("%s has no resolve.\n", 
+				printf("%s has no resolve.\n",
 				       params.resolve);
 		}
 part_fini:
@@ -165,10 +165,10 @@ part_fini:
 		exit(0);
 	}
 	if(!params.commandline) {
-		
+
 		signal(SIGWINCH, (void (*)(int))_resize_handler);
 		initscr();
-		
+
 #ifdef HAVE_3D
 		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
@@ -183,15 +183,15 @@ part_fini:
 			endwin();
 			error("Screen is too small make sure the screen "
 			      "is at least %dx%d\n"
-			      "Right now it is %dx%d\n", 
-			      width, 
-			      height, 
-			      COLS, 
+			      "Right now it is %dx%d\n",
+			      width,
+			      height,
+			      COLS,
 			      LINES);
 			ba_fini();
 			exit(1);
 		}
-		
+
 		raw();
 		keypad(stdscr, TRUE);
 		noecho();
@@ -200,11 +200,11 @@ part_fini:
 		nodelay(stdscr, TRUE);
 		start_color();
 		_set_pairs();
-		
+
 		grid_win = newwin(height, width, starty, startx);
 		max_display = grid_win->_maxy * grid_win->_maxx;
 		//scrollok(grid_win, TRUE);
-		
+
 #ifdef HAVE_3D
 		startx = width;
 		COLS -= 2;
@@ -214,20 +214,20 @@ part_fini:
 		startx = 0;
 		starty = height;
 		height = LINES - height;
-		
+
 #endif
-		
+
 		text_win = newwin(height, width, starty, startx);
         }
 	while (!end) {
 		if(!params.commandline) {
 			_get_option();
 		redraw:
-			
+
 			clear_window(text_win);
 			clear_window(grid_win);
 			move(0,0);
-			
+
 			init_grid(new_node_ptr);
 			main_xcord = 1;
 			main_ycord = 1;
@@ -270,40 +270,40 @@ part_fini:
 			break;
 #endif
 		}
-			
+
 		if(!params.commandline) {
 			//wscrl(grid_win,-1);
 			box(text_win, 0, 0);
 			wnoutrefresh(text_win);
-			
+
 			print_grid(grid_line_cnt * (grid_win->_maxx-1));
 			box(grid_win, 0, 0);
 			wnoutrefresh(grid_win);
-			
+
 			doupdate();
-			
+
 			node_info_ptr = new_node_ptr;
 			if (node_info_ptr) {
 				error_code = slurm_load_node(
-					node_info_ptr->last_update, 
+					node_info_ptr->last_update,
 					&new_node_ptr, SHOW_ALL);
 				if (error_code == SLURM_SUCCESS)
 					slurm_free_node_info_msg(
 						node_info_ptr);
-				else if (slurm_get_errno() 
+				else if (slurm_get_errno()
 					 == SLURM_NO_CHANGE_IN_DATA) {
 					error_code = SLURM_SUCCESS;
 					new_node_ptr = node_info_ptr;
 				}
 			} else {
-				error_code = slurm_load_node((time_t) NULL, 
+				error_code = slurm_load_node((time_t) NULL,
 						&new_node_ptr, SHOW_ALL);
 			}
 			if (error_code && (quiet_flag != 1)) {
 				if(!params.commandline) {
 					mvwprintw(
 						text_win,
-						main_ycord, 
+						main_ycord,
 						1,
 						"slurm_load_node: %s",
 						slurm_strerror(
@@ -332,16 +332,16 @@ part_fini:
 			}
 		} else
 			break;
-		
+
 	}
-	
+
 	if(!params.commandline) {
 		nodelay(stdscr, FALSE);
 		getch();
 		endwin();
 	}
 	ba_fini();
-        
+
 	exit(0);
 }
 
@@ -354,7 +354,7 @@ static int _get_option()
 	case KEY_RIGHT:
 	case '-':
 	case '_':
-		text_line_cnt++;		
+		text_line_cnt++;
 		return 1;
 		break;
 	case KEY_LEFT:
@@ -363,12 +363,12 @@ static int _get_option()
 		text_line_cnt--;
 		if(text_line_cnt<0) {
 			text_line_cnt = 0;
-			return 0;		
-	
+			return 0;
+
 		}
 		return 1;
 		break;
-		
+
 	case 's':
 		text_line_cnt = 0;
 		grid_line_cnt = 0;
@@ -413,12 +413,12 @@ static int _get_option()
 	case 'd':
 	case KEY_DOWN:
 		grid_line_cnt++;
-		if((((grid_line_cnt-2) * (grid_win->_maxx-1)) + 
+		if((((grid_line_cnt-2) * (grid_win->_maxx-1)) +
 		    max_display) > DIM_SIZE[X]) {
 			grid_line_cnt--;
-			return 0;		
+			return 0;
 		}
-		
+
 		return 1;
 		break;
 #endif
@@ -437,14 +437,14 @@ static void *_resize_handler(int sig)
 	int startx=0, starty=0;
 	int height, width;
 	main_ycord = 1;
-	
+
 	/* clear existing data and update to avoid ghost during resize */
 	clear_window(text_win);
 	clear_window(grid_win);
 	doupdate();
 	delwin(grid_win);
 	delwin(text_win);
-	
+
 	endwin();
 	COLS=0;
 	LINES=0;
@@ -471,10 +471,10 @@ static void *_resize_handler(int sig)
 		ba_fini();
 		exit(0);
 	}
-        
+
 	grid_win = newwin(height, width, starty, startx);
 	max_display = grid_win->_maxy * grid_win->_maxx;
-		
+
 #ifdef HAVE_3D
 	startx = width;
 	COLS -= 2;
@@ -484,11 +484,11 @@ static void *_resize_handler(int sig)
 	startx = 0;
 	starty = height;
 	height = LINES - height;
-	
+
 #endif
-	
+
 	text_win = newwin(height, width, starty, startx);
-	
+
 	print_date();
 	switch (params.display) {
 	case JOBS:

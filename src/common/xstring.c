@@ -1,12 +1,12 @@
 /*****************************************************************************\
- *  xstring.c - heap-oriented string manipulation functions with "safe" 
+ *  xstring.c - heap-oriented string manipulation functions with "safe"
  *	string expansion as needed.
  ******************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>
  *             Mark Grondona <grondona@llnl.gov>, et al.
- *	
+ *
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -18,15 +18,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -69,8 +69,8 @@
 #define XFGETS_CHUNKSIZE 64
 
 /*
- * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
- * for details. 
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+ * for details.
  */
 strong_alias(_xstrcat,		slurm_xstrcat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
@@ -111,21 +111,21 @@ static void makespace(char **str, int needed)
 	}
 }
 
-/* 
+/*
  * Concatenate str2 onto str1, expanding str1 as needed.
  *   str1 (IN/OUT)	target string (pointer to in case of expansion)
  *   str2 (IN)		source string
  */
 void _xstrcat(char **str1, const char *str2)
 {
-	if (str2 == NULL) 
+	if (str2 == NULL)
 		str2 = "(null)";
 
 	makespace(str1, strlen(str2));
 	strcat(*str1, str2);
 }
 
-/* 
+/*
  * append one char to str and null terminate
  */
 static void strcatchar(char *str, char c)
@@ -136,7 +136,7 @@ static void strcatchar(char *str, char c)
 	str[len] = '\0';
 }
 
-/* 
+/*
  * Add a character to str, expanding str1 as needed.
  *   str1 (IN/OUT)	target string (pointer to in case of expansion)
  *   size (IN/OUT)	size of str1 (pointer to in case of expansion)
@@ -161,8 +161,8 @@ void _xslurm_strerrorcat(char **buf)
 	xstrcat(*buf, err);
 }
 
-/* 
- * append strftime of fmt to buffer buf, expand buf as needed 
+/*
+ * append strftime of fmt to buffer buf, expand buf as needed
  *
  */
 void _xstrftimecat(char **buf, const char *fmt)
@@ -181,7 +181,7 @@ void _xstrftimecat(char **buf, const char *fmt)
 	if (fmt == NULL)
 		fmt = default_fmt;
 
-	if (time(&t) == (time_t) -1) 
+	if (time(&t) == (time_t) -1)
 		fprintf(stderr, "time() failed\n");
 
 	if (!localtime_r(&t, &tm))
@@ -206,7 +206,7 @@ int _xstrfmtcat(char **str, const char *fmt, ...)
 	int n, size = 100;
 	char *p = NULL;
 	va_list ap;
-	
+
 	if((p = xmalloc(size)) == NULL)
 		return 0;
 	while(1) {
@@ -257,7 +257,7 @@ void _xmemcat(char **str, char *start, char *end)
 	xstrcat(*str, buf);
 }
 
-/* 
+/*
  * Replacement for libc basename
  *   path (IN)		path possibly containing '/' characters
  *   RETURN		last component of path
@@ -268,7 +268,7 @@ char * xbasename(char *path)
 
 	p = strrchr(path , '/');
 	return (p ? (p + 1) : path);
-}	
+}
 
 /*
  * Duplicate a string.
@@ -305,7 +305,7 @@ char *xstrdup_printf(const char *fmt, ...)
 	int n, size = 100;
 	char *p = NULL;
 	va_list ap;
-	
+
 	if((p = xmalloc(size)) == NULL)
 		return NULL;
 	while(1) {
@@ -360,16 +360,16 @@ long int xstrntol(const char *str, char **endptr, size_t n, int base)
 	long int number = 0;
 	char *new_str = xstrndup(str, n);
 
-	if(!new_str) 
+	if(!new_str)
 		goto end_it;
-	
+
 	number = strtol(new_str, endptr, base);
 	xfree(new_str);
 end_it:
 	return number;
 }
 
-/* 
+/*
  * Find the first instance of a sub-string "pattern" in the string "str",
  * and replace it with the string "replacement".
  *   str (IN/OUT)	target string (pointer to in case of expansion)
@@ -403,7 +403,7 @@ void _xstrsubstitute(char **str, const char *pattern, const char *replacement)
 	xfree(end_copy);
 }
 
-/* 
+/*
  * Remove first instance of quotes that surround a string in "str",
  *   and return the result without the quotes
  *   str (IN)	        target string (pointer to in case of expansion)
@@ -431,7 +431,7 @@ char *xstrstrip(char *str)
 	while(str[i]) {
 		if(quote && str[i] == quote_c) {
 			found = 1;
-			break;		
+			break;
 		}
 		i++;
 	}
@@ -448,7 +448,7 @@ char *xstrstrip(char *str)
  *   Returns an xmalloc'd string containing the hostname
  *   of the local machine.  The hostname contains only
  *   the short version of the hostname (e.g. "linux123.foo.bar"
- *   becomes "linux123") 
+ *   becomes "linux123")
  *
  *   Returns NULL on error.
  */

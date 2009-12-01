@@ -2,28 +2,28 @@
  *  test7.3.prog.c - Test of "user managed" IO with the slurm_step_launch()
  *                   API function (required for "poe" launch on IBM
  *                   AIX systems).
- *  
+ *
  *  Usage: test7.3.prog [min_nodes] [max_nodes] [tasks]
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -89,7 +89,7 @@ int main (int argc, char *argv[])
 		while ((job_resp->node_list == NULL) ||
 		       (strlen(job_resp->node_list) == 0)) {
 			sleep(5);
-			if (slurm_allocation_lookup_lite(job_resp->job_id, 
+			if (slurm_allocation_lookup_lite(job_resp->job_id,
 							 &job_resp) &&
 			    (slurm_get_errno() != ESLURM_JOB_PENDING)) {
 				slurm_perror("slurm_confirm_allocation");
@@ -145,7 +145,7 @@ int main (int argc, char *argv[])
 	launch->argc = 1;
 	launch->user_managed_io = true; /* This is the key to using
 					  "user managed" IO */
-	
+
 	if (slurm_step_launch(ctx, launch, NULL) != SLURM_SUCCESS) {
 		slurm_perror("slurm_step_launch");
 		rc = 1;

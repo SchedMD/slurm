@@ -312,12 +312,12 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @HAVE_ELAN_FALSE@pkglib_LTLIBRARIES = 
 @HAVE_ELAN_TRUE@pkglib_LTLIBRARIES = proctrack_rms.la
 proctrack_rms_la_SOURCES = proctrack_rms.c
-proctrack_rms_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) 
+proctrack_rms_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 proctrack_rms_la_LIBADD = -lrmscall
 all: all-am
 

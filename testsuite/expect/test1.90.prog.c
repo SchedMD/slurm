@@ -70,7 +70,7 @@ main (int argc, char **argv)
 	task_id = atoi(task_str);
 	_load_cpu_mask(&cpu_mask);
 	_load_mem_mask(&mem_mask);
-	printf("TASK_ID:%d,CPU_MASK:%lu,MEM_MASK:%lu\n", 
+	printf("TASK_ID:%d,CPU_MASK:%lu,MEM_MASK:%lu\n",
 		task_id, _mask_to_int(&cpu_mask), _mask_to_int(&mem_mask));
 	exit(0);
 }

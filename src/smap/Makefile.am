@@ -6,8 +6,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-LIBS=$(NCURSES) 
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES) 
+LIBS=$(NCURSES)
+INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 
 if HAVE_SOME_CURSES
 
@@ -17,7 +17,7 @@ smap_LDADD = \
 	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la \
 	$(top_builddir)/src/api/libslurm.o -ldl
 
-noinst_HEADERS = smap.h 
+noinst_HEADERS = smap.h
 smap_SOURCES = smap.c \
 	job_functions.c partition_functions.c \
 	configure_functions.c grid_functions.c \

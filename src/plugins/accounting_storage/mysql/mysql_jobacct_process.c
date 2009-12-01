@@ -8,32 +8,32 @@
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -71,13 +71,13 @@ static void _state_time_string(char **extra, uint32_t state,
 	case JOB_PENDING:
 		if(start) {
 			if(!end) {
-				xstrfmtcat(*extra, 
+				xstrfmtcat(*extra,
 					   "(t1.eligible && (!t1.start || "
 					   "(%d between "
 					   "t1.eligible and t1.start)))",
 					   start);
 			} else {
-				xstrfmtcat(*extra, 
+				xstrfmtcat(*extra,
 					   "(t1.eligible && ((%d between "
 					   "t1.eligible and t1.start) || "
 					   "(t1.eligible between %d and %d)))",
@@ -95,12 +95,12 @@ static void _state_time_string(char **extra, uint32_t state,
 	case JOB_RUNNING:
 		if(start) {
 			if(!end) {
-				xstrfmtcat(*extra, 
+				xstrfmtcat(*extra,
 					   "(t1.start && (!t1.end || "
 					   "(%d between t1.start and t1.end)))",
 					   start);
 			} else {
-				xstrfmtcat(*extra, 
+				xstrfmtcat(*extra,
 					   "(t1.start && "
 					   "((%d between t1.start and t1.end) "
 					   "|| (t1.start between %d and %d)))",
@@ -117,14 +117,14 @@ static void _state_time_string(char **extra, uint32_t state,
 	case JOB_TIMEOUT:
 	case JOB_NODE_FAIL:
 	default:
-		xstrfmtcat(*extra, "(t1.state='%u' && (t1.end && ", state);	
+		xstrfmtcat(*extra, "(t1.state='%u' && (t1.end && ", state);
 		if(start) {
 			if(!end) {
 				xstrfmtcat(*extra, "(t1.end >= %d)))", start);
 			} else {
-				xstrfmtcat(*extra, 
+				xstrfmtcat(*extra,
 					   "(t1.end between %d and %d)))",
-					   start, end);				
+					   start, end);
 			}
 		} else if(end) {
 			xstrfmtcat(*extra, "(t1.end <= %d)))", end);
@@ -198,10 +198,10 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 				 "%4.4u-%2.2u-%2.2u"
 				 "T%2.2u:%2.2u:%2.2u",
 				 (time_tm.tm_year + 1900),
-				 (time_tm.tm_mon+1), 
+				 (time_tm.tm_mon+1),
 				 time_tm.tm_mday,
 				 time_tm.tm_hour,
-				 time_tm.tm_min, 
+				 time_tm.tm_min,
 				 time_tm.tm_sec);
 
 			localtime_r((time_t *)&curr_end, &time_tm);
@@ -209,10 +209,10 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 				 "%4.4u-%2.2u-%2.2u"
 				 "T%2.2u:%2.2u:%2.2u",
 				 (time_tm.tm_year + 1900),
-				 (time_tm.tm_mon+1), 
+				 (time_tm.tm_mon+1),
 				 time_tm.tm_mday,
 				 time_tm.tm_hour,
-				 time_tm.tm_min, 
+				 time_tm.tm_min,
 				 time_tm.tm_sec);
 
 			/* write the buffer to file */
@@ -223,7 +223,7 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 			debug("Storing event archive at %s", reg_file);
 			old_file = xstrdup_printf("%s.old", reg_file);
 			new_file = xstrdup_printf("%s.new", reg_file);
-					
+
 			fd = creat(new_file, 0600);
 			if (fd < 0) {
 				error("Can't save archive, "
@@ -232,10 +232,10 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 				rc = errno;
 				xfree(insert);
 				break;
-			} 
+			}
 			values = xstrdup_printf("%s\nvalues\n(", insert);
 		}
-	
+
 		xstrfmtcat(values, "'%s'", row[0]);
 		for(i=1; i<col_count; i++) {
 			xstrfmtcat(values, ", '%s'", row[i]);
@@ -245,8 +245,8 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 			xstrcat(values, ", '1')");
 		else
 			xstrcat(values, ")");
-				
-		if(!fd 
+
+		if(!fd
 		   || ((rc = _write_to_file(fd, values)) != SLURM_SUCCESS)) {
 			xfree(values);
 			break;
@@ -266,7 +266,7 @@ static int _write_archive_file(MYSQL_RES *result, int start_col, int col_count,
 
 	fsync(fd);
 	close(fd);
-			
+
 	if (rc)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
@@ -350,7 +350,7 @@ static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
 		time_tm.tm_mon -= arch_cond->purge_job;
 		time_tm.tm_isdst = -1;
 		curr_end = mktime(&time_tm);
-		
+
 		env_array_append_fmt(&env, "SLURM_ARCHIVE_JOBS", "%u",
 				     arch_cond->archive_jobs);
 		env_array_append_fmt (&env, "SLURM_ARCHIVE_LAST_JOB", "%d",
@@ -414,8 +414,8 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	hostlist_iterator_t h_itr = NULL;
 	char *object = NULL;
 	char *query = NULL;
-	
-	if(!job_cond || !job_cond->used_nodes) 
+
+	if(!job_cond || !job_cond->used_nodes)
 		return NULL;
 
 	if(!job_cond->cluster_list || list_count(job_cond->cluster_list) != 1) {
@@ -424,7 +424,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		      "you are asking for.");
 		return NULL;
 	}
-	
+
 	temp_hl = hostlist_create(job_cond->used_nodes);
 	if(!hostlist_count(temp_hl)) {
 		error("we didn't get any real hosts to look for.");
@@ -444,12 +444,12 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		if(!job_cond->usage_end)
 			job_cond->usage_end = now;
 
-		xstrfmtcat(query, 
+		xstrfmtcat(query,
 			   " && ((period_start < %d) "
 			   "&& (period_end >= %d || period_end = 0))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
-		
+
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -467,11 +467,11 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		local_cluster->hl = hostlist_create(row[0]);
 		local_cluster->start = atoi(row[1]);
 		local_cluster->end   = atoi(row[2]);
-		local_cluster->asked_bitmap = 
+		local_cluster->asked_bitmap =
 			bit_alloc(hostlist_count(local_cluster->hl));
 		while((host = hostlist_next(h_itr))) {
 			if((loc = hostlist_find(
-				    local_cluster->hl, host)) != -1) 
+				    local_cluster->hl, host)) != -1)
 				bit_set(local_cluster->asked_bitmap, loc);
 			free(host);
 		}
@@ -482,7 +482,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 				local_cluster->end = now;
 				(*curr_cluster) = local_cluster;
 			}
-		} else 
+		} else
 			_destroy_local_cluster(local_cluster);
 	}
 	mysql_free_result(result);
@@ -499,7 +499,7 @@ no_hosts:
 	return local_cluster_list;
 }
 
-extern int good_nodes_from_inx(List local_cluster_list, 
+extern int good_nodes_from_inx(List local_cluster_list,
 			       void **object, char *node_inx,
 			       int submit)
 {
@@ -514,7 +514,7 @@ extern int good_nodes_from_inx(List local_cluster_list,
 		if((submit < (*curr_cluster)->start)
 		   || (submit > (*curr_cluster)->end)) {
 			local_cluster_t *local_cluster = NULL;
-			
+
 			ListIterator itr =
 				list_iterator_create(local_cluster_list);
 			while((local_cluster = list_next(itr))) {
@@ -550,14 +550,14 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 
 	if(!job_cond)
 		return 0;
-	
+
 	/* THIS ASSOCID CHECK ALWAYS NEEDS TO BE FIRST!!!!!!! */
 	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
 		set = 0;
 		xstrfmtcat(*extra, ", %s as t3 where (", assoc_table);
 		itr = list_iterator_create(job_cond->associd_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "t3.id=%s", object);
 			set = 1;
@@ -566,7 +566,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		xstrcat(*extra, ")");
 		table_level="t3";
 		/* just incase the association is gone */
-		if(set) 
+		if(set)
 			xstrcat(*extra, " || ");
 		xstrfmtcat(*extra, "t3.id is null) && "
 			   "(t2.lft between t3.lft and t3.rgt "
@@ -581,7 +581,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->acct_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "t1.account='%s'", object);
 			set = 1;
@@ -599,7 +599,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 
 		itr = list_iterator_create(job_cond->userid_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "t1.uid='%s'", object);
 			set = 1;
@@ -616,7 +616,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->groupid_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "t1.gid='%s'", object);
 			set = 1;
@@ -633,7 +633,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->partition_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "t1.partition='%s'", object);
 			set = 1;
@@ -653,20 +653,20 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 
 		if(job_cond->cluster_list
 		   && list_count(job_cond->cluster_list)) {
-			
+
 			itr = list_iterator_create(job_cond->cluster_list);
 			while((object = list_next(itr))) {
-				if(my_set) 
+				if(my_set)
 					xstrcat(query, " || ");
 				xstrfmtcat(query, "cluster='%s'", object);
 				my_set = 1;
 			}
 			list_iterator_destroy(itr);
-		} 
+		}
 
 		if(my_set)
 			xstrcat(query, ") && (");
-		
+
 		itr = list_iterator_create(job_cond->resv_list);
 		while((object = list_next(itr))) {
 			if(my_set)
@@ -683,7 +683,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			goto no_resv;
 		}
 		xfree(query);
-		if(!job_cond->resvid_list) 
+		if(!job_cond->resvid_list)
 			job_cond->resvid_list = list_create(slurm_destroy_char);
 		while((row = mysql_fetch_row(result))) {
 			list_append(job_cond->resvid_list, xstrdup(row[0]));
@@ -717,7 +717,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->step_list);
 		while((selected_step = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "t1.jobid=%u", selected_step->jobid);
 			set = 1;
@@ -735,11 +735,11 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		if(job_cond->cpus_max) {
 			xstrfmtcat(*extra, "(t1.alloc_cpus between %u and %u))",
 				   job_cond->cpus_min, job_cond->cpus_max);
-			
+
 		} else {
 			xstrfmtcat(*extra, "(t1.alloc_cpus='%u'))",
 				   job_cond->cpus_min);
-			
+
 		}
 	}
 
@@ -750,14 +750,14 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			xstrcat(*extra, " where (");
 
 		if(job_cond->nodes_max) {
-			xstrfmtcat(*extra, 
+			xstrfmtcat(*extra,
 				   "(t1.alloc_nodes between %u and %u))",
 				   job_cond->nodes_min, job_cond->nodes_max);
-			
+
 		} else {
 			xstrfmtcat(*extra, "(t1.alloc_nodes='%u'))",
 				   job_cond->nodes_min);
-			
+
 		}
 	}
 	if(job_cond->state_list && list_count(job_cond->state_list)) {
@@ -769,10 +769,10 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 
 		itr = list_iterator_create(job_cond->state_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
-			_state_time_string(extra, atoi(object), 
-					   job_cond->usage_start, 
+			_state_time_string(extra, atoi(object),
+					   job_cond->usage_start,
 					   job_cond->usage_end);
 			set = 1;
 		}
@@ -786,23 +786,23 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 				xstrcat(*extra, " && (");
 			else
 				xstrcat(*extra, " where (");
-			
+
 			if(!job_cond->usage_end)
-				xstrfmtcat(*extra, 
+				xstrfmtcat(*extra,
 					   "(t1.end >= %d || t1.end = 0))",
 					   job_cond->usage_start);
 			else
-				xstrfmtcat(*extra, 
+				xstrfmtcat(*extra,
 					   "(t1.eligible < %d "
 					   "&& (t1.end >= %d || t1.end = 0)))",
-					   job_cond->usage_end, 
+					   job_cond->usage_end,
 					   job_cond->usage_start);
 		} else if(job_cond->usage_end) {
 			if(*extra)
 				xstrcat(*extra, " && (");
 			else
 				xstrcat(*extra, " where (");
-			xstrfmtcat(*extra, 
+			xstrfmtcat(*extra,
 				   "(t1.eligible < %d))", job_cond->usage_end);
 		}
 	}
@@ -817,16 +817,16 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 
 		itr = list_iterator_create(job_cond->cluster_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, 
-				   "(t1.cluster='%s' || %s.cluster='%s')", 
+			xstrfmtcat(*extra,
+				   "(t1.cluster='%s' || %s.cluster='%s')",
 				   object, table_level, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(*extra, ")");
-	} 
+	}
 
 	if(job_cond->wckey_list && list_count(job_cond->wckey_list)) {
 		set = 0;
@@ -837,7 +837,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 
 		itr = list_iterator_create(job_cond->wckey_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "t1.wckey='%s'", object);
 			set = 1;
@@ -852,9 +852,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					   acct_job_cond_t *job_cond)
 {
 
-	char *query = NULL;	
-	char *extra = NULL;	
-	char *tmp = NULL;	
+	char *query = NULL;
+	char *extra = NULL;
+	char *tmp = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	int set = 0, is_admin=1;
@@ -870,9 +870,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	acct_user_rec_t user;
 	local_cluster_t *curr_cluster = NULL;
 	List local_cluster_list = NULL;
-	int only_pending = 0; 
+	int only_pending = 0;
 
-	/* if this changes you will need to edit the corresponding 
+	/* if this changes you will need to edit the corresponding
 	 * enum below also t1 is job_table */
 	char *job_req_inx[] = {
 		"t1.id",
@@ -944,10 +944,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_CLUSTER,
 		JOB_REQ_ACCOUNT,
 		JOB_REQ_LFT,
-		JOB_REQ_COUNT		
+		JOB_REQ_COUNT
 	};
 
-	/* if this changes you will need to edit the corresponding 
+	/* if this changes you will need to edit the corresponding
 	 * enum below also t1 is step_table */
 	char *step_req_inx[] = {
 		"t1.stepid",
@@ -1042,9 +1042,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			 * check it below after the query.
 			 */
 			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
-			   || assoc_mgr_get_admin_level(mysql_conn, uid) 
-			   >= ACCT_ADMIN_OPERATOR) 
-				is_admin = 1;	
+			   || assoc_mgr_get_admin_level(mysql_conn, uid)
+			   >= ACCT_ADMIN_OPERATOR)
+				is_admin = 1;
 			else {
 				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
 						       NULL);
@@ -1085,7 +1085,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	 * coordinator of.
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
-		query = xstrdup_printf("select lft from %s where user='%s'", 
+		query = xstrdup_printf("select lft from %s where user='%s'",
 				       assoc_table, user.name);
 		if(user.coord_accts) {
 			acct_coord_rec_t *coord = NULL;
@@ -1122,18 +1122,18 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 						   row[0], table_level,
 						   table_level);
 				else
-					xstrfmtcat(extra, 
+					xstrfmtcat(extra,
 						   " where ((%s between %s.lft "
 						   "and %s.rgt)",
 						   row[0], table_level,
 						   table_level);
 			}
-		}		
+		}
 		if(set)
 			xstrcat(extra,")");
 		mysql_free_result(result);
 	}
-	
+
 	query = xstrdup_printf("select %s from %s as t1 left join %s as t2 "
 			       "on t1.associd=t2.id",
 			       tmp, job_table, assoc_table);
@@ -1142,11 +1142,11 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(query, extra);
 		xfree(extra);
 	}
-	
+
 	/* Here we want to order them this way in such a way so it is
-	   easy to look for duplicates 
+	   easy to look for duplicates
 	*/
-	if(job_cond && !job_cond->duplicates) 
+	if(job_cond && !job_cond->duplicates)
 		xstrcat(query, " order by t1.cluster, jobid, submit desc");
 	else
 		xstrcat(query, " order by t1.cluster, submit desc");
@@ -1170,7 +1170,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 
 		if(job_cond && !job_cond->duplicates && curr_id == last_id)
 			continue;
-		
+
 		last_id = curr_id;
 
 		/* check the bitmap to see if this is one of the jobs
@@ -1179,7 +1179,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					(void **)&curr_cluster,
 					row[JOB_REQ_NODE_INX], submit))
 			continue;
-		
+
 		job = create_jobacct_job_rec();
 		list_append(job_list, job);
 
@@ -1200,10 +1200,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			job->cluster = xstrdup(row[JOB_REQ_CLUSTER]);
 		else if(row[JOB_REQ_CLUSTER1] && row[JOB_REQ_CLUSTER1][0])
 			job->cluster = xstrdup(row[JOB_REQ_CLUSTER1]);
-			
-		if(row[JOB_REQ_USER_NAME]) 
+
+		if(row[JOB_REQ_USER_NAME])
 			job->user = xstrdup(row[JOB_REQ_USER_NAME]);
-		else 
+		else
 			job->uid = atoi(row[JOB_REQ_UID]);
 
 		if(row[JOB_REQ_LFT])
@@ -1234,12 +1234,12 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			if(job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
 
-			if(!job->end || job->end > job_cond->usage_end) 
+			if(!job->end || job->end > job_cond->usage_end)
 				job->end = job_cond->usage_end;
 
 			if(!job->start)
 				job->start = job->end;
-			
+
 			job->elapsed = job->end - job->start;
 
 			if(row[JOB_REQ_SUSPENDED]) {
@@ -1252,11 +1252,11 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					"|| end = 0)) && id=%s "
 					"order by start",
 					suspend_table,
-					job_cond->usage_end, 
+					job_cond->usage_end,
 					job_cond->usage_start,
 					id);
-				
-				debug4("%d(%d) query\n%s", 
+
+				debug4("%d(%d) query\n%s",
 				       mysql_conn->conn, __LINE__, query);
 				if(!(result2 = mysql_db_query_ret(
 					     mysql_conn->db_conn,
@@ -1269,31 +1269,31 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				while((row2 = mysql_fetch_row(result2))) {
 					int local_start =
 						atoi(row2[0]);
-					int local_end = 
+					int local_end =
 						atoi(row2[1]);
-					
+
 					if(!local_start)
 						continue;
-					
+
 					if(job->start > local_start)
 						local_start = job->start;
 					if(job->end < local_end)
 						local_end = job->end;
-					
+
 					if((local_end - local_start) < 1)
 						continue;
-					
-					job->elapsed -= 
+
+					job->elapsed -=
 						(local_end - local_start);
-					job->suspended += 
+					job->suspended +=
 						(local_end - local_start);
 				}
-				mysql_free_result(result2);			
+				mysql_free_result(result2);
 
 			}
 		} else {
 			job->suspended = atoi(row[JOB_REQ_SUSPENDED]);
-			
+
 			/* fix the suspended number to be correct */
 			if(job->state == JOB_SUSPENDED)
 				job->suspended = now - job->suspended;
@@ -1326,17 +1326,17 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			xfree(job->nodes);
 			job->nodes = xstrdup("(unknown)");
 		}
-			
+
 		job->track_steps = atoi(row[JOB_REQ_TRACKSTEPS]);
 		job->priority = atoi(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = atoi(row[JOB_REQ_REQ_CPUS]);
 		job->requid = atoi(row[JOB_REQ_KILL_REQUID]);
 		job->qos = atoi(row[JOB_REQ_QOS]);
 		job->show_full = 1;
-		
+
 		if(only_pending || (job_cond && job_cond->without_steps))
 			goto skip_steps;
-					
+
 		if(job_cond && job_cond->step_list
 		   && list_count(job_cond->step_list)) {
 			set = 0;
@@ -1349,12 +1349,12 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					job->show_full = 1;
 					break;
 				}
-				
-				if(set) 
+
+				if(set)
 					xstrcat(extra, " || ");
-				else 
+				else
 					xstrcat(extra, " && (");
-			
+
 				xstrfmtcat(extra, "t1.stepid=%u",
 					   selected_step->stepid);
 				set = 1;
@@ -1365,19 +1365,19 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				xstrcat(extra, ")");
 		}
 		for(i=0; i<STEP_REQ_COUNT; i++) {
-			if(i) 
+			if(i)
 				xstrcat(tmp, ", ");
 			xstrcat(tmp, step_req_inx[i]);
 		}
 		query =	xstrdup_printf("select %s from %s t1 where t1.id=%s",
 				       tmp, step_table, id);
 		xfree(tmp);
-		
+
 		if(extra) {
 			xstrcat(query, extra);
 			xfree(extra);
 		}
-		
+
 		//info("query = %s", query);
 		if(!(step_result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
@@ -1388,10 +1388,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			return NULL;
 		}
 		xfree(query);
-		
+
 		/* Querying the steps in the fashion was faster than
 		   doing only 1 query and then matching the steps up
-		   later with the job.  
+		   later with the job.
 		*/
 		while ((step_row = mysql_fetch_row(step_result))) {
 			/* check the bitmap to see if this is one of the steps
@@ -1401,7 +1401,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 						step_row[STEP_REQ_NODE_INX],
 						submit))
 				continue;
-		
+
 			step = create_jobacct_step_rec();
 			step->job_ptr = job;
 			if(!job->first_step_ptr)
@@ -1421,7 +1421,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				step->ntasks = step->ncpus;
 
 			step->start = atoi(step_row[STEP_REQ_START]);
-			
+
 			step->end = atoi(step_row[STEP_REQ_END]);
 			/* if the job has ended end the step also */
 			if(!step->end && job_ended) {
@@ -1431,15 +1431,15 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 
 			if(job_cond && !job_cond->without_usage_truncation
 			   && job_cond->usage_start) {
-				if(step->start 
+				if(step->start
 				   && (step->start < job_cond->usage_start))
 					step->start = job_cond->usage_start;
-				
+
 				if(!step->start && step->end)
 					step->start = step->end;
-				
-				if(!step->end 
-				   || (step->end > job_cond->usage_end)) 
+
+				if(!step->end
+				   || (step->end > job_cond->usage_end))
 					step->end = job_cond->usage_end;
 			}
 
@@ -1460,44 +1460,44 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				atoi(step_row[STEP_REQ_USER_USEC]);
 			step->sys_cpu_sec = atoi(step_row[STEP_REQ_SYS_SEC]);
 			step->sys_cpu_usec = atoi(step_row[STEP_REQ_SYS_USEC]);
-			job->tot_cpu_sec += 
-				step->tot_cpu_sec += 
+			job->tot_cpu_sec +=
+				step->tot_cpu_sec +=
 				step->user_cpu_sec + step->sys_cpu_sec;
-			job->tot_cpu_usec += 
-				step->tot_cpu_usec += 
+			job->tot_cpu_usec +=
+				step->tot_cpu_usec +=
 				step->user_cpu_usec + step->sys_cpu_usec;
 			step->sacct.max_vsize =
 				atoi(step_row[STEP_REQ_MAX_VSIZE]);
-			step->sacct.max_vsize_id.taskid = 
+			step->sacct.max_vsize_id.taskid =
 				atoi(step_row[STEP_REQ_MAX_VSIZE_TASK]);
-			step->sacct.ave_vsize = 
+			step->sacct.ave_vsize =
 				atof(step_row[STEP_REQ_AVE_VSIZE]);
 			step->sacct.max_rss =
 				atoi(step_row[STEP_REQ_MAX_RSS]);
-			step->sacct.max_rss_id.taskid = 
+			step->sacct.max_rss_id.taskid =
 				atoi(step_row[STEP_REQ_MAX_RSS_TASK]);
-			step->sacct.ave_rss = 
+			step->sacct.ave_rss =
 				atof(step_row[STEP_REQ_AVE_RSS]);
 			step->sacct.max_pages =
 				atoi(step_row[STEP_REQ_MAX_PAGES]);
-			step->sacct.max_pages_id.taskid = 
+			step->sacct.max_pages_id.taskid =
 				atoi(step_row[STEP_REQ_MAX_PAGES_TASK]);
 			step->sacct.ave_pages =
 				atof(step_row[STEP_REQ_AVE_PAGES]);
 			step->sacct.min_cpu =
 				atof(step_row[STEP_REQ_MIN_CPU]);
-			step->sacct.min_cpu_id.taskid = 
+			step->sacct.min_cpu_id.taskid =
 				atoi(step_row[STEP_REQ_MIN_CPU_TASK]);
 			step->sacct.ave_cpu = atof(step_row[STEP_REQ_AVE_CPU]);
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
-			step->sacct.max_vsize_id.nodeid = 
+			step->sacct.max_vsize_id.nodeid =
 				atoi(step_row[STEP_REQ_MAX_VSIZE_NODE]);
-			step->sacct.max_rss_id.nodeid = 
+			step->sacct.max_rss_id.nodeid =
 				atoi(step_row[STEP_REQ_MAX_RSS_NODE]);
-			step->sacct.max_pages_id.nodeid = 
+			step->sacct.max_pages_id.nodeid =
 				atoi(step_row[STEP_REQ_MAX_PAGES_NODE]);
-			step->sacct.min_cpu_id.nodeid = 
+			step->sacct.min_cpu_id.nodeid =
 				atoi(step_row[STEP_REQ_MIN_CPU_NODE]);
 
 			step->requid = atoi(step_row[STEP_REQ_KILL_REQUID]);
@@ -1512,14 +1512,14 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			   different.  If it is different print out
 			   the step separate.
 			*/
-			if(list_count(job->steps) > 1) 
+			if(list_count(job->steps) > 1)
 				job->track_steps = 1;
 			else if(step && step->stepname && job->jobname) {
-				if(strcmp(step->stepname, job->jobname)) 
+				if(strcmp(step->stepname, job->jobname))
 					job->track_steps = 1;
 			}
 		}
-	skip_steps:		
+	skip_steps:
 		/* need to reset here to make the above test valid */
 		step = NULL;
 	}
@@ -1543,7 +1543,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 
 //	DEF_TIMERS;
 
-	/* if this changes you will need to edit the corresponding 
+	/* if this changes you will need to edit the corresponding
 	 * enum below */
 	char *event_req_inx[] = {
 		"node_name",
@@ -1556,7 +1556,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		"cluster_nodes",
 	};
 
-	/* if this changes you will need to edit the corresponding 
+	/* if this changes you will need to edit the corresponding
 	 * enum below */
 	char *job_req_inx[] = {
 		"id",
@@ -1590,7 +1590,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		"qos"
 	};
 
-	/* if this changes you will need to edit the corresponding 
+	/* if this changes you will need to edit the corresponding
 	 * enum below */
 	char *step_req_inx[] = {
 		"id",
@@ -1631,7 +1631,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	};
 
 
-	/* if this changes you will need to edit the corresponding 
+	/* if this changes you will need to edit the corresponding
 	 * enum below */
 	char *suspend_req_inx[] = {
 		"id",
@@ -1682,7 +1682,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		JOB_REQ_NODE_INX,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_QOS,
-		JOB_REQ_COUNT		
+		JOB_REQ_COUNT
 	};
 
 	enum {
@@ -1750,7 +1750,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	last_submit = mktime(&time_tm);
 	last_submit--;
 	debug("archive: adjusted last submit is (%d)", last_submit);
-	
+
 	if(arch_cond->archive_script)
 		return _archive_script(arch_cond, last_submit);
 	else if(!arch_cond->archive_dir) {
@@ -1760,7 +1760,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 
 	if(arch_cond->purge_event) {
 		/* remove all data from step table that was older than
-		 * period_start * arch_cond->purge_event. 
+		 * period_start * arch_cond->purge_event.
 		 */
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
@@ -1777,13 +1777,13 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		curr_end = mktime(&time_tm);
 		curr_end--;
 
-		debug4("from %d - %d months purging events from before %d", 
+		debug4("from %d - %d months purging events from before %d",
 		       last_submit, arch_cond->purge_event, curr_end);
-		
+
 		if(arch_cond->archive_events) {
 			char *insert = NULL;
 			MYSQL_RES *result = NULL;
-			
+
 			xfree(tmp);
 			xstrfmtcat(tmp, "%s", event_req_inx[0]);
 			for(i=1; i<EVENT_REQ_COUNT; i++) {
@@ -1801,7 +1801,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 			insert = xstrdup_printf("insert into %s (%s) ",
 						event_table, tmp);
 			xfree(tmp);
-			
+
 //			START_TIMER;
 			debug3("%d(%d) query\n%s", mysql_conn->conn,
 			       __LINE__, query);
@@ -1823,9 +1823,9 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 
 			rc = _write_archive_file(
 				result, EVENT_REQ_START, EVENT_REQ_COUNT,
-				curr_end, arch_cond->archive_dir, 
+				curr_end, arch_cond->archive_dir,
 				"event", insert, false);
-			
+
 			xfree(insert);
 			mysql_free_result(result);
 
@@ -1848,7 +1848,7 @@ exit_events:
 
 	if(arch_cond->purge_suspend) {
 		/* remove all data from step table that was older than
-		 * period_start * arch_cond->purge_suspend. 
+		 * period_start * arch_cond->purge_suspend.
 		 */
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
@@ -1865,13 +1865,13 @@ exit_events:
 		curr_end = mktime(&time_tm);
 		curr_end--;
 
-		debug4("from %d - %d months purging suspend from before %d", 
+		debug4("from %d - %d months purging suspend from before %d",
 		       last_submit, arch_cond->purge_suspend, curr_end);
-		
+
 		if(arch_cond->archive_suspend) {
 			char *insert = NULL;
 			MYSQL_RES *result = NULL;
-			
+
 			xfree(tmp);
 			xstrfmtcat(tmp, "%s", suspend_req_inx[0]);
 			for(i=1; i<SUSPEND_REQ_COUNT; i++) {
@@ -1888,7 +1888,7 @@ exit_events:
 			insert = xstrdup_printf("insert into %s (%s) ",
 						suspend_table, tmp);
 			xfree(tmp);
-			
+
 //			START_TIMER;
 			debug3("%d(%d) query\n%s", mysql_conn->conn,
 			       __LINE__, query);
@@ -1910,9 +1910,9 @@ exit_events:
 
 			rc = _write_archive_file(
 				result, SUSPEND_REQ_START, SUSPEND_REQ_COUNT,
-				curr_end, arch_cond->archive_dir, 
+				curr_end, arch_cond->archive_dir,
 				"suspend", insert, false);
-			
+
 			xfree(insert);
 			mysql_free_result(result);
 
@@ -1935,7 +1935,7 @@ exit_suspend:
 
 	if(arch_cond->purge_step) {
 		/* remove all data from step table that was older than
-		 * start * arch_cond->purge_step. 
+		 * start * arch_cond->purge_step.
 		 */
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
@@ -1952,9 +1952,9 @@ exit_suspend:
 		curr_end = mktime(&time_tm);
 		curr_end--;
 
-		debug4("from %d - %d months purging steps from before %d", 
+		debug4("from %d - %d months purging steps from before %d",
 		       last_submit, arch_cond->purge_step, curr_end);
-		
+
 		if(arch_cond->archive_steps) {
 			char *insert = NULL;
 			MYSQL_RES *result = NULL;
@@ -1977,7 +1977,7 @@ exit_suspend:
 			insert = xstrdup_printf("insert into %s (%s) ",
 						step_table, tmp);
 			xfree(tmp);
-			
+
 //			START_TIMER;
 			debug3("%d(%d) query\n%s", mysql_conn->conn,
 			       __LINE__, query);
@@ -1996,12 +1996,12 @@ exit_suspend:
 				mysql_free_result(result);
 				goto exit_steps;
 			}
-			
+
 			rc = _write_archive_file(
 				result, STEP_REQ_START, STEP_REQ_COUNT,
-				curr_end, arch_cond->archive_dir, 
+				curr_end, arch_cond->archive_dir,
 				"step", insert, true);
-			
+
 			xfree(insert);
 			mysql_free_result(result);
 
@@ -2021,10 +2021,10 @@ exit_suspend:
 		}
 	}
 exit_steps:
-	
+
 	if(arch_cond->purge_job) {
 		/* remove all data from step table that was older than
-		 * last_submit * arch_cond->purge_job. 
+		 * last_submit * arch_cond->purge_job.
 		 */
 		/* use localtime to avoid any daylight savings issues */
 		if(!localtime_r(&last_submit, &time_tm)) {
@@ -2041,13 +2041,13 @@ exit_steps:
 		curr_end = mktime(&time_tm);
 		curr_end--;
 
-		debug4("from %d - %d months purging jobs from before %d", 
+		debug4("from %d - %d months purging jobs from before %d",
 		       last_submit, arch_cond->purge_job, curr_end);
 
 		if(arch_cond->archive_jobs) {
 			char *insert = NULL;
 			MYSQL_RES *result = NULL;
-						
+
 			xfree(tmp);
 			xstrfmtcat(tmp, "%s", job_req_inx[0]);
 			for(i=1; i<JOB_REQ_COUNT; i++) {
@@ -2084,12 +2084,12 @@ exit_steps:
 				mysql_free_result(result);
 				goto exit_jobs;
 			}
-			
+
 			rc = _write_archive_file(
 				result, JOB_REQ_SUBMIT, JOB_REQ_COUNT,
-				curr_end, arch_cond->archive_dir, 
+				curr_end, arch_cond->archive_dir,
 				"job", insert, true);
-			
+
 			xfree(insert);
 			mysql_free_result(result);
 
@@ -2131,7 +2131,7 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 		int data_allocated, data_read = 0;
 		int state_fd = open(arch_rec->archive_file, O_RDONLY);
 		if (state_fd < 0) {
-			info("No archive file (%s) to recover", 
+			info("No archive file (%s) to recover",
 			     arch_rec->archive_file);
 			error_code = ENOENT;
 		} else {
@@ -2144,7 +2144,7 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 					if (errno == EINTR)
 						continue;
 					else {
-						error("Read error on %s: %m", 
+						error("Read error on %s: %m",
 						      arch_rec->archive_file);
 						break;
 					}
@@ -2170,14 +2170,14 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 		error("It doesn't appear we have anything to load.");
 		return SLURM_ERROR;
 	}
-	
+
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, data);
 	error_code = mysql_db_query_check_after(mysql_conn->db_conn, data);
 	xfree(data);
 	if(error_code != SLURM_SUCCESS) {
 		error("Couldn't load old data");
 		return SLURM_ERROR;
-	}       
+	}
 
 	return SLURM_SUCCESS;
 }

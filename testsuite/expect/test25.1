@@ -12,21 +12,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -63,7 +63,7 @@ proc def_cpu_cnt { } {
 	spawn $sinfo -h -o "%P %C" -p $partition --state=idle
 	expect {
 		-re "$partition ($number)(K?)/($number)(K?)" {
-			set cpu_cnt $expect_out(3,string) 
+			set cpu_cnt $expect_out(3,string)
 			if {[string compare $expect_out(4,string) ""]} {
 				set cpu_cnt [expr $cpu_cnt * 1024]
 			}
@@ -100,7 +100,7 @@ proc sub_job { cpu_cnt } {
 	spawn $sbatch --output=/dev/null --error=/dev/null -n $cpu_cnt --exclusive $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string) 
+			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
@@ -197,7 +197,7 @@ proc sprio_opt { soption } {
 				set not_support 1
 				exp_continue
 			}
-			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .--usage. .-hlnvVw." {	
+			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .--usage. .-hlnvVw." {
 				if {$debug} {send_user "\nmatch5\n"}
 				incr matches
 				exp_continue
@@ -326,7 +326,7 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID|PRIORITY|AGE|FAIRSHARE|JOBSIZE|PARTITION|QOS" {	
+			-re "JOBID|PRIORITY|AGE|FAIRSHARE|JOBSIZE|PARTITION|QOS" {
 				if {$debug} {send_user "\nmatch9\n"}
 				incr matches
 				exp_continue
@@ -360,12 +360,12 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID.*PRIORITY" {	
+			-re "JOBID.*PRIORITY" {
 				if {$debug} {send_user "\nmatch10\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$number" {	
+			-re "$jobid *$number" {
 				if {$debug} {send_user "\nmatch11\n"}
 				incr matches
 				exp_continue
@@ -399,12 +399,12 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID     USER   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS   NICE" {	
+			-re "JOBID     USER   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS   NICE" {
 				if {$debug} {send_user "\nmatch12\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid.*$number *$number *$number *$number *$number *$number *$number" {	
+			-re "$jobid.*$number *$number *$number *$number *$number *$number *$number" {
 				if {$debug} {send_user "\nmatch13\n"}
 				incr matches
 				exp_continue
@@ -438,12 +438,12 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID *PRIORITY" {	
+			-re "JOBID *PRIORITY" {
 				if {$debug} {send_user "\nmatch14\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$float" {	
+			-re "$jobid *$float" {
 				if {$debug} {send_user "\nmatch15\n"}
 				incr matches
 				exp_continue
@@ -487,7 +487,7 @@ proc sprio_args { soption sargs jobid} {
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *.* *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$number" {	
+			-re "$jobid *.* *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$number" {
 				if {$debug} {send_user "\nmatch18\n"}
 				incr matches
 				exp_continue
@@ -521,12 +521,12 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID *USER" {	
+			-re "JOBID *USER" {
 				if {$debug} {send_user "\nmatch19\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$sargs" {	
+			-re "$jobid *$sargs" {
 				if {$debug} {send_user "\nmatch20\n"}
 				incr matches
 				exp_continue
@@ -560,12 +560,12 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID *USER" {	
+			-re "JOBID *USER" {
 				if {$debug} {send_user "\nmatch21\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$sargs" {	
+			-re "$jobid *$sargs" {
 				if {$debug} {send_user "\nmatch22\n"}
 				incr matches
 				exp_continue
@@ -599,17 +599,17 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "format.*job_flag.*jobs.*$jobid.*verbose" {	
+			-re "format.*job_flag.*jobs.*$jobid.*verbose" {
 				if {$debug} {send_user "\nmatch23\n"}
 				incr matches
 				exp_continue
 			}
-			-re "JOBID *PRIORITY" {	
+			-re "JOBID *PRIORITY" {
 				if {$debug} {send_user "\nmatch24\n"}
 				incr matches
 				exp_continue
 			}
-			-re "$jobid *$number" {	
+			-re "$jobid *$number" {
 				if {$debug} {send_user "\nmatch25\n"}
 				incr matches
 				exp_continue
@@ -719,7 +719,7 @@ if {!$exit_code} {
 #
 # Cancel jobs
 #
-cancel_job $jobid1 
+cancel_job $jobid1
 cancel_job $jobid2
 
 #

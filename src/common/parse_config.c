@@ -8,32 +8,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -147,7 +147,7 @@ s_p_hashtbl_t *s_p_hashtbl_create(
 	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
 	hashtbl = (s_p_hashtbl_t *)xmalloc(len);
 	memset(hashtbl, 0, len);
-					      
+
 	for (op = options; op->key != NULL; op++) {
 		value = xmalloc(sizeof(s_p_values_t));
 		value->key = xstrdup(op->key);
@@ -236,7 +236,7 @@ static int _keyvalue_regex(const char *line,
 	*value = NULL;
 	*remaining = (char *)line;
 	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
-	
+
 	if (regexec(&keyvalue_re, line, nmatch, pmatch, 0)
 	    == REG_NOMATCH) {
 		return -1;
@@ -369,7 +369,7 @@ static int _get_next_line(char *buf, int buf_size, FILE *file)
 	}
 	/* _strip_cr_nl(buf); */ /* not necessary */
 	_strip_escapes(buf);
-	
+
 	return lines;
 }
 
@@ -377,7 +377,7 @@ static int _handle_string(s_p_values_t *v,
 			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once, latest value used", 
+		error("%s specified more than once, latest value used",
 		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
@@ -402,7 +402,7 @@ static int _handle_long(s_p_values_t *v,
 			const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once, latest value used", 
+		error("%s specified more than once, latest value used",
 		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
@@ -445,7 +445,7 @@ static int _handle_uint16(s_p_values_t *v,
 			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once, latest value used", 
+		error("%s specified more than once, latest value used",
 		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
@@ -470,7 +470,7 @@ static int _handle_uint16(s_p_values_t *v,
 			    || strcasecmp(value, "INFINITE") == 0) {
 				num = (uint16_t) INFINITE;
 			} else {
-				error("%s value \"%s\" is not a valid number", 
+				error("%s value \"%s\" is not a valid number",
 					v->key, value);
 				return -1;
 			}
@@ -478,7 +478,7 @@ static int _handle_uint16(s_p_values_t *v,
 			error("%s value (%s) is out of range", v->key, value);
 			return -1;
 		} else if (value[0] == '-') {
-			error("%s value (%s) is less than zero", v->key, 
+			error("%s value (%s) is less than zero", v->key,
 			      value);
 			return -1;
 		} else if (num > 0xffff) {
@@ -498,7 +498,7 @@ static int _handle_uint32(s_p_values_t *v,
 			  const char *value, const char *line, char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once, latest value used", 
+		error("%s specified more than once, latest value used",
 		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
@@ -527,7 +527,7 @@ static int _handle_uint32(s_p_values_t *v,
 			    (strcasecmp(value, "INFINITE")  == 0)) {
 				num = (uint32_t) INFINITE;
 			} else {
-				error("%s value (%s) is not a valid number", 
+				error("%s value (%s) is not a valid number",
 					v->key, value);
 				return -1;
 			}
@@ -535,11 +535,11 @@ static int _handle_uint32(s_p_values_t *v,
 			error("%s value (%s) is out of range", v->key, value);
 			return -1;
 		} else if (value[0] == '-') {
-			error("%s value (%s) is less than zero", v->key, 
+			error("%s value (%s) is less than zero", v->key,
 			      value);
 			return -1;
 		} else if (num > 0xffffffff) {
-			error("%s value (%s) is greater than 4294967295", 
+			error("%s value (%s) is greater than 4294967295",
 				v->key, value);
 			return -1;
 		}
@@ -552,7 +552,7 @@ static int _handle_uint32(s_p_values_t *v,
 }
 
 static int _handle_pointer(s_p_values_t *v,
-			   const char *value, const char *line, 
+			   const char *value, const char *line,
 			   char **leftover)
 {
 	if (v->handler != NULL) {
@@ -601,11 +601,11 @@ static int _handle_array(s_p_values_t *v,
 }
 
 static int _handle_boolean(s_p_values_t *v,
-			   const char *value, const char *line, 
+			   const char *value, const char *line,
 			   char **leftover)
 {
 	if (v->data_count != 0) {
-		error("%s specified more than once, latest value used", 
+		error("%s specified more than once, latest value used",
 		      v->key);
 		xfree(v->data);
 		v->data_count = 0;
@@ -823,9 +823,9 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, char *filename)
 		error("s_p_parse_file: No filename given.");
 		return SLURM_ERROR;
 	}
-	
+
 	_keyvalue_regex_init();
-	
+
 	f = fopen(filename, "r");
 	if (f == NULL) {
 		error("s_p_parse_file: unable to read \"%s\": %m",
@@ -1083,7 +1083,7 @@ int s_p_get_pointer(void **ptr, const char *key, const s_p_hashtbl_t *hashtbl)
  * Returns 1 when a value was set for "key" during parsing and both
  *   "ptr_array" and "count" were successfully set, otherwise returns 0.
  */
-int s_p_get_array(void **ptr_array[], int *count, 
+int s_p_get_array(void **ptr_array[], int *count,
 		  const char *key, const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;

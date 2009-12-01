@@ -308,9 +308,6 @@
 /* Define to 1 if using XCPU for job launch */
 #undef HAVE_XCPU
 
-/* Define to 1 if you have the `\' function. */
-#undef HAVE__
-
 /* Define if you have __progname. */
 #undef HAVE__PROGNAME
 

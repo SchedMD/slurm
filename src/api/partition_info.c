@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *   
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -53,20 +53,20 @@
 #include "src/common/xstring.h"
 
 /*
- * slurm_print_partition_info_msg - output information about all Slurm 
+ * slurm_print_partition_info_msg - output information about all Slurm
  *	partitions based upon message as loaded using slurm_load_partitions
  * IN out - file to write to
  * IN part_info_ptr - partitions information message pointer
  * IN one_liner - print as a single line if true
  */
-void slurm_print_partition_info_msg ( FILE* out, 
+void slurm_print_partition_info_msg ( FILE* out,
 		partition_info_msg_t * part_info_ptr, int one_liner )
 {
 	int i ;
 	partition_info_t * part_ptr = part_info_ptr->partition_array ;
 	char time_str[32];
 
-	slurm_make_time_str ((time_t *)&part_info_ptr->last_update, time_str, 
+	slurm_make_time_str ((time_t *)&part_info_ptr->last_update, time_str,
 		sizeof(time_str));
 	fprintf( out, "Partition data as of %s, record count %d\n",
 		time_str, part_info_ptr->record_count);
@@ -78,13 +78,13 @@ void slurm_print_partition_info_msg ( FILE* out,
 }
 
 /*
- * slurm_print_partition_info - output information about a specific Slurm 
+ * slurm_print_partition_info - output information about a specific Slurm
  *	partition based upon message as loaded using slurm_load_partitions
  * IN out - file to write to
  * IN part_ptr - an individual partition information record pointer
  * IN one_liner - print as a single line if true
  */
-void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr, 
+void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 				  int one_liner )
 {
 	char *print_this = slurm_sprint_partition_info(part_ptr, one_liner);
@@ -94,14 +94,14 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 
 
 /*
- * slurm_sprint_partition_info - output information about a specific Slurm 
+ * slurm_sprint_partition_info - output information about a specific Slurm
  *	partition based upon message as loaded using slurm_load_partitions
  * IN part_ptr - an individual partition information record pointer
  * IN one_liner - print as a single line if true
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-char *slurm_sprint_partition_info ( partition_info_t * part_ptr, 
+char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 				    int one_liner )
 {
 	char tmp1[16], tmp2[16];
@@ -112,7 +112,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	/****** Line 1 ******/
 
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "PartitionName=%s", 
+		 "PartitionName=%s",
 		 part_ptr->name);
 	xstrcat(out, tmp_line);
 	if (one_liner)
@@ -128,11 +128,11 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s",
 			 part_ptr->allow_alloc_nodes);
 	xstrcat(out, tmp_line);
-	if ((part_ptr->allow_groups == NULL) || 
+	if ((part_ptr->allow_groups == NULL) ||
 	    (part_ptr->allow_groups[0] == '\0'))
 		sprintf(tmp_line, " AllowGroups=ALL");
 	else {
-		snprintf(tmp_line, sizeof(tmp_line), 
+		snprintf(tmp_line, sizeof(tmp_line),
 			" AllowGroups=%s", part_ptr->allow_groups);
 	}
 	xstrcat(out, tmp_line);
@@ -146,11 +146,11 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line added here for BG partitions 
+	/****** Line added here for BG partitions
 	 to keep with alphabetized output******/
 
 #ifdef HAVE_BG
-	snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s", 
+	snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s",
 		part_ptr->nodes);
 	xstrcat(out, tmp_line);
 	if (one_liner)
@@ -165,10 +165,10 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	if (part_ptr->default_time == INFINITE)
 		sprintf(tmp_line, "DefaultTime=UNLIMITED");
 	else if (part_ptr->default_time == NO_VAL)
-		sprintf(tmp_line, "DefaultTime=NONE");	  
+		sprintf(tmp_line, "DefaultTime=NONE");
 	else {
 		char time_line[32];
-		secs2time_str(part_ptr->default_time * 60, time_line, 
+		secs2time_str(part_ptr->default_time * 60, time_line,
 			sizeof(time_line));
 		sprintf(tmp_line, " DefaultTime=%s", time_line);
 	}
@@ -188,7 +188,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, " ");
 	else
 		xstrcat(out, "\n   ");
-      
+
 	/****** Line 4 ******/
 
 	if (part_ptr->max_nodes == INFINITE)
@@ -207,7 +207,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		sprintf(tmp_line, " MaxTime=UNLIMITED");
 	else {
 		char time_line[32];
-		secs2time_str(part_ptr->max_time * 60, time_line, 
+		secs2time_str(part_ptr->max_time * 60, time_line,
 			      sizeof(time_line));
 		sprintf(tmp_line, " MaxTime=%s", time_line);
 	}
@@ -243,7 +243,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	/****** Line 6 ******/
 
 	sprintf(tmp_line, "Priority=%u", part_ptr->priority);
-	xstrcat(out, tmp_line);	
+	xstrcat(out, tmp_line);
 	if (part_ptr->root_only)
 		sprintf(tmp_line, " RootOnly=YES");
 	else
@@ -275,7 +275,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		sprintf(tmp_line, "State=DOWN");
 	xstrcat(out, tmp_line);
-	
+
 #ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->total_cpus, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
@@ -296,22 +296,22 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, "\n");
 	else
 		xstrcat(out, "\n\n");
-	
+
 	return out;
 }
 
 
 /*
- * slurm_load_partitions - issue RPC to get slurm all partition configuration  
- *	information if changed since update_time 
+ * slurm_load_partitions - issue RPC to get slurm all partition configuration
+ *	information if changed since update_time
  * IN update_time - time of current configuration data
- * IN partition_info_msg_pptr - place to store a partition configuration 
+ * IN partition_info_msg_pptr - place to store a partition configuration
  *	pointer
  * IN show_flags - partition filtering options
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_partition_info_msg
  */
-extern int slurm_load_partitions (time_t update_time, 
+extern int slurm_load_partitions (time_t update_time,
 		partition_info_msg_t **resp, uint16_t show_flags)
 {
         int rc;
@@ -326,18 +326,18 @@ extern int slurm_load_partitions (time_t update_time,
 	req.show_flags   = show_flags;
         req_msg.msg_type = REQUEST_PARTITION_INFO;
         req_msg.data     = &req;
-	
+
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
-	
+
 	switch (resp_msg.msg_type) {
 	case RESPONSE_PARTITION_INFO:
 		*resp = (partition_info_msg_t *) resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);	
-		if (rc) 
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
 			slurm_seterrno_ret(rc);
 		*resp = NULL;
 		break;

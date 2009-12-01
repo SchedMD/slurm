@@ -5,32 +5,32 @@
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -80,14 +80,14 @@
  * where <application> is a description of the intended application of
  * the plugin (e.g., "jobacct" for SLURM job completion logging) and <method>
  * is a description of how this plugin satisfies that application.  SLURM will
- * only load job completion logging plugins if the plugin_type string has a 
+ * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobacct/".
  *
  * plugin_version - an unsigned 32-bit integer giving the version number
  * of the plugin.  If major and minor revisions are desired, the major
  * version number may be multiplied by a suitable magnitude constant such
  * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job accounting API 
+ * minimum versions for their plugins as the job accounting API
  * matures.
  */
 const char plugin_name[] = "Accounting storage SLURMDBD plugin";
@@ -133,13 +133,13 @@ extern int fini ( void )
 extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 					   bool rollback)
 {
-	if(!slurmdbd_auth_info)	
+	if(!slurmdbd_auth_info)
 		init();
 
 	if(slurm_open_slurmdbd_conn(slurmdbd_auth_info,
-				    make_agent, rollback) == SLURM_SUCCESS) 
+				    make_agent, rollback) == SLURM_SUCCESS)
 		errno = SLURM_SUCCESS;
-	
+
 	return NULL;
 }
 
@@ -181,7 +181,7 @@ extern int acct_storage_p_add_users(void *db_conn, uint32_t uid, List user_list)
 
 	req.msg_type = DBD_ADD_USERS;
 	req.data = &get_msg;
-	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION, 
+	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
 					     &req, &resp_code);
 
 	if(resp_code != SLURM_SUCCESS)
@@ -203,7 +203,7 @@ extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
 
 	req.msg_type = DBD_ADD_ACCOUNT_COORDS;
 	req.data = &get_msg;
-	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION, 
+	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
 					     &req, &resp_code);
 
 	if(resp_code != SLURM_SUCCESS)
@@ -289,10 +289,10 @@ extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 	req.data = &get_msg;
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
 					     &req, &resp_code);
-	
+
 	if(resp_code != SLURM_SUCCESS)
 		rc = resp_code;
-	
+
 	return rc;
 }
 
@@ -310,14 +310,14 @@ extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
 	req.data = &get_msg;
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
 					     &req, &resp_code);
-	
+
 	if(resp_code != SLURM_SUCCESS)
 		rc = resp_code;
-	
+
 	return rc;
 }
 
-extern int acct_storage_p_add_reservation(void *db_conn, 
+extern int acct_storage_p_add_reservation(void *db_conn,
 					   acct_reservation_rec_t *resv)
 {
 	slurmdbd_msg_t req;
@@ -332,7 +332,7 @@ extern int acct_storage_p_add_reservation(void *db_conn,
 
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
 					     &req, &resp_code);
-	
+
 	if(resp_code != SLURM_SUCCESS)
 		rc = resp_code;
 
@@ -368,7 +368,7 @@ extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -409,7 +409,7 @@ extern List acct_storage_p_modify_accounts(void *db_conn, uint32_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -452,7 +452,7 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -496,7 +496,7 @@ extern List acct_storage_p_modify_associations(
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -537,7 +537,7 @@ extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -578,7 +578,7 @@ extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -590,7 +590,7 @@ extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern int acct_storage_p_modify_reservation(void *db_conn, 
+extern int acct_storage_p_modify_reservation(void *db_conn,
 					   acct_reservation_rec_t *resv)
 {
 	slurmdbd_msg_t req;
@@ -605,7 +605,7 @@ extern int acct_storage_p_modify_reservation(void *db_conn,
 
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
 					     &req, &resp_code);
-	
+
 	if(resp_code != SLURM_SUCCESS)
 		rc = resp_code;
 
@@ -640,7 +640,7 @@ extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -682,7 +682,7 @@ extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -722,7 +722,7 @@ extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -762,7 +762,7 @@ extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -804,7 +804,7 @@ extern List acct_storage_p_remove_associations(
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -846,7 +846,7 @@ extern List acct_storage_p_remove_qos(
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -888,7 +888,7 @@ extern List acct_storage_p_remove_wckeys(
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
-		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -900,7 +900,7 @@ extern List acct_storage_p_remove_wckeys(
 	return ret_list;
 }
 
-extern int acct_storage_p_remove_reservation(void *db_conn, 
+extern int acct_storage_p_remove_reservation(void *db_conn,
 					   acct_reservation_rec_t *resv)
 {
 	slurmdbd_msg_t req;
@@ -915,7 +915,7 @@ extern int acct_storage_p_remove_reservation(void *db_conn,
 
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
 					     &req, &resp_code);
-	
+
 	if(resp_code != SLURM_SUCCESS)
 		rc = resp_code;
 
@@ -933,7 +933,7 @@ extern List acct_storage_p_get_users(void *db_conn, uid_t uid,
 
 	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
 	get_msg.cond = user_cond;
-	
+
 	req.msg_type = DBD_GET_USERS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
@@ -949,7 +949,7 @@ extern List acct_storage_p_get_users(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_USERS) {
-		error("slurmdbd: response type not DBD_GOT_USERS: %u", 
+		error("slurmdbd: response type not DBD_GOT_USERS: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -972,7 +972,7 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 
 	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
 	get_msg.cond = acct_cond;
-	
+
 	req.msg_type = DBD_GET_ACCOUNTS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
@@ -988,7 +988,7 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_ACCOUNTS) {
-		error("slurmdbd: response type not DBD_GOT_ACCOUNTS: %u", 
+		error("slurmdbd: response type not DBD_GOT_ACCOUNTS: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1012,7 +1012,7 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 
 	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
 	get_msg.cond = cluster_cond;
-	
+
 	req.msg_type = DBD_GET_CLUSTERS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
@@ -1028,7 +1028,7 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_CLUSTERS) {
-		error("slurmdbd: response type not DBD_GOT_CLUSTERS: %u", 
+		error("slurmdbd: response type not DBD_GOT_CLUSTERS: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1047,7 +1047,7 @@ extern List acct_storage_p_get_config(void)
 	dbd_list_msg_t *got_msg;
 	int rc;
 	List ret_list = NULL;
-	
+
 	req.msg_type = DBD_GET_CONFIG;
 	req.data = NULL;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
@@ -1063,7 +1063,7 @@ extern List acct_storage_p_get_config(void)
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_CONFIG) {
-		error("slurmdbd: response type not DBD_GOT_CONFIG: %u", 
+		error("slurmdbd: response type not DBD_GOT_CONFIG: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1086,7 +1086,7 @@ extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
 
 	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
 	get_msg.cond = assoc_cond;
-	
+
 	req.msg_type = DBD_GET_ASSOCS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
@@ -1102,7 +1102,7 @@ extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_ASSOCS) {
-		error("slurmdbd: response type not DBD_GOT_ASSOCS: %u", 
+		error("slurmdbd: response type not DBD_GOT_ASSOCS: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1125,7 +1125,7 @@ extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
 
 	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
 	get_msg.cond = assoc_cond;
-	
+
 	req.msg_type = DBD_GET_PROBS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
@@ -1141,7 +1141,7 @@ extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_PROBS) {
-		error("slurmdbd: response type not DBD_GOT_PROBS: %u", 
+		error("slurmdbd: response type not DBD_GOT_PROBS: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1180,7 +1180,7 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_QOS) {
-		error("slurmdbd: response type not DBD_GOT_QOS: %u", 
+		error("slurmdbd: response type not DBD_GOT_QOS: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1190,7 +1190,7 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 		 */
 		if(!got_msg->my_list)
 		        ret_list = list_create(NULL);
-		else 
+		else
 			ret_list = got_msg->my_list;
 		got_msg->my_list = NULL;
 		slurmdbd_free_list_msg(SLURMDBD_VERSION, got_msg);
@@ -1226,7 +1226,7 @@ extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_WCKEYS) {
-		error("slurmdbd: response type not DBD_GOT_WCKEYS: %u", 
+		error("slurmdbd: response type not DBD_GOT_WCKEYS: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1236,7 +1236,7 @@ extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 		 */
 		if(!got_msg->my_list)
 		        ret_list = list_create(NULL);
-		else 
+		else
 			ret_list = got_msg->my_list;
 		got_msg->my_list = NULL;
 		slurmdbd_free_list_msg(SLURMDBD_VERSION, got_msg);
@@ -1272,7 +1272,7 @@ extern List acct_storage_p_get_reservations(void *mysql_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_RESVS) {
-		error("slurmdbd: response type not DBD_GOT_RESVS: %u", 
+		error("slurmdbd: response type not DBD_GOT_RESVS: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1282,7 +1282,7 @@ extern List acct_storage_p_get_reservations(void *mysql_conn, uid_t uid,
 		 */
 		if(!got_msg->my_list)
 		        ret_list = list_create(NULL);
-		else 
+		else
 			ret_list = got_msg->my_list;
 		got_msg->my_list = NULL;
 		slurmdbd_free_list_msg(SLURMDBD_VERSION, got_msg);
@@ -1318,7 +1318,7 @@ extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_TXN) {
-		error("slurmdbd: response type not DBD_GOT_TXN: %u", 
+		error("slurmdbd: response type not DBD_GOT_TXN: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1347,7 +1347,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	get_msg.start = start;
 	get_msg.end = end;
 	req.msg_type = type;
-		
+
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
 		my_list = &got_assoc->accounting_list;
@@ -1360,7 +1360,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 		return SLURM_ERROR;
 		break;
 	}
-	
+
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
 
@@ -1374,9 +1374,9 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 		} else
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
-	} else if (resp.msg_type != DBD_GOT_ASSOC_USAGE 
+	} else if (resp.msg_type != DBD_GOT_ASSOC_USAGE
 		   && resp.msg_type != DBD_GOT_WCKEY_USAGE) {
-		error("slurmdbd: response type not DBD_GOT_ASSOC_USAGE: %u", 
+		error("slurmdbd: response type not DBD_GOT_ASSOC_USAGE: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_usage_msg_t *) resp.data;
@@ -1404,14 +1404,14 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 	return rc;
 }
 
-extern int acct_storage_p_roll_usage(void *db_conn, 
+extern int acct_storage_p_roll_usage(void *db_conn,
 				     time_t sent_start, time_t sent_end,
 				     uint16_t archive_data)
 {
 	slurmdbd_msg_t req;
 	dbd_roll_usage_msg_t get_msg;
 	int rc, resp_code;
-	
+
 	memset(&get_msg, 0, sizeof(dbd_roll_usage_msg_t));
 	get_msg.end = sent_end;
 	get_msg.start = sent_start;
@@ -1554,7 +1554,7 @@ extern int clusteracct_storage_p_get_usage(
 	get_msg.end = end;
 
 	req.msg_type = DBD_GET_CLUSTER_USAGE;
-	
+
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
 
@@ -1569,7 +1569,7 @@ extern int clusteracct_storage_p_get_usage(
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_CLUSTER_USAGE) {
-		error("slurmdbd: response type not DBD_GOT_CLUSTER_USAGE: %u", 
+		error("slurmdbd: response type not DBD_GOT_CLUSTER_USAGE: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_usage_msg_t *) resp.data;
@@ -1584,7 +1584,7 @@ extern int clusteracct_storage_p_get_usage(
 	return rc;
 }
 
-/* 
+/*
  * load into the storage the start of a job
  */
 extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
@@ -1603,24 +1603,24 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 		return SLURM_ERROR;
 	}
 	memset(&req, 0, sizeof(dbd_job_start_msg_t));
-	
+
 	req.alloc_cpus    = job_ptr->total_procs;
 	req.cluster       = cluster_name;
 	req.account       = job_ptr->account;
 	req.assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
-			     SELECT_JOBDATA_BLOCK_ID, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_BLOCK_ID,
 			     &block_id);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
-			     SELECT_JOBDATA_NODE_CNT, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_NODE_CNT,
 			     &req.alloc_nodes);
 #else
 	req.alloc_nodes      = job_ptr->node_cnt;
 #endif
 	req.block_id      = block_id;
 	req.db_index      = job_ptr->db_index;
-	if (job_ptr->details) 
+	if (job_ptr->details)
 		req.eligible_time = job_ptr->details->begin_time;
 	req.gid           = job_ptr->group_id;
 	req.job_id        = job_ptr->job_id;
@@ -1628,7 +1628,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
 	if(job_ptr->node_bitmap) {
-		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
+		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 				       job_ptr->node_bitmap);
 	}
 
@@ -1647,7 +1647,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	msg.data          = &req;
 
 	/* if we already have the db_index don't wait around for it
-	 * again just send the message 
+	 * again just send the message
 	 */
 	if(req.db_index) {
 		if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0) {
@@ -1656,7 +1656,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 		}
 		xfree(block_id);
 		return SLURM_SUCCESS;
-	} 
+	}
 
 	/* If we don't have the db_index we need to wait for it to be
 	 * used in the other submissions for this job.
@@ -1668,7 +1668,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 			return SLURM_ERROR;
 		}
 	} else if (msg_rc.msg_type != DBD_ID_RC) {
-		error("slurmdbd: response type not DBD_ID_RC: %u", 
+		error("slurmdbd: response type not DBD_ID_RC: %u",
 		      msg_rc.msg_type);
 	} else {
 		resp = (dbd_id_rc_msg_t *) msg_rc.data;
@@ -1678,11 +1678,11 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 		slurmdbd_free_id_rc_msg(SLURMDBD_VERSION, resp);
 	}
 	xfree(block_id);
-	
+
 	return rc;
 }
 
-/* 
+/*
  * load into the storage the end of a job
  */
 extern int jobacct_storage_p_job_complete(void *db_conn,
@@ -1691,7 +1691,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	slurmdbd_msg_t msg;
 	dbd_job_comp_msg_t req;
 
-	if (!job_ptr->db_index 
+	if (!job_ptr->db_index
 	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
 		error("jobacct_storage_p_job_complete: "
 		      "Not inputing this job, it has no submit time.");
@@ -1721,7 +1721,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-/* 
+/*
  * load into the storage the start of a job step
  */
 extern int jobacct_storage_p_step_start(void *db_conn,
@@ -1737,19 +1737,19 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	char *ionodes = NULL;
 
 	cpus = tasks = step_ptr->job_ptr->num_procs;
-	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_JOBDATA_IONODES, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_IONODES,
 			     &ionodes);
 	if (ionodes) {
-		snprintf(node_list, BUFFER_SIZE, 
+		snprintf(node_list, BUFFER_SIZE,
 			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
 		xfree(ionodes);
 	} else {
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	}
-	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_JOBDATA_NODE_CNT, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_NODE_CNT,
 			     &nodes);
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
@@ -1758,16 +1758,16 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 			 step_ptr->job_ptr->nodes);
 		nodes = step_ptr->job_ptr->node_cnt;
 	} else {
-		cpus = step_ptr->cpu_count; 
+		cpus = step_ptr->cpu_count;
 		tasks = step_ptr->step_layout->task_cnt;
 		nodes = step_ptr->step_layout->node_cnt;
 		task_dist = step_ptr->step_layout->task_dist;
-		snprintf(node_list, BUFFER_SIZE, "%s", 
+		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->step_layout->node_list);
 	}
 #endif
 
-	if (!step_ptr->job_ptr->db_index 
+	if (!step_ptr->job_ptr->db_index
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
 		error("jobacct_storage_p_step_start: "
@@ -1781,8 +1781,8 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
-	if(step_ptr->step_node_bitmap) { 
-		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
+	if(step_ptr->step_node_bitmap) {
+		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 				       step_ptr->step_node_bitmap);
 	}
 	req.node_cnt    = nodes;
@@ -1805,7 +1805,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-/* 
+/*
  * load into the storage the end of a job step
  */
 extern int jobacct_storage_p_step_complete(void *db_conn,
@@ -1820,32 +1820,32 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	char *ionodes = NULL;
 
 	cpus = tasks = step_ptr->job_ptr->num_procs;
-	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_JOBDATA_IONODES, 
+	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
+			     SELECT_JOBDATA_IONODES,
 			     &ionodes);
 	if (ionodes) {
-		snprintf(node_list, BUFFER_SIZE, 
+		snprintf(node_list, BUFFER_SIZE,
 			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
 		xfree(ionodes);
 	} else {
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	}
-	
+
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = tasks = step_ptr->job_ptr->total_procs;
-		snprintf(node_list, BUFFER_SIZE, "%s", 
+		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	} else {
-		cpus = step_ptr->cpu_count; 
+		cpus = step_ptr->cpu_count;
 		tasks = step_ptr->step_layout->task_cnt;
-		snprintf(node_list, BUFFER_SIZE, "%s", 
+		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->step_layout->node_list);
 	}
 #endif
 
-	if (!step_ptr->job_ptr->db_index 
+	if (!step_ptr->job_ptr->db_index
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
 		error("jobacct_storage_p_step_complete: "
@@ -1878,7 +1878,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-/* 
+/*
  * load into the storage a suspention of a job
  */
 extern int jobacct_storage_p_suspend(void *db_conn,
@@ -1888,7 +1888,7 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 	dbd_job_suspend_msg_t req;
 
 	memset(&req, 0, sizeof(dbd_job_suspend_msg_t));
-	
+
 	req.assoc_id     = job_ptr->assoc_id;
 	req.job_id       = job_ptr->job_id;
 	req.db_index     = job_ptr->db_index;
@@ -1905,8 +1905,8 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-/* 
- * get info from the storage 
+/*
+ * get info from the storage
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
@@ -1918,7 +1918,7 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 	dbd_list_msg_t *got_msg;
 	int rc;
 	List job_list = NULL;
-		
+
 	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
 
 	get_msg.cond = job_cond;
@@ -1938,7 +1938,7 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
 	} else if (resp.msg_type != DBD_GOT_JOBS) {
-		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
+		error("slurmdbd: response type not DBD_GOT_JOBS: %u",
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1950,7 +1950,7 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 	return job_list;
 }
 
-/* 
+/*
  * Expire old info from the storage
  * Not applicable for any database
  */
@@ -1976,7 +1976,7 @@ extern int jobacct_storage_p_archive(void *db_conn,
 		dbd_rc_msg_t *msg = resp.data;
 		rc = msg->return_code;
 
-		if(msg->return_code == SLURM_SUCCESS) 
+		if(msg->return_code == SLURM_SUCCESS)
 			info("%s", msg->comment);
 		else
 			error("%s", msg->comment);
@@ -1989,15 +1989,15 @@ extern int jobacct_storage_p_archive(void *db_conn,
 	return rc;
 }
 
-/* 
- * load old info into the storage 
+/*
+ * load old info into the storage
  */
-extern int jobacct_storage_p_archive_load(void *db_conn, 
+extern int jobacct_storage_p_archive_load(void *db_conn,
 					  acct_archive_rec_t *arch_rec)
 {
 	slurmdbd_msg_t req, resp;
 	int rc = SLURM_SUCCESS;
-	
+
 	req.msg_type = DBD_ARCHIVE_LOAD;
 	req.data     = arch_rec;
 
@@ -2009,7 +2009,7 @@ extern int jobacct_storage_p_archive_load(void *db_conn,
 		dbd_rc_msg_t *msg = resp.data;
 		rc = msg->return_code;
 
-		if(msg->return_code == SLURM_SUCCESS) 
+		if(msg->return_code == SLURM_SUCCESS)
 			info("%s", msg->comment);
 		else
 			error("%s", msg->comment);

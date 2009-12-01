@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) 
+INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sattach
 
@@ -10,12 +10,12 @@ sattach_SOURCES = \
 	attach.c attach.h \
 	opt.c opt.h \
 	sattach.c \
-	sattach.wrapper.c 
+	sattach.wrapper.c
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 
 sattach_LDADD = \
-	$(convenience_libs) 
+	$(convenience_libs)
 
 sattach_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 

@@ -1,8 +1,8 @@
 /****************************************************************************\
  *  debugger.h - definitions needed for TotalView interactions
  *****************************************************************************
- *  This file was supplied by James Cownie <jcownie@etnus.com> and provides 
- *  information required to interface Slurm to the TotalView debugger from 
+ *  This file was supplied by James Cownie <jcownie@etnus.com> and provides
+ *  information required to interface Slurm to the TotalView debugger from
  *  the Etnus Corporation. For more information about TotalView, see
  *  http://www.etnus.com/
 \*****************************************************************************/
@@ -51,7 +51,7 @@
 #ifdef HAVE_BG_FILES
 /* On bluegene systems the below structure is defined here.  So as to
  * not confict with allocate.c including this file we will just use the
- * definition there instead of defining it here. 
+ * definition there instead of defining it here.
  */
 # include "src/plugins/select/bluegene/wrap_rm_api.h"
 #else
@@ -66,7 +66,7 @@ typedef struct {
 extern MPIR_PROCDESC *MPIR_proctable;
 extern int MPIR_proctable_size;
 
-/* Various global variables which a debugger can use for 
+/* Various global variables which a debugger can use for
  * 1) finding out what the state of the program is at
  *    the time the magic breakpoint is hit.
  * 2) inform the process that it has been attached to and is
@@ -77,9 +77,9 @@ extern VOLATILE int MPIR_debug_gate;
 extern int          MPIR_being_debugged; /* Cause extra info on internal state
 					  * to be maintained
 					  */
- 
+
 /* Values for the debug_state, this seems to be all we need at the moment
- * but that may change... 
+ * but that may change...
  */
 #define MPIR_DEBUG_SPAWNED   1
 #define MPIR_DEBUG_ABORTING  2
@@ -92,6 +92,6 @@ extern void MPIR_Breakpoint(void);
 
 /* Value for totalview %J expansion in bulk launch string
  */
-extern char *totalview_jobid; 
+extern char *totalview_jobid;
 
 #endif

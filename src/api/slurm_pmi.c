@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -99,7 +99,7 @@ again:	if (gettimeofday(&tv1, NULL)) {
 	}
 
 	/* Verify we are active at the right time. If current time is different
-	 * from target by more than 15*pmi_time, then start over. If PMI_TIME 
+	 * from target by more than 15*pmi_time, then start over. If PMI_TIME
 	 * is set appropriately, then srun should have no more than 30 RPCs
 	 * in the queue at one time in the worst case. */
 	if (gettimeofday(&tv2, NULL))
@@ -113,7 +113,7 @@ again:	if (gettimeofday(&tv1, NULL)) {
 		error_time = delta_time - tot_time;
 	if (error_time > (15*pmi_time)) {	/* too far off */
 #if 0
-		info("delta=%u tot=%u err=%u", 
+		info("delta=%u tot=%u err=%u",
 			delta_time, tot_time, error_time);
 #endif
 		if ((++retries) <= 2)
@@ -159,7 +159,7 @@ static void _set_pmi_time(void)
 }
 
 /* Transmit PMI Keyval space data */
-int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr, 
+int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 		int pmi_rank, int pmi_size)
 {
 	slurm_msg_t msg_send;
@@ -169,19 +169,19 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 		return EINVAL;
 
 	if ((rc = _get_addr()) != SLURM_SUCCESS)
-		return rc; 
+		return rc;
 	_set_pmi_time();
 
 	slurm_msg_t_init(&msg_send);
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
-	
+
 	/* Send the RPC to the local srun communcation manager.
-	 * Since the srun can be sent thousands of messages at 
-	 * the same time and refuse some connections, retry as 
-	 * needed. Spread out messages by task's rank. Also 
-	 * increase the timeout if many tasks since the srun 
+	 * Since the srun can be sent thousands of messages at
+	 * the same time and refuse some connections, retry as
+	 * needed. Spread out messages by task's rank. Also
+	 * increase the timeout if many tasks since the srun
 	 * command is very overloaded.
 	 * We also increase the timeout (default timeout is
 	 * 10 secs). */
@@ -208,7 +208,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 }
 
 /* Wait for barrier and get full PMI Keyval space data */
-int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr, 
+int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		int pmi_rank, int pmi_size)
 {
 	int rc, srun_fd, retries = 0, timeout = 0;
@@ -243,7 +243,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	}
 	/* hostname is not set here, so slurm_get_addr fails
 	slurm_get_addr(&slurm_addr, &port, hostname, sizeof(hostname)); */
-	port = ntohs(slurm_addr.sin_port); 
+	port = ntohs(slurm_addr.sin_port);
 	if ((env_pmi_ifhn = getenv("SLURM_PMI_RESP_IFHN"))) {
 		strncpy(hostname, env_pmi_ifhn, sizeof(hostname));
 		hostname[sizeof(hostname)-1] = 0;
@@ -261,11 +261,11 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	msg_send.data = &data;
 
 	/* Send the RPC to the local srun communcation manager.
-	 * Since the srun can be sent thousands of messages at 
-	 * the same time and refuse some connections, retry as 
+	 * Since the srun can be sent thousands of messages at
+	 * the same time and refuse some connections, retry as
 	 * needed. Wait until all key-pairs have been sent by
 	 * all tasks then spread out messages by task's rank.
-	 * Also increase the message timeout if many tasks 
+	 * Also increase the message timeout if many tasks
 	 * since the srun command can get very overloaded (the
 	 * default timeout is 10 secs).
 	 */
@@ -308,7 +308,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	}
 	if(msg_rcv.auth_cred)
 		(void)g_slurm_auth_destroy(msg_rcv.auth_cred);
-	
+
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
 		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
 		slurm_close_accepted_conn(srun_fd);
@@ -316,7 +316,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	}
 	if (slurm_send_rc_msg(&msg_rcv, SLURM_SUCCESS) < 0)
 		error("slurm_send_rc_msg: %m");
-	
+
 	slurm_close_accepted_conn(srun_fd);
 	*kvs_set_ptr = msg_rcv.data;
 
@@ -325,7 +325,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 }
 
 /* Forward keypair info to other tasks as required.
- * Clear message forward structure upon completion. 
+ * Clear message forward structure upon completion.
  * The messages are forwarded sequentially. */
 static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr)
 {

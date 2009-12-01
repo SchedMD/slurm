@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -309,9 +309,9 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 
 	if ((slurmctld_conf.slurm_user_id != 0)
 	&&  (slurmctld_conf.slurm_user_id != uid)) {
-		/* If SlurmUser is not root, then it is unable to set the 
-		 * appropriate user id and group id for the program to be 
-		 * launched. To prevent the launched program for an arbitrary 
+		/* If SlurmUser is not root, then it is unable to set the
+		 * appropriate user id and group id for the program to be
+		 * launched. To prevent the launched program for an arbitrary
 		 * user being executed as user SlurmUser, disable all other
 		 * users from setting triggers. */
 		info("Attempt to set trigger by uid %u != SlurmUser", uid);
@@ -616,10 +616,10 @@ static int _open_resv_state_file(char **state_file)
 	xstrcat(*state_file, "/trigger_state");
 	state_fd = open(*state_file, O_RDONLY);
 	if (state_fd < 0) {
-		error("Could not open trigger state file %s: %m", 
+		error("Could not open trigger state file %s: %m",
 		      *state_file);
 	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat trigger state file %s: %m", 
+		error("Could not stat trigger state file %s: %m",
 		      *state_file);
 		(void) close(state_fd);
 	} else if (stat_buf.st_size < 10) {
@@ -661,7 +661,7 @@ extern int trigger_state_restore(void)
 				if (errno == EINTR)
 					continue;
 				else {
-					error("Read error on %s: %m", 
+					error("Read error on %s: %m",
 					      state_file);
 					break;
 				}
@@ -747,14 +747,14 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 
 	if (trig_in->trig_type & TRIGGER_TYPE_DOWN) {
 		if (trigger_down_nodes_bitmap
-		&&  bit_overlap(trig_in->job_ptr->node_bitmap, 
+		&&  bit_overlap(trig_in->job_ptr->node_bitmap,
 				trigger_down_nodes_bitmap)) {
 			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 				info("trigger[%u] for job %u down",
 					trig_in->trig_id, trig_in->job_id);
 			}
 			trig_in->state = 1;
-			trig_in->trig_time = now + 
+			trig_in->trig_time = now +
 					(trig_in->trig_time - 0x8000);
 			return;
 		}
@@ -762,14 +762,14 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 
 	if (trig_in->trig_type & TRIGGER_TYPE_FAIL) {
 		if (trigger_fail_nodes_bitmap
-		&&  bit_overlap(trig_in->job_ptr->node_bitmap, 
+		&&  bit_overlap(trig_in->job_ptr->node_bitmap,
 				trigger_fail_nodes_bitmap)) {
 			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 				info("trigger[%u] for job %u node fail",
 					trig_in->trig_id, trig_in->job_id);
 			}
 			trig_in->state = 1;
-			trig_in->trig_time = now + 
+			trig_in->trig_time = now +
 					(trig_in->trig_time - 0x8000);
 			return;
 		}
@@ -777,10 +777,10 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 
 	if (trig_in->trig_type & TRIGGER_TYPE_UP) {
 		if (trigger_up_nodes_bitmap
-		&&  bit_overlap(trig_in->job_ptr->node_bitmap, 
+		&&  bit_overlap(trig_in->job_ptr->node_bitmap,
 				trigger_up_nodes_bitmap)) {
 			trig_in->state = 1;
-			trig_in->trig_time = now + 
+			trig_in->trig_time = now +
 					(0x8000 - trig_in->trig_time);
 			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 				info("trigger[%u] for job %u up",
@@ -810,9 +810,9 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->res_id = bitmap2node_name(
 					trigger_down_nodes_bitmap);
 			trig_in->state = 1;
-		} else if (bit_overlap(trig_in->nodes_bitmap, 
+		} else if (bit_overlap(trig_in->nodes_bitmap,
 					trigger_down_nodes_bitmap)) {
-			bit_and(trig_in->nodes_bitmap, 
+			bit_and(trig_in->nodes_bitmap,
 					trigger_down_nodes_bitmap);
 			xfree(trig_in->res_id);
 			trig_in->res_id = bitmap2node_name(
@@ -820,7 +820,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->state = 1;
 		}
 		if (trig_in->state == 1) {
-			trig_in->trig_time = now + 
+			trig_in->trig_time = now +
 					(trig_in->trig_time - 0x8000);
 			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 				info("trigger[%u] for node %s down",
@@ -838,9 +838,9 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->res_id = bitmap2node_name(
 					trigger_drained_nodes_bitmap);
 			trig_in->state = 1;
-		} else if (bit_overlap(trig_in->nodes_bitmap, 
+		} else if (bit_overlap(trig_in->nodes_bitmap,
 					trigger_drained_nodes_bitmap)) {
-			bit_and(trig_in->nodes_bitmap, 
+			bit_and(trig_in->nodes_bitmap,
 					trigger_drained_nodes_bitmap);
 			xfree(trig_in->res_id);
 			trig_in->res_id = bitmap2node_name(
@@ -848,7 +848,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->state = 1;
 		}
 		if (trig_in->state == 1) {
-			trig_in->trig_time = now + 
+			trig_in->trig_time = now +
 					(trig_in->trig_time - 0x8000);
 			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 				info("trigger[%u] for node %s drained",
@@ -866,9 +866,9 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->res_id = bitmap2node_name(
 					trigger_fail_nodes_bitmap);
 			trig_in->state = 1;
-		} else if (bit_overlap(trig_in->nodes_bitmap, 
+		} else if (bit_overlap(trig_in->nodes_bitmap,
 					trigger_fail_nodes_bitmap)) {
-			bit_and(trig_in->nodes_bitmap, 
+			bit_and(trig_in->nodes_bitmap,
 					trigger_fail_nodes_bitmap);
 			xfree(trig_in->res_id);
 			trig_in->res_id = bitmap2node_name(
@@ -876,7 +876,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->state = 1;
 		}
 		if (trig_in->state == 1) {
-			trig_in->trig_time = now + 
+			trig_in->trig_time = now +
 					(trig_in->trig_time - 0x8000);
 			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 				info("trigger[%u] for node %s fail",
@@ -887,7 +887,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	}
 
 	if (trig_in->trig_type & TRIGGER_TYPE_IDLE) {
-		/* We need to determine which (if any) of these 
+		/* We need to determine which (if any) of these
 		 * nodes have been idle for at least the offset time */
 		time_t min_idle = now - (trig_in->trig_time - 0x8000);
 		int i;
@@ -934,9 +934,9 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->res_id = bitmap2node_name(
 					trigger_up_nodes_bitmap);
 			trig_in->state = 1;
-		} else if (bit_overlap(trig_in->nodes_bitmap, 
+		} else if (bit_overlap(trig_in->nodes_bitmap,
 					trigger_up_nodes_bitmap)) {
-			bit_and(trig_in->nodes_bitmap, 
+			bit_and(trig_in->nodes_bitmap,
 					trigger_up_nodes_bitmap);
 			xfree(trig_in->res_id);
 			trig_in->res_id = bitmap2node_name(
@@ -944,7 +944,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->state = 1;
 		}
 		if (trig_in->state == 1) {
-			trig_in->trig_time = now + 
+			trig_in->trig_time = now +
 					(trig_in->trig_time - 0x8000);
 			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 				info("trigger[%u] for node %s up",
@@ -966,11 +966,11 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	}
 }
 
-/* Ideally we would use the existing proctrack plugin to prevent any 
+/* Ideally we would use the existing proctrack plugin to prevent any
  * processes from escaping our control, but that plugin is tied
  * to various slurmd data structures. We just the process group ID
- * to kill the spawned program after MAX_PROG_TIME. Since triggers are 
- * meant primarily for system administrators rather than users, this 
+ * to kill the spawned program after MAX_PROG_TIME. Since triggers are
+ * meant primarily for system administrators rather than users, this
  * may be sufficient. */
 static void _trigger_run_program(trig_mgr_info_t *trig_in)
 {
@@ -1032,7 +1032,7 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 static void _clear_event_triggers(void)
 {
 	if (trigger_down_nodes_bitmap) {
-		bit_nclear(trigger_down_nodes_bitmap, 
+		bit_nclear(trigger_down_nodes_bitmap,
 			   0, (bit_size(trigger_down_nodes_bitmap) - 1));
 	}
 	if (trigger_drained_nodes_bitmap) {
@@ -1040,7 +1040,7 @@ static void _clear_event_triggers(void)
 			   0, (bit_size(trigger_drained_nodes_bitmap) - 1));
 	}
 	if (trigger_up_nodes_bitmap) {
-		bit_nclear(trigger_up_nodes_bitmap,   
+		bit_nclear(trigger_up_nodes_bitmap,
 			   0, (bit_size(trigger_up_nodes_bitmap) - 1));
 	}
 	trigger_node_reconfig = false;
@@ -1076,7 +1076,7 @@ extern void trigger_process(void)
 			if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 				info("launching program for trigger[%u]",
 					trig_in->trig_id);
-				info("  uid=%u gid=%u program=%s arg=%s", 
+				info("  uid=%u gid=%u program=%s arg=%s",
 					trig_in->user_id, trig_in->group_id,
 					trig_in->program, trig_in->res_id);
 			}
@@ -1084,12 +1084,12 @@ extern void trigger_process(void)
 			trig_in->trig_time = now;
 			state_change = true;
 			_trigger_run_program(trig_in);
-		} else if ((trig_in->state == 2) && 
-			   (difftime(now, trig_in->trig_time) > 
+		} else if ((trig_in->state == 2) &&
+			   (difftime(now, trig_in->trig_time) >
 					MAX_PROG_TIME)) {
 			if (trig_in->group_id != 0) {
 				killpg(trig_in->group_id, SIGKILL);
-				rc = waitpid(trig_in->group_id, &prog_stat, 
+				rc = waitpid(trig_in->group_id, &prog_stat,
 					     WNOHANG);
 				if ((rc > 0) && prog_stat) {
 					info("trigger uid=%u type=%s:%s "
@@ -1097,7 +1097,7 @@ extern void trigger_process(void)
 					     trig_in->user_id,
 					     _res_type(trig_in->res_type),
 					     _trig_type(trig_in->trig_type),
-					     WIFEXITED(prog_stat), 
+					     WIFEXITED(prog_stat),
 					     WTERMSIG(prog_stat));
 				}
 				if ((rc == trig_in->group_id) ||
@@ -1106,9 +1106,9 @@ extern void trigger_process(void)
 			}
 
 			if (trig_in->group_id == 0) {
-				if (slurm_get_debug_flags() & 
+				if (slurm_get_debug_flags() &
 				    DEBUG_FLAG_TRIGGERS) {
-					info("purging trigger[%u]", 
+					info("purging trigger[%u]",
 					     trig_in->trig_id);
 				}
 				list_delete_item(trig_iter);

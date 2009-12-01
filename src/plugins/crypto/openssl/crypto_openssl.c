@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -106,7 +106,7 @@ extern int init ( void )
 }
 
 /*
- * fini() is called when the plugin is unloaded, 
+ * fini() is called when the plugin is unloaded,
  * free any global memory allocations here to avoid memory leaks.
  */
 extern int fini ( void )
@@ -157,7 +157,7 @@ crypto_read_public_key(const char *path)
 	if (!PEM_read_PUBKEY(fp, &pk, NULL, NULL)) {
 		fclose(fp);
 		return NULL;
-	} 
+	}
 	fclose(fp);
 
 	return (void *) pk;
@@ -173,13 +173,13 @@ crypto_str_error(int errnum)
 		loaded = 1;
 	}
 
-	return (char *) ERR_reason_error_string(ERR_get_error()); 
+	return (char *) ERR_reason_error_string(ERR_get_error());
 }
 
 /* NOTE: Caller must xfree the signature returned by sig_pp */
 extern int
-crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp, 
-		unsigned int *sig_size_p) 
+crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
+		unsigned int *sig_size_p)
 {
 	EVP_MD_CTX    ectx;
 	int           rc    = SLURM_SUCCESS;
@@ -193,7 +193,7 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 	EVP_SignInit(&ectx, EVP_sha1());
 	EVP_SignUpdate(&ectx, buffer, buf_size);
 
-	if (!(EVP_SignFinal(&ectx, (unsigned char *)*sig_pp, sig_size_p, 
+	if (!(EVP_SignFinal(&ectx, (unsigned char *)*sig_pp, sig_size_p,
 			(EVP_PKEY *) key))) {
 		rc = SLURM_ERROR;
 	}
@@ -207,7 +207,7 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 }
 
 extern int
-crypto_verify_sign(void * key, char *buffer, unsigned int buf_size, 
+crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 		char *signature, unsigned int sig_size)
 {
 	EVP_MD_CTX     ectx;
@@ -216,7 +216,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 	EVP_VerifyInit(&ectx, EVP_sha1());
 	EVP_VerifyUpdate(&ectx, buffer, buf_size);
 
-	rc = EVP_VerifyFinal(&ectx, (unsigned char *) signature, 
+	rc = EVP_VerifyFinal(&ectx, (unsigned char *) signature,
 		sig_size, (EVP_PKEY *) key);
 	if (rc <= 0)
 		rc = SLURM_ERROR;

@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -53,10 +53,10 @@
 
 #define SRUN_LAUNCH_MSG 0
 
-/* Launch the srun request. Note that retry is always zero since 
- * we don't want to clog the system up with messages destined for 
- * defunct srun processes 
- */ 
+/* Launch the srun request. Note that retry is always zero since
+ * we don't want to clog the system up with messages destined for
+ * defunct srun processes
+ */
 static void _srun_agent_launch(slurm_addr *addr, char *host,
 		slurm_msg_type_t type, void *msg_args)
 {
@@ -81,14 +81,14 @@ extern void srun_allocate (uint32_t job_id)
 
 	xassert(job_ptr);
 	if (job_ptr && job_ptr->alloc_resp_port && job_ptr->alloc_node &&
-	    job_ptr->resp_host && job_ptr->job_resrcs && 
+	    job_ptr->resp_host && job_ptr->job_resrcs &&
 	    job_ptr->job_resrcs->cpu_array_cnt) {
 		slurm_addr * addr;
 		resource_allocation_response_msg_t *msg_arg;
 		job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		slurm_set_addr(addr, job_ptr->alloc_resp_port, 
+		slurm_set_addr(addr, job_ptr->alloc_resp_port,
 			job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(resource_allocation_response_msg_t));
 		msg_arg->job_id 	= job_ptr->job_id;
@@ -96,19 +96,19 @@ extern void srun_allocate (uint32_t job_id)
 		msg_arg->num_cpu_groups	= job_resrcs_ptr->cpu_array_cnt;
 		msg_arg->cpus_per_node  = xmalloc(sizeof(uint16_t) *
 					  job_resrcs_ptr->cpu_array_cnt);
-		memcpy(msg_arg->cpus_per_node, 
+		memcpy(msg_arg->cpus_per_node,
 		       job_resrcs_ptr->cpu_array_value,
 		       (sizeof(uint16_t) * job_resrcs_ptr->cpu_array_cnt));
 		msg_arg->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
 					   job_resrcs_ptr->cpu_array_cnt);
-		memcpy(msg_arg->cpu_count_reps, 
+		memcpy(msg_arg->cpu_count_reps,
 		       job_resrcs_ptr->cpu_array_reps,
 		       (sizeof(uint32_t) * job_resrcs_ptr->cpu_array_cnt));
 		msg_arg->node_cnt	= job_ptr->node_cnt;
 		msg_arg->select_jobinfo = select_g_select_jobinfo_copy(
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
-		_srun_agent_launch(addr, job_ptr->alloc_node, 
+		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg);
 	}
 }
@@ -129,7 +129,7 @@ extern void srun_allocate_abort(struct job_record *job_ptr)
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;
-		_srun_agent_launch(addr, job_ptr->alloc_node, 
+		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   SRUN_JOB_COMPLETE,
 				   msg_arg);
 	}
@@ -163,7 +163,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
 		if (!bit_test(step_ptr->step_node_bitmap, bit_position))
 			continue;	/* job step not on this node */
-		if ( (step_ptr->port    == 0)    || 
+		if ( (step_ptr->port    == 0)    ||
 		     (step_ptr->host    == NULL) ||
 		     (step_ptr->batch_step)      ||
 		     (step_ptr->host[0] == '\0') )
@@ -174,9 +174,9 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = step_ptr->step_id;
 		msg_arg->nodelist = xstrdup(node_name);
-		_srun_agent_launch(addr, step_ptr->host, SRUN_NODE_FAIL, 
+		_srun_agent_launch(addr, step_ptr->host, SRUN_NODE_FAIL,
 				   msg_arg);
-	}	
+	}
 	list_iterator_destroy(step_iterator);
 
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
@@ -207,10 +207,10 @@ extern void srun_ping (void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
-		
+
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
-		
+
 		if ((job_ptr->time_last_active <= old) && job_ptr->other_port
 		    &&  job_ptr->alloc_node && job_ptr->resp_host) {
 			addr = xmalloc(sizeof(struct sockaddr_in));
@@ -237,11 +237,11 @@ extern void srun_timeout (struct job_record *job_ptr)
 	srun_timeout_msg_t *msg_arg;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
-	
+
 	xassert(job_ptr);
 	if (!IS_JOB_RUNNING(job_ptr))
 		return;
-	
+
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
@@ -256,7 +256,7 @@ extern void srun_timeout (struct job_record *job_ptr)
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
-		if ( (step_ptr->port    == 0)    || 
+		if ( (step_ptr->port    == 0)    ||
 		     (step_ptr->host    == NULL) ||
 		     (step_ptr->batch_step)      ||
 		     (step_ptr->host[0] == '\0') )
@@ -267,9 +267,9 @@ extern void srun_timeout (struct job_record *job_ptr)
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = step_ptr->step_id;
 		msg_arg->timeout  = job_ptr->end_time;
-		_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, 
+		_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT,
 				   msg_arg);
-	}	
+	}
 	list_iterator_destroy(step_iterator);
 }
 
@@ -310,14 +310,14 @@ extern void srun_job_complete (struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	
+
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;
-		_srun_agent_launch(addr, job_ptr->alloc_node, 
+		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   SRUN_JOB_COMPLETE, msg_arg);
 	}
 
@@ -326,7 +326,7 @@ extern void srun_job_complete (struct job_record *job_ptr)
 		if (step_ptr->batch_step)	/* batch script itself */
 			continue;
 		srun_step_complete(step_ptr);
-	}	
+	}
 	list_iterator_destroy(step_iterator);
 }
 

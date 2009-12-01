@@ -6,11 +6,11 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 #
-# Note:    To avoid one minute NFS propogation delays in the output files, 
-#          we create them ahead of time. Without explicity file creation, 
+# Note:    To avoid one minute NFS propogation delays in the output files,
+#          we create them ahead of time. Without explicity file creation,
 #          this test requires about one minute per cycle to execute.
 #
-# Note:    This script generates and then deletes files in the working 
+# Note:    This script generates and then deletes files in the working
 #          directory named test9.4.input, test9.4.[0-9]+.input, and
 #          test9.4.[0-9]+.output
 ############################################################################
@@ -19,21 +19,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -68,7 +68,7 @@ set task_cnt      $max_stress_tasks
 
 print_header $test_id
 
-# Execute an srun job to print hostname to output_file with task_cnt tasks 
+# Execute an srun job to print hostname to output_file with task_cnt tasks
 # per node, wait for completion
 # Returns 0 on successful completion, returns 1 otherwise
 proc run_cat_job { input_file output_file } {
@@ -77,7 +77,7 @@ proc run_cat_job { input_file output_file } {
 	expect {
 		-re "Unable to contact" {
 			send_user "\nFAILURE: slurm appears to be down\n"
-			return 1  
+			return 1
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
@@ -105,7 +105,7 @@ set srun_pid [spawn $srun -e /dev/null -i $file_in -o $file_in_task -N$node_cnt 
 expect {
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
-		exit 1  
+		exit 1
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"

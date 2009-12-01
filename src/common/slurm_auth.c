@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -143,13 +143,13 @@ slurm_auth_get_ops( slurm_auth_context_t c )
  	/* Find the correct plugin. */
         c->cur_plugin = plugin_load_and_link(c->auth_type, n_syms, syms,
 					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE ) 
+        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
         	return &c->ops;
 
 	error("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      c->auth_type);
-	
+
 	/* Get the plugin list, if needed. */
         if ( c->plugin_list == NULL ) {
 		char *plugin_dir;
@@ -160,20 +160,20 @@ slurm_auth_get_ops( slurm_auth_context_t c )
                 }
 
                 plugrack_set_major_type( c->plugin_list, "auth" );
-                plugrack_set_paranoia( c->plugin_list, 
-				       PLUGRACK_PARANOIA_NONE, 
+                plugrack_set_paranoia( c->plugin_list,
+				       PLUGRACK_PARANOIA_NONE,
 				       0 );
 		plugin_dir = slurm_get_plugin_dir();
                 plugrack_read_dir( c->plugin_list, plugin_dir );
 		xfree(plugin_dir);
         }
-  
+
         /* Find the correct plugin. */
         c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->auth_type );
         if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
                 error( "can't find a plugin for type %s", c->auth_type );
                 return NULL;
-        }  
+        }
 
         /* Dereference the API. */
         if ( plugin_get_syms( c->cur_plugin,
@@ -200,16 +200,16 @@ slurm_auth_marshal_args( void *hosts, int timeout )
         static int timeout_idx = -1;
         static int count = sizeof( auth_args ) / sizeof( struct _arg_desc ) - 1;
         void **argv;
-        
+
         /* Get indices from descriptor, if we haven't already. */
         if ( ( hostlist_idx == -1 ) &&
              ( timeout_idx == -1 ) ) {
                 hostlist_idx = arg_idx_by_name( auth_args, ARG_HOST_LIST );
-                timeout_idx = arg_idx_by_name( auth_args, ARG_TIMEOUT );        
+                timeout_idx = arg_idx_by_name( auth_args, ARG_TIMEOUT );
         }
 
         argv = xmalloc( count * sizeof( void * ) );
-        
+
         /* Marshal host list.  Don't quite know how to do this yet. */
         argv[ hostlist_idx ] = hosts;
 
@@ -245,14 +245,14 @@ slurm_auth_context_create( const char *auth_type )
 
         /* Plugin rack is demand-loaded on first reference. */
         c->plugin_list = NULL;
-        c->cur_plugin = PLUGIN_INVALID_HANDLE;  
+        c->cur_plugin = PLUGIN_INVALID_HANDLE;
 
         return c;
 }
 
 
 static const char *
-slurm_auth_generic_errstr( int slurm_errno )         
+slurm_auth_generic_errstr( int slurm_errno )
 {
         static struct {
                 int err;
@@ -283,7 +283,7 @@ slurm_auth_generic_errstr( int slurm_errno )
 
 static int
 _slurm_auth_context_destroy( slurm_auth_context_t c )
-{    
+{
 	int rc = SLURM_SUCCESS;
 
         /*
@@ -300,7 +300,7 @@ _slurm_auth_context_destroy( slurm_auth_context_t c )
 
         xfree( c->auth_type );
         xfree( c );
-        
+
         return rc;
 }
 
@@ -309,10 +309,10 @@ slurm_auth_init( char *auth_type )
 {
         int retval = SLURM_SUCCESS;
 	char *auth_type_local = NULL;
-	
+
         slurm_mutex_lock( &context_lock );
 
-        if ( g_context ) 
+        if ( g_context )
                 goto done;
 
 	if (auth_type == NULL) {
@@ -331,9 +331,9 @@ slurm_auth_init( char *auth_type )
                 retval = SLURM_ERROR;
                 goto done;
         }
-        
+
         if ( slurm_auth_get_ops( g_context ) == NULL ) {
-                error( "cannot resolve %s plugin operations", 
+                error( "cannot resolve %s plugin operations",
 		       auth_type );
                 _slurm_auth_context_destroy( g_context );
                 g_context = NULL;
@@ -366,7 +366,7 @@ slurm_auth_fini( void )
  * context initialization includes a test for the completeness of
  * the API function dispatcher.
  */
-          
+
 void *
 g_slurm_auth_create( void *hosts, int timeout, char *auth_info )
 {
@@ -382,7 +382,7 @@ g_slurm_auth_create( void *hosts, int timeout, char *auth_info )
         if ( ( argv = slurm_auth_marshal_args( hosts, timeout ) ) == NULL ) {
                 return NULL;
         }
-       
+
         ret = (*(g_context->ops.create))( argv, auth_info );
         xfree( argv );
         return ret;
@@ -415,7 +415,7 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
         if ( ( argv = slurm_auth_marshal_args( hosts, timeout ) ) == NULL ) {
                 return SLURM_ERROR;
         }
-        
+
         ret = (*(g_context->ops.verify))( cred, auth_info );
         xfree( argv );
         return ret;
@@ -426,7 +426,7 @@ g_slurm_auth_get_uid( void *cred, char *auth_info )
 {
 	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
-        
+
         return (*(g_context->ops.get_uid))( cred, auth_info );
 }
 
@@ -435,7 +435,7 @@ g_slurm_auth_get_gid( void *cred, char *auth_info )
 {
 	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
-        
+
         return (*(g_context->ops.get_gid))( cred, auth_info );
 }
 
@@ -444,7 +444,7 @@ g_slurm_auth_pack( void *cred, Buf buf )
 {
         if ( slurm_auth_init(NULL) < 0 )
                 return SLURM_ERROR;
- 
+
 	if ( auth_dummy )
 		return SLURM_SUCCESS;
 
@@ -456,7 +456,7 @@ g_slurm_auth_unpack( Buf buf )
 {
 	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return NULL;
-        
+
         return (*(g_context->ops.unpack))( buf );
 }
 

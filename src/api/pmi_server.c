@@ -6,21 +6,21 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
@@ -92,7 +92,7 @@ static void _print_kvs(void);
 
 /* Transmit the KVS keypairs to all tasks, waiting at a barrier
  * This will take some time, so we work with a copy of the KVS keypairs.
- * We also work with a private copy of the barrier data and clear the 
+ * We also work with a private copy of the barrier data and clear the
  * global data pointers so any new barrier requests get treated as
  * completely independent of this one. */
 static void _kvs_xmit_tasks(void)
@@ -107,7 +107,7 @@ static void _kvs_xmit_tasks(void)
 
 	/* Target KVS_TIME should be about ave processing time */
 	debug("kvs_put processing time min=%d, max=%d ave=%d (usec)",
-		min_time_kvs_put, max_time_kvs_put, 
+		min_time_kvs_put, max_time_kvs_put,
 		(tot_time_kvs_put / barrier_cnt));
 	min_time_kvs_put = 1000000;
 	max_time_kvs_put = 0;
@@ -144,7 +144,7 @@ static void *_msg_thread(void *x)
 	struct msg_arg *msg_arg_ptr = (struct msg_arg *) x;
 	int rc, success = 0, timeout;
 	slurm_msg_t msg_send;
-	
+
 	slurm_msg_t_init(&msg_send);
 
 	debug2("KVS_Barrier msg to %s:%u",
@@ -196,7 +196,7 @@ static void *_agent(void *x)
 	}
 	fanout_off_host = getenv("PMI_FANOUT_OFF_HOST");
 
-	/* only send one message to each host, 
+	/* only send one message to each host,
 	 * build table of the ports on each host */
 	START_TIMER;
 	slurm_attr_init(&attr);
@@ -208,7 +208,7 @@ static void *_agent(void *x)
 		kvs_host_list = xmalloc(sizeof(struct kvs_hosts) * pmi_fanout);
 		host_cnt = 0;
 
-		/* This code enables key-pair forwarding between 
+		/* This code enables key-pair forwarding between
 		 * tasks. First task on the node gets the key-pairs
 		 * with host/port information for all other tasks on
 		 * that node it should forward the information to. */
@@ -220,9 +220,9 @@ static void *_agent(void *x)
 				   args->barrier_xmit_ptr[j].hostname))
 				continue;	/* another host */
 			kvs_host_list[host_cnt].task_id = 0; /* not avail */
-			kvs_host_list[host_cnt].port = 
+			kvs_host_list[host_cnt].port =
 					args->barrier_xmit_ptr[j].port;
-			kvs_host_list[host_cnt].hostname = 
+			kvs_host_list[host_cnt].hostname =
 					args->barrier_xmit_ptr[j].hostname;
 			args->barrier_xmit_ptr[j].port = 0;/* don't reissue */
 			host_cnt++;
@@ -306,14 +306,14 @@ struct kvs_comm **_kvs_comm_dup(void)
 		rc_kvs[i] = xmalloc(sizeof(struct kvs_comm));
 		rc_kvs[i]->kvs_name = xstrdup(kvs_comm_ptr[i]->kvs_name);
 		rc_kvs[i]->kvs_cnt = kvs_comm_ptr[i]->kvs_cnt;
-		rc_kvs[i]->kvs_keys = 
+		rc_kvs[i]->kvs_keys =
 				xmalloc(sizeof(char *) * rc_kvs[i]->kvs_cnt);
-		rc_kvs[i]->kvs_values = 
+		rc_kvs[i]->kvs_values =
 				xmalloc(sizeof(char *) * rc_kvs[i]->kvs_cnt);
 		for (j=0; j<rc_kvs[i]->kvs_cnt; j++) {
-			rc_kvs[i]->kvs_keys[j] = 
+			rc_kvs[i]->kvs_keys[j] =
 					xstrdup(kvs_comm_ptr[i]->kvs_keys[j]);
-			rc_kvs[i]->kvs_values[j] = 
+			rc_kvs[i]->kvs_values[j] =
 					xstrdup(kvs_comm_ptr[i]->kvs_values[j]);
 		}
 	}
@@ -333,7 +333,7 @@ static struct kvs_comm *_find_kvs_by_name(char *name)
 	return NULL;
 }
 
-static void _merge_named_kvs(struct kvs_comm *kvs_orig, 
+static void _merge_named_kvs(struct kvs_comm *kvs_orig,
 		struct kvs_comm *kvs_new)
 {
 	int i, j;
@@ -351,12 +351,12 @@ static void _merge_named_kvs(struct kvs_comm *kvs_orig,
 			continue;	/* already recorded, update */
 		/* append it */
 		kvs_orig->kvs_cnt++;
-		xrealloc(kvs_orig->kvs_keys, 
+		xrealloc(kvs_orig->kvs_keys,
 				(sizeof(char *) * kvs_orig->kvs_cnt));
-		xrealloc(kvs_orig->kvs_values, 
+		xrealloc(kvs_orig->kvs_values,
 				(sizeof(char *) * kvs_orig->kvs_cnt));
 		kvs_orig->kvs_keys[kvs_orig->kvs_cnt-1] = kvs_new->kvs_keys[i];
-		kvs_orig->kvs_values[kvs_orig->kvs_cnt-1] = 
+		kvs_orig->kvs_values[kvs_orig->kvs_cnt-1] =
 				kvs_new->kvs_values[i];
 		kvs_new->kvs_keys[i] = NULL;
 		kvs_new->kvs_values[i] = NULL;
@@ -381,7 +381,7 @@ static void _print_kvs(void)
 		for (j=0; j<kvs_comm_ptr[i]->kvs_cnt; j++) {
 			info("KVS: %s:%s:%s", kvs_comm_ptr[i]->kvs_name,
 				kvs_comm_ptr[i]->kvs_keys[j],
-				kvs_comm_ptr[i]->kvs_values[j]); 
+				kvs_comm_ptr[i]->kvs_values[j]);
 		}
 	}
 #endif
@@ -394,7 +394,7 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 	DEF_TIMERS;
 
 	/* Merge new data with old.
-	 * NOTE: We just move pointers rather than copy data where 
+	 * NOTE: We just move pointers rather than copy data where
 	 * possible for improved performance */
 	START_TIMER;
 	pthread_mutex_lock(&kvs_mutex);
@@ -402,7 +402,7 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 		kvs_ptr = _find_kvs_by_name(kvs_set_ptr->
 			kvs_comm_ptr[i]->kvs_name);
 		if (kvs_ptr) {
-			_merge_named_kvs(kvs_ptr, 
+			_merge_named_kvs(kvs_ptr,
 				kvs_set_ptr->kvs_comm_ptr[i]);
 		} else {
 			_move_kvs(kvs_set_ptr->kvs_comm_ptr[i]);
@@ -432,8 +432,8 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 #endif
 
 #if _DEBUG
-	info("pmi_kvs_get: rank:%u size:%u port:%u, host:%s", 
-		kvs_get_ptr->task_id, kvs_get_ptr->size, 
+	info("pmi_kvs_get: rank:%u size:%u port:%u, host:%s",
+		kvs_get_ptr->task_id, kvs_get_ptr->size,
 		kvs_get_ptr->port, kvs_get_ptr->hostname);
 #endif
 	if (kvs_get_ptr->size == 0) {
@@ -457,7 +457,7 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 		goto fini;
 	}
 	if (kvs_get_ptr->task_id >= barrier_cnt) {
-		error("PMK_KVS_Barrier task count(%u) >= size(%u)", 
+		error("PMK_KVS_Barrier task count(%u) >= size(%u)",
 			kvs_get_ptr->task_id, barrier_cnt);
 		rc = SLURM_ERROR;
 		goto fini;
@@ -480,7 +480,7 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 #endif
 		_kvs_xmit_tasks();
 }
-fini:	pthread_mutex_unlock(&kvs_mutex); 
+fini:	pthread_mutex_unlock(&kvs_mutex);
 
 	return rc;
 }

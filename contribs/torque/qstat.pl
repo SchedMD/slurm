@@ -9,36 +9,36 @@
 #  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 #  Written by Danny Auble <auble1@llnl.gov>.
 #  CODE-OCEC-09-009. All rights reserved.
-#  
+#
 #  This file is part of SLURM, a resource management program.
 #  For details, see <https://computing.llnl.gov/linux/slurm/>.
 #  Please also read the included file: DISCLAIMER.
-#  
+#
 #  SLURM is free software; you can redistribute it and/or modify it under
 #  the terms of the GNU General Public License as published by the Free
 #  Software Foundation; either version 2 of the License, or (at your option)
 #  any later version.
 #
-#  In addition, as a special exception, the copyright holders give permission 
+#  In addition, as a special exception, the copyright holders give permission
 #  to link the code of portions of this program with the OpenSSL library under
-#  certain conditions as described in each individual source file, and 
-#  distribute linked combinations including the two. You must obey the GNU 
-#  General Public License in all respects for all of the code used other than 
-#  OpenSSL. If you modify file(s) with this exception, you may extend this 
-#  exception to your version of the file(s), but you are not obligated to do 
+#  certain conditions as described in each individual source file, and
+#  distribute linked combinations including the two. You must obey the GNU
+#  General Public License in all respects for all of the code used other than
+#  OpenSSL. If you modify file(s) with this exception, you may extend this
+#  exception to your version of the file(s), but you are not obligated to do
 #  so. If you do not wish to do so, delete this exception statement from your
-#  version.  If you delete this exception statement from all source files in 
+#  version.  If you delete this exception statement from all source files in
 #  the program, then also delete it here.
-#  
+#
 #  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 #  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 #  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 #  details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with SLURM; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
-#  
+#
 #  Based off code with permission copyright 2006, 2007 Cluster Resources, Inc.
 ###############################################################################
 
@@ -103,13 +103,13 @@ if ($man)
 
 # Use sole remaining argument as jobIds
 
-if($^O eq 'aix') { 
+if($^O eq 'aix') {
 	$hostname = `hostname`;
 } else {
 	$hostname = `hostname -f`;
 }
 chomp $hostname;
-		
+
 # Handle unsupported arguments
 #unsupportedOption("-e", DIE) if $executable;
 #unsupportedOption("-W", DIE) if $siteSpecific;
@@ -134,19 +134,19 @@ if(defined($queueList)) {
 	if(!$resp) {
 		die "Problem loading jobs.\n";
 	}
-	
+
 	my $line = 0;
 	foreach my $part (@{$resp->{partition_array}}) {
 		if (@queueIds) {
 			next unless grep /^$part->{'name'}/, @queueIds;
-		} 
-		
+		}
+
 		if ($full) { # Full
 			print_part_full($part);
 		} else { # Brief
 			print_part_brief($part, $line);
 			$line++;
-		}	
+		}
 		$rc = 0;
 	}
 } elsif($queueStatus) {
@@ -190,15 +190,15 @@ if(defined($queueList)) {
 		my $state = $job->{'job_state'};
 		if($job->{'end_time'} && $job->{'end_time'} < $now_time) {
 			$use_time = $job->{'end_time'};
-		} 	
+		}
 		$job->{'statPSUtl'} = job_time_used($job);
 		$job->{'aWDuration'} = $job->{'statPSUtl'};
 
 		$job->{'allocNodeList'} = $job->{'nodes'} || "--";
 		$job->{'stateCode'} = stateCode($job->{'job_state'});
 		$job->{'user_name'} = getpwuid($job->{'user_id'});
-		$job->{'name'} = "Allocation" if !$job->{'name'};	       
-		
+		$job->{'name'} = "Allocation" if !$job->{'name'};
+
 		# Filter jobs according to options and arguments
 		if (@jobIds) {
 			next unless grep /^$job->{'job_id'}/, @jobIds;
@@ -211,11 +211,11 @@ if(defined($queueList)) {
 				next unless ($job->{'stateCode'} eq 'Q');
 			}
 			if (@userIds) {
-				next unless 
+				next unless
 					grep /^$job->{'user_name'}$/, @userIds;
 			}
 		}
-		
+
 		if ($all || $idle || $nodes || $running
 		    || $giga || $mega || $userList) { # Normal
 			print_job_select($job);
@@ -245,7 +245,7 @@ sub stateCode
 	}
 
 	switch($state) {
-		case [JOB_COMPLETE, 
+		case [JOB_COMPLETE,
 		      JOB_CANCELLED,
 		      JOB_TIMEOUT,
 		      JOB_FAILED]    { return 'C' }
@@ -265,11 +265,11 @@ sub stateCode
 sub hhmm
 {
 	my ($hhmmss) = @_;
-	
+
 	if ($hhmmss == INFINITE) {
 		return "Infinite";
 	}
-	
+
 	# Convert hhmmss to duration in minutes
 	$hhmmss = 0 unless $hhmmss;
 	$hhmmss =~ /(?:(\d+):)?(?:(\d+):)?([\d\.]+)/;
@@ -378,8 +378,8 @@ sub job_time_used
 	} else {
 		$end_time = $job->{'end_time'};
 	}
-	
-	return ($end_time - $job->{'suspend_time'} + $job->{'pre_sus_time'}) 
+
+	return ($end_time - $job->{'suspend_time'} + $job->{'pre_sus_time'})
 		if $job->{'suspend_time'};
 	return ($end_time - $job->{'start_time'});
 }
@@ -405,7 +405,7 @@ sub running_stopped
 	return "S";
 }
 
-sub get_exec_host 
+sub get_exec_host
 {
 	my ($job) = @_;
 
@@ -418,12 +418,12 @@ sub get_exec_host
 		while((my $host = Slurm::Hostlist::shift($hl))) {
 			push(@allocNodes,
 			     "$host/" . $job->{'cpus_per_node'}[$inx]);
-			
+
 			$cpu_cnt++;
 			if($cpu_cnt >= $job->{'cpu_count_reps'}[$inx]) {
 				$cpu_cnt = 0;
 				$inx++;
-			}			
+			}
 		}
 		$execHost = join '+', @allocNodes;
 	}
@@ -433,7 +433,7 @@ sub get_exec_host
 ###############################################################################
 # Job Functions
 ###############################################################################
-sub print_job_brief 
+sub print_job_brief
 {
 	my ($job, $line_num) = @_;
 
@@ -456,7 +456,7 @@ sub print_job_select
 
 	if (!defined $header_printed) {
 		print "\n${hostname}:\n";
-		
+
 		printf("%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
 		       "", "", "", "", "", "", "", "Req'd", "Req'd", "", "Elap");
 		printf(
@@ -472,10 +472,10 @@ sub print_job_select
 		$header_printed = 1;
 	}
 	$execHost = get_exec_host($job) if $nodes;
-		
+
 	printf("%-20.20s %-8.8s %-8.8s %-20.20s " .
 	       "%-6.6s %5.5s %3.3s %6.6s %-5.5s %-1s %-5.5s",
-	       $job->{'job_id'}, 
+	       $job->{'job_id'},
 	       $job->{'user_name'},
 	       $job->{'partition'},
 	       $job->{'name'},
@@ -503,25 +503,25 @@ sub print_job_full
 	# Print the job attributes
 	printf("Job Id:\t%s\n", $job->{'job_id'});
 	printf("\tJob_Name = %s\n", $job->{'name'}) if $job->{'name'};
-	printf("\tJob_Owner = %s@%s\n", 
+	printf("\tJob_Owner = %s@%s\n",
 	       $job->{'user_name'}, $job->{'alloc_node'});
-	
+
 	printf "\tinteractive = True\n" if !$job->{'batch_flag'};
-	
+
 	printf("\tjob_state = %s\n", $job->{'stateCode'});
 	printf("\tqueue = %s\n", $job->{'partition'});
-	
+
 	printf("\tqtime = %s\n", hRTime($job->{'submit_time'}));
-	printf("\tmtime = %s\n", hRTime($job->{'start_time'})) 
+	printf("\tmtime = %s\n", hRTime($job->{'start_time'}))
 		if $job->{'start_time'};
 	printf("\tctime = %s\n", hRTime($job->{'end_time'}))
 		if $job->{'end_time'};
-	
+
 	printf("\tAccount_Name = %s\n", $job->{'account'}) if $job->{'account'};
-	
+
 	my $execHost = get_exec_host($job);
 	printf("\texec_host = %s\n", $execHost) if $execHost ne '--';
-		
+
 	printf("\tPriority = %u\n", $job->{'priority'});
 	printf("\teuser = %s(%d)\n", $job->{'user_name'}, $job->{'user_id'});
 
@@ -533,24 +533,24 @@ sub print_job_full
 	printf("\tResource_List.walltime = %s\n", hhmmss($job->{'aWDuration'}));
 	printf("\tResource_List.nodect = %d\n", $job->{'num_nodes'})
 		if $job->{'num_nodes'};
-	printf("\tResource_List.ncpus = %s\n", $job->{'num_procs'}) 
-		if $job->{'num_procs'}; 
-	
+	printf("\tResource_List.ncpus = %s\n", $job->{'num_procs'})
+		if $job->{'num_procs'};
+
 	if ($job->{'reqNodes'}) {
 		my $nodeExpr = $job->{'reqNodes'};
-		$nodeExpr .= ":ppn=" . $job->{'ntasks_per_node'} 
-		        if $job->{'ntasks_per_node'}; 
-		
+		$nodeExpr .= ":ppn=" . $job->{'ntasks_per_node'}
+		        if $job->{'ntasks_per_node'};
+
 		printf("\tResource_List.nodes = %s\n", $nodeExpr);
 	}
-		
+
 	print "\n";
 }
 
 ###############################################################################
 # Partition Functions
 ###############################################################################
-sub print_part_brief 
+sub print_part_brief
 {
 	my ($part, $line_num) = @_;
 
@@ -559,7 +559,7 @@ sub print_part_brief
 		       "Queue", "Max", "Tot", "Ena",  "Str", "Que", "Run",
 		       "Hld", "Wat", "Trn", "Ext", "T");
 		printf("%-16s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %1s\n",
-		       "----------------", "---", "---", "---",  "---", "---", 
+		       "----------------", "---", "---", "---",  "---", "---",
 		       "---", "---", "---", "---", "---", "-");
 	}
 	printf("%-16.16s %5.5s %5.5s %5.5s %5.5s %5.5s %5.5s %5.5s " .
@@ -576,15 +576,15 @@ sub print_part_full
 	printf("Queue:\t%s\n", $part->{'name'});
 	printf("\tqueue_type = Execution\n");
 	printf("\tresources_default.nodes = %d\n", $part->{'total_nodes'});
-	
+
 	printf("\tenabled = %s\n", yes_no($part->{'state_up'}));
-	
+
 	printf("\tstarted = %s\n", yes_no($part->{'state_up'}));
-	
+
 	print "\n";
 }
 
-sub print_part_limits 
+sub print_part_limits
 {
 	my ($part, $line_num) = @_;
 
@@ -597,13 +597,13 @@ sub print_part_limits
 		       "----", "---", "---", "--", "-----");
 	}
 
-	
+
 	printf("%-16.16s   --      --    ", $part->{'name'});
 	if($part->{'max_time'} != INFINITE) {
 		printf("%8u ", $part->{'max_time'});
 	} else {
 		printf("   --    ");
-		
+
 	}
 
 	if($part->{'max_nodes'} != INFINITE) {

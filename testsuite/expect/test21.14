@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          sacctmgr modify accounts, descriptions, limits, 
+#          sacctmgr modify accounts, descriptions, limits,
 #          and parents down and up the tree
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -12,21 +12,21 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Joseph Donaghy <donaghy1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-# 
+#
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
 # Please also read the included file: DISCLAIMER.
-#  
+#
 # SLURM is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-# 
+#
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -105,7 +105,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-# OK This is the real test, first test change the desc and org of the accounts 
+# OK This is the real test, first test change the desc and org of the accounts
 incr exit_code [mod_acct "" "" "$nm1,$nm2,$nm3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $ds2 $or2]
 if { $exit_code } {
 	remove_acct "" "$nm1,$nm2,$nm3"
@@ -141,7 +141,7 @@ if {$matches != 3} {
 	incr exit_code 1
 }
 
-# Next, test change the limits of the accounts 
+# Next, test change the limits of the accounts
 incr exit_code [mod_acct "" "" "$nm1,$nm2,$nm3" "" "" "" $fs2 "" "" "" "" "" "" $mc2 "" $mj2 $mn2 "" $mw2 "" "" ""]
 if { $exit_code } {
 	remove_acct "" "$nm1,$nm2,$nm3"
@@ -177,7 +177,7 @@ if {$matches != 6} {
 	incr exit_code 1
 }
 
-# Next, test change the desc and limits of the accounts 
+# Next, test change the desc and limits of the accounts
 incr exit_code [mod_acct "" "" "$nm1,$nm3" "" "" "" -1 "" "" "" "" "" "" -1 "" -1 -1 "" -1 "" $ds1 $or1]
 if { $exit_code } {
 	remove_acct "" "$nm1,$nm2,$nm3"
@@ -195,7 +195,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	# Any time you use () around something you need to combine all 
+	# Any time you use () around something you need to combine all
 	# those things together since you can miss some and they be thrown away
 	-re "(($nm1|$nm3).$ds1.$or1.($tc1|$tc2).1.....|$nm2.$ds2.$or2.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.)" {
 		incr matches
@@ -256,7 +256,7 @@ if {$matches != 2} {
 	incr exit_code 1
 }
 
-# Next, test change the parent of $n2 to be $n3 on $tc1 
+# Next, test change the parent of $n2 to be $n3 on $tc1
 # making the child the parent
 incr exit_code [mod_acct "$tc1" "" "$nm2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "$nm3" "" ""]
 if { $exit_code } {
@@ -294,7 +294,7 @@ if {$matches != 4} {
 }
 
 
-# Next, test change the parent of $n3 to be $n2 on $tc1 again 
+# Next, test change the parent of $n3 to be $n2 on $tc1 again
 # only this time the parent will become the child instead of it being a sibling.
 incr exit_code [mod_acct "$tc1" "" "$nm3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "$nm2" "" ""]
 if { $exit_code } {

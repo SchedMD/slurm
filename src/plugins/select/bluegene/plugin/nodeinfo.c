@@ -5,32 +5,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -62,13 +62,13 @@ static node_subgrp_t *_find_subgrp(List subgrp_list, enum node_states state,
 	itr = list_iterator_create(subgrp_list);
 	while((subgrp = list_next(itr))) {
 		if(subgrp->state == state)
-			break;			
+			break;
 	}
 	list_iterator_destroy(itr);
 	if(!subgrp) {
 		subgrp = xmalloc(sizeof(node_subgrp_t));
 		subgrp->state = state;
-		subgrp->bitmap = bit_alloc(size);		
+		subgrp->bitmap = bit_alloc(size);
 		list_append(subgrp_list, subgrp);
 	}
 
@@ -95,7 +95,7 @@ static int _unpack_node_subgrp(node_subgrp_t **subgrp_pptr, Buf buffer,
 	*subgrp_pptr = subgrp;
 
 	safe_unpackstr_xmalloc(&subgrp->str, &uint32_tmp, buffer);
-	if (!subgrp->str) 
+	if (!subgrp->str)
 		subgrp->inx = bitfmt2int("");
 	else
 		subgrp->inx = bitfmt2int(subgrp->str);
@@ -128,7 +128,7 @@ extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer)
 
 	pack16(nodeinfo->bitmap_size, buffer);
 
-	if(nodeinfo->subgrp_list) 
+	if(nodeinfo->subgrp_list)
 		count = list_count(nodeinfo->subgrp_list);
 
 	pack16(count, buffer);
@@ -158,11 +158,11 @@ extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer)
 	nodeinfo_ptr->subgrp_list = list_create(_free_node_subgrp);
 	for(j=0; j<size; j++) {
 		node_subgrp_t *subgrp = NULL;
-		if(_unpack_node_subgrp(&subgrp, buffer, 
+		if(_unpack_node_subgrp(&subgrp, buffer,
 				       nodeinfo_ptr->bitmap_size)
 		   != SLURM_SUCCESS)
 			goto unpack_error;
-		list_append(nodeinfo_ptr->subgrp_list, subgrp);		
+		list_append(nodeinfo_ptr->subgrp_list, subgrp);
 	}
 	return SLURM_SUCCESS;
 
@@ -193,7 +193,7 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 		if (nodeinfo->magic != NODEINFO_MAGIC) {
 			error("free_nodeinfo: nodeinfo magic bad");
 			return EINVAL;
-		} 
+		}
 		nodeinfo->magic = 0;
 		if(nodeinfo->subgrp_list)
 			list_destroy(nodeinfo->subgrp_list);
@@ -210,22 +210,22 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 	bg_record_t *bg_record = NULL;
 	static time_t last_set_all = 0;
 
-	if(!blocks_are_created) 
+	if(!blocks_are_created)
 		return SLURM_NO_CHANGE_IN_DATA;
-	
+
 	/* only set this once when the last_bg_update is newer than
 	   the last time we set things up. */
 	if(last_set_all && (last_bg_update-1 < last_set_all)) {
 		debug2("Node select info for set all hasn't "
-		       "changed since %d", 
+		       "changed since %d",
 		       last_set_all);
-		return SLURM_NO_CHANGE_IN_DATA;	
+		return SLURM_NO_CHANGE_IN_DATA;
 	}
 	last_set_all = last_bg_update;
 
 	/* set this here so we know things have changed */
 	last_node_update = time(NULL);
-	
+
 	slurm_mutex_lock(&block_state_mutex);
 	for (i=0; i<node_record_count; i++) {
 		node_ptr = &(node_record_table_ptr[i]);
@@ -245,7 +245,7 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 		if(bg_record->job_running == NO_JOB_RUNNING)
 			continue;
 
-		if(bg_record->state == RM_PARTITION_ERROR) 
+		if(bg_record->state == RM_PARTITION_ERROR)
 			state = NODE_STATE_ERROR;
 		else if(bg_record->job_running > NO_JOB_RUNNING) {
 			/* we don't need to set the allocated here
@@ -267,14 +267,14 @@ extern int select_nodeinfo_set_all(time_t last_query_time)
 			subgrp = _find_subgrp(
 				node_ptr->select_nodeinfo->subgrp_list,
 				state, bg_conf->numpsets);
- 			
+
 			if(subgrp->node_cnt < bg_conf->bp_node_cnt) {
 				if(bg_record->node_cnt < bg_conf->bp_node_cnt) {
 					bit_or(subgrp->bitmap,
 					       bg_record->ionode_bitmap);
 					subgrp->node_cnt += bg_record->node_cnt;
 				} else {
-					bit_nset(subgrp->bitmap, 
+					bit_nset(subgrp->bitmap,
 						 0, (bg_conf->numpsets-1));
 					subgrp->node_cnt = bg_conf->bp_node_cnt;
 				}
@@ -292,7 +292,7 @@ extern int select_nodeinfo_set(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo, 
+extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			       enum select_nodedata_type dinfo,
 			       enum node_states state,
 			       void *data)
@@ -308,7 +308,7 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		error("get_nodeinfo: nodeinfo not set");
 		return SLURM_ERROR;
 	}
-	
+
 	if (nodeinfo->magic != NODEINFO_MAGIC) {
 		error("get_nodeinfo: jobinfo magic bad");
 		return SLURM_ERROR;
@@ -320,18 +320,18 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	case SELECT_NODEDATA_SUBGRP_SIZE:
 		*uint16 = 0;
-		if(!nodeinfo->subgrp_list) 
+		if(!nodeinfo->subgrp_list)
 			return SLURM_ERROR;
 		*uint16 = list_count(nodeinfo->subgrp_list);
 		break;
 	case SELECT_NODEDATA_SUBCNT:
 		*uint16 = 0;
-		if(!nodeinfo->subgrp_list) 
+		if(!nodeinfo->subgrp_list)
 			return SLURM_ERROR;
 		itr = list_iterator_create(nodeinfo->subgrp_list);
 		while((subgrp = list_next(itr))) {
 			if(subgrp->state == state) {
-				*uint16 = subgrp->node_cnt;	
+				*uint16 = subgrp->node_cnt;
 				break;
 			}
 		}
@@ -339,12 +339,12 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	case SELECT_NODEDATA_BITMAP:
 		*bitmap = NULL;
-		if(!nodeinfo->subgrp_list) 
+		if(!nodeinfo->subgrp_list)
 			return SLURM_ERROR;
 		itr = list_iterator_create(nodeinfo->subgrp_list);
 		while((subgrp = list_next(itr))) {
 			if(subgrp->state == state) {
-				*bitmap = bit_copy(subgrp->bitmap);	
+				*bitmap = bit_copy(subgrp->bitmap);
 				break;
 			}
 		}
@@ -352,12 +352,12 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		break;
 	case SELECT_NODEDATA_STR:
 		*tmp_char = NULL;
-		if(!nodeinfo->subgrp_list) 
+		if(!nodeinfo->subgrp_list)
 			return SLURM_ERROR;
 		itr = list_iterator_create(nodeinfo->subgrp_list);
 		while((subgrp = list_next(itr))) {
 			if(subgrp->state == state) {
-				*tmp_char = xstrdup(subgrp->str);	
+				*tmp_char = xstrdup(subgrp->str);
 				break;
 			}
 		}
@@ -367,6 +367,6 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
 		rc = SLURM_ERROR;
 		break;
-	}	
+	}
 	return rc;
 }

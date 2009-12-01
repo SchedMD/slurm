@@ -11,7 +11,7 @@ INCLUDES = -I$(top_srcdir)
 slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o -ldl	   \
-	$(PLPA_LIBS) 
+	$(PLPA_LIBS)
 
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
@@ -39,7 +39,7 @@ slurmd_SOURCES = $(SLURMD_SOURCES)
 if HAVE_AIX
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0 
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
 else
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 endif

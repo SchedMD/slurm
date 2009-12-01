@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -77,7 +77,7 @@ int print_step_from_format(job_step_info_t * job_step, List list);
 /*****************************************************************************
  * Job Line Format Options
  *****************************************************************************/
-int job_format_add_function(List list, int width, bool right_justify, 
+int job_format_add_function(List list, int width, bool right_justify,
 			    char *suffix,
 			    int (*function) (job_info_t *, int, bool, char*));
 
@@ -176,83 +176,83 @@ int job_format_add_function(List list, int width, bool right_justify,
 /*****************************************************************************
  * Job Line Print Functions
  *****************************************************************************/
-int _print_job_job_id(job_info_t * job, int width, bool right_justify, 
+int _print_job_job_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_partition(job_info_t * job, int width, bool right_justify, 
+int _print_job_partition(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_prefix(job_info_t * job, int width, bool right_justify, 
+int _print_job_prefix(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_reason(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_reason_list(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_name(job_info_t * job, int width, bool right_justify, 
+int _print_job_name(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_wckey(job_info_t * job, int width, bool right_justify, 
+int _print_job_wckey(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_user_id(job_info_t * job, int width, bool right_justify, 
+int _print_job_user_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_user_name(job_info_t * job, int width, bool right_justify, 
+int _print_job_user_name(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_group_id(job_info_t * job, int width, bool right_justify, 
+int _print_job_group_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_group_name(job_info_t * job, int width, bool right_justify, 
+int _print_job_group_name(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_job_state(job_info_t * job, int width, bool right_justify, 
+int _print_job_job_state(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_job_state_compact(job_info_t * job, int width,
 			bool right_justify, char* suffix);
-int _print_job_time_left(job_info_t * job, int width, bool right_justify, 
+int _print_job_time_left(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_time_limit(job_info_t * job, int width, bool right_justify, 
+int _print_job_time_limit(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_time_used(job_info_t * job, int width, bool right_justify, 
+int _print_job_time_used(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_time_start(job_info_t * job, int width, bool right_justify, 
+int _print_job_time_start(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_time_end(job_info_t * job, int width, bool right_justify, 
+int _print_job_time_end(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_priority(job_info_t * job, int width, bool right_justify, 
+int _print_job_priority(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_priority_long(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_nodes(job_info_t * job, int width, bool right_justify, 
+int _print_job_nodes(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_node_inx(job_info_t * job, int width, bool right_justify, 
+int _print_job_node_inx(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_partition(job_info_t * job, int width, bool right_justify, 
+int _print_job_partition(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_num_procs(job_info_t * job, int width, bool right_justify, 
+int _print_job_num_procs(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_num_nodes(job_info_t * job, int width, bool right_justify, 
+int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_num_sct(job_info_t * job, int width, bool right_justify, 
+int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_shared(job_info_t * job, int width, bool right_justify, 
+int _print_job_shared(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_contiguous(job_info_t * job, int width, bool right_justify, 
+int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_min_procs(job_info_t * job, int width, bool right_justify, 
+int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_min_sockets(job_info_t * job, int width, bool right_justify, 
+int _print_job_min_sockets(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_min_cores(job_info_t * job, int width, bool right_justify, 
+int _print_job_min_cores(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_min_threads(job_info_t * job, int width, bool right_justify, 
+int _print_job_min_threads(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_min_memory(job_info_t * job, int width, bool right_justify, 
+int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify, 
+int _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_req_nodes(job_info_t * job, int width, bool right_justify, 
+int _print_job_req_nodes(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_exc_nodes(job_info_t * job, int width, bool right_justify, 
+int _print_job_exc_nodes(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_req_node_inx(job_info_t * job, int width, bool right_justify, 
+int _print_job_req_node_inx(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_exc_node_inx(job_info_t * job, int width, bool right_justify, 
+int _print_job_exc_node_inx(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_features(job_info_t * job, int width, bool right_justify, 
+int _print_job_features(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_account(job_info_t * job, int width, bool right_justify,
 			char* suffix);
@@ -271,7 +271,7 @@ int _print_job_reservation(job_info_t * job, int width, bool right_justify,
  * Step Print Format Functions
  *****************************************************************************/
 int step_format_add_function(List list, int width, bool right_justify,
-		char * suffix, 
+		char * suffix,
 		int (*function) (job_step_info_t *, int, bool, char *));
 
 #define step_format_add_id(list,wid,right,suffix) \

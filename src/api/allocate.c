@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- * 
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -94,7 +94,7 @@ static resource_allocation_response_msg_t *_wait_for_allocation_response(
  * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 int
-slurm_allocate_resources (job_desc_msg_t *req, 
+slurm_allocate_resources (job_desc_msg_t *req,
 			  resource_allocation_response_msg_t **resp)
 {
 	int rc;
@@ -105,21 +105,21 @@ slurm_allocate_resources (job_desc_msg_t *req,
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-	/* 
+	/*
 	 * set Node and session id for this request
 	 */
 	if (req->alloc_sid == NO_VAL)
 		req->alloc_sid = getsid(0);
 
-	if ( (req->alloc_node == NULL) 
+	if ( (req->alloc_node == NULL)
 	    && (gethostname_short(host, sizeof(host)) == 0) ) {
 		req->alloc_node = host;
 		host_set  = true;
 	}
 
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
-	req_msg.data     = req; 
-			
+	req_msg.data     = req;
+
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
 	/*
@@ -129,7 +129,7 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	if (host_set)
 		req->alloc_node = NULL;
 
-	if (rc == SLURM_SOCKET_ERROR) 
+	if (rc == SLURM_SOCKET_ERROR)
 		return SLURM_SOCKET_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -161,7 +161,7 @@ slurm_allocate_resources (job_desc_msg_t *req,
  *      the controller will put the job in the PENDING state.  If
  *      pending callback is not NULL, it will be called with the job_id
  *      of the pending job as the sole parameter.
- * 
+ *
  * RET allocation structure on success, NULL on error set errno to
  *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
  *      with no allocation granted)
@@ -185,7 +185,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-	
+
 	/* make a copy of the user's job description struct so that we
 	 * can make changes before contacting the controller */
 	req = (job_desc_msg_t *)xmalloc(sizeof(job_desc_msg_t));
@@ -193,7 +193,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		return NULL;
 	memcpy(req, user_req, sizeof(job_desc_msg_t));
 
-	/* 
+	/*
 	 * set Node and session id for this request
 	 */
 	if (req->alloc_sid == NO_VAL)
@@ -219,7 +219,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	}
 
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
-	req_msg.data     = req; 
+	req_msg.data     = req;
 
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 
@@ -252,7 +252,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			/* yes, allocation has been granted */
 			errno = SLURM_PROTOCOL_SUCCESS;
 		} else if (!req->immediate) {
-			if (resp->error_code != SLURM_SUCCESS) 
+			if (resp->error_code != SLURM_SUCCESS)
 				info("%s", slurm_strerror(resp->error_code));
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
@@ -261,7 +261,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 				pending_callback(job_id);
  			resp = _wait_for_allocation_response(job_id, listen,
 							     timeout);
-			/* If NULL, we didn't get the allocation in 
+			/* If NULL, we didn't get the allocation in
 			   the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
 				errnum = errno;
@@ -284,7 +284,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 }
 
 /*
- * slurm_job_will_run - determine if a job would execute immediately if 
+ * slurm_job_will_run - determine if a job would execute immediately if
  *	submitted now
  * IN job_desc_msg - description of resource allocation request
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
@@ -301,8 +301,8 @@ int slurm_job_will_run (job_desc_msg_t *req)
 		req->alloc_node = buf;
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
-	req_msg.data     = req; 
-	
+	req_msg.data     = req;
+
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_SOCKET_ERROR;
 
@@ -317,9 +317,9 @@ int slurm_job_will_run (job_desc_msg_t *req)
 				    buf, sizeof(buf));
 		info("Job %u to start at %s using %u "
 #ifdef HAVE_BG
-		     "cnodes" 
+		     "cnodes"
 #else
-		     "processors" 
+		     "processors"
 #endif
 		     " on %s",
 		     will_run_resp->job_id, buf,
@@ -358,7 +358,7 @@ int slurm_job_will_run (job_desc_msg_t *req)
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 int
-slurm_job_step_create (job_step_create_request_msg_t *req, 
+slurm_job_step_create (job_step_create_request_msg_t *req,
                        job_step_create_response_msg_t **resp)
 {
 	slurm_msg_t req_msg, resp_msg;
@@ -366,8 +366,8 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
-	req_msg.data     = req; 
-	
+	req_msg.data     = req;
+
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
@@ -407,8 +407,8 @@ slurm_allocation_lookup(uint32_t jobid,
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
-	req_msg.data     = &req; 
-	
+	req_msg.data     = &req;
+
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
@@ -431,7 +431,7 @@ slurm_allocation_lookup(uint32_t jobid,
 }
 
 /*
- * slurm_allocation_lookup_lite - retrieve info for an existing resource 
+ * slurm_allocation_lookup_lite - retrieve info for an existing resource
  *                                allocation without the addrs and such
  * IN jobid - job allocation identifier
  * OUT info - job allocation information
@@ -450,8 +450,8 @@ slurm_allocation_lookup_lite(uint32_t jobid,
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_ALLOCATION_INFO_LITE;
-	req_msg.data     = &req; 
-	
+	req_msg.data     = &req;
+
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
@@ -491,8 +491,8 @@ int slurm_sbcast_lookup(uint32_t jobid, job_sbcast_cred_msg_t **info)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_SBCAST_CRED;
-	req_msg.data     = &req; 
-	
+	req_msg.data     = &req;
+
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
@@ -515,7 +515,7 @@ int slurm_sbcast_lookup(uint32_t jobid, job_sbcast_cred_msg_t **info)
 }
 
 /*
- *  Handle a return code message type. 
+ *  Handle a return code message type.
  *    if return code is nonzero, sets errno to return code and returns < 0.
  *    Otherwise, returns 0 (SLURM_SUCCES)
  */
@@ -525,7 +525,7 @@ _handle_rc_msg(slurm_msg_t *msg)
 	int rc = ((return_code_msg_t *) msg->data)->return_code;
 	slurm_free_return_code_msg(msg->data);
 
-	if (rc) 
+	if (rc)
 		slurm_seterrno_ret(rc);
 	else
 		return SLURM_SUCCESS;
@@ -534,7 +534,7 @@ _handle_rc_msg(slurm_msg_t *msg)
 /*
  * Read a SLURM hostfile specified by "filename".  "filename" must contain
  * a list of SLURM NodeNames, one per line.  Reads up to "n" number of hostnames
- * from the file. Returns a string representing a hostlist ranged string of 
+ * from the file. Returns a string representing a hostlist ranged string of
  * the contents of the file.  This is a helper function, it does not
  * contact any SLURM daemons.
  *
@@ -553,7 +553,7 @@ char *slurm_read_hostfile(char *filename, int n)
 	int line_num = 0;
 	hostlist_t hostlist = NULL;
 	char *nodelist = NULL;
-	
+
 	if (filename == NULL || strlen(filename) == 0)
 		return NULL;
 
@@ -592,14 +592,14 @@ char *slurm_read_hostfile(char *filename, int n)
 				}
 				line_size--;
 				continue;
-			}	
+			}
 			in_line[i] = '\0';
 			break;
 		}
-			
+
 		hostlist_push(hostlist, in_line);
-		if(n != (int)NO_VAL && hostlist_count(hostlist) == n) 
-			break; 
+		if(n != (int)NO_VAL && hostlist_count(hostlist) == n)
+			break;
 	}
 	fclose(fp);
 
@@ -610,7 +610,7 @@ char *slurm_read_hostfile(char *filename, int n)
 	if (hostlist_count(hostlist) < n) {
 		error("Too few NodeNames in SLURM Hostfile");
 		goto cleanup_hostfile;
-	}		
+	}
 
 	nodelist = (char *)malloc(0xffff);
 	if (!nodelist) {
@@ -710,8 +710,8 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
  * IN slurmctld_fd: file descriptor for slurmctld communications
  * OUT resp: resource allocation response message
  * RET 1 if resp is filled in, 0 otherwise */
-static int 
-_accept_msg_connection(int listen_fd, 
+static int
+_accept_msg_connection(int listen_fd,
 		       resource_allocation_response_msg_t **resp)
 {
 	int	     conn_fd;
@@ -720,7 +720,7 @@ _accept_msg_connection(int listen_fd,
 	char         host[256];
 	uint16_t     port;
 	int          rc = 0;
-	
+
 	conn_fd = slurm_accept_msg_conn(listen_fd, &cli_addr);
 	if (conn_fd < 0) {
 		error("Unable to accept connection: %m");
@@ -732,7 +732,7 @@ _accept_msg_connection(int listen_fd,
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
-		
+
 	if((rc = slurm_receive_msg(conn_fd, msg, 0)) != 0) {
 		slurm_free_msg(msg);
 
@@ -741,14 +741,14 @@ _accept_msg_connection(int listen_fd,
 			*resp = NULL;
 			return 0;
 		}
-		
+
 		error("_accept_msg_connection[%s]: %m", host);
 		return SLURM_ERROR;
 	}
-	
+
 	rc = _handle_msg(msg, resp); /* handle_msg frees msg */
 	slurm_free_msg(msg);
-		
+
 	slurm_close_accepted_conn(conn_fd);
 	return rc;
 }
@@ -824,7 +824,7 @@ _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 			errno = errnum;
 			return NULL;
 		} else {
-			debug3("Unable to confirm allocation for job %u: %m", 
+			debug3("Unable to confirm allocation for job %u: %m",
 			       job_id);
 			return NULL;
 		}

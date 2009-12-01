@@ -7,32 +7,32 @@
  *  Written by Danny Auble <da@llnl.gov>
  *
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -70,7 +70,7 @@ extern void get_job(void)
 			new_job_ptr = job_info_ptr;
 		}
 	} else
-		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr, 
+		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
 					     show_flags);
 
 	if (error_code) {
@@ -78,7 +78,7 @@ extern void get_job(void)
 			if(!params.commandline) {
 				mvwprintw(text_win,
 					  main_ycord, 1,
-					  "slurm_load_job: %s", 
+					  "slurm_load_job: %s",
 					  slurm_strerror(slurm_get_errno()));
 				main_ycord++;
 			} else {
@@ -95,9 +95,9 @@ extern void get_job(void)
 		recs = new_job_ptr->record_count;
 	else
 		recs = 0;
-	
+
 	if(!params.commandline)
-		if((text_line_cnt+printed_jobs) > count) 
+		if((text_line_cnt+printed_jobs) > count)
 			text_line_cnt--;
 	printed_jobs = 0;
 	count = 0;
@@ -108,7 +108,7 @@ extern void get_job(void)
 		job_ptr = &(new_job_ptr->job_array[i]);
 		if(!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)
 		   && !IS_JOB_SUSPENDED(job_ptr)
-		   && !IS_JOB_COMPLETING(job_ptr)) 
+		   && !IS_JOB_COMPLETING(job_ptr))
 			continue;	/* job has completed */
 		if(nodes_req) {
 			int overlap = 0;
@@ -116,7 +116,7 @@ extern void get_job(void)
 			inx2bitstr(loc_bitmap, job_ptr->node_inx);
 			overlap = bit_overlap(loc_bitmap, nodes_req);
 			FREE_NULL_BITMAP(loc_bitmap);
-			if(!overlap) 
+			if(!overlap)
 				continue;
 		}
 
@@ -134,9 +134,9 @@ extern void get_job(void)
 
 			if(!params.commandline) {
 				if((count>=text_line_cnt)
-				   && (printed_jobs 
+				   && (printed_jobs
 				       < (text_win->_maxy-3))) {
-					job_ptr->num_procs = 
+					job_ptr->num_procs =
 						(int)letters[count%62];
 					wattron(text_win,
 						COLOR_PAIR(colors[count%6]));
@@ -144,26 +144,26 @@ extern void get_job(void)
 					wattroff(text_win,
 						 COLOR_PAIR(colors[count%6]));
 					printed_jobs++;
-				} 
+				}
 			} else {
 				job_ptr->num_procs = (int)letters[count%62];
 				_print_text_job(job_ptr);
 			}
-			count++;			
+			count++;
 		}
 		if(count==128)
 			count=0;
 	}
-		
+
 	for (i = 0; i < recs; i++) {
 		job_ptr = &(new_job_ptr->job_array[i]);
-		
+
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* job has completed */
 
 		if(!params.commandline) {
 			if((count>=text_line_cnt)
-			   && (printed_jobs 
+			   && (printed_jobs
 			       < (text_win->_maxy-3))) {
 				xfree(job_ptr->nodes);
 				job_ptr->nodes = xstrdup("waiting...");
@@ -174,7 +174,7 @@ extern void get_job(void)
 				wattroff(text_win,
 					 COLOR_PAIR(colors[count%6]));
 				printed_jobs++;
-			} 
+			}
 		} else {
 			xfree(job_ptr->nodes);
 			job_ptr->nodes = xstrdup("waiting...");
@@ -182,8 +182,8 @@ extern void get_job(void)
 			_print_text_job(job_ptr);
 			printed_jobs++;
 		}
-		count++;			
-		
+		count++;
+
 		if(count==128)
 			count=0;
 	}
@@ -193,7 +193,7 @@ extern void get_job(void)
 
 	if(!params.commandline)
 		main_ycord++;
-	
+
 	job_info_ptr = new_job_ptr;
 	return;
 }
@@ -276,15 +276,15 @@ static int _print_text_job(job_info_t * job_ptr)
 	uint32_t node_cnt = 0;
 	char *ionodes = NULL, *uname;
 	time_t now_time = time(NULL);
-	
+
 #ifdef HAVE_BG
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
-				    SELECT_JOBDATA_IONODES, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_IONODES,
 				    &ionodes);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo, 
-				    SELECT_JOBDATA_NODE_CNT, 
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_NODE_CNT,
 				    &node_cnt);
-	if(!strcasecmp(job_ptr->nodes,"waiting...")) 
+	if(!strcasecmp(job_ptr->nodes,"waiting..."))
 		xfree(ionodes);
 #else
 	node_cnt = job_ptr->num_nodes;
@@ -308,19 +308,19 @@ static int _print_text_job(job_info_t * job_ptr)
 		main_xcord += 10;
 #ifdef HAVE_BG
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%.16s", 
-			  select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, 
-						  time_buf, 
-						  sizeof(time_buf), 
+			  main_xcord, "%.16s",
+			  select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+						  time_buf,
+						  sizeof(time_buf),
 						  SELECT_PRINT_BG_ID));
 		main_xcord += 18;
 #endif
 #ifdef HAVE_CRAY_XT
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%.16s", 
-			  select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, 
-						  time_buf, 
-						  sizeof(time_buf), 
+			  main_xcord, "%.16s",
+			  select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+						  time_buf,
+						  sizeof(time_buf),
 						  SELECT_PRINT_RESV_ID));
 		main_xcord += 18;
 #endif
@@ -348,29 +348,29 @@ static int _print_text_job(job_info_t * job_ptr)
 			  time_buf);
 		main_xcord += 11;
 
-		mvwprintw(text_win, 
+		mvwprintw(text_win,
 			  main_ycord,
 			  main_xcord, "%5s", tmp_cnt);
-		
+
 		main_xcord += 6;
 
 		tempxcord = main_xcord;
-		
+
 		i=0;
 		while (job_ptr->nodes[i] != '\0') {
 			if ((printed = mvwaddch(text_win,
-						main_ycord, 
+						main_ycord,
 						main_xcord,
 						job_ptr->nodes[i])) < 0) {
 				xfree(ionodes);
 				return printed;
 			}
 			main_xcord++;
-			width = text_win->_maxx 
+			width = text_win->_maxx
 				- main_xcord;
 			if (job_ptr->nodes[i] == '[')
 				prefixlen = i + 1;
-			else if (job_ptr->nodes[i] == ',' 
+			else if (job_ptr->nodes[i] == ','
 				 && (width - 9) <= 0) {
 				main_ycord++;
 				main_xcord = tempxcord + prefixlen;
@@ -378,9 +378,9 @@ static int _print_text_job(job_info_t * job_ptr)
 			i++;
 		}
 		if(ionodes) {
-			mvwprintw(text_win, 
+			mvwprintw(text_win,
 				  main_ycord,
-				  main_xcord, "[%s]", 
+				  main_xcord, "[%s]",
 				  ionodes);
 			main_xcord += strlen(ionodes)+2;
 			xfree(ionodes);
@@ -392,17 +392,17 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("%8d ", job_ptr->job_id);
 		printf("%9.9s ", job_ptr->partition);
 #ifdef HAVE_BG
-		printf("%16.16s ", 
-		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, 
-					       time_buf, 
-					       sizeof(time_buf), 
+		printf("%16.16s ",
+		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+					       time_buf,
+					       sizeof(time_buf),
 					       SELECT_PRINT_BG_ID));
 #endif
 #ifdef HAVE_CRAY_XT
-		printf("%16.16s ", 
-		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo, 
-					       time_buf, 
-					       sizeof(time_buf), 
+		printf("%16.16s ",
+		       select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
+					       time_buf,
+					       sizeof(time_buf),
 					       SELECT_PRINT_RESV_ID));
 #endif
 		uname = uid_to_string((uid_t) job_ptr->user_id);
@@ -417,11 +417,11 @@ static int _print_text_job(job_info_t * job_ptr)
 			time_diff = now_time - job_ptr->start_time;
 			secs2time_str(time_diff, time_buf, sizeof(time_buf));
 		}
-		
+
 		printf("%10.10s ", time_buf);
 
 		printf("%5s ", tmp_cnt);
-		
+
 		printf("%s", job_ptr->nodes);
 		if(ionodes) {
 			printf("[%s]", ionodes);
@@ -429,7 +429,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		}
 
 		printf("\n");
-		
+
 	}
 
 	return printed;

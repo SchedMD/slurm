@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -50,7 +50,7 @@
 
 static char *	_dump_all_jobs(int *job_cnt, time_t update_time);
 static char *	_dump_job(struct job_record *job_ptr, time_t update_time);
-static void	_get_job_comment(struct job_record *job_ptr, 
+static void	_get_job_comment(struct job_record *job_ptr,
 			char *buffer, int buf_size);
 static uint16_t _get_job_cpus_per_task(struct job_record *job_ptr);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
@@ -91,7 +91,7 @@ reject_msg_t reject_msgs[REJECT_MSG_MAX];
  * ARG=<cnt>#<JOBID>;
  *	STATE=<state>;			Moab equivalent job state
  *	[EXITCODE=<number>;]		Job exit code, if completed
- *	[RFEATURES=<features>;]		required features, if any, 
+ *	[RFEATURES=<features>;]		required features, if any,
  *					NOTE: OR operator not supported
  *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
  *	[STARTDATE=<uts>;]		earliest start time, if any
@@ -312,7 +312,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	if (job_ptr->batch_flag == 0)
 		xstrcat(buf, "FLAGS=INTERACTIVE;");
 
-	snprintf(tmp, sizeof(tmp), 
+	snprintf(tmp, sizeof(tmp),
 		"UPDATETIME=%u;WCLIMIT=%u;TASKS=%u;",
 		(uint32_t) job_ptr->time_last_active,
 		(uint32_t) _get_job_time_limit(job_ptr),
@@ -394,7 +394,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	return buf;
 }
 
-static void	_get_job_comment(struct job_record *job_ptr, 
+static void	_get_job_comment(struct job_record *job_ptr,
 			char *buffer, int buf_size)
 {
 	int size, sharing = 0;
@@ -435,7 +435,7 @@ static void	_get_job_comment(struct job_record *job_ptr,
 	/* TPN = tasks per node */
 	if (job_ptr->details && (job_ptr->details->ntasks_per_node != 0)) {
 		size += snprintf((buffer + size), (buf_size - size),
-			"%sTPN:%u", field_sep, 
+			"%sTPN:%u", field_sep,
 			job_ptr->details->ntasks_per_node);
 		field_sep = "?";
 	}
@@ -474,7 +474,7 @@ static uint32_t _get_job_min_mem(struct job_record *job_ptr)
 }
 
 static uint32_t _get_job_min_disk(struct job_record *job_ptr)
-	
+
 {
 	if (job_ptr->details)
 		return job_ptr->details->job_min_tmp_disk;
@@ -497,7 +497,7 @@ static uint32_t	_get_job_max_nodes(struct job_record *job_ptr)
 	if (job_ptr->details->max_nodes) {
 		max_nodes = job_ptr->details->max_nodes;
 		if (job_ptr->part_ptr->max_nodes != INFINITE) {
-			max_nodes = MIN(max_nodes, 
+			max_nodes = MIN(max_nodes,
 					job_ptr->part_ptr->max_nodes);
 		}
 	} else if (job_ptr->part_ptr->max_nodes == INFINITE)
@@ -541,7 +541,7 @@ static uint32_t _get_job_tasks(struct job_record *job_ptr)
 			task_cnt = 1;
 		if (job_ptr->details) {
 			task_cnt = MAX(task_cnt,
-				       (_get_job_min_nodes(job_ptr) * 
+				       (_get_job_min_nodes(job_ptr) *
 				        job_ptr->details->
 					ntasks_per_node));
 		}
@@ -556,7 +556,7 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr)
 
 	if ((limit == NO_VAL) && (job_ptr->part_ptr)) {
 		/* Job will get partition's time limit when schedule.
-		 * The partition's limit can change between now and 
+		 * The partition's limit can change between now and
 		 * job initiation time. */
 		limit = job_ptr->part_ptr->max_time;
 	}
@@ -567,7 +567,7 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr)
 		return (limit * 60);	/* seconds, not minutes */
 }
 
-/* NOTE: if job has already completed, we append "EXITCODE=#" to 
+/* NOTE: if job has already completed, we append "EXITCODE=#" to
  * the state name */
 static char *	_get_job_state(struct job_record *job_ptr)
 {
@@ -576,10 +576,10 @@ static char *	_get_job_state(struct job_record *job_ptr)
 
 	if (IS_JOB_COMPLETING(job_ptr)) {
 		/* Give configured KillWait+10 for job
-		 * to clear out, then then consider job 
-		 * done. Moab will allocate jobs to 
-		 * nodes that are already Idle. */ 
-		int age = (int) difftime(time(NULL), 
+		 * to clear out, then then consider job
+		 * done. Moab will allocate jobs to
+		 * nodes that are already Idle. */
+		int age = (int) difftime(time(NULL),
 			job_ptr->end_time);
 		if (age < (kill_wait+10))
 			return "Running";
@@ -642,7 +642,7 @@ static uint32_t	_get_job_suspend_time(struct job_record *job_ptr)
 {
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		time_t now = time(NULL);
-		return (uint32_t) difftime(now, 
+		return (uint32_t) difftime(now,
 				job_ptr->suspend_time);
 	}
 	return (uint32_t) 0;
