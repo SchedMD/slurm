@@ -2342,7 +2342,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 	if ((!strcmp(conf->switch_type, "switch/elan"))
 	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc")))
-		fatal("proctrack/linuxproc is incompatable with switch/elan");
+		fatal("proctrack/linuxproc is incompatible with switch/elan");
 
 	if (s_p_get_string(&temp_str, "PrivateData", hashtbl)) {
 		if (strstr(temp_str, "account"))

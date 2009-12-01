@@ -390,7 +390,7 @@ sacct [<OPTION>]                                                            \n\
                    current user's jobs are displayed.  If ran by user root  \n\
                    this is the default.                                     \n\
      -A, --accounts:                                                        \n\
-	           Use this comma seperated list of accounts to select jobs \n\
+	           Use this comma separated list of accounts to select jobs \n\
                    to display.  By default, all accounts are selected.      \n\
      -b, --brief:                                                           \n\
 	           Equivalent to '--format=jobstep,state,error'. This option\n\
@@ -416,7 +416,7 @@ sacct [<OPTION>]                                                            \n\
                    current accounting log file. (Only appliciable when      \n\
                    running the filetxt plugin.)                             \n\
      -g, --gid, --group:                                                    \n\
-	           Use this comma seperated list of gids or group names     \n\
+	           Use this comma separated list of gids or group names     \n\
                    to select jobs to display.  By default, all groups are   \n\
                    selected.                                                \n\
      -h, --help:   Print this description of use.                           \n\
@@ -449,7 +449,7 @@ sacct [<OPTION>]                                                            \n\
                    Display jobs that ran on any of these nodes,             \n\
                    can be one or more using a ranged string.                \n\
      -o, --format:                                                          \n\
-	           Comma seperated list of fields. (use \"--helpformat\"    \n\
+	           Comma separated list of fields. (use \"--helpformat\"    \n\
                    for a list of available fields).                         \n\
      -O, --formatted_dump:                                                  \n\
 	           Dump accounting records in an easy-to-read format,       \n\
@@ -457,7 +457,7 @@ sacct [<OPTION>]                                                            \n\
      -p, --parsable: output will be '|' delimited with a '|' at the end     \n\
      -P, --parsable2: output will be '|' delimited without a '|' at the end \n\
      -r, --partition:                                                       \n\
-	           Comma seperated list of partitions to select jobs and    \n\
+	           Comma separated list of partitions to select jobs and    \n\
                    job steps from. The default is all partitions.           \n\
      -s, --state:                                                           \n\
 	           Select jobs based on their current state or the state    \n\
@@ -474,7 +474,7 @@ sacct [<OPTION>]                                                            \n\
                    the start time would be truncated to --starttime.        \n\
                    The same for end time and --endtime.                     \n\
      -u, --uid, --user:                                                     \n\
-	           Use this comma seperated list of uids or user names      \n\
+	           Use this comma separated list of uids or user names      \n\
                    to select jobs to display.  By default, the running      \n\
                    user's uid is used.                                      \n\
      --usage:      Display brief usage message.                             \n\

@@ -378,7 +378,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
-	char *assocs; /* comma seperated list of associations */
+	char *assocs; /* comma separated list of associations */
 	char *cluster; /* cluster reservation is for */
 	uint32_t cpus; /* how many cpus are in reservation */
 	uint64_t down_secs; /* number of cpu seconds down */

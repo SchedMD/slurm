@@ -40,7 +40,7 @@ set exit_code   0
 print_header $test_id
 
 if {[test_front_end] != 0} {
-        send_user "\nThis test is incompatable with front-end systems\n"
+        send_user "\nThis test is incompatible with front-end systems\n"
 	exit 0
 }
 

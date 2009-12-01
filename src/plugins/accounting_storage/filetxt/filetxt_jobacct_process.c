@@ -816,7 +816,7 @@ static int _parse_line(char *f[], void **data, int len)
 			(*job)->exitcode = atoi(f[F_JOB_EXITCODE]);
 		break;
 	default:
-		error("UNKOWN TYPE %d",i);
+		error("UNKNOWN TYPE %d",i);
 		break;
 	}
 	return SLURM_SUCCESS;

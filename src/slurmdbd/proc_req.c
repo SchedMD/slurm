@@ -1692,8 +1692,8 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	if ((init_msg->version < SLURMDBD_VERSION_MIN) ||
 	    (init_msg->version > SLURMDBD_VERSION)) {
-		comment = "Incompatable RPC version";
-		error("Incompatable RPC version received "
+		comment = "Incompatible RPC version";
+		error("Incompatible RPC version received "
 		      "(%u not between %d and %d)",
 		      init_msg->version, 
 		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);

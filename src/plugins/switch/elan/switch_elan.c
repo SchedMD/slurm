@@ -161,7 +161,7 @@ const uint32_t plugin_version   = 90;
 int init ( void )
 {
 #ifdef HAVE_FRONT_END
-	fatal("Plugin switch/elan is incompatable with front-end configuration");
+	fatal("Plugin switch/elan is incompatible with front-end configuration");
 #endif
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;

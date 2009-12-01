@@ -57,7 +57,7 @@ expect {
 	-re "(Task count specification invalid|configuration is not available)" {
 		if { [test_front_end] } {
 			set can_not_run 1
-			send_user "\nWARNING: error expected, Testing is incompatable with front-end systems\n"
+			send_user "\nWARNING: error expected, Testing is incompatible with front-end systems\n"
 		}
 		exp_continue
 	}
@@ -174,7 +174,7 @@ if {[string compare $host_1 ""] != 0} {
 	send_user "\nFAILURE: Started two tasks instead of one\n"
 }
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
+	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
 	exit $exit_code
 }
 

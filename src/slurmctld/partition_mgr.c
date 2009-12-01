@@ -512,7 +512,7 @@ int load_all_part_state(void)
 	debug3("Version string in part_state header is %s", ver_str);
 	if ((!ver_str) || (strcmp(ver_str, PART_STATE_VERSION) != 0)) {
 		error("**********************************************************");
-		error("Can not recover partition state, data version incompatable");
+		error("Can not recover partition state, data version incompatible");
 		error("**********************************************************");
 		xfree(ver_str);
 		free_buf(buffer);

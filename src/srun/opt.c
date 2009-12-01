@@ -889,7 +889,7 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'e':
 			if (opt.pty) {
-				error("--error incompatable with --pty "
+				fatal("--error incompatible with --pty "
 				      "option");
 				exit(error_exit);
 			}
@@ -911,7 +911,7 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'i':
 			if (opt.pty) {
-				error("--input incompatable with "
+				fatal("--input incompatible with "
 				      "--pty option");
 				exit(error_exit);
 			}
@@ -977,7 +977,7 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'o':
 			if (opt.pty) {
-				error("--output incompatable with --pty "
+				error("--output incompatible with --pty "
 				      "option");
 				exit(error_exit);
 			}
@@ -1366,7 +1366,7 @@ static void set_options(const int argc, char **argv)
 			else
 				tmp_str = NULL;
 			if (tmp_str) {
-				error("%s incompatable with --pty option",
+				error("%s incompatible with --pty option",
 				      tmp_str);
 				exit(error_exit);
 			}
