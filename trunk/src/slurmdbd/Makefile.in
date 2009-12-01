@@ -62,7 +62,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
-	$(top_srcdir)/auxdir/x_ac_gtk.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
@@ -151,11 +150,10 @@ EXEEXT = @EXEEXT@
 FEDERATION_LDFLAGS = @FEDERATION_LDFLAGS@
 FGREP = @FGREP@
 GREP = @GREP@
-GTK2_CFLAGS = @GTK2_CFLAGS@
-GTK2_LIBS = @GTK2_LIBS@
+GTK_CFLAGS = @GTK_CFLAGS@
+GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
-HAVEPKGCONFIG = @HAVEPKGCONFIG@
 HAVE_AIX = @HAVE_AIX@
 HAVE_ELAN = @HAVE_ELAN@
 HAVE_FEDERATION = @HAVE_FEDERATION@
