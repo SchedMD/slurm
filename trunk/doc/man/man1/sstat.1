@@ -5,103 +5,103 @@ sstat \- Display various status information
 of a running job/step.
 
 .SH "SYNOPSIS"
-.BR "sstat " 
-[\fIOPTIONS\fR...] 
+.BR "sstat "
+[\fIOPTIONS\fR...]
 
 .SH "DESCRIPTION"
 .PP
 Status information for running jobs invoked with SLURM.
 .PP
-The 
+The
 .BR "sstat "
 command displays job status information for your analysis.
-The 
+The
 .BR "sstat "
 command displays information pertaining to CPU, Task, Node, Resident
 Set Size (RSS) and Virtual Memory (VM).
-You can tailor the output with the use of the 
-\f3\-\-fields=\fP 
+You can tailor the output with the use of the
+\f3\-\-fields=\fP
 option to specify the fields to be shown.
 .PP
-For the root user, the 
+For the root user, the
 .BR "sstat "
 command displays job status data for any job running on the system.
 .PP
-For the non\-root user, the 
+For the non\-root user, the
 .BR "sstat "
-command limits the display of job status data to jobs that were 
+command limits the display of job status data to jobs that were
 launched with their own user identifier (UID).
 
-.TP 
+.TP
 \f3\-a \fP\f3,\fP \f3\-\-allsteps\fP
 Print all steps for the given job(s) when no step is specified.
 
-.TP 
+.TP
 \f3\-e \fP\f3,\fP \f3\-\-helpformat\fP
 Print a list of fields that can be specified with the '\-\-format' option.
 
-.TP 
+.TP
 \f3\-h \fP\f3,\fP \f3\-\-help\fP
 Displays a general help message.
 
-.TP 
+.TP
 \f3\-j \fP\f3,\fP \f3\-\-jobs\fP
 Format is <job(.step)>. Stat this job step or comma-separated list of
 job steps. This option is required.  The step portion will default to
 step 0 if not specified, unless the \-\-allsteps flag is set where not
 specifing a step will result in all running steps to be displayed.
 
-.TP 
+.TP
 \f3\-n \fP\f3,\fP \f3\-\-noheader\fP
 No header will be added to the beginning of output. The default is to print a header.
 
-.TP 
+.TP
 \f3\-o \fP\f3,\fP \f3\-\-format\fP,\fP \f3\-\-fields\fP
 Comma seperated list of fields.
 (use '\-\-helpformat' for a list of available fields).
 
-.TP 
+.TP
 \f3\-p \fP\f3,\fP \f3\-\-parsable\fP
 output will be '|' delimited with a '|' at the end.
 
-.TP 
+.TP
 \f3\-P \fP\f3,\fP \f3\-\-parsable2\fP
 output will be '|' delimited without a '|' at the end
 
-.TP 
+.TP
 \f3\-\-usage\fP
 Display brief usage message.
 
-.TP 
+.TP
 \f3\-v\fP\f3,\fP \f3\-\-verbose\fP
 Primarily for debugging purposes, report the state of various variables during processing.
 
-.TP 
+.TP
 \f3\-V \fP\f3,\fP \f3\-\-version\fP
 Print version.
 
 
 .SS "Job Status Fields"
 The following are the field options:
-.RS 
+.RS
 .TP
 \f3AveCPU\fP
 
 
-.TP 
-\f3AvePages\fP 
+.TP
+\f3AvePages\fP
 
 
 .TP
-\f3AveRSS\fP 
+\f3AveRSS\fP
 
 
 .TP
 \f3AveVMSize\fP
 
 
-.TP 
-\f3JobID\fP 
+.TP
+\f3JobID\fP
 
 
 .TP
