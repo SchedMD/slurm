@@ -1,18 +1,18 @@
 .TH SMAP "1" "June 2009" "smap 2.1" "Slurm components"
 
 .SH "NAME"
-smap \- graphically view information about SLURM jobs, partitions, and set 
+smap \- graphically view information about SLURM jobs, partitions, and set
 configurations parameters.
 
 .SH "SYNOPSIS"
-\fBsmap\fR [\fIOPTIONS\fR...] 
+\fBsmap\fR [\fIOPTIONS\fR...]
 .SH "DESCRIPTION"
-\fBsmap\fR is used to graphically view job, partition and node information 
-for a system running SLURM. 
-Note that information about nodes and partitions to which a user lacks 
+\fBsmap\fR is used to graphically view job, partition and node information
+for a system running SLURM.
+Note that information about nodes and partitions to which a user lacks
 access will always be displayed to avoid obvious gaps in the output.
-This is equivalent to the \fB\-\-all\fR option of the \fBsinfo\fR and 
-\fBsqueue\fR commands. 
+This is equivalent to the \fB\-\-all\fR option of the \fBsinfo\fR and
+\fBsqueue\fR commands.
 
 .SH "OPTIONS"
 .TP
@@ -21,12 +21,12 @@ Print output to the commandline, no curses.
 
 .TP
 \fB\-D <option>\fR, \fB\-\-display=<option>\fR
-sets the display mode for smap. Showing revelant information about specific 
-views and displaying a corresponding node chart. While in any 
+sets the display mode for smap. Showing revelant information about specific
+views and displaying a corresponding node chart. While in any
 display a user can switch by typing a different view letter.  This is true in
-all modes except for 'configure mode' user can type 'quit' to exit just 
+all modes except for 'configure mode' user can type 'quit' to exit just
 configure mode.  Typing 'exit' will end the configuration mode and exit smap.
-Note that unallocated nodes are indicated by a '.' and nodes in the 
+Note that unallocated nodes are indicated by a '.' and nodes in the
 DOWN, DRAINED or FAIL state by a '#'.
 .RS
 .TP 15
@@ -40,10 +40,10 @@ Displays current BlueGene node states and allows users to configure the system.
 Displays information about jobs running on system.
 .TP
 .I "r"
-Display information about advanced reservations. 
-While all current and future reservations will be listed, 
+Display information about advanced reservations.
+While all current and future reservations will be listed,
 only currently active reservations will appear on the node map.
-.TP 
+.TP
 .I "s"
 Displays information about slurm partitions on the system
 .RE
@@ -58,10 +58,10 @@ Print a message describing all \fBsmap\fR options.
 
 .TP
 \fB\-i <seconds>\fR , \fB\-\-iterate=<seconds>\fR
-Print the state on a periodic basis. 
+Print the state on a periodic basis.
 Sleep for the indicated number of seconds between reports.
 User can exit at anytime by typing 'q' or hitting the return key.
-If user is in configure mode type 'exit' to exit program, 'quit' 
+If user is in configure mode type 'exit' to exit program, 'quit'
 to exit configure mode.
 
 .TP
@@ -69,7 +69,7 @@ to exit configure mode.
 Only show objects with these ionodes this support is only for
 bluegene systems. This should be used inconjuction with the '\-n'
 option.  Only specify the ionode number range here.  Specify the node
-name with the '\-n' option. 
+name with the '\-n' option.
 
 .TP
 \fB\-n\fR, \fB\-\-nodes\fR
@@ -83,10 +83,10 @@ Avoid printing error messages.
 .TP
 \fB\-R <RACK_MIDPLANE_ID/XYZ>\fR, \fB\-\-resolve=<RACK_MIDPLANE_ID/XYZ>\fR
 Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
-                                                                                  
+
 To get the XYZ coord for a Rack/Midplane id input \-R R101 where 10 is the rack
 and 1 is the midplane.
-                                                                                  
+
 To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 with
 no leading 'R'.
 
@@ -100,8 +100,8 @@ Print version information and exit.
 
 .SH "INTERACTIVE OPTIONS"
 When using smap in curses mode you can scroll through the different windows
-using the arrow keys.  The \fBup\fR and \fBdown\fR arrow keys scroll 
-the window containing the grid, and the \fBleft\fR and \fBright\fR arrow keys 
+using the arrow keys.  The \fBup\fR and \fBdown\fR arrow keys scroll
+the window containing the grid, and the \fBleft\fR and \fBright\fR arrow keys
 scroll the window containing the text information.
 
 .SH "OUTPUT FIELD DESCRIPTIONS"
@@ -133,7 +133,7 @@ Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 Name of the job or advanced reservation.
 .TP
 \fBNODELIST\fR or \fBBP_LIST\fR
-Names of nodes or base partitions associated with this configuration, 
+Names of nodes or base partitions associated with this configuration,
 partition or reservation.
 .TP
 \fBNODES\fR
@@ -145,21 +145,21 @@ default partition.
 .TP
 \fBST\fR
 State of a job in compact form. Possible states include:
-PD (pending), R (running), S (suspended), 
-CD  (completed), CF (configuring), CG (completing), 
-F (failed), TO (timeout), and NF (node failure). See 
+PD (pending), R (running), S (suspended),
+CD  (completed), CF (configuring), CG (completing),
+F (failed), TO (timeout), and NF (node failure). See
 \fBJOB STATE CODES\fR section below for more information.
 .TP
 \fBSTART_TIME\fR
 The time when an advanced reservation started.
 .TP
 \fBSTATE\fR
-State of the nodes. 
-Possible states include: allocated, completing, down, 
+State of the nodes.
+Possible states include: allocated, completing, down,
 drained, draining, fail, failing, idle, and unknown plus
-their abbreviated forms: alloc, comp, donw, drain, drng, 
+their abbreviated forms: alloc, comp, donw, drain, drng,
 fail, failg, idle, and unk respectively.
-Note that the suffix "*" identifies nodes that are presently 
+Note that the suffix "*" identifies nodes that are presently
 not responding.
 See \fBNODE STATE CODES\fR section below for more information.
 .TP
@@ -171,19 +171,19 @@ jobs or partitions without a job time limit.
 
 .SH "TOPOGRAPHY INFORMATION"
 .PP
-The node chart is designed to indicate relative locations of 
-the nodes. 
-On most Linux clusters this will represent a one\-dimensional 
-array of nodes. Larger clusters will utilize multiple as needed 
-with right side of one line being logically followed by the 
+The node chart is designed to indicate relative locations of
+the nodes.
+On most Linux clusters this will represent a one\-dimensional
+array of nodes. Larger clusters will utilize multiple as needed
+with right side of one line being logically followed by the
 left side of the next line.
 .PP
 .nf
-On BlueGene systems, the node chart will indicate the three 
+On BlueGene systems, the node chart will indicate the three
 dimensional topography of the system.
 The X dimension will increase from left to right on a given line.
 The Y dimension will increase in planes from bottom to top.
-The Z dimension will increase within a plane from the back 
+The Z dimension will increase within a plane from the back
 line to the front line of a plane.
 Note the example below:
 
@@ -218,9 +218,9 @@ e  12378 debug     RMP4     joseph asx4 R   0:34    2k bgl[612x713]
 
 .SH "CONFIGURATION INSTRUCTIONS"
 .PP
-For Admin use. From this screen one can create a configuration 
+For Admin use. From this screen one can create a configuration
 file that is used to partition and wire the system into usable
-blocks.  
+blocks.
 
 .TP
 \fBOUTPUT\fR
@@ -248,45 +248,45 @@ Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 Returns the XYZ coords for a Rack/Midplane id or vice\-versa.
 
 To get the XYZ coord for a Rack/Midplane id input \-R R101 where 10 is the rack
-and 1 is the midplane.  
+and 1 is the midplane.
 
 To get the Rack/Midplane id from a XYZ coord input \-R 101 where X=1 Y=1 Z=1 with
-no leading 'R'.  
+no leading 'R'.
 
 .TP
 \fBload <bluegene.conf file>\fR
 Load an already exsistant bluegene.conf file. This will varify and mapout a
-bluegene.conf file.  After loaded the configuration may be edited and 
+bluegene.conf file.  After loaded the configuration may be edited and
 saved as a new file.
 
-.TP 
+.TP
 \fBcreate <size> <options>\fR
-Submit request for partition creation. The size may be specified either 
-as a count of base partitions or specific dimensions in the X, Y and Z 
-directions separated by "x", for example "2x3x4". A variety of options 
+Submit request for partition creation. The size may be specified either
+as a count of base partitions or specific dimensions in the X, Y and Z
+directions separated by "x", for example "2x3x4". A variety of options
 may be specified. Valid options are listed below. Note that the option
 and their values are case insensitive (e.g. "MESH" and "mesh" are equivalent).
 .TP
 \fBStart = XxYxZ\fR
-Identify where to start the partition.  This is primarily for testing 
+Identify where to start the partition.  This is primarily for testing
 purposes.  For convenience one can only put the X coord or XxY will also work.
 The default value is 0x0x0.
 .TP
 \fBConnection = MESH | TORUS | SMALL\fR
-Identify how the nodes should be connected in network. 
+Identify how the nodes should be connected in network.
 The default value is TORUS.
 .RS
 .TP
 \fBSmall\fR
 Equivalent to "Connection=Small".
-If a small connection is specified the base partition chosen will create 
-smaller partitions based on options \fB32CNBlocks\fR and 
-\fB128CNBlocks\fR respectively for a Bluegene L system.  
+If a small connection is specified the base partition chosen will create
+smaller partitions based on options \fB32CNBlocks\fR and
+\fB128CNBlocks\fR respectively for a Bluegene L system.
 \fB16CNBlocks\fR, \fB64CNBlocks\fR, and \fB256CNBlocks\fR are also
-available for Bluegene P systems.  Keep in mind you 
+available for Bluegene P systems.  Keep in mind you
 must have enough ionodes to make all these configurations possible.
-  These number will be altered to take up the 
-entire base partition. Size does not need to be specified with a small 
+  These number will be altered to take up the
+entire base partition. Size does not need to be specified with a small
 request, we will always default to 1 base partition for allocation.
 .TP
 \fBMesh\fR
@@ -298,7 +298,7 @@ Equivalent to "Connection=Torus".
 
 .TP
 \fBRotation = TRUE | FALSE\fR
-Specifies that the geometry specified in the size parameter may 
+Specifies that the geometry specified in the size parameter may
 be rotated in space (e.g. the Y and Z dimensions may be switched).
 The default value is FALSE.
 .TP
@@ -306,10 +306,10 @@ The default value is FALSE.
 Equivalent to "Rotation=true".
 .TP
 \fBElongation = TRUE | FALSE\fR
-If TRUE, permit the geometry specified in the size parameter to be altered as 
-needed to fit available resources. 
-For example, an allocation of "4x2x1" might be used to satisfy a size specification 
-of "2x2x2". 
+If TRUE, permit the geometry specified in the size parameter to be altered as
+needed to fit available resources.
+For example, an allocation of "4x2x1" might be used to satisfy a size specification
+of "2x2x2".
 The default value is FALSE.
 .TP
 \fBElongate\fR
@@ -317,23 +317,23 @@ Equivalent to "Elongation=true".
 
 .TP
 \fBcopy <id> <count>\fR
-Submit request for partition to be copied. 
-You may copy a specific partition by specifying its id, by default the 
-last configured partition is copied. 
-You may also specify a number of copies to be made. 
+Submit request for partition to be copied.
+You may copy a specific partition by specifying its id, by default the
+last configured partition is copied.
+You may also specify a number of copies to be made.
 By default, one copy is made.
 
 .TP
 \fBdelete <id>\fR
-Delete the specified block. 
+Delete the specified block.
 
 .TP
 \fBdown <node_range>\fR
-Down a specific node or range of nodes. 
+Down a specific node or range of nodes.
 i.e. 000, 000\-111 [000x111]
 .TP
 \fBup <node_range>\fR
-Bring a specific node or range of nodes up. 
+Bring a specific node or range of nodes up.
 i.e. 000, 000\-111 [000x111]
 .TP
 \fBalldown\fR
@@ -344,8 +344,8 @@ Set all nodes to up state.
 
 .TP
 \fBsave <file_name>\fR
-Save the current configuration to a file. 
-If no file_name is specified, the configuration is written to a 
+Save the current configuration to a file.
+If no file_name is specified, the configuration is written to a
 file named "bluegene.conf" in the current working directory.
 
 .TP
@@ -377,7 +377,7 @@ The node is allocated to one or more active jobs plus
 one or more jobs are in the process of COMPLETING.
 .TP
 \fBCOMPLETING\fR
-All jobs associated with this node are in the process of 
+All jobs associated with this node are in the process of
 COMPLETING.  This node state will be removed when
 all of the job's processes have terminated and the SLURM
 epilog program (if any) has terminated. See the \fBEpilog\fR
@@ -408,15 +408,15 @@ node\fR command in the \fBscontrol\fR(1) man page or the
 \fBslurm.conf\fR(5) man page for more information.
 .TP
 \fBFAIL\fR
-The node is expected to fail soon and is unavailable for 
-use per system administrator request.  
-See the \fBupdate node\fR command in the \fBscontrol\fR(1) 
+The node is expected to fail soon and is unavailable for
+use per system administrator request.
+See the \fBupdate node\fR command in the \fBscontrol\fR(1)
 man page or the \fBslurm.conf\fR(5) man page for more information.
 .TP
 \fBFAILING\fR
-The node is currently executing a job, but is expected to fail 
-soon and is unavailable for use per system administrator request.  
-See the \fBupdate node\fR command in the \fBscontrol\fR(1) 
+The node is currently executing a job, but is expected to fail
+soon and is unavailable for use per system administrator request.
+See the \fBupdate node\fR command in the \fBscontrol\fR(1)
 man page or the \fBslurm.conf\fR(5) man page for more information.
 .TP
 \fBIDLE\fR
@@ -432,7 +432,7 @@ has not yet been determined.
 .SH "JOB STATE CODES"
 Jobs typically pass through several states in the course of their
 execution.
-The typical states are \fBPENDING\fR, \fBRUNNING\fR, \fBSUSPENDED\fR, 
+The typical states are \fBPENDING\fR, \fBRUNNING\fR, \fBSUSPENDED\fR,
 \fBCOMPLETING\fR, and \fBCOMPLETED\fR.
 An explanation of each state follows.
 .TP 20
@@ -495,10 +495,10 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-\fBscontrol\fR(1), \fBsinfo\fR(1), \fBsqueue\fR(1), 
-\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
-\fBslurm_load_partitions\fR(3), 
-\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
-\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), 
+\fBscontrol\fR(1), \fBsinfo\fR(1), \fBsqueue\fR(1),
+\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3),
+\fBslurm_load_partitions\fR(3),
+\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3),
+\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3),
 \fBslurm_update_partition\fR(3),
 \fBslurm.conf\fR(5)

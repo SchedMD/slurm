@@ -8,7 +8,7 @@ sreport \- Generate reports from the slurm accounting data.
 
 .SH "DESCRIPTION"
 \fBsreport\fR is used to generate certain reports. It provides a view into accounting data gathered from slurm via
-the account information maintained within a database with the interface 
+the account information maintained within a database with the interface
 being provided by the \fBslurmdbd\fR (Slurm Database daemon).
 
 .SH "OPTIONS"
@@ -33,14 +33,14 @@ Output will be '|' delimited without a '|' at the end.
 Print no warning or informational messages, only error messages.
 .TP
 \fB\-t <format>\fR
-Specify the output time format. 
+Specify the output time format.
 Time format options are case insensitive and may be abbreviated.
 The default format is Minutes.
 Supported time format options are listed in the \fBtime\fP command
 section below.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Print detailed event logging. 
+Print detailed event logging.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
@@ -80,7 +80,7 @@ Identical to the \fBexit\fR command.
 
 .TP
 \fBtime <time_format>\fP
-Specify the output time format. 
+Specify the output time format.
 Time format options are case insensitive and may be abbreviated.
 The default format is Minutes.
 Supported time format options include:
@@ -110,7 +110,7 @@ Percentage of Total
 
 .TP
 \fBverbose\fP
-Enable detailed event logging. 
+Enable detailed event logging.
 
 .TP
 \fBversion\fP
@@ -148,13 +148,13 @@ UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
 REPORT DESCRIPTION
 .RS
 .TP
-.B cluster AccountUtilizationByUser 
+.B cluster AccountUtilizationByUser
 This report will display account utilization as it appears on the
 hierarchical tree.  Starting with the specified account or the
 root account by default this report will list the underlying
 usage with a sum on each level.  Use the 'tree' option to span
 the tree for better visibility.
-.TP 
+.TP
 .B cluster UserUtilizationByAccount
 This report will display users by account in order of utilization without
 grouping multiple accounts by user into one, but displaying them
@@ -174,7 +174,7 @@ the number should be grouped with idle time.
 .TP
 .B cluster WCKeyUtilizationByUser
 This report will display wckey utilization sorted by WCKey name for
-each user on each cluster.  
+each user on each cluster.
 
 .TP
 .B job SizesByAccount
@@ -187,7 +187,7 @@ accounts listed.
 .TP
 .B job SizesByWckey
 This report will dispay the amount of time for each wckey for job ranges
-specified by the 'grouping=' option.  
+specified by the 'grouping=' option.
 
 .TP
 .B reservation Utilization
@@ -197,7 +197,7 @@ This report will display total usage for reservations on the systems.
 .B user TopUsage
 Displays the top users on a cluster.  Use the group option to group
 accounts together.  The default is to have a different line for each
-user account combination.  
+user account combination.
 
 .TP
 Each report type has various options...
@@ -217,7 +217,7 @@ Period ending for report. Default is 23:59:59 of previous day.
 Valid time formats are...
 HH:MM[:SS] [AM|PM]
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
-MM/DD[/YY]-HH:MM[:SS]         
+MM/DD[/YY]-HH:MM[:SS]
 YYYY-MM-DD[THH:MM[:SS]]
 .TP
 .B Format=<OPT>
@@ -227,7 +227,7 @@ When using the format option for listing various fields you can put a
 %NUMBER afterwards to specify how many characters should be printed.
 
 i.e. format=name%30 will print 30 characters of field name right
-justified.  A \-30 will print 30 characters left justified.  
+justified.  A \-30 will print 30 characters left justified.
 
 .TP
 .B Start=<OPT>
@@ -235,7 +235,7 @@ Period start for report.  Default is 00:00:00 of previous day.
 Valid time formats are...
 HH:MM[:SS] [AM|PM]
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
-MM/DD[/YY]-HH:MM[:SS]         
+MM/DD[/YY]-HH:MM[:SS]
 YYYY-MM-DD[THH:MM[:SS]]
 .RE
 
@@ -246,7 +246,7 @@ CLUSTER
 .B Accounts=<OPT>
 When used with the UserUtilizationByAccount, or
 AccountUtilizationByUser, List of accounts to include in report.
-Default is all. 
+Default is all.
 .TP
 .B Tree
 When used with the AccountUtilizationByUser report will span the
@@ -258,11 +258,11 @@ include in report.  Default is all.
 .TP
 .B Wckeys=<OPT>
 When used with the UserUtilizationByWckey or WCKeyUtilizationByUser,
-List of wckeys to include in report. Default is all. 
+List of wckeys to include in report. Default is all.
 .RE
 
 .TP
-JOB    
+JOB
 .RS
 .TP
 .B Accounts=<OPT>
@@ -295,7 +295,7 @@ List of partitions jobs ran on to include in report.  Default is all.
 .TP
 .B PrintJobCount
 When used with the Sizes report will print number of jobs ran instead
-of time used.  
+of time used.
 .TP
 .B Users=<OPT>
 List of users jobs to include in report.  Default is all.
@@ -333,10 +333,10 @@ Default is 10.
 .TP
 .B Users=<OPT>
 List of users jobs to include in report.  Default is all.
-.RE  
+.RE
 
 .TP
- 
+
 .SH "Format Options for Each Report"
 
 \fBCluster\fP
@@ -364,7 +364,7 @@ List of users jobs to include in report.  Default is all.
 \fBUser\fP
        TopUsage
              \- Account, Cluster, Login, Proper, Used
-                                                                           
+
 .TP
 All commands and options are case-insensitive.
 .TP

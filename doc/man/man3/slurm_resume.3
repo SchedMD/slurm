@@ -4,7 +4,7 @@
 slurm_suspend, slurm_resume, slurm_requeue \- Slurm suspend, resume and requeue functions
 
 .SH "SYNTAX"
-.LP 
+.LP
 #include <slurm/slurm.h>
 .LP
 .LP
@@ -27,7 +27,7 @@ int \fBslurm_requeue\fR (
 );
 
 .SH "ARGUMENTS"
-.LP 
+.LP
 .TP
 \fIjob_id\fP
 SLURM job ID to perform the operation upon.
@@ -42,12 +42,12 @@ Resume execution of a previously suspended job.
 .LP
 \fBslurm_requeue\fR
 Requeue a running or pending SLURM batch job.
-The job script will be restarted from its beginning, 
+The job script will be restarted from its beginning,
 ignoring any previous checkpoint.
 
 .SH "RETURN VALUE"
 .LP
-Zero is returned upon success. 
+Zero is returned upon success.
 On error, \-1 is returned, and the Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
@@ -56,10 +56,10 @@ On error, \-1 is returned, and the Slurm error code is set appropriately.
 resume a job that is not currently suspended, or
 requeue a job on which the operation has been disabled).
 .LP
-\fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
+\fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist.
 .LP
-\fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the 
-requested action (e.g. not user root or SlurmUser). 
+\fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the
+requested action (e.g. not user root or SlurmUser).
 .LP
 \fBESLURM_JOB_PENDING\fR the requested job is still pending.
 .LP
@@ -68,7 +68,7 @@ requested action (e.g. not user root or SlurmUser).
 \fBESLURM_NOT_SUPPORTED\fR the requested operation is not supported on this system.
 
 .SH "NOTE"
-These functions are included in the libslurm library, 
+These functions are included in the libslurm library,
 which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
@@ -91,5 +91,5 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-.LP 
+.LP
 \fBscontrol\fR(1)
