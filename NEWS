@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
  -- Patch from Matthieu Hautreux to improve error message in slurmd/req.c
  -- Added support for split groups from (Matthiu Hautreux CEA)
  -- Patch from Mark Grondona to move blcr scripts into pkglibexecdir
+ -- Patch from Doug Parisek to calculate a job's projected start time under the
+    builtin scheduler.
 
 * Changes in SLURM 2.1.0-pre7
 =============================
