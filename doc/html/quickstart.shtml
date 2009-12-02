@@ -3,25 +3,25 @@
 <h1>Quick Start User Guide</h1>
 
 <h2>Overview</h2>
-<p>The Simple Linux Utility for Resource Management (SLURM) is an open source, 
-fault-tolerant, and highly scalable cluster management and job scheduling system 
-for large and small Linux clusters. SLURM requires no kernel modifications for 
-its operation and is relatively self-contained. As a cluster resource manager, 
-SLURM has three key functions. First, it allocates exclusive and/or non-exclusive 
-access to resources (compute nodes) to users for some duration of time so they 
-can perform work. Second, it provides a framework for starting, executing, and 
-monitoring work (normally a parallel job) on the set of allocated nodes. Finally, 
+<p>The Simple Linux Utility for Resource Management (SLURM) is an open source,
+fault-tolerant, and highly scalable cluster management and job scheduling system
+for large and small Linux clusters. SLURM requires no kernel modifications for
+its operation and is relatively self-contained. As a cluster resource manager,
+SLURM has three key functions. First, it allocates exclusive and/or non-exclusive
+access to resources (compute nodes) to users for some duration of time so they
+can perform work. Second, it provides a framework for starting, executing, and
+monitoring work (normally a parallel job) on the set of allocated nodes. Finally,
 it arbitrates contention for resources by managing a queue of pending work.</p>
 
 <h2>Architecture</h2>
-<p>As depicted in Figure 1, SLURM consists of a <b>slurmd</b> daemon running on 
-each compute node and a central <b>slurmctld</b> daemon running on a management node 
-(with optional fail-over twin). 
+<p>As depicted in Figure 1, SLURM consists of a <b>slurmd</b> daemon running on
+each compute node and a central <b>slurmctld</b> daemon running on a management node
+(with optional fail-over twin).
 The <b>slurmd</b> daemons provide fault-tolerant hierarchical communications.
 The user commands include: <b>sacct</b>, <b>salloc</b>, <b>sattach</b>,
-<b>sbatch</b>, <b>sbcast</b>, <b>scancel</b>, <b>scontrol</b>,  
-<b>sinfo</b>, <b>smap</b>, <b>squeue</b>, <b>srun</b>, <b>strigger</b> 
-and <b>sview</b>.  
+<b>sbatch</b>, <b>sbcast</b>, <b>scancel</b>, <b>scontrol</b>,
+<b>sinfo</b>, <b>smap</b>, <b>squeue</b>, <b>srun</b>, <b>strigger</b>
+and <b>sview</b>.
 All of the commands can run anywhere in the cluster.</p>
 
 <div class="figure">
@@ -29,19 +29,19 @@ All of the commands can run anywhere in the cluster.</p>
   Figure 1. SLURM components
 </div>
 
-<p>The entities managed by these SLURM daemons, shown in Figure 2, include 
-<b>nodes</b>, the compute resource in SLURM, 
-<b>partitions</b>, which group nodes into logical (possibly overlapping) sets, 
-<b>jobs</b>, or allocations of resources assigned to a user for 
-a specified amount of time, and 
-<b>job steps</b>, which are sets of (possibly parallel) tasks within a job. 
-The partitions can be considered job queues, each of which has an assortment of 
+<p>The entities managed by these SLURM daemons, shown in Figure 2, include
+<b>nodes</b>, the compute resource in SLURM,
+<b>partitions</b>, which group nodes into logical (possibly overlapping) sets,
+<b>jobs</b>, or allocations of resources assigned to a user for
+a specified amount of time, and
+<b>job steps</b>, which are sets of (possibly parallel) tasks within a job.
+The partitions can be considered job queues, each of which has an assortment of
 constraints such as job size limit, job time limit, users permitted to use it, etc.
-Priority-ordered jobs are allocated nodes within a partition until the resources 
-(nodes, processors, memory, etc.) within that partition are exhausted. Once 
-a job is assigned a set of nodes, the user is able to initiate parallel work in 
-the form of job steps in any configuration within the allocation. For instance, 
-a single job step may be started that utilizes all nodes allocated to the job, 
+Priority-ordered jobs are allocated nodes within a partition until the resources
+(nodes, processors, memory, etc.) within that partition are exhausted. Once
+a job is assigned a set of nodes, the user is able to initiate parallel work in
+the form of job steps in any configuration within the allocation. For instance,
+a single job step may be started that utilizes all nodes allocated to the job,
 or several job steps may independently use a portion of the allocation.</p>
 
 <div class="figure">
@@ -52,23 +52,23 @@ or several job steps may independently use a portion of the allocation.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Commands</h2>
-<p>Man pages exist for all SLURM daemons, commands, and API functions. The command 
-option <span class="commandline">--help</span> also provides a brief summary of 
+<p>Man pages exist for all SLURM daemons, commands, and API functions. The command
+option <span class="commandline">--help</span> also provides a brief summary of
 options. Note that the command options are all case insensitive.</p>
 
 <p><span class="commandline"><b>sacct</b></span> is used to report job or job
 step accounting information about active or completed jobs.</p>
 
-<p><span class="commandline"><b>salloc</b></span> is used to allocate resources 
-for a job in real time. Typically this is used to allocate resources and spawn a shell. 
+<p><span class="commandline"><b>salloc</b></span> is used to allocate resources
+for a job in real time. Typically this is used to allocate resources and spawn a shell.
 The shell is then used to execute srun commands to launch parallel tasks.</p>
 
-<p><span class="commandline"><b>sattach</b></span> is used to attach standard 
-input, output, and error plus signal capabilities to a currently running 
+<p><span class="commandline"><b>sattach</b></span> is used to attach standard
+input, output, and error plus signal capabilities to a currently running
 job or job step. One can attach to and detach from jobs multiple times.</p>
 
-<p><span class="commandline"><b>sbatch</b></span> is used to submit a job script 
-for later execution. The script will typically contain one or more srun commands 
+<p><span class="commandline"><b>sbatch</b></span> is used to submit a job script
+for later execution. The script will typically contain one or more srun commands
 to launch parallel tasks.</p>
 
 <p><span class="commandline"><b>sbcast</b></span> is used to transfer a file
@@ -102,42 +102,42 @@ execution or initiate job steps in real time.
 <span class="commandline">srun</span>
 has a wide variety of options to specify resource requirements, including: minimum
 and maximum node count, processor count, specific nodes to use or not use, and
-specific node characteristics (so much memory, disk space, certain required 
+specific node characteristics (so much memory, disk space, certain required
 features, etc.).
 A job can contain multiple job steps executing sequentially or in parallel on
 independent or shared nodes within the job's node allocation.</p>
 
-<p><span class="commandline"><b>smap</b></span> reports state information for 
-jobs, partitions, and nodes managed by SLURM, but graphically displays the 
+<p><span class="commandline"><b>smap</b></span> reports state information for
+jobs, partitions, and nodes managed by SLURM, but graphically displays the
 information to reflect network topology.</p>
 
-<p><span class="commandline"><b>strigger</b></span> is used to set, get or 
+<p><span class="commandline"><b>strigger</b></span> is used to set, get or
 view event triggers. Event triggers include things such as nodes going down
 or jobs approaching their time limit.</p>
 
-<p><span class="commandline"><b>sview</b></span> is a graphical user interface to 
+<p><span class="commandline"><b>sview</b></span> is a graphical user interface to
 get and update state information for jobs, partitions, and nodes managed by SLURM.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Examples</h2>
-<p>First we determine what partitions exist on the system, what nodes 
-they include, and general system state. This information is provided 
-by the <span class="commandline">sinfo</span> command. 
-In the example below we find there are two partitions: <i>debug</i> 
+<p>First we determine what partitions exist on the system, what nodes
+they include, and general system state. This information is provided
+by the <span class="commandline">sinfo</span> command.
+In the example below we find there are two partitions: <i>debug</i>
 and <i>batch</i>.
-The <i>*</i> following the name <i>debug</i> indicates this is the 
-default partition for submitted jobs. 
-We see that both partitions are in an <i>UP</i> state. 
+The <i>*</i> following the name <i>debug</i> indicates this is the
+default partition for submitted jobs.
+We see that both partitions are in an <i>UP</i> state.
 Some configurations may include partitions for larger jobs
-that are <i>DOWN</i> except on weekends or at night. The information 
-about each partition may be split over more than one line so that 
-nodes in different states can be identified. 
-In this case, the two nodes <i>adev[1-2]</i> are <i>down</i>. 
+that are <i>DOWN</i> except on weekends or at night. The information
+about each partition may be split over more than one line so that
+nodes in different states can be identified.
+In this case, the two nodes <i>adev[1-2]</i> are <i>down</i>.
 The <i>*</i> following the state <i>down</i> indicate the nodes are
 not responding. Note the use of a concise expression for node
 name specification with a common prefix <i>adev</i> and numeric
-ranges or specific numbers identified. This format allows for 
+ranges or specific numbers identified. This format allows for
 very clusters to be easily managed.
 The <span class="commandline">sinfo</span> command
 has many options to easily let you view the information of interest
@@ -153,13 +153,13 @@ batch        up      30:00     3  alloc adev[7-8,14]
 batch        up      30:00     4   idle adev[9-12]
 </pre>
 
-<p>Next we determine what jobs exist on the system using the 
+<p>Next we determine what jobs exist on the system using the
 <span class="commandline">squeue</span> command. The
 <i>ST</i> field is job state.
-Two jobs are in a running state (<i>R</i> is an abbreviation 
+Two jobs are in a running state (<i>R</i> is an abbreviation
 for <i>Running</i>) while one job is in a pending state
 (<i>PD</i> is an abbreviation for <i>Pending</i>).
-The <i>TIME</i> field shows how long the jobs have run 
+The <i>TIME</i> field shows how long the jobs have run
 for using the format <i>days-hours:minutes:seconds</i>.
 The <i>NODELIST(REASON)</i> field indicates where the
 job is running or the reason it is still pending. Typical
@@ -168,7 +168,7 @@ for resources to become available) and <i>Priority</i>
 (queued behind a higher priority job).
 The <span class="commandline">squeue</span> command
 has many options to easily let you view the information of interest
-to you in whatever format you prefer. 
+to you in whatever format you prefer.
 See the man page for more information.</p>
 <pre>
 adev0: squeue
@@ -179,15 +179,15 @@ JOBID PARTITION  NAME  USER ST  TIME NODES NODELIST(REASON)
 </pre>
 
 <p>The <span class="commandline">scontrol</span> command
-can be used to report more detailed information about 
+can be used to report more detailed information about
 nodes, partitions, jobs, job steps, and configuration.
 It can also be used by system administrators to make
-configuration changes. A couple of examples are shown 
+configuration changes. A couple of examples are shown
 below. See the man page for more information.</p>
 <pre>
 adev0: scontrol show partition
 PartitionName=debug TotalNodes=5 TotalCPUs=40 RootOnly=NO
-   Default=YES Shared=FORCE:4 Priority=1 State=UP 
+   Default=YES Shared=FORCE:4 Priority=1 State=UP
    MaxTime=00:30:00 Hidden=NO
    MinNodes=1 MaxNodes=26 DisableRootJobs=NO AllowGroups=ALL
    Nodes=adev[1-5] NodeIndices=0-4
@@ -202,7 +202,7 @@ PartitionName=batch TotalNodes=10 TotalCPUs=80 RootOnly=NO
 adev0: scontrol show node adev1
 NodeName=adev1 State=DOWN* CPUs=8 AllocCPUs=0
    RealMemory=4000 TmpDisk=0
-   Sockets=2 Cores=4 Threads=1 Weight=1 Features=intel 
+   Sockets=2 Cores=4 Threads=1 Weight=1 Features=intel
    Reason=Not responding [slurm@06/02-14:01:24]
 
 65648     batch  math  phil PD  0:00     6 (Resources)
@@ -227,14 +227,14 @@ JobId=65672 UserId=phil(5136) GroupId=phil(5136)
 </pre>
 
 <p>It is possible to create a resource allocation and launch
-the tasks for a job step in a single command line using the 
-<span class="commandline">srun</span> command. Depending 
-upon the MPI implementation used, MPI jobs may also be 
-launched in this manner. 
+the tasks for a job step in a single command line using the
+<span class="commandline">srun</span> command. Depending
+upon the MPI implementation used, MPI jobs may also be
+launched in this manner.
 See the <a href="#mpi">MPI</a> section for more MPI-specific information.
-In this example we execute <span class="commandline">/bin/hostname</span> 
-on three nodes (<i>-N3</i>) and include task numbers on the output (<i>-l</i>). 
-The default partition will be used. 
+In this example we execute <span class="commandline">/bin/hostname</span>
+on three nodes (<i>-N3</i>) and include task numbers on the output (<i>-l</i>).
+The default partition will be used.
 One task per node will be used by default.
 Note that the <span class="commandline">srun</span> command has
 many options available to control what resource are allocated
@@ -246,9 +246,9 @@ adev0: srun -N3 -l /bin/hostname
 2: adev5
 </pre>
 
-<p>This variation on the previous example executes 
-<span class="commandline">/bin/hostname</span> in four tasks (<i>-n4</i>). 
-One processor per task will be used by default (note that we don't specify 
+<p>This variation on the previous example executes
+<span class="commandline">/bin/hostname</span> in four tasks (<i>-n4</i>).
+One processor per task will be used by default (note that we don't specify
 a node count).</p>
 <pre>
 adev0: srun -n4 -l /bin/hostname
@@ -259,10 +259,10 @@ adev0: srun -n4 -l /bin/hostname
 </pre>
 
 <p>One common mode of operation is to submit a script for later execution.
-In this example the script name is <i>my.script</i> and we explicitly use 
-the nodes adev9 and adev10 (<i>-w "adev[9-10]"</i>, note the use of a 
-node range expression). 
-We also explicitly state that the subsequent job steps will spawn four tasks 
+In this example the script name is <i>my.script</i> and we explicitly use
+the nodes adev9 and adev10 (<i>-w "adev[9-10]"</i>, note the use of a
+node range expression).
+We also explicitly state that the subsequent job steps will spawn four tasks
 each, which will insure that our allocation contains at least four processors
 (one processor per task to be launched).
 The output will appear in the file my.stdout ("-o my.stdout").
@@ -272,9 +272,9 @@ by the option at the beginning of the script (before any commands to be executed
 in the script).
 Options supplied on the command line would override any options specified within
 the script.
-Note that my.script contains the command <span class="commandline">/bin/hostname</span> 
-that executed on the first node in the allocation (where the script runs) plus 
-two job steps initiated using the <span class="commandline">srun</span> command 
+Note that my.script contains the command <span class="commandline">/bin/hostname</span>
+that executed on the first node in the allocation (where the script runs) plus
+two job steps initiated using the <span class="commandline">srun</span> command
 and executed sequentially.</p>
 <pre>
 adev0: cat my.script
@@ -299,26 +299,26 @@ adev9
 3: /home/jette
 </pre>
 
-<p>The final mode of operation is to create a resource allocation 
-and spawn job steps within that allocation. 
+<p>The final mode of operation is to create a resource allocation
+and spawn job steps within that allocation.
 The <span class="commandline">salloc</span> command is used
-to create a resource allocation and typically start a shell within 
-that allocation. 
-One or more job steps would typically be executed within that allocation 
+to create a resource allocation and typically start a shell within
+that allocation.
+One or more job steps would typically be executed within that allocation
 using the <span class="commandline">srun</span> command to launch the tasks
-(depending upon the type of MPI being used, the launch mechanism may 
+(depending upon the type of MPI being used, the launch mechanism may
 differ, see <a href="#mpi">MPI</a> details below).
-Finally the shell created by <span class="commandline">salloc</span> would 
+Finally the shell created by <span class="commandline">salloc</span> would
 be terminated using the <i>exit</i> command.
 SLURM does not automatically migrate executable or data files
-to the nodes allocated to a job. 
+to the nodes allocated to a job.
 Either the files must exists on local disk or in some global file system
 (e.g. NFS or Lustre).
 We provide the tool <span class="commandline">sbcast</span> to transfer
 files to local storage on allocated nodes using SLURM's hierarchical
 communications.
-In this example we use <span class="commandline">sbcast</span> to transfer 
-the executable program <i>a.out</i> to <i>/tmp/joe.a.out</i> on local storage 
+In this example we use <span class="commandline">sbcast</span> to transfer
+the executable program <i>a.out</i> to <i>/tmp/joe.a.out</i> on local storage
 of the allocated nodes.
 After executing the program, we delete it from local storage</p>
 <pre>
@@ -340,7 +340,7 @@ srun: jobid 473 submitted
 adev0: squeue
 JOBID PARTITION NAME USER ST TIME  NODES NODELIST(REASON)
   473 batch     test jill R  00:00 1     adev9
- 
+
 adev0: scancel 473
 
 adev0: squeue
@@ -351,24 +351,24 @@ JOBID PARTITION NAME USER ST TIME  NODES NODELIST(REASON)
 
 <h2><a name="mpi">MPI</a></h2>
 
-<p>MPI use depends upon the type of MPI being used. 
-There are three fundamentally different modes of operation used 
+<p>MPI use depends upon the type of MPI being used.
+There are three fundamentally different modes of operation used
 by these various MPI implementation.
 <ol>
-<li>SLURM directly launches the tasks and performs initialization 
-of communications (Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX, 
+<li>SLURM directly launches the tasks and performs initialization
+of communications (Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX,
 MVAPICH, MVAPICH2 and some MPICH1 modes).</li>
 <li>SLURM creates a resource allocation for the job and then
 mpirun launches tasks using SLURM's infrastructure (OpenMPI,
 LAM/MPI and HP-MPI).</li>
-<li>SLURM creates a resource allocation for the job and then 
-mpirun launches tasks using some mechanism other than SLURM, 
-such as SSH or RSH (BlueGene MPI and some MPICH1 modes). 
-These tasks initiated outside of SLURM's monitoring 
-or control. SLURM's epilog should be configured to purge 
+<li>SLURM creates a resource allocation for the job and then
+mpirun launches tasks using some mechanism other than SLURM,
+such as SSH or RSH (BlueGene MPI and some MPICH1 modes).
+These tasks initiated outside of SLURM's monitoring
+or control. SLURM's epilog should be configured to purge
 these tasks when the job's allocation is relinquished. </li>
 </ol>
-<p>Links to instructions for using several varieties of MPI 
+<p>Links to instructions for using several varieties of MPI
 with SLURM are provided below.
 <ul>
 <li><a href="mpi_guide.html#bluegene_mpi">BlueGene MPI</a></li>

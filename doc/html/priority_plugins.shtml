@@ -29,7 +29,7 @@ Plugin API require no specialization for job priority support.
 Note carefully, however, the versioning discussion below.</p>
 
 <p>The programmer is urged to study
-<span class="commandline">src/plugins/priority/basic/priority_basic.c</span> 
+<span class="commandline">src/plugins/priority/basic/priority_basic.c</span>
 for an example implementation of a SLURM priority plugin.</p>
 
 <p class="footer"><a href="#top">top</a></p>

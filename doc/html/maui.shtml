@@ -3,13 +3,13 @@
 <h1>Maui Scheduler Integration Guide</h1>
 <h2>Overview</h2>
 <p>Maui configuration is quite complicated and is really beyond the scope
-of any documents we could supply with SLURM.  
-The best resource for Maui configuration information is the 
-online documents at Cluster Resources Inc.: 
+of any documents we could supply with SLURM.
+The best resource for Maui configuration information is the
+online documents at Cluster Resources Inc.:
 <a href="http://www.clusterresources.com/products/maui/docs/mauiadmin.shtml">
 http://www.clusterresources.com/products/maui/docs/mauiadmin.shtml</a>.
 
-<p>Maui uses SLURM commands and a wiki interface to communicate. See the 
+<p>Maui uses SLURM commands and a wiki interface to communicate. See the
 <a href="http://www.clusterresources.com/products/mwm/docs/wiki/wikiinterface.shtml">
 Wiki Interface Specification</a> and
 <a href="http://www.clusterresources.com/products/mwm/docs/wiki/socket.shtml">
@@ -18,14 +18,14 @@ Wiki Socket Protocol Description</a> for more information.</p>
 <h2>Configuration</h2>
 <p>First, download the Maui scheduler kit from their web site
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
-http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php</a>. 
-Note: maui-3.2.6p9 has been validated with SLURM, other versions 
+http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php</a>.
+Note: maui-3.2.6p9 has been validated with SLURM, other versions
 should also work properly.
-We anticipate the Maui Scheduler to be upgraded to utilize a more 
-extensive interface to Slurm in early 2007. 
-The newer Maui Scheduler will be able to utilize a more ful featured 
-interface to Slurm as descripted in the 
-<a href="moab.html">Moab Cluster Suite Integration Guide</a>. 
+We anticipate the Maui Scheduler to be upgraded to utilize a more
+extensive interface to Slurm in early 2007.
+The newer Maui Scheduler will be able to utilize a more ful featured
+interface to Slurm as descripted in the
+<a href="moab.html">Moab Cluster Suite Integration Guide</a>.
 This guide will be upgrade at that time.</p>
 
 <h3>Maui configuration</h3>
@@ -35,14 +35,14 @@ Then build Maui from its source distribution. This is a two step process:</p>
 <li>./configure --with-key=42 --with-wiki
 <li>gmake
 </ol>
-<p>The key of 42 is arbitrary. You can use any value, but it will need to 
-be a number no larger than 4,294,967,295 (2^32) and specify the same 
+<p>The key of 42 is arbitrary. You can use any value, but it will need to
+be a number no larger than 4,294,967,295 (2^32) and specify the same
 value as a SLURM configuration parameter described below.
-Maui developers have assured us the authentication key will eventually be 
+Maui developers have assured us the authentication key will eventually be
 set in a configuration file rather than at build time.</p>
 
 <p>Update the Maui configuration file <i>maui.conf</i> (Copy the file
-maui-3.2.6p9/maui.cfg.dist to maui.conf). Add the following configuration 
+maui-3.2.6p9/maui.cfg.dist to maui.conf). Add the following configuration
 parameters to maui.conf:</p>
 <pre>
 RMCFG[host]       TYPE=WIKI
@@ -50,17 +50,17 @@ RMPORT            7321            # selected port
 RMHOST            host
 RMAUTHTYPE[host]  CHECKSUM
 </pre>
-<p><i>host</i> is the hostname where the SLURM controller is running. 
-This must match the value of <i>ControlMachine</i> configured in 
+<p><i>host</i> is the hostname where the SLURM controller is running.
+This must match the value of <i>ControlMachine</i> configured in
 slurm.conf. Note that <i>localhost</i> doesn't work. If you run Maui
-and SLURM on the same machine, you must specify the actual host name. 
-The above example uses a TCP port number of 7321 for 
-communications between SLURM and Maui, but you can pick any port that 
+and SLURM on the same machine, you must specify the actual host name.
+The above example uses a TCP port number of 7321 for
+communications between SLURM and Maui, but you can pick any port that
 is available and accessible. You can also set a polling interval with</p>
 <pre>
 RMPOLLINTERVAL  00:00:20
 </pre>
-<p>It may be desired to have Maui poll SLURM quite often -- 
+<p>It may be desired to have Maui poll SLURM quite often --
 in this case every 20 seconds.
 Note that a job submitted to an idle cluster will not be initiated until
 the Maui daemon polls SLURM and decides to make it run, so the value of
@@ -68,9 +68,9 @@ RMPOLLINTERVAL should be set to a value appropriate for your site
 considering both the desired system responsiveness and the overhead of
 executing Maui daemons too frequently.</p>
 
-<p>In order for Maui to be able to access your SLURM partition, you will 
-need to define in maui.conf a partition with the same name as the SLURM 
-partition(s). For example if nodes "linux[0-3]" are in SLURM partition 
+<p>In order for Maui to be able to access your SLURM partition, you will
+need to define in maui.conf a partition with the same name as the SLURM
+partition(s). For example if nodes "linux[0-3]" are in SLURM partition
 "PartA", slurm.conf includes a line of this sort:</p>
 <pre>
 PartitionName=PartA Default=yes Nodes=linux[0-3]
@@ -99,29 +99,29 @@ SchedulerType=sched/wiki
 SchedulerPort=7321
 SchedulerAuth=42 (for Slurm version 1.1 and earlier only)
 </pre>
-<p>In this case, "SchedulerAuth" has been set to 42, which was the 
-authentication key specified when Maui was configured above. 
+<p>In this case, "SchedulerAuth" has been set to 42, which was the
+authentication key specified when Maui was configured above.
 Just make sure the numbers match.</p>
 
-<p>For SLURM version 1.2 or higher, the authentication key 
-is stored in a file specific to the wiki-plugin named 
+<p>For SLURM version 1.2 or higher, the authentication key
+is stored in a file specific to the wiki-plugin named
 <i>wiki.conf</i>.
 This file should be protected from reading by users.
 It only needs to be readable by <i>SlurmUser</i> (as configured
 in <i>slurm.conf</i>) and only needs to exist on computers
 where the <i>slurmctld</i> daemon executes.
 More information about wiki.conf is available in
-a man page distributed with SLURM, although that 
-includes a description of keywords presently only 
-supported by the sched/wiki2 plugin for use with the 
+a man page distributed with SLURM, although that
+includes a description of keywords presently only
+supported by the sched/wiki2 plugin for use with the
 Moab Scheduler.</p>
 
 <p>SLURM version 2.0 and higher have internal scheduling capabilities
 that are not compatable with Maui.
 <ol>
-<li>Do not configure SLURM to use the "priority/multifactor" plugin 
+<li>Do not configure SLURM to use the "priority/multifactor" plugin
 as it would set job priorities which conflict with those set by Maui.</li>
-<li>Do not use SLURM's <a href="reservations.html">reservation</a> 
+<li>Do not use SLURM's <a href="reservations.html">reservation</a>
 mechanism, but use that offered by Maui.</li>
 <li>Do not use SLURM's <a href="resource_limits.html">resource limits</a>
 as those may conflict with those managed by Maui.</li>
@@ -130,37 +130,37 @@ as those may conflict with those managed by Maui.</li>
 
 <p>The wiki.conf keywords currently supported by Maui include:</p>
 
-<p><b>AuthKey</b> is a DES based encryption key used to sign 
-communications between SLURM and Maui or Moab. 
-This use of this key is essential to insure that a user 
-not build his own program to cancel other user's jobs in 
+<p><b>AuthKey</b> is a DES based encryption key used to sign
+communications between SLURM and Maui or Moab.
+This use of this key is essential to insure that a user
+not build his own program to cancel other user's jobs in
 SLURM.
-This should be no more than 32-bit unsigned integer and match 
-the the encryption key in Maui (<i>--with-key</i> on the 
-configure line) or Moab (<i>KEY</i> parameter in the 
-<i>moab-private.cfg</i> file). 
-Note that SLURM's wiki plugin does not include a mechanism 
-to submit new jobs, so even without this key nobody could 
+This should be no more than 32-bit unsigned integer and match
+the the encryption key in Maui (<i>--with-key</i> on the
+configure line) or Moab (<i>KEY</i> parameter in the
+<i>moab-private.cfg</i> file).
+Note that SLURM's wiki plugin does not include a mechanism
+to submit new jobs, so even without this key nobody could
 run jobs as another user.</p>
 
 <p><b>ExcludePartitions</b> is used to identify partitions
-whose jobs are to be scheduled directly by SLURM rather 
-than Maui. 
-These jobs will be scheduled on a First-Come-First-Served 
-basis. 
-This may provide faster response times than Maui scheduling. 
+whose jobs are to be scheduled directly by SLURM rather
+than Maui.
+These jobs will be scheduled on a First-Come-First-Served
+basis.
+This may provide faster response times than Maui scheduling.
 Maui will account for and report the jobs, but their initiation
 will be outside of Maui's control.
-Note that Maui controls for resource reservation, fair share 
+Note that Maui controls for resource reservation, fair share
 scheduling, etc. will not apply to the initiation of these jobs.
 If more than one partition is to be scheduled directly by
 Slurm, use a comma separator between their names.</p>
 
-<p><b>HidePartitionJobs</b> identifies partitions whose jobs are not 
+<p><b>HidePartitionJobs</b> identifies partitions whose jobs are not
 to be reported to Maui.
 These jobs will not be accounted for or otherwise visible to Maui.
 Any partitions listed here must also be listed in <b>ExcludePartitions</b>.
-If more than one partition is to have its jobs hidden, use a comma 
+If more than one partition is to have its jobs hidden, use a comma
 separator between their names.</p>
 
 <p>Here is a sample <i>wiki.conf</i> file</p>
@@ -171,7 +171,7 @@ separator between their names.</p>
 # Matches Maui's --with-key configuration parameter
 AuthKey=42
 #
-# SLURM to directly schedule "debug" partition 
+# SLURM to directly schedule "debug" partition
 # and hide the jobs from Maui
 ExcludePartitions=debug
 HidePartitionJobs=debug
