@@ -431,6 +431,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
+%{_libexecdir}/slurm/cr_*
 %ifos aix5.3
 %{_sbindir}/srun
 %endif
