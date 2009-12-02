@@ -447,9 +447,16 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				c_usage->pd_cpu += r_usage->total_time;
 			else
 				c_usage->a_cpu += r_usage->total_time;
-/* 			info("adding this much %lld to cluster %s", */
-/* 			     r_usage->total_time, c_usage->name); */
-
+			char *start_char = xstrdup(ctime(&r_usage->start));
+			char *end_char = xstrdup(ctime(&r_usage->end));
+			start_char[strlen(start_char)-1] = '\0';
+			info("adding this much %lld to cluster %s "
+			     "%d %d %s - %s",
+			     r_usage->total_time, c_usage->name,
+			     (row_flags & RESERVE_FLAG_MAINT), 
+			     r_usage->id, start_char, end_char);
+			xfree(start_char);
+			xfree(end_char);
 		}
 		mysql_free_result(result);
 
@@ -749,6 +756,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(c_usage->total_time < c_usage->a_cpu) {
 				char *start_char = xstrdup(ctime(&curr_start));
 				char *end_char = xstrdup(ctime(&curr_end));
+				start_char[strlen(start_char)-1] = '\0';
 				error("We have more allocated time than is "
 				      "possible (%llu > %llu) for "
 				      "cluster %s(%d) from %s - %s",
@@ -768,9 +776,12 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(c_usage->total_time < (total_used)) {
 				char *start_char = xstrdup(ctime(&curr_start));
 				char *end_char = xstrdup(ctime(&curr_end));
+				int64_t overtime;
+
+				start_char[strlen(start_char)-1] = '\0';
 				error("We have more time than is "
 				      "possible (%llu+%llu+%llu)(%llu) "
-				      "> %llu) for "
+				      "> %llu for "
 				      "cluster %s(%d) from %s - %s",
 				      c_usage->a_cpu, c_usage->d_cpu,
 				      c_usage->pd_cpu, total_used,
@@ -780,15 +791,29 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				xfree(start_char);
 				xfree(end_char);
 
-				/* set the planned down to 0 and the
-				   down to what ever is left from the
-				   allocated. */
-				c_usage->pd_cpu = 0;
-				c_usage->d_cpu =
-					c_usage->total_time - c_usage->a_cpu;
+				/* First figure out how much actual down time
+				   we have and then how much
+				   planned down time we have. */
+				overtime = (int64_t)(c_usage->total_time -
+						     (c_usage->a_cpu
+						      + c_usage->d_cpu));
+				if(overtime < 0)
+					c_usage->d_cpu += overtime;
+
+				overtime = (int64_t)(c_usage->total_time -
+						     (c_usage->a_cpu
+						      + c_usage->d_cpu
+						      + c_usage->pd_cpu));
+				if(overtime < 0)
+					c_usage->pd_cpu += overtime;
 
 				total_used = c_usage->a_cpu +
 					c_usage->d_cpu + c_usage->pd_cpu;
+				/* info("We now have (%llu+%llu+%llu)(%llu) " */
+				/*       "?= %llu", */
+				/*       c_usage->a_cpu, c_usage->d_cpu, */
+				/*       c_usage->pd_cpu, total_used, */
+				/*       c_usage->total_time); */
 			}
 
 			c_usage->i_cpu = c_usage->total_time -
