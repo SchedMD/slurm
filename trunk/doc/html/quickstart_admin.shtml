@@ -150,15 +150,20 @@ Some macro definitions that may be used in building SLURM include:
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Daemons</h2>
-<p><b>slurmctld</b> is sometimes called the &quot;controller&quot; daemon. It
-orchestrates SLURM activities, including queuing of job, monitoring node state,
-and allocating resources (nodes) to jobs. There is an optional backup controller
-that automatically assumes control in the event the primary controller fails.
-The primary controller resumes control whenever it is restored to service. The
-controller saves its state to disk whenever there is a change.
-This state can be recovered by the controller at startup time.
-State changes are saved so that jobs and other state can be preserved when
-controller moves (to or from backup controller) or is restarted.</p>
+
+<p><b>slurmctld</b> is sometimes called the &quot;controller&quot;
+daemon. It orchestrates SLURM activities, including queuing of jobs,
+monitoring node states, and allocating resources to jobs. There is an
+optional backup controller that automatically assumes control in the
+event the primary controller fails (see the <a href="#HA">High
+Availability</a> section below).  The primary controller resumes
+control whenever it is restored to service. The controller saves its
+state to disk whenever there is a change in state (see
+&quot;StateSaveLocation&quot; in <a href="#Config">Configuration</a>
+section below).  This state can be recovered by the controller at
+startup time.  State changes are saved so that jobs and other state
+information can be preserved when the controller moves (to or from a
+backup controller) or is restarted.</p>
 
 <p>We recommend that you create a Unix user <i>slurm</i> for use by
 <b>slurmctld</b>. This user name will also be specified using the
@@ -185,6 +190,24 @@ time per the SLURM configuration.
 A file <b>etc/init.d/slurm</b> is provided for this purpose.
 This script accepts commands <b>start</b>, <b>startclean</b> (ignores
 all saved state), <b>restart</b>, and <b>stop</b>.</p>
+
+<h3><a name="HA"></a>High Availability</h3>
+
+<p>A backup controller can be configured (see
+&quot;BackupController&quot; in the <a
+href="#Config">Configuration</a> section below) to take over for the
+primary slurmctld if it ever fails.  The backup controller should be
+hosted on a node different from the node hosting the slurmctld.
+However, both hosts should mount a common file system containing the
+state information (see &quot;StateSaveLocation&quot; in the <a
+href="#Config">Configuration</a> section below).</p>
+
+<p>The backup controller detects when the primary fails and takes over
+for it.  When the primary returns to service, it notifies the backup.
+The backup then saves state and returns to backup mode.  The primary
+reads the saved state and resumes normal operation.  Other than a
+brief period of non-responsiveness, the transition back and forth
+should go undetected.</p>
 
 <h2>Infrastructure</h2>
 <h3>User and Group Identification</h3>
@@ -326,7 +349,7 @@ even those allocated to other users.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<h2>Configuration</h2>
+<h2><a name="Config"></a>Configuration</h2>
 <p>The SLURM configuration file includes a wide variety of parameters.
 This configuration file must be available on each node of the cluster and
 must have consistent contents. A full
@@ -641,6 +664,6 @@ Contents of major releases are also described in the RELEASE_NOTES file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 March 2009</p>
+<p style="text-align:center;">Last modified 1 December 2009</p>
 
 <!--#include virtual="footer.txt"-->
