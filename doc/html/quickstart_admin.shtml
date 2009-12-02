@@ -197,7 +197,7 @@ all saved state), <b>restart</b>, and <b>stop</b>.</p>
 &quot;BackupController&quot; in the <a
 href="#Config">Configuration</a> section below) to take over for the
 primary slurmctld if it ever fails.  The backup controller should be
-hosted on a node different from the node hosting the slurmctld.
+hosted on a node different from the node hosting the primary slurmctld.
 However, both hosts should mount a common file system containing the
 state information (see &quot;StateSaveLocation&quot; in the <a
 href="#Config">Configuration</a> section below).</p>
