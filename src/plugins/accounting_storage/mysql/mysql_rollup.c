@@ -381,9 +381,14 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		   unexpected results with association based reports
 		   since the association is given the total amount of
 		   time of each reservation, thus equaling more time
-		   that is available.  Job/Cluster/Reservation reports
+		   than is available.  Job/Cluster/Reservation reports
 		   should be fine though since we really don't over
-		   allocate resources.
+		   allocate resources.  The issue with us not being
+		   able to handle overlapping reservations here is
+		   unless the reservation completely overlaps the
+		   other reservation we have no idea how many cpus
+		   should be removed since this could be a
+		   heterogeneous system.
 		*/
 		while((row = mysql_fetch_row(result))) {
 			int row_start = atoi(row[RESV_REQ_START]);
@@ -447,16 +452,16 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				c_usage->pd_cpu += r_usage->total_time;
 			else
 				c_usage->a_cpu += r_usage->total_time;
-			char *start_char = xstrdup(ctime(&r_usage->start));
-			char *end_char = xstrdup(ctime(&r_usage->end));
-			start_char[strlen(start_char)-1] = '\0';
-			info("adding this much %lld to cluster %s "
-			     "%d %d %s - %s",
-			     r_usage->total_time, c_usage->name,
-			     (row_flags & RESERVE_FLAG_MAINT), 
-			     r_usage->id, start_char, end_char);
-			xfree(start_char);
-			xfree(end_char);
+			/* char *start_char = xstrdup(ctime(&r_usage->start)); */
+			/* char *end_char = xstrdup(ctime(&r_usage->end)); */
+			/* start_char[strlen(start_char)-1] = '\0'; */
+			/* info("adding this much %lld to cluster %s " */
+			/*      "%d %d %s - %s", */
+			/*      r_usage->total_time, c_usage->name, */
+			/*      (row_flags & RESERVE_FLAG_MAINT),  */
+			/*      r_usage->id, start_char, end_char); */
+			/* xfree(start_char); */
+			/* xfree(end_char); */
 		}
 		mysql_free_result(result);
 
