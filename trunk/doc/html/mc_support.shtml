@@ -150,7 +150,7 @@ the affinity to be set, the task/affinity plugin must be first enabled in
 slurm.conf:
 
 <PRE>
-TaskPlugin=task/affinity          # enable task affinity   
+TaskPlugin=task/affinity          # enable task affinity
 </PRE>
 
 <p>See the "Task Launch" section if generating slurm.conf via
@@ -361,7 +361,7 @@ each node.  In some cases, it is more convenient to be able to
 request that no more than a specific number of ntasks be invoked
 on each node, socket, or core.  Examples of this include submitting
 a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
-assigned to each node while allowing the OpenMP portion to utilize 
+assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
 setup/cleanup/monitoring job to each node of a pre-existing
 allocation as one step in a larger job script.
@@ -718,7 +718,7 @@ trivial and that it assumes that users are experts.</p>
 <p>Several extensions have also been made to the other SLURM utilities to
 make working with multi-core/multi-threaded systems easier.</p>
 
-<!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --> 
+<!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 <h3>sinfo</h3>
 
 <p>The long version (-l) of the sinfo node listing (-N) has been
@@ -727,8 +727,8 @@ node.  For example:
 
 <PRE>
 % sinfo -N
-NODELIST     NODES PARTITION STATE 
-hydra[12-15]     4    parts* idle  
+NODELIST     NODES PARTITION STATE
+hydra[12-15]     4    parts* idle
 
 % sinfo -lN
 Thu Sep 14 17:47:13 2006
@@ -758,13 +758,13 @@ the following identifiers are available:</p>
 
 <PRE>
 % sinfo -o '%9P %4c %8z %8X %8Y %8Z'
-PARTITION CPUS S:C:T    SOCKETS  CORES    THREADS 
-parts*    4    2:2:1    2        2        1       
+PARTITION CPUS S:C:T    SOCKETS  CORES    THREADS
+parts*    4    2:2:1    2        2        1
 </PRE>
 
 <p>See also 'sinfo --help' and 'man sinfo'</p>
 
-<!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --> 
+<!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 <h3>squeue</h3>
 
 <p>For user specified output formats (-o/--format) and sorting (-S/--sort),
@@ -797,23 +797,23 @@ the following identifiers are available:</p>
 <PRE>
 % squeue -o '%.5i %.2t %.4M %.5D %7X %7Y %7Z %7z %R'
 JOBID ST TIME NODES SOCKETS CORES   THREADS S:C:T   NODELIST(REASON)
-   17 PD 0:00     1 2       2       1       2:2:1   (Resources) 
-   18 PD 0:00     1 2       2       1       2:2:1   (Resources) 
-   19 PD 0:00     1 2       2       1       2:2:1   (Resources) 
-   13  R 1:27     1 2       2       1       2:2:1   hydra12 
-   14  R 1:26     1 2       2       1       2:2:1   hydra13 
-   15  R 1:26     1 2       2       1       2:2:1   hydra14 
-   16  R 1:26     1 2       2       1       2:2:1   hydra15 
+   17 PD 0:00     1 2       2       1       2:2:1   (Resources)
+   18 PD 0:00     1 2       2       1       2:2:1   (Resources)
+   19 PD 0:00     1 2       2       1       2:2:1   (Resources)
+   13  R 1:27     1 2       2       1       2:2:1   hydra12
+   14  R 1:26     1 2       2       1       2:2:1   hydra13
+   15  R 1:26     1 2       2       1       2:2:1   hydra14
+   16  R 1:26     1 2       2       1       2:2:1   hydra15
 
 % squeue -o '%.5i %.2t %.4M %.5D %9c %11H %9I %11J'
 JOBID ST TIME NODES MIN_PROCS MIN_SOCKETS MIN_CORES MIN_THREADS
-   17 PD 0:00     1 1         4           2         1          
-   18 PD 0:00     1 1         4           2         1          
-   19 PD 0:00     1 1         4           2         1          
-   13  R 1:29     1 0         0           0         0          
-   14  R 1:28     1 0         0           0         0          
-   15  R 1:28     1 0         0           0         0          
-   16  R 1:28     1 0         0           0         0          
+   17 PD 0:00     1 1         4           2         1
+   18 PD 0:00     1 1         4           2         1
+   19 PD 0:00     1 1         4           2         1
+   13  R 1:29     1 0         0           0         0
+   14  R 1:28     1 0         0           0         0
+   15  R 1:28     1 0         0           0         0
+   16  R 1:28     1 0         0           0         0
 </PRE>
 
 <p>
@@ -858,7 +858,7 @@ the job starts running).
 
 <p>See also 'squeue --help' and 'man squeue'</p>
 
-<!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - --> 
+<!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 <h3>scontrol</h3>
 
 <p>The following job settings can be adjusted using scontrol:
@@ -884,13 +884,13 @@ Constraints:
 
 % squeue -o '%.5i %.2t %.4M %.5D %9c %11H %9I %11J'
 JOBID ST TIME NODES MIN_PROCS MIN_SOCKETS MIN_CORES MIN_THREADS
-   17 PD 0:00     1 1         4           2         1          
-   18 PD 0:00     1 1         8           4         2          
-   19 PD 0:00     1 1         4           2         1          
-   13  R 1:35     1 0         0           0         0          
-   14  R 1:34     1 0         0           0         0          
-   15  R 1:34     1 0         0           0         0          
-   16  R 1:34     1 0         0           0         0          
+   17 PD 0:00     1 1         4           2         1
+   18 PD 0:00     1 1         8           4         2
+   19 PD 0:00     1 1         4           2         1
+   13  R 1:35     1 0         0           0         0
+   14  R 1:34     1 0         0           0         0
+   15  R 1:34     1 0         0           0         0
+   16  R 1:34     1 0         0           0         0
 </PRE>
 
 <p>The 'scontrol show job' command can be used to display
@@ -934,7 +934,7 @@ via <a href="configurator.html">configurator.html</a>.
 task/affinity plugin must be first enabled in slurm.conf:
 
 <PRE>
-TaskPlugin=task/affinity          # enable task affinity   
+TaskPlugin=task/affinity          # enable task affinity
 </PRE>
 
 <p>This setting is part of the task launch specific parameters:</p>
@@ -942,11 +942,11 @@ TaskPlugin=task/affinity          # enable task affinity
 <PRE>
 # o Define task launch specific parameters
 #
-#    "TaskProlog" : Define a program to be executed as the user before each 
+#    "TaskProlog" : Define a program to be executed as the user before each
 #                   task begins execution.
-#    "TaskEpilog" : Define a program to be executed as the user after each 
+#    "TaskEpilog" : Define a program to be executed as the user after each
 #                   task terminates.
-#    "TaskPlugin" : Define a task launch plugin. This may be used to 
+#    "TaskPlugin" : Define a task launch plugin. This may be used to
 #                   provide resource management within a node (e.g. pinning
 #                   tasks to specific processors). Permissible values are:
 #      "task/none"     : no task launch actions, the default.
@@ -961,7 +961,7 @@ TaskPlugin=task/affinity          # enable task affinity
 
 <p>SLURM will automatically detect the architecture of the nodes used
 by examining /proc/cpuinfo.  If, for some reason, the administrator
-wishes to override the automatically selected architecture, the 
+wishes to override the automatically selected architecture, the
 NodeName parameter can be used in combination with FastSchedule:
 
 <PRE>
@@ -976,25 +976,25 @@ using NodeName:
 #
 #  o Node configuration
 #
-#    The configuration information of nodes (or machines) to be managed 
+#    The configuration information of nodes (or machines) to be managed
 #    by SLURM is described here. The only required value in this section
-#    of the config file is the "NodeName" field, which specifies the 
+#    of the config file is the "NodeName" field, which specifies the
 #    hostnames of the node or nodes to manage. It is recommended, however,
 #    that baseline values for the node configuration be established
-#    using the following parameters (see slurm.config(5) for more info): 
+#    using the following parameters (see slurm.config(5) for more info):
 #
 #     "NodeName"   : The only required node configuration parameter, NodeName
 #                    specifies a node or set of nodes to be managed by SLURM.
 #                    The special NodeName of "DEFAULT" may be used to establish
 #                    default node configuration parameters for subsequent node
-#                    records. Typically this would be the string that 
-#                    `/bin/hostname -s` would return on the node. However 
-#                    NodeName may be an arbitrary string if NodeHostname is 
+#                    records. Typically this would be the string that
+#                    `/bin/hostname -s` would return on the node. However
+#                    NodeName may be an arbitrary string if NodeHostname is
 #                    used (see below).
 #
-#     "Feature"    : comma separated list of "features" for the given node(s) 
+#     "Feature"    : comma separated list of "features" for the given node(s)
 #
-#     "NodeAddr"   : preferred address for contacting the node. This may be 
+#     "NodeAddr"   : preferred address for contacting the node. This may be
 #                    either a name or IP address.
 #
 #     "NodeHostname"
@@ -1029,7 +1029,7 @@ using NodeName:
 #     "Weight"     : Priority of node for scheduling purposes
 #
 #   If any of the above values are set for a node or group of nodes, and
-#   that node checks in to the slurm controller with less than the 
+#   that node checks in to the slurm controller with less than the
 #   configured resources, the node's state will be set to DOWN, in order
 #   to avoid scheduling any jobs on a possibly misconfigured machine.
 #

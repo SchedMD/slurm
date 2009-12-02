@@ -8,7 +8,7 @@ them. It is intended as a resource to programmers wishing to write their own
 SLURM preemption plugins. This is version 100 of the API.</p>
 
 <p>SLURM preemption plugins are SLURM plugins that identify which jobs
-can be preempted by a pending job. They must conform to the SLURM Plugin 
+can be preempted by a pending job. They must conform to the SLURM Plugin
 API with the following specifications:</p>
 
 <p><span class="commandline">const char
@@ -19,9 +19,9 @@ We recommend, for example:</p>
 
 <ul>
 <li><b>none</b>&#151;This plugin prevents any job preemption.</li>
-<li><b>partition_prio</b>&#151;This plugin permit pending jobs from one 
+<li><b>partition_prio</b>&#151;This plugin permit pending jobs from one
 partition to preempt jobs from a lower priority partition.</li>
-<li><b>qos</b>&#151;This plugin permits jobs to preempt others based 
+<li><b>qos</b>&#151;This plugin permits jobs to preempt others based
 upon their Quality Of Service values as defined in the SLURM database.</li>
 </ul>
 
@@ -31,29 +31,29 @@ Plugin API require no specialization for job preemption support.
 Note carefully, however, the versioning discussion below.</p>
 
 <p>The programmer is urged to study
-<span class="commandline">src/plugins/preempt/partition_prio/preempt_partition_prio.c</span> 
+<span class="commandline">src/plugins/preempt/partition_prio/preempt_partition_prio.c</span>
 for an example implementation of a SLURM preemption plugin.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
-<p>The following functions must appear. Functions which are not implemented 
+<p>The following functions must appear. Functions which are not implemented
 should be stubbed.</p>
 
 <p class="commandline">List find_preemptable_jobs(
 struct job_record *job_ptr)</p>
-<p style="margin-left:.2in"><b>Description</b>: Identifies the jobs 
+<p style="margin-left:.2in"><b>Description</b>: Identifies the jobs
 which can be preempted by a specific pending job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline">job_ptr</span> (input) a pointer to the 
+<span class="commandline">job_ptr</span> (input) a pointer to the
 pending job which is attempting to be started</p>
-<p style="margin-left:.2in"><b>Returns</b>: A list of pointers to 
-jobs which may be preempted. 
-The list should be be released using the <i>list_destroy</i> function when 
+<p style="margin-left:.2in"><b>Returns</b>: A list of pointers to
+jobs which may be preempted.
+The list should be be released using the <i>list_destroy</i> function when
 no longer required.
 This list should be sorted in order from most attractive to
 preempt to least attractive to preempt (e.g. lowest to highest priority).
-For example, even within a given partition or QOS one might want to 
+For example, even within a given partition or QOS one might want to
 smaller jobs first.</p>
 
 <h2>Versioning</h2>

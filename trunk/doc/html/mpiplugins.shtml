@@ -3,17 +3,17 @@
 <h1><a name="top">SLURM MPI Plugin API</a></h1>
 
 <h2> Overview</h2>
-<p> This document describes SLURM MPI selection plugins and the API that defines 
-them. It is intended as a resource to programmers wishing to write their own SLURM 
+<p> This document describes SLURM MPI selection plugins and the API that defines
+them. It is intended as a resource to programmers wishing to write their own SLURM
 node selection plugins. This is version 0 of the API.</p>
 
 <p>SLURM mpi selection plugins are SLURM plugins that implement the which version of
-mpi is used during execution of the new SLURM job. API described herein. They are 
-intended to provide a mechanism for both selecting mpi versions for pending jobs and 
-performing any mpi-specific tasks for job launch or termination. The plugins must 
+mpi is used during execution of the new SLURM job. API described herein. They are
+intended to provide a mechanism for both selecting mpi versions for pending jobs and
+performing any mpi-specific tasks for job launch or termination. The plugins must
 conform to the SLURM Plugin API with the following specifications:</p>
 <p><span class="commandline">const char plugin_type[]</span><br>
-The major type must be &quot;mpi.&quot; The minor type can be any recognizable 
+The major type must be &quot;mpi.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
 <ul>
 <li><b>lam</b>&#151;For use with LAM MPI and Open MPI.</li>
@@ -21,9 +21,9 @@ abbreviation for the type of node selection algorithm. We recommend, for example
 <li><b>mvapich</b>&#151;For use with Infiniband.</li>
 <li><b>none</b>&#151;For use with most other versions of MPI.</li>
 </ul>
-<p>The <span class="commandline">plugin_name</span> and 
-<span class="commandline">plugin_version</span> 
-symbols required by the SLURM Plugin API require no specialization for node selection support. 
+<p>The <span class="commandline">plugin_name</span> and
+<span class="commandline">plugin_version</span>
+symbols required by the SLURM Plugin API require no specialization for node selection support.
 Note carefully, however, the versioning discussion below.</p>
 
 <p>A simplified flow of logic follows:
@@ -46,34 +46,34 @@ which will set configure the slurmd to use the correct mpi as well to interact w
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
-<p> These functions are expected to read and/or modify data structures directly in 
-the slurmd daemon's and srun memory. Slurmd is a multi-threaded program with independent 
-read and write locks on each data structure type. Therefore the type of operations 
+<p> These functions are expected to read and/or modify data structures directly in
+the slurmd daemon's and srun memory. Slurmd is a multi-threaded program with independent
+read and write locks on each data structure type. Therefore the type of operations
 permitted on various data structures is identified for each function.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
-<p>The following functions must appear. Functions which are not implemented should 
+<p>The following functions must appear. Functions which are not implemented should
 be stubbed.</p>
 
 <p class="commandline">int mpi_p_init (slurmd_job_t *job, int rank);</p>
 <p style="margin-left:.2in"><b>Description</b>: Used by slurmd to configure the slurmd's environment
 to that of the correct mpi.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br><span class="commandline"> job</span>&nbsp; 
+<p style="margin-left:.2in"><b>Arguments</b>:<br><span class="commandline"> job</span>&nbsp;
 &nbsp;&nbsp;(input) Pointer to the slurmd_job that is running.  Cannot be NULL.<br>
 <span class="commandline"> rank</span>&nbsp;
-&nbsp;&nbsp;(input) Primarily there for MVAPICH.  Used to send the rank fo the mpirun job. 
+&nbsp;&nbsp;(input) Primarily there for MVAPICH.  Used to send the rank fo the mpirun job.
 This can be 0 if no rank information is needed for the mpi type.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
 <p class="commandline">int mpi_p_thr_create (srun_job_t *job);</p>
-<p style="margin-left:.2in"><b>Description</b>: Used by srun to spawn the thread for the mpi processes. 
+<p style="margin-left:.2in"><b>Description</b>: Used by srun to spawn the thread for the mpi processes.
 Most all the real processing happens here.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> job</span>&nbsp; 
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> job</span>&nbsp;
 &nbsp;&nbsp;(input) Pointer to the srun_job that is running.  Cannot be NULL.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return -1.</p>
 
 <p class="commandline">int mpi_p_single_task ();</p>
@@ -81,25 +81,25 @@ the plugin should return -1.</p>
 can run at the same time </p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> none</span></p>
-<p style="margin-left:.2in"><b>Returns</b>: false if multiple tasks can run and true if only 
+<p style="margin-left:.2in"><b>Returns</b>: false if multiple tasks can run and true if only
 a single task can run at one time.</p>
 
 <p class="commandline">int mpi_p_exit();</p>
-<p style="margin-left:.2in"><b>Description</b>: Cleans up anything that needs cleaning up after 
+<p style="margin-left:.2in"><b>Description</b>: Cleans up anything that needs cleaning up after
 execution.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> none</span></p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
-<p> This document describes version 0 of the SLURM node selection API. Future 
-releases of SLURM may revise this API. A node selection plugin conveys its ability 
-to implement a particular API version using the mechanism outlined for SLURM plugins. 
-In addition, the credential is transmitted along with the version number of the 
-plugin that transmitted it. It is at the discretion of the plugin author whether 
+<p> This document describes version 0 of the SLURM node selection API. Future
+releases of SLURM may revise this API. A node selection plugin conveys its ability
+to implement a particular API version using the mechanism outlined for SLURM plugins.
+In addition, the credential is transmitted along with the version number of the
+plugin that transmitted it. It is at the discretion of the plugin author whether
 to maintain data format compatibility across different versions of the plugin.</p>
 
 <p class="footer"><a href="#top">top</a></p>
