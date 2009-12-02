@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -274,7 +274,7 @@ static void _wait_for_connections()
 	pthread_mutex_unlock(&message_lock);
 }
 
-static bool 
+static bool
 _msg_socket_readable(eio_obj_t *obj)
 {
 	debug3("Called _msg_socket_readable");
@@ -350,7 +350,7 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 		}
 		usleep(10);	/* sleep and again */
 	}
-	
+
 	slurm_attr_destroy(&attr);
 	param = NULL;
 
@@ -411,7 +411,7 @@ _handle_accept(void *arg)
 
 	rc = SLURM_SUCCESS;
 	safe_write(fd, &rc, sizeof(int));
-	
+
 	while (1) {
 		rc = _handle_request(fd, job, uid, gid);
 		if (rc != SLURM_SUCCESS)
@@ -583,8 +583,8 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 	 * Sanity checks
 	 */
 	if (job->pgid <= (pid_t)1) {
-		debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]", 
-                       job->jobid, job->stepid, job->jmgr_pid, job->pgid);
+		debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]",
+		       job->jobid, job->stepid, job->jmgr_pid, job->pgid);
 		rc = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
@@ -601,14 +601,14 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 
 	if (killpg(job->pgid, signal) == -1) {
 		rc = -1;
-		verbose("Error sending signal %d to %u.%u, pgid %d: %m", 
+		verbose("Error sending signal %d to %u.%u, pgid %d: %m",
 			signal, job->jobid, job->stepid, job->pgid);
 	} else {
-		verbose("Sent signal %d to %u.%u, pgid %d", 
+		verbose("Sent signal %d to %u.%u, pgid %d",
 			signal, job->jobid, job->stepid, job->pgid);
 	}
 	pthread_mutex_unlock(&suspend_mutex);
-	
+
 done:
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
@@ -642,7 +642,7 @@ _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid)
 	 * Sanity checks
 	 */
 	if (ltaskid < 0 || ltaskid >= job->ntasks) {
-		debug("step %u.%u invalid local task id %d", 
+		debug("step %u.%u invalid local task id %d",
 		      job->jobid, job->stepid, ltaskid);
 		rc = SLURM_ERROR;
 		goto done;
@@ -674,16 +674,16 @@ _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid)
 
 	if (kill(job->task[ltaskid]->pid, signal) == -1) {
 		rc = -1;
-		verbose("Error sending signal %d to %u.%u, pid %d: %m", 
+		verbose("Error sending signal %d to %u.%u, pid %d: %m",
 			signal, job->jobid, job->stepid,
 			job->task[ltaskid]->pid);
 	} else {
-		verbose("Sent signal %d to %u.%u, pid %d", 
+		verbose("Sent signal %d to %u.%u, pid %d",
 			signal, job->jobid, job->stepid,
 			job->task[ltaskid]->pid);
 	}
 	pthread_mutex_unlock(&suspend_mutex);
-	
+
 done:
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
@@ -719,26 +719,26 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	 * Sanity checks
 	 */
 	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%u]", 
+		debug ("step %u.%u invalid container [cont_id:%u]",
 			job->jobid, job->stepid, job->cont_id);
 		rc = -1;
 		errnum = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
-	if ((job->nodeid == 0) && (msg_sent == 0) && 
+	if ((job->nodeid == 0) && (msg_sent == 0) &&
 	    (job->state < SLURMSTEPD_STEP_ENDING)) {
 		time_t now = time(NULL);
 		char entity[24], time_str[24];
 		if (job->stepid == SLURM_BATCH_SCRIPT) {
 			snprintf(entity, sizeof(entity), "JOB %u", job->jobid);
 		} else {
-			snprintf(entity, sizeof(entity), "STEP %u.%u", 
+			snprintf(entity, sizeof(entity), "STEP %u.%u",
 				 job->jobid, job->stepid);
 		}
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 
-		/* Not really errors, 
+		/* Not really errors,
 		 * but we want messages displayed by default */
 		if (sig == SIG_TIME_LIMIT) {
 			error("*** %s CANCELLED AT %s DUE TO TIME LIMIT ***",
@@ -757,7 +757,7 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 			msg_sent = 1;
 		}
 	}
-	if ((sig == SIG_TIME_LIMIT) || (sig == SIG_NODE_FAIL) || 
+	if ((sig == SIG_TIME_LIMIT) || (sig == SIG_NODE_FAIL) ||
 	    (sig == SIG_FAILURE))
 		goto done;
 	if (sig == SIG_ABORT) {
@@ -779,10 +779,10 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	if (slurm_container_signal(job->cont_id, sig) < 0) {
 		rc = -1;
 		errnum = errno;
-		verbose("Error sending signal %d to %u.%u: %m", 
+		verbose("Error sending signal %d to %u.%u: %m",
 			sig, job->jobid, job->stepid);
 	} else {
-		verbose("Sent signal %d to %u.%u", 
+		verbose("Sent signal %d to %u.%u",
 			sig, job->jobid, job->stepid);
 	}
 	pthread_mutex_unlock(&suspend_mutex);
@@ -833,23 +833,23 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
 	}
 
        /*
-        * Sanity checks
-        */
+	* Sanity checks
+	*/
        if (job->pgid <= (pid_t)1) {
-               debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]",
-                       job->jobid, job->stepid, job->jmgr_pid, job->pgid);
-               rc = ESLURMD_JOB_NOTRUNNING;
-               goto done;
+	       debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]",
+		       job->jobid, job->stepid, job->jmgr_pid, job->pgid);
+	       rc = ESLURMD_JOB_NOTRUNNING;
+	       goto done;
        }
 
        /*
-        * Signal the process group
-        */
+	* Signal the process group
+	*/
        pthread_mutex_lock(&suspend_mutex);
        if (suspended) {
-               rc = ESLURMD_STEP_SUSPENDED;
-               pthread_mutex_unlock(&suspend_mutex);
-               goto done;
+	       rc = ESLURMD_STEP_SUSPENDED;
+	       pthread_mutex_unlock(&suspend_mutex);
+	       goto done;
        }
 
        /* set timestamp in case another request comes */
@@ -859,15 +859,15 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
 /*	if (! image_dir) { */
 /*		image_dir = xstrdup(job->ckpt_dir); */
 /*	} */
-       
+
        /* call the plugin to send the request */
        if (checkpoint_signal_tasks(job, image_dir) != SLURM_SUCCESS) {
-               rc = -1;
-               verbose("Error sending checkpoint request to %u.%u: %s",
-                     job->jobid, job->stepid, slurm_strerror(rc));
+	       rc = -1;
+	       verbose("Error sending checkpoint request to %u.%u: %s",
+		     job->jobid, job->stepid, slurm_strerror(rc));
        } else {
-               verbose("Sent checkpoint request to %u.%u",
-                       job->jobid, job->stepid);
+	       verbose("Sent checkpoint request to %u.%u",
+		       job->jobid, job->stepid);
        }
 
        pthread_mutex_unlock(&suspend_mutex);
@@ -904,7 +904,7 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 	 * Sanity checks
 	 */
 	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%u]", 
+		debug ("step %u.%u invalid container [cont_id:%u]",
 			job->jobid, job->stepid, job->cont_id);
 		rc = -1;
 		errnum = ESLURMD_JOB_NOTRUNNING;
@@ -923,10 +923,10 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 	if (slurm_container_signal(job->cont_id, SIGKILL) < 0) {
 		rc = -1;
 		errnum = errno;
-		verbose("Error sending SIGKILL signal to %u.%u: %m", 
+		verbose("Error sending SIGKILL signal to %u.%u: %m",
 			job->jobid, job->stepid);
 	} else {
-		verbose("Sent SIGKILL signal to %u.%u", 
+		verbose("Sent SIGKILL signal to %u.%u",
 			job->jobid, job->stepid);
 	}
 	pthread_mutex_unlock(&suspend_mutex);
@@ -993,7 +993,7 @@ done:
 		len = job->ntasks * sizeof(uint32_t);
 		pids = xmalloc(len);
 		gtids = xmalloc(len);
-		
+
 		if (job->task != NULL) {
 			for (i = 0; i < job->ntasks; i++) {
 				if (job->task[i] == NULL)
@@ -1031,7 +1031,7 @@ _handle_pid_in_container(int fd, slurmd_job_t *job)
 	      job->jobid, job->stepid);
 
 	safe_read(fd, &pid, sizeof(pid_t));
-	
+
 	rc = slurm_container_has_pid(job->cont_id, pid);
 
 	/* Send the return code */
@@ -1100,8 +1100,8 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 			sleep(1);
 
 		if (slurm_container_signal(job->cont_id, SIGSTOP) < 0) {
-			verbose("Error suspending %u.%u (SIGSTOP): %m", 
-			        job->jobid, job->stepid);
+			verbose("Error suspending %u.%u (SIGSTOP): %m",
+				job->jobid, job->stepid);
 		} else {
 			verbose("Suspended %u.%u", job->jobid, job->stepid);
 		}
@@ -1156,8 +1156,8 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	} else {
 		if (slurm_container_signal(job->cont_id, SIGCONT) < 0) {
-			verbose("Error resuming %u.%u: %m", 
-			        job->jobid, job->stepid);
+			verbose("Error resuming %u.%u: %m",
+				job->jobid, job->stepid);
 		} else {
 			verbose("Resumed %u.%u", job->jobid, job->stepid);
 		}
@@ -1203,8 +1203,8 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	safe_read(fd, &last, sizeof(int));
 	safe_read(fd, &step_rc, sizeof(int));
 	jobacct = jobacct_gather_g_create(NULL);
-	jobacct_gather_g_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);	
-	
+	jobacct_gather_g_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+
 	/*
 	 * Record the completed nodes
 	 */
@@ -1236,13 +1236,13 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 #endif
 	}
 	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
-	
+
 	/************* acct stuff ********************/
 	jobacct_gather_g_aggregate(step_complete.jobacct, jobacct);
 timeout:
 	jobacct_gather_g_destroy(jobacct);
 	/*********************************************/
-	
+
 	/* Send the return code and errno, we do this within the locked
 	 * region to ensure that the stepd doesn't exit before we can
 	 * perform this send. */
@@ -1250,7 +1250,7 @@ timeout:
 	safe_write(fd, &errnum, sizeof(int));
 	pthread_cond_signal(&step_complete.cond);
 	pthread_mutex_unlock(&step_complete.lock);
-	
+
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;
@@ -1275,10 +1275,10 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 		jobacct_gather_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
 		return SLURM_ERROR;
 	}
-	
+
 	jobacct = jobacct_gather_g_create(NULL);
 	debug3("num tasks = %d", job->ntasks);
-	
+
 	for (i = 0; i < job->ntasks; i++) {
 		temp_jobacct = jobacct_gather_g_stat_task(job->task[i]->pid);
 		if(temp_jobacct) {
