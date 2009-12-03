@@ -20,7 +20,7 @@ $constants{macros} = [qw /
 		SLURM_BATCH_SCRIPT
 		SHOW_ALL
 		JOB_COMPLETING
-		
+
 		NODE_STATE_BASE
 		NODE_STATE_FLAGS
 		NODE_RESUME
@@ -51,7 +51,7 @@ $constants{job_states} = [qw /
 $constants{job_state_reason} = [qw /
 		WAIT_NO_REASON
 		WAIT_PRIORITY
-		WAIT_DEPENDENCY 
+		WAIT_DEPENDENCY
 		WAIT_RESOURCES
 		WAIT_PART_NODE_LIMIT
 		WAIT_PART_TIME_LIMIT
@@ -336,7 +336,7 @@ Slurm - Perl API for slurm
 
 =head1 DESCRIPTION
 
-The Slurm class is a wrapper of the slurm API. 
+The Slurm class is a wrapper of the slurm API.
 
 TODO
 

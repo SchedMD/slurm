@@ -8,19 +8,20 @@
 # --with aix         %_with_aix         1    build aix RPM
 # --with authd       %_with_authd       1    build auth-authd RPM
 # --with auth_none   %_with_auth_none   1    build auth-none RPM
+# --with blcr        %_with_blcr        1    require blcr support
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
 # --with cray_xt     %_with_cray_xt     1    build for Cray XT system
 # --with debug       %_with_debug       1    enable extra debugging within SLURM
 # --with elan        %_with_elan        1    build switch-elan RPM
+# --with lua         %_with_lua         1    build SLURM lua bindings (proctrack only for now)
 # --without munge    %_without_munge    1    don't build auth-munge RPM
+# --with mysql       %_with_mysql       1    require mysql support
 # --without openssl  %_without_openssl  1    don't require openssl RPM to be installed
 # --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
+# --with postgres    %_with_postgres    1    require postgresql support
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
-# --with lua         %_with_lua         1    build SLURM lua bindings (proctrack only for now)
 # --with sun_const   %_with_sun_const   1    build for Sun Constellation system
-# --with mysql       %_with_mysql       1    require mysql support
-# --with postgres    %_with_postgres    1    require postgresql support
 
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacors
@@ -43,10 +44,11 @@
 %slurm_without_opt elan
 %slurm_without_opt sun_const
 
-# These options are only here to force there to be these on the build.  
+# These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
 %slurm_without_opt mysql
 %slurm_without_opt postgres
+%slurm_without_opt blcr
 
 # Build with munge by default on all platforms (disable using --without munge)
 %slurm_with_opt munge
@@ -58,7 +60,7 @@
 %slurm_with_opt readline
 
 # Build with PAM by default on linux
-%ifos linux 
+%ifos linux
 %slurm_with_opt pam
 %endif
 
@@ -85,7 +87,7 @@ Release: See META file
 
 Summary: Simple Linux Utility for Resource Management
 
-License: GPL 
+License: GPL
 Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
@@ -117,6 +119,10 @@ BuildRequires: ncurses-devel
 BuildRequires: pkgconfig
 %endif
 
+%if %{slurm_with blcr}
+BuildRequires: blcr
+%endif
+
 %if %{slurm_with readline}
 BuildRequires: readline-devel
 %endif
@@ -135,7 +141,7 @@ BuildRequires: postgresql-devel >= 8.0.0
 
 BuildRequires: perl(ExtUtils::MakeMaker)
 
-%description 
+%description
 SLURM is an open source, fault-tolerant, and highly
 scalable cluster management and job scheduling system for Linux clusters
 containing up to 65,536 nodes. Components include machine status,
@@ -162,13 +168,17 @@ partition management, job management, scheduling and accounting modules.
 # http://slforums.typo3-factory.net/index.php?showtopic=11378
 %define _unpackaged_files_terminate_build      0
 
-# First we remove $prefix/local and then just prefix to make 
+# First we remove $prefix/local and then just prefix to make
 # sure we get the correct installdir
-%define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;') 
+%define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
-%define _perlarchlib %(perl -e 'use Config; $T=$Config{installarchlib}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;') 
+%define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
+
+
+%define _perlarchlib %(perl -e 'use Config; $T=$Config{installarchlib}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
 
 %define _perldir %{_prefix}%{_perlarch}
+%define _perlman3dir %{_prefix}%{_perlman3}
 %define _perlarchlibdir %{_prefix}%{_perlarchlib}
 %define _php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php5)
 
@@ -297,7 +307,6 @@ SLURM lua bindings
 Includes the SLURM proctrack/lua plugin
 %endif
 
-
 %package sjstat
 Summary: Perl tool to print SLURM job state information.
 Group: Development/System
@@ -334,7 +343,7 @@ or any user who has allocated resources on the node according to the SLURM
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
 
-make %{?_smp_mflags} 
+make %{?_smp_mflags}
 
 %install
 rm -rf "$RPM_BUILD_ROOT"
@@ -431,7 +440,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
+%if %{slurm_with blcr}
 %{_libexecdir}/slurm/cr_*
+%endif
 %ifos aix5.3
 %{_sbindir}/srun
 %endif
@@ -503,7 +514,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_perldir}/auto/Slurm/Slurm.so
 %{_perldir}/auto/Slurm/Slurm.bs
 %{_perldir}/auto/Slurm/autosplit.ix
-%{_mandir}/man3/Slurm.*
+%{_perlman3dir}/Slurm.*
 
 #############################################################################
 
@@ -636,7 +647,7 @@ if [ -x /sbin/ldconfig ]; then
     /sbin/ldconfig %{_libdir}
     /sbin/ldconfig %{_libdir}
     if [ $1 = 1 ]; then
-        [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
     fi
 fi
 if [ ! -f %{_sysconfdir}/slurm.conf ]; then
@@ -649,23 +660,23 @@ fi
 %preun
 if [ "$1" = 0 ]; then
     if [ -x /etc/init.d/slurm ]; then
-        [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-        if /etc/init.d/slurm status | grep -q running; then
-            /etc/init.d/slurm stop
-        fi
+	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+	if /etc/init.d/slurm status | grep -q running; then
+	    /etc/init.d/slurm stop
+	fi
     fi
     if [ -x /etc/init.d/slurmdbd ]; then
-        [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurmdbd
-        if /etc/init.d/slurmdbd status | grep -q running; then
-            /etc/init.d/slurmdbd stop
-        fi
+	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurmdbd
+	if /etc/init.d/slurmdbd status | grep -q running; then
+	    /etc/init.d/slurmdbd stop
+	fi
     fi
 fi
 
 %postun
 if [ "$1" = 0 ]; then
     if [ -x /sbin/ldconfig ]; then
-        /sbin/ldconfig %{_libdir}
+	/sbin/ldconfig %{_libdir}
     fi
 fi
 #############################################################################

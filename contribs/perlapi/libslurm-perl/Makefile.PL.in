@@ -13,7 +13,7 @@ following link(s):
 
 # Most all the extra code is to deal with MakeMaker < 6.11 not working
 # correctly to build rpms
- 
+
 my(
    $mm_version,
    $mm_knows_destdir,
@@ -56,7 +56,7 @@ DESTDIR_HACK
        warn $error;
 } elsif (!$mm_has_good_destdir) {
 	my $error = <<DESTDIR_BUG;
-	
+
     ***********************************************************************
     ExtUtils::MakeMaker ${mm_version} contains bugs that may cause problems
     in the \"make\" process.  It is recommended that you upgrade
@@ -105,7 +105,7 @@ if (eval {require ExtUtils::Constant; 1}) {
 		SLURM_BATCH_SCRIPT
 		SHOW_ALL
 		JOB_COMPLETING
-		
+
 		NODE_STATE_BASE
 		NODE_STATE_FLAGS
 		NODE_RESUME
@@ -135,7 +135,7 @@ if (eval {require ExtUtils::Constant; 1}) {
 	$enums{job_state_reason} = [qw /
 		WAIT_NO_REASON
 		WAIT_PRIORITY
-		WAIT_DEPENDENCY 
+		WAIT_DEPENDENCY
 		WAIT_RESOURCES
 		WAIT_PART_NODE_LIMIT
 		WAIT_PART_TIME_LIMIT
@@ -269,14 +269,14 @@ sub MY::install {
 	foreach (@code) {
 		# Write the correct path to perllocal.pod
 		next if /installed into/;
-	
+
 		# Replace all other $(INSTALL*) vars (except $(INSTALLDIRS) of course)
 		# with their $(DESTINSTALL*) counterparts
-		s/\Q$(\E(INSTALL(?!DIRS)${MACRO_RE})\Q)\E/\$(DEST$1)/g;	
-         }
+		s/\Q$(\E(INSTALL(?!DIRS)${MACRO_RE})\Q)\E/\$(DEST$1)/g;
+	 }
 
-         clean_MY_globals($self);
-         return join("\n", @code);
+	 clean_MY_globals($self);
+	 return join("\n", @code);
 }
 
 # Now override the constants routine to add our own macros.
@@ -294,13 +294,13 @@ sub MY::constants {
 
 		#tore the assignment string if necessary.
 		set_EQ_from_line($line);
-		
+
 		# Add some "dummy" (PERL|SITE|VENDOR)PREFIX macros for later use (only if
 		# necessary for old EU::MMs of course)
 		if (line_has_macro_def($line, 'PREFIX')) {
 			foreach my $r (@REPOSITORIES) {
 				my $rprefix = "${r}PREFIX";
-				
+
 				if (!defined(get_macro($rprefix))) {
 					set_macro($rprefix, macro_ref('PREFIX'));
 					$line .= "\n" . macro_def($rprefix);
@@ -310,12 +310,12 @@ sub MY::constants {
 
  		# fix problem with /usr(/local) being used as a prefix
 		# instead of the real thing.
-		
+
 		if ($line =~ 'INSTALL') {
 			$line =~ s/= \/usr\/local/= \$(PREFIX)/;
 			$line =~ s/= \/usr/= \$(PREFIX)/;
 		}
-		
+
 		# Add DESTDIR support if necessary
 		if (line_has_macro_def($line, 'INSTALLDIRS')) {
 			if(!get_macro('DESTDIR')) {
@@ -325,17 +325,17 @@ sub MY::constants {
 					    qr/INSTALL${MACRO_RE}/)) {
 			my $macro = get_macro_name_from_line($line);
 			if(!get_macro('DEST' . $macro,
-				      macro_ref('DESTDIR') 
+				      macro_ref('DESTDIR')
 				      . macro_ref($macro))) {
 				$line .= "\n"
 					. macro_def('DEST' . $macro,
-						    macro_ref('DESTDIR') 
+						    macro_ref('DESTDIR')
 						    . macro_ref($macro));
 			}
 		}
 	}
 	push(@code, qq{});
-	
+
 	clean_MY_globals($self);
 	return join("\n", @code);
 }
@@ -377,9 +377,9 @@ sub macro_def {
 
 sub set_EQ_from_line {
 	my($line) = (@_);
-	
+
 	return if defined($EQ);
-	
+
 	$line =~ /\S(${EQ_RE})/;
 	$EQ = $1;
 }
@@ -433,7 +433,7 @@ sub init_MY_globals {
 	return if $MY_GLOBALS_ARE_SANE;
 
 	$MY_GLOBALS_ARE_SANE = 1;
-	
+
 	@REPOSITORIES = qw(
 			   PERL
 			   SITE
@@ -448,7 +448,7 @@ sub init_MY_globals {
 	# To assign or own macros we'll follow the first assignment string we find;
 	# normally " = ".
 	$EQ = undef;
-	
+
 }
 
 # Unset $SELF to avoid any leaking memory.
@@ -457,4 +457,3 @@ sub clean_MY_globals {
 
 	$SELF = undef;
 }
-
