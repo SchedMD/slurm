@@ -106,8 +106,8 @@ static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
 
 /* path to shell scripts */
 static const char scch_path[] = SLURM_PREFIX "/sbin/scch";
-static const char cr_checkpoint_path[] = PKGLIBEXECDIR "/bin/cr_checkpoint.sh";
-static const char cr_restart_path[] = PKGLIBEXECDIR "/bin/cr_restart.sh";
+static const char cr_checkpoint_path[] = PKGLIBEXECDIR "/cr_checkpoint.sh";
+static const char cr_restart_path[] = PKGLIBEXECDIR "/cr_restart.sh";
 
 static uint32_t ckpt_agent_jobid = 0;
 static uint16_t ckpt_agent_count = 0;
