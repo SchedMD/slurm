@@ -87,6 +87,12 @@ const char plugin_type[] = "jobacct_gather/aix";
 const uint32_t plugin_version = 100;
 
 /* Other useful declarations */
+static bool jobacct_shutdown = 0;
+static bool jobacct_suspended = 0;
+static List task_list = NULL;
+static uint32_t cont_id = (uint32_t)NO_VAL;
+static bool pgid_plugin = false;
+
 #ifdef HAVE_AIX
 typedef struct prec {	/* process record */
 	pid_t   pid;
@@ -100,6 +106,7 @@ typedef struct prec {	/* process record */
 
 static int freq = 0;
 static int pagesize = 0;
+
 /* Finally, pre-define all the routines. */
 
 static void _acct_kill_job(void);
@@ -293,14 +300,14 @@ static void _get_process_data()
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&jobacct_lock);
 
-	if (job_mem_limit) {
+	if (jobacct_mem_limit) {
 		debug("Job %u memory used:%u limit:%u KB",
-		      acct_job_id, total_job_mem, job_mem_limit);
+		      jobacct_job_id, total_job_mem, jobacct_mem_limit);
 	}
-	if (acct_job_id && job_mem_limit &&
-	    (total_job_mem > job_mem_limit)) {
+	if (jobacct_job_id && jobacct_mem_limit &&
+	    (total_job_mem > jobacct_mem_limit)) {
 		error("Job %u exceeded %u KB memory limit, being killed",
-		       acct_job_id, job_mem_limit);
+		       jobacct_job_id, jobacct_mem_limit);
 		_acct_kill_job();
 	}
 
@@ -321,7 +328,7 @@ static void _acct_kill_job(void)
 	/*
 	 * Request message:
 	 */
-	req.job_id      = acct_job_id;
+	req.job_id      = jobacct_job_id;
 	req.job_step_id = NO_VAL;
 	req.signal      = SIGKILL;
 	req.batch_flag  = 0;
@@ -497,22 +504,37 @@ extern void jobacct_gather_p_change_poll(uint16_t frequency)
 
 extern void jobacct_gather_p_suspend_poll()
 {
-	jobacct_common_suspend_poll();
+	jobacct_suspended = true;
 }
 
 extern void jobacct_gather_p_resume_poll()
 {
-	jobacct_common_resume_poll();
+	jobacct_suspended = false;
 }
 
 extern int jobacct_gather_p_set_proctrack_container_id(uint32_t id)
 {
-	return jobacct_common_set_proctrack_container_id(id);
+	if(pgid_plugin)
+		return SLURM_SUCCESS;
+
+	if(cont_id != (uint32_t)NO_VAL)
+		info("Warning: jobacct: set_proctrack_container_id: "
+		     "cont_id is already set to %d you are setting it to %d",
+		     cont_id, id);
+	if(id <= 0) {
+		error("jobacct: set_proctrack_container_id: "
+		      "I was given most likely an unset cont_id %d",
+		      id);
+		return SLURM_ERROR;
+	}
+	cont_id = id;
+
+	return SLURM_SUCCESS;
 }
 
 extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
-	return jobacct_common_add_task(pid, jobacct_id);
+	return jobacct_common_add_task(pid, jobacct_id, task_list);
 }
 
 extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
@@ -521,14 +543,14 @@ extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
 	_get_process_data();
 #endif
 	if(pid)
-		return jobacct_common_stat_task(pid);
+		return jobacct_common_stat_task(pid, task_list);
 	else
 		return NULL;
 }
 
 extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)
 {
-	return jobacct_common_remove_task(pid);
+	return jobacct_common_remove_task(pid, task_list);
 }
 
 extern void jobacct_gather_p_2_sacct(sacct_t *sacct,

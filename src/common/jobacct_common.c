@@ -41,15 +41,11 @@
 
 #include "jobacct_common.h"
 
-bool jobacct_shutdown = false;
-bool jobacct_suspended = false;
-List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
-uint32_t cont_id = (uint32_t)NO_VAL;
-uint32_t acct_job_id = 0;
-uint32_t job_mem_limit = 0;
-bool pgid_plugin = false;
-uint32_t mult = 1000;
+uint32_t jobacct_job_id = 0;
+uint32_t jobacct_mem_limit = 0;
+
+static uint32_t mult = 1000;
 
 static void _pack_jobacct_id(jobacct_id_t *jobacct_id, Buf buffer)
 {
@@ -1027,26 +1023,6 @@ unpack_error:
        	return SLURM_ERROR;
 }
 
-extern int jobacct_common_set_proctrack_container_id(uint32_t id)
-{
-	if(pgid_plugin)
-		return SLURM_SUCCESS;
-
-	if(cont_id != (uint32_t)NO_VAL)
-		info("Warning: jobacct: set_proctrack_container_id: "
-		     "cont_id is already set to %d you are setting it to %d",
-		     cont_id, id);
-	if(id <= 0) {
-		error("jobacct: set_proctrack_container_id: "
-		      "I was given most likely an unset cont_id %d",
-		      id);
-		return SLURM_ERROR;
-	}
-	cont_id = id;
-
-	return SLURM_SUCCESS;
-}
-
 extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit)
 {
 	if ((job_id == 0) || (mem_limit == 0)) {
@@ -1055,12 +1031,13 @@ extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit)
 		return SLURM_ERROR;
 	}
 
-	acct_job_id   = job_id;
-	job_mem_limit = mem_limit * 1024;	/* MB to KB */
+	jobacct_job_id   = job_id;
+	jobacct_mem_limit = mem_limit * 1024;	/* MB to KB */
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
+extern int jobacct_common_add_task(pid_t pid, jobacct_id_t *jobacct_id,
+				   List task_list)
 {
 	struct jobacctinfo *jobacct = jobacct_common_alloc_jobacct(jobacct_id);
 
@@ -1087,7 +1064,7 @@ error:
 	return SLURM_ERROR;
 }
 
-extern struct jobacctinfo *jobacct_common_stat_task(pid_t pid)
+extern struct jobacctinfo *jobacct_common_stat_task(pid_t pid, List task_list)
 {
 	struct jobacctinfo *jobacct = NULL;
 	struct jobacctinfo *ret_jobacct = NULL;
@@ -1114,7 +1091,7 @@ error:
 	return ret_jobacct;
 }
 
-extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid)
+extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid, List task_list)
 {
 	struct jobacctinfo *jobacct = NULL;
 
@@ -1143,22 +1120,5 @@ extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid)
 error:
 	slurm_mutex_unlock(&jobacct_lock);
 	return jobacct;
-}
-
-extern int jobacct_common_endpoll()
-{
-	jobacct_shutdown = true;
-
-	return SLURM_SUCCESS;
-}
-
-extern void jobacct_common_suspend_poll()
-{
-	jobacct_suspended = true;
-}
-
-extern void jobacct_common_resume_poll()
-{
-	jobacct_suspended = false;
 }
 

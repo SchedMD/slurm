@@ -30,6 +30,7 @@ documents those changes that are of interest to users and admins.
  -- Patch from Mark Grondona to move blcr scripts into pkglibexecdir
  -- Patch from Doug Parisek to calculate a job's projected start time under the
     builtin scheduler.
+ -- Removed most global variables out of src/common/jobacct_common.h
 
 * Changes in SLURM 2.1.0-pre7
 =============================
