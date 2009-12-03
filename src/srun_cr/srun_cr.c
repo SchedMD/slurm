@@ -154,7 +154,7 @@ mimic_exit(int status)
 }
 /****************************************************************/
 static void
-on_child_exit(int signum)
+on_child_exit(int signum, siginfo_t *siginfo, void *arg)
 {
 	int status;
 

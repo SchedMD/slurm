@@ -466,7 +466,7 @@ extern int slurm_ckpt_signal_tasks(slurmd_job_t *job, char *image_dir)
 				exit(errno);
 			}
 
-			argv[0] = cr_checkpoint_path;
+			argv[0] = (char *)cr_checkpoint_path;
 			argv[1] = pid;
 			argv[2] = context_file;
 			argv[3] = NULL;
@@ -512,7 +512,7 @@ extern int slurm_ckpt_restart_task(slurmd_job_t *job, char *image_dir, int gtid)
 		sprintf(context_file, "%s/task.%d.ckpt", image_dir, gtid);
 	}
 
-	argv[0] = cr_restart_path;
+	argv[0] = (char *)cr_restart_path;
 	argv[1] = context_file;
 	argv[2] = NULL;
 
@@ -690,7 +690,7 @@ static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
 			snprintf(str_step, sizeof(str_step), "%u", step_id);
 			snprintf(str_err,  sizeof(str_err),  "%u", error_code);
 
-			args[0] = scch_path;
+			args[0] = (char *)scch_path;
 			args[1] = str_job;
 			args[2] = str_step;
 			args[3] = str_err;
