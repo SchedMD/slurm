@@ -119,9 +119,10 @@ BuildRequires: ncurses-devel
 BuildRequires: pkgconfig
 %endif
 
-%if %{slurm_with blcr}
-BuildRequires: blcr
-%endif
+# not sure if this is always an actual rpm or not so leaving the requirement out
+#%if %{slurm_with blcr}
+#BuildRequires: blcr
+#%endif
 
 %if %{slurm_with readline}
 BuildRequires: readline-devel
@@ -327,6 +328,15 @@ to root, any user with an SLURM-launched job currently running on the node,
 or any user who has allocated resources on the node according to the SLURM
 %endif
 
+%if %{slurm_with blcr}
+%package blcr
+Summary: Allows SLURM to use Berkeley Lab Checkpoint/Restart
+Group: System Environment/Base
+Requires: slurm
+%description blcr
+Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
+%endif
+
 #############################################################################
 
 %prep
@@ -427,6 +437,15 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
 rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
+%if %{slurm_with blcr}
+%files blcr
+%defattr(-,root,root)
+%{_bindir}/srun_cr
+%{_libexecdir}/slurm/cr_*
+%{_libdir}/slurm/checkpoint_blcr.so
+%endif
+#############################################################################
+
 %files -f slurm.files
 %defattr(-,root,root,0755)
 %doc AUTHORS
@@ -440,9 +459,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
-%if %{slurm_with blcr}
-%{_libexecdir}/slurm/cr_*
-%endif
 %ifos aix5.3
 %{_sbindir}/srun
 %endif
