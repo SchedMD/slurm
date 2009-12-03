@@ -39,9 +39,9 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 subdir = src/plugins/checkpoint/blcr
-DIST_COMMON = $(am__dist_bin_SCRIPTS_DIST) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(srcdir)/cr_checkpoint.sh.in \
-	$(srcdir)/cr_restart.sh.in
+DIST_COMMON = $(am__dist_pkglibexec_SCRIPTS_DIST) \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/cr_checkpoint.sh.in $(srcdir)/cr_restart.sh.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
@@ -104,7 +104,8 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)"
+am__installdirs = "$(DESTDIR)$(pkglibdir)" \
+	"$(DESTDIR)$(pkglibexecdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 checkpoint_blcr_la_LIBADD =
 am__checkpoint_blcr_la_SOURCES_DIST = checkpoint_blcr.c
@@ -115,8 +116,8 @@ checkpoint_blcr_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(checkpoint_blcr_la_LDFLAGS) $(LDFLAGS) -o $@
 @WITH_BLCR_TRUE@am_checkpoint_blcr_la_rpath = -rpath $(pkglibdir)
-am__dist_bin_SCRIPTS_DIST = cr_checkpoint.sh cr_restart.sh
-SCRIPTS = $(dist_bin_SCRIPTS)
+am__dist_pkglibexec_SCRIPTS_DIST = cr_checkpoint.sh cr_restart.sh
+SCRIPTS = $(dist_pkglibexec_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -321,12 +322,13 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+AM_CPPFLAGS = -DPKGLIBEXECDIR=\"$(pkglibexecdir)\"
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @WITH_BLCR_TRUE@pkglib_LTLIBRARIES = checkpoint_blcr.la
 @WITH_BLCR_TRUE@checkpoint_blcr_la_SOURCES = checkpoint_blcr.c
 @WITH_BLCR_TRUE@checkpoint_blcr_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@WITH_BLCR_TRUE@dist_bin_SCRIPTS = cr_checkpoint.sh cr_restart.sh
+@WITH_BLCR_TRUE@dist_pkglibexec_SCRIPTS = cr_checkpoint.sh cr_restart.sh
 @WITH_BLCR_FALSE@EXTRA_checkpoint_blcr_la_SOURCES = checkpoint_blcr.c
 all: all-am
 
@@ -399,10 +401,10 @@ clean-pkglibLTLIBRARIES:
 	done
 checkpoint_blcr.la: $(checkpoint_blcr_la_OBJECTS) $(checkpoint_blcr_la_DEPENDENCIES) 
 	$(checkpoint_blcr_la_LINK) $(am_checkpoint_blcr_la_rpath) $(checkpoint_blcr_la_OBJECTS) $(checkpoint_blcr_la_LIBADD) $(LIBS)
-install-dist_binSCRIPTS: $(dist_bin_SCRIPTS)
+install-dist_pkglibexecSCRIPTS: $(dist_pkglibexec_SCRIPTS)
 	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
-	@list='$(dist_bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
+	test -z "$(pkglibexecdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibexecdir)"
+	@list='$(dist_pkglibexec_SCRIPTS)'; test -n "$(pkglibexecdir)" || list=; \
 	for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
@@ -420,19 +422,19 @@ install-dist_binSCRIPTS: $(dist_bin_SCRIPTS)
 	while read type dir files; do \
 	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
 	     test -z "$$files" || { \
-	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(pkglibexecdir)$$dir'"; \
+	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(pkglibexecdir)$$dir" || exit $$?; \
 	     } \
 	; done
 
-uninstall-dist_binSCRIPTS:
+uninstall-dist_pkglibexecSCRIPTS:
 	@$(NORMAL_UNINSTALL)
-	@list='$(dist_bin_SCRIPTS)'; test -n "$(bindir)" || exit 0; \
+	@list='$(dist_pkglibexec_SCRIPTS)'; test -n "$(pkglibexecdir)" || exit 0; \
 	files=`for p in $$list; do echo "$$p"; done | \
 	       sed -e 's,.*/,,;$(transform)'`; \
 	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(bindir)" && rm -f $$files
+	echo " ( cd '$(DESTDIR)$(pkglibexecdir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(pkglibexecdir)" && rm -f $$files
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -555,7 +557,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(LTLIBRARIES) $(SCRIPTS)
 installdirs:
-	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibexecdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -612,7 +614,8 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-dist_binSCRIPTS install-pkglibLTLIBRARIES
+install-exec-am: install-dist_pkglibexecSCRIPTS \
+	install-pkglibLTLIBRARIES
 
 install-html: install-html-am
 
@@ -652,7 +655,8 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-dist_binSCRIPTS uninstall-pkglibLTLIBRARIES
+uninstall-am: uninstall-dist_pkglibexecSCRIPTS \
+	uninstall-pkglibLTLIBRARIES
 
 .MAKE: install-am install-strip
 
@@ -661,7 +665,7 @@ uninstall-am: uninstall-dist_binSCRIPTS uninstall-pkglibLTLIBRARIES
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am \
-	install-dist_binSCRIPTS install-dvi install-dvi-am \
+	install-dist_pkglibexecSCRIPTS install-dvi install-dvi-am \
 	install-exec install-exec-am install-html install-html-am \
 	install-info install-info-am install-man install-pdf \
 	install-pdf-am install-pkglibLTLIBRARIES install-ps \
@@ -669,7 +673,7 @@ uninstall-am: uninstall-dist_binSCRIPTS uninstall-pkglibLTLIBRARIES
 	installdirs maintainer-clean maintainer-clean-generic \
 	mostlyclean mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-dist_binSCRIPTS \
+	uninstall-am uninstall-dist_pkglibexecSCRIPTS \
 	uninstall-pkglibLTLIBRARIES
 
 

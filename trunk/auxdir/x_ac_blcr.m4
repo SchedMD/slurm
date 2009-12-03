@@ -3,7 +3,7 @@
 ##*****************************************************************************
 #  AUTHOR:
 #    Copied from x_ac_munge.
-#    
+#
 #
 #  SYNOPSIS:
 #    X_AC_BLCR()
@@ -31,21 +31,21 @@ AC_DEFUN([X_AC_BLCR], [
     [x_ac_cv_blcr_dir],
     [
       for d in $_x_ac_blcr_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include" || continue
-        test -f "$d/include/libcr.h" || continue
+	test -d "$d" || continue
+	test -d "$d/include" || continue
+	test -f "$d/include/libcr.h" || continue
 	for bit in $_x_ac_blcr_libs; do
-          test -d "$d/$bit" || continue
-        
+	  test -d "$d/$bit" || continue
+
  	  _x_ac_blcr_libs_save="$LIBS"
-          LIBS="-L$d/$bit -lcr $LIBS"
-          AC_LINK_IFELSE(
-            AC_LANG_CALL([], cr_init),
-            AS_VAR_SET(x_ac_cv_blcr_dir, $d))
-          LIBS="$_x_ac_blcr_libs_save"
-          test -n "$x_ac_cv_blcr_dir" && break
+	  LIBS="-L$d/$bit -lcr $LIBS"
+	  AC_LINK_IFELSE(
+	    AC_LANG_CALL([], cr_init),
+	    AS_VAR_SET(x_ac_cv_blcr_dir, $d))
+	  LIBS="$_x_ac_blcr_libs_save"
+	  test -n "$x_ac_cv_blcr_dir" && break
 	done
-        test -n "$x_ac_cv_blcr_dir" && break
+	test -n "$x_ac_cv_blcr_dir" && break
       done
     ])
 

@@ -20141,15 +20141,15 @@ if test "${x_ac_cv_blcr_dir+set}" = set; then :
 else
 
       for d in $_x_ac_blcr_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include" || continue
-        test -f "$d/include/libcr.h" || continue
+	test -d "$d" || continue
+	test -d "$d/include" || continue
+	test -f "$d/include/libcr.h" || continue
 	for bit in $_x_ac_blcr_libs; do
-          test -d "$d/$bit" || continue
+	  test -d "$d/$bit" || continue
 
  	  _x_ac_blcr_libs_save="$LIBS"
-          LIBS="-L$d/$bit -lcr $LIBS"
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	  LIBS="-L$d/$bit -lcr $LIBS"
+	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -20172,10 +20172,10 @@ if ac_fn_c_try_link "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          LIBS="$_x_ac_blcr_libs_save"
-          test -n "$x_ac_cv_blcr_dir" && break
+	  LIBS="$_x_ac_blcr_libs_save"
+	  test -n "$x_ac_cv_blcr_dir" && break
 	done
-        test -n "$x_ac_cv_blcr_dir" && break
+	test -n "$x_ac_cv_blcr_dir" && break
       done
 
 fi
