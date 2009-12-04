@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.1.0-pre9
+=============================
+
 * Changes in SLURM 2.1.0-pre8
 =============================
  -- Rearranged the "scontrol show job" output into functional groupings
