@@ -1447,7 +1447,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 {
 	int rc = SLURM_SUCCESS;
 	bg_record_t* bg_record = NULL;
-	char buf[100];
+	char buf[256];
 	uint16_t conn_type = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
@@ -1491,8 +1491,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       buf, sizeof(buf),
 				       SELECT_PRINT_MIXED);
-	debug("bluegene:submit_job: %d %s nodes=%u-%u-%u",
-	      local_mode, buf, min_nodes, req_nodes, max_nodes);
+	debug("bluegene:submit_job: %u mode=%d %s nodes=%u-%u-%u", 
+	      job_ptr->job_id, local_mode, buf,
+	      min_nodes, req_nodes, max_nodes);
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       buf, sizeof(buf),
 				       SELECT_PRINT_BLRTS_IMAGE);

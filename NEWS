@@ -321,8 +321,12 @@ documents those changes that are of interest to users and admins.
     added. 
  -- MySQL plugin - When doing archiving end time is now decreased by 1 
     which should be more correct.
- -- Bluegene - Fixed issue where --no-rotate didn't work correctly on job
+ -- BLUEGENE - Fixed issue where --no-rotate didn't work correctly on job
     submissions.
+ -- BLUEGENE - made the buffer longer when submitting jobs to get the entire 
+    line.  Previously the line could be shortened prematurely.
+ -- BLUEGENE - Fix to make sure we don't erroneously set a connection type
+    to SMALL.
 
 * Changes in SLURM 2.0.8
 ========================
