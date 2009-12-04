@@ -930,7 +930,7 @@ static int _find_best_block_match(List block_list,
 	request.procs = req_procs;
 	request.conn_type = conn_type;
 	request.rotate = rotate;
-	request.elongate = true;
+	request.elongate = rotate;
 
 #ifdef HAVE_BGL
 	request.blrtsimage = blrtsimage;
