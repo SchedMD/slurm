@@ -347,9 +347,16 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?slurm_with_cray_xt:--enable-cray-xt} \
 	%{?slurm_with_debug:--enable-debug} \
 	%{?slurm_with_sun_const:--enable-sun-const} \
+	%{?with_db2_dir} \
 	%{?with_proctrack}	\
+	%{?with_cpusetdir} \
+	%{?with_apbasildir} \
+	%{?with_xcpu} \
+	%{?with_mysql_config} \
+	%{?with_pg_config} \
 	%{?with_ssl}		\
 	%{?with_munge}      \
+	%{?with_blcr}      \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
 
@@ -386,6 +393,12 @@ rm -f $RPM_BUILD_ROOT/%{_mandir}/man5/bluegene*
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/.packlist
 rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
 
+%if ! %{slurm_with blcr}
+# remove these if they exist
+rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/srun_cr* ${RPM_BUILD_ROOT}%{_bindir}/srun_cr ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
+%endif
+
+
 # Build conditional file list for main package
 LIST=./slurm.files
 touch $LIST
@@ -398,7 +411,7 @@ install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/fed
 %endif
 
 %if %{slurm_with bluegene}
-rm ${RPM_BUILD_ROOT}%{_bindir}/srun
+rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
 %endif
 
@@ -437,15 +450,6 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
 rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
-%if %{slurm_with blcr}
-%files blcr
-%defattr(-,root,root)
-%{_bindir}/srun_cr
-%{_libexecdir}/slurm/cr_*
-%{_libdir}/slurm/checkpoint_blcr.so
-%endif
-#############################################################################
-
 %files -f slurm.files
 %defattr(-,root,root,0755)
 %doc AUTHORS
@@ -476,6 +480,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/slurm/src
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean
+%if %{slurm_with blcr}
+%exclude %{_mandir}/man1/srun_cr*
+%exclude %{_bindir}/srun_cr
+%endif
 #############################################################################
 
 %files devel
@@ -643,6 +651,16 @@ rm -rf $RPM_BUILD_ROOT
 %files pam_slurm
 %defattr(-,root,root)
 %{_libdir}/security/pam_slurm.so
+%endif
+#############################################################################
+
+%if %{slurm_with blcr}
+%files blcr
+%defattr(-,root,root)
+%{_bindir}/srun_cr
+%{_libexecdir}/slurm/cr_*
+%{_libdir}/slurm/checkpoint_blcr.so
+%{_mandir}/man1/srun_cr*
 %endif
 #############################################################################
 
