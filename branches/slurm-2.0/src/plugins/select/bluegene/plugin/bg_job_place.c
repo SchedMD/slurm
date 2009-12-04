@@ -1343,10 +1343,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_get_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_MAX_PROCS,
 					     &max_procs);
-			if((max_procs > bg_conf->procs_per_bp)
-			   || (max_procs == NO_VAL))
-				conn_type = SELECT_TORUS;
-			else
+			if((max_procs != NO_VAL)
+			   && (max_procs < bg_conf->procs_per_bp))
 				conn_type = SELECT_SMALL;
 		}
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
