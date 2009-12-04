@@ -1307,7 +1307,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 {
 	int rc = SLURM_SUCCESS;
 	bg_record_t* bg_record = NULL;
-	char buf[100];
+	char buf[256];
 	uint16_t conn_type = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
