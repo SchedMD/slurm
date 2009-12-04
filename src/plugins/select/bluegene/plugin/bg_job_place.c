@@ -1355,8 +1355,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	}
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
-	debug("bluegene:submit_job: %d %s nodes=%u-%u-%u", 
-	      mode, buf, min_nodes, req_nodes, max_nodes);
+	debug("bluegene:submit_job: %u mode=%d %s nodes=%u-%u-%u", 
+	      job_ptr->job_id, mode, buf, min_nodes, req_nodes, max_nodes);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_BLRTS_IMAGE);
 #ifdef HAVE_BGL
