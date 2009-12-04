@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     added. 
  -- MySQL plugin - When doing archiving end time is now decreased by 1 
     which should be more correct.
+ -- Bluegene - Fixed issue where --no-rotate didn't work correctly on job
+    submissions.
 
 * Changes in SLURM 2.0.8
 ========================
