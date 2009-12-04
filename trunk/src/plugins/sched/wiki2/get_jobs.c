@@ -344,7 +344,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	}
 	snprintf(tmp, sizeof(tmp),
 		"RMEM=%u;RDISK=%u;",
-		 min__mem,
+		 min_mem,
 		_get_job_min_disk(job_ptr));
 	xstrcat(buf, tmp);
 
