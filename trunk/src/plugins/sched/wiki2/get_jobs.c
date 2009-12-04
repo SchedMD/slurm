@@ -236,7 +236,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 {
 	char *buf = NULL, tmp[16384];
 	char *gname, *quote, *uname;
-	uint32_t end_time, suspend_time;
+	uint32_t end_time, suspend_time, min_mem;
 	int i, rej_sent = 0;
 
 	if (!job_ptr)
@@ -338,9 +338,13 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		job_ptr->partition);
 	xstrcat(buf, tmp);
 
+	min_mem = _get_job_min_mem(job_ptr);
+	if (min_mem & MEM_PER_CPU) {
+		min_mem &= ~MEM_PER_CPU;
+	}
 	snprintf(tmp, sizeof(tmp),
 		"RMEM=%u;RDISK=%u;",
-		_get_job_min_mem(job_ptr),
+		 min__mem,
 		_get_job_min_disk(job_ptr));
 	xstrcat(buf, tmp);
 
