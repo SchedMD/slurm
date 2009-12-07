@@ -434,13 +434,13 @@ need_refresh:
 		node_ptr = sview_node_info->node_ptr;
 		i++;
 		if(!strcmp(node_ptr->name, name)) {
-#ifdef HAVE_BG
-			/* get other blocks that are on this bp */
-			add_extra_bluegene_buttons(
-				&popup_win->grid_button_list,
-				i, &i);
-			i--;
-#else
+/* #ifdef HAVE_BG */
+/* 			/\* get other blocks that are on this bp *\/ */
+/* 			add_extra_bluegene_buttons( */
+/* 				&popup_win->grid_button_list, */
+/* 				i, &i); */
+/* 			i--; */
+/* #else */
 			/* this may need to go away in the future
 			   after add_extra_cr_buttons is functional */
 			get_button_list_from_main(&popup_win->grid_button_list,
@@ -449,7 +449,7 @@ need_refresh:
 			   core and what not */
 			add_extra_cr_buttons(&popup_win->grid_button_list,
 					     node_ptr);
-#endif
+/* #endif */
 			_layout_node_record(treeview, node_ptr, update);
 			found = 1;
 			break;

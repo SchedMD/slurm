@@ -1092,6 +1092,7 @@ display_it:
 		/* we want to over ride any subgrp in error
 		   state */
 		enum node_states state = NODE_STATE_UNKNOWN;
+		char *name = NULL;
 
 		i++;
 		switch(spec_info->type) {
@@ -1104,10 +1105,22 @@ display_it:
 		case NODE_PAGE:
 			if(!block_ptr->nodes)
 				continue;
-			g_print("sending %s %s", search_info->gchar_data, block_ptr->nodes);
 			if(!(hostset = hostset_create(search_info->gchar_data)))
 				continue;
-			if(!hostset_intersects(hostset, block_ptr->nodes)) {
+			name = block_ptr->nodes;
+			if(block_ptr->small_block) {
+				int j=0;
+				/* strip off the ionodes part */
+				while(name[j]) {
+					if(name[j] == '[') {
+						name[j] = '\0';
+						break;
+					}
+					j++;
+				}
+			}
+
+			if(!hostset_intersects(hostset, name)) {
 				hostset_destroy(hostset);
 				continue;
 			}
@@ -1298,7 +1311,6 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		g_free(name);
 		gtk_tree_model_get(model, iter, SORTID_NODELIST, &name, -1);
 		gtk_tree_model_get(model, iter, SORTID_SMALL_BLOCK, &i, -1);
-		g_print("got %s %d\n", name, i);
 		if(i) {
 			i=0;
 			/* strip off the ionodes part */
@@ -1310,7 +1322,6 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 				i++;
 			}
 		}
-		g_print(" %s\n", name);
 		popup_win->spec_info->search_info->gchar_data = name;
 		break;
 	case INFO_PAGE:
