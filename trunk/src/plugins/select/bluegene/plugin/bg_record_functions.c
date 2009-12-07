@@ -1490,16 +1490,22 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 {
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
-	struct node_record send_node;
+	struct node_record send_node, *node_ptr;
 	struct config_record config_rec;
 	int total_cpus = 0;
 	int rc = SLURM_SUCCESS;
 
 	xassert(node_inx <= node_record_count);
+	node_ptr = &node_record_table_ptr[node_inx];
+
+	/* only do this if the node isn't in the DRAINED state.
+	   DRAINING is ok */
+	if(IS_NODE_DRAINED(node_ptr))
+		return rc;
 
 	memset(&send_node, 0, sizeof(struct node_record));
 	memset(&config_rec, 0, sizeof(struct config_record));
-	send_node.name = node_record_table_ptr[node_inx].name;
+	send_node.name = xstrdup(node_ptr->name);
 	send_node.config_ptr = &config_rec;
 
 	/* here we need to check if there are any other blocks on this
@@ -1536,6 +1542,8 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 						   slurmctld_cluster_name,
 						   &send_node, event_time);
 	}
+
+	xfree(send_node.name);
 
 	return rc;
 }

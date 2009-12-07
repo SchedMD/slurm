@@ -854,6 +854,15 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 		list_iterator_destroy(itr);
 
 	large_block:
+		/* make sure if we are removing a block to put it back
+		   to a normal state in accounting first */
+		itr = list_iterator_create(delete_list);
+		while ((found_record = list_next(itr))) {
+			if(bg_record->state == RM_PARTITION_ERROR)
+				resume_block(bg_record);
+		}
+		list_iterator_destroy(itr);
+
 		free_block_list(delete_list);
 		list_destroy(delete_list);
 		slurm_mutex_unlock(&block_state_mutex);
@@ -1068,6 +1077,7 @@ extern int select_p_update_node_state (int index, uint16_t state)
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
 	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
+	uint16_t *cpus = (uint16_t *)data;
 	uint32_t *nodes = (uint32_t *)data, tmp;
 	int i;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
@@ -1081,6 +1091,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	case SELECT_GET_NODE_SCALING:
 		if((*nodes) != INFINITE)
 			(*nodes) = bg_conf->bp_node_cnt;
+		break;
+	case SELECT_GET_NODE_CPU_CNT:
+		if((*cpus) != (uint16_t)INFINITE)
+			(*cpus) = bg_conf->cpu_ratio;
 		break;
 	case SELECT_SET_BP_CNT:
 		if(((*nodes) == INFINITE) || ((*nodes) == NO_VAL))

@@ -119,6 +119,11 @@
 /* Derived node states */
 #define IS_NODE_DRAIN(_X)		\
 	(_X->node_state & NODE_STATE_DRAIN)
+#define IS_NODE_DRAINING(_X)		\
+	((_X->node_state & NODE_STATE_DRAIN) \
+	 && (IS_NODE_ALLOCATED(_X) || IS_NODE_ERROR(_X) || IS_NODE_MIXED(_X)))
+#define IS_NODE_DRAINED(_X)		\
+	(IS_NODE_DRAIN(_X) && !IS_NODE_DRAINING(_X))
 #define IS_NODE_COMPLETING(_X)	\
 	(_X->node_state & NODE_STATE_COMPLETING)
 #define IS_NODE_NO_RESPOND(_X)		\
