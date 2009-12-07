@@ -8357,6 +8357,10 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 			char *reason = "Setting partial node down.";
 			struct node_record send_node;
 			struct config_record config_rec;
+			uint16_t cpu_cnt = 0;
+			select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
+						&cpu_cnt);
+			err_cpus *= cpu_cnt;
 			memset(&send_node, 0, sizeof(struct node_record));
 			memset(&config_rec, 0, sizeof(struct config_record));
 			send_node.name = node_ptr->name;

@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.0-pre9
 =============================
+ -- BLUEGENE - made it so when removing a block in an error state the nodes in
+    the block are set correctly in accounting as not in error.
 
 * Changes in SLURM 2.1.0-pre8
 =============================
