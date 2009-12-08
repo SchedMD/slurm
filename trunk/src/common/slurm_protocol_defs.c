@@ -1420,73 +1420,7 @@ void slurm_free_submit_response_response_msg(submit_response_msg_t * msg)
 void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 {
 	if (config_ptr) {
-		xfree(config_ptr->accounting_storage_host);
-		xfree(config_ptr->accounting_storage_loc);
-		xfree(config_ptr->accounting_storage_pass);
-		xfree(config_ptr->accounting_storage_type);
-		xfree(config_ptr->accounting_storage_user);
-		xfree(config_ptr->authtype);
-		xfree(config_ptr->backup_addr);
-		xfree(config_ptr->backup_controller);
-		xfree(config_ptr->checkpoint_type);
-		xfree(config_ptr->cluster_name);
-		xfree(config_ptr->control_addr);
-		xfree(config_ptr->control_machine);
-		xfree(config_ptr->crypto_type);
-		xfree(config_ptr->epilog);
-		xfree(config_ptr->epilog_slurmctld);
-		xfree(config_ptr->health_check_program);
-		xfree(config_ptr->job_acct_gather_type);
-		xfree(config_ptr->job_ckpt_dir);
-		xfree(config_ptr->job_comp_host);
-		xfree(config_ptr->job_comp_loc);
-		xfree(config_ptr->job_comp_pass);
-		xfree(config_ptr->job_comp_type);
-		xfree(config_ptr->job_comp_user);
-		xfree(config_ptr->job_credential_private_key);
-		xfree(config_ptr->job_credential_public_certificate);
-		xfree(config_ptr->licenses);
-		xfree(config_ptr->mail_prog);
-		xfree(config_ptr->mpi_default);
-		xfree(config_ptr->mpi_params);
-		xfree(config_ptr->node_prefix);
-		xfree(config_ptr->plugindir);
-		xfree(config_ptr->plugstack);
-		xfree(config_ptr->preempt_type);
-		xfree(config_ptr->proctrack_type);
-		xfree(config_ptr->prolog);
-		xfree(config_ptr->prolog_slurmctld);
-		xfree(config_ptr->propagate_rlimits);
-		xfree(config_ptr->propagate_rlimits_except);
-		xfree(config_ptr->resume_program);
-		xfree(config_ptr->salloc_default_command);
-		xfree(config_ptr->sched_params);
-		xfree(config_ptr->schedtype);
-		xfree(config_ptr->select_type);
-		if(config_ptr->select_conf_key_pairs)
-			list_destroy((List)config_ptr->select_conf_key_pairs);
-		xfree(config_ptr->slurm_conf);
-		xfree(config_ptr->slurm_user_name);
-		xfree(config_ptr->slurmctld_pidfile);
-		xfree(config_ptr->slurmctld_logfile);
-		xfree(config_ptr->slurmd_logfile);
-		xfree(config_ptr->slurmd_pidfile);
-		xfree(config_ptr->slurmd_spooldir);
-		xfree(config_ptr->srun_epilog);
-		xfree(config_ptr->srun_prolog);
-		xfree(config_ptr->state_save_location);
-		xfree(config_ptr->suspend_exc_nodes);
-		xfree(config_ptr->suspend_exc_parts);
-		xfree(config_ptr->suspend_program);
-		xfree(config_ptr->switch_type);
-		xfree(config_ptr->task_epilog);
-		xfree(config_ptr->task_plugin);
-		xfree(config_ptr->task_prolog);
-		xfree(config_ptr->tmp_fs);
-		xfree(config_ptr->topology_plugin);
-		xfree(config_ptr->unkillable_program);
-		xfree(config_ptr->version);
-		xfree(config_ptr->z_char);
+		free_slurm_conf(config_ptr, 0);
 		xfree(config_ptr);
 	}
 }
