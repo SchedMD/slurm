@@ -42,7 +42,6 @@
 typedef struct {
 	int color_inx;
 	job_info_t *job_ptr;
-	char *nodes;
 	int node_cnt;
 #ifdef HAVE_BG
 	bool small_block;
@@ -1033,6 +1032,44 @@ static int _get_node_cnt(job_info_t * job)
 	return node_cnt;
 }
 
+static int _adjust_completing(job_info_t *job_ptr)
+{
+	static node_info_msg_t *node_info_ptr = NULL;
+	hostlist_t hl = NULL;
+	int i, j;
+	char buf[8192];
+
+	if(get_new_info_node(&node_info_ptr, force_refresh) == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	hl = hostlist_create ("");
+	for (i=0; ; i+=2) {
+		if (job_ptr->node_inx[i] == -1)
+			break;
+		if (i >= node_info_ptr->record_count) {
+			error ("Invalid node index for job %u",
+			       job_ptr->job_id);
+			break;
+		}
+		for (j=job_ptr->node_inx[i]; j<=job_ptr->node_inx[i+1]; j++) {
+			if (j >= node_info_ptr->record_count) {
+				error ("Invalid node index for job %u",
+				       job_ptr->job_id);
+				break;
+			}
+			hostlist_push(hl, node_info_ptr->node_array[j].name);
+		}
+	}
+	hostlist_uniq(hl);
+	hostlist_ranged_string(hl, sizeof(buf), buf);
+	hostlist_destroy(hl);
+
+	xfree (job_ptr->nodes);
+	job_ptr->nodes = xstrdup (buf);
+
+	return SLURM_SUCCESS;
+}
+
 /* this needs to be freed by xfree() */
 static void _convert_char_to_job_and_step(const char *data,
 					  int *jobid, int *stepid)
@@ -1098,7 +1135,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 		suspend_secs = (time(NULL) - job_ptr->start_time) - now_time;
 		secs2time_str(now_time, running_char, sizeof(running_char));
 
-		nodes = sview_job_info_ptr->nodes;
+		nodes = sview_job_info_ptr->job_ptr->nodes;
 	}
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -1576,7 +1613,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		}
 		suspend_secs = (time(NULL) - job_ptr->start_time) - now_time;
 		secs2time_str(now_time, tmp_char, sizeof(tmp_char));
-		nodes = sview_job_info_ptr->nodes;
+		nodes = sview_job_info_ptr->job_ptr->nodes;
 	}
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
 			   sview_colors[sview_job_info_ptr->color_inx], -1);
@@ -2238,7 +2275,6 @@ static void _job_info_list_del(void *object)
 	sview_job_info_t *sview_job_info = (sview_job_info_t *)object;
 
 	if (sview_job_info) {
-		xfree(sview_job_info->nodes);
 		if(sview_job_info->step_list)
 			list_destroy(sview_job_info->step_list);
 		xfree(sview_job_info);
@@ -2256,8 +2292,8 @@ static int _sview_job_sort_aval_dec(sview_job_info_t* rec_a,
 	else if (size_a > size_b)
 		return 1;
 
-	if(rec_a->nodes && rec_b->nodes) {
-		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+	if(rec_a->job_ptr->nodes && rec_b->job_ptr->nodes) {
+		size_a = strcmp(rec_a->job_ptr->nodes, rec_b->job_ptr->nodes);
 		if (size_a < 0)
 			return -1;
 		else if (size_a > 0)
@@ -2307,7 +2343,6 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		sview_job_info_ptr->job_ptr = job_ptr;
 		sview_job_info_ptr->step_list = list_create(NULL);
 		sview_job_info_ptr->node_cnt = 0;
-		sview_job_info_ptr->nodes = NULL;
 		sview_job_info_ptr->color_inx =
 			job_ptr->job_id % sview_colors_cnt;
 #ifdef HAVE_BG
@@ -2325,8 +2360,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 			sview_job_info_ptr->nodes = xstrdup(tmp_char);
 		}
 #endif
-		if(!sview_job_info_ptr->nodes)
-			sview_job_info_ptr->nodes = xstrdup(job_ptr->nodes);
+		if(IS_JOB_COMPLETING(job_ptr))
+			_adjust_completing(job_ptr);
 
 		if(!sview_job_info_ptr->node_cnt)
 			sview_job_info_ptr->node_cnt = _get_node_cnt(job_ptr);
