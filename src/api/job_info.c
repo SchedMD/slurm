@@ -434,7 +434,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		      job_resrcs->memory_allocated[rel_node_inx]))) {
 			if (hostlist_count(hl_last)) {
 				hostlist_ranged_string(hl_last,
-						       sizeof(last_hosts), last_hosts);
+						       sizeof(last_hosts),
+						       last_hosts);
 				snprintf(tmp_line, sizeof(tmp_line),
 					 "  Nodes=%s CPU_IDs=%s Mem=%u",
 					 last_hosts, tmp2, last_mem_alloc_ptr ?
