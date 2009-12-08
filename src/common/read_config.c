@@ -1390,6 +1390,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
 	xfree (ctl_conf_ptr->epilog);
+	xfree (ctl_conf_ptr->epilog_slurmctld);
 	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_ckpt_dir);
@@ -1411,14 +1412,17 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->priority_type);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
-	xfree (ctl_conf_ptr->propagate_rlimits_except);
+	xfree (ctl_conf_ptr->prolog_slurmctld);
 	xfree (ctl_conf_ptr->propagate_rlimits);
+	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->resume_program);
 	xfree (ctl_conf_ptr->salloc_default_command);
-	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
+	if(ctl_conf_ptr->select_conf_key_pairs)
+		list_destroy((List)ctl_conf_ptr->select_conf_key_pairs);
+	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
 	xfree (ctl_conf_ptr->slurmctld_logfile);
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
@@ -1439,6 +1443,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->tmp_fs);
 	xfree (ctl_conf_ptr->topology_plugin);
 	xfree (ctl_conf_ptr->unkillable_program);
+	xfree (ctl_conf_ptr->version);
+	xfree (ctl_conf_ptr->z_char);
 
 	if (purge_node_hash)
 		_free_name_hashtbl();
