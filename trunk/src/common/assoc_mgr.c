@@ -291,7 +291,6 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 			assoc->uid = (uint32_t)NO_VAL;
 		else
 			assoc->uid = pw_uid;
-
 		/* get the qos bitmap here */
 		if(g_qos_count > 0) {
 			if(!assoc->valid_qos
@@ -396,6 +395,43 @@ static int _post_wckey_list(List wckey_list)
 	list_iterator_destroy(itr);
 	return SLURM_SUCCESS;
 }
+
+static int _post_qos_list(List qos_list)
+{
+	acct_qos_rec_t *qos = NULL;
+	ListIterator itr = list_iterator_create(qos_list);
+
+	g_qos_count = 0;
+	g_qos_max_priority = 0;
+
+	while((qos = list_next(itr))) {
+		/* get the highest qos value to create bitmaps
+		   from */
+		if(qos->id > g_qos_count)
+			g_qos_count = qos->id;
+
+		if(qos->priority > g_qos_max_priority)
+			g_qos_max_priority = qos->priority;
+	}
+	/* Since in the database id's don't start at 1
+	   instead of 0 we need to ignore the 0 bit and start
+	   with 1 so increase the count by 1.
+	*/
+	if(g_qos_count > 0)
+		g_qos_count++;
+
+	if(g_qos_max_priority) {
+		list_iterator_reset(itr);
+
+		while((qos = list_next(itr))) {
+			qos->norm_priority = (double)qos->priority
+				/ (double)g_qos_max_priority;
+		}
+	}
+	list_iterator_destroy(itr);
+
+	return SLURM_SUCCESS;
+}
 static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 {
 	acct_association_cond_t assoc_q;
@@ -465,35 +501,9 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 		} else {
 			return SLURM_SUCCESS;
 		}
-	} else {
-		ListIterator itr = list_iterator_create(assoc_mgr_qos_list);
-		acct_qos_rec_t *qos = NULL;
-		while((qos = list_next(itr))) {
-			/* get the highest qos value to create bitmaps
-			   from */
-			if(qos->id > g_qos_count)
-				g_qos_count = qos->id;
-
-			if(qos->priority > g_qos_max_priority)
-				g_qos_max_priority = qos->priority;
-		}
-		/* Since in the database id's don't start at 1
-		   instead of 0 we need to ignore the 0 bit and start
-		   with 1 so increase the count by 1.
-		*/
-		if(g_qos_count > 0)
-			g_qos_count++;
-
-		if(g_qos_max_priority) {
-			list_iterator_reset(itr);
-
-			while((qos = list_next(itr))) {
-				qos->norm_priority = (double)qos->priority
-					/ (double)g_qos_max_priority;
-			}
-		}
-		list_iterator_destroy(itr);
 	}
+
+	_post_qos_list(assoc_mgr_qos_list);
 
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
 	return SLURM_SUCCESS;
@@ -677,8 +687,10 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 		      "no new list given back keeping cached one.");
 		return SLURM_ERROR;
 	}
+	_post_qos_list(current_qos);
 
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
+
 	if(assoc_mgr_qos_list)
 		list_destroy(assoc_mgr_qos_list);
 
@@ -2372,17 +2384,6 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	pack16(SLURMDBD_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
-	if(assoc_mgr_association_list) {
-		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		slurm_mutex_lock(&assoc_mgr_association_lock);
-		msg.my_list = assoc_mgr_association_list;
-		/* let us know what to unpack */
-		pack16(DBD_ADD_ASSOCS, buffer);
-		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
-				       DBD_ADD_ASSOCS, &msg, buffer);
-		slurm_mutex_unlock(&assoc_mgr_association_lock);
-	}
-
 	if(assoc_mgr_user_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
 		slurm_mutex_lock(&assoc_mgr_user_lock);
@@ -2414,6 +2415,18 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
 				       DBD_ADD_WCKEYS, &msg, buffer);
 		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
+	}
+	/* this needs to be done last so qos is set up
+	 * before hand when loading it back */
+	if(assoc_mgr_association_list) {
+		memset(&msg, 0, sizeof(dbd_list_msg_t));
+		slurm_mutex_lock(&assoc_mgr_association_lock);
+		msg.my_list = assoc_mgr_association_list;
+		/* let us know what to unpack */
+		pack16(DBD_ADD_ASSOCS, buffer);
+		slurmdbd_pack_list_msg(SLURMDBD_VERSION,
+				       DBD_ADD_ASSOCS, &msg, buffer);
+		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	}
 
 	/* write the buffer to file */
@@ -2929,6 +2942,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			if(assoc_mgr_qos_list)
 				list_destroy(assoc_mgr_qos_list);
 			assoc_mgr_qos_list = msg->my_list;
+			_post_qos_list(assoc_mgr_qos_list);
 			debug("Recovered %u qos",
 			      list_count(assoc_mgr_qos_list));
 			slurm_mutex_unlock(&assoc_mgr_qos_lock);
@@ -3068,5 +3082,3 @@ extern int assoc_mgr_set_missing_uids()
 
 	return SLURM_SUCCESS;
 }
-
-
