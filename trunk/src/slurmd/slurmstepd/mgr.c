@@ -7,32 +7,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -155,15 +155,15 @@ typedef struct kill_thread {
 } kill_thread_t;
 
 
-/* 
+/*
  * Prototypes
  */
 
-/* 
+/*
  * Job manager related prototypes
  */
 static int  _access(const char *path, int modes, uid_t uid, gid_t gid);
-static void _send_launch_failure(launch_tasks_request_msg_t *, 
+static void _send_launch_failure(launch_tasks_request_msg_t *,
 				 slurm_addr *, int);
 static int  _fork_all_tasks(slurmd_job_t *job);
 static int  _become_user(slurmd_job_t *job, struct priv_state *ps);
@@ -176,7 +176,7 @@ static int  _reclaim_privileges(struct priv_state *state);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static int  _slurmd_job_log_init(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
-static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
+static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n,
 			   int status);
 static void _wait_for_children_slurmstepd(slurmd_job_t *job);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
@@ -195,7 +195,7 @@ static int  _run_script_as_user(const char *name, const char *path,
  */
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
-static int    _send_complete_batch_script_msg(slurmd_job_t *job, 
+static int    _send_complete_batch_script_msg(slurmd_job_t *job,
 					      int err, int status);
 
 /*
@@ -224,10 +224,10 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 	_set_job_log_prefix(job);
 
 	_setargs(job);
-	
+
 	job->envtp->cli = cli;
 	job->envtp->self = self;
-	
+
 	return job;
 }
 
@@ -240,7 +240,7 @@ batch_finish(slurmd_job_t *job, int rc)
 	int i;
 	for (i = 0; i < job->ntasks; i++) {
 		/* If signalled we only need to check one and then
-		 * break out of the loop */ 
+		 * break out of the loop */
 		if(WIFSIGNALED(job->task[i]->estatus)) {
 			switch(WTERMSIG(job->task[i]->estatus)) {
 			case SIGTERM:
@@ -266,7 +266,7 @@ batch_finish(slurmd_job_t *job, int rc)
 	if (job->aborted) {
 		if ((job->stepid == NO_VAL) ||
 		    (job->stepid == SLURM_BATCH_SCRIPT)) {
-			info("step %u.%u abort completed", 
+			info("step %u.%u abort completed",
 			     job->jobid, job->stepid);
 		} else
 			info("job %u abort completed", job->jobid);
@@ -309,7 +309,7 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	if ((job->argv[0] = _make_batch_script(msg, job->batchdir)) == NULL) {
 		goto cleanup2;
 	}
-	
+
 	/* this is the new way of setting environment variables */
 	env_array_for_batch_job(&job->env, msg, conf->node_name);
 
@@ -317,7 +317,7 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	 * needed) */
 	job->envtp->overcommit = msg->overcommit;
 	job->envtp->select_jobinfo = msg->select_jobinfo;
-	
+
 	return job;
 
 cleanup2:
@@ -345,10 +345,10 @@ _set_job_log_prefix(slurmd_job_t *job)
 {
 	char buf[256];
 
-	if (job->jobid > MAX_NOALLOC_JOBID) 
+	if (job->jobid > MAX_NOALLOC_JOBID)
 		return;
 
-	if ((job->jobid >= MIN_NOALLOC_JOBID) || (job->stepid == NO_VAL)) 
+	if ((job->jobid >= MIN_NOALLOC_JOBID) || (job->stepid == NO_VAL))
 		snprintf(buf, sizeof(buf), "[%u]", job->jobid);
 	else
 		snprintf(buf, sizeof(buf), "[%u.%u]", job->jobid, job->stepid);
@@ -392,7 +392,7 @@ _setup_normal_io(slurmd_job_t *job)
 		xassert(srun != NULL);
 
 		/* If I/O is labelled with task num, and if a separate file is
-		   written per node or per task, the I/O needs to be sent 
+		   written per node or per task, the I/O needs to be sent
 		   back to the stepd, get a label appended, and written from
 		   the stepd rather than sent back to srun or written directly
 		   from the node.  When a task has ofname or efname == NULL, it
@@ -411,14 +411,14 @@ _setup_normal_io(slurmd_job_t *job)
 			if (outpattern == SLURMD_ALL_UNIQUE) {
 				/* Open a separate file per task */
 				for (ii = 0; ii < job->ntasks; ii++) {
-					rc = io_create_local_client( 
-						job->task[ii]->ofname, 
+					rc = io_create_local_client(
+						job->task[ii]->ofname,
 						file_flags, job, job->labelio,
 						job->task[ii]->id,
 						same ? job->task[ii]->id : -2);
 					if (rc != SLURM_SUCCESS) {
 						error("Could not open output "
-						      "file %s: %m", 
+						      "file %s: %m",
 						      job->task[ii]->ofname);
 						rc = ESLURMD_IO_ERROR;
 						goto claim;
@@ -429,13 +429,13 @@ _setup_normal_io(slurmd_job_t *job)
 					srun_stderr_tasks = -2;
 			} else if (outpattern == SLURMD_ALL_SAME) {
 				/* Open a file for all tasks */
-				rc = io_create_local_client( 
-					job->task[0]->ofname, 
+				rc = io_create_local_client(
+					job->task[0]->ofname,
 					file_flags, job, job->labelio,
 					-1, same ? -1 : -2);
 				if (rc != SLURM_SUCCESS) {
 					error("Could not open output "
-					      "file %s: %m", 
+					      "file %s: %m",
 					      job->task[0]->ofname);
 					rc = ESLURMD_IO_ERROR;
 					goto claim;
@@ -449,15 +449,15 @@ _setup_normal_io(slurmd_job_t *job)
 				if (errpattern == SLURMD_ALL_UNIQUE) {
 					/* Open a separate file per task */
 					for (ii = 0; ii < job->ntasks; ii++) {
-						rc = io_create_local_client( 
-							job->task[ii]->efname, 
-							file_flags, job, 
+						rc = io_create_local_client(
+							job->task[ii]->efname,
+							file_flags, job,
 							job->labelio,
 							-2, job->task[ii]->id);
 						if (rc != SLURM_SUCCESS) {
 							error("Could not "
 							      "open error "
-							      "file %s: %m", 
+							      "file %s: %m",
 							      job->task[ii]->
 							      efname);
 							rc = ESLURMD_IO_ERROR;
@@ -467,13 +467,13 @@ _setup_normal_io(slurmd_job_t *job)
 					srun_stderr_tasks = -2;
 				} else if (errpattern == SLURMD_ALL_SAME) {
 					/* Open a file for all tasks */
-					rc = io_create_local_client( 
-						job->task[0]->efname, 
+					rc = io_create_local_client(
+						job->task[0]->efname,
 						file_flags, job, job->labelio,
 						-2, -1);
 					if (rc != SLURM_SUCCESS) {
 						error("Could not open error "
-						      "file %s: %m", 
+						      "file %s: %m",
 						      job->task[0]->efname);
 						rc = ESLURMD_IO_ERROR;
 						goto claim;
@@ -482,8 +482,8 @@ _setup_normal_io(slurmd_job_t *job)
 				}
 			}
 		}
-		
-		if(io_initial_client_connect(srun, job, srun_stdout_tasks, 
+
+		if(io_initial_client_connect(srun, job, srun_stdout_tasks,
 					     srun_stderr_tasks) < 0) {
 			rc = ESLURMD_IO_ERROR;
 			goto claim;
@@ -500,7 +500,7 @@ claim:
 		if (io_thread_start(job) < 0)
 			rc = ESLURMD_IO_ERROR;
 	}
-	
+
 	debug2("Leaving  _setup_normal_io");
 	return rc;
 }
@@ -514,7 +514,7 @@ _setup_user_managed_io(slurmd_job_t *job)
 		error("_setup_user_managed_io: no clients!");
 		return SLURM_ERROR;
 	}
-	
+
 	return user_managed_io_client_connect(job->ntasks, srun, job->task);
 }
 
@@ -522,7 +522,7 @@ static void
 _random_sleep(slurmd_job_t *job)
 {
 	long int delay = 0;
-	long int max   = (3 * job->nnodes); 
+	long int max   = (3 * job->nnodes);
 
 	srand48((long int) (job->jobid + job->nodeid));
 
@@ -554,12 +554,12 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	slurm_msg_t_init(&resp);
 	resp.data		= &msg;
 	resp.msg_type		= MESSAGE_TASK_EXIT;
-	
+
 	/*
 	 *  XXX Hack for TCP timeouts on exit of large, synchronized
 	 *  jobs. Delay a random amount if job->nnodes > 100
 	 */
-	if (job->nnodes > 100) 
+	if (job->nnodes > 100)
 		_random_sleep(job);
 
 	/*
@@ -615,7 +615,7 @@ _wait_for_children_slurmstepd(slurmd_job_t *job)
 	/* Find the maximum task return code */
 	for (i = 0; i < job->ntasks; i++) {
 		/* If signalled we only need to check one and then
-		   break out of the loop */ 
+		   break out of the loop */
 		if(WIFSIGNALED(job->task[i]->estatus)) {
 			switch(WTERMSIG(job->task[i]->estatus)) {
 			case SIGTERM:
@@ -665,11 +665,11 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	/************* acct stuff ********************/
 	if(!acct_sent) {
 		jobacct_gather_g_aggregate(step_complete.jobacct, job->jobacct);
-		jobacct_gather_g_getinfo(step_complete.jobacct, 
+		jobacct_gather_g_getinfo(step_complete.jobacct,
 					 JOBACCT_DATA_TOTAL, msg.jobacct);
 		acct_sent = true;
 	}
-	/*********************************************/	
+	/*********************************************/
 	slurm_msg_t_init(&req);
 	req.msg_type = REQUEST_STEP_COMPLETE;
 	req.data = &msg;
@@ -797,7 +797,7 @@ _send_step_complete_msgs(slurmd_job_t *job)
 }
 
 /* This dummy function is provided so that the checkpoint functions can
- * 	resolve this symbol name (as needed for some of the checkpoint  
+ * 	resolve this symbol name (as needed for some of the checkpoint
  *	functions used by slurmctld). */
 extern void agent_queue_request(void *dummy)
 {
@@ -805,7 +805,7 @@ extern void agent_queue_request(void *dummy)
 	      "checkpoint plugin");
 }
 
-/* 
+/*
  * Executes the functions of the slurmd job manager process,
  * which runs as root and performs shared memory and interconnect
  * initialization, etc.
@@ -813,7 +813,7 @@ extern void agent_queue_request(void *dummy)
  * Returns 0 if job ran and completed successfully.
  * Returns errno if job startup failed. NOTE: This will DRAIN the node.
  */
-int 
+int
 job_manager(slurmd_job_t *job)
 {
 	int  rc = 0;
@@ -837,13 +837,13 @@ job_manager(slurmd_job_t *job)
 		rc = SLURM_MPI_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
-	
+
 	if (!job->batch &&
 	    (interconnect_preinit(job->switch_job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
 	}
-	
+
 #ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
@@ -859,7 +859,7 @@ job_manager(slurmd_job_t *job)
 	 */
 	if(!rc)
 		rc = _slurmd_job_log_init(job);
-	
+
 	if (rc) {
 		error("IO setup failed: %m");
 		rc = SLURM_SUCCESS;	/* drains node otherwise */
@@ -867,9 +867,9 @@ job_manager(slurmd_job_t *job)
 	} else {
 		io_initialized = true;
 	}
-		
+
 	/* Call interconnect_init() before becoming user */
-	if (!job->batch && 
+	if (!job->batch &&
 	    (interconnect_init(job->switch_job, job->uid) < 0)) {
 		/* error("interconnect_init: %m"); already logged */
 		rc = ESLURM_INTERCONNECT_FAILURE;
@@ -884,7 +884,7 @@ job_manager(slurmd_job_t *job)
 		io_close_task_fds(job);
 		goto fail2;
 	}
-	
+
 	/* calls pam_setup() and requires pam_finish() if successful */
 	if (_fork_all_tasks(job) < 0) {
 		debug("_fork_all_tasks failed");
@@ -899,7 +899,7 @@ job_manager(slurmd_job_t *job)
 	reattach_job = job;
 
 	job->state = SLURMSTEPD_STEP_RUNNING;
-	
+
 	/* if we are not polling then we need to make sure we get some
 	 * information here
 	 */
@@ -910,16 +910,16 @@ job_manager(slurmd_job_t *job)
 
 	_wait_for_all_tasks(job);
 	jobacct_gather_g_endpoll();
-		
+
 	job->state = SLURMSTEPD_STEP_ENDING;
 
-	/* 
+	/*
 	 * This just cleans up all of the PAM state and errors are logged
 	 * below, so there's no need for error handling.
 	 */
 	pam_finish();
 
-	if (!job->batch && 
+	if (!job->batch &&
 	    (interconnect_fini(job->switch_job) < 0)) {
 		error("interconnect_fini: %m");
 	}
@@ -931,8 +931,8 @@ job_manager(slurmd_job_t *job)
 	 * is moved behind wait_for_io(), we may block waiting for IO
 	 * on a hung process.
 	 *
-	 * Make sure all processes in session are dead. On systems 
-	 * with an IBM Federation switch, all processes must be 
+	 * Make sure all processes in session are dead. On systems
+	 * with an IBM Federation switch, all processes must be
 	 * terminated before the switch window can be released by
 	 * interconnect_postfini().
 	 */
@@ -951,9 +951,9 @@ job_manager(slurmd_job_t *job)
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->batch && !job->user_managed_io && io_initialized) 
+	if (!job->batch && !job->user_managed_io && io_initialized)
 		_wait_for_io(job);
-	
+
 	debug2("Before call to spank_fini()");
 	if (spank_fini (job)  < 0) {
 		error ("spank_fini failed\n");
@@ -961,7 +961,7 @@ job_manager(slurmd_job_t *job)
 	debug2("After call to spank_fini()");
 
     fail1:
-	/* If interactive job startup was abnormal, 
+	/* If interactive job startup was abnormal,
 	 * be sure to notify client.
 	 */
 	if (rc != 0) {
@@ -994,7 +994,7 @@ _spank_task_privileged(slurmd_job_t *job, int taskid, struct priv_state *sp)
 
 
 /* fork and exec N tasks
- */ 
+ */
 static int
 _fork_all_tasks(slurmd_job_t *job)
 {
@@ -1050,7 +1050,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			error ("exec_all_tasks: pipe: %m");
 			return SLURM_ERROR;
 		}
-		debug3("New fdpair[0] = %d, fdpair[1] = %d", 
+		debug3("New fdpair[0] = %d, fdpair[1] = %d",
 		       fdpair[0], fdpair[1]);
 		fd_set_close_on_exec(fdpair[0]);
 		fd_set_close_on_exec(fdpair[1]);
@@ -1115,7 +1115,7 @@ _fork_all_tasks(slurmd_job_t *job)
 				if (j > i)
 					close(readfds[j]);
 			}
-			/* jobacct_gather_g_endpoll();	
+			/* jobacct_gather_g_endpoll();
 			 * closing jobacct files here causes deadlock */
 
 			if (conf->propagate_prio == 1)
@@ -1142,13 +1142,13 @@ _fork_all_tasks(slurmd_job_t *job)
 		}
 
 		/*
-		 * Parent continues: 
+		 * Parent continues:
 		 */
 
 		close(readfds[i]);
-		verbose ("task %lu (%lu) started %M", 
-			(unsigned long) job->task[i]->gtid, 
-			(unsigned long) pid); 
+		verbose ("task %lu (%lu) started %M",
+			(unsigned long) job->task[i]->gtid,
+			(unsigned long) pid);
 
 		job->task[i]->pid = pid;
 		if (i == 0)
@@ -1199,7 +1199,7 @@ _fork_all_tasks(slurmd_job_t *job)
 		}
 		jobacct_id.nodeid = job->nodeid;
 		jobacct_id.taskid = job->task[i]->gtid;
-		jobacct_gather_g_add_task(job->task[i]->pid, 
+		jobacct_gather_g_add_task(job->task[i]->pid,
 				   &jobacct_id);
 
 		if (spank_task_post_fork (job, i) < 0) {
@@ -1208,22 +1208,22 @@ _fork_all_tasks(slurmd_job_t *job)
 		}
 	}
 	jobacct_gather_g_set_proctrack_container_id(job->cont_id);
-	
+
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
 	 */
 	for (i = 0; i < job->ntasks; i++) {
 		char c = '\0';
-		
+
 		debug3("Unblocking %u.%u task %d, writefd = %d",
 		       job->jobid, job->stepid, i, writefds[i]);
 		if (write (writefds[i], &c, sizeof (c)) != 1)
-			error ("write to unblock task %d failed", i); 
+			error ("write to unblock task %d failed", i);
 
 		close(writefds[i]);
 
 		/*
-		 * Prepare process for attach by parallel debugger 
+		 * Prepare process for attach by parallel debugger
 		 * (if specified and able)
 		 */
 		if (pdebug_trace_process(job, job->task[i]->pid)
@@ -1251,8 +1251,8 @@ fail1:
  * the same exit status (and whose statuses have not been sent back to
  * the client) Aggregate these tasks into a single task exit message.
  *
- */ 
-static int 
+ */
+static int
 _send_pending_exit_msgs(slurmd_job_t *job)
 {
 	int  i;
@@ -1261,17 +1261,17 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 	bool set    = false;
 	uint32_t  tid[job->ntasks];
 
-	/* 
-	 * Collect all exit codes with the same status into a 
-	 * single message. 
+	/*
+	 * Collect all exit codes with the same status into a
+	 * single message.
 	 */
 	for (i = 0; i < job->ntasks; i++) {
 		slurmd_task_info_t *t = job->task[i];
 
-		if (!t->exited || t->esent) 
+		if (!t->exited || t->esent)
 			continue;
-		
-		if (!set) { 
+
+		if (!set) {
 			status = t->estatus;
 			set    = true;
 		} else if (status != t->estatus)
@@ -1280,7 +1280,7 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 		tid[nsent++] = t->gtid;
 		t->esent = true;
 	}
-	
+
 	if (nsent) {
 		debug2("Aggregated %d task exit messages", nsent);
 		_send_exit_msg(job, tid, nsent, status);
@@ -1302,20 +1302,20 @@ _log_task_exit(unsigned long taskid, unsigned long pid, int status)
 	 */
 	if (WIFEXITED(status))
 		verbose("task %lu (%lu) exited with exit code %d.",
-		        taskid, pid, WEXITSTATUS(status));
+			taskid, pid, WEXITSTATUS(status));
 	else if (WIFSIGNALED(status))
 		/* WCOREDUMP isn't available on AIX */
 		verbose("task %lu (%lu) exited. Killed by signal %d%s.",
-		        taskid, pid, WTERMSIG(status),
+			taskid, pid, WTERMSIG(status),
 #ifdef WCOREDUMP
-		        WCOREDUMP(status) ? " (core dumped)" : ""
+			WCOREDUMP(status) ? " (core dumped)" : ""
 #else
 			""
 #endif
 			);
 	else
 		verbose("task %lu (%lu) exited with status 0x%04x.",
-		        taskid, pid, status);
+			taskid, pid, status);
 }
 
 /*
@@ -1360,13 +1360,13 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 		/************* acct stuff ********************/
 		jobacct = jobacct_gather_g_remove_task(pid);
 		if(jobacct) {
-			jobacct_gather_g_setinfo(jobacct, 
+			jobacct_gather_g_setinfo(jobacct,
 						 JOBACCT_DATA_RUSAGE, &rusage);
 			jobacct_gather_g_aggregate(job->jobacct, jobacct);
 			jobacct_gather_g_destroy(jobacct);
-		} 		
-		/*********************************************/	
-	
+		}
+		/*********************************************/
+
 		/* See if the pid matches that of one of the tasks */
 		for (i = 0; i < job->ntasks; i++) {
 			if (job->task[i]->pid == pid) {
@@ -1383,7 +1383,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			job->envtp->env = job->env;
 			job->envtp->procid = job->task[i]->gtid;
 			job->envtp->localid = job->task[i]->id;
-			
+
 			job->envtp->distribution = -1;
 			job->envtp->batch_flag = job->batch;
 			setup_env(job->envtp, false);
@@ -1438,7 +1438,7 @@ _wait_for_all_tasks(slurmd_job_t *job)
 		if (rc != -1) {
 			i += rc;
 			if (i < tasks_left) {
-				/* To limit the amount of traffic back 
+				/* To limit the amount of traffic back
 				 * we will sleep a bit to make sure we
 				 * have most if not all the tasks
 				 * completed before we return */
@@ -1508,16 +1508,16 @@ _wait_for_io(slurmd_job_t *job)
 	return;
 }
 
-	
+
 static char *
 _make_batch_dir(slurmd_job_t *job)
 {
-	char path[MAXPATHLEN]; 
+	char path[MAXPATHLEN];
 
 	if (job->stepid == NO_VAL)
 		snprintf(path, 1024, "%s/job%05u", conf->spooldir, job->jobid);
 	else {
-		snprintf(path, 1024, "%s/job%05u.%05u", 
+		snprintf(path, 1024, "%s/job%05u.%05u",
 			 conf->spooldir, job->jobid, job->stepid);
 	}
 
@@ -1548,7 +1548,7 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	FILE *fp = NULL;
 	char  script[MAXPATHLEN];
 
-	snprintf(script, 1024, "%s/%s", path, "slurm_script"); 
+	snprintf(script, 1024, "%s/%s", path, "slurm_script");
 
   again:
 	if ((fp = safeopen(script, "w", SAFEOPEN_CREATE_ONLY)) == NULL) {
@@ -1567,7 +1567,7 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	if (fclose(fp) < 0) {
 		error("fclose: %m");
 	}
-	
+
 	if (chown(script, (uid_t) msg->uid, (gid_t) -1) < 0) {
 		error("chown(%s): %m", path);
 		goto error;
@@ -1596,18 +1596,18 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	name = xstrdup(conf->node_name);
 #else
 	name = xstrdup(msg->complete_nodelist);
-	
+
 #endif
 	debug ("sending launch failure message: %s", slurm_strerror (rc));
 
 	slurm_msg_t_init(&resp_msg);
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
-	slurm_set_addr(&resp_msg.address, 
+	slurm_set_addr(&resp_msg.address,
 		       msg->resp_port[nodeid % msg->num_resp_port],
-		       NULL); 
+		       NULL);
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
-		
+
 	resp.node_name     = name;
 	resp.return_code   = rc ? rc : -1;
 	resp.count_of_pids = 0;
@@ -1619,7 +1619,7 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 
 static void
 _send_launch_resp(slurmd_job_t *job, int rc)
-{	
+{
 	int i;
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
@@ -1634,7 +1634,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	resp_msg.address	= srun->resp_addr;
 	resp_msg.data		= &resp;
 	resp_msg.msg_type	= RESPONSE_LAUNCH_TASKS;
-	
+
 	resp.node_name		= xstrdup(job->node_name);
 	resp.return_code	= rc;
 	resp.count_of_pids	= job->ntasks;
@@ -1663,12 +1663,12 @@ _send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 
 	req.job_id	= job->jobid;
 	req.job_rc      = status;
-	req.slurm_rc	= err; 
-		
+	req.slurm_rc	= err;
+
 	slurm_msg_t_init(&req_msg);
 	req.node_name	= job->node_name;
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
-	req_msg.data	= &req;	
+	req_msg.data	= &req;
 
 	info("sending REQUEST_COMPLETE_BATCH_SCRIPT");
 
@@ -1728,7 +1728,7 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 	}
 
 	if (_initgroups(job) < 0) {
-		error("_initgroups: %m"); 
+		error("_initgroups: %m");
 	}
 
 	if (do_setuid && seteuid(job->pwd->pw_uid) < 0) {
@@ -1742,7 +1742,7 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 static int
 _reclaim_privileges(struct priv_state *ps)
 {
-	/* 
+	/*
 	 * No need to reclaim privileges if our uid == pwd->pw_uid
 	 */
 	if (geteuid() == ps->saved_uid)
@@ -1767,7 +1767,7 @@ _reclaim_privileges(struct priv_state *ps)
 
 
 static int
-_slurmd_job_log_init(slurmd_job_t *job) 
+_slurmd_job_log_init(slurmd_job_t *job)
 {
 	char argv0[64];
 
@@ -1787,13 +1787,13 @@ _slurmd_job_log_init(slurmd_job_t *job)
 		conf->log_opts.stderr_level = LOG_LEVEL_DEBUG3;
 
 	snprintf(argv0, sizeof(argv0), "slurmd[%s]", conf->node_name);
-	/* 
-	 * reinitialize log 
+	/*
+	 * reinitialize log
 	 */
-	
+
 	log_alter(conf->log_opts, 0, NULL);
 	log_set_argv0(argv0);
-       
+
 	/* Connect slurmd stderr to job's stderr */
 	if (!job->user_managed_io && job->task != NULL) {
 		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
@@ -1815,7 +1815,7 @@ _setargs(slurmd_job_t *job)
 	if ((job->jobid >= MIN_NOALLOC_JOBID) || (job->stepid == NO_VAL))
 		setproctitle("[%u]",    job->jobid);
 	else
-		setproctitle("[%u.%u]", job->jobid, job->stepid); 
+		setproctitle("[%u.%u]", job->jobid, job->stepid);
 
 	return;
 }
@@ -1883,7 +1883,7 @@ _become_user(slurmd_job_t *job, struct priv_state *ps)
 	}
 
 	return SLURM_SUCCESS;
-}	
+}
 
 
 static int
@@ -1944,17 +1944,17 @@ static int _access(const char *path, int modes, uid_t uid, gid_t gid)
 }
 
 /*
- * Run a script as a specific user, with the specified uid, gid, and 
+ * Run a script as a specific user, with the specified uid, gid, and
  * extended groups.
  *
- * name IN: class of program (task prolog, task epilog, etc.), 
+ * name IN: class of program (task prolog, task epilog, etc.),
  * path IN: pathname of program to run
  * job IN: slurd job structue, used to get uid, gid, and groups
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
  * env IN: environment variables to use on exec, sets minimal environment
  *	if NULL
  *
- * RET 0 on success, -1 on failure. 
+ * RET 0 on success, -1 on failure.
  */
 int
 _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
@@ -2042,6 +2042,6 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 	/* Insure that all child processes get killed, one last time */
 	killpg(cpid, SIGKILL);
 	slurm_container_signal(job->cont_id, SIGKILL);
-	
+
 	return status;
 }
