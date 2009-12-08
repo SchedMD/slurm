@@ -69,6 +69,7 @@ static int	_process_command (int argc, char *argv[]);
 static void	_update_it (int argc, char *argv[]);
 static int	_update_bluegene_block (int argc, char *argv[]);
 static int      _update_bluegene_subbp (int argc, char *argv[]);
+static int	_update_slurmctld_debug(char *val);
 static void	_usage ();
 
 int
@@ -1072,15 +1073,17 @@ _show_it (int argc, char *argv[])
 static void
 _update_it (int argc, char *argv[])
 {
+	char *val = NULL;
 	int i, error_code = SLURM_SUCCESS;
 	int nodetag=0, partag=0, jobtag=0;
 	int blocktag=0, subtag=0, restag=0;
+	int debugtag=0;
 
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
 		char *tag = argv[i];
 		int taglen = 0;
-		char *val = strchr(argv[i], '=');
+		val = strchr(argv[i], '=');
 		if (!val)
 			continue;
 		taglen = val - argv[i];
@@ -1098,6 +1101,8 @@ _update_it (int argc, char *argv[])
 			subtag=1;
 		} else if (strncasecmp (tag, "ReservationName", MAX(taglen, 3)) == 0) {
 			restag=1;
+		} else if (strncasecmp (tag, "SlurmctldDebug", MAX(taglen, 3)) == 0) {
+			debugtag=1;
 		}
 	}
 
@@ -1120,6 +1125,8 @@ _update_it (int argc, char *argv[])
 		error_code = _update_bluegene_block (argc, argv);
 	else if (subtag)
 		error_code = _update_bluegene_subbp (argc, argv);
+	else if (debugtag)
+		error_code = _update_slurmctld_debug(val);
 	else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");
@@ -1129,7 +1136,7 @@ _update_it (int argc, char *argv[])
 			"(i.e. bgl000[0-3]),");
 #endif
 		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
-				"or \"JobId\"\n");
+				"\"JobId\", or \"SlurmctldDebug\" \n");
 	}
 
 	if (error_code) {
@@ -1295,6 +1302,30 @@ _update_bluegene_subbp (int argc, char *argv[])
 	fprintf(stderr, "This only works on a bluegene system.\n");
 	return 0;
 #endif
+}
+
+/*
+ * _update_slurmctld_debug - update the slurmctld debug level
+ * IN  val - new value
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
+ *			error message and returns 0
+ */
+static int _update_slurmctld_debug(char *val)
+{
+	char *endptr;
+	int error_code = SLURM_SUCCESS;
+	uint32_t level = (uint32_t)strtoul(val, &endptr, 10);
+
+	if (*endptr != '\0' || level > 9) {
+		error_code = 1;
+		if (quiet_flag != 1)
+			fprintf(stderr, "invalid debug level: %s\n",
+				val);
+	} else {
+		error_code = slurm_set_debug_level(level);
+	}
+
+	return error_code;
 }
 
 /* _usage - show the valid scontrol commands */
