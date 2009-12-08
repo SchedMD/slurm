@@ -1741,6 +1741,7 @@ static void *_agent(void *x)
 	static time_t fail_time = 0;
 	int sigarray[] = {SIGUSR1, 0};
 	int read_timeout = SLURMDBD_TIMEOUT * 1000;
+	/* DEF_TIMERS; */
 
 	/* Prepare to catch SIGUSR1 to interrupt pending
 	 * I/O and terminate in a timely fashion. */
@@ -1748,6 +1749,7 @@ static void *_agent(void *x)
 	xsignal_unblock(sigarray);
 
 	while (agent_shutdown == 0) {
+		/* START_TIMER; */
 		slurm_mutex_lock(&slurmdbd_lock);
 		if(halt_agent)
 			pthread_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
@@ -1815,7 +1817,6 @@ static void *_agent(void *x)
 			}
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
-
 		slurm_mutex_lock(&assoc_cache_mutex);
 		if(slurmdbd_fd >= 0 && running_cache)
 			pthread_cond_signal(&assoc_cache_cond);
@@ -1830,6 +1831,8 @@ static void *_agent(void *x)
 			fail_time = time(NULL);
 		}
 		slurm_mutex_unlock(&agent_lock);
+		/* END_TIMER; */
+		/* info("at the end with %s", TIME_STR); */
 	}
 
 	slurm_mutex_lock(&agent_lock);
