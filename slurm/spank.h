@@ -170,6 +170,7 @@ enum spank_err {
     ESPANK_NOEXIST     = 8, /* Id/pid doesn't exist on this node             */
     ESPANK_NOT_EXECD   = 9, /* Lookup by pid requested, but no tasks running */
     ESPANK_NOT_AVAIL   = 10,/* SPANK item not available from this callback   */
+    ESPANK_NOT_LOCAL   = 11,/* Function only valid in local/alloc context    */
 };
 
 typedef enum spank_err spank_err_t;
@@ -325,21 +326,48 @@ spank_err_t spank_setenv (spank_t spank, const char *var, const char *val,
  *  Unset environment variable "var" in the environment of current job or
  *   task in the spank handle.
  *
- *  Returns ESPANK_SUCCESS on sucess, o/w spank_err_t on failure:
+ *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
  *    ESPANK_BAD_ARG   = spank handle invalid or var is NULL.
- *    SPANK_NOT_REMOTE = not called from slurmd.
+ *    ESPANK_NOT_REMOTE = not called from slurmd.
  */
 spank_err_t spank_unsetenv (spank_t spank, const char *var);
 
-/* External functions available from SPANK plugins to modify the environment
- * which is exported to the SLURM Prolog and Epilog programs. These environment
- * variables are not otherwise visible to the job or SPANK functions. The
- * syntax of these functions is identical to the getenv, setenv, and unsetenv
- * functions. */
-extern char *spank_get_job_env(const char *name);
-extern int   spank_set_job_env(const char *name, const char *value, 
-			       int overwrite);
-extern int   spank_unset_job_env(const char *name);
+/*
+ *  Set an environment variable "name" to "value" in the "job control"
+ *   environment, which is an extra set of environment variables
+ *   included in the environment of the SLURM prolog and epilog
+ *   programs. Environment variables set via this function will
+ *   be prepended with SPANK_ to differentiate them from other env
+ *   vars, and to avoid security issues.
+ *
+ *  Returns ESPANK_SUCCESS on success, o/w/ spank_err_t on failure:
+ *     ESPANK_ENV_EXISTS  = var exists in control env and overwrite == 0.
+ *     ESPANK_NOT_LOCAL   = not called in local context
+ */
+spank_err_t spank_job_control_setenv (spank_t sp, const char *name,
+        const char *value, int overwrite);
+
+/*
+ *  Place a copy of environment variable "name" from the job control
+ *   environment into a buffer buf of size len.
+ *
+ *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
+ *     ESPANK_BAD_ARG     = invalid spank handle or len <= 0
+ *     ESPANK_ENV_NOEXIST = environment var does not exist in control env
+ *     ESPANK_NOSPACE     = buffer too small, truncation occurred.
+ *     ESPANK_NOT_LOCAL   = not called in local context
+ */
+spank_err_t spank_job_control_getenv (spank_t sp, const char *name,
+        char *buf, int len);
+
+/*
+ *  Unset environment variable "name" in the job control environment.
+ *
+ *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
+ *     ESPANK_BAD_ARG   = invalid spank handle or var is NULL
+ *     ESPANK_NOT_LOCAL   = not called in local context
+ */
+spank_err_t spank_job_control_unsetenv (spank_t sp, const char *name);
 
 /*
  *  SLURM logging functions which are exported to plugins.

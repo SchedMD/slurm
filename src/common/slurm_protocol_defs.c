@@ -2021,20 +2021,20 @@ static void _make_lower(char *change)
 	}
 }
 
-/* Validate SPANK specified job environment does not contain any invalid
- * names. Log failures using info() */
+/*
+ *  Sanitize spank_job_env by prepending "SPANK_" to all entries,
+ *   thus rendering them harmless in environment of scripts and
+ *   programs running with root privileges.
+ */
 extern bool valid_spank_job_env(char **spank_job_env,
 			        uint32_t spank_job_env_size, uid_t uid)
 {
 	int i;
 
 	for (i=0; i<spank_job_env_size; i++) {
-		if ((strncmp(spank_job_env[i], "LD_PRELOAD=", 11) == 0) ||
-		    (strncmp(spank_job_env[i], "PATH=",        5) == 0)) {
-			info("Invalid spank_job_env from uid %d: %s",
-			     (int) uid, spank_job_env[i]);
-			return false;
-		}
+		char *entry = spank_job_env[i];
+		spank_job_env[i] = xstrdup_printf ("SPANK_%s", entry);
+		xfree (entry);
 	}
 	return true;
 }
