@@ -234,6 +234,7 @@ function displayfile()
    "# JOB PRIORITY <br>" +
    "#PriorityType=priority/basic <br>" +
    "#PriorityDecayHalfLife= <br>" +
+   "#PriorityCalcPeriod= <br>" +
    "#PriorityFavorSmall= <br>" +
    "#PriorityMaxAge= <br>" +
    "#PriorityUsageResetPeriod= <br>" +

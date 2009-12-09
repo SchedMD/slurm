@@ -459,6 +459,25 @@ uint32_t slurm_get_priority_decay_hl(void)
 	return priority_hl;
 }
 
+/* slurm_get_priority_calc_period
+ * returns the seconds between priority decay calculation from slurmctld_conf
+ * RET uint32_t - calc_period in secs.
+ */
+uint32_t slurm_get_priority_calc_period(void)
+{
+	uint32_t calc_period = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		calc_period = conf->priority_calc_period;
+		slurm_conf_unlock();
+	}
+
+	return calc_period;
+}
+
 /* slurm_get_priority_favor_small
  * returns weither or not we are favoring small jobs from slurmctld_conf object
  * RET bool - true if favor small, false else.

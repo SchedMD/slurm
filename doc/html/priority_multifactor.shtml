@@ -223,10 +223,11 @@ Where:
 </DL>
 
 <P> In practice, the <i>PriorityDecayHalfLife</i> could be a matter of
-  seconds or days as appropriate for each site.  The measurement
-  period is nominally 5 minutes.  The decay factor, D, is assigned the
-  value that will achieve the half-life decay rate specified by
-  the <i>PriorityDecayHalfLife</i> parameter.</P>
+seconds or days as appropriate for each site.  The decay is
+recalculated every <i>PriorityCalcPeriod</i> minutes, or 5 minutes by
+default.  The decay factor, D, is assigned the value that will achieve
+the half-life decay rate specified by the <i>PriorityDecayHalfLife</i>
+parameter.</P>
 
 <P> The historical resources a machine has available could be similarly aggregated with the same decay factor:</P>
 
@@ -441,6 +442,9 @@ factor as it is currently configured.</P>
   PriorityUsageResetPeriod must be set to some interval.
   The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
   days-hr).  The default value is 7-0 (7 days).
+<DT> PriorityCalcPeriod
+<DD> The period of time in minutes in which the half-life decay will
+  be re-calculated.  The default value is 5 (minutes).
 <DT> PriorityUsageResetPeriod
 <DD> At this interval the usage of associations will be reset to 0.
   This is used if you want to enforce hard limits of time usage per
@@ -541,7 +545,7 @@ PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 12 June 2009</p>
+<p style="text-align:center;">Last modified 9 Dec 2009</p>
 
 <!--#include virtual="footer.txt"-->
 
