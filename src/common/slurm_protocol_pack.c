@@ -3466,6 +3466,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 		select_g_select_jobinfo_pack(job_desc_ptr->select_jobinfo,
 					     buffer);
 		select_g_select_jobinfo_free(job_desc_ptr->select_jobinfo);
+		job_desc_ptr->select_jobinfo = NULL;
 	}
 }
 
