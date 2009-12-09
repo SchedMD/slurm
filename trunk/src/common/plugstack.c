@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <libgen.h>
 #include <glob.h>
+#include <dlfcn.h>
 
 #include "src/common/plugin.h"
 #include "src/common/xmalloc.h"
@@ -1522,6 +1523,8 @@ const char * spank_strerror (spank_err_t err)
 		return "Lookup by PID requested, but no tasks running";
 	case ESPANK_NOT_AVAIL:
 		return "Item not available from this callback";
+	case ESPANK_NOT_LOCAL:
+		return "Valid only in local or allocator context";
 	}
 
 	return "Unknown";
@@ -1875,6 +1878,105 @@ spank_err_t spank_unsetenv (spank_t spank, const char *var)
 		return (ESPANK_BAD_ARG);
 
 	unsetenvp(((slurmd_job_t *) spank->job)->env, var);
+
+	return (ESPANK_SUCCESS);
+}
+
+
+/*
+ *  Dynamically loaded versions of spank_*_job_env
+ */
+const char *dyn_spank_get_job_env (const char *name)
+{
+	void *h = dlopen (NULL, 0);
+	char * (*fn)(const char *n);
+
+	fn = dlsym (h, "spank_get_job_env");
+	if (fn == NULL)
+		return NULL;
+
+	return ((*fn) (name));
+}
+
+int dyn_spank_set_job_env (const char *n, const char *v, int overwrite)
+{
+	void *h = dlopen (NULL, 0);
+	int (*fn)(const char *n, const char *v, int overwrite);
+
+	fn = dlsym (h, "spank_set_job_env");
+	if (fn == NULL)
+		return (-1);
+
+	return ((*fn) (n, v, overwrite));
+}
+
+extern int dyn_spank_unset_job_env (const char *n)
+{
+	void *h = dlopen (NULL, 0);
+	int (*fn)(const char *n);
+
+	fn = dlsym (h, "spank_unset_job_env");
+	if (fn == NULL)
+		return (-1);
+
+	return ((*fn) (n));
+}
+
+
+spank_err_t spank_job_control_getenv (spank_t spank, const char *var,
+			char *buf, int len)
+{
+	const char *val;
+	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+		return (ESPANK_BAD_ARG);
+
+	if ((var == NULL) || (buf == NULL) || (len <= 0))
+		return (ESPANK_BAD_ARG);
+
+	if (spank_remote (spank))
+		return (ESPANK_NOT_LOCAL);
+
+	val = dyn_spank_get_job_env (var);
+	if (val == NULL)
+		return (ESPANK_ENV_NOEXIST);
+
+	if (strlcpy (buf, val, len) >= len)
+		return (ESPANK_NOSPACE);
+
+	return (ESPANK_SUCCESS);
+}
+
+spank_err_t spank_job_control_setenv (spank_t spank, const char *var,
+			const char *val, int overwrite)
+{
+	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+		return (ESPANK_BAD_ARG);
+
+	if ((var == NULL) || (val == NULL))
+		return (ESPANK_BAD_ARG);
+
+	if (spank_remote (spank))
+		return (ESPANK_NOT_LOCAL);
+
+	if (dyn_spank_set_job_env (var, val, overwrite) < 0)
+		return (ESPANK_BAD_ARG);
+
+	return (ESPANK_SUCCESS);
+}
+
+spank_err_t spank_job_control_unsetenv (spank_t spank, const char *var)
+{
+	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+		return (ESPANK_BAD_ARG);
+
+	if (var == NULL)
+		return (ESPANK_BAD_ARG);
+
+	if (spank_remote (spank))
+		return (ESPANK_NOT_LOCAL);
+
+	if (dyn_spank_unset_job_env (var) < 0)
+		return (ESPANK_BAD_ARG);
 
 	return (ESPANK_SUCCESS);
 }

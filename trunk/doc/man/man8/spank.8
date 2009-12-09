@@ -172,20 +172,20 @@ and \fBunsetenv\fR(3) may be used in local context.
 Functions are also available from within the \fBSPANK\fR plugins to
 establish environment variables to be exported to the SLURM
 \fBPrologSlurmctld\fR, \fBProlog\fR, \fBEpilog\fR and \fBEpilogSlurmctld\fR
-programs. While designed for \fBSPANK\fR plugin use, hackers could
-insert arbitrary environment variables, so their use by the various
-prolog and epilog programs should avoid possible security compromises.
-SLURM does block the setting of LD_PRELOAD and PATH as a precausionary measure.
-These environment variables are not otherwise visible
-to the job or \fBSPANK\fR functions.
-These environment variable functons may only called from the local contact.
-The syntax of these functions is identical to the getenv,
-setenv, and unsetenv functions respectively:
+programs (the so-called \fBjob control\fR environment).
+The name of environment variables established by these calls will be prepended
+with the string \fISPANK_\fR in order to avoid any security implications
+of arbitrary environment variable control. (After all, the job control
+scripts do run as root or the SLURM user.).
+.LP
+These functions are available from \fBlocal\fR context only.
 .nf
-  char *\fBspank_get_job_env\fR(const char *name);
-  int   \fBspank_set_job_env\fR(const char *name, const char *value,
-			        int overwrite);
-  int   \fBspank_unset_job_env\fR(const char *name);
+
+  spank_err_t \fBspank_job_control_getenv\fR(spank_t spank, const char *var,
+		             char *buf, int len);
+  spank_err_t \fBspank_job_control_setenv\fR(spank_t spank, const char *var,
+		             const char *val, int overwrite);
+  spank_err_t \fBspank_job_control_unsetenv\fR(spank_t spank, const char *var);
 .fi
 .LP
 See \fBspank.h\fR for more information, and \fBEXAMPLES\fR below for an example
