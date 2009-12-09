@@ -378,6 +378,8 @@ struct job_record {
 	time_t ckpt_time;	        /* last time job was periodically
 					 * checkpointed */
 	char *comment;			/* arbitrary comment */
+	uint32_t cpu_cnt;		/* current count of cpus held
+					 * by the job */
 	uint16_t cr_enabled;            /* specify if if Consumable Resources
                                          * is enabled. Needed since CR deals
                                          * with a finer granularity in its
@@ -1022,6 +1024,15 @@ extern int job_step_signal(uint32_t job_id, uint32_t step_id,
  *	last_job_update - time of last job table update
  */
 extern void job_time_limit (void);
+
+/*
+ * job_update_cpu_cnt - when job is completing remove allocated cpus
+ *                      from count.
+ * IN/OUT job_ptr - job structure to be updated
+ * IN node_inx    - node bit that is finished with job.
+ * RET SLURM_SUCCES on success SLURM_ERROR on cpu_cnt underflow
+ */
+extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx);
 
 /*
  * check_job_step_time_limit - terminate jobsteps which have exceeded

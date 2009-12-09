@@ -113,7 +113,8 @@ default value of zero.
 .TP
 \fB%C\fR
 Number of CPUs (processors) requested by the job or allocated to
-it if already running.
+it if already running.  As a job is completing this number will
+reflect the current number of CPUs allocated.
 .TP
 \fB%d\fR
 Minimum size of temporary disk space (in MB) requested by the job.
@@ -124,7 +125,8 @@ required by a pending job. The actual number of nodes allocated to a pending
 job may exceed this number if the job specified a node range count (e.g.
 minimum and maximum node counts) or the the job specifies a processor
 count instead of a node count and the cluster contains nodes with varying
-processor counts.
+processor counts. As a job is completing this number will reflect the
+current number of nodes allocated.
 .TP
 \fB%e\fR
 Time at which the job ended or is expected to end (based upon its time limit)
@@ -193,8 +195,7 @@ requested by the job
 \fB%N\fR
 List of nodes allocated to the job or job step. In the case of a
 \fICOMPLETING\fR job, the list of nodes will comprise only those
-nodes that have not yet been returned to service. This may result
-in the node count being greater than the number of listed nodes.
+nodes that have not yet been returned to service.
 .TP
 \fB%O\fR
 Are contiguous nodes requested by the job.

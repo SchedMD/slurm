@@ -2138,6 +2138,9 @@ void make_node_idle(struct node_record *node_ptr,
 	    (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
 		last_job_update = now;
 		bit_clear(job_ptr->node_bitmap, inx);
+
+		job_update_cpu_cnt(job_ptr, inx);
+
 		if (job_ptr->node_cnt) {
 			if ((--job_ptr->node_cnt) == 0) {
 				time_t delay;
