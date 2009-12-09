@@ -808,7 +808,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			geo[j] = (uint16_t) atoi(token);
 			if (geo[j] <= 0) {
 				//error("invalid --geometry argument");
-				xfree(original_ptr);
 				goto return_error;
 				break;
 			}
@@ -818,7 +817,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		}
 		if (token != NULL) {
 			//error("too many dimensions in Geometry");
-			xfree(original_ptr);
 			goto return_error;
 		}
 
@@ -828,7 +826,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
 					    SELECT_JOBDATA_GEOMETRY,
 					    (void *) &geo);
-
 		break;
 	case SORTID_ROTATE:
 		type = "rotate";
@@ -915,13 +912,13 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	}
 
 #ifdef HAVE_BG
-	xfree(geometry_tmp);
+	xfree(original_ptr);
 #endif
 	return type;
 
 return_error:
 #ifdef HAVE_BG
-	xfree(geometry_tmp);
+	xfree(original_ptr);
 #endif
 	errno = 1;
 	return type;
@@ -2767,7 +2764,6 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		xfree(temp);
 		goto no_input;
 	}
-
 
 	if(old_text && !strcmp(old_text, new_text)) {
 		temp = g_strdup_printf("No change in value.");
