@@ -2357,7 +2357,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 			snprintf(tmp_char, sizeof(tmp_char), "%s[%s]",
 					 job_ptr->nodes, ionodes);
 			xfree(ionodes);
-			sview_job_info_ptr->nodes = xstrdup(tmp_char);
+			sview_job_info_ptr->job_ptr->nodes = xstrdup(tmp_char);
 		}
 #endif
 		if(IS_JOB_COMPLETING(job_ptr))
@@ -2387,7 +2387,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 				 */
 				xfree(step_ptr->nodes);
 				step_ptr->nodes =
-					xstrdup(sview_job_info_ptr->nodes);
+					xstrdup(sview_job_info_ptr->
+						job_ptr->nodes);
 				step_ptr->num_tasks =
 					sview_job_info_ptr->node_cnt;
 				xfree(step_ptr->node_inx);
