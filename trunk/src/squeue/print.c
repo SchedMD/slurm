@@ -56,7 +56,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-static int	_adjust_completing (job_info_t *j, node_info_msg_t **ni);
 static int	_filter_job(job_info_t * job);
 static int	_filter_step(job_step_info_t * step);
 static int	_get_node_cnt(job_info_t * job);
@@ -95,7 +94,6 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 
 	/* Filter out the jobs of interest */
 	for (; i < size; i++) {
-		_adjust_completing(&jobs[i], &ni);
 		if (_filter_job(&jobs[i]))
 			continue;
 		list_append(l, (void *) &jobs[i]);
@@ -655,25 +653,16 @@ int _print_job_node_inx(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 {
-	char tmp_char[8];
+	char tmp_char[18];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		if (job->job_resrcs &&
-		    (job->job_resrcs->cpu_array_cnt > 0) &&
-		    (job->job_resrcs->cpu_array_value) &&
-		    (job->job_resrcs->cpu_array_reps)) {
-			uint32_t cnt = 0, i;
-			for (i=0; i<job->job_resrcs->cpu_array_cnt; i++) {
-				cnt += job->job_resrcs->cpu_array_value[i] *
-				       job->job_resrcs->cpu_array_reps[i];
-			}
-			convert_num_unit((float)cnt, tmp_char,
-					 sizeof(tmp_char), UNIT_NONE);
-		} else {
-			convert_num_unit((float)job->num_procs, tmp_char,
-					 sizeof(tmp_char), UNIT_NONE);
-		}
+#ifdef HAVE_BG
+		convert_num_unit((float)job->num_procs, tmp_char,
+				 sizeof(tmp_char), UNIT_NONE);
+#else
+		snprintf(tmp_char, sizeof(tmp_char), "%u", job->num_procs);
+#endif
 		_print_str(tmp_char, width, right, true);
 	}
 	if (suffix)
@@ -1452,53 +1441,4 @@ static int _filter_step(job_step_info_t * step)
 	}
 
 	return 0;
-}
-
-static int _adjust_completing (job_info_t *job_ptr, node_info_msg_t **ni)
-{
-	hostlist_t hl = NULL;
-	int i, j;
-	char buf[8192];
-
-	if (!(job_ptr->job_state & JOB_COMPLETING))
-		return (0);
-
-	/* NOTE: We want to load all nodes (show_all flag set)
-	 * so that node index values from the job records are
-	 * valid for cross-referencing */
-	if ((*ni == NULL) && (slurm_load_node (0, ni, 1) < 0)) {
-		error ("Unable the load node information: %m");
-		return (0);
-	}
-
-	hl = hostlist_create ("");
-	for (i=0; ; i+=2) {
-		if (job_ptr->node_inx[i] == -1)
-			break;
-		if (i >= (*ni)->record_count) {
-			error ("Invalid node index for job %u",
-					job_ptr->job_id);
-			break;
-		}
-		for (j=job_ptr->node_inx[i]; j<=job_ptr->node_inx[i+1]; j++) {
-			if (j >= (*ni)->record_count) {
-				error ("Invalid node index for job %u",
-						job_ptr->job_id);
-				break;
-			}
-			hostlist_push(hl, (*ni)->node_array[j].name);
-		}
-	}
-
-	hostlist_uniq(hl);
-	hostlist_ranged_string (hl, 8192, buf);
-	hostlist_destroy(hl);
-	/* if we decrement the nodelist why not the num_nodes? this
-	 * code will set the number to the total number of nodes in
-	 * the list */
-	/* job_ptr->num_nodes = MAX(job_ptr->num_nodes, */
-	/* 			_nodes_in_list(job_ptr->nodes)); */
-	xfree (job_ptr->nodes);
-	job_ptr->nodes = xstrdup (buf);
-	return (0);
 }

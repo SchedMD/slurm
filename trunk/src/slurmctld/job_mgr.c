@@ -94,7 +94,7 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION      "VER008" /*already changed for slurm2.1 */
+#define JOB_STATE_VERSION      "VER009" /*already changed for slurm2.1 */
 
 #define JOB_CKPT_VERSION      "JOB_CKPT_001"
 
@@ -113,7 +113,8 @@ static bool     wiki_sched_test = false;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
-static int  _checkpoint_job_record (struct job_record *job_ptr, char *image_dir);
+static int  _checkpoint_job_record (struct job_record *job_ptr,
+				    char *image_dir);
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				   uint32_t job_id);
 static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
@@ -689,6 +690,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->num_procs, buffer);
 	pack32(dump_job_ptr->total_procs, buffer);
+	pack32(dump_job_ptr->cpu_cnt, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
 	pack32(dump_job_ptr->db_index, buffer);
 	pack32(dump_job_ptr->assoc_id, buffer);
@@ -773,7 +775,8 @@ static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	uint32_t exit_code, num_procs, assoc_id, db_index, name_len;
-	uint32_t next_step_id, total_procs, resv_id, spank_job_env_size = 0;
+	uint32_t next_step_id, total_procs, cpu_cnt,
+		resv_id, spank_job_env_size = 0;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t now = time(NULL);
 	uint16_t job_state, details, batch_flag, step_flag;
@@ -805,6 +808,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&alloc_sid, buffer);
 	safe_unpack32(&num_procs, buffer);
 	safe_unpack32(&total_procs, buffer);
+	safe_unpack32(&cpu_cnt, buffer);
 	safe_unpack32(&exit_code, buffer);
 	safe_unpack32(&db_index, buffer);
 	safe_unpack32(&assoc_id, buffer);
@@ -1003,6 +1007,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->time_last_active = now;
 	job_ptr->time_limit   = time_limit;
 	job_ptr->total_procs  = total_procs;
+	job_ptr->cpu_cnt      = cpu_cnt;
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->user_id      = user_id;
 	job_ptr->warn_signal  = warn_signal;
@@ -1485,6 +1490,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 		if (IS_JOB_COMPLETING(job_ptr)) {
 			job_count++;
 			bit_clear(job_ptr->node_bitmap, bit_position);
+			job_update_cpu_cnt(job_ptr, bit_position);
 			if (job_ptr->node_cnt)
 				(job_ptr->node_cnt)--;
 			else
@@ -3819,6 +3825,47 @@ void job_time_limit(void)
 	fini_job_resv_check();
 }
 
+extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
+{
+	uint16_t cpu_cnt=0, i=0;
+	int curr_node_inx;
+
+	xassert(job_ptr);
+	if(!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
+		error("job_update_cpu_cnt: "
+		      "no job_resrcs or node_bitmap for job %u",
+		      job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+	/* Figure out what the first bit is in the job to get the
+	   correct offset. unlike the job_ptr->node_bitmap which gets
+	   cleared, job_ptr->job_resrcs->node_bitmap never gets cleared.
+	*/
+	curr_node_inx = bit_ffs(job_ptr->job_resrcs->node_bitmap);
+	if(curr_node_inx != -1) {
+		for (i=0; i<job_ptr->job_resrcs->cpu_array_cnt; i++) {
+			cpu_cnt = job_ptr->job_resrcs->cpu_array_value[i];
+			if(curr_node_inx >= node_inx)
+				break;
+			curr_node_inx += job_ptr->job_resrcs->cpu_array_reps[i];
+		}
+		job_ptr->cpu_cnt -= cpu_cnt;
+		if((int)job_ptr->cpu_cnt < 0) {
+			error("job_update_cpu_cnt: "
+			      "cpu_cnt underflow on job_id %u",
+			      job_ptr->job_id);
+			job_ptr->cpu_cnt = 0;
+			return SLURM_ERROR;
+		}
+	} else {
+		error("job_update_cpu_cnt: "
+		      "no nodes set yet in job %u", job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+
 /* Terminate a job that has exhausted its time limit */
 static void _job_timed_out(struct job_record *job_ptr)
 {
@@ -4178,6 +4225,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 {
 	struct job_details *detail_ptr;
 	time_t begin_time = 0;
+	char *nodelist = NULL;
 
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
@@ -4218,7 +4266,16 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
 	pack32(dump_job_ptr->priority, buffer);
 
-	packstr(dump_job_ptr->nodes, buffer);
+	/* Only send the allocated nodelist since we are only sending
+	 * the number of cpus and nodes that are currently allocated. */
+	if(!IS_JOB_COMPLETING(dump_job_ptr))
+		packstr(dump_job_ptr->nodes, buffer);
+	else {
+		nodelist = bitmap2node_name(dump_job_ptr->node_bitmap);
+		packstr(nodelist, buffer);
+		xfree(nodelist);
+	}
+
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
@@ -4249,7 +4306,9 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	packstr(dump_job_ptr->wckey, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
-	if (dump_job_ptr->total_procs)
+	if (IS_JOB_COMPLETING(dump_job_ptr))
+		pack32(dump_job_ptr->cpu_cnt, buffer);
+	else if (dump_job_ptr->total_procs)
 		pack32(dump_job_ptr->total_procs, buffer);
 	else
 		pack32(dump_job_ptr->num_procs, buffer);

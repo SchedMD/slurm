@@ -1029,44 +1029,6 @@ static int _get_node_cnt(job_info_t * job)
 	return node_cnt;
 }
 
-static int _adjust_completing(job_info_t *job_ptr)
-{
-	static node_info_msg_t *node_info_ptr = NULL;
-	hostlist_t hl = NULL;
-	int i, j;
-	char buf[8192];
-
-	if(get_new_info_node(&node_info_ptr, force_refresh) == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	hl = hostlist_create ("");
-	for (i=0; ; i+=2) {
-		if (job_ptr->node_inx[i] == -1)
-			break;
-		if (i >= node_info_ptr->record_count) {
-			error ("Invalid node index for job %u",
-			       job_ptr->job_id);
-			break;
-		}
-		for (j=job_ptr->node_inx[i]; j<=job_ptr->node_inx[i+1]; j++) {
-			if (j >= node_info_ptr->record_count) {
-				error ("Invalid node index for job %u",
-				       job_ptr->job_id);
-				break;
-			}
-			hostlist_push(hl, node_info_ptr->node_array[j].name);
-		}
-	}
-	hostlist_uniq(hl);
-	hostlist_ranged_string(hl, sizeof(buf), buf);
-	hostlist_destroy(hl);
-
-	xfree (job_ptr->nodes);
-	job_ptr->nodes = xstrdup (buf);
-
-	return SLURM_SUCCESS;
-}
-
 /* this needs to be freed by xfree() */
 static void _convert_char_to_job_and_step(const char *data,
 					  int *jobid, int *stepid)
@@ -2357,9 +2319,6 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 			sview_job_info_ptr->job_ptr->nodes = xstrdup(tmp_char);
 		}
 #endif
-		if(IS_JOB_COMPLETING(job_ptr))
-			_adjust_completing(job_ptr);
-
 		if(!sview_job_info_ptr->node_cnt)
 			sview_job_info_ptr->node_cnt = _get_node_cnt(job_ptr);
 
