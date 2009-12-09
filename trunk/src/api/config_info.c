@@ -622,6 +622,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		key_pair->value = xstrdup(tmp_str);
 		list_append(ret_list, key_pair);
 
+		secs2time_str((time_t) slurm_ctl_conf_ptr->priority_calc_period,
+			      tmp_str, sizeof(tmp_str));
+		key_pair = xmalloc(sizeof(config_key_pair_t));
+		key_pair->name = xstrdup("PriorityCalcPeriod");
+		key_pair->value = xstrdup(tmp_str);
+		list_append(ret_list, key_pair);
+
 		snprintf(tmp_str, sizeof(tmp_str), "%u",
 			 slurm_ctl_conf_ptr->priority_favor_small);
 		key_pair = xmalloc(sizeof(config_key_pair_t));

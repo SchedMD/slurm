@@ -200,6 +200,12 @@ char *slurm_get_plugin_dir(void);
  */
 uint32_t slurm_get_priority_decay_hl(void);
 
+/* slurm_get_priority_calc_period
+ * returns the seconds between priority decay calculation from slurmctld_conf
+ * RET uint32_t - calc_period in secs.
+ */
+uint32_t slurm_get_priority_calc_period(void);
+
 /* slurm_get_priority_favor_small
  * returns weither or not we are favoring small jobs from slurmctld_conf object
  * RET bool - true if favor small, false else.

@@ -99,6 +99,7 @@ extern char *default_plugstack;
 #endif
 #define DEFAULT_PREEMPT_TYPE        "preempt/none"
 #define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
+#define DEFAULT_PRIORITY_CALC_PERIOD 300 /* in seconds */
 #define DEFAULT_PRIORITY_TYPE       "priority/basic"
 #define DEFAULT_PROPAGATE_PRIO_PROCESS 0
 #define DEFAULT_RETURN_TO_SERVICE   0

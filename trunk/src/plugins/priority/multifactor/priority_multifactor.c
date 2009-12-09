@@ -63,7 +63,6 @@
 
 #include "src/slurmctld/locks.h"
 
-#define DECAY_INTERVAL	300 /* sleep for this many seconds */
 #define SECS_PER_DAY	(24 * 60 * 60)
 #define SECS_PER_WEEK	(7 * 24 * 60 * 60)
 
@@ -625,6 +624,7 @@ static void *_decay_thread(void *no_data)
 	struct tm tm;
 	time_t last_ran = 0;
 	time_t last_reset = 0, next_reset = 0;
+	uint32_t calc_period = slurm_get_priority_calc_period();
 	double decay_hl = (double)slurm_get_priority_decay_hl();
 	double decay_factor = 1;
 	uint16_t reset_period = slurm_get_priority_reset_period();
@@ -666,6 +666,7 @@ static void *_decay_thread(void *no_data)
 			   flush the used time at a certain time
 			   set by PriorityUsageResetPeriod in the slurm.conf
 			*/
+			calc_period = slurm_get_priority_calc_period();
 			reset_period = slurm_get_priority_reset_period();
 			next_reset = 0;
 			decay_hl = (double)slurm_get_priority_decay_hl();
@@ -835,8 +836,8 @@ static void *_decay_thread(void *no_data)
 		running_decay = 0;
 		slurm_mutex_unlock(&decay_lock);
 
-		/* sleep for DECAY_INTERVAL secs */
-		tm.tm_sec += DECAY_INTERVAL;
+		/* sleep for calc_period secs */
+		tm.tm_sec += calc_period;
 		tm.tm_isdst = -1;
 		next_time = mktime(&tm);
 		sleep((next_time-start_time));

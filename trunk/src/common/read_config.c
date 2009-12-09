@@ -214,6 +214,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PreemptMode", S_P_STRING},
 	{"PreemptType", S_P_STRING},
 	{"PriorityDecayHalfLife", S_P_STRING},
+	{"PriorityCalcPeriod", S_P_STRING},
 	{"PriorityFavorSmall", S_P_BOOLEAN},
 	{"PriorityMaxAge", S_P_STRING},
 	{"PriorityUsageResetPeriod", S_P_STRING},
@@ -2268,6 +2269,17 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 	} else
 		conf->priority_decay_hl = DEFAULT_PRIORITY_DECAY;
+
+	if (s_p_get_string(&temp_str, "PriorityCalcPeriod", hashtbl)) {
+		int calc_period = time_str2mins(temp_str);
+		if (calc_period < 1) {
+			fatal("Bad value \"%s\" for PriorityCalcPeriod",
+			      temp_str);
+		}
+		conf->priority_calc_period = calc_period * 60;
+		xfree(temp_str);
+	} else
+		conf->priority_calc_period = DEFAULT_PRIORITY_CALC_PERIOD;
 
 	if (s_p_get_boolean(&truth, "PriorityFavorSmall", hashtbl) && truth)
 		conf->priority_favor_small = 1;

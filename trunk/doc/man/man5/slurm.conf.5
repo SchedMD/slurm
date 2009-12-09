@@ -803,9 +803,16 @@ how over\- or under\-serviced an association is (user, bank account and
 cluster) in determining job priority.  If set to 0 no decay will be applied.
 This is helpful if you want to enforce hard time limits per association.  If
 set to 0 \fBPriorityUsageResetPeriod\fR must be set to some interval.
-Applicable only if \fBPriorityType=priority/multifactor\fR.
+Applicable only if PriorityType=priority/multifactor.
 The unit is a time string (i.e. min, hr:min:00, days\-hr:min:00,
 or days\-hr).  The default value is 7\-0 (7 days).
+
+.TP
+\fBPriorityCalcPeriod\fR
+The period of time in minutes in which the half-life decay will be
+re-calculated.
+Applicable only if PriorityType=priority/multifactor.
+The default value is 5 (minutes).
 
 .TP
 \fBPriorityFavorSmall\fR
@@ -2041,7 +2048,7 @@ exist when the SLURM daemons are started. These nodes can be made available
 for use simply by updating the node state using the scontrol command rather
 than restarting the slurmctld daemon. After these nodes are made available,
 change their \fRState\fR in the slurm.conf file. Until these nodes are made
-available, they will not be seen using any SLURM commands or APIs nor will
+available, they will not be seen using any SLURM commands or Is nor will
 any attempt be made to contact them.
 "UNKNOWN" indicates the node's state is undefined (BUSY or IDLE),
 but will be established when the \fBslurmd\fR daemon on that node
