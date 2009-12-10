@@ -44,6 +44,7 @@
 #include "src/sreport/resv_reports.h"
 #include "src/sreport/user_reports.h"
 #include "src/common/xsignal.h"
+#include "src/common/proc_args.h"
 
 #define OPT_LONG_HIDE   0x102
 #define BUFFER_SIZE 4096
@@ -432,7 +433,7 @@ _get_command (int *argc, char **argv)
 
 static void _print_version(void)
 {
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
+	print_slurm_version ();
 	if (quiet_flag == -1) {
 		long version = slurm_api_version();
 		printf("slurm_api_version: %ld, %ld.%ld.%ld\n", version,

@@ -55,6 +55,8 @@
 #include <unistd.h>
 
 #include "src/common/xstring.h"
+#include "src/common/proc_args.h"
+
 #include "src/sinfo/print.h"
 #include "src/sinfo/sinfo.h"
 
@@ -75,7 +77,6 @@ static const char * _node_state_list (void);
 static void  _parse_token( char *token, char *field, int *field_size,
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
-static void  _print_version( void );
 static void  _usage( void );
 
 /*
@@ -212,7 +213,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.verbose++;
 			break;
 		case (int) 'V':
-			_print_version();
+			print_slurm_version ();
 			exit(0);
 		case (int) OPT_LONG_HELP:
 			_help();
@@ -749,12 +750,6 @@ void _print_options( void )
 	printf("weight_flag     = %s\n", params.match_flags.weight_flag ?
 			"true" : "false");
 	printf("-----------------------------\n\n");
-}
-
-
-static void _print_version(void)
-{
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 static void _usage( void )

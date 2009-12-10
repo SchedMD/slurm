@@ -1786,7 +1786,7 @@ _rpc_daemon_status(slurm_msg_t *msg)
 	resp->pid                = conf->pid;
 	resp->slurmd_debug       = conf->debug_level;
 	resp->slurmd_logfile     = xstrdup(conf->logfile);
-	resp->version            = xstrdup(SLURM_VERSION);
+	resp->version            = xstrdup(SLURM_VERSION_STRING);
 
 	slurm_msg_t_copy(&resp_msg, msg);
 	resp_msg.msg_type = RESPONSE_SLURMD_STATUS;

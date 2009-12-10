@@ -8,32 +8,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -83,6 +83,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/node_conf.h"
+#include "src/common/proc_args.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
@@ -159,7 +160,7 @@ static void      _usage(void);
 static void      _wait_for_all_threads(void);
 
 
-int 
+int
 main (int argc, char *argv[])
 {
 	int i, pidfd;
@@ -169,7 +170,7 @@ main (int argc, char *argv[])
 	uint32_t curr_uid = 0;
 
 	/*
-	 * Make sure we have no extra open files which 
+	 * Make sure we have no extra open files which
 	 * would be propagated to spawned tasks.
 	 */
 	for (i=3; i<256; i++)
@@ -209,9 +210,9 @@ main (int argc, char *argv[])
 		 * called right after so it isn't that big of a deal.
 		 */
 		if ((pw=getpwuid(slurmd_uid)))
-			slurmd_user = xstrdup(pw->pw_name);	
+			slurmd_user = xstrdup(pw->pw_name);
 		if ((pw=getpwuid(curr_uid)))
-			curr_user = pw->pw_name;	
+			curr_user = pw->pw_name;
 
 		fatal("You are running slurmd as something "
 		      "other than user %s(%d).  If you want to "
@@ -229,7 +230,7 @@ main (int argc, char *argv[])
 	xsignal(SIGHUP,  &_hup_handler );
 	xsignal_block(blocked_signals);
 
-	/* 
+	/*
 	 * Run slurmd_init() here in order to report early errors
 	 * (with public keyfile)
 	 */
@@ -241,16 +242,16 @@ main (int argc, char *argv[])
 
 	debug3("slurmd initialization successful");
 
-	/* 
+	/*
 	 * Become a daemon if desired.
 	 * Do not chdir("/") or close all fd's
 	 */
 	if (conf->daemonize) {
-		if (daemon(1,1) == -1) 
+		if (daemon(1,1) == -1)
 			error("Couldn't daemonize slurmd: %m");
 	}
 	test_core_limit();
-	info("slurmd version %s started", SLURM_VERSION);
+	info("slurmd version %s started", SLURM_VERSION_STRING);
 	debug3("finished daemonize");
 
 	if ((oom_value = getenv("SLURMD_OOM_ADJ"))) {
@@ -275,12 +276,12 @@ main (int argc, char *argv[])
 	}
 
 
-	/* 
+	/*
 	 * Restore any saved revoked credential information
 	 */
 	if (!conf->cleanstart && (_restore_cred_state(conf->vctx) < 0))
 		return SLURM_FAILURE;
-	
+
 	if (interconnect_node_init() < 0)
 		fatal("Unable to initialize interconnect.");
 	if (conf->cleanstart && switch_g_clear_node_state())
@@ -348,12 +349,12 @@ _spawn_registration_engine(void)
 			fatal("msg_engine: pthread_create: %m");
 		usleep(10);	/* sleep and again */
 	}
-	
+
 	return;
 }
 
-/* Spawn a thread to make sure we send at least one registration message to 
- * slurmctld. If slurmctld restarts, it will request another registration 
+/* Spawn a thread to make sure we send at least one registration message to
+ * slurmctld. If slurmctld restarts, it will request another registration
  * message. */
 static void *
 _registration_engine(void *arg)
@@ -362,7 +363,7 @@ _registration_engine(void *arg)
 
 	while (!_shutdown) {
 		if ((sent_reg_time == (time_t) 0) &&
-        	    (send_registration_msg(SLURM_SUCCESS, true) != 
+		    (send_registration_msg(SLURM_SUCCESS, true) !=
 		     SLURM_SUCCESS)) {
 			debug("Unable to register with slurm controller, "
 			      "retrying");
@@ -426,7 +427,7 @@ _increment_thd_count(void)
 	slurm_mutex_lock(&active_mutex);
 	while (active_threads >= MAX_THREADS) {
 		if (!logged) {
-			info("active_threads == MAX_THREADS(%d)", 
+			info("active_threads == MAX_THREADS(%d)",
 			     MAX_THREADS);
 			logged = true;
 		}
@@ -479,14 +480,14 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 			error("running service_connection without starting "
 			      "a new thread slurmd will be "
 			      "unresponsive until done");
-			
+
 			_service_connection((void *) arg);
 			info("slurmd should be responsive now");
 			break;
 		}
 		usleep(10);	/* sleep and again */
 	}
-	
+
 	return;
 }
 
@@ -496,7 +497,7 @@ _service_connection(void *arg)
 	conn_t *con = (conn_t *) arg;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 	int rc = SLURM_SUCCESS;
-	
+
 	debug3("in the service_connection");
 	slurm_msg_t_init(msg);
 	if((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg, 0))
@@ -510,7 +511,7 @@ _service_connection(void *arg)
 	}
 	debug2("got this type of message %d", msg->msg_type);
 	slurmd_req(msg);
-	
+
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
 		error ("close(%d): %m", con->fd);
@@ -528,12 +529,12 @@ send_registration_msg(uint32_t status, bool startup)
 	int ret_val = SLURM_SUCCESS;
 	slurm_msg_t req;
 	slurm_msg_t resp;
-	slurm_node_registration_status_msg_t *msg = 
+	slurm_node_registration_status_msg_t *msg =
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
-	
+
 	slurm_msg_t_init(&req);
 	slurm_msg_t_init(&resp);
-	
+
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
 	msg->status  = status;
@@ -634,7 +635,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		if (stepd->stepid == NO_VAL)
 			debug("found apparently running job %u", stepd->jobid);
 		else
-			debug("found apparently running step %u.%u", 
+			debug("found apparently running step %u.%u",
 			      stepd->jobid, stepd->stepid);
 		msg->job_id[n]  = stepd->jobid;
 		msg->step_id[n] = stepd->stepid;
@@ -678,11 +679,11 @@ _massage_pathname(char **path)
 static void
 _read_config(void)
 {
-        char *path_pubkey = NULL;
+	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
 	slurm_conf_reinit(conf->conffile);
 	cf = slurm_conf_lock();
-	
+
 	slurm_mutex_lock(&conf->config_mutex);
 
 	if (conf->conffile == NULL)
@@ -706,11 +707,11 @@ _read_config(void)
 	 * valid aliases */
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_aliased_nodename();
-	
-	if (conf->node_name == NULL) 
+
+	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_nodename("localhost");
 
-	if (conf->node_name == NULL) 
+	if (conf->node_name == NULL)
 		fatal("Unable to determine this slurmd's NodeName");
 
 	_massage_pathname(&conf->logfile);
@@ -728,9 +729,9 @@ _read_config(void)
 	/* store hardware properties in slurmd_config */
 	xfree(conf->block_map);
 	xfree(conf->block_map_inv);
-	
+
 	conf->block_map_size = 0;
-	
+
 	_update_logging();
 	get_procs(&conf->actual_cpus);
 	get_cpuinfo(conf->actual_cpus,
@@ -740,7 +741,7 @@ _read_config(void)
 		    &conf->block_map_size,
 		    &conf->block_map, &conf->block_map_inv);
 
-	if(cf->fast_schedule && 
+	if(cf->fast_schedule &&
 	   ((conf->conf_cpus != conf->actual_cpus)    ||
 	    (conf->sockets   != conf->actual_sockets) ||
 	    (conf->cores     != conf->actual_cores)   ||
@@ -773,7 +774,7 @@ _read_config(void)
 	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
 	_free_and_set(&conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(cf->tmp_fs));
-	_free_and_set(&conf->health_check_program, 
+	_free_and_set(&conf->health_check_program,
 		      xstrdup(cf->health_check_program));
 	_free_and_set(&conf->spooldir, xstrdup(cf->slurmd_spooldir));
 	_massage_pathname(&conf->spooldir);
@@ -782,14 +783,14 @@ _read_config(void)
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
-	
+
 	conf->propagate_prio = cf->propagate_prio_process;
 	conf->job_acct_gather_freq = cf->job_acct_gather_freq;
 
 	if ( (conf->node_name == NULL) ||
 	     (conf->node_name[0] == '\0') )
 		fatal("Node name lookup failure");
- 
+
 	if (cf->control_addr == NULL)
 		fatal("Unable to establish controller machine");
 	if (cf->slurmctld_port == 0)
@@ -806,10 +807,10 @@ static void
 _reconfigure(void)
 {
 	slurm_ctl_conf_t *cf;
-	
+
 	_reconfig = 0;
 	_read_config();
-	
+
 	/*
 	 * Rebuild topology information and refresh slurmd topo infos
 	 */
@@ -873,7 +874,7 @@ _print_conf(void)
 	str = xmalloc(conf->block_map_size*5);
 	str[0] = '\0';
 	for (i = 0; i < conf->block_map_size; i++) {
-		char id[10];	       
+		char id[10];
 		sprintf(id, "%u,", conf->block_map[i]);
 		strcat(str, id);
 	}
@@ -881,7 +882,7 @@ _print_conf(void)
 	debug3("Block Map   = %s", str);
 	str[0] = '\0';
 	for (i = 0; i < conf->block_map_size; i++) {
-		char id[10];	       
+		char id[10];
 		sprintf(id, "%u,", conf->block_map_inv[i]);
 		strcat(str, id);
 	}
@@ -992,7 +993,7 @@ _process_cmdline(int ac, char **av)
 		case 'd':
 			conf->stepd_loc = xstrdup(optarg);
 			break;
-		case 'D': 
+		case 'D':
 			conf->daemonize = 0;
 			break;
 		case 'f':
@@ -1015,7 +1016,7 @@ _process_cmdline(int ac, char **av)
 			conf->debug_level++;
 			break;
 		case 'V':
-			printf("%s %s\n", PACKAGE, SLURM_VERSION);
+			print_slurm_version();
 			exit(0);
 			break;
 		default:
@@ -1095,9 +1096,9 @@ _slurmd_init(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 
-	/* 
+	/*
 	 * Update location of log messages (syslog, stderr, logfile, etc.),
-	 * print current configuration (if in debug mode), and 
+	 * print current configuration (if in debug mode), and
 	 * load appropriate plugin(s).
 	 */
 	/* _update_logging(); */
@@ -1127,7 +1128,7 @@ _slurmd_init(void)
 	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
 		return SLURM_FAILURE;
 
-	/* 
+	/*
 	 * Create slurmd spool directory if necessary.
 	 */
 	if (_set_slurmd_spooldir() < 0) {
@@ -1136,7 +1137,7 @@ _slurmd_init(void)
 	}
 
 	if (conf->cleanstart) {
-		/* 
+		/*
 		 * Need to kill any running slurmd's here
 		 */
 		_kill_old_slurmd();
@@ -1175,7 +1176,7 @@ _slurmd_init(void)
 			slurm_stepd_path);
 	}
 	if (!S_ISREG(stat_buf.st_mode)) {
-		fatal("slurmstepd not a file at %s", 
+		fatal("slurmstepd not a file at %s",
 			slurm_stepd_path);
 	}
 
@@ -1198,7 +1199,7 @@ _restore_cred_state(slurm_cred_ctx_t ctx)
 	file_name = xstrdup(conf->spooldir);
 	xstrcat(file_name, "/cred_state");
 	cred_fd = open(file_name, O_RDONLY);
-	if (cred_fd < 0) 
+	if (cred_fd < 0)
 		goto cleanup;
 
 	data_allocated = 1024;
@@ -1237,7 +1238,7 @@ _slurmd_fini(void)
 {
 	save_cred_state(conf->vctx);
 	switch_fini();
-	slurmd_task_fini(); 
+	slurmd_task_fini();
 	slurm_conf_destroy();
 	slurm_proctrack_fini();
 	slurm_auth_fini();
@@ -1277,7 +1278,7 @@ int save_cred_state(slurm_cred_ctx_t ctx)
 	}
 	buffer = init_buf(1024);
 	slurm_cred_ctx_pack(ctx, buffer);
-	if (write(cred_fd, get_buf_data(buffer), 
+	if (write(cred_fd, get_buf_data(buffer),
 		  get_buf_offset(buffer)) != get_buf_offset(buffer)) {
 		error("write %s error %m", new_file);
 		(void) unlink(new_file);
@@ -1309,14 +1310,14 @@ cleanup:
 static void
 _term_handler(int signum)
 {
-	if (signum == SIGTERM || signum == SIGINT) { 
+	if (signum == SIGTERM || signum == SIGINT) {
 		_shutdown = 1;
 		if (msg_pthread && (pthread_self() != msg_pthread))
 			pthread_kill(msg_pthread, SIGTERM);
 	}
 }
 
-static void 
+static void
 _hup_handler(int signum)
 {
 	if (signum == SIGHUP) {
@@ -1325,7 +1326,7 @@ _hup_handler(int signum)
 }
 
 
-static void 
+static void
 _usage()
 {
 	fprintf(stderr, "\
@@ -1342,8 +1343,8 @@ Usage: %s [OPTIONS]\n\
 	return;
 }
 
-/* 
- * create spool directory as needed and "cd" to it 
+/*
+ * create spool directory as needed and "cd" to it
  */
 static int
 _set_slurmd_spooldir(void)
@@ -1357,7 +1358,7 @@ _set_slurmd_spooldir(void)
 		}
 	}
 
-	/* 
+	/*
 	 * Ensure spool directory permissions are correct.
 	 */
 	if (chmod(conf->spooldir, 0755) < 0) {
@@ -1368,12 +1369,12 @@ _set_slurmd_spooldir(void)
 	return SLURM_SUCCESS;
 }
 
-/* Kill the currently running slurmd 
+/* Kill the currently running slurmd
  *
  * Returns file descriptor for the existing pidfile so that the
  * current slurmd can wait on termination of the old.
  */
-static void 
+static void
 _kill_old_slurmd(void)
 {
 	int fd;
@@ -1382,28 +1383,28 @@ _kill_old_slurmd(void)
 		info ("killing old slurmd[%lu]", (unsigned long) oldpid);
 		kill(oldpid, SIGTERM);
 
-		/* 
+		/*
 		 * Wait for previous daemon to terminate
 		 */
-		if (fd_get_readw_lock(fd) < 0) 
+		if (fd_get_readw_lock(fd) < 0)
 			fatal ("unable to wait for readw lock: %m");
-		(void) close(fd); /* Ignore errors */ 
+		(void) close(fd); /* Ignore errors */
 	}
 }
 
 /* Reset slurmctld logging based upon configuration parameters */
-static void _update_logging(void) 
+static void _update_logging(void)
 {
 	log_options_t *o = &conf->log_opts;
 	slurm_ctl_conf_t *cf;
 
-	/* 
+	/*
 	 * Initialize debug level if not already set
 	 */
 	cf = slurm_conf_lock();
 	if ( (conf->debug_level == LOG_LEVEL_INFO)
 	     && (cf->slurmd_debug != (uint16_t) NO_VAL) )
-		conf->debug_level = cf->slurmd_debug; 
+		conf->debug_level = cf->slurmd_debug;
 	slurm_conf_unlock();
 
 	o->stderr_level  = conf->debug_level;
@@ -1421,7 +1422,7 @@ static void _update_logging(void)
 		o->stderr_level = LOG_LEVEL_QUIET;
 		if (conf->logfile)
 			o->syslog_level = LOG_LEVEL_FATAL;
-	} else 
+	} else
 		o->syslog_level  = LOG_LEVEL_QUIET;
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
@@ -1443,7 +1444,7 @@ static void _atfork_final(void)
 	slurm_mutex_unlock(&fork_mutex);
 }
 
-static void _install_fork_handlers(void) 
+static void _install_fork_handlers(void)
 {
 	int err;
 
@@ -1460,7 +1461,7 @@ static int _set_topo_info(void)
 {
 	int rc;
 	char * addr, * pattern;
-	
+
 	rc = slurm_topo_get_node_addr(conf->node_name, &addr, &pattern);
 	if ( rc == SLURM_SUCCESS ) {
 		xfree(conf->node_topo_addr);
@@ -1468,6 +1469,6 @@ static int _set_topo_info(void)
 		conf->node_topo_addr = addr;
 		conf->node_topo_pattern = pattern;
 	}
-       
+
 	return rc;
 }

@@ -56,6 +56,8 @@
 #include <unistd.h>
 
 #include "src/common/xstring.h"
+#include "src/common/proc_args.h"
+
 #include "src/sbcast/sbcast.h"
 
 #define OPT_LONG_HELP   0x100
@@ -67,7 +69,6 @@
 static void     _help( void );
 static uint32_t _map_size( char *buf );
 static void     _print_options( void );
-static void     _print_version( void );
 static void     _usage( void );
 
 /*
@@ -136,7 +137,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.verbose++;
 			break;
 		case (int) 'V':
-			_print_version();
+			print_slurm_version();
 			exit(0);
 		case (int) OPT_LONG_HELP:
 			_help();
@@ -206,11 +207,6 @@ static void _print_options( void )
 	info("-----------------------------");
 }
 
-
-static void _print_version(void)
-{
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
-}
 
 static void _usage( void )
 {

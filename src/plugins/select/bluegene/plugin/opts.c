@@ -41,7 +41,6 @@
 
 /* FUNCTIONS */
 static void _help(void);
-static void _print_version(void);
 static void _usage(void);
 
 /*
@@ -94,7 +93,7 @@ void parse_command_line(int argc, char *argv[])
 			_usage();
 			exit(0);
 		case (int) 'V':
-			_print_version();
+			print_slurm_version();
 			exit(0);
 		case (int) 'w':
 			wait_full = true;
@@ -102,11 +101,6 @@ void parse_command_line(int argc, char *argv[])
 		}
 	}
 
-}
-
-static void _print_version(void)
-{
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 static void _usage(void)

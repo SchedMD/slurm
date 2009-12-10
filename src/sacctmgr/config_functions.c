@@ -142,7 +142,7 @@ static void _print_slurm_config(void)
 	printf("SlurmUserId            = %s(%u)\n", user_name, slurm_user_id);
 	xfree(user_name);
 	printf("SLURM_CONF             = %s\n", default_slurm_config_file);
-	printf("SLURM_VERSION          = %s\n", SLURM_VERSION);
+	printf("SLURM_VERSION          = %s\n", SLURM_VERSION_STRING);
 	printf("TrackWCKey             = %u\n", track_wckey);
 }
 

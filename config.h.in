@@ -422,8 +422,11 @@
 /* Define Slurm installation prefix */
 #undef SLURM_PREFIX
 
-/* Define the project's version string. */
+/* SLURM Version Number */
 #undef SLURM_VERSION
+
+/* Define the project's version string. */
+#undef SLURM_VERSION_STRING
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS

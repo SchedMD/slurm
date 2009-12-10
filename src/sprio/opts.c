@@ -56,6 +56,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -73,7 +74,6 @@ static void  _help( void );
 static void  _parse_token( char *token, char *field, int *field_size,
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
-static void  _print_version( void );
 static void  _usage( void );
 
 /*
@@ -136,7 +136,7 @@ parse_command_line( int argc, char* argv[] )
 			params.verbose++;
 			break;
 		case (int) 'V':
-			_print_version();
+			print_slurm_version ();
 			exit(0);
 		case (int) 'w':
 			params.weights = true;
@@ -443,11 +443,6 @@ _build_user_list( char* str )
 		user = strtok_r (NULL, ",", &tmp_char);
 	}
 	return my_list;
-}
-
-static void _print_version(void)
-{
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 static void _usage(void)

@@ -83,7 +83,7 @@
 /* print this version of SLURM */
 void print_slurm_version(void)
 {
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
+	printf("%s %s\n", PACKAGE, SLURM_VERSION_STRING);
 }
 
 /*

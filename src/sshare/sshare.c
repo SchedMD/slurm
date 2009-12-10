@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/sshare/sshare.h"
+#include "src/common/proc_args.h"
 #include <grp.h>
 
 
@@ -389,7 +390,7 @@ static char *_convert_to_name(int id, bool gid)
 
 static void _print_version(void)
 {
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
+	print_slurm_version();
 	if (quiet_flag == -1) {
 		long version = slurm_api_version();
 		printf("slurm_api_version: %ld, %ld.%ld.%ld\n", version,

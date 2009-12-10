@@ -902,11 +902,12 @@ am__isrc
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
-SLURM_VERSION
+SLURM_VERSION_STRING
 RELEASE
 SLURM_MICRO
 SLURM_MINOR
 SLURM_MAJOR
+SLURM_VERSION
 VERSION
 SLURM_API_REVISION
 SLURM_API_AGE
@@ -2817,14 +2818,9 @@ for name in CURRENT REVISION AGE; do
    API=`perl -ne "print,exit if s/^\s*API_$name:\s*(\S*).*/\1/i" $srcdir/META`
    eval SLURM_API_$name=$API
 done
-SLURM_API_VERSION="0x"
 SLURM_API_MAJOR=`expr $SLURM_API_CURRENT - $SLURM_API_AGE`
-API=`printf "%02x" $SLURM_API_MAJOR`
-SLURM_API_VERSION="${SLURM_API_VERSION}$API"
-API=`printf "%02x" $SLURM_API_AGE`
-SLURM_API_VERSION="${SLURM_API_VERSION}$API"
-API=`printf "%02x" $SLURM_API_REVISION`
-SLURM_API_VERSION="${SLURM_API_VERSION}$API"
+SLURM_API_VERSION=`printf "0x%02x%02x%02x" $SLURM_API_MAJOR $SLURM_API_AGE $SLURM_API_REVISION`
+
 
 cat >>confdefs.h <<_ACEOF
 #define SLURM_API_VERSION $SLURM_API_VERSION
@@ -2870,6 +2866,14 @@ SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`
 SLURM_MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
 RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
 
+SLURM_VERSION="`printf "0x%02x%02x%02x" $SLURM_MAJOR $SLURM_MINOR $SLURM_MICRO`"
+
+cat >>confdefs.h <<_ACEOF
+#define SLURM_VERSION $SLURM_VERSION
+_ACEOF
+
+
+
 if test "$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO" != "$VERSION"; then
     as_fn_error "META information is inconsistent: $VERSION != $SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO!" "$LINENO" 5
 fi
@@ -2878,11 +2882,11 @@ fi
 if echo "$RELEASE" | grep -e "UNSTABLE"; then
    DATE=`date +"%Y%m%d%H%M"`
    SLURM_RELEASE="unstable svn build $DATE"
-   SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR ($SLURM_RELEASE)"
+   SLURM_VERSION_STRING="$SLURM_MAJOR.$SLURM_MINOR ($SLURM_RELEASE)"
 else
    SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
-   SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO"
-   test $RELEASE = "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
+   SLURM_VERSION_STRING="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO"
+   test $RELEASE = "1" || SLURM_VERSION_STRING="$SLURM_VERSION_STRING-$SLURM_RELEASE"
 fi
 
 cat >>confdefs.h <<_ACEOF
@@ -2906,7 +2910,7 @@ _ACEOF
 
 
 cat >>confdefs.h <<_ACEOF
-#define SLURM_VERSION "$SLURM_VERSION"
+#define SLURM_VERSION_STRING "$SLURM_VERSION_STRING"
 _ACEOF
 
 
@@ -6964,13 +6968,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:6967: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:6971: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:6970: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:6974: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:6973: output\"" >&5)
+  (eval echo "\"\$as_me:6977: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -8175,7 +8179,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 8178 "configure"' > conftest.$ac_ext
+  echo '#line 8182 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9964,11 +9968,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9967: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9971: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9971: \$? = $ac_status" >&5
+   echo "$as_me:9975: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10303,11 +10307,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10306: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10310: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10310: \$? = $ac_status" >&5
+   echo "$as_me:10314: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10408,11 +10412,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10411: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10415: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10415: \$? = $ac_status" >&5
+   echo "$as_me:10419: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10463,11 +10467,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10466: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10470: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10470: \$? = $ac_status" >&5
+   echo "$as_me:10474: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12846,7 +12850,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12849 "configure"
+#line 12853 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12942,7 +12946,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12945 "configure"
+#line 12949 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14898,11 +14902,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14901: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14905: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14905: \$? = $ac_status" >&5
+   echo "$as_me:14909: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14997,11 +15001,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15000: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15004: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15004: \$? = $ac_status" >&5
+   echo "$as_me:15008: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15049,11 +15053,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15052: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15056: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15056: \$? = $ac_status" >&5
+   echo "$as_me:15060: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized

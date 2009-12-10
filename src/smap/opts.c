@@ -38,10 +38,10 @@
 \*****************************************************************************/
 
 #include "src/smap/smap.h"
+#include "src/common/proc_args.h"
 
 /* FUNCTIONS */
 static void _help(void);
-static void _print_version(void);
 static void _usage(void);
 
 /*
@@ -142,7 +142,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.verbose++;
 			break;
 		case 'V':
-			_print_version();
+			print_slurm_version();
 			exit(0);
 		case OPT_LONG_HELP:
 			_help();
@@ -180,11 +180,6 @@ extern void clear_window(WINDOW *win)
 		}
 	wmove(win, 1, 1);
 	wnoutrefresh(win);
-}
-
-static void _print_version(void)
-{
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 static void _usage(void)

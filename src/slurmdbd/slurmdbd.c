@@ -60,6 +60,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/proc_args.h"
+
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/backup.h"
@@ -205,7 +207,7 @@ int main(int argc, char *argv[])
 		/* Daemon is fully operational here */
 		if(!shutdown_time || primary_resumed) {
 			shutdown_time = 0;
-			info("slurmdbd version %s started", SLURM_VERSION);
+			info("slurmdbd version %s started", SLURM_VERSION_STRING);
 			if(backup)
 				run_backup();
 		}
@@ -304,7 +306,7 @@ static void _parse_commandline(int argc, char *argv[])
 			debug_level++;
 			break;
 		case 'V':
-			printf("%s %s\n", PACKAGE, SLURM_VERSION);
+			print_slurm_version();
 			exit(0);
 			break;
 		default:

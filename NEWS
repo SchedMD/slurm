@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
  -- Add ESPANK_NOT_LOCAL error code to spank_err_t
  -- Made the #define DECAY_INTERVAL used in the priority/multifactor plugin
     a slurm.conf variable (PriorityCalcPeriod)
+ -- Added new macro SLURM_VERSION for use in autoconf scripts to determine
+    current version of slurm installed on system when building against the api.
 
 * Changes in SLURM 2.1.0-pre8
 =============================
