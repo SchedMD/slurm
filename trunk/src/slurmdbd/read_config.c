@@ -656,7 +656,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SLURMDBD_VERSION");
-	key_pair->value = xstrdup(SLURM_VERSION);
+	key_pair->value = xstrdup(SLURM_VERSION_STRING);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

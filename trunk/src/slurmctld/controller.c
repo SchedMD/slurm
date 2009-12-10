@@ -81,6 +81,7 @@
 #include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/proc_args.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/basil_interface.h"
@@ -367,7 +368,7 @@ int main(int argc, char *argv[])
 	}
 
 	info("slurmctld version %s started on cluster %s",
-	     SLURM_VERSION, slurmctld_cluster_name);
+	     SLURM_VERSION_STRING, slurmctld_cluster_name);
 
 	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
@@ -1503,7 +1504,7 @@ static void _parse_commandline(int argc, char *argv[])
 			debug_level++;
 			break;
 		case 'V':
-			printf("%s %s\n", PACKAGE, SLURM_VERSION);
+			print_slurm_version();
 			exit(0);
 			break;
 		default:

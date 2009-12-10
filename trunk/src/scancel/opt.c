@@ -67,6 +67,8 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/proc_args.h"
+
 #include "src/scancel/scancel.h"
 
 /* getopt_long options, integers but not characters */
@@ -114,8 +116,6 @@ static void _opt_args(int, char **);
 
 /* verify options sanity  */
 static bool _opt_verify(void);
-
-static void _print_version (void);
 
 static void _xlate_job_step_ids(char **rest);
 
@@ -212,11 +212,6 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 	fprintf (stderr, "Valid signals include: %s\n", sig_names);
 	xfree(sig_names);
 	exit(1);
-}
-
-static void _print_version (void)
-{
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 /*
@@ -398,7 +393,7 @@ static void _opt_args(int argc, char **argv)
 				opt.verbose++;
 				break;
 			case (int)'V':
-				_print_version();
+				print_slurm_version ();
 				exit(0);
 			case (int)'w':
 				opt.nodelist = xstrdup(optarg);

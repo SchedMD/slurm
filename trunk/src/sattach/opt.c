@@ -72,6 +72,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/read_config.h" /* contains getnodename() */
+#include "src/common/proc_args.h"
 
 #include "src/sattach/opt.h"
 
@@ -108,8 +109,6 @@ static void  _opt_list(void);
 /* verify options sanity  */
 static bool _opt_verify(void);
 
-static void  _print_version(void);
-
 static void _process_env_var(env_vars_t *e, const char *val);
 
 /* Get a POSITIVE decimal integer from arg */
@@ -135,11 +134,6 @@ int initialize_and_process_args(int argc, char *argv[])
 
 	return 1;
 
-}
-
-static void _print_version(void)
-{
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 /*
@@ -331,7 +325,7 @@ void set_options(const int argc, char **argv)
 			opt.verbose++;
 			break;
 		case 'V':
-			_print_version();
+			print_slurm_version();
 			exit(0);
 			break;
 		case LONG_OPT_IN_FILTER:

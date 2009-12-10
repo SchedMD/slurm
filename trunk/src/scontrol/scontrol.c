@@ -41,6 +41,7 @@
 
 #include "scontrol.h"
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include "src/common/proc_args.h"
 
 #define OPT_LONG_HIDE   0x102
 
@@ -184,7 +185,7 @@ main (int argc, char *argv[])
 
 static void _print_version(void)
 {
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
+	print_slurm_version();
 	if (quiet_flag == -1) {
 		long version = slurm_api_version();
 		printf("slurm_api_version: %ld, %ld.%ld.%ld\n", version,

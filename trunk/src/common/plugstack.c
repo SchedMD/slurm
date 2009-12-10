@@ -1773,7 +1773,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		break;
 	case S_SLURM_VERSION:
 		p2vers = va_arg(vargs, char  **);
-		*p2vers = SLURM_VERSION;
+		*p2vers = SLURM_VERSION_STRING;
 		break;
 	case S_SLURM_VERSION_MAJOR:
 		p2vers = va_arg(vargs, char  **);

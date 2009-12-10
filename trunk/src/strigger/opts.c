@@ -60,6 +60,8 @@
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/proc_args.h"
+
 #include "src/strigger/strigger.h"
 
 #define OPT_LONG_HELP      0x100
@@ -76,7 +78,6 @@
 static void     _help( void );
 static void     _init_options( void );
 static void     _print_options( void );
-static void     _print_version( void );
 static void     _usage( void );
 static void     _validate_options( void );
 
@@ -200,7 +201,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.verbose++;
 			break;
 		case (int) 'V':
-			_print_version();
+			print_slurm_version();
 			exit(0);
 		case (int) OPT_LONG_HELP:
 			_help();
@@ -336,11 +337,6 @@ static void _validate_options( void )
 		error("The --offset parameter must be between +/-32000");
 		exit(1);
 	}
-}
-
-static void _print_version(void)
-{
-	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 static void _usage( void )

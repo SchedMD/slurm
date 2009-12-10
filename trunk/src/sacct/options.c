@@ -837,7 +837,7 @@ void parse_command_line(int argc, char **argv)
 			slurm_addto_char_list(job_cond->wckey_list, optarg);
 			break;
 		case 'V':
-			printf("%s %s\n", PACKAGE, SLURM_VERSION);
+			print_slurm_version();
 			exit(0);
 		case 't':
 		case 'X':

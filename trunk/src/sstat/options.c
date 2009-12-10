@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "src/common/read_config.h"
+#include "src/common/proc_args.h"
 #include "sstat.h"
 #include <time.h>
 
@@ -345,7 +346,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 
 		case 'V':
-			printf("%s %s\n", PACKAGE, SLURM_VERSION);
+			print_slurm_version();
 			exit(0);
 			break;
 		case ':':
