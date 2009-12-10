@@ -638,3 +638,4 @@ _task_info_destroy(slurmd_task_info_t *t, uint16_t multi_prog)
 	} /* otherwise, t->argv is a pointer to job->argv */
 	xfree(t);
 }
+

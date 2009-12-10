@@ -220,4 +220,20 @@ void  srun_info_destroy(struct srun_info *srun);
 slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
 				      char *ifname, char *ofname, char *efname);
 
+/*
+ *  Return a task info structure corresponding to pid.
+ *   We inline it here so that it can be included from src/common/plugstack.c
+ *   without undefined symbol warnings.
+ */
+static inline slurmd_task_info_t *
+job_task_info_by_pid (slurmd_job_t *job, pid_t pid)
+{
+	int i;
+	for (i = 0; i < job->ntasks; i++) {
+		if (job->task[i]->pid == pid)
+			return (job->task[i]);
+	}
+	return (NULL);
+}
+
 #endif /* !_SLURMSTEPD_JOB_H */

@@ -1384,20 +1384,6 @@ int spank_get_remote_options(job_options_t opts)
 	return (0);
 }
 
-/*
- *  Return a task info structure corresponding to pid.
- */
-static slurmd_task_info_t * job_task_info_by_pid (slurmd_job_t *job, pid_t pid)
-{
-	slurmd_task_info_t *task = NULL;
-	int i;
-	for (i = 0; i < job->ntasks; i++) {
-		if (job->task[i]->pid == pid)
-			task = job->task[i];
-	}
-	return (task);
-}
-
 static int tasks_execd (spank_t spank)
 {
 	return ( (spank->phase == STEP_TASK_POST_FORK)
