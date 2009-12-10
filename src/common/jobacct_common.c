@@ -1115,7 +1115,7 @@ extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid, List task_list)
 		debug2("removing task %u pid %d from jobacct",
 		       jobacct->max_vsize_id.taskid, jobacct->pid);
 	} else {
-		error("pid(%d) not being watched in jobacct!", pid);
+		debug2("pid(%d) not being watched in jobacct!", pid);
 	}
 error:
 	slurm_mutex_unlock(&jobacct_lock);

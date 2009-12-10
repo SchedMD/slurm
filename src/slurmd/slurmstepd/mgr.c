@@ -1332,7 +1332,6 @@ static int
 _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 {
 	slurmd_task_info_t *t = NULL;
-	int i;
 	int status;
 	pid_t pid;
 	int completed = 0;
@@ -1367,22 +1366,15 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 		}
 		/*********************************************/
 
-		/* See if the pid matches that of one of the tasks */
-		for (i = 0; i < job->ntasks; i++) {
-			if (job->task[i]->pid == pid) {
-				t = job->task[i];
-				completed++;
-				break;
-			}
-		}
-		if (t != NULL) {
-			_log_task_exit(job->task[i]->gtid, pid, status);
+		if ((t = job_task_info_by_pid(job, pid))) {
+			completed++;
+			_log_task_exit(t->gtid, pid, status);
 
 			t->exited  = true;
 			t->estatus = status;
 			job->envtp->env = job->env;
-			job->envtp->procid = job->task[i]->gtid;
-			job->envtp->localid = job->task[i]->id;
+			job->envtp->procid = t->gtid;
+			job->envtp->localid = t->id;
 
 			job->envtp->distribution = -1;
 			job->envtp->batch_flag = job->batch;
@@ -1403,10 +1395,11 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 						    job, -1, job->env);
 				xfree(my_epilog);
 			}
-			job->envtp->procid = i;
+			job->envtp->procid = t->id;
 
-			if (spank_task_exit (job, i) < 0)
-				error ("Unable to spank task %d at exit", i);
+			if (spank_task_exit (job, t->id) < 0)
+				error ("Unable to spank task %d at exit",
+				       t->id);
 
 			post_term(job);
 		}
