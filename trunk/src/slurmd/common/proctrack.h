@@ -48,7 +48,7 @@
  *
  * Returns a SLURM errno.
  */
-extern int slurm_proctrack_init( void );
+extern int slurm_proctrack_init(void);
 
 /*
  * Terminate the process tracking plugin, free memory.
