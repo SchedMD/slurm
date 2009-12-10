@@ -804,8 +804,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if((int64_t)c_usage->i_cpu < 0) {
 /* 				info("got %d %d %d", c_usage->r_cpu, */
 /* 				     c_usage->i_cpu, c_usage->o_cpu); */
-				c_usage->r_cpu += c_usage->i_cpu;
-				c_usage->o_cpu -= c_usage->i_cpu;
+				c_usage->r_cpu += (int64_t)c_usage->i_cpu;
+				c_usage->o_cpu -= (int64_t)c_usage->i_cpu;
 				c_usage->i_cpu = 0;
 				if((int64_t)c_usage->r_cpu < 0)
 					c_usage->r_cpu = 0;
