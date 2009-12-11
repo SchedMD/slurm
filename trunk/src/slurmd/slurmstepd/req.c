@@ -599,6 +599,25 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
+	/*
+	 * Print a message in the step output before killing when
+	 * SIGTERM or SIGKILL are sent
+	 */
+	if ((signal == SIGTERM) || (signal == SIGKILL)) {
+		time_t now = time(NULL);
+		char entity[24], time_str[24];
+		if (job->stepid == SLURM_BATCH_SCRIPT) {
+			snprintf(entity, sizeof(entity), "JOB %u", job->jobid);
+		} else {
+			snprintf(entity, sizeof(entity), "STEP %u.%u",
+				 job->jobid, job->stepid);
+		}
+		slurm_make_time_str(&now, time_str, sizeof(time_str));
+
+		error("*** %s KILLED AT %s WITH SIGNAL %u ***",
+		      entity, time_str, signal);
+	}
+
 	if (killpg(job->pgid, signal) == -1) {
 		rc = -1;
 		verbose("Error sending signal %d to %u.%u, pgid %d: %m",
