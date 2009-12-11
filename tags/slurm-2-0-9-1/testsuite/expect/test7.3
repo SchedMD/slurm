@@ -1,0 +1,140 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose:  Test of slurm_spawn API (needed on IBM SP systems).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes files in the working directory
+#          named test7.3.prog and test7.3.io
+############################################################################
+# Copyright (C) 2004 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "7.3"
+set exit_code   0
+set io_prog     "test$test_id.io"
+set test_prog   "test$test_id.prog"
+
+print_header $test_id
+
+if {[test_front_end] != 0} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit 0
+}
+
+#
+# Delete left-over programs and rebuild them 
+#
+file delete $io_prog $test_prog
+
+exec $bin_cc -O -o $io_prog ${io_prog}.c
+exec $bin_chmod 700 $io_prog
+
+send_user "slurm_dir is $slurm_dir\n"
+if {[test_aix]} {
+	send_user "$bin_cc ${test_prog}.c -Wl,-brtl -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm -lntbl\n"
+	exec       $bin_cc ${test_prog}.c -Wl,-brtl -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm -lntbl
+} elseif [file exists ${slurm_dir}/lib64/libslurm.so] {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm
+} else {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
+}
+exec $bin_chmod 700 $test_prog
+
+#
+# Spawn initial program via srun
+#
+# (Actually there is a bug in the Linux which causes Expect to record
+# an eof from the spawned program before it really complets, so we
+# exec it and then scan the output)
+#
+set timeout $max_job_delay
+set job_id 0
+set matches 0
+set task_cnt 1
+# Usage: test7.3.prog [min_nodes] [max_nodes] [tasks]
+spawn ./$test_prog 1 2
+expect {
+	-re "job_id ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Starting ($number) tasks" {
+		set task_cnt $expect_out(1,string)
+		exp_continue
+	}
+	-re "task 0 write to stdout" {
+		incr matches
+		exp_continue
+	}
+	-re "task 0 write to stderr" {
+		incr matches
+		exp_continue
+	}
+	-re "task 0 read from stdin:test message" {
+		incr matches
+		exp_continue
+	}
+	-re "task 1 write to stdout" {
+		incr matches
+		exp_continue
+	}
+	-re "task 1 write to stderr" {
+		incr matches
+		exp_continue
+	}
+	-re "task 1 read from stdin:test message" {
+		incr matches
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: spawn IO not responding\n"
+		cancel_job $job_id
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != [expr $task_cnt * 3]} {
+	send_user "\nFAILURE: spawn IO communications failure\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	file delete $io_prog $test_prog
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

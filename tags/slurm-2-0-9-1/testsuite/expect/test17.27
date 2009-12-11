@@ -1,0 +1,319 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test that a job executes with the specified nodes, requires multiple
+#          nodes (--nodes, --nodelist and --exclude options).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "17.27"
+set exit_code        0
+set file_in          "test$test_id.input"
+set file_out         "test$test_id.output"
+set job_id           0
+
+print_header $test_id
+
+if { [test_xcpu] } {
+	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
+	exit 0
+}
+
+#
+# Submit a 3+ node job
+#
+set host_0      ""
+set host_1      ""
+set host_2      ""
+set host_3      ""
+
+if { [test_bluegene] } {
+	set node_cnt 1536
+} else {
+	set node_cnt 3
+}
+
+set available [available_nodes [default_partition]]
+if {$available < $node_cnt} {
+    send_user "\nWARNING: not enough nodes currently available ($available avail, $node_cnt needed)\n"
+    exit $exit_code
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$srun -l $bin_printenv SLURMD_NODENAME"
+
+#
+# Run job to determine what nodes are available
+#
+spawn $sbatch -N$node_cnt -vv -t1 --output=$file_out $file_in
+expect {
+	-re "nodes *: ($number)" {
+		if {$expect_out(1,string) != 3} {
+			send_user "\nFAILURE: failed to process --nodes option\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	exit 1
+}
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: job did not complete\n"
+	cancel_job $job_id
+	exit 1
+}
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: no output file\n"
+	exit 1
+}
+spawn $bin_cat $file_out
+expect {
+	-re "($number): ($alpha_numeric_under)" {
+		if {$expect_out(1,string) == 0} {
+			set host_0 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 1} {
+			set host_1 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 2} {
+			set host_2 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 3} {
+			set host_3 $expect_out(2,string)
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Verify node count
+#
+if {[string compare $host_0 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 0\n"
+	set exit_code   1	
+}
+if {[string compare $host_1 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 1\n"
+	set exit_code   1	
+}
+if {[string compare $host_2 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 2\n"
+	set exit_code   1	
+}
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
+#	On blue gene we could get extra tasks
+	exit $exit_code
+}
+if {[string compare $host_3 ""] != 0} {
+	send_user "\nFAILURE: Started more than three tasks\n"
+	set exit_code   1	
+}
+
+set dup_hostname 0
+if {[string compare $host_0 $host_1] == 0} {
+	incr dup_hostname 	
+}
+if {[string compare $host_0 $host_2] == 0} {
+	incr dup_hostname 1	
+}
+if {$dup_hostname == 1} {
+	send_user "\nFAILURE: Re-used a node in the allocation\n"
+	set exit_code   1	
+}
+set exclude_node $host_0
+set include_node $host_2
+
+#
+# Submit a job explicitly excluding a node
+#
+set job_id      0
+set host_0      ""
+set host_1      ""
+set host_2      ""
+exec $bin_rm $file_out
+spawn $sbatch -N2 --exclude=$exclude_node -t1 --output=$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: job did not complete\n"
+	set exit_code 1
+}
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: no output file\n"
+	exit 1
+}
+spawn $bin_cat $file_out
+expect {
+	-re "($number): ($alpha_numeric_under)" {
+		if {$expect_out(1,string) == 0} {
+			set host_0 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 1} {
+			set host_1 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 2} {
+			set host_2 $expect_out(2,string)
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Verify node count and names
+#
+if {[string compare $host_0 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 0\n"
+	set exit_code   1	
+}
+if {[string compare $host_1 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 1\n"
+	set exit_code   1	
+}
+if {[string compare $host_2 ""] != 0} {
+	send_user "\nFAILURE: Started more than two tasks\n"
+	set exit_code   1	
+}
+set dup_hostname 0
+if {[string compare $host_0 $exclude_node] == 0} {
+	set dup_hostname 1	
+}
+if {[string compare $host_1 $exclude_node] == 0} {
+	set dup_hostname 1	
+}
+if {$dup_hostname == 1} {
+	send_user "\nFAILURE: Allocated an excluded node\n"
+	set exit_code   1	
+}
+
+#
+# Submit a job explicitly including a node
+#
+set job_id      0
+set host_0      ""
+set host_1      ""
+exec $bin_rm $file_out
+spawn $sbatch -N1 --nodelist=$include_node -t1 --output=$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: job did not complete\n"
+	set exit_code 1
+}
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: no output file\n"
+	exit 1
+}
+spawn $bin_cat $file_out
+expect {
+
+	-re "($number): ($alpha_numeric_under)" {
+		if {$expect_out(1,string) == 0} {
+			set host_0 $expect_out(2,string)
+		}
+		if {$expect_out(1,string) == 1} {
+			set host_1 $expect_out(2,string)
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Verify node count and names
+#
+if {[string compare $host_0 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 0\n"
+	set exit_code   1	
+}
+if {[string compare $host_1 ""] != 0} {
+	send_user "\nFAILURE: Started more than one task\n"
+	set exit_code   1	
+}
+set dup_hostname 0
+if {[string compare $host_0 $include_node] == 0} {
+	set dup_hostname 1	
+}
+if {$dup_hostname == 0} {
+	send_user "\nFAILURE: Allocation lacked an included node\n"
+	set exit_code   1	
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm $file_in $file_out
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
