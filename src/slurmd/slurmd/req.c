@@ -840,7 +840,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
 	info("launch task %u.%u request from %u.%u@%s (port %hu)", req->job_id,
 	     req->job_step_id, req->uid, req->gid, host, port);
-	env_array_append(&req->env, "SLURM_SRUN_COMM_HOST", host);
+
+	/* this could be set previously and needs to be overwritten by
+	   this call for messages to work correctly for the new call */
+	env_array_overwrite(&req->env, "SLURM_SRUN_COMM_HOST", host);
 	req->envc = envcount(req->env);
 
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
