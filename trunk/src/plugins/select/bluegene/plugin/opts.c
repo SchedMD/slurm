@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "sfree.h"
+#include "src/common/proc_args.h"
 
 /* FUNCTIONS */
 static void _help(void);
