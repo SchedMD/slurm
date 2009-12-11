@@ -84,18 +84,21 @@ int slurm_spank_init(spank_t sp, int ac, char **av)
 		slurm_error("spank_context error");
 	if (SPANK_JOB_ENV_TESTS &&
 	    ((context == S_CTX_LOCAL) || (context == S_CTX_ALLOCATOR))) {
-		/* Testing logic for spank_job_env options */
-		char *test_value;
-		spank_set_job_env("DUMMY", "DV",   1);
-		spank_set_job_env("NAME", "VALUE", 1);
-		spank_set_job_env("name", "value", 1);
-/*		spank_set_job_env("PATH", "/", 1); */
-		test_value = spank_get_job_env("NAME");
-		if (test_value == NULL)
+		/* Testing logic for spank_job_control_env options */
+		char test_value[200];
+		spank_err_t err;
+		spank_job_control_setenv(sp, "DUMMY", "DV",   1);
+		spank_job_control_setenv(sp, "NAME", "VALUE", 1);
+		spank_job_control_setenv(sp, "name", "value", 1);
+/*		spank_job_control_setenv(sp, "PATH", "/", 1); */
+		memset(test_value, 0, sizeof(test_value));
+		err = spank_job_control_getenv(
+			sp, "NAME", test_value, sizeof(test_value));
+		if (err != ESPANK_SUCCESS)
 			slurm_error("spank_get_job_env error, NULL");
 		else if (strcmp(test_value, "VALUE"))
 			slurm_error("spank_get_job_env error, bad value");
-		spank_unset_job_env("DUMMY");
+		spank_job_control_unsetenv(sp, "DUMMY");
 	}
 
 	if (spank_option_register(sp, spank_options_reg) != ESPANK_SUCCESS)
