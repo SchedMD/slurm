@@ -25,7 +25,7 @@ documents those changes that are of interest to users and admins.
  -- Patch from Matthieu Hautreux that adds an entry into the error file when
     a job or step receives a TERM or KILL signal.
  -- Make it so env var SLURM_SRUN_COMM_HOST is overwritten if already in 
-    existance in the slurmd.
+    existence in the slurmd.
 
 * Changes in SLURM 2.1.0-pre8
 =============================
