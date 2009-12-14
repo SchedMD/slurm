@@ -3829,7 +3829,11 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 {
 	uint16_t cpu_cnt=0, i=0;
 	int curr_node_inx;
-
+#ifdef HAVE_BG
+	/* This function doesn't apply to a bluegene system since the
+	   cpu count isn't set up on that system. */
+	return SLURM_SUCCESS;
+#endif
 	xassert(job_ptr);
 	if(!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
 		error("job_update_cpu_cnt: "
@@ -3849,6 +3853,7 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 				break;
 			curr_node_inx += job_ptr->job_resrcs->cpu_array_reps[i];
 		}
+		/* info("removing %u from %u", cpu_cnt, job_ptr->cpu_cnt); */
 		job_ptr->cpu_cnt -= cpu_cnt;
 		if((int)job_ptr->cpu_cnt < 0) {
 			error("job_update_cpu_cnt: "
@@ -4306,7 +4311,8 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer)
 	packstr(dump_job_ptr->wckey, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
-	if (IS_JOB_COMPLETING(dump_job_ptr))
+
+	if (IS_JOB_COMPLETING(dump_job_ptr) && dump_job_ptr->cpu_cnt)
 		pack32(dump_job_ptr->cpu_cnt, buffer);
 	else if (dump_job_ptr->total_procs)
 		pack32(dump_job_ptr->total_procs, buffer);
