@@ -332,6 +332,9 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - add support for scontrol show blocks.
  -- Added support for job step time limits.
 
+* Changes in SLURM 2.0.10
+=========================
+
 * Changes in SLURM 2.0.9
 ========================
  -- When running the mysql plugin natively MUNGE errors are now eliminated 
@@ -353,6 +356,8 @@ documents those changes that are of interest to users and admins.
     line.  Previously the line could be shortened prematurely.
  -- BLUEGENE - Fix to make sure we don't erroneously set a connection type
     to SMALL.
+ -- Type cast a negative uint64_t to int64_t to avoid confusion when doing 
+    arithmetic with it in accounting dealing with over commit time.
 
 * Changes in SLURM 2.0.8
 ========================
