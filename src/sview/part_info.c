@@ -1427,7 +1427,7 @@ void _display_info_part(List info_list,	popup_info_t *popup_win)
 	ListIterator itr = NULL;
 	sview_part_info_t *sview_part_info = NULL;
 	int update = 0;
-	int i = -1, j = 0;
+	int j = 0;
 	int first_time = 0;
 
 	if(!spec_info->search_info->gchar_data) {
@@ -1451,7 +1451,6 @@ need_refresh:
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
 		part_ptr = sview_part_info->part_ptr;
-		i++;
 		if(!strcmp(part_ptr->name, name)) {
 			j=0;
 			while(part_ptr->node_inx[j] >= 0) {

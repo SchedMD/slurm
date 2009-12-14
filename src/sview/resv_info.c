@@ -684,7 +684,7 @@ void _display_info_resv(List info_list,	popup_info_t *popup_win)
 	ListIterator itr = NULL;
 	sview_resv_info_t *sview_resv_info = NULL;
 	int update = 0;
-	int i = -1, j = 0;
+	int j = 0;
 
 	if(!spec_info->search_info->gchar_data) {
 		//info = xstrdup("No pointer given!");
@@ -705,7 +705,6 @@ need_refresh:
 	itr = list_iterator_create(info_list);
 	while ((sview_resv_info = (sview_resv_info_t*) list_next(itr))) {
 		resv_ptr = sview_resv_info->resv_ptr;
-		i++;
 		if(!strcmp(resv_ptr->name, name)) {
 			j=0;
 			while(resv_ptr->node_inx[j] >= 0) {
