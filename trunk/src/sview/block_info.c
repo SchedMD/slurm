@@ -449,6 +449,20 @@ static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
 	int size_a = rec_a->node_cnt;
 	int size_b = rec_b->node_cnt;
 
+	if((rec_a->job_running == NO_JOB_RUNNING)
+	   && (rec_b->job_running != NO_JOB_RUNNING))
+		return 1;
+	else if((rec_a->job_running != NO_JOB_RUNNING)
+		&& (rec_b->job_running == NO_JOB_RUNNING))
+		return -1;
+
+	if((rec_a->state == RM_PARTITION_FREE)
+	   && (rec_b->state != RM_PARTITION_FREE))
+		return 1;
+	else if((rec_a->state != RM_PARTITION_FREE)
+		&& (rec_b->state == RM_PARTITION_FREE))
+		return -1;
+
 	if (size_a < size_b)
 		return -1;
 	else if (size_a > size_b)

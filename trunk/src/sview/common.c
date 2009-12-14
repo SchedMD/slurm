@@ -177,7 +177,6 @@ static int _sort_iter_compare_func_nodes(GtkTreeModel *model,
 			while(name2[spot] && g_ascii_isdigit(name2[spot])) {
 				spot++;
 			}
-
 			if(!name2[spot]) {
 			} else if(name2[spot] == 'K')
 				tmp_int *= 1024;
@@ -734,8 +733,8 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 
 			break;
 		case G_TYPE_STRING:
-			if(!strcasecmp(display_data[i].name, "Nodes")
-			   || !strcasecmp(display_data[i].name, "CPUs")
+			if(!strcasecmp(display_data[i].name, "Node Count")
+			   || !strcasecmp(display_data[i].name, "CPU Count")
 			   || !strcasecmp(display_data[i].name, "Real Memory")
 			   || !strcasecmp(display_data[i].name, "Tmp Disk")) {
 				gtk_tree_sortable_set_sort_func(
