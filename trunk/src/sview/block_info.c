@@ -588,7 +588,7 @@ void _display_info_block(List block_list,
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
-	int i = -1, j = 0, found = 0;
+	int j = 0, found = 0;
 	sview_block_info_t *block_ptr = NULL;
 	char *info = NULL;
 	int update = 0;
@@ -613,7 +613,6 @@ need_refresh:
 
 	itr = list_iterator_create(block_list);
 	while ((block_ptr = (sview_block_info_t*) list_next(itr))) {
-		i++;
 		if(!strcmp(block_ptr->bg_block_name, name)
 		   || !strcmp(block_ptr->nodes, name)) {
 			/* we want to over ride any subgrp in error

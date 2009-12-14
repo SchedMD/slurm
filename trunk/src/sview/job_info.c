@@ -2390,7 +2390,7 @@ void _display_info_job(List info_list, popup_info_t *popup_win)
 	int found = 0;
 	GtkTreeView *treeview = NULL;
 	int update = 0;
-	int i = -1, j = 0;
+	int j = 0;
 
 	if(spec_info->search_info->int_data == NO_VAL) {
 	/* 	info = xstrdup("No pointer given!"); */
@@ -2410,7 +2410,6 @@ need_refresh:
 
 	itr = list_iterator_create(info_list);
 	while((sview_job_info = (sview_job_info_t*) list_next(itr))) {
-		i++;
 		if(sview_job_info->job_ptr->job_id ==
 		   spec_info->search_info->int_data)
 			break;
@@ -2434,9 +2433,7 @@ need_refresh:
 		found = 1;
 	} else {
 		itr = list_iterator_create(sview_job_info->step_list);
-		i=-1;
 		while ((step_ptr = list_next(itr))) {
-			i++;
 			if(step_ptr->step_id ==
 			   spec_info->search_info->int_data2) {
 				j=0;
