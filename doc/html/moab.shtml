@@ -47,7 +47,7 @@ partition configuration specifications.</p>
 <p>The default value of <i>SchedulerPort</i> is 7321.</p>
 
 <p>SLURM version 2.0 and higher have internal scheduling capabilities
-that are not compatable with Moab.
+that are not compatible with Moab.
 <ol>
 <li>Do not configure SLURM to use the "priority/multifactor" plugin
 as it would set job priorities which conflict with those set by Moab.</li>
@@ -81,11 +81,11 @@ This use of this key is essential to insure that a user
 not build his own program to cancel other user's jobs in
 SLURM.
 This should be no more than 32-bit unsigned integer and match
-the the encryption key in Maui (<i>--with-key</i> on the
+the encryption key in Maui (<i>--with-key</i> on the
 configure line) or Moab (<i>KEY</i> parameter in the
 <i>moab-private.cfg</i> file).
 Note that SLURM's wiki plugin does not include a mechanism
-to submit new jobs, so even without this key nobody could
+to submit new jobs, so even without this key, nobody can
 run jobs as another user.</p>
 
 <p><b>EPort</b> is an event notification port in Moab.
@@ -110,7 +110,7 @@ BackupAddr configured in slurm.conf.</p>
 <p><b>ExcludePartitions</b> is used to identify partitions
 whose jobs are to be scheduled directly by SLURM rather
 than Moab.
-This only effects jobs which are submitted using Slurm
+This only affects jobs which are submitted using SLURM
 commands (i.e. srun, salloc or sbatch, NOT msub from Moab).
 These jobs will be scheduled on a First-Come-First-Served
 basis.
@@ -120,7 +120,7 @@ will be outside of Moab's control.
 Note that Moab controls for resource reservation, fair share
 scheduling, etc. will not apply to the initiation of these jobs.
 If more than one partition is to be scheduled directly by
-Slurm, use a comma separator between their names.</p>
+SLURM, use a comma separator between their names.</p>
 
 <p><b>HidePartitionJobs</b> identifies partitions whose jobs are not
 to be reported to Moab.
@@ -130,10 +130,10 @@ If more than one partition is to have its jobs hidden, use a comma
 separator between their names.</p>
 
 <p><b>HostFormat</b> controls the format of job task lists built
-by Slurm and reported to Moab.
+by SLURM and reported to Moab.
 The default value is "0", for which each host name is listed
 individually, once per processor (e.g. "tux0:tux0:tux1:tux1:...").
-A value of "1" uses Slurm hostlist expressions with processor
+A value of "1" uses SLURM hostlist expressions with processor
 counts (e.g. "tux[0-16]*2").
 This is currently experimental.
 
@@ -146,16 +146,17 @@ The default value is 10 seconds.
 The value should match <i>JOBAGGREGATIONTIME</i> configured
 in the <i>moab.cnf</i> file.</p>
 
-<p><b>JobPriority</b> controls the scheduling of newly arriving
-jobs in SLURM.
-SLURM can either place all newly arriving jobs in a HELD state
-(priority = 0) and let Moab decide when and where to run the jobs
-or SLURM can control when and where to run jobs.
-In the later case, Moab can modify the priorities of pending jobs
-to re-order the job queue or just monitor system state.
-Possible values are "hold" and "run" with "hold" being the default.</p>
+<p><b>JobPriority</b> controls the scheduling of newly arriving jobs
+in SLURM.  Possible values are "hold" and "run" with "hold" being the
+default. When <i>JobPriority=hold</i>, SLURM places all newly arriving
+jobs in a HELD state (priority = 0) and lets Moab decide when and
+where to run the jobs.  When <i>JobPriority=run</i>, SLURM controls
+when and where to run jobs.
+<b>Note:</b> The "run" option implementation has yet to be completed.
+Once the "run" option is available, Moab will be able to modify the
+priorities of pending jobs to re-order the job queue.</p>
 
-<p>Here is a sample <i>wiki.conf</i> file
+<h4>Sample <i>wiki.conf</i> file</h4>
 <pre>
 # wiki.conf
 # SLURM's wiki plugin configuration file
@@ -226,10 +227,10 @@ as user root:</p>
 </pre>
 <p> For typical batch jobs, the job transfer from Moab to
 SLURM is performed using <i>sbatch</i> and occurs instantaneously.
-The environment is loadeded by a SLURM daemon (slurmd) when the
+The environment is loaded by a SLURM daemon (slurmd) when the
 batch job begins execution.
 For interactive jobs (<i>msub -I ...</i>), the job transfer
-from Moab to SLURM can not be completed until the environment
+from Moab to SLURM cannot be completed until the environment
 variables are loaded, during which time the Moab daemon is
 completely non-responsive.
 To insure that Moab remains operational, SLURM will abort the above
@@ -247,7 +248,7 @@ cache files for users. The program can be found in the SLURM
 distribution at <i>contribs/env_cache_builder.c</i>.
 This program can support a longer timeout than Moab, but
 will report errors for users for whom the environment file
-can not be automatically build (typically due to the user's
+cannot be automatically build (typically due to the user's
 "dot" files spawning another shell so the desired command
 never execution).
 For such user, you can manually build a cache file.
@@ -280,6 +281,6 @@ Write the output to a file with the same name as the user in the
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 May 2009</p>
+<p style="text-align:center;">Last modified 14 December 2009</p>
 
 <!--#include virtual="footer.txt"-->
