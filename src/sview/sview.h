@@ -274,6 +274,9 @@ extern List popup_list;
 extern List grid_button_list;
 extern List signal_params_list;
 extern int global_sleep_time;
+extern int global_x_width;
+extern int global_horizontal;
+extern int global_vertical;
 extern bool admin_mode;
 extern GtkWidget *main_statusbar;
 extern GtkWidget *main_window;
@@ -303,6 +306,7 @@ extern void create_config_popup(GtkAction *action, gpointer user_data);
 extern void create_daemon_popup(GtkAction *action, gpointer user_data);
 extern void create_search_popup(GtkAction *action, gpointer user_data);
 extern void change_refresh_popup(GtkAction *action, gpointer user_data);
+extern void change_grid_popup(GtkAction *action, gpointer user_data);
 
 //grid.c
 extern void destroy_grid_button(void *arg);

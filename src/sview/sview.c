@@ -57,6 +57,9 @@ List popup_list = NULL;
 List signal_params_list = NULL;
 int page_running[PAGE_CNT];
 int global_sleep_time = 5;
+int global_x_width = 0;
+int global_horizontal = 10;
+int global_vertical = 10;
 bool admin_mode = FALSE;
 GtkWidget *main_notebook = NULL;
 GtkWidget *main_statusbar = NULL;
@@ -405,6 +408,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"    </menu>"
 		"    <menu action='options'>"
 		"      <menuitem action='grid'/>"
+		"      <menuitem action='grid_specs'/>"
 		"      <menuitem action='interval'/>"
 		"      <separator/>"
 		"      <menuitem action='admin'/>"
@@ -493,7 +497,10 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 "<control>x", "Exits Program", G_CALLBACK(_delete)},
 		{"help", NULL, "_Help", "<alt>h"},
 		{"about", GTK_STOCK_ABOUT, "A_bout", "<control>b"},
-		{"manual", GTK_STOCK_HELP, "_Manual", "<control>m"}
+		{"manual", GTK_STOCK_HELP, "_Manual", "<control>m"},
+		{"grid_specs", GTK_STOCK_EDIT, "Set Grid _Properties",
+		 "<control>p", "Change Grid Properties",
+		 G_CALLBACK(change_grid_popup)}
 	};
 
 	GtkActionEntry admin_entries[] = {

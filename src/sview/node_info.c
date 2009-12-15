@@ -496,11 +496,10 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 		goto update_color;
 	}
 
-	if(info_list) {
-		list_destroy(info_list);
-	}
-
-	info_list = list_create(_node_info_list_del);
+	if(info_list)
+		list_flush(info_list);
+	else
+		info_list = list_create(_node_info_list_del);
 	if (!info_list) {
 		g_print("malloc error\n");
 		return NULL;

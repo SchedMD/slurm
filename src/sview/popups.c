@@ -574,7 +574,7 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 	GtkObject *adjustment = gtk_adjustment_new(global_sleep_time,
 						   1, 10000,
 						   5, 60,
-						   1);
+						   0);
 	GtkWidget *spin_button =
 		gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
@@ -605,8 +605,7 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
-	if (response == GTK_RESPONSE_OK)
-	{
+	if (response == GTK_RESPONSE_OK) {
 		global_sleep_time =
 			gtk_spin_button_get_value_as_int(
 				GTK_SPIN_BUTTON(spin_button));
@@ -619,8 +618,96 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 					      temp);
 		g_free(temp);
 		if (!g_thread_create(_refresh_thr, GINT_TO_POINTER(response),
-				     FALSE, &error))
-		{
+				     FALSE, &error)) {
+			g_printerr ("Failed to create refresh thread: %s\n",
+				    error->message);
+		}
+	}
+
+	gtk_widget_destroy(popup);
+
+	return;
+}
+
+extern void change_grid_popup(GtkAction *action, gpointer user_data)
+{
+	GtkWidget *table = gtk_table_new(1, 2, FALSE);
+	GtkWidget *label;
+	GtkObject *adjustment;
+	GtkWidget *width_sb, *hori_sb, *vert_sb;
+	int width = global_x_width, hori = global_horizontal,
+		vert = global_vertical;
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"Grid Properties",
+		GTK_WINDOW (user_data),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		NULL);
+	GError *error = NULL;
+	int response = 0;
+	char *temp = NULL;
+
+	label = gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(popup), label);
+	gtk_dialog_add_button(GTK_DIALOG(popup),
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+			   table, FALSE, FALSE, 0);
+
+	label = gtk_label_new("Nodes in row ");
+	adjustment = gtk_adjustment_new(global_x_width, 1, 1000, 1, 60, 0);
+	width_sb = gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(table), width_sb, 1, 2, 0, 1);
+
+	label = gtk_label_new("Nodes before horizontal break ");
+	adjustment = gtk_adjustment_new(global_horizontal, 1, 1000, 1, 60, 0);
+	hori_sb = gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 1, 2);
+	gtk_table_attach_defaults(GTK_TABLE(table), hori_sb, 1, 2, 1, 2);
+
+	label = gtk_label_new("Nodes before vertical break ");
+	adjustment = gtk_adjustment_new(global_vertical, 1, 1000, 1, 60, 0);
+	vert_sb = gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 2, 3);
+	gtk_table_attach_defaults(GTK_TABLE(table), vert_sb, 1, 2, 2, 3);
+
+	gtk_widget_show_all(popup);
+	response = gtk_dialog_run (GTK_DIALOG(popup));
+
+	if (response == GTK_RESPONSE_OK) {
+		global_x_width =
+			gtk_spin_button_get_value_as_int(
+				GTK_SPIN_BUTTON(width_sb));
+		global_horizontal =
+			gtk_spin_button_get_value_as_int(
+				GTK_SPIN_BUTTON(hori_sb));
+		global_vertical =
+			gtk_spin_button_get_value_as_int(
+				GTK_SPIN_BUTTON(vert_sb));
+		if((width == global_x_width)
+		   && (hori == global_horizontal)
+		   && (vert == global_vertical)) {
+			temp = g_strdup_printf("Grid: Nothing changed.");
+		} else {
+			temp = g_strdup_printf("Grid set to %d nodes breaks "
+					       "at %d H and %d V.",
+					       global_x_width,
+					       global_horizontal,
+					       global_vertical);
+			get_system_stats(main_grid_table);
+		}
+		gtk_statusbar_pop(GTK_STATUSBAR(main_statusbar),
+				  STATUS_REFRESH);
+		response = gtk_statusbar_push(GTK_STATUSBAR(main_statusbar),
+					      STATUS_REFRESH,
+					      temp);
+		g_free(temp);
+		if (!g_thread_create(_refresh_thr, GINT_TO_POINTER(response),
+				     FALSE, &error)) {
 			g_printerr ("Failed to create refresh thread: %s\n",
 				    error->message);
 		}
