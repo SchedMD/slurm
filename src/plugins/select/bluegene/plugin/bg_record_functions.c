@@ -808,6 +808,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 			bg_record->bg_block_list = NULL;
 		}
 	} else {
+		List bg_block_list = NULL;
+
 		debug("add_bg_record: adding a small block");
 		if(no_check)
 			goto no_check;
@@ -900,13 +902,25 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		 * Here we go through each node listed and do the same thing
 		 * for each node.
 		 */
-		itr = list_iterator_create(bg_record->bg_block_list);
+		bg_block_list = bg_record->bg_block_list;
+		bg_record->bg_block_list = list_create(NULL);
+		itr = list_iterator_create(bg_block_list);
 		while ((ba_node = list_next(itr)) != NULL) {
+			xfree(bg_record->nodes);
+			bg_record->nodes = xstrdup_printf(
+				"%s%c%c%c",
+				bg_conf->slurm_node_prefix,
+				alpha_num[ba_node->coord[X]],
+				alpha_num[ba_node->coord[Y]],
+				alpha_num[ba_node->coord[Z]]);
+			list_append(bg_record->bg_block_list, ba_node);
 			handle_small_record_request(records, blockreq,
 						    bg_record, io_start);
+			list_flush(bg_record->bg_block_list);
 		}
 		list_iterator_destroy(itr);
 		destroy_bg_record(bg_record);
+		list_destroy(bg_block_list);
 	}
 
 	return SLURM_SUCCESS;
