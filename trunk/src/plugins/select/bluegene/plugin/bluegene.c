@@ -189,7 +189,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	/* We can't use bridge_get_block_info here because users are
 	   filled in there.  This function is very slow but necessary
 	   here to get the correct block count and the users. */
-	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
+	if ((rc = bridge_get_block(bg_block_id, &block_ptr)) != STATUS_OK) {
 		if(rc == INCONSISTENT_DATA
 		   && bg_conf->layout_mode == LAYOUT_DYNAMIC)
 			return REMOVE_USER_FOUND;

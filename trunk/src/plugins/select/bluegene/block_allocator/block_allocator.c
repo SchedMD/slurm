@@ -2487,13 +2487,15 @@ extern int load_block_wiring(char *bg_block_id)
 
 /*
  * get the used wires for a block out of the database and return the
- * node list
+ * node list.  The block_ptr here must be gotten with bridge_get_block
+ * not bridge_get_block_info, if you are looking to recover from
+ * before.  If you are looking to start clean it doesn't matter.
  */
-extern List get_and_set_block_wiring(char *bg_block_id)
+extern List get_and_set_block_wiring(char *bg_block_id,
+				     rm_partition_t *block_ptr)
 {
 #ifdef HAVE_BG_FILES
 	int rc, i, j;
-	rm_partition_t *block_ptr = NULL;
 	int cnt = 0;
 	int switch_cnt = 0;
 	rm_switch_t *curr_switch = NULL;
@@ -2508,13 +2510,6 @@ extern List get_and_set_block_wiring(char *bg_block_id)
 	ListIterator itr = NULL;
 
 	debug3("getting info for block %s\n", bg_block_id);
-
-	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
-		error("bridge_get_block(%s): %s",
-		      bg_block_id,
-		      bg_err_str(rc));
-		goto end_it;
-	}
 
 	if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
 				  &switch_cnt)) != STATUS_OK) {
