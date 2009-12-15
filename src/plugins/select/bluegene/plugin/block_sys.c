@@ -417,11 +417,19 @@ int read_bg_blocks(List curr_block_list)
 	hostlist_t hostlist;		/* expanded form of hosts */
 
 	set_bp_map();
-	if ((rc = bridge_get_blocks_info(state, &block_list))
-	    != STATUS_OK) {
-		error("2 rm_get_blocks_info(): %s", bg_err_str(rc));
-		return SLURM_ERROR;
 
+	if(bg_recover) {
+		if ((rc = bridge_get_blocks(state, &block_list))
+		    != STATUS_OK) {
+			error("2 rm_get_blocks(): %s", bg_err_str(rc));
+			return SLURM_ERROR;
+		}
+	} else {
+		if ((rc = bridge_get_blocks_info(state, &block_list))
+		    != STATUS_OK) {
+			error("2 rm_get_blocks_info(): %s", bg_err_str(rc));
+			return SLURM_ERROR;
+		}
 	}
 
 	if ((rc = bridge_get_data(block_list, RM_PartListSize, &block_count))
@@ -429,9 +437,9 @@ int read_bg_blocks(List curr_block_list)
 		error("bridge_get_data(RM_PartListSize): %s", bg_err_str(rc));
 		block_count = 0;
 	}
+
 	info("querying the system for existing blocks");
 	for(block_number=0; block_number<block_count; block_number++) {
-
 		if (block_number) {
 			if ((rc = bridge_get_data(block_list,
 						  RM_PartListNextPart,
@@ -470,16 +478,6 @@ int read_bg_blocks(List curr_block_list)
 			continue;
 		}
 
-		if(bg_recover) {
-			if ((rc = bridge_get_block(tmp_char, &block_ptr))
-			    != STATUS_OK) {
-				error("Block %s doesn't exist.",
-				      tmp_char);
-				rc = SLURM_ERROR;
-				free(tmp_char);
-				break;
-			}
-		}
 		/* New BG Block record */
 
 		bg_record = xmalloc(sizeof(bg_record_t));
@@ -496,11 +494,11 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSize): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 
 		if(bp_cnt==0)
-			goto clean_up;
+			continue;
 
 		bg_record->node_cnt = bp_cnt;
 		bg_record->cpu_cnt = bg_conf->cpu_ratio * bg_record->node_cnt;
@@ -513,11 +511,11 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_BPNum): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 
 		if(bp_cnt==0)
-			goto clean_up;
+			continue;
 		bg_record->bp_count = bp_cnt;
 
 		debug3("has %d BPs", bg_record->bp_count);
@@ -527,7 +525,7 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSwitchNum): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionSmall,
@@ -535,7 +533,7 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSmall): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 
 		if(small) {
@@ -545,7 +543,7 @@ int read_bg_blocks(List curr_block_list)
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_PartitionOptions): "
 				      "%s", bg_err_str(rc));
-				goto clean_up;
+				continue;
 			} else if(tmp_char) {
 				switch(tmp_char[0]) {
 				case 's':
@@ -576,7 +574,7 @@ int read_bg_blocks(List curr_block_list)
 				error("bridge_get_data("
 				      "RM_PartitionFirstNodeCard): %s",
 				      bg_err_str(rc));
-				goto clean_up;
+				continue;
 			}
 
 			if((rc = bridge_get_data(block_ptr,
@@ -586,7 +584,7 @@ int read_bg_blocks(List curr_block_list)
 				error("bridge_get_data("
 				      "RM_PartitionNodeCardNum): %s",
 				      bg_err_str(rc));
-				goto clean_up;
+				continue;
 			}
 #ifdef HAVE_BGL
 			/* Translate nodecard count to ionode count */
@@ -606,7 +604,7 @@ int read_bg_blocks(List curr_block_list)
 						  RM_NodeCardQuarter,
 						  &io_start)) != STATUS_OK) {
 				error("bridge_get_data(CardQuarter): %d",rc);
-				goto clean_up;
+				continue;
 			}
 			io_start *= bg_conf->quarter_ionode_cnt;
 			io_start += bg_conf->nodecard_ionode_cnt * (nc_id%4);
@@ -619,11 +617,11 @@ int read_bg_blocks(List curr_block_list)
 						  RM_NodeCardID,
 						  &tmp_char)) != STATUS_OK) {
 				error("bridge_get_data(RM_NodeCardID): %d",rc);
-				goto clean_up;
+				continue;
 			}
 
 			if(!tmp_char)
-				goto clean_up;
+				continue;
 
 			/* From the first nodecard id we can figure
 			   out where to start from with the alloc of ionodes.
@@ -642,7 +640,7 @@ int read_bg_blocks(List curr_block_list)
 					error("bridge_get_data("
 					      "RM_NodeCardFirstIONode): %d",
 					      rc);
-					goto clean_up;
+					continue;
 				}
 				if ((rc = bridge_get_data(ionode,
 							  RM_IONodeID,
@@ -652,11 +650,11 @@ int read_bg_blocks(List curr_block_list)
 					      "RM_NodeCardIONodeNum): %s",
 					      bg_err_str(rc));
 					rc = SLURM_ERROR;
-					goto clean_up;
+					continue;
 				}
 
 				if(!tmp_char)
-					goto clean_up;
+					continue;
 				/* just add the ionode num to the
 				 * io_start */
 				io_start += atoi((char*)tmp_char+1);
@@ -666,7 +664,6 @@ int read_bg_blocks(List curr_block_list)
 				io_cnt = 0;
 			}
 #endif
-
 			if(set_ionodes(bg_record, io_start, io_cnt)
 			   == SLURM_ERROR)
 				error("couldn't create ionode_bitmap "
@@ -689,7 +686,7 @@ int read_bg_blocks(List curr_block_list)
 				error("bridge_get_data"
 				      "(RM_PartitionConnection): %s",
 				      bg_err_str(rc));
-				goto clean_up;
+				continue;
 			}
 			/* Set the bitmap blank here if it is a full
 			   node we don't want anything set we also
@@ -698,11 +695,12 @@ int read_bg_blocks(List curr_block_list)
 			bg_record->ionode_bitmap = bit_alloc(bg_conf->numpsets);
 		}
 
-		bg_record->bg_block_list =
-			get_and_set_block_wiring(bg_record->bg_block_id);
+		bg_record->bg_block_list = get_and_set_block_wiring(
+			bg_record->bg_block_id, block_ptr);
 		if(!bg_record->bg_block_list)
 			fatal("couldn't get the wiring info for block %s",
 			      bg_record->bg_block_id);
+
 		hostlist = hostlist_create(NULL);
 
 		for (i=0; i<bp_cnt; i++) {
@@ -725,9 +723,7 @@ int read_bg_blocks(List curr_block_list)
 					      "(RM_FirstBP): %s",
 					      bg_err_str(rc));
 					rc = SLURM_ERROR;
-					if (bg_recover)
-						bridge_free_block(block_ptr);
-					return rc;
+					break;
 				}
 			}
 			if ((rc = bridge_get_data(bp_ptr, RM_BPID, &bpid))
@@ -786,7 +782,7 @@ int read_bg_blocks(List curr_block_list)
 					  &bg_record->state)) != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionState): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		} else if(bg_record->state == RM_PARTITION_CONFIGURING)
 			bg_record->boot_state = 1;
 		else
@@ -811,7 +807,7 @@ int read_bg_blocks(List curr_block_list)
 					  &bp_cnt)) != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionUsersNum): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		} else {
 			if(bp_cnt==0) {
 
@@ -830,12 +826,12 @@ int read_bg_blocks(List curr_block_list)
 					error("bridge_get_data"
 					      "(RM_PartitionFirstUser): %s",
 					      bg_err_str(rc));
-					goto clean_up;
+					continue;
 				}
 				if(!user_name) {
 					error("No user name was "
 					      "returned from database");
-					goto clean_up;
+					continue;
 				}
 				bg_record->user_name = xstrdup(user_name);
 
@@ -868,11 +864,11 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionBlrtsImg): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 		if(!user_name) {
 			error("No BlrtsImg was returned from database");
-			goto clean_up;
+			continue;
 		}
 		bg_record->blrtsimage = xstrdup(user_name);
 
@@ -882,11 +878,11 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionLinuxImg): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 		if(!user_name) {
 			error("No LinuxImg was returned from database");
-			goto clean_up;
+			continue;
 		}
 		bg_record->linuximage = xstrdup(user_name);
 
@@ -896,11 +892,11 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionRamdiskImg): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 		if(!user_name) {
 			error("No RamdiskImg was returned from database");
-			goto clean_up;
+			continue;
 		}
 		bg_record->ramdiskimage = xstrdup(user_name);
 
@@ -911,11 +907,11 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionCnloadImg): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 		if(!user_name) {
 			error("No CnloadImg was returned from database");
-			goto clean_up;
+			continue;
 		}
 		bg_record->linuximage = xstrdup(user_name);
 
@@ -925,11 +921,11 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionIoloadImg): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 		if(!user_name) {
 			error("No IoloadImg was returned from database");
-			goto clean_up;
+			continue;
 		}
 		bg_record->ramdiskimage = xstrdup(user_name);
 
@@ -940,20 +936,13 @@ int read_bg_blocks(List curr_block_list)
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionMloaderImg): %s",
 			      bg_err_str(rc));
-			goto clean_up;
+			continue;
 		}
 		if(!user_name) {
 			error("No MloaderImg was returned from database");
-			goto clean_up;
+			continue;
 		}
 		bg_record->mloaderimage = xstrdup(user_name);
-
-
-	clean_up:
-		if (bg_recover
-		    && ((rc = bridge_free_block(block_ptr)) != STATUS_OK)) {
-			error("bridge_free_block(): %s", bg_err_str(rc));
-		}
 	}
 	bridge_free_block_list(block_list);
 

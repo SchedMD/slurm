@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Improve sview layout of blocks in use.
  -- A user can not change the dimensions of the grid in sview.
+ -- BLUEGENE - improved startup speed further for large numbers of defined
+    blocks
 
 * Changes in SLURM 2.1.0-pre9
 =============================
