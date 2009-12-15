@@ -186,6 +186,9 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 	rm_partition_t *block_ptr = NULL;
 	int rc, i, user_count;
 
+	/* We can't use bridge_get_block_info here because users are
+	   filled in there.  This function is very slow but necessary
+	   here to get the correct block count and the users. */
 	if ((rc = bridge_get_block(bg_block_id,  &block_ptr)) != STATUS_OK) {
 		if(rc == INCONSISTENT_DATA
 		   && bg_conf->layout_mode == LAYOUT_DYNAMIC)
@@ -205,7 +208,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 		returnc = REMOVE_USER_ERR;
 		user_count = 0;
 	} else
-		debug2("got %d users for %s",user_count, bg_block_id);
+		debug2("got %d users for %s", user_count, bg_block_id);
 	for(i=0; i<user_count; i++) {
 		if(i) {
 			if ((rc = bridge_get_data(block_ptr,
