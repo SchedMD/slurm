@@ -3104,7 +3104,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "node_name", "tinytext default '' not null" },
 		{ "cluster", "tinytext not null" },
 		{ "cpu_count", "int not null" },
-		{ "state", "smallint default 0 not null" },
+		{ "state", "smallint unsigned default 0 not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "period_end", "int unsigned default 0 not null" },
 		{ "reason", "tinytext not null" },
@@ -3133,7 +3133,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "timelimit", "int unsigned default 0 not null" },
 		{ "name", "tinytext not null" },
 		{ "track_steps", "tinyint not null" },
-		{ "state", "smallint not null" },
+		{ "state", "smallint unsigned not null" },
 		{ "comp_code", "int default 0 not null" },
 		{ "priority", "int not null" },
 		{ "req_cpus", "int unsigned not null" },
@@ -3190,7 +3190,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "node_inx", "text not null default ''" },
 		{ "start", "int unsigned default 0 not null"},
 		{ "end", "int unsigned default 0 not null" },
-		{ "flags", "smallint default 0 not null" },
+		{ "flags", "smallint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -3204,7 +3204,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "name", "text not null" },
 		{ "nodelist", "text not null" },
 		{ "node_inx", "text" },
-		{ "state", "smallint not null" },
+		{ "state", "smallint unsigned not null" },
 		{ "kill_requid", "int default -1 not null" },
 		{ "comp_code", "int default 0 not null" },
 		{ "nodes", "int unsigned not null" },
