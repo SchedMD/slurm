@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
  -- A user can not change the dimensions of the grid in sview.
  -- BLUEGENE - improved startup speed further for large numbers of defined
     blocks
+ -- Fix to _get_job_min_nodes() in wiki2/get_jobs.c suggested by Michal Novotny
 
 * Changes in SLURM 2.1.0-pre9
 =============================

@@ -514,15 +514,27 @@ static uint32_t	_get_job_max_nodes(struct job_record *job_ptr)
 
 static uint32_t	_get_job_min_nodes(struct job_record *job_ptr)
 {
+	uint32_t min_nodes = 1;
+
 	if (IS_JOB_STARTED(job_ptr)) {
 		/* return actual count of currently allocated nodes.
 		 * NOTE: gets decremented to zero while job is completing */
 		return job_ptr->node_cnt;
 	}
 
-	if (job_ptr->details)
-		return job_ptr->details->min_nodes;
-	return (uint32_t) 1;
+	if ((job_ptr->details == NULL) || (job_ptr->part_ptr == NULL))
+		return min_nodes;	/* should never reach here */
+
+	if (job_ptr->details->min_nodes) {
+		min_nodes = job_ptr->details->min_nodes;
+		if (job_ptr->part_ptr->min_nodes > 1) {
+			min_nodes = MAX(min_nodes,
+					job_ptr->part_ptr->min_nodes);
+		}
+	} else	/* use partition limit */
+		min_nodes = job_ptr->part_ptr->min_nodes;
+
+	return min_nodes;
 }
 
 static uint32_t _get_job_submit_time(struct job_record *job_ptr)
