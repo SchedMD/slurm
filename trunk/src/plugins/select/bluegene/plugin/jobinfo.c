@@ -63,7 +63,7 @@ extern select_jobinfo_t *alloc_select_jobinfo()
 	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 		jobinfo->geometry[i] = (uint16_t) NO_VAL;
 	}
-	jobinfo->conn_type = SELECT_NAV;
+	jobinfo->conn_type = (uint16_t) NO_VAL;
 	jobinfo->reboot = (uint16_t) NO_VAL;
 	jobinfo->rotate = (uint16_t) NO_VAL;
 	jobinfo->magic = JOBINFO_MAGIC;

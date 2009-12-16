@@ -345,6 +345,8 @@ enum select_print_mode {
 enum select_node_cnt {
 	SELECT_GET_NODE_SCALING,      /* Give scaling factor for node count */
 	SELECT_GET_NODE_CPU_CNT,      /* Give how many cpus are on a node */
+	SELECT_GET_BP_CPU_CNT,        /* Give how many cpus are on a
+				       * base partition */
 	SELECT_APPLY_NODE_MIN_OFFSET, /* Apply min offset to variable */
 	SELECT_APPLY_NODE_MAX_OFFSET, /* Apply max offset to variable */
 	SELECT_SET_NODE_CNT,	      /* Set altered node cnt */

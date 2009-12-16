@@ -421,7 +421,13 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		type = "Update Features";
 		got_features_edit_signal = xstrdup(new_text);
 		break;
+	default:
+		type = "unknown";
+		break;
 	}
+
+	if(strcmp(type, "unknown"))
+		global_send_update_msg = 1;
 
 	return type;
 
@@ -464,11 +470,13 @@ static gboolean _admin_focus_out_part(GtkEntry *entry,
 				      GdkEventFocus *event,
 				      update_part_msg_t *part_msg)
 {
-	int type = gtk_entry_get_max_length(entry);
-	const char *name = gtk_entry_get_text(entry);
-	type -= DEFAULT_ENTRY_LENGTH;
-	_set_part_msg(part_msg, name, type);
-
+	if(global_entry_changed) {
+		int type = gtk_entry_get_max_length(entry);
+		const char *name = gtk_entry_get_text(entry);
+		type -= DEFAULT_ENTRY_LENGTH;
+		_set_part_msg(part_msg, name, type);
+		global_entry_changed = 0;
+	}
 	return false;
 }
 
@@ -2358,7 +2366,9 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	response = gtk_dialog_run (GTK_DIALOG(popup));
 
 	if (response == GTK_RESPONSE_OK) {
-		if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
+		if(!global_send_update_msg) {
+			temp = g_strdup_printf("No change detected.");
+		} else if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
 			temp = g_strdup_printf(
 				"Partition %s updated successfully",
 				partid);
@@ -2374,6 +2384,7 @@ end_it:
 
 	g_free(partid);
 	g_free(nodelist);
+	global_entry_changed = 0;
 	slurm_free_update_part_msg(part_msg);
 	gtk_widget_destroy(popup);
 	if(got_edit_signal) {

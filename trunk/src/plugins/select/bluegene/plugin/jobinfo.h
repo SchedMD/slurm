@@ -55,7 +55,7 @@ struct select_jobinfo {
 	char *nodes;            /* node list given for estimated start */
 	char *ionodes;          /* for bg to tell which ionodes of a small
 				 * block the job is running */
-	uint32_t node_cnt;      /* how many cnodes in block */
+	uint32_t node_cnt;      /* how many cnodes in block running job */
 	uint16_t altered;       /* see if we have altered this job
 				 * or not yet */
 	uint32_t max_cpus;	/* maximum processors to use */

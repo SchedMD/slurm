@@ -277,6 +277,8 @@ extern int global_sleep_time;
 extern int global_x_width;
 extern int global_horizontal;
 extern int global_vertical;
+extern bool global_entry_changed;
+extern bool global_send_update_msg;
 extern bool admin_mode;
 extern GtkWidget *main_statusbar;
 extern GtkWidget *main_window;

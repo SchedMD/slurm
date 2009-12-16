@@ -123,14 +123,14 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
 static job_desc_msg_t * _copy_job_record_to_job_desc(
-					struct job_record *job_ptr);
+	struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static acct_qos_rec_t *_determine_and_validate_qos(
-					acct_association_rec_t *assoc_ptr,
-					acct_qos_rec_t *qos_rec,
-					int *error_code);
+	acct_association_rec_t *assoc_ptr,
+	acct_qos_rec_t *qos_rec,
+	int *error_code);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
@@ -303,9 +303,9 @@ static void _delete_job_desc_files(uint32_t job_id)
 }
 
 static acct_qos_rec_t *_determine_and_validate_qos(
-				acct_association_rec_t *assoc_ptr,
-				acct_qos_rec_t *qos_rec,
-				int *error_code)
+	acct_association_rec_t *assoc_ptr,
+	acct_qos_rec_t *qos_rec,
+	int *error_code)
 {
 	acct_qos_rec_t *qos_ptr = NULL;
 
@@ -1069,7 +1069,7 @@ static int _load_job_state(Buf buffer)
 		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 		qos_rec.id = job_ptr->qos;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
-				job_ptr->assoc_ptr, &qos_rec, &qos_error);
+			job_ptr->assoc_ptr, &qos_rec, &qos_error);
 		if (qos_error != SLURM_SUCCESS) {
 			info("Cancelling job %u with invalid qos", job_id);
 			job_ptr->job_state = JOB_CANCELLED;
@@ -1434,7 +1434,7 @@ extern int kill_job_by_part_name(char *part_name)
 		} else if (IS_JOB_PENDING(job_ptr)) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
-				job_ptr->job_id, part_name);
+			     job_ptr->job_id, part_name);
 			job_ptr->job_state	= JOB_CANCELLED;
 			job_ptr->start_time	= now;
 			job_ptr->end_time	= now;
@@ -1528,8 +1528,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 				     job_ptr->job_id, node_name);
 				_set_job_prio(job_ptr);
 				snprintf(requeue_msg, sizeof(requeue_msg),
-					"Job requeued due to failure of node %s",
-					node_name);
+					 "Job requeued due to failure of node %s",
+					 node_name);
 				slurm_sched_requeue(job_ptr, requeue_msg);
 				job_ptr->time_last_active  = now;
 				if (suspended) {
@@ -1762,8 +1762,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->alloc_node, job_specs->alloc_sid);
 
 	debug3("   resp_host=%s alloc_resp_port=%u  other_port=%u",
-		job_specs->resp_host,
-		job_specs->alloc_resp_port, job_specs->other_port);
+	       job_specs->resp_host,
+	       job_specs->alloc_resp_port, job_specs->other_port);
 	debug3("   dependency=%s account=%s comment=%s",
 	       job_specs->dependency, job_specs->account,
 	       job_specs->comment);
@@ -1811,7 +1811,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->plane_size);
 
 	select_g_select_jobinfo_sprint(job_specs->select_jobinfo,
-				buf, sizeof(buf), SELECT_PRINT_MIXED);
+				       buf, sizeof(buf), SELECT_PRINT_MIXED);
 	if (buf[0] != '\0')
 		debug3("   %s", buf);
 }
@@ -2383,6 +2383,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t rotate;
 	uint16_t conn_type;
 	uint32_t max_cpus=0;
+	static uint32_t cpus_per_bp = 0;
+
+	if(!cpus_per_bp)
+		select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT, &cpus_per_bp);
 #endif
 
 	*job_pptr = (struct job_record *) NULL;
@@ -2647,10 +2651,21 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	select_g_select_jobinfo_get(job_desc->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if (conn_type == (uint16_t) NO_VAL) {
-		conn_type = (uint16_t) SELECT_TORUS;
+		conn_type = (uint16_t) SELECT_NAV;
 		select_g_select_jobinfo_set(job_desc->select_jobinfo,
 					    SELECT_JOBDATA_CONN_TYPE,
 					    &conn_type);
+	} else if(((conn_type >= SELECT_SMALL)
+		   && (job_desc->num_procs >= cpus_per_bp))
+		  || (((conn_type == SELECT_TORUS)|| (conn_type == SELECT_MESH))
+		      && (job_desc->num_procs < cpus_per_bp))) {
+		/* check to make sure we have a valid conn_type with
+		 * the cpu count */
+		info("Job's cpu count at %u makes our conn_type "
+		     "of '%s' invalid.",
+		     job_desc->num_procs, conn_type_string(conn_type));
+		error_code = ESLURM_INVALID_NODE_COUNT;
+		goto cleanup_fail;
 	}
 #endif
 
@@ -3345,9 +3360,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 				if(accounting_enforce
 				   & ACCOUNTING_ENFORCE_WCKEYS) {
 					error("_job_create: invalid wckey '%s' "
-					     "for user %u.",
-					     wckey_rec.name,
-					     job_desc->user_id);
+					      "for user %u.",
+					      wckey_rec.name,
+					      job_desc->user_id);
 					return ESLURM_INVALID_WCKEY;
 				}
 			}
@@ -3464,9 +3479,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
 		if (detail_ptr->overcommit == 0) {
 			detail_ptr->job_min_cpus =
-					MAX(detail_ptr->job_min_cpus,
-					    (detail_ptr->cpus_per_task *
-					     detail_ptr->ntasks_per_node));
+				MAX(detail_ptr->job_min_cpus,
+				    (detail_ptr->cpus_per_task *
+				     detail_ptr->ntasks_per_node));
 		}
 	} else {
 		detail_ptr->job_min_cpus = MAX(detail_ptr->job_min_cpus,
@@ -4196,7 +4211,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			continue;
 
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
-		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
+		    &&  (job_ptr->user_id != uid) && !validate_super_user(uid))
 			break;
 
 		jobs_packed++;
@@ -4497,8 +4512,8 @@ void reset_job_bitmaps(void)
 
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 		if ((job_ptr->nodes_completing) &&
-		     (node_name2bitmap(job_ptr->nodes_completing,
-				       false,  &job_ptr->node_bitmap))) {
+		    (node_name2bitmap(job_ptr->nodes_completing,
+				      false,  &job_ptr->node_bitmap))) {
 			error("Invalid nodes (%s) for job_id %u",
 			      job_ptr->nodes_completing,
 			      job_ptr->job_id);
@@ -4514,8 +4529,8 @@ void reset_job_bitmaps(void)
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) &&
 		    job_ptr->job_resrcs && (cr_flag || gang_flag) &&
 		    valid_job_resources(job_ptr->job_resrcs,
-					 node_record_table_ptr,
-					 slurmctld_conf.fast_schedule)) {
+					node_record_table_ptr,
+					slurmctld_conf.fast_schedule)) {
 			error("Aborting JobID %u due to change in socket/core "
 			      "configuration of allocated nodes",
 			      job_ptr->job_id);
@@ -4565,7 +4580,7 @@ void reset_job_bitmaps(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 			error("select_g_update_nodeinfo(%u): %m",
-				job_ptr->job_id);
+			      job_ptr->job_id);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -4838,10 +4853,19 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false;
 #ifdef HAVE_BG
- 	 uint16_t reboot = (uint16_t) NO_VAL;
-	 uint16_t rotate = (uint16_t) NO_VAL;
-	 uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
-	 char *image = NULL;
+	uint16_t conn_type = (uint16_t) NO_VAL;
+	uint16_t reboot = (uint16_t) NO_VAL;
+	uint16_t rotate = (uint16_t) NO_VAL;
+	uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
+	char *image = NULL;
+	static uint32_t cpus_per_bp = 0;
+	static uint16_t cpus_per_node = 0;
+
+	if(!cpus_per_bp)
+		select_g_alter_node_cnt(SELECT_GET_BP_CPU_CNT, &cpus_per_bp);
+	if(!cpus_per_node)
+		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
+					&cpus_per_node);
 #endif
 
 	job_ptr = find_job_record(job_specs->job_id);
@@ -4977,11 +5001,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 
-	 /* This needs to be done after the association acct policy check since
-	  * it looks at unaltered nodes for bluegene systems
-	  */
-	 debug3("update before alteration asking for nodes %u-%u cpus %u",
-		job_specs->min_nodes, job_specs->max_nodes,
+	/* This needs to be done after the association acct policy check since
+	 * it looks at unaltered nodes for bluegene systems
+	 */
+	debug3("update before alteration asking for nodes %u-%u cpus %u",
+	       job_specs->min_nodes, job_specs->max_nodes,
 	       job_specs->num_procs);
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_specs);
 	select_g_select_jobinfo_get(job_specs->select_jobinfo,
@@ -4996,6 +5020,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (job_specs->num_procs < 1)
 			error_code = ESLURM_BAD_TASK_COUNT;
 		else {
+#ifdef HAVE_BG
+			uint32_t node_cnt = job_specs->num_procs;
+			if(cpus_per_node)
+				node_cnt /= cpus_per_node;
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						    SELECT_JOBDATA_NODE_CNT,
+						    &node_cnt);
+#endif
 			job_ptr->num_procs = job_specs->num_procs;
 			info("update_job: setting num_procs to %u for "
 			     "job_id %u", job_specs->num_procs,
@@ -5045,21 +5077,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		if (save_min_nodes) {
 			detail_ptr->min_nodes = save_min_nodes;
-			save_min_nodes = 0;
+			save_min_nodes = NO_VAL;
 		}
 		if (save_max_nodes) {
 			detail_ptr->max_nodes = save_max_nodes;
-			save_max_nodes = 0;
+			save_max_nodes = NO_VAL;
 		}
 	}
 	if (save_min_nodes != NO_VAL) {
-		info("update_job: setting min_nodes to %u for job_id %u",
-		     job_specs->min_nodes, job_specs->job_id);
+		info("update_job: setting min_nodes from "
+		     "%u to %u for job_id %u",
+		     save_min_nodes, detail_ptr->min_nodes, job_specs->job_id);
 		update_accounting = true;
 	}
 	if (save_max_nodes != NO_VAL) {
-		info("update_job: setting max_nodes to %u for job_id %u",
-		     job_specs->max_nodes, job_specs->job_id);
+		info("update_job: setting max_nodes from "
+		     "%u to %u for job_id %u",
+		     save_max_nodes, detail_ptr->max_nodes, job_specs->job_id);
+		update_accounting = true;
 	}
 
 	if (job_specs->time_limit != NO_VAL) {
@@ -5440,8 +5475,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user) {
-			detail_ptr->ntasks_per_node = job_specs->
-						      ntasks_per_node;
+			detail_ptr->ntasks_per_node =
+				job_specs->ntasks_per_node;
 			info("update_job: setting ntasks_per_node to %u for "
 			     "job_id %u", job_specs->ntasks_per_node,
 			     job_specs->job_id);
@@ -5528,7 +5563,60 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 #ifdef HAVE_BG
- 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
+	select_g_select_jobinfo_get(job_specs->select_jobinfo,
+				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
+	 if (conn_type != (uint16_t) NO_VAL) {
+		 if (!IS_JOB_PENDING(job_ptr))
+			 error_code = ESLURM_DISABLED;
+		 else {
+			 if((conn_type >= SELECT_SMALL)
+			    && (job_ptr->num_procs >= cpus_per_bp)) {
+				 info("update_job: could not change "
+				      "conn_type to '%s' because cpu "
+				      "count is %u for job %u making "
+				      "the conn_type invalid.",
+				      conn_type_string(conn_type),
+				      job_ptr->num_procs,
+				      job_ptr->job_id);
+				 error_code = ESLURM_INVALID_NODE_COUNT;
+			 } else if(((conn_type == SELECT_TORUS)
+				    || (conn_type == SELECT_MESH))
+				   && (job_ptr->num_procs < cpus_per_bp)) {
+				 info("update_job: could not change "
+				      "conn_type to '%s' because cpu "
+				      "count is %u for job %u making "
+				      "the conn_type invalid.",
+				      conn_type_string(conn_type),
+				      job_ptr->num_procs,
+				      job_ptr->job_id);
+				 error_code = ESLURM_INVALID_NODE_COUNT;
+			 } else {
+				 info("update_job: setting conn_type to '%s' "
+				      "for jobid %u",
+				      conn_type_string(conn_type),
+				      job_ptr->job_id);
+				 select_g_select_jobinfo_set(
+					 job_ptr->select_jobinfo,
+					 SELECT_JOBDATA_CONN_TYPE, &conn_type);
+			 }
+		 }
+	 }
+	 /* check to make sure we didn't mess up with the proc count */
+ 	 select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				     SELECT_JOBDATA_CONN_TYPE, &conn_type);
+	 if(((conn_type >= SELECT_SMALL)
+	     && (job_ptr->num_procs >= cpus_per_bp))
+	    || (((conn_type == SELECT_TORUS)|| (conn_type == SELECT_MESH))
+		&& (job_ptr->num_procs < cpus_per_bp))) {
+		 info("update_job: With cpu count at %u our conn_type "
+		      "of '%s' is invalid for job %u.",
+		      job_ptr->num_procs,
+		      conn_type_string(conn_type),
+		      job_ptr->job_id);
+		 error_code = ESLURM_INVALID_NODE_COUNT;
+	 }
+
+	 select_g_select_jobinfo_get(job_specs->select_jobinfo,
 				     SELECT_JOBDATA_ROTATE, &rotate);
 	 if (rotate != (uint16_t) NO_VAL) {
 		 if (!IS_JOB_PENDING(job_ptr))
