@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - improved startup speed further for large numbers of defined
     blocks
  -- Fix to _get_job_min_nodes() in wiki2/get_jobs.c suggested by Michal Novotny
+ -- BLUEGENE - fixed issues when updating a pending job when a node 
+    count was incorrect for the asked for connection type.
 
 * Changes in SLURM 2.1.0-pre9
 =============================

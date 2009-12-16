@@ -486,7 +486,6 @@ static bg_record_t *_find_matching_block(List block_list,
 				*/
 				goto good_conn_type;
 			}
-
 #endif
 			debug("bg block %s conn-type not usable asking for %s "
 			      "bg_record is %s",
@@ -876,13 +875,13 @@ static int _find_best_block_match(List block_list,
 	}
 
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_CONN_TYPE, &conn_type);
+				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_GEOMETRY, &req_geometry);
+				    SELECT_JOBDATA_GEOMETRY, &req_geometry);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_ROTATE, &rotate);
+				    SELECT_JOBDATA_ROTATE, &rotate);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_MAX_CPUS, &max_cpus);
+				    SELECT_JOBDATA_MAX_CPUS, &max_cpus);
 
 
 #ifdef HAVE_BGL
@@ -1604,11 +1603,11 @@ preempt:
 						job_ptr->select_jobinfo,
 						SELECT_JOBDATA_BLOCK_ID,
 						bg_record->bg_block_id);
-					conn_type = bg_record->conn_type;
-					select_g_select_jobinfo_set(
-						job_ptr->select_jobinfo,
-						SELECT_JOBDATA_CONN_TYPE,
-						&conn_type);
+					/* conn_type = bg_record->conn_type; */
+					/* select_g_select_jobinfo_set( */
+					/* 	job_ptr->select_jobinfo, */
+					/* 	SELECT_JOBDATA_CONN_TYPE, */
+					/* 	&conn_type); */
 					if(job_ptr) {
 						job_ptr->job_state
 							|= JOB_CONFIGURING;

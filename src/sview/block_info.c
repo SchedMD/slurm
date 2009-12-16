@@ -1345,8 +1345,7 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	}
 
 
-	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error))
-	{
+	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error)) {
 		g_printerr ("Failed to create part popup thread: %s\n",
 			    error->message);
 		return;

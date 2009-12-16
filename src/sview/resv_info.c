@@ -305,6 +305,9 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		break;
 	}
 
+	if(strcmp(type, "unknown"))
+		global_send_update_msg = 1;
+
 	return type;
 
 return_error:
@@ -356,11 +359,13 @@ static gboolean _admin_focus_out_resv(GtkEntry *entry,
 				      GdkEventFocus *event,
 				      resv_desc_msg_t *resv_msg)
 {
-	int type = gtk_entry_get_max_length(entry);
-	const char *name = gtk_entry_get_text(entry);
-	type -= DEFAULT_ENTRY_LENGTH;
-	_set_resv_msg(resv_msg, name, type);
-
+	if(global_entry_changed) {
+		int type = gtk_entry_get_max_length(entry);
+		const char *name = gtk_entry_get_text(entry);
+		type -= DEFAULT_ENTRY_LENGTH;
+		_set_resv_msg(resv_msg, name, type);
+		global_entry_changed = 0;
+	}
 	return false;
 }
 
@@ -1382,7 +1387,10 @@ extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		case EDIT_EDIT:
 			if(got_edit_signal)
 				goto end_it;
-			if(slurm_update_reservation(resv_msg)
+
+			if(!global_send_update_msg) {
+				temp = g_strdup_printf("No change detected.");
+			} else if(slurm_update_reservation(resv_msg)
 			   == SLURM_SUCCESS) {
 				temp = g_strdup_printf(
 					"Reservation %s updated successfully",
@@ -1402,6 +1410,7 @@ extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 end_it:
 
 	g_free(resvid);
+	global_entry_changed = 0;
 	slurm_free_resv_desc_msg(resv_msg);
 	gtk_widget_destroy(popup);
 	if(got_edit_signal) {

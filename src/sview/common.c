@@ -35,6 +35,12 @@ typedef struct {
 	GtkTreeIter iter;
 } treedata_t;
 
+static gboolean _entry_changed(GtkWidget *widget, void *msg)
+{
+	global_entry_changed = 1;
+	return false;
+}
+
 static void _handle_response(GtkDialog *dialog, gint response_id,
 			     popup_info_t *popup_win)
 {
@@ -1363,6 +1369,11 @@ extern void display_admin_edit(GtkTable *table, void *type_msg, int *row,
 		g_signal_connect(entry, "focus-out-event",
 				 focus_callback,
 				 type_msg);
+
+		/* set global variable so we know something changed */
+		g_signal_connect(entry, "changed",
+				 (GCallback)_entry_changed,
+				 NULL);
 	} else /* others can't be altered by the user */
 		return;
 	label = gtk_label_new(display_data->name);

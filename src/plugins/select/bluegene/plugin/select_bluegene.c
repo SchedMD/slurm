@@ -1096,6 +1096,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		if((*cpus) != (uint16_t)INFINITE)
 			(*cpus) = bg_conf->cpu_ratio;
 		break;
+	case SELECT_GET_BP_CPU_CNT:
+		if((*nodes) != INFINITE)
+			(*nodes) = bg_conf->cpus_per_bp;
+		break;
 	case SELECT_SET_BP_CNT:
 		if(((*nodes) == INFINITE) || ((*nodes) == NO_VAL))
 			tmp = (*nodes);
@@ -1154,7 +1158,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		/* make sure if the user only specified num_procs to
 		   set min_nodes correctly
 		*/
-		if(job_desc->num_procs > job_desc->min_nodes)
+		if((job_desc->num_procs != NO_VAL)
+		   && (job_desc->num_procs > job_desc->min_nodes))
 			job_desc->min_nodes =
 				job_desc->num_procs / bg_conf->cpu_ratio;
 

@@ -711,9 +711,16 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 #else
 	if((bg_update_ptr->conn_type >= SELECT_SMALL)
 		&& (bg_update_ptr->conn_type != bg_record->conn_type)) {
-		debug3("changing small block mode from %u to %u",
-		       bg_record->conn_type, bg_update_ptr->conn_type);
+		debug3("changing small block mode from %s to %s",
+		       conn_type_string(bg_record->conn_type),
+		       conn_type_string(bg_update_ptr->conn_type));
 		rc = 1;
+#ifndef HAVE_BG_FILES
+		/* since we don't check state on an emulated system we
+		 * have to change it here
+		 */
+		bg_record->conn_type = bg_update_ptr->conn_type;
+#endif
 	}
 #endif
 	if(bg_update_ptr->linuximage

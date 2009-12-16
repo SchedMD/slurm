@@ -538,17 +538,17 @@ static void _set_active_combo_job(GtkComboBox *combo,
 		goto end_it;
 	switch(type) {
 	case SORTID_ACTION:
-		if(!strcmp(temp_char, "none"))
+		if(!strcasecmp(temp_char, "None"))
 			action = 0;
-		else if(!strcmp(temp_char, "cancel"))
+		else if(!strcasecmp(temp_char, "Cancel"))
 			action = 1;
-		else if(!strcmp(temp_char, "suspend"))
+		else if(!strcasecmp(temp_char, "Suspend"))
 			action = 2;
-		else if(!strcmp(temp_char, "resume"))
+		else if(!strcasecmp(temp_char, "Resume"))
 			action = 3;
-		else if(!strcmp(temp_char, "checkpoint"))
+		else if(!strcasecmp(temp_char, "Checkpoint"))
 			action = 4;
-		else if(!strcmp(temp_char, "requeue"))
+		else if(!strcasecmp(temp_char, "Requeue"))
 			action = 5;
 		else
 			action = 0;
@@ -560,9 +560,9 @@ static void _set_active_combo_job(GtkComboBox *combo,
 #ifdef HAVE_BG
 	case SORTID_ROTATE:
 #endif
-		if(!strcmp(temp_char, "yes"))
+		if(!strcasecmp(temp_char, "yes"))
 			action = 0;
-		else if(!strcmp(temp_char, "no"))
+		else if(!strcasecmp(temp_char, "no"))
 			action = 1;
 		else
 			action = 0;
@@ -570,12 +570,22 @@ static void _set_active_combo_job(GtkComboBox *combo,
 		break;
 #ifdef HAVE_BG
 	case SORTID_CONNECTION:
-		if(!strcmp(temp_char, "torus"))
+		if(!strcasecmp(temp_char, "Torus"))
 			action = 0;
-		else if(!strcmp(temp_char, "mesh"))
+		else if(!strcasecmp(temp_char, "Mesh"))
 			action = 1;
-		else if(!strcmp(temp_char, "nav"))
+		else if(!strcasecmp(temp_char, "NAV"))
 			action = 2;
+#ifndef HAVE_BGL
+		else if(!strcasecmp(temp_char, "HTC_S"))
+			action = 3;
+		else if(!strcasecmp(temp_char, "HTC_D"))
+			action = 4;
+		else if(!strcasecmp(temp_char, "HTC_V"))
+			action = 5;
+		else if(!strcasecmp(temp_char, "HTC_L"))
+			action = 6;
+#endif
 		else
 			action = 0;
 		break;
@@ -849,16 +859,26 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			conn_type = SELECT_TORUS;
 		} else if (!strcasecmp(new_text, "mesh")) {
 			conn_type = SELECT_MESH;
+#ifndef HAVE_BGL
+		} else if (!strcasecmp(new_text, "htc smp")) {
+			conn_type = SELECT_HTC_S;
+		} else if (!strcasecmp(new_text, "htc dual")) {
+			conn_type = SELECT_HTC_D;
+		} else if (!strcasecmp(new_text, "htc virtual")) {
+			conn_type = SELECT_HTC_V;
+		} else if (!strcasecmp(new_text, "htc linux")) {
+			conn_type = SELECT_HTC_L;
+#endif
 		} else {
 			conn_type = SELECT_NAV;
 		}
+
 		if(!job_msg->select_jobinfo)
 			job_msg->select_jobinfo
 				= select_g_select_jobinfo_alloc();
 		select_g_select_jobinfo_set(job_msg->select_jobinfo,
 					    SELECT_JOBDATA_CONN_TYPE,
 					    (void *) &conn_type);
-
 		break;
 #ifdef HAVE_BGL
 	case SORTID_IMAGE_BLRTS:
@@ -872,7 +892,11 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		break;
 #endif
 	case SORTID_IMAGE_LINUX:
+#ifdef HAVE_BGL
 		type = "LinuxImage";
+#else
+		type = "CnloadImage";
+#endif
 		if(!job_msg->select_jobinfo)
 			job_msg->select_jobinfo
 				= select_g_select_jobinfo_alloc();
@@ -890,7 +914,11 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 					    (void *) new_text);
 		break;
 	case SORTID_IMAGE_RAMDISK:
+#ifdef HAVE_BGL
 		type = "RamdiskImage";
+#else
+		type = "IoloadImage";
+#endif
 		if(!job_msg->select_jobinfo)
 			job_msg->select_jobinfo
 				= select_g_select_jobinfo_alloc();
@@ -910,6 +938,9 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "unknown";
 		break;
 	}
+
+	if(strcmp(type, "unknown"))
+		global_send_update_msg = 1;
 
 #ifdef HAVE_BG
 	xfree(original_ptr);
@@ -957,11 +988,14 @@ static gboolean _admin_focus_out_job(GtkEntry *entry,
 				     GdkEventFocus *event,
 				     job_desc_msg_t *job_msg)
 {
-	int type = gtk_entry_get_max_length(entry);
-	const char *name = gtk_entry_get_text(entry);
-	type -= DEFAULT_ENTRY_LENGTH;
-	_set_job_msg(job_msg, name, type);
+	if(global_entry_changed) {
+		int type = gtk_entry_get_max_length(entry);
+		const char *name = gtk_entry_get_text(entry);
+		type -= DEFAULT_ENTRY_LENGTH;
 
+		_set_job_msg(job_msg, name, type);
+		global_entry_changed = 0;
+	}
 	return false;
 }
 
@@ -2311,7 +2345,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &sview_job_info_ptr->node_cnt);
-		if(ionodes) {
+		if(job_ptr->nodes && ionodes) {
 			sview_job_info_ptr->small_block = 1;
 			snprintf(tmp_char, sizeof(tmp_char), "%s[%s]",
 					 job_ptr->nodes, ionodes);
@@ -2624,7 +2658,7 @@ extern GtkListStore *create_model_job(int type)
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   1, SORTID_ACTION,
-				   0, "requeue",
+				   0, "Requeue",
 				   -1);
 		break;
 	case SORTID_SHARED:
@@ -2650,19 +2684,41 @@ extern GtkListStore *create_model_job(int type)
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "torus",
+				   0, "Torus",
 				   1, SORTID_CONNECTION,
 				   -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "mesh",
+				   0, "Mesh",
 				   1, SORTID_CONNECTION,
 				   -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "nav",
+				   0, "NAV",
 				   1, SORTID_CONNECTION,
 				   -1);
+#ifndef HAVE_BGL
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC SMP",
+				   1, SORTID_CONNECTION,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC Dual",
+				   1, SORTID_CONNECTION,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC Virtual",
+				   1, SORTID_CONNECTION,
+				   -1);
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   0, "HTC Linux",
+				   1, SORTID_CONNECTION,
+				   -1);
+#endif
 		break;
 #endif
 	default:
@@ -3456,7 +3512,11 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		case EDIT_EDIT:
 			if(got_edit_signal)
 				goto end_it;
-			if(slurm_update_job(job_msg) == SLURM_SUCCESS) {
+
+			if(!global_send_update_msg) {
+				tmp_char_ptr = g_strdup_printf(
+					"No change detected.");
+			} else if(slurm_update_job(job_msg) == SLURM_SUCCESS) {
 				tmp_char_ptr = g_strdup_printf(
 					"Job %u updated successfully",
 					jobid);
@@ -3478,6 +3538,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		}
 	}
 end_it:
+	global_entry_changed = 0;
 	slurm_free_job_desc_msg(job_msg);
 	gtk_widget_destroy(popup);
 	if(got_edit_signal) {
