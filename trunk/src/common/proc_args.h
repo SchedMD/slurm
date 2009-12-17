@@ -69,7 +69,7 @@ void print_slurm_version(void);
 task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size);
 
 /* verify the requested connection type */
-int verify_conn_type(const char *arg);
+uint16_t verify_conn_type(const char *arg);
 
 /* verify the requested geometry arguments */
 int verify_geometry(const char *arg, uint16_t *geometry);
