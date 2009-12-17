@@ -54,6 +54,7 @@ enum {
 	EDIT_SIGNAL_USER,
 	EDIT_CANCEL,
 	EDIT_CANCEL_USER,
+	EDIT_REQUEUE,
 	EDIT_SUSPEND,
 	EDIT_EDIT
 };
@@ -352,6 +353,7 @@ static display_data_t options_data_job[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, JOB_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Signal", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, JOB_PAGE, "Requeue", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Cancel", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Suspend/Resume", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE, "Edit Job", TRUE, ADMIN_PAGE},
@@ -604,7 +606,7 @@ end_it:
 static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 				int column)
 {
-	char *type = NULL;
+	char *type = "";
 	int temp_int = 0;
 	char *p;
 #ifdef HAVE_BG
@@ -3396,6 +3398,17 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		entry = create_entry();
 		label = gtk_label_new("Signal?");
 		edit_type = EDIT_SIGNAL;
+	} else if(!strcasecmp("Requeue", type)) {
+		label = gtk_dialog_add_button(GTK_DIALOG(popup),
+					      GTK_STOCK_YES, GTK_RESPONSE_OK);
+		gtk_window_set_default(GTK_WINDOW(popup), label);
+		gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Are you sure you want to requeue job %u?", jobid);
+		label = gtk_label_new(tmp_char);
+		edit_type = EDIT_REQUEUE;
 	} else if(!strcasecmp("Cancel", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
@@ -3485,6 +3498,25 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 				_cancel_step_id(jobid, stepid, signal);
 
 			break;
+		case EDIT_REQUEUE:
+			response = slurm_requeue(jobid);
+			if(response) {
+				tmp_char_ptr = g_strdup_printf(
+					"Error happened trying to requeue "
+					"job %u.",
+					jobid);
+				display_edit_note(tmp_char_ptr);
+				g_free(tmp_char_ptr);
+
+			} else {
+				tmp_char_ptr = g_strdup_printf(
+					"Job %u requeued successfully.",
+					jobid);
+				display_edit_note(tmp_char_ptr);
+				g_free(tmp_char_ptr);
+			}
+
+			break;
 		case EDIT_SUSPEND:
 			if(state == JOB_SUSPENDED)
 				response = slurm_resume(jobid);
@@ -3503,8 +3535,8 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 				else
 					tmp_char_ptr = "suspended";
 				tmp_char_ptr = g_strdup_printf(
-					"Job %s %u successfully.",
-					tmp_char_ptr, jobid);
+					"Job %u %s successfully.",
+					jobid, tmp_char_ptr);
 				display_edit_note(tmp_char_ptr);
 				g_free(tmp_char_ptr);
 			}

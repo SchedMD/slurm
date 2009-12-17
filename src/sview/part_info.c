@@ -312,7 +312,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 				 const char *new_text,
 				 int column)
 {
-	char *type = NULL;
+	char *type = "";
 	int temp_int = 0;
 
 	errno = 0;

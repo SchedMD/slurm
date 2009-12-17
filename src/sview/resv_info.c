@@ -228,7 +228,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 				 const char *new_text,
 				 int column)
 {
-	char *type = NULL;
+	char *type = "";
 	int temp_int = 0;
 	uint32_t f;
 
