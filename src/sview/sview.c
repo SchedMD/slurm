@@ -410,7 +410,9 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"    </menu>"
 		"    <menu action='options'>"
 		"      <menuitem action='grid'/>"
+#ifndef HAVE_BG
 		"      <menuitem action='grid_specs'/>"
+#endif
 		"      <menuitem action='interval'/>"
 		"      <separator/>"
 		"      <menuitem action='admin'/>"
@@ -502,7 +504,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"manual", GTK_STOCK_HELP, "_Manual", "<control>m"},
 		{"grid_specs", GTK_STOCK_EDIT, "Set Grid _Properties",
 		 "<control>p", "Change Grid Properties",
-		 G_CALLBACK(change_grid_popup)}
+		 G_CALLBACK(change_grid_popup)},
 	};
 
 	GtkActionEntry admin_entries[] = {
