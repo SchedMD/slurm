@@ -143,12 +143,15 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
  * verify that a connection type in arg is of known form
  * returns the connection_type or -1 if not recognized
  */
-int verify_conn_type(const char *arg)
+uint16_t verify_conn_type(const char *arg)
 {
 #ifdef HAVE_BG
-	int len = strlen(arg);
-
-	if (!strncasecmp(arg, "MESH", len))
+	uint16_t len = strlen(arg);
+	if(!len) {
+		/* no input given */
+		error("no conn-type argument given.");
+		return (uint16_t)NO_VAL;
+	} else if (!strncasecmp(arg, "MESH", len))
 		return SELECT_MESH;
 	else if (!strncasecmp(arg, "TORUS", len))
 		return SELECT_TORUS;
@@ -166,8 +169,8 @@ int verify_conn_type(const char *arg)
 		return SELECT_HTC_L;
 #endif
 #endif
-	error("invalid --conn-type argument %s ignored.", arg);
-	return NO_VAL;
+	error("invalid conn-type argument '%s' ignored.", arg);
+	return (uint16_t)NO_VAL;
 }
 
 /*
