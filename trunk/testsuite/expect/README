@@ -94,7 +94,7 @@ test1.7    Confirm that job time limit function works (--time option).
 test1.8    Confirm that basic srun stdin, stdout, and stderr options work
            (--input, --output, and --error option respectively).
 test1.9    Test of srun verbose mode (--verbose option).
-test1.10   Test of srun/slurmd debug mode (--debug option).
+test1.10   Test of srun/slurmd debug mode (--slurmd-debug option).
 test1.11   Test job name option (--job-name).
 test1.12   Test of --checkpoint option. This does not validate the
            checkpoint file itself.

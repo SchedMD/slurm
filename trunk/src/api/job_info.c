@@ -588,19 +588,8 @@ line13:
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 18 (optional) ******/
-	if (job_ptr->comment) {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
-		snprintf(tmp_line, sizeof(tmp_line), "Comment=%s ",
-			 job_ptr->comment);
-		xstrcat(out, tmp_line);
-	}
-
 #ifdef HAVE_BG
-	/****** Line 19 (optional) ******/
+	/****** Line 18 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       select_buf, sizeof(select_buf),
 				       SELECT_PRINT_BG_ID);
@@ -613,8 +602,8 @@ line13:
 			 "Block_ID=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-#endif
-	/****** Line 20 (optional) ******/
+
+	/****** Line 19 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       select_buf, sizeof(select_buf),
 				       SELECT_PRINT_MIXED_SHORT);
@@ -626,9 +615,8 @@ line13:
 		xstrcat(out, select_buf);
 	}
 
-#ifdef HAVE_BG
 #ifdef HAVE_BGL
-	/****** Line 21 (optional) ******/
+	/****** Line 20 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				       select_buf, sizeof(select_buf),
 				       SELECT_PRINT_BLRTS_IMAGE);
@@ -642,7 +630,7 @@ line13:
 		xstrcat(out, tmp_line);
 	}
 #endif
-	/****** Line 22 (optional) ******/
+	/****** Line 21 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_LINUX_IMAGE);
@@ -660,7 +648,7 @@ line13:
 #endif
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 23 (optional) ******/
+	/****** Line 22 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MLOADER_IMAGE);
@@ -673,7 +661,7 @@ line13:
 			 "MloaderImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 24 (optional) ******/
+	/****** Line 23 (optional) ******/
 	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_RAMDISK_IMAGE);
@@ -692,6 +680,17 @@ line13:
 		xstrcat(out, tmp_line);
 	}
 #endif
+
+	/****** Line 24 (optional) ******/
+	if (job_ptr->comment) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		snprintf(tmp_line, sizeof(tmp_line), "Comment=%s ",
+			 job_ptr->comment);
+		xstrcat(out, tmp_line);
+	}
 
 	if (one_liner)
 		xstrcat(out, "\n");
