@@ -204,8 +204,8 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		snprintf(tmp_line, sizeof(tmp_line), "OS=%s ", node_ptr->os);
 		xstrcat(out, tmp_line);
 	}
-	snprintf(tmp_line, sizeof(tmp_line), "RealMemory=%u Reason=%s",
-		 node_ptr->real_memory, node_ptr->reason);
+	snprintf(tmp_line, sizeof(tmp_line), "RealMemory=%u Sockets=%u",
+		 node_ptr->real_memory, node_ptr->sockets);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -215,16 +215,25 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	/****** Line 4 ******/
 
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Sockets=%u State=%s%s%s%s ThreadsPerCore=%u "
-		 "TmpDisk=%u Weight=%u",
-		 node_ptr->sockets, node_state_string(my_state),
-		 comp_str, drain_str, power_str, node_ptr->threads,
-		 node_ptr->tmp_disk, node_ptr->weight);
+		 "State=%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u",
+		 node_state_string(my_state), comp_str, drain_str, power_str,
+		 node_ptr->threads, node_ptr->tmp_disk, node_ptr->weight);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 5 ******/
+
+	snprintf(tmp_line, sizeof(tmp_line), "Reason=%s",
+		 node_ptr->reason);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
 		xstrcat(out, "\n\n");
+
 	return out;
 }
 
