@@ -181,15 +181,31 @@ extern List create_dynamic_block(List block_list,
 
 		request->conn_type = SELECT_SMALL;
 		new_blocks = list_create(destroy_bg_record);
+		/* check only blocks that are free and small */
 		if(_breakup_blocks(block_list, new_blocks,
 				   request, my_block_list,
 				   true, true)
 		   == SLURM_SUCCESS)
 			goto finished;
 
+		/* check only blocks that are free and any size */
 		if(_breakup_blocks(block_list, new_blocks,
 				   request, my_block_list,
 				   true, false)
+		   == SLURM_SUCCESS)
+			goto finished;
+
+		/* check usable blocks that are small with any state */
+		if(_breakup_blocks(block_list, new_blocks,
+				   request, my_block_list,
+				   false, true)
+		   == SLURM_SUCCESS)
+			goto finished;
+
+		/* check all usable blocks */
+		if(_breakup_blocks(block_list, new_blocks,
+				   request, my_block_list,
+				   false, false)
 		   == SLURM_SUCCESS)
 			goto finished;
 

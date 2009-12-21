@@ -10,6 +10,10 @@ documents those changes that are of interest to users and admins.
  -- Fix to _get_job_min_nodes() in wiki2/get_jobs.c suggested by Michal Novotny
  -- BLUEGENE - fixed issues when updating a pending job when a node 
     count was incorrect for the asked for connection type.
+ -- BLUEGENE - fixed issue when combining blocks that are in ready states to
+    make a larger block from those or make multiple smaller blocks by
+    splitting the larger block.  Previously this would only work with block
+    in a free state.
 
 * Changes in SLURM 2.1.0-pre9
 =============================
