@@ -136,7 +136,7 @@ extern char *
 slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j;
-	char time_str[32], select_buf[122], *group_name, *user_name;
+	char time_str[32], *group_name, *user_name;
 	char tmp1[128], tmp2[128], *tmp3_ptr;
 	char tmp_line[512];
 	char *ionodes = NULL;
@@ -146,6 +146,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	uint32_t min_nodes, max_nodes;
 
 #ifdef HAVE_BG
+	char select_buf[122];
 	char *nodelist = "BP_List";
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_IONODES,
