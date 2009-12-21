@@ -2372,7 +2372,6 @@ static void _help(void)
 "Help options:\n"
 "  -h, --help                  show this help message\n"
 "  -u, --usage                 display brief usage message\n"
-"      --print-request         Display job's layout without scheduling it\n"
 "\n"
 "Other options:\n"
 "  -V, --version               output version information and exit\n"
