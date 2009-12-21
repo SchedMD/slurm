@@ -210,7 +210,7 @@ static char * _task_list(struct job_record *job_ptr)
 static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
 {
 	int host_str_len = 4096;
-	char *host_str, tmp_str[64];
+	char *host_str;
 	char *tok, *sep;
 	int i, in_bracket = 0, fini = 0;
 
@@ -245,9 +245,7 @@ static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
 				if (in_bracket)
 					break;
 				tok[i] = '\0';
-				snprintf(tmp_str, sizeof(tmp_str), "%s%s*%d",
-					sep, tok, *reps);
-				xstrcat(*buf, tmp_str);
+				xstrfmtcat(*buf, "%s%s*%d", sep, tok, *reps);
 				sep = ":";
 				tok += (i + 1);
 				i = -1;
