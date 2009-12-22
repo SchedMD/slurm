@@ -1260,7 +1260,7 @@ static int _filter_job(job_info_t * job)
 	int filter;
 	ListIterator iterator;
 	uint32_t *job_id, *user;
-	uint16_t *state_id;
+	enum job_states *state_id;
 	char *account, *part, *qos;
 
 	if (params.job_list) {
