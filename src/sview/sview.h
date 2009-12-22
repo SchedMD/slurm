@@ -427,6 +427,10 @@ extern void admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type);
 extern void get_info_submit(GtkTable *table, display_data_t *display_data);
 extern void set_menus_submit(void *arg, void *arg2,
 			     GtkTreePath *path, int type);
+
+// config_info.c
+extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr);
+
 // common.c
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 extern int find_col(display_data_t *display_data, int type);

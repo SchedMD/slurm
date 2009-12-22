@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in wiki(2) plugins where if HostFormat=2 and the task list is
     greater than 64 we don't truncate.  Previously this would mess up Moab
     by sending a truncated task list when doing a get jobs.
+ -- Added update slurmctld debug level to sview when in admin mode.
 
 * Changes in SLURM 2.1.0-pre9
 =============================
