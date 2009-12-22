@@ -71,8 +71,11 @@ GtkTable *main_grid_table = NULL;
 GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
 GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
-GtkActionGroup *admin_action_group = NULL;
 int grid_speedup = 0;
+
+static GtkActionGroup *admin_action_group = NULL;
+static GtkActionGroup *menu_action_group = NULL;
+static bool debug_inited = 0;
 
 display_data_t main_display_data[] = {
 	{G_TYPE_NONE, JOB_PAGE, "Jobs", TRUE, -1,
@@ -337,6 +340,52 @@ static void _reconfigure(GtkToggleAction *action)
 	g_free(temp);
 }
 
+static void _get_current_debug(GtkRadioAction *action)
+{
+	static int debug_level = 0;
+	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+	static GtkAction *debug_action = NULL;
+	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
+
+	if(err_code != SLURM_ERROR)
+		debug_level = slurm_ctl_conf_ptr->slurmctld_debug;
+
+	if(!debug_action)
+		debug_action = gtk_action_group_get_action(
+			menu_action_group, "debug_quiet");
+	/* Since this is the inital value we don't signal anything
+	   changed so we need to make it happen here */
+	if(debug_level == 0)
+		debug_inited = 1;
+	gtk_radio_action_set_current_value(GTK_RADIO_ACTION(debug_action),
+					   debug_level);
+}
+
+static void _set_debug(GtkRadioAction *action,
+		       GtkRadioAction *extra,
+		       GtkNotebook *notebook)
+{
+	char *temp = NULL;
+	int level;
+	/* This is here to make sure we got the correct value in the
+	   beginning.  This gets called when the value is
+	   changed. And since we don't set it at the beginning we
+	   need to check it here. */
+	if(!debug_inited) {
+		debug_inited = 1;
+		return;
+	}
+
+	level = gtk_radio_action_get_current_value(action);
+	if(!slurm_set_debug_level(level)) {
+		temp = g_strdup_printf(
+			"Slurmctld debug level is now set to %d", level);
+	} else
+		temp = g_strdup_printf("Problem with set debug level request");
+	display_edit_note(temp);
+	g_free(temp);
+}
+
 static void _tab_pos(GtkRadioAction *action,
 		     GtkRadioAction *extra,
 		     GtkNotebook *notebook)
@@ -377,7 +426,6 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	GtkUIManager *ui_manager = NULL;
 	GtkAccelGroup *accel_group = NULL;
 	GError *error = NULL;
-	GtkActionGroup *action_group = NULL;
 
 	/* Our menu*/
 	const char *ui_description =
@@ -405,6 +453,18 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		"      </menu>"
 		"      <menuitem action='refresh'/>"
 		"      <menuitem action='reconfig'/>"
+		"      <menu action='debuglevel'>"
+		"        <menuitem action='debug_quiet'/>"
+		"        <menuitem action='debug_fatal'/>"
+		"        <menuitem action='debug_error'/>"
+		"        <menuitem action='debug_info'/>"
+		"        <menuitem action='debug_verbose'/>"
+		"        <menuitem action='debug_debug'/>"
+		"        <menuitem action='debug_debug2'/>"
+		"        <menuitem action='debug_debug3'/>"
+		"        <menuitem action='debug_debug4'/>"
+		"        <menuitem action='debug_debug5'/>"
+		"      </menu>"
 		"      <separator/>"
 		"      <menuitem action='exit'/>"
 		"    </menu>"
@@ -511,6 +571,23 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"reconfig", GTK_STOCK_REDO, "SLUR_M Reconfigure",
 		 "<control>m", "Reconfigures System",
 		 G_CALLBACK(_reconfigure)},
+		{"debuglevel", GTK_STOCK_DIALOG_WARNING,
+		 "Slurmctld Debug Level",
+		 "", "Set slurmctld debug level",
+		 G_CALLBACK(_get_current_debug)},
+	};
+
+	GtkRadioActionEntry debug_entries[] = {
+		{"debug_quiet", NULL, "quiet(0)", "", "Quiet level", 0},
+		{"debug_fatal", NULL, "fatal(1)", "", "Fatal level", 1},
+		{"debug_error", NULL, "error(2)", "", "Error level", 2},
+		{"debug_info", NULL, "info(3)", "", "Info level", 3},
+		{"debug_verbose", NULL, "verbose(4)", "", "Verbose level", 4},
+		{"debug_debug", NULL, "debug(5)", "", "Debug debug level", 5},
+		{"debug_debug2", NULL, "debug2(6)", "", "Debug2 level", 6},
+		{"debug_debug3", NULL, "debug3(7)", "", "Debug3 level", 7},
+		{"debug_debug4", NULL, "debug4(8)", "", "Debug4 level", 8},
+		{"debug_debug5", NULL, "debug5(9)", "", "Debug5 level", 9},
 	};
 
 	GtkRadioActionEntry radio_entries[] = {
@@ -536,15 +613,19 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	};
 
 	/* Make an accelerator group (shortcut keys) */
-	action_group = gtk_action_group_new ("MenuActions");
-	gtk_action_group_add_actions(action_group, entries,
+	menu_action_group = gtk_action_group_new ("MenuActions");
+	gtk_action_group_add_actions(menu_action_group, entries,
 				     G_N_ELEMENTS(entries), window);
-	gtk_action_group_add_radio_actions(action_group, radio_entries,
+	gtk_action_group_add_radio_actions(menu_action_group, radio_entries,
 					   G_N_ELEMENTS(radio_entries),
 					   0, G_CALLBACK(_tab_pos), notebook);
-	gtk_action_group_add_toggle_actions(action_group, toggle_entries,
-					   G_N_ELEMENTS(toggle_entries),
-					   NULL);
+	gtk_action_group_add_radio_actions(menu_action_group, debug_entries,
+					   G_N_ELEMENTS(debug_entries),
+					   -1, G_CALLBACK(_set_debug),
+					   notebook);
+	gtk_action_group_add_toggle_actions(menu_action_group, toggle_entries,
+					    G_N_ELEMENTS(toggle_entries),
+					    NULL);
 	admin_action_group = gtk_action_group_new ("MenuAdminActions");
 	gtk_action_group_add_actions(admin_action_group, admin_entries,
 				     G_N_ELEMENTS(admin_entries),
@@ -552,7 +633,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 	gtk_action_group_set_sensitive(admin_action_group, FALSE);
 
 	ui_manager = gtk_ui_manager_new();
-	gtk_ui_manager_insert_action_group(ui_manager, action_group, 0);
+	gtk_ui_manager_insert_action_group(ui_manager, menu_action_group, 0);
 	gtk_ui_manager_insert_action_group(ui_manager, admin_action_group, 1);
 
 	accel_group = gtk_ui_manager_get_accel_group(ui_manager);

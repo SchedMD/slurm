@@ -286,32 +286,15 @@ extern void create_config_popup(GtkAction *action, gpointer user_data)
 	int error_code;
 	GtkTreeStore *treestore =
 		_local_create_treestore_2cols(popup, 600, 400);
-	static slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
-	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
 	g_signal_connect(G_OBJECT(popup), "delete_event",
 			 G_CALLBACK(_delete_popup), NULL);
 	g_signal_connect(G_OBJECT(popup), "response",
 			 G_CALLBACK(_delete_popup), NULL);
 
-
-	if (old_slurm_ctl_conf_ptr) {
-		error_code = slurm_load_ctl_conf(
-			old_slurm_ctl_conf_ptr->last_update,
-			&slurm_ctl_conf_ptr);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
-			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
-			error_code = SLURM_SUCCESS;
-		}
-	}
-	else
-		error_code = slurm_load_ctl_conf((time_t) NULL,
-						 &slurm_ctl_conf_ptr);
-
+	error_code = get_new_info_config(&slurm_ctl_conf_ptr);
 	_layout_ctl_conf(treestore, slurm_ctl_conf_ptr);
-
 
 	gtk_widget_show_all(popup);
 

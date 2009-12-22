@@ -16,7 +16,8 @@ sview_LDADD =					  \
 noinst_HEADERS = sview.h
 sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 	block_info.c node_info.c resv_info.c \
-	submit_info.c admin_info.c common.c
+	submit_info.c admin_info.c common.c \
+	config_info.c
 
 force:
 $(sview_LDADD) : force
