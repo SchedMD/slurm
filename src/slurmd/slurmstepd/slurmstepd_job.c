@@ -176,6 +176,18 @@ job_create(launch_tasks_request_msg_t *msg)
 		_pwd_destroy(pwd);
 		return NULL;
 	}
+
+	if(msg->job_mem && (msg->acctg_freq != (uint16_t) NO_VAL)
+	   && (msg->acctg_freq > conf->job_acct_gather_freq)) {
+		error("Can't set frequency to %u, it is higher than %u.  "
+		      "We need it to be at least at this level to "
+		      "monitor memory usage.",
+		      msg->acctg_freq, conf->job_acct_gather_freq);
+		slurm_seterrno (ESLURMD_INVALID_ACCT_FREQ);
+		_pwd_destroy(pwd);
+		return NULL;
+	}
+
 	job = xmalloc(sizeof(slurmd_job_t));
 #ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
@@ -318,6 +330,16 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	}
 	if (!_valid_gid(pwd, &(msg->gid))) {
 		slurm_seterrno (ESLURMD_GID_NOT_FOUND);
+		_pwd_destroy(pwd);
+		return NULL;
+	}
+	if(msg->job_mem && (msg->acctg_freq != (uint16_t) NO_VAL)
+	   && (msg->acctg_freq > conf->job_acct_gather_freq)) {
+		error("Can't set frequency to %u, it is higher than %u.  "
+		      "We need it to be at least at this level to "
+		      "monitor memory usage.",
+		      msg->acctg_freq, conf->job_acct_gather_freq);
+		slurm_seterrno (ESLURMD_INVALID_ACCT_FREQ);
 		_pwd_destroy(pwd);
 		return NULL;
 	}

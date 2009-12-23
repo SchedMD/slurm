@@ -5,35 +5,35 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov> 
+ *  Written by Danny Auble <da@llnl.gov>
  *  and Christopher Morrone <morrone2@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -84,7 +84,7 @@ int slurmstepd_blocked_signals[] = {
 slurmd_conf_t * conf;
 extern char  ** environ;
 
-int 
+int
 main (int argc, char *argv[])
 {
 	slurm_addr *cli;
@@ -115,13 +115,13 @@ main (int argc, char *argv[])
 	 * on STDERR_FILENO for us. */
 	dup2(STDERR_FILENO, STDIN_FILENO);
 
-	/* Create the slurmd_job_t, mostly from info in a 
+	/* Create the slurmd_job_t, mostly from info in a
 	   launch_tasks_request_msg_t or a batch_job_launch_msg_t */
 	job = _step_setup(cli, self, msg);
 	job->ngids = ngids;
 	job->gids = gids;
 
-	/* fork handlers cause mutexes on some global data structures 
+	/* fork handlers cause mutexes on some global data structures
 	   to be re-initialized after the fork. */
 	list_install_fork_handlers();
 	slurm_conf_install_fork_handlers();
@@ -142,7 +142,7 @@ main (int argc, char *argv[])
 
 	/* This does most of the stdio setup, then launches all the tasks,
 	   and blocks until the step is complete */
-	rc = job_manager(job); 
+	rc = job_manager(job);
 
 	/* signal the message thread to shutdown, and wait for it */
 	eio_signal_shutdown(job->msg_handle);
@@ -216,7 +216,7 @@ _init_from_slurmd(int sock, char **argv,
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
 	debug3("step_type = %d", step_type);
-	
+
 	/* receive reverse-tree info from slurmd */
 	pthread_mutex_lock(&step_complete.lock);
 	safe_read(sock, &step_complete.rank, sizeof(int));
@@ -238,7 +238,7 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
 	}
 	free_buf(buffer);
-				
+
 	debug2("debug level is %d.", conf->debug_level);
 	conf->log_opts.stderr_level = conf->debug_level;
 	conf->log_opts.logfile_level = conf->debug_level;
@@ -261,7 +261,7 @@ _init_from_slurmd(int sock, char **argv,
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 	/* acct info */
 	jobacct_gather_g_startpoll(conf->job_acct_gather_freq);
-	
+
 	switch_g_slurmd_step_init();
 
 	slurm_get_ip_str(&step_complete.parent_addr, &port, buf, 16);
@@ -272,7 +272,7 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(sizeof(char) * len);
 	safe_read(sock, incoming_buffer, len);
-	buffer = create_buf(incoming_buffer,len);	
+	buffer = create_buf(incoming_buffer,len);
 	cli = xmalloc(sizeof(slurm_addr));
 	if(slurm_unpack_slurm_addr_no_alloc(cli, buffer) == SLURM_ERROR) {
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
@@ -294,7 +294,7 @@ _init_from_slurmd(int sock, char **argv,
 		}
 		free_buf(buffer);
 	}
-		
+
 	/* receive req from slurmd */
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(sizeof(char) * len);
@@ -315,7 +315,7 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("Unrecognized launch RPC");
 		break;
 	}
-	if(unpack_msg(msg, buffer) == SLURM_ERROR) 
+	if(unpack_msg(msg, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: we didn't unpack the request correctly");
 	free_buf(buffer);
 
@@ -369,7 +369,7 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 	}
 	job->jmgr_pid = getpid();
 	job->jobacct = jobacct_gather_g_create(NULL);
-	
+
 	/*
 	 * Add slurmd node topology informations to job env array
 	 */
@@ -388,7 +388,7 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 	jobacct_gather_g_destroy(job->jobacct);
 	if (!job->batch)
 		job_destroy(job);
-	/* 
+	/*
 	 * The message cannot be freed until the jobstep is complete
 	 * because the job struct has pointers into the msg, such
 	 * as the switch jobinfo pointer.
@@ -405,7 +405,7 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 		break;
 	}
 	jobacct_gather_g_destroy(step_complete.jobacct);
-	
+
 	xfree(msg);
 }
 #endif

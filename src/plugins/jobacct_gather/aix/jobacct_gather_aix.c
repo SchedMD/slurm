@@ -452,18 +452,17 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 
 	debug("%s loaded", plugin_name);
 
-	debug("jobacct: frequency = %d", frequency);
+	debug("jobacct-gather: frequency = %d", frequency);
 
 	jobacct_shutdown = false;
-
-	if (frequency == 0) {	/* don't want dynamic monitoring? */
-		debug2("jobacct AIX dynamic logging disabled");
-		return rc;
-	}
 
 	freq = frequency;
 	pagesize = getpagesize()/1024;
 	task_list = list_create(jobacct_common_free_jobacct);
+	if (frequency == 0) {	/* don't want dynamic monitoring? */
+		debug2("jobacct AIX dynamic logging disabled");
+		return rc;
+	}
 
 	/* create polling thread */
 	slurm_attr_init(&attr);
@@ -472,21 +471,28 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 
 	if  (pthread_create(&_watch_tasks_thread_id, &attr,
 			    &_watch_tasks, NULL)) {
-		debug("jobacct failed to create _watch_tasks "
+		debug("jobacct-gather failed to create _watch_tasks "
 		      "thread: %m");
 		frequency = 0;
-	}
-	else
-		debug3("jobacct AIX dynamic logging enabled");
+	} else
+		debug3("jobacct-gather AIX dynamic logging enabled");
 	slurm_attr_destroy(&attr);
 #else
-	error("jobacct AIX not loaded, not an aix system, check slurm.conf");
+	error("jobacct-gather AIX not loaded, not an aix system, "
+	      "check slurm.conf");
 #endif
 	return rc;
 }
 
 extern int jobacct_gather_p_endpoll()
 {
+#ifdef HAVE_AIX
+	slurm_mutex_lock(&jobacct_lock);
+	if(task_list)
+		list_destroy(task_list);
+	task_list = NULL;
+	slurm_mutex_unlock(&jobacct_lock);
+#endif
 	jobacct_shutdown = true;
 
 	return SLURM_SUCCESS;
@@ -495,7 +501,27 @@ extern int jobacct_gather_p_endpoll()
 extern void jobacct_gather_p_change_poll(uint16_t frequency)
 {
 #ifdef HAVE_AIX
+	if(freq == 0 && frequency != 0) {
+		pthread_attr_t attr;
+		pthread_t _watch_tasks_thread_id;
+		/* create polling thread */
+		slurm_attr_init(&attr);
+		if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+
+		if  (pthread_create(&_watch_tasks_thread_id, &attr,
+				    &_watch_tasks, NULL)) {
+			debug("jobacct-gather failed to create _watch_tasks "
+			      "thread: %m");
+			frequency = 0;
+		} else
+			debug3("jobacct-gather AIX dynamic logging enabled");
+		slurm_attr_destroy(&attr);
+		jobacct_shutdown = false;
+	}
+
 	freq = frequency;
+	debug("jobacct-gather: frequency changed = %d", frequency);
 	if (freq == 0)
 		jobacct_shutdown = true;
 #endif

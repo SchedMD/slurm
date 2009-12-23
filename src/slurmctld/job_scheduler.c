@@ -614,6 +614,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	slurm_cred_arg_t cred_arg;
 	job_resources_t *job_resrcs_ptr;
 
+	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
+
 	cred_arg.jobid     = launch_msg_ptr->job_id;
 	cred_arg.stepid    = launch_msg_ptr->step_id;
 	cred_arg.uid       = launch_msg_ptr->uid;

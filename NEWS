@@ -18,6 +18,9 @@ documents those changes that are of interest to users and admins.
     greater than 64 we don't truncate.  Previously this would mess up Moab
     by sending a truncated task list when doing a get jobs.
  -- Added update slurmctld debug level to sview when in admin mode.
+ -- Added logic to make sure if enforcing a memory limit when using the
+    jobacct_gather plugin a user can no longer turn off the logic to enforce
+    the limit.
 
 * Changes in SLURM 2.1.0-pre9
 =============================
