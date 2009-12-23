@@ -4,7 +4,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov>, 
+ *  Written by Kevin Tew <tew1@llnl.gov>,
  *	Jim Garlick <garlick@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
@@ -17,15 +17,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
+ *  In addition, as a special exception, the copyright holders give permission
  *  to link the code of portions of this program with the OpenSSL library under
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -69,15 +69,15 @@ BEGIN_C_DECLS
 
 #include <errno.h>
 
-/* set errno to the specified value - then return -1 */ 
+/* set errno to the specified value - then return -1 */
 #define slurm_seterrno_ret(errnum) do { \
 	slurm_seterrno(errnum);         \
 	return (errnum ? -1 : 0);       \
-        } while (0)
+	} while (0)
 
 /* general return codes */
 #define SLURM_SUCCESS   0
-#define SLURM_ERROR    -1 
+#define SLURM_ERROR    -1
 #define SLURM_FAILURE  -1
 
 /* general communication layer return codes */
@@ -194,6 +194,7 @@ enum {
 	ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN =		4000,
 	ESLURMD_KILL_TASK_FAILED,
 	ESLURMD_KILL_JOB_ALREADY_COMPLETE,
+	ESLURMD_INVALID_ACCT_FREQ,
 	ESLURMD_INVALID_JOB_CREDENTIAL,
 	ESLURMD_UID_NOT_FOUND,
 	ESLURMD_GID_NOT_FOUND,
@@ -234,11 +235,11 @@ enum {
 	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT ,
 	SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT,
 
-        /* slurm_auth errors */
-        ESLURM_AUTH_CRED_INVALID	= 6000,
+	/* slurm_auth errors */
+	ESLURM_AUTH_CRED_INVALID	= 6000,
 	ESLURM_AUTH_FOPEN_ERROR,
 	ESLURM_AUTH_NET_ERROR,
-        ESLURM_AUTH_UNABLE_TO_SIGN,
+	ESLURM_AUTH_UNABLE_TO_SIGN,
 
 	/* accounting errors */
 	ESLURM_DB_CONNECTION            = 7000

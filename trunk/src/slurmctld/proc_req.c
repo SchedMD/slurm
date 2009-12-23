@@ -617,6 +617,9 @@ static int _make_step_cred(struct step_record *step_ptr,
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
 	xassert(job_resrcs_ptr && job_resrcs_ptr->cpus);
+
+	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
+
 	cred_arg.jobid    = job_ptr->job_id;
 	cred_arg.stepid   = step_ptr->step_id;
 	cred_arg.uid      = job_ptr->user_id;
