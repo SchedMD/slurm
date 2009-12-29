@@ -57,6 +57,7 @@
 #include "src/common/env.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 /* external functions available for SPANK plugins to modify the environment
  * exported to the SLURM Prolog and Epilog programs */
@@ -174,15 +175,15 @@ int main(int argc, char *argv[])
 	}
 
 	if (opt.get_user_env_time >= 0) {
-		struct passwd *pw;
-		pw = getpwuid(opt.uid);
-		if (pw == NULL) {
-			error("getpwuid(%u): %m", (uint32_t)opt.uid);
+		char *user = uid_to_string(opt.uid);
+		if (strcmp(user, "nobody") == 0) {
+			error("Invalid user id %u: %m", (uint32_t)opt.uid);
 			exit(error_exit);
 		}
-		env = env_array_user_default(pw->pw_name,
+		env = env_array_user_default(user,
 					     opt.get_user_env_time,
 					     opt.get_user_env_mode);
+		xfree(user);
 		if (env == NULL)
 			exit(error_exit);    /* error already logged */
 		_set_rlimits(env);

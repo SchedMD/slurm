@@ -262,14 +262,18 @@ static void argerror(const char *msg, ...)
  */
 static void _opt_default()
 {
-	struct passwd *pw;
+	char *user;
 	int i;
+	uid_t uid = getuid();
 
-	if ((pw = getpwuid(getuid())) != NULL) {
-		strncpy(opt.user, pw->pw_name, MAX_USERNAME);
-		opt.uid = pw->pw_uid;
-	} else
-		error("who are you?");
+	user = uid_to_string(uid);
+	if (strcmp(user, "nobody") == 0)
+		fatal("Invalid user id: %u", uid);
+	else {
+		strncpy(opt.user, user, MAX_USERNAME);
+		opt.uid = uid;
+	}
+	xfree(user);
 
 	opt.gid = getgid();
 

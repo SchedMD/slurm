@@ -65,7 +65,6 @@
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
-#include <pwd.h>		/* getpwuid   */
 #include <ctype.h>		/* isdigit    */
 #include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
@@ -259,14 +258,18 @@ static bool _valid_node_list(char **node_list_pptr)
 static void _opt_default()
 {
 	char buf[MAXPATHLEN + 1];
-	struct passwd *pw;
+	char *user;
 	int i;
+	uid_t uid = getuid();
 
-	if ((pw = getpwuid(getuid())) != NULL) {
-		strncpy(opt.user, pw->pw_name, MAX_USERNAME);
-		opt.uid = pw->pw_uid;
-	} else
-		error("who are you?");
+	user = uid_to_string(uid);
+	if (strcmp(user, "nobody") == 0)
+		fatal("Invalid user id: %u", uid);
+	else {
+		strncpy(opt.user, user, MAX_USERNAME);
+		opt.uid = uid;
+	}
+	xfree(user);
 
 	opt.script_argc = 0;
 	opt.script_argv = NULL;

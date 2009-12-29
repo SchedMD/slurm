@@ -62,7 +62,6 @@
 #include <sys/wait.h>
 #include <ctype.h>
 #include <fcntl.h>
-#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,6 +84,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/plugstack.h"
 #include "src/common/read_config.h"
+#include "src/common/uid.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/srun_job.h"
@@ -762,7 +762,11 @@ static int _set_rlimit_env(void)
 
 static int _become_user (void)
 {
-	struct passwd *pwd = getpwuid (opt.uid);
+	char *user = uid_to_string(opt.uid);
+	gid_t gid = gid_from_uid(opt.uid);
+
+	if (strcmp(user, "nobody") == 0)
+		return (error ("Invalid user id %u: %m", opt.uid));
 
 	if (opt.uid == getuid ())
 		return (0);
@@ -770,7 +774,8 @@ static int _become_user (void)
 	if ((opt.egid != (gid_t) -1) && (setgid (opt.egid) < 0))
 		return (error ("setgid: %m"));
 
-	initgroups (pwd->pw_name, pwd->pw_gid); /* Ignore errors */
+	initgroups (user, gid); /* Ignore errors */
+	xfree(user);
 
 	if (setuid (opt.uid) < 0)
 		return (error ("setuid: %m"));
