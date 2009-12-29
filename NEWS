@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- Added logic to make sure if enforcing a memory limit when using the
     jobacct_gather plugin a user can no longer turn off the logic to enforce
     the limit.
+ -- Replaced many calls to getpwuid() with reentrant uid_to_string()
 
 * Changes in SLURM 2.1.0-pre9
 =============================
