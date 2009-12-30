@@ -2827,8 +2827,6 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
-	GtkTreePath *path = NULL;
-	GtkTreeViewColumn *focus_column = NULL;
 
 	if(display_data)
 		local_display_data = display_data;
@@ -2928,12 +2926,18 @@ display_it:
 				 SORTID_CNT, SORTID_TIME_SUBMIT, SORTID_COLOR);
 	}
 
-	/* highlight the correct nodes from the last selection */
-	gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
-				 &path, &focus_column);
-	if(path)
-		highlight_grid(GTK_TREE_VIEW(display_widget), path,
-			       SORTID_NODE_INX, grid_button_list);
+	if(gtk_tree_selection_count_selected_rows(
+		   gtk_tree_view_get_selection(
+			   GTK_TREE_VIEW(display_widget)))) {
+		GtkTreePath *path = NULL;
+		GtkTreeViewColumn *focus_column = NULL;
+		/* highlight the correct nodes from the last selection */
+		gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
+					 &path, &focus_column);
+		if(path)
+			highlight_grid(GTK_TREE_VIEW(display_widget), path,
+				       SORTID_NODE_INX, grid_button_list);
+	}
 
 	view = INFO_VIEW;
 	_update_info_job(info_list, GTK_TREE_VIEW(display_widget));
