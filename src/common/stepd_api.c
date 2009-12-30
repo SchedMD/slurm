@@ -772,6 +772,32 @@ rwfail:
 }
 
 /*
+ * Reconfigure the job step (Primarily to allow the stepd to refresh
+ * it's log file pointer.
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int
+stepd_reconfig(int fd)
+{
+	int req = REQUEST_STEP_RECONFIGURE;
+	int rc;
+	int errnum = 0;
+
+	safe_write(fd, &req, sizeof(int));
+
+	/* Receive the return code and errno */
+	safe_read(fd, &rc, sizeof(int));
+	safe_read(fd, &errnum, sizeof(int));
+
+	errno = errnum;
+	return rc;
+rwfail:
+	return -1;
+}
+
+/*
  * Terminate the job step.
  *
  * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
