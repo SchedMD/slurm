@@ -138,6 +138,8 @@ void print_fields(type_t type, void *object)
 	while((field = list_next(print_fields_itr))) {
 		char *tmp_char = NULL;
 		int tmp_int = NO_VAL, tmp_int2 = NO_VAL;
+		double tmp_dub = (double)NO_VAL;
+
 		memset(&outbuf, 0, sizeof(outbuf));
 		switch(field->type) {
 		case PRINT_ALLOC_CPUS:
@@ -197,16 +199,16 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->sacct.ave_cpu;
+					tmp_dub = job->sacct.ave_cpu;
 				break;
 			case JOBSTEP:
-				tmp_int = step->sacct.ave_cpu;
+				tmp_dub = step->sacct.ave_cpu;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			tmp_char = _elapsed_time((int)tmp_int, 0);
+			tmp_char = _elapsed_time((int)tmp_dub, 0);
 
 			field->print_routine(field,
 					     tmp_char,
@@ -217,17 +219,17 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->sacct.ave_pages;
+					tmp_dub = job->sacct.ave_pages;
 				break;
 			case JOBSTEP:
-				tmp_int = step->sacct.ave_pages;
+				tmp_dub = step->sacct.ave_pages;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			if(tmp_int != NO_VAL)
-				convert_num_unit((float)tmp_int,
+			if(tmp_dub != (double)NO_VAL)
+				convert_num_unit((float)tmp_dub,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
 
@@ -239,17 +241,17 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->sacct.ave_rss;
+					tmp_dub = job->sacct.ave_rss;
 				break;
 			case JOBSTEP:
-				tmp_int = step->sacct.ave_rss;
+				tmp_dub = step->sacct.ave_rss;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			if(tmp_int != NO_VAL)
-				convert_num_unit((float)tmp_int,
+			if(tmp_dub != (double)NO_VAL)
+				convert_num_unit((float)tmp_dub,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
 
@@ -261,17 +263,17 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->sacct.ave_vsize;
+					tmp_dub = job->sacct.ave_vsize;
 				break;
 			case JOBSTEP:
-				tmp_int = step->sacct.ave_vsize;
+				tmp_dub = step->sacct.ave_vsize;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			if(tmp_int != NO_VAL)
-				convert_num_unit((float)tmp_int,
+			if(tmp_dub != (double)NO_VAL)
+				convert_num_unit((float)tmp_dub,
 						 outbuf, sizeof(outbuf),
 						 UNIT_KILO);
 
@@ -728,16 +730,16 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if(!job->track_steps)
-					tmp_int = job->sacct.min_cpu;
+					tmp_dub = job->sacct.min_cpu;
 				break;
 			case JOBSTEP:
-				tmp_int = step->sacct.min_cpu;
+				tmp_dub = step->sacct.min_cpu;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			tmp_char = _elapsed_time((int)tmp_int, 0);
+			tmp_char = _elapsed_time((int)tmp_dub, 0);
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));

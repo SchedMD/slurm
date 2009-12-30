@@ -10991,8 +10991,8 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	int cpus = 0, tasks = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
-	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
-	float ave_cpu = 0, ave_cpu2 = 0;
+	double ave_vsize = 0, ave_rss = 0, ave_pages = 0;
+	double ave_cpu = 0, ave_cpu2 = 0;
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
 	uint32_t exit_code = 0;
@@ -11047,20 +11047,20 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 
 	/* figure out the ave of the totals sent */
 	if(cpus > 0) {
-		ave_vsize = jobacct->tot_vsize;
-		ave_vsize /= cpus;
-		ave_rss = jobacct->tot_rss;
-		ave_rss /= cpus;
-		ave_pages = jobacct->tot_pages;
-		ave_pages /= cpus;
-		ave_cpu = jobacct->tot_cpu;
-		ave_cpu /= cpus;
-		ave_cpu /= 100;
+		ave_vsize = (double)jobacct->tot_vsize;
+		ave_vsize /= (double)cpus;
+		ave_rss = (double)jobacct->tot_rss;
+		ave_rss /= (double)cpus;
+		ave_pages = (double)jobacct->tot_pages;
+		ave_pages /= (double)cpus;
+		ave_cpu = (double)jobacct->tot_cpu;
+		ave_cpu /= (double)cpus;
+		ave_cpu /= (double)100;
 	}
 
 	if(jobacct->min_cpu != NO_VAL) {
-		ave_cpu2 = jobacct->min_cpu;
-		ave_cpu2 /= 100;
+		ave_cpu2 = (double)jobacct->min_cpu;
+		ave_cpu2 /= (double)100;
 	}
 
 	if(!step_ptr->job_ptr->db_index) {

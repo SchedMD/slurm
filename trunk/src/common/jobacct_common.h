@@ -75,16 +75,16 @@ typedef struct {
 typedef struct {
 	uint32_t max_vsize;
 	jobacct_id_t max_vsize_id;
-	float ave_vsize;
+	double ave_vsize;
 	uint32_t max_rss;
 	jobacct_id_t max_rss_id;
-	float ave_rss;
+	double ave_rss;
 	uint32_t max_pages;
 	jobacct_id_t max_pages_id;
-	float ave_pages;
-	float min_cpu;
+	double ave_pages;
+	uint32_t min_cpu;
 	jobacct_id_t min_cpu_id;
-	float ave_cpu;
+	double ave_cpu;
 } sacct_t;
 
 typedef struct {

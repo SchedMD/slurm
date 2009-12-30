@@ -45,8 +45,6 @@ pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
 uint32_t jobacct_job_id = 0;
 uint32_t jobacct_mem_limit = 0;
 
-static uint32_t mult = 1000;
-
 static void _pack_jobacct_id(jobacct_id_t *jobacct_id, Buf buffer)
 {
 	pack32((uint32_t)jobacct_id->nodeid, buffer);
@@ -65,11 +63,13 @@ unpack_error:
 static void _pack_sacct(sacct_t *sacct, Buf buffer)
 {
 	int i=0;
-	uint32_t temp;
 
 	if(!sacct) {
-		for(i=0; i<8; i++)
+		for(i=0; i<4; i++)
 			pack32((uint32_t) 0, buffer);
+
+		for(i=0; i<4; i++)
+			packdouble(0, buffer);
 
 		for(i=0; i<4; i++) {	/* _pack_jobacct_id() */
 			pack32((uint32_t) 0, buffer);
@@ -79,18 +79,14 @@ static void _pack_sacct(sacct_t *sacct, Buf buffer)
 	}
 
 	pack32(sacct->max_vsize, buffer);
-	temp = sacct->ave_vsize * mult;
-	pack32(temp, buffer);
 	pack32(sacct->max_rss, buffer);
-	temp = (uint32_t)sacct->ave_rss * mult;
-	pack32(temp, buffer);
 	pack32(sacct->max_pages, buffer);
-	temp = (uint32_t)sacct->ave_pages * mult;
-	pack32(temp, buffer);
-	temp = (uint32_t)sacct->min_cpu * mult;
-	pack32(temp, buffer);
-	temp = (uint32_t)sacct->ave_cpu * mult;
-	pack32(temp, buffer);
+	pack32(sacct->min_cpu, buffer);
+
+	packdouble(sacct->ave_vsize, buffer);
+	packdouble(sacct->ave_rss, buffer);
+	packdouble(sacct->ave_pages, buffer);
+	packdouble(sacct->ave_cpu, buffer);
 
 	_pack_jobacct_id(&sacct->max_vsize_id, buffer);
 	_pack_jobacct_id(&sacct->max_rss_id, buffer);
@@ -101,24 +97,16 @@ static void _pack_sacct(sacct_t *sacct, Buf buffer)
 /* you need to xfree this */
 static int _unpack_sacct(sacct_t *sacct, Buf buffer)
 {
-	/* this is here to handle the floats since it appears sending
-	 * in a float with a typecast returns incorrect information
-	 */
-	uint32_t temp;
-
 	safe_unpack32(&sacct->max_vsize, buffer);
-	safe_unpack32(&temp, buffer);
-	sacct->ave_vsize = temp / mult;
 	safe_unpack32(&sacct->max_rss, buffer);
-	safe_unpack32(&temp, buffer);
-	sacct->ave_rss = temp / mult;
 	safe_unpack32(&sacct->max_pages, buffer);
-	safe_unpack32(&temp, buffer);
-	sacct->ave_pages = temp / mult;
-	safe_unpack32(&temp, buffer);
-	sacct->min_cpu = temp / mult;
-	safe_unpack32(&temp, buffer);
-	sacct->ave_cpu = temp / mult;
+	safe_unpack32(&sacct->min_cpu, buffer);
+
+	safe_unpackdouble(&sacct->ave_vsize, buffer);
+	safe_unpackdouble(&sacct->ave_rss, buffer);
+	safe_unpackdouble(&sacct->ave_pages, buffer);
+	safe_unpackdouble(&sacct->ave_cpu, buffer);
+
 	if(_unpack_jobacct_id(&sacct->max_vsize_id, buffer) != SLURM_SUCCESS)
 		goto unpack_error;
 	if(_unpack_jobacct_id(&sacct->max_rss_id, buffer) != SLURM_SUCCESS)
@@ -138,7 +126,7 @@ extern jobacct_job_rec_t *create_jobacct_job_rec()
 {
 	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
 	memset(&job->sacct, 0, sizeof(sacct_t));
-	job->sacct.min_cpu = (float)NO_VAL;
+	job->sacct.min_cpu = NO_VAL;
 	job->state = JOB_PENDING;
 	job->steps = list_create(destroy_jobacct_step_rec);
 	job->requid = -1;
@@ -938,16 +926,16 @@ extern void jobacct_common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
 	slurm_mutex_lock(&jobacct_lock);
 	sacct->max_vsize = jobacct->max_vsize;
 	sacct->max_vsize_id = jobacct->max_vsize_id;
-	sacct->ave_vsize = jobacct->tot_vsize;
+	sacct->ave_vsize = (double)jobacct->tot_vsize;
 	sacct->max_rss = jobacct->max_rss;
 	sacct->max_rss_id = jobacct->max_rss_id;
-	sacct->ave_rss = jobacct->tot_rss;
+	sacct->ave_rss = (double)jobacct->tot_rss;
 	sacct->max_pages = jobacct->max_pages;
 	sacct->max_pages_id = jobacct->max_pages_id;
-	sacct->ave_pages = jobacct->tot_pages;
+	sacct->ave_pages = (double)jobacct->tot_pages;
 	sacct->min_cpu = jobacct->min_cpu;
 	sacct->min_cpu_id = jobacct->min_cpu_id;
-	sacct->ave_cpu = jobacct->tot_cpu;
+	sacct->ave_cpu = (double)jobacct->tot_cpu;
 	slurm_mutex_unlock(&jobacct_lock);
 }
 

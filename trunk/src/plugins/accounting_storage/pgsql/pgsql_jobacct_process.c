@@ -693,7 +693,7 @@ no_cond:
 			step->sacct.ave_pages = atof(
 				PQgetvalue(step_result, j,
 					   STEP_REQ_AVE_PAGES));
-			step->sacct.min_cpu = atof(
+			step->sacct.min_cpu = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_MIN_CPU));
 			step->sacct.min_cpu_id.taskid =	atoi(
 				PQgetvalue(step_result, j,

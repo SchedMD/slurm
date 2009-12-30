@@ -1485,7 +1485,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			step->sacct.ave_pages =
 				atof(step_row[STEP_REQ_AVE_PAGES]);
 			step->sacct.min_cpu =
-				atof(step_row[STEP_REQ_MIN_CPU]);
+				atoi(step_row[STEP_REQ_MIN_CPU]);
 			step->sacct.min_cpu_id.taskid =
 				atoi(step_row[STEP_REQ_MIN_CPU_TASK]);
 			step->sacct.ave_cpu = atof(step_row[STEP_REQ_AVE_CPU]);
