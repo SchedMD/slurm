@@ -116,7 +116,7 @@ const char *_jobstep_format =
 "%u "	/* max pages */
 "%u "	/* max pages task */
 "%.2f "	/* ave pages */
-"%.2f "	/* min cpu */
+"%u "	/* min cpu */
 "%u "	/* min cpu task */
 "%.2f "	/* ave cpu */
 "%s "	/* step process name */
@@ -703,7 +703,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		 0,	/* max pages */
 		 0,	/* max pages task */
 		 float_tmp,	/* ave pages */
-		 float_tmp,	/* min cpu */
+		 0,	/* min cpu */
 		 0,	/* min cpu task */
 		 float_tmp,	/* ave cpu */
 		 step_ptr->name,    /* step exe name */
@@ -736,7 +736,8 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	char *ionodes = NULL;
 #endif
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
-	float ave_cpu = 0, ave_cpu2 = 0;
+	float ave_cpu = 0;
+	uint32_t ave_cpu2 = 0;
 	char *account;
 	uint32_t exit_code;
 

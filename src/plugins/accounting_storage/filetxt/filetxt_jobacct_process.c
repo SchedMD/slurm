@@ -370,7 +370,7 @@ static filetxt_job_rec_t *_create_filetxt_job_rec(filetxt_header_t header)
 	memcpy(&job->header, &header, sizeof(filetxt_header_t));
 	memset(&job->rusage, 0, sizeof(struct rusage));
 	memset(&job->sacct, 0, sizeof(sacct_t));
-	job->sacct.min_cpu = (float)NO_VAL;
+	job->sacct.min_cpu = NO_VAL;
 	job->job_start_seen = 0;
 	job->job_step_seen = 0;
 	job->job_terminated_seen = 0;
@@ -764,7 +764,7 @@ static int _parse_line(char *f[], void **data, int len)
 			(*step)->sacct.max_pages_id.taskid =
 				atoi(f[F_MAX_PAGES_TASK]);
 			(*step)->sacct.ave_pages = atof(f[F_AVE_PAGES]);
-			(*step)->sacct.min_cpu = atof(f[F_MIN_CPU]);
+			(*step)->sacct.min_cpu = atoi(f[F_MIN_CPU]);
 			(*step)->sacct.min_cpu_id.taskid =
 				atoi(f[F_MIN_CPU_TASK]);
 			(*step)->sacct.ave_cpu = atof(f[F_AVE_CPU]);

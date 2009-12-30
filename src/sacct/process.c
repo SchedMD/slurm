@@ -80,7 +80,7 @@ void aggregate_sacct(sacct_t *dest, sacct_t *from)
 	dest->ave_pages += from->ave_pages;
 
 	if((dest->min_cpu > from->min_cpu)
-	   || (dest->min_cpu == (float)NO_VAL)) {
+	   || (dest->min_cpu == NO_VAL)) {
 		dest->min_cpu = from->min_cpu;
 		dest->min_cpu_id = from->min_cpu_id;
 	}

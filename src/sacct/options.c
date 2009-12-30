@@ -1149,7 +1149,7 @@ void do_dump(void)
 
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		if(job->sacct.min_cpu == (float)NO_VAL)
+		if(job->sacct.min_cpu == NO_VAL)
 			job->sacct.min_cpu = 0;
 
 		if(list_count(job->steps)) {
@@ -1226,7 +1226,7 @@ void do_dump(void)
 			       step->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
-			       "%.2f %u %u %.2f %s %s %s\n",
+			       "%.u %u %u %.2f %s %s %s\n",
 			       step->sacct.max_vsize_id.nodeid,
 			       step->sacct.max_vsize_id.taskid,
 			       step->sacct.ave_vsize/1024,
@@ -1284,7 +1284,7 @@ void do_dump(void)
 			       job->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
-			       "%.2f %u %u %.2f %s %s %s %d\n",
+			       "%.u %u %u %.2f %s %s %s %d\n",
 			       job->sacct.max_vsize_id.nodeid,
 			       job->sacct.max_vsize_id.taskid,
 			       job->sacct.ave_vsize/1024,
@@ -1373,10 +1373,11 @@ void do_list(void)
 			job->sacct.min_cpu = 0;
 
 		if(list_count(job->steps)) {
-			job->sacct.ave_cpu /= list_count(job->steps);
-			job->sacct.ave_rss /= list_count(job->steps);
-			job->sacct.ave_vsize /= list_count(job->steps);
-			job->sacct.ave_pages /= list_count(job->steps);
+			int cnt = list_count(job->steps);
+			job->sacct.ave_cpu /= (double)cnt;
+			job->sacct.ave_rss /= (double)cnt;
+			job->sacct.ave_vsize /= (double)cnt;
+			job->sacct.ave_pages /= (double)cnt;
 		}
 
 		if (job->show_full)

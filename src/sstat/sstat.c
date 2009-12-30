@@ -102,9 +102,9 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	memset(&step, 0, sizeof(jobacct_step_rec_t));
 
 	memset(&temp_sacct, 0, sizeof(sacct_t));
-	temp_sacct.min_cpu = (float)NO_VAL;
+	temp_sacct.min_cpu = NO_VAL;
 	memset(&step.sacct, 0, sizeof(sacct_t));
-	step.sacct.min_cpu = (float)NO_VAL;
+	step.sacct.min_cpu = NO_VAL;
 
 	step.job_ptr = &job;
 	step.stepid = step_id;
@@ -162,12 +162,12 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 cleanup:
 
 	if(tot_tasks) {
-		step.sacct.ave_cpu /= tot_tasks;
-		step.sacct.ave_cpu /= 100;
+		step.sacct.ave_cpu /= (double)tot_tasks;
+		step.sacct.ave_cpu /= (double)100;
 		step.sacct.min_cpu /= 100;
-		step.sacct.ave_rss /= tot_tasks;
-		step.sacct.ave_vsize /= tot_tasks;
-		step.sacct.ave_pages /= tot_tasks;
+		step.sacct.ave_rss /= (double)tot_tasks;
+		step.sacct.ave_vsize /= (double)tot_tasks;
+		step.sacct.ave_pages /= (double)tot_tasks;
 		step.ntasks = tot_tasks;
 	}
 	jobacct_gather_g_destroy(r.jobacct);
