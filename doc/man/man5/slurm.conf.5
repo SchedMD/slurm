@@ -738,14 +738,15 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 
 .TP
 \fBPreemptMode\fR
-Enables gang scheduling and/or controls the mechanism used to preempt jobs.
-The \fBPreemptType\fR parameter controls the mechanism used to determine
-which jobs are capable of preempting other jobs while \fBPreemptMode\fR
-controls the mechanism used to preempt the lower priority jobs.
-Jobs which are being gang scheduled (time sliced) rather than being preempted
-will always make use of a suspend/resume mechanism.
-The \fBGANG\fR option can be specified in addition to a preemption
-method specification with the two options comma separated.
+Enables gang scheduling and/or controls the mechanism used to preempt
+jobs.  When the \fBPreemptType\fR parameter is set to enable
+preemption, the \fBPreemptMode\fR selects the mechanism used to
+preempt the lower priority jobs.  The \fBGANG\fR option is used to
+enable gang scheduling independent of whether preemption is enabled
+(the \fBPreemptType\fR setting).  The \fBGANG\fR option can be
+specified in addition to a \fBPreemptMode\fR setting with the two
+options comma separated.  The \fBSUSPEND\fR option requires that gang
+scheduling be enabled (i.e, "PreemptMode=SUSPEND,GANG").
 .RS
 .TP 12
 \fBOFF\fR
@@ -2198,9 +2199,10 @@ is very important.
 \fBSelectTypeParameters\fR should be configured to treat
 memory as a consumable resource and the \fB\-\-mem\fR option
 should be used for job allocations.
-Possible values for \fBShared\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
 Sharing of resources is typically useful only when using gang scheduling
 (\fBPreemptMode=suspend\fR or \fBPreemptMode=kill\fR).
+Possible values for \fBShared\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
+The default value is "NO".
 For more information see the following web pages:
 .br
 .na
@@ -2217,11 +2219,11 @@ For more information see the following web pages:
 .TP 12
 \fBEXCLUSIVE\fR
 Allocates entire nodes to jobs even with select/cons_res configured.
-This can be used to allocate whole nodes in some partitions
-and individual processors in other partitions.
+Jobs that run in partitions with "Shared=EXCLUSIVE" will have
+exclusive access to all allocated nodes.
 .TP
 \fBFORCE\fR
-Make all resources in the partition available for sharing
+Makes all resources in the partition available for sharing
 without any means for users to disable it.
 May be followed with a colon and maximum number of jobs in
 running or suspended state.
@@ -2232,8 +2234,8 @@ small blocks or for systems running
 with gang scheduling (\fBSchedulerType=sched/gang\fR).
 .TP
 \fBYES\fR
-Make nodes in the partition available for sharing, but provides
-the user with a means of getting dedicated resources.
+Makes all resources in the partition available for sharing,
+but honors a user's request for dedicated resources.
 If \fBSelectType=select/cons_res\fR, then resources will be
 over\-subscribed unless explicitly disabled in the job submit
 request using the "\-\-exclusive" option.
@@ -2246,6 +2248,10 @@ For example "Shared=YES:4" enables each node, socket or
 core to execute up to four jobs at once.
 Recommended only for systems running with gang scheduling
 (\fBSchedulerType=sched/gang\fR).
+.TP
+\fBNO\fR
+Selected resources are allocated to a single job. No resource will be
+allocated to more than one job.
 .RE
 
 .TP
