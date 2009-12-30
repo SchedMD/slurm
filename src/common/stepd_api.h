@@ -212,6 +212,15 @@ int stepd_suspend(int *fd, int size, uint32_t jobid);
 int stepd_resume(int fd);
 
 /*
+ * Reconfigure the job step (Primarily to allow the stepd to refresh
+ * it's log file pointer.
+ *
+ * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
+ * and sets errno.
+ */
+int stepd_reconfig(int fd);
+
+/*
  *
  * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
  * and sets errno.
