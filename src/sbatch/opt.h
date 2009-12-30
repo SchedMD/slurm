@@ -56,8 +56,6 @@
 #  define SYSTEM_DIMENSIONS 1
 #endif
 
-#define MAX_USERNAME	9
-
 
 typedef struct sbatch_options {
 	char *progname;		/* argv[0] of this program or   */
@@ -66,7 +64,7 @@ typedef struct sbatch_options {
 	int script_argc;
 	char **script_argv;
 
-	char user[MAX_USERNAME];/* local username		*/
+	char *user;		/* local username		*/
 	uid_t uid;		/* local uid			*/
 	gid_t gid;		/* local gid			*/
 	uid_t euid;		/* effective user --uid=user	*/

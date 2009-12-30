@@ -57,7 +57,6 @@
 #endif
 
 #define DEFAULT_IMMEDIATE	1
-#define MAX_USERNAME		9
 #define DEFAULT_BELL_DELAY	10
 
 typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
@@ -66,7 +65,7 @@ typedef struct salloc_options {
 
 	char *progname;		/* argv[0] of this program or
 				 * configuration file if multi_prog */
-	char user[MAX_USERNAME];/* local username		*/
+	char* user;		/* local username		*/
 	uid_t uid;		/* local uid			*/
 	gid_t gid;		/* local gid			*/
 	uid_t euid;		/* effective user --uid=user	*/

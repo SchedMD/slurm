@@ -296,19 +296,14 @@ static void argerror(const char *msg, ...)
 static void _opt_default()
 {
 	char buf[MAXPATHLEN + 1];
-	char *user;
 	int i;
 	uid_t uid = getuid();
 
-	user = uid_to_string(uid);
-	if (strcmp(user, "nobody") == 0)
+	opt.user = uid_to_string(uid);
+	if (strcmp(opt.user, "nobody") == 0)
 		fatal("Invalid user id: %u", uid);
-	else {
-		strncpy(opt.user, user, MAX_USERNAME);
-		opt.uid = uid;
-	}
-	xfree(user);
 
+	opt.uid = uid;
 	opt.gid = getgid();
 
 	if ((getcwd(buf, MAXPATHLEN)) == NULL) {

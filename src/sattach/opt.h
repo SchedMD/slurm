@@ -43,8 +43,6 @@
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
 
-#define MAX_USERNAME	9
-
 
 /* global variables relating to user options */
 extern int _verbose;
@@ -52,7 +50,7 @@ extern int _verbose;
 typedef struct sbatch_options {
 	char *progname;		/* argv[0] of this program or
 				 * configuration file if multi_prog */
-	char user[MAX_USERNAME];/* local username		*/
+	char *user;		/* local username		*/
 	uid_t uid;		/* local uid			*/
 	gid_t gid;		/* local gid			*/
 	uid_t euid;		/* effective user --uid=user	*/
