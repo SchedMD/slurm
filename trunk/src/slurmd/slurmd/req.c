@@ -2377,7 +2377,8 @@ _terminate_all_steps(uint32_t jobid, bool batch)
 
 		debug2("terminate job step %u.%u", jobid, stepd->stepid);
 		if (stepd_terminate(fd) < 0)
-			debug("kill jobid=%u failed: %m", jobid);
+			debug("kill jobid=%u.%u failed: %m", jobid,
+			      stepd->stepid);
 		close(fd);
 	}
 	list_iterator_destroy(i);

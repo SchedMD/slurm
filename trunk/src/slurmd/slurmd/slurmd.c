@@ -806,7 +806,10 @@ _read_config(void)
 static void
 _reconfigure(void)
 {
+	List steps;
+	ListIterator i;
 	slurm_ctl_conf_t *cf;
+	step_loc_t *stepd;
 
 	_reconfig = 0;
 	_read_config();
@@ -831,6 +834,26 @@ _reconfigure(void)
 	cf = slurm_conf_lock();
 	init_gids_cache(cf->cache_groups);
 	slurm_conf_unlock();
+
+	/* send reconfig to each stepd so they can refresh their log
+	 * file handle
+	 */
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((stepd = list_next(i))) {
+		int fd;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1)
+			continue;
+		if(stepd_reconfig(fd) != SLURM_SUCCESS)
+			debug("Reconfig jobid=%u.%u failed: %m",
+			      stepd->jobid, stepd->stepid);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
 
 	/*
 	 * XXX: reopen slurmd port?

@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     jobacct_gather plugin a user can no longer turn off the logic to enforce
     the limit.
  -- Replaced many calls to getpwuid() with reentrant uid_to_string()
+ -- The slurmstepd will now refresh it's log file handle on a reconfig,
+    previously if a log was rolled any output from the stepd was lost.
 
 * Changes in SLURM 2.1.0-pre9
 =============================

@@ -85,6 +85,7 @@ static int _handle_completion(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_task_info(int fd, slurmd_job_t *job);
 static int _handle_list_pids(int fd, slurmd_job_t *job);
+static int _handle_reconfig(int fd, slurmd_job_t *job, uid_t uid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -524,6 +525,10 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 	case REQUEST_STEP_LIST_PIDS:
 		debug("Handling REQUEST_STEP_LIST_PIDS");
 		rc = _handle_list_pids(fd, job);
+		break;
+	case REQUEST_STEP_RECONFIGURE:
+		debug("Handling REQUEST_STEP_RECONFIGURE");
+		rc = _handle_reconfig(fd, job, uid);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -1361,3 +1366,35 @@ rwfail:
 		xfree(pids);
 	return SLURM_FAILURE;
 }
+
+static int
+_handle_reconfig(int fd, slurmd_job_t *job, uid_t uid)
+{
+	int rc = SLURM_SUCCESS;
+	int errnum = 0;
+
+	if (!_slurm_authorized_user(uid)) {
+		debug("job step reconfigure request from uid %ld "
+		      "for job %u.%u ",
+		      (long)uid, job->jobid, job->stepid);
+		rc = -1;
+		errnum = EPERM;
+		goto done;
+	}
+
+	/* We just want to make sure the file handle is correct on a
+	   reconfigure since the file could had rolled thus making
+	   the currect fd incorrect. */
+	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
+	debug("_handle_reconfigure for job %u.%u successful",
+	      job->jobid, job->stepid);
+
+done:
+	/* Send the return code and errno */
+	safe_write(fd, &rc, sizeof(int));
+	safe_write(fd, &errnum, sizeof(int));
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
