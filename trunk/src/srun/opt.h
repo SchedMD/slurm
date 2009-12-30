@@ -60,7 +60,6 @@
 
 #define DEFAULT_IMMEDIATE	1
 #define MAX_THREADS		60
-#define MAX_USERNAME		9
 
 #define INT_UNASSIGNED ((int)-1)
 
@@ -85,7 +84,7 @@ typedef struct srun_options {
 	char *progname;		/* argv[0] of this program or
 				 * configuration file if multi_prog */
 	bool multi_prog;	/* multiple programs to execute */
-	char user[MAX_USERNAME];/* local username		*/
+	char *user;		/* local username		*/
 	uid_t uid;		/* local uid			*/
 	gid_t gid;		/* local gid			*/
 	uid_t euid;		/* effective user --uid=user	*/

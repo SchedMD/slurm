@@ -186,19 +186,14 @@ _get_pos_int(const char *arg, const char *what)
  */
 static void _opt_default()
 {
-	char *user;
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	uid_t uid = getuid();
 
-	user = uid_to_string(uid);
-	if (strcmp(user, "nobody") == 0)
+	opt.user = uid_to_string(uid);
+	if (strcmp(opt.user, "nobody") == 0)
 		fatal("Invalid user id: %u", uid);
-	else {
-		strncpy(opt.user, user, MAX_USERNAME);
-		opt.uid = uid;
-	}
-	xfree(user);
 
+	opt.uid = uid;
 	opt.gid = getgid();
 
 	opt.progname = NULL;
