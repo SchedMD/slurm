@@ -927,6 +927,8 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	reserve_info_t *resv_ptr = NULL;
 	time_t now = time(NULL);
+	GtkTreePath *path = NULL;
+	GtkTreeViewColumn *focus_column = NULL;
 
 	if(display_data)
 		local_display_data = display_data;
@@ -1004,6 +1006,15 @@ display_it:
 		create_treestore(tree_view, display_data_resv,
 				 SORTID_CNT, SORTID_TIME_START, SORTID_COLOR);
 	}
+
+	/* highlight the correct nodes from the last selection */
+	gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
+				 &path, &focus_column);
+	if(path)
+		highlight_grid(GTK_TREE_VIEW(display_widget), path,
+			       SORTID_NODE_INX, grid_button_list);
+
+
 	view = INFO_VIEW;
 	_update_info_resv(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
