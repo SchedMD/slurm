@@ -1777,6 +1777,8 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	sview_part_info_t *sview_part_info = NULL;
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
+	GtkTreePath *path = NULL;
+	GtkTreeViewColumn *focus_column = NULL;
 
 	if(display_data)
 		local_display_data = display_data;
@@ -1836,13 +1838,13 @@ display_it:
 					   changed);
 	if(!info_list)
 		return;
+
 	/* set up the grid */
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = list_next(itr))) {
 		part_ptr = sview_part_info->part_ptr;
 		j=0;
 		while(part_ptr->node_inx[j] >= 0) {
-
 				change_grid_color(grid_button_list,
 						  part_ptr->node_inx[j],
 						  part_ptr->node_inx[j+1],
@@ -1876,6 +1878,14 @@ display_it:
 		create_treestore(tree_view, display_data_part,
 				 SORTID_CNT, SORTID_NAME, SORTID_COLOR);
 	}
+
+	/* highlight the correct nodes from the last selection */
+	gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
+				 &path, &focus_column);
+	if(path)
+		highlight_grid(GTK_TREE_VIEW(display_widget), path,
+			       SORTID_NODE_INX, grid_button_list);
+
 	view = INFO_VIEW;
 	_update_info_part(info_list, GTK_TREE_VIEW(display_widget));
 end_it:

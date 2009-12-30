@@ -883,6 +883,8 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	int j=0;
 	ListIterator itr = NULL;
 	sview_block_info_t *sview_block_info_ptr = NULL;
+	GtkTreePath *path = NULL;
+	GtkTreeViewColumn *focus_column = NULL;
 
 	if(display_data)
 		local_display_data = display_data;
@@ -985,6 +987,14 @@ display_it:
 		create_treestore(tree_view, display_data_block,
 				 SORTID_CNT, SORTID_NODELIST, SORTID_COLOR);
 	}
+
+	/* highlight the correct nodes from the last selection */
+	gtk_tree_view_get_cursor(GTK_TREE_VIEW(display_widget),
+				 &path, &focus_column);
+	if(path)
+		highlight_grid(GTK_TREE_VIEW(display_widget), path,
+			       SORTID_NODE_INX, grid_button_list);
+
 	view = INFO_VIEW;
 	_update_info_block(block_list, GTK_TREE_VIEW(display_widget));
 end_it:
