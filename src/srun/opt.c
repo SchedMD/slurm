@@ -2104,7 +2104,7 @@ static void _opt_list()
 	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
 	if (opt.ckpt_interval)
-		info("checkpoint     : %d secs", opt.ckpt_interval);
+		info("checkpoint     : %d mins", opt.ckpt_interval);
 	info("checkpoint_dir : %s", opt.ckpt_dir);
 	if (opt.restart_dir)
 		info("restart_dir    : %s", opt.restart_dir);
