@@ -72,9 +72,11 @@
 # Build with sgijob plugin and mysql (for slurmdbd) on CHAOS systems
 %if %{?chaos}0
 %slurm_with_opt mysql
-%slurm_with_opt lua
 %if %chaos < 5
 %slurm_with_opt sgijob
+%slurm_without_opt lua
+%else
+%slurm_with_opt lua
 %endif
 %else
 %slurm_without_opt sgijob
