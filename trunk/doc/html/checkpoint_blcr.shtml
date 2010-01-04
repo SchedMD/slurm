@@ -29,8 +29,13 @@ Basic familiarity with SLURM commands is assumed.</p>
 
 <p>Several options have been added to support checkpoint restart:</p>
 <ul>
-<li><b>--checkpoint</b>: Specify the interval between periodic checkpoint
-of a job step, in seconds</li>
+<li><b>--checkpoint</b>: Specifies the interval between creating
+checkpoints of the job step.
+By default, the job step will have no checkpoints created.
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
+"days\-hours:minutes:seconds".
+</li>
 <li><b>--checkpoint-dir</b>:Specify the directory where the checkpoint image
 files of a job step will be stored.
 The default value is the current working directory.
