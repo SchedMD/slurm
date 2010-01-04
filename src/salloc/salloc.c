@@ -59,12 +59,6 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
-/* external functions available for SPANK plugins to modify the environment
- * exported to the SLURM Prolog and Epilog programs */
-extern char *spank_get_job_env(const char *name);
-extern int   spank_set_job_env(const char *name, const char *value,
-			       int overwrite);
-extern int   spank_unset_job_env(const char *name);
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/plugstack.h"
