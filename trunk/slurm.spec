@@ -69,7 +69,7 @@
 %slurm_with_opt aix
 %endif
 
-# Build with sgijob plugin and mysql (for slurmdbdb) on CHAOS systems
+# Build with sgijob plugin and mysql (for slurmdbd) on CHAOS systems
 %if %{?chaos}0
 %slurm_with_opt mysql
 %slurm_with_opt lua
