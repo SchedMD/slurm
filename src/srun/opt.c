@@ -1693,7 +1693,7 @@ static bool _opt_verify(void)
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
-		error("invalid number of processes (-n %d)", opt.nprocs);
+		error("invalid number of tasks (-n %d)", opt.nprocs);
 		verified = false;
 	}
 
