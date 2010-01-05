@@ -365,11 +365,11 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		       job_block, block_id);
 
 		if (!strcmp(job_block, block_id)) {
-			free(block_id);
+			free(job_block);
 			continue;
 		}
 
-		free(block_id);
+		free(job_block);
 
 		if ((rc = bridge_get_data(job_elem, RM_JobDBJobID, &job_id))
 		    != STATUS_OK) {
