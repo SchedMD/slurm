@@ -377,10 +377,10 @@ Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 Set the job's minimum real memory required per node to the specified value.
 Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 .TP
-\fIMinCPUs\fP=<count>
+\fIMinCPUsNode\fP=<count>
 Set the job's minimum number of CPUs per node to the specified value.
 .TP
-\fIMinTmpDisk\fP=<megabytes>
+\fIMinTmpDiskNode\fP=<megabytes>
 Set the job's minimum temporary disk space required per node to the specified value.
 .TP
 \fIName\fP=<name>
@@ -397,8 +397,8 @@ Only privileged users can specify a negative adjustment.
 \fINumNodes\fP=<min_count>[\-<max_count>]
 Set the job's minimum and optionally maximum count of nodes to be allocated.
 .TP
-\fINumProcs\fP=<count>
-Set the job's count of required processes to the specified value.
+\fINumTasks\fP=<count>
+Set the job's count of required tasks to the specified value.
 .TP
 \fIPartition\fP=<name>
 Set the job's partition to the specified value.
@@ -792,33 +792,57 @@ The location of the SLURM configuration file.
 .br
 # scontrol
 .br
-scontrol: show part class
+scontrol: show part debug
 .br
-PartitionName=class TotalNodes=10 TotalCPUs=20 RootOnly=NO
+PartitionName=debug
 .br
-   Default=NO Shared=NO State=UP MaxTime=0:30:00 Hidden=NO
+   AllocNodes=ALL AllowGroups=ALL Default=YES
 .br
-   MinNodes=1 MaxNodes=2 AllowGroups=students
+   DefaultTime=NONE DisableRootJobs=NO Hidden=NO
 .br
-   Nodes=lx[0031-0040] NodeIndices=31,40,-1
+   MaxNodes=UNLIMITED MaxTime=UNLIMITED MinNodes=1
 .br
-scontrol: update PartitionName=class MaxTime=60:00 MaxNodes=4
+   Nodes=snowflake[0-48]
 .br
-scontrol: show job 65539
+   Priority=1 RootOnly=NO Shared=YES:4
 .br
-JobId=65539 UserId=1500 JobState=PENDING TimeLimit=0:20:00
+   State=UP TotalCPUs=694 TotalNodes=49
 .br
-   Priority=100 Partition=batch Name=job01 NodeList=(null)
+scontrol: update PartitionName=debug MaxTime=60:00 MaxNodes=4
 .br
-   StartTime=0 EndTime=0 Shared=0 ReqProcs=1000
+scontrol: show job 71701
 .br
-   ReqNodes=400 Contiguous=1 MinCPUs=4 MinMemoryNode=1024
+JobId=71701 Name=hostname
 .br
-   MinTmpDisk=2034 ReqNodeList=lx[3000-3003]
+   UserId=da(1000) GroupId=da(1000)
 .br
-   Features=(null) JobScript=/bin/hostname
+   Priority=66264 Account=none QOS=normal WCKey=*123
 .br
-scontrol: update JobId=65539 TimeLimit=30:00 Priority=500
+   JobState=COMPLETED Reason=None Dependency=(null)
+.br
+   TimeLimit=UNLIMITED Requeue=1 Restarts=0 BatchFlag=0 ExitCode=0:0
+.br
+   SubmitTime=2010-01-05T10:58:40 EligibleTime=2010-01-05T10:58:40
+.br
+   StartTime=2010-01-05T10:58:40 EndTime=2010-01-05T10:58:40
+.br
+   SuspendTime=None SecsPreSuspend=0
+.br
+   Partition=debug AllocNode:Sid=snowflake:4702
+.br
+   ReqNodeList=(null) ExcNodeList=(null)
+.br
+   NodeList=snowflake0
+.br
+   NumNodes=1 NumCPUs=10 CPUs/Task=2 ReqS:C:T=1:1:1
+.br
+   MinCPUsNode=2 MinMemoryNode=0 MinTmpDiskNode=0
+.br
+   Features=(null) Reservation=(null)
+.br
+   Shared=OK Contiguous=0 Licenses=(null) Network=(null)
+.br
+scontrol: update JobId=71701 TimeLimit=30:00 Priority=500
 .br
 scontrol: show hostnames tux[1-3]
 .br
