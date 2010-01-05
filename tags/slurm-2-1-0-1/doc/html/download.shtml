@@ -1,0 +1,183 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Download</h1>
+<p>
+SLURM source can be downloaded from
+<a href="http://sourceforge.net/projects/slurm/">
+http://sourceforge.net/projects/slurm/</a><br>
+SLURM has also been packaged for
+<a href="http://packages.debian.org/src:slurm-llnl">Debian</a> and
+<a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
+(both named <i>slurm-llnl</i>).</p>
+
+<p>Related software available from various sources include:
+<ul>
+
+<li><b>Authentication</b> plugins identifies the user originating
+a message.</li>
+<ul>
+<li><a href="http://www.theether.org/authd">authd</a></li>
+<li><b>Munge</b> (recommended)<br>
+In order to compile the "auth/munge" authentication plugin for SLURM,
+you will need to build and install Munge, available from
+<a href="http://home.gna.org/munge/">http://home.gna.org/munge/</a> or
+<a href="http://packages.debian.org/src:munge">Debian</a> or
+<a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.
+</li>
+</ul><br>
+
+<li><b>Databases</b> can be used to store accounting information.
+See our <a href="accounting.html">Accounting</a> web page for more information.</li>
+<ul>
+<li><a href="http://www.mysql.com/">MySQL</a> (recommended)</li>
+<li><a href="http://www.postgresql.org/">PostgreSQL</a></li>
+</ul><br>
+
+<li><b>Debuggers</b> and debugging tools</li>
+<ul>
+<li><a href="http://www.totalviewtech.com/"><b>TotalView</b></a>
+is a GUI-based source code debugger well suited for parallel applications.<li>
+<li><a href="http://padb.pittman.org.uk/"><b>Padb</b></a>
+is a job inspection tool for examining and debugging parallel programs, primarily it simplifies the process of gathering stack traces but also supports a wide range of other functions.
+It's an open source, non-interactive, command line, scriptable tool intended for use by programmers and system administrators alike.</li>
+</ul><br>
+
+<li><b>Digital signatures</b> (Cypto plugin) are used to insure message are not altered.</li>
+<ul>
+<li><b>Munge</b> (recommended)<br>
+Munge can be used at an alternative to OpenSSL.
+Munge is available under the Gnu General Public License.
+See Munge download information above.</li>
+<li><b>OpenSSL</b><br>
+OpenSSL may be used as an alternative to Munge for generation of digital signatures.
+Download it from <a href="http://www.openssl.org/">http://www.openssl.org/</a>.</li>
+</ul><br>
+
+<li><b>Hostlist</b><br>
+A python program used for manipulation of SLURM hostlists including
+functions such as intersection and difference. Download the code from:<br>
+<a href="http://www.nsc.liu.se/~kent/python-hostlist">
+http://www.nsc.liu.se/~kent/python-hostlist</a></li><br>
+
+<li><b>Interconnect</b> plugins (Switch plugin)</li>
+<ul>
+<li><b>QsNet</b><br>
+In order to build the "switch/elan" plugin for SLURM, you will need
+the <b>qsnetlibs</b> development libraries from
+<a href="http://www.quadrics.com">Quadrics</a>. The Elan
+plugin also requires the <b>libelanhosts</b> library and
+a corresponding /etc/elanhosts configuration file, used to map
+hostnames to Elan IDs. The libelanhosts source is available from
+<a href="https://sourceforge.net/projects/slurm/">
+https://sourceforge.net/projects/slurm/</a>.
+</ul><br>
+
+<li><b>I/O Watchdog</b><br>
+A facility for monitoring user applications, most notably parallel jobs,
+for <i>hangs</i> which typically have a side-effect of ceasing all write
+activity. This faciltiy attempts to monitor all write activity of an
+application and trigger a set of user-defined actions when write activity
+as ceased for a configurable period of time. A SPANK plugin is provided
+for use with SLURM. See the README and man page in the package for more
+details. Download the latest source from:<br>
+<a href="http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2">
+http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
+
+<li><b>MPI</b> versions supported</li>
+<ul>
+<li><a href="http://www.mpi-softtech.com/">ChaMPIon, MPI Software Technology</a></li>
+<li><a href="http://www.hp.com/go/mpi">HP-MPI</a></li>
+<li><a href="http://www.lam-mpi.org/">LAM/MPI</a></li>
+<li><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/">MPICH1</a></li>
+<li><a href="http://www.mcs.anl.gov/research/projects/mpich2/">MPICH2</a></li>
+<li><a href="http://www.myri.com/scs/download-mpichgm.html">MPICH-GM</a></li>
+<li><a href="http://www.myri.com/scs/download-mpichmx.html">MPICH-MX</a></li>
+<li><a href="http://mvapich.cse.ohio-state.edu/">MVAPICH</a></li>
+<li><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba">MVAPICH2</a></li>
+<li><a href="http://www.open-mpi.org">Open MPI</a></li>
+<li><a href="http://www.quadrics.com/">Quadrics MPI</a></li>
+</ul><br>
+
+<li><b>PAM Modules (pam_slurm)</b><br>
+Pluggable Authentication Module (PAM) for restricting access to compute nodes
+where SLURM performs resource management. Access to the node is restricted to
+user root and users who have been allocated resources on that node.
+NOTE: pam_slurm is included within the SLURM distribution for version 2.1
+or higher.
+For earlier SLURM versions, pam_slurm is available for download from<br>
+<a href="https://sourceforge.net/projects/slurm/">
+https://sourceforge.net/projects/slurm/</a><br>
+SLURM's PAM module has also been packaged for
+<a href="http://packages.debian.org/src:libpam-slurm">Debian</a> and
+<a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
+(both named <i>libpam-slurm</i>).</li><br>
+
+<li><b>Schedulers</b> offering control over the workload</li>
+<ul>
+<li><a href="http://www.sdsc.edu/catalina/">Catalina</a> a scheduler supporting the
+<a href="http://www.ogf.org/">Open Grid Forum</a> Advance Reservation API</li>
+<li><a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
+<li><a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+Maui Scheduler</a></li>
+<li><a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a></li>
+</ul><br>
+
+<li><b>Scripting interfaces</b>
+<ul>
+<li>A <b>Perl</b> interface is included in the SLURM distribution in the
+<i>contribs/perlapi</i> directory and packaged in the <i>perapi</i> RPM.</li>
+
+<li><a href="http://www.gingergeeks.co.uk/pyslurm/">PySlurm</a> is a
+Python/Pyrex module to interface with SLURM. There is also a Python module
+in the SLURM distribution to expand and collect hostlist expressions at
+<i>contribs/python/hostlist</i>.</li>
+</ul><br>
+
+<li><b>SPANK Plugins</b><br>
+SPANK provides a very generic interface for stackable plug-ins which
+may be used to dynamically modify the job launch code in SLURM. SPANK
+plugins may be built without access to SLURM source code. They need
+only be compiled against SLURM’s spank.h header file, added to the
+SPANK config file plugstack.conf, and they will be loaded at runtime
+during the next job launch. Thus, the SPANK infrastructure provides
+administrators and other developers a low cost, low effort ability to
+dynamically modify the runtime behavior of SLURM job launch.
+As assortment of SPANK plugins are available from<br>
+<a href="http://code.google.com/p/slurm-spank-plugins/">
+http://code.google.com/p/slurm-spank-plugins/</a>.<br>
+The current source for the plugins can be checked out of the subversion
+repository with the following command:<br>
+<i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/ slurm-plugins</i></li><br>
+
+<li><b>PAM Module (pam_slurm)</b><br>
+Pluggable Authentication Module (PAM) for restricting access to compute nodes
+where SLURM performs resource management. Access to the node is restricted to
+user root and users who have been allocated resources on that node.
+NOTE: pam_slurm is included within the SLURM distribution for version 2.1
+or higher.
+For earlier SLURM versions, pam_slurm is available for download from<br>
+<a href="https://sourceforge.net/projects/slurm/">
+https://sourceforge.net/projects/slurm/</a><br>
+SLURM's PAM module has also been packaged for
+<a href="http://packages.debian.org/src:libpam-slurm">Debian</a> and
+<a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
+(both named <i>libpam-slurm</i>).</li><br>
+
+<li><b>Sqlog</b><br>
+A set of scripts that leverages SLURM's job completion logging facility
+in provide information about what jobs were running at any point in the
+past as well as what resources they used. Download the code from:<br>
+<a href="http://sqlog.googlecode.com">http://sqlog.googlecode.com</a></li><br>
+
+<li><b>Task Affinity</b> plugins</li>
+<ul>
+<li><a href="http://www.open-mpi.org/software/plpa/">
+Portable Linux Processor Affinity (PLPA)</a></li>
+</ul><br>
+
+</ul>
+
+<p style="text-align:center;">Last modified 13 October 2009</p>
+
+<!--#include virtual="footer.txt"-->
