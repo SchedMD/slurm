@@ -332,9 +332,9 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.nice = NICE_OFFSET + nice;
 			update_cnt++;
 		}
-		/* ReqProcs was replaced by NumProcs in SLURM version 2.1 */
+		/* ReqProcs was replaced by NumTasks in SLURM version 2.1 */
 		else if ((strncasecmp(tag, "ReqProcs", MAX(taglen, 4)) == 0) ||
-			 (strncasecmp(tag, "NumProcs", MAX(taglen, 8)) == 0)) {
+			 (strncasecmp(tag, "NumTasks", MAX(taglen, 8)) == 0)) {
 			job_msg.num_procs =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
@@ -377,7 +377,7 @@ scontrol_update_job (int argc, char *argv[])
 				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "MinCPUs", MAX(taglen, 4)) == 0) {
+		else if (strncasecmp(tag, "MinCPUsNode", MAX(taglen, 4)) == 0) {
 			job_msg.job_min_cpus =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
@@ -395,7 +395,8 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.job_min_memory |= MEM_PER_CPU;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "MinTmpDisk", MAX(taglen, 5)) == 0) {
+		else if (strncasecmp(tag, "MinTmpDiskNode",
+				     MAX(taglen, 5)) == 0) {
 			job_msg.job_min_tmp_disk =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
