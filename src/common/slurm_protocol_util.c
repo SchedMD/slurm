@@ -57,6 +57,7 @@ int check_header_version(header_t * header)
 {
 	if(slurmdbd_conf) {
 		if (header->version != SLURM_PROTOCOL_VERSION
+		    && header->version != SLURM_2_1_PROTOCOL_VERSION
 		    && header->version != SLURM_2_0_PROTOCOL_VERSION
 		    && header->version != SLURM_1_3_PROTOCOL_VERSION)
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
@@ -84,8 +85,10 @@ void init_header(header_t *header, slurm_msg_t *msg,
 	   || msg->msg_type == ACCOUNTING_FIRST_REG) {
 		uint32_t rpc_version =
 			((accounting_update_msg_t *)msg->data)->rpc_version;
-		if(rpc_version >= 6)
+		if(rpc_version >= 7)
 			header->version = SLURM_PROTOCOL_VERSION;
+		else if(rpc_version >= 6)
+			header->version = SLURM_2_1_PROTOCOL_VERSION;
 		else if(rpc_version >= 5)
 			header->version = SLURM_2_0_PROTOCOL_VERSION;
 		else
