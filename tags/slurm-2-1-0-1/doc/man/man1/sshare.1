@@ -1,0 +1,95 @@
+.TH SSHARE "1" "November 2008" "sshare 2.0" "SLURM Commands"
+
+.SH "NAME"
+sshare \- Tool for listing the shares of associations to a cluster.
+
+.SH "SYNOPSIS"
+\fBsshare\fR [\fIOPTIONS\fR...]
+
+.SH "DESCRIPTION"
+\fBsshare\fR is used to view SLURM share information.  This command is
+only viable when running with the priority/multifactor plugin.
+The sshare information is derived from a database with the interface
+being provided by \fBslurmdbd\fR (SLURM Database daemon) which is
+read in from the slurmctld and used to process the shares available
+to a given association.  sshare provides SLURM share information of
+Account, User, Raw Shares, Normalized Shares, Raw Usage, Normalized
+Usage, Effective Usage, and the Fair-share factor for each association.
+
+
+.SH "OPTIONS"
+
+.TP
+\fB\-A\fR, \fB\-\-accounts=\fR
+Display information for specific accounts (comma separated list).
+
+.TP
+\fB\-a\fR, \fB\-\-all\fR
+Display information for all users.
+
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+No header will be added to the beginning of the output.
+
+.TP
+\fB\-l\fR, \fB\-\-long\fR
+Long listing - includes the normalized usage information.
+
+.TP
+\fB\-p\fR, \fB\-\-parsable\fR
+Output will be '|' delimited with a '|' at the end.
+
+.TP
+\fB\-P\fR, \fB\-\-parsable2\fR
+Output will be '|' delimited without a '|' at the end.
+
+.TP
+\fB\-u\fR, \fB\-\-users=\fR
+Display information for specific users (comma separated list).
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Display more information about the specified options.
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Display the version number of sshare.
+
+.TP
+\fB\-\-help\fR
+\fB\-\-usage\fR
+Display a description of sshare options and commands.
+
+
+.SH "EXAMPLES"
+.eo
+.br
+> sshare -A <Account>
+.br
+.br
+> sshare --parsable --users=<User>
+.br
+
+.ec
+
+.SH "COPYING"
+Copyright (C) 2008 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBslurm.conf\fR(5)
+\fBslurmdbd\fR(8)

@@ -1,0 +1,256 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate scontrol show commands for jobs and steps.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008-2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "2.8"
+set exit_code   0
+set file_in     "test$test_id.input"
+set job_id1     0
+set job_id2     0
+
+print_header $test_id
+
+#
+# Build input script file
+#
+make_bash_script $file_in "
+  $srun $bin_sleep 60 &
+  $srun $bin_sleep 60
+"
+
+#
+# Submit a couple jobs so we have something to work with
+#
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: srun submit failed\n"
+	exit 1
+}
+
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		cancel_job $job_id1
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	send_user "\nFAILURE: srun submit failed\n"
+	cancel_job $job_id1
+	exit 1
+}
+
+exec $bin_rm -f $file_in
+
+#
+# Look at all jobs with scontrol
+#
+set matches 0
+spawn $scontrol show job
+expect {
+	-re "JobId=$job_id1 " {
+		incr matches
+		exp_continue
+	}
+	-re "JobId=$job_id2 " {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 2} {
+	send_user "\nFAILURE: scontrol failed to find all jobs\n"
+	set exit_code 1
+}
+
+#
+# Look at a specific job with scontrol
+#
+set matches 0
+spawn $scontrol show job $job_id1
+expect {
+	-re "JobId=$job_id1 " {
+		incr matches
+		exp_continue
+	}
+	-re "JobId=" {
+		send_user "\nFAILURE: scontrol filter by job id\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol failed to find requested job\n"
+	set exit_code 1
+}
+
+#
+# Wait for job to start running then give the step a chance to start tasks
+#
+if {[wait_for_job $job_id1 RUNNING] != 0} {
+	send_user "\nFAILURE: waiting for job $job_id1 to run\n"
+	set exit_code 1
+}
+exec $bin_sleep 10
+
+#
+# Look at all job steps with scontrol
+#
+set matches 0
+spawn $scontrol show step
+expect {
+	-re "StepId=$job_id1.0 " {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol failed to find all job steps\n"
+	set exit_code 1
+}
+
+#
+# Look at specific job step with scontrol
+#
+set matches 0
+spawn $scontrol show step $job_id1.0
+expect {
+	-re "StepId=$job_id1.0 " {
+		incr matches
+		exp_continue
+	}
+	-re "StepId=" {
+		send_user "\nFAILURE: scontrol filter by step id\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol failed to specific job step\n"
+	set exit_code 1
+}
+
+#
+# Look at specific _invalid_ job step with scontrol
+# (At least it should be invalid)
+#
+set matches 0
+set job_id3 [expr $job_id1 + 10000]
+spawn $scontrol show step $job_id3.0
+expect {
+	-re "StepId=$job_id3.0 " {
+		send_user "\nFAILURE: scontrol found unexpected job step\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "Invalid job id" {
+		send_user "\nNo worries, error expectd\n"
+		incr matches
+		exp_continue
+	}
+	-re "StepId=" {
+		send_user "\nFAILURE: scontrol filter by step id\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol found unexpected job step\n"
+	set exit_code 1
+}
+
+cancel_job $job_id1
+cancel_job $job_id2
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
+
