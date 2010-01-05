@@ -24,6 +24,9 @@
 /* Define to 1 if licensed under terms of the GNU General Public License. */
 #undef GPL_LICENSED
 
+/* Define to 1 if using gtk+-2.10.0 or higher */
+#undef GTK2_USE_RADIO_SET
+
 /* Define to 1 if using gtk+-2.12.0 or higher */
 #undef GTK2_USE_TOOLTIP
 

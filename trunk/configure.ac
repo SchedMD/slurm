@@ -180,6 +180,10 @@ AC_SUBST(HAVE_SOME_CURSES)
 AM_PATH_GTK_2_0([2.7.1], [ac_have_gtk="yes"], [ac_have_gtk="no"], [gthread])
 AM_CONDITIONAL(HAVE_GTK, test "x$ac_have_gtk" = "xyes")
 
+if test ${gtk_config_minor_version=0} -gt 10 ; then
+       AC_DEFINE([GTK2_USE_RADIO_SET], 1, [Define to 1 if using gtk+-2.10.0 or higher])
+fi
+
 if test ${gtk_config_minor_version=0} -gt 12 ; then
        AC_DEFINE([GTK2_USE_TOOLTIP], 1, [Define to 1 if using gtk+-2.12.0 or higher])
 fi
