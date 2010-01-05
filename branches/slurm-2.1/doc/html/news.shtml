@@ -69,6 +69,8 @@ is now available.</li>
 <p>SLURM Version 2.1 was released in January 2010.
 Major enhancements include:
 <ul>
+<li>Optimized resource allocation based upon network topology (e.g.
+hierarchical switches).</li>
 <li>Support for job preemption based upon job Quality of Service (QOS) in
 addition to queue priority.</li>
 <li>Support for time limits on individual job steps (in addition to the
@@ -84,8 +86,6 @@ not been finalized. Anyone desiring to perform SLURM development should notify
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activities. Future development plans includes:
 <ul>
-<li>Optimized resource allocation based upon network topology (e.g.
-hierarchical switches).</li>
 <li>Modify more SLURM commands to operate between clusters.</li>
 <li>Support for BlueGene/Q systems.</li>
 <li>Permit resource allocations (jobs) to change size.</li>
