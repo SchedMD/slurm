@@ -1,7 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.1.0-pre10
+* Changes in SLURM 2.1.1
+=============================
+
+* Changes in SLURM 2.1.0
 =============================
  -- Improve sview layout of blocks in use.
  -- A user can now change the dimensions of the grid in sview.

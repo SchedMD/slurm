@@ -11,10 +11,10 @@
   Minor:	1
   Micro:        0
   Version:	2.1.0
-  Release:	0.pre9
+  Release:	1
 ##
 #  When changing API_CURRENT update src/common/slurm_protocol_common.h
-#  with a new SLURM_PROTOCOL_VERSION signifing the old one and the version 
+#  with a new SLURM_PROTOCOL_VERSION signifing the old one and the version
 #  it was so the slurmdbd can continue to send the old protocol version.
 ##
   API_CURRENT:	21
