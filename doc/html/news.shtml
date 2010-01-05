@@ -73,8 +73,6 @@ Major enhancements include:
 addition to queue priority.</li>
 <li>Support for time limits on individual job steps (in addition to the
 job time limit).</li>
-<li>Fully implement the PgSQL accounting plugin.</li>
-<li>Provide a web-based SLURM administration tool.</li>
 <li>Improve fault-tolerance in recognizing compute node reboots.</li>
 <li>Add sinfo and squeue information about specific cores allocated.</li>
 <li>Support for Solaris (OpenSolaris build 119).</li>
@@ -93,6 +91,8 @@ hierarchical switches).</li>
 <li>Permit resource allocations (jobs) to change size.</li>
 <li>Add Kerberos credential support including credential forwarding
 and refresh.</li>
+<li>Fully implement the PgSQL accounting plugin.</li>
+<li>Provide a web-based SLURM administration tool.</li>
 </ul>
 
 <p style="text-align:center;">Last modified 5 January 2010</p>
