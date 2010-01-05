@@ -798,6 +798,7 @@ static int _load_job_state(Buf buffer)
 	check_jobinfo_t check_job = NULL;
 	acct_association_rec_t assoc_rec;
 	acct_qos_rec_t qos_rec;
+	bool job_finished = false;
 
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&job_id, buffer);
@@ -1043,6 +1044,7 @@ static int _load_job_state(Buf buffer)
 			job_ptr->start_time = now;
 		job_ptr->end_time = now;
 		job_completion_logger(job_ptr);
+		job_finished = 1;
 	} else {
 		job_ptr->assoc_id = assoc_rec.id;
 		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
@@ -1061,11 +1063,13 @@ static int _load_job_state(Buf buffer)
 		}
 		/* make sure we have this job completed in the
 		 * database */
-		if(IS_JOB_FINISHED(job_ptr))
+		if(IS_JOB_FINISHED(job_ptr)) {
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
+			job_finished = 1;
+		}
 	}
 
-	if (job_ptr->qos) {
+	if (!job_finished && job_ptr->qos) {
 		memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 		qos_rec.id = job_ptr->qos;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
@@ -1079,6 +1083,7 @@ static int _load_job_state(Buf buffer)
 				job_ptr->start_time = now;
 			job_ptr->end_time = now;
 			job_completion_logger(job_ptr);
+			job_finished = 1;
 		}
 		job_ptr->qos = qos_rec.id;
 	}
