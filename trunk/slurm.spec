@@ -72,15 +72,14 @@
 # Build with sgijob plugin and mysql (for slurmdbd) on CHAOS systems
 %if %{?chaos}0
 %slurm_with_opt mysql
-%if %chaos < 5
-%slurm_with_opt sgijob
-%slurm_without_opt lua
-%else
 %slurm_with_opt lua
-%endif
 %else
 %slurm_without_opt sgijob
 %slurm_without_opt lua
+%endif
+
+%if %{?chaos}0 && 0%{?chaos} < 5
+%slurm_with_opt sgijob
 %endif
 
 Name:    See META file
@@ -142,7 +141,12 @@ BuildRequires: mysql-devel >= 5.0.0
 BuildRequires: postgresql-devel >= 8.0.0
 %endif
 
+%ifnos aix5.3
+# FIXME: AIX can't seem to find this even though this is in existance there.
+# We should probably figure out a better way of doing this, but for now we
+# just won't look for it on AIX.
 BuildRequires: perl(ExtUtils::MakeMaker)
+%endif
 
 %description
 SLURM is an open source, fault-tolerant, and highly
