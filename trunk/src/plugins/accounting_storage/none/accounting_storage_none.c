@@ -278,6 +278,12 @@ extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
 	return NULL;
 }
 
+extern List acct_storage_p_get_events(void *db_conn, uint32_t uid,
+				      acct_event_cond_t *event_cond)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
 					acct_association_cond_t *assoc_q)
 {

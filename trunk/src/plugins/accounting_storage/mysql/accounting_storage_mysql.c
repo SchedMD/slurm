@@ -8739,6 +8739,12 @@ empty:
 	return assoc_list;
 }
 
+extern List acct_storage_p_get_events(mysql_conn_t *mysql_conn, uint32_t uid,
+				      acct_event_cond_t *event_cond)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 					acct_association_cond_t *assoc_cond)
 {

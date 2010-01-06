@@ -159,6 +159,8 @@ typedef enum {
 	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
 	DBD_GET_PROBS,  	/* Get problems existing in accounting	*/
 	DBD_GOT_PROBS,		/* Response to DBD_GET_PROBS		*/
+	DBD_GET_EVENTS, 	/* Get event information		*/
+	DBD_GOT_EVENTS, 	/* Response to DBD_GET_EVENTS		*/
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

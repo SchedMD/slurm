@@ -419,6 +419,7 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_ACCOUNTS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_CLUSTERS:
+	case DBD_GOT_EVENTS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
@@ -452,13 +453,14 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
 	case DBD_GET_CLUSTERS:
+	case DBD_GET_EVENTS:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
 	case DBD_GET_RESVS:
-	case DBD_GET_WCKEYS:
 	case DBD_GET_TXN:
 	case DBD_GET_USERS:
+	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
@@ -588,6 +590,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_ACCOUNTS:
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_CLUSTERS:
+	case DBD_GOT_EVENTS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
@@ -621,13 +624,14 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
 	case DBD_GET_CLUSTERS:
+	case DBD_GET_EVENTS:
 	case DBD_GET_JOBS_COND:
-	case DBD_GET_USERS:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
 	case DBD_GET_RESVS:
-	case DBD_GET_WCKEYS:
 	case DBD_GET_TXN:
+	case DBD_GET_USERS:
+	case DBD_GET_WCKEYS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
@@ -781,6 +785,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_CLUSTERS;
 	} else if(!strcasecmp(msg_type, "Get Cluster Usage")) {
 		return DBD_GET_CLUSTER_USAGE;
+	} else if(!strcasecmp(msg_type, "Get Events")) {
+		return DBD_GET_EVENTS;
 	} else if(!strcasecmp(msg_type, "Get Jobs")) {
 		return DBD_GET_JOBS;
 	} else if(!strcasecmp(msg_type, "Get Problems")) {
@@ -797,6 +803,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GOT_CLUSTERS;
 	} else if(!strcasecmp(msg_type, "Got Cluster Usage")) {
 		return DBD_GOT_CLUSTER_USAGE;
+	} else if(!strcasecmp(msg_type, "Got Events")) {
+		return DBD_GOT_EVENTS;
 	} else if(!strcasecmp(msg_type, "Got Jobs")) {
 		return DBD_GOT_JOBS;
 	} else if(!strcasecmp(msg_type, "Got List")) {
@@ -983,6 +991,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Get Cluster Usage";
 		break;
+	case DBD_GET_EVENTS:
+		if(get_enum) {
+			return "DBD_GET_EVENTS";
+		} else
+			return "Get Events";
+		break;
 	case DBD_GET_JOBS:
 		if(get_enum) {
 			return "DBD_GET_JOBS";
@@ -1030,6 +1044,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GOT_CLUSTER_USAGE";
 		} else
 			return "Got Cluster Usage";
+		break;
+	case DBD_GOT_EVENTS:
+		if(get_enum) {
+			return "DBD_GOT_EVENTS";
+		} else
+			return "Got Events";
 		break;
 	case DBD_GOT_JOBS:
 		if(get_enum) {
@@ -2142,6 +2162,9 @@ void inline slurmdbd_free_cond_msg(uint16_t rpc_version,
 		case DBD_GET_RESVS:
 			my_destroy = destroy_acct_reservation_cond;
 			break;
+		case DBD_GET_EVENTS:
+			my_destroy = destroy_acct_event_cond;
+			break;
 		default:
 			fatal("Unknown cond type");
 			return;
@@ -2553,6 +2576,9 @@ void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
 	case DBD_GET_RESVS:
 		my_function = pack_acct_reservation_cond;
 		break;
+	case DBD_GET_EVENTS:
+		my_function = pack_acct_event_cond;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -2605,6 +2631,9 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 		break;
 	case DBD_GET_RESVS:
 		my_function = unpack_acct_reservation_cond;
+		break;
+	case DBD_GET_EVENTS:
+		my_function = unpack_acct_event_cond;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -3154,6 +3183,9 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_TXN:
 		my_function = pack_acct_txn_rec;
 		break;
+	case DBD_GOT_EVENTS:
+		my_function = pack_acct_event_rec;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -3236,6 +3268,10 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_TXN:
 		my_function = unpack_acct_txn_rec;
 		my_destroy = destroy_acct_txn_rec;
+		break;
+	case DBD_GOT_EVENTS:
+		my_function = unpack_acct_event_rec;
+		my_destroy = destroy_acct_event_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");

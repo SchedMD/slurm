@@ -276,6 +276,32 @@ typedef struct {
 } acct_coord_rec_t;
 
 typedef struct {
+	List cluster_list;	/* list of char * */
+	uint32_t cpus_max;      /* number of cpus high range */
+	uint32_t cpus_min;      /* number of cpus low range */
+	uint16_t event_type;    /* type of events, default is all */
+	char *node_string;      /* a ranged node string of node of interest */
+	time_t period_end;      /* period end of events */
+	time_t period_start;    /* period start of events */
+	List state_list;        /* list of char * */
+	List reason_list;       /* list of char * */
+} acct_event_cond_t;
+
+typedef struct {
+	char *cluster;          /* Name of associated cluster */
+	char *cluster_nodes;    /* node list in cluster during time
+				 * period (only set in a cluster event) */
+	uint32_t cpu_count;     /* Number of CPUs effected by event */
+	char *node_name;        /* Name of node (only set in a node event) */
+	time_t period_end;      /* End of period */
+	time_t period_start;    /* Start of period */
+	char *reason;           /* reason node is in state during time
+				   period (only set in a node event) */
+	uint16_t state;         /* State of node during time
+				   period (only set in a node event) */
+} acct_event_rec_t;
+
+typedef struct {
 	List acct_list;		/* list of char * */
 	List associd_list;	/* list of char */
 	List cluster_list;	/* list of char * */
@@ -564,6 +590,7 @@ extern void destroy_cluster_accounting_rec(void *object);
 extern void destroy_acct_cluster_rec(void *object);
 extern void destroy_acct_accounting_rec(void *object);
 extern void destroy_acct_association_rec(void *object);
+extern void destroy_acct_event_rec(void *object);
 extern void destroy_acct_qos_rec(void *object);
 extern void destroy_acct_reservation_rec(void *object);
 extern void destroy_acct_txn_rec(void *object);
@@ -574,6 +601,7 @@ extern void destroy_acct_user_cond(void *object);
 extern void destroy_acct_account_cond(void *object);
 extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
+extern void destroy_acct_event_cond(void *object);
 extern void destroy_acct_job_cond(void *object);
 extern void destroy_acct_qos_cond(void *object);
 extern void destroy_acct_reservation_cond(void *object);
@@ -615,6 +643,10 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 				      Buf buffer);
 extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 				       Buf buffer);
+extern void pack_acct_event_rec(void *in, uint16_t rpc_version,
+				Buf buffer);
+extern int unpack_acct_event_rec(void **object, uint16_t rpc_version,
+				 Buf buffer);
 extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer);
 extern void pack_acct_reservation_rec(void *in, uint16_t rpc_version,
@@ -643,6 +675,9 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 				       Buf buffer);
 extern int unpack_acct_association_cond(void **object, uint16_t rpc_version,
 					Buf buffer);
+extern void pack_acct_event_cond(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_event_cond(void **object, uint16_t rpc_version,
+				  Buf buffer);
 extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_job_cond(void **object, uint16_t rpc_version,
 				Buf buffer);
@@ -982,6 +1017,15 @@ extern List acct_storage_g_get_associations(
 
 /*
  * get info from the storage
+ * IN:  acct_event_cond_t *
+ * RET: List of acct_event_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_events(
+	void *db_conn,  uint32_t uid, acct_event_cond_t *event_cond);
+
+/*
+ * get info from the storage
  * IN:  acct_association_cond_t *
  * RET: List of acct_association_rec_t *
  * note List needs to be freed when called
@@ -1037,6 +1081,7 @@ extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
 extern int acct_storage_g_get_usage(
 	void *db_conn,  uint32_t uid, void *in, int type,
 	time_t start, time_t end);
+
 /*
  * roll up data in the storage
  * IN: sent_start (option time to do a re-roll or start from this point)
