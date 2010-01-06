@@ -567,6 +567,23 @@ on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
+List acct_storage_p_get_events(void *db_conn, uint32_t uid,
+acct_event_cond_t *event_cond)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Get a list of acct_event_rec_t *'s based on the conditional sent.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">db_conn</span> (input) connection to
+the storage type. <br>
+<span class="commandline">uid</span> (input) uid of user calling the
+function.<br>
+<span class="commandline">event_cond</span> (input) conditional about
+which events are to be returned.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">List</span> containing acct_event_rec_t *'s
+on success, or<br>
+<span class="commandline">NULL</span> on failure.
+
+<p class="commandline">
 List acct_storage_p_get_qos(void *db_conn, uint32_t uid,
 acct_qos_cond_t *qos_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
