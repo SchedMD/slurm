@@ -1803,6 +1803,16 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->batch_start_timeout = DEFAULT_BATCH_START_TIMEOUT;
 
 	s_p_get_string(&conf->cluster_name, "ClusterName", hashtbl);
+	/* Some databases are case sensitive so we have to make sure
+	   the cluster name is lower case since sacctmgr makes sure
+	   this is the case as well.
+	*/
+	if(conf->cluster_name) {
+		int i;
+		for (i = 0; conf->cluster_name[i] != '\0'; i++)
+			conf->cluster_name[i] =
+				(char)tolower(conf->cluster_name[i]);
+	}
 
 	if (!s_p_get_uint16(&conf->complete_wait, "CompleteWait", hashtbl))
 		conf->complete_wait = DEFAULT_COMPLETE_WAIT;

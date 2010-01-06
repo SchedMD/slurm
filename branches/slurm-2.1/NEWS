@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.1
 =============================
+ -- Fix for case sensitive databases when a slurmctld has a mixed case
+    clustername to lower case the string to easy compares.
 
 * Changes in SLURM 2.1.0
 =============================
