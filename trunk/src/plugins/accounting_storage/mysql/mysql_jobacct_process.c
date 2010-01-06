@@ -771,7 +771,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			_state_time_string(extra, atoi(object),
+			_state_time_string(extra, (uint32_t)atoi(object),
 					   job_cond->usage_start,
 					   job_cond->usage_end);
 			set = 1;

@@ -88,6 +88,14 @@ typedef enum {
 	ACCT_PROBLEM_USER_NO_UID,
 } acct_problem_type_t;
 
+typedef enum {
+	ACCT_EVENT_ALL,
+	ACCT_EVENT_CLUSTER,
+	ACCT_EVENT_NODE
+} acct_event_type_t;
+
+
+
 #define ACCT_CLASSIFIED_FLAG 0x0100
 #define ACCT_CLASS_BASE      0x00ff
 
@@ -279,12 +287,13 @@ typedef struct {
 	List cluster_list;	/* list of char * */
 	uint32_t cpus_max;      /* number of cpus high range */
 	uint32_t cpus_min;      /* number of cpus low range */
-	uint16_t event_type;    /* type of events, default is all */
-	char *node_string;      /* a ranged node string of node of interest */
+	uint16_t event_type;    /* type of events (acct_event_type_t),
+				 * default is all */
+	List node_list;	        /* list of char * */
 	time_t period_end;      /* period end of events */
 	time_t period_start;    /* period start of events */
-	List state_list;        /* list of char * */
 	List reason_list;       /* list of char * */
+	List state_list;        /* list of char * */
 } acct_event_cond_t;
 
 typedef struct {

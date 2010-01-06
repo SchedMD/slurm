@@ -8259,7 +8259,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	uint32_t parent_mj = INFINITE;
-        uint32_t parent_msj = INFINITE;
+	uint32_t parent_msj = INFINITE;
 	uint32_t parent_mcpj = INFINITE;
 	uint32_t parent_mnpj = INFINITE;
 	uint32_t parent_mwpj = INFINITE;
@@ -8742,7 +8742,214 @@ empty:
 extern List acct_storage_p_get_events(mysql_conn_t *mysql_conn, uint32_t uid,
 				      acct_event_cond_t *event_cond)
 {
-	return NULL;
+	char *query = NULL;
+	char *extra = NULL;
+	char *tmp = NULL;
+	List ret_list = NULL;
+	ListIterator itr = NULL;
+	char *object = NULL;
+	int set = 0;
+	int i=0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	time_t now = time(NULL);
+
+	/* if this changes you will need to edit the corresponding enum */
+	char *event_req_inx[] = {
+		"node_name",
+		"cluster",
+		"cpu_count",
+		"state",
+		"period_start",
+		"period_end",
+		"reason",
+		"cluster_nodes"
+	};
+
+	enum {
+		EVENT_REQ_NODE,
+		EVENT_REQ_CLUSTER,
+		EVENT_REQ_CPU,
+		EVENT_REQ_STATE,
+		EVENT_REQ_START,
+		EVENT_REQ_END,
+		EVENT_REQ_REASON,
+		EVENT_REQ_CNODES,
+		EVENT_REQ_COUNT
+	};
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	if(!event_cond)
+		goto empty;
+
+	if(event_cond->cluster_list
+	   && list_count(event_cond->cluster_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(event_cond->cluster_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "cluster=\"%s\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(event_cond->cpus_min) {
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		if(event_cond->cpus_max) {
+			xstrfmtcat(extra, "cpu_count between %u and %u)",
+				   event_cond->cpus_min, event_cond->cpus_max);
+
+		} else {
+			xstrfmtcat(extra, "cpu_count='%u')",
+				   event_cond->cpus_min);
+
+		}
+	}
+
+	switch(event_cond->event_type) {
+	case ACCT_EVENT_ALL:
+		break;
+	case ACCT_EVENT_CLUSTER:
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		xstrcat(extra, "node_name = '')");
+
+		break;
+	case ACCT_EVENT_NODE:
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		xstrcat(extra, "node_name != '')");
+
+		break;
+	default:
+		error("Unknown event %u doing all", event_cond->event_type);
+		break;
+	}
+
+	if(event_cond->node_list
+	   && list_count(event_cond->node_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(event_cond->node_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "node_name=\"%s\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(event_cond->period_start) {
+		if(!event_cond->period_end)
+			event_cond->period_end = now;
+
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		xstrfmtcat(query,
+			   "(period_start < %d) "
+			   "&& (period_end >= %d || period_end = 0))",
+			   event_cond->period_end, event_cond->period_start);
+	}
+
+	if(event_cond->reason_list
+	   && list_count(event_cond->reason_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(event_cond->reason_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "reason like \"%%%s%%\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(event_cond->state_list
+	   && list_count(event_cond->state_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(event_cond->state_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "state=\"%s\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+
+empty:
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", event_req_inx[i]);
+	for(i=1; i<EVENT_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", event_req_inx[i]);
+	}
+
+	query = xstrdup_printf("select %s from %s", tmp, event_table);
+	xfree(tmp);
+	if(extra) {
+		xstrfmtcat(query, " %s", extra);
+		xfree(extra);
+	}
+
+	ret_list = list_create(destroy_acct_event_rec);
+	while((row = mysql_fetch_row(result))) {
+		acct_event_rec_t *event = xmalloc(sizeof(acct_event_rec_t));
+
+		list_append(ret_list, event);
+
+		if(row[EVENT_REQ_NODE] && row[EVENT_REQ_NODE][0])
+			event->node_name = xstrdup(row[EVENT_REQ_NODE]);
+
+		if(row[EVENT_REQ_CLUSTER] && row[EVENT_REQ_CLUSTER][0])
+			event->cluster = xstrdup(row[EVENT_REQ_CLUSTER]);
+
+		event->cpu_count = atoi(row[EVENT_REQ_CPU]);
+		event->state = atoi(row[EVENT_REQ_STATE]);
+		event->period_start = atoi(row[EVENT_REQ_START]);
+		event->period_end = atoi(row[EVENT_REQ_END]);
+
+		if(row[EVENT_REQ_REASON] && row[EVENT_REQ_REASON][0])
+			event->reason = xstrdup(row[EVENT_REQ_REASON]);
+
+		if(row[EVENT_REQ_CLUSTER] && row[EVENT_REQ_CLUSTER][0])
+			event->cluster_nodes = xstrdup(row[EVENT_REQ_CNODES]);
+	}
+	mysql_free_result(result);
+
+	return ret_list;
 }
 
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
@@ -8836,8 +9043,6 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-
-
 
 	if(!qos_cond) {
 		xstrcat(extra, "where deleted=0");

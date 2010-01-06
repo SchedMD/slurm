@@ -752,11 +752,12 @@ extern void destroy_acct_event_cond(void *object)
 	if(acct_event) {
 		if(acct_event->cluster_list)
 			list_destroy(acct_event->cluster_list);
-		xfree(acct_event->node_string);
-		if(acct_event->state_list)
-			list_destroy(acct_event->state_list);
+		if(acct_event->node_list)
+			list_destroy(acct_event->node_list);
 		if(acct_event->reason_list)
 			list_destroy(acct_event->reason_list);
+		if(acct_event->state_list)
+			list_destroy(acct_event->state_list);
 		xfree(acct_event);
 	}
 }
@@ -5122,15 +5123,13 @@ extern void pack_acct_event_cond(void *in, uint16_t rpc_version, Buf buffer)
 	pack32(object->cpus_max, buffer);
 	pack32(object->cpus_min, buffer);
 	pack16(object->event_type, buffer);
-	packstr(object->node_string, buffer);
-	pack_time(object->period_end, buffer);
-	pack_time(object->period_start, buffer);
-	if(object->state_list)
-		count = list_count(object->state_list);
+
+	if(object->node_list)
+		count = list_count(object->node_list);
 
 	pack32(count, buffer);
 	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->state_list);
+		itr = list_iterator_create(object->node_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
@@ -5138,12 +5137,28 @@ extern void pack_acct_event_cond(void *in, uint16_t rpc_version, Buf buffer)
 	}
 	count = NO_VAL;
 
+	pack_time(object->period_end, buffer);
+	pack_time(object->period_start, buffer);
+
 	if(object->reason_list)
 		count = list_count(object->reason_list);
 
 	pack32(count, buffer);
 	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->reason_list);
+		while((tmp_info = list_next(itr))) {
+			packstr(tmp_info, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
+
+	if(object->state_list)
+		count = list_count(object->state_list);
+
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(object->state_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
@@ -5175,19 +5190,19 @@ extern int unpack_acct_event_cond(void **object, uint16_t rpc_version,
 	safe_unpack32(&object_ptr->cpus_max, buffer);
 	safe_unpack32(&object_ptr->cpus_min, buffer);
 	safe_unpack16(&object_ptr->event_type, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->node_string, &uint32_tmp, buffer);
-	safe_unpack_time(&object_ptr->period_end, buffer);
-	safe_unpack_time(&object_ptr->period_start, buffer);
 
 	safe_unpack32(&count, buffer);
 	if(count != NO_VAL) {
-		object_ptr->state_list = list_create(slurm_destroy_char);
+		object_ptr->node_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 					       buffer);
-			list_append(object_ptr->state_list, tmp_info);
+			list_append(object_ptr->node_list, tmp_info);
 		}
 	}
+
+	safe_unpack_time(&object_ptr->period_end, buffer);
+	safe_unpack_time(&object_ptr->period_start, buffer);
 
 	safe_unpack32(&count, buffer);
 	if(count != NO_VAL) {
@@ -5196,6 +5211,16 @@ extern int unpack_acct_event_cond(void **object, uint16_t rpc_version,
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 					       buffer);
 			list_append(object_ptr->reason_list, tmp_info);
+		}
+	}
+
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->state_list = list_create(slurm_destroy_char);
+		for(i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+					       buffer);
+			list_append(object_ptr->state_list, tmp_info);
 		}
 	}
 
