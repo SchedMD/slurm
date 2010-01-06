@@ -3,10 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.2.0.pre0
 =============================
+ -- Added RunTime field to scontrol show job report
 
 * Changes in SLURM 2.1.1
 =============================
- -- Added RunTime field to scontrol show job report
 
 * Changes in SLURM 2.1.0
 =============================
