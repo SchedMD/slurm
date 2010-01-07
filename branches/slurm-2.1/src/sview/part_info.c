@@ -2034,8 +2034,32 @@ display_it:
 			hostset_destroy(hostset);
 			break;
 		case PART_PAGE:
+			switch(spec_info->search_info->search_type) {
+			case SEARCH_PARTITION_NAME:
+				if(!spec_info->search_info->gchar_data)
+					continue;
+
+				if(strcmp(part_ptr->name,
+					  spec_info->search_info->gchar_data))
+					continue;
+				break;
+			case SEARCH_PARTITION_STATE:
+				if(spec_info->search_info->int_data == NO_VAL)
+					continue;
+				if(part_ptr->state_up !=
+				   spec_info->search_info->int_data)
+					continue;
+				break;
+			default:
+				continue;
+				break;
+			}
+			break;
 		case BLOCK_PAGE:
 		case JOB_PAGE:
+			if(!spec_info->search_info->gchar_data)
+				continue;
+
 			if(strcmp(part_ptr->name,
 				  spec_info->search_info->gchar_data))
 				continue;
