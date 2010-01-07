@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     clustername to lower case the string to easy compares.
  -- Fix squeue if job is completing and failed to print remaining
     nodes instead of failed message.
+ -- Fix sview core when searching for partitions by state.
 
 * Changes in SLURM 2.1.0
 =============================
