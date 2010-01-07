@@ -16,9 +16,20 @@ Functionality provided includes:
 node failure</li>
 </ol></p>
 
-<b>Note:</b> checkpoint/blcr cannot restart interactive jobs. It can
+<p><b>Note:</b> checkpoint/blcr cannot restart interactive jobs. It can
 create checkpoints for both interactive and batch steps, but only
-batch jobs can be restarted.
+batch jobs can be restarted.</p>
+
+<p>The general mode of operation is to
+<ol>
+<li>Start the job step using the <b>srun_cr</b> command as described 
+below.</li>
+<li>Create a checkpoint of <b>srun_cr</b> using BLCR's <b>cr_checkpoint</b>
+command and cancel the job. <b>srun_cr</b> will automatically checkpoint
+your job.</li>
+<li>Restart <b>srun_cr</b> using BLCR's <b>cr_restart</b> command.
+The job will be restarted using a newly allocated jobid.</li>
+</ol>
 
 <h2>User Commands</h2>
 
@@ -170,6 +181,6 @@ or reading job checkpoint files</li>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 December 2009</p>
+<p style="text-align:center;">Last modified 7 January 2010</p>
 
 <!--#include virtual="footer.txt"-->
