@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Fix for case sensitive databases when a slurmctld has a mixed case
     clustername to lower case the string to easy compares.
+ -- Fix squeue if job is completing and failed to print remaining
+    nodes instead of failed message.
 
 * Changes in SLURM 2.1.0
 =============================
