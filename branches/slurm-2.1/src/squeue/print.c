@@ -1334,7 +1334,6 @@ static int _filter_job(job_info_t * job)
 		if (filter == 1)
 			return 3;
 	} else {
-		uint16_t base_state = job->job_state & JOB_STATE_BASE;
 		if (!IS_JOB_PENDING(job) &&
 		    !IS_JOB_RUNNING(job) &&
 		    !IS_JOB_SUSPENDED(job) &&
