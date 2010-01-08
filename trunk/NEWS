@@ -14,7 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Fix sview core when searching for partitions by state.
  -- Fixed setting the start time when querying in sacct to the
     beginning of the day if not set previously.
- -- Defined slurm_free_reservation_info_msg in common/slurm_protocol_defs.h
+ -- Defined slurm_free_reservation_info_msg and slurm_free_topo_info_msg
+    in common/slurm_protocol_defs.h
 
 * Changes in SLURM 2.1.0
 =============================
