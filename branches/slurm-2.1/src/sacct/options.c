@@ -868,7 +868,7 @@ void parse_command_line(int argc, char **argv)
 
 	if(!job_cond->usage_start) {
 		job_cond->usage_start = time(NULL);
-		if(!job_cond->state_list)
+		if(!job_cond->state_list) {
 			struct tm start_tm;
 
 			if(!localtime_r(&job_cond->usage_start, &start_tm)) {
