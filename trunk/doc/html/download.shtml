@@ -129,9 +129,15 @@ Moab Cluster Suite</a></li>
 <i>contribs/perlapi</i> directory and packaged in the <i>perapi</i> RPM.</li>
 
 <li><a href="http://www.gingergeeks.co.uk/pyslurm/">PySlurm</a> is a
-Python/Pyrex module to interface with SLURM. There is also a Python module
-in the SLURM distribution to expand and collect hostlist expressions at
-<i>contribs/python/hostlist</i>.</li>
+Python/Pyrex module to interface with SLURM. 
+There is also a Python module to expand and collect hostlist expressions 
+available at <a href="http://www.nsc.liu.se/~kent/python-hostlist/">
+http://www.nsc.liu.se/~kent/python-hostlist/</a>.</li>
+
+<li><a href="http://www.lua.org/">Lua</a> may be used to implement a
+SLURM process tracking plugin.
+The Lua script available in <i>contribs/lua/protrack.lua</i> 
+implements containers using CPUSETs.
 </ul><br>
 
 <li><b>SPANK Plugins</b><br>
@@ -178,6 +184,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 13 October 2009</p>
+<p style="text-align:center;">Last modified 6 January 2010</p>
 
 <!--#include virtual="footer.txt"-->

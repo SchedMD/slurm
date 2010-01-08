@@ -69,12 +69,12 @@ is now available.</li>
 <p>SLURM Version 2.1 was released in January 2010.
 Major enhancements include:
 <ul>
+<li>Optimized resource allocation based upon network topology (e.g.
+hierarchical switches).</li>
 <li>Support for job preemption based upon job Quality of Service (QOS) in
 addition to queue priority.</li>
 <li>Support for time limits on individual job steps (in addition to the
 job time limit).</li>
-<li>Fully implement the PgSQL accounting plugin.</li>
-<li>Provide a web-based SLURM administration tool.</li>
 <li>Improve fault-tolerance in recognizing compute node reboots.</li>
 <li>Add sinfo and squeue information about specific cores allocated.</li>
 <li>Support for Solaris (OpenSolaris build 119).</li>
@@ -86,13 +86,13 @@ not been finalized. Anyone desiring to perform SLURM development should notify
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activities. Future development plans includes:
 <ul>
-<li>Optimized resource allocation based upon network topology (e.g.
-hierarchical switches).</li>
 <li>Modify more SLURM commands to operate between clusters.</li>
 <li>Support for BlueGene/Q systems.</li>
 <li>Permit resource allocations (jobs) to change size.</li>
 <li>Add Kerberos credential support including credential forwarding
 and refresh.</li>
+<li>Fully implement the PgSQL accounting plugin.</li>
+<li>Provide a web-based SLURM administration tool.</li>
 </ul>
 
 <p style="text-align:center;">Last modified 5 January 2010</p>

@@ -40,6 +40,8 @@
   (e.g. place it into a <i>hold</i> state)?</a></li>
 <li><a href="#mem_limit">Why are jobs not getting the appropriate
   memory limit?</a></li>
+<li><a href="#mailing_list">Is an archive available of messages posted to 
+the <i>slurm-dev</i> mailing list?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -623,6 +625,11 @@ This is probably a variation on the <a href="#memlock">locked memory limit</a>
 problem described above.
 Use the same solution for the AS (Address Space), RSS (Resident Set Size),
 or other limits as needed.</p>
+
+<p><a name="mailing_list"><b>23. Is an archive available of messages posted to 
+the <i>slurm-dev</i> mailing list?</b></a><br>
+Yes, it is at <a href="http://groups.google.com/group/slurm-devel">
+http://groups.google.com/group/slurm-devel</a>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -1239,6 +1246,6 @@ $ squeue -tpd -h -o "scontrol update jobid=%i priority=1000" >my.script
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 September 2009</p>
+<p style="text-align:center;">Last modified 5 January 2010</p>
 
 <!--#include virtual="footer.txt"-->

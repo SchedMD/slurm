@@ -590,20 +590,16 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_reason_list(job_info_t * job, int width, bool right,
 		char* suffix)
 {
-	uint16_t base_state = 0;
-
-	if (job)
-		base_state = job->job_state & JOB_STATE_BASE;
-
 	if (job == NULL) {	/* Print the Header instead */
 #ifdef HAVE_BG
 		_print_str("BP_LIST(REASON)", width, right, false);
 #else
 		_print_str("NODELIST(REASON)", width, right, false);
 #endif
-	} else if ((base_state == JOB_PENDING) ||
-	           (base_state == JOB_TIMEOUT) ||
-	           (base_state == JOB_FAILED)) {
+	} else if (!IS_JOB_COMPLETING(job)
+		   && (IS_JOB_PENDING(job)
+		       || IS_JOB_TIMEOUT(job)
+		       || IS_JOB_FAILED(job))) {
 		char id[FORMAT_STRING_SIZE], *reason;
 		if (job->state_desc)
 			reason = job->state_desc;
@@ -1338,11 +1334,10 @@ static int _filter_job(job_info_t * job)
 		if (filter == 1)
 			return 3;
 	} else {
-		uint16_t base_state = job->job_state & JOB_STATE_BASE;
-		if ((base_state != JOB_PENDING)   &&
-		    (base_state != JOB_RUNNING)   &&
-		    (base_state != JOB_SUSPENDED) &&
-		    (!(job->job_state & JOB_COMPLETING)))
+		if (!IS_JOB_PENDING(job) &&
+		    !IS_JOB_RUNNING(job) &&
+		    !IS_JOB_SUSPENDED(job) &&
+		    !IS_JOB_COMPLETING(job))
 			return 4;
 	}
 
