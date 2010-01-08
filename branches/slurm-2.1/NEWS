@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fix squeue if job is completing and failed to print remaining
     nodes instead of failed message.
  -- Fix sview core when searching for partitions by state.
+ -- Fixed setting the start time when querying in sacct to the
+    beginning of the day if not set previously.
 
 * Changes in SLURM 2.1.0
 =============================
