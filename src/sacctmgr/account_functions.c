@@ -282,8 +282,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(addto_qos_char_list(assoc_cond->qos_list, g_qos_list,
 					       argv[i]+end, option))
 				a_set = 1;
-			else
+			else {
 				exit_code = 1;
+				fprintf(stderr,
+					" Bad QosLevel value: %s\n",
+					argv[i]+end);
+			}
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
@@ -489,8 +493,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if(addto_qos_char_list(assoc->qos_list,
 					       g_qos_list, argv[i]+end, option))
 				a_set = 1;
-			else
+			else {
 				exit_code = 1;
+				fprintf(stderr,
+					" Bad QosLevel value: %s\n",
+					argv[i]+end);
+			}
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n"

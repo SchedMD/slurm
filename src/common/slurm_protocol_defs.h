@@ -1010,6 +1010,7 @@ void slurm_free_job_step_info_response_msg(
 		job_step_info_response_msg_t * msg);
 void slurm_free_node_info_msg(node_info_msg_t * msg);
 void slurm_free_partition_info_msg(partition_info_msg_t * msg);
+void slurm_free_reservation_info_msg(reserve_info_msg_t * msg);
 void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 void slurm_free_will_run_response_msg(will_run_response_msg_t *msg);
 void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);

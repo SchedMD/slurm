@@ -7,6 +7,14 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.1
 =============================
+ -- Fix for case sensitive databases when a slurmctld has a mixed case
+    clustername to lower case the string to easy compares.
+ -- Fix squeue if job is completing and failed to print remaining
+    nodes instead of failed message.
+ -- Fix sview core when searching for partitions by state.
+ -- Fixed setting the start time when querying in sacct to the
+    beginning of the day if not set previously.
+ -- Defined slurm_free_reservation_info_msg in common/slurm_protocol_defs.h
 
 * Changes in SLURM 2.1.0
 =============================

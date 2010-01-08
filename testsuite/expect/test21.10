@@ -287,7 +287,7 @@ if {$aamatches != 1} {
 #
 # Use sacctmgr to list the test associations
 #
-set as_list_pid [spawn $sacctmgr list $acc $wa $nam=$nm1 format=$nams,$fs,$gm,$gc,$gj,$gs,$gn,$gw,$mm,$mc,$mj,$ms,$mn,$mw]
+set as_list_pid [spawn $sacctmgr list $acc $wa $nam=$nm1 format=$nam,$fs,$gm,$gc,$gj,$gs,$gn,$gw,$mm,$mc,$mj,$ms,$mn,$mw]
 expect {
 	-re "$nm1,$fs1,$gm1,$gc1,$gj1,$gs1,$gn1,$gw1,$mm1,$mc1,$mj1,$ms1,$mn1,$mw1" {
 		exp_continue
