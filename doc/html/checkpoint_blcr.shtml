@@ -16,10 +16,6 @@ Functionality provided includes:
 node failure</li>
 </ol></p>
 
-<p><b>Note:</b> checkpoint/blcr cannot restart interactive jobs. It can
-create checkpoints for both interactive and batch steps, but only
-batch jobs can be restarted.</p>
-
 <p>The general mode of operation is to
 <ol>
 <li>Start the job step using the <b>srun_cr</b> command as described 
@@ -30,6 +26,13 @@ your job.</li>
 <li>Restart <b>srun_cr</b> using BLCR's <b>cr_restart</b> command.
 The job will be restarted using a newly allocated jobid.</li>
 </ol>
+
+<p><b>NOTE:</b> checkpoint/blcr cannot restart interactive jobs. It can
+create checkpoints for both interactive and batch steps, but only
+batch jobs can be restarted.</p>
+
+<p><b>NOTE:</b> BLCR operation has been verified with MVAPICH2. 
+Some other MPI implementations should also work.</p>
 
 <h2>User Commands</h2>
 
