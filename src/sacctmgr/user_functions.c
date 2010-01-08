@@ -859,8 +859,12 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			if(addto_qos_char_list(start_assoc.qos_list, g_qos_list,
 					       argv[i]+end, option))
 				limit_set = 1;
-			else
+			else {
 				exit_code = 1;
+				fprintf(stderr,
+					" Bad QosLevel value: %s\n",
+					argv[i]+end);
+			}
 		} else if (!strncasecmp (argv[i], "WCKeys",
 					 MAX(command_len, 1))) {
 			slurm_addto_char_list(wckey_cond->name_list,
