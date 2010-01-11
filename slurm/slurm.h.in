@@ -179,20 +179,18 @@ BEGIN_C_DECLS
 /*****************************************************************************\
  *      DEFINITIONS FOR VERSION MANAGEMENT
 \*****************************************************************************/
-
+/* Define SLURM version number. 
+ * High-order byte is major version.
+ * Middle byte     is minor version. 
+ * Low-order byte  is micro version.
+ * Use SLURM_VERSION_NUM macro to compare versions, for example
+ * #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(2,1,0)
+ */
+#undef  SLURM_VERSION_NUMBER
 #define SLURM_VERSION_NUM(a,b,c) (((a) << 16) + ((b) << 8) + (c))
 #define SLURM_VERSION_MAJOR(a)   (((a) >> 16) & 0xff)
 #define SLURM_VERSION_MINOR(a)   (((a) >>  8) & 0xff)
 #define SLURM_VERSION_MICRO(a)    ((a)        & 0xff)
-
-/* Define the API's version. Update in META as needed.
- * Also defined in config.h.
- * High-order byte is major version. Update when existing APIs change.
- * Middle byte     is minor version. Update when new functions are added.
- * Low-order byte  is micro version. Update on patches and bug fixes. */
-#ifndef SLURM_API_VERSION
-#undef SLURM_API_VERSION
-#endif
 
 /*****************************************************************************\
  *	DEFINITIONS FOR INPUT VALUES
