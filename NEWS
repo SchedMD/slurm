@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     beginning of the day if not set previously.
  -- Defined slurm_free_reservation_info_msg and slurm_free_topo_info_msg
     in common/slurm_protocol_defs.h
+ -- Avoid generating error when a job step includes a memory specification and 
+    memory is not configured as a consumable resource.
 
 * Changes in SLURM 2.1.0
 =============================
