@@ -2,7 +2,7 @@
  *  step_mgr.c - manage the job step information of slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -76,6 +76,7 @@ static int  _count_cpus(bitstr_t *bitmap);
 static struct step_record * _create_step_record (struct job_record *job_ptr);
 static void _dump_step_layout(struct step_record *step_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
+static bool _is_mem_resv(void);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr,
 				    job_step_create_request_msg_t *step_spec,
@@ -609,13 +610,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		return NULL;
 	}
 
-	if (step_spec->mem_per_cpu) {
+	if (step_spec->mem_per_cpu && _is_mem_resv()) {
 		int node_inx = 0, usable_mem;
-		for (i=bit_ffs(job_resrcs_ptr->node_bitmap); i<node_record_count;
-		     i++) {
+		for (i=bit_ffs(job_resrcs_ptr->node_bitmap); 
+		     i<node_record_count; i++) {
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
-			usable_mem = job_resrcs_ptr->memory_allocated[node_inx] -
+			usable_mem = job_resrcs_ptr->
+				     memory_allocated[node_inx] -
 				     job_resrcs_ptr->memory_used[node_inx];
 			task_cnt = usable_mem / step_spec->mem_per_cpu;
 			if (cpus_per_task > 0)
@@ -1013,7 +1015,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	}
 #endif
 
-	if (step_ptr->mem_per_cpu &&
+	if (step_ptr->mem_per_cpu && is_mem_resv() &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
 	     (job_resrcs_ptr->memory_used == NULL))) {
 		error("step_alloc_lps: lack memory allocation details "
@@ -1035,7 +1037,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
-		if (step_ptr->mem_per_cpu) {
+		if (step_ptr->mem_per_cpu && is_mem_resv()) {
 			job_resrcs_ptr->memory_used[job_node_inx] +=
 				(step_ptr->mem_per_cpu * cpus_alloc);
 		}
@@ -1074,7 +1076,7 @@ static void _dump_step_layout(struct step_record *step_ptr)
 
 	info("====================");
 	info("step_id:%u.%u", job_ptr->job_id, step_ptr->step_id);
-	for (i=0, bit_inx= 0, node_inx=0; node_inx<job_resrcs_ptr->nhosts; i++) {
+	for (i=0, bit_inx=0, node_inx=0; node_inx<job_resrcs_ptr->nhosts; i++) {
 		for (rep=0; rep<job_resrcs_ptr->sock_core_rep_count[i]; rep++) {
 			for (sock_inx=0;
 			     sock_inx<job_resrcs_ptr->sockets_per_node[i];
@@ -1118,7 +1120,7 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	if (i_first == -1)	/* empty bitmap */
 		return;
 
-	if (step_ptr->mem_per_cpu &&
+	if (step_ptr->mem_per_cpu && is_mem_resv() &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
 	     (job_resrcs_ptr->memory_used == NULL))) {
 		error("_step_dealloc_lps: lack memory allocation details "
@@ -1144,7 +1146,7 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 				job_ptr->job_id, step_ptr->step_id);
 			job_resrcs_ptr->cpus_used[job_node_inx] = 0;
 		}
-		if (step_ptr->mem_per_cpu) {
+		if (step_ptr->mem_per_cpu && is_mem_resv()) {
 			uint32_t mem_use = step_ptr->mem_per_cpu * cpus_alloc;
 			if (job_resrcs_ptr->memory_used[job_node_inx] >= mem_use) {
 				job_resrcs_ptr->memory_used[job_node_inx] -=
@@ -1490,7 +1492,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
 
-	if (step_ptr->mem_per_cpu &&
+	if (step_ptr->mem_per_cpu && _is_mem_resv() &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
 	     (job_resrcs_ptr->memory_used == NULL))) {
 		error("step_layout_create: lack memory allocation details "
@@ -1515,7 +1517,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					      job_resrcs_ptr->cpus_used[pos];
 			} else
 				usable_cpus = job_resrcs_ptr->cpus[pos];
-			if (step_ptr->mem_per_cpu) {
+			if (step_ptr->mem_per_cpu && _is_mem_resv()) {
 				usable_mem =
 					job_resrcs_ptr->memory_allocated[pos]-
 					job_resrcs_ptr->memory_used[pos];
@@ -1688,7 +1690,7 @@ extern int pack_ctld_job_step_info_response_msg(
 	}
 	list_iterator_destroy(job_iterator);
 
-	if(list_count(job_list) && !valid_job && !steps_packed)
+	if (list_count(job_list) && !valid_job && !steps_packed)
 		error_code = ESLURM_INVALID_JOB_ID;
 
 	part_filter_clear();
@@ -1968,7 +1970,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		return ESLURM_INVALID_JOB_ID;
 	}
 	if (step_ptr->batch_step) {
-		if(rem)
+		if (rem)
 			*rem = 0;
 		step_ptr->exit_code = req->step_rc;
 		if (max_rc)
@@ -2011,7 +2013,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
 	}
 
-	bit_nset(step_ptr->exit_node_bitmap, req->range_first, req->range_last);
+	bit_nset(step_ptr->exit_node_bitmap, 
+		 req->range_first, req->range_last);
 	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
 	if (rem)
 		*rem = rem_nodes;
@@ -2583,4 +2586,24 @@ check_job_step_time_limit (struct job_record *job_ptr, time_t now)
 	}
 
 	list_iterator_destroy (step_iterator);
+}
+
+/* Return true if memory is a reserved resources, false otherwise */
+static bool _is_mem_resv(void)
+{
+	static bool mem_resv_value  = false;
+	static bool mem_resv_tested = false;
+
+	if (!mem_resv_tested) {
+		mem_resv_tested = true;
+		slurm_ctl_conf_t *conf = slurm_conf_lock();
+		if ((conf->select_type_param == CR_MEMORY)        ||
+		    (conf->select_type_param == CR_SOCKET_MEMORY) ||
+		    (conf->select_type_param == CR_CORE_MEMORY)   ||
+		    (conf->select_type_param == CR_CPU_MEMORY))
+			mem_resv_value = true;
+		slurm_conf_unlock();
+	}
+
+	return mem_resv_value;
 }
