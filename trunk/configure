@@ -907,7 +907,7 @@ RELEASE
 SLURM_MICRO
 SLURM_MINOR
 SLURM_MAJOR
-SLURM_VERSION
+SLURM_VERSION_NUMBER
 VERSION
 SLURM_API_REVISION
 SLURM_API_AGE
@@ -2866,10 +2866,10 @@ SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`
 SLURM_MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
 RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
 
-SLURM_VERSION="`printf "0x%02x%02x%02x" $SLURM_MAJOR $SLURM_MINOR $SLURM_MICRO`"
+SLURM_VERSION_NUMBER="`printf "0x%02x%02x%02x" $SLURM_MAJOR $SLURM_MINOR $SLURM_MICRO`"
 
 cat >>confdefs.h <<_ACEOF
-#define SLURM_VERSION $SLURM_VERSION
+#define SLURM_VERSION_NUMBER $SLURM_VERSION_NUMBER
 _ACEOF
 
 

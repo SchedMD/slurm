@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.pre0
 =============================
  -- Added RunTime field to scontrol show job report
+ -- Added SLURM_VERSION_NUMBER and removed SLURM_API_VERSION from slurm/slurm.h.
 
 * Changes in SLURM 2.1.1
 =============================
