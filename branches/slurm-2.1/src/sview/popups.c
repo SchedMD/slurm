@@ -439,13 +439,16 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 #endif
 	} else if(!strcmp(name, "node_state")) {
 		display_data_t pulldown_display_data[] = {
-			{G_TYPE_NONE, NODE_STATE_UNKNOWN, "Down", TRUE, -1},
-			{G_TYPE_NONE, NODE_STATE_NO_RESPOND, "No Response",
-			 TRUE, -1},
-			{G_TYPE_NONE, NODE_STATE_DRAIN, "Drained", TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_DOWN, "Down", TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_ALLOCATED | NODE_STATE_DRAIN,
+			 "Draining", TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_IDLE | NODE_STATE_DRAIN,
+			 "Drained", TRUE, -1},
 			{G_TYPE_NONE, NODE_STATE_IDLE, "Idle", TRUE, -1},
 			{G_TYPE_NONE, NODE_STATE_ALLOCATED, "Allocated",
 			 TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_ERROR, "Error", TRUE, -1},
+			{G_TYPE_NONE, NODE_STATE_MIXED, "Mixed", TRUE, -1},
 			{G_TYPE_NONE, NODE_STATE_COMPLETING, "Completing",
 			 TRUE, -1},
 			{G_TYPE_NONE, NODE_STATE_UNKNOWN, "Unknown", TRUE, -1},
