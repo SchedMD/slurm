@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
  -- Avoid generating error when a job step includes a memory specification and 
     memory is not configured as a consumable resource.
  -- Patch for small memory leak in src/common/plugstack.c
+ -- Fix sview search on node state.
 
 * Changes in SLURM 2.1.0
 =============================
