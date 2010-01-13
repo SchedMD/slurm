@@ -182,7 +182,8 @@ BEGIN_C_DECLS
 /* Define SLURM version number. 
  * High-order byte is major version.
  * Middle byte     is minor version. 
- * Low-order byte  is micro version.
+ * Low-order byte  is micro version (NOTE: excludes "-pre#" component
+ #                 of micro version used in pre-releases).
  * Use SLURM_VERSION_NUM macro to compare versions, for example
  * #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(2,1,0)
  */

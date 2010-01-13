@@ -425,6 +425,9 @@
 /* Define Slurm installation prefix */
 #undef SLURM_PREFIX
 
+/* SLURM Version Number */
+#undef SLURM_VERSION_NUMBER
+
 /* Define the project's version string. */
 #undef SLURM_VERSION_STRING
 
