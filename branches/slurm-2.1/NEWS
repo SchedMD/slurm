@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     memory is not configured as a consumable resource.
  -- Patch for small memory leak in src/common/plugstack.c
  -- Fix sview search on node state.
+ -- Fix bug in which improperly formed job dependency specification can cause
+    slurmctld to abort. 
 
 * Changes in SLURM 2.1.0
 =============================
