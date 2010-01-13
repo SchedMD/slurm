@@ -1043,8 +1043,6 @@ extern void specific_info_node(popup_info_t *popup_win)
 	hostlist_iterator_t host_itr = NULL;
 	int i = -1;
 	sview_search_info_t *search_info = spec_info->search_info;
-	bool drain_flag1 = false, comp_flag1 = false, no_resp_flag1 = false;
-	bool drain_flag2 = false, comp_flag2 = false, no_resp_flag2 = false;
 
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_node, SORTID_CNT);
@@ -1122,16 +1120,9 @@ display_it:
 	}
 
 	i = -1;
-	if(search_info->int_data != NO_VAL) {
-		drain_flag1 = (search_info->int_data & NODE_STATE_DRAIN);
-		comp_flag1 = (search_info->int_data & NODE_STATE_COMPLETING);
-		no_resp_flag1 = (search_info->int_data
-				 & NODE_STATE_NO_RESPOND);
-	}
 
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info_ptr = list_next(itr))) {
-		uint16_t tmp_16 = 0;
 		int found = 0;
 		char *host = NULL;
 		i++;
@@ -1139,29 +1130,37 @@ display_it:
 
 		switch(search_info->search_type) {
 		case SEARCH_NODE_STATE:
-			if(search_info->int_data != node_ptr->node_state) {
+			if(search_info->int_data == NO_VAL)
+				continue;
+			else if(search_info->int_data != node_ptr->node_state) {
 				if(IS_NODE_MIXED(node_ptr)) {
+					uint16_t alloc_cnt = 0, err_cnt = 0;
+					uint16_t idle_cnt = node_ptr->cpus;
+					select_g_select_nodeinfo_get(
+						node_ptr->select_nodeinfo,
+						SELECT_NODEDATA_SUBCNT,
+						NODE_STATE_ALLOCATED,
+						&alloc_cnt);
+					select_g_select_nodeinfo_get(
+						node_ptr->select_nodeinfo,
+						SELECT_NODEDATA_SUBCNT,
+						NODE_STATE_ERROR,
+						&err_cnt);
+					idle_cnt -= (alloc_cnt + err_cnt);
 					if((search_info->int_data
 					    & NODE_STATE_BASE)
 					   == NODE_STATE_ALLOCATED) {
-						select_g_select_nodeinfo_get(
-							node_ptr->
-							select_nodeinfo,
-							SELECT_NODEDATA_SUBCNT,
-							NODE_STATE_ALLOCATED,
-							&tmp_16);
-						if(tmp_16)
+						if(alloc_cnt)
 							break;
 					} else if((search_info->int_data
 						   & NODE_STATE_BASE)
 						  == NODE_STATE_ERROR) {
-						select_g_select_nodeinfo_get(
-							node_ptr->
-							select_nodeinfo,
-							SELECT_NODEDATA_SUBCNT,
-							NODE_STATE_ERROR,
-							&tmp_16);
-						if(tmp_16)
+						if(err_cnt)
+							break;
+					} else if((search_info->int_data
+						   & NODE_STATE_BASE)
+						  == NODE_STATE_IDLE) {
+						if(idle_cnt)
 							break;
 					}
 				}
