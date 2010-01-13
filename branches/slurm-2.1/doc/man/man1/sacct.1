@@ -486,7 +486,12 @@ It is in the form:
 
 .TP
 \f3jobname\fP
-The name of the job or job step.
+The name of the job or job step. The \f3slurm_accounting.log\fP file
+is a space delimited file. Because of this if a space is used in the 
+jobname an underscore is substituted for the space before the record 
+is written to the accounting file. So when the jobname is displayed 
+by sacct the jobname that had a space in it will now have an underscore 
+in place of the space.
 
 .TP
 \f3layout\fP
