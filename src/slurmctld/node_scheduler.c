@@ -982,13 +982,14 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
 			ckpt_msg.op        = CHECK_VACATE;
 			ckpt_msg.job_id    = job_ptr->job_id;
-			rc = job_checkpoint(&ckpt_msg, 0, -1);
+			rc = job_checkpoint(&ckpt_msg, 0, -1, (uint16_t)NO_VAL);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been checkpointed",
 				     job_ptr->job_id);
 			}
 		} else if (mode == PREEMPT_MODE_REQUEUE) {
-			rc = job_requeue(0, job_ptr->job_id, -1);
+			rc = job_requeue(0, job_ptr->job_id, -1,
+					 (uint16_t)NO_VAL);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);

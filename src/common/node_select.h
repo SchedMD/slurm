@@ -66,8 +66,10 @@ typedef struct {
 
 extern int node_select_free_block_info(block_info_t *block_info);
 
-extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer);
-extern int node_select_unpack_block_info(block_info_t **block_info, Buf buffer);
+extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer,
+					uint16_t protocol_version);
+extern int node_select_unpack_block_info(block_info_t **block_info, Buf buffer,
+					 uint16_t protocol_version);
 
 /*
  * node_select_block_info_msg_free - free buffer returned by
@@ -80,7 +82,8 @@ extern int node_select_block_info_msg_free (
 
 /* Unpack node select info from a buffer */
 extern int node_select_block_info_msg_unpack(
-	block_info_msg_t **block_info_msg_pptr, Buf buffer);
+	block_info_msg_t **block_info_msg_pptr, Buf buffer,
+	uint16_t protocol_version);
 
 /*
  * Initialize context for node selection plugin
@@ -307,18 +310,22 @@ extern select_jobinfo_t *select_g_select_jobinfo_copy(
 /* pack a select job credential into a buffer in machine independent form
  * IN jobinfo  - the select job credential to be saved
  * OUT buffer  - buffer with select credential appended
+ * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
  */
-extern int select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer);
+extern int select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+					uint16_t protocol_version);
 
 /* unpack a select job credential from a buffer
  * OUT jobinfo - the select job credential read
  * IN  buffer  - buffer with select credential read from current pointer loc
+ * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
  * NOTE: returned value must be freed using select_g_select_jobinfo_free
  */
 extern int select_g_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
-					  Buf buffer);
+					  Buf buffer,
+					  uint16_t protocol_version);
 
 /* write select job info to a string
  * IN jobinfo - a select job credential
@@ -344,10 +351,10 @@ extern char *select_g_select_jobinfo_xstrdup(
 \*******************************************************/
 
 extern int select_g_select_nodeinfo_pack(
-	select_nodeinfo_t *nodeinfo, Buf buffer);
+	select_nodeinfo_t *nodeinfo, Buf buffer, uint16_t protocol_version);
 
 extern int select_g_select_nodeinfo_unpack(
-	select_nodeinfo_t **nodeinfo, Buf buffer);
+	select_nodeinfo_t **nodeinfo, Buf buffer, uint16_t protocol_version);
 
 extern select_nodeinfo_t *select_g_select_nodeinfo_alloc(uint32_t size);
 
@@ -371,9 +378,11 @@ extern int select_g_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
  *	machine independent form
  * IN last_update_time - time of latest information consumer has
  * OUT buffer - location to hold the data, consumer must free
+ * IN protocol_version - slurm protocol version of client
  * RET - slurm error code
  */
-extern int select_g_pack_select_info(time_t last_query_time, Buf *buffer);
+extern int select_g_pack_select_info(time_t last_query_time, Buf *buffer,
+				     uint16_t protocol_version);
 
 /* Note reconfiguration or change in partition configuration */
 extern int select_g_reconfigure(void);

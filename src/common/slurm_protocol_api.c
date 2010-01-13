@@ -2035,14 +2035,15 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	/*
 	 * Unpack message body
 	 */
+	msg->protocol_version = header.version;
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 
-	if ( (header.body_length > remaining_buf(buffer)) ||
-	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
+	if ((header.body_length > remaining_buf(buffer)) ||
+	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		(void) g_slurm_auth_destroy(auth_cred);
 		free_buf(buffer);
-		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
 
@@ -2914,6 +2915,7 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	rc_msg.return_code = rc;
 
 	slurm_msg_t_init(&resp_msg);
+	resp_msg.protocol_version = msg->protocol_version;
 	resp_msg.address  = msg->address;
 	resp_msg.msg_type = RESPONSE_SLURM_RC;
 	resp_msg.data     = &rc_msg;

@@ -976,6 +976,7 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	char *non_usable_nodes = NULL;
 	bitstr_t *bitmap = NULL;
 	ListIterator itr = NULL;
+	uint16_t protocol_version = (uint16_t)NO_VAL;
 
 	if(!dir_name) {
 		debug2("Starting bluegene with clean slate");
@@ -1016,29 +1017,28 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	xfree(state_file);
 
 	buffer = create_buf(data, data_size);
-
-	/*
-	 * Check the data version so that when the format changes, we
-	 * we don't try to unpack data using the wrong format routines
-	 */
-	if(size_buf(buffer)
-	   >= sizeof(uint32_t) + strlen(BLOCK_STATE_VERSION)) {
-	        char *ptr = get_buf_data(buffer);
-		if (!memcmp(&ptr[sizeof(uint32_t)], BLOCK_STATE_VERSION, 3)) {
-		        safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-		        debug3("Version string in block_state header is %s",
-			       ver_str);
+	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	debug3("Version string in block_state header is %s", ver_str);
+	if(ver_str) {
+		if(!strcmp(ver_str, BLOCK_STATE_VERSION)) {
+			protocol_version = SLURM_PROTOCOL_VERSION;
+		} else if(!strcmp(ver_str, BLOCK_2_1_STATE_VERSION)) {
+			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
 		}
 	}
-	if (ver_str && (strcmp(ver_str, BLOCK_STATE_VERSION) != 0)) {
+
+	if (protocol_version == (uint16_t)NO_VAL) {
+		error("***********************************************");
 		error("Can not recover block state, "
 		      "data version incompatible");
+		error("***********************************************");
 		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;
 	}
 	xfree(ver_str);
-	if(node_select_block_info_msg_unpack(&block_ptr, buffer)
+	if(node_select_block_info_msg_unpack(&block_ptr, buffer,
+					     protocol_version)
 	   == SLURM_ERROR) {
 		error("select_p_state_restore: problem unpacking block_info");
 		goto unpack_error;

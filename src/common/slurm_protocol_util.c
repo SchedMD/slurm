@@ -61,9 +61,49 @@ int check_header_version(header_t * header)
 		    && header->version != SLURM_2_0_PROTOCOL_VERSION
 		    && header->version != SLURM_1_3_PROTOCOL_VERSION)
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
-	} else if (header->version != SLURM_PROTOCOL_VERSION)
-		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
-
+	} else if (header->version != SLURM_PROTOCOL_VERSION) {
+		/* Starting with 2.2 we will handle previous versions
+		   of SLURM for some calls */
+		switch(header->msg_type) {
+		case REQUEST_NODE_INFO:
+		case REQUEST_PARTITION_INFO:
+		case REQUEST_RESERVATION_INFO:
+		case REQUEST_CREATE_RESERVATION:
+		case REQUEST_CREATE_PARTITION:
+		case REQUEST_UPDATE_PARTITION:
+		case REQUEST_BUILD_INFO:
+		case REQUEST_JOB_WILL_RUN:
+		case REQUEST_UPDATE_JOB:
+		case REQUEST_JOB_END_TIME:
+		case REQUEST_RECONFIGURE:
+		case REQUEST_TOPO_INFO:
+		case REQUEST_SHUTDOWN:
+		case REQUEST_SHUTDOWN_IMMEDIATE:
+		case REQUEST_SUBMIT_BATCH_JOB:
+		case REQUEST_JOB_STEP_INFO:
+		case REQUEST_JOB_INFO:
+		case REQUEST_JOB_INFO_SINGLE:
+		case REQUEST_CANCEL_JOB_STEP:
+		case REQUEST_COMPLETE_JOB_ALLOCATION:
+		case REQUEST_STEP_LAYOUT:
+		case REQUEST_CHECKPOINT:
+		case REQUEST_CHECKPOINT_COMP:
+		case REQUEST_CHECKPOINT_TASK_COMP:
+		case REQUEST_SUSPEND:
+		case REQUEST_JOB_READY:
+		case REQUEST_JOB_REQUEUE:
+		case REQUEST_SHARE_INFO:
+		case REQUEST_PRIORITY_FACTORS:
+		case REQUEST_BLOCK_INFO:
+		case REQUEST_UPDATE_BLOCK:
+		case REQUEST_SET_DEBUG_LEVEL:
+			if(header->version == SLURM_2_1_PROTOCOL_VERSION)
+				break;
+		default:
+			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
+			break;
+		}
+	}
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
@@ -81,7 +121,9 @@ void init_header(header_t *header, slurm_msg_t *msg,
 	/* Since the slurmdbd could talk to a host of different
 	   versions of slurm this needs to be kept current when the
 	   protocol version changes. */
-	if(msg->msg_type == ACCOUNTING_UPDATE_MSG
+	if(msg->protocol_version != (uint16_t)NO_VAL)
+		header->version = msg->protocol_version;
+	else if(msg->msg_type == ACCOUNTING_UPDATE_MSG
 	   || msg->msg_type == ACCOUNTING_FIRST_REG) {
 		uint32_t rpc_version =
 			((accounting_update_msg_t *)msg->data)->rpc_version;

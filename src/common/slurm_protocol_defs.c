@@ -66,16 +66,12 @@
 static void _free_all_job_info (job_info_msg_t *msg);
 
 static void _free_all_node_info (node_info_msg_t *msg);
-static void _slurm_free_node_info_members (node_info_t * node);
 
 static void _free_all_partitions (partition_info_msg_t *msg);
-static void _slurm_free_partition_info_members (partition_info_t * part);
 
 static void  _free_all_reservations(reserve_info_msg_t *msg);
-static void _slurm_free_reserve_info_members (reserve_info_t * part);
 
 static void _free_all_step_info (job_step_info_response_msg_t *msg);
-static void _slurm_free_job_step_info_members (job_step_info_t * msg);
 static void _make_lower(char *change);
 
 /*
@@ -86,8 +82,9 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 {
 	memset(msg, 0, sizeof(slurm_msg_t));
 
-	msg->msg_type = (uint16_t)NO_VAL;
 	msg->conn_fd = -1;
+	msg->msg_type = (uint16_t)NO_VAL;
+	msg->protocol_version = (uint16_t)NO_VAL;
 
 	forward_init(&msg->forward, NULL);
 
@@ -453,7 +450,7 @@ void slurm_free_update_node_msg(update_node_msg_t * msg)
 void slurm_free_update_part_msg(update_part_msg_t * msg)
 {
 	if (msg) {
-		_slurm_free_partition_info_members((partition_info_t *)msg);
+		slurm_free_partition_info_members((partition_info_t *)msg);
 		xfree(msg);
 	}
 }
@@ -1496,10 +1493,10 @@ static void _free_all_step_info (job_step_info_response_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->job_step_count; i++)
-		_slurm_free_job_step_info_members (&msg->job_steps[i]);
+		slurm_free_job_step_info_members (&msg->job_steps[i]);
 }
 
-static void _slurm_free_job_step_info_members (job_step_info_t * msg)
+void slurm_free_job_step_info_members (job_step_info_t * msg)
 {
 	if (msg != NULL) {
 		xfree(msg->partition);
@@ -1538,10 +1535,10 @@ static void _free_all_node_info(node_info_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->record_count; i++)
-		_slurm_free_node_info_members(&msg->node_array[i]);
+		slurm_free_node_info_members(&msg->node_array[i]);
 }
 
-static void _slurm_free_node_info_members(node_info_t * node)
+void slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->name);
@@ -1580,12 +1577,12 @@ static void  _free_all_partitions(partition_info_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->record_count; i++)
-		_slurm_free_partition_info_members(
+		slurm_free_partition_info_members(
 			&msg->partition_array[i]);
 
 }
 
-static void _slurm_free_partition_info_members(partition_info_t * part)
+void slurm_free_partition_info_members(partition_info_t * part)
 {
 	if (part) {
 		xfree(part->allow_alloc_nodes);
@@ -1622,12 +1619,12 @@ static void  _free_all_reservations(reserve_info_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->record_count; i++)
-		_slurm_free_reserve_info_members(
+		slurm_free_reserve_info_members(
 			&msg->reservation_array[i]);
 
 }
 
-static void _slurm_free_reserve_info_members(reserve_info_t * resv)
+void slurm_free_reserve_info_members(reserve_info_t * resv)
 {
 	if (resv) {
 		xfree(resv->accounts);

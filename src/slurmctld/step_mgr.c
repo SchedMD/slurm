@@ -1744,10 +1744,12 @@ extern int kill_step_on_node(struct job_record  *job_ptr,
  * IN ckpt_ptr - checkpoint request message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd conn_fd)
+			       uid_t uid, slurm_fd conn_fd, 
+			       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr;
@@ -1756,6 +1758,7 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	slurm_msg_t resp_msg;
 
 	slurm_msg_t_init(&resp_msg);
+	resp_msg.protocol_version = protocol_version;
 
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);
@@ -1820,10 +1823,12 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
  * IN ckpt_ptr - checkpoint complete status message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd conn_fd)
+				    uid_t uid, slurm_fd conn_fd,
+				    uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr;
@@ -1832,6 +1837,7 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 	return_code_msg_t rc_msg;
 
 	slurm_msg_t_init(&resp_msg);
+	resp_msg.protocol_version = protocol_version;
 
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);
@@ -1875,10 +1881,12 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
  * IN ckpt_ptr - checkpoint task complete status message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd conn_fd)
+					 uid_t uid, slurm_fd conn_fd,
+					 uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr;
@@ -1887,6 +1895,7 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 	return_code_msg_t rc_msg;
 
 	slurm_msg_t_init(&resp_msg);
+	resp_msg.protocol_version = protocol_version;
 
 	/* find the job */
 	job_ptr = find_job_record (ckpt_ptr->job_id);
@@ -2248,7 +2257,8 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->ckpt_dir, buffer);
 	pack16(step_ptr->batch_step, buffer);
 	if (!step_ptr->batch_step) {
-		pack_slurm_step_layout(step_ptr->step_layout, buffer);
+		pack_slurm_step_layout(step_ptr->step_layout, buffer,
+				       SLURM_PROTOCOL_VERSION);
 		switch_pack_jobinfo(step_ptr->switch_job, buffer);
 	}
 	checkpoint_pack_jobinfo(step_ptr->check_job, buffer);
@@ -2260,7 +2270,8 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
  * IN/OUT - job_ptr - point to a job for which the step is to be loaded.
  * IN/OUT buffer - location to get data from, pointers advanced
  */
-extern int load_step_state(struct job_record *job_ptr, Buf buffer)
+extern int load_step_state(struct job_record *job_ptr, Buf buffer,
+			   uint16_t protocol_version)
 {
 	struct step_record *step_ptr = NULL;
 	uint8_t no_kill;
@@ -2275,61 +2286,63 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 
-	safe_unpack32(&step_id, buffer);
-	safe_unpack16(&cyclic_alloc, buffer);
-	safe_unpack16(&port, buffer);
-	safe_unpack16(&ckpt_interval, buffer);
-	safe_unpack16(&cpus_per_task, buffer);
-	safe_unpack16(&resv_port_cnt, buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		safe_unpack32(&step_id, buffer);
+		safe_unpack16(&cyclic_alloc, buffer);
+		safe_unpack16(&port, buffer);
+		safe_unpack16(&ckpt_interval, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&resv_port_cnt, buffer);
 
-	safe_unpack8(&no_kill, buffer);
+		safe_unpack8(&no_kill, buffer);
 
-	safe_unpack32(&cpu_count, buffer);
-	safe_unpack32(&mem_per_cpu, buffer);
-	safe_unpack32(&exit_code, buffer);
-	if (exit_code != NO_VAL) {
-		safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
-		safe_unpack16(&bit_cnt, buffer);
-	}
-	safe_unpack32(&core_size, buffer);
-	if (core_size)
-		safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
+		safe_unpack32(&cpu_count, buffer);
+		safe_unpack32(&mem_per_cpu, buffer);
+		safe_unpack32(&exit_code, buffer);
+		if (exit_code != NO_VAL) {
+			safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
+			safe_unpack16(&bit_cnt, buffer);
+		}
+		safe_unpack32(&core_size, buffer);
+		if (core_size)
+			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
 
-	safe_unpack32(&time_limit, buffer);
-	safe_unpack_time(&start_time, buffer);
-	safe_unpack_time(&pre_sus_time, buffer);
-	safe_unpack_time(&tot_sus_time, buffer);
-	safe_unpack_time(&ckpt_time, buffer);
+		safe_unpack32(&time_limit, buffer);
+		safe_unpack_time(&start_time, buffer);
+		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&tot_sus_time, buffer);
+		safe_unpack_time(&ckpt_time, buffer);
 
-	safe_unpackstr_xmalloc(&host, &name_len, buffer);
-	safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
-	safe_unpackstr_xmalloc(&name, &name_len, buffer);
-	safe_unpackstr_xmalloc(&network, &name_len, buffer);
-	safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
-	safe_unpack16(&batch_step, buffer);
-	if (!batch_step) {
-		if (unpack_slurm_step_layout(&step_layout, buffer))
+		safe_unpackstr_xmalloc(&host, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
+		safe_unpackstr_xmalloc(&name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&network, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+		safe_unpack16(&batch_step, buffer);
+		if (!batch_step) {
+			if (unpack_slurm_step_layout(&step_layout, buffer,
+						     protocol_version))
+				goto unpack_error;
+			switch_alloc_jobinfo(&switch_tmp);
+			if (switch_unpack_jobinfo(switch_tmp, buffer))
+				goto unpack_error;
+		}
+		checkpoint_alloc_jobinfo(&check_tmp);
+		if (checkpoint_unpack_jobinfo(check_tmp, buffer))
 			goto unpack_error;
-		switch_alloc_jobinfo(&switch_tmp);
-        	if (switch_unpack_jobinfo(switch_tmp, buffer))
-                	goto unpack_error;
-	}
-	checkpoint_alloc_jobinfo(&check_tmp);
-        if (checkpoint_unpack_jobinfo(check_tmp, buffer))
-                goto unpack_error;
 
-	/* validity test as possible */
-	if (cyclic_alloc > 1) {
-		error("Invalid data for job %u.%u: cyclic_alloc=%u",
-		      job_ptr->job_id, step_id, cyclic_alloc);
-		goto unpack_error;
+		/* validity test as possible */
+		if (cyclic_alloc > 1) {
+			error("Invalid data for job %u.%u: cyclic_alloc=%u",
+			      job_ptr->job_id, step_id, cyclic_alloc);
+			goto unpack_error;
+		}
+		if (no_kill > 1) {
+			error("Invalid data for job %u.%u: no_kill=%u",
+			      job_ptr->job_id, step_id, no_kill);
+			goto unpack_error;
+		}
 	}
-	if (no_kill > 1) {
-		error("Invalid data for job %u.%u: no_kill=%u",
-		      job_ptr->job_id, step_id, no_kill);
-		goto unpack_error;
-	}
-
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL)
 		step_ptr = _create_step_record(job_ptr);
@@ -2461,7 +2474,8 @@ extern void step_checkpoint(void)
 			ckpt_req.job_id = job_ptr->job_id;
 			ckpt_req.step_id = SLURM_BATCH_SCRIPT;
 			ckpt_req.image_dir = NULL;
-			job_checkpoint(&ckpt_req, getuid(), -1);
+			job_checkpoint(&ckpt_req, getuid(), -1,
+				       (uint16_t)NO_VAL);
 			job_ptr->ckpt_time = now;
 			last_job_update = now;
 			continue; /* ignore periodic step ckpt */

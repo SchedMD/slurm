@@ -648,7 +648,7 @@ static int _suspend_job(uint32_t job_id)
 	msg.job_id = job_id;
 	debug3("gang: suspending %u", job_id);
 	msg.op = SUSPEND_JOB;
-	rc = job_suspend(&msg, 0, -1, false);
+	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_DISABLED)) {
 		info("gang: suspending job %u: %s",
@@ -665,7 +665,7 @@ static void _resume_job(uint32_t job_id)
 	msg.job_id = job_id;
 	debug3("gang: resuming %u", job_id);
 	msg.op = RESUME_JOB;
-	rc = job_suspend(&msg, 0, -1, false);
+	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_ALREADY_DONE)) {
 		error("gang: resuming job %u: %s",
 		      job_id, slurm_strerror(rc));

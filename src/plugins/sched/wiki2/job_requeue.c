@@ -68,7 +68,7 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 
 	lock_slurmctld(job_write_lock);
-	slurm_rc = job_requeue(0, jobid, -1);
+	slurm_rc = job_requeue(0, jobid, -1, (uint16_t)NO_VAL);
 	if (slurm_rc != SLURM_SUCCESS) {
 		unlock_slurmctld(job_write_lock);
 		*err_code = -700;

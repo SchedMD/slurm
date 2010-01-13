@@ -338,65 +338,71 @@ extern select_jobinfo_t *copy_select_jobinfo(select_jobinfo_t *jobinfo)
 /* pack a select job credential into a buffer in machine independent form
  * IN jobinfo  - the select job credential to be saved
  * OUT buffer  - buffer with select credential appended
+ * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
  */
-extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer)
+extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
+				uint16_t protocol_version)
 {
 	int i;
 
-	if (jobinfo) {
-		/* NOTE: If new elements are added here, make sure to
-		 * add equivalant pack of zeros below for NULL pointer */
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-			pack16(jobinfo->geometry[i], buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		if (jobinfo) {
+			/* NOTE: If new elements are added here, make sure to
+			 * add equivalant pack of zeros below for NULL
+			 * pointer */
+			for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+				pack16(jobinfo->geometry[i], buffer);
+			}
+			pack16(jobinfo->conn_type, buffer);
+			pack16(jobinfo->reboot, buffer);
+			pack16(jobinfo->rotate, buffer);
+
+			pack32(jobinfo->node_cnt, buffer);
+			pack32(jobinfo->max_cpus, buffer);
+
+			packstr(jobinfo->bg_block_id, buffer);
+			packstr(jobinfo->nodes, buffer);
+			packstr(jobinfo->ionodes, buffer);
+#ifdef HAVE_BGL
+			packstr(jobinfo->blrtsimage, buffer);
+#endif
+			packstr(jobinfo->linuximage, buffer);
+			packstr(jobinfo->mloaderimage, buffer);
+			packstr(jobinfo->ramdiskimage, buffer);
+		} else {
+			/* pack space for 3 positions for geo
+			 * then 1 for conn_type, reboot, and rotate
+			 */
+			for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
+				pack16((uint16_t) 0, buffer);
+
+			pack32((uint32_t) 0, buffer); //node_cnt
+			pack32((uint32_t) 0, buffer); //max_cpus
+
+			packnull(buffer); //bg_block_id
+			packnull(buffer); //nodes
+			packnull(buffer); //ionodes
+#ifdef HAVE_BGL
+			packnull(buffer); //blrts
+#endif
+			packnull(buffer); //linux
+			packnull(buffer); //mloader
+			packnull(buffer); //ramdisk
 		}
-		pack16(jobinfo->conn_type, buffer);
-		pack16(jobinfo->reboot, buffer);
-		pack16(jobinfo->rotate, buffer);
-
-		pack32(jobinfo->node_cnt, buffer);
-		pack32(jobinfo->max_cpus, buffer);
-
-		packstr(jobinfo->bg_block_id, buffer);
-		packstr(jobinfo->nodes, buffer);
-		packstr(jobinfo->ionodes, buffer);
-#ifdef HAVE_BGL
-		packstr(jobinfo->blrtsimage, buffer);
-#endif
-		packstr(jobinfo->linuximage, buffer);
-		packstr(jobinfo->mloaderimage, buffer);
-		packstr(jobinfo->ramdiskimage, buffer);
-	} else {
-		/* pack space for 3 positions for geo
-		 * then 1 for conn_type, reboot, and rotate
-		 */
-		for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
-			pack16((uint16_t) 0, buffer);
-
-		pack32((uint32_t) 0, buffer); //node_cnt
-		pack32((uint32_t) 0, buffer); //max_cpus
-
-		packnull(buffer); //bg_block_id
-		packnull(buffer); //nodes
-		packnull(buffer); //ionodes
-#ifdef HAVE_BGL
-		packnull(buffer); //blrts
-#endif
-		packnull(buffer); //linux
-		packnull(buffer); //mloader
-		packnull(buffer); //ramdisk
 	}
-
 	return SLURM_SUCCESS;
 }
 
 /* unpack a select job credential from a buffer
  * OUT jobinfo - the select job credential read
  * IN  buffer  - buffer with select credential read from current pointer loc
+ * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
  * NOTE: returned value must be freed using free_jobinfo
  */
-extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer)
+extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
+				 uint16_t protocol_version)
 {
 	int i;
 	uint32_t uint32_tmp;
@@ -404,26 +410,33 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer)
 	*jobinfo_pptr = jobinfo;
 
 	jobinfo->magic = JOBINFO_MAGIC;
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-		safe_unpack16(&(jobinfo->geometry[i]), buffer);
-	}
-	safe_unpack16(&(jobinfo->conn_type), buffer);
-	safe_unpack16(&(jobinfo->reboot), buffer);
-	safe_unpack16(&(jobinfo->rotate), buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+			safe_unpack16(&(jobinfo->geometry[i]), buffer);
+		}
+		safe_unpack16(&(jobinfo->conn_type), buffer);
+		safe_unpack16(&(jobinfo->reboot), buffer);
+		safe_unpack16(&(jobinfo->rotate), buffer);
 
-	safe_unpack32(&(jobinfo->node_cnt), buffer);
-	safe_unpack32(&(jobinfo->max_cpus), buffer);
+		safe_unpack32(&(jobinfo->node_cnt), buffer);
+		safe_unpack32(&(jobinfo->max_cpus), buffer);
 
-	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id),  &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->nodes),        &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->ionodes),      &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->nodes), &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint32_tmp,
+				       buffer);
 #ifdef HAVE_BGL
-	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),   &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->blrtsimage), &uint32_tmp,
+				       buffer);
 #endif
-	safe_unpackstr_xmalloc(&(jobinfo->linuximage),   &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp, buffer);
-
+		safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp,
+				       buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
