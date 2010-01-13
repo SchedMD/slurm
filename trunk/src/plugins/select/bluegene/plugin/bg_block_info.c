@@ -208,28 +208,30 @@ extern int block_ready(struct job_record *job_ptr)
 }
 
 /* Pack all relevent information about a block */
-extern void pack_block(bg_record_t *bg_record, Buf buffer)
+extern void pack_block(bg_record_t *bg_record, Buf buffer,
+		       uint16_t protocol_version)
 {
-	packstr(bg_record->bg_block_id, buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		packstr(bg_record->bg_block_id, buffer);
 #ifdef HAVE_BGL
-	packstr(bg_record->blrtsimage, buffer);
+		packstr(bg_record->blrtsimage, buffer);
 #endif
-	pack_bit_fmt(bg_record->bitmap, buffer);
-	pack16((uint16_t)bg_record->conn_type, buffer);
-	packstr(bg_record->ionodes, buffer);
-	pack_bit_fmt(bg_record->ionode_bitmap, buffer);
-	pack32((uint32_t)bg_record->job_running, buffer);
-	packstr(bg_record->linuximage, buffer);
-	packstr(bg_record->mloaderimage, buffer);
-	packstr(bg_record->nodes, buffer);
-	pack32((uint32_t)bg_record->node_cnt, buffer);
+		pack_bit_fmt(bg_record->bitmap, buffer);
+		pack16((uint16_t)bg_record->conn_type, buffer);
+		packstr(bg_record->ionodes, buffer);
+		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+		pack32((uint32_t)bg_record->job_running, buffer);
+		packstr(bg_record->linuximage, buffer);
+		packstr(bg_record->mloaderimage, buffer);
+		packstr(bg_record->nodes, buffer);
+		pack32((uint32_t)bg_record->node_cnt, buffer);
 #ifdef HAVE_BGL
-	pack16((uint16_t)bg_record->node_use, buffer);
+		pack16((uint16_t)bg_record->node_use, buffer);
 #endif
-
-	packstr(bg_record->user_name, buffer);
-	packstr(bg_record->ramdiskimage, buffer);
-	pack16((uint16_t)bg_record->state, buffer);
+		packstr(bg_record->user_name, buffer);
+		packstr(bg_record->ramdiskimage, buffer);
+		pack16((uint16_t)bg_record->state, buffer);
+	}
 }
 
 extern int update_block_list()

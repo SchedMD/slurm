@@ -817,7 +817,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id);
 
 /* Perform checkpoint operation on a job */
 extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
-			  slurm_fd conn_fd);
+			  slurm_fd conn_fd, uint16_t protocol_version);
 
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr);
@@ -877,10 +877,11 @@ extern void job_preempt_remove(uint32_t job_id);
  * IN ckpt_ptr - checkpoint request message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
-		       slurm_fd conn_fd);
+		       slurm_fd conn_fd, uint16_t protocol_version);
 
 /*
  * job_signal - signal the specified job
@@ -893,7 +894,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
  *	last_job_update - time of last job table update
  */
 extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
-		uid_t uid);
+		      uid_t uid);
 
 /*
  * job_step_cancel - cancel the specified job step
@@ -911,29 +912,32 @@ extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id, uid_t uid );
  * IN ckpt_ptr - checkpoint request message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd conn_fd);
+		uid_t uid, slurm_fd conn_fd, uint16_t protocol_version);
 
 /*
  * job_step_checkpoint_comp - note job step checkpoint completion
  * IN ckpt_ptr - checkpoint complete status message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
-		uid_t uid, slurm_fd conn_fd);
+		uid_t uid, slurm_fd conn_fd, uint16_t protocol_version);
 /*
  * job_step_checkpoint_task_comp - note task checkpoint completion
  * IN ckpt_ptr - checkpoint task complete status message
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
+ * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
-                uid_t uid, slurm_fd conn_fd);
+                uid_t uid, slurm_fd conn_fd, uint16_t protocol_version);
 
 /*
  * job_suspend - perform some suspend/resume operation
@@ -945,10 +949,12 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
  *		   suspending it, this is used to distinguish
  *		   jobs explicitly suspended by admins/users from
  *		   jobs suspended though automatic preemption
+ * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
-		       slurm_fd conn_fd, bool clear_prio);
+		       slurm_fd conn_fd, bool clear_prio,
+		       uint16_t protocol_version);
 
 /*
  * job_complete - note the normal termination the specified job
@@ -988,9 +994,11 @@ extern int job_req_node_filter(struct job_record *job_ptr,
  * IN uid - user id of user issuing the RPC
  * IN job_id - id of the job to be requeued
  * IN conn_fd - file descriptor on which to send reply, -1 if none
+ * IN protocol_version - slurm protocol version of client
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd);
+extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd,
+			uint16_t protocol_version);
 
 /*
  * job_step_complete - note normal completion the specified job step
@@ -1130,11 +1138,14 @@ extern void load_part_uid_allow_list ( int force );
 extern int load_all_part_state ( void );
 
 /*
- * Create a new job step from data in a buffer (as created by dump_job_step_state)
+ * Create a new job step from data in a buffer (as created by
+ * dump_job_stepstate)
  * IN/OUT - job_ptr - point to a job for which the step is to be loaded.
- * IN/OUT buffer - location from which to get data, pointers automatically advanced
+ * IN/OUT buffer - location from which to get data, pointers
+ *                 automatically advanced
  */
-extern int load_step_state(struct job_record *job_ptr, Buf buffer);
+extern int load_step_state(struct job_record *job_ptr, Buf buffer,
+			   uint16_t protocol_version);
 
 /* make_node_alloc - flag specified node as allocated to a job
  * IN node_ptr - pointer to node being allocated
@@ -1196,13 +1207,15 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
+ * IN protocol_version - slurm protocol version of client
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
 extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
-		uint16_t show_flags, uid_t uid);
+			  uint16_t show_flags, uid_t uid,
+			  uint16_t protocol_version);
 
 /*
  * pack_all_node - dump all configuration and node information for all nodes
@@ -1211,13 +1224,15 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - node filtering options
  * IN uid - uid of user making request (for partition filtering)
+ * IN protocol_version - slurm protocol version of client
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
  */
 extern void pack_all_node (char **buffer_ptr, int *buffer_size,
-		uint16_t show_flags, uid_t uid);
+			   uint16_t show_flags, uid_t uid,
+			   uint16_t protocol_version);
 
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info
@@ -1240,12 +1255,14 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - partition filtering options
  * IN uid - uid of user making request (for partition filtering)
+ * IN protocol_version - slurm protocol version of client
  * global: part_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
 extern void pack_all_part(char **buffer_ptr, int *buffer_size,
-		uint16_t show_flags, uid_t uid);
+			  uint16_t show_flags, uid_t uid,
+			  uint16_t protocol_version);
 
 /*
  * pack_job - dump all configuration information about a specific job in
@@ -1258,7 +1275,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
  *	  whenever the data format changes
  */
 extern void pack_job (struct job_record *dump_job_ptr, uint16_t show_flags,
-		      Buf buffer);
+		      Buf buffer, uint16_t protocol_version);
 
 /*
  * pack_part - dump all configuration information about a specific partition
@@ -1270,7 +1287,8 @@ extern void pack_job (struct job_record *dump_job_ptr, uint16_t show_flags,
  * NOTE: if you make any changes here be sure to make the corresponding
  *	changes to load_part_config in api/partition_info.c
  */
-extern void pack_part (struct part_record *part_ptr, Buf buffer);
+extern void pack_part (struct part_record *part_ptr, Buf buffer,
+		       uint16_t protocol_version);
 
 /*
  * pack_one_job - dump information for one jobs in
@@ -1285,7 +1303,8 @@ extern void pack_part (struct part_record *part_ptr, Buf buffer);
  *	whenever the data format changes
  */
 extern int pack_one_job(char **buffer_ptr, int *buffer_size,
-			uint32_t job_id, uint16_t show_flags, uid_t uid);
+			uint32_t job_id, uint16_t show_flags, uid_t uid,
+			uint16_t protocol_version);
 
 /* part_filter_clear - Clear the partition's hidden flag based upon a user's
  * group access. This must follow a call to part_filter_set() */

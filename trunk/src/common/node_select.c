@@ -91,11 +91,14 @@ typedef struct slurm_select_ops {
 	int		(*job_suspend)	       (struct job_record *job_ptr);
 	int		(*job_resume)	       (struct job_record *job_ptr);
 	int		(*pack_select_info)    (time_t last_query_time,
-						Buf *buffer_ptr);
+						Buf *buffer_ptr,
+						uint16_t protocol_version);
         int	        (*nodeinfo_pack)       (select_nodeinfo_t *nodeinfo,
-						Buf buffer);
+						Buf buffer,
+						uint16_t protocol_version);
         int	        (*nodeinfo_unpack)     (select_nodeinfo_t **nodeinfo,
-						Buf buffer);
+						Buf buffer,
+						uint16_t protocol_version);
 	select_nodeinfo_t *(*nodeinfo_alloc)   (uint32_t size);
 	int	        (*nodeinfo_free)       (select_nodeinfo_t *nodeinfo);
 	int             (*nodeinfo_set_all)    (time_t last_query_time);
@@ -117,9 +120,11 @@ typedef struct slurm_select_ops {
 						void *data);
 	select_jobinfo_t *(*jobinfo_copy)        (select_jobinfo_t *jobinfo);
 	int             (*jobinfo_pack)        (select_jobinfo_t *jobinfo,
-						Buf buffer);
+						Buf buffer,
+						uint16_t protocol_version);
 	int             (*jobinfo_unpack)      (select_jobinfo_t **jobinfo_pptr,
-						Buf buffer);
+						Buf buffer,
+						uint16_t protocol_version);
 	char *          (*jobinfo_sprint)      (select_jobinfo_t *jobinfo,
 						char *buf, size_t size,
 						int mode);
@@ -325,50 +330,53 @@ static void _free_block_info(block_info_t *block_info)
  * plugin. The unpack functions can not be there since the plugin is
  * dependent upon libraries which do not exist on the BlueGene front-end
  * nodes. */
-static int _unpack_block_info(block_info_t *block_info, Buf buffer)
+static int _unpack_block_info(block_info_t *block_info, Buf buffer,
+			      uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 	char *bp_inx_str = NULL;
 
-	safe_unpackstr_xmalloc(&block_info->bg_block_id,
-			       &uint32_tmp, buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&block_info->bg_block_id,
+				       &uint32_tmp, buffer);
 #ifdef HAVE_BGL
-	safe_unpackstr_xmalloc(&block_info->blrtsimage,
-			       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->blrtsimage,
+				       &uint32_tmp, buffer);
 #endif
-	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
-	if (bp_inx_str == NULL) {
-		block_info->bp_inx = bitfmt2int("");
-	} else {
-		block_info->bp_inx = bitfmt2int(bp_inx_str);
-		xfree(bp_inx_str);
-	}
-	safe_unpack16(&block_info->conn_type, buffer);
-	safe_unpackstr_xmalloc(&(block_info->ionodes),
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
-	if (bp_inx_str == NULL) {
-		block_info->ionode_inx = bitfmt2int("");
-	} else {
-		block_info->ionode_inx = bitfmt2int(bp_inx_str);
-		xfree(bp_inx_str);
-	}
-	safe_unpack32(&block_info->job_running, buffer);
-	safe_unpackstr_xmalloc(&block_info->linuximage,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&block_info->mloaderimage,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(block_info->nodes), &uint32_tmp, buffer);
-	safe_unpack32(&block_info->node_cnt, buffer);
+		safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
+		if (bp_inx_str == NULL) {
+			block_info->bp_inx = bitfmt2int("");
+		} else {
+			block_info->bp_inx = bitfmt2int(bp_inx_str);
+			xfree(bp_inx_str);
+		}
+		safe_unpack16(&block_info->conn_type, buffer);
+		safe_unpackstr_xmalloc(&(block_info->ionodes),
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
+		if (bp_inx_str == NULL) {
+			block_info->ionode_inx = bitfmt2int("");
+		} else {
+			block_info->ionode_inx = bitfmt2int(bp_inx_str);
+			xfree(bp_inx_str);
+		}
+		safe_unpack32(&block_info->job_running, buffer);
+		safe_unpackstr_xmalloc(&block_info->linuximage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->mloaderimage,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&(block_info->nodes), &uint32_tmp,
+				       buffer);
+		safe_unpack32(&block_info->node_cnt, buffer);
 #ifdef HAVE_BGL
-	safe_unpack16(&block_info->node_use, buffer);
+		safe_unpack16(&block_info->node_use, buffer);
 #endif
-	safe_unpackstr_xmalloc(&block_info->owner_name,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&block_info->ramdiskimage,
-			       &uint32_tmp, buffer);
-	safe_unpack16(&block_info->state, buffer);
-
+		safe_unpackstr_xmalloc(&block_info->owner_name,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&block_info->ramdiskimage,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&block_info->state, buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -386,77 +394,83 @@ extern int node_select_free_block_info(block_info_t *block_info)
 	return SLURM_SUCCESS;
 }
 
-extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer)
+extern void node_select_pack_block_info(block_info_t *block_info, Buf buffer,
+					uint16_t protocol_version)
 {
-	if(!block_info) {
-		packnull(buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		if(!block_info) {
+			packnull(buffer);
 #ifdef HAVE_BGL
-		packnull(buffer);
+			packnull(buffer);
 #endif
-		pack16((uint16_t)NO_VAL, buffer);
-		packnull(buffer);
-
-		packnull(buffer);
-		packnull(buffer);
-
-		pack32(NO_VAL, buffer);
-
-		packnull(buffer);
-		packnull(buffer);
-		packnull(buffer);
-		pack32(NO_VAL, buffer);
-#ifdef HAVE_BGL
-		pack16((uint16_t)NO_VAL, buffer);
-#endif
-
-		packnull(buffer);
-		packnull(buffer);
-		pack16((uint16_t)NO_VAL, buffer);
-	} else {
-		packstr(block_info->bg_block_id, buffer);
-#ifdef HAVE_BGL
-		packstr(block_info->blrtsimage, buffer);
-#endif
-
-		if(block_info->bp_inx) {
-			char *bitfmt = inx2bitfmt(block_info->bp_inx);
-			packstr(bitfmt, buffer);
-			xfree(bitfmt);
-		} else
+			pack16((uint16_t)NO_VAL, buffer);
 			packnull(buffer);
 
-		pack16(block_info->conn_type, buffer);
-
-		packstr(block_info->ionodes, buffer);
-
-		if(block_info->ionode_inx) {
-			char *bitfmt = inx2bitfmt(block_info->ionode_inx);
-			packstr(bitfmt, buffer);
-			xfree(bitfmt);
-		} else
+			packnull(buffer);
 			packnull(buffer);
 
-		pack32(block_info->job_running, buffer);
+			pack32(NO_VAL, buffer);
 
-		packstr(block_info->linuximage, buffer);
-		packstr(block_info->mloaderimage, buffer);
-		packstr(block_info->nodes, buffer);
-		pack32(block_info->node_cnt, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32(NO_VAL, buffer);
 #ifdef HAVE_BGL
-		pack16(block_info->node_use, buffer);
+			pack16((uint16_t)NO_VAL, buffer);
 #endif
-		packstr(block_info->owner_name, buffer);
-		packstr(block_info->ramdiskimage, buffer);
-		pack16(block_info->state, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+			pack16((uint16_t)NO_VAL, buffer);
+		} else {
+			packstr(block_info->bg_block_id, buffer);
+#ifdef HAVE_BGL
+			packstr(block_info->blrtsimage, buffer);
+#endif
+
+			if(block_info->bp_inx) {
+				char *bitfmt = inx2bitfmt(block_info->bp_inx);
+				packstr(bitfmt, buffer);
+				xfree(bitfmt);
+			} else
+				packnull(buffer);
+
+			pack16(block_info->conn_type, buffer);
+
+			packstr(block_info->ionodes, buffer);
+
+			if(block_info->ionode_inx) {
+				char *bitfmt =
+					inx2bitfmt(block_info->ionode_inx);
+				packstr(bitfmt, buffer);
+				xfree(bitfmt);
+			} else
+				packnull(buffer);
+
+			pack32(block_info->job_running, buffer);
+
+			packstr(block_info->linuximage, buffer);
+			packstr(block_info->mloaderimage, buffer);
+			packstr(block_info->nodes, buffer);
+			pack32(block_info->node_cnt, buffer);
+#ifdef HAVE_BGL
+			pack16(block_info->node_use, buffer);
+#endif
+			packstr(block_info->owner_name, buffer);
+			packstr(block_info->ramdiskimage, buffer);
+			pack16(block_info->state, buffer);
+		}
 	}
 }
 
-extern int node_select_unpack_block_info(block_info_t **block_info, Buf buffer)
+extern int node_select_unpack_block_info(block_info_t **block_info, Buf buffer,
+					 uint16_t protocol_version)
 {
         int rc = SLURM_SUCCESS;
 	block_info_t *bg_rec = xmalloc(sizeof(block_info_t));
 
-	if((rc = _unpack_block_info(bg_rec, buffer)) != SLURM_SUCCESS)
+	if((rc = _unpack_block_info(bg_rec, buffer, protocol_version))
+	   != SLURM_SUCCESS)
 		xfree(bg_rec);
 	else
 		*block_info = bg_rec;
@@ -487,19 +501,23 @@ extern int node_select_block_info_msg_free (
 
 /* Unpack node select info from a buffer */
 extern int node_select_block_info_msg_unpack(
-	block_info_msg_t **block_info_msg_pptr, Buf buffer)
+	block_info_msg_t **block_info_msg_pptr, Buf buffer,
+	uint16_t protocol_version)
 {
 	int i;
 	block_info_msg_t *buf;
 
 	buf = xmalloc(sizeof(block_info_msg_t));
-	safe_unpack32(&(buf->record_count), buffer);
-	safe_unpack_time(&(buf->last_update), buffer);
-	buf->block_array = xmalloc(sizeof(block_info_t) *
-				   buf->record_count);
-	for(i=0; i<buf->record_count; i++) {
-		if (_unpack_block_info(&(buf->block_array[i]), buffer))
-			goto unpack_error;
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		safe_unpack32(&(buf->record_count), buffer);
+		safe_unpack_time(&(buf->last_update), buffer);
+		buf->block_array = xmalloc(sizeof(block_info_t) *
+					   buf->record_count);
+		for(i=0; i<buf->record_count; i++) {
+			if (_unpack_block_info(&(buf->block_array[i]), buffer,
+					       protocol_version))
+				goto unpack_error;
+		}
 	}
 	*block_info_msg_pptr = buf;
 	return SLURM_SUCCESS;
@@ -721,31 +739,36 @@ extern int select_g_job_resume(struct job_record *job_ptr)
 	return (*(g_select_context->ops.job_resume))(job_ptr);
 }
 
-extern int select_g_pack_select_info(time_t last_query_time, Buf *buffer)
+extern int select_g_pack_select_info(time_t last_query_time, Buf *buffer,
+				     uint16_t protocol_version)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.pack_select_info))
-		(last_query_time, buffer);
+		(last_query_time, buffer, protocol_version);
 }
 
 extern int select_g_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer)
+					 Buf buffer,
+					 uint16_t protocol_version)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_select_context->ops.nodeinfo_pack))(nodeinfo, buffer);
+	return (*(g_select_context->ops.nodeinfo_pack))(
+		nodeinfo, buffer, protocol_version);
 }
 
 extern int select_g_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   Buf buffer)
+					   Buf buffer,
+					   uint16_t protocol_version)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_select_context->ops.nodeinfo_unpack))(nodeinfo, buffer);
+	return (*(g_select_context->ops.nodeinfo_unpack))(nodeinfo, buffer,
+							  protocol_version);
 }
 
 extern select_nodeinfo_t *select_g_select_nodeinfo_alloc(uint32_t size)
@@ -937,12 +960,13 @@ extern select_jobinfo_t *select_g_select_jobinfo_copy(select_jobinfo_t *jobinfo)
  * OUT buffer  - buffer with select credential appended
  * RET         - slurm error code
  */
-extern int  select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
+extern int  select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+					 uint16_t protocol_version)
 {
 	if (jobinfo) {
 		/* NOTE: If new elements are added here, make sure to
 		 * add equivalant pack of zeros below for NULL pointer */
-		packstr(jobinfo->reservation_id, buffer);
+		packstr(jobinfo->reservation_id, buffer, protocol_version);
 	} else {
 		packnull(buffer); //reservation_id
 	}
@@ -957,7 +981,8 @@ extern int  select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
  * NOTE: returned value must be freed using select_g_select_jobinfo_free
  */
 extern int select_g_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
-					  Buf buffer)
+					  Buf buffer,
+					  uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 
@@ -965,7 +990,8 @@ extern int select_g_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 	*jobinfo_pptr = jobinfo;
 
 	jobinfo->magic = JOBINFO_MAGIC;
-	safe_unpackstr_xmalloc(&(jobinfo->reservation_id), &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->reservation_id), &uint32_tmp, buffer,
+		protocol_version);
 
 	return SLURM_SUCCESS;
 
@@ -1145,12 +1171,14 @@ extern select_jobinfo_t *select_g_select_jobinfo_copy(select_jobinfo_t *jobinfo)
  * OUT buffer  - buffer with select credential appended
  * RET         - slurm error code
  */
-extern int select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
+extern int select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+					uint16_t protocol_version)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_select_context->ops.jobinfo_pack))(jobinfo, buffer);
+	return (*(g_select_context->ops.jobinfo_pack))(
+		jobinfo, buffer, protocol_version);
 }
 
 /* unpack a select job credential from a buffer
@@ -1160,12 +1188,13 @@ extern int select_g_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
  * NOTE: returned value must be freed using select_g_free_jobinfo
  */
 extern int select_g_select_jobinfo_unpack(
-	select_jobinfo_t **jobinfo, Buf buffer)
+	select_jobinfo_t **jobinfo, Buf buffer,	uint16_t protocol_version)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_select_context->ops.jobinfo_unpack))(jobinfo, buffer);
+	return (*(g_select_context->ops.jobinfo_unpack))(
+		jobinfo, buffer, protocol_version);
 }
 
 /* write select job credential to a string

@@ -98,7 +98,7 @@ extern int pack_msg ( slurm_msg_t const * msg , Buf buffer );
  *			automatically updated
  * RET 0 or error code
  */
-extern int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
+extern int unpack_msg ( slurm_msg_t * msg , Buf buffer );
 
 /***************************************************************************/
 /* specific case statement Pack / Unpack methods for slurm protocol bodies */

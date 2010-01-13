@@ -81,6 +81,7 @@
 
 /* Change PART_STATE_VERSION value when changing the state save format */
 #define PART_STATE_VERSION      "VER002"
+#define PART_2_1_STATE_VERSION  "VER002" /*version for slurm2.1 */
 
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
@@ -473,6 +474,7 @@ int load_all_part_state(void)
 	Buf buffer;
 	char *ver_str = NULL;
 	char* allow_alloc_nodes = NULL;
+	uint16_t protocol_version = (uint16_t)NO_VAL;
 
 	/* read the file */
 	lock_state_files();
@@ -510,7 +512,15 @@ int load_all_part_state(void)
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
-	if ((!ver_str) || (strcmp(ver_str, PART_STATE_VERSION) != 0)) {
+	if(ver_str) {
+		if(!strcmp(ver_str, PART_STATE_VERSION)) {
+			protocol_version = SLURM_PROTOCOL_VERSION;
+		} else if(!strcmp(ver_str, PART_2_1_STATE_VERSION)) {
+			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
+		}
+	}
+
+	if (protocol_version == (uint16_t)NO_VAL) {
 		error("**********************************************************");
 		error("Can not recover partition state, data version incompatible");
 		error("**********************************************************");
@@ -522,36 +532,40 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
-		safe_unpack32(&max_time, buffer);
-		safe_unpack32(&default_time, buffer);
-		safe_unpack32(&max_nodes, buffer);
-		safe_unpack32(&min_nodes, buffer);
+		if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpack32(&max_time, buffer);
+			safe_unpack32(&default_time, buffer);
+			safe_unpack32(&max_nodes, buffer);
+			safe_unpack32(&min_nodes, buffer);
 
-		safe_unpack16(&def_part_flag, buffer);
-		safe_unpack16(&hidden,    buffer);
-		safe_unpack16(&root_only, buffer);
-		safe_unpack16(&max_share, buffer);
-		safe_unpack16(&priority,  buffer);
+			safe_unpack16(&def_part_flag, buffer);
+			safe_unpack16(&hidden,    buffer);
+			safe_unpack16(&root_only, buffer);
+			safe_unpack16(&max_share, buffer);
+			safe_unpack16(&priority,  buffer);
 
-		if(priority > part_max_priority)
-			part_max_priority = priority;
+			if(priority > part_max_priority)
+				part_max_priority = priority;
 
-		safe_unpack16(&state_up, buffer);
-		safe_unpackstr_xmalloc(&allow_groups, &name_len, buffer);
-		safe_unpackstr_xmalloc(&allow_alloc_nodes, &name_len, buffer);
-		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-
+			safe_unpack16(&state_up, buffer);
+			safe_unpackstr_xmalloc(&allow_groups,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+		}
 		/* validity test as possible */
 		if ((def_part_flag > 1) ||
 		    (root_only > 1) || (hidden > 1) ||
 		    (state_up > 1)) {
-			error("Invalid data for partition %s: def_part_flag=%u, "
-				"hidden=%u root_only=%u, state_up=%u",
-				part_name, def_part_flag, hidden, root_only,
-				state_up);
+			error("Invalid data for partition %s: "
+			      "def_part_flag=%u, "
+			      "hidden=%u root_only=%u, state_up=%u",
+			      part_name, def_part_flag, hidden, root_only,
+			      state_up);
 			error("No more partition data will be processed from "
-				"the checkpoint file");
+			      "the checkpoint file");
 			xfree(part_name);
 			error_code = EINVAL;
 			break;
@@ -771,7 +785,8 @@ extern void part_filter_clear(void)
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
 extern void pack_all_part(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid)
+			  uint16_t show_flags, uid_t uid,
+			  uint16_t protocol_version)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
@@ -798,7 +813,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 		    ((part_ptr->hidden)
 		     || (validate_group (part_ptr, uid) == 0)))
 			continue;
-		pack_part(part_ptr, buffer);
+		pack_part(part_ptr, buffer, protocol_version);
 		parts_packed++;
 	}
 	list_iterator_destroy(part_iterator);
@@ -824,38 +839,41 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
  * NOTE: if you make any changes here be sure to make the corresponding changes
  *	to _unpack_partition_info_members() in common/slurm_protocol_pack.c
  */
-void pack_part(struct part_record *part_ptr, Buf buffer)
+void pack_part(struct part_record *part_ptr, Buf buffer,
+	       uint16_t protocol_version)
 {
 	uint16_t default_part_flag;
 	uint32_t altered;
 
-	if (default_part_loc == part_ptr)
-		default_part_flag = 1;
-	else
-		default_part_flag = 0;
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		if (default_part_loc == part_ptr)
+			default_part_flag = 1;
+		else
+			default_part_flag = 0;
 
-	packstr(part_ptr->name, buffer);
-	pack32(part_ptr->max_time, buffer);
-	pack32(part_ptr->default_time, buffer);
-	pack32(part_ptr->max_nodes_orig, buffer);
-	pack32(part_ptr->min_nodes_orig, buffer);
-	altered = part_ptr->total_nodes;
-	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
-				&altered);
-	pack32(altered, buffer);
-	pack32(part_ptr->total_cpus, buffer);
-	pack16(default_part_flag,    buffer);
-	pack16(part_ptr->disable_root_jobs, buffer);
-	pack16(part_ptr->hidden,     buffer);
-	pack16(part_ptr->root_only,  buffer);
-	pack16(part_ptr->max_share,  buffer);
-	pack16(part_ptr->priority,   buffer);
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		altered = part_ptr->total_nodes;
+		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET,
+					&altered);
+		pack32(altered, buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack16(default_part_flag,    buffer);
+		pack16(part_ptr->disable_root_jobs, buffer);
+		pack16(part_ptr->hidden,     buffer);
+		pack16(part_ptr->root_only,  buffer);
+		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->priority,   buffer);
 
-	pack16(part_ptr->state_up, buffer);
-	packstr(part_ptr->allow_groups, buffer);
-	packstr(part_ptr->allow_alloc_nodes, buffer);
-	packstr(part_ptr->nodes, buffer);
-	pack_bit_fmt(part_ptr->node_bitmap, buffer);
+		pack16(part_ptr->state_up, buffer);
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->nodes, buffer);
+		pack_bit_fmt(part_ptr->node_bitmap, buffer);
+	}
 }
 
 

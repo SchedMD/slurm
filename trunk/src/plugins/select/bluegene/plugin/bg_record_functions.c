@@ -625,7 +625,8 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 		lock_slurmctld(job_write_lock);
 		debug2("Trying to requeue job %d", bg_record->job_running);
-		if((rc = job_requeue(0, bg_record->job_running, -1))) {
+		if((rc = job_requeue(0, bg_record->job_running,
+				     -1, (uint16_t)NO_VAL))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_record->job_running,
 			      slurm_strerror(rc));

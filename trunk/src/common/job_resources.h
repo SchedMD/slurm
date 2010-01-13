@@ -179,9 +179,11 @@ extern void log_job_resources(uint32_t job_id,
 			      job_resources_t *job_resrcs_ptr);
 
 /* Un/pack full job_resources data structure */
-extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer);
+extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
+			       uint16_t protocol_version);
 extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
-				char *nodelist, Buf buffer);
+				char *nodelist, Buf buffer,
+				uint16_t protocol_version);
 
 /* Reset the node_bitmap in a job_resources data structure
  * This is needed after a restart/reconfiguration since nodes can

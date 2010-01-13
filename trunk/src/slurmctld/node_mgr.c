@@ -79,6 +79,7 @@
 
 /* Change NODE_STATE_VERSION value when changing the state save format */
 #define NODE_STATE_VERSION      "VER003"
+#define NODE_2_1_STATE_VERSION  "VER003"
 
 /* Global variables */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
@@ -94,7 +95,8 @@ static void 	_make_node_down(struct node_record *node_ptr,
 static void	_node_did_resp(struct node_record *node_ptr);
 static bool	_node_is_hidden(struct node_record *node_ptr);
 static int	_open_node_state_file(char **state_file);
-static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
+static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer,
+			    uint16_t protocol_version);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				struct config_record *config_ptr);
@@ -264,6 +266,7 @@ extern int load_all_node_state ( bool state_only )
 	hostset_t hs = NULL;
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	bool power_save_mode = false;
+	uint16_t protocol_version = (uint16_t)NO_VAL;
 
 	if (conf->suspend_program && conf->resume_program)
 		power_save_mode = true;
@@ -306,7 +309,15 @@ extern int load_all_node_state ( bool state_only )
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in node_state header is %s", ver_str);
-	if ((!ver_str) || (strcmp(ver_str, NODE_STATE_VERSION) != 0)) {
+	if(ver_str) {
+		if(!strcmp(ver_str, NODE_STATE_VERSION)) {
+			protocol_version = SLURM_PROTOCOL_VERSION;
+		} else if(!strcmp(ver_str, NODE_2_1_STATE_VERSION)) {
+			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
+		}
+	}
+
+	if (protocol_version == (uint16_t)NO_VAL) {
 		error("*****************************************************");
 		error("Can not recover node state, data version incompatible");
 		error("*****************************************************");
@@ -320,17 +331,20 @@ extern int load_all_node_state ( bool state_only )
 
 	while (remaining_buf (buffer) > 0) {
 		uint16_t base_state;
-		safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
-		safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
-		safe_unpackstr_xmalloc (&features,  &name_len, buffer);
-		safe_unpack16 (&node_state,  buffer);
-		safe_unpack16 (&cpus,        buffer);
-		safe_unpack16 (&sockets,     buffer);
-		safe_unpack16 (&cores,       buffer);
-		safe_unpack16 (&threads,     buffer);
-		safe_unpack32 (&real_memory, buffer);
-		safe_unpack32 (&tmp_disk,    buffer);
-		base_state = node_state & NODE_STATE_BASE;
+		if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
+			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
+			safe_unpack16 (&node_state,  buffer);
+			safe_unpack16 (&cpus,        buffer);
+			safe_unpack16 (&sockets,     buffer);
+			safe_unpack16 (&cores,       buffer);
+			safe_unpack16 (&threads,     buffer);
+			safe_unpack32 (&real_memory, buffer);
+			safe_unpack32 (&tmp_disk,    buffer);
+			base_state = node_state & NODE_STATE_BASE;
+		} else
+			goto unpack_error;
 
 		/* validity test as possible */
 		if ((cpus == 0) ||
@@ -485,13 +499,15 @@ static bool _node_is_hidden(struct node_record *node_ptr)
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - node filtering options
  * IN uid - uid of user making request (for partition filtering)
+ * IN protocol_version - slurm protocol version of client
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  * NOTE: READ lock_slurmctld config before entry
  */
 extern void pack_all_node (char **buffer_ptr, int *buffer_size,
-		uint16_t show_flags, uid_t uid)
+			   uint16_t show_flags, uid_t uid,
+			   uint16_t protocol_version)
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset, node_scaling;
@@ -504,46 +520,52 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	*buffer_size = 0;
 
 	buffer = init_buf (BUF_SIZE*16);
+	nodes_packed = 0;
 
-	/* write header: version and time */
-	nodes_packed = 0 ;
-	pack32  (nodes_packed, buffer);
-	select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-				&node_scaling);
-	pack32  (node_scaling, buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		/* write header: version and time */
+		pack32(nodes_packed, buffer);
+		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
+					&node_scaling);
+		pack32(node_scaling, buffer);
 
-	pack_time  (now, buffer);
+		pack_time(now, buffer);
 
-	/* write node records */
-	part_filter_set(uid);
-	for (inx = 0; inx < node_record_count; inx++, node_ptr++) {
-		xassert (node_ptr->magic == NODE_MAGIC);
-		xassert (node_ptr->config_ptr->magic ==
-			 CONFIG_MAGIC);
+		/* write node records */
+		part_filter_set(uid);
+		for (inx = 0; inx < node_record_count; inx++, node_ptr++) {
+			xassert (node_ptr->magic == NODE_MAGIC);
+			xassert (node_ptr->config_ptr->magic ==
+				 CONFIG_MAGIC);
 
-		/* We can't avoid packing node records without breaking
-		 * the node index pointers. So pack a node with a name of
-		 * NULL and let the caller deal with it. */
-		hidden = false;
-		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-		    (_node_is_hidden(node_ptr)))
-			hidden = true;
-		else if (IS_NODE_FUTURE(node_ptr))
-			hidden = true;
-		else if ((node_ptr->name == NULL) ||
-			 (node_ptr->name[0] == '\0'))
-			hidden = true;
+			/* We can't avoid packing node records without breaking
+			 * the node index pointers. So pack a node
+			 * with a name of NULL and let the caller deal
+			 * with it. */
+			hidden = false;
+			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
+			    (_node_is_hidden(node_ptr)))
+				hidden = true;
+			else if (IS_NODE_FUTURE(node_ptr))
+				hidden = true;
+			else if ((node_ptr->name == NULL) ||
+				 (node_ptr->name[0] == '\0'))
+				hidden = true;
 
-		if (hidden) {
-			char *orig_name = node_ptr->name;
-			node_ptr->name = NULL;
-			_pack_node(node_ptr, buffer);
-			node_ptr->name = orig_name;
-		} else
-			_pack_node(node_ptr, buffer);
-		nodes_packed ++ ;
+			if (hidden) {
+				char *orig_name = node_ptr->name;
+				node_ptr->name = NULL;
+				_pack_node(node_ptr, buffer, protocol_version);
+				node_ptr->name = orig_name;
+			} else
+				_pack_node(node_ptr, buffer, protocol_version);
+			nodes_packed++;
+		}
+		part_filter_clear();
+	} else {
+		error("pack_all_node: Unsupported slurm version %u",
+		      protocol_version);
 	}
-	part_filter_clear();
 
 	tmp_offset = get_buf_offset (buffer);
 	set_buf_offset (buffer, 0);
@@ -560,39 +582,47 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
  *	machine independent form (for network transmission)
  * IN dump_node_ptr - pointer to node for which information is requested
  * IN/OUT buffer - buffer where data is placed, pointers automatically updated
+ * IN protocol_version - slurm protocol version of client
  * NOTE: if you make any changes here be sure to make the corresponding
  *	changes to load_node_config in api/node_info.c
  * NOTE: READ lock_slurmctld config before entry
  */
-static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
+static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
+			uint16_t protocol_version)
 {
-	packstr (dump_node_ptr->name, buffer);
-	pack16  (dump_node_ptr->node_state, buffer);
-	if (slurmctld_conf.fast_schedule) {
-		/* Only data from config_record used for scheduling */
-		pack16  (dump_node_ptr->config_ptr->cpus, buffer);
-		pack16  (dump_node_ptr->config_ptr->sockets, buffer);
-		pack16  (dump_node_ptr->config_ptr->cores, buffer);
-		pack16  (dump_node_ptr->config_ptr->threads, buffer);
-		pack32  (dump_node_ptr->config_ptr->real_memory, buffer);
-		pack32  (dump_node_ptr->config_ptr->tmp_disk, buffer);
+	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		packstr (dump_node_ptr->name, buffer);
+		pack16  (dump_node_ptr->node_state, buffer);
+		if (slurmctld_conf.fast_schedule) {
+			/* Only data from config_record used for scheduling */
+			pack16(dump_node_ptr->config_ptr->cpus, buffer);
+			pack16(dump_node_ptr->config_ptr->sockets, buffer);
+			pack16(dump_node_ptr->config_ptr->cores, buffer);
+			pack16(dump_node_ptr->config_ptr->threads, buffer);
+			pack32(dump_node_ptr->config_ptr->real_memory, buffer);
+			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
+		} else {
+			/* Individual node data used for scheduling */
+			pack16(dump_node_ptr->cpus, buffer);
+			pack16(dump_node_ptr->sockets, buffer);
+			pack16(dump_node_ptr->cores, buffer);
+			pack16(dump_node_ptr->threads, buffer);
+			pack32(dump_node_ptr->real_memory, buffer);
+			pack32(dump_node_ptr->tmp_disk, buffer);
+		}
+		pack32(dump_node_ptr->config_ptr->weight, buffer);
+
+		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,
+					      buffer, protocol_version);
+
+		packstr(dump_node_ptr->arch, buffer);
+		packstr(dump_node_ptr->config_ptr->feature, buffer);
+		packstr(dump_node_ptr->os, buffer);
+		packstr(dump_node_ptr->reason, buffer);
 	} else {
-		/* Individual node data used for scheduling */
-		pack16  (dump_node_ptr->cpus, buffer);
-		pack16  (dump_node_ptr->sockets, buffer);
-		pack16  (dump_node_ptr->cores, buffer);
-		pack16  (dump_node_ptr->threads, buffer);
-		pack32  (dump_node_ptr->real_memory, buffer);
-		pack32  (dump_node_ptr->tmp_disk, buffer);
+		error("_pack_node: Unsupported slurm version %u",
+		      protocol_version);
 	}
-	pack32  (dump_node_ptr->config_ptr->weight, buffer);
-
-	select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo, buffer);
-
-	packstr (dump_node_ptr->arch, buffer);
-	packstr (dump_node_ptr->config_ptr->feature, buffer);
-	packstr (dump_node_ptr->os, buffer);
-	packstr (dump_node_ptr->reason, buffer);
 }
 
 

@@ -354,15 +354,18 @@ typedef struct slurm_protocol_config {
 } slurm_protocol_config_t;
 
 typedef struct slurm_msg {
-	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
-			    * this way for packing purposes.  message type */
-	uint16_t flags;
 	slurm_addr address;
-	slurm_fd conn_fd;
 	void *auth_cred;
+	slurm_fd conn_fd;
 	void *data;
 	uint32_t data_size;
-
+	uint16_t flags;
+	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
+			    * this way for packing purposes.  message type */
+	uint16_t protocol_version; /* DON'T PACK!  Only used if
+				    * message comming from non-default
+				    * slurm protocol.  Initted to
+				    * NO_VAL meaning use the default. */
 	/* The following were all added for the forward.c code */
 	forward_t forward;
 	forward_struct_t *forward_struct;
@@ -1008,11 +1011,15 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr);
 void slurm_free_job_info_msg(job_info_msg_t * job_buffer_ptr);
 void slurm_free_job_step_info_response_msg(
 		job_step_info_response_msg_t * msg);
+void slurm_free_job_step_info_members (job_step_info_t * msg);
 void slurm_free_node_info_msg(node_info_msg_t * msg);
+void slurm_free_node_info_members(node_info_t * node);
 void slurm_free_partition_info_msg(partition_info_msg_t * msg);
+void slurm_free_partition_info_members(partition_info_t * part);
 void slurm_free_reservation_info_msg(reserve_info_msg_t * msg);
 void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 void slurm_free_will_run_response_msg(will_run_response_msg_t *msg);
+void slurm_free_reserve_info_members(reserve_info_t * resv);
 void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
 void inline slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);

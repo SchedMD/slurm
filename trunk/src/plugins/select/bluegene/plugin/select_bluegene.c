@@ -341,7 +341,7 @@ extern int select_p_state_save(char *dir_name)
 #endif
 		xassert(bg_record->bg_block_id != NULL);
 
-		pack_block(bg_record, buffer);
+		pack_block(bg_record, buffer, SLURM_PROTOCOL_VERSION);
 		blocks_packed++;
 	}
 	list_iterator_destroy(itr);
@@ -536,7 +536,8 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
+extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr,
+				     uint16_t protocol_version)
 {
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
@@ -554,35 +555,38 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
 		pack32(blocks_packed, buffer);
 		pack_time(last_bg_update, buffer);
 
-		if(bg_lists->main) {
-			slurm_mutex_lock(&block_state_mutex);
-			itr = list_iterator_create(bg_lists->main);
-			while ((bg_record = list_next(itr))) {
-				pack_block(bg_record, buffer);
-				blocks_packed++;
+		if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+			if(bg_lists->main) {
+				slurm_mutex_lock(&block_state_mutex);
+				itr = list_iterator_create(bg_lists->main);
+				while ((bg_record = list_next(itr))) {
+					pack_block(bg_record, buffer,
+						   protocol_version);
+					blocks_packed++;
+				}
+				list_iterator_destroy(itr);
+				slurm_mutex_unlock(&block_state_mutex);
+			} else {
+				error("select_p_pack_select_info: "
+				      "no bg_lists->main");
+				return SLURM_ERROR;
 			}
-			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&block_state_mutex);
-		} else {
-			error("select_p_pack_select_info: no bg_lists->main");
-			return SLURM_ERROR;
-		}
-		/*
-		 * get all the blocks we are freeing since they have
-		 * been moved here
-		 */
-		if(bg_lists->freeing) {
-			slurm_mutex_lock(&block_state_mutex);
-			itr = list_iterator_create(bg_lists->freeing);
-			while ((bg_record = (bg_record_t *) list_next(itr))
-			       != NULL) {
-				xassert(bg_record->bg_block_id != NULL);
-
-				pack_block(bg_record, buffer);
-				blocks_packed++;
+			/*
+			 * get all the blocks we are freeing since they have
+			 * been moved here
+			 */
+			if(bg_lists->freeing) {
+				slurm_mutex_lock(&block_state_mutex);
+				itr = list_iterator_create(bg_lists->freeing);
+				while ((bg_record = list_next(itr))) {
+					xassert(bg_record->bg_block_id != NULL);
+					pack_block(bg_record, buffer,
+						   protocol_version);
+					blocks_packed++;
+				}
+				list_iterator_destroy(itr);
+				slurm_mutex_unlock(&block_state_mutex);
 			}
-			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&block_state_mutex);
 		}
 		tmp_offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, 0);
@@ -599,15 +603,17 @@ extern int select_p_pack_select_info(time_t last_query_time, Buf *buffer_ptr)
 }
 
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer)
+					 Buf buffer,
+					 uint16_t protocol_version)
 {
-	return select_nodeinfo_pack(nodeinfo, buffer);
+	return select_nodeinfo_pack(nodeinfo, buffer, protocol_version);
 }
 
 extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   Buf buffer)
+					   Buf buffer,
+					   uint16_t protocol_version)
 {
-	return select_nodeinfo_unpack(nodeinfo, buffer);
+	return select_nodeinfo_unpack(nodeinfo, buffer, protocol_version);
 }
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size)
@@ -666,15 +672,17 @@ extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
 	return free_select_jobinfo(jobinfo);
 }
 
-extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer)
+extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+					 uint16_t protocol_version)
 {
-	return pack_select_jobinfo(jobinfo, buffer);
+	return pack_select_jobinfo(jobinfo, buffer, protocol_version);
 }
 
 extern int  select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
-					   Buf buffer)
+					   Buf buffer,
+					   uint16_t protocol_version)
 {
-	return unpack_select_jobinfo(jobinfo, buffer);
+	return unpack_select_jobinfo(jobinfo, buffer, protocol_version);
 }
 
 extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,

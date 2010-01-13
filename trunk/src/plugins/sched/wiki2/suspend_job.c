@@ -71,7 +71,7 @@ extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg)
 	msg.job_id = jobid;
 	msg.op = SUSPEND_JOB;
 	lock_slurmctld(job_write_lock);
-	slurm_rc = job_suspend(&msg, 0, -1, false);
+	slurm_rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;

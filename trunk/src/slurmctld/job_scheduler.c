@@ -1315,7 +1315,8 @@ static void *_run_prolog(void *arg)
 		if (last_job_requeue == job_id) {
 			info("prolog_slurmctld failed again for job %u");
 			kill_job = true;
-		} else if ((rc = job_requeue(0, job_id, -1))) {
+		} else if ((rc = job_requeue(0, job_id, -1,
+					     (uint16_t)NO_VAL))) {
 			info("unable to requeue job %u: %m");
 			kill_job = true;
 		} else

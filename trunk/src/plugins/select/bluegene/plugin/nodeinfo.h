@@ -57,9 +57,11 @@ struct select_nodeinfo {
 	List subgrp_list;
 };
 
-extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer);
+extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
+				uint16_t protocol_version);
 
-extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer);
+extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
+				  uint16_t protocol_version);
 
 extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size);
 

@@ -274,7 +274,8 @@ static int _make_sure_block_still_exists(bg_update_t *bg_update_ptr,
 		      bg_update_ptr->bg_block_id,
 		      bg_update_ptr->job_ptr->job_id);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
+				     -1, (uint16_t)NO_VAL))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
@@ -487,7 +488,8 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		error("No block %s", bg_update_ptr->bg_block_id);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
+				     -1, (uint16_t)NO_VAL))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
@@ -573,7 +575,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		   incase the fail job isn't ran */
 		sleep(2);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
+				     -1, (uint16_t)NO_VAL))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
@@ -656,7 +659,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		   incase the fail job isn't ran */
 		sleep(2);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id,
+				     -1, (uint16_t)NO_VAL))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id,
 			      slurm_strerror(rc));
@@ -872,7 +876,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			   incase the fail job isn't ran */
 			lock_slurmctld(job_write_lock);
 			if((rc = job_requeue(
-				    0, bg_update_ptr->job_ptr->job_id, -1))) {
+				    0, bg_update_ptr->job_ptr->job_id,
+				    -1, (uint16_t)NO_VAL))) {
 				error("couldn't requeue job %u, failing it: %s",
 				      bg_update_ptr->job_ptr->job_id,
 				      slurm_strerror(rc));

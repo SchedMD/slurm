@@ -117,6 +117,7 @@ extern int num_unused_cpus;
 /* Change BLOCK_STATE_VERSION value when changing the state save
  * format i.e. pack_block() */
 #define BLOCK_STATE_VERSION      "VER003"
+#define BLOCK_2_1_STATE_VERSION  "VER003" /*Slurm 2.1's version*/
 
 #include "bg_block_info.h"
 #include "bg_job_place.h"
