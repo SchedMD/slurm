@@ -5412,19 +5412,10 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	/* Set here is used to ask for jobs and nodes in anything
-	 * other than up state, so it you reset it later make sure
-	 * this is accounted for before you do
-	 */
-	set = 1;
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		object = xstrdup(row[0]);
-
-		/* check to see if this is the first time to register */
-		if(clust_reg && (row[1][0] == '0'))
-			set = 0;
 
 		list_append(ret_list, object);
 		if(!rc) {
@@ -5456,50 +5447,6 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 			list_destroy(ret_list);
 			ret_list = NULL;
 			goto end_it;
-		}
-	}
-
-	/* Get all nodes in a down state and jobs pending or running.
-	 * This is for the first time a cluster registers
-	 */
-
-	if(!set && slurmdbd_conf) {
-		/* This only happens here with the slurmdbd.  If
-		 * calling this plugin directly we do this in
-		 * clusteracct_storage_p_cluster_procs.
-		 */
-		slurm_addr ctld_address;
-		slurm_fd fd;
-
-		info("First time to register cluster requesting "
-		     "running jobs and system information.");
-
-		slurm_set_addr_char(&ctld_address, cluster->control_port,
-				    cluster->control_host);
-		fd = slurm_open_msg_conn(&ctld_address);
-		if (fd < 0) {
-			error("can not open socket back to slurmctld "
-			      "%s(%u): %m", cluster->control_host,
-			      cluster->control_port);
-		} else {
-			slurm_msg_t out_msg;
-			accounting_update_msg_t update;
-			/* We have to put this update message here so
-			   we can tell the sender to send the correct
-			   RPC version.
-			*/
-			memset(&update, 0, sizeof(accounting_update_msg_t));
-			update.rpc_version = cluster->rpc_version;
-			slurm_msg_t_init(&out_msg);
-			out_msg.msg_type = ACCOUNTING_FIRST_REG;
-			out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
-			out_msg.data = &update;
-			slurm_send_node_msg(fd, &out_msg);
-			/* We probably need to add matching recv_msg function
-			 * for an arbitray fd or should these be fire
-			 * and forget?  For this, that we can probably
-			 * forget about it */
-			slurm_close_stream(fd);
 		}
 	}
 
@@ -10333,17 +10280,12 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 		/* Get all nodes in a down state and jobs pending or running.
 		 * This is for the first time a cluster registers
 		 *
-		 * This only happens here when calling the plugin directly.  If
-		 * calling this plugin throught the slurmdbd we do this in
-		 * acct_storage_p_modify_clusters.
+		 * We will return ACCOUNTING_FIRST_REG so this
+		 * is taken care of since the message thread
+		 * may not be up when we run this in the controller or
+		 * in the slurmdbd.
 		 */
-		if(!slurmdbd_conf) {
-			/* We will return ACCOUNTING_FIRST_REG so this
-			   is taken care of since the message thread
-			   may not be up when we run this in the controller.
-			*/
-			first = 1;
-		}
+		first = 1;
 		goto add_it;
 	}
 
