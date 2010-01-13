@@ -69,8 +69,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if (!strncasecmp (argv[i], "WithDeleted",
-					 MAX(command_len, 5))) {
+		} else if (!end && !strncasecmp (argv[i], "WithDeleted",
+						 MAX(command_len, 5))) {
 			qos_cond->with_deleted = 1;
 		} else if(!end && !strncasecmp(argv[i], "where",
 					       MAX(command_len, 5))) {
