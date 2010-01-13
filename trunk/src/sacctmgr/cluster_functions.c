@@ -40,6 +40,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/uid.h"
+static bool with_deleted = 0;
 static bool without_limits = 0;
 
 static int _set_cond(int *start, int argc, char *argv[],
@@ -52,6 +53,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+
+	with_deleted = 0;
+	without_limits = 0;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -71,6 +75,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "where",
 					       MAX(command_len, 5))) {
 			continue;
+		} else if (!end &&
+			   !strncasecmp (argv[i], "WithDeleted",
+					 MAX(command_len, 5))) {
+			with_deleted = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOLimits",
 						 MAX(command_len, 3))) {
 			without_limits = 1;
@@ -478,6 +486,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					      "F,GrpJ,GrpN,GrpS,MaxJ,MaxN,"
 					      "MaxS,MaxW,QOS");
 	}
+
+	cluster_cond->with_deleted = with_deleted;
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {

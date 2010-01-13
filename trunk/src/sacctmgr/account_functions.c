@@ -88,6 +88,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 5))) {
 			acct_cond->with_coords = 1;
 		} else if (!end &&
+			   !strncasecmp (argv[i], "WithDeleted",
+					 MAX(command_len, 5))) {
+			acct_cond->with_deleted = 1;
+			assoc_cond->with_deleted = 1;
+		} else if (!end &&
 			   !strncasecmp (argv[i], "WithRawQOSLevel",
 					 MAX(command_len, 5))) {
 			assoc_cond->with_raw_qos = 1;

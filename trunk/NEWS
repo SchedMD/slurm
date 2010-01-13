@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
  -- Added SLURM_VERSION_NUMBER and removed SLURM_API_VERSION from slurm/slurm.h.
  -- Added support to handle communication with SLURM 2.1 clusters.  Job's
     should not be lost in the future when upgrading to higher versions of SLURM.
+ -- Added withdeleted options for listing clusters, users, and accounts
 
 * Changes in SLURM 2.1.1
 =============================
