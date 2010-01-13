@@ -334,9 +334,36 @@ Possible values on Blue Gene are "MESH", "TORUS" and "NAV"
 Set the job's requirement for contiguous (consecutive) nodes to be allocated.
 Possible values are "YES" and "NO".
 .TP
-\fIDependency\fP=<job_id>
-Defer job's initiation until specified job_id completes.
-Cancel dependency with job_id value of "0", "Dependency=0".
+\fIDependency\fP=<dependency_list>
+Defer job's initiation until specified job dependency specification 
+is satisfied.
+Cancel dependency with an empty dependency_list (e.g. "Dependency=").
+<\fIdependency_list\fR> is of the form
+<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
+Many jobs can share the same dependency and these jobs may even belong to
+different  users. 
+.PD
+.RS
+.TP
+\fBafter:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have begun
+execution.
+.TP
+\fBafterany:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated.
+.TP
+\fBafternotok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated
+in some failed state (non-zero exit code, node failure, timed out, etc).
+.TP
+\fBafterok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have successfully
+executed (ran to completion with non-zero exit code).
+.TP
+\fBsingleton\fR
+This job can begin execution after any previously launched jobs
+sharing the same job name and user have terminated.
+.RE
 .TP
 \fIExcNodeList\fP=<nodes>
 Set the job's list of excluded node. Multiple node names may be
