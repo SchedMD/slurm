@@ -34,6 +34,17 @@ If a line begins with the word "Include" followed by whitespace
 and then a file name, that file will be included inline with the current
 configuration file.
 .LP
+Note on file permissions:
+.LP
+The \fIslurm.conf\fR file must be readable by all users of SLURM, since it
+is used by many of the SLURM commands.  Other files that are defined
+in the \fIslurm.conf\fR file, such as log files and job accounting files,
+may need to be created/owned by the "SlurmUser" uid to be successfully
+accessed.  Use the "chown" and "chmod" commands to set the ownership
+and permissions appropriately.
+
+.SH "PARAMETERS"
+.LP
 The overall configuration parameters available include:
 
 .TP
@@ -1471,17 +1482,25 @@ The value may not exceed 65533 seconds.
 
 .TP
 \fBSrunEpilog\fR
-Fully qualified pathname of an executable to be run by srun following the
-completion of a job step.  The command line arguments for the executable will
-be the command and arguments of the job step.  This configuration parameter
-may be overridden by srun's \fB\-\-epilog\fR parameter.
+Fully qualified pathname of an executable to be run by srun following
+the completion of a job step.  The command line arguments for the
+executable will be the command and arguments of the job step.  This
+configuration parameter may be overridden by srun's \fB\-\-epilog\fR
+parameter. Note that while the other "Epilog" executables (e.g.,
+TaskEpilog) are run by slurmd on the compute nodes where the tasks are
+executed, the \fBSrunEpilog\fR runs on the node where the "srun" is
+executing.
 
 .TP
 \fBSrunProlog\fR
-Fully qualified pathname of an executable to be run by srun prior to the
-launch of a job step.  The command line arguments for the executable will
-be the command and arguments of the job step.  This configuration parameter
-may be overridden by srun's \fB\-\-prolog\fR parameter.
+Fully qualified pathname of an executable to be run by srun prior to
+the launch of a job step.  The command line arguments for the
+executable will be the command and arguments of the job step.  This
+configuration parameter may be overridden by srun's \fB\-\-prolog\fR
+parameter. Note that while the other "Prolog" executables (e.g.,
+TaskProlog) are run by slurmd on the compute nodes where the tasks are
+executed, the \fBSrunProlog\fR runs on the node where the "srun" is
+executing.
 
 .TP
 \fBStateSaveLocation\fR

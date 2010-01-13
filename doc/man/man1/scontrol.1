@@ -503,35 +503,46 @@ described above.  However, the following fields displayed by the show
 job command are read\-only and cannot be modified:
 
 .TP
-\fIAllocNode:Sid\fp
+\fIAllocNode:Sid\fP
 Local node and system id making the resource allocation.
 .TP
-\fIEndTime\fp
+\fIEndTime\fP
 The time the job is expected to terminate based on the job's time
 limit.  When the job ends sooner, this field will be updated with the
 actual end time.
 .TP
-\fIJobState\fp
+\fIJobState\fP
 The current state of the job.
 .TP
-\fINodeList\fp
+\fINodeList\fP
 The list of nodes allocated to the job.
 .TP
-\fINodeListIndices\fp
+\fINodeListIndices\fP
 The NodeIndices expose the internal indices into the node table
 associated with the node(s) allocated to the job.
 .TP
-\fIPreSusTime\fp
+\fIPreSusTime\fP
 Time the job ran prior to last suspend.
 .TP
-\fIReason\fp
+\fIReason\fP
 The reason job is not running: e.g., waiting "Resources".
 .TP
-\fISuspendTime\fp
+\fISuspendTime\fP
 Time the job was last suspended or resumed.
 .TP
-\fIUserId\fp  \fIGroupId\fp
+\fIUserId\fP  \fIGroupId\fP
 The user and group under which the job was submitted.
+.TP
+NOTE on information displayed for various job states: 
+When you submit a request for the "show job" function the scontrol
+process makes an RPC request call to slurmctld with a REQUEST_JOB_INFO
+message type.  If the state of the job is PENDING, then it returns
+some detail information such as: min_nodes, min_procs, cpus_per_task,
+etc. If the state is other than PENDING the code assumes that it is in
+a further state such as RUNNING, COMPLETE, etc. In these cases the
+code explicitly returns zero for these values. These values are
+meaningless once the job resources have been allocated and the job has
+started.
 .TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, NODES\fR
 .TP
