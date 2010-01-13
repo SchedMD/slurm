@@ -808,8 +808,9 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	if (job_ptr->details == NULL)
 		return EINVAL;
 
-	/* Clear dependencies on NULL or empty dependency input */
-	if ((new_depend == NULL) || (new_depend[0] == '\0')) {
+	/* Clear dependencies on NULL, "0", or empty dependency input */
+	if ((new_depend == NULL) || (new_depend[0] == '\0') ||
+	    ((new_depend[0] == '0') && (new_depend[1] == '\0'))) {
 		xfree(job_ptr->details->dependency);
 		if (job_ptr->details->depend_list) {
 			list_destroy(job_ptr->details->depend_list);
@@ -846,7 +847,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		if ((sep_ptr == NULL) && (job_id == 0)) {
 			job_id = strtol(tok, &sep_ptr, 10);
 			if ((sep_ptr == NULL) || (sep_ptr[0] != '\0') ||
-			    (job_id < 0) || (job_id == job_ptr->job_id)) {
+			    (job_id == 0) || (job_id == job_ptr->job_id)) {
 				rc = EINVAL;
 				break;
 			}
@@ -863,6 +864,9 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			dep_ptr->job_ptr = dep_job_ptr;
 			if (!list_append(new_depend_list, dep_ptr))
 				fatal("list_append memory allocation failure");
+			break;
+		} else if (sep_ptr == NULL) {
+			rc = EINVAL;
 			break;
 		}
 
@@ -882,7 +886,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		while (rc == SLURM_SUCCESS) {
 			job_id = strtol(sep_ptr, &sep_ptr2, 10);
 			if ((sep_ptr2 == NULL) ||
-			    (job_id < 0) || (job_id == job_ptr->job_id) ||
+			    (job_id == 0) || (job_id == job_ptr->job_id) ||
 			    ((sep_ptr2[0] != '\0') && (sep_ptr2[0] != ',') &&
 			     (sep_ptr2[0] != ':'))) {
 				rc = EINVAL;

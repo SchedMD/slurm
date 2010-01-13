@@ -371,8 +371,11 @@ _spank_stack_process_line(const char *file, int line, char *buf, List *stackp)
 		return (0);
 	}
 
-	if (type == CF_INCLUDE)
-		return (_spank_conf_include (file, line, path, stackp));
+       if (type == CF_INCLUDE) {
+               int rc = _spank_conf_include (file, line, path, stackp);
+               xfree (path);
+               return (rc);
+       }
 
 	if (path == NULL)	/* No plugin listed on this line */
 		return (0);

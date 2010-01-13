@@ -290,8 +290,11 @@ static void _update_node_record(node_info_t *node_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_ERR_CPUS,
 			   tmp_cnt, -1);
 
-	if((alloc_cpus && err_cpus)
-	   || (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
+	if(IS_NODE_DRAIN(node_ptr)) {
+		/* don't worry about mixed since the
+		   whole node is being drained. */
+	} else if((alloc_cpus && err_cpus)
+		  || (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
 		node_ptr->node_state &= NODE_STATE_FLAGS;
 		node_ptr->node_state |= NODE_STATE_MIXED;
 	}
@@ -603,13 +606,16 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 #endif
 			idle_cpus -= err_cpus;
 
-			if ((alloc_cpus && err_cpus) ||
+			if(IS_NODE_DRAIN(node_ptr)) {
+				/* don't worry about mixed since the
+				   whole node is being drained. */
+			} else if ((alloc_cpus && err_cpus) ||
 			    (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
+				node_ptr->node_state &= NODE_STATE_FLAGS;
 				if(err_cpus)
 					node_ptr->node_state
-						|= NODE_STATE_DRAIN;
+						|= NODE_STATE_ERROR;
 
-				node_ptr->node_state &= NODE_STATE_FLAGS;
 				node_ptr->node_state |= NODE_STATE_MIXED;
 			} else if(err_cpus) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;
@@ -1037,8 +1043,6 @@ extern void specific_info_node(popup_info_t *popup_win)
 	hostlist_iterator_t host_itr = NULL;
 	int i = -1;
 	sview_search_info_t *search_info = spec_info->search_info;
-	bool drain_flag1 = false, comp_flag1 = false, no_resp_flag1 = false;
-	bool drain_flag2 = false, comp_flag2 = false, no_resp_flag2 = false;
 
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_node, SORTID_CNT);
@@ -1116,16 +1120,9 @@ display_it:
 	}
 
 	i = -1;
-	if(search_info->int_data != NO_VAL) {
-		drain_flag1 = (search_info->int_data & NODE_STATE_DRAIN);
-		comp_flag1 = (search_info->int_data & NODE_STATE_COMPLETING);
-		no_resp_flag1 = (search_info->int_data
-				 & NODE_STATE_NO_RESPOND);
-	}
 
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info_ptr = list_next(itr))) {
-		uint16_t tmp_16 = 0;
 		int found = 0;
 		char *host = NULL;
 		i++;
@@ -1135,66 +1132,59 @@ display_it:
 		case SEARCH_NODE_STATE:
 			if(search_info->int_data == NO_VAL)
 				continue;
-
-			drain_flag2 = (node_ptr->node_state
-				       & NODE_STATE_DRAIN);
-			comp_flag2 = (node_ptr->node_state
-				      & NODE_STATE_COMPLETING);
-			no_resp_flag2 = (node_ptr->node_state
-					 & NODE_STATE_NO_RESPOND);
-
-			if(drain_flag1 && drain_flag2)
-				break;
-			else if(comp_flag1 && comp_flag2)
-				break;
-			else if(no_resp_flag1 && no_resp_flag2)
-				break;
-
-			if(node_ptr->node_state != search_info->int_data) {
-				if((search_info->int_data & NODE_STATE_BASE)
-				   == NODE_STATE_ALLOCATED) {
+			else if(search_info->int_data != node_ptr->node_state) {
+				if(IS_NODE_MIXED(node_ptr)) {
+					uint16_t alloc_cnt = 0, err_cnt = 0;
+					uint16_t idle_cnt = node_ptr->cpus;
 					select_g_select_nodeinfo_get(
 						node_ptr->select_nodeinfo,
 						SELECT_NODEDATA_SUBCNT,
 						NODE_STATE_ALLOCATED,
-						&tmp_16);
-					if(tmp_16)
-						break;
-				}
-				if((search_info->int_data & NODE_STATE_BASE)
-				   == NODE_STATE_ERROR) {
+						&alloc_cnt);
 					select_g_select_nodeinfo_get(
 						node_ptr->select_nodeinfo,
 						SELECT_NODEDATA_SUBCNT,
 						NODE_STATE_ERROR,
-						&tmp_16);
-					if(tmp_16)
-						break;
+						&err_cnt);
+					idle_cnt -= (alloc_cnt + err_cnt);
+					if((search_info->int_data
+					    & NODE_STATE_BASE)
+					   == NODE_STATE_ALLOCATED) {
+						if(alloc_cnt)
+							break;
+					} else if((search_info->int_data
+						   & NODE_STATE_BASE)
+						  == NODE_STATE_ERROR) {
+						if(err_cnt)
+							break;
+					} else if((search_info->int_data
+						   & NODE_STATE_BASE)
+						  == NODE_STATE_IDLE) {
+						if(idle_cnt)
+							break;
+					}
 				}
 				continue;
 			}
 			break;
-
 		case SEARCH_NODE_NAME:
 		default:
-			/* Nothing to do here since we just are
-			 * looking for the node name */
+			if(!search_info->gchar_data)
+				continue;
+			while((host = hostlist_next(host_itr))) {
+				if(!strcmp(host, node_ptr->name)) {
+					free(host);
+					found = 1;
+					break;
+				}
+				free(host);
+			}
+			hostlist_iterator_reset(host_itr);
+
+			if(!found)
+				continue;
 			break;
 		}
-		if(!search_info->gchar_data)
-			continue;
-		while((host = hostlist_next(host_itr))) {
-			if(!strcmp(host, node_ptr->name)) {
-				free(host);
-				found = 1;
-				break;
-			}
-			free(host);
-		}
-		hostlist_iterator_reset(host_itr);
-
-		if(!found)
-			continue;
 		list_push(send_info_list, sview_node_info_ptr);
 		change_grid_color(popup_win->grid_button_list,
 				  i, i, 0, true, 0);
