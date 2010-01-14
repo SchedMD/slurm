@@ -142,7 +142,7 @@ computing resources described below.
 <P> The fair-share hierarchy represents the portions of the computing resource that have been allocated to multiple projects.  These allocations are assigned to an account.  There can be multiple levels of allocations made as allocations of a given account are further divided to sub-accounts:</P>
 
 <div class="figure">
-  <img src=AllocationPies.gif width=400 ><BR>
+  <img src=allocation_pies.gif width=400 ><BR>
   Figure 1. Machine Allocation
 </div>
 
@@ -292,7 +292,7 @@ Where:
 <P> In the example below, when user 3 submits their first job using account C, they will want their job's priority to reflect all the resources delivered to account B.  They do not care that user 1 has been using up a significant portion of the cycles allocated to account B and user 2 has yet to run a job out of account B.  If user 2 submits a job using account B and user 3 submits a job using account C, user 3 expects their job to be scheduled before the job from user 2.</P>
 
 <div class="figure">
-  <img src=UsagePies.gif width=400 ><BR>
+  <img src=usage_pies.gif width=400 ><BR>
   Figure 2. Usage Example
 </div>
 
@@ -353,7 +353,7 @@ Where:
 <P> The actual usage charged to each account is represented by the solid arrows.  The actual usage charged to each account is summed as one goes up the tree.  Account C's usage is the sum of the usage of Users 2 and 3; account A's actual usage is the sum of its children, accounts B and C.</P>
 
 <div class="figure">
-  <img src=ExampleUsage.gif width=400 ><BR>
+  <img src=example_usage.gif width=400 ><BR>
   Figure 3. Fair-share Example
 </div>
 
@@ -545,7 +545,7 @@ PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 9 Dec 2009</p>
+<p style="text-align:center;">Last modified 14 January 2010</p>
 
 <!--#include virtual="footer.txt"-->
 
