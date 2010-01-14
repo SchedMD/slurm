@@ -60,12 +60,12 @@ generated_html = \
 
 html_DATA = \
 	${generated_html} \
-	AllocationPies.gif \
+	allocation_pies.gif \
 	arch.gif \
 	configurator.html \
 	coding_style.pdf \
 	entities.gif \
-	ExampleUsage.gif \
+	example_usage.gif \
 	lci.7.tutorial.pdf \
 	lll.gif \
 	mc_support.gif \
@@ -83,7 +83,7 @@ html_DATA = \
 	topo_ex1.gif \
 	topo_ex2.gif \
 	linuxstyles.css \
-	UsagePies.gif
+	usage_pies.gif
 
 MOSTLYCLEANFILES = ${generated_html}
 
