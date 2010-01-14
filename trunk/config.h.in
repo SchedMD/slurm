@@ -167,9 +167,6 @@
 /* Define to 1 if using PostgreSQL libaries */
 #undef HAVE_PGSQL
 
-/* define if plpa library installed */
-#undef HAVE_PLPA
-
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
 
