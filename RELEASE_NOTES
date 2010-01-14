@@ -27,6 +27,8 @@ HIGHLIGHTS
 * The sched/gang plugin has been removed. The logic is now directly within the
   slurmctld daemon so that gang scheduling and/or job preemption can be
   performed with a backfill scheduler.
+* Sbatch response changed from "sbatch: Submitted batch job #" written to 
+  stderr to "Submitted batch job #" written to stdout.
 * Preempted jobs can now be canceled, checkpointed or requeued rather than
   only suspended.
 * Support for QOS (Quality Of Service) has been added to the accounting
