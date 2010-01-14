@@ -46,21 +46,6 @@ AC_DEFUN([X_AC_AFFINITY], [
   fi
 
 #
-# Test for PLPA functions (see http://www.open-mpi.org/software/plpa)
-#
-  AC_CHECK_LIB([plpa],
-	[plpa_sched_getaffinity],
-	[ac_have_plpa=yes; PLPA_LIBS="-rpath /usr/local/lib -lplpa"])
-
-  AC_SUBST(PLPA_LIBS)
-  if test "x$ac_have_plpa" = "xyes"; then
-    have_sched_setaffinity=yes
-    AC_DEFINE(HAVE_PLPA, 1, [define if plpa library installed])
-  else
-    AC_MSG_WARN([Unable to locate PLPA processor affinity functions])
-  fi
-
-#
 # Test for cpuset directory
 #
   cpuset_default_dir="/dev/cpuset"
