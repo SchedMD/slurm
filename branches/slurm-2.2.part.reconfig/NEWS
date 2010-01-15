@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     should not be lost in the future when upgrading to higher versions of SLURM.
  -- Added withdeleted options for listing clusters, users, and accounts
  -- Remove PLPA task affinity functions due to that package being deprecated.
+ -- Preserve current partition state information rather than use contents of 
+    slurm.conf file by default after slurmctld restart or reconfiguration.
 
 * Changes in SLURM 2.1.1
 =============================

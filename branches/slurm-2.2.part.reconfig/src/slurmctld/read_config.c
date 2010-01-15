@@ -2,7 +2,7 @@
  *  read_config.c - read the overall slurm configuration file
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -100,12 +100,16 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 				char *old_select_type, char *old_switch_type);
 static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
+static void _purge_old_part_state(List old_part_list);
 static int  _restore_job_dependencies(void);
 static int  _restore_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
+static int  _restore_part_state(List old_part_list);
+static int  _strcmp(const char *s1, const char *s2);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
 static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
+static void _sync_part_prio(void);
 static int  _update_preempt(uint16_t old_enable_preempt);
 #ifdef 	HAVE_ELAN
 static void _validate_node_proc_count(void);
@@ -528,38 +532,48 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
  * global: part_list - global partition list pointer
  *	default_part - default parameters for a partition
  */
-static int _build_all_partitionline_info()
+static int _build_all_partitionline_info(void)
 {
-	slurm_conf_partition_t *part, **ptr_array;
+	slurm_conf_partition_t **ptr_array;
 	int count;
 	int i;
-	ListIterator itr = NULL;
 
 	count = slurm_conf_partition_array(&ptr_array);
 	if (count == 0)
 		fatal("No PartitionName information available!");
 
-	for (i = 0; i < count; i++) {
-		part = ptr_array[i];
+	for (i = 0; i < count; i++)
+		_build_single_partitionline_info(ptr_array[i]);
 
-		_build_single_partitionline_info(part);
-		if(part->priority > part_max_priority)
-			part_max_priority = part->priority;
+	return SLURM_SUCCESS;
+}
+
+/* _sync_part_prio - Set normalized partition priorities */
+static void _sync_part_prio(void)
+{
+	ListIterator itr = NULL;
+	struct part_record *part_ptr = NULL;
+
+	part_max_priority = 0;
+	itr = list_iterator_create(part_list);
+	if (itr == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((part_ptr = list_next(itr))) {
+		if (part_ptr->priority > part_max_priority)
+			part_max_priority = part_ptr->priority;
 	}
+	list_iterator_destroy(itr);
 
-	/* set up the normalized priority of the partitions */
-	if(part_max_priority) {
-		struct part_record *part_ptr = NULL;
-
+	if (part_max_priority) {
 		itr = list_iterator_create(part_list);
-		while((part_ptr = list_next(itr))) {
-			part_ptr->norm_priority = (double)part_ptr->priority
-				/ (double)part_max_priority;
+		if (itr == NULL)
+			fatal("list_iterator_create malloc failure");
+		while ((part_ptr = list_next(itr))) {
+			part_ptr->norm_priority = (double)part_ptr->priority /
+						  (double)part_max_priority;
 		}
 		list_iterator_destroy(itr);
 	}
-
-	return SLURM_SUCCESS;
 }
 
 /*
@@ -578,8 +592,9 @@ int read_slurm_conf(int recover)
 {
 	DEF_TIMERS;
 	int error_code, i, rc, load_job_ret = SLURM_SUCCESS;
-	int old_node_record_count;
-	struct node_record *old_node_table_ptr;
+	int old_node_record_count = 0;
+	struct node_record *old_node_table_ptr = NULL;
+	List old_part_list = NULL;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
 	uint16_t old_preempt_mode = slurmctld_conf.preempt_mode;
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
@@ -602,32 +617,38 @@ int read_slurm_conf(int recover)
 		update_job_nodes_completing();
 	}
 
-	/* save node states for reconfig RPC */
-	old_node_record_count = node_record_count;
-	old_node_table_ptr    = node_record_table_ptr;
-	for (i=0; i<node_record_count; i++) {
-		xfree(old_node_table_ptr[i].arch);
-		xfree(old_node_table_ptr[i].features);
-		xfree(old_node_table_ptr[i].os);
-		old_node_table_ptr[i].features = xstrdup(
-			old_node_table_ptr[i].config_ptr->feature);
-		/* Store the original configured CPU count somewhere
-		 * (port is reused here for that purpose) so we can
-		 * report changes in its configuration. */
-		old_node_table_ptr[i].port = old_node_table_ptr[i].
-					     config_ptr->cpus;
+	/* save node and partition states for reconfig RPC */
+	if (recover == 0) {
+		old_node_record_count = node_record_count;
+		old_node_table_ptr    = node_record_table_ptr;
+		for (i=0; i<node_record_count; i++) {
+			xfree(old_node_table_ptr[i].arch);
+			xfree(old_node_table_ptr[i].features);
+			xfree(old_node_table_ptr[i].os);
+			old_node_table_ptr[i].features = xstrdup(
+				old_node_table_ptr[i].config_ptr->feature);
+			/* Store the original configured CPU count somewhere
+			 * (port is reused here for that purpose) so we can
+			 * report changes in its configuration. */
+			old_node_table_ptr[i].port = old_node_table_ptr[i].
+						     config_ptr->cpus;
+		}
+		node_record_table_ptr = NULL;
+		node_record_count = 0;
+		old_part_list = part_list;
+		part_list = NULL;
 	}
-	node_record_table_ptr = NULL;
-	node_record_count = 0;
 
 	if ((error_code = _init_all_slurm_conf())) {
 		node_record_table_ptr = old_node_table_ptr;
+		part_list = old_part_list;
 		return error_code;
 	}
 
 	if (slurm_topo_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize topology plugin");
 
+	/* Build node and partittion information based upon slurm.conf file */
 	_build_all_nodeline_info();
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
@@ -646,6 +667,7 @@ int read_slurm_conf(int recover)
 		error("read_slurm_conf: no nodes configured.");
 		_purge_old_node_state(old_node_table_ptr,
 				      old_node_record_count);
+		_purge_old_part_state(old_part_list);
 		return EINVAL;
 	}
 
@@ -653,18 +675,25 @@ int read_slurm_conf(int recover)
 	rehash_jobs();
 	set_slurmd_addr();
 
-	if (recover > 1) {	/* Load node, part and job info */
+	if (recover > 1) {	/* Load node, part and job state files */
 		(void) load_all_node_state(false);
 		(void) load_all_part_state();
 		load_job_ret = load_all_job_state();
-	} else if (recover == 1) {	/* Load job info only */
+	} else if (recover == 1) {  /* Load job and partition state files */
 		(void) load_all_node_state(true);
+		(void) load_all_part_state();
 		load_job_ret = load_all_job_state();
-	} else {	/* Load no info, preserve all state */
+	} else {	/* Load no info, 
+			 * preserve state from old data structures */
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");
 			rc = _restore_node_state(old_node_table_ptr,
 						 old_node_record_count);
+			error_code = MAX(error_code, rc);  /* not fatal */
+		}
+		if (old_part_list) {
+			info("restoring original partition state");
+			rc = _restore_part_state(old_part_list);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
 		load_last_job_id();
@@ -673,6 +702,7 @@ int read_slurm_conf(int recover)
 		xfree(state_save_dir);
 	}
 
+	_sync_part_prio();
 	_build_bitmaps_pre_select();
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
 	     != SLURM_SUCCESS)						||
@@ -688,6 +718,7 @@ int read_slurm_conf(int recover)
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
+	_purge_old_part_state(old_part_list);
 
 	if ((rc = _build_bitmaps()))
 		fatal("_build_bitmaps failure");
@@ -856,6 +887,158 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 	xfree(old_node_table_ptr);
 }
 
+/* Variant of strcmp that will accept NULL string pointers */
+static int  _strcmp(const char *s1, const char *s2)
+{
+	if ((s1 != NULL) && (s2 == NULL))
+		return 1;
+	if ((s1 == NULL) && (s2 == NULL))
+		return 0;
+	if ((s1 == NULL) && (s2 != NULL))
+		return -1;
+	return strcmp(s1, s2);
+}
+
+/* Restore partition information from saved records */
+static int  _restore_part_state(List old_part_list)
+{
+	int rc = SLURM_SUCCESS;
+	ListIterator part_iterator;
+	struct part_record *old_part_ptr, *part_ptr;
+
+	if (!old_part_list)
+		return rc;
+
+	/* For each part in list, find and update recs */
+	part_iterator = list_iterator_create(old_part_list);
+	if (!part_iterator)
+		fatal("list_iterator_create malloc");
+	while ((old_part_ptr = (struct part_record *) 
+			       list_next(part_iterator))) {
+		xassert(old_part_ptr->magic == PART_MAGIC);
+		part_ptr = find_part_record(old_part_ptr->name);
+		if (part_ptr) {
+			/* Current partition found in slurm.conf,
+			 * report differences from slurm.conf configuration */
+			if (_strcmp(part_ptr->allow_groups, 
+				    old_part_ptr->allow_groups)) {
+				error("Partition %s AllowGroups differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->allow_groups);
+				part_ptr->allow_groups = xstrdup(old_part_ptr->
+								 allow_groups);
+			}
+			if (_strcmp(part_ptr->allow_alloc_nodes, 
+				    old_part_ptr->allow_alloc_nodes)) {
+				error("Partition %s AllowNodes differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->allow_alloc_nodes);
+				part_ptr->allow_groups = xstrdup(old_part_ptr->
+							 allow_alloc_nodes);
+			}
+			if (part_ptr->default_time != 
+			    old_part_ptr->default_time) {
+				error("Partition %s DefaultTime differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->default_time = old_part_ptr->
+							 default_time;
+			}
+			if (part_ptr->disable_root_jobs != 
+			    old_part_ptr->disable_root_jobs) {
+				error("Partition %s DisableRootJobs differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->disable_root_jobs = old_part_ptr->
+							      disable_root_jobs;
+			}
+			if (part_ptr->hidden != old_part_ptr->hidden) {
+				error("Partition %s Hidden differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->hidden = old_part_ptr->hidden;
+			}
+			if (part_ptr->max_nodes != old_part_ptr->max_nodes) {
+				error("Partition %s MaxNodes differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->max_nodes = old_part_ptr->max_nodes;
+				part_ptr->max_nodes_orig = old_part_ptr->
+							   max_nodes_orig;
+			}
+			if (part_ptr->max_share != old_part_ptr->max_share) {
+				error("Partition %s Shared differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->max_share = old_part_ptr->max_share;
+			}
+			if (part_ptr->max_time != old_part_ptr->max_time) {
+				error("Partition %s MaxTime differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->max_time = old_part_ptr->max_time;
+			}
+			if (part_ptr->min_nodes != old_part_ptr->min_nodes) {
+				error("Partition %s MinNodes differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->min_nodes = old_part_ptr->min_nodes;
+				part_ptr->min_nodes_orig = old_part_ptr->
+							   min_nodes_orig;
+			}
+			if (_strcmp(part_ptr->nodes, old_part_ptr->nodes)) {
+				error("Partition %s Nodes differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->nodes);
+				part_ptr->nodes = xstrdup(old_part_ptr->nodes);
+			}
+			if (part_ptr->priority != old_part_ptr->priority) {
+				error("Partition %s Priority differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->priority = old_part_ptr->priority;
+			}
+			if (part_ptr->root_only != old_part_ptr->root_only) {
+				error("Partition %s RootOnly differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->root_only = old_part_ptr->root_only;
+			}
+			if (part_ptr->state_up != old_part_ptr->state_up) {
+				error("Partition %s State differs from "
+				      "slurm.conf", part_ptr->name);
+				part_ptr->state_up = old_part_ptr->state_up;
+			}
+		} else {
+			error("Partition %s missing from slurm.conf, "
+			      "restoring it", old_part_ptr->name);
+			part_ptr = create_part_record();
+			part_ptr->name = xstrdup(old_part_ptr->name);
+			part_ptr->allow_alloc_nodes = xstrdup(old_part_ptr->
+							      allow_alloc_nodes);
+			part_ptr->allow_groups = xstrdup(old_part_ptr->
+							 allow_groups);
+			part_ptr->default_time = old_part_ptr->default_time;
+			part_ptr->disable_root_jobs = old_part_ptr->
+						      disable_root_jobs;
+			part_ptr->hidden = old_part_ptr->hidden;
+			part_ptr->max_nodes = old_part_ptr->max_nodes;
+			part_ptr->max_nodes_orig = old_part_ptr->max_nodes_orig;
+			part_ptr->max_share = old_part_ptr->max_share;
+			part_ptr->max_time = old_part_ptr->max_time;
+			part_ptr->min_nodes = old_part_ptr->min_nodes;
+			part_ptr->min_nodes_orig = old_part_ptr->min_nodes_orig;
+			part_ptr->nodes = xstrdup(old_part_ptr->nodes);
+			part_ptr->priority = old_part_ptr->priority;
+			part_ptr->root_only = old_part_ptr->root_only;
+			part_ptr->state_up = old_part_ptr->state_up;
+		}
+	}
+	list_iterator_destroy(part_iterator);
+
+	return rc;
+}
+
+/* Purge old partition state information */
+static void _purge_old_part_state(List old_part_list)
+{
+	if (!old_part_list)
+		return;
+
+	list_delete_all(old_part_list, &list_find_part, "universal_key");
+	old_part_list = NULL;
+}
 
 /*
  * _preserve_select_type_param - preserve original plugin parameters.
