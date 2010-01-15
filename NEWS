@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     slurmctld to abort.
  -- Fixed issue where slurmctld wouldn't always get a message to send cluster
     information when registering for the first time with the slurmdbd.
+ -- Add slurm_*_trigger.3 man pages for event trigger APIs.
 
 * Changes in SLURM 2.1.0
 =============================
