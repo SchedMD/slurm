@@ -100,11 +100,11 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 				char *old_select_type, char *old_switch_type);
 static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
-static void _purge_old_part_state(List old_part_list);
+static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
 static int  _restore_job_dependencies(void);
 static int  _restore_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
-static int  _restore_part_state(List old_part_list);
+static int  _restore_part_state(List old_part_list, char *old_def_part_name);
 static int  _strcmp(const char *s1, const char *s2);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
@@ -595,6 +595,7 @@ int read_slurm_conf(int recover)
 	int old_node_record_count = 0;
 	struct node_record *old_node_table_ptr = NULL;
 	List old_part_list = NULL;
+	char *old_def_part_name = NULL;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
 	uint16_t old_preempt_mode = slurmctld_conf.preempt_mode;
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
@@ -637,6 +638,8 @@ int read_slurm_conf(int recover)
 		node_record_count = 0;
 		old_part_list = part_list;
 		part_list = NULL;
+		old_def_part_name = default_part_name;
+		default_part_name = NULL;
 	}
 
 	if ((error_code = _init_all_slurm_conf())) {
@@ -667,7 +670,7 @@ int read_slurm_conf(int recover)
 		error("read_slurm_conf: no nodes configured.");
 		_purge_old_node_state(old_node_table_ptr,
 				      old_node_record_count);
-		_purge_old_part_state(old_part_list);
+		_purge_old_part_state(old_part_list, old_def_part_name);
 		return EINVAL;
 	}
 
@@ -693,7 +696,8 @@ int read_slurm_conf(int recover)
 		}
 		if (old_part_list) {
 			info("restoring original partition state");
-			rc = _restore_part_state(old_part_list);
+			rc = _restore_part_state(old_part_list, 
+						 old_def_part_name);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
 		load_last_job_id();
@@ -718,7 +722,7 @@ int read_slurm_conf(int recover)
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
-	_purge_old_part_state(old_part_list);
+	_purge_old_part_state(old_part_list, old_def_part_name);
 
 	if ((rc = _build_bitmaps()))
 		fatal("_build_bitmaps failure");
@@ -900,7 +904,7 @@ static int  _strcmp(const char *s1, const char *s2)
 }
 
 /* Restore partition information from saved records */
-static int  _restore_part_state(List old_part_list)
+static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator part_iterator;
@@ -1027,15 +1031,28 @@ static int  _restore_part_state(List old_part_list)
 	}
 	list_iterator_destroy(part_iterator);
 
+	if (old_def_part_name &&
+	    ((default_part_name == NULL) ||
+	     strcmp(old_def_part_name, default_part_name))) {
+		part_ptr = find_part_record(old_def_part_name);
+		if (part_ptr) {
+			error("Default partition reset to %s", old_def_part_name);
+			default_part_loc  = part_ptr;
+			xfree(default_part_name);
+			default_part_name = xstrdup(old_def_part_name);
+		}
+	}
+
 	return rc;
 }
 
 /* Purge old partition state information */
-static void _purge_old_part_state(List old_part_list)
+static void _purge_old_part_state(List old_part_list, char *old_def_part_name)
 {
+	xfree(old_def_part_name);
+
 	if (!old_part_list)
 		return;
-
 	list_delete_all(old_part_list, &list_find_part, "universal_key");
 	old_part_list = NULL;
 }
