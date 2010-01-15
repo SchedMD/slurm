@@ -285,17 +285,16 @@ static int _delete_part_record(char *name)
 	int i;
 
 	last_part_update = time(NULL);
-	if (name == NULL)
+	if (name == NULL) {
 		i = list_delete_all(part_list, &list_find_part,
 				    "universal_key");
-	else
+	} else
 		i = list_delete_all(part_list, &list_find_part, name);
 	if ((name == NULL) || (i != 0))
 		return 0;
 
-	error
-	    ("_delete_part_record: attempt to delete non-existent partition %s",
-	     name);
+	error("_delete_part_record: attempt to delete non-existent "
+	      "partition %s", name);
 	return ENOENT;
 }
 
@@ -574,41 +573,37 @@ int load_all_part_state(void)
 		/* find record and perform update */
 		part_ptr = list_find_first(part_list, &list_find_part,
 					   part_name);
-
-		if (part_ptr) {
-			part_cnt++;
-			part_ptr->hidden         = hidden;
-			part_ptr->max_time       = max_time;
-			part_ptr->default_time   = default_time;
-			part_ptr->max_nodes      = max_nodes;
-			part_ptr->max_nodes_orig = max_nodes;
-			part_ptr->min_nodes      = min_nodes;
-			part_ptr->min_nodes_orig = min_nodes;
-			if (def_part_flag) {
-				xfree(default_part_name);
-				default_part_name = xstrdup(part_name);
-				default_part_loc = part_ptr;
-			}
-			part_ptr->root_only      = root_only;
-			part_ptr->max_share      = max_share;
-			part_ptr->priority       = priority;
-
-			if(part_max_priority)
-				part_ptr->norm_priority =
-					(double)part_ptr->priority
-					/ (double)part_max_priority;
-
-			part_ptr->state_up       = state_up;
-			xfree(part_ptr->allow_groups);
-			part_ptr->allow_groups   = allow_groups;
-			xfree(part_ptr->allow_alloc_nodes);
-			part_ptr->allow_alloc_nodes   = allow_alloc_nodes;
-			xfree(part_ptr->nodes);
-			part_ptr->nodes = nodes;
-		} else {
-			info("load_all_part_state: partition %s removed from "
+		part_cnt++;
+		if (part_ptr == NULL) {
+			info("load_all_part_state: partition %s missing from "
 				"configuration file", part_name);
+			part_ptr = create_part_record();
+			xfree(part_ptr->name);
+			part_ptr->name = xstrdup(part_name);
 		}
+
+		part_ptr->hidden         = hidden;
+		part_ptr->max_time       = max_time;
+		part_ptr->default_time   = default_time;
+		part_ptr->max_nodes      = max_nodes;
+		part_ptr->max_nodes_orig = max_nodes;
+		part_ptr->min_nodes      = min_nodes;
+		part_ptr->min_nodes_orig = min_nodes;
+		if (def_part_flag) {
+			xfree(default_part_name);
+			default_part_name = xstrdup(part_name);
+			default_part_loc = part_ptr;
+		}
+		part_ptr->root_only      = root_only;
+		part_ptr->max_share      = max_share;
+		part_ptr->priority       = priority;
+		part_ptr->state_up       = state_up;
+		xfree(part_ptr->allow_groups);
+		part_ptr->allow_groups   = allow_groups;
+		xfree(part_ptr->allow_alloc_nodes);
+		part_ptr->allow_alloc_nodes   = allow_alloc_nodes;
+		xfree(part_ptr->nodes);
+		part_ptr->nodes = nodes;
 
 		xfree(part_name);
 	}
