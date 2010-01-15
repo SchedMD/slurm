@@ -578,6 +578,7 @@ int load_all_part_state(void)
 			info("load_all_part_state: partition %s missing from "
 				"configuration file", part_name);
 			part_ptr = create_part_record();
+			xfree(part_ptr->name);
 			part_ptr->name = xstrdup(part_name);
 		}
 
