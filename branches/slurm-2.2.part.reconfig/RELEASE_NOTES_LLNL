@@ -1,0 +1,17 @@
+LLNL CHAOS-SPECIFIC RELEASE NOTES FOR SLURM VERSION 2.2
+05 January 2010
+
+This lists only the most significant changes from SLURM v2.1 to v2.2
+with respect to Chaos systems. See the file RELEASE_NOTES for other
+changes.
+
+For system administrators:
+
+Mostly for users:
+
+SLURM state files in version 2.2 are different from those of version 2.1.
+After installing SLURM version 2.2, plan to restart without preserving
+jobs or other state information. While SLURM version 2.1 is still running,
+cancel all pending and running jobs (e.g.
+"scancel --state=pending; scancel --state=running"). Then stop and restart
+daemons with the "-c" option or use "/etc/init.d/slurm startclean".

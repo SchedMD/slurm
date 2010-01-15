@@ -1,0 +1,179 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of Blue Gene MPI job execution
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes a file in the working
+#          directory named test8.4.prog
+############################################################################
+# Copyright (C) 2004 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id            "8.4"
+set exit_code          0
+set file_in            "test$test_id.input"
+set file_out           "test$test_id.output"
+set file_err           "test$test_id.error"
+set test_prog          "test$test_id.prog"
+set job_id             0
+
+# Blue Gene cross-compiler info
+set task_cnt           16
+set mpicc              "/usr/local/bin/mpxlc"
+set mpicc_opts         "-qarch=440d"
+set mpirun_opts        "-nodes $task_cnt -exe [$bin_pwd]/$test_prog -cwd [$bin_pwd]"
+
+print_header $test_id
+
+#
+# Test for existence of mpi compiler
+#
+if {[info exists mpicc] == 0} {
+	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
+	exit 0
+}
+if {[file executable $mpicc] == 0} {
+	send_user "\nWARNING: $mpicc does not exists\n"
+	exit 0
+}
+if {[test_front_end] == 0} {
+	send_user "\nWARNING: This test is only compatable with front-end systems\n"
+	 exit $exit_code
+}
+
+#
+# Delete left-over program and rebuild it
+#
+exec $bin_rm -f $test_prog ${test_prog}.o
+exec $mpicc $mpicc_opts -o $test_prog ${test_prog}.c
+
+#
+# Delete left-over input script plus stdout/err files
+# Build input script file
+#
+exec $bin_rm -f $file_in $file_out $file_err
+exec echo "#!$bin_bash"					 >$file_in
+exec echo "$bin_env | $bin_grep MPIRUN_PARTITION"	>>$file_in
+exec echo "$mpirun $mpirun_opts"			>>$file_in
+exec echo "$bin_echo TEST_COMPLETE"			>>$file_in
+exec $bin_chmod 700 $file_in
+
+#
+# Spawn an sbatch job that uses stdout/err and confirm their contents
+#
+set timeout $max_job_delay
+set no_start 0
+set sbatch_pid [spawn $sbatch -N1-1 --output=$file_out --error=$file_err -t4 $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "configuration not available" {
+		set no_start 1
+		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+if {$no_start != 0} {
+	send_user "\nWARNING: partition too small for test\n"
+	cancel_job $job_id
+	exit 0
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+#
+# Check for desired output in stdout
+#
+if {[wait_for_file $file_out] == 0} {
+	set found_env 0
+	set matches  0
+	set complete 0
+	spawn $bin_cat $file_out
+	expect {
+		-re "MPIRUN_PARTITION" {
+			incr found_env
+			exp_continue
+		}
+                -re "I just received msg from Rank" {
+			incr matches
+                        exp_continue
+                }
+		-re "TEST_COMPLETE" {
+			incr complete
+			exp_continue
+		}
+                eof {
+			wait
+                }
+        }
+	if {$matches != $task_cnt} {
+		send_user "\nFAILURE: unexpected output\n"
+		set exit_code 1
+	} elseif {$complete != 1} {
+		send_user "\nFAILURE: test failed to complete\n"
+		set exit_code 1
+	} elseif {$found_env != 1} {
+		send_user "\nFAILURE: failed to set MPIRUN_PARTITION env var\n"
+		set exit_code 1
+	}
+} else {
+	send_user "\nFAILURE: Output file missing\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
