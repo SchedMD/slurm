@@ -58,6 +58,7 @@ extern int set_oom_adj(int adj)
 		return -1;
 	}
 	if (snprintf(oom_adj, 16, "%d", adj) >= 16) {
+		close(fd);
 		return -1;
 	}
 	while ((write(fd, oom_adj, strlen(oom_adj)) < 0) && (errno == EINTR))

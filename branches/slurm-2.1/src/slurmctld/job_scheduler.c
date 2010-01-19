@@ -1098,15 +1098,18 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 	slurm_attr_init(&thread_attr_epilog);
 	pthread_attr_setdetachstate(&thread_attr_epilog,
 				    PTHREAD_CREATE_DETACHED);
-	while(1) {
+	while (1) {
 		rc = pthread_create(&thread_id_epilog,
 				    &thread_attr_epilog,
 				    _run_epilog, (void *) job_ptr);
-		if (rc == 0)
+		if (rc == 0) {
+			slurm_attr_destroy(&thread_attr_epilog);
 			return SLURM_SUCCESS;
+		}
 		if (errno == EAGAIN)
 			continue;
 		error("pthread_create: %m");
+		slurm_attr_destroy(&thread_attr_epilog);
 		return errno;
 	}
 }
@@ -1241,15 +1244,18 @@ extern int prolog_slurmctld(struct job_record *job_ptr)
 	slurm_attr_init(&thread_attr_prolog);
 	pthread_attr_setdetachstate(&thread_attr_prolog,
 				    PTHREAD_CREATE_DETACHED);
-	while(1) {
+	while (1) {
 		rc = pthread_create(&thread_id_prolog,
 				    &thread_attr_prolog,
 				    _run_prolog, (void *) job_ptr);
-		if (rc == 0)
+		if (rc == 0) {
+			slurm_attr_destroy(&thread_attr_prolog);
 			return SLURM_SUCCESS;
+		}
 		if (errno == EAGAIN)
 			continue;
 		error("pthread_create: %m");
+		slurm_attr_destroy(&thread_attr_prolog);
 		return errno;
 	}
 }

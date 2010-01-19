@@ -386,6 +386,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	hl_last = hostlist_create(NULL);
 	if (!hl_last) {
 		error("slurm_sprint_job_info: hostlist_create: NULL");
+		hostlist_destroy(hl);
 		return NULL;
 	}
 
@@ -411,6 +412,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		core_bitmap = bit_alloc(bit_reps);
 		if (core_bitmap == NULL) {
 			error("bit_alloc malloc failure");
+			hostlist_destroy(hl_last);
+			hostlist_destroy(hl);
 			return NULL;
 		}
 

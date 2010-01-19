@@ -163,12 +163,15 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
-	if (slurm_send_node_msg(fd, req) < 0)
+	if (slurm_send_node_msg(fd, req) < 0) {
+		slurm_shutdown_msg_conn(fd);
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
+	}
 	resp_msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(resp_msg);
 
 	if((rc = slurm_receive_msg(fd, resp_msg, 0)) != 0) {
+		slurm_shutdown_msg_conn(fd);
 		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 	}
 
@@ -181,8 +184,8 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 					   resp_msg->data);
 	slurm_free_msg(resp_msg);
 
-	if (rc) slurm_seterrno_ret(rc);
-
+	if (rc)
+		slurm_seterrno_ret(rc);
         return rc;
 }
 
