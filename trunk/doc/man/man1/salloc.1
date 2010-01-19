@@ -698,8 +698,18 @@ Silence salloc's use of the terminal bell. Also see the option \fB\-\-bell\fR.
 
 .TP
 \fB\-\-no\-shell\fR
-immediately exit after allocating resources instead of spawning a
-shell when used with the \fB\-A\fR, \fB\-\-allocate\fR option.
+immediately exit after allocating resources, without running a
+command. However, the SLURM job will still be created and will remain
+active and will own the allocated resources as long as it is active.
+You will have a SLURM job id with no associated processes or
+tasks. You can submit \fBsrun\fR commands against this resource allocation,
+if you specify the \fB\-\-jobid=\fR option with the job id of this SLURM job.
+Or, this can be used to temporarily reserve a set of resources so that
+other jobs cannot use them for some period of time.  (Note that the
+SLURM job is subject to the normal constraints on jobs, including time
+limits, so that eventually the job will terminate and the resources
+will be freed, or you can terminate the job manually using the
+\fBscancel\fR command.) 
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR

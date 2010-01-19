@@ -174,7 +174,6 @@ static int select_node_cnt = 0;
 static bool job_preemption_enabled = false;
 static bool job_preemption_killing = false;
 static bool job_preemption_tested  = false;
-static List preempt_job_list = NULL;
 
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
@@ -185,7 +184,6 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(uint32_t size);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Procedure Declarations */
-static void _preempt_list_del(void *x);
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t job_node_req,
@@ -1201,8 +1199,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* Build list of preemptee jobs whose resources are
 			 * actually used */
 			if (*preemptee_job_list == NULL) {
-				*preemptee_job_list = list_create(
-							_preempt_list_del);
+				*preemptee_job_list = list_create(NULL);
 				if (*preemptee_job_list == NULL)
 					fatal("list_create malloc failure");
 			}
@@ -1343,7 +1340,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * actually used. List returned even if not killed
 		 * in selected plugin, but by Moab or something else. */
 		if (*preemptee_job_list == NULL) {
-			*preemptee_job_list = list_create(_preempt_list_del);
+			*preemptee_job_list = list_create(NULL);
 			if (*preemptee_job_list == NULL)
 				fatal("list_create malloc failure");
 		}
@@ -1454,11 +1451,6 @@ static int _synchronize_bitmaps(struct job_record *job_ptr,
 	return SLURM_SUCCESS;
 }
 
-static void _preempt_list_del(void *x)
-{
-	xfree(x);
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -1474,8 +1466,6 @@ extern int init(void)
 	fatal("Use SelectType=select/bluegene");
 #endif
 	cr_type = (select_type_plugin_info_t)slurmctld_conf.select_type_param;
-	if (!preempt_job_list)
-		preempt_job_list = list_create(_preempt_list_del);
 	verbose("%s loaded with argument %d ", plugin_name, cr_type);
 
 	return SLURM_SUCCESS;
@@ -1492,9 +1482,6 @@ extern int fini(void)
 	xfree(cr_num_core_count);
 	cr_node_num_cores = NULL;
 	cr_num_core_count = NULL;
-	if (preempt_job_list)
-		list_destroy(preempt_job_list);
-	preempt_job_list = NULL;
 
 	verbose("%s shutting down ...", plugin_name);
 

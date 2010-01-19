@@ -238,7 +238,7 @@ a ranged string.
 
 .TP
 \f3\-o \fP\f3,\fP \f3\-\-format\fP
-Comma seperated list of fields. (use "\-\-helpformat" for a list of
+Comma separated list of fields. (use "\-\-helpformat" for a list of
 available fields).
 
 NOTE: When using the format option for listing various fields you can put a
@@ -265,7 +265,7 @@ output will be '|' delimited without a '|' at the end
 .TP
 \f3\-r \fP\f3,\fP \f3\-\-partition\fP
 
-Comma seperated list of partitions to select jobs and job steps
+Comma separated list of partitions to select jobs and job steps
 from. The default is all partitions.
 
 .TP
@@ -329,7 +329,7 @@ would be truncated to \-\-starttime.  The same for end time and \-\-endtime.
 
 .TP
 \f3\-u \fP\f2uid_list\fP\f3,\fP  \f3\-\-uid\fP\f3=\fP\f2uid_list\fP \f3\-\-user\fP\f3=\fP\f2user_list\fP
-Use this comma seperated list of uids or user names to select jobs to display.  By default, the running
+Use this comma separated list of uids or user names to select jobs to display.  By default, the running
 user's uid is used.
 
 .TP
@@ -486,7 +486,12 @@ It is in the form:
 
 .TP
 \f3jobname\fP
-The name of the job or job step.
+The name of the job or job step. The \f3slurm_accounting.log\fP file
+is a space delimited file. Because of this if a space is used in the 
+jobname an underscore is substituted for the space before the record 
+is written to the accounting file. So when the jobname is displayed 
+by sacct the jobname that had a space in it will now have an underscore 
+in place of the space.
 
 .TP
 \f3layout\fP

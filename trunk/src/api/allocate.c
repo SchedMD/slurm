@@ -271,7 +271,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		break;
 	default:
 		errnum = SLURM_UNEXPECTED_MSG_ERROR;
-		return NULL;
+		resp = NULL;
 	}
 
 	destroy_forward(&req_msg.forward);
@@ -294,16 +294,25 @@ int slurm_job_will_run (job_desc_msg_t *req)
 	slurm_msg_t req_msg, resp_msg;
 	will_run_response_msg_t *will_run_resp;
 	char buf[64];
+	bool host_set = false;
+	int rc;
 
 	/* req.immediate = true;    implicit */
 	if ((req->alloc_node == NULL) &&
-	    (gethostname_short(buf, sizeof(buf)) == 0))
+	    (gethostname_short(buf, sizeof(buf)) == 0)) {
 		req->alloc_node = buf;
+		host_set = true;
+	}
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req;
 
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+
+	if (host_set)
+		req->alloc_node = NULL;
+
+	if (rc < 0)
 		return SLURM_SOCKET_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -557,15 +566,17 @@ char *slurm_read_hostfile(char *filename, int n)
 	if (filename == NULL || strlen(filename) == 0)
 		return NULL;
 
-	if((fp = fopen(filename, "r")) == NULL) {
+	if ((fp = fopen(filename, "r")) == NULL) {
 		error("slurm_allocate_resources error opening file %s, %m",
 		      filename);
 		return NULL;
 	}
 
 	hostlist = hostlist_create(NULL);
-	if (hostlist == NULL)
+	if (hostlist == NULL) {
+		fclose(fp);
 		return NULL;
+	}
 
 	while (fgets(in_line, BUFFER_SIZE, fp) != NULL) {
 		line_num++;
@@ -574,6 +585,7 @@ char *slurm_read_hostfile(char *filename, int n)
 			error ("Line %d, of hostfile %s too long",
 			       line_num, filename);
 			fclose (fp);
+			hostlist_destroy(hostlist);
 			return NULL;
 		}
 
@@ -598,7 +610,7 @@ char *slurm_read_hostfile(char *filename, int n)
 		}
 
 		hostlist_push(hostlist, in_line);
-		if(n != (int)NO_VAL && hostlist_count(hostlist) == n)
+		if (n != (int)NO_VAL && hostlist_count(hostlist) == n)
 			break;
 	}
 	fclose(fp);
@@ -743,6 +755,7 @@ _accept_msg_connection(int listen_fd,
 		}
 
 		error("_accept_msg_connection[%s]: %m", host);
+		slurm_close_accepted_conn(conn_fd);
 		return SLURM_ERROR;
 	}
 

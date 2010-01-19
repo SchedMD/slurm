@@ -130,6 +130,11 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	obj = eio_obj_create(sock, &message_socket_ops, (void *)msg_thr);
 
 	msg_thr->handle = eio_handle_create();
+	if (!msg_thr->handle) {
+		error("failed to create eio handle");
+		xfree(msg_thr);
+		return NULL;
+	}
 	eio_new_initial_obj(msg_thr->handle, obj);
 	pthread_mutex_lock(&msg_thr_start_lock);
 	slurm_attr_init(&attr);
