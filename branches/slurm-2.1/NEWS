@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     information when registering for the first time with the slurmdbd.
  -- Add slurm_*_trigger.3 man pages for event trigger APIs.
  -- Fix bug in job preemption logic that would free allocated memory twice.
+ -- Fix spelling issues (from Gennaro Oliva)
 
 * Changes in SLURM 2.1.0
 =============================
