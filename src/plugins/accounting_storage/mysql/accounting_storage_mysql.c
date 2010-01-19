@@ -1783,7 +1783,7 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 /* This should take care of all the lft and rgts when you move an
  * account.  This handles deleted associations also.
  */
-static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
+static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 			 char *cluster,
 			 char *id, char *parent, time_t now)
 {
@@ -1813,7 +1813,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	par_left = atoi(row[0]);
 	mysql_free_result(result);
 
-	diff = ((par_left + 1) - lft);
+	diff = ((par_left + 1) - *lft);
 
 	if(diff == 0) {
 		debug3("Trying to move association to the same position?  "
@@ -1821,7 +1821,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 		return ESLURM_SAME_PARENT_ACCOUNT;
 	}
 
-	width = (rgt - lft + 1);
+	width = (*rgt - *lft + 1);
 
 	/* every thing below needs to be a %d not a %u because we are
 	   looking for -1 */
@@ -1829,7 +1829,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 		   "update %s set mod_time=%d, deleted = deleted + 2, "
 		   "lft = lft + %d, rgt = rgt + %d "
 		   "WHERE lft BETWEEN %d AND %d;",
-		   assoc_table, now, diff, diff, lft, rgt);
+		   assoc_table, now, diff, diff, *lft, *rgt);
 
 	xstrfmtcat(query,
 		   "UPDATE %s SET mod_time=%d, rgt = rgt + %d WHERE "
@@ -1849,11 +1849,11 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 		   "(%d < 0 && lft > %d && deleted < 2) "
 		   "|| (%d > 0 && lft > %d);",
 		   assoc_table, now, width,
-		   diff, rgt,
-		   diff, lft,
+		   diff, *rgt,
+		   diff, *lft,
 		   assoc_table, now, width,
-		   diff, rgt,
-		   diff, lft);
+		   diff, *rgt,
+		   diff, *lft);
 
 	xstrfmtcat(query,
 		   "update %s set mod_time=%d, "
@@ -1863,9 +1863,23 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 		   "update %s set mod_time=%d, "
 		   "parent_acct=\"%s\" where id = %s;",
 		   assoc_table, now, parent, id);
+	/* get the new lft and rgt if changed */
+	xstrfmtcat(query,
+		   "select lft, rgt from %s where id = %s",
+		   assoc_table, id);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
 	xfree(query);
+	if((row = mysql_fetch_row(result))) {
+		debug4("lft and rgt were %u %u and now is %s %s",
+		       *lft, *rgt, row[0], row[1]);
+		*lft = atoi(row[0]);
+		*rgt = atoi(row[1]);
+	}
+	mysql_free_result(result);
 
 	return rc;
 }
@@ -1876,7 +1890,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
  * of current parent, and parent to be child of child.)
  */
 static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
-			uint32_t lft, uint32_t rgt,
+			uint32_t *lft, uint32_t *rgt,
 			char *cluster,
 			char *id, char *old_parent, char *new_parent,
 			time_t now)
@@ -1893,7 +1907,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	query = xstrdup_printf(
 		"select id, lft, rgt from %s where lft between %d and %d "
 		"&& acct=\"%s\" && user='' order by lft;",
-		assoc_table, lft, rgt,
+		assoc_table, *lft, *rgt,
 		new_parent);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result =
@@ -1904,9 +1918,11 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	xfree(query);
 
 	if((row = mysql_fetch_row(result))) {
+		uint32_t child_lft = atoi(row[1]), child_rgt = atoi(row[2]);
+
 		debug4("%s(%s) %s,%s is a child of %s",
 		       new_parent, row[0], row[1], row[2], id);
-		rc = _move_account(mysql_conn, atoi(row[1]), atoi(row[2]),
+		rc = _move_account(mysql_conn, &child_lft, &child_rgt,
 				   cluster, row[0], old_parent, now);
 	}
 
@@ -1931,7 +1947,9 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	xfree(query);
 
 	if((row = mysql_fetch_row(result))) {
-		rc = _move_account(mysql_conn, atoi(row[0]), atoi(row[1]),
+		*lft = atoi(row[0]);
+		*rgt = atoi(row[1]);
+		rc = _move_account(mysql_conn, lft, rgt,
 				   cluster, id, new_parent, now);
 	} else {
 		error("can't find parent? we were able to a second ago.");
@@ -2097,7 +2115,6 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 
 		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
 		init_acct_association_rec(mod_assoc);
-
 		mod_assoc->id = atoi(row[ASSOC_ID]);
 
 		if(!row[ASSOC_MJ] && assoc->max_jobs != NO_VAL) {
@@ -4567,6 +4584,9 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xfree(extra);
 			continue;
 		} else {
+			uint32_t lft = atoi(row[MASSOC_LFT]);
+			uint32_t rgt = atoi(row[MASSOC_RGT]);
+
 			/* If it was once deleted we have kept the lft
 			 * and rgt's consant while it was deleted and
 			 * so we can just unset the deleted flag,
@@ -4579,8 +4599,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 
 				/* We need to move the parent! */
 				if(_move_parent(mysql_conn, uid,
-						atoi(row[MASSOC_LFT]),
-						atoi(row[MASSOC_RGT]),
+						&lft, &rgt,
 						object->cluster,
 						row[MASSOC_ID],
 						row[MASSOC_PACCT],
@@ -4589,8 +4608,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 					continue;
 				moved_parent = 1;
 			} else {
-				object->lft = atoi(row[MASSOC_LFT]);
-				object->rgt = atoi(row[MASSOC_RGT]);
+				object->lft = lft;
+				object->rgt = rgt;
 			}
 
 			affect_rows = 2;
@@ -5602,7 +5621,13 @@ extern List acct_storage_p_modify_associations(
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *mod_assoc = NULL;
 		int account_type=0;
-
+		/* If parent changes these also could change
+		   so we need to keep track of the latest
+		   ones.
+		*/
+		uint32_t lft = atoi(row[MASSOC_LFT]);
+		uint32_t rgt = atoi(row[MASSOC_RGT]);
+		
 		if(!is_admin) {
 			acct_coord_rec_t *coord = NULL;
 			char *account = row[MASSOC_ACCT];
@@ -5690,8 +5715,7 @@ extern List acct_storage_p_modify_associations(
 					continue;
 				}
 				rc = _move_parent(mysql_conn, uid,
-						  atoi(row[MASSOC_LFT]),
-						  atoi(row[MASSOC_RGT]),
+						  &lft, &rgt,
 						  row[MASSOC_CLUSTER],
 						  row[MASSOC_ID],
 						  row[MASSOC_PACCT],
@@ -5822,8 +5846,7 @@ extern List acct_storage_p_modify_associations(
 			_modify_unset_users(mysql_conn,
 					    mod_assoc,
 					    row[MASSOC_ACCT],
-					    atoi(row[MASSOC_LFT]),
-					    atoi(row[MASSOC_RGT]),
+					    lft, rgt,
 					    ret_list,
 					    moved_parent);
 		}
