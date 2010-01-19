@@ -232,8 +232,10 @@ extern void jobacct_common_aggregate(struct jobacctinfo *dest,
 			     struct jobacctinfo *from);
 extern void jobacct_common_2_sacct(sacct_t *sacct,
 				   struct jobacctinfo *jobacct);
-extern void jobacct_common_pack(struct jobacctinfo *jobacct, Buf buffer);
-extern int jobacct_common_unpack(struct jobacctinfo **jobacct, Buf buffer);
+extern void jobacct_common_pack(struct jobacctinfo *jobacct,
+				uint16_t rpc_version, Buf buffer);
+extern int jobacct_common_unpack(struct jobacctinfo **jobacct,
+				 uint16_t rpc_version, Buf buffer);
 
 extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit);
 extern int jobacct_common_add_task(pid_t pid, jobacct_id_t *jobacct_id,
