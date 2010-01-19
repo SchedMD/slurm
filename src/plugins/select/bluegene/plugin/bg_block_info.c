@@ -268,7 +268,7 @@ extern int update_block_list()
 				switch(rc) {
 				case INCONSISTENT_DATA:
 					debug2("got inconsistent data when "
-					       "quering block %s", name);
+					       "querying block %s", name);
 					continue;
 					break;
 				case PARTITION_NOT_FOUND:
@@ -621,7 +621,7 @@ extern int update_freeing_block_list()
 				switch(rc) {
 				case INCONSISTENT_DATA:
 					debug2("got inconsistent data when "
-					       "quering block %s", name);
+					       "querying block %s", name);
 					continue;
 					break;
 				case PARTITION_NOT_FOUND:

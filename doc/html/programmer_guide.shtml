@@ -99,7 +99,7 @@ SLURM.<br>
 <b>plugins</b>&#151;Plugin functions for various infrastructures or optional
 behavior. A separate subdirectory is used for each plugin class:<br>
 <ul>
-<li><b>accounting_storage</b> for specifing the type of storage for accounting,<br>
+<li><b>accounting_storage</b> for specifying the type of storage for accounting,<br>
 <li><b>auth</b> for user authentication,<br>
 <li><b>checkpoint</b> for system-initiated checkpoint and restart of user jobs,<br>
 <li><b>crypto</b> for cryptographic functions,<br>

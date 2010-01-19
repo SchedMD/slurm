@@ -2778,7 +2778,7 @@ extern int load_qos_usage(char *state_save_location)
 	debug3("Version in assoc_mgr_state header is %u", ver);
 	if (ver != ASSOC_USAGE_VERSION) {
 		error("***********************************************");
-		error("Can not recover usage_mgr state, incompatable version, "
+		error("Can not recover usage_mgr state, incompatible version, "
 		      "got %u need %u", ver, ASSOC_USAGE_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
