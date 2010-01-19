@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
  -- Fix spelling issues (from Gennaro Oliva)
  -- Fix issue when changing parents of an account in accounting all childern
     weren't always sent to their respected slurmctlds until a restart.
+ -- Restore support for srun/salloc/sbatch option --hint=nomultithread to 
+    bind tasks to cores rather than threads (broken in slurm v2.1.0-pre5).
 
 * Changes in SLURM 2.1.0
 =============================
