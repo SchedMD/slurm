@@ -1308,15 +1308,6 @@ static void set_options(const int argc, char **argv)
 						&opt.min_threads_per_core,
 						NULL, true );
 			break;
-		case LONG_OPT_HINT:
-			if (verify_hint(optarg,
-				&opt.min_sockets_per_node,
-				&opt.min_cores_per_socket,
-				&opt.min_threads_per_core,
-				&opt.cpu_bind_type)) {
-				exit(error_exit);
-			}
-			break;
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node",
 				true);
@@ -1328,6 +1319,17 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_NTASKSPERCORE:
 			opt.ntasks_per_core = _get_int(optarg, "ntasks-per-core",
 				true);
+			break;
+		case LONG_OPT_HINT:
+			/* Keep after other options filled in */
+			if (verify_hint(optarg,
+					&opt.min_sockets_per_node,
+					&opt.min_cores_per_socket,
+					&opt.min_threads_per_core,
+					&opt.ntasks_per_core,
+					&opt.cpu_bind_type)) {
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
 			xfree(opt.blrtsimage);

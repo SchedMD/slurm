@@ -108,7 +108,8 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
 
 /* verify a hint and convert it into the implied settings */
 bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
-		 int *min_threads, cpu_bind_type_t *cpu_bind_type);
+		 int *min_threads, int *ntasks_per_core,
+		 cpu_bind_type_t *cpu_bind_type);
 
 /* parse the mail type */
 uint16_t parse_mail_type(const char *arg);
