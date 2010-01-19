@@ -4237,7 +4237,8 @@ _pack_stat_jobacct_msg(stat_jobacct_msg_t * msg, Buf buffer)
 	pack32((uint32_t)msg->return_code, buffer);
 	pack32((uint32_t)msg->step_id, buffer);
 	pack32((uint32_t)msg->num_tasks, buffer);
-	jobacct_gather_g_pack(msg->jobacct, buffer);
+	jobacct_gather_g_pack(msg->jobacct,
+			      SLURMDBD_VERSION, buffer);
 }
 
 
@@ -4253,7 +4254,9 @@ _unpack_stat_jobacct_msg(stat_jobacct_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->return_code, buffer);
 	safe_unpack32(&msg->step_id, buffer);
 	safe_unpack32(&msg->num_tasks, buffer);
-	if (jobacct_gather_g_unpack(&msg->jobacct, buffer) != SLURM_SUCCESS)
+	if (jobacct_gather_g_unpack(&msg->jobacct,
+				    SLURMDBD_VERSION, buffer)
+	    != SLURM_SUCCESS)
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -4302,7 +4305,8 @@ _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer)
 	pack32((uint32_t)msg->range_first, buffer);
 	pack32((uint32_t)msg->range_last, buffer);
 	pack32((uint32_t)msg->step_rc, buffer);
-	jobacct_gather_g_pack(msg->jobacct, buffer);
+	jobacct_gather_g_pack(
+		msg->jobacct, SLURMDBD_VERSION, buffer);
 }
 
 static int
@@ -4318,7 +4322,9 @@ _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->range_first, buffer);
 	safe_unpack32(&msg->range_last, buffer);
 	safe_unpack32(&msg->step_rc, buffer);
-	if (jobacct_gather_g_unpack(&msg->jobacct, buffer) != SLURM_SUCCESS)
+	if (jobacct_gather_g_unpack(&msg->jobacct,
+				    SLURMDBD_VERSION, buffer)
+	    != SLURM_SUCCESS)
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
