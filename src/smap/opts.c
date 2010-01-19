@@ -211,7 +211,7 @@ Usage: smap [OPTIONS]\n\
                              option.  Only specify the ionode number range \n\
                              here.  Specify the node name with the -n option.\n\
                              This option is only valid on Bluegene systems,\n\
-                             and only valid when quering blocks.\n\
+                             and only valid when querying blocks.\n\
   -n, --nodes=[nodes]        only show objects with these nodes.\n\
                              If querying to the ionode level use the -I\n\
                              option in conjunction with this option.\n\

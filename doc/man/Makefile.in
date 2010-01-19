@@ -325,6 +325,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_allocation_msg_thr_create.3 \
 	man3/slurm_allocation_msg_thr_destroy.3 \
 	man3/slurm_api_version.3 \
+	man3/slurm_checkpoint.3 \
 	man3/slurm_checkpoint_able.3 \
 	man3/slurm_checkpoint_complete.3 \
 	man3/slurm_checkpoint_create.3 \

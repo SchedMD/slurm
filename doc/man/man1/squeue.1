@@ -88,8 +88,8 @@ is the minimum field size.
 If no size is specified, whatever is needed to print the information will be used.
 .TP
 \fI .\fR
-indicates the output should be left justified.
-By default, output is right justified.
+indicates the output should be right justified and size must be specified.
+By default, output is left justified.
 .RE
 
 .IP
@@ -483,7 +483,7 @@ Print the job steps in the debug partition sorted by user:
 .br
 # squeue -s -p debug -S u
 .br
-  STEPID        NAME PARTITION     USER TIME_USED NODELIST(REASON)
+  STEPID        NAME PARTITION     USER      TIME NODELIST
 .br
  65552.1       test1     debug    alice      0:23 dev[1-4]
 .br
@@ -497,13 +497,13 @@ Print information only about jobs 12345,12345, and 12348:
 .br
 # squeue --jobs 12345,12346,12348
 .br
- JOBID PARTITION NAME USER ST TIME_USED NODES NODELIST(REASON)
+ JOBID PARTITION NAME USER ST  TIME  NODES NODELIST(REASON)
 .br
- 12345     debug job1 dave  R      0:21     4 dev[9-12]
+ 12345     debug job1 dave  R   0:21     4 dev[9-12]
 .br
- 12346     debug job2 dave PD      0:00     8 (Resources)
+ 12346     debug job2 dave PD   0:00     8 (Resources)
 .br
- 12348     debug job3 ed   PD      0:00     4 (Priority)
+ 12348     debug job3 ed   PD   0:00     4 (Priority)
 .ec
 
 .eo
@@ -511,9 +511,9 @@ Print information only about job step 65552.1:
 .br
 # squeue --steps 65552.1
 .br
-  STEPID     NAME PARTITION    USER    TIME_USED NODELIST(REASON)
+  STEPID     NAME PARTITION    USER    TIME  NODELIST
 .br
- 65552.1    test2     debug   alice        12:49 dev[1-4]
+ 65552.1    test2     debug   alice   12:49  dev[1-4]
 .ec
 
 .SH "COPYING"

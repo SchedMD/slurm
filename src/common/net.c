@@ -104,7 +104,7 @@ int net_stream_listen(int *fd, short *port)
 
 	val = 1;
 	rc = setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
-	if (rc > 0)
+	if (rc < 0)
 		goto cleanup;
 
 	*port = _sock_bind_wild(*fd);

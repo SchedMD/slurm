@@ -129,7 +129,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes);
-static void _preempt_list_del(void *x);
 static bool _rem_run_job(struct part_cr_record *part_cr_ptr, uint32_t job_id);
 static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err,
@@ -1750,8 +1749,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 			/* Build list of preemptee jobs whose resources are
 			 * actually used */
 			if (*preemptee_job_list == NULL) {
-				*preemptee_job_list = list_create(
-							_preempt_list_del);
+				*preemptee_job_list = list_create(NULL);
 				if (*preemptee_job_list == NULL)
 					fatal("list_create malloc failure");
 			}
@@ -1890,7 +1888,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * actually used. List returned even if not killed
 		 * in selected plugin, but by Moab or something else. */
 		if (*preemptee_job_list == NULL) {
-			*preemptee_job_list = list_create(_preempt_list_del);
+			*preemptee_job_list = list_create(NULL);
 			if (*preemptee_job_list == NULL)
 				fatal("list_create malloc failure");
 		}
@@ -1919,11 +1917,6 @@ static int  _cr_job_list_sort(void *x, void *y)
 	return (int) difftime(job1_ptr->end_time, job2_ptr->end_time);
 }
 
-static void _preempt_list_del(void *x)
-{
-	xfree(x);
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -1935,7 +1928,7 @@ extern int init ( void )
 	rc = _init_status_pthread();
 #endif
 #ifdef HAVE_BG
-	error("%s is incompatable with BlueGene", plugin_name);
+	error("%s is incompatible with BlueGene", plugin_name);
 	fatal("Use SelectType=select/bluegene");
 #endif
 	cr_type = (select_type_plugin_info_t)

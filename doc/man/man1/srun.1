@@ -440,7 +440,11 @@ a terminal is not possible.
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
 Specify a name for the job. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
-is the supplied \fBexecutable\fR program's name.
+is the supplied \fBexecutable\fR program's name. NOTE: This information 
+may be written to the slurm_jobacct.log file. This file is space delimited
+so if a space is used in the \fIjobname\fR name it will cause problems in 
+properly displaying the contents of the slurm_jobacct.log file when the 
+\fBsacct\fR command is used.
 
 .TP
 \fB\-\-jobid\fR=<\fIjobid\fR>
@@ -518,12 +522,14 @@ and
 https://computing.llnl.gov/linux/slurm/dist_plane.html.
 .TP
 .B arbitrary
-The arbitrary method of distribution will allocate tasks in\-order as
-listed in file designated by the environment variable SLURM_HOSTFILE.  If
-this variable is listed it will over ride any other method specified.
-If not set the method will default to block.  Inside the hostfile must
-contain at minimum the number of hosts requested.  If requesting tasks
-(\-n) your tasks will be laid out on the nodes in the order of the file.
+The arbitrary method of distribution will allocate processes in\-order
+as listed in file designated by the environment variable
+SLURM_HOSTFILE.  If this variable is listed it will over ride any
+other method specified.  If not set the method will default to block.
+Inside the hostfile must contain at minimum the number of hosts
+requested and be one per line or comma separated.  If specifying a
+task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks 
+will be laid out on the nodes in the order of the file.
 .RE
 
 .TP
@@ -784,10 +790,13 @@ allocation as one step in a larger job script.
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
-Overcommit resources.  Normally, \fBsrun\fR will allocate one task
-per processor.  By specifying \fB\-\-overcommit\fR you are explicitly
-allowing more than one task per processor.  However no more than
-\fBMAX_TASKS_PER_NODE\fR tasks are permitted to execute per node.
+Overcommit resources. Normally, \fBsrun\fR
+will not allocate more than one process per CPU. By specifying
+\fB\-\-overcommit\fR you are explicitly allowing more than one process
+per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are 
+permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is 
+defined in the file \fIslurm.h\fR and is not a variable, it is set at 
+SLURM build time.
 
 .TP
 \fB\-o\fR, \fB\-\-output\fR=<\fImode\fR>
@@ -948,9 +957,12 @@ the job. By default only errors are displayed.
 
 .TP
 \fB\-T\fR, \fB\-\-threads\fR=<\fInthreads\fR>
-Request that \fBsrun\fR
-use \fInthreads\fR to initiate and control the parallel job. The
-default value is the smaller of 60 or the number of nodes allocated.
+Allows limiting the number of concurrent threads used to
+send the job request from the srun process to the slurmd
+processes on the allocated nodes. Default is to use one
+thread per allocated node up to a maximum of 60 concurrent
+threads. Specifying this option limits the number of
+concurrent threads to \fInthreads\fR (less than or equal to 60).
 This should only be used to set a low thread count for testing on
 very small memory computers.
 
@@ -1061,6 +1073,14 @@ set via the environment variable SLURM_DISABLE_STATUS.
 Request that a specific list of hosts not be included in the resources
 allocated to this job. The host list will be assumed to be a filename
 if it contains a "/"character.
+
+.TP
+\fB\-Z\fR, \fB\-\-no\-allocate\fR
+Run the specified tasks on a set of nodes without creating a SLURM
+"job" in the SLURM queue structure, bypassing the normal resource
+allocation step.  The list of nodes must be specified with the 
+\fB\-w\fR, \fB\-\-nodelist\fR option.  This is a privileged option 
+only available for the users "SlurmUser" and "root".
 
 .PP
 The following options support Blue Gene systems, but may be
@@ -1826,7 +1846,7 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-\fBsalloc\fR(1), \fBsttach\fR(1), \fBsbatch\fR(1), \fBsbcast\fR(1),
+\fBsalloc\fR(1), \fBsattach\fR(1), \fBsbatch\fR(1), \fBsbcast\fR(1),
 \fBscancel\fR(1), \fBscontrol\fR(1), \fBsqueue\fR(1), \fBslurm.conf\fR(5),
 \fBsched_setaffinity\fR(2), \fBnuma\fR(3)
 \fBgetrlimit\fR(2),

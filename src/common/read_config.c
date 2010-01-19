@@ -2266,7 +2266,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 #ifdef HAVE_BG
 	if ((conf->preempt_mode & PREEMPT_MODE_GANG) ||
 	    (conf->preempt_mode & PREEMPT_MODE_SUSPEND))
-		fatal("PreemptMode incompatable with BlueGene systems");
+		fatal("PreemptMode incompatible with BlueGene systems");
 #endif
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
