@@ -156,6 +156,7 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	    (step_resp == NULL)) {
 		errnum = errno;
 		slurm_free_job_step_create_request_msg(step_req);
+		close(sock);
 		goto fail;
 	}
 
@@ -295,8 +296,7 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 
 	case SLURM_STEP_CTX_TID:
 		node_inx = va_arg(ap, uint32_t);
-		if ((node_inx < 0)
-		    || (node_inx > ctx->step_resp->step_layout->node_cnt)) {
+		if (node_inx > ctx->step_resp->step_layout->node_cnt) {
 			slurm_seterrno(EINVAL);
 			rc = SLURM_ERROR;
 			break;
@@ -325,8 +325,7 @@ slurm_step_ctx_get (slurm_step_ctx_t *ctx, int ctx_key, ...)
 		break;
 	case SLURM_STEP_CTX_HOST:
 		node_inx = va_arg(ap, uint32_t);
-		if ((node_inx < 0)
-		    || (node_inx > ctx->step_resp->step_layout->node_cnt)) {
+		if (node_inx > ctx->step_resp->step_layout->node_cnt) {
 			slurm_seterrno(EINVAL);
 			rc = SLURM_ERROR;
 			break;

@@ -1614,13 +1614,16 @@ int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
 		}
 		len = cp - kp;
 		temp[s].key = (char *) malloc((len+1) * sizeof (char));
-		if (temp[s].key == NULL)
+		if (temp[s].key == NULL) {
+			temp[s].val = NULL;
+			PMI_Free_keyvals(temp, s);
 			return PMI_FAIL;
+		}
 		strncpy(temp[s].key, kp, len);
 		temp[s].key[len] = '\0';
 		if (!IsPmiKey(temp[s].key)) {
 			free(temp[s].key);
-			temp[s].key=NULL;
+			temp[s].key = NULL;
 			break;
 		}
 		vp = ++cp;
@@ -1628,8 +1631,10 @@ int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
 			cp++;
 		len = cp - vp + 1;
 		temp[s].val = (char *) malloc((len+1) * sizeof (char));
-		if (temp[s].val == NULL)
+		if (temp[s].val == NULL) {
+			PMI_Free_keyvals(temp, s+1);
 			return PMI_FAIL;
+		}
 		strncpy(temp[s].val, vp, len);
 		temp[s].val[len] = '\0';
 		s++;
@@ -1692,25 +1697,30 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 	if  (pmi_debug)
 		fprintf(stderr, "In: PMI_Args_to_keyval \n");
 
-	if ((keyvalp == NULL) || (size == NULL) || (argcp == NULL) || (argvp == NULL))
+	if ((keyvalp == NULL) || (size == NULL) || 
+	    (argcp == NULL) || (argvp == NULL))
 		return PMI_ERR_INVALID_ARG;
 
-	cnt=*argcp;
+	cnt  = *argcp;
 	argv = *argvp;
+
+	if (cnt == 0)
+		return PMI_ERR_INVALID_ARG;
 
 	temp = (PMI_keyval_t *) malloc(cnt * (sizeof (PMI_keyval_t)));
 	if (temp == NULL)
 		return PMI_FAIL;
 
-	if (cnt == 0)
-		return PMI_ERR_INVALID_ARG;
 	j = 0;
 	i = 0;
 
 	if (argv[i][0] != '-') {
 		temp[j].val = (char *) malloc((strlen(argv[i])+1) * sizeof (char));
-		if (temp[j].val == NULL)
+		if (temp[j].val == NULL) {
+			temp[j].key = NULL;
+			PMI_Free_keyvals(temp, j);
 			return PMI_FAIL;
+		}
 		strcpy(temp[j].val, argv[i]);
 		temp[i].key=NULL;
 		--cnt;
@@ -1722,8 +1732,11 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 		if (argv[i][0] == '-') {
 			temp[j].key = (char *) malloc((strlen(argv[i])+1) *
 					sizeof (char));
-			if (temp[j].key == NULL)
+			if (temp[j].key == NULL) {
+				temp[j].val = NULL;
+				PMI_Free_keyvals(temp, j);
 				return PMI_FAIL;
+			}
 			strcpy(temp[j].key, argv[i]);
 			++i;
 			--cnt;
@@ -1731,8 +1744,10 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 				temp[j].val = (char *) malloc(
 						(strlen(argv[i])+1) *
 						sizeof (char));
-				if (temp[j].val == NULL)
+				if (temp[j].val == NULL) {
+					PMI_Free_keyvals(temp, j+1);
 					return PMI_FAIL;
+				}
 				strcpy(temp[j].val, argv[i]);
 				i++;
 				--cnt;
@@ -1741,6 +1756,7 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 			}
 			j++;
 		} else {
+			PMI_Free_keyvals(temp, j);
 			return PMI_ERR_INVALID_ARG;
 		}
 	}
