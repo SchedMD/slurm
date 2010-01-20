@@ -321,9 +321,9 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			wckey_ptr->user = xstrdup(user);
 			wckey_ptr->cluster = xstrdup(cluster);
 			list_append(wckey_list, wckey_ptr);
-/* 			info("adding wckey '%s' '%s' '%s'", */
-/* 				     wckey_ptr->name, wckey_ptr->user, */
-/* 				     wckey_ptr->cluster); */
+			/* info("adding wckey '%s' '%s' '%s'", */
+			/* 	     wckey_ptr->name, wckey_ptr->user, */
+			/* 	     wckey_ptr->cluster); */
 			/* we have already checked to make
 			   sure this was the slurm user before
 			   calling this */
@@ -341,7 +341,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			list_destroy(wckey_list);
 		}
 		xfree(user);
-		//info("got wckeyid of %d", wckey_rec.id);
+		/* info("got wckeyid of %d", wckey_rec.id); */
 		wckeyid = wckey_rec.id;
 	}
 no_wckeyid:
@@ -10607,8 +10607,10 @@ no_rollup_change:
 #endif
 	}
 
-	/* if there is a start_time get the wckeyid */
-	if(job_ptr->start_time && job_ptr->assoc_id)
+	/* If there is a start_time get the wckeyid.  If the job is
+	 * cancelled before the job starts we also want to grab it. */
+	if(job_ptr->assoc_id
+	   && (job_ptr->start_time || IS_JOB_CANCELLED(job_ptr)))
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
 				       job_ptr->user_id, cluster_name,
 				       job_ptr->assoc_id);
