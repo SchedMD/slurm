@@ -54,6 +54,7 @@
 #  include "src/common/unsetenv.h"
 #endif
 
+#include <sys/param.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -147,6 +148,7 @@ static void  _set_exit_code(void);
 static int   _setup_signals();
 static void  _step_opt_exclusive(void);
 static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
+static void  _set_submit_dir_env(void);
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
@@ -248,6 +250,7 @@ int srun(int ac, char **av)
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
 	(void) _set_umask_env();
+	_set_submit_dir_env();
 
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
@@ -631,6 +634,22 @@ static int _set_umask_env(void)
 	}
 	debug ("propagating UMASK=%s", mask_char);
 	return SLURM_SUCCESS;
+}
+
+/* Set SLURM_SUBMIT_DIR environment variable with current state */
+static void _set_submit_dir_env(void)
+{
+	char buf[MAXPATHLEN + 1];
+
+	if ((getcwd(buf, MAXPATHLEN)) == NULL) {
+		error("getcwd failed: %m");
+		exit(error_exit);
+	}
+
+	if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0) {
+		error("unable to set SLURM_SUBMIT_DIR in environment");
+		return;
+	}
 }
 
 /*
