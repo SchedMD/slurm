@@ -5627,7 +5627,7 @@ extern List acct_storage_p_modify_associations(
 		*/
 		uint32_t lft = atoi(row[MASSOC_LFT]);
 		uint32_t rgt = atoi(row[MASSOC_RGT]);
-		
+
 		if(!is_admin) {
 			acct_coord_rec_t *coord = NULL;
 			char *account = row[MASSOC_ACCT];
@@ -8229,7 +8229,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	uint32_t parent_mj = INFINITE;
-        uint32_t parent_msj = INFINITE;
+	uint32_t parent_msj = INFINITE;
 	uint32_t parent_mcpj = INFINITE;
 	uint32_t parent_mnpj = INFINITE;
 	uint32_t parent_mwpj = INFINITE;
