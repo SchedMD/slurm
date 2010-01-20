@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix smap to put BGP images when using -Dc on a Blue Gene/P system
  -- Set SLURM_SUBMIT_DIR environment variable for srun and salloc commands to
     match behavior of sbatch command.
+ -- Report WorkDir from "scontrol show job" command for jobs launched using
+    salloc and srun.
 
 * Changes in SLURM 2.1.0
 =============================

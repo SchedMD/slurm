@@ -82,6 +82,7 @@
 char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
+char *work_dir = NULL;
 
 enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -430,14 +431,13 @@ static void _set_exit_code(void)
 /* Set SLURM_SUBMIT_DIR environment variable with current state */
 static void _set_submit_dir_env(void)
 {
-	char buf[MAXPATHLEN + 1];
-
-	if ((getcwd(buf, MAXPATHLEN)) == NULL) {
+	work_dir = xmalloc(MAXPATHLEN + 1);
+	if ((getcwd(work_dir, MAXPATHLEN)) == NULL) {
 		error("getcwd failed: %m");
 		exit(error_exit);
 	}
 
-	if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0) {
+	if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir) < 0) {
 		error("unable to set SLURM_SUBMIT_DIR in environment");
 		return;
 	}
@@ -495,6 +495,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->comment = xstrdup(opt.comment);
 	if (opt.qos)
 		desc->qos = xstrdup(opt.qos);
+
+	if (opt.cwd)
+		desc->work_dir = xstrdup(opt.cwd);
+	else if (work_dir)
+		desc->work_dir = xstrdup(work_dir);
 
 	if (opt.hold)
 		desc->priority     = 0;
