@@ -139,10 +139,12 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
 	uint16_t min_cores = 0, min_sockets = 0, ntasks_per_socket = 0;
+	uint16_t ntasks_per_core = 0xffff;
 
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		min_cores   = job_ptr->details->mc_ptr->min_cores;
 		min_sockets = job_ptr->details->mc_ptr->min_sockets;
+		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
 		ntasks_per_socket = job_ptr->details->mc_ptr->ntasks_per_socket;
 	}
 
@@ -264,11 +266,12 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	 */
 	avail_cpus = 0;
 	num_tasks = 0;
+	threads_per_core = MIN(threads_per_core, ntasks_per_core); 
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;
 		avail_cpus += tmp;
 		if (ntasks_per_socket)
-			num_tasks += MIN(tmp,ntasks_per_socket);
+			num_tasks += MIN(tmp, ntasks_per_socket);
 		else
 			num_tasks += tmp;
 	}
@@ -359,10 +362,12 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
 	uint16_t min_cores = 0, min_sockets = 0;
+	uint16_t ntasks_per_core = 0xffff;
 
 	if (!cpu_type && job_ptr->details && job_ptr->details->mc_ptr) {
 		min_cores   = job_ptr->details->mc_ptr->min_cores;
 		min_sockets = job_ptr->details->mc_ptr->min_sockets;
+		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
 	}
 
 	/* These are the job parameters that we must respect:
@@ -464,6 +469,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	 * Note: cpus_per_task and ntasks_per_core need to play nice
 	 *       2 tasks_per_core vs. 2 cpus_per_task
 	 */
+	threads_per_core = MIN(threads_per_core, ntasks_per_core);
 	num_tasks = avail_cpus = threads_per_core;
 	i = job_ptr->details->mc_ptr->ntasks_per_core;
 	if (!cpu_type && i > 0)
