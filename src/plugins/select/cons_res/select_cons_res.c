@@ -198,7 +198,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 #if (CR_DEBUG)
 
-static void _dump_job_res(job_resources_t job) {
+static void _dump_job_res(struct job_resources *job) {
 	char str[64];
 
 	if (job->core_bitmap)
