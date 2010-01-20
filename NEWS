@@ -30,6 +30,7 @@ documents those changes that are of interest to users and admins.
  -- Fix issue where a 2.0 sacct could not talk correctly to a 2.1 slurmdbd.
  -- BLUEGENE - Fix issue where no partitions have any nodes assigned them to
     alert user no blocks can be created.
+ -- BLUEGENE - Fix smap to put BGP images when using -Dc on a Blue Gene/P system
 
 * Changes in SLURM 2.1.0
 =============================
