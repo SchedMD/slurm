@@ -420,14 +420,16 @@ extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct,
 	return jobacct_common_getinfo(jobacct, type, data);
 }
 
-extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct, Buf buffer)
+extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct,
+				  uint16_t rpc_version, Buf buffer)
 {
-	jobacct_common_pack(jobacct, buffer);
+	jobacct_common_pack(jobacct, rpc_version, buffer);
 }
 
-extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
+extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct,
+				   uint16_t rpc_version, Buf buffer)
 {
-	return jobacct_common_unpack(jobacct, buffer);
+	return jobacct_common_unpack(jobacct, rpc_version, buffer);
 }
 
 extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
