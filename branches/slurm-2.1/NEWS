@@ -35,6 +35,7 @@ documents those changes that are of interest to users and admins.
     match behavior of sbatch command.
  -- Report WorkDir from "scontrol show job" command for jobs launched using
     salloc and srun.
+ -- Update correctly the wckey when changing it on a pending job.
 
 * Changes in SLURM 2.1.0
 =============================
