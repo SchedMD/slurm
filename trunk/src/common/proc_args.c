@@ -536,7 +536,8 @@ bool verify_socket_core_thread_count(const char *arg, int *min_sockets,
  * RET true if valid
  */
 bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
-		 int *min_threads, cpu_bind_type_t *cpu_bind_type)
+		 int *min_threads, int *ntasks_per_core, 
+		 cpu_bind_type_t *cpu_bind_type)
 {
 	char *buf, *p, *tok;
 	if (!arg) {
@@ -577,6 +578,8 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 		} else if (strcasecmp(tok, "nomultithread") == 0) {
 		        *min_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
+			if (*ntasks_per_core == NO_VAL)
+				*ntasks_per_core = 1;
 		} else {
 			error("unrecognized --hint argument \"%s\", "
 			      "see --hint=help", tok);
