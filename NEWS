@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Fix issue where no partitions have any nodes assigned them to
     alert user no blocks can be created.
  -- BLUEGENE - Fix smap to put BGP images when using -Dc on a Blue Gene/P system
+ -- Set SLURM_SUBMIT_DIR environment variable for srun and salloc commands to
+    match behavior of sbatch command.
 
 * Changes in SLURM 2.1.0
 =============================

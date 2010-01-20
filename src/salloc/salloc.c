@@ -46,6 +46,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -100,6 +101,7 @@ static void _signal_while_allocating(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
+static void _set_submit_dir_env(void);
 static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
 static void _ping_handler(srun_ping_msg_t *msg);
@@ -163,6 +165,8 @@ int main(int argc, char *argv[])
 		error("Plugin stack post-option processing failed");
 		exit(error_exit);
 	}
+
+	_set_submit_dir_env();
 	if (opt.cwd && chdir(opt.cwd)) {
 		error("chdir(%s): %m", opt.cwd);
 		exit(error_exit);
@@ -302,7 +306,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Run the user's command.
 	 */
-	if(env_array_for_job(&env, alloc, &desc) != SLURM_SUCCESS)
+	if (env_array_for_job(&env, alloc, &desc) != SLURM_SUCCESS)
 		goto relinquish;
 
 	/* Add default task count for srun, if not already set */
@@ -420,6 +424,22 @@ static void _set_exit_code(void)
 			error("SLURM_EXIT_IMMEDIATE has zero value");
 		else
 			immediate_exit = i;
+	}
+}
+
+/* Set SLURM_SUBMIT_DIR environment variable with current state */
+static void _set_submit_dir_env(void)
+{
+	char buf[MAXPATHLEN + 1];
+
+	if ((getcwd(buf, MAXPATHLEN)) == NULL) {
+		error("getcwd failed: %m");
+		exit(error_exit);
+	}
+
+	if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0) {
+		error("unable to set SLURM_SUBMIT_DIR in environment");
+		return;
 	}
 }
 
