@@ -75,8 +75,8 @@ typedef struct slurm_jobacct_gather_ops {
 	int (*jobacct_gather_getinfo)        (jobacctinfo_t *jobacct,
 					      enum jobacct_data_type type,
 					      void *data);
-	void (*jobacct_gather_pack)   (jobacctinfo_t *jobacct, Buf buffer);
-	int (*jobacct_gather_unpack)  (jobacctinfo_t **jobacct, Buf buffer);
+	void (*jobacct_gather_pack)   (jobacctinfo_t *jobacct, uint16_t rpc_version, Buf buffer);
+	int (*jobacct_gather_unpack)  (jobacctinfo_t **jobacct, uint16_t rpc_version, Buf buffer);
 	void (*jobacct_gather_aggregate)     (jobacctinfo_t *dest,
 					      jobacctinfo_t *from);
 	int (*jobacct_gather_startpoll)      (uint16_t frequency);
@@ -362,7 +362,8 @@ extern int jobacct_gather_g_getinfo(jobacctinfo_t *jobacct,
 	return retval;
 }
 
-extern void jobacct_gather_g_pack(jobacctinfo_t *jobacct, Buf buffer)
+extern void jobacct_gather_g_pack(jobacctinfo_t *jobacct,
+				  uint16_t rpc_version, Buf buffer)
 {
 	if (_slurm_jobacct_gather_init() < 0)
 		return;
@@ -370,12 +371,13 @@ extern void jobacct_gather_g_pack(jobacctinfo_t *jobacct, Buf buffer)
 	slurm_mutex_lock( &g_jobacct_gather_context_lock );
 	if ( g_jobacct_gather_context )
 		(*(g_jobacct_gather_context->ops.jobacct_gather_pack))
-			(jobacct, buffer);
+			(jobacct, rpc_version, buffer);
 	slurm_mutex_unlock( &g_jobacct_gather_context_lock );
 	return;
 }
 
-extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct, Buf buffer)
+extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct,
+				   uint16_t rpc_version, Buf buffer)
 {
 	int retval = SLURM_SUCCESS;
 
@@ -385,7 +387,8 @@ extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct, Buf buffer)
 	slurm_mutex_lock( &g_jobacct_gather_context_lock );
 	if ( g_jobacct_gather_context )
 		retval = (*(g_jobacct_gather_context->
-			    ops.jobacct_gather_unpack))(jobacct, buffer);
+			    ops.jobacct_gather_unpack))
+			(jobacct, rpc_version, buffer);
 	slurm_mutex_unlock( &g_jobacct_gather_context_lock );
 	return retval;
 }

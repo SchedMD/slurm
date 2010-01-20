@@ -86,8 +86,10 @@ extern int jobacct_gather_g_setinfo(jobacctinfo_t *jobacct,
 				    enum jobacct_data_type type, void *data);
 extern int jobacct_gather_g_getinfo(jobacctinfo_t *jobacct,
 				    enum jobacct_data_type type, void *data);
-extern void jobacct_gather_g_pack(jobacctinfo_t *jobacct, Buf buffer);
-extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct, Buf buffer);
+extern void jobacct_gather_g_pack(jobacctinfo_t *jobacct,
+				  uint16_t rpc_version, Buf buffer);
+extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct,
+				   uint16_t rpc_version, Buf buffer);
 
 extern void jobacct_gather_g_aggregate(jobacctinfo_t *dest,
 				       jobacctinfo_t *from);
