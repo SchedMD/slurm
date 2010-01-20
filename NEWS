@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
  -- Restore support for srun/salloc/sbatch option --hint=nomultithread to 
     bind tasks to cores rather than threads (broken in slurm v2.1.0-pre5).
  -- Fix issue where a 2.0 sacct could not talk correctly to a 2.1 slurmdbd.
+ -- BLUEGENE - Fix issue where no partitions have any nodes assigned them to
+    alert user no blocks can be created.
 
 * Changes in SLURM 2.1.0
 =============================

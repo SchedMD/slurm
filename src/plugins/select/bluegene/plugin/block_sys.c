@@ -1078,13 +1078,23 @@ extern int load_state_file(List curr_block_list, char *dir_name)
 	bitmap = bit_alloc(node_record_count);
 	itr = list_iterator_create(part_list);
 	while ((part_ptr = list_next(itr))) {
-		/* we only want to use bps that are in partitions
-		 */
+		/* we only want to use bps that are in partitions */
+		if(!part_ptr->node_bitmap) {
+			debug4("Partition %s doesn't have any nodes in it.",
+			       part_ptr->name);
+			continue;
+		}
 		bit_or(bitmap, part_ptr->node_bitmap);
 	}
 	list_iterator_destroy(itr);
 
 	bit_not(bitmap);
+	if(bit_ffs(bitmap) != -1) {
+		fatal("We don't have any nodes in any partitions.  "
+		      "Can't create blocks.  "
+		      "Please check your slurm.conf.");
+	}
+
 	non_usable_nodes = bitmap2node_name(bitmap);
 	FREE_NULL_BITMAP(bitmap);
 	removable_set_bps(non_usable_nodes);
