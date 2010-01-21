@@ -672,7 +672,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "min cpus per node";
 		if(temp_int <= 0)
 			goto return_error;
-		job_msg->num_procs = (uint32_t)temp_int;
+		job_msg->job_min_cpus = (uint32_t)temp_int;
 		break;
 	case SORTID_TASKS:
 		temp_int = strtol(new_text, (char **)NULL, 10);
