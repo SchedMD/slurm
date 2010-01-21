@@ -442,6 +442,8 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 			}
 		}
 	}
+	if (sls->abort && !time_set)
+		info("Job step aborted");	/* no need to wait */
 
 	if (!force_terminated_job && task_exit_signal)
 		info("Force Terminated job step %u.%u",

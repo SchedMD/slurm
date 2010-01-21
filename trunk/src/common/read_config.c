@@ -371,6 +371,13 @@ static void _set_node_prefix(const char *nodenames)
 		       && nodenames[i-1] >= '0'))
 			break;
 	}
+
+	if(i == 1) {
+		error("In your Node definition in your slurm.conf you "
+		      "gave a nodelist '%s' without a prefix.  "
+		      "Please try something like bg%s.", nodenames, nodenames);
+	}
+
 	xfree(conf_ptr->node_prefix);
 	if(nodenames[i] == '\0')
 		conf_ptr->node_prefix = xstrdup(nodenames);

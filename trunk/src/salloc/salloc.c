@@ -46,6 +46,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -81,6 +82,7 @@
 char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
+char *work_dir = NULL;
 
 enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -100,6 +102,7 @@ static void _signal_while_allocating(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _set_exit_code(void);
 static void _set_rlimits(char **env);
+static void _set_submit_dir_env(void);
 static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
 static void _ping_handler(srun_ping_msg_t *msg);
@@ -163,6 +166,8 @@ int main(int argc, char *argv[])
 		error("Plugin stack post-option processing failed");
 		exit(error_exit);
 	}
+
+	_set_submit_dir_env();
 	if (opt.cwd && chdir(opt.cwd)) {
 		error("chdir(%s): %m", opt.cwd);
 		exit(error_exit);
@@ -302,7 +307,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Run the user's command.
 	 */
-	if(env_array_for_job(&env, alloc, &desc) != SLURM_SUCCESS)
+	if (env_array_for_job(&env, alloc, &desc) != SLURM_SUCCESS)
 		goto relinquish;
 
 	/* Add default task count for srun, if not already set */
@@ -423,6 +428,21 @@ static void _set_exit_code(void)
 	}
 }
 
+/* Set SLURM_SUBMIT_DIR environment variable with current state */
+static void _set_submit_dir_env(void)
+{
+	work_dir = xmalloc(MAXPATHLEN + 1);
+	if ((getcwd(work_dir, MAXPATHLEN)) == NULL) {
+		error("getcwd failed: %m");
+		exit(error_exit);
+	}
+
+	if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir) < 0) {
+		error("unable to set SLURM_SUBMIT_DIR in environment");
+		return;
+	}
+}
+
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
@@ -475,6 +495,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->comment = xstrdup(opt.comment);
 	if (opt.qos)
 		desc->qos = xstrdup(opt.qos);
+
+	if (opt.cwd)
+		desc->work_dir = xstrdup(opt.cwd);
+	else if (work_dir)
+		desc->work_dir = xstrdup(work_dir);
 
 	if (opt.hold)
 		desc->priority     = 0;

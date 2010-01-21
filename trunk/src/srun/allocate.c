@@ -612,6 +612,8 @@ job_desc_msg_create_from_opts ()
 		j->comment = xstrdup(opt.comment);
 	if (opt.qos)
 		j->qos = xstrdup(opt.qos);
+	if (opt.cwd)
+		j->work_dir = xstrdup(opt.cwd);
 
 	if (opt.hold)
 		j->priority     = 0;

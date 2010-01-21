@@ -73,11 +73,21 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 		/* we only want to use bps that are in
 		 * partitions
 		 */
+		if(!part_ptr->node_bitmap) {
+			debug4("Partition %s doesn't have any nodes in it.",
+			       part_ptr->name);
+			continue;
+		}
 		bit_or(bitmap, part_ptr->node_bitmap);
 	}
 	list_iterator_destroy(itr);
 
 	bit_not(bitmap);
+	if(bit_ffs(bitmap) != -1) {
+		fatal("We don't have any nodes in any partitions.  "
+		      "Can't create blocks.  "
+		      "Please check your slurm.conf.");
+	}
 	non_usable_nodes = bitmap2node_name(bitmap);
 	removable_set_bps(non_usable_nodes);
 	FREE_NULL_BITMAP(bitmap);
@@ -290,6 +300,11 @@ extern int create_full_system_block(List bg_found_block_list)
 		/* we only want to use bps that are in
 		 * partitions
 		 */
+		if(!part_ptr->node_bitmap) {
+			debug4("Partition %s doesn't have any nodes in it.",
+			       part_ptr->name);
+			continue;
+		}
 		bit_or(bitmap, part_ptr->node_bitmap);
 	}
 	list_iterator_destroy(itr);

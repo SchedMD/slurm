@@ -1059,8 +1059,8 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		   not needed for linear systems since they can be
 		   laid out in any fashion
 		*/
-		if (i < 4) {
-			g_error("bad node name %s\n",
+		if (i < 3) {
+			g_print("bad node name %s\n",
 				sview_node_info_ptr->node_ptr->name);
 			goto end_it;
 		} else {

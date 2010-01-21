@@ -365,7 +365,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		debug2("looking at block %s looking for %s\n",
 		       job_block, block_id);
 
-		if (!strcmp(job_block, block_id)) {
+		if (strcmp(job_block, block_id)) {
 			free(job_block);
 			continue;
 		}
