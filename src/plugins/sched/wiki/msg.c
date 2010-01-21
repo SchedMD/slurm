@@ -572,7 +572,7 @@ static int	_parse_msg(char *msg, char **req)
 
 #if 0
 	/* Old wiki interface does not require checksum
-	 * (actually a cryptographic signature) on incomming
+	 * (actually a cryptographic signature) on incoming
 	 * messages.  NOTE: This is not secure! */
 	if (auth_key[0] != '\0') {
 		char sum[20];	/* format is "CK=%08x08x" */

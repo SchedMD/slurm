@@ -1545,7 +1545,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			  that doesn't have as many cpus as we decided
 			  we needed for each task.  This would result
 			  in not getting a task for the node we
-			  recieved.  This is usually in error.  This
+			  received.  This is usually in error.  This
 			  only happens when the person doesn't specify
 			  how many cpus_per_task they want, and we
 			  have to come up with a number, in this case

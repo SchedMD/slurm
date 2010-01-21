@@ -2358,6 +2358,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 			   just keep tacking on ionodes to a node list */
 			sview_job_info_ptr->nodes = xstrdup(tmp_char);
 		}
+#else
+		sview_job_info_ptr->nodes = xstrdup(job_ptr->nodes);
 #endif
 		if(!sview_job_info_ptr->node_cnt)
 			sview_job_info_ptr->node_cnt = _get_node_cnt(job_ptr);

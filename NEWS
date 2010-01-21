@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.2
 =============================
+ -- Added nodelist to sview for jobs on non-bluegene systems
 
 * Changes in SLURM 2.1.1
 =============================
@@ -4714,7 +4715,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.2.9
 ========================
  -- Fixes for reported problems:
-   - Argument to srun `-n' option was taken as octal if preceeded with a `0'.
+   - Argument to srun `-n' option was taken as octal if preceded with a `0'.
  -- New format for Elan hosts config file (/etc/elanhosts. See README)
  -- Various fixes for managing COMPLETING jobs.
  -- Support for passing options to squeue via environment variables 
