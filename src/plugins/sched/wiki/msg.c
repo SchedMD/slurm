@@ -61,6 +61,7 @@ uint16_t e_port = 0;
 struct   part_record *exclude_part_ptr[EXC_PART_CNT];
 struct   part_record *hide_part_ptr[HIDE_PART_CNT];
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
+uint16_t host_format;
 int      init_prio_mode = PRIO_HOLD;
 uint16_t kill_wait;
 uint16_t use_host_exp = 0;
@@ -246,6 +247,7 @@ extern int parse_wiki_config(void)
 		{"EPort", S_P_UINT16},
 		{"ExcludePartitions", S_P_STRING},
 		{"HidePartitionJobs", S_P_STRING},
+		{"HostFormat", S_P_UINT16},
 		{"JobAggregationTime", S_P_UINT16},
 		{"JobPriority", S_P_STRING},
 		{NULL} };
@@ -298,7 +300,10 @@ extern int parse_wiki_config(void)
 		xfree(key);
 	}
 	s_p_get_uint16(&e_port, "EPort", tbl);
-	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl);
+	if (s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl))
+		error("JobAggregationTime not used by sched/wiki");
+	if (s_p_get_uint16(&host_format, "HostFormat", tbl))
+		error("HostFormat not used by sched/wiki");
 
 	if (s_p_get_string(&exclude_partitions, "ExcludePartitions", tbl)) {
 		char *tok = NULL, *tok_p = NULL;
