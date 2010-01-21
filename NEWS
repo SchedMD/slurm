@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.2
 =============================
+ -- Added nodelist to sview for jobs on non-bluegene systems
 
 * Changes in SLURM 2.1.1
 =============================
