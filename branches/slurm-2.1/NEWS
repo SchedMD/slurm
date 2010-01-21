@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
  -- Update correctly the wckey when changing it on a pending job.
  -- Set wckeyid correctly in accounting when cancelling a pending job.
  -- BLUEGENE - critical fix where jobs would be killed incorrectly.
+ -- BLUEGENE - fix for sview putting multiple ionodes on to nodelists when
+    viewing the jobs tab.
 
 * Changes in SLURM 2.1.0
 =============================
