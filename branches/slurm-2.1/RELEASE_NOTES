@@ -27,7 +27,7 @@ HIGHLIGHTS
 * The sched/gang plugin has been removed. The logic is now directly within the
   slurmctld daemon so that gang scheduling and/or job preemption can be
   performed with a backfill scheduler.
-* Sbatch response changed from "sbatch: Submitted batch job #" written to 
+* Sbatch response changed from "sbatch: Submitted batch job #" written to
   stderr to "Submitted batch job #" written to stdout.
 * Preempted jobs can now be canceled, checkpointed or requeued rather than
   only suspended.
@@ -36,7 +36,7 @@ HIGHLIGHTS
 * Added "--signal=<int>@<time>" option to salloc, sbatch and srun commands to
   notify programs before reaching the end of their time limit.
 * Added squeue option "--start" to report expected start time of pending jobs.
-  The times are only set if the backfill scheduler is in use.
+  The times are only set if the backfill or builtin scheduler is in use.
 * The pam_slurm Pluggable Authentication Module for SLURM previously
   distributed separately has been moved within the main SLURM distribution
   and is packaged as a separate RPM.
