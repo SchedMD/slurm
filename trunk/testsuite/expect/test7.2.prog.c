@@ -52,7 +52,7 @@ main (int argc, char **argv)
 	int i, j, rc;
 	int nprocs, procid;
 	int clique_size, *clique_ranks = NULL;
-	char *nprocs_ptr, *procid_ptr;
+	char *jobid_ptr, *nprocs_ptr, *procid_ptr;
 	int pmi_rank, pmi_size, kvs_name_len, key_len, val_len;
 	PMI_BOOL initialized;
 	char *key, *val, *kvs_name;
@@ -63,15 +63,20 @@ main (int argc, char **argv)
 	gettimeofday(&tv1, NULL);
 
 	/* Get process count and our id from environment variables */
+	jobid_ptr  = getenv("SLURM_JOBID");
 	nprocs_ptr = getenv("SLURM_NPROCS");
 	procid_ptr = getenv("SLURM_PROCID");
-	if ((nprocs_ptr == NULL) ||
-	    (procid_ptr == NULL)) {
-		printf("FAILURE: Environment variables not set\n");
+	if (jobid_ptr == NULL) {
+		printf("WARNING: PMI test not run under SLURM\n");
+		nprocs = 1;
+		procid = 0;
+	} else if ((nprocs_ptr == NULL) || (procid_ptr == NULL)) {
+		printf("FAILURE: SLURM environment variables not set\n");
 		exit(1);
+	} else {
+		nprocs = atoi(nprocs_ptr);
+		procid = atoi(procid_ptr);
 	}
-	nprocs = atoi(nprocs_ptr);
-	procid = atoi(procid_ptr);
 
 	/* Validate process count and our id */
 	if ((nprocs < 1) || (nprocs > 9999)) {
@@ -225,7 +230,7 @@ main (int argc, char **argv)
 			exit(1);
 		}
 #if _DEBUG
-		if ((pmi_size <= 8) && (pmi_rank == 1))	/* limit output */
+		if ((pmi_size <= 8) && (pmi_rank == 0))	/* limit output */
 			printf("PMI_KVS_Get(%s,%s) %s\n", kvs_name, key, val);
 #endif
 		snprintf(key, key_len, "attr_2_%d", i);
