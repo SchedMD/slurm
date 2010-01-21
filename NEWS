@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Remove PLPA task affinity functions due to that package being deprecated.
  -- Preserve current partition state information rather than use contents of 
     slurm.conf file after slurmctld restart or reconfiguration.
+ -- Modify SLURM's PMI library (for MPICH2) to properly execute an executable
+    program stand-alone (single MPI task launched without srun).
 
 * Changes in SLURM 2.1.2
 =============================

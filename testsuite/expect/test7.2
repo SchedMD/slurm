@@ -51,6 +51,32 @@ if {![test_aix]} {
 exec $bin_chmod 700 $file_prog_get
 
 #
+# Run job stand-alone to validate basic operation with 1 task and no srun
+#
+send_user "\nRunning PMI test stand alone (without srun)\n"
+set prog_pid [spawn $file_prog_get]
+expect {
+	-re "(FAILURE|error)" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $prog_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if { $exit_code == 0 } {
+	send_user "\n\nSo far, so good\nNow run PMI test under srun\n"
+} else {
+	exit $exit_code
+}
+
+#
 # Spawn a job to test PMI functionality
 #
 set timeout $max_job_delay
@@ -73,12 +99,7 @@ if { [test_bluegene] } {
 set timeout [expr $max_job_delay +  60]
 set srun_pid [spawn $srun -l -N$node_cnt -n$task_cnt -O -t1 --threads=1 $file_prog_get]
 expect {
-	-re "FAILURE" {
-		send_user "\nFAILURE: some error occurred\n"
-		set exit_code 1
-		exp_continue
-	}
-	-re "error" {
+	-re "(FAILURE|error)" {
 		send_user "\nFAILURE: some error occurred\n"
 		set exit_code 1
 		exp_continue
