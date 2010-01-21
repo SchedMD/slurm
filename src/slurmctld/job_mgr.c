@@ -7512,9 +7512,9 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 		}
 	}
 
+	xfree(job_ptr->wckey);
 	if (wckey_rec.name && wckey_rec.name[0] != '\0') {
-		xstrfmtcat(job_ptr->name, "\"%s", wckey_rec.name);
-		job_ptr->account = xstrdup(wckey_rec.name);
+		job_ptr->wckey = xstrdup(wckey_rec.name);
 		info("%s: setting wckey to %s for job_id %u",
 		     module, wckey_rec.name, job_ptr->job_id);
 	} else {

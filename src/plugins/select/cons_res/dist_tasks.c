@@ -177,6 +177,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	uint16_t cpus, num_bits, vpus = 1;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool alloc_cores = false, alloc_sockets = false;
+	uint16_t ntasks_per_core = 0xffff;
 
 	if (!job_res)
 		return;
@@ -191,6 +192,9 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		alloc_cores = true;
 #endif
 
+	if (job_ptr->details && job_ptr->details->mc_ptr)
+		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
+
 	size  = bit_size(job_res->node_bitmap);
 	csize = bit_size(job_res->core_bitmap);
 	for (c = 0, i = 0, n = 0; n < size; n++) {
@@ -204,7 +208,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			fatal ("cons_res: _block_sync_core_bitmap index error");
 
 		cpus  = job_res->cpus[i];
-		vpus  = select_node_record[n].vpus;
+		vpus  = MIN(select_node_record[n].vpus, ntasks_per_core);
 
 		while ((cpus > 0) && (num_bits > 0)) {
 			if (bit_test(job_res->core_bitmap, c++)) {
@@ -256,6 +260,7 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bitstr_t *core_map;
 	bool *sock_used, alloc_cores = false, alloc_sockets = false;
+	uint16_t ntasks_per_core = 0xffff;
 
 	if ((job_res == NULL) || (job_res->core_bitmap == NULL))
 		return;
@@ -270,6 +275,8 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		alloc_cores = true;
 #endif
 	core_map = job_res->core_bitmap;
+	if (job_ptr->details && job_ptr->details->mc_ptr)
+		ntasks_per_core = job_ptr->details->mc_ptr->ntasks_per_core;
 
 	sock_size  = select_node_record[0].sockets;
 	sock_start = xmalloc(sock_size * sizeof(uint32_t));
@@ -284,7 +291,7 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			continue;
 		sockets = select_node_record[n].sockets;
 		cps     = select_node_record[n].cores;
-		vpus    = select_node_record[n].vpus;
+		vpus    = MIN(select_node_record[n].vpus, ntasks_per_core);
 #ifdef CR_DEBUG
 		info("DEBUG: job %u node %s vpus %u cpus %u",
 		     job_ptr->job_id, select_node_record[n].node_ptr->name,

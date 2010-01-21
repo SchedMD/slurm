@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
  -- Preserve current partition state information rather than use contents of 
     slurm.conf file after slurmctld restart or reconfiguration.
 
+* Changes in SLURM 2.1.2
+=============================
+
 * Changes in SLURM 2.1.1
 =============================
  -- Fix for case sensitive databases when a slurmctld has a mixed case
@@ -39,6 +42,18 @@ documents those changes that are of interest to users and admins.
  -- Restore support for srun/salloc/sbatch option --hint=nomultithread to 
     bind tasks to cores rather than threads (broken in slurm v2.1.0-pre5).
  -- Fix issue where a 2.0 sacct could not talk correctly to a 2.1 slurmdbd.
+ -- BLUEGENE - Fix issue where no partitions have any nodes assigned them to
+    alert user no blocks can be created.
+ -- BLUEGENE - Fix smap to put BGP images when using -Dc on a Blue Gene/P system
+ -- Set SLURM_SUBMIT_DIR environment variable for srun and salloc commands to
+    match behavior of sbatch command.
+ -- Report WorkDir from "scontrol show job" command for jobs launched using
+    salloc and srun.
+ -- Update correctly the wckey when changing it on a pending job.
+ -- Set wckeyid correctly in accounting when cancelling a pending job.
+ -- BLUEGENE - critical fix where jobs would be killed incorrectly.
+ -- BLUEGENE - fix for sview putting multiple ionodes on to nodelists when
+    viewing the jobs tab.
 
 * Changes in SLURM 2.1.0
 =============================
