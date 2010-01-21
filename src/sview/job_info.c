@@ -43,6 +43,7 @@ typedef struct {
 	int color_inx;
 	job_info_t *job_ptr;
 	int node_cnt;
+	char *nodes;
 #ifdef HAVE_BG
 	bool small_block;
 #endif
@@ -1130,7 +1131,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 		suspend_secs = (time(NULL) - job_ptr->start_time) - now_time;
 		secs2time_str(now_time, running_char, sizeof(running_char));
 
-		nodes = sview_job_info_ptr->job_ptr->nodes;
+		nodes = sview_job_info_ptr->nodes;
 	}
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -1608,7 +1609,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		}
 		suspend_secs = (time(NULL) - job_ptr->start_time) - now_time;
 		secs2time_str(now_time, tmp_char, sizeof(tmp_char));
-		nodes = sview_job_info_ptr->job_ptr->nodes;
+		nodes = sview_job_info_ptr->nodes;
 	}
 	gtk_tree_store_set(treestore, iter, SORTID_COLOR,
 			   sview_colors[sview_job_info_ptr->color_inx], -1);
@@ -2270,6 +2271,7 @@ static void _job_info_list_del(void *object)
 	sview_job_info_t *sview_job_info = (sview_job_info_t *)object;
 
 	if (sview_job_info) {
+		xfree(sview_job_info->nodes);
 		if(sview_job_info->step_list)
 			list_destroy(sview_job_info->step_list);
 		xfree(sview_job_info);
@@ -2287,8 +2289,8 @@ static int _sview_job_sort_aval_dec(sview_job_info_t* rec_a,
 	else if (size_a > size_b)
 		return 1;
 
-	if(rec_a->job_ptr->nodes && rec_b->job_ptr->nodes) {
-		size_a = strcmp(rec_a->job_ptr->nodes, rec_b->job_ptr->nodes);
+	if(rec_a->nodes && rec_b->nodes) {
+		size_a = strcmp(rec_a->nodes, rec_b->nodes);
 		if (size_a < 0)
 			return -1;
 		else if (size_a > 0)
@@ -2350,9 +2352,11 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		if(job_ptr->nodes && ionodes) {
 			sview_job_info_ptr->small_block = 1;
 			snprintf(tmp_char, sizeof(tmp_char), "%s[%s]",
-					 job_ptr->nodes, ionodes);
+				 job_ptr->nodes, ionodes);
 			xfree(ionodes);
-			sview_job_info_ptr->job_ptr->nodes = xstrdup(tmp_char);
+			/* keep a different string here so we don't
+			   just keep tacking on ionodes to a node list */
+			sview_job_info_ptr->nodes = xstrdup(tmp_char);
 		}
 #endif
 		if(!sview_job_info_ptr->node_cnt)
@@ -2379,8 +2383,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 				 */
 				xfree(step_ptr->nodes);
 				step_ptr->nodes =
-					xstrdup(sview_job_info_ptr->
-						job_ptr->nodes);
+					xstrdup(sview_job_info_ptr->nodes);
 				step_ptr->num_tasks =
 					sview_job_info_ptr->node_cnt;
 				xfree(step_ptr->node_inx);
