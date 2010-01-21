@@ -196,7 +196,7 @@ int _slurm_close_accepted_conn ( slurm_fd open_fd ) ;
 slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address ) ;
 
 /* _slurm_accept_stream
- * accepts a incomming stream connection on a stream server slurm_fd
+ * accepts a incoming stream connection on a stream server slurm_fd
  * IN open_fd		- file descriptor to accept connection on
  * OUT slurm_address 	- slurm_addr of the accepted connection
  * RET slurm_fd		- file descriptor of the accepted connection

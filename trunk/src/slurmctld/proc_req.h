@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  proc_msg.h - process incomming message functions
+ *  proc_msg.h - process incoming message functions
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

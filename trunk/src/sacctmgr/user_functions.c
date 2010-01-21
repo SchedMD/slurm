@@ -2414,7 +2414,7 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
-	/* FIX ME: This list should be recieved from the slurmdbd not
+	/* FIX ME: This list should be received from the slurmdbd not
 	 * just assumed.  Right now it doesn't do it correctly though.
 	 * This is why we are doing it this way.
 	 */

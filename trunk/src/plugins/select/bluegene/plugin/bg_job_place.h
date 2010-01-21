@@ -44,7 +44,7 @@
 /*
  * Try to find resources for a given job request
  * IN job_ptr - pointer to job record in slurmctld
- * IN/OUT bitmap - nodes availble for assignment to job, clear those not to
+ * IN/OUT bitmap - nodes available for assignment to job, clear those not to
  *	           be used
  * IN min_nodes, max_nodes  - minimum and maximum number of nodes to allocate
  *	                      to this job (considers slurm partition limits)

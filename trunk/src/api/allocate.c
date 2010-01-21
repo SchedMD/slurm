@@ -684,7 +684,7 @@ static void _destroy_allocation_response_socket(listen_t *listen)
 }
 
 /* process RPC from slurmctld
- * IN msg: message recieved
+ * IN msg: message received
  * OUT resp: resource allocation response message
  * RET 1 if resp is filled in, 0 otherwise */
 static int

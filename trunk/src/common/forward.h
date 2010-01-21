@@ -125,7 +125,7 @@ extern void forward_wait(slurm_msg_t *msg);
  */
 /*********************************************************************
 Code taken from common/slurm_protocol_api.c
-//This function should only be used after a message is recieved.
+//This function should only be used after a message is received.
 
 // a call to slurm_receive_msg will fill in a ret_list
 	ret_list = slurm_receive_msg(fd, resp, timeout);
