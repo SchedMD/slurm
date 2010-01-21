@@ -110,12 +110,12 @@ set num_threads 0
 log_user 0
 spawn $scontrol show node $node_name
 expect {
-	-re "Sockets=($number)" {
-		set num_sockets $expect_out(1,string)
-		exp_continue
-	}
 	-re "CoresPerSocket=($number)" {
 	   	set num_cores $expect_out(1,string)
+		exp_continue
+	}
+	-re "Sockets=($number)" {
+		set num_sockets $expect_out(1,string)
 		exp_continue
 	}
 	-re "ThreadsPerCore=($number)" {
