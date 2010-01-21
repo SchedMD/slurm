@@ -159,6 +159,9 @@ $ srun -n20 a.out
 library integrated with SLURM</li>
 <li>Set the environment variable <b>PMI_DEBUG</b> to a numeric value
 of 1 or higher for the PMI library to print debugging information</li>
+<li>Information about building MPICH2 for use with SLURM is described on the 
+<a href="http://wiki.mcs.anl.gov/mpich2/index.php/Frequently_Asked_Questions#Q:_How_do_I_use_MPICH2_with_slurm.3F">
+MPICH2 FAQ</a> web page</li>
 </ul></p>
 <hr size=4 width="100%">
 
@@ -302,6 +305,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched
 outside of its control.</p>
 
-<p style="text-align:center;">Last modified 2 March 2009</p>
+<p style="text-align:center;">Last modified 20 January 2010</p>
 
 <!--#include virtual="footer.txt"-->
