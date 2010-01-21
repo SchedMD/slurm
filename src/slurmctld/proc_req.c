@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  proc_req.c - process incomming messages to slurmctld
+ *  proc_req.c - process incoming messages to slurmctld
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
