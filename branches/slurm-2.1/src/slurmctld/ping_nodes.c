@@ -210,7 +210,7 @@ void ping_nodes (void)
 		 * this mechanism avoids an additional (per node) timer or
 		 * counter and gets updated configuration information
 		 * once in a while). We limit these requests since they
-		 * can generate a flood of incomming RPCs. */
+		 * can generate a flood of incoming RPCs. */
 		if (IS_NODE_UNKNOWN(node_ptr) || restart_flag ||
 		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
 			hostlist_push(reg_agent_args->hostlist,

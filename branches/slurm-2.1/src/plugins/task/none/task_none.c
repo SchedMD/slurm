@@ -182,7 +182,7 @@ extern int task_pre_launch (slurmd_job_t *job)
 
 /*
  * task_term() is called after termination of application task.
- *	It is preceeded by --task-epilog (from srun command line)
+ *	It is preceded by --task-epilog (from srun command line)
  *	followed by TaskEpilog program (from slurm.conf).
  */
 extern int task_post_term (slurmd_job_t *job)

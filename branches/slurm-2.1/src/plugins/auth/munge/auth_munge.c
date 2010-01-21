@@ -97,7 +97,7 @@
  * of "auth/".
  *
  * plugin_version   - specifies the version number of the plugin.
- * min_plug_version - specifies the minumum version number of incomming
+ * min_plug_version - specifies the minumum version number of incoming
  *                    messages that this plugin can accept
  */
 const char plugin_name[]       	= "auth plugin for Munge "

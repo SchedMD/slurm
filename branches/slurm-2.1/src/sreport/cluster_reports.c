@@ -1017,7 +1017,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 					uid = passwd_ptr->pw_uid;
 				/* In this report we are using the sreport user
 				   structure to store the information we want
-				   since it is already avaliable and will do
+				   since it is already available and will do
 				   pretty much what we want.
 				*/
 				sreport_user =
@@ -1288,7 +1288,7 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 				uid = passwd_ptr->pw_uid;
 			/* In this report we are using the sreport user
 			   structure to store the information we want
-			   since it is already avaliable and will do
+			   since it is already available and will do
 			   pretty much what we want.
 			*/
 			sreport_user =	xmalloc(sizeof(sreport_user_rec_t));
