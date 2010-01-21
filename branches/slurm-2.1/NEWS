@@ -37,6 +37,7 @@ documents those changes that are of interest to users and admins.
     salloc and srun.
  -- Update correctly the wckey when changing it on a pending job.
  -- Set wckeyid correctly in accounting when cancelling a pending job.
+ -- BLUEGENE - critical fix where jobs would be killed incorrectly.
 
 * Changes in SLURM 2.1.0
 =============================
