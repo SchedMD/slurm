@@ -358,7 +358,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		   "'%s', \"%s\", %u, %u, %u",
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
 		   job_ptr->group_id, grp_str, job_ptr->name,
-		   job_state, job_ptr->total_procs, job_ptr->partition, lim_str,
+		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
 		   (int)job_ptr->start_time, (int)job_ptr->end_time,
 		   job_ptr->node_cnt);
 

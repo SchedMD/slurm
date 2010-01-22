@@ -616,7 +616,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				    * real memory per CPU | MEM_PER_CPU,
 				    * default=0 (no limit) */
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
-	uint32_t num_procs;	/* total count of processors required,
+	uint32_t min_cpus;	/* minimum number of processors required,
+				 * default=0 */
+	uint32_t max_cpus;	/* maximum number of processors required,
 				 * default=0 */
 	uint32_t min_nodes;	/* minimum number of nodes required by job,
 				 * default=0 */
@@ -687,6 +689,7 @@ typedef struct job_info {
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	char *licenses;		/* licenses required by the job */
+	uint32_t max_cpus;	/* maximum number of cpus usable by job */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
 	uint16_t min_cores;	/* minimum number of cores per cpu */
 	uint16_t min_sockets;	/* minimum number of sockets per node */
@@ -703,7 +706,7 @@ typedef struct job_info {
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
 
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
-	uint32_t num_procs;	/* number of processors required by job */
+	uint32_t num_cpus;	/* minimum number of cpus required by job */
 	char *partition;	/* name of assigned partition */
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job,

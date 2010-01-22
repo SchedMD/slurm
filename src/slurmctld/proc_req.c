@@ -3299,15 +3299,15 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 
 	/* _max_nprocs() represents the total number of CPUs available
 	 * for this step (overcommit not supported yet). If job_desc_msg
-	 * contains a reasonable num_procs request, use that value;
+	 * contains a reasonable min_cpus request, use that value;
 	 * otherwise default to the allocation processor request.
 	 */
-	launch_msg_ptr->nprocs = job_ptr->total_procs;
-	if (job_desc_msg->num_procs > 0 &&
-		job_desc_msg->num_procs < launch_msg_ptr->nprocs)
-		launch_msg_ptr->nprocs = job_desc_msg->num_procs;
+	launch_msg_ptr->nprocs = job_ptr->total_cpus;
+	if (job_desc_msg->min_cpus > 0 &&
+		job_desc_msg->min_cpus < launch_msg_ptr->nprocs)
+		launch_msg_ptr->nprocs = job_desc_msg->min_cpus;
 	if (launch_msg_ptr->nprocs < 0)
-		launch_msg_ptr->nprocs = job_ptr->num_procs;
+		launch_msg_ptr->nprocs = job_ptr->cpu_cnt;
 
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
 	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint16_t) *

@@ -76,9 +76,11 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->job_min_memory    = NO_VAL;
 	job_desc_msg->job_min_tmp_disk  = NO_VAL;
 	job_desc_msg->kill_on_node_fail = (uint16_t) NO_VAL;
+	job_desc_msg->max_cpus		= NO_VAL;
 	job_desc_msg->max_nodes		= NO_VAL;
 	job_desc_msg->mem_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->min_cores		= (uint16_t) NO_VAL;
+	job_desc_msg->min_cpus		= NO_VAL;
 	job_desc_msg->min_nodes		= NO_VAL;
 	job_desc_msg->min_sockets	= (uint16_t) NO_VAL;
 	job_desc_msg->min_threads	= (uint16_t) NO_VAL;
@@ -86,7 +88,6 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->ntasks_per_core	= (uint16_t) NO_VAL;
 	job_desc_msg->ntasks_per_node	= (uint16_t) NO_VAL;
 	job_desc_msg->ntasks_per_socket	= (uint16_t) NO_VAL;
-	job_desc_msg->num_procs		= NO_VAL;
 	job_desc_msg->num_tasks		= NO_VAL;
 	job_desc_msg->overcommit	= (uint8_t) NO_VAL;
 	job_desc_msg->plane_size	= (uint16_t) NO_VAL;

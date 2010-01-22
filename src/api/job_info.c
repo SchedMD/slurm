@@ -365,8 +365,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 13 ******/
 #ifdef HAVE_BG
-	convert_num_unit((float)job_ptr->num_procs, tmp1, sizeof(tmp1),
-			 UNIT_NONE);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NODE_CNT,
 				    &min_nodes);
@@ -376,10 +374,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	} else
 		max_nodes = min_nodes;
 #else
-	snprintf(tmp1, sizeof(tmp1), "%u", job_ptr->num_procs);
 	min_nodes = job_ptr->num_nodes;
 	max_nodes = job_ptr->max_nodes;
 #endif
+	_sprint_range(tmp1, sizeof(tmp1), job_ptr->num_cpus, job_ptr->max_cpus);
 	_sprint_range(tmp2, sizeof(tmp2), min_nodes, max_nodes);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "NumNodes=%s NumCPUs=%s CPUs/Task=%u ReqS:C:T=%u:%u:%u",

@@ -270,7 +270,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 					    &proc_cnt);
 
 #else
-		proc_cnt = job_ptr->total_procs;
+		proc_cnt = job_ptr->total_cpus;
 #endif
 		snprintf(tmp_str, sizeof(tmp_str), "%u:%u@%u,",
 			 jobid, proc_cnt, (uint32_t) job_ptr->start_time);
@@ -558,7 +558,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				     SELECT_JOBDATA_NODE_CNT, &proc_cnt);
 #else
-		proc_cnt = job_ptr->total_procs;
+		proc_cnt = job_ptr->total_cpus;
 #endif
 		snprintf(tmp_str, sizeof(tmp_str),
 			 "STARTINFO=%u TASKS=%u STARTTIME=%u NODES=",

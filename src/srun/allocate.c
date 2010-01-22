@@ -656,12 +656,12 @@ job_desc_msg_create_from_opts ()
 	if (opt.job_min_tmp_disk != NO_VAL)
 		j->job_min_tmp_disk = opt.job_min_tmp_disk;
 	if (opt.overcommit) {
-		j->num_procs    = opt.min_nodes;
-		j->overcommit	= opt.overcommit;
+		j->min_cpus    = opt.min_nodes;
+		j->overcommit  = opt.overcommit;
 	} else
-		j->num_procs    = opt.nprocs * opt.cpus_per_task;
+		j->min_cpus    = opt.nprocs * opt.cpus_per_task;
 	if (opt.nprocs_set)
-		j->num_tasks    = opt.nprocs;
+		j->num_tasks   = opt.nprocs;
 
 	if (opt.cpus_set)
 		j->cpus_per_task = opt.cpus_per_task;

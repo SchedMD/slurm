@@ -335,7 +335,7 @@ scontrol_update_job (int argc, char *argv[])
 		/* ReqProcs was replaced by NumTasks in SLURM version 2.1 */
 		else if ((strncasecmp(tag, "ReqProcs", MAX(taglen, 4)) == 0) ||
 			 (strncasecmp(tag, "NumTasks", MAX(taglen, 8)) == 0)) {
-			job_msg.num_procs =
+			job_msg.num_tasks =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}

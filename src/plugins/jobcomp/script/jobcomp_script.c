@@ -220,7 +220,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->submit = job->details ? job->details->submit_time:job->start_time;
 	j->batch_flag = job->batch_flag;
 	j->nodes = xstrdup (job->nodes);
-	j->nprocs = job->total_procs;
+	j->nprocs = job->total_cpus;
 	j->nnodes = job->node_cnt;
 	j->account = job->account ? xstrdup (job->account) : NULL;
 	if (job->details && job->details->work_dir)

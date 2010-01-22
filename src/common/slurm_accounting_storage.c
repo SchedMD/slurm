@@ -161,9 +161,9 @@ typedef struct slurm_acct_storage_ops {
 				    char *cluster,
 				    struct node_record *node_ptr,
 				    time_t event_time);
-	int  (*cluster_procs)      (void *db_conn,
-				    char *cluster, char *cluster_nodes,
-				    uint32_t procs, time_t event_time);
+	int  (*cluster_cpus)      (void *db_conn,
+				   char *cluster, char *cluster_nodes,
+				   uint32_t cpus, time_t event_time);
 	int  (*c_get_usage)        (void *db_conn, uint32_t uid,
 				    void *cluster_rec, int type,
 				    time_t start, time_t end);
@@ -265,7 +265,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_roll_usage",
 		"clusteracct_storage_p_node_down",
 		"clusteracct_storage_p_node_up",
-		"clusteracct_storage_p_cluster_procs",
+		"clusteracct_storage_p_cluster_cpus",
 		"clusteracct_storage_p_get_usage",
 		"clusteracct_storage_p_register_ctld",
 		"jobacct_storage_p_job_start",
@@ -2440,7 +2440,7 @@ extern void pack_acct_event_rec(void *in, uint16_t rpc_version, Buf buffer)
 }
 
 extern int unpack_acct_event_rec(void **object, uint16_t rpc_version,
-				  Buf buffer)
+				 Buf buffer)
 {
 	uint32_t uint32_tmp;
 	acct_event_rec_t *object_ptr = xmalloc(sizeof(acct_event_rec_t));
@@ -8621,16 +8621,16 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 }
 
 
-extern int clusteracct_storage_g_cluster_procs(void *db_conn,
-					       char *cluster,
-					       char *cluster_nodes,
-					       uint32_t procs,
-					       time_t event_time)
+extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
+					      char *cluster,
+					      char *cluster_nodes,
+					      uint32_t cpus,
+					      time_t event_time)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.cluster_procs))
-		(db_conn, cluster, cluster_nodes, procs, event_time);
+ 	return (*(g_acct_storage_context->ops.cluster_cpus))
+		(db_conn, cluster, cluster_nodes, cpus, event_time);
 }
 
 

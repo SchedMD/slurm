@@ -83,7 +83,7 @@ struct squeue_parameters {
 	bool long_list;
 	bool no_header;
 	int  iterate;
-	int  max_procs;
+	int  max_cpus;
 	int  verbose;
 
 	char* accounts;

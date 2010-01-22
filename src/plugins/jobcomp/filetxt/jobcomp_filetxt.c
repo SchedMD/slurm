@@ -288,7 +288,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		 job_state_string(job_state),
 		 job_ptr->partition, lim_str, start_str,
 		 end_str, job_ptr->nodes, job_ptr->node_cnt,
-		 job_ptr->total_procs, work_dir,
+		 job_ptr->total_cpus, work_dir,
 		 select_buf);
 	tot_size = strlen(job_rec);
 

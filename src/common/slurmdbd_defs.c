@@ -444,11 +444,11 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_ARCHIVE_LOAD:
 		pack_acct_archive_rec(req->data, rpc_version, buffer);
 		break;
-	case DBD_CLUSTER_PROCS:
+	case DBD_CLUSTER_CPUS:
 	case DBD_FLUSH_JOBS:
-		slurmdbd_pack_cluster_procs_msg(
+		slurmdbd_pack_cluster_cpus_msg(
 			rpc_version,
-			(dbd_cluster_procs_msg_t *)req->data, buffer);
+			(dbd_cluster_cpus_msg_t *)req->data, buffer);
 		break;
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
@@ -615,11 +615,11 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_ARCHIVE_LOAD:
 		rc = unpack_acct_archive_rec(&resp->data, rpc_version, buffer);
 		break;
-	case DBD_CLUSTER_PROCS:
+	case DBD_CLUSTER_CPUS:
 	case DBD_FLUSH_JOBS:
-		rc = slurmdbd_unpack_cluster_procs_msg(
+		rc = slurmdbd_unpack_cluster_cpus_msg(
 			rpc_version,
-			(dbd_cluster_procs_msg_t **)&resp->data, buffer);
+			(dbd_cluster_cpus_msg_t **)&resp->data, buffer);
 		break;
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
@@ -772,7 +772,7 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 	} else if(!strcasecmp(msg_type, "Add Users")) {
 		return DBD_ADD_USERS;
 	} else if(!strcasecmp(msg_type, "Cluster Processors")) {
-		return DBD_CLUSTER_PROCS;
+		return DBD_CLUSTER_CPUS;
 	} else if(!strcasecmp(msg_type, "Flush Jobs")) {
 		return DBD_FLUSH_JOBS;
 	} else if(!strcasecmp(msg_type, "Get Accounts")) {
@@ -949,9 +949,9 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Add Users";
 		break;
-	case DBD_CLUSTER_PROCS:
+	case DBD_CLUSTER_CPUS:
 		if(get_enum) {
-			return "DBD_CLUSTER_PROCS";
+			return "DBD_CLUSTER_CPUS";
 		} else
 			return "Cluster Processors";
 		break;
@@ -2084,8 +2084,8 @@ void inline slurmdbd_free_acct_coord_msg(uint16_t rpc_version,
 	}
 }
 
-void inline slurmdbd_free_cluster_procs_msg(uint16_t rpc_version,
-					    dbd_cluster_procs_msg_t *msg)
+void inline slurmdbd_free_cluster_cpus_msg(uint16_t rpc_version,
+					    dbd_cluster_cpus_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->cluster_name);
@@ -2434,29 +2434,29 @@ unpack_error:
 }
 
 void inline
-slurmdbd_pack_cluster_procs_msg(uint16_t rpc_version,
-				dbd_cluster_procs_msg_t *msg, Buf buffer)
+slurmdbd_pack_cluster_cpus_msg(uint16_t rpc_version,
+				dbd_cluster_cpus_msg_t *msg, Buf buffer)
 {
 	if(rpc_version >= 5) {
 		packstr(msg->cluster_name, buffer);
 		packstr(msg->cluster_nodes, buffer);
-		pack32(msg->proc_count,    buffer);
+		pack32(msg->cpu_count,    buffer);
 		pack_time(msg->event_time, buffer);
 	} else {
 		packstr(msg->cluster_name, buffer);
-		pack32(msg->proc_count,    buffer);
+		pack32(msg->cpu_count,    buffer);
 		pack_time(msg->event_time, buffer);
 	}
 }
 
 int inline
-slurmdbd_unpack_cluster_procs_msg(uint16_t rpc_version,
-				  dbd_cluster_procs_msg_t **msg, Buf buffer)
+slurmdbd_unpack_cluster_cpus_msg(uint16_t rpc_version,
+				  dbd_cluster_cpus_msg_t **msg, Buf buffer)
 {
-	dbd_cluster_procs_msg_t *msg_ptr;
+	dbd_cluster_cpus_msg_t *msg_ptr;
 	uint32_t uint32_tmp;
 
-	msg_ptr = xmalloc(sizeof(dbd_cluster_procs_msg_t));
+	msg_ptr = xmalloc(sizeof(dbd_cluster_cpus_msg_t));
 	*msg = msg_ptr;
 
 	if(rpc_version >= 5) {
@@ -2464,18 +2464,18 @@ slurmdbd_unpack_cluster_procs_msg(uint16_t rpc_version,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->cluster_nodes,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&msg_ptr->proc_count, buffer);
+		safe_unpack32(&msg_ptr->cpu_count, buffer);
 		safe_unpack_time(&msg_ptr->event_time, buffer);
 	} else {
 		safe_unpackstr_xmalloc(&msg_ptr->cluster_name,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&msg_ptr->proc_count, buffer);
+		safe_unpack32(&msg_ptr->cpu_count, buffer);
 		safe_unpack_time(&msg_ptr->event_time, buffer);
 	}
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdbd_free_cluster_procs_msg(rpc_version, msg_ptr);
+	slurmdbd_free_cluster_cpus_msg(rpc_version, msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -3550,7 +3550,7 @@ slurmdbd_pack_step_complete_msg(uint16_t rpc_version,
 	pack_time(msg->start_time, buffer);
 	pack_time(msg->job_submit_time, buffer);
 	pack32(msg->step_id, buffer);
-	pack32(msg->total_procs, buffer);
+	pack32(msg->total_cpus, buffer);
 }
 
 int inline
@@ -3569,7 +3569,7 @@ slurmdbd_unpack_step_complete_msg(uint16_t rpc_version,
 	safe_unpack_time(&msg_ptr->start_time, buffer);
 	safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 	safe_unpack32(&msg_ptr->step_id, buffer);
-	safe_unpack32(&msg_ptr->total_procs, buffer);
+	safe_unpack32(&msg_ptr->total_cpus, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3594,7 +3594,7 @@ slurmdbd_pack_step_start_msg(uint16_t rpc_version, dbd_step_start_msg_t *msg,
 		pack_time(msg->job_submit_time, buffer);
 		pack32(msg->step_id, buffer);
 		pack16(msg->task_dist, buffer);
-		pack32(msg->total_procs, buffer);
+		pack32(msg->total_cpus, buffer);
 		pack32(msg->total_tasks, buffer);
 	} else {
 		pack32(msg->assoc_id, buffer);
@@ -3605,7 +3605,7 @@ slurmdbd_pack_step_start_msg(uint16_t rpc_version, dbd_step_start_msg_t *msg,
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->job_submit_time, buffer);
 		pack32(msg->step_id, buffer);
-		pack32(msg->total_procs, buffer);
+		pack32(msg->total_cpus, buffer);
 	}
 }
 
@@ -3628,7 +3628,7 @@ slurmdbd_unpack_step_start_msg(uint16_t rpc_version,
 		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 		safe_unpack32(&msg_ptr->step_id, buffer);
 		safe_unpack16(&msg_ptr->task_dist, buffer);
-		safe_unpack32(&msg_ptr->total_procs, buffer);
+		safe_unpack32(&msg_ptr->total_cpus, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 	} else {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
@@ -3639,7 +3639,7 @@ slurmdbd_unpack_step_start_msg(uint16_t rpc_version,
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 		safe_unpack32(&msg_ptr->step_id, buffer);
-		safe_unpack32(&msg_ptr->total_procs, buffer);
+		safe_unpack32(&msg_ptr->total_cpus, buffer);
 	}
 
 	return SLURM_SUCCESS;

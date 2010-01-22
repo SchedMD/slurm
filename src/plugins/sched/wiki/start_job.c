@@ -248,8 +248,8 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	job_ptr->details->req_nodes = new_node_list;
 	save_req_bitmap = job_ptr->details->req_node_bitmap;
 	job_ptr->details->req_node_bitmap = new_bitmap;
-	old_task_cnt = job_ptr->num_procs;
-	job_ptr->num_procs = MAX(task_cnt, old_task_cnt);
+	old_task_cnt = job_ptr->details->min_cpus;
+	job_ptr->details->min_cpus = MAX(task_cnt, old_task_cnt);
 	job_ptr->priority = 100000000;
 
  fini:	unlock_slurmctld(job_write_lock);
@@ -290,7 +290,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 
 		/* restore some of job state */
 		job_ptr->priority = 0;
-		job_ptr->num_procs = old_task_cnt;
+		job_ptr->details->min_cpus = old_task_cnt;
 		rc = -1;
 	}
 

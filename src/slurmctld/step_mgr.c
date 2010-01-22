@@ -1007,10 +1007,11 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		/* "scontrol reconfig" of live system */
 		pick_step_cores = false;
 	} else if ((step_ptr->exclusive == 0) ||
-		   (step_ptr->cpu_count == job_ptr->total_procs)) {
+		   (step_ptr->cpu_count == job_ptr->total_cpus)) {
 		/* Step uses all of job's cores
 		 * Just copy the bitmap to save time */
-		step_ptr->core_bitmap_job = bit_copy(job_resrcs_ptr->core_bitmap);
+		step_ptr->core_bitmap_job = bit_copy(
+			job_resrcs_ptr->core_bitmap);
 		pick_step_cores = false;
 	}
 #endif
@@ -1595,7 +1596,10 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 		task_cnt = step_ptr->step_layout->task_cnt;
 		node_list = step_ptr->step_layout->node_list;
 	} else {
-		task_cnt = step_ptr->job_ptr->num_procs;
+		if(step_ptr->job_ptr->details)
+			task_cnt = step_ptr->job_ptr->details->min_cpus;
+		else
+			task_cnt = step_ptr->job_ptr->cpu_cnt;
 		node_list = step_ptr->job_ptr->nodes;
 	}
 	pack32(step_ptr->job_ptr->job_id, buffer);
@@ -1603,10 +1607,12 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	pack16(step_ptr->ckpt_interval, buffer);
 	pack32(step_ptr->job_ptr->user_id, buffer);
 #ifdef HAVE_BG
-	if (step_ptr->job_ptr->total_procs)
-		pack32(step_ptr->job_ptr->total_procs, buffer);
+	if (step_ptr->job_ptr->total_cpus)
+		pack32(step_ptr->job_ptr->total_cpus, buffer);
+	else if(step_ptr->job_ptr->details)
+		pack32(step_ptr->job_ptr->details->min_cpus, buffer);
 	else
-		pack32(step_ptr->job_ptr->num_procs, buffer);
+		pack32(step_ptr->job_ptr->cpu_cnt, buffer);
 #else
 	pack32(step_ptr->cpu_count, buffer);
 #endif

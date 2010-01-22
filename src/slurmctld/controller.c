@@ -153,7 +153,7 @@ void *acct_db_conn = NULL;
 int accounting_enforce = 0;
 int association_based_accounting = 0;
 bool ping_nodes_now = false;
-int      cluster_procs = 0;
+int      cluster_cpus = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -1016,7 +1016,7 @@ static int _accounting_cluster_ready()
 	int i;
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);
-	int procs = 0;
+	int cpus = 0;
 	bitstr_t *total_node_bitmap = NULL;
 	char *cluster_nodes = NULL;
 
@@ -1026,19 +1026,19 @@ static int _accounting_cluster_ready()
 			continue;
 #ifdef SLURM_NODE_ACCT_REGISTER
 		if (slurmctld_conf.fast_schedule)
-			procs += node_ptr->config_ptr->cpus;
+			cpus += node_ptr->config_ptr->cpus;
 		else
-			procs += node_ptr->cpus;
+			cpus += node_ptr->cpus;
 #else
-		procs += node_ptr->config_ptr->cpus;
+		cpus += node_ptr->config_ptr->cpus;
 #endif
 	}
 
-	/* Since cluster_procs is used else where we need to keep a
-	   local var here to avoid race conditions on cluster_procs
+	/* Since cluster_cpus is used else where we need to keep a
+	   local var here to avoid race conditions on cluster_cpus
 	   not being correct.
 	*/
-	cluster_procs = procs;
+	cluster_cpus = cpus;
 
 	/* Now get the names of all the nodes on the cluster at this
 	   time and send it also.
@@ -1048,10 +1048,10 @@ static int _accounting_cluster_ready()
 	cluster_nodes = bitmap2node_name(total_node_bitmap);
 	FREE_NULL_BITMAP(total_node_bitmap);
 
-	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
-						 slurmctld_cluster_name,
-						 cluster_nodes,
-						 cluster_procs, event_time);
+	rc = clusteracct_storage_g_cluster_cpus(acct_db_conn,
+						slurmctld_cluster_name,
+						cluster_nodes,
+						cluster_cpus, event_time);
 	xfree(cluster_nodes);
 	if(rc == ACCOUNTING_FIRST_REG) {
 		/* see if we are running directly to a database
@@ -1062,9 +1062,9 @@ static int _accounting_cluster_ready()
 	}
 
 	/* just incase the numbers change we need to
-	   update the proc count on the cluster inside
+	   update the cpu count on the cluster inside
 	   the priority plugin */
-	priority_g_set_max_cluster_usage(cluster_procs,
+	priority_g_set_max_cluster_usage(cluster_cpus,
 					 slurmctld_conf.priority_decay_hl);
 
 	return rc;

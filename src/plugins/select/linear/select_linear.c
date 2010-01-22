@@ -495,7 +495,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	if (job_resrcs_ptr->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
-	job_resrcs_ptr->nprocs = job_ptr->total_procs;
+	job_resrcs_ptr->nprocs = job_ptr->total_cpus;
 	if (build_job_resources(job_resrcs_ptr, (void *)select_node_ptr,
 				 select_fast_schedule))
 		error("_build_select_struct: build_job_resources: %m");
@@ -635,7 +635,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((!IS_JOB_RUNNING(job_scan_ptr))			||
 		    (job_scan_ptr->node_cnt   != req_nodes)		||
-		    (job_scan_ptr->total_procs < job_ptr->num_procs)	||
+		    (job_scan_ptr->total_cpus < job_ptr->details->min_cpus)	||
 		    (!bit_super_set(job_scan_ptr->node_bitmap, bitmap)))
 			continue;
 		if (job_scan_ptr->details && job_ptr->details &&
@@ -654,7 +654,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 			continue;	/* Excluded nodes in this job */
 
 		bit_and(bitmap, job_scan_ptr->node_bitmap);
-		job_ptr->total_procs = job_scan_ptr->total_procs;
+		job_ptr->total_cpus = job_scan_ptr->total_cpus;
 		rc = SLURM_SUCCESS;
 		break;
 	}
@@ -709,7 +709,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Build table with information about sets of consecutive nodes */
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
-	rem_cpus = job_ptr->num_procs;
+	rem_cpus = job_ptr->details->min_cpus;
 	if (req_nodes > min_nodes)
 		rem_nodes = req_nodes;
 	else
@@ -910,8 +910,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		error_code = SLURM_SUCCESS;
 	}
 	if (error_code == SLURM_SUCCESS) {
-		/* job's total_procs is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_procs = total_cpus;
+		/* job's total_cpus is needed for SELECT_MODE_WILL_RUN */
+		job_ptr->total_cpus = total_cpus;
 	}
 
 	xfree(consec_cpus);
@@ -946,7 +946,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	int best_fit_location = 0, best_fit_sufficient;
 	bool sufficient;
 
-	rem_cpus = job_ptr->num_procs;
+	rem_cpus = job_ptr->details->min_cpus;
 	if (req_nodes > min_nodes)
 		rem_nodes = req_nodes;
 	else
@@ -1204,8 +1204,8 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		rc = EINVAL;
 
  fini:	if (rc == SLURM_SUCCESS) {
-		/* Job's total_procs is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_procs = total_cpus;
+		/* Job's total_cpus is needed for SELECT_MODE_WILL_RUN */
+		job_ptr->total_cpus = total_cpus;
 	}
 	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
@@ -2028,7 +2028,7 @@ extern int select_p_block_init(List part_list)
  * NOTE: the job information that is considered for scheduling includes:
  *	req_node_bitmap: bitmap of specific nodes required by the job
  *	contiguous: allocated nodes must be sequentially located
- *	num_procs: minimum number of processors required by the job
+ *	num_cpus: minimum number of processors required by the job
  * NOTE: bitmap must be a superset of the job's required at the time that
  *	select_p_job_test is called
  */

@@ -336,7 +336,8 @@ host_fini:	if (rc) {
 			info("wiki: change job %u min_nodes to %u",
 				jobid, new_node_cnt);
 #ifdef HAVE_BG
-			job_ptr->num_procs = job_desc.num_procs;
+			job_ptr->details->min_cpus = job_desc.min_cpus;
+			job_ptr->details->max_cpus = job_desc.max_cpus;
 			job_ptr->details->job_min_cpus = job_desc.job_min_cpus;
 #endif
 			last_job_update = now;

@@ -70,7 +70,7 @@ static int   _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _cluster_procs(slurmdbd_conn_t *slurmdbd_conn,
+static int   _cluster_cpus(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
@@ -223,8 +223,8 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _archive_load(slurmdbd_conn,
 					   in_buffer, out_buffer, uid);
 			break;
-		case DBD_CLUSTER_PROCS:
-			rc = _cluster_procs(slurmdbd_conn,
+		case DBD_CLUSTER_CPUS:
+			rc = _cluster_cpus(slurmdbd_conn,
 					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_ACCOUNTS:
@@ -950,42 +950,42 @@ end_it:
 	return rc;
 }
 
-static int _cluster_procs(slurmdbd_conn_t *slurmdbd_conn,
+static int _cluster_cpus(slurmdbd_conn_t *slurmdbd_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_cluster_procs_msg_t *cluster_procs_msg = NULL;
+	dbd_cluster_cpus_msg_t *cluster_cpus_msg = NULL;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
 	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
-		comment = "DBD_CLUSTER_PROCS message from invalid uid";
-		error("DBD_CLUSTER_PROCS message from invalid uid %u", *uid);
+		comment = "DBD_CLUSTER_CPUS message from invalid uid";
+		error("DBD_CLUSTER_CPUS message from invalid uid %u", *uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
-	if (slurmdbd_unpack_cluster_procs_msg(slurmdbd_conn->rpc_version,
-					      &cluster_procs_msg, in_buffer) !=
+	if (slurmdbd_unpack_cluster_cpus_msg(slurmdbd_conn->rpc_version,
+					      &cluster_cpus_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_CLUSTER_PROCS message";
+		comment = "Failed to unpack DBD_CLUSTER_CPUS message";
 		error("%s", comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	debug2("DBD_CLUSTER_PROCS: called for %s(%u)",
-	       cluster_procs_msg->cluster_name,
-	       cluster_procs_msg->proc_count);
+	debug2("DBD_CLUSTER_CPUS: called for %s(%u)",
+	       cluster_cpus_msg->cluster_name,
+	       cluster_cpus_msg->cpu_count);
 
-	rc = clusteracct_storage_g_cluster_procs(
+	rc = clusteracct_storage_g_cluster_cpus(
 		slurmdbd_conn->db_conn,
-		cluster_procs_msg->cluster_name,
-		cluster_procs_msg->cluster_nodes,
-		cluster_procs_msg->proc_count,
-		cluster_procs_msg->event_time);
+		cluster_cpus_msg->cluster_name,
+		cluster_cpus_msg->cluster_nodes,
+		cluster_cpus_msg->cpu_count,
+		cluster_cpus_msg->event_time);
 end_it:
-	slurmdbd_free_cluster_procs_msg(slurmdbd_conn->rpc_version,
-					cluster_procs_msg);
+	slurmdbd_free_cluster_cpus_msg(slurmdbd_conn->rpc_version,
+					cluster_cpus_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
-				      rc, comment, DBD_CLUSTER_PROCS);
+				      rc, comment, DBD_CLUSTER_CPUS);
 	return rc;
 }
 
@@ -1642,7 +1642,7 @@ static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_cluster_procs_msg_t *cluster_procs_msg = NULL;
+	dbd_cluster_cpus_msg_t *cluster_cpus_msg = NULL;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
@@ -1652,8 +1652,8 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		rc = ESLURM_ACCESS_DENIED;
 		goto end_it;
 	}
-	if (slurmdbd_unpack_cluster_procs_msg(slurmdbd_conn->rpc_version,
-					      &cluster_procs_msg, in_buffer) !=
+	if (slurmdbd_unpack_cluster_cpus_msg(slurmdbd_conn->rpc_version,
+					      &cluster_cpus_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_FLUSH_JOBS message";
 		error("%s", comment);
@@ -1661,15 +1661,15 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 	debug2("DBD_FLUSH_JOBS: called for %s",
-	       cluster_procs_msg->cluster_name);
+	       cluster_cpus_msg->cluster_name);
 
 	rc = acct_storage_g_flush_jobs_on_cluster(
 		slurmdbd_conn->db_conn,
-		cluster_procs_msg->cluster_name,
-		cluster_procs_msg->event_time);
+		cluster_cpus_msg->cluster_name,
+		cluster_cpus_msg->event_time);
 end_it:
-	slurmdbd_free_cluster_procs_msg(slurmdbd_conn->rpc_version,
-					cluster_procs_msg);
+	slurmdbd_free_cluster_cpus_msg(slurmdbd_conn->rpc_version,
+					cluster_cpus_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 				      rc, comment, DBD_FLUSH_JOBS);
 	return rc;
@@ -1839,7 +1839,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&details, 0, sizeof(struct job_details));
 	memset(&id_rc_msg, 0, sizeof(dbd_id_rc_msg_t));
 
-	job.total_procs = job_start_msg->alloc_cpus;
+	job.total_cpus = job_start_msg->alloc_cpus;
 	job.node_cnt = job_start_msg->alloc_nodes;
 	job.account = _replace_double_quotes(job_start_msg->account);
 	job.assoc_id = job_start_msg->assoc_id;
@@ -1854,7 +1854,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.nodes = job_start_msg->nodes;
 	job.network = job_start_msg->node_inx;
 	job.partition = job_start_msg->partition;
-	job.num_procs = job_start_msg->req_cpus;
+	details.min_cpus = job_start_msg->req_cpus;
 	job.resv_id = job_start_msg->resv_id;
 	job.priority = job_start_msg->priority;
 	job.start_time = job_start_msg->start_time;
@@ -3234,7 +3234,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	job.start_time = step_comp_msg->start_time;
 	details.submit_time = step_comp_msg->job_submit_time;
 	step.step_id = step_comp_msg->step_id;
-	step.cpu_count = step_comp_msg->total_procs;
+	step.cpu_count = step_comp_msg->total_cpus;
 	details.num_tasks = step_comp_msg->total_tasks;
 
 	job.details = &details;
@@ -3298,7 +3298,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	step.start_time = step_start_msg->start_time;
 	details.submit_time = step_start_msg->job_submit_time;
 	step.step_id = step_start_msg->step_id;
-	step.cpu_count = step_start_msg->total_procs;
+	step.cpu_count = step_start_msg->total_cpus;
 	details.num_tasks = step_start_msg->total_tasks;
 
 	layout.node_cnt = step_start_msg->node_cnt;

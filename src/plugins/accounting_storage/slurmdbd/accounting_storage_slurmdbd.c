@@ -1530,23 +1530,23 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_cluster_procs(void *db_conn,
+extern int clusteracct_storage_p_cluster_cpus(void *db_conn,
 					       char *cluster,
 					       char *cluster_nodes,
-					       uint32_t procs,
+					       uint32_t cpus,
 					       time_t event_time)
 {
 	slurmdbd_msg_t msg;
-	dbd_cluster_procs_msg_t req;
+	dbd_cluster_cpus_msg_t req;
 	int rc = SLURM_ERROR;
 
 	debug2("Sending info for cluster %s", cluster);
-	memset(&req, 0, sizeof(dbd_cluster_procs_msg_t));
+	memset(&req, 0, sizeof(dbd_cluster_cpus_msg_t));
 	req.cluster_name = cluster;
 	req.cluster_nodes = cluster_nodes;
-	req.proc_count   = procs;
+	req.cpu_count   = cpus;
 	req.event_time   = event_time;
-	msg.msg_type     = DBD_CLUSTER_PROCS;
+	msg.msg_type     = DBD_CLUSTER_CPUS;
 	msg.data         = &req;
 
 	slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION, &msg, &rc);
@@ -1643,7 +1643,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	}
 	memset(&req, 0, sizeof(dbd_job_start_msg_t));
 
-	req.alloc_cpus    = job_ptr->total_procs;
+	req.alloc_cpus    = job_ptr->total_cpus;
 	req.cluster       = cluster_name;
 	req.account       = job_ptr->account;
 	req.assoc_id      = job_ptr->assoc_id;
@@ -1672,7 +1672,8 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	}
 
 	req.partition     = job_ptr->partition;
-	req.req_cpus      = job_ptr->num_procs;
+	if (job_ptr->details)
+		req.req_cpus      = job_ptr->details->min_cpus;
 	req.resv_id       = job_ptr->resv_id;
 	req.priority      = job_ptr->priority;
 	req.start_time    = job_ptr->start_time;
@@ -1775,7 +1776,10 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 
-	cpus = tasks = step_ptr->job_ptr->num_procs;
+	if(step_ptr->job_ptr->details)
+		cpus = step_ptr->job_ptr->details->min_cpus;
+	else
+		cpus = step_ptr->job_ptr->cpu_cnt;
 	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_IONODES,
 			     &ionodes);
@@ -1792,7 +1796,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 			     &nodes);
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = tasks = step_ptr->job_ptr->total_procs;
+		cpus = tasks = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 		nodes = step_ptr->job_ptr->node_cnt;
@@ -1832,7 +1836,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	if (step_ptr->step_layout)
 		req.task_dist   = step_ptr->step_layout->task_dist;
 	req.task_dist   = task_dist;
-	req.total_procs = cpus;
+	req.total_cpus = cpus;
 	req.total_tasks = tasks;
 
 	msg.msg_type    = DBD_STEP_START;
@@ -1858,7 +1862,10 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 
-	cpus = tasks = step_ptr->job_ptr->num_procs;
+	if(step_ptr->job_ptr->details)
+		cpus = step_ptr->job_ptr->details->min_cpus;
+	else
+		cpus = step_ptr->job_ptr->cpu_cnt;
 	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_IONODES,
 			     &ionodes);
@@ -1873,7 +1880,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = tasks = step_ptr->job_ptr->total_procs;
+		cpus = tasks = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	} else {
@@ -1905,7 +1912,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 	req.step_id     = step_ptr->step_id;
-	req.total_procs = cpus;
+	req.total_cpus = cpus;
 	req.total_tasks = tasks;
 
 	msg.msg_type    = DBD_STEP_COMPLETE;
@@ -2071,15 +2078,15 @@ extern int acct_storage_p_flush_jobs_on_cluster(void *db_conn, char *cluster,
 						time_t event_time)
 {
 	slurmdbd_msg_t msg;
-	dbd_cluster_procs_msg_t req;
+	dbd_cluster_cpus_msg_t req;
 
 	info("Ending any jobs in accounting that were running when controller "
 	     "went down on cluster %s", cluster);
 
-	memset(&req, 0, sizeof(dbd_cluster_procs_msg_t));
+	memset(&req, 0, sizeof(dbd_cluster_cpus_msg_t));
 
 	req.cluster_name = cluster;
-	req.proc_count   = 0;
+	req.cpu_count   = 0;
 	req.event_time   = event_time;
 
 	msg.msg_type     = DBD_FLUSH_JOBS;

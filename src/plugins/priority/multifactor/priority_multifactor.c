@@ -438,7 +438,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 		 * the job is requesting smaller than 1 node.
 		 * We need a way to figure out how to look at
 		 * cpus requested here for those situations.  This can
-		 * probably be done with the num_procs, but
+		 * probably be done with the num_cpus, but
 		 * that isn't always used.  This is usually
 		 * set on bluegene systems, which is where
 		 * this problem arose.  The code below was
@@ -452,9 +452,9 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 			factors->priority_js = (double)(node_record_count
 					   - job_ptr->details->min_nodes)
 				/ (double)node_record_count;
-/* 			if(job_ptr->num_procs && job_ptr->num_procs != NO_VAL) { */
+/* 			if(job_ptr->num_cpus && job_ptr->num_cpus != NO_VAL) { */
 /* 				factors->priority_js +=  */
-/* 					(double)(total_cpus - job_ptr->num_procs) */
+/* 					(double)(total_cpus - job_ptr->num_cpus) */
 /* 					/ (double)total_cpus; */
 /* 				factors->priority_js /= 2;			 */
 /* 			} */
@@ -462,9 +462,9 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 			factors->priority_js =
 				(double)job_ptr->details->min_nodes
 				/ (double)node_record_count;
-/* 			if(job_ptr->num_procs && job_ptr->num_procs != NO_VAL) { */
+/* 			if(job_ptr->num_cpus && job_ptr->num_cpus != NO_VAL) { */
 /* 				factors->priority_js +=  */
-/* 					(double)job_ptr->num_procs */
+/* 					(double)job_ptr->num_cpus */
 /* 					/ (double)total_cpus; */
 /* 				factors->priority_js /= 2;			 */
 /* 			} */
@@ -764,7 +764,7 @@ static void *_decay_thread(void *no_data)
 					* pow(decay_factor, (double)run_delta);
 
 				real_decay = run_decay
-					* (double)job_ptr->total_procs;
+					* (double)job_ptr->total_cpus;
 
 				/* now apply the usage factor for this
 				   qos */
@@ -941,11 +941,11 @@ int init ( void )
 		calc_fairshare = 0;
 		weight_fs = 0;
 	} else if(assoc_mgr_root_assoc) {
-		if(!cluster_procs)
+		if(!cluster_cpus)
 			fatal("We need to have a cluster cpu count "
 			      "before we can init the priority/multifactor "
 			      "plugin");
-		priority_p_set_max_cluster_usage(cluster_procs,
+		priority_p_set_max_cluster_usage(cluster_cpus,
 						 slurm_get_priority_decay_hl());
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&decay_handler_thread, &thread_attr,

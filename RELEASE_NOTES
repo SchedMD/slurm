@@ -45,15 +45,15 @@ BLUEGENE SPECIFIC CHANGES
 
 
 API CHANGES
-* General changes:
-
-* Changed the following struct definitions:
+* Changed members of the following structs:
+job_info_t
+	num_procs -> num_cpus
+job_desc_msg_t
+	num_procs -> min_cpus
 
 * Added the following struct definitions:
-
-* Renamed
-
-* Changed members of the following structs:
+job_desc_msg_t
+	max_cpus
 
 * Changed the following enums
 

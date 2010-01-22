@@ -80,7 +80,7 @@ static List  _build_step_list( char* str );
 static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
 static void  _help( void );
-static int   _max_procs_per_node(void);
+static int   _max_cpus_per_node(void);
 static int   _parse_state( char* str, enum job_states* states );
 static void  _parse_token( char *token, char *field, int *field_size,
 			   bool *right_justify, char **suffix);
@@ -341,16 +341,16 @@ parse_command_line( int argc, char* argv[] )
 		}
 	}
 
-	params.max_procs = _max_procs_per_node();
+	params.max_cpus = _max_cpus_per_node();
 
 	if ( params.verbose )
 		_print_options();
 }
 
 /* Return the maximum number of processors for any node in the cluster */
-static int   _max_procs_per_node(void)
+static int   _max_cpus_per_node(void)
 {
-	int error_code, max_procs = 1;
+	int error_code, max_cpus = 1;
 	node_info_msg_t *node_info_ptr = NULL;
 
 	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
@@ -359,12 +359,12 @@ static int   _max_procs_per_node(void)
 		int i;
 		node_info_t *node_ptr = node_info_ptr->node_array;
 		for (i=0; i<node_info_ptr->record_count; i++) {
-			max_procs = MAX(max_procs, node_ptr[i].cpus);
+			max_cpus = MAX(max_cpus, node_ptr[i].cpus);
 		}
 		slurm_free_node_info_msg (node_info_ptr);
 	}
 
-	return max_procs;
+	return max_cpus;
 }
 
 /*
@@ -515,15 +515,15 @@ extern int parse_format( char* format )
 							right_justify,
 							suffix  );
 			else if (field[0] == 'c')
-				job_format_add_min_procs( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix  );
+				job_format_add_min_cpus( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix  );
 			else if (field[0] == 'C')
-				job_format_add_num_procs( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix  );
+				job_format_add_num_cpus( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix  );
 			else if (field[0] == 'd')
 				job_format_add_min_tmp_disk(
 							  params.format_list,
@@ -802,7 +802,7 @@ _print_options()
 	printf( "iterate    = %d\n", params.iterate );
 	printf( "job_flag   = %d\n", params.job_flag );
 	printf( "jobs       = %s\n", params.jobs );
-	printf( "max_procs  = %d\n", params.max_procs ) ;
+	printf( "max_cpus   = %d\n", params.max_cpus ) ;
 	printf( "nodes      = %s\n", hostlist ) ;
 	printf( "partitions = %s\n", params.partitions ) ;
 	printf( "sort       = %s\n", params.sort ) ;
