@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Added nodelist to sview for jobs on non-bluegene systems
  -- Correction in value of batch job environment variable SLURM_TASKS_PER_NODE
     under some conditions.
+ -- Fix bugs which treated --ntasks-per-node as a minimum rather than maximum 
+    value in some places.
 
 * Changes in SLURM 2.1.1
 =============================
