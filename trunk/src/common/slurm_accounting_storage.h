@@ -1132,11 +1132,11 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 					 struct node_record *node_ptr,
 					 time_t event_time);
 
-extern int clusteracct_storage_g_cluster_procs(void *db_conn,
-					       char *cluster,
-					       char *cluster_nodes,
-					       uint32_t procs,
-					       time_t event_time);
+extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
+					      char *cluster,
+					      char *cluster_nodes,
+					      uint32_t cpus,
+					      time_t event_time);
 
 extern int clusteracct_storage_g_register_ctld(
 	void *db_conn, char *cluster, uint16_t port);

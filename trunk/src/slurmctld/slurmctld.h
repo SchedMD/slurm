@@ -160,7 +160,7 @@ extern char *slurmctld_cluster_name;	/* name of cluster */
 extern void *acct_db_conn;
 extern int   accounting_enforce;
 extern int   association_based_accounting;
-extern int   cluster_procs;
+extern int   cluster_cpus;
 
 /*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h
@@ -324,10 +324,12 @@ struct job_details {
 					 * CPU | MEM_PER_CPU */
 	uint32_t job_min_tmp_disk;	/* minimum tempdisk per node, MB */
 	uint32_t magic;			/* magic cookie for data integrity */
+	uint32_t max_cpus;		/* maximum number of cpus */
 	uint32_t max_nodes;		/* maximum number of nodes */
 	multi_core_data_t *mc_ptr;	/* multi-core specific data */
 	char *mem_bind;			/* binding map for map/mask_cpu */
 	uint16_t mem_bind_type;		/* see mem_bind_type_t */
+	uint32_t min_cpus;		/* minimum number of cpus */
 	uint32_t min_nodes;		/* minimum number of nodes */
 	uint16_t nice;		        /* requested priority change,
 					 * NICE_OFFSET == no change */
@@ -427,7 +429,6 @@ struct job_record {
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to insure
 					 * epilog is not re-run for job */
-	uint32_t num_procs;		/* count of required processors */
 	uint16_t other_port;		/* port for client communications */
 	char *partition;		/* name of the partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
@@ -467,7 +468,7 @@ struct job_record {
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
 					 * NO_VAL implies partition max_time */
 	time_t tot_sus_time;		/* total time in suspend state */
-	uint32_t total_procs;		/* number of allocated processors,
+	uint32_t total_cpus;		/* number of allocated cpus,
 					 * for accounting */
 	uint32_t user_id;		/* user the job runs as */
 	uint16_t warn_signal;		/* signal to send before end_time */

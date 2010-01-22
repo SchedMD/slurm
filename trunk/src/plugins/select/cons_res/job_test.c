@@ -926,7 +926,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
 
-	rem_cpus = job_ptr->num_procs;
+	rem_cpus = job_ptr->details->min_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
 
 	i = 0;
@@ -1157,7 +1157,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	int best_fit_location = 0, best_fit_sufficient;
 	bool sufficient;
 
-	rem_cpus = job_ptr->num_procs;
+	rem_cpus = job_ptr->details->min_cpus;
 	if (req_nodes > min_nodes)
 		rem_nodes = req_nodes;
 	else
@@ -1454,10 +1454,11 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		}
 	}
 
-	/* NOTE: num_procs is 1 by default,
+	/* NOTE: details->min_cpus is 1 by default,
 	 * Only reset max_nodes if user explicitly sets a proc count */
-	if ((job_ptr->num_procs > 1) && (max_nodes > job_ptr->num_procs))
-		max_nodes = job_ptr->num_procs;
+	if ((job_ptr->details->min_cpus > 1)
+	    && (max_nodes > job_ptr->details->min_cpus))
+		max_nodes = job_ptr->details->min_cpus;
 
 	origmap = bit_copy(node_map);
 	if (origmap == NULL)
@@ -1664,11 +1665,11 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* This is the case if -O/--overcommit  is true */
-	if (job_ptr->num_procs == job_ptr->details->min_nodes) {
+	if (job_ptr->details->min_cpus == job_ptr->details->min_nodes) {
 		struct multi_core_data *mc_ptr = job_ptr->details->mc_ptr;
-		job_ptr->num_procs *= MAX(1, mc_ptr->min_threads);
-		job_ptr->num_procs *= MAX(1, mc_ptr->min_cores);
-		job_ptr->num_procs *= MAX(1, mc_ptr->min_sockets);
+		job_ptr->details->min_cpus *= MAX(1, mc_ptr->min_threads);
+		job_ptr->details->min_cpus *= MAX(1, mc_ptr->min_cores);
+		job_ptr->details->min_cpus *= MAX(1, mc_ptr->min_sockets);
 	}
 
 	debug3("cons_res: cr_job_test: evaluating job %u on %u nodes",
@@ -1966,7 +1967,7 @@ alloc_job:
 	if ((error_code == SLURM_SUCCESS) && (mode == SELECT_MODE_WILL_RUN)) {
 		/* Set a reasonable value for the number of allocated CPUs.
 		 * Without computing task distribution this is only a guess */
-		job_ptr->total_procs = MAX(job_ptr->num_procs,
+		job_ptr->total_cpus = MAX(job_ptr->details->min_cpus,
 					   job_ptr->details->min_nodes);
 	}
 	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
@@ -1985,7 +1986,8 @@ alloc_job:
 	job_res->nprocs           = job_res->nhosts;
 	if (job_ptr->details->ntasks_per_node)
 		job_res->nprocs  *= job_ptr->details->ntasks_per_node;
-	job_res->nprocs           = MAX(job_res->nprocs, job_ptr->num_procs);
+	job_res->nprocs           = MAX(job_res->nprocs,
+					job_ptr->details->min_cpus);
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;
 	job_res->cpus_used        = xmalloc(job_res->nhosts *
@@ -2062,9 +2064,9 @@ alloc_job:
 	/* translate job_res->cpus array into format with rep count */
 	build_cnt = build_job_resources_cpu_array(job_res);
 	if (build_cnt >= 0)
-		job_ptr->total_procs = build_cnt;
+		job_ptr->total_cpus = build_cnt;
 	else
-		job_ptr->total_procs = total_cpus;	/* best guess */
+		job_ptr->total_cpus = total_cpus;	/* best guess */
 
 	if ((cr_type != CR_CPU_MEMORY)    && (cr_type != CR_CORE_MEMORY) &&
 	    (cr_type != CR_SOCKET_MEMORY) && (cr_type != CR_MEMORY))

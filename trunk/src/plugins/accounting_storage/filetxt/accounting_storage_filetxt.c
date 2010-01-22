@@ -508,10 +508,10 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_cluster_procs(void *db_conn,
+extern int clusteracct_storage_p_cluster_cpus(void *db_conn,
 					       char *cluster,
 					       char *cluster_nodes,
-					       uint32_t procs,
+					       uint32_t cpus,
 					       time_t event_time)
 {
 	return SLURM_SUCCESS;
@@ -584,7 +584,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	snprintf(buf, BUFFER_SIZE,
 		 "%d %s %d %ld %u %s %s",
 		 JOB_START, jname,
-		 track_steps, priority, job_ptr->total_procs,
+		 track_steps, priority, job_ptr->total_cpus,
 		 nodes, account);
 
 	rc = _print_record(job_ptr, job_ptr->start_time, buf);
@@ -642,7 +642,10 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	}
 
 #ifdef HAVE_BG
-	cpus = step_ptr->job_ptr->num_procs;
+	if(step_ptr->job_ptr->details)
+		cpus = step_ptr->job_ptr->details->min_cpus;
+	else
+		cpus = step_ptr->job_ptr->cpu_cnt;
 	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_IONODES,
 			     &ionodes);
@@ -656,7 +659,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->total_procs;
+		cpus = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
 	} else {
 		cpus = step_ptr->step_layout->task_cnt;
@@ -773,7 +776,10 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		comp_status = JOB_COMPLETE;
 
 #ifdef HAVE_BG
-	cpus = step_ptr->job_ptr->num_procs;
+	if(step_ptr->job_ptr->details)
+		cpus = step_ptr->job_ptr->details->min_cpus;
+	else
+		cpus = step_ptr->job_ptr->cpu_cnt;
 	select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 			     SELECT_JOBDATA_IONODES,
 			     &ionodes);
@@ -787,7 +793,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->total_procs;
+		cpus = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
 
 	} else {

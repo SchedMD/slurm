@@ -89,7 +89,7 @@ typedef enum {
 	DBD_ADD_ASSOCS,         /* Add new association to the mix       */
 	DBD_ADD_CLUSTERS,       /* Add new cluster to the mix           */
 	DBD_ADD_USERS,          /* Add new user to the mix              */
-	DBD_CLUSTER_PROCS,	/* Record total processors on cluster	*/
+	DBD_CLUSTER_CPUS,	/* Record total processors on cluster	*/
 	DBD_FLUSH_JOBS, 	/* End jobs that are still running
 				 * when a controller is restarted.	*/
 	DBD_GET_ACCOUNTS,	/* Get account information		*/
@@ -177,17 +177,17 @@ typedef struct {
 	acct_user_cond_t *cond;
 } dbd_acct_coord_msg_t;
 
-typedef struct dbd_cluster_procs_msg {
+typedef struct dbd_cluster_cpus_msg {
 	char *cluster_name;	/* name of cluster */
 	char *cluster_nodes;	/* name of cluster */
-	uint32_t proc_count;	/* total processor count */
+	uint32_t cpu_count;	/* total processor count */
 	time_t event_time;	/* time of transition */
-} dbd_cluster_procs_msg_t;
+} dbd_cluster_cpus_msg_t;
 
 typedef struct {
 	void *rec; /* this could be anything based on the type types
-		     * are defined in slurm_accounting_storage.h
-		     * *_rec_t */
+		    * are defined in slurm_accounting_storage.h
+		    * *_rec_t */
 } dbd_rec_msg_t;
 
 typedef struct {
@@ -339,7 +339,7 @@ typedef struct dbd_step_comp_msg {
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
 	uint32_t step_id;	/* step ID */
-	uint32_t total_procs;	/* count of allocated processors */
+	uint32_t total_cpus;	/* count of allocated processors */
 	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_comp_msg_t;
 
@@ -357,7 +357,7 @@ typedef struct dbd_step_start_msg {
 				  * in db */
 	uint32_t step_id;	/* step ID */
 	uint16_t task_dist;     /* layout method of step */
-	uint32_t total_procs;	/* count of allocated processors */
+	uint32_t total_cpus;	/* count of allocated processors */
 	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_start_msg_t;
 
@@ -419,8 +419,8 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type,
 \*****************************************************************************/
 void inline slurmdbd_free_acct_coord_msg(uint16_t rpc_version,
 					 dbd_acct_coord_msg_t *msg);
-void inline slurmdbd_free_cluster_procs_msg(uint16_t rpc_version,
-					    dbd_cluster_procs_msg_t *msg);
+void inline slurmdbd_free_cluster_cpus_msg(uint16_t rpc_version,
+					   dbd_cluster_cpus_msg_t *msg);
 void inline slurmdbd_free_rec_msg(uint16_t rpc_version,
 				  slurmdbd_msg_type_t type,
 				  dbd_rec_msg_t *msg);
@@ -438,7 +438,7 @@ void inline slurmdbd_free_job_complete_msg(uint16_t rpc_version,
 void inline slurmdbd_free_job_start_msg(uint16_t rpc_version,
 					dbd_job_start_msg_t *msg);
 void inline slurmdbd_free_id_rc_msg(uint16_t rpc_version,
-					   dbd_id_rc_msg_t *msg);
+				    dbd_id_rc_msg_t *msg);
 void inline slurmdbd_free_job_suspend_msg(uint16_t rpc_version,
 					  dbd_job_suspend_msg_t *msg);
 void inline slurmdbd_free_list_msg(uint16_t rpc_version,
@@ -468,9 +468,9 @@ void inline slurmdbd_free_usage_msg(uint16_t rpc_version,
 void inline slurmdbd_pack_acct_coord_msg(uint16_t rpc_version,
 					 dbd_acct_coord_msg_t *msg,
 					 Buf buffer);
-void inline slurmdbd_pack_cluster_procs_msg(uint16_t rpc_version,
-					    dbd_cluster_procs_msg_t *msg,
-					    Buf buffer);
+void inline slurmdbd_pack_cluster_cpus_msg(uint16_t rpc_version,
+					   dbd_cluster_cpus_msg_t *msg,
+					   Buf buffer);
 void inline slurmdbd_pack_rec_msg(uint16_t rpc_version,
 				  slurmdbd_msg_type_t type,
 				  dbd_rec_msg_t *msg, Buf buffer);
@@ -528,9 +528,9 @@ void inline slurmdbd_pack_usage_msg(uint16_t rpc_version,
 int inline slurmdbd_unpack_acct_coord_msg(uint16_t rpc_version,
 					  dbd_acct_coord_msg_t **msg,
 					  Buf buffer);
-int inline slurmdbd_unpack_cluster_procs_msg(uint16_t rpc_version,
-					     dbd_cluster_procs_msg_t **msg,
-					     Buf buffer);
+int inline slurmdbd_unpack_cluster_cpus_msg(uint16_t rpc_version,
+					    dbd_cluster_cpus_msg_t **msg,
+					    Buf buffer);
 int inline slurmdbd_unpack_rec_msg(uint16_t rpc_version,
 				   slurmdbd_msg_type_t type,
 				   dbd_rec_msg_t **msg, Buf buffer);

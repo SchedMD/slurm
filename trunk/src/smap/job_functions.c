@@ -44,7 +44,7 @@
 #include "src/smap/smap.h"
 
 static int  _get_node_cnt(job_info_t * job);
-static int  _max_procs_per_node(void);
+static int  _max_cpus_per_node(void);
 static int  _nodes_in_list(char *node_list);
 static void _print_header_job(void);
 static int  _print_text_job(job_info_t * job_ptr);
@@ -136,7 +136,7 @@ extern void get_job(void)
 				if((count>=text_line_cnt)
 				   && (printed_jobs
 				       < (text_win->_maxy-3))) {
-					job_ptr->num_procs =
+					job_ptr->num_cpus =
 						(int)letters[count%62];
 					wattron(text_win,
 						COLOR_PAIR(colors[count%6]));
@@ -146,7 +146,7 @@ extern void get_job(void)
 					printed_jobs++;
 				}
 			} else {
-				job_ptr->num_procs = (int)letters[count%62];
+				job_ptr->num_cpus = (int)letters[count%62];
 				_print_text_job(job_ptr);
 			}
 			count++;
@@ -167,7 +167,7 @@ extern void get_job(void)
 			       < (text_win->_maxy-3))) {
 				xfree(job_ptr->nodes);
 				job_ptr->nodes = xstrdup("waiting...");
-				job_ptr->num_procs = (int) letters[count%62];
+				job_ptr->num_cpus = (int) letters[count%62];
 				wattron(text_win,
 					COLOR_PAIR(colors[count%6]));
 				_print_text_job(job_ptr);
@@ -178,7 +178,7 @@ extern void get_job(void)
 		} else {
 			xfree(job_ptr->nodes);
 			job_ptr->nodes = xstrdup("waiting...");
-			job_ptr->num_procs = (int) letters[count%62];
+			job_ptr->num_cpus = (int) letters[count%62];
 			_print_text_job(job_ptr);
 			printed_jobs++;
 		}
@@ -298,7 +298,7 @@ static int _print_text_job(job_info_t * job_ptr)
 #endif
 	if(!params.commandline) {
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%c", job_ptr->num_procs);
+			  main_xcord, "%c", job_ptr->num_cpus);
 		main_xcord += 3;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d", job_ptr->job_id);
@@ -309,10 +309,11 @@ static int _print_text_job(job_info_t * job_ptr)
 #ifdef HAVE_BG
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.16s",
-			  select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-						  time_buf,
-						  sizeof(time_buf),
-						  SELECT_PRINT_BG_ID));
+			  select_g_select_jobinfo_sprint(
+				  job_ptr->select_jobinfo,
+				  time_buf,
+				  sizeof(time_buf),
+				  SELECT_PRINT_BG_ID));
 		main_xcord += 18;
 #endif
 #ifdef HAVE_CRAY_XT
@@ -440,16 +441,16 @@ static int _get_node_cnt(job_info_t * job)
 	int node_cnt = 0, round;
 	bool completing = job->job_state & JOB_COMPLETING;
 	uint16_t base_job_state = job->job_state & (~JOB_COMPLETING);
-	static int max_procs = 0;
+	static int max_cpus = 0;
 
 	if (base_job_state == JOB_PENDING || completing) {
-		if (max_procs == 0)
-			max_procs = _max_procs_per_node();
+		if (max_cpus == 0)
+			max_cpus = _max_cpus_per_node();
 
 		node_cnt = _nodes_in_list(job->req_nodes);
 		node_cnt = MAX(node_cnt, job->num_nodes);
-		round  = job->num_procs + max_procs - 1;
-		round /= max_procs;      /* round up */
+		round  = job->num_cpus + max_cpus - 1;
+		round /= max_cpus;      /* round up */
 		node_cnt = MAX(node_cnt, round);
 	} else
 		node_cnt = _nodes_in_list(job->nodes);
@@ -465,9 +466,9 @@ static int _nodes_in_list(char *node_list)
 }
 
 /* Return the maximum number of processors for any node in the cluster */
-static int   _max_procs_per_node(void)
+static int   _max_cpus_per_node(void)
 {
-	int error_code, max_procs = 1;
+	int error_code, max_cpus = 1;
 	node_info_msg_t *node_info_ptr = NULL;
 
 	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
@@ -476,11 +477,11 @@ static int   _max_procs_per_node(void)
 		int i;
 		node_info_t *node_ptr = node_info_ptr->node_array;
 		for (i=0; i<node_info_ptr->record_count; i++) {
-			max_procs = MAX(max_procs, node_ptr[i].cpus);
+			max_cpus = MAX(max_cpus, node_ptr[i].cpus);
 		}
 		slurm_free_node_info_msg (node_info_ptr);
 	}
 
-	return max_procs;
+	return max_cpus;
 }
 

@@ -78,7 +78,7 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, ntasks_per_node, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_socket, uint16_t);
 	STORE_FIELD(hv, job_info, num_nodes, uint32_t);
-	STORE_FIELD(hv, job_info, num_procs, uint32_t);
+	STORE_FIELD(hv, job_info, num_cpus, uint32_t);
 	if(job_info->partition)
 		STORE_FIELD(hv, job_info, partition, charp);
 	STORE_FIELD(hv, job_info, pre_sus_time, time_t);

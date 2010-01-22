@@ -128,8 +128,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_nodes)
 #define job_format_add_node_inx(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_node_inx)
-#define job_format_add_num_procs(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_num_procs)
+#define job_format_add_num_cpus(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_num_cpus)
 #define job_format_add_num_nodes(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_num_nodes)
 #define job_format_add_num_sct(list,wid,right,suffix) \
@@ -138,8 +138,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_shared)
 #define job_format_add_contiguous(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_contiguous)
-#define job_format_add_min_procs(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_min_procs)
+#define job_format_add_min_cpus(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_min_cpus)
 #define job_format_add_min_sockets(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_min_sockets)
 #define job_format_add_min_cores(list,wid,right,suffix) \
@@ -222,7 +222,7 @@ int _print_job_node_inx(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_partition(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_num_procs(job_info_t * job, int width, bool right_justify,
+int _print_job_num_cpus(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 			char* suffix);
@@ -232,7 +232,7 @@ int _print_job_shared(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
+int _print_job_min_cpus(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_min_sockets(job_info_t * job, int width, bool right_justify,
 			char* suffix);

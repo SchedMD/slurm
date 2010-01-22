@@ -1163,16 +1163,16 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = job_desc->min_nodes;
 		}
 
-		/* make sure if the user only specified num_procs to
+		/* make sure if the user only specified min_cpus to
 		   set min_nodes correctly
 		*/
-		if((job_desc->num_procs != NO_VAL)
-		   && (job_desc->num_procs > job_desc->min_nodes))
+		if((job_desc->min_cpus != NO_VAL)
+		   && (job_desc->min_cpus > job_desc->min_nodes))
 			job_desc->min_nodes =
-				job_desc->num_procs / bg_conf->cpu_ratio;
+				job_desc->min_cpus / bg_conf->cpu_ratio;
 
-		/* initialize num_procs to the min_nodes */
-		job_desc->num_procs = job_desc->min_nodes * bg_conf->cpu_ratio;
+		/* initialize min_cpus to the min_nodes */
+		job_desc->min_cpus = job_desc->min_nodes * bg_conf->cpu_ratio;
 
 		if((job_desc->max_nodes == (uint32_t) NO_VAL)
 		   || (job_desc->max_nodes < job_desc->min_nodes))
@@ -1198,7 +1198,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					     SELECT_JOBDATA_NODE_CNT,
 					     &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
-			job_desc->num_procs = bg_conf->cpus_per_bp * tmp;
+			job_desc->min_cpus = bg_conf->cpus_per_bp * tmp;
 		} else {
 #ifdef HAVE_BGL
 			if(job_desc->min_nodes <= bg_conf->nodecard_node_cnt
@@ -1219,7 +1219,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 			tmp = bg_conf->bp_node_cnt/job_desc->min_nodes;
 
-			job_desc->num_procs = bg_conf->cpus_per_bp/tmp;
+			job_desc->min_cpus = bg_conf->cpus_per_bp/tmp;
 			job_desc->min_nodes = 1;
 #else
 			i = bg_conf->smallest_block;
@@ -1235,12 +1235,12 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					   SELECT_JOBDATA_NODE_CNT,
 					   &job_desc->min_nodes);
 
-			job_desc->num_procs = job_desc->min_nodes
+			job_desc->min_cpus = job_desc->min_nodes
 				* bg_conf->cpu_ratio;
 			job_desc->min_nodes = 1;
 #endif
 		}
-		//job_desc->job_min_cpus = job_desc->num_procs;
+		//job_desc->job_min_cpus = job_desc->min_cpus;
 
 		if(job_desc->max_nodes > bg_conf->bp_node_cnt) {
 			tmp = job_desc->max_nodes % bg_conf->bp_node_cnt;

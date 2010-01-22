@@ -439,10 +439,10 @@ static uint32_t _get_job_tasks(struct job_record *job_ptr)
 	uint32_t task_cnt;
 
 	if (IS_JOB_STARTED(job_ptr)) {
-		task_cnt = job_ptr->total_procs;
+		task_cnt = job_ptr->total_cpus;
 	} else {
-		if (job_ptr->num_procs)
-			task_cnt = job_ptr->num_procs;
+		if (job_ptr->details && job_ptr->details->min_cpus)
+			task_cnt = job_ptr->details->min_cpus;
 		else
 			task_cnt = 1;
 		if (job_ptr->details) {

@@ -647,17 +647,17 @@ int _print_job_node_inx(job_info_t * job, int width, bool right, char* suffix)
 	return SLURM_SUCCESS;
 }
 
-int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
+int _print_job_num_cpus(job_info_t * job, int width, bool right, char* suffix)
 {
 	char tmp_char[18];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
 #ifdef HAVE_BG
-		convert_num_unit((float)job->num_procs, tmp_char,
+		convert_num_unit((float)job->num_cpus, tmp_char,
 				 sizeof(tmp_char), UNIT_NONE);
 #else
-		snprintf(tmp_char, sizeof(tmp_char), "%u", job->num_procs);
+		snprintf(tmp_char, sizeof(tmp_char), "%u", job->num_cpus);
 #endif
 		_print_str(tmp_char, width, right, true);
 	}
@@ -705,8 +705,8 @@ static int _get_node_cnt(job_info_t * job)
 	if (base_job_state == JOB_PENDING || completing) {
 		node_cnt = _nodes_in_list(job->req_nodes);
 		node_cnt = MAX(node_cnt, job->num_nodes);
-		round  = job->num_procs + params.max_procs - 1;
-		round /= params.max_procs;	/* round up */
+		round  = job->num_cpus + params.max_cpus - 1;
+		round /= params.max_cpus;	/* round up */
 		node_cnt = MAX(node_cnt, round);
 	} else
 		node_cnt = _nodes_in_list(job->nodes);
@@ -778,8 +778,8 @@ int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
-			 char* suffix)
+int _print_job_min_cpus(job_info_t * job, int width, bool right_justify,
+			char* suffix)
 {
 	char tmp_char[8];
 

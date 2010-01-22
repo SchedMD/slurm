@@ -169,7 +169,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 {
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
-	uint16_t sockets=0, cores=0, num_procs;
+	uint16_t sockets=0, cores=0, num_cpus;
 	int start, p, t, task_cnt=0;
 	char *str;
 
@@ -184,9 +184,9 @@ void batch_bind(batch_job_launch_msg_t *req)
 		return;
 	}
 
-	num_procs  = MIN((sockets * cores),
+	num_cpus  = MIN((sockets * cores),
 			 (conf->sockets * conf->cores));
-	req_map = (bitstr_t *) bit_alloc(num_procs);
+	req_map = (bitstr_t *) bit_alloc(num_cpus);
 	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 	if (!req_map || !hw_map) {
 		error("task/affinity: malloc error");
@@ -204,14 +204,14 @@ void batch_bind(batch_job_launch_msg_t *req)
 	 * sync with the slurmctld daemon). */
 	for (p = 0; p < (sockets * cores); p++) {
 		if (bit_test(arg.core_bitmap, p))
-			bit_set(req_map, (p % num_procs));
+			bit_set(req_map, (p % num_cpus));
 	}
 	str = (char *)bit_fmt_hexmask(req_map);
 	debug3("task/affinity: job %u CPU mask from slurmctld: %s",
 		req->job_id, str);
 	xfree(str);
 
-	for (p = 0; p < num_procs; p++) {
+	for (p = 0; p < num_cpus; p++) {
 		if (bit_test(req_map, p) == 0)
 			continue;
 		/* core_bitmap does not include threads, so we
@@ -221,7 +221,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 			uint16_t pos = p * conf->threads + t;
 			if (pos >= conf->block_map_size) {
 				info("more resources configured than exist");
-				p = num_procs;
+				p = num_cpus;
 				break;
 			}
 			bit_set(hw_map, pos);
@@ -546,7 +546,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 {
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
-	uint16_t p, t, num_procs, sockets, cores;
+	uint16_t p, t, num_cpus, sockets, cores;
 	int job_node_id;
 	int start;
 	char *str;
@@ -573,9 +573,9 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	debug3("task/affinity: slurmctld s %u c %u; hw s %u c %u t %u",
 		sockets, cores, *hw_sockets, *hw_cores, *hw_threads);
 
-	num_procs   = MIN((sockets * cores),
+	num_cpus   = MIN((sockets * cores),
 			  ((*hw_sockets)*(*hw_cores)));
-	req_map = (bitstr_t *) bit_alloc(num_procs);
+	req_map = (bitstr_t *) bit_alloc(num_cpus);
 	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 	if (!req_map || !hw_map) {
 		error("task/affinity: malloc error");
@@ -590,7 +590,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	 * sync with the slurmctld daemon). */
 	for (p = 0; p < (sockets * cores); p++) {
 		if (bit_test(arg.core_bitmap, start+p))
-			bit_set(req_map, (p % num_procs));
+			bit_set(req_map, (p % num_cpus));
 	}
 
 	str = (char *)bit_fmt_hexmask(req_map);
@@ -598,7 +598,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		req->job_id, req->job_step_id, str);
 	xfree(str);
 
-	for (p = 0; p < num_procs; p++) {
+	for (p = 0; p < num_cpus; p++) {
 		if (bit_test(req_map, p) == 0)
 			continue;
 		/* core_bitmap does not include threads, so we

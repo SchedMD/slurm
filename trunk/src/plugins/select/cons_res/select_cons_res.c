@@ -1614,7 +1614,7 @@ extern int select_p_block_init(List part_list)
  * NOTE: the job information that is considered for scheduling includes:
  *	req_node_bitmap: bitmap of specific nodes required by the job
  *	contiguous: allocated nodes must be sequentially located
- *	num_procs: minimum number of processors required by the job
+ *	num_cpus: minimum number of processors required by the job
  * NOTE: bitmap must be a superset of req_nodes at the time that
  *	select_p_job_test is called
  */

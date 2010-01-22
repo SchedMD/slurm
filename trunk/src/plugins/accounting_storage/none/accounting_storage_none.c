@@ -354,10 +354,10 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_cluster_procs(void *db_conn,
+extern int clusteracct_storage_p_cluster_cpus(void *db_conn,
 					       char *cluster,
 					       char *cluster_nodes,
-					       uint32_t procs,
+					       uint32_t cpus,
 					       time_t event_time)
 {
 	return SLURM_SUCCESS;

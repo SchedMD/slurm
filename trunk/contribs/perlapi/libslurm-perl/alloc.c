@@ -26,7 +26,7 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 	I32 klen;
 	STRLEN vlen;
 	int num_keys, i;
-	
+
 	slurm_init_job_desc_msg(job_desc_msg);
 
 	FETCH_FIELD(hv, job_desc_msg, contiguous, uint16_t, FALSE);
@@ -38,7 +38,7 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 			num_keys = HvKEYS(environ_hv);
 			job_desc_msg->env_size = num_keys;
 			Newz(0, job_desc_msg->environment, num_keys + 1, char*);
-			
+
 			hv_iterinit(environ_hv);
 			i = 0;
 			while((val = hv_iternextsv(environ_hv, &env_key, &klen))) {
@@ -66,7 +66,8 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 	FETCH_FIELD(hv, job_desc_msg, exc_nodes, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, shared, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, time_limit, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, num_procs, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, min_cpus, uint32_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, max_cpus, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, min_nodes, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, max_nodes, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, min_sockets, uint16_t, FALSE);
@@ -156,7 +157,7 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 }
 
 /*
- * free allocated environment variable memory for job_desc_msg_t 
+ * free allocated environment variable memory for job_desc_msg_t
  */
 static void
 _free_environment(char** environ)
@@ -188,7 +189,7 @@ resource_allocation_response_msg_to_hv(resource_allocation_response_msg_t* resp_
 {
 	AV* avp;
 	int i;
-	
+
 	STORE_FIELD(hv, resp_msg, job_id, uint32_t);
 	if(resp_msg->node_list)
 		STORE_FIELD(hv, resp_msg, node_list, charp);
@@ -199,7 +200,7 @@ resource_allocation_response_msg_to_hv(resource_allocation_response_msg_t* resp_
 			av_store(avp, i, newSVuv(resp_msg->cpus_per_node[i]));
 		}
 		hv_store_sv(hv, "cpus_per_node", newRV_noinc((SV*)avp));
-		
+
 		avp = newAV();
 		for(i = 0; i < resp_msg->num_cpu_groups; i ++) {
 			av_store(avp, i, newSVuv(resp_msg->cpu_count_reps[i]));
@@ -220,7 +221,7 @@ job_alloc_info_response_msg_to_hv(job_alloc_info_response_msg_t *resp_msg, HV* h
 {
 	AV* avp;
 	int i;
-	
+
 	STORE_FIELD(hv, resp_msg, job_id, uint32_t);
 	if(resp_msg->node_list)
 		STORE_FIELD(hv, resp_msg, node_list, charp);
@@ -231,7 +232,7 @@ job_alloc_info_response_msg_to_hv(job_alloc_info_response_msg_t *resp_msg, HV* h
 			av_store(avp, i, newSVuv(resp_msg->cpus_per_node[i]));
 		}
 		hv_store_sv(hv, "cpus_per_node", newRV_noinc((SV*)avp));
-		
+
 		avp = newAV();
 		for(i = 0; i < resp_msg->num_cpu_groups; i ++) {
 			av_store(avp, i, newSVuv(resp_msg->cpu_count_reps[i]));
@@ -263,4 +264,3 @@ submit_response_msg_to_hv(submit_response_msg_t *resp_msg, HV* hv)
 	STORE_FIELD(hv, resp_msg, error_code, uint32_t);
 	return 0;
 }
-

@@ -1037,7 +1037,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 				     &resp_data->proc_cnt);
 
 #else
-		resp_data->proc_cnt = job_ptr->total_procs;
+		resp_data->proc_cnt = job_ptr->total_cpus;
 #endif
 		resp_data->start_time = MAX(job_ptr->start_time, start_res);
 		job_ptr->start_time   = 0;  /* restore pending job start time */

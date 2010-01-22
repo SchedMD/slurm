@@ -10479,10 +10479,10 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 	return mysql_db_query(mysql_conn->db_conn, query);
 }
 
-extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
+extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
 					       char *cluster,
 					       char *cluster_nodes,
-					       uint32_t procs,
+					       uint32_t cpus,
 					       time_t event_time)
 {
 	char* query;
@@ -10523,8 +10523,8 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 		goto add_it;
 	}
 
-	if(atoi(row[0]) == procs) {
-		debug3("we have the same procs as before no need to "
+	if(atoi(row[0]) == cpus) {
+		debug3("we have the same cpu count as before no need to "
 		       "update the database.");
 		if(cluster_nodes) {
 			if(!row[1][0]) {
@@ -10549,9 +10549,9 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 			goto end_it;
 	} else
 		debug("%s has changed from %s cpus to %u",
-		      cluster, row[0], procs);
+		      cluster, row[0], cpus);
 
-	/* reset all the entries for this cluster since the procs
+	/* reset all the entries for this cluster since the cpus
 	   changed some of the downed nodes may have gone away.
 	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
@@ -10568,7 +10568,7 @@ add_it:
 		"insert into %s (cluster, cluster_nodes, cpu_count, "
 		"period_start, reason) "
 		"values (\"%s\", \"%s\", %u, %d, 'Cluster processor count')",
-		event_table, cluster, cluster_nodes, procs, event_time);
+		event_table, cluster, cluster_nodes, cpus, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 end_it:
@@ -10888,8 +10888,8 @@ no_rollup_change:
 			   (int)job_ptr->start_time,
 			   jname, track_steps,
 			   job_ptr->job_state & JOB_STATE_BASE,
-			   job_ptr->priority, job_ptr->num_procs,
-			   job_ptr->total_procs, node_cnt,
+			   job_ptr->priority, job_ptr->details->min_cpus,
+			   job_ptr->total_cpus, node_cnt,
 			   job_ptr->job_state & JOB_STATE_BASE,
 			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id,
 			   job_ptr->time_limit);
@@ -10945,7 +10945,7 @@ no_rollup_change:
 			   "where id=%d",
 			   (int)job_ptr->start_time,
 			   jname, job_ptr->job_state & JOB_STATE_BASE,
-			   job_ptr->total_procs, node_cnt,
+			   job_ptr->total_cpus, node_cnt,
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->db_index);
@@ -11084,7 +11084,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 					   step_ptr->step_node_bitmap);
 		}
 #ifdef HAVE_BG
-		tasks = cpus = step_ptr->job_ptr->num_procs;
+		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 				     SELECT_JOBDATA_IONODES,
 				     &ionodes);
@@ -11100,7 +11100,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 				     &nodes);
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-			tasks = cpus = step_ptr->job_ptr->total_procs;
+			tasks = cpus = step_ptr->job_ptr->total_cpus;
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
 			nodes = step_ptr->job_ptr->node_cnt;
@@ -11199,11 +11199,11 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	} else {
 		now = time(NULL);
 #ifdef HAVE_BG
-		tasks = cpus = step_ptr->job_ptr->num_procs;
+		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
 
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-			tasks = cpus = step_ptr->job_ptr->total_procs;
+			tasks = cpus = step_ptr->job_ptr->total_cpus;
 		else {
 			cpus = step_ptr->cpu_count;
 			tasks = step_ptr->step_layout->task_cnt;

@@ -262,6 +262,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "QOS Preemption loop detected"                	},
 	{ ESLURM_NODE_NOT_AVAIL,
 	  "Required node not available (down or drained)"	},
+	{ ESLURM_INVALID_CPU_COUNT,
+	  "CPU count specification invalid"             	},
 
 	/* slurmd error codes */
 

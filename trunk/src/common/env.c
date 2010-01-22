@@ -999,7 +999,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		if((int)desc->cpus_per_task > 1
 		   && desc->cpus_per_task != (uint16_t)NO_VAL)
 			num_tasks /= desc->cpus_per_task;
-		//num_tasks = desc->num_procs;
+		//num_tasks = desc->min_cpus;
 	}
 
 	if(desc->task_dist == SLURM_DIST_ARBITRARY) {

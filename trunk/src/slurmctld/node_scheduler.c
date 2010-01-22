@@ -352,7 +352,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 {
 	uint32_t saved_min_nodes, saved_job_min_nodes;
 	bitstr_t *saved_req_node_bitmap = NULL;
-	uint32_t saved_num_procs, saved_req_nodes;
+	uint32_t saved_min_cpus, saved_max_cpus, saved_req_nodes;
 	int rc, tmp_node_set_size;
 	struct node_set *tmp_node_set_ptr;
 	int error_code = SLURM_SUCCESS, i;
@@ -389,8 +389,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		saved_req_node_bitmap = bit_copy(accumulate_bitmap);
 		job_ptr->details->req_node_bitmap = NULL;
 	}
-	saved_num_procs = job_ptr->num_procs;
-	job_ptr->num_procs = 1;
+	saved_min_cpus = job_ptr->details->min_cpus;
+	saved_max_cpus = job_ptr->details->max_cpus;
+	job_ptr->details->min_cpus = 1;
+	job_ptr->details->max_cpus = 1;
 	tmp_node_set_ptr = xmalloc(sizeof(struct node_set) * node_set_size);
 
 	/* Accumulate nodes with required feature counts.
@@ -437,7 +439,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			min_nodes = feat_ptr->count;
 			req_nodes = feat_ptr->count;
 			job_ptr->details->min_nodes = feat_ptr->count;
-			job_ptr->num_procs = feat_ptr->count;
+			job_ptr->details->min_cpus = feat_ptr->count;
 			if (*preemptee_job_list) {
 				list_destroy(*preemptee_job_list);
 				*preemptee_job_list = NULL;
@@ -502,7 +504,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		} else
 			job_ptr->details->req_node_bitmap = accumulate_bitmap;
 		node_cnt = bit_set_count(job_ptr->details->req_node_bitmap);
-		job_ptr->num_procs = MAX(saved_num_procs, node_cnt);
+		job_ptr->details->min_cpus = MAX(saved_min_cpus, node_cnt);
 		min_nodes = MAX(saved_min_nodes, node_cnt);
 		job_ptr->details->min_nodes = min_nodes;
 		req_nodes = MAX(min_nodes, req_nodes);
@@ -511,7 +513,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	} else {
 		min_nodes = saved_min_nodes;
 		req_nodes = saved_req_nodes;
-		job_ptr->num_procs = saved_num_procs;
+		job_ptr->details->min_cpus = saved_min_cpus;
+		job_ptr->details->max_cpus = saved_max_cpus;
 		job_ptr->details->min_nodes = saved_job_min_nodes;
 	}
 #if 0
@@ -548,7 +551,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	/* restore job's initial required node bitmap */
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	job_ptr->details->req_node_bitmap = saved_req_node_bitmap;
-	job_ptr->num_procs = saved_num_procs;
+	job_ptr->details->min_cpus = saved_min_cpus;
 	job_ptr->details->min_nodes = saved_job_min_nodes;
 
 	/* Restore available node bitmap, ignoring reservations */
@@ -666,9 +669,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			FREE_NULL_BITMAP(partially_idle_node_bitmap);
 			return error_code;
 		}
-                debug3("Job %u shared %d CR type %d num_procs %d nbits %d",
+                debug3("Job %u shared %d CR type %d cpus %u-%u nbits %d",
 		     job_ptr->job_id, shared, cr_enabled, cr_type,
-		     job_ptr->num_procs,
+		     job_ptr->details->min_cpus, job_ptr->details->max_cpus,
 		     bit_set_count(partially_idle_node_bitmap));
         }
 
@@ -1129,8 +1132,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 					       &preemptee_job_list);
 	}
 	/* set up the cpu_cnt here so we can decrement it as nodes
-	   free up. total_procs is set within _get_req_features */
-	job_ptr->cpu_cnt = job_ptr->total_procs;
+	   free up. total_cpus is set within _get_req_features */
+	job_ptr->cpu_cnt = job_ptr->total_cpus;
 
 	if (!test_only && preemptee_job_list && (error_code == SLURM_SUCCESS))
 		_preempt_jobs(preemptee_job_list, &error_code);

@@ -1117,31 +1117,31 @@ extern int clusteracct_storage_p_register_ctld(PGconn *acct_pgsql_db,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
+extern int clusteracct_storage_p_cluster_cpus(PGconn *acct_pgsql_db,
 					       char *cluster,
 					       char *cluster_nodes,
-					       uint32_t procs,
+					       uint32_t cpus,
 					       time_t event_time)
 {
 #ifdef HAVE_PGSQL
-	static uint32_t last_procs = -1;
+	static uint32_t last_cpus = -1;
 	char* query;
 	int rc = SLURM_SUCCESS;
 	PGresult *result = NULL;
-	int got_procs = 0;
+	int got_cpus = 0;
 
-	if (procs == last_procs) {
-		debug3("we have the same procs as before no need to "
+	if (cpus == last_cpus) {
+		debug3("we have the same cpus as before no need to "
 		       "update the database.");
 		return SLURM_SUCCESS;
 	}
-	last_procs = procs;
+	last_cpus = cpus;
 
 	/* Record the processor count */
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
-	info("cluster_acct_procs: %s has %u total CPUs at %s",
-	     cluster, procs, tmp_buff);
+	info("cluster_acct_cpus: %s has %u total CPUs at %s",
+	     cluster, cpus, tmp_buff);
 #endif
 	query = xstrdup_printf(
 		"select cpu_count from %s where cluster='%s' "
@@ -1159,12 +1159,12 @@ extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
 		      "most likely a first time running.", cluster);
 		goto add_it;
 	}
-	got_procs = atoi(PQgetvalue(result, 0, 0));
-	if(got_procs == procs) {
+	got_cpus = atoi(PQgetvalue(result, 0, 0));
+	if(got_cpus == cpus) {
 		debug("%s hasn't changed since last entry", cluster);
 		goto end_it;
 	}
-	debug("%s has changed from %d cpus to %u", cluster, got_procs, procs);
+	debug("%s has changed from %d cpus to %u", cluster, got_cpus, cpus);
 
 	query = xstrdup_printf(
 		"update %s set period_end=%u where cluster='%s' "
@@ -1178,7 +1178,7 @@ add_it:
 	query = xstrdup_printf(
 		"insert into %s (cluster, cpu_count, period_start, reason) "
 		"values ('%s', %u, %d, 'Cluster processor count')",
-		event_table, cluster, procs, event_time);
+		event_table, cluster, cpus, event_time);
 	rc = pgsql_db_query(acct_pgsql_db, query);
 	xfree(query);
 
@@ -1295,8 +1295,8 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 			   (int)job_ptr->start_time,
 			   jname, track_steps,
 			   job_ptr->job_state & JOB_STATE_BASE,
-			   priority, job_ptr->num_procs,
-			   job_ptr->total_procs);
+			   priority, job_ptr->details->min_cpus,
+			   job_ptr->total_cpus);
 	try_again:
 		if(!(job_ptr->db_index = pgsql_insert_ret_id(acct_pgsql_db,
 							     "job_table_id_seq",
@@ -1332,7 +1332,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 			   "alloc_cpus=%u, associd=%d where id=%d",
 			   (int)job_ptr->start_time,
 			   jname, job_ptr->job_state & JOB_STATE_BASE,
-			   job_ptr->total_procs, job_ptr->assoc_id,
+			   job_ptr->total_cpus, job_ptr->assoc_id,
 			   job_ptr->db_index);
 		rc = pgsql_db_query(acct_pgsql_db, query);
 	}
@@ -1445,12 +1445,12 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	}
 
 	if(slurmdbd_conf) {
-		cpus = step_ptr->job_ptr->total_procs;
+		cpus = step_ptr->job_ptr->total_cpus;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	} else {
 #ifdef HAVE_BG
-		cpus = step_ptr->job_ptr->num_procs;
+		cpus = step_ptr->job_ptr->details->min_cpus;
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 				     SELECT_JOBDATA_IONODES,
 				     &ionodes);
@@ -1464,7 +1464,7 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-			cpus = step_ptr->job_ptr->total_procs;
+			cpus = step_ptr->job_ptr->total_cpus;
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
 		} else {
@@ -1544,16 +1544,16 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 
 	if(slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
-		cpus = step_ptr->job_ptr->total_procs;
+		cpus = step_ptr->job_ptr->total_cpus;
 
 	} else {
 		now = time(NULL);
 #ifdef HAVE_BG
-		cpus = step_ptr->job_ptr->num_procs;
+		cpus = step_ptr->job_ptr->details->min_cpus;
 
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-			cpus = step_ptr->job_ptr->total_procs;
+			cpus = step_ptr->job_ptr->total_cpus;
 		else
 			cpus = step_ptr->step_layout->task_cnt;
 #endif
