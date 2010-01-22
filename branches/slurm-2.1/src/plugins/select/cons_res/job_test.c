@@ -581,8 +581,6 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		/* memory is per-cpu */
 		while (cpus > 0 && (req_mem * cpus) > avail_mem)
 			cpus--;
-		if (cpus < job_ptr->details->ntasks_per_node)
-			cpus = 0;
 		/* FIXME: do we need to recheck min_cores, etc. here? */
 	} else {
 		/* memory is per node */
@@ -1982,10 +1980,7 @@ alloc_job:
 	if (job_res->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
 	job_res->nhosts           = bit_set_count(bitmap);
-	job_res->nprocs           = job_res->nhosts;
-	if (job_ptr->details->ntasks_per_node)
-		job_res->nprocs  *= job_ptr->details->ntasks_per_node;
-	job_res->nprocs           = MAX(job_res->nprocs, job_ptr->num_procs);
+	job_res->nprocs           = MAX(job_res->nhosts, job_ptr->num_procs);
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;
 	job_res->cpus_used        = xmalloc(job_res->nhosts *
