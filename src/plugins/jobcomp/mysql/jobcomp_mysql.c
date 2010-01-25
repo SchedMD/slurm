@@ -286,7 +286,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32];
 	char *connect_type = NULL, *reboot = NULL, *rotate = NULL,
-		*maxprocs = NULL, *geometry = NULL, *start = NULL,
+		*geometry = NULL, *start = NULL,
 		*blockid = NULL;
 	enum job_states job_state;
 	char *query = NULL;
@@ -319,8 +319,6 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 						 SELECT_PRINT_REBOOT);
 	rotate = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						 SELECT_PRINT_ROTATE);
-	maxprocs = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						   SELECT_PRINT_MAX_CPUS);
 	geometry = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						   SELECT_PRINT_GEOMETRY);
 	start = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
@@ -346,7 +344,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		xstrcat(query, ", reboot");
 	if(rotate)
 		xstrcat(query, ", rotate");
-	if(maxprocs)
+	if(job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
 		xstrcat(query, ", maxprocs");
 	if(geometry)
 		xstrcat(query, ", geometry");
@@ -377,10 +375,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		xstrfmtcat(query, ", '%s'", rotate);
 		xfree(rotate);
 	}
-	if(maxprocs) {
-		xstrfmtcat(query, ", '%s'", maxprocs);
-		xfree(maxprocs);
-	}
+	if(job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
+		xstrfmtcat(query, ", '%u'", job_ptr->details->max_cpus);
+
 	if(geometry) {
 		xstrfmtcat(query, ", '%s'", geometry);
 		xfree(geometry);

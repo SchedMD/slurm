@@ -1142,10 +1142,6 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		tmp = 1;
 		set_select_jobinfo(job_desc->select_jobinfo,
 				   SELECT_JOBDATA_ALTERED, &tmp);
-		tmp = NO_VAL;
-		set_select_jobinfo(job_desc->select_jobinfo,
-				   SELECT_JOBDATA_MAX_CPUS,
-				   &tmp);
 
 		if(job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
@@ -1240,7 +1236,6 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes = 1;
 #endif
 		}
-		//job_desc->job_min_cpus = job_desc->min_cpus;
 
 		if(job_desc->max_nodes > bg_conf->bp_node_cnt) {
 			tmp = job_desc->max_nodes % bg_conf->bp_node_cnt;
@@ -1252,10 +1247,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 		if(tmp > 0) {
 			job_desc->max_nodes = tmp;
-			tmp *= bg_conf->cpus_per_bp;
-			set_select_jobinfo(job_desc->select_jobinfo,
-					   SELECT_JOBDATA_MAX_CPUS,
-					   &tmp);
+			job_desc->max_cpus =
+				job_desc->max_nodes * bg_conf->cpus_per_bp;
 			tmp = NO_VAL;
 		} else {
 #ifdef HAVE_BGL
@@ -1272,11 +1265,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					bg_conf->bp_node_cnt;
 
 			tmp = bg_conf->bp_node_cnt/job_desc->max_nodes;
-			tmp = bg_conf->cpus_per_bp/tmp;
-
-			set_select_jobinfo(job_desc->select_jobinfo,
-					   SELECT_JOBDATA_MAX_CPUS,
-					   &tmp);
+			job_desc->max_cpus = bg_conf->cpus_per_bp/tmp;
 			job_desc->max_nodes = 1;
 #else
 			i = bg_conf->smallest_block;
@@ -1287,10 +1276,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				}
 				i *= 2;
 			}
-			tmp = job_desc->max_nodes * bg_conf->cpu_ratio;
-			set_select_jobinfo(job_desc->select_jobinfo,
-					   SELECT_JOBDATA_MAX_CPUS,
-					   &tmp);
+			job_desc->max_cpus =
+				job_desc->max_nodes * bg_conf->cpu_ratio;
 
 			job_desc->max_nodes = 1;
 #endif

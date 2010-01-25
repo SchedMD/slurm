@@ -90,7 +90,7 @@ static void _sprint_range(char *str, uint32_t str_size,
 			  uint32_t lower, uint32_t upper)
 {
 	char tmp[128];
-	/* Note: We don't have the size of str here */
+
 #ifdef HAVE_BG
 	convert_num_unit((float)lower, tmp, sizeof(tmp), UNIT_NONE);
 #else
@@ -120,7 +120,7 @@ extern void
 slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 {
 	char *print_this = slurm_sprint_job_info(job_ptr, one_liner);
-	fprintf ( out, "%s", print_this);
+	fprintf(out, "%s", print_this);
 	xfree(print_this);
 }
 
@@ -144,7 +144,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	job_resources_t *job_resrcs = job_ptr->job_resrcs;
 	char *out = NULL;
 	time_t run_time;
-	uint32_t min_nodes, max_nodes;
+	uint32_t min_nodes, max_nodes = 0;
 
 #ifdef HAVE_BG
 	char select_buf[122];
@@ -371,7 +371,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if ((min_nodes == 0) || (min_nodes == NO_VAL)) {
 		min_nodes = job_ptr->num_nodes;
 		max_nodes = job_ptr->max_nodes;
-	} else
+	} else if(job_ptr->max_nodes)
 		max_nodes = min_nodes;
 #else
 	min_nodes = job_ptr->num_nodes;

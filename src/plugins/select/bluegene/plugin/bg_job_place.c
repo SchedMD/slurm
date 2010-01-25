@@ -839,7 +839,7 @@ static int _find_best_block_match(List block_list,
 	int overlap_check = 0;
 	int allow = 0;
 	int check_image = 1;
-	uint32_t max_cpus = (uint32_t)NO_VAL;
+	uint32_t max_cpus = job_ptr->details->max_cpus;
 	char tmp_char[256];
 	static int total_cpus = 0;
 #ifdef HAVE_BGL
@@ -880,9 +880,6 @@ static int _find_best_block_match(List block_list,
 				    SELECT_JOBDATA_GEOMETRY, &req_geometry);
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_ROTATE, &rotate);
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_MAX_CPUS, &max_cpus);
-
 
 #ifdef HAVE_BGL
 	if((rc = _check_images(job_ptr, &blrtsimage, &linuximage,
@@ -942,8 +939,6 @@ static int _find_best_block_match(List block_list,
 	else
 		request.avail_node_bitmap = slurm_block_bitmap;
 
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-			     SELECT_JOBDATA_MAX_CPUS, &max_cpus);
 	/* since we only look at procs after this and not nodes we
 	 *  need to set a max_cpus if given
 	 */
