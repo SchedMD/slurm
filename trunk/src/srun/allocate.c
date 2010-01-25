@@ -647,14 +647,14 @@ job_desc_msg_create_from_opts ()
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
 
-	if (opt.job_min_cpus != NO_VAL)
-		j->job_min_cpus    = opt.job_min_cpus;
-	if (opt.job_min_memory != NO_VAL)
-		j->job_min_memory = opt.job_min_memory;
+	if (opt.pn_min_cpus != NO_VAL)
+		j->pn_min_cpus    = opt.pn_min_cpus;
+	if (opt.pn_min_memory != NO_VAL)
+		j->pn_min_memory = opt.pn_min_memory;
 	else if (opt.mem_per_cpu != NO_VAL)
-		j->job_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
-	if (opt.job_min_tmp_disk != NO_VAL)
-		j->job_min_tmp_disk = opt.job_min_tmp_disk;
+		j->pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
+	if (opt.pn_min_tmp_disk != NO_VAL)
+		j->pn_min_tmp_disk = opt.pn_min_tmp_disk;
 	if (opt.overcommit) {
 		j->min_cpus    = opt.min_nodes;
 		j->overcommit  = opt.overcommit;

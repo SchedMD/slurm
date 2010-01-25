@@ -423,9 +423,9 @@ static int _sort_job_by_min_memory(void *void1, void *void2)
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	job1->job_min_memory &= (~MEM_PER_CPU);
-	job2->job_min_memory &= (~MEM_PER_CPU);
-	diff = job1->job_min_memory - job2->job_min_memory;
+	job1->pn_min_memory &= (~MEM_PER_CPU);
+	job2->pn_min_memory &= (~MEM_PER_CPU);
+	diff = job1->pn_min_memory - job2->pn_min_memory;
 
 	if (reverse_order)
 		diff = -diff;
@@ -438,7 +438,7 @@ static int _sort_job_by_min_tmp_disk(void *void1, void *void2)
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
-	diff = job1->job_min_tmp_disk - job2->job_min_tmp_disk;
+	diff = job1->pn_min_tmp_disk - job2->pn_min_tmp_disk;
 
 	if (reverse_order)
 		diff = -diff;

@@ -317,12 +317,6 @@ struct job_details {
 	List feature_list;		/* required features with
 					 * node counts */
 	char *features;			/* required features */
-	/* job constraints: */
-	uint32_t job_min_cpus;		/* minimum processors per node */
-	uint32_t job_min_memory;	/* minimum memory per node (MB) OR
-					 * memory per allocated
-					 * CPU | MEM_PER_CPU */
-	uint32_t job_min_tmp_disk;	/* minimum tempdisk per node, MB */
 	uint32_t magic;			/* magic cookie for data integrity */
 	uint32_t max_cpus;		/* maximum number of cpus */
 	uint32_t max_nodes;		/* maximum number of nodes */
@@ -339,6 +333,12 @@ struct job_details {
 	uint8_t overcommit;		/* processors being over subscribed */
 	uint16_t plane_size;		/* plane size when task_dist =
 					 * SLURM_DIST_PLANE */
+	/* job constraints: */
+	uint32_t pn_min_cpus;		/* minimum processors per node */
+	uint32_t pn_min_memory;	        /* minimum memory per node (MB) OR
+					 * memory per allocated
+					 * CPU | MEM_PER_CPU */
+	uint32_t pn_min_tmp_disk;	/* minimum tempdisk per node, MB */
 	uint8_t prolog_running;		/* set while prolog_slurmctld is
 					 * running */
 	uint32_t reserved_resources;	/* CPU minutes of resources reserved

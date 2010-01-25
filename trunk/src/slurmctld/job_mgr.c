@@ -1311,9 +1311,9 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack8(detail_ptr->overcommit, buffer);
 	pack8(detail_ptr->prolog_running, buffer);
 
-	pack32(detail_ptr->job_min_cpus, buffer);
-	pack32(detail_ptr->job_min_memory, buffer);
-	pack32(detail_ptr->job_min_tmp_disk, buffer);
+	pack32(detail_ptr->pn_min_cpus, buffer);
+	pack32(detail_ptr->pn_min_memory, buffer);
+	pack32(detail_ptr->pn_min_tmp_disk, buffer);
 	pack_time(detail_ptr->begin_time, buffer);
 	pack_time(detail_ptr->submit_time, buffer);
 
@@ -1345,7 +1345,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
-	uint32_t job_min_cpus, job_min_memory, job_min_tmp_disk;
+	uint32_t pn_min_cpus, pn_min_memory, pn_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0;
 	uint16_t shared, contiguous, nice, ntasks_per_node;
 	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
@@ -1382,9 +1382,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack8(&overcommit, buffer);
 		safe_unpack8(&prolog_running, buffer);
 
-		safe_unpack32(&job_min_cpus, buffer);
-		safe_unpack32(&job_min_memory, buffer);
-		safe_unpack32(&job_min_tmp_disk, buffer);
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack32(&pn_min_memory, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
 		safe_unpack_time(&begin_time, buffer);
 		safe_unpack_time(&submit_time, buffer);
 
@@ -1428,9 +1428,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack8(&overcommit, buffer);
 		safe_unpack8(&prolog_running, buffer);
 
-		safe_unpack32(&job_min_cpus, buffer);
-		safe_unpack32(&job_min_memory, buffer);
-		safe_unpack32(&job_min_tmp_disk, buffer);
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack32(&pn_min_memory, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
 		safe_unpack_time(&begin_time, buffer);
 		safe_unpack_time(&submit_time, buffer);
 
@@ -1505,9 +1505,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->exc_nodes = exc_nodes;
 	job_ptr->details->features = features;
 	job_ptr->details->std_in = in;
-	job_ptr->details->job_min_cpus = job_min_cpus;
-	job_ptr->details->job_min_memory = job_min_memory;
-	job_ptr->details->job_min_tmp_disk = job_min_tmp_disk;
+	job_ptr->details->pn_min_cpus = pn_min_cpus;
+	job_ptr->details->pn_min_memory = pn_min_memory;
+	job_ptr->details->pn_min_tmp_disk = pn_min_tmp_disk;
 	job_ptr->details->max_cpus = max_cpus;
 	job_ptr->details->max_nodes = max_nodes;
 	job_ptr->details->mc_ptr = mc_ptr;
@@ -1859,7 +1859,7 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id;
-	long job_min_cpus, job_min_memory, job_min_tmp_disk, min_cpus;
+	long pn_min_cpus, pn_min_memory, pn_min_tmp_disk, min_cpus;
 	long time_limit, priority, contiguous, acctg_freq;
 	long kill_on_node_fail, shared, immediate;
 	long cpus_per_task, requeue, num_tasks, overcommit;
@@ -1877,30 +1877,31 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	min_cpus = (job_specs->min_cpus != NO_VAL) ?
 		(long) job_specs->min_cpus : -1L;
-	job_min_cpus    = (job_specs->job_min_cpus != (uint16_t) NO_VAL) ?
-		(long) job_specs->job_min_cpus : -1L;
-	debug3("   min_cpus=%ld job_min_cpus=%ld", min_cpus, job_min_cpus);
+	pn_min_cpus    = (job_specs->pn_min_cpus != (uint16_t) NO_VAL) ?
+		(long) job_specs->pn_min_cpus : -1L;
+	debug3("   cpus=%ld-%u pn_min_cpus=%ld", min_cpus,
+	       job_specs->max_cpus, pn_min_cpus);
 
 	debug3("   -N min-[max]: %u-[%u]:%u:%u:%u",
 	       job_specs->min_nodes,   job_specs->max_nodes,
 	       job_specs->min_sockets, job_specs->min_cores,
 	       job_specs->min_threads);
 
-	if (job_specs->job_min_memory == NO_VAL) {
-		job_min_memory = -1L;
+	if (job_specs->pn_min_memory == NO_VAL) {
+		pn_min_memory = -1L;
 		mem_type = "job";
-	} else if (job_specs->job_min_memory & MEM_PER_CPU) {
-		job_min_memory = (long) (job_specs->job_min_memory &
+	} else if (job_specs->pn_min_memory & MEM_PER_CPU) {
+		pn_min_memory = (long) (job_specs->pn_min_memory &
 					 (~MEM_PER_CPU));
 		mem_type = "cpu";
 	} else {
-		job_min_memory = (long) job_specs->job_min_memory;
+		pn_min_memory = (long) job_specs->pn_min_memory;
 		mem_type = "job";
 	}
-	job_min_tmp_disk = (job_specs->job_min_tmp_disk != NO_VAL) ?
-		(long) job_specs->job_min_tmp_disk : -1L;
-	debug3("   min_memory_%s=%ld job_min_tmp_disk=%ld",
-	       mem_type, job_min_memory, job_min_tmp_disk);
+	pn_min_tmp_disk = (job_specs->pn_min_tmp_disk != NO_VAL) ?
+		(long) job_specs->pn_min_tmp_disk : -1L;
+	debug3("   pn_min_memory_%s=%ld pn_min_tmp_disk=%ld",
+	       mem_type, pn_min_memory, pn_min_tmp_disk);
 	immediate = (job_specs->immediate == 0) ? 0L : 1L;
 	debug3("   immediate=%ld features=%s reservation=%s",
 	       immediate, job_specs->features, job_specs->reservation);
@@ -3686,30 +3687,30 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
 	else
 		detail_ptr->cpus_per_task = 1;
-	if (job_desc->job_min_cpus != (uint16_t) NO_VAL)
-		detail_ptr->job_min_cpus = job_desc->job_min_cpus;
+	if (job_desc->pn_min_cpus != (uint16_t) NO_VAL)
+		detail_ptr->pn_min_cpus = job_desc->pn_min_cpus;
 	if (job_desc->overcommit != (uint8_t) NO_VAL)
 		detail_ptr->overcommit = job_desc->overcommit;
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL) {
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
 		if (detail_ptr->overcommit == 0) {
-			detail_ptr->job_min_cpus =
-				MAX(detail_ptr->job_min_cpus,
+			detail_ptr->pn_min_cpus =
+				MAX(detail_ptr->pn_min_cpus,
 				    (detail_ptr->cpus_per_task *
 				     detail_ptr->ntasks_per_node));
 		}
 	} else {
-		detail_ptr->job_min_cpus = MAX(detail_ptr->job_min_cpus,
+		detail_ptr->pn_min_cpus = MAX(detail_ptr->pn_min_cpus,
 					       detail_ptr->cpus_per_task);
 	}
 	if (job_desc->requeue != (uint16_t) NO_VAL)
 		detail_ptr->requeue = MIN(job_desc->requeue, 1);
 	else
 		detail_ptr->requeue = slurmctld_conf.job_requeue;
-	if (job_desc->job_min_memory != NO_VAL)
-		detail_ptr->job_min_memory = job_desc->job_min_memory;
-	if (job_desc->job_min_tmp_disk != NO_VAL)
-		detail_ptr->job_min_tmp_disk = job_desc->job_min_tmp_disk;
+	if (job_desc->pn_min_memory != NO_VAL)
+		detail_ptr->pn_min_memory = job_desc->pn_min_memory;
+	if (job_desc->pn_min_tmp_disk != NO_VAL)
+		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
 	if (job_desc->num_tasks != NO_VAL)
 		detail_ptr->num_tasks = job_desc->num_tasks;
 	if (job_desc->std_err)
@@ -3760,9 +3761,9 @@ static char *_copy_nodelist_no_dup(char *node_list)
 	return xstrdup(buf);
 }
 
-static bool _valid_job_min_mem(job_desc_msg_t * job_desc_msg)
+static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg)
 {
-	uint32_t base_size = job_desc_msg->job_min_memory;
+	uint32_t base_size = job_desc_msg->pn_min_memory;
 	uint32_t size_limit = slurmctld_conf.max_mem_per_cpu;
 	uint16_t cpus_per_node;
 
@@ -4194,10 +4195,10 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			job_desc_msg->nice = NICE_OFFSET;
 	}
 
-	if (job_desc_msg->job_min_memory == NO_VAL) {
+	if (job_desc_msg->pn_min_memory == NO_VAL) {
 		/* Default memory limit is DefMemPerCPU (if set) or no limit */
-		job_desc_msg->job_min_memory = slurmctld_conf.def_mem_per_cpu;
-	} else if (!_valid_job_min_mem(job_desc_msg))
+		job_desc_msg->pn_min_memory = slurmctld_conf.def_mem_per_cpu;
+	} else if (!_valid_pn_min_mem(job_desc_msg))
 		return ESLURM_INVALID_TASK_MEMORY;
 
 	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
@@ -4217,10 +4218,10 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->min_threads = 1;	/* default thread count of 1 */
 
-	if (job_desc_msg->job_min_cpus == (uint16_t) NO_VAL)
-		job_desc_msg->job_min_cpus = 1;   /* default 1 cpu per node */
-	if (job_desc_msg->job_min_tmp_disk == NO_VAL)
-		job_desc_msg->job_min_tmp_disk = 0;/* default 0MB disk per node */
+	if (job_desc_msg->pn_min_cpus == (uint16_t) NO_VAL)
+		job_desc_msg->pn_min_cpus = 1;   /* default 1 cpu per node */
+	if (job_desc_msg->pn_min_tmp_disk == NO_VAL)
+		job_desc_msg->pn_min_tmp_disk = 0;/* default 0MB disk per node */
 
 	return SLURM_SUCCESS;
 }
@@ -4781,10 +4782,10 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 			pack16(detail_ptr->shared, buffer);
 			pack16(detail_ptr->contiguous, buffer);
 			pack16(detail_ptr->cpus_per_task, buffer);
-			pack16(detail_ptr->job_min_cpus, buffer);
+			pack16(detail_ptr->pn_min_cpus, buffer);
 
-			pack32(detail_ptr->job_min_memory, buffer);
-			pack32(detail_ptr->job_min_tmp_disk, buffer);
+			pack32(detail_ptr->pn_min_memory, buffer);
+			pack32(detail_ptr->pn_min_tmp_disk, buffer);
 
 			packstr(detail_ptr->req_nodes, buffer);
 			pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
@@ -5448,18 +5449,18 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		update_accounting = true;
 	}
 
-	if (job_specs->job_min_cpus != (uint16_t) NO_VAL) {
+	if (job_specs->pn_min_cpus != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user
-			 || (detail_ptr->job_min_cpus
-			     > job_specs->job_min_cpus)) {
-			detail_ptr->job_min_cpus = job_specs->job_min_cpus;
-			info("update_job: setting job_min_cpus to %u for "
-			     "job_id %u", job_specs->job_min_cpus,
+			 || (detail_ptr->pn_min_cpus
+			     > job_specs->pn_min_cpus)) {
+			detail_ptr->pn_min_cpus = job_specs->pn_min_cpus;
+			info("update_job: setting pn_min_cpus to %u for "
+			     "job_id %u", job_specs->pn_min_cpus,
 			     job_specs->job_id);
 		} else {
-			error("Attempt to increase job_min_cpus for job %u",
+			error("Attempt to increase pn_min_cpus for job %u",
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -5490,8 +5491,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				   || (!detail_ptr->overcommit
 				       && (new_cpus > detail_ptr->min_cpus))) {
 					detail_ptr->min_cpus = new_cpus;
+					detail_ptr->max_cpus = new_cpus;
 					info("update_job: setting "
-					     "num_procs to %u for "
+					     "min_cpus to %u for "
 					     "job_id %u", detail_ptr->min_cpus,
 					     job_specs->job_id);
 				}
@@ -5691,40 +5693,40 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->job_min_memory != NO_VAL) {
+	if (job_specs->pn_min_memory != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user) {
 			char *entity;
-			if (job_specs->job_min_memory & MEM_PER_CPU)
+			if (job_specs->pn_min_memory & MEM_PER_CPU)
 				entity = "cpu";
 			else
 				entity = "job";
-			detail_ptr->job_min_memory = job_specs->job_min_memory;
+			detail_ptr->pn_min_memory = job_specs->pn_min_memory;
 			info("update_job: setting min_memory_%s to %u for "
 			     "job_id %u", entity,
-			     (job_specs->job_min_memory & (~MEM_PER_CPU)),
+			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
 			     job_specs->job_id);
 		} else {
-			error("Attempt to increase job_min_memory for job %u",
+			error("Attempt to increase pn_min_memory for job %u",
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
-	if (job_specs->job_min_tmp_disk != NO_VAL) {
+	if (job_specs->pn_min_tmp_disk != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user
-			 || (detail_ptr->job_min_tmp_disk
-			     > job_specs->job_min_tmp_disk)) {
-			detail_ptr->job_min_tmp_disk =
-				job_specs->job_min_tmp_disk;
-			info("update_job: setting job_min_tmp_disk to %u for "
-			     "job_id %u", job_specs->job_min_tmp_disk,
+			 || (detail_ptr->pn_min_tmp_disk
+			     > job_specs->pn_min_tmp_disk)) {
+			detail_ptr->pn_min_tmp_disk =
+				job_specs->pn_min_tmp_disk;
+			info("update_job: setting pn_min_tmp_disk to %u for "
+			     "job_id %u", job_specs->pn_min_tmp_disk,
 			     job_specs->job_id);
 		} else {
-			error("Attempt to increase job_min_tmp_disk "
+			error("Attempt to increase pn_min_tmp_disk "
 			      "for job %u",
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
@@ -8286,9 +8288,9 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->time_limit        = job_ptr->time_limit;
 	job_desc->user_id           = job_ptr->user_id;
 	job_desc->work_dir          = xstrdup(details->work_dir);
-	job_desc->job_min_cpus      = details->job_min_cpus;
-	job_desc->job_min_memory    = details->job_min_memory;
-	job_desc->job_min_tmp_disk  = details->job_min_tmp_disk;
+	job_desc->pn_min_cpus      = details->pn_min_cpus;
+	job_desc->pn_min_memory    = details->pn_min_memory;
+	job_desc->pn_min_tmp_disk  = details->pn_min_tmp_disk;
 	job_desc->min_cpus          = details->min_cpus;
 	job_desc->max_cpus          = details->max_cpus;
 	job_desc->min_nodes         = details->min_nodes;

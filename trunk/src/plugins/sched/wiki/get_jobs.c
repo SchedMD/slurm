@@ -54,9 +54,9 @@ static uint16_t _get_job_cpus_per_task(struct job_record *job_ptr);
 static uint16_t _get_job_tasks_per_node(struct job_record *job_ptr);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
 static char *	_get_job_features(struct job_record *job_ptr);
-static uint32_t	_get_job_min_disk(struct job_record *job_ptr);
-static uint32_t	_get_job_min_mem(struct job_record *job_ptr);
-static uint32_t	_get_job_min_nodes(struct job_record *job_ptr);
+static uint32_t	_get_pn_min_disk(struct job_record *job_ptr);
+static uint32_t	_get_pn_min_mem(struct job_record *job_ptr);
+static uint32_t	_get_pn_min_nodes(struct job_record *job_ptr);
 static char *	_get_job_state(struct job_record *job_ptr);
 static uint32_t	_get_job_submit_time(struct job_record *job_ptr);
 static uint32_t	_get_job_suspend_time(struct job_record *job_ptr);
@@ -273,7 +273,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	        uint16_t tpn;
 		snprintf(tmp, sizeof(tmp),
 			"NODES=%u;",
-			_get_job_min_nodes(job_ptr));
+			_get_pn_min_nodes(job_ptr));
 		xstrcat(buf, tmp);
 		tpn = _get_job_tasks_per_node(job_ptr);
 		if (tpn > 0) {
@@ -296,7 +296,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		job_ptr->partition);
 	xstrcat(buf, tmp);
 
-	min_mem = _get_job_min_mem(job_ptr);
+	min_mem = _get_pn_min_mem(job_ptr);
 	if (min_mem & MEM_PER_CPU) {
 		snprintf(tmp, sizeof(tmp),
 			"DMEM=%u;", min_mem & (~MEM_PER_CPU));
@@ -305,8 +305,8 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 
 	snprintf(tmp, sizeof(tmp),
 		"RMEM=%u;RDISK=%u;",
-		_get_job_min_mem(job_ptr),
-		_get_job_min_disk(job_ptr));
+		_get_pn_min_mem(job_ptr),
+		_get_pn_min_disk(job_ptr));
 	xstrcat(buf, tmp);
 
 	end_time = _get_job_end_time(job_ptr);
@@ -399,22 +399,22 @@ static uint16_t _get_job_tasks_per_node(struct job_record *job_ptr)
 	return tasks_per_node;
 }
 
-static uint32_t _get_job_min_mem(struct job_record *job_ptr)
+static uint32_t _get_pn_min_mem(struct job_record *job_ptr)
 {
 	if (job_ptr->details)
-		return job_ptr->details->job_min_memory;
+		return job_ptr->details->pn_min_memory;
 	return (uint32_t) 0;
 }
 
-static uint32_t _get_job_min_disk(struct job_record *job_ptr)
+static uint32_t _get_pn_min_disk(struct job_record *job_ptr)
 
 {
 	if (job_ptr->details)
-		return job_ptr->details->job_min_tmp_disk;
+		return job_ptr->details->pn_min_tmp_disk;
 	return (uint32_t) 0;
 }
 
-static uint32_t	_get_job_min_nodes(struct job_record *job_ptr)
+static uint32_t	_get_pn_min_nodes(struct job_record *job_ptr)
 {
 	if (IS_JOB_STARTED(job_ptr)) {
 		/* return actual count of currently allocated nodes.
@@ -447,7 +447,7 @@ static uint32_t _get_job_tasks(struct job_record *job_ptr)
 			task_cnt = 1;
 		if (job_ptr->details) {
 			task_cnt = MAX(task_cnt,
-				       (_get_job_min_nodes(job_ptr) *
+				       (_get_pn_min_nodes(job_ptr) *
 				        job_ptr->details->
 					ntasks_per_node));
 		}

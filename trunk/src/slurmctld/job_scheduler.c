@@ -574,7 +574,7 @@ extern void launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->script = get_job_script(job_ptr);
 	launch_msg_ptr->environment = get_job_env(job_ptr,
 						  &launch_msg_ptr->envc);
-	launch_msg_ptr->job_mem = job_ptr->details->job_min_memory;
+	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
 	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint16_t) *
 			job_ptr->job_resrcs->cpu_array_cnt);
@@ -626,14 +626,14 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 #endif
 	if (job_ptr->details == NULL)
 		cred_arg.job_mem = 0;
-	else if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+	else if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 		xassert(job_ptr->job_resrcs);
 		xassert(job_ptr->job_resrcs->cpus);
-		cred_arg.job_mem = job_ptr->details->job_min_memory;
+		cred_arg.job_mem = job_ptr->details->pn_min_memory;
 		cred_arg.job_mem &= (~MEM_PER_CPU);
 		cred_arg.job_mem *= job_ptr->job_resrcs->cpus[0];
 	} else
-		cred_arg.job_mem = job_ptr->details->job_min_memory;
+		cred_arg.job_mem = job_ptr->details->pn_min_memory;
 
 	/* Identify the cores allocated to this job. */
 	xassert(job_ptr->job_resrcs);

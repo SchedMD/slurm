@@ -569,15 +569,15 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	    (cr_type != CR_SOCKET_MEMORY) && (cr_type != CR_MEMORY))
 		return cpus;
 
-	/* Memory Check: check job_min_memory to see if:
+	/* Memory Check: check pn_min_memory to see if:
 	 *          - this node has enough memory (MEM_PER_CPU == 0)
 	 *          - there are enough free_cores (MEM_PER_CPU = 1)
 	 */
-	req_mem   = job_ptr->details->job_min_memory & ~MEM_PER_CPU;
+	req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
 	avail_mem = select_node_record[node_i].real_memory;
 	if (!test_only)
 		avail_mem -= node_usage[node_i].alloc_memory;
-	if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 		/* memory is per-cpu */
 		while (cpus > 0 && (req_mem * cpus) > avail_mem)
 			cpus--;
@@ -657,14 +657,14 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 {
 	uint32_t i, free_mem, min_mem, size;
 
-	min_mem = job_ptr->details->job_min_memory & (~MEM_PER_CPU);
+	min_mem = job_ptr->details->pn_min_memory & (~MEM_PER_CPU);
 	size = bit_size(bitmap);
 	for (i = 0; i < size; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
 
 		/* node-level memory check */
-		if ((job_ptr->details->job_min_memory) &&
+		if ((job_ptr->details->pn_min_memory) &&
 		    ((cr_type == CR_CORE_MEMORY) ||
 		     (cr_type == CR_CPU_MEMORY)  ||
 		     (cr_type == CR_MEMORY)      ||
@@ -2073,7 +2073,7 @@ alloc_job:
 		return error_code;
 
 	/* load memory allocated array */
-	save_mem =job_ptr->details->job_min_memory;
+	save_mem =job_ptr->details->pn_min_memory;
 	if (save_mem & MEM_PER_CPU) {
 		/* memory is per-cpu */
 		save_mem &= (~MEM_PER_CPU);

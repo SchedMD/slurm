@@ -778,7 +778,7 @@ int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_min_cpus(job_info_t * job, int width, bool right_justify,
+int _print_pn_min_cpus(job_info_t * job, int width, bool right_justify,
 			char* suffix)
 {
 	char tmp_char[8];
@@ -786,7 +786,7 @@ int _print_job_min_cpus(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_CPUS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->job_min_cpus, tmp_char,
+		convert_num_unit((float)job->pn_min_cpus, tmp_char,
 				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
@@ -795,8 +795,8 @@ int _print_job_min_cpus(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_min_sockets(job_info_t * job, int width, bool right_justify,
-			 char* suffix)
+int _print_min_sockets(job_info_t * job, int width, bool right_justify,
+		       char* suffix)
 {
 	char tmp_char[8];
 
@@ -812,8 +812,8 @@ int _print_job_min_sockets(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_min_cores(job_info_t * job, int width, bool right_justify,
-			 char* suffix)
+int _print_min_cores(job_info_t * job, int width, bool right_justify,
+		     char* suffix)
 {
 	char tmp_char[8];
 
@@ -829,8 +829,8 @@ int _print_job_min_cores(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_min_threads(job_info_t * job, int width, bool right_justify,
-			 char* suffix)
+int _print_min_threads(job_info_t * job, int width, bool right_justify,
+		       char* suffix)
 {
 	char tmp_char[8];
 
@@ -846,7 +846,7 @@ int _print_job_min_threads(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
+int _print_pn_min_memory(job_info_t * job, int width, bool right_justify,
 			  char* suffix)
 {
 	char min_mem[10];
@@ -856,8 +856,8 @@ int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
 		_print_str("MIN_MEMORY", width, right_justify, true);
 	else {
 	    	tmp_char[0] = '\0';
-		job->job_min_memory &= (~MEM_PER_CPU);
-		convert_num_unit((float)job->job_min_memory, min_mem,
+		job->pn_min_memory &= (~MEM_PER_CPU);
+		convert_num_unit((float)job->pn_min_memory, min_mem,
 				 sizeof(min_mem), UNIT_NONE);
 		strcat(tmp_char, min_mem);
 		_print_str(tmp_char, width, right_justify, true);
@@ -869,7 +869,7 @@ int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
 }
 
 int
-_print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify,
+_print_pn_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 			char* suffix)
 {
 	char tmp_char[10];
@@ -877,7 +877,7 @@ _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_TMP_DISK", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->job_min_tmp_disk,
+		convert_num_unit((float)job->pn_min_tmp_disk,
 				 tmp_char, sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
