@@ -1879,7 +1879,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->min_cpus : -1L;
 	job_min_cpus    = (job_specs->job_min_cpus != (uint16_t) NO_VAL) ?
 		(long) job_specs->job_min_cpus : -1L;
-	debug3("   min_cpus=%ld job_min_procs=%ld", min_cpus, job_min_cpus);
+	debug3("   min_cpus=%ld job_min_cpus=%ld", min_cpus, job_min_cpus);
 
 	debug3("   -N min-[max]: %u-[%u]:%u:%u:%u",
 	       job_specs->min_nodes,   job_specs->max_nodes,
@@ -2596,7 +2596,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t reboot;
 	uint16_t rotate;
 	uint16_t conn_type;
-	uint32_t max_cpus=0;
 	static uint32_t cpus_per_bp = 0;
 
 	if(!cpus_per_bp)
@@ -2760,15 +2759,13 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	/* This needs to be done after the association acct policy check since
 	 * it looks at unaltered nodes for bluegene systems
 	 */
-	debug3("before alteration asking for nodes %u-%u cpus %u",
+	debug3("before alteration asking for nodes %u-%u cpus %u-%u",
 	       job_desc->min_nodes, job_desc->max_nodes,
-	       job_desc->min_cpus);
+	       job_desc->min_cpus, job_desc->max_cpus);
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
-	select_g_select_jobinfo_get(job_desc->select_jobinfo,
-				    SELECT_JOBDATA_MAX_CPUS, &max_cpus);
 	debug3("after alteration asking for nodes %u-%u cpus %u-%u",
 	       job_desc->min_nodes, job_desc->max_nodes,
-	       job_desc->min_cpus, max_cpus);
+	       job_desc->min_cpus, job_desc->max_cpus);
 #endif
 	/* check if select partition has sufficient resources to satisfy
 	 * the request */
@@ -2799,6 +2796,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		if(job_desc->max_nodes
 		   && job_desc->min_nodes > job_desc->max_nodes)
 			job_desc->max_nodes = job_desc->min_nodes;
+		if(job_desc->max_cpus
+		   && job_desc->min_cpus > job_desc->max_cpus)
+			job_desc->max_cpus = job_desc->min_cpus;
 	}
 	if (job_desc->exc_nodes) {
 		error_code = node_name2bitmap(job_desc->exc_nodes, false,
@@ -4711,7 +4711,6 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 				pack32(detail_ptr->min_cpus, buffer);
 				pack32(detail_ptr->max_cpus, buffer);
 			}
-
 			if (job_ptr->node_cnt) {
 				pack32(job_ptr->node_cnt, buffer);
 				pack32((uint32_t) 0, buffer);
@@ -5228,7 +5227,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 {
 	int error_code = SLURM_SUCCESS;
 	int super_user = 0;
-	uint32_t save_min_nodes = NO_VAL, save_max_nodes = NO_VAL, max_cpus;
+	uint32_t save_min_nodes = NO_VAL, save_max_nodes = NO_VAL;
 	uint32_t save_min_cpus = NO_VAL, save_max_cpus = NO_VAL;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
@@ -5389,15 +5388,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	/* This needs to be done after the association acct policy check since
 	 * it looks at unaltered nodes for bluegene systems
 	 */
-	debug3("update before alteration asking for nodes %u-%u cpus %u",
+	debug3("update before alteration asking for nodes %u-%u cpus %u-%u",
 	       job_specs->min_nodes, job_specs->max_nodes,
-	       job_specs->min_cpus);
+	       job_specs->min_cpus, job_specs->max_cpus);
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_specs);
-	select_g_select_jobinfo_get(job_specs->select_jobinfo,
-				    SELECT_JOBDATA_MAX_CPUS, &max_cpus);
 	debug3("update after alteration asking for nodes %u-%u cpus %u-%u",
 	       job_specs->min_nodes, job_specs->max_nodes,
-	       job_specs->min_cpus, max_cpus);
+	       job_specs->min_cpus, job_specs->max_cpus);
 
 	/* Reset min and max cpu counts as needed, insure consistency */
 	if (job_specs->min_cpus != NO_VAL) {

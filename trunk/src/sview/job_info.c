@@ -1225,10 +1225,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   tmp_char);
 
 #ifdef HAVE_BG
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       tmp_char,
-				       sizeof(tmp_char),
-				       SELECT_PRINT_MAX_CPUS);
+	convert_num_unit((float)job_ptr->max_cpus, tmp_char, sizeof(tmp_char),
+			 UNIT_NONE);
 #else
 	snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->max_cpus);
 #endif
@@ -1787,10 +1785,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_CPU_MIN, tmp_char, -1);
 
 #ifdef HAVE_BG
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-				       tmp_char,
-				       sizeof(tmp_char),
-				       SELECT_PRINT_MAX_CPUS);
+	convert_num_unit((float)job_ptr->max_cpus, tmp_char, sizeof(tmp_char),
+			 UNIT_NONE);
 #else
 	snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->max_cpus);
 #endif

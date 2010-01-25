@@ -58,7 +58,6 @@ struct select_jobinfo {
 	uint32_t node_cnt;      /* how many cnodes in block running job */
 	uint16_t altered;       /* see if we have altered this job
 				 * or not yet */
-	uint32_t max_cpus;	/* maximum processors to use */
 #ifdef HAVE_BGL
 	char *blrtsimage;       /* BlrtsImage for this block */
 #endif
