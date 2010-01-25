@@ -627,7 +627,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 		cred_arg.job_mem = step_ptr->mem_per_cpu |
 				   MEM_PER_CPU;
 	} else {
-		cred_arg.job_mem = job_ptr->details->job_min_memory;
+		cred_arg.job_mem = job_ptr->details->pn_min_memory;
 	}
 #ifdef HAVE_FRONT_END
 	cred_arg.hostlist = node_record_table_ptr[0].name;
@@ -3294,7 +3294,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->environment = _xduparray2(job_desc_msg->env_size,
 						 job_desc_msg->environment);
 	launch_msg_ptr->envc = job_desc_msg->env_size;
-	launch_msg_ptr->job_mem = job_desc_msg->job_min_memory;
+	launch_msg_ptr->job_mem = job_desc_msg->pn_min_memory;
 	launch_msg_ptr->cpus_per_task = job_desc_msg->cpus_per_task;
 
 	/* _max_nprocs() represents the total number of CPUs available

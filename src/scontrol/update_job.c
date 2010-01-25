@@ -378,26 +378,26 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinCPUsNode", MAX(taglen, 4)) == 0) {
-			job_msg.job_min_cpus =
+			job_msg.pn_min_cpus =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinMemoryNode",
 				     MAX(taglen, 10)) == 0) {
-			job_msg.job_min_memory =
+			job_msg.pn_min_memory =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinMemoryCPU",
 				     MAX(taglen, 10)) == 0) {
-			job_msg.job_min_memory =
+			job_msg.pn_min_memory =
 				(uint32_t) strtol(val, (char **) NULL, 10);
-			job_msg.job_min_memory |= MEM_PER_CPU;
+			job_msg.pn_min_memory |= MEM_PER_CPU;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "MinTmpDiskNode",
 				     MAX(taglen, 5)) == 0) {
-			job_msg.job_min_tmp_disk =
+			job_msg.pn_min_tmp_disk =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}

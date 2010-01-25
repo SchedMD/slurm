@@ -609,11 +609,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *work_dir;		/* pathname of working directory */
 
 	/* job constraints: */
-	uint16_t job_min_cpus;    /* minimum # CPUs per node, default=0 */
-	uint32_t job_min_memory;   /* minimum real memory per node OR
-				    * real memory per CPU | MEM_PER_CPU,
-				    * default=0 (no limit) */
-	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
+	uint16_t cpus_per_task;	/* number of processors required for
+				 * each task */
 	uint32_t min_cpus;	/* minimum number of processors required,
 				 * default=0 */
 	uint32_t max_cpus;	/* maximum number of processors required,
@@ -628,10 +625,16 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * by job, default=0 */
 	uint16_t min_threads;	/* minimum number of threads per core required
 				 * by job, default=0 */
-	uint16_t cpus_per_task;	/* number of processors required for each task */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
-	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
+	uint16_t ntasks_per_socket;/* number of tasks to invoke on
+				    * each socket */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
+	uint16_t pn_min_cpus;    /* minimum # CPUs per node, default=0 */
+	uint32_t pn_min_memory;  /* minimum real memory per node OR
+				  * real memory per CPU | MEM_PER_CPU,
+				  * default=0 (no limit) */
+	uint32_t pn_min_tmp_disk;/* minimum tmp disk per node,
+				  * default=0 */
 
 /*
  * The following parameters are only meaningful on a Blue Gene
@@ -670,7 +673,8 @@ typedef struct job_info {
 	char *command;		/* command to be executed */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
-	uint16_t cpus_per_task;	/* number of processors required for each task */
+	uint16_t cpus_per_task;	/* number of processors required for
+				 * each task */
 	char *dependency;	/* syncrhonize job execution with other jobs */
 	time_t eligible_time;	/* time job is eligible for running */
 	time_t end_time;	/* time of termination, actual or expected */
@@ -682,9 +686,6 @@ typedef struct job_info {
 	char *features;		/* comma separated list of required features */
 	uint32_t group_id;	/* group job sumitted as */
 	uint32_t job_id;	/* job ID */
-	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
-	uint16_t job_min_cpus;	   /* minimum # CPUs per node, default=0 */
-	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	char *licenses;		/* licenses required by the job */
 	uint32_t max_cpus;	/* maximum number of cpus usable by job */
@@ -706,6 +707,9 @@ typedef struct job_info {
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_cpus;	/* minimum number of cpus required by job */
 	char *partition;	/* name of assigned partition */
+	uint32_t pn_min_memory; /* minimum real memory per node, default=0 */
+	uint16_t pn_min_cpus;   /* minimum # CPUs per node, default=0 */
+	uint32_t pn_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job,
 				 * 0=held, 1=required nodes DOWN/DRAINED */

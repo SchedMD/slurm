@@ -175,10 +175,10 @@ typedef struct srun_options {
 	bool preserve_env;	/* --preserve-env		*/
 
 	/* constraint options */
-	int32_t job_min_cpus;	/* --mincpus=n			*/
-	int32_t job_min_memory;	/* --mem=n			*/
+	int32_t pn_min_cpus;	/* --mincpus=n			*/
+	int32_t pn_min_memory;	/* --mem=n			*/
 	int32_t mem_per_cpu;	/* --mem-per-cpu=n		*/
-	long job_min_tmp_disk;	/* --tmp=n			*/
+	long pn_min_tmp_disk;	/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
@@ -230,13 +230,13 @@ extern int immediate_exit;	/* exit code for --imediate option & busy */
  * (if new constraints are added above, might want to add them to this
  *  macro or move this to a function if it gets a little complicated)
  */
-#define constraints_given() ((opt.job_min_cpus     != NO_VAL) || \
-			     (opt.job_min_memory   != NO_VAL) || \
+#define constraints_given() ((opt.pn_min_cpus     != NO_VAL) || \
+			     (opt.pn_min_memory   != NO_VAL) || \
 			     (opt.job_max_memory   != NO_VAL) || \
-			     (opt.job_min_tmp_disk != NO_VAL) || \
-			     (opt.job_min_sockets  != NO_VAL) || \
-			     (opt.job_min_cores    != NO_VAL) || \
-			     (opt.job_min_threads  != NO_VAL) || \
+			     (opt.pn_min_tmp_disk != NO_VAL) || \
+			     (opt.pn_min_sockets  != NO_VAL) || \
+			     (opt.pn_min_cores    != NO_VAL) || \
+			     (opt.pn_min_threads  != NO_VAL) || \
 			     (opt.contiguous))
 
 /* process options:

@@ -389,10 +389,10 @@ static void _opt_default()
 	opt.warn_signal = 0;
 	opt.warn_time   = 0;
 
-	opt.job_min_cpus    = NO_VAL;
-	opt.job_min_memory  = NO_VAL;
+	opt.pn_min_cpus    = NO_VAL;
+	opt.pn_min_memory  = NO_VAL;
 	opt.mem_per_cpu     = NO_VAL;
-	opt.job_min_tmp_disk= NO_VAL;
+	opt.pn_min_tmp_disk= NO_VAL;
 
 	opt.hold	    = false;
 	opt.constraints	    = NULL;
@@ -1079,7 +1079,7 @@ static void set_options(const int argc, char **argv)
 				       optarg);
 			break;
 		case LONG_OPT_MINCPUS:
-			opt.job_min_cpus = _get_int(optarg, "mincpus", true);
+			opt.pn_min_cpus = _get_int(optarg, "mincpus", true);
 			break;
 		case LONG_OPT_MINCORES:
 			verbose("mincores option has been deprecated, use "
@@ -1115,8 +1115,8 @@ static void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MEM:
-			opt.job_min_memory = (int) str_to_bytes(optarg);
-			if (opt.job_min_memory < 0) {
+			opt.pn_min_memory = (int) str_to_bytes(optarg);
+			if (opt.pn_min_memory < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
 				exit(error_exit);
@@ -1146,8 +1146,8 @@ static void set_options(const int argc, char **argv)
 				opt.resv_port_cnt = 0;
 			break;
 		case LONG_OPT_TMP:
-			opt.job_min_tmp_disk = str_to_bytes(optarg);
-			if (opt.job_min_tmp_disk < 0) {
+			opt.pn_min_tmp_disk = str_to_bytes(optarg);
+			if (opt.pn_min_tmp_disk < 0) {
 				error("invalid tmp value %s", optarg);
 				exit(error_exit);
 			}
@@ -1479,11 +1479,11 @@ static void _opt_args(int argc, char **argv)
 
 	set_options(argc, argv);
 
-	if ((opt.job_min_memory > -1) && (opt.mem_per_cpu > -1)) {
-		if (opt.job_min_memory < opt.mem_per_cpu) {
+	if ((opt.pn_min_memory > -1) && (opt.mem_per_cpu > -1)) {
+		if (opt.pn_min_memory < opt.mem_per_cpu) {
 			info("mem < mem-per-cpu - resizing mem to be equal "
 			     "to mem-per-cpu");
-			opt.job_min_memory = opt.mem_per_cpu;
+			opt.pn_min_memory = opt.mem_per_cpu;
 		}
 	}
 
@@ -1611,8 +1611,8 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.job_min_cpus < opt.cpus_per_task)
-		opt.job_min_cpus = opt.cpus_per_task;
+	if (opt.pn_min_cpus < opt.cpus_per_task)
+		opt.pn_min_cpus = opt.cpus_per_task;
 
 	if (opt.argc > 0)
 		opt.cmd_name = base_name(opt.argv[0]);
@@ -2026,17 +2026,17 @@ static char *print_constraints()
 {
 	char *buf = xstrdup("");
 
-	if (opt.job_min_cpus > 0)
-		xstrfmtcat(buf, "mincpus=%d ", opt.job_min_cpus);
+	if (opt.pn_min_cpus > 0)
+		xstrfmtcat(buf, "mincpus-per-node=%d ", opt.pn_min_cpus);
 
-	if (opt.job_min_memory > 0)
-		xstrfmtcat(buf, "mem=%dM ", opt.job_min_memory);
+	if (opt.pn_min_memory > 0)
+		xstrfmtcat(buf, "mem-per-node=%dM ", opt.pn_min_memory);
 
 	if (opt.mem_per_cpu > 0)
 		xstrfmtcat(buf, "mem-per-cpu=%dM ", opt.mem_per_cpu);
 
-	if (opt.job_min_tmp_disk > 0)
-		xstrfmtcat(buf, "tmp=%ld ", opt.job_min_tmp_disk);
+	if (opt.pn_min_tmp_disk > 0)
+		xstrfmtcat(buf, "tmp-per-node=%ld ", opt.pn_min_tmp_disk);
 
 	if (opt.contiguous == true)
 		xstrcat(buf, "contiguous ");

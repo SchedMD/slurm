@@ -338,7 +338,7 @@ host_fini:	if (rc) {
 #ifdef HAVE_BG
 			job_ptr->details->min_cpus = job_desc.min_cpus;
 			job_ptr->details->max_cpus = job_desc.max_cpus;
-			job_ptr->details->job_min_cpus = job_desc.job_min_cpus;
+			job_ptr->details->pn_min_cpus = job_desc.pn_min_cpus;
 #endif
 			last_job_update = now;
 			update_accounting = true;

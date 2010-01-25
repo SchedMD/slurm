@@ -671,7 +671,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "min cpus per node";
 		if(temp_int <= 0)
 			goto return_error;
-		job_msg->job_min_cpus = (uint32_t)temp_int;
+		job_msg->pn_min_cpus = (uint32_t)temp_int;
 		break;
 	case SORTID_TASKS:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -727,7 +727,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "min memory per node";
 		if(temp_int <= 0)
 			goto return_error;
-		job_msg->job_min_memory = (uint32_t)temp_int;
+		job_msg->pn_min_memory = (uint32_t)temp_int;
 		break;
 	case SORTID_TMP_DISK:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -739,7 +739,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "min tmp disk per node";
 		if(temp_int <= 0)
 			goto return_error;
-		job_msg->job_min_tmp_disk = (uint32_t)temp_int;
+		job_msg->pn_min_tmp_disk = (uint32_t)temp_int;
 		break;
 	case SORTID_PARTITION:
 		job_msg->partition = xstrdup(new_text);
@@ -1344,15 +1344,15 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_LICENSES),
 				   job_ptr->licenses);
 
-	convert_num_unit((float)job_ptr->job_min_cpus,
+	convert_num_unit((float)job_ptr->pn_min_cpus,
 			 tmp_char, sizeof(tmp_char), UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_CPU_REQ),
 				   tmp_char);
 
-	if(job_ptr->job_min_memory > 0)
-		convert_num_unit((float)job_ptr->job_min_memory,
+	if(job_ptr->pn_min_memory > 0)
+		convert_num_unit((float)job_ptr->pn_min_memory,
 				 tmp_char, sizeof(tmp_char), UNIT_MEGA);
 	else
 		sprintf(tmp_char, " ");
@@ -1360,8 +1360,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_MEM_MIN),
 				   tmp_char);
-	if(job_ptr->job_min_tmp_disk > 0)
-		convert_num_unit((float)job_ptr->job_min_tmp_disk,
+	if(job_ptr->pn_min_tmp_disk > 0)
+		convert_num_unit((float)job_ptr->pn_min_tmp_disk,
 				 tmp_char, sizeof(tmp_char), UNIT_MEGA);
 	else
 		sprintf(tmp_char, " ");
@@ -1382,7 +1382,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   job_ptr->network);
 #endif
 
-	if(job_ptr->job_min_memory > 0)
+	if(job_ptr->pn_min_memory > 0)
 		sprintf(tmp_char, "%u", job_ptr->nice - NICE_OFFSET);
 	else
 		sprintf(tmp_char, " ");
@@ -1847,7 +1847,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		gtk_tree_store_set(treestore, iter,
 				   SORTID_CPUS_PER_TASK, tmp_char, -1);
 	}
-	convert_num_unit((float)job_ptr->job_min_cpus,
+	convert_num_unit((float)job_ptr->pn_min_cpus,
 			 tmp_char, sizeof(tmp_char), UNIT_NONE);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_CPU_REQ, tmp_char, -1);
@@ -1867,12 +1867,12 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 /* 	gtk_tree_store_set(treestore, iter, */
 /* 			   SORTID_THREADS_MIN, tmp_char, -1); */
 
-	convert_num_unit((float)job_ptr->job_min_memory,
+	convert_num_unit((float)job_ptr->pn_min_memory,
 			 tmp_char, sizeof(tmp_char), UNIT_MEGA);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MEM_MIN, tmp_char, -1);
 
-	convert_num_unit((float)job_ptr->job_min_tmp_disk,
+	convert_num_unit((float)job_ptr->pn_min_tmp_disk,
 			 tmp_char, sizeof(tmp_char), UNIT_MEGA);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_TMP_DISK, tmp_char, -1);

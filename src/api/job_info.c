@@ -555,23 +555,23 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 14 ******/
 line14:
-	if (job_ptr->job_min_memory & MEM_PER_CPU) {
-		job_ptr->job_min_memory &= (~MEM_PER_CPU);
+	if (job_ptr->pn_min_memory & MEM_PER_CPU) {
+		job_ptr->pn_min_memory &= (~MEM_PER_CPU);
 		tmp3_ptr = "CPU";
 	} else
 		tmp3_ptr = "Node";
 #ifdef HAVE_BG
-	convert_num_unit((float)job_ptr->job_min_cpus, tmp1, sizeof(tmp1),
+	convert_num_unit((float)job_ptr->pn_min_cpus, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%s",	tmp1);
 #else
 	snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%u",
-		 job_ptr->job_min_cpus);
+		 job_ptr->pn_min_cpus);
 #endif
 	xstrcat(out, tmp_line);
-	convert_num_unit((float)job_ptr->job_min_memory, tmp1, sizeof(tmp1),
+	convert_num_unit((float)job_ptr->pn_min_memory, tmp1, sizeof(tmp1),
 			 UNIT_MEGA);
-	convert_num_unit((float)job_ptr->job_min_tmp_disk, tmp2, sizeof(tmp2),
+	convert_num_unit((float)job_ptr->pn_min_tmp_disk, tmp2, sizeof(tmp2),
 			 UNIT_MEGA);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 " MinMemory%s=%s MinTmpDiskNode=%s",

@@ -48,8 +48,15 @@ API CHANGES
 * Changed members of the following structs:
 job_info_t
 	num_procs -> num_cpus
+	job_min_cpus -> pn_min_cpus
+	job_min_memory -> pn_min_memory
+	job_min_tmp_disk -> pn_min_tmp_disk
+
 job_desc_msg_t
 	num_procs -> min_cpus
+	job_min_cpus -> pn_min_cpus
+	job_min_memory -> pn_min_memory
+	job_min_tmp_disk -> pn_min_tmp_disk
 
 * Added the following struct definitions:
 job_desc_msg_t

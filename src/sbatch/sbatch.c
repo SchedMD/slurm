@@ -261,18 +261,20 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	/* job constraints */
 	if (opt.mincpus > -1)
-		desc->job_min_cpus = opt.mincpus;
+		desc->pn_min_cpus = opt.mincpus;
 	if (opt.realmem > -1)
-		desc->job_min_memory = opt.realmem;
+		desc->pn_min_memory = opt.realmem;
 	else if (opt.mem_per_cpu > -1)
-		desc->job_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
+		desc->pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
 	if (opt.tmpdisk > -1)
-		desc->job_min_tmp_disk = opt.tmpdisk;
+		desc->pn_min_tmp_disk = opt.tmpdisk;
 	if (opt.overcommit) {
 		desc->min_cpus = MAX(opt.min_nodes, 1);
 		desc->overcommit = opt.overcommit;
 	} else
 		desc->min_cpus = opt.nprocs * opt.cpus_per_task;
+	desc->max_cpus = desc->max_cpus;
+
 	if (opt.nprocs_set)
 		desc->num_tasks = opt.nprocs;
 	if (opt.cpus_set)
