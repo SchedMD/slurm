@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     under some conditions.
  -- Fix bugs which treated --ntasks-per-node as a minimum rather than maximum 
     value in some places.
+ -- When a node silently fails which is already drained/down the reason
+    for draining for the node is not changed.
 
 * Changes in SLURM 2.1.1
 =============================
