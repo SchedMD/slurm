@@ -50,9 +50,9 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 		STORE_FIELD(hv, job_info, features, charp);
 	STORE_FIELD(hv, job_info, group_id, uint32_t);
 	STORE_FIELD(hv, job_info, job_id, uint32_t);
-	STORE_FIELD(hv, job_info, job_min_memory, uint32_t);
-	STORE_FIELD(hv, job_info, job_min_cpus, uint16_t);
-	STORE_FIELD(hv, job_info, job_min_tmp_disk, uint32_t);
+	STORE_FIELD(hv, job_info, pn_min_memory, uint32_t);
+	STORE_FIELD(hv, job_info, pn_min_cpus, uint16_t);
+	STORE_FIELD(hv, job_info, pn_min_tmp_disk, uint32_t);
 	STORE_FIELD(hv, job_info, job_state, uint16_t);
 	if(job_info->licenses)
 		STORE_FIELD(hv, job_info, licenses, charp);
