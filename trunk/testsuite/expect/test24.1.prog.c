@@ -50,7 +50,7 @@
 #include "src/sshare/sshare.h"
 
 /* set up some fake system */
-int cluster_procs = 50;
+int cluster_cpus = 50;
 int long_flag = 1;
 int exit_code = 0;
 sshare_time_format_t time_format = SSHARE_TIME_MINS;
