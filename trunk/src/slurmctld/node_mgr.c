@@ -1433,10 +1433,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			char time_str[32];
 			last_node_update = now;
 			slurm_make_time_str(&now, time_str, sizeof(time_str));
-			xfree(node_ptr->reason);
-			node_ptr->reason = xstrdup_printf(
-				"Node silently failed and came back [slurm@%s]",
-				time_str);
+			if(!node_ptr->reason)
+				node_ptr->reason = xstrdup_printf(
+					"Node silently failed and "
+					"came back [slurm@%s]",
+					time_str);
 			info("Node %s silently failed and came back",
 			     reg_msg->node_name);
 			_make_node_down(node_ptr, last_node_update);
