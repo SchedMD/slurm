@@ -1060,10 +1060,18 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
+		if(!name[0]) {
+			exit_code=1;
+			fprintf(stderr, " No blank names are "
+				"allowed when adding.\n");
+			rc = SLURM_ERROR;
+			continue;
+		}
+
 		user = NULL;
 		if(!sacctmgr_find_user_from_list(local_user_list, name)) {
 			uid_t pw_uid;
-			if(!default_acct) {
+			if(!default_acct || !default_acct[0]) {
 				exit_code=1;
 				fprintf(stderr, " Need a default account for "
 				       "these users to add.\n");

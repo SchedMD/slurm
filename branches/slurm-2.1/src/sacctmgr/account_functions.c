@@ -735,6 +735,14 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
+		if(!name[0]) {
+			exit_code=1;
+			fprintf(stderr, " No blank names are "
+				"allowed when adding.\n");
+			rc = SLURM_ERROR;
+			continue;
+		}
+
 		acct = NULL;
 		if(!sacctmgr_find_account_from_list(local_account_list, name)) {
 			acct = xmalloc(sizeof(acct_account_rec_t));

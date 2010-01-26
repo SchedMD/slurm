@@ -338,6 +338,13 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	cluster_list = list_create(destroy_acct_cluster_rec);
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
+		if(!name[0]) {
+			exit_code=1;
+			fprintf(stderr, " No blank names are "
+				"allowed when adding.\n");
+			rc = SLURM_ERROR;
+			continue;
+		}
 		cluster = xmalloc(sizeof(acct_cluster_rec_t));
 
 		list_append(cluster_list, cluster);
