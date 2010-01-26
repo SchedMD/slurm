@@ -7403,6 +7403,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	int timelimit_set = 0;
 	char *user_name = assoc_ptr->user;
 	bool rc = true;
+	bool limit_set_max_cpus = 0;
 
 	xassert(limit_set_max_nodes);
 	//(*limit_set_max_nodes) = 0;
@@ -7413,9 +7414,38 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		 * qos_ptr->grp_cpu_mins.
 		 */
 
-		/* NOTE: We can't enforce qos_ptr->grp_cpus at this
-		 * time because we don't have access to a CPU count for the job
-		 * due to how all of the job's specifications interact */
+		if (qos_ptr->grp_cpus != INFINITE) {
+			if (job_desc->min_cpus > qos_ptr->grp_cpus) {
+				info("job submit for user %s(%u): "
+				     "min cpu request %u exceeds "
+				     "group max cpu limit %u for qos '%s'",
+				     user_name,
+				     job_desc->user_id,
+				     job_desc->min_cpus,
+				     qos_ptr->grp_cpus,
+				     qos_ptr->name);
+				rc = false;
+				goto end_qos;
+			} else if (job_desc->max_cpus == 0
+				   || (limit_set_max_cpus
+				       && (job_desc->max_cpus
+					   > qos_ptr->grp_cpus))) {
+				job_desc->max_cpus = qos_ptr->grp_cpus;
+				limit_set_max_cpus = 1;
+			} else if (job_desc->max_cpus >
+				   qos_ptr->grp_cpus) {
+				info("job submit for user %s(%u): "
+				     "max cpu changed %u -> %u because "
+				     "of qos limit",
+				     user_name,
+				     job_desc->user_id,
+				     job_desc->max_cpus,
+				     qos_ptr->grp_cpus);
+				if(job_desc->max_cpus == NO_VAL)
+					limit_set_max_cpus = 1;
+				job_desc->max_cpus = qos_ptr->grp_cpus;
+			}
+		}
 
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_jobs.
@@ -7475,12 +7505,41 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 
 
 		/* for validation we don't need to look at
-		 * qos_ptr->max_cpu_mins_pj.
+		 * qos_ptr->max_cpu_mins_pj. It is checked while the
+		 * job is running. 
 		 */
 
-		/* NOTE: We can't enforce qos_ptr->max_cpus at this
-		 * time because we don't have access to a CPU count for the job
-		 * due to how all of the job's specifications interact */
+		if (qos_ptr->max_cpus_pj != INFINITE) {
+			if (job_desc->min_cpus > qos_ptr->max_cpus_pj) {
+				info("job submit for user %s(%u): "
+				     "min cpu limit %u exceeds "
+				     "qos max %u",
+				     user_name,
+				     job_desc->user_id,
+				     job_desc->min_cpus,
+				     qos_ptr->max_cpus_pj);
+				rc = false;
+				goto end_qos;
+			} else if (job_desc->max_cpus == 0
+				   || (limit_set_max_cpus
+				       && (job_desc->max_cpus
+					   > qos_ptr->max_cpus_pj))) {
+				job_desc->max_cpus = qos_ptr->max_cpus_pj;
+				limit_set_max_cpus = 1;
+			} else if (job_desc->max_cpus >
+				   qos_ptr->max_cpus_pj) {
+				info("job submit for user %s(%u): "
+				     "max cpu changed %u -> %u because "
+				     "of qos limit",
+				     user_name,
+				     job_desc->user_id,
+				     job_desc->max_cpus,
+				     qos_ptr->max_cpus_pj);
+				if(job_desc->max_cpus == NO_VAL)
+					limit_set_max_cpus = 1;
+				job_desc->max_cpus = qos_ptr->max_cpus_pj;
+			}
+		}
 
 		/* for validation we don't need to look at
 		 * qos_ptr->max_jobs.
@@ -7574,9 +7633,39 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		 * assoc_ptr->grp_cpu_mins.
 		 */
 
-		/* NOTE: We can't enforce assoc_ptr->grp_cpus at this
-		 * time because we don't have access to a CPU count for the job
-		 * due to how all of the job's specifications interact */
+		if ((!qos_ptr ||
+		     (qos_ptr && qos_ptr->grp_cpus == INFINITE)) &&
+		    (assoc_ptr->grp_cpus != INFINITE)) {
+			if (job_desc->min_cpus > assoc_ptr->grp_cpus) {
+				info("job submit for user %s(%u): "
+				     "min cpu request %u exceeds "
+				     "group max cpu limit %u for account %s",
+				     user_name,
+				     job_desc->user_id,
+				     job_desc->min_cpus,
+				     assoc_ptr->grp_cpus,
+				     assoc_ptr->acct);
+				rc = false;
+				break;
+			} else if (job_desc->max_cpus == 0
+				   || (limit_set_max_cpus
+				       && (job_desc->max_cpus
+					   > assoc_ptr->grp_cpus))) {
+				job_desc->max_cpus = assoc_ptr->grp_cpus;
+				limit_set_max_cpus = 1;
+			} else if (job_desc->max_cpus > assoc_ptr->grp_cpus) {
+				info("job submit for user %s(%u): "
+				     "max cpu changed %u -> %u because "
+				     "of account limit",
+				     user_name,
+				     job_desc->user_id,
+				     job_desc->max_cpus,
+				     assoc_ptr->grp_cpus);
+				if(job_desc->max_cpus == NO_VAL)
+					limit_set_max_cpus = 1;
+				job_desc->max_cpus = assoc_ptr->grp_cpus;
+			}
+		}
 
 		/* for validation we don't need to look at
 		 * assoc_ptr->grp_jobs.
@@ -7651,9 +7740,39 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		 * assoc_ptr->max_cpu_mins_pj.
 		 */
 
-		/* NOTE: We can't enforce assoc_ptr->max_cpus at this
-		 * time because we don't have access to a CPU count for the job
-		 * due to how all of the job's specifications interact */
+		if ((!qos_ptr ||
+		     (qos_ptr && qos_ptr->max_cpus_pj == INFINITE)) &&
+		    (assoc_ptr->max_cpus_pj != INFINITE)) {
+			if (job_desc->min_cpus > assoc_ptr->max_cpus_pj) {
+				info("job submit for user %s(%u): "
+				     "min cpu limit %u exceeds "
+				     "account max %u",
+				     user_name,
+				     job_desc->user_id,
+				     job_desc->min_cpus,
+				     assoc_ptr->max_cpus_pj);
+				rc = false;
+				break;
+			} else if (job_desc->max_cpus == 0
+				   || (limit_set_max_cpus
+				       && (job_desc->max_cpus
+					   > assoc_ptr->max_cpus_pj))) {
+				job_desc->max_cpus = assoc_ptr->max_cpus_pj;
+				limit_set_max_cpus = 1;
+			} else if (job_desc->max_cpus >
+				   assoc_ptr->max_cpus_pj) {
+				info("job submit for user %s(%u): "
+				     "max cpu changed %u -> %u because "
+				     "of account limit",
+				     user_name,
+				     job_desc->user_id,
+				     job_desc->max_cpus,
+				     assoc_ptr->max_cpus_pj);
+				if(job_desc->max_cpus == NO_VAL)
+					limit_set_max_cpus = 1;
+				job_desc->max_cpus = assoc_ptr->max_cpus_pj;
+			}
+		}
 
 		/* for validation we don't need to look at
 		 * assoc_ptr->max_jobs.

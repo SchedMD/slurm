@@ -356,7 +356,7 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
  * acct_policy_job_runnable - Determine of the specified job can execute
  *	right now or not depending upon accounting policy (e.g. running
  *	job limit for this association). If the association limits prevent
- *	the job from ever running (lowered limits since job submissin),
+ *	the job from ever running (lowered limits since job submission),
  *	then cancel the job.
  */
 extern bool acct_policy_job_runnable(struct job_record *job_ptr)
@@ -364,6 +364,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	acct_qos_rec_t *qos_ptr;
 	acct_association_rec_t *assoc_ptr;
 	uint32_t time_limit;
+	uint64_t cpu_time_limit;
+	uint64_t job_cpu_time_limit;
 	bool rc = true;
 	uint64_t usage_mins;
 	uint32_t wall_mins;
@@ -390,6 +392,10 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT))
                 job_ptr->state_reason = WAIT_NO_REASON;
 
+
+	job_cpu_time_limit = (uint64_t)job_ptr->time_limit
+		* (uint64_t)job_ptr->details->min_cpus;
+
 	slurm_mutex_lock(&assoc_mgr_qos_lock);
 	qos_ptr = job_ptr->qos_ptr;
 	if(qos_ptr) {
@@ -410,9 +416,36 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			goto end_qos;
 		}
 
-		/* NOTE: We can't enforce qos_ptr->grp_cpus at this
-		 * time because we don't have access to a CPU count for the job
-		 * due to how all of the job's specifications interact */
+		if (qos_ptr->grp_cpus != INFINITE) {
+			if (job_ptr->details->min_cpus > qos_ptr->grp_cpus) {
+				info("job %u is being cancelled, "
+				     "min cpu request %u exceeds "
+				     "group max cpu limit %u for qos '%s'",
+				     job_ptr->job_id,
+				     job_ptr->details->min_cpus,
+				     qos_ptr->grp_cpus,
+				     qos_ptr->name);
+				_cancel_job(job_ptr);
+			} else if ((qos_ptr->grp_used_cpus +
+				    job_ptr->details->min_cpus) >
+				   qos_ptr->grp_cpus) {
+				job_ptr->state_reason =
+					WAIT_ASSOC_RESOURCE_LIMIT;
+				xfree(job_ptr->state_desc);
+				debug2("job %u being held, "
+				       "the job is at or exceeds "
+				       "group max cpu limit %u "
+				       "with already used %u + requested %u "
+				       "for qos %s",
+				       job_ptr->job_id,
+				       qos_ptr->grp_cpus,
+				       qos_ptr->grp_used_cpus,
+				       job_ptr->details->min_cpus,
+				       qos_ptr->name);
+				rc = false;
+				goto end_qos;
+			}
+		}
 
 		if ((qos_ptr->grp_jobs != INFINITE) &&
 		    (qos_ptr->grp_used_jobs >= qos_ptr->grp_jobs)) {
@@ -478,13 +511,35 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			goto end_qos;
 		}
 
-		/* NOTE: We can't enforce qos_ptr->max_cpu_mins_pj at this
-		 * time because we don't have access to a CPU count for the job
-		 * due to how all of the job's specifications interact */
+		if (qos_ptr->max_cpu_mins_pj != INFINITE) {
+			cpu_time_limit = qos_ptr->max_cpu_mins_pj;
+			if ((job_ptr->time_limit != NO_VAL) &&
+			    (job_cpu_time_limit > cpu_time_limit)) {
+				info("job %u being cancelled, "
+				     "cpu time limit %u exceeds "
+				     "qos max per job %u",
+				     job_ptr->job_id, job_cpu_time_limit,
+				     cpu_time_limit);
+				_cancel_job(job_ptr);
+				rc = false;
+				goto end_qos;
+			}
+		}
 
-		/* NOTE: We can't enforce qos_ptr->max_cpus at this
-		 * time because we don't have access to a CPU count for the job
-		 * due to how all of the job's specifications interact */
+		if (qos_ptr->max_cpus_pj != INFINITE) {
+			if (job_ptr->details->min_cpus >
+			    qos_ptr->max_cpus_pj) {
+				info("job %u being cancelled, "
+				     "min cpu limit %u exceeds "
+				     "qos max %u",
+				     job_ptr->job_id,
+				     job_ptr->details->min_cpus,
+				     qos_ptr->max_cpus_pj);
+				_cancel_job(job_ptr);
+				rc = false;
+				goto end_qos;
+			}
+		}
 
 		if (qos_ptr->max_jobs_pu != INFINITE) {
 			acct_used_limits_t *used_limits = NULL;
@@ -534,7 +589,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			if ((job_ptr->time_limit != NO_VAL) &&
 			    (job_ptr->time_limit > time_limit)) {
 				info("job %u being cancelled, "
-				     "time limit %u exceeds account max %u",
+				     "time limit %u exceeds qos max wall pj %u",
 				     job_ptr->job_id, job_ptr->time_limit,
 				     time_limit);
 				_cancel_job(job_ptr);
@@ -569,6 +624,39 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 			rc = false;
 			goto end_it;
+		}
+
+		if ((!qos_ptr ||
+		     (qos_ptr && qos_ptr->grp_cpus == INFINITE))
+		    && (assoc_ptr->grp_cpus != INFINITE)) {
+			if (job_ptr->details->min_cpus >
+			    assoc_ptr->grp_cpus) {
+				info("job %u being cancelled, "
+				     "min cpu request %u exceeds "
+				     "group max cpu limit %u for account %s",
+				     job_ptr->job_id,
+				     job_ptr->details->min_cpus,
+				     assoc_ptr->grp_cpus, assoc_ptr->acct);
+				_cancel_job(job_ptr);
+			} else if ((assoc_ptr->grp_used_cpus +
+				    job_ptr->details->min_cpus) >
+				   assoc_ptr->grp_cpus) {
+				job_ptr->state_reason =
+					WAIT_ASSOC_RESOURCE_LIMIT;
+				xfree(job_ptr->state_desc);
+				debug2("job %u being held, "
+				       "assoc %u is at or exceeds "
+				       "group max cpu limit %u "
+				       "with already used %u + requested %u "
+				       "for account %s",
+				       job_ptr->job_id, assoc_ptr->id,
+				       assoc_ptr->grp_cpus,
+				       assoc_ptr->grp_used_cpus,
+				       job_ptr->details->min_cpus,
+				       assoc_ptr->acct);
+				rc = false;
+				goto end_it;
+			}
 		}
 
 		if ((!qos_ptr ||
@@ -651,13 +739,39 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			continue;
 		}
 
-		/* NOTE: We can't enforce assoc_ptr->max_cpu_mins_pj at this
-		 * time because we don't have access to a CPU count for the job
-		 * due to how all of the job's specifications interact */
+		if ((!qos_ptr ||
+		     (qos_ptr && qos_ptr->max_cpu_mins_pj == INFINITE)) &&
+		    (assoc_ptr->max_cpu_mins_pj != INFINITE)) {
+			cpu_time_limit = assoc_ptr->max_cpu_mins_pj;
+			if ((job_ptr->time_limit != NO_VAL) &&
+			    (job_cpu_time_limit > cpu_time_limit)) {
+				info("job %u being cancelled, "
+				     "cpu time limit %u exceeds "
+				     "assoc max per job %u",
+				     job_ptr->job_id, job_cpu_time_limit,
+				     cpu_time_limit);
+				_cancel_job(job_ptr);
+				rc = false;
+				goto end_it;
+			}
+		}
 
-		/* NOTE: We can't enforce assoc_ptr->max_cpus at this
-		 * time because we don't have access to a CPU count for the job
-		 * due to how all of the job's specifications interact */
+		if ((!qos_ptr ||
+		     (qos_ptr && qos_ptr->max_cpus_pj == INFINITE)) &&
+		    (assoc_ptr->max_cpus_pj != INFINITE)) {
+			if (job_ptr->details->min_cpus >
+			    assoc_ptr->max_cpus_pj) {
+				info("job %u being cancelled, "
+				     "min cpu limit %u exceeds "
+				     "account max %u",
+				     job_ptr->job_id,
+				     job_ptr->details->min_cpus,
+				     assoc_ptr->max_cpus_pj);
+				_cancel_job(job_ptr);
+				rc = false;
+				goto end_it;
+			}
+		}
 
 		if ((!qos_ptr ||
 		     (qos_ptr && qos_ptr->max_jobs_pu == INFINITE)) &&
@@ -712,6 +826,127 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			}
 		}
 
+		assoc_ptr = assoc_ptr->parent_assoc_ptr;
+		parent = 1;
+	}
+end_it:
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+end_qos:
+	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	return rc;
+}
+
+extern bool acct_policy_node_usable(struct job_record *job_ptr,
+				    uint32_t used_cpus,
+				    char *node_name, uint32_t node_cpus)
+{
+	acct_qos_rec_t *qos_ptr;
+	acct_association_rec_t *assoc_ptr;
+	bool rc = true;
+	uint32_t total_cpus = used_cpus + node_cpus;
+	int parent = 0; /* flag to tell us if we are looking at the
+			 * parent or not
+			 */
+
+	/* check to see if we are enforcing associations */
+	if (!accounting_enforce)
+		return true;
+
+	if (!_valid_job_assoc(job_ptr)) {
+		_cancel_job(job_ptr);
+		return false;
+	}
+
+	/* now see if we are enforcing limits */
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
+		return true;
+
+	/* clear old state reason */
+        if ((job_ptr->state_reason == WAIT_ASSOC_JOB_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_ASSOC_RESOURCE_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT))
+                job_ptr->state_reason = WAIT_NO_REASON;
+
+
+	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	qos_ptr = job_ptr->qos_ptr;
+	if(qos_ptr) {
+		if (qos_ptr->grp_cpus != INFINITE) {
+			if ((total_cpus+qos_ptr->grp_used_cpus)
+			    > qos_ptr->grp_cpus) {
+				debug("Can't use %s, adding it's %u cpus "
+				      "exceeds "
+				      "group max cpu limit %u for qos '%s'",
+				     node_name,
+				     node_cpus,
+				     qos_ptr->grp_cpus,
+				     qos_ptr->name);
+				rc = false;
+				goto end_qos;
+			}
+		}
+
+		if (qos_ptr->max_cpus_pj != INFINITE) {
+			if (total_cpus > qos_ptr->max_cpus_pj) {
+				debug("Can't use %s, adding it's %u cpus "
+				      "exceeds "
+				      "max cpu limit %u for qos '%s'",
+				      node_name,
+				      node_cpus,
+				      qos_ptr->max_cpus_pj,
+				      qos_ptr->name);
+				_cancel_job(job_ptr);
+				rc = false;
+				goto end_qos;
+			}
+		}
+	}
+
+	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_ptr = job_ptr->assoc_ptr;
+	while(assoc_ptr) {
+		if ((!qos_ptr ||
+		     (qos_ptr && qos_ptr->grp_cpus == INFINITE))
+		    && (assoc_ptr->grp_cpus != INFINITE)) {
+			if ((total_cpus+assoc_ptr->grp_used_cpus)
+			    > assoc_ptr->grp_cpus) {
+				debug("Can't use %s, adding it's %u cpus "
+				      "exceeds "
+				      "group max cpu limit %u for account '%s'",
+				      node_name,
+				      node_cpus,
+				      assoc_ptr->grp_cpus,
+				      assoc_ptr->acct);
+				rc = false;
+				goto end_it;
+			}
+		}
+
+		/* We don't need to look at the regular limits for
+		 * parents since we have pre-propogated them, so just
+		 * continue with the next parent
+		 */
+		if(parent) {
+			assoc_ptr = assoc_ptr->parent_assoc_ptr;
+			continue;
+		}
+
+		if ((!qos_ptr ||
+		     (qos_ptr && qos_ptr->max_cpus_pj == INFINITE)) &&
+		    (assoc_ptr->max_cpus_pj != INFINITE)) {
+			if (job_ptr->details->min_cpus >
+			    assoc_ptr->max_cpus_pj) {
+				debug("Can't use %s, adding it's %u cpus "
+				      "exceeds "
+				      "max cpu limit %u for account '%s'",
+				      node_name,
+				      node_cpus,
+				      assoc_ptr->max_cpus_pj,
+				      assoc_ptr->acct);
+				rc = false;
+				goto end_it;
+			}
+		}
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 		parent = 1;
 	}
