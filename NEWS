@@ -14,6 +14,9 @@ documents those changes that are of interest to users and admins.
     currently allocated nodes if that count changes during the job's lifetime 
     (e.g. job allocation uses the --no-kill option and a node goes DOWN, job 
     step would previously always fail).
+ -- Made it so sacctmgr can't add blank user or account.  The MySQL plugin
+    will also reject such requests.
+
 
 * Changes in SLURM 2.1.1
 =============================
