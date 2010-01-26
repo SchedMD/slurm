@@ -10,6 +10,10 @@ documents those changes that are of interest to users and admins.
     value in some places.
  -- When a node silently fails which is already drained/down the reason
     for draining for the node is not changed.
+ -- Srun will ignore SLURM_NNODES environment variable and use the count of 
+    currently allocated nodes if that count changes during the job's lifetime 
+    (e.g. job allocation uses the --no-kill option and a node goes DOWN, job 
+    step would previously always fail).
 
 * Changes in SLURM 2.1.1
 =============================

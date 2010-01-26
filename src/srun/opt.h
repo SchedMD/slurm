@@ -110,6 +110,9 @@ typedef struct srun_options {
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool nodes_set;		/* true if nodes explicitly set */
+	bool nodes_set_env;	/* true if nodes set via SLURM_NNODES */
+	bool nodes_set_opt;	/* true if nodes explicitly set using 
+				 * command line option */
 	bool extra_set;		/* true if extra node info explicitly set */
 	int  time_limit;	/* --time,   -t	(int minutes)	*/
 	char *time_limit_str;	/* --time,   -t (string)	*/

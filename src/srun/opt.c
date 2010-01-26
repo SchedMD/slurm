@@ -328,6 +328,8 @@ static void _opt_default()
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
 	opt.nodes_set = false;
+	opt.nodes_set_env = false;
+	opt.nodes_set_opt = false;
 	opt.cpu_bind_type = 0;
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
@@ -594,13 +596,15 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_NODES:
-		opt.nodes_set = get_resource_arg_range( val ,"OPT_NODES",
-							&opt.min_nodes,
-							&opt.max_nodes, false);
-		if (opt.nodes_set == false) {
+		opt.nodes_set_env = get_resource_arg_range( val ,"OPT_NODES",
+							     &opt.min_nodes,
+							     &opt.max_nodes, 
+							     false);
+		if (opt.nodes_set_env == false) {
 			error("\"%s=%s\" -- invalid node count. ignoring...",
 			      e->var, val);
-		}
+		} else
+			opt.nodes_set = opt.nodes_set_env;
 		break;
 
 	case OPT_OVERCOMMIT:
@@ -962,17 +966,18 @@ static void set_options(const int argc, char **argv)
 				_get_int(optarg, "number of tasks", true);
 			break;
 		case (int)'N':
-			opt.nodes_set =
+			opt.nodes_set_opt =
 				get_resource_arg_range( optarg,
 							"requested node count",
 							&opt.min_nodes,
 							&opt.max_nodes, true );
 
-			if (opt.nodes_set == false) {
+			if (opt.nodes_set_opt == false) {
 				error("invalid resource allocation -N `%s'",
 				      optarg);
 				exit(error_exit);
-			}
+			} else
+				opt.nodes_set = opt.nodes_set_opt;
 			break;
 		case (int)'o':
 			if (opt.pty) {
@@ -1649,11 +1654,12 @@ static bool _opt_verify(void)
 	   && (!opt.nodes_set || !opt.nprocs_set)) {
 		hostlist_t hl = hostlist_create(opt.nodelist);
 		if(!opt.nprocs_set) {
-			opt.nprocs_set = 1;
+			opt.nprocs_set = true;
 			opt.nprocs = hostlist_count(hl);
 		}
 		if(!opt.nodes_set) {
-			opt.nodes_set = 1;
+			opt.nodes_set = true;
+			opt.nodes_set_opt = true;
 			hostlist_uniq(hl);
 			opt.min_nodes = opt.max_nodes = hostlist_count(hl);
 		}
@@ -1782,6 +1788,7 @@ static bool _opt_verify(void)
 		else {
 			opt.min_nodes = hl_cnt;
 			opt.nodes_set = true;
+			opt.nodes_set_opt = true;
 		}
 	}
 	if ((opt.nodes_set || opt.extra_set)				&&
@@ -1824,6 +1831,7 @@ static bool _opt_verify(void)
 			else {
 				opt.min_nodes = hl_cnt;
 				opt.nodes_set = true;
+				opt.nodes_set_opt = true;
 			}
 			/* don't destroy hl here since it could be
 			   used later
@@ -1848,6 +1856,7 @@ static bool _opt_verify(void)
 			      opt.nprocs, opt.min_nodes, opt.nprocs);
 
 			opt.min_nodes = opt.nprocs;
+			opt.nodes_set_opt = true;
 			if (opt.max_nodes
 			    &&  (opt.min_nodes > opt.max_nodes) )
 				opt.max_nodes = opt.min_nodes;
