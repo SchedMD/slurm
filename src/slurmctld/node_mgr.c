@@ -1093,7 +1093,7 @@ static int _update_node_features(char *node_names, char *features)
 	list_iterator_destroy(config_iterator);
 	bit_free(node_bitmap);
 
-	info("_update_node_features: nodes %s reason set to: %s",
+	info("_update_node_features: nodes %s features set to: %s",
 		node_names, features);
 	return SLURM_SUCCESS;
 }

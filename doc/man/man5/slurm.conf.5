@@ -42,6 +42,8 @@ in the \fIslurm.conf\fR file, such as log files and job accounting files,
 may need to be created/owned by the "SlurmUser" uid to be successfully
 accessed.  Use the "chown" and "chmod" commands to set the ownership
 and permissions appropriately.
+See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information 
+about the various files and directories used by SLURM.
 
 .SH "PARAMETERS"
 .LP
@@ -522,8 +524,13 @@ information only on job termination (reducing SLURM interference with the job).
 
 .TP
 \fBJobCheckpointDir\fR
-Set the default directory used to store job checkpoint files.
-The default value is "/var/slurm/checkpoint".
+Specifies the default directory for storing or reading job checkpoint 
+information. The data stored here is only a few thousand bytes per job 
+and includes information needed to resubmit the job request, not job's
+memory image. The directory must be readable and writable by 
+\fBSlurmUser\fR, but not writable by regular users. The job memory images
+may be in a different location as specified by \fB\-\-checkpoint\-dir\fR
+option at job submit time or scontrol's \fBImageDir\fR option.
 
 .TP
 \fBJobCompHost\fR
@@ -2508,6 +2515,130 @@ PartitionName=debug Nodes=dev[0\-8,18\-25] Default=YES
 PartitionName=batch Nodes=dev[9\-17]  MinNodes=4
 .br
 PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
+
+.SH "FILE AND DIRECTORY PERMISSIONS"
+There are three classes of files:
+Files used by \fBslurmctld\fR must be accessible by user \fBSlurmUser\fR
+and accessible by the primary and backup control machines.
+Files used by \fBslurmd\fR must be accessible by user root and 
+accessible from every compute node.
+A few files need to be accessible by normal users on all login and 
+compute nodes.
+While many files and directories are listed below, most of them will 
+not be used with most configurations.
+.TP
+\fBAccountingStorageLoc\fR
+If this specifies a file, it must be writable by user \fBSlurmUser\fR.
+The file must be accessible by the primary and backup control machines.
+It is recommended that the file be readable by all users from login and 
+compute nodes.
+.TP
+\fBEpilog\fR
+Must be executable by user root.
+It is recommended that the file be readable by all users.
+The file must exist on every compute node.
+.TP
+\fBEpilogSlurmctld\fR
+Must be executable by user \fBSlurmUser\fR.
+It is recommended that the file be readable by all users.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBHealthCheckProgram\fR
+Must be executable by user root.
+It is recommended that the file be readable by all users.
+The file must exist on every compute node.
+.TP
+\fBJobCheckpointDir\fR
+Must be writable by user \fBSlurmUser\fR and no other users.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBJobCompLoc\fR
+If this specifies a file, it must be writable by user \fBSlurmUser\fR.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBJobCredentialPrivateKey\fR
+Must be readable only by user \fBSlurmUser\fR and writable by no other users.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBJobCredentialPublicCertificate\fR
+Readable to all users on all nodes.
+Must not be writable by regular users.
+.TP
+\fBMailProg\fR
+Must be executable by user \fBSlurmUser\fR.
+Must not be writable by regular users.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBProlog\fR
+Must be executable by user root.
+It is recommended that the file be readable by all users.
+The file must exist on every compute node.
+.TP
+\fBPrologSlurmctld\fR
+Must be executable by user \fBSlurmUser\fR.
+It is recommended that the file be readable by all users.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBResumeProgram\fR
+Must be executable by user \fBSlurmUser\fR.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBSallocDefaultCommand\fR
+Must be executable by all users.
+The file must exist on every login and compute node.
+.TP
+\fBslurm.conf\fR
+Readable to all users on all nodes.
+Must not be writable by regular users.
+.TP
+\fBSlurmctldLogFile\fR
+Must be writable by user \fBSlurmUser\fR.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBSlurmctldPidFile\fR
+Must be writable by user root. 
+Preferably writable and removable by \fBSlurmUser\fR.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBSlurmdLogFile\fR
+Must be writable by user root.
+A distinct file must exist on each compute node.
+.TP
+\fBSlurmdPidFile\fR
+Must be writable by user root.
+A distinct file must exist on each compute node.
+.TP
+\fBSlurmdSpoolDir\fR
+Must be writable by user root.
+A distinct file must exist on each compute node.
+.TP
+\fBSrunEpilog\fR
+Must be executable by all users.
+The file must exist on every login and compute node.
+.TP
+\fBSrunProlog\fR
+Must be executable by all users.
+The file must exist on every login and compute node.
+.TP
+\fBStateSaveLocation\fR
+Must be writable by user \fBSlurmUser\fR.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBSuspendProgram\fR
+Must be executable by user \fBSlurmUser\fR.
+The file must be accessible by the primary and backup control machines.
+.TP
+\fBTaskEpilog\fR
+Must be executable by all users.
+The file must exist on every compute node.
+.TP
+\fBTaskProlog\fR
+Must be executable by all users.
+The file must exist on every compute node.
+.TP
+\fBUnkillableStepProgram\fR
+Must be executable by user \fBSlurmUser\fR.
+The file must be accessible by the primary and backup control machines.
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.

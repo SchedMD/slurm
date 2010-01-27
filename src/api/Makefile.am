@@ -44,6 +44,19 @@ current = $(SLURM_API_CURRENT)
 age     = $(SLURM_API_AGE)
 rev     = $(SLURM_API_REVISION)
 
+# libpmi version informaiton
+#
+# The libpmi interface shouldn't be changing any time soon, so for SLURM's
+# libpmi only the library REVISION and AGE should change (and it is debatable
+# whether these parts of the .so version should change).
+#
+# REVISION is changed if the source of the library has changed so linkers 
+# prefer the new version.
+# AGE is changed if interfaces are added but compatibility is not broken.
+libpmi_current = 0
+libpmi_age     = 0
+libpmi_rev     = 0
+
 lib_LTLIBRARIES = libslurm.la libpmi.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
@@ -123,7 +136,7 @@ libslurm_la_LDFLAGS        = \
 libpmi_la_SOURCES = pmi.c
 libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
-        -version-info $(current):$(rev):$(age) \
+        -version-info $(libpmi_current):$(libpmi_rev):$(libpmi_age) \
         $(PMI_OTHER_FLAGS)
 
 # This was made so we chould export all symbols from libcommon

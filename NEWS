@@ -20,10 +20,19 @@ documents those changes that are of interest to users and admins.
  -- Added nodelist to sview for jobs on non-bluegene systems
  -- Correction in value of batch job environment variable SLURM_TASKS_PER_NODE
     under some conditions.
- -- Fix bugs which treated --ntasks-per-node as a minimum rather than maximum 
-    value in some places.
  -- When a node silently fails which is already drained/down the reason
     for draining for the node is not changed.
+ -- Srun will ignore SLURM_NNODES environment variable and use the count of 
+    currently allocated nodes if that count changes during the job's lifetime 
+    (e.g. job allocation uses the --no-kill option and a node goes DOWN, job 
+    step would previously always fail).
+ -- Made it so sacctmgr can't add blank user or account.  The MySQL plugin
+    will also reject such requests.
+ -- Revert libpmi.so version for compatibility with SLURM version 2.0 and
+    earlier to avoid forcing applications using a specific libpmi.so version to
+    rebuild unnecessarily (revert from libpmi.so.21.0.0 to libpmi.so.0.0.0).
+ -- Restore support for a pending job's constraints (required node features) 
+    when slurmctld is restarted (internal structure needed to be rebuilt).
 
 * Changes in SLURM 2.1.1
 =============================

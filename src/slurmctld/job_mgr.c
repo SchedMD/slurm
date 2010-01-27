@@ -1504,6 +1504,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	job_ptr->details->std_err = err;
 	job_ptr->details->exc_nodes = exc_nodes;
 	job_ptr->details->features = features;
+	(void) build_feature_list(job_ptr);
 	job_ptr->details->std_in = in;
 	job_ptr->details->pn_min_cpus = pn_min_cpus;
 	job_ptr->details->pn_min_memory = pn_min_memory;
@@ -3696,7 +3697,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		if (detail_ptr->overcommit == 0) {
 			detail_ptr->pn_min_cpus =
 				MAX(detail_ptr->pn_min_cpus,
-				    detail_ptr->cpus_per_task);
+				    (detail_ptr->cpus_per_task *
+				     detail_ptr->ntasks_per_node));
 		}
 	} else {
 		detail_ptr->pn_min_cpus = MAX(detail_ptr->pn_min_cpus,
