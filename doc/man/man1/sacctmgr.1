@@ -235,9 +235,8 @@ this will change in future versions of SLURM.)
 Maximum number of CPUs running jobs are able to be allocated in aggregate for
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
-before it is enforced.)
+value of \-1.  (NOTE: This limit only applys fully when using the Select
+Consumable Resouce plugin.)
 
 .TP
 \fIGrpJobs\fP=<max jobs>
@@ -287,9 +286,8 @@ Maximum number of CPUs each job is able to use in this account.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
-before it is enforced.)
+value of \-1.  (NOTE: This limit only applys fully when using the Select
+Consumable Resouce plugin.)
 
 .TP
 \fIMaxJobs\fP=<max jobs>

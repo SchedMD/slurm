@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     slurm.conf file after slurmctld restart or reconfiguration.
  -- Modify SLURM's PMI library (for MPICH2) to properly execute an executable
     program stand-alone (single MPI task launched without srun).
+ -- Made GrpCPUs and MaxCPUs limits work for select/cons_res.
 
 * Changes in SLURM 2.1.2
 =============================
