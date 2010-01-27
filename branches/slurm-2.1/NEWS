@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
  -- Revert libpmi.so version for compatibility with SLURM version 2.0 and
     earlier to avoid forcing applications using a specific libpmi.so version to
     rebuild unnecessarily (revert from libpmi.so.21.0.0 to libpmi.so.0.0.0).
+ -- Restore support for a pending job's constraints (required node features) 
+    when slurmctld is restarted (internal structure needed to be rebuilt).
 
 * Changes in SLURM 2.1.1
 =============================
