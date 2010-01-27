@@ -3859,7 +3859,8 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_list);
 	while((object = list_next(itr))) {
-		if(!object->name || !object->default_acct) {
+		if(!object->name || !object->name[0]
+		   || !object->default_acct || !object->default_acct[0]) {
 			error("We need a user name and "
 			      "default acct to add.");
 			rc = SLURM_ERROR;
@@ -4000,7 +4001,11 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	itr2 = list_iterator_create(acct_list);
 	while((user = list_next(itr))) {
+		if(!user[0])
+			continue;
 		while((acct = list_next(itr2))) {
+			if(!acct[0])
+				continue;
 			if(query)
 				xstrfmtcat(query, ", (%d, %d, \"%s\", \"%s\")",
 					   now, now, acct, user);
@@ -4083,8 +4088,9 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(acct_list);
 	while((object = list_next(itr))) {
-		if(!object->name || !object->description
-		   || !object->organization) {
+		if(!object->name || !object->name[0]
+		   || !object->description || !object->description[0]
+		   || !object->organization || !object->organization[0]) {
 			error("We need an account name, description, and "
 			      "organization to add. %s %s %s",
 			      object->name, object->description,
@@ -4201,7 +4207,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
 	while((object = list_next(itr))) {
-		if(!object->name) {
+		if(!object->name || !object->name[0]) {
 			error("We need a cluster name to add.");
 			rc = SLURM_ERROR;
 			continue;
@@ -4380,7 +4386,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(association_list);
 	while((object = list_next(itr))) {
-		if(!object->cluster || !object->acct) {
+		if(!object->cluster || !object->cluster[0]
+		   || !object->acct || !object->acct[0]) {
 			error("We need a association cluster and "
 			      "acct to add one.");
 			rc = SLURM_ERROR;
@@ -4807,7 +4814,7 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(qos_list);
 	while((object = list_next(itr))) {
-		if(!object->name) {
+		if(!object->name || !object->name[0]) {
 			error("We need a qos name to add.");
 			rc = SLURM_ERROR;
 			continue;
@@ -4915,7 +4922,8 @@ extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(wckey_list);
 	while((object = list_next(itr))) {
-		if(!object->cluster || !object->user) {
+		if(!object->cluster || !object->cluster[0]
+		   || !object->user || !object->user[0]) {
 			error("We need a wckey name, cluster, "
 			      "and user to add.");
 			rc = SLURM_ERROR;
@@ -5024,7 +5032,7 @@ extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,
 		error("We need a start time to edit a reservation.");
 		return SLURM_ERROR;
 	}
-	if(!resv->cluster) {
+	if(!resv->cluster || !resv->cluster[0]) {
 		error("We need a cluster name to edit a reservation.");
 		return SLURM_ERROR;
 	}
@@ -6209,7 +6217,7 @@ extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 		error("We need a start time to edit a reservation.");
 		return SLURM_ERROR;
 	}
-	if(!resv->cluster) {
+	if(!resv->cluster || !resv->cluster[0]) {
 		error("We need a cluster name to edit a reservation.");
 		return SLURM_ERROR;
 	}
@@ -6400,6 +6408,8 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((object = list_next(itr))) {
+			if(!object[0])
+				continue;
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name=\"%s\"", object);
@@ -6414,6 +6424,8 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->def_acct_list);
 		while((object = list_next(itr))) {
+			if(!object[0])
+				continue;
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "default_acct=\"%s\"", object);
@@ -6428,6 +6440,8 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->def_wckey_list);
 		while((object = list_next(itr))) {
+			if(!object[0])
+				continue;
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "default_wckey=\"%s\"", object);
@@ -6614,6 +6628,8 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		itr = list_iterator_create(user_list);
 		while((object = list_next(itr))) {
+			if(!object[0])
+				continue;
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "user=\"%s\"", object);
@@ -6632,6 +6648,8 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		itr = list_iterator_create(acct_list);
 		while((object = list_next(itr))) {
+			if(!object[0])
+				continue;
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "acct=\"%s\"", object);
@@ -6762,6 +6780,8 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
 		while((object = list_next(itr))) {
+			if(!object[0])
+				continue;
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name=\"%s\"", object);
@@ -6891,6 +6911,8 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(cluster_cond->cluster_list);
 		while((object = list_next(itr))) {
+			if(!object[0])
+				continue;
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name=\"%s\"", object);
@@ -7276,6 +7298,8 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(qos_cond->id_list);
 		while((object = list_next(itr))) {
+			if(!object[0])
+				continue;
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "id=\"%s\"", object);
@@ -7291,6 +7315,8 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(qos_cond->name_list);
 		while((object = list_next(itr))) {
+			if(!object[0])
+				continue;
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name=\"%s\"", object);
@@ -10614,7 +10640,7 @@ extern int clusteracct_storage_p_get_usage(
 		CLUSTER_COUNT
 	};
 
-	if(!cluster_rec->name) {
+	if(!cluster_rec->name || !cluster_rec->name[0]) {
 		error("We need a cluster name to set data for");
 		return SLURM_ERROR;
 	}

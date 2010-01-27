@@ -454,17 +454,23 @@ SLURM_JOB_ID environment variable was set.
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR
-Terminate a job if any task exits with a non\-zero exit code.
+Immediately terminate a job if any task exits with a non\-zero exit code.
+Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
+over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task
+exits with a non\-zero exit code.
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
 Do not automatically terminate a job of one of the nodes it has been
 allocated fails.  This option is only recognized on a job allocation,
 not for the submission of individual job steps.
-The job will assume all responsibilities for fault\-tolerance. The
-active job step (MPI job) will almost certainly suffer a fatal error,
-but subsequent job steps may be run if this option is specified. The
-default action is to terminate job upon node failure.
+The job will assume all responsibilities for fault\-tolerance. 
+Tasks launch using this option will not be considered terminated
+(e.g. \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR and
+\fB\-W\fR, \fB\-\-wait\fR options will have no effect upon the job step).
+The active job step (MPI job) will likely suffer a fatal error,
+but subsequent job steps may be run if this option is specified. 
+The default action is to terminate the job upon node failure.
 
 .TP
 \fB\-l\fR, \fB\-\-label\fR
@@ -754,8 +760,9 @@ ignored if \fISchedulerType=sched/wiki\fR or
 
 .TP
 \fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
-Request that no more than \fIntasks\fR be invoked on each core.
-Similar to \fB\-\-ntasks\-per\-node\fR except at the core level
+Request that \fIntasks\fR be invoked on each core.
+Meant to be used with the \fB\-\-ntasks\fR option.
+Related to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.  Masks will automatically be generated
 to bind the tasks to specific core unless \fB\-\-cpu_bind=none\fR
 is specified.
@@ -765,8 +772,9 @@ NOTE: This option is not supported unless
 
 .TP
 \fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
-Request that no more than \fIntasks\fR be invoked on each socket.
-Similar to \fB\-\-ntasks\-per\-node\fR except at the socket level
+Request that \fIntasks\fR be invoked on each socket.
+Meant to be used with the \fB\-\-ntasks\fR option.
+Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
 instead of the node level.  Masks will automatically be generated
 to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
 is specified.
@@ -776,11 +784,12 @@ NOTE: This option is not supported unless
 
 .TP
 \fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
-Request that no more than \fIntasks\fR be invoked on each node.
-This is similar to using \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
+Request that \fIntasks\fR be invoked on each node.
+Meant to be used with the \fB\-\-nodes\fR option.
+This is related to \fB\-\-cpus\-per\-task\fR=\fIncpus\fR,
 but does not require knowledge of the actual number of cpus on
 each node.  In some cases, it is more convenient to be able to
-request that no more than a specific number of ntasks be invoked
+request that no more than a specific number of tasks be invoked
 on each node.  Examples of this include submitting
 a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
 assigned to each node while allowing the OpenMP portion to utilize
@@ -1044,6 +1053,9 @@ be issued after 60 seconds). The default value is set by the WaitTime
 parameter in the slurm configuration file (see \fBslurm.conf(5)\fR). This
 option can be useful to insure that a job is terminated in a timely fashion
 in the event that one or more tasks terminate prematurely.
+Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
+over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task 
+exits with a non\-zero exit code.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fIhost1,host2,...\fR or \fIfilename\fR>

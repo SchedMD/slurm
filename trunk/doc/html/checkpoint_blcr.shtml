@@ -181,12 +181,18 @@ same set of nodes from which it was previously checkpointed.</li>
 
 <p>The following SLURM configuration parameter has been added:</p>
 <ul>
-<li><b>JobCheckpointDir</b> specified the default directory for storing
-or reading job checkpoint files</li>
+<li><b>JobCheckpointDir</b> 
+Specifies the default directory for storing or reading job checkpoint 
+information. The data stored here is only a few thousand bytes per job 
+and includes information needed to resubmit the job request, not job's
+memory image. The directory must be readable and writable by 
+<b>SlurmUser</b>, but not writable by regular users. The job memory images
+may be in a different location as specified by <b>--checkpoint-dir</b>
+option at job submit time or scontrol's <b>ImageDir</b> option.
 </ul>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 January 2010</p>
+<p style="text-align:center;">Last modified 26 January 2010</p>
 
 <!--#include virtual="footer.txt"-->

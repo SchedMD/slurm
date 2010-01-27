@@ -697,8 +697,9 @@ behavior on the cluster.
 
 .TP
 \fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
-Request that no more than \fIntasks\fR be invoked on each core.
-Similar to \fB\-\-ntasks\-per\-node\fR except at the core level
+Request that \fIntasks\fR be invoked on each core.
+Meant to be used with the \fB\-\-ntasks\fR option.
+Related to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.  Masks will automatically be generated
 to bind the tasks to specific core unless \fB\-\-cpu_bind=none\fR
 is specified.
@@ -708,8 +709,9 @@ NOTE: This option is not supported unless
 
 .TP
 \fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
-Request that no more than \fIntasks\fR be invoked on each socket.
-Similar to \fB\-\-ntasks\-per\-node\fR except at the socket level
+Request that \fIntasks\fR be invoked on each socket.
+Meant to be used with the \fB\-\-ntasks\fR option.
+Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
 instead of the node level.  Masks will automatically be generated
 to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
 is specified.
@@ -719,11 +721,12 @@ NOTE: This option is not supported unless
 
 .TP
 \fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
-Request that no more than \fIntasks\fR be invoked on each node.
-This is similar to using \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
+Request that \fIntasks\fR be invoked on each node.
+Meant to be used with the \fB\-\-nodes\fR option.
+This is related to \fB\-\-cpus\-per\-task\fR=\fIncpus\fR,
 but does not require knowledge of the actual number of cpus on
 each node.  In some cases, it is more convenient to be able to
-request that no more than a specific number of ntasks be invoked
+request that no more than a specific number of tasks be invoked
 on each node.  Examples of this include submitting
 a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
 assigned to each node while allowing the OpenMP portion to utilize

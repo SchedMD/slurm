@@ -275,6 +275,22 @@ int srun(int ac, char **av)
 	} else if ((resp = existing_allocation())) {
 
 		job_id = resp->job_id;
+		if (opt.nodes_set_env && !opt.nodes_set_opt &&
+		    (opt.min_nodes > resp->node_cnt)) {
+			/* This signifies the job used the --no-kill option 
+			 * and a node went DOWN or it used a node count range
+			 * specification, was checkpointed from one size and 
+			 * restarted at a different size */
+			error("SLURM_NNODES environment varariable "
+			      "conflicts with allocated node count (%u!=%u).",
+			      opt.min_nodes, resp->node_cnt);
+			/* Modify options to match resource allocation.
+			 * NOTE: Some options are not supported */
+			opt.min_nodes = resp->node_cnt;
+			xfree(opt.alloc_nodelist);
+			if (!opt.nprocs_set)
+				opt.nprocs = opt.min_nodes;
+		}
 		if (opt.alloc_nodelist == NULL)
                        opt.alloc_nodelist = xstrdup(resp->node_list);
 		if (opt.exclusive)
@@ -283,10 +299,10 @@ int srun(int ac, char **av)
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
 
-		if (opt.begin != 0)
+		if (opt.begin != 0) {
 			error("--begin is ignored because nodes"
-				" are already allocated.");
-
+			      " are already allocated.");
+		}
 		if (!job || create_job_step(job, false) < 0)
 			exit(error_exit);
 	} else {
