@@ -454,15 +454,21 @@ SLURM_JOB_ID environment variable was set.
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR
-Terminate a job if any task exits with a non\-zero exit code.
+Immediately terminate a job if any task exits with a non\-zero exit code.
+Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
+over \fB\-W\fR, \fB\-\-wait\f to terminate the job immediately if a task
+exits with a non\-zero exit code.
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
 Do not automatically terminate a job of one of the nodes it has been
 allocated fails.  This option is only recognized on a job allocation,
 not for the submission of individual job steps.
-The job will assume all responsibilities for fault\-tolerance. The
-active job step (MPI job) will almost certainly suffer a fatal error,
+The job will assume all responsibilities for fault\-tolerance. 
+Tasks launch using this option will not be considered terminated
+(e.g. \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR and
+\fB\-W\fR, \fB\-\-wait\fR options will have no effect upon the job step).
+The active job step (MPI job) will almost certainly suffer a fatal error,
 but subsequent job steps may be run if this option is specified. The
 default action is to terminate job upon node failure.
 
@@ -1047,6 +1053,9 @@ be issued after 60 seconds). The default value is set by the WaitTime
 parameter in the slurm configuration file (see \fBslurm.conf(5)\fR). This
 option can be useful to insure that a job is terminated in a timely fashion
 in the event that one or more tasks terminate prematurely.
+Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
+over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task 
+exits with a non\-zero exit code.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fIhost1,host2,...\fR or \fIfilename\fR>
