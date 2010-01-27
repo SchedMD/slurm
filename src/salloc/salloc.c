@@ -248,8 +248,7 @@ int main(int argc, char *argv[])
 			   ((errno == ETIMEDOUT) ||
 			    (errno == ESLURM_NOT_TOP_PRIORITY) ||
 			    (errno == ESLURM_NODES_BUSY))) {
-			error("Unable to allocate resources: %s",
-			      slurm_strerror(ESLURM_NODES_BUSY));
+			error("Unable to allocate resources: %m");
 			error_exit = immediate_exit;
 		} else {
 			error("Failed to allocate resources: %m");
