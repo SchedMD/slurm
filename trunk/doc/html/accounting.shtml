@@ -81,11 +81,13 @@ The configuration required to use SlurmDBD will be described below.
 Storing information directly into database would be similar.</p>
 
 <p>Note that SlurmDBD relies upon existing SLURM plugins
-for authentication and database use, but the other SLURM
+for authentication and SLURM sql for database use, but the other SLURM
 commands and daemons are not required on the host where
-SlurmDBD is installed. Install the <i>slurmdbd</i> and
-<i>slurm-plugins</i> RPMs on the computer when SlurmDBD
-is to execute.</p>
+SlurmDBD is installed. Install the <i>slurmdbd</i>,
+<i>slurm-plugins</i>, and <i>slurm-sql</i> RPMs on the computer when SlurmDBD
+is to execute.  If you want munge authentication, which is highly
+recommended, you will also need to install
+the <i>slurm-munge</i> RPM.</p>
 
 <p>If SlurmDBD is configured for use but not responding then <i>slurmctld</i> 
 will utilize an interal cache until SlurmDBD is returned to service.
@@ -654,21 +656,17 @@ If the cluster doesn't have the limit set no limit will be enforced.
   to the above system.</li>
 </li>
 
-<!-- For future use
 <li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs
   running from this association and its children.  If this limit is
   reached all jobs running in this group will be killed, and no new
   jobs will be allowed to run.
 </li>
--->
 
-<!-- For future use
 <li><b>GrpCPUs=</b> The total count of cpus able to be used at any given
   time from jobs running from this association and its children.  If
   this limit is reached new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
 </li>
--->
 
 <li><b>GrpJobs=</b> The total number of jobs able to run at any given
   time from this association and its children.  If
@@ -693,19 +691,15 @@ If the cluster doesn't have the limit set no limit will be enforced.
   will be denied.
 </li>
 
-<!-- For future use
 <li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
   running from this association.  If this limit is
   reached the job will be killed will be allowed to run.
 </li>
--->
 
-<!-- For future use
 <li><b>MaxCPUsPerJob=</b> The maximum size in cpus any given job can
   have from this association.  If this limit is reached the job will
   be denied at submission.
 </li>
--->
 
 <li><b>MaxJobs=</b> The total number of jobs able to run at any given
   time from this association.  If this limit is reached new jobs will
@@ -766,7 +760,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align: center;">Last modified 25 January 2010</p>
+<p style="text-align: center;">Last modified 27 January 2010</p>
 
 <!--#include virtual="footer.txt"-->
 
