@@ -456,7 +456,7 @@ SLURM_JOB_ID environment variable was set.
 \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR
 Immediately terminate a job if any task exits with a non\-zero exit code.
 Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
-over \fB\-W\fR, \fB\-\-wait\f to terminate the job immediately if a task
+over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task
 exits with a non\-zero exit code.
 
 .TP
@@ -468,9 +468,9 @@ The job will assume all responsibilities for fault\-tolerance.
 Tasks launch using this option will not be considered terminated
 (e.g. \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR and
 \fB\-W\fR, \fB\-\-wait\fR options will have no effect upon the job step).
-The active job step (MPI job) will almost certainly suffer a fatal error,
-but subsequent job steps may be run if this option is specified. The
-default action is to terminate job upon node failure.
+The active job step (MPI job) will likely suffer a fatal error,
+but subsequent job steps may be run if this option is specified. 
+The default action is to terminate the job upon node failure.
 
 .TP
 \fB\-l\fR, \fB\-\-label\fR
