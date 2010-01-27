@@ -14,6 +14,9 @@ documents those changes that are of interest to users and admins.
  -- Modify SLURM's PMI library (for MPICH2) to properly execute an executable
     program stand-alone (single MPI task launched without srun).
  -- Made GrpCPUs and MaxCPUs limits work for select/cons_res.
+ -- Moved all SQL dependant plugins into a seperate rpm slurm-sql.  This
+    should be needed only where a connection to a database is needed (i.e.
+    where the slurmdbd is running)
 
 * Changes in SLURM 2.1.2
 =============================
