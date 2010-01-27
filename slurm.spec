@@ -266,6 +266,12 @@ Requires: slurm-plugins
 %description slurmdbd
 SLURM database daemon
 
+%package sql
+Summary: SLURM SQL support
+Group: System Environment/Base
+%description sql
+SLURM sql support
+
 %package plugins
 Summary: SLURM plugins (loadable shared objects)
 Group: System Environment/Base
@@ -438,19 +444,21 @@ if [ -d /etc/init.d ]; then
    echo "/etc/init.d/slurmdbd" >> $LIST
 fi
 
-LIST=./plugins.files
+LIST=./sql.files
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_mysql.so &&
    echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_pgsql.so &&
    echo %{_libdir}/slurm/accounting_storage_pgsql.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so          &&
-   echo %{_libdir}/slurm/checkpoint_blcr.so          >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
-   echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
    echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
    echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
+
+LIST=./plugins.files
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so          &&
+   echo %{_libdir}/slurm/checkpoint_blcr.so          >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
+   echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 
@@ -566,6 +574,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/slurmdbd.*
 %{_mandir}/man8/slurmdbd.*
 %config %{_sysconfdir}/slurmdbd.conf.example
+#############################################################################
+
+%files -f sql.files sql
+%defattr(-,root,root)
+%dir %{_libdir}/slurm
 #############################################################################
 
 %files -f plugins.files plugins
