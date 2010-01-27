@@ -36,6 +36,8 @@ documents those changes that are of interest to users and admins.
     rebuild unnecessarily (revert from libpmi.so.21.0.0 to libpmi.so.0.0.0).
  -- Restore support for a pending job's constraints (required node features) 
     when slurmctld is restarted (internal structure needed to be rebuilt).
+ -- Removed checkpoint_blcr.so from the plugin rpm in the slurm.spec since
+    it is also in the blcr rpm.
 
 * Changes in SLURM 2.1.1
 =============================
