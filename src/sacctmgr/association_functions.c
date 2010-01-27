@@ -365,9 +365,10 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		slurm_addto_char_list(format_list, "C,A,U,Part");
 		if(!assoc_cond->without_parent_limits)
 			slurm_addto_char_list(format_list,
-					      "F,GrpCPUMins,GrpJ,GrpN,"
-					      "GrpS,GrpWall,"
-					      "MaxJ,MaxN,MaxS,MaxW,QOS");
+					      "F,GrpJ,GrpN,GrpCPUs,"
+					      "GrpS,GrpWall,GrpCPUMins,MaxJ,"
+					      "MaxN,MaxCPUs,MaxS,MaxW,"
+					      "MaxCPUMins,QOS");
 	}
 	print_fields_list = list_create(destroy_print_field);
 
