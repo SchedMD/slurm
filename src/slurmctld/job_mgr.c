@@ -1297,6 +1297,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->std_err = err;
 	job_ptr->details->exc_nodes = exc_nodes;
 	job_ptr->details->features = features;
+	(void) build_feature_list(job_ptr);
 	job_ptr->details->std_in = in;
 	job_ptr->details->job_min_cpus = job_min_cpus;
 	job_ptr->details->job_min_memory = job_min_memory;
