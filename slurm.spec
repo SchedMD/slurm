@@ -262,7 +262,7 @@ SLURM switch plugin for Quadrics Elan3 or Elan4.
 %package slurmdbd
 Summary: SLURM database daemon
 Group: System Environment/Base
-Requires: slurm-plugins
+Requires: slurm-plugins slurm-sql
 %description slurmdbd
 SLURM database daemon
 
