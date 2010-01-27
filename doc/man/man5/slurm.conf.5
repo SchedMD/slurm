@@ -524,8 +524,13 @@ information only on job termination (reducing SLURM interference with the job).
 
 .TP
 \fBJobCheckpointDir\fR
-Set the default directory used to store job checkpoint files.
-The default value is "/var/slurm/checkpoint".
+Specifies the default directory for storing or reading job checkpoint 
+information. The data stored here is only a few thousand bytes per job 
+and includes information needed to resubmit the job request, not job's
+memory image. The directory must be readable and writable by 
+\fBSlurmUser\fR, but not writable by regular users. The job memory images
+may be in a different location as specified by \fB\-\-checkpoint\-dir\fR
+option at job submit time or scontrol's \fBImageDir\fR option.
 
 .TP
 \fBJobCompHost\fR
