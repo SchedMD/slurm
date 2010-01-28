@@ -4,13 +4,17 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.2.0.pre0
 =============================
  -- Added RunTime field to scontrol show job report
- -- Added SLURM_VERSION_NUMBER and removed SLURM_API_VERSION from slurm/slurm.h.
+ -- Added SLURM_VERSION_NUMBER and removed SLURM_API_VERSION from 
+    slurm/slurm.h.
  -- Added support to handle communication with SLURM 2.1 clusters.  Job's
-    should not be lost in the future when upgrading to higher versions of SLURM.
+    should not be lost in the future when upgrading to higher versions of 
+    SLURM.
  -- Added withdeleted options for listing clusters, users, and accounts
  -- Remove PLPA task affinity functions due to that package being deprecated.
  -- Preserve current partition state information rather than use contents of 
     slurm.conf file after slurmctld restart or reconfiguration.
+ -- Preserve current node Feature state information rather than use contents 
+    of slurm.conf file after slurmctld restart or reconfiguration.
  -- Modify SLURM's PMI library (for MPICH2) to properly execute an executable
     program stand-alone (single MPI task launched without srun).
  -- Made GrpCPUs and MaxCPUs limits work for select/cons_res.

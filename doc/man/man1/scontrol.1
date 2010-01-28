@@ -553,10 +553,11 @@ simple node range expressions (e.g. "lx[10\-20]"). This specification is require
 \fIFeatures\fP=<features>
 Identify feature(s) to be associated with the specified node.  Any
 previously defined feature(s) will be overwritten with the new value.
-\fBNOTE:\fR Features assigned via \fBscontrol\fR do not survive the
-restart of the slurmctld nor will they survive \fBscontrol
-reconfigure\fR if Features are defined in slurm.conf. Update
-slurm.conf with any changes meant to be persistent.
+Features assigned via \fBscontrol\fR will persist across the restart 
+of the slurmctld with state files preserved or the execution of 
+\fBscontrol reconfigure\fR. 
+Update slurm.conf with any changes meant to be persistent across a
+cold\-start of slurmctld.
 
 .TP
 \fIReason\fP=<reason>
