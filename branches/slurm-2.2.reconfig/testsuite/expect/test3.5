@@ -1,0 +1,324 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate scontrol create, delete, and update for partitions.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id        "3.5"
+set authorized     1
+set exit_code      0
+set part_name      "QA_TEST"
+
+print_header $test_id
+
+if {[test_super_user] == 0} {
+	send_user "\nWARNING: can not test more unless SlurmUser or root\n"
+	exit $exit_code
+}
+
+#
+# Confirm the partition name does not already exist
+#
+set found -1
+spawn $scontrol -a show part $part_name
+expect {
+	-re "not found" {
+		send_user "This error was expected, no worries\n"
+		set found 0
+		exp_continue
+	}
+	-re "PartitionName" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found == -1} {
+	send_user "\nFAILURE: scontrol output format error\n"
+	exit 1
+}
+if {$found == 1} {
+	send_user "\nFAILURE: partition $part_name already exists\n"
+	exit 1
+}
+
+#
+# Identify usable nodes in default partition
+#
+set def_name ""
+set def_node ""
+spawn $sinfo -h -o %32P
+expect {
+	-re "($alpha_numeric_under)(\\*)" {
+		set def_name $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $def_name ""] == 0} {
+	send_user "\nFAILURE: failed to find default partition\n"
+	exit 1
+}
+spawn $sinfo -h -o "=%N=" -p $def_name
+expect {
+	-re "=(.+)=" {
+		set def_node $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $def_node ""] == 0} {
+	send_user "\nFAILURE:default partition seems to have no nodes\n"
+	exit 1
+}
+
+#
+# Create a new partition
+#
+spawn $scontrol create PartitionName=$part_name Nodes=$def_node
+expect {
+	-re "error" {
+		send_user "\nFAILURE: something bad happened on partitiion create\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Confirm the partition now exists
+#
+set allow  0
+set found -1
+spawn $scontrol show part $part_name
+expect {
+	-re "not found" {
+		set found 0
+		exp_continue
+	}
+	-re "PartitionName" {
+		set found 1
+		exp_continue
+	}
+	-re "AllowGroups=ALL" {
+		set allow 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 1} {
+	send_user "\nFAILURE: partition not created\n"
+	exit 1
+}
+if {$allow != 1} {
+	send_user "\nFAILURE: partition groups value incorrect\n"
+	set exit_code 1
+}
+
+#
+# Now set AllowGroups to mine and TimeLimit=1
+#
+spawn $bin_id -gn
+expect {
+	-re "($alpha_numeric_under)" {
+		set my_group  $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: id not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+spawn $scontrol update PartitionName=$part_name AllowGroups=$my_group MaxTime=1
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set found 0
+spawn $scontrol show part $part_name
+expect {
+	-re "AllowGroups=$my_group" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 1} {
+        send_user "\nFAILURE: partition group not reset\n"
+	set exit_code 1
+}
+
+#
+# Run a job in this new partition and validate the time limit
+#
+set timed_out 0
+set sleep_time 300
+set timeout [expr $max_job_delay + $sleep_time]
+set srun_pid [spawn $srun -t1 -p $part_name $bin_sleep $sleep_time]
+expect {
+	-re "time limit exceeded" {
+		set timed_out 1
+		exp_continue
+	}
+	-re "Terminated" {
+		set timed_out 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+	}
+	eof {
+		wait
+	}
+}
+if {$timed_out == 1} {
+	send_user "Early termination is expected, no worries.\n"
+} else {
+	send_user "\nFAILURE: partition time limit not enforced\n"
+	set exit_code 1
+}
+
+#
+# Now reset AllowGroups to ALL
+#
+spawn $scontrol update PartitionName=$part_name AllowGroups=ALL
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set found 0
+spawn $scontrol show part $part_name
+expect {
+	-re "AllowGroups=ALL" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 1} {
+	send_user "\nFAILURE: partition group not reset\n"
+	set exit_code 1
+}
+
+#
+# Now delete the partition
+#
+spawn $scontrol delete PartitionName=$part_name
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Confirm the partition is now gone
+#
+set found -1
+spawn $scontrol show part $part_name
+expect {
+	-re "not found" {
+		send_user "This error was expected, no worries\n"
+		set found 0
+		exp_continue
+	}
+	-re "PartitionName" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 0} {
+	send_user "\nFAILURE: partition not deleted\n"
+	exit 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

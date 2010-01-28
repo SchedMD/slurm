@@ -1,0 +1,82 @@
+<!--#include virtual="header.txt"-->
+
+<h1>SLURM: A Highly Scalable Resource Manager</h1>
+
+<p>SLURM is an open-source resource manager designed for Linux clusters of
+all sizes.
+It provides three key functions.
+First it allocates exclusive and/or non-exclusive access to resources
+(computer nodes) to users for some duration of time so they can perform work.
+Second, it provides a framework for starting, executing, and monitoring work
+(typically a parallel job) on a set of allocated nodes.
+Finally, it arbitrates contention for resources by managing a queue of
+pending work. </p>
+
+<p>SLURM's design is very modular with dozens of optional plugins.
+In its simplest configuration, it can be installed and configured in a
+couple of minutes (see <a href="http://www.linux-mag.com/id/7239/1/">
+Caos NSA and Perceus: All-in-one Cluster Software Stack</a>
+by Jeffrey B. Layton).
+More complex configurations rely upon a
+<a href="http://www.mysql.com/">MySQL</a> database for archiving
+<a href="accounting.html">accounting</a> records, managing
+<a href="resource_limits.html">resource limits</a> by user or bank account,
+or supporting sophisticated
+<a href="priority_multifactor.html">job prioritization</a> algorithms.
+SLURM also provides an Applications Programming Interface (API) for
+integration with external schedulers such as
+<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+The Maui Scheduler</a> or
+<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a>.</p>
+
+<p>While other resource managers do exist, SLURM is unique in several
+respects:
+<ul>
+<li>Its source code is freely available under the
+<a href="http://www.gnu.org/licenses/gpl.html">GNU General Public License</a>.</li>
+<li>It is designed to operate in a heterogeneous cluster with up to 65,536 nodes
+and hundreds of thousands of processors.</li>
+<li>It is portable; written in C with a GNU autoconf configuration engine.
+While initially written for Linux, other UNIX-like operating systems should
+be easy porting targets.</li>
+<li>SLURM is highly tolerant of system failures, including failure of the node
+executing its control functions.</li>
+<li>A plugin mechanism exists to support various interconnects, authentication
+mechanisms, schedulers, etc. These plugins are documented and  simple enough for the motivated end user to understand the source and add functionality.</li>
+</ul></p>
+
+<p>SLURM provides resource management on about 1000 computers worldwide,
+including many of the most powerful computers in the world:
+<ul>
+<li><a href="https://asc.llnl.gov/computing_resources/bluegenel/">BlueGene/L</a>
+at LLNL with 106,496 dual-core processors</li>
+<li><a href="http://c-r-labs.com/">EKA</a> at Computational Research Laboratories,
+India with 14,240 Xeon processors and Infiniband interconnect</li>
+<li><a href="https://asc.llnl.gov/computing_resources/purple/">ASC Purple</a>
+an IBM SP/AIX cluster at LLNL with 12,208 Power5 processors and a Federation switch</li>
+<li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
+a Linux cluster at Barcelona Supercomputer Center
+with 10,240 PowerPC processors and a Myrinet switch</li>
+<li><a href="http://en.wikipedia.org/wiki/Anton_(computer)">Anton</a>
+a massively parallel supercomputer designed and built by
+<a href="http://www.deshawresearch.com/">D. E. Shaw Research</a>
+for molecular dynamics simulation using 512 custom-designed ASICs
+and a three-dimensional torus interconnect </li>
+<li><a href="http://news.xinhuanet.com/english/2009-10/29/content_12356478.htm">Tianhe</a> at The National University of Defence Technology (NUDT) with
+6,144 Intel CPUs and 5,120 AMD GPUs.  Debuting as China's fastest super computer</li>
+</ul>
+<p>SLURM is actively being developed, distributed and supported by
+<a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>,
+<a href="http://www.hp.com">Hewlett-Packard</a> and
+<a href="http://www.bull.com">Bull</a>.
+It is also distributed and supported by
+<a href="http://www.clusterresources.com">Cluster Resources</a>,
+<a href="http://www.sicortex.com">SiCortex</a>,
+<a href="http://www.infiscale.com">Infiscale</a>,
+<a href="http://www.ibm.com">IBM</a> and
+<a href="http://www.sun.com">Sun Microsystems</a>.</p>
+
+<p style="text-align:center;">Last modified 25 March 2009</p>
+
+<!--#include virtual="footer.txt"-->
