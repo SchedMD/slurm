@@ -2034,7 +2034,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	if(!step_ptr->nodes
 	   || !strcasecmp(step_ptr->nodes,"waiting...")) {
-		sprintf(tmp_char,"00:00:00");
+		sprintf(tmp_time,"00:00:00");
 		nodes = "waiting...";
 		state = JOB_PENDING;
 	} else {
@@ -2357,7 +2357,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 			/* keep a different string here so we don't
 			   just keep tacking on ionodes to a node list */
 			sview_job_info_ptr->nodes = xstrdup(tmp_char);
-		}
+		} else
+			sview_job_info_ptr->nodes = xstrdup(job_ptr->nodes);
 #else
 		sview_job_info_ptr->nodes = xstrdup(job_ptr->nodes);
 #endif
