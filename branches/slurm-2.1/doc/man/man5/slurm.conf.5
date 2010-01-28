@@ -2131,6 +2131,12 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 
 .TP
+\fBDefaultTime\fR
+Run time limit used for jobs that don't specify a value. If not set
+then MaxTime will be used.
+Format is the same as for MaxTime.
+
+.TP
 \fBDisableRootJobs\fR
 If set to "YES" then user root will be prevented from running any jobs
 on this partition.
@@ -2162,12 +2168,6 @@ days\-hours, days\-hours:minutes, days\-hours:minutes:seconds or
 Time resolution is one minute and second values are rounded up to
 the next minute.
 This limit does not apply to jobs executed by SlurmUser or user root.
-
-.TP
-\fBDefaultTime\fR
-Run time limit used for jobs that don't specify a value. If not set
-then MaxTime will be used.
-Format is the same as for MaxTime.
 
 .TP
 \fBMinNodes\fR
