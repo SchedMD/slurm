@@ -651,6 +651,15 @@ Specify a blank data value to remove all nodes from a partition: "Nodes=".
 Identify the partition to be updated. This specification is required.
 
 .TP
+\fIPriority\fP=<count>
+Jobs submitted to a higher priority partition will be dispatched
+before pending jobs in lower priority partitions and if possible
+they will preempt running jobs from lower priority partitions.
+Note that a partition's priority takes precedence over a job's
+priority.
+The value may not exceed 65533.
+
+.TP
 \fIRootOnly\fP=<yes|no>
 Specify if only allocation requests initiated by user root will be satisfied.
 This can be used to restrict control of the partition to some meta\-scheduler.
