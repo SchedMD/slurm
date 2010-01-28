@@ -852,6 +852,8 @@ static int _restore_node_state(struct node_record *old_node_table_ptr,
 			old_node_table_ptr[i].reason = NULL;
 		}
 		if (old_node_table_ptr[i].features) {
+info("feature old:%s new:%s config:%s", node_ptr->features, 
+     old_node_table_ptr[i].features, node_ptr->config_ptr->feature);
 			xfree(node_ptr->features);
 			node_ptr->features = old_node_table_ptr[i].features;
 			old_node_table_ptr[i].features = NULL;

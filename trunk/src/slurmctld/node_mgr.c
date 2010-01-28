@@ -893,41 +893,34 @@ int update_node ( update_node_msg_t * update_node_msg )
  */
 extern void restore_node_features(void)
 {
-	int i, j, update_cnt = 0;
+	int i, j;
 	char *node_list;
+	struct node_record *node_ptr1, *node_ptr2;
 
-	/* Identify all nodes that have features field
-	 * preserved and not explicitly set in slurm.conf
-	 * to a different value */
-	for (i=0; i<node_record_count; i++) {
-		if (!node_record_table_ptr[i].features)
-			continue;
-		if (node_record_table_ptr[i].config_ptr->feature) {
-			/* use Features explicitly set in slurm.conf */
-			continue;
+	for (i=0, node_ptr1=node_record_table_ptr; i<node_record_count; 
+	     i++, node_ptr1++) {
+
+		if (!node_ptr1->features)
+			continue;	/* No feature to preserve */
+		if (node_ptr1->config_ptr->feature &&
+		    !strcmp(node_ptr1->config_ptr->feature,
+			    node_ptr1->features)) {
+			continue;	/* Identical feature value */
 		}
-		update_cnt++;
-	}
-	if (update_cnt == 0)
-		return;
 
-	for (i=0; i<node_record_count; i++) {
-		if (!node_record_table_ptr[i].features)
-			continue;
-		node_list = xstrdup(node_record_table_ptr[i].name);
-
-		for (j=(i+1); j<node_record_count; j++) {
-			if (!node_record_table_ptr[j].features ||
-			    strcmp(node_record_table_ptr[i].features,
-			    node_record_table_ptr[j].features))
+		node_list = xstrdup(node_ptr1->name);
+		for (j=(i+1), node_ptr2=(node_ptr1+1); j<node_record_count; 
+		     j++, node_ptr2++) {
+			if (!node_ptr2->features ||
+			    strcmp(node_ptr1->features, node_ptr2->features))
 				continue;
 			xstrcat(node_list, ",");
-			xstrcat(node_list, node_record_table_ptr[j].name);
-			xfree(node_record_table_ptr[j].features);
+			xstrcat(node_list, node_ptr2->name);
 		}
-		_update_node_features(node_list,
-			node_record_table_ptr[i].features);
-		xfree(node_record_table_ptr[i].features);
+		error("Node %s Features(%s) differ from slurm.conf",
+		      node_list, node_ptr1->features);
+		_update_node_features(node_list, node_ptr1->features);
+		xfree(node_ptr1->features);
 		xfree(node_list);
 	}
 }
