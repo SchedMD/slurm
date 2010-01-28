@@ -259,11 +259,11 @@ static void _set_active_combo_part(GtkComboBox *combo,
 
 		break;
 	case SORTID_SHARE:
-		if(!strcmp(temp_char, "yes"))
+		if(!strncmp(temp_char, "force", 5))
 			action = 0;
 		else if(!strcmp(temp_char, "no"))
 			action = 1;
-		else if(!strcmp(temp_char, "force"))
+		else if(!strncmp(temp_char, "yes", 3))
 			action = 2;
 		else if(!strcmp(temp_char, "exclusive"))
 			action = 3;
@@ -305,6 +305,51 @@ static void _set_active_combo_part(GtkComboBox *combo,
 end_it:
 	gtk_combo_box_set_active(combo, action);
 
+}
+
+static uint16_t _set_part_share_popup()
+{
+	GtkWidget *table = gtk_table_new(1, 2, FALSE);
+	GtkWidget *label = NULL;
+	GtkObject *adjustment = gtk_adjustment_new(4,
+						   1, 1000,
+						   1, 60,
+						   0);
+	GtkWidget *spin_button =
+		gtk_spin_button_new(GTK_ADJUSTMENT(adjustment), 1, 0);
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"Count",
+		GTK_WINDOW (main_window),
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		NULL);
+	int response = 0;
+	uint16_t count = 4;
+
+	label = gtk_dialog_add_button(GTK_DIALOG(popup),
+				      GTK_STOCK_OK, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(popup), label);
+
+	label = gtk_label_new("Shared Job Count ");
+
+	gtk_container_set_border_width(GTK_CONTAINER(table), 10);
+
+	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
+			   table, FALSE, FALSE, 0);
+
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(table), spin_button, 1, 2, 0, 1);
+
+	gtk_widget_show_all(popup);
+	response = gtk_dialog_run (GTK_DIALOG(popup));
+
+	if (response == GTK_RESPONSE_OK) {
+		count = gtk_spin_button_get_value_as_int(
+			GTK_SPIN_BUTTON(spin_button));
+	}
+
+	gtk_widget_destroy(popup);
+
+	return count;
 }
 
 /* don't free this char */
@@ -384,11 +429,12 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		break;
 	case SORTID_SHARE:
 		if (!strcasecmp(new_text, "yes")) {
-			 part_msg->max_share = 4;
+			part_msg->max_share = _set_part_share_popup();
 		} else if (!strcasecmp(new_text, "exclusive")) {
 			part_msg->max_share = 0;
 		} else if (!strcasecmp(new_text, "force")) {
-			part_msg->max_share = SHARED_FORCE | 4;
+			part_msg->max_share =
+				_set_part_share_popup() | SHARED_FORCE;
 		} else {	/* "no" */
 			part_msg->max_share = 1;
 		}
