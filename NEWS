@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
     when slurmctld is restarted (internal structure needed to be rebuilt).
  -- Removed checkpoint_blcr.so from the plugin rpm in the slurm.spec since
     it is also in the blcr rpm.
+ -- Fixed issue in sview where you were unable to edit the count
+    of jobs to share resources.
 
 * Changes in SLURM 2.1.1
 =============================
