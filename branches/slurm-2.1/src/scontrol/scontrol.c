@@ -491,7 +491,7 @@ _process_command (int argc, char *argv[])
 		return 0;
 	}
 
-if (strncasecmp (tag, "abort", MAX(taglen, 5)) == 0) {
+	if (strncasecmp (tag, "abort", MAX(taglen, 5)) == 0) {
 		/* require full command name */
 		if (argc > 2) {
 			exit_code = 1;
@@ -642,7 +642,8 @@ if (strncasecmp (tag, "abort", MAX(taglen, 5)) == 0) {
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
-					slurm_perror ("scontrol_checkpoint error");
+					slurm_perror(
+						"scontrol_checkpoint error");
 			}
 		}
 	}
@@ -737,7 +738,9 @@ if (strncasecmp (tag, "abort", MAX(taglen, 5)) == 0) {
 				if (error_code) {
 					exit_code = 1;
 					if (quiet_flag != 1)
-						slurm_perror ("slurm_set_debug_level error");
+						slurm_perror(
+							"slurm_set_debug_level "
+							"error");
 				}
 			}
 		}
@@ -934,7 +937,7 @@ _delete_it (int argc, char *argv[])
 	}
 
 	/* First identify the entity type to delete */
-	if (strncasecmp (tag, "PartitionName", MAX(taglen, 1)) == 0) {
+	if (strncasecmp (tag, "PartitionName", MAX(taglen, 3)) == 0) {
 		delete_part_msg_t part_msg;
 		part_msg.name = val;
 		if (slurm_delete_partition(&part_msg)) {
@@ -942,7 +945,7 @@ _delete_it (int argc, char *argv[])
 			snprintf(errmsg, 64, "delete_partition %s", argv[0]);
 			slurm_perror(errmsg);
 		}
-	} else if (strncasecmp (tag, "ReservationName", MAX(taglen, 1)) == 0) {
+	} else if (strncasecmp (tag, "ReservationName", MAX(taglen, 3)) == 0) {
 		reservation_name_msg_t   res_msg;
 		res_msg.name = val;
 		if (slurm_delete_reservation(&res_msg)) {
@@ -950,7 +953,7 @@ _delete_it (int argc, char *argv[])
 			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
 			slurm_perror(errmsg);
 		}
-	} else if (strncasecmp (tag, "BlockName", MAX(taglen, 1)) == 0) {
+	} else if (strncasecmp (tag, "BlockName", MAX(taglen, 3)) == 0) {
 #ifdef HAVE_BG
 		update_block_msg_t   block_msg;
 		slurm_init_update_block_msg ( &block_msg );
@@ -1090,19 +1093,21 @@ _update_it (int argc, char *argv[])
 		taglen = val - argv[i];
 		val++;
 
-		if (strncasecmp (tag, "NodeName", MAX(taglen, 5)) == 0) {
+		if (!strncasecmp(tag, "NodeName", MAX(taglen, 3))) {
 			nodetag=1;
-		} else if (strncasecmp (tag, "PartitionName", MAX(taglen, 3)) == 0) {
+		} else if (!strncasecmp(tag, "PartitionName", MAX(taglen, 3))) {
 			partag=1;
-		} else if (strncasecmp (tag, "JobId", MAX(taglen, 3)) == 0) {
+		} else if (!strncasecmp(tag, "JobId", MAX(taglen, 1))) {
 			jobtag=1;
-		} else if (strncasecmp (tag, "BlockName", MAX(taglen, 3)) == 0) {
+		} else if (!strncasecmp(tag, "BlockName", MAX(taglen, 3))) {
 			blocktag=1;
-		} else if (strncasecmp (tag, "SubBPName", MAX(taglen, 3)) == 0) {
+		} else if (!strncasecmp(tag, "SubBPName", MAX(taglen, 3))) {
 			subtag=1;
-		} else if (strncasecmp (tag, "ReservationName", MAX(taglen, 3)) == 0) {
+		} else if (!strncasecmp(tag, "ReservationName",
+					MAX(taglen, 3))) {
 			restag=1;
-		} else if (strncasecmp (tag, "SlurmctldDebug", MAX(taglen, 3)) == 0) {
+		} else if (!strncasecmp(tag, "SlurmctldDebug",
+					MAX(taglen, 2))) {
 			debugtag=1;
 		}
 	}
