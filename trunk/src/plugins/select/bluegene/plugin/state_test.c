@@ -64,7 +64,7 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 	rm_BP_t *my_bp;
 	rm_location_t bp_loc;
 	rm_BP_state_t bp_state;
-	char bg_down_node[128], reason[128], time_str[32];
+	char bg_down_node[128];
 	time_t now = time(NULL);
 
 	if ((rc = bridge_get_data(my_bg, RM_BPNum, &bp_num)) != STATUS_OK) {
@@ -132,11 +132,9 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 			break;
 
 		error("switch for node %s is bad", bg_down_node);
-		slurm_make_time_str(&now, time_str, sizeof(time_str));
-		snprintf(reason, sizeof(reason),
-			 "select_bluegene: MMCS switch not UP [SLURM@%s]",
-			 time_str);
-		slurm_drain_nodes(bg_down_node, reason);
+		slurm_drain_nodes(bg_down_node,
+				  "select_bluegene: MMCS switch not UP",
+				  slurm_get_slurm_user_id());
 		break;
 	}
 }

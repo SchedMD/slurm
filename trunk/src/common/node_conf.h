@@ -116,6 +116,10 @@ struct node_record {
 	uint16_t no_share_job_cnt;	/* count of jobs running that will
 					 * not share nodes */
 	char *reason; 			/* why a node is DOWN or DRAINING */
+	time_t reason_time;     	/* Time stamp when reason was
+			        	 * set, ignore if no reason is set. */
+	uint32_t reason_uid;    	/* User that set the reason, ignore if
+					 * no reason is set. */
 	char *features;			/* associated features, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */

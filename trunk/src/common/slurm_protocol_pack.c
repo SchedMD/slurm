@@ -1986,12 +1986,20 @@ _pack_update_node_msg(update_node_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
 	xassert(msg != NULL);
-
-	packstr(msg->node_names, buffer);
-	pack16(msg->node_state, buffer);
-	packstr(msg->features, buffer);
-	packstr(msg->reason, buffer);
-	pack32(msg->weight, buffer);
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		packstr(msg->node_names, buffer);
+		pack16(msg->node_state, buffer);
+		packstr(msg->features, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->weight, buffer);
+		pack32(msg->reason_uid, buffer);
+	} else {
+		packstr(msg->node_names, buffer);
+		pack16(msg->node_state, buffer);
+		packstr(msg->features, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->weight, buffer);
+	}
 }
 
 static int
@@ -2006,11 +2014,24 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(update_node_msg_t));
 	*msg = tmp_ptr;
 
-	safe_unpackstr_xmalloc(&tmp_ptr->node_names, &uint32_tmp, buffer);
-	safe_unpack16(&tmp_ptr->node_state, buffer);
-	safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
-	safe_unpack32(&tmp_ptr->weight, buffer);
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->node_names,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&tmp_ptr->node_state, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->weight, buffer);
+		safe_unpack32(&tmp_ptr->reason_uid, buffer);
+	} else {
+		safe_unpackstr_xmalloc(&tmp_ptr->node_names,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&tmp_ptr->node_state, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->weight, buffer);
+		tmp_ptr->reason_uid = NO_VAL; /* To tell we don't have a correct
+						 one, and get it from munge. */
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2392,7 +2413,29 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 	xassert(node != NULL);
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
+		safe_unpack16(&node->node_state, buffer);
+		safe_unpack16(&node->cpus, buffer);
+		safe_unpack16(&node->sockets, buffer);
+		safe_unpack16(&node->cores, buffer);
+		safe_unpack16(&node->threads, buffer);
+
+		safe_unpack32(&node->real_memory, buffer);
+		safe_unpack32(&node->tmp_disk, buffer);
+		safe_unpack32(&node->weight, buffer);
+		safe_unpack32(&node->reason_uid, buffer);
+
+		safe_unpack_time(&node->reason_time, buffer);
+
+		select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer,
+						protocol_version);
+
+		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
+	} else {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpack16(&node->node_state, buffer);
 		safe_unpack16(&node->cpus, buffer);

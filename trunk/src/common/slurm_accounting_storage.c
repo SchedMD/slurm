@@ -156,7 +156,7 @@ typedef struct slurm_acct_storage_ops {
 				    char *cluster,
 				    struct node_record *node_ptr,
 				    time_t event_time,
-				    char *reason);
+				    char *reason, uint32_t reason_uid);
 	int  (*node_up)            (void *db_conn,
 				    char *cluster,
 				    struct node_record *node_ptr,
@@ -8569,12 +8569,12 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time,
-					   char *reason)
+					   char *reason, uint32_t reason_uid)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.node_down))
-		(db_conn, cluster, node_ptr, event_time, reason);
+		(db_conn, cluster, node_ptr, event_time, reason, reason_uid);
 }
 
 extern int clusteracct_storage_g_node_up(void *db_conn,
@@ -8612,7 +8612,7 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 
 			return (*(g_acct_storage_context->ops.node_down))
 				(db_conn, cluster, &send_node,
-				 event_time, reason);
+				 event_time, reason, slurm_get_slurm_user_id());
 		}
 	}
 

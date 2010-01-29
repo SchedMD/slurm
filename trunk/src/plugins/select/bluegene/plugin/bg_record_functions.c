@@ -650,7 +650,8 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	/* at least one base partition */
 	hl = hostlist_create(bg_record->nodes);
 	if (!hl) {
-		slurm_drain_nodes(bg_record->nodes, reason);
+		slurm_drain_nodes(bg_record->nodes, reason,
+				  slurm_get_slurm_user_id());
 		return;
 	}
 	while ((host = hostlist_shift(hl))) {
@@ -664,7 +665,8 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	hostlist_destroy(hl);
 
 	if (needed) {
-		slurm_drain_nodes(bg_record->nodes, reason);
+		slurm_drain_nodes(bg_record->nodes, reason,
+				  slurm_get_slurm_user_id());
 	}
 end_it:
 	while(bg_record->job_running > NO_JOB_RUNNING) {
@@ -1039,14 +1041,9 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	static int create_size = NO_VAL;
 	static blockreq_t blockreq;
 	int rc = SLURM_SUCCESS;
-	time_t now = time(NULL);
-	char reason[128], time_str[32];
+	char *reason = "select_bluegene: nodecard down";
 
 	xassert(bp_name);
-
-	slurm_make_time_str(&now, time_str, sizeof(time_str));
-	snprintf(reason, sizeof(reason),
-		 "select_bluegene: nodecard down [SLURM@%s]", time_str);
 
 	if(io_cnt == NO_VAL) {
 		io_cnt = 1;
@@ -1155,7 +1152,8 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		debug("No block under 1 midplane available for this nodecard.  "
 		      "Draining the whole node.");
 		if(!node_already_down(bp_name)) {
-			slurm_drain_nodes(bp_name, reason);
+			slurm_drain_nodes(bp_name, reason,
+					  slurm_get_slurm_user_id());
 		}
 		rc = SLURM_SUCCESS;
 		goto cleanup;
@@ -1275,15 +1273,10 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			break;
 		case 512:
 			if(!node_already_down(bp_name)) {
-				time_t now = time(NULL);
-				char reason[128], time_str[32];
-				slurm_make_time_str(&now, time_str,
-						    sizeof(time_str));
-				snprintf(reason, sizeof(reason),
-					 "select_bluegene: "
-					 "nodecard down [SLURM@%s]",
-					 time_str);
-				slurm_drain_nodes(bp_name, reason);
+				slurm_drain_nodes(
+					bp_name,
+					"select_bluegene: nodecard down",
+					slurm_get_slurm_user_id());
 			}
 			rc = SLURM_SUCCESS;
 			goto cleanup;
@@ -1550,7 +1543,8 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 		rc = clusteracct_storage_g_node_down(acct_db_conn,
 						     slurmctld_cluster_name,
 						     &send_node, event_time,
-						     reason);
+						     reason,
+						     slurm_get_slurm_user_id());
 	} else {
 		send_node.node_state = NODE_STATE_IDLE;
 		rc = clusteracct_storage_g_node_up(acct_db_conn,

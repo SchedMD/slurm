@@ -117,6 +117,12 @@ int  print_sinfo_list(List sinfo_list);
 	format_add_function(list,wid,right,suffix,_print_state_long)
 #define format_add_time(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_time)
+#define format_add_timestamp(list,wid,right,suffix)		\
+	format_add_function(list,wid,right,suffix,_print_timestamp)
+#define format_add_user(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_user)
+#define format_add_user_long(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_user_long)
 #define format_add_default_time(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_default_time)
 #define format_add_weight(list,wid,right,suffix) \
@@ -177,6 +183,12 @@ int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 int _print_state_long(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_time(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_timestamp(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_user(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_user_long(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_default_time(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);

@@ -204,7 +204,7 @@ static void *xcpu_agent(void *args)
 {
 	int i;
 	static time_t last_xcpu_test;
-	char reason[12], clone_path[128], down_node_list[512];
+	char clone_path[128], down_node_list[512];
 	struct stat buf;
 	time_t now;
 
@@ -234,13 +234,10 @@ static void *xcpu_agent(void *args)
 					error("down_node_list overflow");
 			}
 			if (down_node_list[0]) {
-				char time_str[32];
-				slurm_make_time_str(&now, time_str,
-					sizeof(time_str));
-				snprintf(reason, sizeof(reason),
-					"select_linear: Can not stat XCPU "
-					"[SLURM@%s]", time_str);
-				slurm_drain_nodes(down_node_list, reason);
+				slurm_drain_nodes(
+					down_node_list,
+					"select_linear: Can not stat XCPU ",
+					slurm_get_slurm_user_id());
 			}
 			last_xcpu_test = now;
 		}

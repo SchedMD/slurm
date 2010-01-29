@@ -125,13 +125,14 @@ static display_data_t options_data_node[] = {
 static display_data_t *local_display_data = NULL;
 
 static void _layout_node_record(GtkTreeView *treeview,
-				node_info_t *node_ptr,
+				sview_node_info_t *sview_node_info_ptr,
 				int update)
 {
 	char tmp_cnt[50];
 	char *upper = NULL, *lower = NULL;
 	GtkTreeIter iter;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
+	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	int idle_cpus = node_ptr->cpus;
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
@@ -240,16 +241,17 @@ static void _layout_node_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_REASON),
-				   node_ptr->reason);
+				   sview_node_info_ptr->reason);
 	return;
 }
 
-static void _update_node_record(node_info_t *node_ptr,
+static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				GtkTreeStore *treestore, GtkTreeIter *iter)
 {
 	char tmp_cnt[17];
 	char *upper = NULL, *lower = NULL;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
+	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	int idle_cpus = node_ptr->cpus;
 
 /* 	gtk_tree_store_set(treestore, iter, SORTID_COLOR, */
@@ -321,7 +323,7 @@ static void _update_node_record(node_info_t *node_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_FEATURES,
 			   node_ptr->features, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_REASON,
-			   node_ptr->reason, -1);
+			   sview_node_info_ptr->reason, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 
 	return;
@@ -333,7 +335,7 @@ static void _append_node_record(sview_node_info_t *sview_node_info,
 	gtk_tree_store_append(treestore, iter, NULL);
 	gtk_tree_store_set(treestore, iter, SORTID_POS,
 			   sview_node_info->pos, -1);
-	_update_node_record(sview_node_info->node_ptr, treestore, iter);
+	_update_node_record(sview_node_info, treestore, iter);
 }
 
 static void _update_info_node(List info_list, GtkTreeView *tree_view)
@@ -373,7 +375,7 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 			if(!strcmp(name, node_ptr->name)) {
 				/* update with new info */
 				g_free(name);
-				_update_node_record(node_ptr,
+				_update_node_record(sview_node_info,
 						    GTK_TREE_STORE(model),
 						    &iter);
 				goto found;
@@ -439,7 +441,7 @@ need_refresh:
 		if(!strcmp(node_ptr->name, name)) {
 			change_grid_color(popup_win->grid_button_list,
 					  i, i, i, true, 0);
-			_layout_node_record(treeview, node_ptr, update);
+			_layout_node_record(treeview, sview_node_info, update);
 			found = 1;
 			break;
 		}
@@ -517,6 +519,22 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 		list_append(info_list, sview_node_info_ptr);
 		sview_node_info_ptr->node_ptr = node_ptr;
 		sview_node_info_ptr->pos = i;
+		if(node_ptr->reason &&
+		   (node_ptr->reason_uid != NO_VAL) && node_ptr->reason_time) {
+			char user[32], time_str[32];
+			struct passwd *pw = NULL;
+
+			if ((pw=getpwuid(node_ptr->reason_uid)))
+				snprintf(user, sizeof(user), "%s", pw->pw_name);
+			else
+				snprintf(user, sizeof(user), "Unk(%u)",
+				 node_ptr->reason_uid);
+			slurm_make_time_str(&node_ptr->reason_time,
+					    time_str, sizeof(time_str));
+			sview_node_info_ptr->reason = xstrdup_printf(
+				"%s [%s@%s]", node_ptr->reason, user, time_str);
+		} else
+			sview_node_info_ptr->reason = xstrdup(node_ptr->reason);
 	}
 update_color:
 
@@ -807,31 +825,16 @@ extern int update_state_node(GtkDialog *dialog,
 	i = gtk_dialog_run(dialog);
 	if (i == GTK_RESPONSE_OK) {
 		if(entry) {
-			char *user_name;
-			char time_buf[64], time_str[32];
-			time_t now;
 			node_msg->reason = xstrdup(
 				gtk_entry_get_text(GTK_ENTRY(entry)));
-			if(!node_msg->reason ||
-			   !strlen(node_msg->reason)) {
+			if(!node_msg->reason || !strlen(node_msg->reason)) {
 				lower = g_strdup_printf(
 					"You need a reason to do that.");
 				display_edit_note(lower);
 				g_free(lower);
 				goto end_it;
 			}
-			xstrcat(node_msg->reason, " [");
-			user_name = getlogin();
-			if (user_name)
-				xstrcat(node_msg->reason, user_name);
-			else {
-				sprintf(time_buf, "%d", getuid());
-				xstrcat(node_msg->reason, time_buf);
-			}
-			now = time(NULL);
-			slurm_make_time_str(&now, time_str, sizeof(time_str));
-			snprintf(time_buf, sizeof(time_buf), "@%s]", time_str);
-			xstrcat(node_msg->reason, time_buf);
+			node_msg->reason_uid = getuid();
 		}
 		if(slurm_update_node(node_msg) == SLURM_SUCCESS) {
 			lower = g_strdup_printf(

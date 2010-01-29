@@ -94,10 +94,10 @@ when running with various options are
 "%N %.5D %9P %11T %.4c %.8z %.6m %.8d %.6w %8f %R"
 .TP
 .I "\-\-list\-reasons"
-"%50R %N"
+"%50R %9u %19H %N"
 .TP
 .I "\-\-long \-\-list\-reasons"
-"%50R %6t %N"
+"%50R %12u %19H %6t %N"
 .RE
 
 .IP
@@ -150,6 +150,9 @@ Groups which may use the nodes
 \fB%h\fR
 Jobs may share nodes, "yes", "no", or "force"
 .TP
+\fB%H\fR
+Print the timestamp of the reason a node is unavailable.
+.TP
 \fB%l\fR
 Maximum time for any job in the format "days\-hours:minutes:seconds"
 .TP
@@ -183,6 +186,12 @@ State of nodes, compact form
 .TP
 \fB%T\fR
 State of nodes, extended form
+.TP
+\fB%u\fR
+Print the user name of who set the reason a node is unavailable.
+.TP
+\fB%U\fR
+Print the user name and uid of who set the reason a node is unavailable.
 .TP
 \fB%w\fR
 Scheduling weight of the nodes

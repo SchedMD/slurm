@@ -641,10 +641,11 @@ extern int delete_step_record (struct job_record *job_ptr, uint32_t step_id);
  *  no-op for nodes already drained or draining
  * IN nodes - nodes to drain
  * IN reason - reason to drain the nodes
+ * IN reason_uid - who set the reason
  * RET SLURM_SUCCESS or error code
  * global: node_record_table_ptr - pointer to global node table
  */
-extern int drain_nodes ( char *nodes, char *reason );
+extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 
 /* dump_all_job_state - save the state of all jobs to file
  * RET 0 or error code */

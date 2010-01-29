@@ -53,16 +53,6 @@ COMMAND CHANGES (see man pages for details)
 
 
 BLUEGENE SPECIFIC CHANGES
-* scontrol show blocks option added.
-* scontrol delete block and update block can now remove blocks on dynamic
-  layout configuration.
-* sinfo and sview now display correct CPU counts for partitions.
-* Jobs waiting for a block to boot will now be reported in Configuring state.
-* Vastly improve dynamic layout mode algorithm.
-* Environment variables such as SLURM_NNODES, SLURM_JOB_NUM_NODES and
-  SLURM_JOB_CPUS_PER_NODE now reference cnode counts instead of midplane
-  counts.  SLURM_NODELIST still references midplane names.
-
 
 API CHANGES
 * Changed members of the following structs:
@@ -81,6 +71,13 @@ job_desc_msg_t
 * Added the following struct definitions:
 job_desc_msg_t
 	max_cpus
+
+node_info_t
+	reason_time
+	reason_uid
+
+update_node_msg_t
+	reason_uid
 
 * Changed the following enums
 

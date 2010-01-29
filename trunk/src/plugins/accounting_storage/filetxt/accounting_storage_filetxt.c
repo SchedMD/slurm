@@ -489,7 +489,8 @@ extern int acct_storage_p_roll_usage(void *db_conn,
 extern int clusteracct_storage_p_node_down(void *db_conn,
 					   char *cluster,
 					   struct node_record *node_ptr,
-					   time_t event_time, char *reason)
+					   time_t event_time, char *reason,
+					   uint32_t reason_uid)
 {
 	return SLURM_SUCCESS;
 }

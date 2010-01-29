@@ -701,8 +701,7 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
-	time_t now;
-	char reason[128], tmp[64], time_str[32];
+	char reason[200];
 
 	if(!block_desc_ptr->bg_block_id) {
 		error("update_block: No name specified");
@@ -717,27 +716,24 @@ extern int select_p_update_block (update_block_msg_t *block_desc_ptr)
 		return ESLURM_INVALID_BLOCK_NAME;
 	}
 
-	now = time(NULL);
-	slurm_make_time_str(&now, time_str, sizeof(time_str));
-	snprintf(tmp, sizeof(tmp), "[SLURM@%s]", time_str);
 	if(block_desc_ptr->state == RM_PARTITION_NAV) {
 		if(bg_record->conn_type < SELECT_SMALL)
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
-				 "Admin removing block %s %s",
-				 bg_record->bg_block_id, tmp);
+				 "Admin removing block %s",
+				 bg_record->bg_block_id);
 		else
 			snprintf(reason, sizeof(reason),
 				 "update_block: "
-				 "Removing all blocks on midplane %s %s",
-				 bg_record->nodes, tmp);
+				 "Removing all blocks on midplane %s",
+				 bg_record->nodes);
 
 	} else {
 		snprintf(reason, sizeof(reason),
 			 "update_block: "
-			 "Admin set block %s state to %s %s",
+			 "Admin set block %s state to %s",
 			 bg_record->bg_block_id,
-			 bg_block_state_string(block_desc_ptr->state), tmp);
+			 bg_block_state_string(block_desc_ptr->state));
 	}
 	/* First fail any job running on this block */
 	if(bg_record->job_running > NO_JOB_RUNNING) {
