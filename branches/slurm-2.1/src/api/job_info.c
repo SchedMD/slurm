@@ -143,7 +143,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	uint16_t exit_status = 0, term_sig = 0;
 	job_resources_t *job_resrcs = job_ptr->job_resrcs;
 	char *out = NULL;
-	uint32_t min_nodes, max_nodes;
+	uint32_t min_nodes, max_nodes = 0;
 
 #ifdef HAVE_BG
 	char select_buf[122];
@@ -346,7 +346,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if ((min_nodes == 0) || (min_nodes == NO_VAL)) {
 		min_nodes = job_ptr->num_nodes;
 		max_nodes = job_ptr->max_nodes;
-	} else
+	} else if(job_ptr->max_nodes)
 		max_nodes = min_nodes;
 #else
 	snprintf(tmp1, sizeof(tmp1), "%u", job_ptr->num_procs);
