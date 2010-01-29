@@ -56,6 +56,7 @@
 
 
 struct _options {
+	int disable_sys_info;
 	int enable_debug;
 	int enable_silence;
 	const char *msg_prefix;
@@ -136,6 +137,11 @@ pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
 
 	if ((auth != PAM_SUCCESS) && (!opts.enable_silence))
 		_send_denial_msg(pamh, &opts, user, uid);
+	if ((auth != PAM_SUCCESS) || (!opts.disable_sys_info)) {
+		_log_msg(LOG_INFO, "access %s for user %s (uid=%d)",
+			 (auth == PAM_SUCCESS) ? "granted" : "denied", 
+			 user, uid);
+	}
 	_log_msg(LOG_INFO, "access %s for user %s (uid=%d)",
 		 (auth == PAM_SUCCESS) ? "granted" : "denied", user, uid);
 
@@ -171,6 +177,7 @@ _parse_args(struct _options *opts, int argc, const char **argv)
 {
 	int i;
 
+	opts->disable_sys_info = 0;
 	opts->enable_debug = 0;
 	opts->enable_silence = 0;
 	opts->msg_prefix = "";
@@ -200,6 +207,8 @@ _parse_args(struct _options *opts, int argc, const char **argv)
 	for (i=0; i<argc; i++) {
 		if (!strcmp(argv[i], "debug"))
 			opts->enable_debug = debug = 1;
+		else if (!strcmp(argv[i], "no_sys_info"))
+			opts->disable_sys_info = 1;
 		else if (!strcmp(argv[i], "no_warn"))
 			opts->enable_silence = 1;
 		else if (!strcmp(argv[i], "rsh_kludge"))

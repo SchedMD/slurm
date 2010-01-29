@@ -16,7 +16,7 @@ Overview:
   Restricts access to compute nodes in a cluster using SLURM.
 
 Recognized Arguments:
-  debug; no_warn; rsh_kludge; rlogin_kludge
+  debug; no_sys_info; no_warn; rsh_kludge; rlogin_kludge
 
 Description:
   This module restricts access to compute nodes in a cluster where Simple 
@@ -28,6 +28,8 @@ Description:
   The behavior of this module can be modified with the following flags:
 
     debug         - log debugging information to the system log file
+    no_sys_info   - supress system logging of "access granted for user ...",
+                    access denied and other errors will still be logged
     no_warn       - suppress warning messages to the application
     rsh_kludge    - prevent truncation of first char from rsh error msg
     rlogin_kludge - prevent "staircase-effect" following rlogin error msg

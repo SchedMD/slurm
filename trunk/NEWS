@@ -21,6 +21,9 @@ documents those changes that are of interest to users and admins.
  -- Moved all SQL dependant plugins into a seperate rpm slurm-sql.  This
     should be needed only where a connection to a database is needed (i.e.
     where the slurmdbd is running)
+ -- Add command line option "no_sys_info" to PAM module to supress system 
+    logging of "access granted for user ...", access denied and other errors
+    will still be logged.
 
 * Changes in SLURM 2.1.2
 =============================
