@@ -1968,7 +1968,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 		secs2time_str(now_time, tmp_time, sizeof(tmp_time));
 		nodes = step_ptr->nodes;
 #ifdef HAVE_BG
-		convert_num_unit((float)step_ptr->num_tasks,
+		convert_num_unit((float)step_ptr->num_tasks / cpus_per_node,
 				 tmp_char, sizeof(tmp_char), UNIT_NONE);
 #else
 		convert_num_unit((float)_nodes_in_list(nodes),
@@ -2042,7 +2042,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 		secs2time_str(now_time, tmp_time, sizeof(tmp_time));
 		nodes = step_ptr->nodes;
 #ifdef HAVE_BG
-		convert_num_unit((float)step_ptr->num_tasks,
+		convert_num_unit((float)step_ptr->num_tasks / cpus_per_node,
 				 tmp_char, sizeof(tmp_char), UNIT_NONE);
 #else
 		convert_num_unit((float)_nodes_in_list(nodes),
@@ -2315,9 +2315,6 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 	char tmp_char[50];
 #endif
 
-#ifdef HAVE_FRONT_END
-	int count = 0;
-#endif
 	if(!changed && info_list) {
 		goto update_color;
 	}
@@ -2365,36 +2362,9 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		if(!sview_job_info_ptr->node_cnt)
 			sview_job_info_ptr->node_cnt = _get_node_cnt(job_ptr);
 
-#ifdef HAVE_FRONT_END
-		/* set this up to copy it if we are on a front end
-		   system */
-		count = 0;
-		while(job_ptr->node_inx[count] != -1)
-			count++;
-		count++; // for the -1;
-#endif
-
 		for(j = 0; j < step_info_ptr->job_step_count; j++) {
 			step_ptr = &(step_info_ptr->job_steps[j]);
 			if(step_ptr->job_id == job_ptr->job_id) {
-#ifdef HAVE_FRONT_END
-				/* On front end systems the steps are only
-				 * given the first node to run off of
-				 * so we need to make them appear like
-				 * they are running on the entire
-				 * space (which they really are).
-				 */
-				xfree(step_ptr->nodes);
-				step_ptr->nodes =
-					xstrdup(sview_job_info_ptr->nodes);
-				step_ptr->num_tasks =
-					sview_job_info_ptr->node_cnt;
-				xfree(step_ptr->node_inx);
-				step_ptr->node_inx =
-					xmalloc(sizeof(int) * count);
-				memcpy(step_ptr->node_inx, job_ptr->node_inx,
-				       sizeof(int) * count);
-#endif
 				list_append(sview_job_info_ptr->step_list,
 					    step_ptr);
 			}
