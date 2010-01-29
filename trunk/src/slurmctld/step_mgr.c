@@ -1591,7 +1591,19 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	int task_cnt;
 	char *node_list = NULL;
 	time_t begin_time, run_time;
-
+	bitstr_t *pack_bitstr;
+#ifdef HAVE_FRONT_END
+	/* On front end systems the steps are only
+	 * given the first node to run off of
+	 * so we need to make them appear like
+	 * they are running on the entire
+	 * space (which they really are).
+	 */
+	task_cnt = step_ptr->job_ptr->cpu_cnt;
+	node_list = step_ptr->job_ptr->nodes;
+	pack_bitstr = step_ptr->job_ptr->node_bitmap;
+#else
+	pack_bitstr = step_ptr->step_node_bitmap;
 	if (step_ptr->step_layout) {
 		task_cnt = step_ptr->step_layout->task_cnt;
 		node_list = step_ptr->step_layout->node_list;
@@ -1602,6 +1614,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 			task_cnt = step_ptr->job_ptr->cpu_cnt;
 		node_list = step_ptr->job_ptr->nodes;
 	}
+#endif
 	pack32(step_ptr->job_ptr->job_id, buffer);
 	pack32(step_ptr->step_id, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
@@ -1634,9 +1647,8 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	packstr(node_list, buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
-	pack_bit_fmt(step_ptr->step_node_bitmap, buffer);
+	pack_bit_fmt(pack_bitstr, buffer);
 	packstr(step_ptr->ckpt_dir, buffer);
-
 }
 
 /*
