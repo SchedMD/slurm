@@ -506,6 +506,8 @@ static void _create_part_data()
 			this_ptr = this_ptr->next;
 		}
 	}
+	list_iterator_destroy(part_iterator);
+
 	/* should we sort the select_part_record list by priority here? */
 }
 
