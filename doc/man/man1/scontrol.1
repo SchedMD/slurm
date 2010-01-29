@@ -604,6 +604,15 @@ Update slurm.conf with any changes meant to be persistent.
 Identify the user groups which may use this partition.
 Multiple groups may be specified in a comma separated list.
 To permit all groups to use the partition specify "AllowGroups=ALL".
+
+.TP
+\fIAllocNodes\fP=<name>
+Comma separated list of nodes from which users can execute jobs in the
+partition.
+Node names may be specified using the node range expression syntax
+described above.
+The default value is "ALL".
+
 .TP
 \fIDefault\fP=<yes|no>
 Specify if this partition is to be used by jobs which do not explicitly
@@ -612,6 +621,12 @@ Possible output values are "YES" and "NO".
 In order to change the default partition of a running system,
 use the scontrol update command and set Default=yes for the partition
 that you want to become the new default.
+
+.TP
+\fIDefaultTime\fP=<time>
+Run time limit used for jobs that don't specify a value. If not set
+then MaxTime will be used.
+Format is the same as for MaxTime.
 
 .TP
 \fIHidden\fP=<yes|no>
@@ -650,6 +665,15 @@ Specify a blank data value to remove all nodes from a partition: "Nodes=".
 .TP
 \fIPartitionName\fP=<name>
 Identify the partition to be updated. This specification is required.
+
+.TP
+\fIPriority\fP=<count>
+Jobs submitted to a higher priority partition will be dispatched
+before pending jobs in lower priority partitions and if possible
+they will preempt running jobs from lower priority partitions.
+Note that a partition's priority takes precedence over a job's
+priority.
+The value may not exceed 65533.
 
 .TP
 \fIRootOnly\fP=<yes|no>
