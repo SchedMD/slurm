@@ -168,6 +168,14 @@ static char * _task_list(struct job_record *job_ptr)
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
 	xassert(job_resrcs_ptr);
+#ifdef HAVE_BG
+	if(job_ptr->node_cnt) {
+		task_cnt = ((job_resrcs_ptr->cpu_array_value[0]
+			     * job_resrcs_ptr->cpu_array_reps[0])
+			    / job_ptr->node_cnt);
+	} else
+		task_cnt = 1;
+#endif
 	for (i=0; i<job_resrcs_ptr->nhosts; i++) {
 		if (i == 0) {
 			xassert(job_resrcs_ptr->cpus &&
@@ -188,6 +196,7 @@ static char * _task_list(struct job_record *job_ptr)
 		}
 		host = node_record_table_ptr[node_inx].name;
 
+#ifndef HAVE_BG
 		task_cnt = job_resrcs_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
@@ -196,6 +205,7 @@ static char * _task_list(struct job_record *job_ptr)
 			      job_ptr->job_id, host);
 			task_cnt = 1;
 		}
+#endif
 		for (j=0; j<task_cnt; j++) {
 			if (buf)
 				xstrcat(buf, ":");
@@ -267,6 +277,14 @@ static char * _task_list_exp(struct job_record *job_ptr)
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
 	xassert(job_resrcs_ptr);
+#ifdef HAVE_BG
+	if(job_ptr->node_cnt) {
+		task_cnt = ((job_resrcs_ptr->cpu_array_value[0]
+			     * job_resrcs_ptr->cpu_array_reps[0])
+			    / job_ptr->node_cnt);
+	} else
+		task_cnt = 1;
+#endif
 	for (i=0; i<job_resrcs_ptr->nhosts; i++) {
 		if (i == 0) {
 			xassert(job_resrcs_ptr->cpus &&
@@ -287,6 +305,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 		}
 		host = node_record_table_ptr[node_inx].name;
 
+#ifndef HAVE_BG
 		task_cnt = job_resrcs_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
@@ -295,6 +314,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 			      job_ptr->job_id, host);
 			task_cnt = 1;
 		}
+#endif
 		if (reps == task_cnt) {
 			/* append to existing hostlist record */
 			if (hostlist_push(hl_tmp, host) == 0)
