@@ -1366,16 +1366,22 @@ static void *_slurmctld_background(void *no_data)
 
 
 /* save_all_state - save entire slurmctld state for later recovery */
-void save_all_state(void)
+extern void save_all_state(void)
 {
+	char *save_loc;
+
 	/* Each of these functions lock their own databases */
 	schedule_job_save();
 	schedule_node_save();
 	schedule_part_save();
 	schedule_resv_save();
 	schedule_trigger_save();
-	select_g_state_save(slurmctld_conf.state_save_location);
-	dump_assoc_mgr_state(slurmctld_conf.state_save_location);
+
+	if ((save_loc = slurm_get_state_save_location())) {
+		select_g_state_save(save_loc);
+		dump_assoc_mgr_state(save_loc);
+		xfree(save_loc);
+	}
 }
 
 /* send all info for the controller to accounting */
