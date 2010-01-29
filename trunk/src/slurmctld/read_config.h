@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  read_config.h - functions for reading slurmctld configuration
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2003-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -42,16 +43,18 @@
 /*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
- * IN recover - replace job, node and/or partition data with last saved
- *              state information depending upon value
- *              0 = use no saved state information
- *              1 = recover saved job state,
- *                  node DOWN/DRAIN state and reason information
- *              1 = recover only saved job state information
- *              2 = recover all state saved from last slurmctld shutdown
+ * IN recover - replace job, node and/or partition data with latest
+ *              availble information depending upon value
+ *              0 = use no saved state information, rebuild everything from
+ *		    slurm.conf contents
+ *              1 = recover saved job and trigger state,
+ *                  node DOWN/DRAIN/FAIL state and reason information
+ *              2 = recover all saved state
+ * IN reconfig - true if SIGHUP or "scontrol reconfig" and there is state in
+ *		 memory to preserve, otherwise recover state from disk
  * RET SLURM_SUCCESS if no error, otherwise an error code
  * Note: Operates on common variables only
  */
-extern int read_slurm_conf(int recover);
+extern int read_slurm_conf(int recover, bool reconfig);
 
 #endif /* !_HAVE_READ_CONFIG_H */

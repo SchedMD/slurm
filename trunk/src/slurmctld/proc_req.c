@@ -2,7 +2,7 @@
  *  proc_req.c - process incoming messages to slurmctld
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1892,7 +1892,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(config_write_lock);
 		in_progress = true;
-		error_code = read_slurm_conf(0);
+		error_code = read_slurm_conf(1, true);
 		if (error_code == SLURM_SUCCESS) {
 			_update_cred_key();
 			set_slurmctld_state_loc();

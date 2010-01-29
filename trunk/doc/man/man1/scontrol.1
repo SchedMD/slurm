@@ -553,11 +553,11 @@ simple node range expressions (e.g. "lx[10\-20]"). This specification is require
 \fIFeatures\fP=<features>
 Identify feature(s) to be associated with the specified node.  Any
 previously defined feature(s) will be overwritten with the new value.
-Features assigned via \fBscontrol\fR will persist across the restart 
-of the slurmctld with state files preserved or the execution of 
-\fBscontrol reconfigure\fR. 
-Update slurm.conf with any changes meant to be persistent across a
-cold\-start of slurmctld.
+Features assigned via \fBscontrol\fR will only persist across the restart 
+of the slurmctld daemon with the \fI\-R\fR option and state files 
+preserved or slurmctld's receipt of a SIGHUP. 
+Update slurm.conf with any changes meant to be persistent across normal 
+restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
 \fIReason\fP=<reason>
@@ -592,10 +592,11 @@ Generally only "DRAIN", "FAIL" and "RESUME" should be used.
 Identify weight to be associated with specified nodes. This allows
 dynamic changes to weight associated with nodes, which will be used
 for the subsequent node allocation decisions.
-Any previously identified weight will be overwritten with the new value.\fBNOTE:\fR The \fIWeight\fP associated with nodes will be reset to
-the values specified in slurm.conf (if any) upon slurmctld restart
-or reconfiguration.
-Update slurm.conf with any changes meant to be persistent.
+Weight assigned via \fBscontrol\fR will only persist across the restart 
+of the slurmctld daemon with the \fI\-R\fR option and state files 
+preserved or slurmctld's receipt of a SIGHUP. 
+Update slurm.conf with any changes meant to be persistent across normal 
+restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
 \fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, PARTITIONS\fR
@@ -928,6 +929,7 @@ scontrol: quit
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
