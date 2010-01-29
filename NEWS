@@ -11,10 +11,11 @@ documents those changes that are of interest to users and admins.
     SLURM.
  -- Added withdeleted options for listing clusters, users, and accounts
  -- Remove PLPA task affinity functions due to that package being deprecated.
- -- Preserve current partition state information rather than use contents of 
-    slurm.conf file after slurmctld restart or reconfiguration.
- -- Preserve current node Feature state information rather than use contents 
-    of slurm.conf file after slurmctld restart or reconfiguration.
+ -- Preserve current partition state information and node Feature and Weight 
+    information rather than use contents of slurm.conf file after slurmctld 
+    restart with -R option or SIGHUP. Replace information with contents of 
+    slurm.conf after slurmctld restart without -R or "scontrol reconfigure".
+    See RELEASE_NOTES file fore more details.
  -- Modify SLURM's PMI library (for MPICH2) to properly execute an executable
     program stand-alone (single MPI task launched without srun).
  -- Made GrpCPUs and MaxCPUs limits work for select/cons_res.

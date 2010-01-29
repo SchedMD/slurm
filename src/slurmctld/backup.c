@@ -2,7 +2,7 @@
  *  backup.c - backup slurm controller
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -210,7 +210,7 @@ void run_backup(void)
 		error("failed to restore switch state");
 		abort();
 	}
-	if (read_slurm_conf(2)) {	/* Recover all state */
+	if (read_slurm_conf(2, false)) {	/* Recover all state */
 		error("Unable to recover slurm state");
 		abort();
 	}

@@ -119,6 +119,9 @@ struct node_record {
 	char *features;			/* associated features, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */
+	uint32_t weight;		/* orignal weight, used only for state
+					 * save/restore, DO NOT use for 
+					 * scheduling purposes. */
 	char *arch;			/* computer architecture */
 	char *os;			/* operating system now running */
 	struct node_record *node_next;	/* next entry with same hash index */

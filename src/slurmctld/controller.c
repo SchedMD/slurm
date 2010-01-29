@@ -421,7 +421,7 @@ int main(int argc, char *argv[])
 					   recover ? true : false))
 				fatal(" failed to initialize switch plugin" );
 			lock_slurmctld(config_write_lock);
-			if ((error_code = read_slurm_conf(recover))) {
+			if ((error_code = read_slurm_conf(recover, false))) {
 				fatal("read_slurm_conf reading %s: %s",
 					slurmctld_conf.slurm_conf,
 					slurm_strerror(error_code));
@@ -706,7 +706,7 @@ static int _reconfigure_slurm(void)
 	 * restart the (possibly new) plugin.
 	 */
 	lock_slurmctld(config_write_lock);
-	rc = read_slurm_conf(0);
+	rc = read_slurm_conf(2, true);
 	if (rc)
 		error("read_slurm_conf: %s", slurm_strerror(rc));
 	else {
@@ -1366,7 +1366,7 @@ static void *_slurmctld_background(void *no_data)
 
 
 /* save_all_state - save entire slurmctld state for later recovery */
-void save_all_state(void)
+extern void save_all_state(void)
 {
 	char *save_loc;
 
