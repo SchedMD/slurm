@@ -105,8 +105,7 @@ static int  _restore_job_dependencies(void);
 static int  _restore_node_state(int recover, 
 				struct node_record *old_node_table_ptr,
 				int old_node_record_count);
-static int  _restore_part_state(int recover, List old_part_list, 
-				char *old_def_part_name);
+static int  _restore_part_state(List old_part_list, char *old_def_part_name);
 static int  _strcmp(const char *s1, const char *s2);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
@@ -689,9 +688,9 @@ int read_slurm_conf(int recover, bool reconfig)
 						 old_node_record_count);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
-		if (old_part_list) {
+		if (old_part_list && (recover > 1)) {
 			info("restoring original partition state");
-			rc = _restore_part_state(recover, old_part_list, 
+			rc = _restore_part_state(old_part_list, 
 						 old_def_part_name);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
@@ -923,17 +922,14 @@ static int  _strcmp(const char *s1, const char *s2)
 	return strcmp(s1, s2);
 }
 
-/* Restore partition information from saved records. 
- * Presently all fields are recovered if recover==2, otherwise nothing is. 
- * This is likely to change in the future. */
-static int  _restore_part_state(int recover, List old_part_list, 
-				char *old_def_part_name)
+/* Restore partition information from saved records. */
+static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator part_iterator;
 	struct part_record *old_part_ptr, *part_ptr;
 
-	if ((recover < 2) || !old_part_list)
+	if (!old_part_list)
 		return rc;
 
 	/* For each part in list, find and update recs */
@@ -972,10 +968,10 @@ static int  _restore_part_state(int recover, List old_part_list,
 			}
 			if (part_ptr->disable_root_jobs != 
 			    old_part_ptr->disable_root_jobs) {
-				error("Partition %s DisableRootJobs differs from "
-				      "slurm.conf", part_ptr->name);
+				error("Partition %s DisableRootJobs differs "
+				      "from slurm.conf", part_ptr->name);
 				part_ptr->disable_root_jobs = old_part_ptr->
-							      disable_root_jobs;
+							     disable_root_jobs;
 			}
 			if (part_ptr->hidden != old_part_ptr->hidden) {
 				error("Partition %s Hidden differs from "
@@ -1033,7 +1029,7 @@ static int  _restore_part_state(int recover, List old_part_list,
 			part_ptr = create_part_record();
 			part_ptr->name = xstrdup(old_part_ptr->name);
 			part_ptr->allow_alloc_nodes = xstrdup(old_part_ptr->
-							      allow_alloc_nodes);
+							    allow_alloc_nodes);
 			part_ptr->allow_groups = xstrdup(old_part_ptr->
 							 allow_groups);
 			part_ptr->default_time = old_part_ptr->default_time;
@@ -1041,11 +1037,13 @@ static int  _restore_part_state(int recover, List old_part_list,
 						      disable_root_jobs;
 			part_ptr->hidden = old_part_ptr->hidden;
 			part_ptr->max_nodes = old_part_ptr->max_nodes;
-			part_ptr->max_nodes_orig = old_part_ptr->max_nodes_orig;
+			part_ptr->max_nodes_orig = old_part_ptr->
+						   max_nodes_orig;
 			part_ptr->max_share = old_part_ptr->max_share;
 			part_ptr->max_time = old_part_ptr->max_time;
 			part_ptr->min_nodes = old_part_ptr->min_nodes;
-			part_ptr->min_nodes_orig = old_part_ptr->min_nodes_orig;
+			part_ptr->min_nodes_orig = old_part_ptr->
+						   min_nodes_orig;
 			part_ptr->nodes = xstrdup(old_part_ptr->nodes);
 			part_ptr->priority = old_part_ptr->priority;
 			part_ptr->root_only = old_part_ptr->root_only;
@@ -1077,8 +1075,7 @@ static void _purge_old_part_state(List old_part_list, char *old_def_part_name)
 
 	if (!old_part_list)
 		return;
-	list_delete_all(old_part_list, &list_find_part, "universal_key");
-	old_part_list = NULL;
+	list_destroy(old_part_list);
 }
 
 /*

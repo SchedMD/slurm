@@ -37,7 +37,7 @@ HIGHLIGHTS
      scontrol reconfig    Preserve job state, recreate node and partition state
   Old logic preserved node Feature plus partition state after "slurmctld" or 
   "scontrol reconfig" rather than recreating it. Node Weight was formerly 
-  always recreated. Current behaviour is more consistent.
+  always recreated. New behaviour is more consistent.
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 
