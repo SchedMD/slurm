@@ -3125,7 +3125,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "period_start", "int unsigned not null" },
 		{ "period_end", "int unsigned default 0 not null" },
 		{ "reason", "tinytext not null" },
-		{ "reason_uid", "int unsigned default -2 not null" },
+		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
 		{ "cluster_nodes", "text not null default ''" },
 		{ NULL, NULL}
 	};
