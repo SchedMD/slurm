@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     of jobs to share resources.
  -- BLUEGENE - Fixed issue where tasks on steps weren't being displayed
     correctly with scontrol and sview.
+ -- BLUEGENE - fixed wiki2 plugin to report correct task count for pending jobs.
 
 * Changes in SLURM 2.1.1
 =============================
