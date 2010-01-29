@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     it is also in the blcr rpm.
  -- Fixed issue in sview where you were unable to edit the count
     of jobs to share resources.
+ -- BLUEGENE - Fixed issue where tasks on steps weren't being displayed
+    correctly with scontrol and sview.
 
 * Changes in SLURM 2.1.1
 =============================
