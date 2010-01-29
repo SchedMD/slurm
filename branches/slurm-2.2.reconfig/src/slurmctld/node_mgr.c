@@ -888,8 +888,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 }
 
 /*
- * restore_node_features - Restore node features based upon state
- *	saved (preserves interactive updates)
+ * restore_node_features - Restore node Features and Weight based upon state
+ *	previously in memory (preserves interactive updates)
  */
 extern void restore_node_features(void)
 {
@@ -900,9 +900,16 @@ extern void restore_node_features(void)
 	for (i=0, node_ptr1=node_record_table_ptr; i<node_record_count; 
 	     i++, node_ptr1++) {
 
-		if (!node_ptr1->features)
+		if (node_ptr1->weight != node_ptr1->config_ptr->weight) {
+			error("Node %s Weight(%u) differ from slurm.conf",
+			      node_ptr1->name, node_ptr1->weight);
+			_update_node_weight(node_ptr1->name, 
+					    node_ptr1->weight);
+		}
+
+		if (!node_ptr1->config_ptr->feature && !node_ptr1->features)
 			continue;	/* No feature to preserve */
-		if (node_ptr1->config_ptr->feature &&
+		if (node_ptr1->config_ptr->feature && node_ptr1->features &&
 		    !strcmp(node_ptr1->config_ptr->feature,
 			    node_ptr1->features)) {
 			continue;	/* Identical feature value */
@@ -911,11 +918,13 @@ extern void restore_node_features(void)
 		node_list = xstrdup(node_ptr1->name);
 		for (j=(i+1), node_ptr2=(node_ptr1+1); j<node_record_count; 
 		     j++, node_ptr2++) {
-			if (!node_ptr2->features ||
-			    strcmp(node_ptr1->features, node_ptr2->features))
-				continue;
-			xstrcat(node_list, ",");
-			xstrcat(node_list, node_ptr2->name);
+			if ((!node_ptr1->features && !node_ptr2->features) ||
+			    ( node_ptr1->features &&  node_ptr2->features &&
+			     !strcmp(node_ptr1->features, 
+				     node_ptr2->features))) {
+				xstrcat(node_list, ",");
+				xstrcat(node_list, node_ptr2->name);
+			}
 		}
 		error("Node %s Features(%s) differ from slurm.conf",
 		      node_list, node_ptr1->features);
@@ -1048,7 +1057,7 @@ static int _update_node_features(char *node_names, char *features)
 		} else if (tmp_cnt == config_cnt) {
 			/* all nodes changed, update in situ */
 			xfree(config_ptr->feature);
-			if (features[0])
+			if (features && features[0])
 				config_ptr->feature = xstrdup(features);
 			else
 				config_ptr->feature = NULL;
@@ -1066,7 +1075,7 @@ static int _update_node_features(char *node_names, char *features)
 			new_config_ptr->real_memory = config_ptr->real_memory;
 			new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
 			new_config_ptr->weight      = config_ptr->weight;
-			if (features[0])
+			if (features && features[0])
 				new_config_ptr->feature = xstrdup(features);
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes =

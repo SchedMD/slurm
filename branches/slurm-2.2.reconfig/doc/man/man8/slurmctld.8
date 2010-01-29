@@ -32,10 +32,12 @@ Write log messages to the specified file.
 .TP
 \fB\-R\fR
 Recover full state from last checkpoint.  Normally the slurmctld will
-only recover information about job, and node information.  With this
-option state will be recovered for partition information
-also. (Warning: When using this option any changes to partitions in the
-slurm.conf file will be ignored on next restart or reconfig.)
+recover all information about jobs plus some partition and node information.  
+With this option, additional partition and node information will be recovered 
+(This will recover node Features and Weight plus
+partition .????
+FIXME FIXME
+rather than using the information contained in the slurm.conf file.)
 .TP
 \fB\-v\fR
 Verbose operation. Multiple \fB\-v\fR's increase verbosity.
@@ -62,7 +64,8 @@ other parameters used by other Slurm components, change the common
 configuration file, \fBslurm.conf\fR.
 
 .SH "COPYING"
-Copyright (C) 2002\-2006 The Regents of the University of California.
+Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

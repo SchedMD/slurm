@@ -24,7 +24,13 @@ doc/html/configurator.html that comes with the distribution.
 
 
 HIGHLIGHTS
-
+* Preserve current partition state information and node Feature state 
+  information rather than use contents of slurm.conf file after slurmctld is
+  restarted with the -R option or receives a SIGHUP signal. Previously the  
+  state was always replaced by the contents of the slurm.conf file. In order 
+  to restore partition state and node Features state information from the 
+  slurm.conf file, restart slurmctld *without* the -R option or execute 
+  "scontrol reconfig".
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 
