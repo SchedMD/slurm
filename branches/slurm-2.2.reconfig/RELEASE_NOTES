@@ -24,13 +24,20 @@ doc/html/configurator.html that comes with the distribution.
 
 
 HIGHLIGHTS
-* Preserve current partition state information and node Feature state 
-  information rather than use contents of slurm.conf file after slurmctld is
-  restarted with the -R option or receives a SIGHUP signal. Previously the  
-  state was always replaced by the contents of the slurm.conf file. In order 
-  to restore partition state and node Features state information from the 
-  slurm.conf file, restart slurmctld *without* the -R option or execute 
-  "scontrol reconfig".
+* Preserve current partition state information plus node Feature and Weight 
+  state information after slurmctld receives a SIGHUP signal or is restarted 
+  with the -R option. Recreate partition plus node state information from 
+  slurm.conf file after executing "scontrol reconfig" or restarting slurmctld 
+  *without* the -R option. 
+     OPERATION            ACTION
+     slurmctld -R         Recover all job, node and partition state
+     slurmctld            Recover job state, recreate node and partition state
+     slurmctld -c         Recover no jobs, recreate node and partition state
+     SIGHUP to slurmctld  Preserve all job, node and partition state
+     scontrol reconfig    Preserve job state, recreate node and partition state
+  Old logic preserved node Feature plus partition state after "slurmctld" or 
+  "scontrol reconfig" rather than recreating it. Node Weight was formerly 
+  always recreated. Current behaviour is more consistent.
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 

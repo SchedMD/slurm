@@ -704,9 +704,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		reset_first_job_id();
 		(void) slurm_sched_reconfig();
 		xfree(state_save_dir);
-	} else if (recover == 1) {	/* Load job & partition state files */
+	} else if (recover == 1) {	/* Load job & node state files */
 		(void) load_all_node_state(true);
-		(void) load_all_part_state();
 		load_job_ret = load_all_job_state();
 	} else if (recover > 1) {	/* Load node, part & job state files */
 		(void) load_all_node_state(false);
