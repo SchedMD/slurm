@@ -394,14 +394,11 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		      bg_record->user_name);
 
 		if(job_remove_failed) {
-			char time_str[32], reason[128];
-			time_t now;
-			slurm_make_time_str(&now, time_str, sizeof(time_str));
-			snprintf(reason, sizeof(reason),
-				 "_term_agent: Couldn't remove job "
-				 "[SLURM@%s]", time_str);
 			if(bg_record->nodes)
-				slurm_drain_nodes(bg_record->nodes, reason);
+				slurm_drain_nodes(
+					bg_record->nodes,
+					"_term_agent: Couldn't remove job",
+					slurm_get_slurm_user_id());
 			else
 				error("Block %s doesn't have a node list.",
 				      block_id);
@@ -1438,16 +1435,13 @@ extern int boot_block(bg_record_t *bg_record)
 		error("bridge_create_block(%s): %s",
 		      bg_record->bg_block_id, bg_err_str(rc));
 		if(rc == INCOMPATIBLE_STATE) {
-			char reason[128], time_str[32];
-			time_t now = time(NULL);
-			slurm_make_time_str(&now, time_str, sizeof(time_str));
+			char reason[200];
 			snprintf(reason, sizeof(reason),
 				 "boot_block: "
 				 "Block %s is in an incompatible state.  "
 				 "This usually means hardware is allocated "
-				 "by another block (maybe outside of SLURM). "
-				 "[SLURM@%s]",
-				 bg_record->bg_block_id, time_str);
+				 "by another block (maybe outside of SLURM).",
+				 bg_record->bg_block_id);
 			drain_as_needed(bg_record, reason);
 			bg_record->boot_state = 0;
 			bg_record->boot_count = 0;

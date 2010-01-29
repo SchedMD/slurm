@@ -54,11 +54,13 @@ void slurmctld_req (slurm_msg_t * msg);
  *	no-op for nodes already drained or draining
  * node_list IN - list of nodes to drain
  * reason IN - reason to drain the nodes
+ * reason_uid IN - who set the reason
  * RET SLURM_SUCCESS or error code
  * NOTE: This is utilzed by plugins and not via RPC and it sets its
  *	own locks.
  */
-extern int slurm_drain_nodes(char *node_list, char *reason);
+extern int slurm_drain_nodes(char *node_list, char *reason,
+			     uint32_t reason_uid);
 
 /*
  * slurm_fail_job - terminate a job due to a launch failure

@@ -2483,6 +2483,9 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 	node_ptr.name = node_state_msg->hostlist;
 	node_ptr.cpus = node_state_msg->cpu_count;
 	node_ptr.node_state = node_state_msg->state;
+	node_ptr.reason = node_state_msg->reason;
+	node_ptr.reason_time = node_state_msg->event_time;
+	node_ptr.reason_uid = node_state_msg->reason_uid;
 
 	slurmctld_conf.fast_schedule = 0;
 
@@ -2501,17 +2504,19 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 			&node_ptr,
 			node_state_msg->event_time);
 	} else {
-		debug2("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u",
+		debug2("DBD_NODE_STATE: NODE:%s STATE:%s "
+		       "REASON:%s UID:%u TIME:%u",
 		       node_state_msg->hostlist,
 		       _node_state_string(node_state_msg->new_state),
 		       node_state_msg->reason,
+		       node_ptr.reason_uid,
 		       node_state_msg->event_time);
 		rc = clusteracct_storage_g_node_down(
 			slurmdbd_conn->db_conn,
 			node_state_msg->cluster_name,
 			&node_ptr,
 			node_state_msg->event_time,
-			node_state_msg->reason);
+			node_state_msg->reason, node_ptr.reason_uid);
 	}
 
 end_it:

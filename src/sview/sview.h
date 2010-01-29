@@ -252,6 +252,7 @@ typedef struct {
 	node_info_t *node_ptr;
 	char *color;
 	int pos;
+	char *reason;
 } sview_node_info_t;
 
 typedef struct {

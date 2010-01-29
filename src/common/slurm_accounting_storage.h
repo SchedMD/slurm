@@ -1125,7 +1125,7 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time,
-					   char *reason);
+					   char *reason, uint32_t reason_uid);
 
 extern int clusteracct_storage_g_node_up(void *db_conn,
 					 char *cluster,

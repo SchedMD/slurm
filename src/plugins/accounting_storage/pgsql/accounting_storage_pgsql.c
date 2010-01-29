@@ -1048,7 +1048,8 @@ extern int acct_storage_p_roll_usage(PGconn *acct_pgsql_db,
 extern int clusteracct_storage_p_node_down(PGconn *acct_pgsql_db,
 					   char *cluster,
 					   struct node_record *node_ptr,
-					   time_t event_time, char *reason)
+					   time_t event_time, char *reason,
+					   uint32_t reason_uid)
 {
 #ifdef HAVE_PGSQL
 	uint16_t cpus;
@@ -1078,9 +1079,9 @@ extern int clusteracct_storage_p_node_down(PGconn *acct_pgsql_db,
 	query = xstrdup_printf(
 		"insert into %s "
 		"(node_name, cluster, cpu_count, period_start, reason) "
-		"values ('%s', '%s', %u, %d, '%s')",
+		"values ('%s', '%s', %u, %d, '%s', %u)",
 		event_table, node_ptr->name, cluster,
-		cpus, event_time, my_reason);
+		cpus, event_time, my_reason, reason_uid);
 	rc = pgsql_db_query(acct_pgsql_db, query);
 	xfree(query);
 

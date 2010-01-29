@@ -1100,10 +1100,10 @@ static int _accounting_mark_all_nodes_down(char *reason)
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0')
 			continue;
-		if((rc = clusteracct_storage_g_node_down(acct_db_conn,
-							 slurmctld_cluster_name,
-							 node_ptr, event_time,
-							 reason))
+		if((rc = clusteracct_storage_g_node_down(
+			    acct_db_conn, slurmctld_cluster_name,
+			    node_ptr, event_time,
+			    reason, slurm_get_slurm_user_id()))
 		   == SLURM_ERROR)
 			break;
 	}

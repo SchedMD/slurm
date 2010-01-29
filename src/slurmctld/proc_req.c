@@ -2372,11 +2372,12 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
  *	no-op for nodes already drained or draining
  * node_list IN - list of nodes to drain
  * reason IN - reason to drain the nodes
+ * reason_uid IN - who set the reason
  * RET SLURM_SUCCESS or error code
  * NOTE: This is utilzed by plugins and not via RPC and it sets its
  *	own locks.
  */
-extern int slurm_drain_nodes(char *node_list, char *reason)
+extern int slurm_drain_nodes(char *node_list, char *reason, uint32_t reason_uid)
 {
 	int error_code;
 	DEF_TIMERS;
@@ -2386,7 +2387,7 @@ extern int slurm_drain_nodes(char *node_list, char *reason)
 
 	START_TIMER;
 	lock_slurmctld(node_write_lock);
-	error_code = drain_nodes(node_list, reason);
+	error_code = drain_nodes(node_list, reason, reason_uid);
 	unlock_slurmctld(node_write_lock);
 	END_TIMER2("slurm_drain_nodes");
 
@@ -2425,7 +2426,7 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	update_node_msg_t *update_node_msg_ptr =
-	    			(update_node_msg_t *) msg->data;
+		(update_node_msg_t *) msg->data;
 	/* Locks: Write job and write node */
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
@@ -2433,7 +2434,7 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_UPDATE_NODE from uid=%u",
-		(unsigned int) uid);
+	       (unsigned int) uid);
 	if (!validate_super_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, UPDATE_NODE RPC from uid=%u",
@@ -2451,12 +2452,12 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	/* return result */
 	if (error_code) {
 		info("_slurm_rpc_update_node for %s: %s",
-		      update_node_msg_ptr->node_names,
-		      slurm_strerror(error_code));
+		     update_node_msg_ptr->node_names,
+		     slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("_slurm_rpc_update_node complete for %s %s",
-			update_node_msg_ptr->node_names, TIME_STR);
+		       update_node_msg_ptr->node_names, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 
@@ -2481,7 +2482,7 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_UPDATE_PARTITION from uid=%u",
-		(unsigned int) uid);
+	       (unsigned int) uid);
 	if (!validate_super_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, UPDATE_PARTITION RPC from uid=%u",

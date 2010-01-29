@@ -951,6 +951,10 @@ typedef struct node_info {
 	char *os;		/* operating system currently running */
 	uint32_t real_memory;	/* configured MB of real memory on the node */
 	char *reason;		/* reason for node being DOWN or DRAINING */
+	time_t reason_time;	/* Time stamp when reason was set, ignore if
+				 * no reason is set. */
+	uint32_t reason_uid;   	/* User that set the reason, ignore if
+				 * no reason is set. */
 	uint16_t sockets;       /* number of sockets per node */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
@@ -1423,10 +1427,12 @@ typedef struct submit_response_msg {
 } submit_response_msg_t;
 
 typedef struct slurm_update_node_msg {
+	char *features;		/* new feature for node */
 	char *node_names;	/* comma separated list of required nodes */
 	uint16_t node_state;	/* see enum node_states */
 	char *reason;		/* reason for node being DOWN or DRAINING */
-	char *features;		/* new feature for node */
+	uint32_t reason_uid;	/* user ID of sending (needed if user
+				 * root is sending message) */
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
 

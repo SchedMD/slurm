@@ -312,6 +312,8 @@ typedef struct dbd_node_state_msg {
 	char *hostlist;		/* name of hosts */
 	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
 	char *reason;		/* explanation for the node's state */
+	uint32_t reason_uid;   	/* User that set the reason, ignore if
+				 * no reason is set. */
 	uint16_t state;         /* current state of node.  Used to get
 				   flags on the state (i.e. maintenance) */
 } dbd_node_state_msg_t;

@@ -636,6 +636,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->node_state = node_ptr->node_state;
 		sinfo_ptr->features   = node_ptr->features;
 		sinfo_ptr->reason     = node_ptr->reason;
+		sinfo_ptr->reason_time= node_ptr->reason_time;
+		sinfo_ptr->reason_uid = node_ptr->reason_uid;
 		sinfo_ptr->min_cpus   = node_ptr->cpus;
 		sinfo_ptr->max_cpus   = node_ptr->cpus;
 		sinfo_ptr->min_sockets = node_ptr->sockets;
@@ -709,6 +711,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup("Block(s) in error state");
 		sinfo_ptr->reason     = node_ptr->reason;
+		sinfo_ptr->reason_time= node_ptr->reason_time;
+		sinfo_ptr->reason_uid = node_ptr->reason_uid;
 	}
 	if(params.match_flags.cpus_flag && (used_cpus || error_cpus)) {
 		/* we only get one shot at this (because the node name

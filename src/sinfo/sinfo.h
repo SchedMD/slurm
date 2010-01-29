@@ -100,6 +100,8 @@ typedef struct {
 
 	char *features;
 	char *reason;
+	time_t reason_time;
+	uint32_t reason_uid;
 
 	hostlist_t nodes;
 #ifdef HAVE_BG
