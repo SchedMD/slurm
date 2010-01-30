@@ -5,7 +5,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -329,10 +329,7 @@ int dump_all_part_state(void)
 		_dump_part_state(part_ptr, buffer);
 	}
 	list_iterator_destroy(part_iterator);
-	/* Maintain config read lock until we copy state_save_location *\
-	\* unlock_slurmctld(part_read_lock);          - see below      */
 
-	/* write the buffer to file */
 	old_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(old_file, "/part_state.old");
 	reg_file = xstrdup(slurmctld_conf.state_save_location);
@@ -340,6 +337,8 @@ int dump_all_part_state(void)
 	new_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(new_file, "/part_state.new");
 	unlock_slurmctld(part_read_lock);
+
+	/* write the buffer to file */
 	lock_state_files();
 	log_fd = creat(new_file, 0600);
 	if (log_fd < 0) {

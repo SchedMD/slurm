@@ -5,7 +5,7 @@
  *	configuration list (config_list)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -135,16 +135,17 @@ int dump_all_node_state ( void )
 
 		_dump_node_state (&node_record_table_ptr[inx], buffer);
 	}
-	unlock_slurmctld (node_read_lock);
 
-	/* write the buffer to file */
 	old_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (old_file, "/node_state.old");
 	reg_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (reg_file, "/node_state");
 	new_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (new_file, "/node_state.new");
-	lock_state_files ();
+	unlock_slurmctld (node_read_lock);
+
+	/* write the buffer to file */
+	lock_state_files();
 	log_fd = creat (new_file, 0600);
 	if (log_fd < 0) {
 		error ("Can't save state, error creating file %s %m",
@@ -268,17 +269,13 @@ extern int load_all_node_state ( bool state_only )
 	Buf buffer;
 	char *ver_str = NULL;
 	hostset_t hs = NULL;
-	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	bool power_save_mode = false;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 
-	if (conf->suspend_program && conf->resume_program)
+	if (slurmctld_conf.suspend_program && slurmctld_conf.resume_program)
 		power_save_mode = true;
-	slurm_conf_unlock();
 
 	/* read the file */
-	state_file = xstrdup (slurmctld_conf.state_save_location);
-	xstrcat (state_file, "/node_state");
 	lock_state_files ();
 	state_fd = _open_node_state_file(&state_file);
 	if (state_fd < 0) {
