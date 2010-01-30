@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  reservation.c - resource reservation management
  *****************************************************************************
- *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1756,10 +1756,7 @@ extern int dump_all_resv_state(void)
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter)))
 		_pack_resv(resv_ptr, buffer, true);
 	list_iterator_destroy(iter);
-	/* Maintain config read lock until we copy state_save_location *\
-	\* unlock_slurmctld(resv_read_lock);          - see below      */
 
-	/* write the buffer to file */
 	old_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(old_file, "/resv_state.old");
 	reg_file = xstrdup(slurmctld_conf.state_save_location);
@@ -1767,6 +1764,8 @@ extern int dump_all_resv_state(void)
 	new_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(new_file, "/resv_state.new");
 	unlock_slurmctld(resv_read_lock);
+
+	/* write the buffer to file */
 	lock_state_files();
 	log_fd = creat(new_file, 0600);
 	if (log_fd < 0) {
