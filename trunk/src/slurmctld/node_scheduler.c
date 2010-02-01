@@ -352,7 +352,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 {
 	uint32_t saved_min_nodes, saved_job_min_nodes;
 	bitstr_t *saved_req_node_bitmap = NULL;
-	uint32_t saved_min_cpus, saved_max_cpus, saved_req_nodes;
+	uint32_t saved_min_cpus, saved_req_nodes;
 	int rc, tmp_node_set_size;
 	struct node_set *tmp_node_set_ptr;
 	int error_code = SLURM_SUCCESS, i;
@@ -390,9 +390,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		job_ptr->details->req_node_bitmap = NULL;
 	}
 	saved_min_cpus = job_ptr->details->min_cpus;
-	saved_max_cpus = job_ptr->details->max_cpus;
+	/* Don't mess with max_cpus here since it is only set (as of
+	   2.2 to be a limit and not user configurable. */
 	job_ptr->details->min_cpus = 1;
-	job_ptr->details->max_cpus = 1;
 	tmp_node_set_ptr = xmalloc(sizeof(struct node_set) * node_set_size);
 
 	/* Accumulate nodes with required feature counts.
@@ -514,7 +514,6 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		min_nodes = saved_min_nodes;
 		req_nodes = saved_req_nodes;
 		job_ptr->details->min_cpus = saved_min_cpus;
-		job_ptr->details->max_cpus = saved_max_cpus;
 		job_ptr->details->min_nodes = saved_job_min_nodes;
 	}
 #if 0

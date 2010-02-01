@@ -139,7 +139,7 @@ static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
-		        struct job_record **job_rec_ptr, uid_t submit_uid);
+			struct job_record **job_rec_ptr, uid_t submit_uid);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -380,11 +380,11 @@ int dump_all_job_state(void)
 	packstr(JOB_STATE_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
-        /*
-         * write header: job id
-         * This is needed so that the job id remains persistent even after
-         * slurmctld is restarted.
-         */
+	/*
+	 * write header: job id
+	 * This is needed so that the job id remains persistent even after
+	 * slurmctld is restarted.
+	 */
 	pack32( job_id_sequence, buffer);
 
 	debug3("Writing job id %u to header record of job_state file",
@@ -1734,7 +1734,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				kill_step_on_node(job_ptr, node_ptr);
 				excise_node_from_job(job_ptr, node_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
-			           (job_ptr->details->requeue > 0)) {
+				   (job_ptr->details->requeue > 0)) {
 				char requeue_msg[128];
 
 				srun_node_fail(job_ptr->job_id, node_name);
@@ -2526,7 +2526,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->job_state = JOB_CANCELLED | job_comp_flag;
 			job_ptr->requid = uid;
 		} else if (WIFEXITED(job_return_code) &&
-		           WEXITSTATUS(job_return_code)) {
+			   WEXITSTATUS(job_return_code)) {
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
 			job_ptr->exit_code = job_return_code;
 			job_ptr->state_reason = FAIL_EXIT_CODE;
@@ -2798,9 +2798,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		if(job_desc->max_nodes
 		   && job_desc->min_nodes > job_desc->max_nodes)
 			job_desc->max_nodes = job_desc->min_nodes;
-		if(job_desc->max_cpus
-		   && job_desc->min_cpus > job_desc->max_cpus)
-			job_desc->max_cpus = job_desc->min_cpus;
 	}
 	if (job_desc->exc_nodes) {
 		error_code = node_name2bitmap(job_desc->exc_nodes, false,
@@ -3540,7 +3537,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
 
-        if(slurm_get_track_wckey()) {
+	if(slurm_get_track_wckey()) {
 		if(!job_desc->wckey) {
 			/* get the default wckey for this user since none was
 			 * given */
@@ -4977,8 +4974,8 @@ static int _reset_detail_bitmaps(struct job_record *job_ptr)
 
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	xfree(job_ptr->details->req_node_layout); /* layout info is lost
-	                                           * but should be re-generated
-	                                           * at job start time */
+						   * but should be re-generated
+						   * at job start time */
 	if ((job_ptr->details->req_nodes) &&
 	    (node_name2bitmap(job_ptr->details->req_nodes, false,
 			      &job_ptr->details->req_node_bitmap))) {
@@ -5187,7 +5184,7 @@ static bool _top_priority(struct job_record *job_ptr)
 				break;
 			}
 			if (bit_overlap(job_ptr->part_ptr->node_bitmap,
-				        job_ptr2->part_ptr->node_bitmap) == 0)
+					job_ptr2->part_ptr->node_bitmap) == 0)
 				continue;   /* no node overlap in partitions */
 			if ((job_ptr2->part_ptr->priority >
 			     job_ptr ->part_ptr->priority) ||
@@ -6432,7 +6429,7 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	kill_req->job_id	= job_id;
 	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
-	kill_req->nodes	        = xstrdup(node_ptr->name);
+	kill_req->nodes		= xstrdup(node_ptr->name);
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
@@ -6470,7 +6467,7 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	kill_req->job_id	= job_id;
 	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
-	kill_req->nodes	        = xstrdup(node_ptr->name);
+	kill_req->nodes		= xstrdup(node_ptr->name);
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
@@ -7505,7 +7502,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 
 		/* for validation we don't need to look at
 		 * qos_ptr->max_cpu_mins_pj. It is checked while the
-		 * job is running. 
+		 * job is running.
 		 */
 
 		if (qos_ptr->max_cpus_pj != INFINITE) {

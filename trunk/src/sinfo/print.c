@@ -838,7 +838,7 @@ int _print_timestamp(sinfo_data_t * sinfo_data, int width,
 	} else if (sinfo_data)
 		_print_str("Unknown", width, right_justify, true);
 	else
-		_print_str("TIME", width, right_justify, true);
+		_print_str("TIMESTAMP", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);

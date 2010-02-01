@@ -44,11 +44,11 @@ print_header $test_id
 
 spawn $sinfo --list-reasons
 expect {
-	-re "REASON *USER *TIME *NODELIST" {
+	-re "REASON *USER *TIMESTAMP *NODELIST" {
 		incr matches
 		exp_continue
 	}
-	-re "REASON *USER *TIME *BP_LIST" {
+	-re "REASON *USER *TIMESTAMP *BP_LIST" {
 		incr matches
 		exp_continue
 	}

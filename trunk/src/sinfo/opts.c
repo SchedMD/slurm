@@ -2,7 +2,7 @@
  *  opts.c - sinfo command line option processing functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -242,8 +242,8 @@ extern void parse_command_line(int argc, char *argv[])
 
 		} else if (params.list_reasons) {
 			params.format = params.long_output ?
-			  "%50R %12U %19H %6t %N" :
-			  "%50R %9u %19H %N";
+			  "%20R %12U %19H %6t %N" :
+			  "%20R %9u %19H %N";
 
 		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
 			params.format = xstrdup(env_val);
