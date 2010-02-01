@@ -2,7 +2,7 @@
  *  print.c - sinfo print job functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov> and
  *  Morris Jette <jette1@llnl.gov>
@@ -838,7 +838,7 @@ int _print_timestamp(sinfo_data_t * sinfo_data, int width,
 	} else if (sinfo_data)
 		_print_str("Unknown", width, right_justify, true);
 	else
-		_print_str("TIMELIMIT", width, right_justify, true);
+		_print_str("TIME", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);
