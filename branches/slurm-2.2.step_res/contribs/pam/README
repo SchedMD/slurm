@@ -1,0 +1,64 @@
+Module Name:
+  pam_slurm
+
+Authors:
+  Chris Dunlap <cdunlap@llnl.gov>
+  Jim Garlick  <garlick@llnl.gov>
+  Moe Jette    <jette1@llnl.gov>
+
+Management Groups Provided:
+  account
+
+System Dependencies:
+  libslurm.so
+
+Overview:
+  Restricts access to compute nodes in a cluster using SLURM.
+
+Recognized Arguments:
+  debug; no_sys_info; no_warn; rsh_kludge; rlogin_kludge
+
+Description:
+  This module restricts access to compute nodes in a cluster where Simple 
+  Linux Utility for Resource Managment (SLURM) is in use.  Access is granted
+  to root, any user with an SLURM-launched job currently running on the node,
+  or any user who has allocated resources on the node according to the SLURM
+  database.
+
+  The behavior of this module can be modified with the following flags:
+
+    debug         - log debugging information to the system log file
+    no_sys_info   - supress system logging of "access granted for user ...",
+                    access denied and other errors will still be logged
+    no_warn       - suppress warning messages to the application
+    rsh_kludge    - prevent truncation of first char from rsh error msg
+    rlogin_kludge - prevent "staircase-effect" following rlogin error msg
+
+Examples / Suggested Usage:
+  Use of this module is recommended on any compute node where you want to
+  limit access to just those users who are currently scheduled to run jobs.
+
+  For /etc/pam.d/ style configurations where modules live in /lib/security/,
+  add the following line to the PAM configuration file for the appropriate
+  service(s) (eg, /etc/pam.d/system-auth):
+
+    account    required     /lib/security/pam_slurm.so
+
+  If you always want to allow access for an administrative group (eg, wheel),
+  stack the pam_access module ahead of pam_slurm:
+
+    account    sufficient   /lib/security/pam_access.so
+    account    required     /lib/security/pam_slurm.so
+
+  Then edit the pam_access configuration file (/etc/security/access.conf):
+
+    +:wheel:ALL
+    -:ALL:ALL
+
+  When access is denied because the user does not have an active job running
+  on the node, an error message is returned to the application:
+
+    Access denied: user foo (uid=1313) has no active jobs.
+
+  This message can be suppressed by specifying the "no_warn" argument in the
+  PAM configuration file.
