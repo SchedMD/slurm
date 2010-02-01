@@ -4,7 +4,7 @@
  *	(last_job_update), and hash table (job_hash)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -286,7 +286,7 @@ static void _delete_job_desc_files(uint32_t job_id)
 	char *dir_name, job_dir[20], *file_name;
 	struct stat sbuf;
 
-	dir_name = xstrdup(slurmctld_conf.state_save_location);
+	dir_name = slurm_get_state_save_location();
 
 	sprintf(job_dir, "/job.%d", job_id);
 	xstrcat(dir_name, job_dir);
@@ -480,7 +480,7 @@ static int _open_job_state_file(char **state_file)
 	int state_fd;
 	struct stat stat_buf;
 
-	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	*state_file = slurm_get_state_save_location();
 	xstrcat(*state_file, "/job_state");
 	state_fd = open(*state_file, O_RDONLY);
 	if (state_fd < 0) {
@@ -617,7 +617,7 @@ extern int load_last_job_id( void )
 	uint32_t ver_str_len;
 
 	/* read the file */
-	state_file = xstrdup(slurmctld_conf.state_save_location);
+	state_file = slurm_get_state_save_location();
 	xstrcat(state_file, "/job_state");
 	lock_state_files();
 	state_fd = open(state_file, O_RDONLY);
@@ -3154,7 +3154,7 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 
 	START_TIMER;
 	/* Create state_save_location directory */
-	dir_name = xstrdup(slurmctld_conf.state_save_location);
+	dir_name = slurm_get_state_save_location();
 
 	/* Create job_id specific directory */
 	sprintf(job_dir, "/job.%u", job_id);
@@ -3177,8 +3177,7 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 		/* Create script file */
 		file_name = xstrdup(dir_name);
 		xstrcat(file_name, "/script");
-		error_code =
-			_write_data_to_file(file_name, job_desc->script);
+		error_code = _write_data_to_file(file_name, job_desc->script);
 		xfree(file_name);
 	}
 
@@ -3276,13 +3275,12 @@ static int _write_data_to_file(char *file_name, char *data)
  * IN job_ptr - pointer to job for which data is required
  * OUT env_size - number of elements to read
  * RET point to array of string pointers containing environment variables
- * NOTE: READ lock_slurmctld config before entry
  */
 char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
 	char job_dir[30], *file_name, **environment = NULL;
 
-	file_name = xstrdup(slurmctld_conf.state_save_location);
+	file_name = slurm_get_state_save_location();
 	sprintf(job_dir, "/job.%d/environment", job_ptr->job_id);
 	xstrcat(file_name, job_dir);
 
@@ -3296,13 +3294,12 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
  * get_job_script - return the script for a given job
  * IN job_ptr - pointer to job for which data is required
  * RET point to string containing job script
- * NOTE: READ lock_slurmctld config before entry
  */
 char *get_job_script(struct job_record *job_ptr)
 {
 	char job_dir[30], *file_name, *script = NULL;
 
-	file_name = xstrdup(slurmctld_conf.state_save_location);
+	file_name = slurm_get_state_save_location();
 	sprintf(job_dir, "/job.%d/script", job_ptr->job_id);
 	xstrcat(file_name, job_dir);
 

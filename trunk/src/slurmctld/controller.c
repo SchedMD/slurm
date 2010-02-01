@@ -2,7 +2,7 @@
  *  controller.c - main control machine daemon for slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, Kevin Tew <tew1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -208,6 +208,7 @@ int main(int argc, char *argv[])
 	int cnt, error_code, i;
 	pthread_attr_t thread_attr;
 	struct stat stat_buf;
+	char *dir_name;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
@@ -286,7 +287,7 @@ int main(int argc, char *argv[])
 		} else {
 			if (chdir(slurmctld_conf.state_save_location) < 0) {
 				fatal("chdir(%s): %m",
-					slurmctld_conf.state_save_location);
+				      slurmctld_conf.state_save_location);
 			}
 		}
 	} else {
@@ -417,10 +418,10 @@ int main(int argc, char *argv[])
 		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			/* Now recover the remaining state information */
+			lock_slurmctld(config_write_lock);
 			if (switch_restore(slurmctld_conf.state_save_location,
 					   recover ? true : false))
 				fatal(" failed to initialize switch plugin" );
-			lock_slurmctld(config_write_lock);
 			if ((error_code = read_slurm_conf(recover, false))) {
 				fatal("read_slurm_conf reading %s: %s",
 					slurmctld_conf.slurm_conf,
@@ -539,10 +540,12 @@ int main(int argc, char *argv[])
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			pthread_join(assoc_cache_thread, NULL);
 		}
-		if (select_g_state_save(slurmctld_conf.state_save_location)
-				!= SLURM_SUCCESS )
+
+		dir_name = slurm_get_state_save_location();
+		if (select_g_state_save(dir_name) != SLURM_SUCCESS)
 			error("failed to save node selection state");
-		switch_save(slurmctld_conf.state_save_location);
+		switch_save(dir_name);
+		xfree(dir_name);
 
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
@@ -596,7 +599,9 @@ int main(int argc, char *argv[])
 	node_fini();
 	resv_fini();
 	trigger_fini();
-	assoc_mgr_fini(slurmctld_conf.state_save_location);
+	dir_name = slurm_get_state_save_location();
+	assoc_mgr_fini(dir_name);
+	xfree(dir_name);
 	reserve_port_config(NULL);
 
 	/* Some plugins are needed to purge job/node data structures,
@@ -1079,7 +1084,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 	time_t event_time;
 	int rc = SLURM_ERROR;
 
-	state_file = xstrdup (slurmctld_conf.state_save_location);
+	state_file = slurm_get_state_save_location();
 	xstrcat (state_file, "/node_state");
 	if (stat(state_file, &stat_buf)) {
 		debug("_accounting_mark_all_nodes_down: could not stat(%s) "
@@ -1699,9 +1704,9 @@ _init_pidfile(void)
 
 /*
  * set_slurmctld_state_loc - create state directory as needed and "cd" to it
+ * NOTE: config read lock must be set on entry
  */
-extern void
-set_slurmctld_state_loc(void)
+extern void set_slurmctld_state_loc(void)
 {
 	int rc;
 	struct stat st;
