@@ -64,7 +64,7 @@ node_info_to_hv(node_info_t* node_info, uint16_t node_scaling, HV* hv)
 #endif
 
 	hv_store_uint16_t(hv, "alloc_cpus", alloc_cpus);
-	hv_store_uint16_t(hv, "error_cpus", err_cpus);
+	hv_store_uint16_t(hv, "err_cpus", err_cpus);
 
 	/* TODO: select_nodeinfo */
 

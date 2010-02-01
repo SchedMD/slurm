@@ -96,7 +96,8 @@ Main:
 	    my $rCProc    = $node->{'cpus'};
 	    my $features  = $node->{'features'};
 	    my $rAMem     = $node->{'real_memory'};
-	    my $rAProc    = ($node->{'cpus'}) - ($node->{'alloc_cpus'});
+	    my $rAProc    = ($node->{'cpus'}) - ($node->{'alloc_cpus'})
+		    - ($node->{'err_cpus'});
 	    my $state = lc(Slurm::node_state_string($node->{'node_state'}));
 
 #these aren't really defined in slurm, so I am not sure what to get them from
