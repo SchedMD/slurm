@@ -1,5 +1,5 @@
 /*
- * msg2hv.h - prototypes of msg-hv converting functions 
+ * msg2hv.h - prototypes of msg-hv converting functions
  */
 
 #ifndef _MSG_H
@@ -10,7 +10,7 @@
 typedef char* charp;
 
 /*
- * store an uint16_t into AV 
+ * store an uint16_t into AV
  */
 inline static int av_store_uint16_t(AV* av, int index, uint16_t val)
 {
@@ -24,7 +24,7 @@ inline static int av_store_uint16_t(AV* av, int index, uint16_t val)
 		sv = newSViv(NO_VAL);
 	else
 		sv = newSViv(val);
-	
+
 	if (av_store(av, (I32)index, sv) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
@@ -33,7 +33,7 @@ inline static int av_store_uint16_t(AV* av, int index, uint16_t val)
 }
 
 /*
- * store an uint32_t into AV 
+ * store an uint32_t into AV
  */
 inline static int av_store_uint32_t(AV* av, int index, uint32_t val)
 {
@@ -47,7 +47,7 @@ inline static int av_store_uint32_t(AV* av, int index, uint32_t val)
 		sv = newSViv(NO_VAL);
 	else
 		sv = newSViv(val);
-	
+
 	if (av_store(av, (I32)index, sv) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
@@ -56,12 +56,12 @@ inline static int av_store_uint32_t(AV* av, int index, uint32_t val)
 }
 
 /*
- * store an int into AV 
+ * store an int into AV
  */
 inline static int av_store_int(AV* av, int index, int val)
 {
 	SV* sv = newSViv(val);
-	
+
 	if (av_store(av, (I32)index, sv) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
@@ -70,7 +70,7 @@ inline static int av_store_int(AV* av, int index, int val)
 }
 
 /*
- * store a string into HV 
+ * store a string into HV
  */
 inline static int hv_store_charp(HV* hv, const char *key, charp val)
 {
@@ -87,7 +87,7 @@ inline static int hv_store_charp(HV* hv, const char *key, charp val)
 }
 
 /*
- * store an unsigned 32b int into HV 
+ * store an unsigned 32b int into HV
  */
 inline static int hv_store_uint32_t(HV* hv, const char *key, uint32_t val)
 {
@@ -110,7 +110,7 @@ inline static int hv_store_uint32_t(HV* hv, const char *key, uint32_t val)
 }
 
 /*
- * store an unsigned 16b int into HV 
+ * store an unsigned 16b int into HV
  */
 inline static int hv_store_uint16_t(HV* hv, const char *key, uint16_t val)
 {
@@ -124,7 +124,7 @@ inline static int hv_store_uint16_t(HV* hv, const char *key, uint16_t val)
 		sv = newSViv(NO_VAL);
 	else
 		sv = newSVuv(val);
-	
+
 	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
@@ -133,7 +133,7 @@ inline static int hv_store_uint16_t(HV* hv, const char *key, uint16_t val)
 }
 
 /*
- * store an unsigned 8b int into HV 
+ * store an unsigned 8b int into HV
  */
 inline static int hv_store_uint8_t(HV* hv, const char *key, uint8_t val)
 {
@@ -147,7 +147,7 @@ inline static int hv_store_uint8_t(HV* hv, const char *key, uint8_t val)
 		sv = newSViv(NO_VAL);
 	else
 		sv = newSVuv(val);
-	
+
 	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
@@ -155,12 +155,12 @@ inline static int hv_store_uint8_t(HV* hv, const char *key, uint8_t val)
 	return 0;
 }
 /*
- * store a signed int into HV 
+ * store a signed int into HV
  */
 inline static int hv_store_int(HV* hv, const char *key, int val)
 {
 	SV* sv = newSViv(val);
-	
+
 	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
@@ -169,7 +169,7 @@ inline static int hv_store_int(HV* hv, const char *key, int val)
 }
 
 /*
- * store a bool into HV 
+ * store a bool into HV
  */
 inline static int hv_store_bool(HV* hv, const char *key, bool val)
 {
@@ -180,12 +180,12 @@ inline static int hv_store_bool(HV* hv, const char *key, bool val)
 }
 
 /*
- * store a time_t into HV 
+ * store a time_t into HV
  */
 inline static int hv_store_time_t(HV* hv, const char *key, time_t val)
 {
 	SV* sv = newSVuv(val);
-	
+
 	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
@@ -194,7 +194,7 @@ inline static int hv_store_time_t(HV* hv, const char *key, time_t val)
 }
 
 /*
- * store a SV into HV 
+ * store a SV into HV
  */
 inline static int hv_store_sv(HV* hv, const char *key, SV* sv)
 {
