@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  pgsql_jobacct_process.h - functions the processing of
- *                               information from the pgsql jobacct
- *                               storage.
- *****************************************************************************
+ *  problem.c - accounting interface to pgsql - problems in account data
  *
+ *  $Id: problem.c 13061 2008-01-22 21:23:56Z da $
+ *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -36,41 +36,41 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
- *
- *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
- *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _HAVE_PGSQL_JOBACCT_PROCESS_H
-#define _HAVE_PGSQL_JOBACCT_PROCESS_H
+#include "common.h"
 
-#include <sys/types.h>
-#include <pwd.h>
-#include <stdlib.h>
-#include "src/common/assoc_mgr.h"
-#include "src/common/jobacct_common.h"
-#include "src/slurmdbd/read_config.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/database/pgsql_common.h"
-#include "src/common/slurm_accounting_storage.h"
+/*
+ * as_p_get_problems - get problems in accouting data
+ *
+ * IN pg_conn: database connection
+ * IN uid: user performing the get operation
+ * IN assoc_q: associations to check
+ * RET: list of problems
+ */
+extern List
+as_p_get_problems(pgsql_conn_t *pg_conn, uid_t uid,
+		  acct_association_cond_t *assoc_q)
+{
+	List ret_list = NULL;
 
-#ifdef HAVE_PGSQL
+	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+		return NULL;
 
-extern char *assoc_table;
-extern char *job_table;
-extern char *step_table;
-extern char *suspend_table;
+	ret_list = list_create(destroy_acct_association_rec);
 
-extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
-					   acct_job_cond_t *job_cond);
+	if(get_acct_no_assocs(pg_conn, assoc_q, ret_list)
+	   != SLURM_SUCCESS)
+		goto end_it;
 
-extern int pgsql_jobacct_process_archive(PGconn *acct_pgsql_db,
-					 acct_archive_cond_t *arch_cond);
+	if(get_acct_no_users(pg_conn, assoc_q, ret_list)
+	   != SLURM_SUCCESS)
+		goto end_it;
 
-extern int pgsql_jobacct_process_archive_load(PGconn *acct_pgsql_db,
-					      acct_archive_rec_t *arch_rec);
+	if(get_user_no_assocs_or_no_uid(pg_conn, assoc_q, ret_list)
+	   != SLURM_SUCCESS)
+		goto end_it;
 
-
-#endif
-
-#endif
+end_it:
+	return ret_list;
+}

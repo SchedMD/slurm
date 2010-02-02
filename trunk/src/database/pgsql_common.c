@@ -78,7 +78,8 @@ extern int _create_db(char *db_name, pgsql_db_info_t *db_info)
 		result = PQexec(pgsql_db, create_line);
 		if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 			fatal("PQexec failed: %d %s\n%s",
-			     PQresultStatus(result), PQerrorMessage(pgsql_db), create_line);
+			     PQresultStatus(result), PQerrorMessage(pgsql_db),
+			      create_line);
 		}
 		PQclear(result);
 		pgsql_close_db_connection(&pgsql_db);
@@ -109,6 +110,7 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 					    db_info->pass);
 
 	while(!storage_init) {
+		//debug2("pgsql connect: %s", connect_line);
 		*pgsql_db = PQconnectdb(connect_line);
 
 		if(PQstatus(*pgsql_db) != CONNECTION_OK) {
@@ -123,7 +125,29 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 			info("Database %s not created. Creating", db_name);
 			pgsql_close_db_connection(pgsql_db);
 			_create_db(db_name, db_info);
+
 		} else {
+			char *language_line = "CREATE LANGUAGE plpgsql;";
+			PGresult *result = NULL;
+			const char *ver;
+			ver = PQparameterStatus(*pgsql_db, "server_version");
+			if (atof(ver) < 8.3)
+				fatal("server version 8.3 or above required");
+
+			/* This needs to be done for the accounting_storage
+			   plugin, and most likely any pgsql plugin.  */
+			result = PQexec(*pgsql_db, language_line);
+			if ((PQresultStatus(result) != PGRES_COMMAND_OK)
+			    && strcmp("ERROR:  language \"plpgsql\" "
+				      "already exists\n",
+				      PQerrorMessage(*pgsql_db))) {
+				fatal("PQexec failed: %d %s\n%s",
+				      PQresultStatus(result),
+				      PQerrorMessage(*pgsql_db),
+				      language_line);
+			}
+			PQclear(result);
+
 			storage_init = true;
 		}
 	}
@@ -152,6 +176,10 @@ extern int pgsql_db_query(PGconn *pgsql_db, char *query)
 
 	PQclear(result);
 	return SLURM_SUCCESS;
+}
+extern int pgsql_db_start_transaction(PGconn *pgsql_db)
+{
+	return pgsql_db_query(pgsql_db, "BEGIN WORK");
 }
 
 extern int pgsql_db_commit(PGconn *pgsql_db)
@@ -212,6 +240,27 @@ extern int pgsql_insert_ret_id(PGconn *pgsql_db, char *sequence_name,
 	return new_id;
 
 }
+extern int pgsql_query_ret_id(PGconn *pgsql_db, char *query)
+{
+	int new_id = 0;
+	PGresult *result = NULL;
+
+	slurm_mutex_lock(&pgsql_lock);
+	result = pgsql_db_query_ret(pgsql_db, query);
+	if (result) {
+		new_id = atoi(PQgetvalue(result, 0, 0));
+		PQclear(result);
+	} else {
+		/* should have new id */
+		error("pgsql_query_ret_id() query failed: %s",
+		      PQerrorMessage(pgsql_db));
+	}
+	slurm_mutex_unlock(&pgsql_lock);
+
+	return new_id;
+
+}
+
 
 extern int pgsql_db_create_table(PGconn *pgsql_db,
 				 char *table_name, storage_field_t *fields,
@@ -285,7 +334,8 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 	i=0;
 	while(fields[i].name) {
 		int found = 0;
-		if(!strcmp("serial", fields[i].options)) {
+		not_null = 0;
+		if(!strcasecmp("serial", fields[i].options)) {
 			i++;
 			continue;
 		}
@@ -293,26 +343,23 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 		original_ptr = opt_part;
 		opt_part = strtok_r(opt_part, " ", &temp_char);
 		if(opt_part) {
-			type = xstrdup(opt_part);
-			opt_part = temp_char;
-			opt_part = strtok_r(opt_part, " ", &temp_char);
+			type = xstrdup(opt_part); /* XXX: only one identifier supported */
+			opt_part = strtok_r(NULL, " ", &temp_char);
 			while(opt_part) {
-				if(!strcmp("not null", opt_part)) {
-					not_null = 1;
-					opt_part = temp_char;
-					opt_part = strtok_r(opt_part,
-							    " ", &temp_char);
-				} else if(!strcmp("default", opt_part)){
-					opt_part = temp_char;
-					opt_part = strtok_r(opt_part,
+				if(!strcasecmp("not", opt_part)) {
+					opt_part = strtok_r(NULL, " ",
+							    &temp_char);
+					if (!strcasecmp("null", opt_part)) {
+						not_null = 1;
+
+					}
+				} else if(!strcasecmp("default", opt_part)){
+					opt_part = strtok_r(NULL,
 							    " ", &temp_char);
 					default_str = xstrdup(opt_part);
 				}
-				if(opt_part) {
-					opt_part = temp_char;
-					opt_part = strtok_r(opt_part,
-							    " ", &temp_char);
-				}
+				opt_part = strtok_r(NULL,
+						    " ", &temp_char);
 			}
 		} else {
 			type = xstrdup(fields[i].options);
@@ -374,6 +421,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 	list_destroy(columns);
 	query[strlen(query)-1] = ';';
 
+	//debug4("pgsql db create/alter table:\n %s", query);
 	if(pgsql_db_query(pgsql_db, query)) {
 		xfree(query);
 		return SLURM_ERROR;
