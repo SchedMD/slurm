@@ -1142,7 +1142,7 @@ slurm_cred_get_signature(slurm_cred_t *cred, char **datap, uint32_t *datalen)
 }
 
 /* Convert bitmap to string representation with brackets removed */
-static char *_core_format(bitstr_t core_bitmap)
+static char *_core_format(bitstr_t *core_bitmap)
 {
 	char str[1024], *bracket_ptr;
 
@@ -1159,28 +1159,36 @@ static char *_core_format(bitstr_t core_bitmap)
 
 /*
  * Retrieve the set of cores that were allocated to the job and step then 
- * format them in the List Format (e.g., "0-2,7,12-14").
+ * format them in the List Format (e.g., "0-2,7,12-14"). Also return
+ * job and step's memory limit.
  *
  * NOTE: caller must xfree the returned strings.
  */
 void format_core_allocs(slurm_cred_t *cred, char *node_name,
-			 char **job_alloc_cores, char **step_alloc_cores)
+			 char **job_alloc_cores, char **step_alloc_cores,
+			 uint32_t *job_mem_limit, uint32_t *step_mem_limit)
 {
 	xassert(job_alloc_cores);
 	xassert(step_alloc_cores);
 #ifdef HAVE_BG
 	*job_alloc_cores  = NULL;
 	*step_alloc_cores = NULL;
+	*job_mem_limit = cred->job_mem_limit & (~MEM_PER_CPU);
+	if (cred->step_mem_limit)
+		*step_mem_limit = cred->step_mem_limit & (~MEM_PER_CPU);
+	else
+		*step_mem_limit = *job_mem_limit;
 #else
 	bitstr_t	*job_core_bitmap, *step_core_bitmap;
 	hostset_t	hset = NULL;
 	int		host_index = -1;
 	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
+	uint32_t	job_core_cnt=0, step_core_cnt=0;
 
 	if (!(hset = hostset_create(cred->job_hostlist))) {
 		error("Unable to create job hostset: `%s'",
 		      cred->job_hostlist);
-		return NULL;
+		return;
 	}
 
 	host_index = hostset_find(hset, node_name);
@@ -1188,7 +1196,7 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->jobid);
 		hostset_destroy(hset);
-		return NULL;
+		return;
 	}
 	host_index++;	/* change from 0-origin to 1-origin */
 	for (i=0; host_index; i++) {
@@ -1212,21 +1220,38 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 	if (job_core_bitmap == NULL) {
 		error("bit_alloc malloc failure");
 		hostset_destroy(hset);
-		return NULL;
+		return;
 	}
 	step_core_bitmap = bit_alloc(i_last_bit - i_first_bit);
 	if (step_core_bitmap == NULL) {
 		error("bit_alloc malloc failure");
 		bit_free(job_core_bitmap);
 		hostset_destroy(hset);
-		return NULL;
+		return;
 	}
 	for (i = i_first_bit, j = 0; i < i_last_bit; i++, j++) {
-		if (bit_test(cred->job_core_bitmap, i))
+		if (bit_test(cred->job_core_bitmap, i)) {
 			bit_set(job_core_bitmap, j);
-		if (bit_test(cred->step_core_bitmap, i))
+			job_core_cnt++;
+		}
+		if (bit_test(cred->step_core_bitmap, i)) {
 			bit_set(step_core_bitmap, j);
+			step_core_cnt++;
+		}
 	}
+
+	if (cred->job_mem_limit & MEM_PER_CPU) {
+		*job_mem_limit = (cred->job_mem_limit & (~MEM_PER_CPU)) *
+				 job_core_cnt;
+	} else
+		*job_mem_limit = cred->job_mem_limit;
+	if (cred->step_mem_limit & MEM_PER_CPU) {
+		*step_mem_limit = (cred->step_mem_limit & (~MEM_PER_CPU)) *
+				  step_core_cnt;
+	} else if (cred->step_mem_limit)
+		*step_mem_limit = cred->step_mem_limit;
+	else
+		*step_mem_limit = *job_mem_limit;
 
 	*job_alloc_cores  = _core_format(job_core_bitmap);
 	*step_alloc_cores = _core_format(step_core_bitmap);

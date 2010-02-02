@@ -2,7 +2,8 @@
  * src/slurmd/slurmstepd/ulimits.c - set user limits for job
  * $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -17,7 +18,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -85,7 +86,7 @@ int set_user_limits(slurmd_job_t *job)
 
 	/* Set soft and hard memory and data size limit for this process, 
 	 * handle job limit (for all spawned processes) in slurmd */
-	task_mem_bytes  = job->job_mem;	/* MB */
+	task_mem_bytes  = job->step_mem;	/* MB */
 	task_mem_bytes *= (1024 * 1024);
 #ifdef RLIMIT_DATA
 	if ((task_mem_bytes) && (getrlimit(RLIMIT_DATA, &r) == 0) &&
@@ -93,9 +94,10 @@ int set_user_limits(slurmd_job_t *job)
 		r.rlim_max =  r.rlim_cur = task_mem_bytes;
 		if (setrlimit(RLIMIT_DATA, &r)) {
 			/* Indicates that limit has already been exceeded */
-			fatal("setrlimit(RLIMIT_DATA, %u MB): %m",job->job_mem);
+			fatal("setrlimit(RLIMIT_DATA, %u MB): %m",
+			      job->step_mem);
 		} else
-			info("Set task_data(%u MB)", job->job_mem);
+			info("Set task_data(%u MB)", job->step_mem);
 #if 0
 		getrlimit(RLIMIT_DATA, &r);
 		info("task DATA limits: %u %u", r.rlim_cur, r.rlim_max);

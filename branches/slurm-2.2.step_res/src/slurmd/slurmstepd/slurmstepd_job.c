@@ -210,10 +210,6 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->jobid	= msg->job_id;
 	job->stepid	= msg->job_step_id;
 
-	job->job_mem	= msg->job_mem;
-	if (job->job_mem)
-		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
-
 	job->uid	= (uid_t) msg->uid;
 	job->gid	= (gid_t) msg->gid;
 	job->cwd	= xstrdup(msg->cwd);
@@ -290,7 +286,10 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->open_mode   = msg->open_mode;
 	job->options     = msg->options;
 	format_core_allocs(msg->cred, conf->node_name, 
-			   &job->job_alloc_cores, &job->step_alloc_cores);
+			   &job->job_alloc_cores, &job->step_alloc_cores,
+			   &job->job_mem, &job->step_mem);
+	if (job->job_mem)
+		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
 
 	list_append(job->sruns, (void *) srun);
 
@@ -355,10 +354,6 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->step_id;
 
-	job->job_mem = msg->job_mem;
-	if (job->job_mem)
-		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
-
 	job->batch   = true;
 	if (msg->acctg_freq != (uint16_t) NO_VAL)
 		jobacct_gather_g_change_poll(msg->acctg_freq);
@@ -394,7 +389,10 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 
 	job->cpus_per_task = msg->cpus_per_node[0];
 	format_core_allocs(msg->cred, conf->node_name, 
-			   &job->job_alloc_cores, &job->step_alloc_cores);
+			   &job->job_alloc_cores, &job->step_alloc_cores,
+			   &job->job_mem, &job->step_mem);
+	if (job->job_mem)
+		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
 
 	srun = srun_info_create(NULL, NULL, NULL);
 

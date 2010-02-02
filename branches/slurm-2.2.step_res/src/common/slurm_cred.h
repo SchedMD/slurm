@@ -305,12 +305,14 @@ int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
 
 /*
  * Retrieve the set of cores that were allocated to the job and step then 
- * format them in the List Format (e.g., "0-2,7,12-14").
+ * format them in the List Format (e.g., "0-2,7,12-14"). Also return
+ * job and step's memory limit.
  *
  * NOTE: caller must xfree the returned strings.
  */
 void format_core_allocs(slurm_cred_t *cred, char *node_name,
-			 char **job_alloc_cores, char **step_alloc_cores);
+			 char **job_alloc_cores, char **step_alloc_cores,
+			 uint32_t *job_mem_limit, uint32_t *step_mem_limit);
 
 /*
  * Print a slurm job credential using the info() call
