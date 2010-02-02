@@ -429,6 +429,9 @@ install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/fed
 %if %{slurm_with bluegene}
 rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
+mkdir -p ${RPM_BUILD_ROOT}/etc/ld.so.conf.d
+echo "%{_libdir}/slurm" > ${RPM_BUILD_ROOT}/etc/ld.so.conf.d/slurm.conf
+chmod 644 ${RPM_BUILD_ROOT}/etc/ld.so.conf.d/slurm.conf
 %endif
 
 LIST=./aix.files
@@ -540,6 +543,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_libdir}/slurm/select_bluegene.so
 %{_libdir}/slurm/libsched_if64.so
+%dir /etc/ld.so.conf.d
+/etc/ld.so.conf.d/slurm.conf
 %{_mandir}/man5/bluegene.*
 %{_sbindir}/slurm_epilog
 %{_sbindir}/slurm_prolog
