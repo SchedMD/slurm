@@ -46,7 +46,7 @@ main (int argc, char *argv[])
 	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. contiguous = 1; 
 	job_mesg. name = ("job01");
-	job_mesg. job_min_procs = 1;
+	job_mesg. num_procs = 1;
 	job_mesg. job_min_memory = 100;
 	job_mesg. job_min_tmp_disk = 200;
 	job_mesg. priority = 100;
@@ -55,9 +55,9 @@ main (int argc, char *argv[])
 	job_mesg. min_nodes = 1;
 	job_mesg. user_id = getuid();
 	job_mesg. script = "#!/bin/csh\n/bin/hostname\n";
-	job_mesg. err = "/tmp/slurm.stderr";
-	job_mesg. in = "/tmp/slurm.stdin";
-	job_mesg. out = "/tmp/slurm.stdout";
+	job_mesg. std_err = "/tmp/slurm.stderr";
+	job_mesg. std_in = "/tmp/slurm.stdin";
+	job_mesg. std_out = "/tmp/slurm.stdout";
 	job_mesg. work_dir = "/tmp\0";
 	job_mesg. env_size = 2;
 	env[0] = "SLURM_ENV_0=looking_good";
@@ -83,7 +83,7 @@ main (int argc, char *argv[])
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. contiguous = 1; 
 		job_mesg. name = ("job02+");
-		job_mesg. job_min_procs = 1;
+		job_mesg. num_procs = 1;
 		job_mesg. job_min_memory = 100 + i;
 		job_mesg. job_min_tmp_disk = 200 + i;
 		job_mesg. priority = 100 + i;
