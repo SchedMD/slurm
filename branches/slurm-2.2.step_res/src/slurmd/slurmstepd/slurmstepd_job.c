@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -289,7 +289,8 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->pty         = msg->pty;
 	job->open_mode   = msg->open_mode;
 	job->options     = msg->options;
-	job->alloc_cores = format_core_allocs(msg->cred, conf->node_name);
+	format_core_allocs(msg->cred, conf->node_name, 
+			   &job->job_alloc_cores, &job->step_alloc_cores);
 
 	list_append(job->sruns, (void *) srun);
 
@@ -392,7 +393,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->restart_cnt = msg->restart_cnt;
 
 	job->cpus_per_task = msg->cpus_per_node[0];
-	job->alloc_cores = format_core_allocs(msg->cred, conf->node_name);
+	format_core_allocs(msg->cred, conf->node_name, 
+			   &job->job_alloc_cores, &job->step_alloc_cores);
 
 	srun = srun_info_create(NULL, NULL, NULL);
 
@@ -534,7 +536,8 @@ job_destroy(slurmd_job_t *job)
 	xfree(job->node_name);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
-	xfree(job->alloc_cores);
+	xfree(job->job_alloc_cores);
+	xfree(job->step_alloc_cores);
 	xfree(job);
 }
 

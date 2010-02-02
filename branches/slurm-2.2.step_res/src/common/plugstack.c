@@ -1769,7 +1769,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		break;
 	case S_JOB_ALLOC_CORES:
 		p2str = va_arg(vargs, char **);
-		*p2str = slurmd_job->alloc_cores;
+		*p2str = slurmd_job->job_alloc_cores;
 		break;
 	case S_JOB_ALLOC_MEM:
 		p2uint32 = va_arg(vargs, uint32_t *);
@@ -1778,7 +1778,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_STEP_ALLOC_CORES:
 		/* Under development */
 		p2str = va_arg(vargs, char **);
-		*p2str = slurmd_job->alloc_cores;
+		*p2str = slurmd_job->step_alloc_cores;
 		break;
 	case S_STEP_ALLOC_MEM:
 		/* Under development */

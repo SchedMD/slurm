@@ -1141,14 +1141,38 @@ slurm_cred_get_signature(slurm_cred_t *cred, char **datap, uint32_t *datalen)
 	return SLURM_SUCCESS;
 }
 
-char*
-format_core_allocs(slurm_cred_t *cred, char *node_name)
+/* Convert bitmap to string representation with brackets removed */
+static char *_core_format(bitstr_t core_bitmap)
 {
+	char str[1024], *bracket_ptr;
+
+	bit_fmt(str, sizeof(str), core_bitmap);
+	if (str[0] != '[')
+		return xstrdup(str);
+
+	/* strip off brackets */
+	bracket_ptr = strchr(str, ']');
+	if (bracket_ptr)
+		bracket_ptr[0] = '\0';
+	return xstrdup(str+1);
+}
+
+/*
+ * Retrieve the set of cores that were allocated to the job and step then 
+ * format them in the List Format (e.g., "0-2,7,12-14").
+ *
+ * NOTE: caller must xfree the returned strings.
+ */
+void format_core_allocs(slurm_cred_t *cred, char *node_name,
+			 char **job_alloc_cores, char **step_alloc_cores)
+{
+	xassert(job_alloc_cores);
+	xassert(step_alloc_cores);
 #ifdef HAVE_BG
-	return NULL;
+	*job_alloc_cores  = NULL;
+	*step_alloc_cores = NULL;
 #else
-	bitstr_t	*core_bitmap;
-	char		str[1024], *bracket_ptr;
+	bitstr_t	*job_core_bitmap, *step_core_bitmap;
 	hostset_t	hset = NULL;
 	int		host_index = -1;
 	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
@@ -1184,29 +1208,31 @@ format_core_allocs(slurm_cred_t *cred, char *node_name)
 		}
 	}
 
-	core_bitmap = bit_alloc(i_last_bit - i_first_bit);
-	if (core_bitmap == NULL) {
+	job_core_bitmap = bit_alloc(i_last_bit - i_first_bit);
+	if (job_core_bitmap == NULL) {
 		error("bit_alloc malloc failure");
+		hostset_destroy(hset);
+		return NULL;
+	}
+	step_core_bitmap = bit_alloc(i_last_bit - i_first_bit);
+	if (step_core_bitmap == NULL) {
+		error("bit_alloc malloc failure");
+		bit_free(job_core_bitmap);
 		hostset_destroy(hset);
 		return NULL;
 	}
 	for (i = i_first_bit, j = 0; i < i_last_bit; i++, j++) {
 		if (bit_test(cred->job_core_bitmap, i))
-			bit_set(core_bitmap, j);
+			bit_set(job_core_bitmap, j);
+		if (bit_test(cred->step_core_bitmap, i))
+			bit_set(step_core_bitmap, j);
 	}
 
-	bit_fmt(str, sizeof(str), core_bitmap);
-	bit_free(core_bitmap);
+	*job_alloc_cores  = _core_format(job_core_bitmap);
+	*step_alloc_cores = _core_format(step_core_bitmap);
+	bit_free(job_core_bitmap);
+	bit_free(step_core_bitmap);
 	hostset_destroy(hset);
-
-	if (str[0] != '[')
-		return xstrdup(str);
-
-	/* strip off brackets */
-	bracket_ptr = strchr(str, ']');
-	if (bracket_ptr)
-		bracket_ptr[0] = '\0';
-	return xstrdup(str+1);
 #endif
 }
 
