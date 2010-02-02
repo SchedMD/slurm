@@ -1,0 +1,518 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">SLURM Switch Plugin API</a></h1>
+
+<h2> Overview</h2>
+<p> This document describes SLURM switch (interconnect) plugins and the API that defines
+them. It is intended as a resource to programmers wishing to write their own SLURM
+switch plugins. This is version 0 of the API.
+Note that many of the API functions are used only by one of the daemons. For
+example the slurmctld daemon builds a job step's switch credential
+(<span class="commandline">switch_p_build_jobinfo</span>) while the
+slurmd daemon enables and disables that credential for the job step's
+tasks on a particular node(<span class="commandline">switch_p_job_init</span>,
+etc.). </p>
+
+<p>SLURM switch plugins are SLURM plugins that implement the SLURM switch or interconnect
+API described herein. They must conform to the SLURM Plugin API with the following
+specifications:</p>
+<p><span class="commandline">const char plugin_type[]</span><br>
+The major type must be &quot;switch.&quot; The minor type can be any recognizable
+abbreviation for the type of switch. We recommend, for example:</p>
+<ul>
+<li><b>none</b>&#151;A plugin that implements the API without providing any actual
+switch service. This is the case for Ethernet and Myrinet interconnects.</li>
+<li><b>elan</b>&#151;<a href="http://www.quadrics.com/">Quadrics</a>  Elan3 or Elan4
+interconnect.</li>
+<li><b>federation</b>&#151;IBM Federation interconnects (presently under development).</li>
+</ul>
+<p>The <span class="commandline">plugin_name</span> and
+<span class="commandline">plugin_version</span>
+symbols required by the SLURM Plugin API require no specialization for switch support.
+Note carefully, however, the versioning discussion below.</p>
+<p>The programmer is urged to study
+<span class="commandline">src/plugins/switch/switch_elan.c</span> and
+<span class="commandline">src/plugins/switch/switch_none.c</span>
+for sample implementations of a SLURM switch plugin.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Data Objects</h2>
+<p> The implementation must support two opaque data classes.
+One is used as an job's switch &quot;credential.&quot;
+This class must encapsulate all job-specific information necessary
+for the operation of the API specification below.
+The second is a node's switch state record.
+Both data classes are referred to in SLURM code using an anonymous
+pointer (void *).</p>
+
+<p>The implementation must maintain (though not necessarily directly export) an
+enumerated <span class="commandline">errno</span>  to allow SLURM to discover
+as practically as possible the reason for any failed API call. Plugin-specific enumerated
+integer values should be used when appropriate. It is desirable that these values
+be mapped into the range ESLURM_SWITCH_MIN and ESLURM_SWITCH_MAX
+as defined in <span class="commandline">slurm/slurm_errno.h</span>.
+The error number should be returned by the function
+<a href="#get_errno"><span class="commandline">switch_p_get_errno()</span></a>
+and this error number can be converted to an appropriate string description using the
+<a href="#strerror"><span class="commandline">switch_p_strerror()</span></a>
+function described below.</p>
+
+<p>These values must not be used as return values in integer-valued functions
+in the API. The proper error return value from integer-valued functions is SLURM_ERROR.
+The implementation should endeavor to provide useful and pertinent information by
+whatever means is practical. In some cases this means an errno for each credential,
+since plugins must be re-entrant. If a plugin maintains a global errno in place of or in
+addition to a per-credential errno, it is not required to enforce mutual exclusion on it.
+Successful API calls are not required to reset any errno to a known value. However,
+the initial value of any errno, prior to any error condition arising, should be
+SLURM_SUCCESS. </p>
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>API Functions</h2>
+<p>The following functions must appear. Functions which are not implemented should
+be stubbed.</p>
+
+<h3>Global Switch State Functions</h3>
+<p class="commandline">int switch_p_libstate_save (char *dir_name);</p>
+<p style="margin-left:.2in"><b>Description</b>: Save any global switch state to a file
+within the specified directory. The actual file name used is plugin specific. It is recommended
+that the global switch state contain a magic number for validation purposes. This function
+is called by the slurmctld deamon on shutdown. Note that if the slurmctld daemon fails,
+this function will not be called. The plugin may save state independently and/or make
+use of the switch_p_job_step_allocated function to restore state.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> dir_name</span>&nbsp;
+&nbsp;&nbsp;(input) fully-qualified pathname of a directory into which user SlurmUser (as defined
+in slurm.conf) can create a file and write state information into that file. Cannot be NULL.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_libstate_restore(char *dir_name, bool recover);</p>
+<p style="margin-left:.2in"><b>Description</b>: Restore any global switch state from a file
+within the specified directory. The actual file name used is plugin specific. It is recommended
+that any magic number associated with the global switch state be verified. This function
+is called by the slurmctld deamon on startup.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> dir_name</span>&nbsp;
+&nbsp;&nbsp;(input) fully-qualified pathname of a directory containing a state information file
+from which user SlurmUser (as defined in slurm.conf) can read. Cannot be NULL.<br>
+<span class="commandline"><span class="commandline"> recover</span>&nbsp;
+true of restart with state preserved, false if no state recovery. </p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_libstate_clear (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Clear switch state information.
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h3>Node's Switch State Monitoring Functions</h3>
+
+<p>Nodes will register with current switch state information when the slurmd daemon
+is initiated. The slurmctld daemon will also request that slurmd supply current
+switch state information on a periodic basis.</p>
+
+<p class="commandline">int switch_p_clear_node_state (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Initialize node state.
+If any switch state has previously been established for a job, it will be cleared.
+This will be used to establish a "clean" state for the switch on the node upon
+which it is executed.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_alloc_node_info(switch_node_info_t *switch_node);</p>
+<p style="margin-left:.2in"><b>Description</b>: Allocate storage for a node's switch
+state record. It is recommended that the record contain a magic number for validation
+purposes.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> switch_node</span>&nbsp;
+&nbsp;&nbsp;(output) location for writing location of node's switch state record.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_build_node_info(switch_node_info_t switch_node);</p>
+<p style="margin-left:.2in"><b>Description</b>: Fill in a previously allocated switch state
+record for the node on which this function is executed.
+It is recommended that the magic number be validated.
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_pack_node_info (switch_node_info_t switch_node,
+Buf buffer);</p>
+<p style="margin-left:.2in"><b>Description</b>: Pack the data associated with a
+node's switch state into a buffer for network transmission.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_node</span>&nbsp; &nbsp;&nbsp;(input) an existing
+node's switch state record.<br>
+<span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) buffer onto
+which the switch state information is appended.</p>
+<p style="margin-left:.2in"><b>Returns</b>:
+The number of bytes written should be returned if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_unpack_node_info (switch_node_info_t switch_node,
+Buf buffer);</p>
+<p style="margin-left:.2in"><b>Description</b>: Unpack the data associated with a
+node's switch state record from a buffer.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_node</span>&nbsp; &nbsp;&nbsp;(input/output) a
+previously allocated node switch state record to be filled in with data read from
+the buffer.<br>
+<span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) buffer from
+which the record's contents are read.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">void switch_p_free_node_info (switch_node_info_t switch_node);</p>
+<p style="margin-left:.2in"><b>Description</b>: Release the storage associated with
+a node's switch state record.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> switch_node</span>&nbsp;
+&nbsp;&nbsp;(intput/output) a previously allocated node switch state record.</p>
+<p style="margin-left:.2in"><b>Returns</b>: None</p>
+
+<p class="commandline">char * switch_p_sprintf_node_info (switch_node_info_t switch_node,
+char *buf, size_t size);</p>
+<p style="margin-left:.2in"><b>Description</b>: Print the contents of a node's switch state
+record to a buffer.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_node</span>&nbsp; &nbsp;&nbsp;(input) a
+node's switch state record.<br>
+<span class="commandline"> buf</span>&nbsp; &nbsp;&nbsp;(input/output) point to
+buffer into which the switch state record is to be written.<br>
+of buf in bytes.<br>
+<span class="commandline"> size</span>&nbsp; &nbsp;&nbsp;(input) size
+of buf in bytes.</p>
+<p style="margin-left:.2in"><b>Returns</b>: Location of buffer, same as <i>buf</i>.</p>
+
+<h3>Job's Switch Credential Management Functions</h3>
+<p class="commandline">int switch_p_alloc_jobinfo(switch_jobinfo_t *switch_job);</p>
+<p style="margin-left:.2in"><b>Description</b>: Allocate storage for a job's switch credential.
+It is recommended that the credential contain a magic number for validation purposes.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> switch_job</span>&nbsp;
+&nbsp;&nbsp;(output) location for writing location of job's switch credential.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_build_jobinfo (switch_jobinfo_t switch_job,
+char *nodelist, int *tasks_per_node, int cyclic_alloc, char *network);</p>
+<p style="margin-left:.2in"><b>Description</b>: Build a job's switch credential.
+It is recommended that the credential's magic number be validated.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">switch_job</span>&nbsp; &nbsp;&nbsp;(input/output) Job's
+switch credential to be updated<br>
+<span class="commandline">nodelist</span>&nbsp;&nbsp;&nbsp; (input) List of nodes
+allocated to the job. This may contain expressions to specify node ranges (e.g.
+"linux[1-20]" or "linux[2,4,6,8]").<br>
+<span class="commandline">tasks_per_node</span>&nbsp;&nbsp;&nbsp; (input) List
+of processes per node to be initiated as part of the job.<br>
+<span class="commandline">cyclic_alloc</span>&nbsp;&nbsp;&nbsp; (input) Non-zero
+if job's processes are to be allocated across nodes in a cyclic fashion (task 0 on node 0,
+task 1 on node 1, etc). If zero, processes are allocated sequentially on a node before
+moving to the next node (tasks 0 and 1 on node 0, tasks 2 and 3 on node 1, etc.).<br>
+<span class="commandline">network</span>&nbsp;&nbsp;&nbsp; (input) Job's network
+specification from srun command. </p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">switch_jobinfo_t switch_p_copy_jobinfo  (switch_jobinfo_t switch_job);</p>
+<p style="margin-left:.2in"><b>Description</b>: Allocate storage for a job's switch credential
+and copy an existing credential to that location.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> switch_job</span>&nbsp;
+&nbsp;&nbsp;(input) an existing job switch credential.</p>
+<p style="margin-left:.2in"><b>Returns</b>: A newly allocated job switch credential containing a
+copy of the function argument.</p>
+
+<p class="commandline">void switch_p_free_jobinfo (switch_jobinfo_t switch_job);</p>
+<p style="margin-left:.2in"><b>Description</b>: Release the storage associated with a job's
+ switch credential.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> switch_job</span>&nbsp;
+&nbsp;&nbsp;(intput) an existing job switch credential.</p>
+<p style="margin-left:.2in"><b>Returns</b>: None</p>
+
+<p class="commandline">int switch_p_pack_jobinfo (switch_jobinfo_t switch_job, Buf buffer);</p>
+<p style="margin-left:.2in"><b>Description</b>: Pack the data associated with a job's
+switch credential into a buffer for network transmission.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) an existing job
+switch credential.<br>
+<span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) buffer onto
+which the credential's contents are appended.</p>
+<p style="margin-left:.2in"><b>Returns</b>:
+The number of bytes written should be returned if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_unpack_jobinfo (switch_jobinfo_t switch_job, Buf buffer);</p>
+<p style="margin-left:.2in"><b>Description</b>: Unpack the data associated with a job's
+switch credential from a buffer.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input/output) a previously
+allocated job switch credential to be filled in with data read from the buffer.<br>
+<span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) buffer from
+which the credential's contents are read.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_get_jobinfo (switch_jobinfo_t switch_job, int data_type, void *data);</p>
+<p style="margin-left:.2in"><b>Description</b>: Get some specific data from a job's switch credential.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's switch credential.<br>
+<span class="commandline"> data_type</span>&nbsp; &nbsp;&nbsp;(input) identification
+as to the type of data requested. The interpretation of this value is plugin dependent.<br>
+<span class="commandline"> data</span>&nbsp; &nbsp;&nbsp;(output) filled in with the desired
+data. The form of this data is dependent upon the value of data_type and the plugin.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_job_step_complete (switch_jobinfo_t switch_job,
+char *nodelist);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note that the job step associated
+with the specified nodelist has completed execution.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span> &nbsp;&nbsp;&nbsp;(input)
+The completed job's switch credential.<br>
+<span class="commandline"> nodelist</span>&nbsp; &nbsp;&nbsp;(input) A list of nodes
+on which the job has completed. This may contain expressions to specify node ranges.
+(e.g. "linux[1-20]" or "linux[2,4,6,8]").</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_job_step_part_comp (switch_jobinfo_t switch_job,
+char *nodelist);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note that the job step has completed
+execution on the specified node list. The job step is not necessarily completed on all
+nodes, but switch resources associated with it on the specified nodes are no longer
+in use.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span> &nbsp;&nbsp;&nbsp;(input)
+The completed job's switch credential.<br>
+<span class="commandline"> nodelist</span>&nbsp; &nbsp;&nbsp;(input) A list of nodes
+on which the job step has completed. This may contain expressions to specify node ranges.
+(e.g. "linux[1-20]" or "linux[2,4,6,8]").</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">bool switch_p_part_comp (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Indicate if the switch plugin should
+process partial job step completions (i.e. switch_g_job_step_part_comp). Support
+of partition completions is compute intensive, so it should be avoided unless switch
+resources are in short supply (e.g. switch/federation).</p>
+<p style="margin-left:.2in"><b>Returns</b>: True if partition step completions are
+to be recorded. False if only full job step completions are to be noted.</p>
+
+<p class="commandline">void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t switch_job);</p>
+<p style="margin-left:.2in"><b>Description</b>: Print the contents of a job's
+switch credential to a file.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> fp</span>&nbsp; &nbsp;&nbsp;(input) pointer to an open file.<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.</p>
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+
+<p class="commandline">char *switch_p_sprint_jobinfo(switch_jobinfo_t switch_job,
+char *buf, size_t size);</p>
+<p style="margin-left:.2in"><b>Description</b>: Print the contents of a job's
+switch credential to a buffer.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.<br>
+<span class="commandline"> buf</span>&nbsp; &nbsp;&nbsp;(input/output) pointer to
+buffer into which the job credential information is to be written.<br>
+<span class="commandline"> size</span>&nbsp; &nbsp;&nbsp;(input) size of buf in
+bytes</p>
+<p style="margin-left:.2in"><b>Returns</b>: location of buffer, same as <i>buf</i>.</p>
+
+<p class="commandline">int switch_p_get_data_jobinfo(switch_jobinfo_t switch_job,
+int key, void *resulting_data);</p>
+<p style="margin-left:.2in"><b>Description</b>: Get data from a job's
+switch credential.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.<br>
+<span class="commandline"> key</span>&nbsp; &nbsp;&nbsp;(input) identification
+of the type of data to be retrieved from the switch credential. NOTE: The
+interpretation of this key is dependent upon the switch type. <br>
+<span class="commandline"> resulting_data</span>&nbsp; &nbsp;&nbsp;(input/output)
+pointer to where the requested data should be stored. </p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h3>Node Specific Switch Management Functions</h3>
+<p class="commandline">int switch_p_node_init (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: This function is run from the top level slurmd
+only once per slurmd run. It may be used, for instance, to perform some one-time
+interconnect setup or spawn an error handling thread.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> None</span></p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_node_fini (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: This function is called once as slurmd exits
+(slurmd will wait for this function to return before continuing the exit process).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> None</span></p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<h3>Job Management Functions</h3>
+<pre>
+=========================================================================
+Process 1 (root)        Process 2 (root, user)  |  Process 3 (user task)
+                                                |
+switch_p_job_preinit                            |
+fork ------------------ switch_p_job_init       |
+waitpid                 setuid, chdir, etc.     |
+                        fork N procs -----------+--- switch_p_job_attach
+                        wait all                |    exec mpi process
+                        switch_p_job_fini*      |
+switch_p_job_postfini                           |
+=========================================================================
+</pre>
+
+<p class="commandline">int switch_p_job_preinit (switch_jobinfo_t jobinfo switch_job);</p>
+<p style="margin-left:.2in"><b>Description</b>: Preinit is run as root in the first slurmd process,
+the so called job manager. This function can be used to perform any initialization
+that needs to be performed in the same process as switch_p_job_fini().</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_job_init (switch_jobinfo_t jobinfo switch_job, uid_t uid);</p>
+<p style="margin-left:.2in"><b>Description</b>: Initialize interconnect on node for a job.
+This function is run from the second slurmd process (some interconnect implementations
+may require the switch_p_job_init functions to be executed from a separate process
+than the process executing switch_p_job_fini() [e.g. Quadrics Elan]).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.<br>
+<span class="commandline"> uid</span>&nbsp; &nbsp;&nbsp;(input) the user id
+to execute a job.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_job_attach ( switch_jobinfo_t switch_job, char ***env,
+uint32_t nodeid, uint32_t procid, uint32_t nnodes, uint32_t nprocs, uint32_t rank );</p>
+<p style="margin-left:.2in"><b>Description</b>: Attach process to interconnect
+(Called from within the process, so it is appropriate to set interconnect specific
+environment variables here).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.<br>
+<span class="commandline"> env</span>&nbsp; &nbsp;&nbsp;(input/output) the
+environment variables to be set upon job initiation. Switch specific environment
+variables are added as needed.<br>
+<span class="commandline"> nodeid</span>&nbsp; &nbsp;&nbsp;(input) zero-origin
+id of this node.<br>
+<span class="commandline"> procid</span>&nbsp; &nbsp;&nbsp;(input) zero-origin
+process id local to slurmd and <b>not</b> equivalent to the global task id or MPI rank.<br>
+<span class="commandline"> nnodes</span>&nbsp; &nbsp;&nbsp;(input) count of
+nodes allocated to this job.<br>
+<span class="commandline"> nprocs</span>&nbsp; &nbsp;&nbsp;(input) total count of
+processes or tasks to be initiated for this job.<br>
+<span class="commandline"> rank</span>&nbsp; &nbsp;&nbsp;(input) zero-origin
+id of this task.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_job_fini (switch_jobinfo_t jobinfo switch_job);</p>
+<p style="margin-left:.2in"><b>Description</b>: This function is run from the same process
+as switch_p_job_init() after all job tasks have exited. It is *not* run as root, because
+the process in question has already setuid to the job owner.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_job_postfini ( switch_jobinfo_t switch_job,
+uid_t pgid, uint32_t job_id, uint32_t step_id );</p>
+<p style="margin-left:.2in"><b>Description</b>: This function is run from the initial slurmd
+process (same process as switch_p_job_preinit()), and is run as root. Any cleanup routines
+that need to be run with root privileges should be run from this function.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.<br>
+<span class="commandline"> pgid</span>&nbsp; &nbsp;&nbsp;(input) The process
+group id associated with this task.<br>
+<span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input) the
+associated SLURM job id.<br>
+<span class="commandline"> step_id</span>&nbsp; &nbsp;&nbsp;(input) the
+associated SLURM job step id.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int switch_p_job_step_allocated (switch_jobinfo_t
+jobinfo switch_job, char *nodelist);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note that the identified
+job step is active at restart time. This function can be used to
+restore global switch state information based upon job steps known to be
+active at restart time. Use of this function is preferred over switch state
+saved and restored by the switch plugin. Direct use of job step switch
+information eliminates the possibility of inconsistent state information
+between the switch and job steps.
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.<br>
+<span class="commandline"> nodelist</span>&nbsp; &nbsp;&nbsp;(input) the nodes
+allocated to a job step.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<h3>Error Handling Functions</h3>
+<a name="get_errno"><p class="commandline">int switch_p_get_errno (void);</p></a>
+<p style="margin-left:.2in"><b>Description</b>: Return the number of a switch
+specific error.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None</p>
+<p style="margin-left:.2in"><b>Returns</b>: Error number for the last failure encountered by
+the switch plugin.</p>
+
+<p class="commandline"><a name="strerror">char *switch_p_strerror(int errnum);</a></p>
+<p style="margin-left:.2in"><b>Description</b>: Return a string description of a switch
+specific error code.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> errnum</span>&nbsp; &nbsp;&nbsp;(input) a switch
+specific error code.</p>
+<p style="margin-left:.2in"><b>Returns</b>: Pointer to string describing the error
+or NULL if no description found in this plugin.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Versioning</h2>
+<p> This document describes version 0 of the SLURM Switch API. Future
+releases of SLURM may revise this API. A switch plugin conveys its ability
+to implement a particular API version using the mechanism outlined for SLURM plugins.
+In addition, the credential is transmitted along with the version number of the
+plugin that transmitted it. It is at the discretion of the plugin author whether
+to maintain data format compatibility across different versions of the plugin.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 5 September 2008</p>
+
+<!--#include virtual="footer.txt"-->
