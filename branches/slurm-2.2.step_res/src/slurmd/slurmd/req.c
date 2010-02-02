@@ -689,7 +689,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	if (!verified) {
 		*step_hset = NULL;
 		if (rc >= 0) {
-			if ((hset = hostset_create(arg.hostlist)))
+			if ((hset = hostset_create(arg.step_hostlist)))
 				*step_hset = hset;
 			slurm_cred_free_args(&arg);
 		}
@@ -711,9 +711,9 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	/*
 	 * Check that credential is valid for this host
 	 */
-	if (!(hset = hostset_create(arg.hostlist))) {
+	if (!(hset = hostset_create(arg.step_hostlist))) {
 		error("Unable to parse credential hostlist: `%s'",
-		      arg.hostlist);
+		      arg.step_hostlist);
 		goto fail;
 	}
 
@@ -721,7 +721,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		error("Invalid job %u.%u credential for user %u: "
 		      "host %s not in hostset %s",
 		      arg.jobid, arg.stepid, arg.uid,
-		      conf->node_name, arg.hostlist);
+		      conf->node_name, arg.step_hostlist);
 		goto fail;
 	}
 
@@ -752,7 +752,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		}
 		/* Now count the allocated processors */
 		for (i = i_first_bit; i < i_last_bit; i++) {
-			if (bit_test(arg.core_bitmap, i))
+			if (bit_test(arg.step_core_bitmap, i))
 				alloc_lps++;
 		}
 		if (alloc_lps == 0) {
@@ -765,7 +765,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			debug("cons_res: More than one tasks per logical "
 			      "processor (%d > %u) on host [%u.%u %ld %s] ",
 			      tasks_to_launch, alloc_lps, arg.jobid,
-			      arg.stepid, (long) arg.uid, arg.hostlist);
+			      arg.stepid, (long) arg.uid, arg.step_hostlist);
 		}
 		/* NOTE: alloc_lps is the count of allocated resources
 		 * (typically cores). Convert to CPU count as needed */
@@ -782,11 +782,19 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	/* Overwrite any memory limits in the RPC with contents of the
 	 * memory limit within the credential.
 	 * Reset the CPU count on this node to correct value. */
-	if (arg.job_mem & MEM_PER_CPU) {
-		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
-		req->job_mem *= alloc_lps;
-	} else
-		req->job_mem = arg.job_mem;
+	if (arg.step_mem_limit) {
+		if (arg.step_mem_limit & MEM_PER_CPU) {
+			req->job_mem = arg.step_mem_limit & (~MEM_PER_CPU);
+			req->job_mem *= alloc_lps;
+		} else
+			req->job_mem = arg.step_mem_limit;
+	} else {
+		if (arg.job_mem_limit & MEM_PER_CPU) {
+			req->job_mem = arg.job_mem_limit & (~MEM_PER_CPU);
+			req->job_mem *= alloc_lps;
+		} else
+			req->job_mem = arg.job_mem_limit;
+	}
 	req->cpus_allocated[node_id] = alloc_lps;
 #if 0
 	info("%u.%u mem orig:%u cpus:%u limit:%u",
@@ -1016,14 +1024,14 @@ _set_batch_job_limits(slurm_msg_t *msg)
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
 		return;
 
-	if (arg.job_mem & MEM_PER_CPU) {
+	if (arg.job_mem_limit & MEM_PER_CPU) {
 		int i;
 		uint32_t alloc_lps = 0, last_bit = 0;
 		if (arg.job_nhosts > 0) {
 			last_bit = arg.sockets_per_node[0] *
 				   arg.cores_per_socket[0];
 			for (i=0; i<last_bit; i++) {
-				if (bit_test(arg.core_bitmap, i))
+				if (bit_test(arg.job_core_bitmap, i))
 					alloc_lps++;
 			}
 		}
@@ -1042,10 +1050,10 @@ _set_batch_job_limits(slurm_msg_t *msg)
 				alloc_lps *= i;
 		}
 
-		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
+		req->job_mem = arg.job_mem_limit & (~MEM_PER_CPU);
 		req->job_mem *= alloc_lps;
 	} else
-		req->job_mem = arg.job_mem;
+		req->job_mem = arg.job_mem_limit;
 
 	slurm_cred_free_args(&arg);
 }
