@@ -125,7 +125,7 @@ proc get_block_nodes { block } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: smap not responding\n"
+			send_user "\nFAILURE: scontrol not responding\n"
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -158,7 +158,7 @@ proc get_first_node { } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: smap not responding\n"
+			send_user "\nFAILURE: scontrol not responding\n"
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -189,7 +189,7 @@ proc is_block_in_state { block state } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: smap not responding\n"
+			send_user "\nFAILURE: scontrol not responding\n"
 			slow_kill $my_pid
 			set exit_code 1
 		}
@@ -213,7 +213,7 @@ proc check_node { node error_cnt alloc_cnt } {
 	set alloc_procs [expr $alloc_cnt * $procs_per_cnode]
 	set total_procs 0
 	set match 0
-# 	send_user "really looking for $error_procs $alloc_procs\n"
+#	send_user "really looking for $error_procs $alloc_procs\n"
 	send "$scontrol show node $node\r"
 	expect {
 		-nocase -re "CPUAlloc=$alloc_procs" {
@@ -236,7 +236,7 @@ proc check_node { node error_cnt alloc_cnt } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: smap not responding\n"
+			send_user "\nFAILURE: scontrol not responding\n"
 			set exit_code 1
 		}
 		eof {
@@ -246,7 +246,7 @@ proc check_node { node error_cnt alloc_cnt } {
 
 	if {$match != 3} {
 		send_user "\nFAILURE: scontrol didn't give correct cpu counts $match\n"
-		return 1
+		exit 1
 	}
 
 	set total_cnt [expr ($total_procs / $procs_per_cnode) - $alloc_cnt - $error_cnt]
@@ -317,7 +317,7 @@ proc check_node { node error_cnt alloc_cnt } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: smap not responding\n"
+			send_user "\nFAILURE: sinfo not responding\n"
 			set exit_code 1
 		}
 		eof {
@@ -526,6 +526,10 @@ if {$exit_code} {
 if {![string compare $layout "Dynamic"]} {
 	# lets make 1 ionode in an error state
 	set exit_code [change_subbp_state $first_node "0" "error"]
+	# we need to sleep here for a bit, slurm is a bit too fast to always
+	# have the correct answers here.
+	sleep 1
+
 	#allocate something with that node
 	set block [allocate_and_quit $smallest $first_node $error_block 1]
 

@@ -52,6 +52,10 @@ if {[test_aix] == 1} {
 	send_user "WARNING: Test is incompatible with AIX\n"
 	exit 0
 }
+if {[test_bluegene] == 1} {
+	send_user "WARNING: Test is incompatible with Blue Gene\n"
+	exit 0
+}
 
 #
 # Build the plugin
