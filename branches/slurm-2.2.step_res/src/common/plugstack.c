@@ -2,7 +2,7 @@
  *  plugstack.c -- stackable plugin architecture for node job kontrol (SPANK)
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  CODE-OCEC-09-009. All rights reserved.
  *
@@ -896,8 +896,8 @@ _spank_option_register(struct spank_plugin *p, struct spank_option *opt)
 	}
 
 	if ((strlen(opt->name) > SPANK_OPTION_MAXLEN)) {
-		error("spank: option \"%s\" provided by %s too long. Ignoring.",
-			       	opt->name, p->name);
+		error("spank: option \"%s\" provided by %s too long. "
+		      "Ignoring.", opt->name, p->name);
 		return (ESPANK_NOSPACE);
 	}
 
@@ -934,7 +934,8 @@ static int _spank_plugin_options_cache(struct spank_plugin *p)
 	return (0);
 }
 
-static int _add_one_option(struct option **optz, struct spank_plugin_opt *spopt)
+static int _add_one_option(struct option **optz, 
+			   struct spank_plugin_opt *spopt)
 {
 	struct option opt;
 
@@ -1004,9 +1005,7 @@ int spank_process_option(int optval, const char *arg)
 	if (option_cache == NULL || (list_count(option_cache) == 0))
 		return (-1);
 
-	opt =
-	    list_find_first(option_cache, (ListFindF) _opt_by_val,
-			    &optval);
+	opt = list_find_first(option_cache, (ListFindF) _opt_by_val, &optval);
 
 	if (!opt)
 		return (-1);
@@ -1346,8 +1345,10 @@ int spank_get_remote_options_env (char **env)
 		if (!(arg = getenvp (env, _opt_env_name (option, var, sizeof(var)))))
 			continue;
 
-		if (p->cb && (((*p->cb) (p->val, arg, 1)) < 0))
-			error ("spank: failed to process option %s=%s", p->name, arg);
+		if (p->cb && (((*p->cb) (p->val, arg, 1)) < 0)) {
+			error ("spank: failed to process option %s=%s", 
+			       p->name, arg);
+		}
 
 		/*
 		 *  Now remove the environment variable.
@@ -1771,6 +1772,16 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		*p2str = slurmd_job->alloc_cores;
 		break;
 	case S_JOB_ALLOC_MEM:
+		p2uint32 = va_arg(vargs, uint32_t *);
+		*p2uint32 = slurmd_job->job_mem;
+		break;
+	case S_STEP_ALLOC_CORES:
+		/* Under development */
+		p2str = va_arg(vargs, char **);
+		*p2str = slurmd_job->alloc_cores;
+		break;
+	case S_STEP_ALLOC_MEM:
+		/* Under development */
 		p2uint32 = va_arg(vargs, uint32_t *);
 		*p2uint32 = slurmd_job->job_mem;
 		break;

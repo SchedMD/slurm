@@ -26,6 +26,9 @@ documents those changes that are of interest to users and admins.
     logging of "access granted for user ...", access denied and other errors
     will still be logged.
  -- sinfo -R now has the user and timestamp in separate fields from the reason.
+ -- Add support for spank_get_item() to get S_STEP_ALLOC_CORES and 
+    S_STEP_ALLOC_MEM. Support will remain for S_JOB_ALLOC_CORES and 
+    S_JOB_ALLOC_MEM.
 
 * Changes in SLURM 2.1.2
 =============================
