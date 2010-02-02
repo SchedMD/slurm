@@ -28,6 +28,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fixed wiki2 plugin to report correct task count for pending jobs.
  -- BLUEGENE - Added /etc/ld.so.conf.d/slurm.conf to point to the
     directory holding libsched_if64.so when building rpms.
+ -- Adjust get_wckeys call in slurmdbd to allow operators to list wckeys.
 
 * Changes in SLURM 2.1.1
 =============================

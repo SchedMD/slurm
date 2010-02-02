@@ -1548,7 +1548,7 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 
 	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
 	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
-	   < ACCT_ADMIN_SUPER_USER) {
+	   < ACCT_ADMIN_OPERATOR) {
 		comment = "Your user doesn't have privilege to preform this action";
 		error("%s", comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
