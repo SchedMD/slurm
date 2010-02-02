@@ -2,7 +2,7 @@
  *  src/slurmd/slurmd/req.c - slurmd request handling
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -697,7 +697,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	}
 
 	if ((arg.jobid != jobid) || (arg.stepid != stepid)) {
-		error("job credential for %u.%u  expected %u.%u",
+		error("job credential for %u.%u, expected %u.%u",
 		      arg.jobid, arg.stepid, jobid, stepid);
 		goto fail;
 	}
@@ -726,24 +726,44 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	}
 
 	if ((arg.job_nhosts > 0) && (tasks_to_launch > 0)) {
-		uint32_t i, i_first_bit=0, i_last_bit=0;
+		uint32_t hi, i, i_first_bit=0, i_last_bit=0, j;
+		bool cpu_log = slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND;
 		host_index = hostset_find(hset, conf->node_name);
 		if ((host_index < 0) || (host_index >= arg.job_nhosts)) {
 			error("job cr credential invalid host_index %d for "
 			      "job %u", host_index, arg.jobid);
 			goto fail;
 		}
-		host_index++;	/* change from 0-origin to 1-origin */
-		for (i=0; host_index; i++) {
-			if (host_index > arg.sock_core_rep_count[i]) {
+
+		if (cpu_log) {
+			char *per_job = "", *per_step = "";
+			uint32_t job_mem  = arg.job_mem_limit;
+			uint32_t step_mem = arg.step_mem_limit;
+			if (job_mem & MEM_PER_CPU) {
+				job_mem &= (~MEM_PER_CPU);
+				per_job = "_per_CPU";
+			}
+			if (step_mem & MEM_PER_CPU) {
+				step_mem &= (~MEM_PER_CPU);
+				per_step = "_per_CPU";
+			}
+			info("====================");
+			info("step_id:%u.%u job_mem:%uMB%s step_mem:%uMB%s",
+			     arg.jobid, arg.stepid, job_mem, per_job, 
+			     step_mem, per_step);
+		}
+
+		hi = host_index + 1;	/* change from 0-origin to 1-origin */
+		for (i=0; hi; i++) {
+			if (hi > arg.sock_core_rep_count[i]) {
 				i_first_bit += arg.sockets_per_node[i] *
 					       arg.cores_per_socket[i] *
 					       arg.sock_core_rep_count[i];
-				host_index -= arg.sock_core_rep_count[i];
+				hi -= arg.sock_core_rep_count[i];
 			} else {
 				i_first_bit += arg.sockets_per_node[i] *
 					       arg.cores_per_socket[i] *
-					       (host_index - 1);
+					       (hi - 1);
 				i_last_bit = i_first_bit +
 					     arg.sockets_per_node[i] *
 					     arg.cores_per_socket[i];
@@ -751,10 +771,23 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			}
 		}
 		/* Now count the allocated processors */
-		for (i = i_first_bit; i < i_last_bit; i++) {
-			if (bit_test(arg.step_core_bitmap, i))
-				alloc_lps++;
+		for (i=i_first_bit, j=0; i<i_last_bit; i++, j++) {
+			if (cpu_log) {
+				if (bit_test(arg.step_core_bitmap, i)) {
+					info("JobNode[%u] CPU[%u] Step alloc",
+					     host_index, j);
+					alloc_lps++;
+				} else if (bit_test(arg.job_core_bitmap, i)) {
+					info("JobNode[%u] CPU[%u] Job alloc",
+					     host_index, j);
+				}
+			} else {
+				if (bit_test(arg.step_core_bitmap, i))
+					alloc_lps++;
+			}
 		}
+		if (cpu_log)
+			info("====================");
 		if (alloc_lps == 0) {
 			error("cons_res: zero processors allocated to step");
 			alloc_lps = 1;
@@ -958,16 +991,18 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 		snprintf(path_name, MAXPATHLEN, "/%s", err_name_ptr);
 
 	if ((fd = open(path_name, (O_CREAT|O_APPEND|O_WRONLY), 0644)) == -1) {
-		error("Unable to open %s: %s", path_name, slurm_strerror(errno));
+		error("Unable to open %s: %s", path_name, 
+		      slurm_strerror(errno));
 		return;
 	}
 	snprintf(err_name, 128, "Error running slurm prolog: %d\n",
-		WEXITSTATUS(rc));
+		 WEXITSTATUS(rc));
 	safe_write(fd, err_name, strlen(err_name));
-	if(fchown(fd, (uid_t) req->uid, (gid_t) req->gid) == -1)
+	if (fchown(fd, (uid_t) req->uid, (gid_t) req->gid) == -1) {
 		snprintf(err_name, 128,
 			 "Couldn't change fd owner to %u:%u: %m\n",
 			 req->uid, req->gid);
+	}
 rwfail:
 	close(fd);
 }
