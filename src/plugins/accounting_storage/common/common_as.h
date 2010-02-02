@@ -1,8 +1,10 @@
 /*****************************************************************************\
- *  pgsql_common.h - common functions for the the pgsql storage plugin.
- *****************************************************************************
+ *  common_as.h - header for common functions for accounting storage
  *
+ *  $Id: common_as.c 13061 2008-01-22 21:23:56Z da $
+ *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -34,74 +36,28 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
- *
- *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
- *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
-#ifndef _HAVE_PGSQL_COMMON_H
-#define _HAVE_PGSQL_COMMON_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#ifndef _HAVE_COMMON_AS_H
+#define _HAVE_COMMON_AS_H
 
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
+#include "src/common/assoc_mgr.h"
 
-#include <stdio.h>
-#include <slurm/slurm_errno.h>
-#include "src/slurmctld/slurmctld.h"
-#include "src/common/xstring.h"
-#include <libpq-fe.h>
+extern int send_accounting_update(List update_list, char *cluster, char *host,
+				  uint16_t port, uint16_t rpc_version);
 
-typedef struct {
-	PGconn *db_conn;
-	bool rollback;
-	List update_list;
-	int conn;
-} pgsql_conn_t;
+extern int update_assoc_mgr(List update_list);
 
-typedef struct {
-	uint32_t port;
-	char *host;
-	char *user;
-	char *pass;
-} pgsql_db_info_t;
+extern int addto_update_list(List update_list, acct_update_type_t type,
+			     void *object);
 
-typedef struct {
-	char *name;
-	char *options;
-} storage_field_t;
+extern void dump_update_list(List update_list);
 
-extern pthread_mutex_t pgsql_lock;
+extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version);
 
-extern int *destroy_pgsql_db_info(pgsql_db_info_t *db_info);
+extern int set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
+				 time_t *usage_start, time_t *usage_end);
 
-extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
-				   pgsql_db_info_t *db_info);
+extern void merge_delta_qos_list(List qos_list, List delta_qos_list);
 
-extern int pgsql_close_db_connection(PGconn **pgsql_db);
-
-extern int pgsql_db_query(PGconn *pgsql_db, char *query);
-extern int pgsql_db_start_transaction(PGconn *pgsql_db);
-extern int pgsql_db_commit(PGconn *pgsql_db);
-extern int pgsql_db_rollback(PGconn *pgsql_db);
-
-extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, char *query);
-
-extern int pgsql_insert_ret_id(PGconn *pgsql_db,
-			       char *sequence_name, char *query);
-
-extern int pgsql_query_ret_id(PGconn *pgsql_db, char *query);
-
-extern int pgsql_db_create_table(PGconn *pgsql_db,
-				 char *table_name, storage_field_t *fields,
-				 char *ending);
-
-extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
-				       storage_field_t *fields);
 #endif

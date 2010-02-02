@@ -10552,8 +10552,8 @@ extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
 	}
 
 	if(atoi(row[0]) == cpus) {
-		debug3("we have the same cpu count as before no need to "
-		       "update the database.");
+		debug3("we have the same cpu count as before for %s, "
+		       "no need to update the database.", cluster);
 		if(cluster_nodes) {
 			if(!row[1][0]) {
 				debug("Adding cluster nodes '%s' to "

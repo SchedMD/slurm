@@ -26,6 +26,11 @@ documents those changes that are of interest to users and admins.
     logging of "access granted for user ...", access denied and other errors
     will still be logged.
  -- sinfo -R now has the user and timestamp in separate fields from the reason.
+ -- Much functionality has been added to account_storage/pgsql.  The plugin
+    is still in a very beta state.  It is still highly advised to use the
+    mysql plugin, but if you feel like living on the edge or just really
+    like postgres over mysql for some reason here you go. (Work done
+    primarily by Hongjia Cao, NUDT.)
 
 * Changes in SLURM 2.1.3
 =============================
