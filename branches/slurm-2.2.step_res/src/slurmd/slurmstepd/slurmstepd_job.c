@@ -288,8 +288,13 @@ job_create(launch_tasks_request_msg_t *msg)
 	format_core_allocs(msg->cred, conf->node_name, 
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
-	if (job->job_mem)
-		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
+	if (job->step_mem) {
+		jobacct_common_set_mem_limit(job->jobid, job->stepid, 
+					     job->step_mem);
+	} else if (job->job_mem) {
+		jobacct_common_set_mem_limit(job->jobid, job->stepid, 
+					     job->job_mem);
+	}
 
 	list_append(job->sruns, (void *) srun);
 
@@ -391,8 +396,11 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	format_core_allocs(msg->cred, conf->node_name, 
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
-	if (job->job_mem)
-		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
+	if (job->step_mem) {
+		jobacct_common_set_mem_limit(job->jobid, NO_VAL, 
+					     job->step_mem);
+	} else if (job->job_mem)
+		jobacct_common_set_mem_limit(job->jobid, NO_VAL, job->job_mem);
 
 	srun = srun_info_create(NULL, NULL, NULL);
 

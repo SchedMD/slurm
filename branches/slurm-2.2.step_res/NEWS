@@ -28,7 +28,9 @@ documents those changes that are of interest to users and admins.
  -- sinfo -R now has the user and timestamp in separate fields from the reason.
  -- Add support for spank_get_item() to get S_STEP_ALLOC_CORES and 
     S_STEP_ALLOC_MEM. Support will remain for S_JOB_ALLOC_CORES and 
-    S_JOB_ALLOC_MEM.
+    S_JOB_ALLOC_MEM. 
+ -- Kill individual job steps that exceed their memory limit rather than 
+    killing an entire job if one step exceeds its memory limit.
 
 * Changes in SLURM 2.1.2
 =============================

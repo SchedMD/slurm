@@ -104,7 +104,7 @@ static bool pgid_plugin = false;
 
 /* Finally, pre-define all local routines. */
 
-static void _acct_kill_job(void);
+static void _acct_kill_step(void);
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static void _get_process_data();
 static int _get_process_data_line(int in, prec_t *prec);
@@ -171,7 +171,8 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
  *    is a Linux-style stat entry. We disregard the data if they look
  *    wrong.
  */
-static void _get_process_data() {
+static void _get_process_data(void)
+{
 	static	int	slash_proc_open = 0;
 
 	struct	dirent *slash_proc_entry;
@@ -348,14 +349,15 @@ static void _get_process_data() {
 	slurm_mutex_unlock(&jobacct_lock);
 
 	if (jobacct_mem_limit) {
-		debug("Job %u memory used:%u limit:%u KB",
-		      jobacct_job_id, total_job_mem, jobacct_mem_limit);
+		debug("Step %u.%u memory used:%u limit:%u KB",
+		      jobacct_job_id, jobacct_step_id, 
+		      total_job_mem, jobacct_mem_limit);
 	}
 	if (jobacct_job_id && jobacct_mem_limit &&
 	    (total_job_mem > jobacct_mem_limit)) {
-		error("Job %u exceeded %u KB memory limit, being killed",
-		       jobacct_job_id, jobacct_mem_limit);
-		_acct_kill_job();
+		error("Step %u.%u exceeded %u KB memory limit, being killed",
+		       jobacct_job_id, jobacct_step_id, jobacct_mem_limit);
+		_acct_kill_step();
 	}
 
 finished:
@@ -364,8 +366,8 @@ finished:
 	return;
 }
 
-/* _acct_kill_job() issue RPC to kill a slurm job */
-static void _acct_kill_job(void)
+/* _acct_kill_step() issue RPC to kill a slurm job step */
+static void _acct_kill_step(void)
 {
 	slurm_msg_t msg;
 	job_step_kill_msg_t req;
@@ -375,7 +377,7 @@ static void _acct_kill_job(void)
 	 * Request message:
 	 */
 	req.job_id      = jobacct_job_id;
-	req.job_step_id = NO_VAL;
+	req.job_step_id = jobacct_step_id;
 	req.signal      = SIGKILL;
 	req.batch_flag  = 0;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;

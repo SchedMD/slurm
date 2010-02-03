@@ -237,7 +237,8 @@ extern void jobacct_common_pack(struct jobacctinfo *jobacct,
 extern int jobacct_common_unpack(struct jobacctinfo **jobacct,
 				 uint16_t rpc_version, Buf buffer);
 
-extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit);
+extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t step_id,
+					uint32_t mem_limit);
 extern int jobacct_common_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 				   List task_list);
 extern struct jobacctinfo *jobacct_common_stat_task(pid_t pid, List task_list);
@@ -249,6 +250,7 @@ extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid,
 /* defined in common_jobacct.c */
 extern pthread_mutex_t jobacct_lock;
 extern uint32_t jobacct_job_id;
-extern uint32_t jobacct_mem_limit;	/* job's memory limit in KB */
+extern uint32_t jobacct_step_id;
+extern uint32_t jobacct_mem_limit;	/* step's memory limit in KB */
 
 #endif
