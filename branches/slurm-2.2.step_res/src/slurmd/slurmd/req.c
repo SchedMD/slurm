@@ -1463,6 +1463,8 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	slurm_send_only_controller_msg(&msg);
 }
 
+/* Enforce job memory limits here in slurmd. Step memory limits are 
+ * enforced within slurmstepd (using jobacct_gather plugin). */
 static void
 _enforce_job_mem_limit(void)
 {
@@ -1474,7 +1476,6 @@ _enforce_job_mem_limit(void)
 	uint32_t step_rss;
 	stat_jobacct_msg_t acct_req;
 	stat_jobacct_msg_t *resp = NULL;
-	step_loc_t step_info;
 	struct job_mem_info {
 		uint32_t job_id;
 		uint32_t mem_limit;	/* MB */
@@ -1496,8 +1497,7 @@ _enforce_job_mem_limit(void)
 	job_cnt = 0;
 	job_limits_iter = list_iterator_create(job_limits_list);
 	while ((job_limits_ptr = list_next(job_limits_iter))) {
-		if ((job_limits_ptr->job_mem == 0) ||	/* no job limit */
-		    (job_limits_ptr->step_mem == 0))	/* no step limit */
+		if (job_limits_ptr->job_mem == 0) 	/* no job limit */
 			continue;
 		for (i=0; i<job_cnt; i++) {
 			if (job_mem_info_ptr[i].job_id !=
@@ -1547,23 +1547,6 @@ _enforce_job_mem_limit(void)
 #endif
 			step_rss /= 1024;	/* KB to MB */
 			step_rss = MAX(step_rss, 1);
-
-			slurm_mutex_lock(&job_limits_mutex);
-			step_info.jobid  = stepd->jobid;
-			step_info.stepid = stepd->stepid;
-			job_limits_ptr = list_find_first(job_limits_list,
-							 _step_limits_match,
-							 &step_info);
-			if (job_limits_ptr && job_limits_ptr->step_mem &&
-			    (step_rss > job_limits_ptr->step_mem)) {
-				info("Step %u.%u exceeded memory limit "
-				     "(%u>%u), cancelling it",
-				     stepd->jobid, stepd->stepid, 
-				     step_rss, job_limits_ptr->step_mem);
-				_cancel_step_mem_limit(stepd->jobid, 
-						       stepd->stepid);
-			}
-			slurm_mutex_unlock(&job_limits_mutex);
 			job_mem_info_ptr[job_inx].mem_used += step_rss;
 		}
 		slurm_free_stat_jobacct_msg(resp);
@@ -2848,7 +2831,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, rc);
 		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
-			error ("_rpc_suspend_job: close(%d): %m", msg->conn_fd);
+			error("_rpc_suspend_job: close(%d): %m", 
+			      msg->conn_fd);
 		msg->conn_fd = -1;
 	}
 	if (rc != SLURM_SUCCESS)
