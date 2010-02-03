@@ -86,6 +86,8 @@
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/task_plugin.h"
 
+#define _LIMIT_INFO 0
+
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
 #endif
@@ -97,7 +99,9 @@ typedef struct {
 
 typedef struct {
 	uint32_t job_id;
+	uint32_t step_id;
 	uint32_t job_mem;
+	uint32_t step_mem;
 } job_mem_limits_t;
 
 typedef struct {
@@ -117,6 +121,7 @@ static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
 static int  _init_groups(uid_t my_uid, gid_t my_gid);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
+static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
 static void _rpc_abort_job(slurm_msg_t *);
@@ -668,7 +673,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	uint32_t         jobid = req->job_id;
 	uint32_t         stepid = req->job_step_id;
 	int              tasks_to_launch = req->tasks_to_launch[node_id];
-	uint32_t         alloc_lps = 0;
+	uint32_t         job_cores=0, step_cores=0;
 
 	/*
 	 * First call slurm_cred_verify() so that all valid
@@ -772,66 +777,75 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		}
 		/* Now count the allocated processors */
 		for (i=i_first_bit, j=0; i<i_last_bit; i++, j++) {
-			if (cpu_log) {
-				if (bit_test(arg.step_core_bitmap, i)) {
-					info("JobNode[%u] CPU[%u] Step alloc",
-					     host_index, j);
-					alloc_lps++;
-				} else if (bit_test(arg.job_core_bitmap, i)) {
-					info("JobNode[%u] CPU[%u] Job alloc",
-					     host_index, j);
-				}
-			} else {
-				if (bit_test(arg.step_core_bitmap, i))
-					alloc_lps++;
+			char *who_has = NULL;
+			if (bit_test(arg.job_core_bitmap, i)) {
+				job_cores++;
+				who_has = "Job";
+			}
+			if (bit_test(arg.step_core_bitmap, i)) {
+				step_cores++;
+				who_has = "Step";
+			}
+			if (cpu_log && who_has) {
+				info("JobNode[%u] CPU[%u] %s alloc",
+				     host_index, j, who_has);
 			}
 		}
 		if (cpu_log)
 			info("====================");
-		if (alloc_lps == 0) {
+		if (step_cores == 0) {
 			error("cons_res: zero processors allocated to step");
-			alloc_lps = 1;
+			step_cores = 1;
 		}
-		if (tasks_to_launch > alloc_lps) {
+		if (tasks_to_launch > step_cores) {
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */
 			debug("cons_res: More than one tasks per logical "
 			      "processor (%d > %u) on host [%u.%u %ld %s] ",
-			      tasks_to_launch, alloc_lps, arg.jobid,
+			      tasks_to_launch, step_cores, arg.jobid,
 			      arg.stepid, (long) arg.uid, arg.step_hostlist);
 		}
-		/* NOTE: alloc_lps is the count of allocated resources
+		/* NOTE: step_cores is the count of allocated resources
 		 * (typically cores). Convert to CPU count as needed */
 		if (i_last_bit <= i_first_bit)
 			error("step credential has no CPUs selected");
 		else {
 			i = conf->cpus / (i_last_bit - i_first_bit);
 			if (i > 1)
-				alloc_lps *= i;
+				step_cores *= i;
 		}
-	} else
-		alloc_lps = 1;
+	} else {
+		step_cores = 1;
+		job_cores  = 1;
+	}
 
 	/* Overwrite any memory limits in the RPC with contents of the
 	 * memory limit within the credential.
 	 * Reset the CPU count on this node to correct value. */
 	if (arg.step_mem_limit) {
 		if (arg.step_mem_limit & MEM_PER_CPU) {
-			req->job_mem = arg.step_mem_limit & (~MEM_PER_CPU);
-			req->job_mem *= alloc_lps;
+			req->step_mem_lim  = arg.step_mem_limit & 
+					     (~MEM_PER_CPU);
+			req->step_mem_lim *= step_cores;
 		} else
-			req->job_mem = arg.step_mem_limit;
+			req->step_mem_lim  = arg.step_mem_limit;
 	} else {
 		if (arg.job_mem_limit & MEM_PER_CPU) {
-			req->job_mem = arg.job_mem_limit & (~MEM_PER_CPU);
-			req->job_mem *= alloc_lps;
+			req->step_mem_lim  = arg.job_mem_limit & 
+					     (~MEM_PER_CPU);
+			req->step_mem_lim *= job_cores;
 		} else
-			req->job_mem = arg.job_mem_limit;
+			req->step_mem_lim  = arg.job_mem_limit;
 	}
-	req->cpus_allocated[node_id] = alloc_lps;
+	if (arg.job_mem_limit & MEM_PER_CPU) {
+		req->job_mem_lim  = arg.job_mem_limit & (~MEM_PER_CPU);
+		req->job_mem_lim *= job_cores;
+	} else
+		req->job_mem_lim  = arg.job_mem_limit;
+	req->cpus_allocated[node_id] = step_cores;
 #if 0
 	info("%u.%u mem orig:%u cpus:%u limit:%u",
-	     jobid, stepid, arg.job_mem, alloc_lps, req->job_mem);
+	     jobid, stepid, arg.job_mem, step_cores, req->job_mem);
 #endif
 
 	*step_hset = hset;
@@ -917,22 +931,30 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 #endif
 
-	if (req->job_mem) {
+	if (req->job_mem_lim || req->step_mem_lim) {
+		step_loc_t step_info;
 		slurm_mutex_lock(&job_limits_mutex);
 		if (!job_limits_list)
 			job_limits_list = list_create(_job_limits_free);
+		step_info.jobid  = req->job_id;
+		step_info.stepid = req->job_step_id;
 		job_limits_ptr = list_find_first (job_limits_list,
-						  _job_limits_match,
-						  &req->job_id);
+						  _step_limits_match,
+						  &step_info);
 		if (!job_limits_ptr) {
-			//info("AddLim job:%u mem:%u",req->job_id,req->job_mem);
 			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-			job_limits_ptr->job_id = req->job_id;
+			job_limits_ptr->job_id   = req->job_id;
+			job_limits_ptr->job_mem  = req->job_mem_lim;
+			job_limits_ptr->step_id  = req->job_step_id;
+			job_limits_ptr->step_mem = req->step_mem_lim;
+#if _LIMIT_INFO
+			info("AddLim step:%u.%u job_mem:%u step_mem:%u",
+			      job_limits_ptr->job_id, job_limits_ptr->step_id,
+			      job_limits_ptr->job_mem, 
+			      job_limits_ptr->step_mem);
+#endif
 			list_append(job_limits_list, job_limits_ptr);
 		}
-		/* reset memory limit based upon value calculated in
-		 * _check_job_credential() above */
-		job_limits_ptr->job_mem = req->job_mem;
 		slurm_mutex_unlock(&job_limits_mutex);
 	}
 
@@ -1352,6 +1374,17 @@ static int _job_limits_match(void *x, void *key)
 	return 0;
 }
 
+static int _step_limits_match(void *x, void *key)
+{
+	job_mem_limits_t *job_limits_ptr = (job_mem_limits_t *) x;
+	step_loc_t *step_ptr = (step_loc_t *) key;
+
+	if ((job_limits_ptr->job_id  == step_ptr->jobid) &&
+	    (job_limits_ptr->step_id == step_ptr->stepid))
+		return 1;
+	return 0;
+}
+
 /* Call only with job_limits_mutex locked */
 static void
 _load_job_limits(void)
@@ -1371,8 +1404,7 @@ _load_job_limits(void)
 	step_iter = list_iterator_create(steps);
 	while ((stepd = list_next(step_iter))) {
 		job_limits_ptr = list_find_first(job_limits_list,
-						 _job_limits_match,
-						 &stepd->jobid);
+						 _step_limits_match, stepd);
 		if (job_limits_ptr)	/* already processed */
 			continue;
 		fd = stepd_connect(stepd->directory, stepd->nodename,
@@ -1380,13 +1412,23 @@ _load_job_limits(void)
 		if (fd == -1)
 			continue;	/* step completed */
 		stepd_info_ptr = stepd_get_info(fd);
-		if (stepd_info_ptr && stepd_info_ptr->job_mem_limit) {
+		if (stepd_info_ptr && 
+		    (stepd_info_ptr->job_mem_limit || 
+		     stepd_info_ptr->step_mem_limit)) {
 			/* create entry for this job */
 			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-			job_limits_ptr->job_id  = stepd->jobid;
-			job_limits_ptr->job_mem = stepd_info_ptr->job_mem_limit;
-			debug("RecLim job:%u mem:%u",
-			      stepd->jobid, stepd_info_ptr->job_mem_limit);
+			job_limits_ptr->job_id   = stepd->jobid;
+			job_limits_ptr->step_id  = stepd->stepid;
+			job_limits_ptr->job_mem  = stepd_info_ptr->
+						   job_mem_limit;
+			job_limits_ptr->step_mem = stepd_info_ptr->
+						   step_mem_limit;
+#if _LIMIT_INFO
+			info("RecLim step:%u.%u job_mem:%u step_mem:%u",
+			      job_limits_ptr->job_id, job_limits_ptr->step_id,
+			      job_limits_ptr->job_mem, 
+			      job_limits_ptr->step_mem);
+#endif
 			list_append(job_limits_list, job_limits_ptr);
 		}
 		xfree(stepd_info_ptr);
@@ -1581,7 +1623,8 @@ _rpc_health_check(slurm_msg_t *msg)
 
 
 static int
-_signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid, uint32_t signal)
+_signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid, 
+		uint32_t signal)
 {
 	int               fd, rc = SLURM_SUCCESS;
 	slurmstepd_info_t *step;
@@ -1666,8 +1709,8 @@ _rpc_checkpoint_tasks(slurm_msg_t *msg)
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id);
 	if (fd == -1) {
-		debug("checkpoint for nonexistant %u.%u stepd_connect failed: %m",
-		      req->job_id, req->job_step_id);
+		debug("checkpoint for nonexistant %u.%u stepd_connect "
+		      "failed: %m", req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
@@ -1679,8 +1722,8 @@ _rpc_checkpoint_tasks(slurm_msg_t *msg)
 	}
 
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
-		debug("checkpoint req from uid %ld for job %u.%u owned by uid %ld",
-		      (long) req_uid, req->job_id, req->job_step_id,
+		debug("checkpoint req from uid %ld for job %u.%u owned by "
+		      "uid %ld", (long) req_uid, req->job_id, req->job_step_id,
 		      (long) step->uid);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done3;
@@ -1711,8 +1754,8 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id);
 	if (fd == -1) {
-		debug("kill for nonexistant job %u.%u stepd_connect failed: %m",
-				req->job_id, req->job_step_id);
+		debug("kill for nonexistant job %u.%u stepd_connect "
+		      "failed: %m", req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}

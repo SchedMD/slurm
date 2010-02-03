@@ -2,7 +2,8 @@
  *  src/common/stepd_api.h - slurmstepd message API
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -87,6 +88,7 @@ typedef struct {
 	uint32_t stepid;
 	uint32_t nodeid;
 	uint32_t job_mem_limit;		/* job's memory limit, MB */
+	uint32_t step_mem_limit;	/* step's memory limit, MB */
 } slurmstepd_info_t;
 
 typedef struct {

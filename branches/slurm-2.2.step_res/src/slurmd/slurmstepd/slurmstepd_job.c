@@ -177,7 +177,7 @@ job_create(launch_tasks_request_msg_t *msg)
 		return NULL;
 	}
 
-	if(msg->job_mem && (msg->acctg_freq != (uint16_t) NO_VAL)
+	if (msg->job_mem_lim && (msg->acctg_freq != (uint16_t) NO_VAL)
 	   && (msg->acctg_freq > conf->job_acct_gather_freq)) {
 		error("Can't set frequency to %u, it is higher than %u.  "
 		      "We need it to be at least at this level to "
