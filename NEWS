@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.1.3
 =============================
+ -- BLUEGENE - Fix issues on static/overlap systems where if a midplane
+    was drained you would not be able to create new blocks on it.
 
 * Changes in SLURM 2.1.2
 =============================
