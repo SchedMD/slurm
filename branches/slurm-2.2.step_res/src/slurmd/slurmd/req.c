@@ -1439,25 +1439,48 @@ _load_job_limits(void)
 }
 
 static void
+_cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
+{
+	slurm_msg_t msg;
+	job_notify_msg_t notify_req;
+	job_step_kill_msg_t kill_req;
+
+	/* NOTE: Batch jobs may have no srun to get this message */
+	slurm_msg_t_init(&msg);
+	notify_req.job_id      = job_id;
+	notify_req.job_step_id = step_id;
+	notify_req.message     = "Exceeded job memory limit";
+	msg.msg_type    = REQUEST_JOB_NOTIFY;
+	msg.data        = &notify_req;
+	slurm_send_only_controller_msg(&msg);
+
+	kill_req.job_id      = job_id;
+	kill_req.job_step_id = step_id;
+	kill_req.signal      = SIGKILL;
+	kill_req.batch_flag  = (uint16_t) 0;
+	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
+	msg.data        = &kill_req;
+	slurm_send_only_controller_msg(&msg);
+}
+
+static void
 _enforce_job_mem_limit(void)
 {
 	List steps;
 	ListIterator step_iter, job_limits_iter;
 	job_mem_limits_t *job_limits_ptr;
 	step_loc_t *stepd;
-	int fd, i, job_inx, job_cnt = 0;
+	int fd, i, job_inx, job_cnt;
 	uint32_t step_rss;
 	stat_jobacct_msg_t acct_req;
 	stat_jobacct_msg_t *resp = NULL;
+	step_loc_t step_info;
 	struct job_mem_info {
 		uint32_t job_id;
 		uint32_t mem_limit;	/* MB */
-		uint32_t mem_used;	/* KB */
+		uint32_t mem_used;	/* MB */
 	};
 	struct job_mem_info *job_mem_info_ptr = NULL;
-	slurm_msg_t msg;
-	job_notify_msg_t notify_req;
-	job_step_kill_msg_t kill_req;
 
 	slurm_mutex_lock(&job_limits_mutex);
 	if (!job_limits_loaded)
@@ -1467,11 +1490,26 @@ _enforce_job_mem_limit(void)
 		return;
 	}
 
+	/* Build table of job limits, use highest mem limit recorded */
 	job_mem_info_ptr = xmalloc((list_count(job_limits_list) + 1) *
 			   sizeof(struct job_mem_info));
 	job_cnt = 0;
 	job_limits_iter = list_iterator_create(job_limits_list);
 	while ((job_limits_ptr = list_next(job_limits_iter))) {
+		if ((job_limits_ptr->job_mem == 0) ||	/* no job limit */
+		    (job_limits_ptr->step_mem == 0))	/* no step limit */
+			continue;
+		for (i=0; i<job_cnt; i++) {
+			if (job_mem_info_ptr[i].job_id !=
+			    job_limits_ptr->job_id)
+				continue;
+			job_mem_info_ptr[i].mem_limit = MAX(
+						job_mem_info_ptr[i].mem_limit,
+						job_limits_ptr->job_mem);
+			break;
+		}
+		if (i < job_cnt)	/* job already found & recorded */
+			continue;
 		job_mem_info_ptr[job_cnt].job_id    = job_limits_ptr->job_id;
 		job_mem_info_ptr[job_cnt].mem_limit = job_limits_ptr->job_mem;
 		job_cnt++;
@@ -1487,7 +1525,7 @@ _enforce_job_mem_limit(void)
 				break;
 		}
 		if (job_inx >= job_cnt)
-			continue;	/* job not being tracked */
+			continue;	/* job/step not being tracked */
 
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   stepd->jobid, stepd->stepid);
@@ -1503,8 +1541,29 @@ _enforce_job_mem_limit(void)
 					       resp->jobacct,
 					       JOBACCT_DATA_TOT_RSS,
 					       &step_rss);
-			//info("job %u.%u rss:%u",stepd->jobid, stepd->stepid, step_rss);
+#if _LIMIT_INFO
+			info("Step:%u.%u RSS:%u KB", 
+			     stepd->jobid, stepd->stepid, step_rss);
+#endif
+			step_rss /= 1024;	/* KB to MB */
 			step_rss = MAX(step_rss, 1);
+
+			slurm_mutex_lock(&job_limits_mutex);
+			step_info.jobid  = stepd->jobid;
+			step_info.stepid = stepd->stepid;
+			job_limits_ptr = list_find_first(job_limits_list,
+							 _step_limits_match,
+							 &step_info);
+			if (job_limits_ptr && job_limits_ptr->step_mem &&
+			    (step_rss > job_limits_ptr->step_mem)) {
+				info("Step %u.%u exceeded memory limit "
+				     "(%u>%u), cancelling it",
+				     stepd->jobid, stepd->stepid, 
+				     step_rss, job_limits_ptr->step_mem);
+				_cancel_step_mem_limit(stepd->jobid, 
+						       stepd->stepid);
+			}
+			slurm_mutex_unlock(&job_limits_mutex);
 			job_mem_info_ptr[job_inx].mem_used += step_rss;
 		}
 		slurm_free_stat_jobacct_msg(resp);
@@ -1514,39 +1573,24 @@ _enforce_job_mem_limit(void)
 	list_destroy(steps);
 
 	for (i=0; i<job_cnt; i++) {
-		if ((job_mem_info_ptr[i].mem_limit == 0) ||
-		    (job_mem_info_ptr[i].mem_used == 0)) {
-			/* no memory limit or no steps found, purge record */
+		if (job_mem_info_ptr[i].mem_used == 0) {
+			/* no steps found, 
+			 * purge records for all steps of this job */
 			slurm_mutex_lock(&job_limits_mutex);
 			list_delete_all(job_limits_list, _job_limits_match,
 					&job_mem_info_ptr[i].job_id);
 			slurm_mutex_unlock(&job_limits_mutex);
 			break;
 		}
-		job_mem_info_ptr[i].mem_used /= 1024;	/* KB to MB */
-		if (job_mem_info_ptr[i].mem_used <=
-		    job_mem_info_ptr[i].mem_limit)
+		if ((job_mem_info_ptr[i].mem_limit == 0) ||
+		    (job_mem_info_ptr[i].mem_used <=
+		     job_mem_info_ptr[i].mem_limit))
 			continue;
 
 		info("Job %u exceeded memory limit (%u>%u), cancelling it",
-		    job_mem_info_ptr[i].job_id, job_mem_info_ptr[i].mem_used,
-		    job_mem_info_ptr[i].mem_limit);
-		/* NOTE: Batch jobs may have no srun to get this message */
-		slurm_msg_t_init(&msg);
-		notify_req.job_id      = job_mem_info_ptr[i].job_id;
-		notify_req.job_step_id = NO_VAL;
-		notify_req.message     = "Exceeded job memory limit";
-		msg.msg_type    = REQUEST_JOB_NOTIFY;
-		msg.data        = &notify_req;
-		slurm_send_only_controller_msg(&msg);
-
-		kill_req.job_id      = job_mem_info_ptr[i].job_id;
-		kill_req.job_step_id = NO_VAL;
-		kill_req.signal      = SIGKILL;
-		kill_req.batch_flag  = (uint16_t) 0;
-		msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
-		msg.data        = &kill_req;
-		slurm_send_only_controller_msg(&msg);
+		     job_mem_info_ptr[i].job_id, job_mem_info_ptr[i].mem_used,
+		     job_mem_info_ptr[i].mem_limit);
+		_cancel_step_mem_limit(job_mem_info_ptr[i].job_id, NO_VAL);
 	}
 	xfree(job_mem_info_ptr);
 }
