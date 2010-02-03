@@ -1,0 +1,262 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of TotalView operation with srun, with and without bulk
+#          transfer.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2004-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov> and Dong Ang <dahn@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# In addition, as a special exception, the copyright holders give permission
+# to link the code of portions of this program with the OpenSSL library under
+# certain conditions as described in each individual source file, and
+# distribute linked combinations including the two. You must obey the GNU
+# General Public License in all respects for all of the code used other than
+# OpenSSL. If you modify file(s) with this exception, you may extend this
+# exception to your version of the file(s), but you are not obligated to do
+# so. If you do not wish to do so, delete this exception statement from your
+# version.  If you delete this exception statement from all source files in
+# the program, then also delete it here.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id       "7.4"
+set exit_code     0
+set test_prog     "test$test_id.prog"
+
+# Note this appears as a single argv value to totalviewcli
+set bulk "dset TV::bulk_launch_enabled true; dset TV::bulk_launch_tmpfile1_host_lines %R; dset TV::bulk_launch_string {$srun --jobid=%J -N%N -n%N -w`awk -F. \'BEGIN {ORS=\",\"} {if (NR==%N) ORS=\"\"; print \$1}\' %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+set no_bulk       "dset TV::bulk_launch_enabled false"
+
+print_header $test_id
+
+#
+# Put desired SLURM install directory at head of search path for bulk launch
+# command to work (runs "srun" without path)
+#
+set env(PATH) "$slurm_dir/bin:$env(PATH)"
+send_user "\n $env(PATH)\n"
+
+#
+# Test for existence of mpi compiler and totalview
+#
+if {[info exists mpicc] == 0} {
+	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
+	exit 0
+}
+if {[file executable $mpicc] == 0} {
+	send_user "\nWARNING: $mpicc does not exists\n"
+	exit 0
+}
+if {[info exists totalviewcli] == 0} {
+	send_user "\nWARNING: totalviewcli not defined, can't perform mpi testing\n"
+	exit 0
+}
+if {[file executable $totalviewcli] == 0} {
+	send_user "\nWARNING: $totalviewcli does not exists\n"
+	exit 0
+}
+if {[test_front_end] != 0} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit 0
+}
+
+#
+# Delete left-over program and rebuild it
+#
+exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints
+exec $mpicc -o $test_prog ${test_prog}.c
+
+#
+# Now run totalviewcli (command line interface to TotalView)
+#
+set matches 0
+set no_capability 0
+set timeout $max_job_delay
+send_user "======================================================================\n"
+send_user "=======================  Run without bulk transfer ===================\n"
+send_user "======================================================================\n"
+spawn $totalviewcli -verbosity info -e $no_bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
+expect {
+	-re "d1.<>" {
+		if {$matches == 0} {
+			incr matches
+			send "G\r"
+		}
+		if {$no_capability != 0} {
+			send "quit\r"
+		}
+		exp_continue
+	}
+	-re "cannot open shared object" {
+		send_user "\nWARNING: Set LD_LIBRARY_PATH environment variable "
+		send_user "to include this object's directory\n"
+		exp_continue
+	}
+	-re "Do you want to stop the job now?.*:" {
+		incr matches
+		send "yes\r"
+		exp_continue
+	}
+	-re "Attached to parallel task ($number)" {
+		incr matches
+		exp_continue
+	}
+	-re "Loaded MPI support.*" {
+		exec sleep 2
+		send "G\r"
+		exp_continue
+	}
+	-re "I just received msg from Rank" {
+		incr matches
+		exp_continue
+	}
+	-re "elan_init: No capability, can't continue" {
+		incr no_capability
+		exp_continue
+	}
+	-re "Process 1 has exited.*" {
+		incr matches
+		exec sleep 2
+		send "quit\r"
+		exp_continue
+	}
+	-re "Do you really wish to exit TotalView?" {
+		incr matches
+		send "yes\r"
+		exp_continue
+	}
+	-re "Could not open breakpoint file" {
+		send_user "\nNOTE: Breakpoint file error is expected due to known Totalview bug\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: totalviewcli not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$no_capability != 0} {
+	send_user "\nWARNING: Unable to run test with present configuration\n"
+	exit 0
+}
+if {$matches != 12} {
+	send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
+	send_user "Remove your ~/.totalview directory and try again\n"
+	set exit_code 1
+} else {
+	send_user "\nSo far, so good...\n\n\n"
+}
+
+#
+# Now run totalviewcli (command line interface to TotalView)
+#
+set matches 0
+set no_capability 0
+send_user "======================================================================\n"
+send_user "=====================  Run with bulk transfer ========================\n"
+send_user "======================================================================\n"
+spawn $totalviewcli -verbosity info -e $bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
+expect {
+	-re "d1.<>" {
+		if {$matches == 0} {
+			incr matches
+			send "G\r"
+		}
+		if {$no_capability != 0} {
+			send "quit\r"
+		}
+		exp_continue
+	}
+	-re "cannot open shared object" {
+		send_user "\nWARNING: Set LD_LIBRARY_PATH environment variable "
+		send_user "to include this object's directory\n"
+		exp_continue
+	}
+	-re "Do you want to stop the job now?.*:" {
+		incr matches
+		send "yes\r"
+		exp_continue
+	}
+	-re "Attached to parallel task ($number)" {
+		incr matches
+		exp_continue
+	}
+	-re "Loaded MPI support.*" {
+		exec sleep 2
+		send "G\r"
+		exp_continue
+	}
+	-re "I just received msg from Rank" {
+		incr matches
+		exp_continue
+	}
+	-re "elan_init: No capability, can't continue" {
+		incr no_capability
+		exp_continue
+	}
+	-re "Process 1 has exited.*" {
+		incr matches
+		exec sleep 2
+		send "quit\r"
+		exp_continue
+	}
+	-re "Do you really wish to exit TotalView?" {
+		incr matches
+		send "yes\r"
+		exp_continue
+	}
+	-re "Could not open breakpoint file" {
+		send_user "\nNOTE: Breakpoint file error is expected due to known Totalview bug\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: totalviewcli not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$no_capability != 0} {
+	send_user "\nWARNING: Unable to run test with present configuration\n"
+	exit 0
+}
+if {$matches != 12} {
+	send_user "\nFAILURE: totalviewcli operation matches $matches of 12\n"
+	send_user "Remove your ~/.totalview directory and try again\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.b3breakpoints
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
