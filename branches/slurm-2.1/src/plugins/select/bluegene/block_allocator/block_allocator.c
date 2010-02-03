@@ -1877,13 +1877,10 @@ extern int set_all_bps_except(char *bps)
 		y = temp;
 		temp = start % HOSTLIST_BASE;
 		z = temp;
-		if((ba_system_ptr->grid[x][y][z].state == NODE_STATE_UNKNOWN)
-		   || (ba_system_ptr->grid[x][y][z].state == NODE_STATE_IDLE))
-			ba_system_ptr->grid[x][y][z].state = NODE_STATE_END;
+		/* mark with an impossible state bit */
+		ba_system_ptr->grid[x][y][z].state |= NODE_RESUME;
 #else
-		if((ba_system_ptr->grid[x].state == NODE_STATE_UNKNOWN)
-		   || (ba_system_ptr->grid[x].state == NODE_STATE_IDLE))
-			ba_system_ptr->grid[x].state = NODE_STATE_END;
+		ba_system_ptr->grid[x][y][z].state |= NODE_RESUME;
 #endif
 		free(host);
 	}
@@ -1894,9 +1891,10 @@ extern int set_all_bps_except(char *bps)
 		for (y = 0; y < DIM_SIZE[Y]; y++)
 			for (z = 0; z < DIM_SIZE[Z]; z++) {
 				if(ba_system_ptr->grid[x][y][z].state
-				   == NODE_STATE_END) {
-					ba_system_ptr->grid[x][y][z].state
-						= NODE_STATE_IDLE;
+					  & NODE_RESUME) {
+					/* clear the bit and mark as unused */
+					ba_system_ptr->grid[x][y][z].state &=
+						~NODE_RESUME;
 					ba_system_ptr->grid[x][y][z].used =
 						false;
 				} else if(!ba_system_ptr->grid[x][y][z].used) {
@@ -1904,8 +1902,9 @@ extern int set_all_bps_except(char *bps)
 				}
 			}
 #else
-		if(ba_system_ptr->grid[x].state == NODE_STATE_END) {
-			ba_system_ptr->grid[x].state = NODE_STATE_IDLE;
+		if(ba_system_ptr->grid[x].state & NODE_RESUME) {
+			/* clear the bit and mark as unused */
+			ba_system_ptr->grid[x][y][z].state &= ~NODE_RESUME;
 			ba_system_ptr->grid[x].used = false;
 		} else if(!ba_system_ptr->grid[x].used) {
 			ba_system_ptr->grid[x].used = 2;
