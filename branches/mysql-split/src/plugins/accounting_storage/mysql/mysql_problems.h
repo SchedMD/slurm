@@ -41,7 +41,7 @@
 #ifndef _HAVE_MYSQL_PROBLEMS_H
 #define _HAVE_MYSQL_PROBLEMS_H
 
-#include "mysql_jobacct_process.h"
+#include "accounting_storage_mysql.h"
 
 extern int mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 				acct_association_cond_t *assoc_cond,

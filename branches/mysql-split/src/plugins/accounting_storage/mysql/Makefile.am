@@ -8,17 +8,19 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		mysql_acct.c mysql_acct.h \
+		mysql_archive.c mysql_arvhive.h \
 		mysql_assoc.c mysql_accoc.h \
 		mysql_cluster.c mysql_cluster.h \
+		mysql_job.c mysql_job.h \
 		mysql_jobacct_process.c mysql_jobacct_process.h \
 		mysql_problems.c mysql_problems.h \
 		mysql_qos.c mysql_qos.h \
 		mysql_rollup.c mysql_rollup.h \
 		mysql_txn.c mysql_txn.h \
+		mysql_usage.c mysql_usage.h \
 		mysql_user.c mysql_user.h \
 		mysql_wckey.c mysql_wckey.h \
-		$(top_srcdir)/src/plugins/accounting_storage/common/common_as.h \
-		$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c
+		../common/common_as.c ../common/common_as.h
 
 if WITH_MYSQL
 pkglib_LTLIBRARIES = accounting_storage_mysql.la
