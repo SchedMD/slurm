@@ -2,7 +2,7 @@
  *  slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -4784,7 +4784,9 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 	pack32(msg->nprocs, buffer);
 	pack32(msg->uid, buffer);
 	pack32(msg->gid, buffer);
-	pack32(msg->job_mem, buffer);
+	pack32(msg->job_mem_lim, buffer);
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION)
+		pack32(msg->step_mem_lim, buffer);
 
 	pack32(msg->nnodes, buffer);
 	pack16(msg->cpus_per_task, buffer);
@@ -4855,7 +4857,9 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack32(&msg->nprocs, buffer);
 	safe_unpack32(&msg->uid, buffer);
 	safe_unpack32(&msg->gid, buffer);
-	safe_unpack32(&msg->job_mem, buffer);
+	safe_unpack32(&msg->job_mem_lim, buffer);
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION)
+		safe_unpack32(&msg->step_mem_lim, buffer);
 
 	safe_unpack32(&msg->nnodes, buffer);
 	safe_unpack16(&msg->cpus_per_task, buffer);

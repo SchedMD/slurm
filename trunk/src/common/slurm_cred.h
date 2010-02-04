@@ -2,7 +2,7 @@
  *  src/common/slurm_cred.h - SLURM job and sbcast credential functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -144,20 +144,31 @@ int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);
  * to this STEP
  */
 typedef struct {
-	uint32_t jobid;
-	uint32_t stepid;
-	uint32_t job_mem;	/* MB of memory reserved per node OR
-				 * real memory per CPU | MEM_PER_CPU,
-				 * default=0 (no limit) */
-	uid_t    uid;
-	char    *hostlist;
+	uint32_t  jobid;
+	uint32_t  stepid;
+	uid_t     uid;
 
-	bitstr_t *core_bitmap;
-	uint16_t *cores_per_socket;
-	uint16_t *sockets_per_node;
-	uint32_t *sock_core_rep_count;
-	uint32_t  job_nhosts;	/* count of nodes allocated to JOB */
-	char     *job_hostlist;	/* list of nodes allocated to JOB */
+	/* job_core_bitmap and step_core_bitmap cover the same set of nodes, 
+	 * namely the set of nodes allocated to the job. The core and socket 
+	 * information below applies to job_core_bitmap AND step_core_bitmap */
+	uint16_t *cores_per_socket;	/* Used for job/step_core_bitmaps */
+	uint16_t *sockets_per_node;	/* Used for job/step_core_bitmaps */
+	uint32_t *sock_core_rep_count;	/* Used for job/step_core_bitmaps */
+
+	/* JOB specific info */
+	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
+	char     *job_hostlist;		/* list of nodes allocated to JOB */
+	uint32_t  job_mem_limit;	/* MB of memory reserved per node OR
+					 * real memory per CPU | MEM_PER_CPU,
+					 * default=0 (no limit) */
+	uint32_t  job_nhosts;		/* count of nodes allocated to JOB */
+
+	/* JOB specific info */
+	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */
+	char     *step_hostlist;	/* list of nodes allocated to STEP */
+	uint32_t  step_mem_limit;	/* MB of memory reserved per node OR
+					 * real memory per CPU | MEM_PER_CPU,
+					 * default=0 (no limit) */
 } slurm_cred_arg_t;
 
 /* Terminate the plugin and release all memory. */
@@ -293,12 +304,15 @@ int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
 			     uint32_t *len);
 
 /*
- * Retrieve the set of cores that were allocated to the job and format them
- * in the List Format (e.g., "0-2,7,12-14").
+ * Retrieve the set of cores that were allocated to the job and step then 
+ * format them in the List Format (e.g., "0-2,7,12-14"). Also return
+ * job and step's memory limit.
  *
- * NOTE: caller must xfree the returned string.
+ * NOTE: caller must xfree the returned strings.
  */
-char* format_core_allocs(slurm_cred_t *cred, char *node_name);
+void format_core_allocs(slurm_cred_t *cred, char *node_name,
+			 char **job_alloc_cores, char **step_alloc_cores,
+			 uint32_t *job_mem_limit, uint32_t *step_mem_limit);
 
 /*
  * Print a slurm job credential using the info() call

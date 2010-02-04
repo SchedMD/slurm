@@ -3,7 +3,7 @@
  *	Note there is a global job list (job_list)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -614,39 +614,34 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	slurm_cred_arg_t cred_arg;
 	job_resources_t *job_resrcs_ptr;
 
+	xassert(job_ptr->job_resrcs);
+	job_resrcs_ptr = job_ptr->job_resrcs;
+
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
 
 	cred_arg.jobid     = launch_msg_ptr->job_id;
 	cred_arg.stepid    = launch_msg_ptr->step_id;
 	cred_arg.uid       = launch_msg_ptr->uid;
-#ifdef HAVE_FRONT_END
-	cred_arg.hostlist  = node_record_table_ptr[0].name;
-#else
-	cred_arg.hostlist  = launch_msg_ptr->nodes;
-#endif
-	if (job_ptr->details == NULL)
-		cred_arg.job_mem = 0;
-	else if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-		xassert(job_ptr->job_resrcs);
-		xassert(job_ptr->job_resrcs->cpus);
-		cred_arg.job_mem = job_ptr->details->pn_min_memory;
-		cred_arg.job_mem &= (~MEM_PER_CPU);
-		cred_arg.job_mem *= job_ptr->job_resrcs->cpus[0];
-	} else
-		cred_arg.job_mem = job_ptr->details->pn_min_memory;
 
-	/* Identify the cores allocated to this job. */
-	xassert(job_ptr->job_resrcs);
-	job_resrcs_ptr = job_ptr->job_resrcs;
-	cred_arg.core_bitmap         = job_resrcs_ptr->core_bitmap;
+	cred_arg.job_hostlist        = job_ptr->nodes;
+	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;
+	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
+	cred_arg.job_nhosts          = job_resrcs_ptr->nhosts;
+
+#ifdef HAVE_FRONT_END
+	cred_arg.step_hostlist       = node_record_table_ptr[0].name;
+#else
+	cred_arg.step_hostlist       = launch_msg_ptr->nodes;
+#endif
+	cred_arg.step_core_bitmap    = job_resrcs_ptr->core_bitmap;
+	cred_arg.step_mem_limit      = job_ptr->details->pn_min_memory;
+
 	cred_arg.cores_per_socket    = job_resrcs_ptr->cores_per_socket;
 	cred_arg.sockets_per_node    = job_resrcs_ptr->sockets_per_node;
 	cred_arg.sock_core_rep_count = job_resrcs_ptr->sock_core_rep_count;
-	cred_arg.job_nhosts          = job_resrcs_ptr->nhosts;
-	cred_arg.job_hostlist        = job_ptr->nodes;
 
 	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
-			 &cred_arg);
+						 &cred_arg);
 
 	if (launch_msg_ptr->cred)
 		return SLURM_SUCCESS;
