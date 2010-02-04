@@ -1880,7 +1880,7 @@ extern int set_all_bps_except(char *bps)
 		/* mark with an impossible state bit */
 		ba_system_ptr->grid[x][y][z].state |= NODE_RESUME;
 #else
-		ba_system_ptr->grid[x][y][z].state |= NODE_RESUME;
+		ba_system_ptr->grid[x].state |= NODE_RESUME;
 #endif
 		free(host);
 	}
@@ -1902,7 +1902,7 @@ extern int set_all_bps_except(char *bps)
 #else
 		if(ba_system_ptr->grid[x].state & NODE_RESUME) {
 			/* clear the bit and mark as unused */
-			ba_system_ptr->grid[x][y][z].state &= ~NODE_RESUME;
+			ba_system_ptr->grid[x].state &= ~NODE_RESUME;
 		} else if(!ba_system_ptr->grid[x].used) {
 			ba_system_ptr->grid[x].used = 2;
 		}
