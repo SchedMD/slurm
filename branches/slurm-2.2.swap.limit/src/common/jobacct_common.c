@@ -45,6 +45,7 @@ pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
 uint32_t jobacct_job_id     = 0;
 uint32_t jobacct_step_id    = 0;
 uint32_t jobacct_mem_limit  = 0;
+uint32_t jobacct_vmem_limit = 0;
 uint32_t mult = 1000;
 
 static void _pack_jobacct_id(jobacct_id_t *jobacct_id, uint16_t rpc_version, Buf buffer)
@@ -1087,9 +1088,11 @@ extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t step_id,
 		return SLURM_ERROR;
 	}
 
-	jobacct_job_id    = job_id;
-	jobacct_step_id   = step_id;
-	jobacct_mem_limit = mem_limit * 1024;	/* MB to KB */
+	jobacct_job_id      = job_id;
+	jobacct_step_id     = step_id;
+	jobacct_mem_limit   = mem_limit * 1024;	/* MB to KB */
+	jobacct_vmem_limit  = jobacct_mem_limit;
+	jobacct_vmem_limit *= (slurm_get_vsize_factor() / 100.0);
 	return SLURM_SUCCESS;
 }
 
