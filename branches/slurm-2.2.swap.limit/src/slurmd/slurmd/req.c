@@ -1473,13 +1473,16 @@ _enforce_job_mem_limit(void)
 	job_mem_limits_t *job_limits_ptr;
 	step_loc_t *stepd;
 	int fd, i, job_inx, job_cnt;
-	uint32_t step_rss;
+	uint16_t vsize_factor;
+	uint32_t step_rss, step_vsize;
 	stat_jobacct_msg_t acct_req;
 	stat_jobacct_msg_t *resp = NULL;
 	struct job_mem_info {
 		uint32_t job_id;
 		uint32_t mem_limit;	/* MB */
 		uint32_t mem_used;	/* MB */
+		uint32_t vsize_limit;	/* MB */
+		uint32_t vsize_used;	/* MB */
 	};
 	struct job_mem_info *job_mem_info_ptr = NULL;
 
@@ -1517,6 +1520,13 @@ _enforce_job_mem_limit(void)
 	list_iterator_destroy(job_limits_iter);
 	slurm_mutex_unlock(&job_limits_mutex);
 
+	vsize_factor = slurm_get_vsize_factor();
+	for (i=0; i<job_cnt; i++) {
+		job_mem_info_ptr[i].vsize_limit = job_mem_info_ptr[i].
+						  mem_limit;
+		job_mem_info_ptr[i].vsize_limit *= (vsize_factor / 100.0); 
+	}
+
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	step_iter = list_iterator_create(steps);
 	while ((stepd = list_next(step_iter))) {
@@ -1541,13 +1551,21 @@ _enforce_job_mem_limit(void)
 					       resp->jobacct,
 					       JOBACCT_DATA_TOT_RSS,
 					       &step_rss);
+			jobacct_common_getinfo((struct jobacctinfo *)
+					       resp->jobacct,
+					       JOBACCT_DATA_TOT_VSIZE,
+					       &step_vsize);
 #if _LIMIT_INFO
-			info("Step:%u.%u RSS:%u KB", 
-			     stepd->jobid, stepd->stepid, step_rss);
+			info("Step:%u.%u RSS:%u KB VSIZE:%u KB", 
+			     stepd->jobid, stepd->stepid, 
+			     step_rss, step_vsize);
 #endif
 			step_rss /= 1024;	/* KB to MB */
 			step_rss = MAX(step_rss, 1);
 			job_mem_info_ptr[job_inx].mem_used += step_rss;
+			step_vsize /= 1024;	/* KB to MB */
+			step_vsize = MAX(step_vsize, 1);
+			job_mem_info_ptr[job_inx].vsize_used += step_vsize;
 		}
 		slurm_free_stat_jobacct_msg(resp);
 		close(fd);
@@ -1565,15 +1583,26 @@ _enforce_job_mem_limit(void)
 			slurm_mutex_unlock(&job_limits_mutex);
 			break;
 		}
-		if ((job_mem_info_ptr[i].mem_limit == 0) ||
-		    (job_mem_info_ptr[i].mem_used <=
-		     job_mem_info_ptr[i].mem_limit))
-			continue;
 
-		info("Job %u exceeded memory limit (%u>%u), cancelling it",
-		     job_mem_info_ptr[i].job_id, job_mem_info_ptr[i].mem_used,
-		     job_mem_info_ptr[i].mem_limit);
-		_cancel_step_mem_limit(job_mem_info_ptr[i].job_id, NO_VAL);
+		if ((job_mem_info_ptr[i].mem_limit != 0) &&
+		    (job_mem_info_ptr[i].mem_used >
+		     job_mem_info_ptr[i].mem_limit)) {
+			info("Job %u exceeded memory limit (%u>%u), "
+			     "cancelling it", job_mem_info_ptr[i].job_id, 
+			     job_mem_info_ptr[i].mem_used,
+			     job_mem_info_ptr[i].mem_limit);
+			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id, 
+					       NO_VAL);
+		} else if ((job_mem_info_ptr[i].vsize_limit != 0) &&
+			   (job_mem_info_ptr[i].vsize_used >
+			    job_mem_info_ptr[i].vsize_limit)) {
+			info("Job %u exceeded virtual memory limit (%u>%u), "
+			     "cancelling it", job_mem_info_ptr[i].job_id, 
+			     job_mem_info_ptr[i].vsize_used,
+			     job_mem_info_ptr[i].vsize_limit);
+			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id, 
+					       NO_VAL);
+		}
 	}
 	xfree(job_mem_info_ptr);
 }
