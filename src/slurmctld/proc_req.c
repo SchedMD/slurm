@@ -623,28 +623,24 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.jobid    = job_ptr->job_id;
 	cred_arg.stepid   = step_ptr->step_id;
 	cred_arg.uid      = job_ptr->user_id;
-	if (step_ptr->mem_per_cpu) {
-		cred_arg.job_mem = step_ptr->mem_per_cpu |
-				   MEM_PER_CPU;
-	} else {
-		cred_arg.job_mem = job_ptr->details->pn_min_memory;
-	}
-#ifdef HAVE_FRONT_END
-	cred_arg.hostlist = node_record_table_ptr[0].name;
-#else
-	cred_arg.hostlist = step_ptr->step_layout->node_list;
-#endif
 
-	/* Identify the cores allocated to this job step
-	 * The core_bitmap is based upon the nodes allocated to the _job_.
-	 * The slurmd must identify the appropriate cores to be used
-	 * by each step. */
-	cred_arg.core_bitmap         = step_ptr->core_bitmap_job;
+	cred_arg.job_core_bitmap = job_resrcs_ptr->core_bitmap;
+	cred_arg.job_hostlist    = job_ptr->nodes;
+	cred_arg.job_mem_limit   = job_ptr->details->pn_min_memory;
+	cred_arg.job_nhosts      = job_resrcs_ptr->nhosts;
+
+	cred_arg.step_core_bitmap = step_ptr->core_bitmap_job;
+#ifdef HAVE_FRONT_END
+	cred_arg.step_hostlist   = node_record_table_ptr[0].name;
+#else
+	cred_arg.step_hostlist   = step_ptr->step_layout->node_list;
+#endif
+	if (step_ptr->mem_per_cpu)
+		cred_arg.step_mem_limit  = step_ptr->mem_per_cpu | MEM_PER_CPU;
+
 	cred_arg.cores_per_socket    = job_resrcs_ptr->cores_per_socket;
 	cred_arg.sockets_per_node    = job_resrcs_ptr->sockets_per_node;
 	cred_arg.sock_core_rep_count = job_resrcs_ptr->sock_core_rep_count;
-	cred_arg.job_nhosts          = job_resrcs_ptr->nhosts;
-	cred_arg.job_hostlist        = job_ptr->nodes;
 
 	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg);
 	if (*slurm_cred == NULL) {

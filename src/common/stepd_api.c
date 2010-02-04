@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
@@ -288,14 +288,20 @@ stepd_get_info(int fd)
 {
 	int req = REQUEST_INFO;
 	slurmstepd_info_t *info;
+	uint16_t protocol_version;
 
 	info = xmalloc(sizeof(slurmstepd_info_t));
 	safe_write(fd, &req, sizeof(int));
+	safe_read(fd, &protocol_version, sizeof(uint16_t));
 	safe_read(fd, &info->uid, sizeof(uid_t));
 	safe_read(fd, &info->jobid, sizeof(uint32_t));
 	safe_read(fd, &info->stepid, sizeof(uint32_t));
 	safe_read(fd, &info->nodeid, sizeof(uint32_t));
 	safe_read(fd, &info->job_mem_limit, sizeof(uint32_t));
+	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION)
+		safe_read(fd, &info->step_mem_limit, sizeof(uint32_t));
+	else
+		info->step_mem_limit = info->job_mem_limit;
 
 	return info;
 rwfail:

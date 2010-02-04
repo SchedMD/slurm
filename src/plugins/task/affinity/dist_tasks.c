@@ -203,7 +203,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	 * physically exist than are configured (slurmd is out of
 	 * sync with the slurmctld daemon). */
 	for (p = 0; p < (sockets * cores); p++) {
-		if (bit_test(arg.core_bitmap, p))
+		if (bit_test(arg.job_core_bitmap, p))
 			bit_set(req_map, (p % num_cpus));
 	}
 	str = (char *)bit_fmt_hexmask(req_map);
@@ -589,7 +589,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	 * physically exist than are configured (slurmd is out of
 	 * sync with the slurmctld daemon). */
 	for (p = 0; p < (sockets * cores); p++) {
-		if (bit_test(arg.core_bitmap, start+p))
+		if (bit_test(arg.step_core_bitmap, start+p))
 			bit_set(req_map, (p % num_cpus));
 	}
 

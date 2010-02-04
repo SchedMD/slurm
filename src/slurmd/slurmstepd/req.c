@@ -2,7 +2,7 @@
  *  src/slurmd/slurmstepd/req.c - slurmstepd domain socket request handling
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -554,11 +554,15 @@ rwfail:
 static int
 _handle_info(int fd, slurmd_job_t *job)
 {
+	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
+
+	safe_write(fd, &protocol_version, sizeof(uint16_t));
 	safe_write(fd, &job->uid, sizeof(uid_t));
 	safe_write(fd, &job->jobid, sizeof(uint32_t));
 	safe_write(fd, &job->stepid, sizeof(uint32_t));
 	safe_write(fd, &job->nodeid, sizeof(uint32_t));
 	safe_write(fd, &job->job_mem, sizeof(uint32_t));
+	safe_write(fd, &job->step_mem, sizeof(uint32_t));
 
 	return SLURM_SUCCESS;
 rwfail:

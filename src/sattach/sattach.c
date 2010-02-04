@@ -2,7 +2,7 @@
  *  sattach.c - Attach to a running job step.
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -247,22 +247,28 @@ static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	arg.jobid    = jobid;
 	arg.stepid   = stepid;
 	arg.uid      = uid;
-	arg.hostlist = nodelist;
 
-	arg.core_bitmap   = bit_alloc(node_cnt);
-	bit_nset(arg.core_bitmap, 0, node_cnt-1);
+	arg.job_hostlist  = nodelist;
+	arg.job_nhosts    = node_cnt;
+
+	arg.step_hostlist = nodelist;
+
+	arg.job_core_bitmap   = bit_alloc(node_cnt);
+	bit_nset(arg.job_core_bitmap, 0, node_cnt-1);
+	arg.step_core_bitmap  = bit_alloc(node_cnt);
+	bit_nset(arg.step_core_bitmap, 0, node_cnt-1);
+
 	arg.cores_per_socket = xmalloc(sizeof(uint16_t));
 	arg.cores_per_socket[0] = 1;
 	arg.sockets_per_node = xmalloc(sizeof(uint16_t));
 	arg.sockets_per_node[0] = 1;
 	arg.sock_core_rep_count = xmalloc(sizeof(uint32_t));
 	arg.sock_core_rep_count[0] = node_cnt;
-	arg.job_nhosts    = node_cnt;
-	arg.job_hostlist  = nodelist;
 
 	cred = slurm_cred_faker(&arg);
 
-	bit_free(arg.core_bitmap);
+	bit_free(arg.job_core_bitmap);
+	bit_free(arg.step_core_bitmap);
 	xfree(arg.cores_per_socket);
 	xfree(arg.sockets_per_node);
 	xfree(arg.sock_core_rep_count);

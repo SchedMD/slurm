@@ -42,8 +42,9 @@
 #include "jobacct_common.h"
 
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
-uint32_t jobacct_job_id = 0;
-uint32_t jobacct_mem_limit = 0;
+uint32_t jobacct_job_id     = 0;
+uint32_t jobacct_step_id    = 0;
+uint32_t jobacct_mem_limit  = 0;
 uint32_t mult = 1000;
 
 static void _pack_jobacct_id(jobacct_id_t *jobacct_id, uint16_t rpc_version, Buf buffer)
@@ -1074,7 +1075,8 @@ unpack_error:
        	return SLURM_ERROR;
 }
 
-extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit)
+extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t step_id,
+					uint32_t mem_limit)
 {
 	if ((job_id == 0) || (mem_limit == 0)) {
 		error("jobacct_common_set_mem_limit: jobid:%u mem_limit:%u",
@@ -1082,7 +1084,8 @@ extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit)
 		return SLURM_ERROR;
 	}
 
-	jobacct_job_id   = job_id;
+	jobacct_job_id    = job_id;
+	jobacct_step_id   = step_id;
 	jobacct_mem_limit = mem_limit * 1024;	/* MB to KB */
 	return SLURM_SUCCESS;
 }

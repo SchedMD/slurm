@@ -2,7 +2,7 @@
  *  step_ctx.c - step_ctx task functions for use by AIX/POE
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -72,21 +72,29 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	slurm_cred_arg_t arg;
 	uint32_t node_cnt = ctx->step_resp->step_layout->node_cnt;
 
-	arg.hostlist      = ctx->step_req->node_list;
-	arg.job_mem       = 0;
-	arg.jobid         = ctx->job_id;
-	arg.stepid        = ctx->step_resp->job_step_id;
-	arg.uid           = ctx->user_id;
-	arg.core_bitmap   = bit_alloc(node_cnt);
-	bit_nset(arg.core_bitmap, 0, node_cnt-1);
+	arg.jobid          = ctx->job_id;
+	arg.stepid         = ctx->step_resp->job_step_id;
+	arg.uid            = ctx->user_id;
+
+	arg.job_nhosts     = node_cnt;
+	arg.job_hostlist   = ctx->step_resp->step_layout->node_list;
+	arg.job_mem_limit  = 0;
+
+	arg.step_hostlist  = ctx->step_req->node_list;
+	arg.step_mem_limit = 0;
+
+	arg.job_core_bitmap   = bit_alloc(node_cnt);
+	bit_nset(arg.job_core_bitmap,  0, node_cnt-1);
+	arg.step_core_bitmap  = bit_alloc(node_cnt);
+	bit_nset(arg.step_core_bitmap, 0, node_cnt-1);
+
 	arg.cores_per_socket = xmalloc(sizeof(uint16_t));
 	arg.cores_per_socket[0] = 1;
 	arg.sockets_per_node = xmalloc(sizeof(uint16_t));
 	arg.sockets_per_node[0] = 1;
 	arg.sock_core_rep_count = xmalloc(sizeof(uint32_t));
 	arg.sock_core_rep_count[0] = node_cnt;
-	arg.job_nhosts    = node_cnt;
-	arg.job_hostlist  = ctx->step_resp->step_layout->node_list;
+
 	ctx->step_resp->cred = slurm_cred_faker(&arg);
 }
 

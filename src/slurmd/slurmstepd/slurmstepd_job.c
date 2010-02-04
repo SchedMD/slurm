@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -177,7 +177,7 @@ job_create(launch_tasks_request_msg_t *msg)
 		return NULL;
 	}
 
-	if(msg->job_mem && (msg->acctg_freq != (uint16_t) NO_VAL)
+	if (msg->job_mem_lim && (msg->acctg_freq != (uint16_t) NO_VAL)
 	   && (msg->acctg_freq > conf->job_acct_gather_freq)) {
 		error("Can't set frequency to %u, it is higher than %u.  "
 		      "We need it to be at least at this level to "
@@ -209,10 +209,6 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->nprocs	= msg->nprocs;
 	job->jobid	= msg->job_id;
 	job->stepid	= msg->job_step_id;
-
-	job->job_mem	= msg->job_mem;
-	if (job->job_mem)
-		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
 
 	job->uid	= (uid_t) msg->uid;
 	job->gid	= (gid_t) msg->gid;
@@ -289,7 +285,16 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->pty         = msg->pty;
 	job->open_mode   = msg->open_mode;
 	job->options     = msg->options;
-	job->alloc_cores = format_core_allocs(msg->cred, conf->node_name);
+	format_core_allocs(msg->cred, conf->node_name, 
+			   &job->job_alloc_cores, &job->step_alloc_cores,
+			   &job->job_mem, &job->step_mem);
+	if (job->step_mem) {
+		jobacct_common_set_mem_limit(job->jobid, job->stepid, 
+					     job->step_mem);
+	} else if (job->job_mem) {
+		jobacct_common_set_mem_limit(job->jobid, job->stepid, 
+					     job->job_mem);
+	}
 
 	list_append(job->sruns, (void *) srun);
 
@@ -354,10 +359,6 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->step_id;
 
-	job->job_mem = msg->job_mem;
-	if (job->job_mem)
-		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
-
 	job->batch   = true;
 	if (msg->acctg_freq != (uint16_t) NO_VAL)
 		jobacct_gather_g_change_poll(msg->acctg_freq);
@@ -392,7 +393,14 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->restart_cnt = msg->restart_cnt;
 
 	job->cpus_per_task = msg->cpus_per_node[0];
-	job->alloc_cores = format_core_allocs(msg->cred, conf->node_name);
+	format_core_allocs(msg->cred, conf->node_name, 
+			   &job->job_alloc_cores, &job->step_alloc_cores,
+			   &job->job_mem, &job->step_mem);
+	if (job->step_mem) {
+		jobacct_common_set_mem_limit(job->jobid, NO_VAL, 
+					     job->step_mem);
+	} else if (job->job_mem)
+		jobacct_common_set_mem_limit(job->jobid, NO_VAL, job->job_mem);
 
 	srun = srun_info_create(NULL, NULL, NULL);
 
@@ -534,7 +542,8 @@ job_destroy(slurmd_job_t *job)
 	xfree(job->node_name);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
-	xfree(job->alloc_cores);
+	xfree(job->job_alloc_cores);
+	xfree(job->step_alloc_cores);
 	xfree(job);
 }
 

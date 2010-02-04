@@ -2,7 +2,7 @@
  *  spank.h - Stackable Plug-in Architecture for Node job Kontrol
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  CODE-OCEC-09-009. All rights reserved.
  *  
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -124,34 +124,36 @@ extern spank_f slurm_spank_exit;
  *    rc = spank_get_item (spank, S_JOB_PID_TO_GLOBAL_ID, pid, &global_id);
  */
 enum spank_item {
-    S_JOB_UID,               /* User id (uid_t *)                             */
-    S_JOB_GID,               /* Primary group id (gid_t *)                    */
-    S_JOB_ID,                /* SLURM job id (uint32_t *)                     */ 
-    S_JOB_STEPID,            /* SLURM job step id (uint32_t *)                */ 
-    S_JOB_NNODES,            /* Total number of nodes in job (uint32_t *)     */ 
-    S_JOB_NODEID,            /* Relative id of this node (uint32_t *)         */
-    S_JOB_LOCAL_TASK_COUNT,  /* Number of local tasks (uint32_t *)            */
-    S_JOB_TOTAL_TASK_COUNT,  /* Total number of tasks in job (uint32_t *)     */ 
-    S_JOB_NCPUS,             /* Number of CPUs used by this job (uint16_t *)  */
-    S_JOB_ARGV,              /* Command args (int, char ***)                  */
-    S_JOB_ENV,               /* Job env array (char ***)                      */
-    S_TASK_ID,               /* Local task id (int *)                         */
-    S_TASK_GLOBAL_ID,        /* Global task id (uint32_t *)                   */ 
-    S_TASK_EXIT_STATUS,      /* Exit status of task if exited (int *)         */
-    S_TASK_PID,              /* Task pid (pid_t *)                            */
-    S_JOB_PID_TO_GLOBAL_ID,  /* global task id from pid (pid_t, uint32_t *)   */
-    S_JOB_PID_TO_LOCAL_ID,   /* local task id from pid (pid_t, uint32_t *)    */
-    S_JOB_LOCAL_TO_GLOBAL_ID,/* local id to global id  (uint32_t, uint32_t *) */
-    S_JOB_GLOBAL_TO_LOCAL_ID,/* global id to local id  (uint32_t, uint32_t *) */
-    S_JOB_SUPPLEMENTARY_GIDS,/* Array of suppl. gids (gid_t **, int *)        */
-    S_SLURM_VERSION,         /* Current slurm version (char **)               */
-    S_SLURM_VERSION_MAJOR,   /* Current slurm version major release (char **) */
-    S_SLURM_VERSION_MINOR,   /* Current slurm version minor release (char **) */
-    S_SLURM_VERSION_MICRO,   /* Current slurm version micro release (char **) */
+    S_JOB_UID,               /* User id (uid_t *)                            */
+    S_JOB_GID,               /* Primary group id (gid_t *)                   */
+    S_JOB_ID,                /* SLURM job id (uint32_t *)                    */
+    S_JOB_STEPID,            /* SLURM job step id (uint32_t *)               */
+    S_JOB_NNODES,            /* Total number of nodes in job (uint32_t *)    */
+    S_JOB_NODEID,            /* Relative id of this node (uint32_t *)        */
+    S_JOB_LOCAL_TASK_COUNT,  /* Number of local tasks (uint32_t *)           */
+    S_JOB_TOTAL_TASK_COUNT,  /* Total number of tasks in job (uint32_t *)    */
+    S_JOB_NCPUS,             /* Number of CPUs used by this job (uint16_t *) */
+    S_JOB_ARGV,              /* Command args (int, char ***)                 */
+    S_JOB_ENV,               /* Job env array (char ***)                     */
+    S_TASK_ID,               /* Local task id (int *)                        */
+    S_TASK_GLOBAL_ID,        /* Global task id (uint32_t *)                  */
+    S_TASK_EXIT_STATUS,      /* Exit status of task if exited (int *)        */
+    S_TASK_PID,              /* Task pid (pid_t *)                           */
+    S_JOB_PID_TO_GLOBAL_ID,  /* global task id from pid (pid_t, uint32_t *)  */
+    S_JOB_PID_TO_LOCAL_ID,   /* local task id from pid (pid_t, uint32_t *)   */
+    S_JOB_LOCAL_TO_GLOBAL_ID,/* local id to global id (uint32_t, uint32_t *) */
+    S_JOB_GLOBAL_TO_LOCAL_ID,/* global id to local id (uint32_t, uint32_t *) */
+    S_JOB_SUPPLEMENTARY_GIDS,/* Array of suppl. gids (gid_t **, int *)       */
+    S_SLURM_VERSION,         /* Current SLURM version (char **)              */
+    S_SLURM_VERSION_MAJOR,   /* SLURM version major release (char **)        */
+    S_SLURM_VERSION_MINOR,   /* SLURM version minor release (char **)        */
+    S_SLURM_VERSION_MICRO,   /* SLURM version micro release (char **)        */
     S_STEP_CPUS_PER_TASK,    /* CPUs allocated per task (=1 if --overcommit
-                              * option is used, uint32_t *)                   */
-    S_JOB_ALLOC_CORES,       /* Allocated cores in list format                */
-    S_JOB_ALLOC_MEM          /* Allocated memory in MB                        */
+                              * option is used, uint32_t *)                  */
+    S_JOB_ALLOC_CORES,       /* Job's allocated cores in list format         */
+    S_JOB_ALLOC_MEM,         /* Job's allocated memory in MB                 */
+    S_STEP_ALLOC_CORES,      /* Step's allocated cores in list format        */
+    S_STEP_ALLOC_MEM         /* Step's allocated memory in MB                */
 };
 
 typedef enum spank_item spank_item_t;
