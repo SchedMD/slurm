@@ -3641,6 +3641,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->unkillable_program, buffer);
 		pack16(build_ptr->unkillable_timeout, buffer);
 		packstr(build_ptr->version, buffer);
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+			pack16(build_ptr->vsize_factor, buffer);
+		}
 
 		pack16(build_ptr->wait_time, buffer);
 
@@ -3694,15 +3697,15 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack_time(&build_ptr->boot_time, buffer);
 
 		safe_unpack16(&build_ptr->cache_groups, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->checkpoint_type, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&build_ptr->checkpoint_type, 
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->cluster_name,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->complete_wait, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->control_addr,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->control_machine, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&build_ptr->control_machine, 
+				       &uint32_tmp,buffer);
 		safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint32_tmp,
 				       buffer);
 
@@ -3710,7 +3713,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->debug_flags, buffer);
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
 
-		safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp, 
+				       buffer);
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->epilog_slurmctld,
 				       &uint32_tmp, buffer);
@@ -3801,7 +3805,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->private_data, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&build_ptr->prolog, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->prolog, &uint32_tmp, 
+				       buffer);
 		safe_unpackstr_xmalloc(&build_ptr->prolog_slurmctld,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->propagate_prio_process, buffer);
@@ -3900,9 +3905,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->task_plugin,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->task_plugin_param, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->tmp_fs, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->topology_plugin, &uint32_tmp,
+		safe_unpackstr_xmalloc(&build_ptr->tmp_fs, &uint32_tmp, 
 				       buffer);
+		safe_unpackstr_xmalloc(&build_ptr->topology_plugin, 
+				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->track_wckey, buffer);
 		safe_unpack16(&build_ptr->tree_width, buffer);
 
@@ -3912,12 +3918,16 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->unkillable_timeout, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->version,
 				       &uint32_tmp, buffer);
+		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+			safe_unpack16(&build_ptr->vsize_factor, buffer);
+		}
 
 		safe_unpack16(&build_ptr->wait_time, buffer);
 
 		safe_unpack16(&build_ptr->z_16, buffer);
 		safe_unpack32(&build_ptr->z_32, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->z_char, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->z_char, &uint32_tmp, 
+				       buffer);
 	}
 	return SLURM_SUCCESS;
 

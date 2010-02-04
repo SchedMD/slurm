@@ -881,7 +881,7 @@ extern uint16_t slurm_get_vsize_factor(void)
 	if(slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		vsize_factor = 130;	/* FIXME: stubbed */
+		vsize_factor = conf->vsize_factor;
 		slurm_conf_unlock();
 	}
 	return vsize_factor;

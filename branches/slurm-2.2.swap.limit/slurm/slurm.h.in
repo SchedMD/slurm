@@ -2,7 +2,7 @@
  *  slurm.h - Definitions for all of the SLURM RPCs
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1397,6 +1397,7 @@ typedef struct slurm_ctl_conf {
 				      * they are considered "unkillable". */
 	uint16_t use_pam;	/* enable/disable PAM support */
 	char *version;		/* version of slurmctld */
+	uint16_t vsize_factor;	/* virtual memory limit size factor */
 	uint16_t wait_time;	/* default job --wait time */
 	uint16_t z_16;		/* reserved for future use */
 	uint32_t z_32;		/* reserved for future use */
