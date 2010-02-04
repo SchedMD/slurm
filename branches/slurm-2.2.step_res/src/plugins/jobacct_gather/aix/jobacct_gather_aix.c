@@ -307,8 +307,14 @@ static void _get_process_data(void)
 	}
 	if (jobacct_job_id && jobacct_mem_limit &&
 	    (total_job_mem > jobacct_mem_limit)) {
-		error("Step %u.%u exceeded %u KB memory limit, being killed",
-		       jobacct_job_id, jobacct_step_id, jobacct_mem_limit);
+		if (jobacct_step_id == NO_VAL) {
+			error("Job %u exceeded %u KB memory limit, being "
+ 			      "killed", jobacct_job_id, jobacct_mem_limit);
+		} else {
+			error("Step %u.%u exceeded %u KB memory limit, being "
+			      "killed", jobacct_job_id, jobacct_step_id, 
+			      jobacct_mem_limit);
+		}
 		_acct_kill_step();
 	}
 
