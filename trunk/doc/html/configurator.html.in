@@ -531,7 +531,7 @@ to Maui (configuration parameter <B>SchedulerPort</B> must specified)<BR>
 to Moab (configuration parameter <B>SchedulerPort</B> must specified)<BR>
 <P>
 <input type="text" name="scheduler_port" value="7321"> <B>SchedulerPort</B>: scheduler 
-communications port (used by Wiki only)
+communications port (used by Wiki and Wiki2 only)
 <P>
 Define what node configuration (sockets, cores, memory, etc.) should be used. 
 Using values defined in the configuration file will provide faster scheduling.<BR>
@@ -848,6 +848,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 13 August 2009</P>
+Last modified 3 February 2010</P>
 </BODY>
 
