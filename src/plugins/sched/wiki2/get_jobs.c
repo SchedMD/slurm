@@ -94,6 +94,7 @@ reject_msg_t reject_msgs[REJECT_MSG_MAX];
  *	[RFEATURES=<features>;]		required features, if any,
  *					NOTE: OR operator not supported
  *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
+ *	[EXCLUDE_HOSTLIST=<node1:node2>;list of excluded nodes, if any
  *	[STARTDATE=<uts>;]		earliest start time, if any
  *	[MAXNODES=<nodes>;]		maximum number of nodes, 0 if no limit
  *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
@@ -264,6 +265,16 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 				job_ptr->details->req_node_bitmap);
 			snprintf(tmp, sizeof(tmp),
 				"HOSTLIST=%s;", hosts);
+			xstrcat(buf, tmp);
+			xfree(hosts);
+		}
+		if ((job_ptr->details) &&
+		    (job_ptr->details->exc_nodes) &&
+		    (job_ptr->details->exc_nodes[0])) {
+			char *hosts = bitmap2wiki_node_name(
+				job_ptr->details->exc_node_bitmap);
+			snprintf(tmp, sizeof(tmp),
+				"EXCLUDE_HOSTLIST=%s;", hosts);
 			xstrcat(buf, tmp);
 			xfree(hosts);
 		}
