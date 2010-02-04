@@ -144,13 +144,14 @@ static int _unpack_sacct(sacct_t *sacct, uint16_t rpc_version, Buf buffer)
 		safe_unpackdouble(&sacct->ave_pages, buffer);
 		safe_unpackdouble(&sacct->ave_cpu, buffer);
 
-		if(_unpack_jobacct_id(&sacct->max_vsize_id, rpc_version, buffer) != SLURM_SUCCESS)
+		if(_unpack_jobacct_id(&sacct->max_vsize_id, rpc_version,
+				      buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		if(_unpack_jobacct_id(&sacct->max_rss_id, rpc_version, buffer) != SLURM_SUCCESS)
+		if(_unpack_jobacct_id(&sacct->max_rss_id, rpc_version, 					      buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		if(_unpack_jobacct_id(&sacct->max_pages_id, rpc_version, buffer) != SLURM_SUCCESS)
+		if(_unpack_jobacct_id(&sacct->max_pages_id, rpc_version, 					      buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		if(_unpack_jobacct_id(&sacct->min_cpu_id, rpc_version, buffer) != SLURM_SUCCESS)
+		if(_unpack_jobacct_id(&sacct->min_cpu_id, rpc_version, 					      buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else {
 		/* this is here to handle the floats since it appears sending
@@ -171,13 +172,17 @@ static int _unpack_sacct(sacct_t *sacct, uint16_t rpc_version, Buf buffer)
 		sacct->min_cpu = temp / mult;
 		safe_unpack32(&temp, buffer);
 		sacct->ave_cpu = temp / mult;
-		if(_unpack_jobacct_id(&sacct->max_vsize_id, rpc_version, buffer) != SLURM_SUCCESS)
+		if(_unpack_jobacct_id(&sacct->max_vsize_id, rpc_version,
+				      buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		if(_unpack_jobacct_id(&sacct->max_rss_id, rpc_version, buffer) != SLURM_SUCCESS)
+		if(_unpack_jobacct_id(&sacct->max_rss_id, rpc_version,
+				      buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		if(_unpack_jobacct_id(&sacct->max_pages_id, rpc_version, buffer) != SLURM_SUCCESS)
+		if(_unpack_jobacct_id(&sacct->max_pages_id, rpc_version,
+				      buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		if(_unpack_jobacct_id(&sacct->min_cpu_id, rpc_version, buffer) != SLURM_SUCCESS)
+		if(_unpack_jobacct_id(&sacct->min_cpu_id, rpc_version,
+				      buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 	}
 	return SLURM_SUCCESS;
@@ -838,8 +843,7 @@ extern int jobacct_common_setinfo(struct jobacctinfo *jobacct,
 		jobacct->tot_cpu = *uint32;
 		break;
 	default:
-		debug("jobacct_g_set_setinfo data_type %d invalid",
-		      type);
+		debug("jobacct_g_set_setinfo data_type %d invalid", type);
 	}
 	slurm_mutex_unlock(&jobacct_lock);
 	return rc;
@@ -911,8 +915,7 @@ extern int jobacct_common_getinfo(struct jobacctinfo *jobacct,
 		*uint32 = jobacct->tot_cpu;
 		break;
 	default:
-		debug("jobacct_g_set_setinfo data_type %d invalid",
-		      type);
+		debug("jobacct_g_set_setinfo data_type %d invalid", type);
 	}
 	slurm_mutex_unlock(&jobacct_lock);
 	return rc;
