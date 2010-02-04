@@ -107,12 +107,13 @@ am__DEPENDENCIES_1 =
 @WITH_MYSQL_TRUE@accounting_storage_mysql_la_DEPENDENCIES = $(top_builddir)/src/database/libslurm_mysql.la \
 @WITH_MYSQL_TRUE@	$(am__DEPENDENCIES_1)
 am__accounting_storage_mysql_la_SOURCES_DIST =  \
-	accounting_storage_mysql.c mysql_acct.c mysql_acct.h \
-	mysql_assoc.c mysql_accoc.h mysql_cluster.c mysql_cluster.h \
-	mysql_jobacct_process.c mysql_jobacct_process.h \
-	mysql_problems.c mysql_problems.h mysql_qos.c mysql_qos.h \
-	mysql_rollup.c mysql_rollup.h mysql_txn.c mysql_txn.h \
-	mysql_user.c mysql_user.h mysql_wckey.c mysql_wckey.h \
+	accounting_storage_mysql.c accounting_storage_mysql.h \
+	mysql_acct.c mysql_acct.h mysql_assoc.c mysql_accoc.h \
+	mysql_cluster.c mysql_cluster.h mysql_jobacct_process.c \
+	mysql_jobacct_process.h mysql_problems.c mysql_problems.h \
+	mysql_qos.c mysql_qos.h mysql_rollup.c mysql_rollup.h \
+	mysql_txn.c mysql_txn.h mysql_user.c mysql_user.h \
+	mysql_wckey.c mysql_wckey.h \
 	$(top_srcdir)/src/plugins/accounting_storage/common/common_as.h \
 	$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c
 am__objects_1 =  \
@@ -131,12 +132,13 @@ am__objects_1 =  \
 @WITH_MYSQL_TRUE@am_accounting_storage_mysql_la_OBJECTS =  \
 @WITH_MYSQL_TRUE@	$(am__objects_1)
 am__EXTRA_accounting_storage_mysql_la_SOURCES_DIST =  \
-	accounting_storage_mysql.c mysql_acct.c mysql_acct.h \
-	mysql_assoc.c mysql_accoc.h mysql_cluster.c mysql_cluster.h \
-	mysql_jobacct_process.c mysql_jobacct_process.h \
-	mysql_problems.c mysql_problems.h mysql_qos.c mysql_qos.h \
-	mysql_rollup.c mysql_rollup.h mysql_txn.c mysql_txn.h \
-	mysql_user.c mysql_user.h mysql_wckey.c mysql_wckey.h \
+	accounting_storage_mysql.c accounting_storage_mysql.h \
+	mysql_acct.c mysql_acct.h mysql_assoc.c mysql_accoc.h \
+	mysql_cluster.c mysql_cluster.h mysql_jobacct_process.c \
+	mysql_jobacct_process.h mysql_problems.c mysql_problems.h \
+	mysql_qos.c mysql_qos.h mysql_rollup.c mysql_rollup.h \
+	mysql_txn.c mysql_txn.h mysql_user.c mysql_user.h \
+	mysql_wckey.c mysql_wckey.h \
 	$(top_srcdir)/src/plugins/accounting_storage/common/common_as.h \
 	$(top_srcdir)/src/plugins/accounting_storage/common/common_as.c
 accounting_storage_mysql_la_OBJECTS =  \
@@ -353,7 +355,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-AS_MYSQL_SOURCES = accounting_storage_mysql.c \
+AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		mysql_acct.c mysql_acct.h \
 		mysql_assoc.c mysql_accoc.h \
 		mysql_cluster.c mysql_cluster.h \

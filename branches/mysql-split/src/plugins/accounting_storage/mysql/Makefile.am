@@ -6,7 +6,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-AS_MYSQL_SOURCES = accounting_storage_mysql.c \
+AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		mysql_acct.c mysql_acct.h \
 		mysql_assoc.c mysql_accoc.h \
 		mysql_cluster.c mysql_cluster.h \
