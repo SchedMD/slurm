@@ -1891,12 +1891,10 @@ extern int set_all_bps_except(char *bps)
 		for (y = 0; y < DIM_SIZE[Y]; y++)
 			for (z = 0; z < DIM_SIZE[Z]; z++) {
 				if(ba_system_ptr->grid[x][y][z].state
-					  & NODE_RESUME) {
+				   & NODE_RESUME) {
 					/* clear the bit and mark as unused */
 					ba_system_ptr->grid[x][y][z].state &=
 						~NODE_RESUME;
-					ba_system_ptr->grid[x][y][z].used =
-						false;
 				} else if(!ba_system_ptr->grid[x][y][z].used) {
 					ba_system_ptr->grid[x][y][z].used = 2;
 				}
@@ -1905,7 +1903,6 @@ extern int set_all_bps_except(char *bps)
 		if(ba_system_ptr->grid[x].state & NODE_RESUME) {
 			/* clear the bit and mark as unused */
 			ba_system_ptr->grid[x][y][z].state &= ~NODE_RESUME;
-			ba_system_ptr->grid[x].used = false;
 		} else if(!ba_system_ptr->grid[x].used) {
 			ba_system_ptr->grid[x].used = 2;
 		}
