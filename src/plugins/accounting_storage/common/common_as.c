@@ -42,6 +42,7 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/xstring.h"
+#include "src/slurmdbd/read_config.h"
 #include "common_as.h"
 
 extern char *assoc_hour_table;
@@ -66,9 +67,8 @@ extern char *wckey_month_table;
  * IN rpc_version: rpc version of cluster
  * RET:  error code
  */
-extern int
-send_accounting_update(List update_list, char *cluster, char *host,
-		       uint16_t port, uint16_t rpc_version)
+extern int send_accounting_update(List update_list, char *cluster, char *host,
+				  uint16_t port, uint16_t rpc_version)
 {
 	accounting_update_msg_t msg;
 	slurm_msg_t req;
@@ -90,7 +90,8 @@ send_accounting_update(List update_list, char *cluster, char *host,
 	slurm_msg_t_init(&req);
 	slurm_set_addr_char(&req.address, port, host);
 	req.msg_type = ACCOUNTING_UPDATE_MSG;
-	req.flags = SLURM_GLOBAL_AUTH_KEY;
+	if(slurmdbd_conf)
+		req.flags = SLURM_GLOBAL_AUTH_KEY;
 	req.data = &msg;
 	slurm_msg_t_init(&resp);
 
@@ -124,13 +125,19 @@ send_accounting_update(List update_list, char *cluster, char *host,
  * RET: error code
  * NOTE: the items in update_list are not deleted
  */
-extern int
-update_assoc_mgr(List update_list)
+extern int update_assoc_mgr(List update_list)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator itr = NULL;
 	acct_update_object_t *object = NULL;
 
+	/* NOTE: you can not use list_pop, or list_push
+	   anywhere either, since mysql is
+	   exporting something of the same type as a macro,
+	   which messes everything up (my_list.h is the bad boy).
+	   So we are just going to delete each item as it
+	   comes out.
+	*/
 	itr = list_iterator_create(update_list);
 	while((object = list_next(itr))) {
 		if(!object->objects || !list_count(object->objects)) {
@@ -178,6 +185,9 @@ update_assoc_mgr(List update_list)
  * IN type: update type
  * IN object: object updated
  * RET: error code
+ *
+ * NOTE: This function will take the object given and free it later so it
+ *       needed to be removed from a list if in one before.
  */
 extern int
 addto_update_list(List update_list, acct_update_type_t type, void *object)
@@ -240,7 +250,7 @@ addto_update_list(List update_list, acct_update_type_t type, void *object)
 		error("unknown type set in update_object: %d", type);
 		return SLURM_ERROR;
 	}
-	debug3("XXX: update object with type %d added", type);
+	debug4("XXX: update object with type %d added", type);
 	list_append(update_object->objects, object);
 	return SLURM_SUCCESS;
 }
@@ -273,7 +283,8 @@ dump_update_list(List update_list)
 	itr = list_iterator_create(update_list);
 	while((object = list_next(itr))) {
 		if(!object->objects || !list_count(object->objects)) {
-			debug3("\tUPDATE OBJECT WITH NO RECORDS, type: %d", object->type);
+			debug3("\tUPDATE OBJECT WITH NO RECORDS, type: %d",
+			       object->type);
 			continue;
 		}
 		switch(object->type) {

@@ -42,7 +42,7 @@
 #ifndef _HAVE_MYSQL_ROLLUP_H
 #define _HAVE_MYSQL_ROLLUP_H
 
-#include "mysql_jobacct_process.h"
+#include "accounting_storage_mysql.h"
 
 extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			       time_t start, time_t end);
