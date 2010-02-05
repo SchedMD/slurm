@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki2 (for Moab): Add excluded host list to job information
     using new keyword "EXCLUDE_HOSTLIST".
  -- Correct slurmd reporting of incorrect socket/core/thread counts.  
+ -- For sched/wiki2 (Moab): Do not extend a job's end time for suspend/resume
+    or startup delay due to node boot time. A job's end time will always be
+    its start time plus time limit.
 
 * Changes in SLURM 2.1.2
 =============================
