@@ -101,7 +101,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		tmp, my_usage_table, end, start, cluster_rec->name);
 
 	xfree(tmp);
-	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -264,7 +264,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	xfree(id_str);
 	xfree(tmp);
 
-	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -529,7 +529,7 @@ is_user:
 	}
 
 	xfree(tmp);
-	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -599,8 +599,8 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 				       tmp, last_ran_table);
 		xfree(tmp);
 
-		debug4("%d(%d) query\n%s", mysql_conn->conn,
-		       __LINE__, query);
+		debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
+		       __FILE__, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -628,8 +628,8 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 				"values (@PS, @PS, @PS);",
 				now, event_table, last_ran_table);
 
-			debug3("%d(%d) query\n%s", mysql_conn->conn,
-			       __LINE__, query);
+			debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
+			       __FILE__, __LINE__, query);
 			mysql_free_result(result);
 			if(!(result = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 0))) {
@@ -795,7 +795,7 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 	}
 
 	if(query) {
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 	}

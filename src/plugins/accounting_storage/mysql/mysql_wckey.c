@@ -162,8 +162,8 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "id=LAST_INSERT_ID(id)%s;",
 			   wckey_table, cols, vals, extra);
 
-		debug3("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		object->id = mysql_insert_ret_id(mysql_conn->db_conn, query);
 		xfree(query);
 		if(!object->id) {
@@ -414,7 +414,8 @@ empty:
 			       tmp, wckey_table, extra);
 	xfree(tmp);
 	xfree(extra);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);

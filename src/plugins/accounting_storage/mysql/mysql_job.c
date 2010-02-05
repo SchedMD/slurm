@@ -94,8 +94,8 @@ static char *_get_cluster_from_associd(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf("select cluster from %s where id=%u",
 			       assoc_table, associd);
 
-	debug4("%d(%d) query\n%s",
-	       mysql_conn->conn, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -128,8 +128,8 @@ static char *_get_user_from_associd(mysql_conn_t *mysql_conn, uint32_t associd)
 	query = xstrdup_printf("select user from %s where id=%u",
 			       assoc_table, associd);
 
-	debug4("%d(%d) query\n%s",
-	       mysql_conn->conn, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -287,7 +287,8 @@ extern int mysql_job_start(mysql_conn_t *mysql_conn,
 				       job_ptr->details->submit_time,
 				       job_ptr->details->begin_time,
 				       job_ptr->start_time);
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		if(!(result =
 		     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -331,7 +332,8 @@ extern int mysql_job_start(mysql_conn_t *mysql_conn,
 				       "daily_rollup=%d, monthly_rollup=%d",
 				       last_ran_table, check_time,
 				       check_time, check_time);
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 	} else
@@ -472,7 +474,8 @@ no_rollup_change:
 		if(node_inx)
 			xstrfmtcat(query, ", node_inx=\"%s\"", node_inx);
 
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 	try_again:
 		if(!(job_ptr->db_index = mysql_insert_ret_id(
 			     mysql_conn->db_conn, query))) {
@@ -514,7 +517,8 @@ no_rollup_change:
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->db_index);
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}
 
@@ -561,7 +565,8 @@ extern int mysql_job_complete(mysql_conn_t *mysql_conn,
 				       "daily_rollup=%d, monthly_rollup=%d",
 				       last_ran_table, job_ptr->end_time,
 				       job_ptr->end_time, job_ptr->end_time);
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 	} else
@@ -598,7 +603,8 @@ extern int mysql_job_complete(mysql_conn_t *mysql_conn,
 			       job_ptr->job_state & JOB_STATE_BASE,
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -709,7 +715,8 @@ extern int mysql_step_start(mysql_conn_t *mysql_conn,
 		JOB_RUNNING, cpus, nodes, tasks, node_list, node_inx, task_dist,
 		cpus, nodes, tasks, JOB_RUNNING,
 		node_list, node_inx, task_dist);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -860,7 +867,8 @@ extern int mysql_step_complete(mysql_conn_t *mysql_conn,
 		jobacct->min_cpu_id.nodeid,	/* min cpu node */
 		ave_cpu,	/* ave cpu */
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -913,7 +921,8 @@ extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 			   "update %s set end=%d where id=%u && end=0;",
 			   suspend_table, (int)job_ptr->suspend_time,
 			   job_ptr->db_index);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 

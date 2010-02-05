@@ -604,7 +604,7 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 			       job_table, assoc_table, assoc_table,
 			       assoc_char);
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -635,7 +635,7 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 			       job_table, assoc_table,
 			       assoc_char);
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -664,7 +664,7 @@ static bool _check_jobs_before_remove_without_assoctable(
 	query = xstrdup_printf("select associd from %s where (%s) limit 1;",
 			       job_table, where_char);
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -713,7 +713,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 		   now, type, tmp_cond_char, user_name, tmp_vals);
 	xfree(tmp_cond_char);
 	xfree(tmp_vals);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -785,7 +785,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		   now, type, tmp_name_char, user_name);
 	xfree(tmp_name_char);
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
@@ -824,8 +824,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				       " && t2.deleted=0;",
 				       assoc_table, assoc_table, assoc_char);
 
-		debug3("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -875,8 +875,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		   assoc_hour_table, now, loc_assoc_char,
 		   assoc_month_table, now, loc_assoc_char);
 
-	debug3("%d(%d) query\n%s %d",
-	       mysql_conn->conn, __LINE__, query, strlen(query));
+	debug3("%d(%s:%d) query\n%s %d",
+	       mysql_conn->conn, __FILE__, __LINE__, query, strlen(query));
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
@@ -902,7 +902,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			       "creation_time>%d && (%s);",
 			       assoc_table, day_old, loc_assoc_char);
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -926,8 +926,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			   "SELECT lft, rgt, (rgt - lft + 1) "
 			   "FROM %s WHERE id = %s;",
 			   assoc_table, row[0]);
-		debug3("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		if(!(result2 = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -952,8 +952,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 
 		mysql_free_result(result2);
 
-		debug3("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -990,7 +990,7 @@ just_update:
 	if(table != assoc_table)
 		xfree(loc_assoc_char);
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
@@ -1817,8 +1817,8 @@ extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,
 		   "on duplicate key update deleted=0%s;",
 		   resv_table, cols, resv->id, resv->cluster,
 		   vals, extra);
-	debug3("%d(%d) query\n%s",
-	       mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 
 	if((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
@@ -1952,8 +1952,8 @@ extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 			       resv->time_start, resv->time_start_prev,
 			       resv->cluster);
 try_again:
-	debug4("%d(%d) query\n%s",
-	       mysql_conn->conn, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		rc = SLURM_ERROR;
@@ -2062,8 +2062,8 @@ try_again:
 			   vals, extra);
 	}
 
-	debug3("%d(%d) query\n%s",
-	       mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 
 	if((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
@@ -2160,8 +2160,8 @@ extern int acct_storage_p_remove_reservation(mysql_conn_t *mysql_conn,
 		   resv->id, resv->time_start,
 		   resv->cluster);
 
-	debug3("%d(%d) query\n%s",
-	       mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 
 	if((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
@@ -2359,7 +2359,7 @@ empty:
 			       tmp, resv_table, extra);
 	xfree(tmp);
 	xfree(extra);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		if(local_cluster_list)
@@ -2605,7 +2605,7 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 				       assoc_table, assoc_extra);
 		xfree(assoc_extra);
 
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -2787,7 +2787,7 @@ empty:
 
 	xfree(tmp);
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -2823,8 +2823,8 @@ empty:
 				"group_concat(distinct cluster "
 				"order by cluster) from %s where %s",
 				assoc_table, row[TXN_REQ_NAME]);
-			debug4("%d(%d) query\n%s", mysql_conn->conn,
-			       __LINE__, query);
+			debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
+			       __FILE__, __LINE__, query);
 			if(!(result2 = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 0))) {
 				xfree(query);
@@ -3025,8 +3025,8 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 		"select distinct t1.id, t1.state from %s as t1 where "
 		"t1.cluster=\"%s\" && t1.end=0;",
 		job_table, cluster);
-	debug3("%d(%d) query\n%s",
-	       mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -3078,8 +3078,8 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 /* 			       job_table, assoc_table, JOB_CANCELLED,  */
 /* 			       event_time, cluster); */
 	if(query) {
-		debug3("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);

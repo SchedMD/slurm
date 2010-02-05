@@ -87,8 +87,8 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   cluster_table,
 			   now, now, object->name, object->classification,
 			   now);
-		debug3("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -125,8 +125,8 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		xfree(cols);
 		xfree(vals);
-		debug3("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
@@ -149,8 +149,8 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   object->name, user_name, tmp_extra);
 		xfree(tmp_extra);
 		xfree(extra);
-		debug4("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
+		debug4("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
@@ -287,7 +287,8 @@ extern List mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		   cluster_table, extra);
 
 	xfree(extra);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -443,7 +444,8 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		   cluster_hour_table, now, assoc_char,
 		   cluster_month_table, now, assoc_char);
 	xfree(assoc_char);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
@@ -553,7 +555,8 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -602,7 +605,8 @@ empty:
 			"%s where cluster=\"%s\" "
 			"and period_end=0 and node_name='' limit 1",
 			event_table, cluster->name);
-		debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug4("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		if(!(result2 = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -928,7 +932,8 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn, char *cluster,
 		   "update period_end=0;",
 		   event_table, node_ptr->name, node_ptr->node_state, cluster,
 		   cpus, event_time, my_reason, reason_uid);
-	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -949,7 +954,8 @@ extern int mysql_node_up(mysql_conn_t *mysql_conn, char *cluster,
 		"update %s set period_end=%d where cluster=\"%s\" "
 		"and period_end=0 and node_name=\"%s\";",
 		event_table, event_time, cluster, node_ptr->name);
-	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	return rc;
@@ -996,7 +1002,8 @@ extern int mysql_register_ctld(mysql_conn_t *mysql_conn,
 		   now, DBD_MODIFY_CLUSTERS, cluster,
 		   slurmctld_conf.slurm_user_name, address, port);
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 
 	return mysql_db_query(mysql_conn->db_conn, query);
 }
