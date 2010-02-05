@@ -80,8 +80,9 @@
 
 
 /* Change PART_STATE_VERSION value when changing the state save format */
-#define PART_STATE_VERSION      "VER002"
-#define PART_2_1_STATE_VERSION  "VER002" /*version for slurm2.1 */
+#define PART_STATE_VERSION      "VER003"
+#define PART_2_2_STATE_VERSION  "VER003"	/* SLURM version 2.2 */
+#define PART_2_1_STATE_VERSION  "VER002"	/* SLURM version 2.1 */
 
 /* Global variables */
 struct part_record default_part;	/* default configuration values */

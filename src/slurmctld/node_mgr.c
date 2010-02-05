@@ -78,8 +78,9 @@
 #define MAX_RETRIES	10
 
 /* Change NODE_STATE_VERSION value when changing the state save format */
-#define NODE_STATE_VERSION      "VER003"
-#define NODE_2_1_STATE_VERSION  "VER003"
+#define NODE_STATE_VERSION      "VER004"
+#define NODE_2_2_STATE_VERSION  "VER004"	/* SLURM version 2.2 */
+#define NODE_2_1_STATE_VERSION  "VER003"	/* SLURM version 2.1 */
 
 /* Global variables */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
