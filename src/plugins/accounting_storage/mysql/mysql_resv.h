@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_job.h - functions dealing with jobs and job steps.
+ *  mysql_resv.h - functions dealing with reservations.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -36,26 +36,20 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#ifndef _HAVE_MYSQL_JOB_H
-#define _HAVE_MYSQL_JOB_H
+#ifndef _HAVE_MYSQL_RESV_H
+#define _HAVE_MYSQL_RESV_H
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_job_start(mysql_conn_t *mysql_conn, char *cluster_name,
-			   struct job_record *job_ptr);
+extern int mysql_add_resv(mysql_conn_t *mysql_conn,
+			  acct_reservation_rec_t *resv);
 
-extern int mysql_job_complete(mysql_conn_t *mysql_conn,
-			      struct job_record *job_ptr);
+extern int mysql_modify_resv(mysql_conn_t *mysql_conn,
+			     acct_reservation_rec_t *resv);
 
-extern int mysql_step_start(mysql_conn_t *mysql_conn,
-			    struct step_record *step_ptr);
+extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
+			     acct_reservation_rec_t *resv);
 
-extern int mysql_step_complete(mysql_conn_t *mysql_conn,
-			       struct step_record *step_ptr);
-
-extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr);
-
-extern int mysql_flush_jobs_on_cluster(
-	mysql_conn_t *mysql_conn, char *cluster, time_t event_time);
+extern List mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
+			    acct_reservation_cond_t *resv_cond);
 #endif

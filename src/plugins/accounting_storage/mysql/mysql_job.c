@@ -939,3 +939,87 @@ extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 
 	return rc;
 }
+
+extern int mysql_flush_jobs_on_cluster(
+	mysql_conn_t *mysql_conn, char *cluster, time_t event_time)
+{
+	int rc = SLURM_SUCCESS;
+	/* put end times for a clean start */
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = NULL;
+	char *id_char = NULL;
+	char *suspended_char = NULL;
+
+	if(check_connection(mysql_conn) != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
+
+	/* First we need to get the id's and states so we can clean up
+	 * the suspend table and the step table
+	 */
+	query = xstrdup_printf(
+		"select distinct t1.id, t1.state from %s as t1 where "
+		"t1.cluster=\"%s\" && t1.end=0;",
+		job_table, cluster);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
+	if(!(result =
+	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	while((row = mysql_fetch_row(result))) {
+		int state = atoi(row[1]);
+		if(state == JOB_SUSPENDED) {
+			if(suspended_char)
+				xstrfmtcat(suspended_char, " || id=%s", row[0]);
+			else
+				xstrfmtcat(suspended_char, "id=%s", row[0]);
+		}
+
+		if(id_char)
+			xstrfmtcat(id_char, " || id=%s", row[0]);
+		else
+			xstrfmtcat(id_char, "id=%s", row[0]);
+	}
+	mysql_free_result(result);
+
+	if(suspended_char) {
+		xstrfmtcat(query,
+			   "update %s set suspended=%d-suspended where %s;",
+			   job_table, event_time, suspended_char);
+		xstrfmtcat(query,
+			   "update %s set suspended=%d-suspended where %s;",
+			   step_table, event_time, suspended_char);
+		xstrfmtcat(query,
+			   "update %s set end=%d where (%s) && end=0;",
+			   suspend_table, event_time, suspended_char);
+		xfree(suspended_char);
+	}
+	if(id_char) {
+		xstrfmtcat(query,
+			   "update %s set state=%d, end=%u where %s;",
+			   job_table, JOB_CANCELLED, event_time, id_char);
+		xstrfmtcat(query,
+			   "update %s set state=%d, end=%u where %s;",
+			   step_table, JOB_CANCELLED, event_time, id_char);
+		xfree(id_char);
+	}
+/* 	query = xstrdup_printf("update %s as t1, %s as t2 set " */
+/* 			       "t1.state=%u, t1.end=%u where " */
+/* 			       "t2.id=t1.associd and t2.cluster=\"%s\" " */
+/* 			       "&& t1.end=0;", */
+/* 			       job_table, assoc_table, JOB_CANCELLED,  */
+/* 			       event_time, cluster); */
+	if(query) {
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
+
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+	}
+
+	return rc;
+}
