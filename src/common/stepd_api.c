@@ -310,7 +310,6 @@ stepd_get_info(int fd)
 		info->step_mem_limit = info->job_mem_limit;
 		verbose("Old version slurmstepd for step %u.%u", 
 			info->jobid, info->stepid);
-		verbose("modeid = %u mem limit = %u", info->nodeid, info->job_mem_limit);
 	}
 	return info;
 
