@@ -72,5 +72,4 @@ extern int mysql_register_ctld(mysql_conn_t *mysql_conn,
 extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
 			      char *cluster_nodes, uint32_t cpus,
 			      time_t event_time);
-
 #endif
