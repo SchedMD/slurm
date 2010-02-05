@@ -1393,8 +1393,7 @@ end_it:
 			//memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 			if(!(assoc_list =
-			     mysql_get_associations(mysql_conn,
-							     uid, NULL)))
+			     mysql_get_assocs(mysql_conn, uid, NULL)))
 				return rc;
 			/* NOTE: you can not use list_pop, or list_push
 			   anywhere either, since mysql is
@@ -1865,8 +1864,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		//memset(&local_assoc_cond, 0, sizeof(acct_association_cond_t));
 
 		if(!(local_assoc_list =
-		     mysql_get_associations(mysql_conn,
-						     uid, NULL)))
+		     mysql_get_assocs(mysql_conn, uid, NULL)))
 			return ret_list;
 		/* NOTE: you can not use list_pop, or list_push
 		   anywhere either, since mysql is
@@ -2135,8 +2133,8 @@ end_it:
 	return NULL;
 }
 
-extern List mysql_get_associations(mysql_conn_t *mysql_conn, uid_t uid,
-				   acct_association_cond_t *assoc_cond)
+extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
+			     acct_association_cond_t *assoc_cond)
 {
 	//DEF_TIMERS;
 	char *query = NULL;
@@ -2626,6 +2624,6 @@ empty:
 
 	xfree(parent_delta_qos);
 	xfree(parent_qos);
-	//END_TIMER2("get_associations");
+	//END_TIMER2("get_assocs");
 	return assoc_list;
 }
