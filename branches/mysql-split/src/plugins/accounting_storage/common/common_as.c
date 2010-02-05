@@ -596,6 +596,7 @@ extern bool is_user_coord(acct_user_rec_t *user, char *account)
 
 extern bool is_user_any_coord(void *db_conn, acct_user_rec_t *user)
 {
+	xassert(user);
 	if(assoc_mgr_fill_in_user(db_conn, user, 1, NULL) != SLURM_SUCCESS) {
 		error("couldn't get information for this user %s(%d)",
 		      user->name, user->uid);
