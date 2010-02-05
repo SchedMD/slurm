@@ -556,10 +556,16 @@ _handle_info(int fd, slurmd_job_t *job)
 {
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
-	safe_write(fd, &protocol_version, sizeof(uint16_t));
 	safe_write(fd, &job->uid, sizeof(uid_t));
 	safe_write(fd, &job->jobid, sizeof(uint32_t));
 	safe_write(fd, &job->stepid, sizeof(uint32_t));
+
+	/* protocol_version was added in SLURM version 2.2, 
+	 * so it needed to be added later in the data sent
+	 * for backward compatability (so that it doesn't 
+	 * get confused for a huge UID, job ID or step ID;
+	 * we should be save in avoiding huge node IDs). */
+	safe_write(fd, &protocol_version, sizeof(uint16_t));
 	safe_write(fd, &job->nodeid, sizeof(uint32_t));
 	safe_write(fd, &job->job_mem, sizeof(uint32_t));
 	safe_write(fd, &job->step_mem, sizeof(uint32_t));
