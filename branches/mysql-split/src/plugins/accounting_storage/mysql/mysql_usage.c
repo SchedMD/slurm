@@ -101,7 +101,8 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		tmp, my_usage_table, end, start, cluster_rec->name);
 
 	xfree(tmp);
-	debug4("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -264,7 +265,8 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	xfree(id_str);
 	xfree(tmp);
 
-	debug4("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -431,64 +433,41 @@ extern int mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USAGE) {
-		/* This only works when running though the slurmdbd.
-		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
-		 * SLURMDBD!
-		 */
-		if(slurmdbd_conf) {
-			is_admin = 0;
-			/* we have to check the authentication here in the
-			 * plugin since we don't know what accounts are being
-			 * referenced until after the query.  Here we will
-			 * set if they are an operator or greater and then
-			 * check it below after the query.
-			 */
-			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
-			   || assoc_mgr_get_admin_level(mysql_conn, uid)
-			   >= ACCT_ADMIN_OPERATOR)
-				is_admin = 1;
-			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
-						       NULL);
+		if(!(is_admin = is_user_min_admin_level(
+			     mysql_conn, uid, ACCT_ADMIN_OPERATOR))) {
+			ListIterator itr = NULL;
+			acct_coord_rec_t *coord = NULL;
+			is_user_any_coord(mysql_conn, &user);
+
+			if(username && !strcmp(acct_assoc->user, user.name))
+				goto is_user;
+
+			if(type != DBD_GET_ASSOC_USAGE)
+				goto bad_user;
+
+			if(!user.coord_accts) {
+				debug4("This user isn't a coord.");
+				goto bad_user;
 			}
 
-			if(!is_admin) {
-				ListIterator itr = NULL;
-				acct_coord_rec_t *coord = NULL;
-
-				if(username &&
-				   !strcmp(acct_assoc->user, user.name))
-					goto is_user;
-
-				if(type != DBD_GET_ASSOC_USAGE)
-					goto bad_user;
-
-				if(!user.coord_accts) {
-					debug4("This user isn't a coord.");
-					goto bad_user;
-				}
-
-				if(!acct_assoc->acct) {
-					debug("No account name given "
-					      "in association.");
-					goto bad_user;
-				}
-
-				itr = list_iterator_create(user.coord_accts);
-				while((coord = list_next(itr))) {
-					if(!strcasecmp(coord->name,
-						       acct_assoc->acct))
-						break;
-				}
-				list_iterator_destroy(itr);
-
-				if(coord)
-					goto is_user;
-
-			bad_user:
-				errno = ESLURM_ACCESS_DENIED;
-				return SLURM_ERROR;
+			if(!acct_assoc->acct) {
+				debug("No account name given "
+				      "in association.");
+				goto bad_user;
 			}
+
+			itr = list_iterator_create(user.coord_accts);
+			while((coord = list_next(itr)))
+				if(!strcasecmp(coord->name, acct_assoc->acct))
+					break;
+			list_iterator_destroy(itr);
+
+			if(coord)
+				goto is_user;
+
+		bad_user:
+			errno = ESLURM_ACCESS_DENIED;
+			return SLURM_ERROR;
 		}
 	}
 is_user:
@@ -529,7 +508,8 @@ is_user:
 	}
 
 	xfree(tmp);
-	debug4("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -795,7 +775,8 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 	}
 
 	if(query) {
-		debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 	}

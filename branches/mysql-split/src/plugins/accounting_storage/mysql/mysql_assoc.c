@@ -44,8 +44,7 @@
  * account.  This handles deleted associations also.
  */
 static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
-			 char *cluster,
-			 char *id, char *parent, time_t now)
+			 char *cluster, char *id, char *parent, time_t now)
 {
 	int rc = SLURM_SUCCESS;
 	MYSQL_RES *result = NULL;
@@ -975,8 +974,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 	return set;
 }
 
-extern int mysql_add_assocs(mysql_conn_t *mysql_conn,
-			    uint32_t uid,
+extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			    List association_list)
 {
 	ListIterator itr = NULL;
@@ -1487,40 +1485,14 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	memset(&user, 0, sizeof(acct_user_rec_t));
 	user.uid = uid;
 
-	/* This only works when running though the slurmdbd.
-	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
-	 * SLURMDBD!
-	 */
-	if(slurmdbd_conf) {
-		/* we have to check the authentication here in the
-		 * plugin since we don't know what accounts are being
-		 * referenced until after the query.  Here we will
-		 * set if they are an operator or greater and then
-		 * check it below after the query.
-		 */
-		if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
-		   || assoc_mgr_get_admin_level(mysql_conn, uid)
-		   >= ACCT_ADMIN_OPERATOR)
-			is_admin = 1;
-		else {
-			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1, NULL)
-			   != SLURM_SUCCESS) {
-				error("couldn't get information for this user");
-				errno = SLURM_ERROR;
-				return NULL;
-			}
-			if(!user.coord_accts || !list_count(user.coord_accts)) {
-				error("This user doesn't have any "
-				      "coordinator abilities");
-				errno = ESLURM_ACCESS_DENIED;
-				return NULL;
-			}
+	if(!(is_admin = is_user_min_admin_level(
+		     mysql_conn, uid, ACCT_ADMIN_OPERATOR))) {
+		if(!is_user_any_coord(mysql_conn, &user)) {
+			error("Only admins/coordinators can "
+			      "modify associations");
+			errno = ESLURM_ACCESS_DENIED;
+			return NULL;
 		}
-	} else {
-		/* Setting this here just makes it easier down below
-		 * since user will not be filled in.
-		 */
-		is_admin = 1;
 	}
 
 	set = _setup_association_cond_limits(assoc_cond, &extra);
@@ -1949,40 +1921,14 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	memset(&user, 0, sizeof(acct_user_rec_t));
 	user.uid = uid;
 
-	/* This only works when running though the slurmdbd.
-	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
-	 * SLURMDBD!
-	 */
-	if(slurmdbd_conf) {
-		/* we have to check the authentication here in the
-		 * plugin since we don't know what accounts are being
-		 * referenced until after the query.  Here we will
-		 * set if they are an operator or greater and then
-		 * check it below after the query.
-		 */
-		if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
-		   || assoc_mgr_get_admin_level(mysql_conn, uid)
-		   >= ACCT_ADMIN_OPERATOR)
-			is_admin = 1;
-		else {
-			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1, NULL)
-			   != SLURM_SUCCESS) {
-				error("couldn't get information for this user");
-				errno = SLURM_ERROR;
-				return NULL;
-			}
-			if(!user.coord_accts || !list_count(user.coord_accts)) {
-				error("This user doesn't have any "
-				      "coordinator abilities");
-				errno = ESLURM_ACCESS_DENIED;
-				return NULL;
-			}
+	if(!(is_admin = is_user_min_admin_level(
+		     mysql_conn, uid, ACCT_ADMIN_OPERATOR))) {
+		if(!is_user_any_coord(mysql_conn, &user)) {
+			error("Only admins/coordinators can "
+			      "remove associations");
+			errno = ESLURM_ACCESS_DENIED;
+			return NULL;
 		}
-	} else {
-		/* Setting this here just makes it easier down below
-		 * since user will not be filled in.
-		 */
-		is_admin = 1;
 	}
 
 	set = _setup_association_cond_limits(assoc_cond, &extra);
@@ -2256,27 +2202,9 @@ extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
-		/* This only works when running though the slurmdbd.
-		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
-		 * SLURMDBD!
-		 */
-		if(slurmdbd_conf) {
-			is_admin = 0;
-			/* we have to check the authentication here in the
-			 * plugin since we don't know what accounts are being
-			 * referenced until after the query.  Here we will
-			 * set if they are an operator or greater and then
-			 * check it below after the query.
-			 */
-			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
-			   || assoc_mgr_get_admin_level(mysql_conn, uid)
-			   >= ACCT_ADMIN_OPERATOR)
-				is_admin = 1;
-			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
-						       NULL);
-			}
-		}
+		if(!(is_admin = is_user_min_admin_level(
+			     mysql_conn, uid, ACCT_ADMIN_OPERATOR)))
+			is_user_any_coord(mysql_conn, &user);
 	}
 
 	set = _setup_association_cond_limits(assoc_cond, &extra);

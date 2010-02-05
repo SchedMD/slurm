@@ -1433,7 +1433,8 @@ js_p_get_jobs_cond(pgsql_conn_t *pg_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_JOBS) {
-		is_admin = is_user_admin(pg_conn, uid);
+		is_admin = is_user_min_admin_level(
+			pg_conn, uid, ACCT_ADMIN_OPERATOR);
 		if (!is_admin)
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
 	}

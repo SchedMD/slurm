@@ -87,12 +87,12 @@ typedef enum {
 
 /*global functions */
 extern int check_connection(mysql_conn_t *mysql_conn);
+extern char *fix_double_quotes(char *str);
+extern int last_affected_rows(MYSQL *mysql_db);
 extern int setup_association_limits(acct_association_rec_t *assoc,
 				    char **cols, char **vals,
 				    char **extra, qos_level_t qos_level,
 				    bool get_fs);
-extern int last_affected_rows(MYSQL *mysql_db);
-extern char *fix_double_quotes(char *str);
 extern int modify_common(mysql_conn_t *mysql_conn,
 			 uint16_t type,
 			 time_t now,

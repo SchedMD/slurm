@@ -352,11 +352,13 @@ as_p_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
-		is_admin = is_user_admin(pg_conn, uid);
+		is_admin = is_user_min_admin_level(
+			pg_conn, uid, ACCT_ADMIN_OPERATOR);
 		if (!is_admin) {
 			if(assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL)
 			   != SLURM_SUCCESS) {
-				error("as/pg: get_wckeys: failed get info for user");
+				error("as/pg: get_wckeys: failed get info "
+				      "for user");
 				return NULL;
 			}
 		}

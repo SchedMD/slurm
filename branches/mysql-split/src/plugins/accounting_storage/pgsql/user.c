@@ -671,7 +671,8 @@ as_p_get_users(pgsql_conn_t *pg_conn, uid_t uid, acct_user_cond_t *user_cond)
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
-		is_admin = is_user_admin(pg_conn, uid);
+		is_admin = is_user_min_admin_level(
+			pg_conn, uid, ACCT_ADMIN_OPERATOR);
 		if (!is_admin)
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
 	}
@@ -943,7 +944,8 @@ as_p_remove_coord(pgsql_conn_t *pg_conn, uint32_t uid,
 	memset(&user, 0, sizeof(acct_user_rec_t));
 	user.uid = uid;
 
-	is_admin = is_user_admin(pg_conn, uid);
+	is_admin = is_user_min_admin_level(
+		pg_conn, uid, ACCT_ADMIN_OPERATOR);
 	if (!is_admin && ! is_user_any_coord(pg_conn, &user)) {
 		error("as/pg: remove_coord: user not admin or any coord");
 		return NULL;

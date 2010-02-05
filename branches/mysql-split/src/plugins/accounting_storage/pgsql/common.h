@@ -156,10 +156,6 @@ extern int aspg_remove_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 			      char *user_name, char *table, char *name_char,
 			      char *assoc_char);
 
-extern int is_user_admin(pgsql_conn_t *pg_conn, uid_t uid);
-extern int is_user_any_coord(pgsql_conn_t *pg_conn, acct_user_rec_t *user);
-extern int is_coord(acct_user_rec_t *user, char *account);
-
 extern int check_db_connection(pgsql_conn_t *pg_conn);
 extern int check_table(PGconn *db_conn, char *table, storage_field_t *fields,
 		       char *constraint, char *user);

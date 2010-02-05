@@ -489,7 +489,8 @@ as_p_get_reservations(pgsql_conn_t *pg_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_RESERVATIONS) {
-		is_admin = is_user_admin(pg_conn, uid);
+		is_admin = is_user_min_admin_level(
+			pg_conn, uid, ACCT_ADMIN_OPERATOR);
 		if (! is_admin) {
 			error("as/pg: get_reservations: Only admins can look"
 			      " at reservation usage");

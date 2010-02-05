@@ -1658,7 +1658,8 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	memset(&user, 0, sizeof(acct_user_rec_t));
 	user.uid = uid;
 
-	is_admin = is_user_admin(pg_conn, uid);
+	is_admin = is_user_min_admin_level(
+		pg_conn, uid, ACCT_ADMIN_OPERATOR);
 	if (!is_admin && !is_user_any_coord(pg_conn, &user))
 		return NULL;
 
@@ -1731,7 +1732,7 @@ as_p_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 				/* parent_acct != '' => user_name = '' */
 				account = ROW(MA_PACCT);
 
-			if (!is_coord(&user, account)) {
+			if (!is_user_coord(&user, account)) {
 				if(!ISEMPTY(MA_PACCT))
 					error("User %s(%d) can not modify "
 					      "account (%s) because they "
@@ -2045,7 +2046,8 @@ as_p_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	memset(&user, 0, sizeof(acct_user_rec_t));
 	user.uid = uid;
 
-	is_admin = is_user_admin(pg_conn, uid);
+	is_admin = is_user_min_admin_level(
+		pg_conn, uid, ACCT_ADMIN_OPERATOR);
 	if (!is_admin && !is_user_any_coord(pg_conn, &user))
 		return NULL;
 
@@ -2261,7 +2263,8 @@ as_p_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
-		is_admin = is_user_admin(pg_conn, uid);
+		is_admin = is_user_min_admin_level(
+			pg_conn, uid, ACCT_ADMIN_OPERATOR);
 		if (!is_admin)
 			assoc_mgr_fill_in_user(pg_conn, &user, 1, NULL);
 	}
