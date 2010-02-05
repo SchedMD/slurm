@@ -42,11 +42,17 @@
 
 #include "accounting_storage_mysql.h"
 
+extern time_t global_last_rollup;
+extern pthread_mutex_t rollup_lock;
+
 extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 			      slurmdbd_msg_type_t type, List object_list,
 			      time_t start, time_t end);
-extern int mysq_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
+extern int mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			  void *in, slurmdbd_msg_type_t type,
 			  time_t start, time_t end);
+extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
+			    time_t sent_start, time_t sent_end,
+			    uint16_t archive_data);
 
 #endif

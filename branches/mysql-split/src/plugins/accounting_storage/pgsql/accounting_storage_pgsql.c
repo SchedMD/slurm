@@ -358,7 +358,7 @@ extern List acct_storage_p_modify_users(pgsql_conn_t *pg_conn, uint32_t uid,
 	return as_p_modify_users(pg_conn, uid, user_cond, user);
 }
 
-extern List acct_storage_p_modify_accounts(pgsql_conn_t *pg_conn, uint32_t uid,
+extern List acct_storage_p_modify_accts(pgsql_conn_t *pg_conn, uint32_t uid,
 					   acct_account_cond_t *acct_cond,
 					   acct_account_rec_t *acct)
 {

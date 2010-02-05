@@ -68,7 +68,6 @@
 
 #define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks"
 
-#define BUFFER_SIZE 4096
 #define STATE_COUNT 10
 
 #define MAX_PRINTFIELDS 100

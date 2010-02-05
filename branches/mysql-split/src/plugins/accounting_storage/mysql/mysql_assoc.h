@@ -53,7 +53,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				acct_association_cond_t *assoc_cond);
 
-extern List mysql_get_associations(mysql_conn_t *mysql_conn, uid_t uid,
-				   acct_association_cond_t *assoc_cond);
+extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
+			     acct_association_cond_t *assoc_cond);
 
 #endif

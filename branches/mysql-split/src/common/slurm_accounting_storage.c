@@ -236,7 +236,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_add_wckeys",
 		"acct_storage_p_add_reservation",
 		"acct_storage_p_modify_users",
-		"acct_storage_p_modify_accounts",
+		"acct_storage_p_modify_accts",
 		"acct_storage_p_modify_clusters",
 		"acct_storage_p_modify_associations",
 		"acct_storage_p_modify_qos",

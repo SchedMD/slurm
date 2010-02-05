@@ -313,7 +313,7 @@ extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_modify_accounts(void *db_conn, uint32_t uid,
+extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 					   acct_account_cond_t *acct_q,
 					   acct_account_rec_t *acct)
 {
