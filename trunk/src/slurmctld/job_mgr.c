@@ -890,7 +890,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if (part_ptr == NULL) {
 			verbose("Invalid partition (%s) for job_id %u",
 				partition, job_id);
-			/* not a fatal error, partition could have been removed,
+			/* not fatal error, partition could have been removed,
 			 * reset_job_bitmaps() will clean-up this job */
 		}
 
@@ -1019,7 +1019,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if (part_ptr == NULL) {
 			verbose("Invalid partition (%s) for job_id %u",
 				partition, job_id);
-			/* not a fatal error, partition could have been removed,
+			/* not fatal error, partition could have been removed,
 			 * reset_job_bitmaps() will clean-up this job */
 		}
 
