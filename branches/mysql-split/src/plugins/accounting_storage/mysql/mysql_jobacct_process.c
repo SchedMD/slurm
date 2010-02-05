@@ -450,7 +450,8 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		hostlist_destroy(temp_hl);
@@ -1096,7 +1097,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			}
 			list_iterator_destroy(itr);
 		}
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(extra);
@@ -1151,7 +1153,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	else
 		xstrcat(query, " order by t1.cluster, submit desc");
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		list_destroy(job_list);
@@ -1256,8 +1259,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					job_cond->usage_start,
 					id);
 
-				debug4("%d(%d) query\n%s",
-				       mysql_conn->conn, __LINE__, query);
+				debug4("%d(%s:%d) query\n%s",
+				       mysql_conn->conn, __FILE__,
+				       __LINE__, query);
 				if(!(result2 = mysql_db_query_ret(
 					     mysql_conn->db_conn,
 					     query, 0))) {
@@ -1803,8 +1807,8 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 			xfree(tmp);
 
 //			START_TIMER;
-			debug3("%d(%d) query\n%s", mysql_conn->conn,
-			       __LINE__, query);
+			debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
+			       __FILE__, __LINE__, query);
 			if(!(result = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 0))) {
 				xfree(insert);
@@ -1835,7 +1839,8 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf("delete from %s where "
 				       "period_start <= %d && period_end != 0",
 				       event_table, curr_end);
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1890,8 +1895,8 @@ exit_events:
 			xfree(tmp);
 
 //			START_TIMER;
-			debug3("%d(%d) query\n%s", mysql_conn->conn,
-			       __LINE__, query);
+			debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
+			       __FILE__, __LINE__, query);
 			if(!(result = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 0))) {
 				xfree(insert);
@@ -1922,7 +1927,8 @@ exit_events:
 		query = xstrdup_printf("delete from %s where start <= %d "
 				       "&& end != 0",
 				       suspend_table, curr_end);
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1979,8 +1985,8 @@ exit_suspend:
 			xfree(tmp);
 
 //			START_TIMER;
-			debug3("%d(%d) query\n%s", mysql_conn->conn,
-			       __LINE__, query);
+			debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
+			       __FILE__, __LINE__, query);
 			if(!(result = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 0))) {
 				xfree(insert);
@@ -2012,7 +2018,8 @@ exit_suspend:
 		query = xstrdup_printf("delete from %s where start <= %d "
 				       "&& end != 0",
 				       step_table, curr_end);
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -2067,8 +2074,8 @@ exit_steps:
 			xfree(tmp);
 
 //			START_TIMER;
-			debug3("%d(%d) query\n%s", mysql_conn->conn,
-			       __LINE__, query);
+			debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
+			       __FILE__, __LINE__, query);
 			if(!(result = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 0))) {
 				xfree(insert);
@@ -2100,7 +2107,8 @@ exit_steps:
 		query = xstrdup_printf("delete from %s where submit <= %d "
 				       "&& end != 0",
 				       job_table, curr_end);
-		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -2171,7 +2179,8 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, data);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, data);
 	error_code = mysql_db_query_check_after(mysql_conn->db_conn, data);
 	xfree(data);
 	if(error_code != SLURM_SUCCESS) {
