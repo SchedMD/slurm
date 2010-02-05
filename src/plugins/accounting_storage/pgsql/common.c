@@ -267,13 +267,15 @@ _check_jobs_before_remove_assoc(pgsql_conn_t *pg_conn, char *assoc_char)
  * RET: true if there are related jobs
  */
 static bool
-_check_jobs_before_remove_without_assoctable(pgsql_conn_t *pg_conn, char *where_char)
+_check_jobs_before_remove_without_assoctable(pgsql_conn_t *pg_conn,
+					     char *where_char)
 {
 	char *query = NULL;
 	PGresult *result = NULL;
 	bool rc = false;
 
-	query = xstrdup_printf("SELECT associd FROM %s AS t1 WHERE (%s) LIMIT 1;",
+	query = xstrdup_printf("SELECT associd FROM %s AS t1 "
+			       "WHERE (%s) LIMIT 1;",
 			       job_table, where_char);
 
 	result = DEF_QUERY_RET;
@@ -464,83 +466,6 @@ err_out:
 	}
 
 	return rc;
-}
-
-
-/*
- * is_user_admin - check whether user is admin
- *
- * IN pg_conn: database connection
- * IN uid: user to check
- * RET: true if user is admin
- */
-extern int
-is_user_admin(pgsql_conn_t *pg_conn, uid_t uid)
-{
-	/* This only works when running though the slurmdbd.
-	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
-	 * SLURMDBD!
-	 */
-	if(slurmdbd_conf) {
-		/* we have to check the authentication here in the
-		 * plugin since we don't know what accounts are being
-		 * referenced until after the query.  Here we will
-		 * set if they are an operator or greater and then
-		 * check it below after the query.
-		 */
-		if((uid == slurmdbd_conf->slurm_user_id || uid == 0) ||
-		   assoc_mgr_get_admin_level(pg_conn, uid)
-		   >= ACCT_ADMIN_OPERATOR)
-			return 1;
-		else
-			return 0;
-	} else {
-		return 1;
-	}
-}
-
-/*
- * is_user_any_coord - is the user coord of any account
- *
- * IN pg_conn: database connection
- * IN/OUT user: user record, which will be filled in
- * RET: 1 if the user is coord of some account, 0 else
- */
-extern int
-is_user_any_coord(pgsql_conn_t *pg_conn, acct_user_rec_t *user)
-{
-	if(assoc_mgr_fill_in_user(pg_conn, user, 1, NULL)
-	   != SLURM_SUCCESS) {
-		return SLURM_ERROR;
-	}
-
-	return (user->coord_accts && list_count(user->coord_accts));
-}
-
-/*
- * is_coord - whether user is coord of account
- *
- * IN user: user
- * IN account: account
- * RET: 1 if user is coord of account
- */
-extern int
-is_coord(acct_user_rec_t *user, char *account)
-{
-	ListIterator itr;
-	acct_coord_rec_t *coord;
-
-	if (! user->coord_accts ||
-	    list_count(user->coord_accts) == 0)
-		return 0;
-
-	itr = list_iterator_create(user->coord_accts);
-	while((coord = list_next(itr))) {
-		if(!strcasecmp(coord->name, account))
-			break;
-	}
-	list_iterator_destroy(itr);
-	return coord ? 1 : 0;
 }
 
 

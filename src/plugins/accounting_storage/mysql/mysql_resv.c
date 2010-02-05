@@ -548,27 +548,11 @@ extern List mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_RESERVATIONS) {
-		/* This only works when running though the slurmdbd.
-		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
-		 * SLURMDBD!
-		 */
-		if(slurmdbd_conf) {
-			is_admin = 0;
-			/* we have to check the authentication here in the
-			 * plugin since we don't know what accounts are being
-			 * referenced until after the query.  Here we will
-			 * set if they are an operator or greater and then
-			 * check it below after the query.
-			 */
-			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
-			   || assoc_mgr_get_admin_level(mysql_conn, uid)
-			   >= ACCT_ADMIN_OPERATOR)
-				is_admin = 1;
-			else {
-				error("Only admins can look at "
-				      "reservation usage");
-				return NULL;
-			}
+		if(!(is_admin = is_user_min_admin_level(
+			     mysql_conn, uid, ACCT_ADMIN_OPERATOR))) {
+			error("Only admins can look at reservations");
+			errno = ESLURM_ACCESS_DENIED;
+			return NULL;
 		}
 	}
 

@@ -156,282 +156,6 @@ static int _set_qos_cnt(MYSQL *db_conn)
 	return SLURM_SUCCESS;
 }
 
-/* here to add \\ to all \" in a string */
-extern char *fix_double_quotes(char *str)
-{
-	int i=0, start=0;
-	char *fixed = NULL;
-
-	if(!str)
-		return NULL;
-
-	while(str[i]) {
-		if(str[i] == '"') {
-			char *tmp = xstrndup(str+start, i-start);
-			xstrfmtcat(fixed, "%s\\\"", tmp);
-			xfree(tmp);
-			start = i+1;
-		}
-
-		i++;
-	}
-
-	if((i-start) > 0) {
-		char *tmp = xstrndup(str+start, i-start);
-		xstrcat(fixed, tmp);
-		xfree(tmp);
-	}
-
-	return fixed;
-}
-
-/* This should be added to the beginning of each function to make sure
- * we have a connection to the database before we try to use it.
- */
-extern int check_connection(mysql_conn_t *mysql_conn)
-{
-	if(!mysql_conn) {
-		error("We need a connection to run this");
-		errno = SLURM_ERROR;
-		return SLURM_ERROR;
-	} else if(!mysql_conn->db_conn
-		  || mysql_db_ping(mysql_conn->db_conn) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->db_conn,
-					   mysql_db_name, mysql_db_info)
-		   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			errno = ESLURM_DB_CONNECTION;
-			return ESLURM_DB_CONNECTION;
-		}
-	}
-	return SLURM_SUCCESS;
-}
-
-extern int setup_association_limits(acct_association_rec_t *assoc,
-				    char **cols, char **vals,
-				    char **extra, qos_level_t qos_level,
-				    bool get_fs)
-{
-	if(!assoc)
-		return SLURM_ERROR;
-
-	if((int)assoc->shares_raw >= 0) {
-		xstrcat(*cols, ", fairshare");
-		xstrfmtcat(*vals, ", %u", assoc->shares_raw);
-		xstrfmtcat(*extra, ", fairshare=%u", assoc->shares_raw);
-	} else if (((int)assoc->shares_raw == INFINITE) || get_fs) {
-		xstrcat(*cols, ", fairshare");
-		xstrcat(*vals, ", 1");
-		xstrcat(*extra, ", fairshare=1");
-		assoc->shares_raw = 1;
-	}
-
-	if((int)assoc->grp_cpu_mins >= 0) {
-		xstrcat(*cols, ", grp_cpu_mins");
-		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_mins);
-		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
-			   assoc->grp_cpu_mins);
-	} else if((int)assoc->grp_cpu_mins == INFINITE) {
-		xstrcat(*cols, ", grp_cpu_mins");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_mins=NULL");
-	}
-
-	if((int)assoc->grp_cpus >= 0) {
-		xstrcat(*cols, ", grp_cpus");
-		xstrfmtcat(*vals, ", %u", assoc->grp_cpus);
-		xstrfmtcat(*extra, ", grp_cpus=%u", assoc->grp_cpus);
-	} else if((int)assoc->grp_cpus == INFINITE) {
-		xstrcat(*cols, ", grp_cpus");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpus=NULL");
-	}
-
-	if((int)assoc->grp_jobs >= 0) {
-		xstrcat(*cols, ", grp_jobs");
-		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
-		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
-	} else if((int)assoc->grp_jobs == INFINITE) {
-		xstrcat(*cols, ", grp_jobs");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_jobs=NULL");
-	}
-
-	if((int)assoc->grp_nodes >= 0) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrfmtcat(*vals, ", %u", assoc->grp_nodes);
-		xstrfmtcat(*extra, ", grp_nodes=%u", assoc->grp_nodes);
-	} else if((int)assoc->grp_nodes == INFINITE) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_nodes=NULL");
-	}
-
-	if((int)assoc->grp_submit_jobs >= 0) {
-		xstrcat(*cols, ", grp_submit_jobs");
-		xstrfmtcat(*vals, ", %u",
-			   assoc->grp_submit_jobs);
-		xstrfmtcat(*extra, ", grp_submit_jobs=%u",
-			   assoc->grp_submit_jobs);
-	} else if((int)assoc->grp_submit_jobs == INFINITE) {
-		xstrcat(*cols, ", grp_submit_jobs");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_submit_jobs=NULL");
-	}
-
-	if((int)assoc->grp_wall >= 0) {
-		xstrcat(*cols, ", grp_wall");
-		xstrfmtcat(*vals, ", %u", assoc->grp_wall);
-		xstrfmtcat(*extra, ", grp_wall=%u",
-			   assoc->grp_wall);
-	} else if((int)assoc->grp_wall == INFINITE) {
-		xstrcat(*cols, ", grp_wall");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_wall=NULL");
-	}
-
-	if((int)assoc->max_cpu_mins_pj >= 0) {
-		xstrcat(*cols, ", max_cpu_mins_per_job");
-		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
-		xstrfmtcat(*extra, ", max_cpu_mins_per_job=%u",
-			   assoc->max_cpu_mins_pj);
-	} else if((int)assoc->max_cpu_mins_pj == INFINITE) {
-		xstrcat(*cols, ", max_cpu_mins_per_job");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpu_mins_per_job=NULL");
-	}
-
-	if((int)assoc->max_cpus_pj >= 0) {
-		xstrcat(*cols, ", max_cpus_per_job");
-		xstrfmtcat(*vals, ", %u", assoc->max_cpus_pj);
-		xstrfmtcat(*extra, ", max_cpus_per_job=%u",
-			   assoc->max_cpus_pj);
-	} else if((int)assoc->max_cpus_pj == INFINITE) {
-		xstrcat(*cols, ", max_cpus_per_job");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpus_per_job=NULL");
-	}
-
-	if((int)assoc->max_jobs >= 0) {
-		xstrcat(*cols, ", max_jobs");
-		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
-		xstrfmtcat(*extra, ", max_jobs=%u",
-			   assoc->max_jobs);
-	} else if((int)assoc->max_jobs == INFINITE) {
-		xstrcat(*cols, ", max_jobs");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_jobs=NULL");
-	}
-
-	if((int)assoc->max_nodes_pj >= 0) {
-		xstrcat(*cols, ", max_nodes_per_job");
-		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
-		xstrfmtcat(*extra, ", max_nodes_per_job=%u",
-			   assoc->max_nodes_pj);
-	} else if((int)assoc->max_nodes_pj == INFINITE) {
-		xstrcat(*cols, ", max_nodes_per_job");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_nodes_per_job=NULL");
-	}
-
-	if((int)assoc->max_submit_jobs >= 0) {
-		xstrcat(*cols, ", max_submit_jobs");
-		xstrfmtcat(*vals, ", %u", assoc->max_submit_jobs);
-		xstrfmtcat(*extra, ", max_submit_jobs=%u",
-			   assoc->max_submit_jobs);
-	} else if((int)assoc->max_submit_jobs == INFINITE) {
-		xstrcat(*cols, ", max_submit_jobs");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_submit_jobs=NULL");
-	}
-
-	if((int)assoc->max_wall_pj >= 0) {
-		xstrcat(*cols, ", max_wall_duration_per_job");
-		xstrfmtcat(*vals, ", %u", assoc->max_wall_pj);
-		xstrfmtcat(*extra, ", max_wall_duration_per_job=%u",
-			   assoc->max_wall_pj);
-	} else if((int)assoc->max_wall_pj == INFINITE) {
-		xstrcat(*cols, ", max_wall_duration_per_job");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
-	}
-
-	/* when modifying the qos it happens in the actual function
-	   since we have to wait until we hear about the parent first. */
-	if(qos_level == QOS_LEVEL_MODIFY)
-		goto end_qos;
-
-	if(assoc->qos_list && list_count(assoc->qos_list)) {
-		char *qos_type = "qos";
-		char *qos_val = NULL;
-		char *tmp_char = NULL;
-		int set = 0;
-		ListIterator qos_itr =
-			list_iterator_create(assoc->qos_list);
-
-		while((tmp_char = list_next(qos_itr))) {
-			/* we don't want to include blank names */
-			if(!tmp_char[0])
-				continue;
-			if(!set) {
-				if(tmp_char[0] == '+' || tmp_char[0] == '-')
-					qos_type = "delta_qos";
-				set = 1;
-			}
-			xstrfmtcat(qos_val, ",%s", tmp_char);
-		}
-
-		list_iterator_destroy(qos_itr);
-		if(qos_val) {
-			xstrfmtcat(*cols, ", %s", qos_type);
-			xstrfmtcat(*vals, ", '%s'", qos_val);
-			xstrfmtcat(*extra, ", %s=\"%s\"", qos_type, qos_val);
-			xfree(qos_val);
-		}
-	} else if((qos_level == QOS_LEVEL_SET) && default_qos_str) {
-		/* Add default qos to the account */
-		xstrcat(*cols, ", qos");
-		xstrfmtcat(*vals, ", '%s'", default_qos_str);
-		xstrfmtcat(*extra, ", qos=\"%s\"", default_qos_str);
-		if(!assoc->qos_list)
-			assoc->qos_list = list_create(slurm_destroy_char);
-		slurm_addto_char_list(assoc->qos_list, default_qos_str);
-	} else {
-		/* clear the qos */
-		xstrcat(*cols, ", qos, delta_qos");
-		xstrcat(*vals, ", '', ''");
-		xstrcat(*extra, ", qos=\"\", delta_qos=\"\"");
-	}
-end_qos:
-
-	return SLURM_SUCCESS;
-
-}
-
-/* Let me know if the last statement had rows that were affected.
- */
-extern int last_affected_rows(MYSQL *mysql_db)
-{
-	int status=0, rows=0;
-	MYSQL_RES *result = NULL;
-
-	do {
-		result = mysql_store_result(mysql_db);
-		if (result)
-			mysql_free_result(result);
-		else
-			if (mysql_field_count(mysql_db) == 0) {
-				status = mysql_affected_rows(mysql_db);
-				if(status > 0)
-					rows = status;
-			}
-		if ((status = mysql_next_result(mysql_db)) > 0)
-			debug3("Could not execute statement\n");
-	} while (status == 0);
-
-	return rows;
-}
-
 /* this function is here to see if any of what we are trying to remove
  * has jobs that are or were once running.  So if we have jobs and the
  * object is less than a day old we don't want to delete it only set
@@ -451,7 +175,8 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 			       job_table, assoc_table, assoc_table,
 			       assoc_char);
 
-	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -482,7 +207,8 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 			       job_table, assoc_table,
 			       assoc_char);
 
-	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -511,7 +237,8 @@ static bool _check_jobs_before_remove_without_assoctable(
 	query = xstrdup_printf("select associd from %s where (%s) limit 1;",
 			       job_table, where_char);
 
-	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -525,328 +252,6 @@ static bool _check_jobs_before_remove_without_assoctable(
 	}
 
 	mysql_free_result(result);
-	return rc;
-}
-
-/* This is called by most modify functions to alter the table and
- * insert a new line in the transaction table.
- */
-extern int modify_common(mysql_conn_t *mysql_conn,
-			 uint16_t type,
-			 time_t now,
-			 char *user_name,
-			 char *table,
-			 char *cond_char,
-			 char *vals)
-{
-	char *query = NULL;
-	int rc = SLURM_SUCCESS;
-	char *tmp_cond_char = fix_double_quotes(cond_char);
-	char *tmp_vals = NULL;
-
-	if(vals[1])
-		tmp_vals = fix_double_quotes(vals+2);
-
-	xstrfmtcat(query,
-		   "update %s set mod_time=%d%s "
-		   "where deleted=0 && %s;",
-		   table, now, vals,
-		   cond_char);
-	xstrfmtcat(query,
-		   "insert into %s "
-		   "(timestamp, action, name, actor, info) "
-		   "values (%d, %d, \"%s\", \"%s\", \"%s\");",
-		   txn_table,
-		   now, type, tmp_cond_char, user_name, tmp_vals);
-	xfree(tmp_cond_char);
-	xfree(tmp_vals);
-	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
-	xfree(query);
-
-	if(rc != SLURM_SUCCESS) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
-
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
-
-/* Every option in assoc_char should have a 't1.' infront of it. */
-extern int remove_common(mysql_conn_t *mysql_conn,
-			 uint16_t type,
-			 time_t now,
-			 char *user_name,
-			 char *table,
-			 char *name_char,
-			 char *assoc_char)
-{
-	int rc = SLURM_SUCCESS;
-	char *query = NULL;
-	char *loc_assoc_char = NULL;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	time_t day_old = now - DELETE_SEC_BACK;
-	bool has_jobs = false;
-	char *tmp_name_char = fix_double_quotes(name_char);
-
-	/* If we have jobs associated with this we do not want to
-	 * really delete it for accounting purposes.  This is for
-	 * corner cases most of the time this won't matter.
-	 */
-	if(table == acct_coord_table) {
-		/* This doesn't apply for these tables since we are
-		 * only looking for association type tables.
-		 */
-	} else if((table == qos_table) || (table == wckey_table)) {
-		has_jobs = _check_jobs_before_remove_without_assoctable(
-			mysql_conn, assoc_char);
-	} else if(table != assoc_table) {
-		has_jobs = _check_jobs_before_remove(mysql_conn, assoc_char);
-	} else {
-		has_jobs = _check_jobs_before_remove_assoc(mysql_conn,
-							   name_char);
-	}
-	/* we want to remove completely all that is less than a day old */
-	if(!has_jobs && table != assoc_table) {
-		query = xstrdup_printf("delete from %s where creation_time>%d "
-				       "&& (%s);"
-				       "alter table %s AUTO_INCREMENT=0;",
-				       table, day_old, name_char, table);
-	}
-
-	if(table != assoc_table)
-		xstrfmtcat(query,
-			   "update %s set mod_time=%d, deleted=1 "
-			   "where deleted=0 && (%s);",
-			   table, now, name_char);
-
-	xstrfmtcat(query,
-		   "insert into %s (timestamp, action, name, actor) "
-		   "values (%d, %d, \"%s\", \"%s\");",
-		   txn_table,
-		   now, type, tmp_name_char, user_name);
-	xfree(tmp_name_char);
-
-	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
-
-		return SLURM_ERROR;
-	} else if((table == acct_coord_table)
-		  || (table == qos_table)
-		  || (table == wckey_table))
-		return SLURM_SUCCESS;
-
-	/* mark deleted=1 or remove completely the accounting tables
-	*/
-	if(table != assoc_table) {
-		if(!assoc_char) {
-			error("no assoc_char");
-			if(mysql_conn->rollback) {
-				mysql_db_rollback(mysql_conn->db_conn);
-			}
-			list_flush(mysql_conn->update_list);
-			return SLURM_ERROR;
-		}
-
-		/* If we are doing this on an assoc_table we have
-		   already done this, so don't */
-/* 		query = xstrdup_printf("select lft, rgt " */
-/* 				       "from %s as t2 where %s order by lft;", */
-/* 				       assoc_table, assoc_char); */
-		query = xstrdup_printf("select distinct t1.id "
-				       "from %s as t1, %s as t2 "
-				       "where (%s) && t1.lft between "
-				       "t2.lft and t2.rgt && t1.deleted=0 "
-				       " && t2.deleted=0;",
-				       assoc_table, assoc_table, assoc_char);
-
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			xfree(query);
-			if(mysql_conn->rollback) {
-				mysql_db_rollback(mysql_conn->db_conn);
-			}
-			list_flush(mysql_conn->update_list);
-			return SLURM_ERROR;
-		}
-		xfree(query);
-
-		rc = 0;
-		loc_assoc_char = NULL;
-		while((row = mysql_fetch_row(result))) {
-			acct_association_rec_t *rem_assoc = NULL;
-			if(!rc) {
-				xstrfmtcat(loc_assoc_char, "id=%s", row[0]);
-				rc = 1;
-			} else {
-				xstrfmtcat(loc_assoc_char,
-					   " || id=%s", row[0]);
-			}
-			rem_assoc = xmalloc(sizeof(acct_association_rec_t));
-			rem_assoc->id = atoi(row[0]);
-			if(addto_update_list(mysql_conn->update_list,
-					      ACCT_REMOVE_ASSOC,
-					      rem_assoc) != SLURM_SUCCESS)
-				error("couldn't add to the update list");
-		}
-		mysql_free_result(result);
-	} else
-		loc_assoc_char = assoc_char;
-
-	if(!loc_assoc_char) {
-		debug2("No associations with object being deleted\n");
-		return rc;
-	}
-
-	/* We should not have to delete from usage table, only flag since we
-	 * only delete things that are typos.
-	 */
-	xstrfmtcat(query,
-		   "update %s set mod_time=%d, deleted=1 where (%s);"
-		   "update %s set mod_time=%d, deleted=1 where (%s);"
-		   "update %s set mod_time=%d, deleted=1 where (%s);",
-		   assoc_day_table, now, loc_assoc_char,
-		   assoc_hour_table, now, loc_assoc_char,
-		   assoc_month_table, now, loc_assoc_char);
-
-	debug3("%d(%s:%d) query\n%s %d",
-	       mysql_conn->conn, __FILE__, __LINE__, query, strlen(query));
-	rc = mysql_db_query(mysql_conn->db_conn, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
-		return SLURM_ERROR;
-	}
-
-	/* If we have jobs that have ran don't go through the logic of
-	 * removing the associations. Since we may want them for
-	 * reports in the future since jobs had ran.
-	 */
-	if(has_jobs)
-		goto just_update;
-
-	/* remove completely all the associations for this added in the last
-	 * day, since they are most likely nothing we really wanted in
-	 * the first place.
-	 */
-	query = xstrdup_printf("select id from %s as t1 where "
-			       "creation_time>%d && (%s);",
-			       assoc_table, day_old, loc_assoc_char);
-
-	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
-		xfree(query);
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	while((row = mysql_fetch_row(result))) {
-		MYSQL_RES *result2 = NULL;
-		MYSQL_ROW row2;
-
-		/* we have to do this one at a time since the lft's and rgt's
-		   change. If you think you need to remove this make
-		   sure your new way can handle changing lft and rgt's
-		   in the association. */
-		xstrfmtcat(query,
-			   "SELECT lft, rgt, (rgt - lft + 1) "
-			   "FROM %s WHERE id = %s;",
-			   assoc_table, row[0]);
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
-		if(!(result2 = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			xfree(query);
-			rc = SLURM_ERROR;
-			break;
-		}
-		xfree(query);
-		if(!(row2 = mysql_fetch_row(result2))) {
-			mysql_free_result(result2);
-			continue;
-		}
-
-		xstrfmtcat(query,
-			   "delete quick from %s where lft between %s AND %s;",
-			   assoc_table, row2[0], row2[1]);
-
-		xstrfmtcat(query,
-			   "UPDATE %s SET rgt = rgt - %s WHERE rgt > %s;"
-			   "UPDATE %s SET lft = lft - %s WHERE lft > %s;",
-			   assoc_table, row2[2], row2[1],
-			   assoc_table, row2[2], row2[1]);
-
-		mysql_free_result(result2);
-
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
-		xfree(query);
-		if(rc != SLURM_SUCCESS) {
-			error("couldn't remove assoc");
-			break;
-		}
-	}
-	mysql_free_result(result);
-	if(rc == SLURM_ERROR) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
-		return rc;
-	}
-
-just_update:
-	/* now update the associations themselves that are still
-	 * around clearing all the limits since if we add them back
-	 * we don't want any residue from past associations lingering
-	 * around.
-	 */
-	query = xstrdup_printf("update %s as t1 set mod_time=%d, deleted=1, "
-			       "fairshare=1, max_jobs=NULL, "
-			       "max_nodes_per_job=NULL, "
-			       "max_wall_duration_per_job=NULL, "
-			       "max_cpu_mins_per_job=NULL "
-			       "where (%s);"
-			       "alter table %s AUTO_INCREMENT=0;",
-			       assoc_table, now,
-			       loc_assoc_char,
-			       assoc_table);
-
-	if(table != assoc_table)
-		xfree(loc_assoc_char);
-
-	debug3("%d(%s:%d) query\n%s", mysql_conn->conn, __FILE__, __LINE__, query);
-	rc = mysql_db_query(mysql_conn->db_conn, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		if(mysql_conn->rollback) {
-			mysql_db_rollback(mysql_conn->db_conn);
-		}
-		list_flush(mysql_conn->update_list);
-	}
-
 	return rc;
 }
 
@@ -1421,6 +826,579 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	return rc;
 }
 
+/* This should be added to the beginning of each function to make sure
+ * we have a connection to the database before we try to use it.
+ */
+extern int check_connection(mysql_conn_t *mysql_conn)
+{
+	if(!mysql_conn) {
+		error("We need a connection to run this");
+		errno = SLURM_ERROR;
+		return SLURM_ERROR;
+	} else if(!mysql_conn->db_conn
+		  || mysql_db_ping(mysql_conn->db_conn) != 0) {
+		if(mysql_get_db_connection(&mysql_conn->db_conn,
+					   mysql_db_name, mysql_db_info)
+		   != SLURM_SUCCESS) {
+			error("unable to re-connect to mysql database");
+			errno = ESLURM_DB_CONNECTION;
+			return ESLURM_DB_CONNECTION;
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
+/* Let me know if the last statement had rows that were affected.
+ */
+extern int last_affected_rows(MYSQL *mysql_db)
+{
+	int status=0, rows=0;
+	MYSQL_RES *result = NULL;
+
+	do {
+		result = mysql_store_result(mysql_db);
+		if (result)
+			mysql_free_result(result);
+		else
+			if (mysql_field_count(mysql_db) == 0) {
+				status = mysql_affected_rows(mysql_db);
+				if(status > 0)
+					rows = status;
+			}
+		if ((status = mysql_next_result(mysql_db)) > 0)
+			debug3("Could not execute statement\n");
+	} while (status == 0);
+
+	return rows;
+}
+
+extern int setup_association_limits(acct_association_rec_t *assoc,
+				    char **cols, char **vals,
+				    char **extra, qos_level_t qos_level,
+				    bool get_fs)
+{
+	if(!assoc)
+		return SLURM_ERROR;
+
+	if((int)assoc->shares_raw >= 0) {
+		xstrcat(*cols, ", fairshare");
+		xstrfmtcat(*vals, ", %u", assoc->shares_raw);
+		xstrfmtcat(*extra, ", fairshare=%u", assoc->shares_raw);
+	} else if (((int)assoc->shares_raw == INFINITE) || get_fs) {
+		xstrcat(*cols, ", fairshare");
+		xstrcat(*vals, ", 1");
+		xstrcat(*extra, ", fairshare=1");
+		assoc->shares_raw = 1;
+	}
+
+	if((int)assoc->grp_cpu_mins >= 0) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_mins);
+		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
+			   assoc->grp_cpu_mins);
+	} else if((int)assoc->grp_cpu_mins == INFINITE) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpu_mins=NULL");
+	}
+
+	if((int)assoc->grp_cpus >= 0) {
+		xstrcat(*cols, ", grp_cpus");
+		xstrfmtcat(*vals, ", %u", assoc->grp_cpus);
+		xstrfmtcat(*extra, ", grp_cpus=%u", assoc->grp_cpus);
+	} else if((int)assoc->grp_cpus == INFINITE) {
+		xstrcat(*cols, ", grp_cpus");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpus=NULL");
+	}
+
+	if((int)assoc->grp_jobs >= 0) {
+		xstrcat(*cols, ", grp_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
+		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
+	} else if((int)assoc->grp_jobs == INFINITE) {
+		xstrcat(*cols, ", grp_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_jobs=NULL");
+	}
+
+	if((int)assoc->grp_nodes >= 0) {
+		xstrcat(*cols, ", grp_nodes");
+		xstrfmtcat(*vals, ", %u", assoc->grp_nodes);
+		xstrfmtcat(*extra, ", grp_nodes=%u", assoc->grp_nodes);
+	} else if((int)assoc->grp_nodes == INFINITE) {
+		xstrcat(*cols, ", grp_nodes");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_nodes=NULL");
+	}
+
+	if((int)assoc->grp_submit_jobs >= 0) {
+		xstrcat(*cols, ", grp_submit_jobs");
+		xstrfmtcat(*vals, ", %u",
+			   assoc->grp_submit_jobs);
+		xstrfmtcat(*extra, ", grp_submit_jobs=%u",
+			   assoc->grp_submit_jobs);
+	} else if((int)assoc->grp_submit_jobs == INFINITE) {
+		xstrcat(*cols, ", grp_submit_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_submit_jobs=NULL");
+	}
+
+	if((int)assoc->grp_wall >= 0) {
+		xstrcat(*cols, ", grp_wall");
+		xstrfmtcat(*vals, ", %u", assoc->grp_wall);
+		xstrfmtcat(*extra, ", grp_wall=%u",
+			   assoc->grp_wall);
+	} else if((int)assoc->grp_wall == INFINITE) {
+		xstrcat(*cols, ", grp_wall");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_wall=NULL");
+	}
+
+	if((int)assoc->max_cpu_mins_pj >= 0) {
+		xstrcat(*cols, ", max_cpu_mins_per_job");
+		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
+		xstrfmtcat(*extra, ", max_cpu_mins_per_job=%u",
+			   assoc->max_cpu_mins_pj);
+	} else if((int)assoc->max_cpu_mins_pj == INFINITE) {
+		xstrcat(*cols, ", max_cpu_mins_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpu_mins_per_job=NULL");
+	}
+
+	if((int)assoc->max_cpus_pj >= 0) {
+		xstrcat(*cols, ", max_cpus_per_job");
+		xstrfmtcat(*vals, ", %u", assoc->max_cpus_pj);
+		xstrfmtcat(*extra, ", max_cpus_per_job=%u",
+			   assoc->max_cpus_pj);
+	} else if((int)assoc->max_cpus_pj == INFINITE) {
+		xstrcat(*cols, ", max_cpus_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpus_per_job=NULL");
+	}
+
+	if((int)assoc->max_jobs >= 0) {
+		xstrcat(*cols, ", max_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
+		xstrfmtcat(*extra, ", max_jobs=%u",
+			   assoc->max_jobs);
+	} else if((int)assoc->max_jobs == INFINITE) {
+		xstrcat(*cols, ", max_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_jobs=NULL");
+	}
+
+	if((int)assoc->max_nodes_pj >= 0) {
+		xstrcat(*cols, ", max_nodes_per_job");
+		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
+		xstrfmtcat(*extra, ", max_nodes_per_job=%u",
+			   assoc->max_nodes_pj);
+	} else if((int)assoc->max_nodes_pj == INFINITE) {
+		xstrcat(*cols, ", max_nodes_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_nodes_per_job=NULL");
+	}
+
+	if((int)assoc->max_submit_jobs >= 0) {
+		xstrcat(*cols, ", max_submit_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->max_submit_jobs);
+		xstrfmtcat(*extra, ", max_submit_jobs=%u",
+			   assoc->max_submit_jobs);
+	} else if((int)assoc->max_submit_jobs == INFINITE) {
+		xstrcat(*cols, ", max_submit_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_submit_jobs=NULL");
+	}
+
+	if((int)assoc->max_wall_pj >= 0) {
+		xstrcat(*cols, ", max_wall_duration_per_job");
+		xstrfmtcat(*vals, ", %u", assoc->max_wall_pj);
+		xstrfmtcat(*extra, ", max_wall_duration_per_job=%u",
+			   assoc->max_wall_pj);
+	} else if((int)assoc->max_wall_pj == INFINITE) {
+		xstrcat(*cols, ", max_wall_duration_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
+	}
+
+	/* when modifying the qos it happens in the actual function
+	   since we have to wait until we hear about the parent first. */
+	if(qos_level == QOS_LEVEL_MODIFY)
+		goto end_qos;
+
+	if(assoc->qos_list && list_count(assoc->qos_list)) {
+		char *qos_type = "qos";
+		char *qos_val = NULL;
+		char *tmp_char = NULL;
+		int set = 0;
+		ListIterator qos_itr =
+			list_iterator_create(assoc->qos_list);
+
+		while((tmp_char = list_next(qos_itr))) {
+			/* we don't want to include blank names */
+			if(!tmp_char[0])
+				continue;
+			if(!set) {
+				if(tmp_char[0] == '+' || tmp_char[0] == '-')
+					qos_type = "delta_qos";
+				set = 1;
+			}
+			xstrfmtcat(qos_val, ",%s", tmp_char);
+		}
+
+		list_iterator_destroy(qos_itr);
+		if(qos_val) {
+			xstrfmtcat(*cols, ", %s", qos_type);
+			xstrfmtcat(*vals, ", '%s'", qos_val);
+			xstrfmtcat(*extra, ", %s=\"%s\"", qos_type, qos_val);
+			xfree(qos_val);
+		}
+	} else if((qos_level == QOS_LEVEL_SET) && default_qos_str) {
+		/* Add default qos to the account */
+		xstrcat(*cols, ", qos");
+		xstrfmtcat(*vals, ", '%s'", default_qos_str);
+		xstrfmtcat(*extra, ", qos=\"%s\"", default_qos_str);
+		if(!assoc->qos_list)
+			assoc->qos_list = list_create(slurm_destroy_char);
+		slurm_addto_char_list(assoc->qos_list, default_qos_str);
+	} else {
+		/* clear the qos */
+		xstrcat(*cols, ", qos, delta_qos");
+		xstrcat(*vals, ", '', ''");
+		xstrcat(*extra, ", qos=\"\", delta_qos=\"\"");
+	}
+end_qos:
+
+	return SLURM_SUCCESS;
+
+}
+
+/* This is called by most modify functions to alter the table and
+ * insert a new line in the transaction table.
+ */
+extern int modify_common(mysql_conn_t *mysql_conn,
+			 uint16_t type,
+			 time_t now,
+			 char *user_name,
+			 char *table,
+			 char *cond_char,
+			 char *vals)
+{
+	char *query = NULL;
+	int rc = SLURM_SUCCESS;
+	char *tmp_cond_char = fix_double_quotes(cond_char);
+	char *tmp_vals = NULL;
+
+	if(vals[1])
+		tmp_vals = fix_double_quotes(vals+2);
+
+	xstrfmtcat(query,
+		   "update %s set mod_time=%d%s "
+		   "where deleted=0 && %s;",
+		   table, now, vals,
+		   cond_char);
+	xstrfmtcat(query,
+		   "insert into %s "
+		   "(timestamp, action, name, actor, info) "
+		   "values (%d, %d, \"%s\", \"%s\", \"%s\");",
+		   txn_table,
+		   now, type, tmp_cond_char, user_name, tmp_vals);
+	xfree(tmp_cond_char);
+	xfree(tmp_vals);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
+	rc = mysql_db_query(mysql_conn->db_conn, query);
+	xfree(query);
+
+	if(rc != SLURM_SUCCESS) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->db_conn);
+		}
+		list_flush(mysql_conn->update_list);
+
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* Every option in assoc_char should have a 't1.' infront of it. */
+extern int remove_common(mysql_conn_t *mysql_conn,
+			 uint16_t type,
+			 time_t now,
+			 char *user_name,
+			 char *table,
+			 char *name_char,
+			 char *assoc_char)
+{
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+	char *loc_assoc_char = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	time_t day_old = now - DELETE_SEC_BACK;
+	bool has_jobs = false;
+	char *tmp_name_char = fix_double_quotes(name_char);
+
+	/* If we have jobs associated with this we do not want to
+	 * really delete it for accounting purposes.  This is for
+	 * corner cases most of the time this won't matter.
+	 */
+	if(table == acct_coord_table) {
+		/* This doesn't apply for these tables since we are
+		 * only looking for association type tables.
+		 */
+	} else if((table == qos_table) || (table == wckey_table)) {
+		has_jobs = _check_jobs_before_remove_without_assoctable(
+			mysql_conn, assoc_char);
+	} else if(table != assoc_table) {
+		has_jobs = _check_jobs_before_remove(mysql_conn, assoc_char);
+	} else {
+		has_jobs = _check_jobs_before_remove_assoc(mysql_conn,
+							   name_char);
+	}
+	/* we want to remove completely all that is less than a day old */
+	if(!has_jobs && table != assoc_table) {
+		query = xstrdup_printf("delete from %s where creation_time>%d "
+				       "&& (%s);"
+				       "alter table %s AUTO_INCREMENT=0;",
+				       table, day_old, name_char, table);
+	}
+
+	if(table != assoc_table)
+		xstrfmtcat(query,
+			   "update %s set mod_time=%d, deleted=1 "
+			   "where deleted=0 && (%s);",
+			   table, now, name_char);
+
+	xstrfmtcat(query,
+		   "insert into %s (timestamp, action, name, actor) "
+		   "values (%d, %d, \"%s\", \"%s\");",
+		   txn_table,
+		   now, type, tmp_name_char, user_name);
+	xfree(tmp_name_char);
+
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
+	rc = mysql_db_query(mysql_conn->db_conn, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->db_conn);
+		}
+		list_flush(mysql_conn->update_list);
+
+		return SLURM_ERROR;
+	} else if((table == acct_coord_table)
+		  || (table == qos_table)
+		  || (table == wckey_table))
+		return SLURM_SUCCESS;
+
+	/* mark deleted=1 or remove completely the accounting tables
+	*/
+	if(table != assoc_table) {
+		if(!assoc_char) {
+			error("no assoc_char");
+			if(mysql_conn->rollback) {
+				mysql_db_rollback(mysql_conn->db_conn);
+			}
+			list_flush(mysql_conn->update_list);
+			return SLURM_ERROR;
+		}
+
+		/* If we are doing this on an assoc_table we have
+		   already done this, so don't */
+/* 		query = xstrdup_printf("select lft, rgt " */
+/* 				       "from %s as t2 where %s order by lft;", */
+/* 				       assoc_table, assoc_char); */
+		query = xstrdup_printf("select distinct t1.id "
+				       "from %s as t1, %s as t2 "
+				       "where (%s) && t1.lft between "
+				       "t2.lft and t2.rgt && t1.deleted=0 "
+				       " && t2.deleted=0;",
+				       assoc_table, assoc_table, assoc_char);
+
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			if(mysql_conn->rollback) {
+				mysql_db_rollback(mysql_conn->db_conn);
+			}
+			list_flush(mysql_conn->update_list);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+
+		rc = 0;
+		loc_assoc_char = NULL;
+		while((row = mysql_fetch_row(result))) {
+			acct_association_rec_t *rem_assoc = NULL;
+			if(!rc) {
+				xstrfmtcat(loc_assoc_char, "id=%s", row[0]);
+				rc = 1;
+			} else {
+				xstrfmtcat(loc_assoc_char,
+					   " || id=%s", row[0]);
+			}
+			rem_assoc = xmalloc(sizeof(acct_association_rec_t));
+			rem_assoc->id = atoi(row[0]);
+			if(addto_update_list(mysql_conn->update_list,
+					      ACCT_REMOVE_ASSOC,
+					      rem_assoc) != SLURM_SUCCESS)
+				error("couldn't add to the update list");
+		}
+		mysql_free_result(result);
+	} else
+		loc_assoc_char = assoc_char;
+
+	if(!loc_assoc_char) {
+		debug2("No associations with object being deleted\n");
+		return rc;
+	}
+
+	/* We should not have to delete from usage table, only flag since we
+	 * only delete things that are typos.
+	 */
+	xstrfmtcat(query,
+		   "update %s set mod_time=%d, deleted=1 where (%s);"
+		   "update %s set mod_time=%d, deleted=1 where (%s);"
+		   "update %s set mod_time=%d, deleted=1 where (%s);",
+		   assoc_day_table, now, loc_assoc_char,
+		   assoc_hour_table, now, loc_assoc_char,
+		   assoc_month_table, now, loc_assoc_char);
+
+	debug3("%d(%s:%d) query\n%s %d",
+	       mysql_conn->conn, __FILE__, __LINE__, query, strlen(query));
+	rc = mysql_db_query(mysql_conn->db_conn, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->db_conn);
+		}
+		list_flush(mysql_conn->update_list);
+		return SLURM_ERROR;
+	}
+
+	/* If we have jobs that have ran don't go through the logic of
+	 * removing the associations. Since we may want them for
+	 * reports in the future since jobs had ran.
+	 */
+	if(has_jobs)
+		goto just_update;
+
+	/* remove completely all the associations for this added in the last
+	 * day, since they are most likely nothing we really wanted in
+	 * the first place.
+	 */
+	query = xstrdup_printf("select id from %s as t1 where "
+			       "creation_time>%d && (%s);",
+			       assoc_table, day_old, loc_assoc_char);
+
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->db_conn);
+		}
+		list_flush(mysql_conn->update_list);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	while((row = mysql_fetch_row(result))) {
+		MYSQL_RES *result2 = NULL;
+		MYSQL_ROW row2;
+
+		/* we have to do this one at a time since the lft's and rgt's
+		   change. If you think you need to remove this make
+		   sure your new way can handle changing lft and rgt's
+		   in the association. */
+		xstrfmtcat(query,
+			   "SELECT lft, rgt, (rgt - lft + 1) "
+			   "FROM %s WHERE id = %s;",
+			   assoc_table, row[0]);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
+		if(!(result2 = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			rc = SLURM_ERROR;
+			break;
+		}
+		xfree(query);
+		if(!(row2 = mysql_fetch_row(result2))) {
+			mysql_free_result(result2);
+			continue;
+		}
+
+		xstrfmtcat(query,
+			   "delete quick from %s where lft between %s AND %s;",
+			   assoc_table, row2[0], row2[1]);
+
+		xstrfmtcat(query,
+			   "UPDATE %s SET rgt = rgt - %s WHERE rgt > %s;"
+			   "UPDATE %s SET lft = lft - %s WHERE lft > %s;",
+			   assoc_table, row2[2], row2[1],
+			   assoc_table, row2[2], row2[1]);
+
+		mysql_free_result(result2);
+
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("couldn't remove assoc");
+			break;
+		}
+	}
+	mysql_free_result(result);
+	if(rc == SLURM_ERROR) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->db_conn);
+		}
+		list_flush(mysql_conn->update_list);
+		return rc;
+	}
+
+just_update:
+	/* now update the associations themselves that are still
+	 * around clearing all the limits since if we add them back
+	 * we don't want any residue from past associations lingering
+	 * around.
+	 */
+	query = xstrdup_printf("update %s as t1 set mod_time=%d, deleted=1, "
+			       "fairshare=1, max_jobs=NULL, "
+			       "max_nodes_per_job=NULL, "
+			       "max_wall_duration_per_job=NULL, "
+			       "max_cpu_mins_per_job=NULL "
+			       "where (%s);"
+			       "alter table %s AUTO_INCREMENT=0;",
+			       assoc_table, now,
+			       loc_assoc_char,
+			       assoc_table);
+
+	if(table != assoc_table)
+		xfree(loc_assoc_char);
+
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
+	rc = mysql_db_query(mysql_conn->db_conn, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->db_conn);
+		}
+		list_flush(mysql_conn->update_list);
+	}
+
+	return rc;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -1825,387 +1803,7 @@ extern List acct_storage_p_get_reservations(mysql_conn_t *mysql_conn, uid_t uid,
 extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 				   acct_txn_cond_t *txn_cond)
 {
-	char *query = NULL;
-	char *assoc_extra = NULL;
-	char *name_extra = NULL;
-	char *extra = NULL;
-	char *tmp = NULL;
-	List txn_list = NULL;
-	ListIterator itr = NULL;
-	char *object = NULL;
-	int set = 0;
-	int i=0;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-
-	/* if this changes you will need to edit the corresponding enum */
-	char *txn_req_inx[] = {
-		"id",
-		"timestamp",
-		"action",
-		"name",
-		"actor",
-		"info"
-	};
-	enum {
-		TXN_REQ_ID,
-		TXN_REQ_TS,
-		TXN_REQ_ACTION,
-		TXN_REQ_NAME,
-		TXN_REQ_ACTOR,
-		TXN_REQ_INFO,
-		TXN_REQ_COUNT
-	};
-
-	if(check_connection(mysql_conn) != SLURM_SUCCESS)
-		return NULL;
-
-	if(!txn_cond)
-		goto empty;
-
-	/* handle query for associations first */
-	if(txn_cond->acct_list && list_count(txn_cond->acct_list)) {
-		set = 0;
-		if(assoc_extra)
-			xstrcat(assoc_extra, " && (");
-		else
-			xstrcat(assoc_extra, " where (");
-
-		if(name_extra)
-			xstrcat(name_extra, " && (");
-		else
-			xstrcat(name_extra, " (");
-		itr = list_iterator_create(txn_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set) {
-				xstrcat(assoc_extra, " || ");
-				xstrcat(name_extra, " || ");
-			}
-
-			xstrfmtcat(assoc_extra, "acct=\"%s\"", object);
-
-			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
-				   " || name=\"%s\")"
-				   " || (info like \"%%acct=\\\"%s\\\"%%\")",
-				   object, object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(assoc_extra, ")");
-		xstrcat(name_extra, ")");
-	}
-
-	if(txn_cond->cluster_list && list_count(txn_cond->cluster_list)) {
-		set = 0;
-		if(assoc_extra)
-			xstrcat(assoc_extra, " && (");
-		else
-			xstrcat(assoc_extra, " where (");
-
-		if(name_extra)
-			xstrcat(name_extra, " && (");
-		else
-			xstrcat(name_extra, "(");
-
-		itr = list_iterator_create(txn_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set) {
-				xstrcat(assoc_extra, " || ");
-				xstrcat(name_extra, " || ");
-			}
-			xstrfmtcat(assoc_extra, "cluster=\"%s\"", object);
-
-			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
-				   " || name=\"%s\")"
-				   " || (info like \"%%cluster=\\\"%s\\\"%%\")",
-				   object, object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(assoc_extra, ")");
-		xstrcat(name_extra, ")");
-	}
-
-	if(txn_cond->user_list && list_count(txn_cond->user_list)) {
-		set = 0;
-		if(assoc_extra)
-			xstrcat(assoc_extra, " && (");
-		else
-			xstrcat(assoc_extra, " where (");
-
-		if(name_extra)
-			xstrcat(name_extra, " && (");
-		else
-			xstrcat(name_extra, "(");
-
-		itr = list_iterator_create(txn_cond->user_list);
-		while((object = list_next(itr))) {
-			if(set) {
-				xstrcat(assoc_extra, " || ");
-				xstrcat(name_extra, " || ");
-			}
-			xstrfmtcat(assoc_extra, "user=\"%s\"", object);
-
-			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
-				   " || name=\"%s\")"
-				   " || (info like \"%%user=\\\"%s\\\"%%\")",
-				   object, object, object);
-
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(assoc_extra, ")");
-		xstrcat(name_extra, ")");
-	}
-
-	if(assoc_extra) {
-		query = xstrdup_printf("select id from %s%s",
-				       assoc_table, assoc_extra);
-		xfree(assoc_extra);
-
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			xfree(query);
-			return NULL;
-		}
-		xfree(query);
-
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-
-		set = 0;
-
-		if(mysql_num_rows(result)) {
-			if(name_extra) {
-				xstrfmtcat(extra, "(%s) || (", name_extra);
-				xfree(name_extra);
-			} else
-				xstrcat(extra, "(");
-			while((row = mysql_fetch_row(result))) {
-				if(set)
-					xstrcat(extra, " || ");
-
-				xstrfmtcat(extra, "(name like '%%id=%s %%' "
-					   "|| name like '%%id=%s)' "
-					   "|| name=%s)",
-					   row[0], row[0], row[0]);
-				set = 1;
-			}
-			xstrcat(extra, "))");
-		} else if(name_extra) {
-			xstrfmtcat(extra, "(%s))", name_extra);
-			xfree(name_extra);
-		}
-		mysql_free_result(result);
-	}
-
-	/*******************************************/
-
-	if(txn_cond->action_list && list_count(txn_cond->action_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		itr = list_iterator_create(txn_cond->action_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "action=\"%s\"", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(txn_cond->actor_list && list_count(txn_cond->actor_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		itr = list_iterator_create(txn_cond->actor_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "actor=\"%s\"", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(txn_cond->id_list && list_count(txn_cond->id_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		itr = list_iterator_create(txn_cond->id_list);
-		while((object = list_next(itr))) {
-			char *ptr = NULL;
-			long num = strtol(object, &ptr, 10);
-			if ((num == 0) && ptr && ptr[0]) {
-				error("Invalid value for txn id (%s)",
-				      object);
-				xfree(extra);
-				list_iterator_destroy(itr);
-				return NULL;
-			}
-
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(txn_cond->info_list && list_count(txn_cond->info_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		itr = list_iterator_create(txn_cond->info_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "info like '%%%s%%'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(txn_cond->name_list && list_count(txn_cond->name_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		itr = list_iterator_create(txn_cond->name_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name like '%%%s%%'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(txn_cond->time_start && txn_cond->time_end) {
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		xstrfmtcat(extra, "timestamp < %d && timestamp >= %d)",
-			   txn_cond->time_end, txn_cond->time_start);
-	} else if(txn_cond->time_start) {
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		xstrfmtcat(extra, "timestamp >= %d)", txn_cond->time_start);
-
-	} else if(txn_cond->time_end) {
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		xstrfmtcat(extra, "timestamp < %d)", txn_cond->time_end);
-	}
-
-	/* make sure we can get the max length out of the database
-	 * when grouping the names
-	 */
-	if(txn_cond->with_assoc_info)
-		mysql_db_query(mysql_conn->db_conn,
-			       "set session group_concat_max_len=65536;");
-
-empty:
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", txn_req_inx[i]);
-	for(i=1; i<TXN_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", txn_req_inx[i]);
-	}
-
-	query = xstrdup_printf("select %s from %s", tmp, txn_table);
-
-	if(extra) {
-		xstrfmtcat(query, "%s", extra);
-		xfree(extra);
-	}
-	xstrcat(query, " order by timestamp;");
-
-	xfree(tmp);
-
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
-		xfree(query);
-		return NULL;
-	}
-	xfree(query);
-
-	txn_list = list_create(destroy_acct_txn_rec);
-
-	while((row = mysql_fetch_row(result))) {
-		acct_txn_rec_t *txn = xmalloc(sizeof(acct_txn_rec_t));
-
-		list_append(txn_list, txn);
-
-		txn->action = atoi(row[TXN_REQ_ACTION]);
-		txn->actor_name = xstrdup(row[TXN_REQ_ACTOR]);
-		txn->id = atoi(row[TXN_REQ_ID]);
-		txn->set_info = xstrdup(row[TXN_REQ_INFO]);
-		txn->timestamp = atoi(row[TXN_REQ_TS]);
-		txn->where_query = xstrdup(row[TXN_REQ_NAME]);
-
-		if(txn_cond && txn_cond->with_assoc_info
-		   && (txn->action == DBD_ADD_ASSOCS
-		       || txn->action == DBD_MODIFY_ASSOCS
-		       || txn->action == DBD_REMOVE_ASSOCS)) {
-			MYSQL_RES *result2 = NULL;
-			MYSQL_ROW row2;
-
-			query = xstrdup_printf(
-				"select "
-				"group_concat(distinct user order by user), "
-				"group_concat(distinct acct order by acct), "
-				"group_concat(distinct cluster "
-				"order by cluster) from %s where %s",
-				assoc_table, row[TXN_REQ_NAME]);
-			debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
-			       __FILE__, __LINE__, query);
-			if(!(result2 = mysql_db_query_ret(
-				     mysql_conn->db_conn, query, 0))) {
-				xfree(query);
-				continue;
-			}
-			xfree(query);
-
-			if((row2 = mysql_fetch_row(result2))) {
-				if(row2[0] && row2[0][0])
-					txn->users = xstrdup(row2[0]);
-				if(row2[1] && row2[1][0])
-					txn->accts = xstrdup(row2[1]);
-				if(row2[2] && row2[2][0])
-					txn->clusters = xstrdup(row2[2]);
-			}
-			mysql_free_result(result2);
-		}
-	}
-	mysql_free_result(result);
-
-	return txn_list;
+	return mysql_get_txn(mysql_conn, uid, txn_cond);
 }
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,

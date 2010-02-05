@@ -58,6 +58,35 @@ extern char *wckey_day_table;
 extern char *wckey_month_table;
 
 
+/* here to add \\ to all \" in a string */
+extern char *fix_double_quotes(char *str)
+{
+	int i=0, start=0;
+	char *fixed = NULL;
+
+	if(!str)
+		return NULL;
+
+	while(str[i]) {
+		if(str[i] == '"') {
+			char *tmp = xstrndup(str+start, i-start);
+			xstrfmtcat(fixed, "%s\\\"", tmp);
+			xfree(tmp);
+			start = i+1;
+		}
+
+		i++;
+	}
+
+	if((i-start) > 0) {
+		char *tmp = xstrndup(str+start, i-start);
+		xstrcat(fixed, tmp);
+		xfree(tmp);
+	}
+
+	return fixed;
+}
+
 /*
  * send_accounting_update - send update to controller of cluster
  * IN update_list: updates to send
@@ -524,3 +553,54 @@ merge_delta_qos_list(List qos_list, List delta_qos_list)
 	list_iterator_destroy(new_itr);
 	list_iterator_destroy(curr_itr);
 }
+
+extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
+				    acct_admin_level_t min_level)
+{
+	bool is_admin = 1;
+	/* This only works when running though the slurmdbd.
+	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+	 * SLURMDBD!
+	 */
+	if(slurmdbd_conf) {
+		/* We have to check the authentication here in the
+		 * plugin since we don't know what accounts are being
+		 * referenced until after the query.
+		 */
+		if((uid != slurmdbd_conf->slurm_user_id && uid != 0)
+		   && assoc_mgr_get_admin_level(db_conn, uid) < min_level)
+			is_admin = 0;
+	}
+	return is_admin;
+}
+
+extern bool is_user_coord(acct_user_rec_t *user, char *account)
+{
+	ListIterator itr;
+	acct_coord_rec_t *coord;
+
+	xassert(user);
+	xassert(account);
+
+	if (!user->coord_accts || !list_count(user->coord_accts))
+		return 0;
+
+	itr = list_iterator_create(user->coord_accts);
+	while((coord = list_next(itr))) {
+		if(!strcasecmp(coord->name, account))
+			break;
+	}
+	list_iterator_destroy(itr);
+	return coord ? 1 : 0;
+}
+
+extern bool is_user_any_coord(void *db_conn, acct_user_rec_t *user)
+{
+	if(assoc_mgr_fill_in_user(db_conn, user, 1, NULL) != SLURM_SUCCESS) {
+		error("couldn't get information for this user %s(%d)",
+		      user->name, user->uid);
+		return 0;
+	}
+	return (user->coord_accts && list_count(user->coord_accts));
+}
+
