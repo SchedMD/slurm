@@ -2,7 +2,7 @@
  *  read_config.c - read the overall slurm configuration file
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
@@ -279,6 +279,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"UnkillableStepProgram", S_P_STRING},
 	{"UnkillableStepTimeout", S_P_UINT16},
 	{"UsePAM", S_P_BOOLEAN},
+	{"VSizeFactor", S_P_UINT16},
 	{"WaitTime", S_P_UINT16},
 
 	{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
@@ -1581,6 +1582,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->unkillable_program);
 	ctl_conf_ptr->unkillable_timeout        = (uint16_t) NO_VAL;
 	ctl_conf_ptr->use_pam			= 0;
+	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_on_bad_exit	= 0;
 
@@ -2673,6 +2675,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->unkillable_timeout,
 			    "UnkillableStepTimeout", hashtbl))
 		conf->unkillable_timeout = DEFAULT_UNKILLABLE_TIMEOUT;
+
+	s_p_get_uint16(&conf->vsize_factor, "VSizeFactor", hashtbl);
 
 #ifdef HAVE_BG
 	if (conf->node_prefix == NULL)

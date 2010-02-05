@@ -47,7 +47,8 @@ HIGHLIGHTS
   was formerly always recreated from slurm.conf. 
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
-
+* Added VSizeFactor to enforce virtual memory limits for jobs and job steps as
+  a percentage of their real memory allocation.
 
 COMMAND CHANGES (see man pages for details)
 

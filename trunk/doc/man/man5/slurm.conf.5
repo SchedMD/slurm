@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "August 2009" "slurm.conf 2.1" "Slurm configuration file"
+.TH "slurm.conf" "5" "February 2010" "slurm.conf 2.2" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1791,6 +1791,19 @@ session     required      pam_unix.so
 .br
 For sites configuring PAM with a general configuration file, the appropriate
 lines (see above), where \fBslurm\fR is the service\-name, should be added.
+
+.TP
+\fBVSizeFactor\fR
+Memory specifications in job requests apply to real memory size (also known 
+as resident set size). It is possible to enforce virtual memory limits for 
+both jobs and job steps by limiting their virtual memory to some percentage
+of their real memory allocation. The \fBVSizeFactor\fR parameter specifies 
+the job's or job step's virtual memory limit as a percentage of its real 
+memory limit. For example, if a job's real memory limit is 500MB and VSizeFactor is set to 101 then the job will be killed if its real memory
+exceeds 500MB or its virtual memory exceeds 505MB (101 percent of the 
+real memory limit).
+The default valus is 0, which disables enforcement of virtual memory limits.
+The value may not exceed 65533 percent.
 
 .TP
 \fBWaitTime\fR
