@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     was drained you would not be able to create new blocks on it.
  -- In sched/wiki2 (for Moab): Add excluded host list to job information
     using new keyword "EXCLUDE_HOSTLIST".
+ -- Correct slurmd reporting of incorrect socket/core/thread counts.  
 
 * Changes in SLURM 2.1.2
 =============================
