@@ -252,5 +252,6 @@ extern pthread_mutex_t jobacct_lock;
 extern uint32_t jobacct_job_id;
 extern uint32_t jobacct_step_id;
 extern uint32_t jobacct_mem_limit;	/* step's memory limit in KB */
+extern uint32_t jobacct_vmem_limit;	/* step's virutal memory limit in KB */
 
 #endif

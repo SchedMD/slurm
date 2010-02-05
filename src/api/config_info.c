@@ -2,7 +2,7 @@
  *  config_info.c - get/print the system configuration information of slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -622,7 +622,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		key_pair->value = xstrdup(tmp_str);
 		list_append(ret_list, key_pair);
 
-		secs2time_str((time_t) slurm_ctl_conf_ptr->priority_calc_period,
+		secs2time_str((time_t)slurm_ctl_conf_ptr->priority_calc_period,
 			      tmp_str, sizeof(tmp_str));
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("PriorityCalcPeriod");
@@ -728,7 +728,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PropagateResourceLimitsExcept");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->propagate_rlimits_except);
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->
+				  propagate_rlimits_except);
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -777,7 +778,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->sched_params);
 	list_append(ret_list, key_pair);
 
-	snprintf(tmp_str, sizeof(tmp_str), "%u", slurm_ctl_conf_ptr->schedport);
+	snprintf(tmp_str, sizeof(tmp_str), "%u", 
+		 slurm_ctl_conf_ptr->schedport);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SchedulerPort");
 	key_pair->value = xstrdup(tmp_str);
@@ -1031,6 +1033,13 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		 slurm_ctl_conf_ptr->unkillable_timeout);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("UnkillableStepTimeout");
+	key_pair->value = xstrdup(tmp_str);
+	list_append(ret_list, key_pair);
+
+	snprintf(tmp_str, sizeof(tmp_str), "%u percent",
+		 slurm_ctl_conf_ptr->vsize_factor);
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("VSizeFactor");
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 

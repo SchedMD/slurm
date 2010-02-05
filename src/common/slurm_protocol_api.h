@@ -3,7 +3,7 @@
  *	definitions
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -329,6 +329,11 @@ extern int slurm_set_tree_width(uint16_t tree_width);
  * returns the value of tree_width in slurmctld_conf object
  */
 extern uint16_t slurm_get_tree_width(void);
+
+/* slurm_get_vsize_factor
+ * returns the value of vsize_factor in slurmctld_conf object
+ */
+extern uint16_t slurm_get_vsize_factor(void);
 
 /* slurm_get_accounting_storage_type
  * returns the accounting storage type from slurmctld_conf object

@@ -2,7 +2,7 @@
  *  slurm_protocol_api.c - high-level slurm communication functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -868,6 +868,23 @@ extern uint16_t slurm_get_tree_width(void)
 		slurm_conf_unlock();
 	}
 	return tree_width;
+}
+
+/* slurm_get_vsize_factor
+ * returns the value of vsize_factor in slurmctld_conf object
+ */
+extern uint16_t slurm_get_vsize_factor(void)
+{
+	uint16_t vsize_factor = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		vsize_factor = conf->vsize_factor;
+		slurm_conf_unlock();
+	}
+	return vsize_factor;
 }
 
 /* slurm_set_auth_type

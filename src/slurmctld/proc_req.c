@@ -573,6 +573,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->unkillable_program  = xstrdup(conf->unkillable_program);
 	conf_ptr->unkillable_timeout  = conf->unkillable_timeout;
 	conf_ptr->version             = xstrdup(SLURM_VERSION_STRING);
+	conf_ptr->vsize_factor        = conf->vsize_factor;
 
 	slurm_conf_unlock();
 	return;

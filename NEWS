@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     S_JOB_ALLOC_MEM. 
  -- Kill individual job steps that exceed their memory limit rather than 
     killing an entire job if one step exceeds its memory limit.
+ -- Added configuration parameter VSizeFactor to enforce virtual memory limits 
+    for jobs and job steps as a percentage of their real memory allocation.
 
 * Changes in SLURM 2.2.0.pre1
 =============================

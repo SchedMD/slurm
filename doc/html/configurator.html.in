@@ -215,6 +215,7 @@ function displayfile()
    "SlurmdTimeout=" + document.config.slurmd_timeout.value + "<br>" +
    "#UnkillableStepProgram= <br>" +
    "#UnkillableStepTimeout=60 <br>" +
+   "#VSizeFactor=0 <br>" +
    "Waittime=" + document.config.wait_time.value + "<br>" +
    "# <br>" +
    "# <br>" +

@@ -182,7 +182,7 @@ static void _get_process_data(void)
 	List prec_list = NULL;
 	pid_t *pids = NULL;
 	int npids = 0;
-	uint32_t total_job_mem = 0;
+	uint32_t total_job_mem = 0, total_job_vsize = 0;
 	int		i, fd;
 	ListIterator itr;
 	ListIterator itr2;
@@ -332,6 +332,7 @@ static void _get_process_data(void)
 				total_job_mem += prec->rss;
 				jobacct->max_vsize = jobacct->tot_vsize =
 					MAX(jobacct->max_vsize, prec->vsize);
+				total_job_vsize += prec->vsize;
 				jobacct->max_pages = jobacct->tot_pages =
 					MAX(jobacct->max_pages, prec->pages);
 				jobacct->min_cpu = jobacct->tot_cpu =
@@ -362,6 +363,18 @@ static void _get_process_data(void)
 			error("Step %u.%u exceeded %u KB memory limit, being "
 			      "killed", jobacct_job_id, jobacct_step_id, 
 			      jobacct_mem_limit);
+		}
+		_acct_kill_step();
+	} else if (jobacct_job_id && jobacct_vmem_limit &&
+	    (total_job_vsize > jobacct_vmem_limit)) {
+		if (jobacct_step_id == NO_VAL) {
+			error("Job %u exceeded %u KB virtual memory limit, "
+			      "being killed", jobacct_job_id, 
+			      jobacct_vmem_limit);
+		} else {
+			error("Step %u.%u exceeded %u KB virtual memory "
+			      "limit, being killed", jobacct_job_id, 
+			      jobacct_step_id, jobacct_vmem_limit);
 		}
 		_acct_kill_step();
 	}
