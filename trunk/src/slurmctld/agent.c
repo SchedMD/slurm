@@ -96,7 +96,7 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/srun_comm.h"
 
-#define MAX_RETRIES	100
+#define MAX_RETRIES		100
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
@@ -197,7 +197,9 @@ static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
 
-static bool run_scheduler = false;
+static bool run_scheduler    = false;
+static bool wiki2_sched      = false;
+static bool wiki2_sched_test = false;
 
 /*
  * agent - party responsible for transmitting an common RPC in parallel
@@ -223,6 +225,14 @@ void *agent(void *args)
 	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type);
 #endif
 	slurm_mutex_lock(&agent_cnt_mutex);
+	if (!wiki2_sched_test) {
+		char *sched_type = slurm_get_sched_type();
+		if (strcmp(sched_type, "sched/wiki2") == 0)
+			wiki2_sched = true;
+		xfree(sched_type);
+		wiki2_sched_test = true;
+	}
+
 	while (1) {
 		if (slurmctld_config.shutdown_time ||
 		    (agent_cnt < MAX_AGENT_CNT)) {
@@ -1495,6 +1505,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	struct job_record  *job_ptr;
+	int delay_time;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 	if (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH)
@@ -1525,10 +1536,16 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		return -1;	/* invalid request?? */
 	}
 
+	delay_time = difftime(now, job_ptr->start_time);
 	if (!IS_NODE_POWER_SAVE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr)) {
 		/* ready to launch, adjust time limit for boot time */
-		if (job_ptr->time_limit != INFINITE)
-			job_ptr->end_time = now + (job_ptr->time_limit * 60);
+		if (delay_time && (job_ptr->time_limit != INFINITE) && 
+		    (!wiki2_sched)) {
+			info("Job %u launch delayed by %d secs, "
+			     "updating end_time", 
+			     launch_msg_ptr->job_id, delay_time);
+			job_ptr->end_time += delay_time;
+		}
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;
 	}
@@ -1541,8 +1558,13 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		error("agent waited too long for node %s to respond, "
 		      "sending batch request anyway...",
 		      node_ptr->name);
-		if (job_ptr->time_limit != INFINITE)
-			job_ptr->end_time = now + (job_ptr->time_limit * 60);
+		if (delay_time && (job_ptr->time_limit != INFINITE) && 
+		    (!wiki2_sched)) {
+			info("Job %u launch delayed by %d secs, "
+			     "updating end_time", 
+			     launch_msg_ptr->job_id, delay_time);
+			job_ptr->end_time += delay_time;
+		}
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;
 	}
