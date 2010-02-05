@@ -112,7 +112,8 @@ extern int send_accounting_update(List update_list, char *cluster, char *host,
 		slurm_free_return_code_msg(resp.data);
 		break;
 	default:
-		error("Unknown response message %u", resp.msg_type);
+		if(rc != SLURM_ERROR)
+			error("Unknown response message %u", resp.msg_type);
 		rc = SLURM_ERROR;
 		break;
 	}
