@@ -39,7 +39,7 @@
 \*****************************************************************************/
 
 #include "mysql_rollup.h"
-#include "mysql_jobacct_process.h"
+#include "mysql_archive.h"
 
 typedef struct {
 	int id;

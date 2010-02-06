@@ -2425,6 +2425,7 @@ extern void pack_acct_event_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack_time(0, buffer);
 		pack_time(0, buffer);
 		packnull(buffer);
+		pack32(NO_VAL, buffer);
 		pack16((uint16_t)NO_VAL, buffer);
 		return;
 	}
@@ -2436,6 +2437,7 @@ extern void pack_acct_event_rec(void *in, uint16_t rpc_version, Buf buffer)
 	pack_time(object->period_start, buffer);
 	pack_time(object->period_end, buffer);
 	packstr(object->reason, buffer);
+	pack32(object->reason_uid, buffer);
 	pack16(object->state, buffer);
 }
 
@@ -2452,6 +2454,7 @@ extern int unpack_acct_event_rec(void **object, uint16_t rpc_version,
 	safe_unpack_time(&object_ptr->period_start, buffer);
 	safe_unpack_time(&object_ptr->period_end, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->reason, &uint32_tmp, buffer);
+	safe_unpack32(&object_ptr->reason_uid, buffer);
 	safe_unpack16(&object_ptr->state, buffer);
 
 	return SLURM_SUCCESS;

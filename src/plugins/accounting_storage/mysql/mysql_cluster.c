@@ -692,6 +692,7 @@ extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		"period_start",
 		"period_end",
 		"reason",
+		"reason_uid",
 		"cluster_nodes"
 	};
 
@@ -703,6 +704,7 @@ extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		EVENT_REQ_START,
 		EVENT_REQ_END,
 		EVENT_REQ_REASON,
+		EVENT_REQ_REASON_UID,
 		EVENT_REQ_CNODES,
 		EVENT_REQ_COUNT
 	};
@@ -872,6 +874,7 @@ empty:
 
 		if(row[EVENT_REQ_REASON] && row[EVENT_REQ_REASON][0])
 			event->reason = xstrdup(row[EVENT_REQ_REASON]);
+		event->reason_uid = atoi(row[EVENT_REQ_REASON_UID]);
 
 		if(row[EVENT_REQ_CLUSTER] && row[EVENT_REQ_CLUSTER][0])
 			event->cluster_nodes = xstrdup(row[EVENT_REQ_CNODES]);

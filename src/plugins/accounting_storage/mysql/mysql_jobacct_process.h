@@ -59,9 +59,4 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					   acct_job_cond_t *job_cond);
 
-extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
-					 acct_archive_cond_t *arch_cond);
-
-extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
-					      acct_archive_rec_t *arch_rec);
 #endif
