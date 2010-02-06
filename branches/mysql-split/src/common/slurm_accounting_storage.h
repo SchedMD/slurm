@@ -306,6 +306,7 @@ typedef struct {
 	time_t period_start;    /* Start of period */
 	char *reason;           /* reason node is in state during time
 				   period (only set in a node event) */
+	uint32_t reason_uid;    /* uid of that who set the reason */
 	uint16_t state;         /* State of node during time
 				   period (only set in a node event) */
 } acct_event_rec_t;
