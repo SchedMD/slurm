@@ -395,6 +395,12 @@ install -D -m755 contribs/sjstat ${RPM_BUILD_ROOT}%{_bindir}/sjstat
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.{a,la}
+%if %{?with_pam_dir}0
+rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.{a,la}
+%endif
+test -f $RPM_BUILD_ROOT/lib/security/pam_slurm.{a,la}
+test -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.{a,la}
+test -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.{a,la}
 %if ! %{slurm_with auth_none}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %endif
@@ -460,16 +466,17 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
 LIST=./pam.files
 touch $LIST
 %if %{?with_pam_dir}0
-test -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.so		&&
-    echo %{with_pam_dir}/pam_slurm.so	>>$LIST
+    test -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.so	&&
+	echo %{with_pam_dir}/pam_slurm.so	>>$LIST
 %else
-test -f $RPM_BUILD_ROOT/lib/security/pam_slurm.so		&&
-    echo /lib/security/pam_slurm.so	>>$LIST
-test -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.so		&&
-    echo /lib32/security/pam_slurm.so	>>$LIST
-test -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.so		&&
-    echo /lib64/security/pam_slurm.so	>>$LIST
+    test -f $RPM_BUILD_ROOT/lib/security/pam_slurm.so		&&
+	echo /lib/security/pam_slurm.so		>>$LIST
+    test -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.so		&&
+	echo /lib32/security/pam_slurm.so	>>$LIST
+    test -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.so		&&
+	echo /lib64/security/pam_slurm.so	>>$LIST
 %endif
+cat ./pam.files
 #############################################################################
 
 %clean
