@@ -104,8 +104,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobacct_gather_linux_la_LIBADD =
-am_jobacct_gather_linux_la_OBJECTS = jobacct_gather_linux.lo \
-	proctrack.lo
+am_jobacct_gather_linux_la_OBJECTS = jobacct_gather_linux.lo
 jobacct_gather_linux_la_OBJECTS =  \
 	$(am_jobacct_gather_linux_la_OBJECTS)
 jobacct_gather_linux_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -319,10 +318,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = jobacct_gather_linux.la
 
 # Null job completion logging plugin.
-jobacct_gather_linux_la_SOURCES = jobacct_gather_linux.c \
-	$(top_builddir)/src/slurmd/common/proctrack.c \
-	$(top_builddir)/src/slurmd/common/proctrack.h
-
+jobacct_gather_linux_la_SOURCES = jobacct_gather_linux.c
 jobacct_gather_linux_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
@@ -399,7 +395,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_linux.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -421,13 +416,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-proctrack.lo: $(top_builddir)/src/slurmd/common/proctrack.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT proctrack.lo -MD -MP -MF $(DEPDIR)/proctrack.Tpo -c -o proctrack.lo `test -f '$(top_builddir)/src/slurmd/common/proctrack.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/proctrack.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/proctrack.Tpo $(DEPDIR)/proctrack.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/slurmd/common/proctrack.c' object='proctrack.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o proctrack.lo `test -f '$(top_builddir)/src/slurmd/common/proctrack.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/proctrack.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
