@@ -457,11 +457,11 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 
 %if %{?with_pam_dir}0
-LIST=./pam_slurm
+LIST=./pam.files
 test -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.so		&&
     echo %{with_pam_dir}/pam_slurm.so	>>$LIST
 %else
-LIST=./pam_slurm
+LIST=./pam.files
 test -f $RPM_BUILD_ROOT/lib/security/pam_slurm.so		&&
     echo /lib/security/pam_slurm.so	>>$LIST
 test -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.so		&&
@@ -675,7 +675,7 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %if %{slurm_with pam}
-%files pam_slurm
+%files -f pam.files pam_slurm
 %defattr(-,root,root)
 %endif
 #############################################################################
