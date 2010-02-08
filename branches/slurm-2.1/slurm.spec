@@ -443,6 +443,7 @@ if [ -d /etc/init.d ]; then
 fi
 
 LIST=./plugins.files
+touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_mysql.so &&
    echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_pgsql.so &&
@@ -456,12 +457,12 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 
-%if %{?with_pam_dir}0
 LIST=./pam.files
+touch $LIST
+%if %{?with_pam_dir}0
 test -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.so		&&
     echo %{with_pam_dir}/pam_slurm.so	>>$LIST
 %else
-LIST=./pam.files
 test -f $RPM_BUILD_ROOT/lib/security/pam_slurm.so		&&
     echo /lib/security/pam_slurm.so	>>$LIST
 test -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.so		&&
