@@ -584,8 +584,8 @@ typedef struct {
 } acct_archive_cond_t;
 
 typedef struct {
-	char *archive_file;  /* archive file containing an insert line
-				of jobs since past */
+	char *archive_file;  /* archive file containing data that was
+				once flushed from the database */
 	char *insert;     /* an sql statement to be ran containing the
 			     insert of jobs since past */
 } acct_archive_rec_t;
