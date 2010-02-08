@@ -135,6 +135,198 @@ typedef struct {
 	char *period_start;
 } local_suspend_t;
 
+/* if this changes you will need to edit the corresponding
+ * enum below */
+static char *event_req_inx[] = {
+	"node_name",
+	"cluster",
+	"cpu_count",
+	"state",
+	"period_start",
+	"period_end",
+	"reason",
+	"reason_uid",
+	"cluster_nodes",
+};
+
+enum {
+	EVENT_REQ_NODE,
+	EVENT_REQ_CLUSTER,
+	EVENT_REQ_CPU,
+	EVENT_REQ_STATE,
+	EVENT_REQ_START,
+	EVENT_REQ_END,
+	EVENT_REQ_REASON,
+	EVENT_REQ_REASON_UID,
+	EVENT_REQ_CNODES,
+	EVENT_REQ_COUNT
+};
+
+/* if this changes you will need to edit the corresponding
+ * enum below */
+static char *job_req_inx[] = {
+	"account",
+	"alloc_cpus",
+	"alloc_nodes",
+	"associd",
+	"blockid",
+	"cluster",
+	"comp_code",
+	"eligible",
+	"end",
+	"gid",
+	"id",
+	"jobid",
+	"kill_requid",
+	"name",
+	"nodelist",
+	"node_inx",
+	"partition",
+	"priority",
+	"qos",
+	"req_cpus",
+	"resvid",
+	"start",
+	"state",
+	"submit",
+	"suspended",
+	"track_steps",
+	"uid",
+	"wckey",
+	"wckeyid",
+};
+
+enum {
+	JOB_REQ_ACCOUNT,
+	JOB_REQ_ALLOC_CPUS,
+	JOB_REQ_ALLOC_NODES,
+	JOB_REQ_ASSOCID,
+	JOB_REQ_BLOCKID,
+	JOB_REQ_CLUSTER,
+	JOB_REQ_COMP_CODE,
+	JOB_REQ_ELIGIBLE,
+	JOB_REQ_END,
+	JOB_REQ_GID,
+	JOB_REQ_ID,
+	JOB_REQ_JOBID,
+	JOB_REQ_KILL_REQUID,
+	JOB_REQ_NAME,
+	JOB_REQ_NODELIST,
+	JOB_REQ_NODE_INX,
+	JOB_REQ_RESVID,
+	JOB_REQ_PARTITION,
+	JOB_REQ_PRIORITY,
+	JOB_REQ_QOS,
+	JOB_REQ_REQ_CPUS,
+	JOB_REQ_START,
+	JOB_REQ_STATE,
+	JOB_REQ_SUBMIT,
+	JOB_REQ_SUSPENDED,
+	JOB_REQ_TRACKSTEPS,
+	JOB_REQ_UID,
+	JOB_REQ_WCKEY,
+	JOB_REQ_WCKEYID,
+	JOB_REQ_COUNT
+};
+
+/* if this changes you will need to edit the corresponding
+ * enum below */
+static char *step_req_inx[] = {
+	"id",
+	"stepid",
+	"start",
+	"end",
+	"suspended",
+	"name",
+	"nodelist",
+	"node_inx",
+	"state",
+	"kill_requid",
+	"comp_code",
+	"nodes",
+	"cpus",
+	"tasks",
+	"task_dist",
+	"user_sec",
+	"user_usec",
+	"sys_sec",
+	"sys_usec",
+	"max_vsize",
+	"max_vsize_task",
+	"max_vsize_node",
+	"ave_vsize",
+	"max_rss",
+	"max_rss_task",
+	"max_rss_node",
+	"ave_rss",
+	"max_pages",
+	"max_pages_task",
+	"max_pages_node",
+	"ave_pages",
+	"min_cpu",
+	"min_cpu_task",
+	"min_cpu_node",
+	"ave_cpu"
+};
+
+
+enum {
+	STEP_REQ_ID,
+	STEP_REQ_STEPID,
+	STEP_REQ_START,
+	STEP_REQ_END,
+	STEP_REQ_SUSPENDED,
+	STEP_REQ_NAME,
+	STEP_REQ_NODELIST,
+	STEP_REQ_NODE_INX,
+	STEP_REQ_STATE,
+	STEP_REQ_KILL_REQUID,
+	STEP_REQ_COMP_CODE,
+	STEP_REQ_NODES,
+	STEP_REQ_CPUS,
+	STEP_REQ_TASKS,
+	STEP_REQ_TASKDIST,
+	STEP_REQ_USER_SEC,
+	STEP_REQ_USER_USEC,
+	STEP_REQ_SYS_SEC,
+	STEP_REQ_SYS_USEC,
+	STEP_REQ_MAX_VSIZE,
+	STEP_REQ_MAX_VSIZE_TASK,
+	STEP_REQ_MAX_VSIZE_NODE,
+	STEP_REQ_AVE_VSIZE,
+	STEP_REQ_MAX_RSS,
+	STEP_REQ_MAX_RSS_TASK,
+	STEP_REQ_MAX_RSS_NODE,
+	STEP_REQ_AVE_RSS,
+	STEP_REQ_MAX_PAGES,
+	STEP_REQ_MAX_PAGES_TASK,
+	STEP_REQ_MAX_PAGES_NODE,
+	STEP_REQ_AVE_PAGES,
+	STEP_REQ_MIN_CPU,
+	STEP_REQ_MIN_CPU_TASK,
+	STEP_REQ_MIN_CPU_NODE,
+	STEP_REQ_AVE_CPU,
+	STEP_REQ_COUNT
+};
+
+/* if this changes you will need to edit the corresponding
+ * enum below */
+static char *suspend_req_inx[] = {
+	"id",
+	"associd",
+	"start",
+	"end",
+};
+
+enum {
+	SUSPEND_REQ_ID,
+	SUSPEND_REQ_ASSOCID,
+	SUSPEND_REQ_START,
+	SUSPEND_REQ_END,
+	SUSPEND_REQ_COUNT
+};
+
+
 static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 static int high_buffer_size = (1024 * 1024);
 
@@ -561,280 +753,51 @@ static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
 	return cnt;
 }
 
-/* returns count of events archived or SLURM_ERROR on error */
-static uint32_t _archive_suspend(mysql_conn_t *mysql_conn,
-				 time_t period_end, char *arch_dir)
+/* returns sql statement from archived data or NULL on error */
+static char *_load_cluster_events(uint16_t rpc_version,
+				  Buf buffer, uint32_t rec_cnt)
 {
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	char *tmp = NULL, *query = NULL;
-	time_t period_start = 0;
-	uint32_t cnt = 0;
-	local_suspend_t suspend;
-	Buf buffer;
-	int error_code = 0, i = 0;
+	char *insert = NULL, *format = NULL;
+	local_event_t object;
+	int i = 0;
 
-	/* if this changes you will need to edit the corresponding
-	 * enum below */
-	char *req_inx[] = {
-		"id",
-		"associd",
-		"start",
-		"end",
-	};
-
-	enum {
-		SUSPEND_REQ_ID,
-		SUSPEND_REQ_ASSOCID,
-		SUSPEND_REQ_START,
-		SUSPEND_REQ_END,
-		SUSPEND_REQ_COUNT
-	};
-
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", req_inx[0]);
-	for(i=1; i<SUSPEND_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", req_inx[i]);
+	xstrfmtcat(insert, "insert into %s (%s", event_table, event_req_inx[0]);
+	xstrcat(format, "('%s'");
+	for(i=1; i<EVENT_REQ_COUNT; i++) {
+		xstrfmtcat(insert, ", %s", event_req_inx[i]);
+		xstrcat(format, ", '%s'");
 	}
+	xstrcat(insert, ") values ");
+	xstrcat(format, ")");
+	for(i=0; i<rec_cnt; i++) {
+		memset(&object, 0, sizeof(local_event_t));
+		if(_unpack_local_event(&object, rpc_version, buffer)
+		   != SLURM_SUCCESS) {
+			error("issue unpacking");
+			xfree(format);
+			xfree(insert);
+			break;
+		}
+		if(i)
+			xstrcat(insert, ", ");
 
-	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s where "
-			       "start <= %d && end != 0 "
-			       "order by start asc",
-			       tmp, suspend_table, period_end);
-	xfree(tmp);
+		xstrfmtcat(insert, format,
+			   object.cluster,
+			   object.cluster_nodes,
+			   object.cpu_count,
+			   object.node_name,
+			   object.period_end,
+			   object.period_start,
+			   object.reason,
+			   object.reason_uid,
+			   object.state);
 
-//	START_TIMER;
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
 	}
-	xfree(query);
-
-	if(!(cnt = mysql_num_rows(result))) {
-		mysql_free_result(result);
-		return 0;
-	}
-
-	buffer = init_buf(high_buffer_size);
-	pack16(SLURMDBD_VERSION, buffer);
-	pack_time(time(NULL), buffer);
-	pack16(DBD_GOT_EVENTS, buffer);
-	pack32(cnt, buffer);
-
-	while((row = mysql_fetch_row(result))) {
-		if(!period_start)
-			period_start = atoi(row[SUSPEND_REQ_START]);
-
-		memset(&suspend, 0, sizeof(local_suspend_t));
-
-		suspend.id = row[SUSPEND_REQ_ID];
-		suspend.associd = row[SUSPEND_REQ_ASSOCID];
-		suspend.period_start = row[SUSPEND_REQ_START];
-		suspend.period_end = row[SUSPEND_REQ_END];
-
-		_pack_local_suspend(&suspend, SLURMDBD_VERSION, buffer);
-	}
-	mysql_free_result(result);
-
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
+	xfree(format);
 
-	error_code = _write_archive_file(buffer, period_start, period_end,
-					 arch_dir, "suspend");
-	free_buf(buffer);
-
-	if(error_code != SLURM_SUCCESS)
-		return error_code;
-
-	return cnt;
-}
-
-/* returns count of steps archived or SLURM_ERROR on error */
-static uint32_t _archive_steps(mysql_conn_t *mysql_conn,
-			       time_t period_end, char *arch_dir)
-{
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	char *tmp = NULL, *query = NULL;
-	time_t period_start = 0;
-	uint32_t cnt = 0;
-	local_step_t step;
-	Buf buffer;
-	int error_code = 0, i = 0;
-
-	/* if this changes you will need to edit the corresponding
-	 * enum below */
-	char *req_inx[] = {
-		"id",
-		"stepid",
-		"start",
-		"end",
-		"suspended",
-		"name",
-		"nodelist",
-		"node_inx",
-		"state",
-		"kill_requid",
-		"comp_code",
-		"nodes",
-		"cpus",
-		"tasks",
-		"task_dist",
-		"user_sec",
-		"user_usec",
-		"sys_sec",
-		"sys_usec",
-		"max_vsize",
-		"max_vsize_task",
-		"max_vsize_node",
-		"ave_vsize",
-		"max_rss",
-		"max_rss_task",
-		"max_rss_node",
-		"ave_rss",
-		"max_pages",
-		"max_pages_task",
-		"max_pages_node",
-		"ave_pages",
-		"min_cpu",
-		"min_cpu_task",
-		"min_cpu_node",
-		"ave_cpu"
-	};
-
-
-	enum {
-		STEP_REQ_ID,
-		STEP_REQ_STEPID,
-		STEP_REQ_START,
-		STEP_REQ_END,
-		STEP_REQ_SUSPENDED,
-		STEP_REQ_NAME,
-		STEP_REQ_NODELIST,
-		STEP_REQ_NODE_INX,
-		STEP_REQ_STATE,
-		STEP_REQ_KILL_REQUID,
-		STEP_REQ_COMP_CODE,
-		STEP_REQ_NODES,
-		STEP_REQ_CPUS,
-		STEP_REQ_TASKS,
-		STEP_REQ_TASKDIST,
-		STEP_REQ_USER_SEC,
-		STEP_REQ_USER_USEC,
-		STEP_REQ_SYS_SEC,
-		STEP_REQ_SYS_USEC,
-		STEP_REQ_MAX_VSIZE,
-		STEP_REQ_MAX_VSIZE_TASK,
-		STEP_REQ_MAX_VSIZE_NODE,
-		STEP_REQ_AVE_VSIZE,
-		STEP_REQ_MAX_RSS,
-		STEP_REQ_MAX_RSS_TASK,
-		STEP_REQ_MAX_RSS_NODE,
-		STEP_REQ_AVE_RSS,
-		STEP_REQ_MAX_PAGES,
-		STEP_REQ_MAX_PAGES_TASK,
-		STEP_REQ_MAX_PAGES_NODE,
-		STEP_REQ_AVE_PAGES,
-		STEP_REQ_MIN_CPU,
-		STEP_REQ_MIN_CPU_TASK,
-		STEP_REQ_MIN_CPU_NODE,
-		STEP_REQ_AVE_CPU,
-		STEP_REQ_COUNT
-	};
-
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", req_inx[0]);
-	for(i=1; i<STEP_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", req_inx[i]);
-	}
-
-	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s where "
-			       "start <= %d && end != 0 "
-			       "&& !deleted order by start asc",
-			       tmp, step_table, period_end);
-	xfree(tmp);
-
-//	START_TIMER;
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	if(!(cnt = mysql_num_rows(result))) {
-		mysql_free_result(result);
-		return 0;
-	}
-
-	buffer = init_buf(high_buffer_size);
-	pack16(SLURMDBD_VERSION, buffer);
-	pack_time(time(NULL), buffer);
-	pack16(DBD_GOT_EVENTS, buffer);
-	pack32(cnt, buffer);
-
-	while((row = mysql_fetch_row(result))) {
-		if(!period_start)
-			period_start = atoi(row[STEP_REQ_START]);
-
-		memset(&step, 0, sizeof(local_step_t));
-
-		step.ave_cpu = row[STEP_REQ_AVE_CPU];
-		step.ave_pages = row[STEP_REQ_AVE_PAGES];
-		step.ave_rss = row[STEP_REQ_AVE_RSS];
-		step.ave_vsize = row[STEP_REQ_AVE_VSIZE];
-		step.comp_code = row[STEP_REQ_COMP_CODE];
-		step.cpus = row[STEP_REQ_CPUS];
-		step.id = row[STEP_REQ_ID];
-		step.kill_requid = row[STEP_REQ_KILL_REQUID];
-		step.max_pages = row[STEP_REQ_MAX_PAGES];
-		step.max_pages_node = row[STEP_REQ_MAX_PAGES_NODE];
-		step.max_pages_task = row[STEP_REQ_MAX_PAGES_TASK];
-		step.max_rss = row[STEP_REQ_MAX_RSS];
-		step.max_rss_node = row[STEP_REQ_MAX_RSS_NODE];
-		step.max_rss_task = row[STEP_REQ_MAX_RSS_TASK];
-		step.max_vsize = row[STEP_REQ_MAX_VSIZE];
-		step.max_vsize_node = row[STEP_REQ_MAX_VSIZE_NODE];
-		step.max_vsize_task = row[STEP_REQ_MAX_VSIZE_TASK];
-		step.min_cpu = row[STEP_REQ_MIN_CPU];
-		step.min_cpu_node = row[STEP_REQ_MIN_CPU_NODE];
-		step.min_cpu_task = row[STEP_REQ_MIN_CPU_TASK];
-		step.name = row[STEP_REQ_NAME];
-		step.nodelist = row[STEP_REQ_NODELIST];
-		step.nodes = row[STEP_REQ_NODES];
-		step.node_inx = row[STEP_REQ_NODE_INX];
-		step.period_end = row[STEP_REQ_END];
-		step.period_start = row[STEP_REQ_START];
-		step.period_suspended = row[STEP_REQ_SUSPENDED];
-		step.state = row[STEP_REQ_STATE];
-		step.stepid = row[STEP_REQ_STEPID];
-		step.sys_sec = row[STEP_REQ_SYS_SEC];
-		step.sys_usec = row[STEP_REQ_SYS_USEC];
-		step.tasks = row[STEP_REQ_TASKS];
-		step.task_dist = row[STEP_REQ_TASKDIST];
-		step.user_sec = row[STEP_REQ_USER_SEC];
-		step.user_usec = row[STEP_REQ_USER_USEC];
-
-		_pack_local_step(&step, SLURMDBD_VERSION, buffer);
-	}
-	mysql_free_result(result);
-
-//	END_TIMER2("step query");
-//	info("event query took %s", TIME_STR);
-
-	error_code = _write_archive_file(buffer, period_start, period_end,
-					 arch_dir, "event");
-	free_buf(buffer);
-
-	if(error_code != SLURM_SUCCESS)
-		return error_code;
-
-	return cnt;
+	return insert;
 }
 
 /* returns count of jobs archived or SLURM_ERROR on error */
@@ -850,78 +813,10 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn,
 	Buf buffer;
 	int error_code = 0, i = 0;
 
-	/* if this changes you will need to edit the corresponding
-	 * enum below */
-	char *req_inx[] = {
-		"account",
-		"alloc_cpus",
-		"alloc_nodes",
-		"associd",
-		"blockid",
-		"cluster",
-		"comp_code",
-		"eligible",
-		"end",
-		"gid",
-		"id",
-		"jobid",
-		"kill_requid",
-		"name",
-		"nodelist",
-		"node_inx",
-		"partition",
-		"priority",
-		"qos",
-		"req_cpus",
-		"resvid",
-		"start",
-		"state",
-		"submit",
-		"suspended",
-		"track_steps",
-		"uid",
-		"wckey",
-		"wckeyid",
-	};
-
-	enum {
-		JOB_REQ_ACCOUNT,
-		JOB_REQ_ALLOC_CPUS,
-		JOB_REQ_ALLOC_NODES,
-		JOB_REQ_ASSOCID,
-		JOB_REQ_BLOCKID,
-		JOB_REQ_CLUSTER,
-		JOB_REQ_COMP_CODE,
-		JOB_REQ_ELIGIBLE,
-		JOB_REQ_END,
-		JOB_REQ_GID,
-		JOB_REQ_ID,
-		JOB_REQ_JOBID,
-		JOB_REQ_KILL_REQUID,
-		JOB_REQ_NAME,
-		JOB_REQ_NODELIST,
-		JOB_REQ_NODE_INX,
-		JOB_REQ_RESVID,
-		JOB_REQ_PARTITION,
-		JOB_REQ_PRIORITY,
-		JOB_REQ_QOS,
-		JOB_REQ_REQ_CPUS,
-		JOB_REQ_START,
-		JOB_REQ_STATE,
-		JOB_REQ_SUBMIT,
-		JOB_REQ_SUSPENDED,
-		JOB_REQ_TRACKSTEPS,
-		JOB_REQ_UID,
-		JOB_REQ_WCKEY,
-		JOB_REQ_WCKEYID,
-		JOB_REQ_COUNT
-	};
-
-
 	xfree(tmp);
-	xstrfmtcat(tmp, "%s", req_inx[0]);
+	xstrfmtcat(tmp, "%s", job_req_inx[0]);
 	for(i=1; i<JOB_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", req_inx[i]);
+		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
 	}
 
 	/* get all the events started before this time listed */
@@ -1002,6 +897,365 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn,
 		return error_code;
 
 	return cnt;
+}
+
+/* returns sql statement from archived data or NULL on error */
+static char *_load_jobs(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
+{
+	char *insert = NULL, *format = NULL;
+	local_job_t object;
+	int i = 0;
+
+	xstrfmtcat(insert, "insert into %s (%s", job_table, job_req_inx[0]);
+	xstrcat(format, "('%s'");
+	for(i=1; i<JOB_REQ_COUNT; i++) {
+		xstrfmtcat(insert, ", %s", job_req_inx[i]);
+		xstrcat(format, ", '%s'");
+	}
+	xstrcat(insert, ") values ");
+	xstrcat(format, ")");
+	for(i=0; i<rec_cnt; i++) {
+		memset(&object, 0, sizeof(local_job_t));
+		if(_unpack_local_job(&object, rpc_version, buffer)
+		   != SLURM_SUCCESS) {
+			error("issue unpacking");
+			xfree(format);
+			xfree(insert);
+			break;
+		}
+		if(i)
+			xstrcat(insert, ", ");
+
+		xstrfmtcat(insert, format,
+			   object.account,
+			   object.alloc_cpus,
+			   object.alloc_nodes,
+			   object.associd,
+			   object.blockid,
+			   object.cluster,
+			   object.comp_code,
+			   object.eligible,
+			   object.end,
+			   object.gid,
+			   object.id,
+			   object.jobid,
+			   object.kill_requid,
+			   object.name,
+			   object.nodelist,
+			   object.node_inx,
+			   object.partition,
+			   object.priority,
+			   object.qos,
+			   object.req_cpus,
+			   object.resvid,
+			   object.start,
+			   object.state,
+			   object.submit,
+			   object.suspended,
+			   object.track_steps,
+			   object.uid,
+			   object.wckey,
+			   object.wckey_id);
+
+	}
+//	END_TIMER2("step query");
+//	info("job query took %s", TIME_STR);
+	xfree(format);
+
+	return insert;
+}
+
+/* returns count of steps archived or SLURM_ERROR on error */
+static uint32_t _archive_steps(mysql_conn_t *mysql_conn,
+			       time_t period_end, char *arch_dir)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *tmp = NULL, *query = NULL;
+	time_t period_start = 0;
+	uint32_t cnt = 0;
+	local_step_t step;
+	Buf buffer;
+	int error_code = 0, i = 0;
+
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", step_req_inx[0]);
+	for(i=1; i<STEP_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", step_req_inx[i]);
+	}
+
+	/* get all the events started before this time listed */
+	query = xstrdup_printf("select %s from %s where "
+			       "start <= %d && end != 0 "
+			       "&& !deleted order by start asc",
+			       tmp, step_table, period_end);
+	xfree(tmp);
+
+//	START_TIMER;
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if(!(cnt = mysql_num_rows(result))) {
+		mysql_free_result(result);
+		return 0;
+	}
+
+	buffer = init_buf(high_buffer_size);
+	pack16(SLURMDBD_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+	pack16(DBD_STEP_START, buffer);
+	pack32(cnt, buffer);
+
+	while((row = mysql_fetch_row(result))) {
+		if(!period_start)
+			period_start = atoi(row[STEP_REQ_START]);
+
+		memset(&step, 0, sizeof(local_step_t));
+
+		step.ave_cpu = row[STEP_REQ_AVE_CPU];
+		step.ave_pages = row[STEP_REQ_AVE_PAGES];
+		step.ave_rss = row[STEP_REQ_AVE_RSS];
+		step.ave_vsize = row[STEP_REQ_AVE_VSIZE];
+		step.comp_code = row[STEP_REQ_COMP_CODE];
+		step.cpus = row[STEP_REQ_CPUS];
+		step.id = row[STEP_REQ_ID];
+		step.kill_requid = row[STEP_REQ_KILL_REQUID];
+		step.max_pages = row[STEP_REQ_MAX_PAGES];
+		step.max_pages_node = row[STEP_REQ_MAX_PAGES_NODE];
+		step.max_pages_task = row[STEP_REQ_MAX_PAGES_TASK];
+		step.max_rss = row[STEP_REQ_MAX_RSS];
+		step.max_rss_node = row[STEP_REQ_MAX_RSS_NODE];
+		step.max_rss_task = row[STEP_REQ_MAX_RSS_TASK];
+		step.max_vsize = row[STEP_REQ_MAX_VSIZE];
+		step.max_vsize_node = row[STEP_REQ_MAX_VSIZE_NODE];
+		step.max_vsize_task = row[STEP_REQ_MAX_VSIZE_TASK];
+		step.min_cpu = row[STEP_REQ_MIN_CPU];
+		step.min_cpu_node = row[STEP_REQ_MIN_CPU_NODE];
+		step.min_cpu_task = row[STEP_REQ_MIN_CPU_TASK];
+		step.name = row[STEP_REQ_NAME];
+		step.nodelist = row[STEP_REQ_NODELIST];
+		step.nodes = row[STEP_REQ_NODES];
+		step.node_inx = row[STEP_REQ_NODE_INX];
+		step.period_end = row[STEP_REQ_END];
+		step.period_start = row[STEP_REQ_START];
+		step.period_suspended = row[STEP_REQ_SUSPENDED];
+		step.state = row[STEP_REQ_STATE];
+		step.stepid = row[STEP_REQ_STEPID];
+		step.sys_sec = row[STEP_REQ_SYS_SEC];
+		step.sys_usec = row[STEP_REQ_SYS_USEC];
+		step.tasks = row[STEP_REQ_TASKS];
+		step.task_dist = row[STEP_REQ_TASKDIST];
+		step.user_sec = row[STEP_REQ_USER_SEC];
+		step.user_usec = row[STEP_REQ_USER_USEC];
+
+		_pack_local_step(&step, SLURMDBD_VERSION, buffer);
+	}
+	mysql_free_result(result);
+
+//	END_TIMER2("step query");
+//	info("event query took %s", TIME_STR);
+
+	error_code = _write_archive_file(buffer, period_start, period_end,
+					 arch_dir, "event");
+	free_buf(buffer);
+
+	if(error_code != SLURM_SUCCESS)
+		return error_code;
+
+	return cnt;
+}
+
+/* returns sql statement from archived data or NULL on error */
+static char *_load_steps(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
+{
+	char *insert = NULL, *format = NULL;
+	local_step_t object;
+	int i = 0;
+
+	xstrfmtcat(insert, "insert into %s (%s", step_table, step_req_inx[0]);
+	xstrcat(format, "('%s'");
+	for(i=1; i<STEP_REQ_COUNT; i++) {
+		xstrfmtcat(insert, ", %s", step_req_inx[i]);
+		xstrcat(format, ", '%s'");
+	}
+	xstrcat(insert, ") values ");
+	xstrcat(format, ")");
+	for(i=0; i<rec_cnt; i++) {
+		memset(&object, 0, sizeof(local_step_t));
+		if(_unpack_local_step(&object, rpc_version, buffer)
+		   != SLURM_SUCCESS) {
+			error("issue unpacking");
+			xfree(format);
+			xfree(insert);
+			break;
+		}
+		if(i)
+			xstrcat(insert, ", ");
+
+		xstrfmtcat(insert, format,
+			   object.ave_cpu,
+			   object.ave_pages,
+			   object.ave_rss,
+			   object.ave_vsize,
+			   object.comp_code,
+			   object.cpus,
+			   object.id,
+			   object.kill_requid,
+			   object.max_pages,
+			   object.max_pages_node,
+			   object.max_pages_task,
+			   object.max_rss,
+			   object.max_rss_node,
+			   object.max_rss_task,
+			   object.max_vsize,
+			   object.max_vsize_node,
+			   object.max_vsize_task,
+			   object.min_cpu,
+			   object.min_cpu_node,
+			   object.min_cpu_task,
+			   object.name,
+			   object.nodelist,
+			   object.nodes,
+			   object.node_inx,
+			   object.period_end,
+			   object.period_start,
+			   object.period_suspended,
+			   object.state,
+			   object.stepid,
+			   object.sys_sec,
+			   object.sys_usec,
+			   object.tasks,
+			   object.task_dist,
+			   object.user_sec,
+			   object.user_usec);
+
+	}
+//	END_TIMER2("step query");
+//	info("step query took %s", TIME_STR);
+	xfree(format);
+
+	return insert;
+}
+
+/* returns count of events archived or SLURM_ERROR on error */
+static uint32_t _archive_suspend(mysql_conn_t *mysql_conn,
+				 time_t period_end, char *arch_dir)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *tmp = NULL, *query = NULL;
+	time_t period_start = 0;
+	uint32_t cnt = 0;
+	local_suspend_t suspend;
+	Buf buffer;
+	int error_code = 0, i = 0;
+
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", suspend_req_inx[0]);
+	for(i=1; i<SUSPEND_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", suspend_req_inx[i]);
+	}
+
+	/* get all the events started before this time listed */
+	query = xstrdup_printf("select %s from %s where "
+			       "start <= %d && end != 0 "
+			       "order by start asc",
+			       tmp, suspend_table, period_end);
+	xfree(tmp);
+
+//	START_TIMER;
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if(!(cnt = mysql_num_rows(result))) {
+		mysql_free_result(result);
+		return 0;
+	}
+
+	buffer = init_buf(high_buffer_size);
+	pack16(SLURMDBD_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+	pack16(DBD_JOB_SUSPEND, buffer);
+	pack32(cnt, buffer);
+
+	while((row = mysql_fetch_row(result))) {
+		if(!period_start)
+			period_start = atoi(row[SUSPEND_REQ_START]);
+
+		memset(&suspend, 0, sizeof(local_suspend_t));
+
+		suspend.id = row[SUSPEND_REQ_ID];
+		suspend.associd = row[SUSPEND_REQ_ASSOCID];
+		suspend.period_start = row[SUSPEND_REQ_START];
+		suspend.period_end = row[SUSPEND_REQ_END];
+
+		_pack_local_suspend(&suspend, SLURMDBD_VERSION, buffer);
+	}
+	mysql_free_result(result);
+
+//	END_TIMER2("step query");
+//	info("event query took %s", TIME_STR);
+
+	error_code = _write_archive_file(buffer, period_start, period_end,
+					 arch_dir, "suspend");
+	free_buf(buffer);
+
+	if(error_code != SLURM_SUCCESS)
+		return error_code;
+
+	return cnt;
+}
+
+/* returns sql statement from archived data or NULL on error */
+static char *_load_suspend(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
+{
+	char *insert = NULL, *format = NULL;
+	local_suspend_t object;
+	int i = 0;
+
+	xstrfmtcat(insert, "insert into %s (%s",
+		   suspend_table, suspend_req_inx[0]);
+	xstrcat(format, "('%s'");
+	for(i=1; i<SUSPEND_REQ_COUNT; i++) {
+		xstrfmtcat(insert, ", %s", suspend_req_inx[i]);
+		xstrcat(format, ", '%s'");
+	}
+	xstrcat(insert, ") values ");
+	xstrcat(format, ")");
+	for(i=0; i<rec_cnt; i++) {
+		memset(&object, 0, sizeof(local_suspend_t));
+		if(_unpack_local_suspend(&object, rpc_version, buffer)
+		   != SLURM_SUCCESS) {
+			error("issue unpacking");
+			xfree(format);
+			xfree(insert);
+			break;
+		}
+		if(i)
+			xstrcat(insert, ", ");
+
+		xstrfmtcat(insert, format,
+			   object.associd,
+			   object.id,
+			   object.period_end,
+			   object.period_start);
+
+	}
+//	END_TIMER2("suspend query");
+//	info("suspend query took %s", TIME_STR);
+	xfree(format);
+
+	return insert;
 }
 
 static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
@@ -1346,6 +1600,10 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 {
 	char *data = NULL;
 	int error_code = SLURM_SUCCESS;
+	Buf buffer;
+	time_t buf_time;
+	uint16_t type = 0, ver = 0;
+	uint32_t data_size = 0, rec_cnt = 0;
 
 	if(!arch_rec) {
 		error("We need a acct_archive_rec to load anything.");
@@ -1355,7 +1613,6 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 	if(arch_rec->insert) {
 		data = xstrdup(arch_rec->insert);
 	} else if(arch_rec->archive_file) {
-		uint32_t data_size = 0;
 		int data_allocated, data_read = 0;
 		int state_fd = open(arch_rec->archive_file, O_RDONLY);
 		if (state_fd < 0) {
@@ -1399,11 +1656,67 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
+	/* this is the old version of an archive file where the file
+	   was straight sql. */
+	if((strlen(data) >= 12) &&
+	   (!strncmp("insert into ", data, 12)
+	    || (!strncmp("delete from ", data, 12))))
+		goto got_sql;
+
+	buffer = create_buf(data, data_size);
+
+	safe_unpack16(&ver, buffer);
+	debug3("Version in assoc_mgr_state header is %u", ver);
+	if (ver <= SLURMDBD_VERSION || ver < SLURMDBD_VERSION_MIN) {
+		error("***********************************************");
+		error("Can not recover archive file, incompatible version, "
+		      "got %u need > %u <= %u", ver,
+		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
+		error("***********************************************");
+		free_buf(buffer);
+		return EFAULT;
+	}
+	safe_unpack_time(&buf_time, buffer);
+	safe_unpack16(&type, buffer);
+	safe_unpack32(&rec_cnt, buffer);
+
+	if(!rec_cnt) {
+		error("we didn't get any records from this file of type '%s'",
+		      slurmdbd_msg_type_2_str(type, 0));
+		free_buf(buffer);
+		goto got_sql;
+	}
+
+	switch(type) {
+	case DBD_GOT_EVENTS:
+		data = _load_cluster_events(ver, buffer, rec_cnt);
+		break;
+	case DBD_GOT_JOBS:
+		data = _load_jobs(ver, buffer, rec_cnt);
+		break;
+	case DBD_STEP_START:
+		data = _load_steps(ver, buffer, rec_cnt);
+		break;
+	case DBD_JOB_SUSPEND:
+		data = _load_suspend(ver, buffer, rec_cnt);
+		break;
+	default:
+		error("Unknown type '%u' to load from archive", type);
+		break;
+	}
+	free_buf(buffer);
+
+got_sql:
+	if(!data) {
+		error("No data to load");
+		return SLURM_ERROR;
+	}
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, data);
 	error_code = mysql_db_query_check_after(mysql_conn->db_conn, data);
 	xfree(data);
 	if(error_code != SLURM_SUCCESS) {
+	unpack_error:
 		error("Couldn't load old data");
 		return SLURM_ERROR;
 	}
