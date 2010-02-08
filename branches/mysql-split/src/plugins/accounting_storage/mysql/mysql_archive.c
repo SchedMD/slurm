@@ -47,36 +47,313 @@
 #include "src/common/jobacct_common.h"
 
 typedef struct {
-	uint32_t associd;
-	uint32_t id;
-	time_t period_end;
-	time_t period_start;
+	char *cluster;
+	char *cluster_nodes;
+	char *cpu_count;
+	char *node_name;
+	char *period_end;
+	char *period_start;
+	char *reason;
+	char *reason_uid;
+	char *state;
+} local_event_t;
+
+typedef struct {
+	char *account;
+	char *alloc_cpus;
+	char *alloc_nodes;
+	char *associd;
+	char *blockid;
+	char *cluster;
+	char *comp_code;
+	char *eligible;
+	char *end;
+	char *gid;
+	char *id;
+	char *jobid;
+	char *kill_requid;
+	char *name;
+	char *nodelist;
+	char *node_inx;
+	char *partition;
+	char *priority;
+	char *qos;
+	char *req_cpus;
+	char *resvid;
+	char *start;
+	char *state;
+	char *submit;
+	char *suspended;
+	char *track_steps;
+	char *uid;
+	char *wckey;
+	char *wckey_id;
+} local_job_t;
+
+typedef struct {
+	char *ave_cpu;
+	char *ave_pages;
+	char *ave_rss;
+	char *ave_vsize;
+	char *comp_code;
+	char *cpus;
+	char *id;
+	char *kill_requid;
+	char *max_pages;
+	char *max_pages_node;
+	char *max_pages_task;
+	char *max_rss;
+	char *max_rss_node;
+	char *max_rss_task;
+	char *max_vsize;
+	char *max_vsize_node;
+	char *max_vsize_task;
+	char *min_cpu;
+	char *min_cpu_node;
+	char *min_cpu_task;
+	char *name;
+	char *nodelist;
+	char *nodes;
+	char *node_inx;
+	char *period_end;
+	char *period_start;
+	char *period_suspended;
+	char *state;
+	char *stepid;
+	char *sys_sec;
+	char *sys_usec;
+	char *tasks;
+	char *task_dist;
+	char *user_sec;
+	char *user_usec;
+} local_step_t;
+
+typedef struct {
+	char *associd;
+	char *id;
+	char *period_end;
+	char *period_start;
 } local_suspend_t;
 
 static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 static int high_buffer_size = (1024 * 1024);
 
+static void _pack_local_event(local_event_t *object,
+			      uint16_t rpc_version, Buf buffer)
+{
+	packstr(object->cluster, buffer);
+	packstr(object->cluster_nodes, buffer);
+	packstr(object->cpu_count, buffer);
+	packstr(object->node_name, buffer);
+	packstr(object->period_end, buffer);
+	packstr(object->period_start, buffer);
+	packstr(object->reason, buffer);
+	packstr(object->reason_uid, buffer);
+	packstr(object->state, buffer);
+}
+
+/* this needs to be allocated before calling, and since we aren't
+ * doing any copying it needs to be used before destroying buffer */
+static int _unpack_local_event(local_event_t *object,
+			       uint16_t rpc_version, Buf buffer)
+{
+	uint32_t tmp32;
+
+	unpackstr_ptr(&object->cluster, &tmp32, buffer);
+	unpackstr_ptr(&object->cluster_nodes, &tmp32, buffer);
+	unpackstr_ptr(&object->cpu_count, &tmp32, buffer);
+	unpackstr_ptr(&object->node_name, &tmp32, buffer);
+	unpackstr_ptr(&object->period_end, &tmp32, buffer);
+	unpackstr_ptr(&object->period_start, &tmp32, buffer);
+	unpackstr_ptr(&object->reason, &tmp32, buffer);
+	unpackstr_ptr(&object->reason_uid, &tmp32, buffer);
+	unpackstr_ptr(&object->state, &tmp32, buffer);
+
+	return SLURM_SUCCESS;
+}
+
+static void _pack_local_job(local_job_t *object,
+			    uint16_t rpc_version, Buf buffer)
+{
+	packstr(object->account, buffer);
+	packstr(object->alloc_cpus, buffer);
+	packstr(object->alloc_nodes, buffer);
+	packstr(object->associd, buffer);
+	packstr(object->blockid, buffer);
+	packstr(object->cluster, buffer);
+	packstr(object->comp_code, buffer);
+	packstr(object->eligible, buffer);
+	packstr(object->end, buffer);
+	packstr(object->gid, buffer);
+	packstr(object->id, buffer);
+	packstr(object->jobid, buffer);
+	packstr(object->kill_requid, buffer);
+	packstr(object->name, buffer);
+	packstr(object->nodelist, buffer);
+	packstr(object->node_inx, buffer);
+	packstr(object->partition, buffer);
+	packstr(object->priority, buffer);
+	packstr(object->qos, buffer);
+	packstr(object->req_cpus, buffer);
+	packstr(object->resvid, buffer);
+	packstr(object->start, buffer);
+	packstr(object->state, buffer);
+	packstr(object->submit, buffer);
+	packstr(object->suspended, buffer);
+	packstr(object->track_steps, buffer);
+	packstr(object->uid, buffer);
+	packstr(object->wckey, buffer);
+	packstr(object->wckey_id, buffer);
+}
+
+/* this needs to be allocated before calling, and since we aren't
+ * doing any copying it needs to be used before destroying buffer */
+static int _unpack_local_job(local_job_t *object,
+			     uint16_t rpc_version, Buf buffer)
+{
+	uint32_t tmp32;
+
+	unpackstr_ptr(&object->account, &tmp32, buffer);
+	unpackstr_ptr(&object->alloc_cpus, &tmp32, buffer);
+	unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
+	unpackstr_ptr(&object->associd, &tmp32, buffer);
+	unpackstr_ptr(&object->blockid, &tmp32, buffer);
+	unpackstr_ptr(&object->cluster, &tmp32, buffer);
+	unpackstr_ptr(&object->comp_code, &tmp32, buffer);
+	unpackstr_ptr(&object->eligible, &tmp32, buffer);
+	unpackstr_ptr(&object->end, &tmp32, buffer);
+	unpackstr_ptr(&object->gid, &tmp32, buffer);
+	unpackstr_ptr(&object->id, &tmp32, buffer);
+	unpackstr_ptr(&object->jobid, &tmp32, buffer);
+	unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
+	unpackstr_ptr(&object->name, &tmp32, buffer);
+	unpackstr_ptr(&object->nodelist, &tmp32, buffer);
+	unpackstr_ptr(&object->node_inx, &tmp32, buffer);
+	unpackstr_ptr(&object->partition, &tmp32, buffer);
+	unpackstr_ptr(&object->priority, &tmp32, buffer);
+	unpackstr_ptr(&object->qos, &tmp32, buffer);
+	unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
+	unpackstr_ptr(&object->resvid, &tmp32, buffer);
+	unpackstr_ptr(&object->start, &tmp32, buffer);
+	unpackstr_ptr(&object->state, &tmp32, buffer);
+	unpackstr_ptr(&object->submit, &tmp32, buffer);
+	unpackstr_ptr(&object->suspended, &tmp32, buffer);
+	unpackstr_ptr(&object->track_steps, &tmp32, buffer);
+	unpackstr_ptr(&object->uid, &tmp32, buffer);
+	unpackstr_ptr(&object->wckey, &tmp32, buffer);
+	unpackstr_ptr(&object->wckey_id, &tmp32, buffer);
+
+	return SLURM_SUCCESS;
+}
+
+static void _pack_local_step(local_step_t *object,
+			     uint16_t rpc_version, Buf buffer)
+{
+	packstr(object->ave_cpu, buffer);
+	packstr(object->ave_pages, buffer);
+	packstr(object->ave_rss, buffer);
+	packstr(object->ave_vsize, buffer);
+	packstr(object->comp_code, buffer);
+	packstr(object->cpus, buffer);
+	packstr(object->id, buffer);
+	packstr(object->kill_requid, buffer);
+	packstr(object->max_pages, buffer);
+	packstr(object->max_pages_node, buffer);
+	packstr(object->max_pages_task, buffer);
+	packstr(object->max_rss, buffer);
+	packstr(object->max_rss_node, buffer);
+	packstr(object->max_rss_task, buffer);
+	packstr(object->max_vsize, buffer);
+	packstr(object->max_vsize_node, buffer);
+	packstr(object->max_vsize_task, buffer);
+	packstr(object->min_cpu, buffer);
+	packstr(object->min_cpu_node, buffer);
+	packstr(object->min_cpu_task, buffer);
+	packstr(object->name, buffer);
+	packstr(object->nodelist, buffer);
+	packstr(object->nodes, buffer);
+	packstr(object->node_inx, buffer);
+	packstr(object->period_end, buffer);
+	packstr(object->period_start, buffer);
+	packstr(object->period_suspended, buffer);
+	packstr(object->state, buffer);
+	packstr(object->stepid, buffer);
+	packstr(object->sys_sec, buffer);
+	packstr(object->sys_usec, buffer);
+	packstr(object->tasks, buffer);
+	packstr(object->task_dist, buffer);
+	packstr(object->user_sec, buffer);
+	packstr(object->user_usec, buffer);
+}
+
+/* this needs to be allocated before calling, and since we aren't
+ * doing any copying it needs to be used before destroying buffer */
+static int _unpack_local_step(local_step_t *object,
+			      uint16_t rpc_version, Buf buffer)
+{
+	uint32_t tmp32;
+
+	unpackstr_ptr(&object->ave_cpu, &tmp32, buffer);
+	unpackstr_ptr(&object->ave_pages, &tmp32, buffer);
+	unpackstr_ptr(&object->ave_rss, &tmp32, buffer);
+	unpackstr_ptr(&object->ave_vsize, &tmp32, buffer);
+	unpackstr_ptr(&object->comp_code, &tmp32, buffer);
+	unpackstr_ptr(&object->cpus, &tmp32, buffer);
+	unpackstr_ptr(&object->id, &tmp32, buffer);
+	unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
+	unpackstr_ptr(&object->max_pages, &tmp32, buffer);
+	unpackstr_ptr(&object->max_pages_node, &tmp32, buffer);
+	unpackstr_ptr(&object->max_pages_task, &tmp32, buffer);
+	unpackstr_ptr(&object->max_rss, &tmp32, buffer);
+	unpackstr_ptr(&object->max_rss_node, &tmp32, buffer);
+	unpackstr_ptr(&object->max_rss_task, &tmp32, buffer);
+	unpackstr_ptr(&object->max_vsize, &tmp32, buffer);
+	unpackstr_ptr(&object->max_vsize_node, &tmp32, buffer);
+	unpackstr_ptr(&object->max_vsize_task, &tmp32, buffer);
+	unpackstr_ptr(&object->min_cpu, &tmp32, buffer);
+	unpackstr_ptr(&object->min_cpu_node, &tmp32, buffer);
+	unpackstr_ptr(&object->min_cpu_task, &tmp32, buffer);
+	unpackstr_ptr(&object->name, &tmp32, buffer);
+	unpackstr_ptr(&object->nodelist, &tmp32, buffer);
+	unpackstr_ptr(&object->nodes, &tmp32, buffer);
+	unpackstr_ptr(&object->node_inx, &tmp32, buffer);
+	unpackstr_ptr(&object->period_end, &tmp32, buffer);
+	unpackstr_ptr(&object->period_start, &tmp32, buffer);
+	unpackstr_ptr(&object->period_suspended, &tmp32, buffer);
+	unpackstr_ptr(&object->state, &tmp32, buffer);
+	unpackstr_ptr(&object->stepid, &tmp32, buffer);
+	unpackstr_ptr(&object->sys_sec, &tmp32, buffer);
+	unpackstr_ptr(&object->sys_usec, &tmp32, buffer);
+	unpackstr_ptr(&object->tasks, &tmp32, buffer);
+	unpackstr_ptr(&object->task_dist, &tmp32, buffer);
+	unpackstr_ptr(&object->user_sec, &tmp32, buffer);
+	unpackstr_ptr(&object->user_usec, &tmp32, buffer);
+
+	return SLURM_SUCCESS;
+}
+
 static void _pack_local_suspend(local_suspend_t *object,
 				uint16_t rpc_version, Buf buffer)
 {
-	pack32(object->associd, buffer);
-	pack32(object->id, buffer);
-	pack_time(object->period_end, buffer);
-	pack_time(object->period_start, buffer);
+	packstr(object->associd, buffer);
+	packstr(object->id, buffer);
+	packstr(object->period_end, buffer);
+	packstr(object->period_start, buffer);
 }
 
-/* this needs to be allocated before calling */
+/* this needs to be allocated before calling, and since we aren't
+ * doing any copying it needs to be used before destroying buffer */
 static int _unpack_local_suspend(local_suspend_t *object,
-				  uint16_t rpc_version, Buf buffer)
+				 uint16_t rpc_version, Buf buffer)
 {
-	safe_unpack32(&object->associd, buffer);
-	safe_unpack32(&object->id, buffer);
-	safe_unpack_time(&object->period_end, buffer);
-	safe_unpack_time(&object->period_start, buffer);
+	uint32_t tmp32;
+
+	unpackstr_ptr(&object->associd, &tmp32, buffer);
+	unpackstr_ptr(&object->id, &tmp32, buffer);
+	unpackstr_ptr(&object->period_end, &tmp32, buffer);
+	unpackstr_ptr(&object->period_start, &tmp32, buffer);
 
 	return SLURM_SUCCESS;
-unpack_error:
-	return SLURM_ERROR;
 }
 
 static char *_make_archive_name(time_t period_start, time_t period_end,
@@ -187,7 +464,7 @@ static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
 	char *tmp = NULL, *query = NULL;
 	time_t period_start = 0;
 	uint32_t cnt = 0;
-	acct_event_rec_t event;
+	local_event_t event;
 	Buf buffer;
 	int error_code = 0, i = 0;
 
@@ -254,21 +531,20 @@ static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
 		if(!period_start)
 			period_start = atoi(row[EVENT_REQ_START]);
 
-		memset(&event, 0, sizeof(acct_event_rec_t));
+		memset(&event, 0, sizeof(local_event_t));
 
 
-		event.node_name = row[EVENT_REQ_NODE];
 		event.cluster = row[EVENT_REQ_CLUSTER];
-		event.reason = row[EVENT_REQ_REASON];
 		event.cluster_nodes = row[EVENT_REQ_CNODES];
+		event.cpu_count = row[EVENT_REQ_CPU];
+		event.node_name = row[EVENT_REQ_NODE];
+		event.period_end = row[EVENT_REQ_END];
+		event.period_start = row[EVENT_REQ_START];
+		event.reason = row[EVENT_REQ_REASON];
+		event.reason_uid = row[EVENT_REQ_REASON_UID];
+		event.state = row[EVENT_REQ_STATE];
 
-		event.cpu_count = atoi(row[EVENT_REQ_CPU]);
-		event.state = atoi(row[EVENT_REQ_STATE]);
-		event.period_start = atoi(row[EVENT_REQ_START]);
-		event.period_end = atoi(row[EVENT_REQ_END]);
-		event.reason_uid = atoi(row[EVENT_REQ_REASON_UID]);
-
-		pack_acct_event_rec(&event, SLURMDBD_VERSION, buffer);
+		_pack_local_event(&event, SLURMDBD_VERSION, buffer);
 	}
 	mysql_free_result(result);
 
@@ -354,10 +630,10 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn,
 
 		memset(&suspend, 0, sizeof(local_suspend_t));
 
-		suspend.id = atoi(row[SUSPEND_REQ_ID]);
-		suspend.associd = atoi(row[SUSPEND_REQ_ASSOCID]);
-		suspend.period_start = atoi(row[SUSPEND_REQ_START]);
-		suspend.period_end = atoi(row[SUSPEND_REQ_END]);
+		suspend.id = row[SUSPEND_REQ_ID];
+		suspend.associd = row[SUSPEND_REQ_ASSOCID];
+		suspend.period_start = row[SUSPEND_REQ_START];
+		suspend.period_end = row[SUSPEND_REQ_END];
 
 		_pack_local_suspend(&suspend, SLURMDBD_VERSION, buffer);
 	}
@@ -385,7 +661,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn,
 	char *tmp = NULL, *query = NULL;
 	time_t period_start = 0;
 	uint32_t cnt = 0;
-	jobacct_step_rec_t step;
+	local_step_t step;
 	Buf buffer;
 	int error_code = 0, i = 0;
 
@@ -506,68 +782,45 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn,
 		if(!period_start)
 			period_start = atoi(row[STEP_REQ_START]);
 
-		memset(&step, 0, sizeof(jobacct_step_rec_t));
+		memset(&step, 0, sizeof(local_step_t));
 
-		step.stepid = atoi(row[STEP_REQ_STEPID]);
-		/* info("got step %u.%u", */
-/* 			     job.header.jobnum, step.stepnum); */
-		step.state = atoi(row[STEP_REQ_STATE]);
-		step.exitcode = atoi(row[STEP_REQ_COMP_CODE]);
-		step.ncpus = atoi(row[STEP_REQ_CPUS]);
-		step.nnodes = atoi(row[STEP_REQ_NODES]);
+		step.ave_cpu = row[STEP_REQ_AVE_CPU];
+		step.ave_pages = row[STEP_REQ_AVE_PAGES];
+		step.ave_rss = row[STEP_REQ_AVE_RSS];
+		step.ave_vsize = row[STEP_REQ_AVE_VSIZE];
+		step.comp_code = row[STEP_REQ_COMP_CODE];
+		step.cpus = row[STEP_REQ_CPUS];
+		step.id = row[STEP_REQ_ID];
+		step.kill_requid = row[STEP_REQ_KILL_REQUID];
+		step.max_pages = row[STEP_REQ_MAX_PAGES];
+		step.max_pages_node = row[STEP_REQ_MAX_PAGES_NODE];
+		step.max_pages_task = row[STEP_REQ_MAX_PAGES_TASK];
+		step.max_rss = row[STEP_REQ_MAX_RSS];
+		step.max_rss_node = row[STEP_REQ_MAX_RSS_NODE];
+		step.max_rss_task = row[STEP_REQ_MAX_RSS_TASK];
+		step.max_vsize = row[STEP_REQ_MAX_VSIZE];
+		step.max_vsize_node = row[STEP_REQ_MAX_VSIZE_NODE];
+		step.max_vsize_task = row[STEP_REQ_MAX_VSIZE_TASK];
+		step.min_cpu = row[STEP_REQ_MIN_CPU];
+		step.min_cpu_node = row[STEP_REQ_MIN_CPU_NODE];
+		step.min_cpu_task = row[STEP_REQ_MIN_CPU_TASK];
+		step.name = row[STEP_REQ_NAME];
+		step.nodelist = row[STEP_REQ_NODELIST];
+		step.nodes = row[STEP_REQ_NODES];
+		step.node_inx = row[STEP_REQ_NODE_INX];
+		step.period_end = row[STEP_REQ_END];
+		step.period_start = row[STEP_REQ_START];
+		step.period_suspended = row[STEP_REQ_SUSPENDED];
+		step.state = row[STEP_REQ_STATE];
+		step.stepid = row[STEP_REQ_STEPID];
+		step.sys_sec = row[STEP_REQ_SYS_SEC];
+		step.sys_usec = row[STEP_REQ_SYS_USEC];
+		step.tasks = row[STEP_REQ_TASKS];
+		step.task_dist = row[STEP_REQ_TASKDIST];
+		step.user_sec = row[STEP_REQ_USER_SEC];
+		step.user_usec = row[STEP_REQ_USER_USEC];
 
-		step.ntasks = atoi(row[STEP_REQ_TASKS]);
-		step.task_dist = atoi(row[STEP_REQ_TASKDIST]);
-		if(!step.ntasks)
-			step.ntasks = step.ncpus;
-
-		step.start = atoi(row[STEP_REQ_START]);
-
-		step.end = atoi(row[STEP_REQ_END]);
-
-		step.user_cpu_sec = atoi(row[STEP_REQ_USER_SEC]);
-		step.user_cpu_usec =
-			atoi(row[STEP_REQ_USER_USEC]);
-		step.sys_cpu_sec = atoi(row[STEP_REQ_SYS_SEC]);
-		step.sys_cpu_usec = atoi(row[STEP_REQ_SYS_USEC]);
-		step.sacct.max_vsize =
-			atoi(row[STEP_REQ_MAX_VSIZE]);
-		step.sacct.max_vsize_id.taskid =
-			atoi(row[STEP_REQ_MAX_VSIZE_TASK]);
-		step.sacct.ave_vsize =
-			atof(row[STEP_REQ_AVE_VSIZE]);
-		step.sacct.max_rss =
-			atoi(row[STEP_REQ_MAX_RSS]);
-		step.sacct.max_rss_id.taskid =
-			atoi(row[STEP_REQ_MAX_RSS_TASK]);
-		step.sacct.ave_rss =
-			atof(row[STEP_REQ_AVE_RSS]);
-		step.sacct.max_pages =
-			atoi(row[STEP_REQ_MAX_PAGES]);
-		step.sacct.max_pages_id.taskid =
-			atoi(row[STEP_REQ_MAX_PAGES_TASK]);
-		step.sacct.ave_pages =
-			atof(row[STEP_REQ_AVE_PAGES]);
-		step.sacct.min_cpu =
-			atoi(row[STEP_REQ_MIN_CPU]);
-		step.sacct.min_cpu_id.taskid =
-			atoi(row[STEP_REQ_MIN_CPU_TASK]);
-		step.sacct.ave_cpu = atof(row[STEP_REQ_AVE_CPU]);
-		step.stepname = row[STEP_REQ_NAME];
-		step.nodes = row[STEP_REQ_NODELIST];
-		step.sacct.max_vsize_id.nodeid =
-			atoi(row[STEP_REQ_MAX_VSIZE_NODE]);
-		step.sacct.max_rss_id.nodeid =
-			atoi(row[STEP_REQ_MAX_RSS_NODE]);
-		step.sacct.max_pages_id.nodeid =
-			atoi(row[STEP_REQ_MAX_PAGES_NODE]);
-		step.sacct.min_cpu_id.nodeid =
-			atoi(row[STEP_REQ_MIN_CPU_NODE]);
-
-		step.requid = atoi(row[STEP_REQ_KILL_REQUID]);
-
-
-		pack_jobacct_step_rec(&step, SLURMDBD_VERSION, buffer);
+		_pack_local_step(&step, SLURMDBD_VERSION, buffer);
 	}
 	mysql_free_result(result);
 
@@ -593,74 +846,74 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn,
 	char *tmp = NULL, *query = NULL;
 	time_t period_start = 0;
 	uint32_t cnt = 0;
-	jobacct_job_rec_t job;
+	local_job_t job;
 	Buf buffer;
 	int error_code = 0, i = 0;
 
 	/* if this changes you will need to edit the corresponding
 	 * enum below */
 	char *req_inx[] = {
-		"id",
-		"jobid",
-		"associd",
-		"wckey",
-		"wckeyid",
-		"uid",
-		"gid",
-		"resvid",
-		"partition",
-		"blockid",
-		"cluster",
 		"account",
-		"eligible",
-		"submit",
-		"start",
-		"end",
-		"suspended",
-		"name",
-		"track_steps",
-		"state",
-		"comp_code",
-		"priority",
-		"req_cpus",
 		"alloc_cpus",
 		"alloc_nodes",
+		"associd",
+		"blockid",
+		"cluster",
+		"comp_code",
+		"eligible",
+		"end",
+		"gid",
+		"id",
+		"jobid",
+		"kill_requid",
+		"name",
 		"nodelist",
 		"node_inx",
-		"kill_requid",
-		"qos"
+		"partition",
+		"priority",
+		"qos",
+		"req_cpus",
+		"resvid",
+		"start",
+		"state",
+		"submit",
+		"suspended",
+		"track_steps",
+		"uid",
+		"wckey",
+		"wckeyid",
 	};
 
 	enum {
-		JOB_REQ_ID,
-		JOB_REQ_JOBID,
-		JOB_REQ_ASSOCID,
-		JOB_REQ_WCKEY,
-		JOB_REQ_WCKEYID,
-		JOB_REQ_UID,
-		JOB_REQ_GID,
-		JOB_REQ_RESVID,
-		JOB_REQ_PARTITION,
-		JOB_REQ_BLOCKID,
-		JOB_REQ_CLUSTER,
 		JOB_REQ_ACCOUNT,
-		JOB_REQ_ELIGIBLE,
-		JOB_REQ_SUBMIT,
-		JOB_REQ_START,
-		JOB_REQ_END,
-		JOB_REQ_SUSPENDED,
-		JOB_REQ_NAME,
-		JOB_REQ_TRACKSTEPS,
-		JOB_REQ_STATE,
-		JOB_REQ_COMP_CODE,
-		JOB_REQ_PRIORITY,
-		JOB_REQ_REQ_CPUS,
 		JOB_REQ_ALLOC_CPUS,
 		JOB_REQ_ALLOC_NODES,
+		JOB_REQ_ASSOCID,
+		JOB_REQ_BLOCKID,
+		JOB_REQ_CLUSTER,
+		JOB_REQ_COMP_CODE,
+		JOB_REQ_ELIGIBLE,
+		JOB_REQ_END,
+		JOB_REQ_GID,
+		JOB_REQ_ID,
+		JOB_REQ_JOBID,
+		JOB_REQ_KILL_REQUID,
+		JOB_REQ_NAME,
 		JOB_REQ_NODELIST,
 		JOB_REQ_NODE_INX,
-		JOB_REQ_KILL_REQUID,
+		JOB_REQ_RESVID,
+		JOB_REQ_PARTITION,
+		JOB_REQ_PRIORITY,
 		JOB_REQ_QOS,
+		JOB_REQ_REQ_CPUS,
+		JOB_REQ_START,
+		JOB_REQ_STATE,
+		JOB_REQ_SUBMIT,
+		JOB_REQ_SUSPENDED,
+		JOB_REQ_TRACKSTEPS,
+		JOB_REQ_UID,
+		JOB_REQ_WCKEY,
+		JOB_REQ_WCKEYID,
 		JOB_REQ_COUNT
 	};
 
@@ -702,41 +955,39 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn,
 		if(!period_start)
 			period_start = atoi(row[JOB_REQ_SUBMIT]);
 
-		memset(&job, 0, sizeof(jobacct_job_rec_t));
+		memset(&job, 0, sizeof(local_job_t));
 
-		job.show_full = atoi(row[JOB_REQ_ID]); /* overloaded
-							   with db_inx */
-		job.jobid = atoi(row[JOB_REQ_JOBID]);
-		job.associd = atoi(row[JOB_REQ_ASSOCID]);
-		job.wckey = row[JOB_REQ_WCKEY];
-		job.wckeyid = atoi(row[JOB_REQ_WCKEYID]);
-		job.uid = atoi(row[JOB_REQ_UID]);
-		job.gid = atoi(row[JOB_REQ_GID]);
-		job.resvid = atoi(row[JOB_REQ_RESVID]);
-		job.partition = row[JOB_REQ_PARTITION];
+		job.account = row[JOB_REQ_ACCOUNT];
+		job.alloc_cpus = row[JOB_REQ_ALLOC_CPUS];
+		job.alloc_nodes = row[JOB_REQ_ALLOC_NODES];
+		job.associd = row[JOB_REQ_ASSOCID];
 		job.blockid = row[JOB_REQ_BLOCKID];
 		job.cluster = row[JOB_REQ_CLUSTER];
-		job.account = row[JOB_REQ_ACCOUNT];
-		job.eligible = atoi(row[JOB_REQ_ELIGIBLE]);
-		job.submit = atoi(row[JOB_REQ_SUBMIT]);
-		job.start = atoi(row[JOB_REQ_START]);
-		job.end = atoi(row[JOB_REQ_END]);
-		job.suspended = atoi(row[JOB_REQ_SUSPENDED]);
-		job.jobname = row[JOB_REQ_NAME];
-		job.track_steps = atoi(row[JOB_REQ_TRACKSTEPS]);
-		job.state = atoi(row[JOB_REQ_STATE]);
-		job.exitcode = atoi(row[JOB_REQ_COMP_CODE]);
-		job.priority = atoi(row[JOB_REQ_PRIORITY]);
-		job.req_cpus = atoi(row[JOB_REQ_REQ_CPUS]);
-		job.alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
-		job.alloc_nodes = atoi(row[JOB_REQ_ALLOC_NODES]);
-		job.nodes = row[JOB_REQ_NODELIST];
-		job.user = row[JOB_REQ_NODE_INX]; /* overloaded with
-						    * node_inx */
-		job.requid = atoi(row[JOB_REQ_KILL_REQUID]);
-		job.qos = atoi(row[JOB_REQ_QOS]);
+		job.comp_code = row[JOB_REQ_COMP_CODE];
+		job.eligible = row[JOB_REQ_ELIGIBLE];
+		job.end = row[JOB_REQ_END];
+		job.gid = row[JOB_REQ_GID];
+		job.id = row[JOB_REQ_ID];
+		job.jobid = row[JOB_REQ_JOBID];
+		job.kill_requid = row[JOB_REQ_KILL_REQUID];
+		job.name = row[JOB_REQ_NAME];
+		job.nodelist = row[JOB_REQ_NODELIST];
+		job.node_inx = row[JOB_REQ_NODE_INX];
+		job.partition = row[JOB_REQ_PARTITION];
+		job.priority = row[JOB_REQ_PRIORITY];
+		job.qos = row[JOB_REQ_QOS];
+		job.req_cpus = row[JOB_REQ_REQ_CPUS];
+		job.resvid = row[JOB_REQ_RESVID];
+		job.start = row[JOB_REQ_START];
+		job.state = row[JOB_REQ_STATE];
+		job.submit = row[JOB_REQ_SUBMIT];
+		job.suspended = row[JOB_REQ_SUSPENDED];
+		job.track_steps = row[JOB_REQ_TRACKSTEPS];
+		job.uid = row[JOB_REQ_UID];
+		job.wckey = row[JOB_REQ_WCKEY];
+		job.wckey_id = row[JOB_REQ_WCKEYID];
 
-		pack_jobacct_job_rec(&job, SLURMDBD_VERSION, buffer);
+		_pack_local_job(&job, SLURMDBD_VERSION, buffer);
 	}
 	mysql_free_result(result);
 
