@@ -398,9 +398,9 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.{a,la}
 %if %{?with_pam_dir}0
 rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.{a,la}
 %endif
-test -f $RPM_BUILD_ROOT/lib/security/pam_slurm.{a,la}
-test -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.{a,la}
-test -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.{a,la}
+rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.{a,la}
+rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.{a,la}
+rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.{a,la}
 %if ! %{slurm_with auth_none}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %endif
@@ -476,7 +476,6 @@ touch $LIST
     test -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.so		&&
 	echo /lib64/security/pam_slurm.so	>>$LIST
 %endif
-cat ./pam.files
 #############################################################################
 
 %clean
