@@ -809,6 +809,7 @@ PTHREAD_CC
 HAVE_UNSETENV_FALSE
 HAVE_UNSETENV_TRUE
 LIBOBJS
+PAM_DIR
 HAVE_PAM_FALSE
 HAVE_PAM_TRUE
 PAM_LIBS
@@ -985,6 +986,7 @@ with_gnu_ld
 enable_libtool_lock
 with_cpusetdir
 enable_pam
+with_pam_dir
 enable_iso8601
 enable_load_env_no_login
 enable_cray_xt
@@ -1682,6 +1684,7 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-cpusetdir=PATH   specify path to cpuset directory default is
                           /dev/cpuset
+  --with-pam_dir=PATH     Specify path to PAM module installation
   --with-apbasil=PATH     Specify path to apbasil command
   --with-xcpu=PATH        specify path to XCPU directory
   --with-mysql_config=PATH
@@ -6968,13 +6971,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:6971: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:6974: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:6974: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:6977: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:6977: output\"" >&5)
+  (eval echo "\"\$as_me:6980: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -8179,7 +8182,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 8182 "configure"' > conftest.$ac_ext
+  echo '#line 8185 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9968,11 +9971,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9971: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9974: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9975: \$? = $ac_status" >&5
+   echo "$as_me:9978: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10307,11 +10310,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10310: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10313: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:10314: \$? = $ac_status" >&5
+   echo "$as_me:10317: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -10412,11 +10415,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10415: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10418: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10419: \$? = $ac_status" >&5
+   echo "$as_me:10422: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10467,11 +10470,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:10470: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:10473: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:10474: \$? = $ac_status" >&5
+   echo "$as_me:10477: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12850,7 +12853,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12853 "configure"
+#line 12856 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12946,7 +12949,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12949 "configure"
+#line 12952 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14902,11 +14905,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14905: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14908: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14909: \$? = $ac_status" >&5
+   echo "$as_me:14912: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15001,11 +15004,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15004: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15007: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15008: \$? = $ac_status" >&5
+   echo "$as_me:15011: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15053,11 +15056,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15056: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15059: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15060: \$? = $ac_status" >&5
+   echo "$as_me:15063: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17014,7 +17017,6 @@ $as_echo "$as_me: WARNING: Unable to locate PAM libraries" >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
   fi
-
    if test "x$x_ac_pam" = "xyes" -a "x$ac_have_pam" = "xyes" -a "x$ac_have_pam_misc" = "xyes"; then
   HAVE_PAM_TRUE=
   HAVE_PAM_FALSE='#'
@@ -17022,6 +17024,35 @@ else
   HAVE_PAM_TRUE='#'
   HAVE_PAM_FALSE=
 fi
+
+
+
+
+# Check whether --with-pam_dir was given.
+if test "${with_pam_dir+set}" = set; then :
+  withval=$with_pam_dir;
+	if test -d $withval ; then
+	  PAM_DIR="$withval"
+	else
+	  as_fn_error "bad value \"$withval\" for --with-pam_dir" "$LINENO" 5
+	fi
+
+else
+
+	if test -d /lib64/security ; then
+	  PAM_DIR="/lib64/security"
+	else
+	  PAM_DIR="/lib/security"
+	fi
+
+
+fi
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define PAM_DIR "$pam_dir"
+_ACEOF
 
 
 
