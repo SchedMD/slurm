@@ -48,9 +48,29 @@ AC_DEFUN([X_AC_PAM], [
   else
     AC_MSG_RESULT([no])
   fi
-
   AM_CONDITIONAL(HAVE_PAM,
       test "x$x_ac_pam" = "xyes" -a "x$ac_have_pam" = "xyes" -a "x$ac_have_pam_misc" = "xyes")
+
+
+  AC_ARG_WITH(pam_dir,
+    AS_HELP_STRING(--with-pam_dir=PATH,Specify path to PAM module installation),
+    [
+	if test -d $withval ; then
+	  PAM_DIR="$withval"
+	else
+	  AC_MSG_ERROR([bad value "$withval" for --with-pam_dir])
+	fi
+    ],
+    [
+	if test -d /lib64/security ; then
+	  PAM_DIR="/lib64/security"
+	else
+	  PAM_DIR="/lib/security"
+	fi
+     ]
+  )
+  AC_SUBST(PAM_DIR)
+  AC_DEFINE_UNQUOTED(PAM_DIR, "$pam_dir", [Define PAM module installation directory.])
 
 ])
 
