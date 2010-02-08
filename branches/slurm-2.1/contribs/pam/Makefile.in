@@ -133,9 +133,7 @@ DIST_SOURCES = $(am__pam_slurm_la_SOURCES_DIST) \
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-
-# pkglibdir = $(libdir)/../$(PAM_DIR)	this works, but ugly
-pkglibdir = $(exec_prefix)/$(PAM_DIR)
+pkglibdir = $(prefix)/$(PAM_DIR)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
