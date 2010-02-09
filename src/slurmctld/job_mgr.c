@@ -4795,6 +4795,11 @@ static bool _top_priority(struct job_record *job_ptr)
 				continue;
 			if (!IS_JOB_PENDING(job_ptr2))
 				continue;
+			if (IS_JOB_COMPLETING(job_ptr2)) {
+				/* Job is hung in pending & completing state,
+				 * indicative of job requeue */
+				continue;
+			}
 			if (!job_independent(job_ptr2, 0))
 				continue;
 			if ((job_ptr2->resv_name && (!job_ptr->resv_name)) ||
