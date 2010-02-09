@@ -1392,7 +1392,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	 * time limits may cut it short */
 	if (step_specs->time_limit == NO_VAL || step_specs->time_limit == 0 ||
 	    step_specs->time_limit == INFINITE) {
-		step_ptr->time_limit = job_ptr->time_limit;
+		step_ptr->time_limit = INFINITE;
 	} else {
 		/* enforce partition limits if necessary */
 		if ((step_specs->time_limit > job_ptr->part_ptr->max_time) &&

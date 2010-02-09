@@ -20,8 +20,9 @@ documents those changes that are of interest to users and admins.
     modes).
  -- For topology/tree, log invalid hostnames in a single hostlist expression
     rather than one per line.
- -- A job step's default time limit will be the job's time limit rather than
-    partition's default time limit.
+ -- A job step's default time limit will be UNLIMITED rather than partition's 
+    default time limit. The step will automatically be cancelled as part of the
+    job termination logic when the job's time limit is reached.
  -- sacct - fixed bug when checking jobs against a reservation
 
 * Changes in SLURM 2.1.2
