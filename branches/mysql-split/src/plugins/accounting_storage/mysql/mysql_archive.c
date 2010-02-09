@@ -47,7 +47,6 @@
 #include "src/common/jobacct_common.h"
 
 typedef struct {
-	char *cluster;
 	char *cluster_nodes;
 	char *cpu_count;
 	char *node_name;
@@ -64,7 +63,6 @@ typedef struct {
 	char *alloc_nodes;
 	char *associd;
 	char *blockid;
-	char *cluster;
 	char *comp_code;
 	char *eligible;
 	char *end;
@@ -139,7 +137,6 @@ typedef struct {
  * enum below */
 static char *event_req_inx[] = {
 	"node_name",
-	"cluster",
 	"cpu_count",
 	"state",
 	"period_start",
@@ -151,7 +148,6 @@ static char *event_req_inx[] = {
 
 enum {
 	EVENT_REQ_NODE,
-	EVENT_REQ_CLUSTER,
 	EVENT_REQ_CPU,
 	EVENT_REQ_STATE,
 	EVENT_REQ_START,
@@ -170,7 +166,6 @@ static char *job_req_inx[] = {
 	"alloc_nodes",
 	"associd",
 	"blockid",
-	"cluster",
 	"comp_code",
 	"eligible",
 	"end",
@@ -202,7 +197,6 @@ enum {
 	JOB_REQ_ALLOC_NODES,
 	JOB_REQ_ASSOCID,
 	JOB_REQ_BLOCKID,
-	JOB_REQ_CLUSTER,
 	JOB_REQ_COMP_CODE,
 	JOB_REQ_ELIGIBLE,
 	JOB_REQ_END,
@@ -333,7 +327,6 @@ static int high_buffer_size = (1024 * 1024);
 static void _pack_local_event(local_event_t *object,
 			      uint16_t rpc_version, Buf buffer)
 {
-	packstr(object->cluster, buffer);
 	packstr(object->cluster_nodes, buffer);
 	packstr(object->cpu_count, buffer);
 	packstr(object->node_name, buffer);
@@ -351,7 +344,6 @@ static int _unpack_local_event(local_event_t *object,
 {
 	uint32_t tmp32;
 
-	unpackstr_ptr(&object->cluster, &tmp32, buffer);
 	unpackstr_ptr(&object->cluster_nodes, &tmp32, buffer);
 	unpackstr_ptr(&object->cpu_count, &tmp32, buffer);
 	unpackstr_ptr(&object->node_name, &tmp32, buffer);
@@ -372,7 +364,6 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->alloc_nodes, buffer);
 	packstr(object->associd, buffer);
 	packstr(object->blockid, buffer);
-	packstr(object->cluster, buffer);
 	packstr(object->comp_code, buffer);
 	packstr(object->eligible, buffer);
 	packstr(object->end, buffer);
@@ -410,7 +401,6 @@ static int _unpack_local_job(local_job_t *object,
 	unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
 	unpackstr_ptr(&object->associd, &tmp32, buffer);
 	unpackstr_ptr(&object->blockid, &tmp32, buffer);
-	unpackstr_ptr(&object->cluster, &tmp32, buffer);
 	unpackstr_ptr(&object->comp_code, &tmp32, buffer);
 	unpackstr_ptr(&object->eligible, &tmp32, buffer);
 	unpackstr_ptr(&object->end, &tmp32, buffer);
@@ -549,7 +539,8 @@ static int _unpack_local_suspend(local_suspend_t *object,
 }
 
 static char *_make_archive_name(time_t period_start, time_t period_end,
-			      char *arch_dir, char *arch_type)
+				char *cluster_name,
+				char *arch_dir, char *arch_type)
 {
 	struct tm time_tm;
 	char start_char[32];
@@ -582,12 +573,13 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 		 time_tm.tm_sec);
 
 	/* write the buffer to file */
-	return xstrdup_printf("%s/%s_archive_%s_%s",
-			      arch_dir, arch_type, start_char, end_char);
+	return xstrdup_printf("%s/%s_%s_archive_%s_%s",
+			      arch_dir, cluster_name, arch_type,
+			      start_char, end_char);
 
 }
 
-static int _write_archive_file(Buf buffer,
+static int _write_archive_file(Buf buffer, char *cluster_name,
 			       time_t period_start, time_t period_end,
 			       char *arch_dir, char *arch_type)
 {
@@ -601,9 +593,10 @@ static int _write_archive_file(Buf buffer,
 
 	/* write the buffer to file */
 	reg_file = _make_archive_name(
-		period_start, period_end, arch_dir, arch_type);
+		period_start, period_end, cluster_name, arch_dir, arch_type);
 
-	debug("Storing %s archive at %s", arch_type, reg_file);
+	debug("Storing %s archive for %s at %s",
+	      arch_type, cluster_name, reg_file);
 	old_file = xstrdup_printf("%s.old", reg_file);
 	new_file = xstrdup_printf("%s.new", reg_file);
 
@@ -648,8 +641,8 @@ static int _write_archive_file(Buf buffer,
 }
 
 /* returns count of events archived or SLURM_ERROR on error */
-static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
-					time_t period_end, char *arch_dir)
+static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
+				time_t period_end, char *arch_dir)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -664,7 +657,6 @@ static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
 	 * enum below */
 	char *event_req_inx[] = {
 		"node_name",
-		"cluster",
 		"cpu_count",
 		"state",
 		"period_start",
@@ -676,7 +668,6 @@ static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
 
 	enum {
 		EVENT_REQ_NODE,
-		EVENT_REQ_CLUSTER,
 		EVENT_REQ_CPU,
 		EVENT_REQ_STATE,
 		EVENT_REQ_START,
@@ -717,6 +708,7 @@ static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
 	pack16(SLURMDBD_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack16(DBD_GOT_EVENTS, buffer);
+	packstr(cluster_name, buffer);
 	pack32(cnt, buffer);
 
 	while((row = mysql_fetch_row(result))) {
@@ -725,8 +717,6 @@ static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
 
 		memset(&event, 0, sizeof(local_event_t));
 
-
-		event.cluster = row[EVENT_REQ_CLUSTER];
 		event.cluster_nodes = row[EVENT_REQ_CNODES];
 		event.cpu_count = row[EVENT_REQ_CPU];
 		event.node_name = row[EVENT_REQ_NODE];
@@ -743,7 +733,8 @@ static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
 
-	error_code = _write_archive_file(buffer, period_start, period_end,
+	error_code = _write_archive_file(buffer, cluster_name,
+					 period_start, period_end,
 					 arch_dir, "event");
 	free_buf(buffer);
 
@@ -754,8 +745,8 @@ static uint32_t _archive_cluster_events(mysql_conn_t *mysql_conn,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_cluster_events(uint16_t rpc_version,
-				  Buf buffer, uint32_t rec_cnt)
+static char *_load_events(uint16_t rpc_version, Buf buffer,
+			  char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
 	local_event_t object;
@@ -782,7 +773,6 @@ static char *_load_cluster_events(uint16_t rpc_version,
 			xstrcat(insert, ", ");
 
 		xstrfmtcat(insert, format,
-			   object.cluster,
 			   object.cluster_nodes,
 			   object.cpu_count,
 			   object.node_name,
@@ -801,7 +791,7 @@ static char *_load_cluster_events(uint16_t rpc_version,
 }
 
 /* returns count of jobs archived or SLURM_ERROR on error */
-static uint32_t _archive_jobs(mysql_conn_t *mysql_conn,
+static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 			      time_t period_end, char *arch_dir)
 {
 	MYSQL_RES *result = NULL;
@@ -844,6 +834,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn,
 	pack16(SLURMDBD_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack16(DBD_GOT_JOBS, buffer);
+	packstr(cluster_name, buffer);
 	pack32(cnt, buffer);
 
 	while((row = mysql_fetch_row(result))) {
@@ -857,7 +848,6 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn,
 		job.alloc_nodes = row[JOB_REQ_ALLOC_NODES];
 		job.associd = row[JOB_REQ_ASSOCID];
 		job.blockid = row[JOB_REQ_BLOCKID];
-		job.cluster = row[JOB_REQ_CLUSTER];
 		job.comp_code = row[JOB_REQ_COMP_CODE];
 		job.eligible = row[JOB_REQ_ELIGIBLE];
 		job.end = row[JOB_REQ_END];
@@ -889,7 +879,8 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn,
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
 
-	error_code = _write_archive_file(buffer, period_start, period_end,
+	error_code = _write_archive_file(buffer, cluster_name,
+					 period_start, period_end,
 					 arch_dir, "job");
 	free_buf(buffer);
 
@@ -900,7 +891,8 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_jobs(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
+static char *_load_jobs(uint16_t rpc_version, Buf buffer,
+			char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
 	local_job_t object;
@@ -932,7 +924,6 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
 			   object.alloc_nodes,
 			   object.associd,
 			   object.blockid,
-			   object.cluster,
 			   object.comp_code,
 			   object.eligible,
 			   object.end,
@@ -966,7 +957,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
 }
 
 /* returns count of steps archived or SLURM_ERROR on error */
-static uint32_t _archive_steps(mysql_conn_t *mysql_conn,
+static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 			       time_t period_end, char *arch_dir)
 {
 	MYSQL_RES *result = NULL;
@@ -1009,6 +1000,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn,
 	pack16(SLURMDBD_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack16(DBD_STEP_START, buffer);
+	packstr(cluster_name, buffer);
 	pack32(cnt, buffer);
 
 	while((row = mysql_fetch_row(result))) {
@@ -1060,7 +1052,8 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn,
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
 
-	error_code = _write_archive_file(buffer, period_start, period_end,
+	error_code = _write_archive_file(buffer, cluster_name,
+					 period_start, period_end,
 					 arch_dir, "event");
 	free_buf(buffer);
 
@@ -1071,7 +1064,8 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_steps(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
+static char *_load_steps(uint16_t rpc_version, Buf buffer,
+			 char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
 	local_step_t object;
@@ -1143,7 +1137,7 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
 }
 
 /* returns count of events archived or SLURM_ERROR on error */
-static uint32_t _archive_suspend(mysql_conn_t *mysql_conn,
+static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 				 time_t period_end, char *arch_dir)
 {
 	MYSQL_RES *result = NULL;
@@ -1186,6 +1180,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn,
 	pack16(SLURMDBD_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack16(DBD_JOB_SUSPEND, buffer);
+	packstr(cluster_name, buffer);
 	pack32(cnt, buffer);
 
 	while((row = mysql_fetch_row(result))) {
@@ -1206,7 +1201,8 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn,
 //	END_TIMER2("step query");
 //	info("event query took %s", TIME_STR);
 
-	error_code = _write_archive_file(buffer, period_start, period_end,
+	error_code = _write_archive_file(buffer, cluster_name,
+					 period_start, period_end,
 					 arch_dir, "suspend");
 	free_buf(buffer);
 
@@ -1217,7 +1213,8 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_suspend(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
+static char *_load_suspend(uint16_t rpc_version, Buf buffer,
+			 char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
 	local_suspend_t object;
@@ -1258,7 +1255,8 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer, uint32_t rec_cnt)
 	return insert;
 }
 
-static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
+static int _archive_script(acct_archive_cond_t *arch_cond, char *cluster_name,
+			   time_t last_submit)
 {
 	char * args[] = {arch_cond->archive_script, NULL};
 	const char *tmpdir;
@@ -1295,6 +1293,8 @@ static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
 	}
 
 	env = env_array_create();
+	env_array_append_fmt(&env, "SLURM_ARCHIVE_CLUSTER", "%s",
+			     cluster_name);
 
 	if(arch_cond->purge_event) {
 		/* use localtime to avoid any daylight savings issues */
@@ -1375,38 +1375,16 @@ static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
 	return SLURM_SUCCESS;
 }
 
-extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
-					 acct_archive_cond_t *arch_cond)
+static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
+			    char *cluster_name, acct_archive_cond_t *arch_cond)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-	time_t last_submit = time(NULL);
 	time_t curr_end;
 	struct tm time_tm;
 
-//	DEF_TIMERS;
-
-	if(!arch_cond) {
-		error("No arch_cond was given to archive from.  returning");
-		return SLURM_ERROR;
-	}
-
-	if(!localtime_r(&last_submit, &time_tm)) {
-		error("Couldn't get localtime from first start %d",
-		      last_submit);
-		return SLURM_ERROR;
-	}
-	time_tm.tm_sec = 0;
-	time_tm.tm_min = 0;
-	time_tm.tm_hour = 0;
-	time_tm.tm_mday = 1;
-	time_tm.tm_isdst = -1;
-	last_submit = mktime(&time_tm);
-	last_submit--;
-	debug("archive: adjusted last submit is (%d)", last_submit);
-
 	if(arch_cond->archive_script)
-		return _archive_script(arch_cond, last_submit);
+		return _archive_script(arch_cond, cluster_name, last_submit);
 	else if(!arch_cond->archive_dir) {
 		error("No archive dir given, can't process");
 		return SLURM_ERROR;
@@ -1435,8 +1413,8 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		       last_submit, arch_cond->purge_event, curr_end);
 
 		if(arch_cond->archive_events) {
-			rc = _archive_cluster_events(mysql_conn, curr_end,
-						     arch_cond->archive_dir);
+			rc = _archive_events(mysql_conn, cluster_name,
+					     curr_end, arch_cond->archive_dir);
 			if(!rc)
 				goto exit_events;
 			else if(rc == SLURM_ERROR)
@@ -1480,8 +1458,8 @@ exit_events:
 		       last_submit, arch_cond->purge_suspend, curr_end);
 
 		if(arch_cond->archive_suspend) {
-			rc = _archive_suspend(mysql_conn, curr_end,
-					      arch_cond->archive_dir);
+			rc = _archive_suspend(mysql_conn, cluster_name,
+					      curr_end, arch_cond->archive_dir);
 			if(!rc)
 				goto exit_suspend;
 			else if(rc == SLURM_ERROR)
@@ -1525,8 +1503,8 @@ exit_suspend:
 		       last_submit, arch_cond->purge_step, curr_end);
 
 		if(arch_cond->archive_steps) {
-			rc = _archive_steps(mysql_conn, curr_end,
-					    arch_cond->archive_dir);
+			rc = _archive_steps(mysql_conn, cluster_name,
+					    curr_end, arch_cond->archive_dir);
 			if(!rc)
 				goto exit_steps;
 			else if(rc == SLURM_ERROR)
@@ -1570,8 +1548,8 @@ exit_steps:
 		       last_submit, arch_cond->purge_job, curr_end);
 
 		if(arch_cond->archive_jobs) {
-			rc = _archive_jobs(mysql_conn, curr_end,
-					   arch_cond->archive_dir);
+			rc = _archive_jobs(mysql_conn, cluster_name,
+					   curr_end, arch_cond->archive_dir);
 			if(!rc)
 				goto exit_jobs;
 			else if(rc == SLURM_ERROR)
@@ -1591,19 +1569,71 @@ exit_steps:
 		}
 	}
 exit_jobs:
-
 	return SLURM_SUCCESS;
+}
+
+extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
+					 acct_archive_cond_t *arch_cond)
+{
+	int rc = SLURM_SUCCESS;
+	char *cluster_name = NULL;
+	time_t last_submit = time(NULL);
+	struct tm time_tm;
+	List use_cluster_list = mysql_cluster_list;
+	ListIterator itr = NULL;
+
+//	DEF_TIMERS;
+
+	if(!arch_cond) {
+		error("No arch_cond was given to archive from.  returning");
+		return SLURM_ERROR;
+	}
+
+	if(!localtime_r(&last_submit, &time_tm)) {
+		error("Couldn't get localtime from first start %d",
+		      last_submit);
+		return SLURM_ERROR;
+	}
+	time_tm.tm_sec = 0;
+	time_tm.tm_min = 0;
+	time_tm.tm_hour = 0;
+	time_tm.tm_mday = 1;
+	time_tm.tm_isdst = -1;
+	last_submit = mktime(&time_tm);
+	last_submit--;
+	debug("archive: adjusted last submit is (%d)", last_submit);
+
+
+	if(arch_cond->job_cond && arch_cond->job_cond->cluster_list
+	   && list_count(arch_cond->job_cond->cluster_list))
+		use_cluster_list = arch_cond->job_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+
+	itr = list_iterator_create(use_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		if((rc = _execute_archive(mysql_conn, last_submit,
+					  cluster_name, arch_cond))
+		   != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(itr);
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
+
+
+	return rc;
 }
 
 extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 					      acct_archive_rec_t *arch_rec)
 {
-	char *data = NULL;
+	char *data = NULL, *cluster_name = NULL;
 	int error_code = SLURM_SUCCESS;
 	Buf buffer;
 	time_t buf_time;
 	uint16_t type = 0, ver = 0;
-	uint32_t data_size = 0, rec_cnt = 0;
+	uint32_t data_size = 0, rec_cnt = 0, tmp32 = 0;
 
 	if(!arch_rec) {
 		error("We need a acct_archive_rec to load anything.");
@@ -1678,6 +1708,7 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 	}
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack16(&type, buffer);
+	unpackstr_ptr(&cluster_name, &tmp32, buffer);
 	safe_unpack32(&rec_cnt, buffer);
 
 	if(!rec_cnt) {
@@ -1689,16 +1720,16 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 
 	switch(type) {
 	case DBD_GOT_EVENTS:
-		data = _load_cluster_events(ver, buffer, rec_cnt);
+		data = _load_events(ver, buffer, cluster_name, rec_cnt);
 		break;
 	case DBD_GOT_JOBS:
-		data = _load_jobs(ver, buffer, rec_cnt);
+		data = _load_jobs(ver, buffer, cluster_name, rec_cnt);
 		break;
 	case DBD_STEP_START:
-		data = _load_steps(ver, buffer, rec_cnt);
+		data = _load_steps(ver, buffer, cluster_name, rec_cnt);
 		break;
 	case DBD_JOB_SUSPEND:
-		data = _load_suspend(ver, buffer, rec_cnt);
+		data = _load_suspend(ver, buffer, cluster_name, rec_cnt);
 		break;
 	default:
 		error("Unknown type '%u' to load from archive", type);

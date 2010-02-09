@@ -116,7 +116,7 @@ char *cluster_day_table = "cluster_day_usage_table";
 char *cluster_hour_table = "cluster_hour_usage_table";
 char *cluster_month_table = "cluster_month_usage_table";
 char *cluster_table = "cluster_table";
-char *event_table = "cluster_event_table";
+char *event_table = "event_table";
 char *job_table = "job_table";
 char *last_ran_table = "last_ran_table";
 char *qos_table = "qos_table";
@@ -325,10 +325,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "id", "int not null auto_increment" },
+		{ "id_assoc", "int not null auto_increment" },
 		{ "user", "tinytext not null default ''" },
 		{ "acct", "tinytext not null" },
-		{ "cluster", "tinytext not null" },
 		{ "partition", "tinytext not null default ''" },
 		{ "parent_acct", "tinytext not null default ''" },
 		{ "lft", "int not null" },
@@ -355,8 +354,8 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "id", "int not null" },
-		{ "period_start", "int unsigned not null" },
+		{ "id_assoc", "int not null" },
+		{ "time_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}
 	};
@@ -377,8 +376,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "cluster", "tinytext not null" },
-		{ "period_start", "int unsigned not null" },
+		{ "time_start", "int unsigned not null" },
 		{ "cpu_count", "int default 0" },
 		{ "alloc_cpu_secs", "bigint default 0" },
 		{ "down_cpu_secs", "bigint default 0" },
@@ -390,49 +388,48 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	};
 
 	storage_field_t event_table_fields[] = {
-		{ "period_start", "int unsigned not null" },
-		{ "period_end", "int unsigned default 0 not null" },
+		{ "time_start", "int unsigned not null" },
+		{ "time_end", "int unsigned default 0 not null" },
 		{ "node_name", "tinytext default '' not null" },
 		{ "cluster_nodes", "text not null default ''" },
 		{ "cpu_count", "int not null" },
-		{ "state", "smallint unsigned default 0 not null" },
 		{ "reason", "tinytext not null" },
 		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
+		{ "state", "smallint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t job_table_fields[] = {
-		{ "id", "int not null auto_increment" },
+		{ "job_db_inx", "int not null auto_increment" },
 		{ "deleted", "tinyint default 0" },
-		{ "jobid", "int unsigned not null" },
-		{ "associd", "int unsigned not null" },
-		{ "wckey", "tinytext not null default ''" },
-		{ "wckeyid", "int unsigned not null" },
-		{ "uid", "int unsigned not null" },
-		{ "gid", "int unsigned not null" },
-		{ "cluster", "tinytext not null" },
-		{ "partition", "tinytext not null" },
-		{ "blockid", "tinytext" },
 		{ "account", "tinytext" },
-		{ "eligible", "int unsigned default 0 not null" },
-		{ "submit", "int unsigned default 0 not null" },
-		{ "start", "int unsigned default 0 not null" },
-		{ "end", "int unsigned default 0 not null" },
-		{ "suspended", "int unsigned default 0 not null" },
-		{ "timelimit", "int unsigned default 0 not null" },
-		{ "name", "tinytext not null" },
-		{ "track_steps", "tinyint not null" },
-		{ "state", "smallint unsigned not null" },
-		{ "comp_code", "int default 0 not null" },
-		{ "priority", "int not null" },
-		{ "req_cpus", "int unsigned not null" },
-		{ "alloc_cpus", "int unsigned not null" },
-		{ "alloc_nodes", "int unsigned not null" },
-		{ "nodelist", "text" },
-		{ "node_inx", "text" },
+		{ "cpus_req", "int unsigned not null" },
+		{ "cpus_alloc", "int unsigned not null" },
+		{ "exit_code", "int default 0 not null" },
+		{ "job_name", "tinytext not null" },
+		{ "id_assoc", "int unsigned not null" },
+		{ "id_block", "tinytext" },
+		{ "id_job", "int unsigned not null" },
+		{ "id_resv", "int unsigned not null" },
+		{ "id_wckey", "int unsigned not null" },
+		{ "id_user", "int unsigned not null" },
+		{ "id_group", "int unsigned not null" },
 		{ "kill_requid", "int default -1 not null" },
+		{ "nodelist", "text" },
+		{ "nodes_alloc", "int unsigned not null" },
+		{ "node_inx", "text" },
+		{ "partition", "tinytext not null" },
+		{ "priority", "int not null" },
 		{ "qos", "smallint default 0" },
-		{ "resvid", "int unsigned not null" },
+		{ "state", "smallint unsigned not null" },
+		{ "timelimit", "int unsigned default 0 not null" },
+		{ "time_submit", "int unsigned default 0 not null" },
+		{ "time_eligible", "int unsigned default 0 not null" },
+		{ "time_start", "int unsigned default 0 not null" },
+		{ "time_end", "int unsigned default 0 not null" },
+		{ "time_suspended", "int unsigned default 0 not null" },
+		{ "wckey", "tinytext not null default ''" },
+		{ "track_steps", "tinyint not null" },
 		{ NULL, NULL}
 	};
 
@@ -469,53 +466,52 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	};
 
 	storage_field_t resv_table_fields[] = {
-		{ "id", "int unsigned default 0 not null" },
-		{ "name", "text not null" },
-		{ "cluster", "text not null" },
+		{ "id_resv", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "cpus", "int unsigned not null" },
 		{ "assoclist", "text not null default ''" },
+		{ "cpus", "int unsigned not null" },
+		{ "flags", "smallint unsigned default 0 not null" },
 		{ "nodelist", "text not null default ''" },
 		{ "node_inx", "text not null default ''" },
-		{ "start", "int unsigned default 0 not null"},
-		{ "end", "int unsigned default 0 not null" },
-		{ "flags", "smallint unsigned default 0 not null" },
+		{ "resv_name", "text not null" },
+		{ "time_start", "int unsigned default 0 not null"},
+		{ "time_end", "int unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t step_table_fields[] = {
-		{ "id", "int not null" },
+		{ "job_db_inx", "int not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "stepid", "smallint not null" },
-		{ "start", "int unsigned default 0 not null" },
-		{ "end", "int unsigned default 0 not null" },
-		{ "suspended", "int unsigned default 0 not null" },
-		{ "name", "text not null" },
+		{ "cpus_alloc", "int unsigned not null" },
+		{ "exit_code", "int default 0 not null" },
+		{ "id_step", "smallint not null" },
+		{ "kill_requid", "int default -1 not null" },
 		{ "nodelist", "text not null" },
+		{ "nodes_alloc", "int unsigned not null" },
 		{ "node_inx", "text" },
 		{ "state", "smallint unsigned not null" },
-		{ "kill_requid", "int default -1 not null" },
-		{ "comp_code", "int default 0 not null" },
-		{ "nodes", "int unsigned not null" },
-		{ "cpus", "int unsigned not null" },
-		{ "tasks", "int unsigned not null" },
+		{ "step_name", "text not null" },
+		{ "task_cnt", "int unsigned not null" },
 		{ "task_dist", "smallint default 0" },
+		{ "time_start", "int unsigned default 0 not null" },
+		{ "time_end", "int unsigned default 0 not null" },
+		{ "time_suspended", "int unsigned default 0 not null" },
 		{ "user_sec", "int unsigned default 0 not null" },
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "int unsigned default 0 not null" },
 		{ "sys_usec", "int unsigned default 0 not null" },
-		{ "max_vsize", "bigint unsigned default 0 not null" },
-		{ "max_vsize_task", "smallint unsigned default 0 not null" },
-		{ "max_vsize_node", "int unsigned default 0 not null" },
-		{ "ave_vsize", "double unsigned default 0.0 not null" },
-		{ "max_rss", "bigint unsigned default 0 not null" },
-		{ "max_rss_task", "smallint unsigned default 0 not null" },
-		{ "max_rss_node", "int unsigned default 0 not null" },
-		{ "ave_rss", "double unsigned default 0.0 not null" },
 		{ "max_pages", "int unsigned default 0 not null" },
 		{ "max_pages_task", "smallint unsigned default 0 not null" },
 		{ "max_pages_node", "int unsigned default 0 not null" },
 		{ "ave_pages", "double unsigned default 0.0 not null" },
+		{ "max_rss", "bigint unsigned default 0 not null" },
+		{ "max_rss_task", "smallint unsigned default 0 not null" },
+		{ "max_rss_node", "int unsigned default 0 not null" },
+		{ "ave_rss", "double unsigned default 0.0 not null" },
+		{ "max_vsize", "bigint unsigned default 0 not null" },
+		{ "max_vsize_task", "smallint unsigned default 0 not null" },
+		{ "max_vsize_node", "int unsigned default 0 not null" },
+		{ "ave_vsize", "double unsigned default 0.0 not null" },
 		{ "min_cpu", "int unsigned default 0 not null" },
 		{ "min_cpu_task", "smallint unsigned default 0 not null" },
 		{ "min_cpu_node", "int unsigned default 0 not null" },
@@ -524,10 +520,10 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	};
 
 	storage_field_t suspend_table_fields[] = {
-		{ "id", "int not null" },
-		{ "associd", "int not null" },
-		{ "start", "int unsigned default 0 not null" },
-		{ "end", "int unsigned default 0 not null" },
+		{ "job_db_inx", "int not null" },
+		{ "id_assoc", "int not null" },
+		{ "time_start", "int unsigned default 0 not null" },
+		{ "time_end", "int unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -556,9 +552,8 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "id", "int not null auto_increment" },
-		{ "name", "tinytext not null default ''" },
-		{ "cluster", "tinytext not null" },
+		{ "id_wckey", "int not null auto_increment" },
+		{ "wckey_name", "tinytext not null default ''" },
 		{ "user", "tinytext not null" },
 		{ NULL, NULL}
 	};
@@ -567,8 +562,8 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "id", "int not null" },
-		{ "period_start", "int unsigned not null" },
+		{ "id_wckey", "int not null" },
+		{ "time_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0" },
 		{ "resv_cpu_secs", "bigint default 0" },
 		{ "over_cpu_secs", "bigint default 0" },
@@ -603,7 +598,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"REPEAT "
 		"set @s = 'select '; "
 		"if @par_id is NULL then set @s = CONCAT("
-		"@s, '@par_id := id, '); "
+		"@s, '@par_id := id_assoc, '); "
 		"end if; "
 		"if @mj is NULL then set @s = CONCAT("
 		"@s, '@mj := max_jobs, '); "
@@ -664,11 +659,86 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		char table_name[200];
 
 		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, assoc_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 assoc_table_fields,
+					 ", primary key (id_assoc), "
+					 " unique index (user(20), acct(20), "
+					 "partition(20)))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, assoc_day_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 assoc_usage_table_fields,
+					 ", primary key (id_assoc, "
+					 "time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, assoc_hour_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 assoc_usage_table_fields,
+					 ", primary key (id_assoc, "
+					 "time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, assoc_month_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 assoc_usage_table_fields,
+					 ", primary key (id_assoc, "
+					 "time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, cluster_day_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 cluster_usage_table_fields,
+					 ", primary key (time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, cluster_hour_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 cluster_usage_table_fields,
+					 ", primary key (time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, cluster_month_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 cluster_usage_table_fields,
+					 ", primary key (time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
 			 cluster_name, event_table);
 		if(mysql_db_create_table(db_conn, table_name,
 					 event_table_fields,
 					 ", primary key (node_name(20), "
-					 "period_start))")
+					 "time_start))")
 		   == SLURM_ERROR) {
 			rc = SLURM_ERROR;
 			break;
@@ -677,19 +747,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		snprintf(table_name, sizeof(table_name), "%s_%s",
 			 cluster_name, job_table);
 		if(mysql_db_create_table(db_conn, table_name, job_table_fields,
-					 ", primary key (id), "
-					 "unique index (jobid, "
-					 "associd, submit))")
-		   == SLURM_ERROR) {
-			rc = SLURM_ERROR;
-			break;
-		}
-
-		snprintf(table_name, sizeof(table_name), "%s_%s",
-			 cluster_name, step_table);
-		if(mysql_db_create_table(db_conn, table_name,
-					 step_table_fields,
-					 ", primary key (id, stepid))")
+					 ", primary key (job_db_inx), "
+					 "unique index (id_job, "
+					 "id_assoc, time_submit))")
 		   == SLURM_ERROR) {
 			rc = SLURM_ERROR;
 			break;
@@ -699,8 +759,17 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 			 cluster_name, resv_table);
 		if(mysql_db_create_table(db_conn, table_name,
 					 resv_table_fields,
-					 ", primary key (id, start, "
-					 "cluster(20)))")
+					 ", primary key (id_resv, time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, step_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 step_table_fields,
+					 ", primary key (job_db_inx, id_step))")
 		   == SLURM_ERROR) {
 			rc = SLURM_ERROR;
 			break;
@@ -715,17 +784,50 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 			break;
 		}
 
-		/* snprintf(table_name, sizeof(table_name), "%s_%s", */
-		/* 	 cluster_name, wckey_table); */
-		/* if(mysql_db_create_table(db_conn, table_name, */
-		/* 			 wckey_table_fields, */
-		/* 			 ", primary key (id), " */
-		/* 			 " unique index (name(20), user(20), " */
-		/* 			 "cluster(20)))") */
-		/*    == SLURM_ERROR) { */
-		/* 	rc = SLURM_ERROR; */
-		/* 	break; */
-		/* } */
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, wckey_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 wckey_table_fields,
+					 ", primary key (id_wckey), "
+					 " unique index (wckey_name(20), "
+					 "user(20)))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, wckey_day_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 wckey_usage_table_fields,
+					 ", primary key (id_wckey, "
+					 "time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, wckey_hour_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 wckey_usage_table_fields,
+					 ", primary key (id_wckey, "
+					 "time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, wckey_month_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 wckey_usage_table_fields,
+					 ", primary key (id_wckey, "
+					 "time_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&mysql_cluster_list_lock);
@@ -743,49 +845,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 
 	if(mysql_db_create_table(db_conn, acct_table, acct_table_fields,
 				 ", primary key (name(20)))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, assoc_day_table,
-				 assoc_usage_table_fields,
-				 ", primary key (id, period_start))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, assoc_hour_table,
-				 assoc_usage_table_fields,
-				 ", primary key (id, period_start))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, assoc_month_table,
-				 assoc_usage_table_fields,
-				 ", primary key (id, period_start))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, assoc_table, assoc_table_fields,
-				 ", primary key (id), "
-				 " unique index (user(20), acct(20), "
-				 "cluster(20), partition(20)))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, cluster_day_table,
-				 cluster_usage_table_fields,
-				 ", primary key (cluster(20), period_start))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, cluster_hour_table,
-				 cluster_usage_table_fields,
-				 ", primary key (cluster(20), period_start))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, cluster_month_table,
-				 cluster_usage_table_fields,
-				 ", primary key (cluster(21), period_start))")
-	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(db_conn, last_ran_table,
@@ -860,32 +919,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 
 	if(mysql_db_create_table(db_conn, user_table, user_table_fields,
 				 ", primary key (name(20)))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, wckey_table,
-				 wckey_table_fields,
-				 ", primary key (id), "
-				 " unique index (name(20), user(20), "
-				 "cluster(20)))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, wckey_day_table,
-				 wckey_usage_table_fields,
-				 ", primary key (id, period_start))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, wckey_hour_table,
-				 wckey_usage_table_fields,
-				 ", primary key (id, period_start))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, wckey_month_table,
-				 wckey_usage_table_fields,
-				 ", primary key (id, period_start))")
-	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	rc = mysql_db_query(db_conn, get_parent_proc);

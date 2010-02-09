@@ -385,7 +385,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 	   resvid_list up here */
 	if(job_cond->resv_list && list_count(job_cond->resv_list)) {
 		char *query = xstrdup_printf(
-			"select distinct id from %s where (");
+			"select distinct job_db_inx from %s where (");
 		int my_set = 0;
 		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
