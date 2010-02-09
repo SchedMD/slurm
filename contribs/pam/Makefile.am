@@ -8,7 +8,7 @@ CPPFLAGS = -fPIC
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 PLUGIN_FLAGS = -module --export-dynamic -avoid-version
 
-pkglibdir = $(DESTDIR)$(PAM_DIR)
+pkglibdir = $(PAM_DIR)
 
 if HAVE_PAM
 pam_lib = pam_slurm.la
