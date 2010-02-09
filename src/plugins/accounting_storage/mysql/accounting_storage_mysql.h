@@ -79,6 +79,13 @@ extern char *wckey_hour_table;
 extern char *wckey_month_table;
 extern char *wckey_table;
 
+/* Since tables are cluster centric we have a global cluster list to
+ * go off of.
+ */
+extern List mysql_cluster_list;
+extern pthread_mutex_t mysql_cluster_list_lock;
+
+
 typedef enum {
 	QOS_LEVEL_NONE,
 	QOS_LEVEL_SET,
