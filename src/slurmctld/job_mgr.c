@@ -5164,11 +5164,16 @@ static bool _top_priority(struct job_record *job_ptr)
 		top = true;	/* assume top priority until found otherwise */
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr2 = (struct job_record *)
-			list_next(job_iterator))) {
+					list_next(job_iterator))) {
 			if (job_ptr2 == job_ptr)
 				continue;
 			if (!IS_JOB_PENDING(job_ptr2))
 				continue;
+			if (IS_JOB_COMPLETING(job_ptr2)) {
+				/* Job is hung in pending & completing state,
+				 * indicative of job requeue */
+				continue;
+			}
 			if (!job_independent(job_ptr2, 0))
 				continue;
 			if ((job_ptr2->resv_name && (!job_ptr->resv_name)) ||
