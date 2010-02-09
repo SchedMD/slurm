@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
     specify the directory into which PAM modules get installed, although it
     should pick the proper directory by default. "make install" and "rpmbuild"
     should now put the pam_slurm.so file in the proper directory.
+ -- Do not block new jobs with --immediate option while another job is in the
+    process of being requeued (which can take a long time for some node failure
+    modes).
 
 * Changes in SLURM 2.1.2
 =============================
