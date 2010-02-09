@@ -6,32 +6,32 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <https://computing.llnl.gov/linux/slurm/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -96,7 +96,7 @@ static int  _client_read(eio_obj_t *, List);
 static int  _client_write(eio_obj_t *, List);
 
 struct io_operations client_ops = {
-        readable:	&_client_readable,
+	readable:	&_client_readable,
 	writable:	&_client_writable,
 	handle_read:	&_client_read,
 	handle_write:	&_client_write,
@@ -173,7 +173,7 @@ static bool _task_readable(eio_obj_t *);
 static int  _task_read(eio_obj_t *, List);
 
 struct io_operations task_read_ops = {
-        readable:	&_task_readable,
+	readable:	&_task_readable,
 	handle_read:	&_task_read,
 };
 
@@ -225,7 +225,7 @@ static struct io_buf *_build_connection_okay_message(slurmd_job_t *job);
 /**********************************************************************
  * IO client socket functions
  **********************************************************************/
-static bool 
+static bool
 _client_readable(eio_obj_t *obj)
 {
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
@@ -259,7 +259,7 @@ _client_readable(eio_obj_t *obj)
 	return false;
 }
 
-static bool 
+static bool
 _client_writable(eio_obj_t *obj)
 {
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
@@ -307,7 +307,7 @@ _client_writable(eio_obj_t *obj)
 	return false;
 }
 
-static int 
+static int
 _client_read(eio_obj_t *obj, List objs)
 {
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
@@ -355,11 +355,11 @@ _client_read(eio_obj_t *obj, List objs)
 			return SLURM_ERROR;
 		}
 		if (_send_connection_okay_response(client->job)) {
-			/* 
-			 * If we get here because of a failed 
+			/*
+			 * If we get here because of a failed
 			 * _send_connection_okay_response, it's because of a
-			 * lack of buffer space in the output queue.  Just 
-			 * keep the current input message client->in_msg in 
+			 * lack of buffer space in the output queue.  Just
+			 * keep the current input message client->in_msg in
 			 * place, and resend on the next call.
 			 */
 			return SLURM_SUCCESS;
@@ -370,7 +370,7 @@ _client_read(eio_obj_t *obj, List objs)
 	} else if (client->header.length == 0) { /* zero length is an eof message */
 		debug5("  got stdin eof message!");
 	} else {
-		buf = client->in_msg->data + 
+		buf = client->in_msg->data +
 			(client->in_msg->length - client->in_remaining);
 	again:
 		if ((n = read(obj->fd, buf, client->in_remaining)) < 0) {
@@ -462,17 +462,17 @@ _client_write(eio_obj_t *obj, List objs)
 			debug5("_client_write: nothing in the queue");
 			return SLURM_SUCCESS;
 		}
-		debug5("  dequeue successful, client->out_msg->length = %d", 
+		debug5("  dequeue successful, client->out_msg->length = %d",
 			client->out_msg->length);
 		client->out_remaining = client->out_msg->length;
 	}
 
-	debug5("  client->out_remaining = %d", client->out_remaining); 
+	debug5("  client->out_remaining = %d", client->out_remaining);
 
 	/*
 	 * Write message to socket.
 	 */
-	buf = client->out_msg->data + 
+	buf = client->out_msg->data +
 		(client->out_msg->length - client->out_remaining);
 again:
 	if ((n = write(obj->fd, buf, client->out_remaining)) < 0) {
@@ -499,7 +499,7 @@ again:
 }
 
 
-static bool 
+static bool
 _local_file_writable(eio_obj_t *obj)
 {
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
@@ -538,13 +538,13 @@ _local_file_write(eio_obj_t *obj, List objs)
 		if (client->out_msg == NULL) {
 			return SLURM_SUCCESS;
 		}
-		client->out_remaining = client->out_msg->length - 
+		client->out_remaining = client->out_msg->length -
 					io_hdr_packed_size();
 	}
 
 	/* This code to make a buffer, fill it, unpack its contents, and free
 	   it is just used to read the header to get the global task id. */
-	header_tmp_buf = create_buf(client->out_msg->data, 
+	header_tmp_buf = create_buf(client->out_msg->data,
 				    client->out_msg->length);
 	if (!header_tmp_buf)
 		fatal("Failure to allocate memory for a message header");
@@ -561,11 +561,11 @@ _local_file_write(eio_obj_t *obj, List objs)
 	}
 
 	/* Write the message to the file. */
-	buf = client->out_msg->data + 
+	buf = client->out_msg->data +
 		(client->out_msg->length - client->out_remaining);
 
-	n = write_labelled_message(obj->fd, buf, client->out_remaining, 
-				   header.gtaskid, client->labelio, 
+	n = write_labelled_message(obj->fd, buf, client->out_remaining,
+				   header.gtaskid, client->labelio,
 				   client->label_width);
 	if (n < 0) {
 		client->out_eof = true;
@@ -610,7 +610,7 @@ _create_task_in_eio(int fd, slurmd_job_t *job)
 	return eio;
 }
 
-static bool 
+static bool
 _task_writable(eio_obj_t *obj)
 {
 	struct task_write_info *t = (struct task_write_info *) obj->arg;
@@ -732,7 +732,7 @@ _create_task_out_eio(int fd, uint16_t type,
 	return eio;
 }
 
-static bool 
+static bool
 _task_readable(eio_obj_t *obj)
 {
 	struct task_read_info *out = (struct task_read_info *)obj->arg;
@@ -801,7 +801,7 @@ again:
 	if (cbuf_used(out->buf) == 0 && out->eof && !out->eof_msg_sent) {
 		_send_eof_msg(out);
 	}
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -851,7 +851,7 @@ static void *_window_manager(void *arg)
 		if (kill(win_info->task->pid, SIGWINCH)) {
 			if (errno == ESRCH)
 				break;
-			error("kill(%d, SIGWINCH): %m", 
+			error("kill(%d, SIGWINCH): %m",
 				(int)win_info->task->pid);
 		}
 	}
@@ -993,7 +993,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		task->in = _create_task_in_eio(task->to_stdin, job);
 		eio_new_initial_obj(job->eio, (void *)task->in);
 	}
-	
+
 	/*
 	 *  Initialize stdout
 	 */
@@ -1016,10 +1016,10 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			fd_set_close_on_exec(task->stdout_fd);
 			task->from_stdout = -1;  /* not used */
 		}
-	} else if (task->ofname != NULL && 
+	} else if (task->ofname != NULL &&
 		   (!job->labelio || strcmp(task->ofname, "/dev/null")==0)) {
 #else
-	if (task->ofname != NULL && 
+	if (task->ofname != NULL &&
 	    (!job->labelio || strcmp(task->ofname, "/dev/null")==0) ) {
 #endif
 		/* open file on task's stdout */
@@ -1058,10 +1058,10 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (job->pty) {
 		if (task->gtid == 0) {
 			/* Make a file descriptor for the task to write to, but
-			   don't make a separate one read from, because in pty 
+			   don't make a separate one read from, because in pty
 			   mode we can't distinguish between stdout and stderr
 			   coming from the remote shell.  Both streams from the
-			   shell will go to task->stdout_fd, which is okay in 
+			   shell will go to task->stdout_fd, which is okay in
 			   pty mode because any output routed through the stepd
 			   will be displayed. */
 			task->stderr_fd = dup(task->stdin_fd);
@@ -1074,10 +1074,10 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			fd_set_close_on_exec(task->stderr_fd);
 			task->from_stderr = -1;  /* not used */
 		}
-	} else if (task->efname != NULL && 
+	} else if (task->efname != NULL &&
 		   (!job->labelio || strcmp(task->efname, "/dev/null")==0)) {
 #else
-	if (task->efname != NULL && 
+	if (task->efname != NULL &&
 	    (!job->labelio || strcmp(task->efname, "/dev/null")==0) ) {
 #endif
 		/* open file on task's stdout */
@@ -1127,7 +1127,7 @@ io_init_tasks_stdio(slurmd_job_t *job)
 }
 
 int
-io_thread_start(slurmd_job_t *job) 
+io_thread_start(slurmd_job_t *job)
 {
 	pthread_attr_t attr;
 	int rc = 0, retries = 0;
@@ -1143,9 +1143,9 @@ io_thread_start(slurmd_job_t *job)
 		}
 		usleep(10);	/* sleep and again */
 	}
-	
+
 	slurm_attr_destroy(&attr);
-	
+
 	/*fatal_add_cleanup(&_fatal_cleanup, (void *) job);*/
 
 	return rc;
@@ -1237,7 +1237,7 @@ _build_connection_okay_message(slurmd_job_t *job)
 	/* free the Buf packbuf, but not the memory to which it points */
 	packbuf->head = NULL;
 	free_buf(packbuf);
-	
+
 	return msg;
 }
 
@@ -1272,12 +1272,12 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 			/* Some clients only take certain I/O streams */
 			if (out->type==SLURM_IO_STDOUT) {
-				if (client->ltaskid_stdout != -1 && 
+				if (client->ltaskid_stdout != -1 &&
 				    client->ltaskid_stdout != out->ltaskid)
 					continue;
 			}
 			if (out->type==SLURM_IO_STDERR) {
-				if (client->ltaskid_stderr != -1 && 
+				if (client->ltaskid_stderr != -1 &&
 				    client->ltaskid_stderr != out->ltaskid)
 					continue;
 			}
@@ -1367,7 +1367,7 @@ io_close_task_fds(slurmd_job_t *job)
 	}
 }
 
-void 
+void
 io_close_all(slurmd_job_t *job)
 {
 	int devnull;
@@ -1392,13 +1392,13 @@ io_close_all(slurmd_job_t *job)
 			error("Unable to dup /dev/null onto stderr\n");
 	}
 
-	/* Signal IO thread to close appropriate 
+	/* Signal IO thread to close appropriate
 	 * client connections
 	 */
 	eio_signal_shutdown(job->eio);
 }
 
-void 
+void
 io_close_local_fds(slurmd_job_t *job)
 {
 	ListIterator clients;
@@ -1456,7 +1456,7 @@ _io_thr(void *arg)
  *  modified in some way, like labelling lines with the task number.
  */
 int
-io_create_local_client(const char *filename, int file_flags, 
+io_create_local_client(const char *filename, int file_flags,
 		       slurmd_job_t *job, bool labelio,
 		       int stdout_tasks, int stderr_tasks)
 {
@@ -1498,7 +1498,7 @@ io_create_local_client(const char *filename, int file_flags,
 	return SLURM_SUCCESS;
 }
 
-/* 
+/*
  * Create the initial TCP connection back to a waiting client (e.g. srun).
  *
  * Since this is the first client connection and the IO engine has not
@@ -1509,7 +1509,7 @@ io_create_local_client(const char *filename, int file_flags,
  * an IO stream.
  */
 int
-io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job, 
+io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job,
 			  int stdout_tasks, int stderr_tasks)
 {
 	int sock = -1;
@@ -1527,11 +1527,11 @@ io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job,
 			return SLURM_SUCCESS;
 		}
 		debug4("connecting IO back to %s:%d", ip, ntohs(port));
-	} 
+	}
 
 	if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
 		error("connect io: %m");
-		/* XXX retry or silently fail? 
+		/* XXX retry or silently fail?
 		 *     fail for now.
 		 */
 		return SLURM_ERROR;
@@ -1567,7 +1567,7 @@ io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job,
 	return SLURM_SUCCESS;
 }
 
-/* 
+/*
  * Initiate a TCP connection back to a waiting client (e.g. srun).
  *
  * Create a new eio client object and wake up the eio engine so that
@@ -1587,11 +1587,11 @@ io_client_connect(srun_info_t *srun, slurmd_job_t *job)
 		uint16_t     port;
 		slurm_get_ip_str(&srun->ioaddr, &port, ip, sizeof(ip));
 		debug4("connecting IO back to %s:%d", ip, ntohs(port));
-	} 
+	}
 
 	if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
 		error("connect io: %m");
-		/* XXX retry or silently fail? 
+		/* XXX retry or silently fail?
 		 *     fail for now.
 		 */
 		return SLURM_ERROR;
@@ -1644,13 +1644,13 @@ _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
 		msg.stderr_objs = 0;
 	else
 		msg.stderr_objs = list_count(job->stderr_eio_objs);
-	
+
 	if (io_init_msg_write_to_fd(sock, &msg) != SLURM_SUCCESS) {
 		error("Couldn't sent slurm_io_init_msg");
 		return SLURM_ERROR;
 	}
-	
-		
+
+
 	return SLURM_SUCCESS;
 }
 
@@ -1696,7 +1696,7 @@ _send_eof_msg(struct task_read_info *out)
 
 	debug4("Entering _send_eof_msg");
 	out->eof_msg_sent = true;
-	
+
 	if (_outgoing_buf_free(out->job)) {
 		msg = list_dequeue(out->job->free_outgoing);
 	} else {
@@ -1733,12 +1733,12 @@ _send_eof_msg(struct task_read_info *out)
 
 		/* Some clients only take certain I/O streams */
 		if (out->type==SLURM_IO_STDOUT) {
-			if (client->ltaskid_stdout != -1 && 
+			if (client->ltaskid_stdout != -1 &&
 			    client->ltaskid_stdout != out->ltaskid)
 				continue;
 		}
 		if (out->type==SLURM_IO_STDERR) {
-			if (client->ltaskid_stderr != -1 && 
+			if (client->ltaskid_stderr != -1 &&
 			    client->ltaskid_stderr != out->ltaskid)
 				continue;
 		}
@@ -1816,7 +1816,7 @@ _task_build_message(struct task_read_info *out, slurmd_job_t *job, cbuf_t cbuf)
 	/* free the Buf packbuf, but not the memory to which it points */
 	packbuf->head = NULL;
 	free_buf(packbuf);
-	
+
 	debug4("Leaving  _task_build_message");
 	return msg;
 }
@@ -1947,8 +1947,8 @@ user_managed_io_client_connect(int ntasks, srun_info_t *srun,
 
 
 void
-io_find_filename_pattern( slurmd_job_t *job, 
-			  slurmd_filename_pattern_t *outpattern, 
+io_find_filename_pattern( slurmd_job_t *job,
+			  slurmd_filename_pattern_t *outpattern,
 			  slurmd_filename_pattern_t *errpattern,
 			  bool *same_out_err_files )
 {
@@ -2027,12 +2027,12 @@ io_find_filename_pattern( slurmd_job_t *job,
 		for (jj = ii+1; jj < job->ntasks; jj++) {
 
 			if (!job->task[ii]->ofname || !job->task[jj]->ofname ||
-			    strcmp(job->task[ii]->ofname, 
+			    strcmp(job->task[ii]->ofname,
 				   job->task[jj]->ofname) == 0)
 				of_all_unique = false;
 
 			if (!job->task[ii]->efname || !job->task[jj]->efname ||
-			    strcmp(job->task[ii]->efname, 
+			    strcmp(job->task[ii]->efname,
 				   job->task[jj]->efname) == 0)
 				ef_all_unique = false;
 		}
@@ -2047,7 +2047,7 @@ io_find_filename_pattern( slurmd_job_t *job,
 	if (of_all_unique && ef_all_unique) {
 		*same_out_err_files = true;
 		for (ii = 0; ii < job->ntasks; ii++) {
-			if (job->task[ii]->ofname && 
+			if (job->task[ii]->ofname &&
 			    job->task[ii]->efname &&
 			    strcmp(job->task[ii]->ofname,
 				   job->task[ii]->efname) != 0) {
@@ -2080,6 +2080,3 @@ io_get_file_flags(slurmd_job_t *job)
 	}
 	return file_flags;
 }
-
-
-
