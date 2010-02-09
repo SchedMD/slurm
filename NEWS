@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- Do not block new jobs with --immediate option while another job is in the
     process of being requeued (which can take a long time for some node failure
     modes).
+ -- For topology/tree, log invalid hostnames in a single hostlist expression
+    rather than one per line.
 
 * Changes in SLURM 2.1.2
 =============================
