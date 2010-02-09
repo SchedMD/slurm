@@ -52,6 +52,7 @@
 #include "mysql_archive.h"
 #include "mysql_assoc.h"
 #include "mysql_cluster.h"
+#include "mysql_convert.h"
 #include "mysql_job.h"
 #include "mysql_jobacct_process.h"
 #include "mysql_problems.h"
@@ -62,6 +63,9 @@
 #include "mysql_usage.h"
 #include "mysql_user.h"
 #include "mysql_wckey.h"
+
+List mysql_cluster_list = NULL;
+pthread_mutex_t mysql_cluster_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -127,6 +131,30 @@ char *wckey_month_table = "wckey_month_usage_table";
 char *wckey_table = "wckey_table";
 
 static char *default_qos_str = NULL;
+
+static List _get_cluster_names(MYSQL *db_conn)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	List ret_list = NULL;
+	char *query = xstrdup_printf("select name from %s", cluster_table);
+
+	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+		xfree(query);
+		return ret_list;
+	}
+	xfree(query);
+
+	ret_list = list_create(slurm_destroy_char);
+	while((row = mysql_fetch_row(result))) {
+		if(row[0] && row[0][0])
+			list_append(ret_list, xstrdup(row[0]));
+	}
+	mysql_free_result(result);
+
+	return ret_list;
+
+}
 
 static int _set_qos_cnt(MYSQL *db_conn)
 {
@@ -274,7 +302,6 @@ static mysql_db_info_t *_mysql_acct_create_db_info()
 /* Any time a new table is added set it up here */
 static int _mysql_acct_check_tables(MYSQL *db_conn)
 {
-	int rc = SLURM_SUCCESS;
 	storage_field_t acct_coord_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
@@ -363,15 +390,14 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	};
 
 	storage_field_t event_table_fields[] = {
-		{ "node_name", "tinytext default '' not null" },
-		{ "cluster", "tinytext not null" },
-		{ "cpu_count", "int not null" },
-		{ "state", "smallint unsigned default 0 not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "period_end", "int unsigned default 0 not null" },
+		{ "node_name", "tinytext default '' not null" },
+		{ "cluster_nodes", "text not null default ''" },
+		{ "cpu_count", "int not null" },
+		{ "state", "smallint unsigned default 0 not null" },
 		{ "reason", "tinytext not null" },
 		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
-		{ "cluster_nodes", "text not null default ''" },
 		{ NULL, NULL}
 	};
 
@@ -613,6 +639,101 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"END;";
 	char *query = NULL;
 	time_t now = time(NULL);
+	char *cluster_name = NULL;
+	int rc = SLURM_SUCCESS;
+	ListIterator itr = NULL;
+
+	/* Make the cluster table first since we build other tables
+	   built off this one */
+	if(mysql_db_create_table(db_conn, cluster_table,
+				 cluster_table_fields,
+				 ", primary key (name(20)))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	slurm_mutex_lock(&mysql_cluster_list_lock);
+	if(!(mysql_cluster_list = _get_cluster_names(db_conn))) {
+		error("issue getting contents of %s", cluster_table);
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
+		return SLURM_ERROR;
+	}
+
+	/* might as well do all the cluster centric tables inside this
+	 * lock */
+	itr = list_iterator_create(mysql_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		char table_name[200];
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, event_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 event_table_fields,
+					 ", primary key (node_name(20), "
+					 "period_start))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, job_table);
+		if(mysql_db_create_table(db_conn, table_name, job_table_fields,
+					 ", primary key (id), "
+					 "unique index (jobid, "
+					 "associd, submit))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, step_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 step_table_fields,
+					 ", primary key (id, stepid))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, resv_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 resv_table_fields,
+					 ", primary key (id, start, "
+					 "cluster(20)))")
+		   == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		snprintf(table_name, sizeof(table_name), "%s_%s",
+			 cluster_name, suspend_table);
+		if(mysql_db_create_table(db_conn, table_name,
+					 suspend_table_fields,
+					 ")") == SLURM_ERROR) {
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		/* snprintf(table_name, sizeof(table_name), "%s_%s", */
+		/* 	 cluster_name, wckey_table); */
+		/* if(mysql_db_create_table(db_conn, table_name, */
+		/* 			 wckey_table_fields, */
+		/* 			 ", primary key (id), " */
+		/* 			 " unique index (name(20), user(20), " */
+		/* 			 "cluster(20)))") */
+		/*    == SLURM_ERROR) { */
+		/* 	rc = SLURM_ERROR; */
+		/* 	break; */
+		/* } */
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&mysql_cluster_list_lock);
+	if(rc != SLURM_SUCCESS)
+		return rc;
+
+	if(mysql_convert_tables(db_conn) != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	if(mysql_db_create_table(db_conn, acct_coord_table,
 				 acct_coord_table_fields,
@@ -664,23 +785,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	if(mysql_db_create_table(db_conn, cluster_month_table,
 				 cluster_usage_table_fields,
 				 ", primary key (cluster(21), period_start))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, cluster_table,
-				 cluster_table_fields,
-				 ", primary key (name(20)))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, event_table,
-				 event_table_fields,
-				 ", primary key (node_name(20), cluster(20), "
-				 "period_start))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, job_table, job_table_fields,
-				 ", primary key (id), "
-				 "unique index (jobid, associd, submit))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -750,22 +854,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 			return SLURM_ERROR;
 	}
 
-	if(mysql_db_create_table(db_conn, step_table,
-				 step_table_fields,
-				 ", primary key (id, stepid))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, resv_table,
-				 resv_table_fields,
-				 ", primary key (id, start, cluster(20)))")
-	   == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(db_conn, suspend_table,
-				 suspend_table_fields,
-				 ")") == SLURM_ERROR)
-		return SLURM_ERROR;
-
 	if(mysql_db_create_table(db_conn, txn_table, txn_table_fields,
 				 ", primary key (id))") == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -774,7 +862,8 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 				 ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	if(mysql_db_create_table(db_conn, wckey_table, wckey_table_fields,
+	if(mysql_db_create_table(db_conn, wckey_table,
+				 wckey_table_fields,
 				 ", primary key (id), "
 				 " unique index (name(20), user(20), "
 				 "cluster(20)))")
