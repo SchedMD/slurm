@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     default time limit. The step will automatically be cancelled as part of the
     job termination logic when the job's time limit is reached.
  -- sacct - fixed bug when checking jobs against a reservation
+ -- In select/cons_res, fix support for job allocation with --ntasks_per_node
+    option. Previously could allocate too few CPUs on some nodes.  
 
 * Changes in SLURM 2.1.2
 =============================

@@ -286,6 +286,12 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 		num_tasks = MIN(num_tasks, c);
 		avail_cpus = num_tasks * cpus_per_task;
 	}
+	if (job_ptr->details->ntasks_per_node &&
+	    (num_tasks < job_ptr->details->ntasks_per_node)) {
+		/* insufficient resources on this node */
+		num_tasks = 0;
+		goto fini;
+	}
 
 	/* Step 4 - make sure that ntasks_per_socket is enforced when
 	 *          allocating cores
@@ -488,6 +494,12 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 		c = avail_cpus / cpus_per_task;
 		num_tasks = MIN(num_tasks, c);
 		avail_cpus = num_tasks * cpus_per_task;
+	}
+	if (job_ptr->details->ntasks_per_node &&
+	    (num_tasks < job_ptr->details->ntasks_per_node)) {
+		/* insufficient resources on this node */
+		num_tasks = 0;
+		goto fini;
 	}
 
 	/* Step 4 */
