@@ -99,6 +99,8 @@ static void _free_switch_record_table(void);
 static int  _get_switch_inx(const char *name);
 static char *_get_topo_conf(void);
 static void _log_switches(void);
+static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap, 
+			      hostlist_t *invalid_hostlist);
 static int  _parse_switches(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
@@ -218,7 +220,7 @@ static void _validate_switches(void)
 	slurm_conf_switches_t *ptr, **ptr_array;
 	int depth, i, j;
 	struct switch_record *switch_ptr;
-	hostlist_t hl;
+	hostlist_t hl, invalid_hl = NULL;
 	char *child;
 	bitstr_t *multi_homed_bitmap = NULL;	/* nodes on >1 leaf switch */
 	bitstr_t *switches_bitmap = NULL;	/* nodes on any leaf switch */
@@ -244,8 +246,9 @@ static void _validate_switches(void)
 		if (ptr->nodes) {
 			switch_ptr->level = 0;	/* leaf switch */
 			switch_ptr->nodes = xstrdup(ptr->nodes);
-			if (node_name2bitmap(ptr->nodes, true,
-					     &switch_ptr->node_bitmap)) {
+			if (_node_name2bitmap(ptr->nodes, 
+					      &switch_ptr->node_bitmap, 
+					      &invalid_hl)) {
 				fatal("Invalid node name (%s) in switch "
 				      "config (%s)",
 				      ptr->nodes, ptr->switch_name);
@@ -335,6 +338,14 @@ static void _validate_switches(void)
 		bit_free(switches_bitmap);
 	} else
 		fatal("switches contain no nodes");
+
+	if (invalid_hl) {
+		char buf[128];
+		hostlist_ranged_string(invalid_hl, sizeof(buf), buf);
+		error("WARNING: Invalid hostnames in switch configuration: %s",
+		      buf);
+		hostlist_destroy(invalid_hl);
+	}
 
 	/* Report nodes on multiple leaf switches,
 	 * possibly due to bad configuration file */
@@ -502,3 +513,60 @@ static void _destroy_switches(void *ptr)
 	xfree(ptr);
 }
 
+/*
+ * _node_name2bitmap - given a node name regular expression, build a bitmap
+ *	representation, any invalid hostnames are added to a hostlist
+ * IN node_names  - set of node namess
+ * OUT bitmap     - set to bitmap, may not have all bits set on error
+ * IN/OUT invalid_hostlist - hostlist of invalid host names, initialize to NULL
+ * RET 0 if no error, otherwise EINVAL
+ * NOTE: call bit_free(bitmap) and hostlist_destroy(invalid_hostlist)
+ *       to free memory when variables are no longer required
+ */
+static int _node_name2bitmap(char *node_names, bitstr_t **bitmap, 
+			     hostlist_t *invalid_hostlist)
+{
+	char *this_node_name;
+	bitstr_t *my_bitmap;
+	hostlist_t host_list;
+
+	my_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+	if (my_bitmap == NULL)
+		fatal("bit_alloc malloc failure");
+	*bitmap = my_bitmap;
+
+	if (node_names == NULL) {
+		error("_node_name2bitmap: node_names is NULL");
+		return EINVAL;
+	}
+
+	if ( (host_list = hostlist_create(node_names)) == NULL) {
+		/* likely a badly formatted hostlist */
+		error("_node_name2bitmap: hostlist_create(%s) error", 
+		      node_names);
+		return EINVAL;
+	}
+
+	while ( (this_node_name = hostlist_shift(host_list)) ) {
+		struct node_record *node_ptr;
+		node_ptr = find_node_record(this_node_name);
+		if (node_ptr) {
+			bit_set(my_bitmap, 
+				(bitoff_t) (node_ptr - node_record_table_ptr));
+		} else {
+			debug2("_node_name2bitmap: invalid node specified %s",
+			       this_node_name);
+			if (*invalid_hostlist) {
+				hostlist_push_host(*invalid_hostlist,
+						   this_node_name);
+			} else {
+				*invalid_hostlist = 
+					hostlist_create(this_node_name);
+			}
+		}
+		free (this_node_name);
+	}
+	hostlist_destroy(host_list);
+
+	return SLURM_SUCCESS;
+}
