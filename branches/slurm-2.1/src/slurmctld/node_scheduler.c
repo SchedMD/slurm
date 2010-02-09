@@ -1190,8 +1190,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * is for the job when we place it
 	 */
 	job_ptr->start_time = job_ptr->time_last_active = now;
-	if (job_ptr->time_limit == NO_VAL)
-		job_ptr->time_limit = part_ptr->max_time;
+	if (job_ptr->time_limit == NO_VAL) {
+		if (part_ptr->default_time != NO_VAL)
+			job_ptr->time_limit = part_ptr->default_time;
+		else
+			job_ptr->time_limit = part_ptr->max_time;
+	}
 	if (job_ptr->time_limit == INFINITE)
 		job_ptr->end_time = job_ptr->start_time +
 				    (365 * 24 * 60 * 60); /* secs in year */
