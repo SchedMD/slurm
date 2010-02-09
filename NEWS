@@ -13,7 +13,8 @@ documents those changes that are of interest to users and admins.
     its start time plus time limit.
  -- Added build-time option (to configure program) of --with-pam_dir to 
     specify the directory into which PAM modules get installed, although it
-    should pick the proper directory by default.
+    should pick the proper directory by default. "make install" and "rpmbuild"
+    should now put the pam_slurm.so file in the proper directory.
 
 * Changes in SLURM 2.1.2
 =============================
