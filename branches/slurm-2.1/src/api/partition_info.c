@@ -170,7 +170,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		char time_line[32];
 		secs2time_str(part_ptr->default_time * 60, time_line,
 			sizeof(time_line));
-		sprintf(tmp_line, " DefaultTime=%s", time_line);
+		sprintf(tmp_line, "DefaultTime=%s", time_line);
 	}
 	xstrcat(out, tmp_line);
 	if (part_ptr->disable_root_jobs)
