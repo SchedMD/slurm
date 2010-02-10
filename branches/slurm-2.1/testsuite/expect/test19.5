@@ -195,6 +195,8 @@ if {[wait_for_file $file_out_time] != 0} {
 		-re "CG *0:($number)" {
 			send_user "\nFAILURE: job unexpected found in completing state.\n"
 			send_user "  This may be a sign of node failure and job requeue.\n"
+			send_user "  Check for job state transistions through RUNNING,\n"
+			send_user "  COMPLETING, PENDING and RUNNING again.\n"
 			set exit_code 1
 			set run_time $expect_out(1,string)
 			exp_continue
