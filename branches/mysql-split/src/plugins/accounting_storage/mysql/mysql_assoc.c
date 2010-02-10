@@ -40,6 +40,67 @@
 #include "mysql_assoc.h"
 #include "mysql_usage.h"
 
+static char *aassoc_req_inx[] = {
+	"id_assoc",
+	"parent_acct",
+	"lft",
+	"rgt",
+	"deleted"
+};
+
+enum {
+	AASSOC_ID,
+	AASSOC_PACCT,
+	AASSOC_LFT,
+	AASSOC_RGT,
+	AASSOC_DELETED,
+	AASSOC_COUNT
+};
+
+static char *massoc_req_inx[] = {
+	"id_assoc",
+	"acct",
+	"parent_acct",
+	"user",
+	"partition",
+	"lft",
+	"rgt",
+	"qos",
+};
+
+enum {
+	MASSOC_ID,
+	MASSOC_ACCT,
+	MASSOC_PACCT,
+	MASSOC_USER,
+	MASSOC_PART,
+	MASSOC_LFT,
+	MASSOC_RGT,
+	MASSOC_QOS,
+	MASSOC_COUNT
+};
+
+/* if this changes you will need to edit the corresponding
+ * enum below also t1 is step_table */
+static char *rassoc_req_inx[] = {
+	"id_assoc",
+	"acct",
+	"parent_acct",
+	"cluster",
+	"user",
+	"partition"
+};
+
+enum {
+	RASSOC_ID,
+	RASSOC_ACCT,
+	RASSOC_PACCT,
+	RASSOC_CLUSTER,
+	RASSOC_USER,
+	RASSOC_PART,
+	RASSOC_COUNT
+};
+
 /* This should take care of all the lft and rgts when you move an
  * account.  This handles deleted associations also.
  */
@@ -53,10 +114,8 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	int diff = 0;
 	int width = 0;
 	char *query = xstrdup_printf(
-		"SELECT lft from %s "
-		"where cluster=\"%s\" && acct=\"%s\" && user='';",
-		assoc_table,
-		cluster, parent);
+		"SELECT lft from %s_%s where acct=\"%s\" && user='';",
+		cluster, assoc_table, parent);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
@@ -86,47 +145,47 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	/* every thing below needs to be a %d not a %u because we are
 	   looking for -1 */
 	xstrfmtcat(query,
-		   "update %s set mod_time=%d, deleted = deleted + 2, "
+		   "update %s_%s set mod_time=%d, deleted = deleted + 2, "
 		   "lft = lft + %d, rgt = rgt + %d "
 		   "WHERE lft BETWEEN %d AND %d;",
-		   assoc_table, now, diff, diff, *lft, *rgt);
+		   cluster, assoc_table, now, diff, diff, *lft, *rgt);
 
 	xstrfmtcat(query,
-		   "UPDATE %s SET mod_time=%d, rgt = rgt + %d WHERE "
+		   "UPDATE %s_%s SET mod_time=%d, rgt = rgt + %d WHERE "
 		   "rgt > %d && deleted < 2;"
-		   "UPDATE %s SET mod_time=%d, lft = lft + %d WHERE "
+		   "UPDATE %s_%s SET mod_time=%d, lft = lft + %d WHERE "
 		   "lft > %d && deleted < 2;",
-		   assoc_table, now, width,
+		   cluster, assoc_table, now, width,
 		   par_left,
-		   assoc_table, now, width,
+		   cluster, assoc_table, now, width,
 		   par_left);
 
 	xstrfmtcat(query,
-		   "UPDATE %s SET mod_time=%d, rgt = rgt - %d WHERE "
+		   "UPDATE %s_%s SET mod_time=%d, rgt = rgt - %d WHERE "
 		   "(%d < 0 && rgt > %d && deleted < 2) "
 		   "|| (%d > 0 && rgt > %d);"
-		   "UPDATE %s SET mod_time=%d, lft = lft - %d WHERE "
+		   "UPDATE %s_%s SET mod_time=%d, lft = lft - %d WHERE "
 		   "(%d < 0 && lft > %d && deleted < 2) "
 		   "|| (%d > 0 && lft > %d);",
-		   assoc_table, now, width,
+		   cluster, assoc_table, now, width,
 		   diff, *rgt,
 		   diff, *lft,
-		   assoc_table, now, width,
+		   cluster, assoc_table, now, width,
 		   diff, *rgt,
 		   diff, *lft);
 
 	xstrfmtcat(query,
-		   "update %s set mod_time=%d, "
+		   "update %s_%s set mod_time=%d, "
 		   "deleted = deleted - 2 WHERE deleted > 1;",
-		   assoc_table, now);
+		   cluster, assoc_table, now);
 	xstrfmtcat(query,
-		   "update %s set mod_time=%d, "
-		   "parent_acct=\"%s\" where id = %s;",
-		   assoc_table, now, parent, id);
+		   "update %s_%s set mod_time=%d, "
+		   "parent_acct=\"%s\" where id_assoc = %s;",
+		   cluster, assoc_table, now, parent, id);
 	/* get the new lft and rgt if changed */
 	xstrfmtcat(query,
-		   "select lft, rgt from %s where id = %s",
-		   assoc_table, id);
+		   "select lft, rgt from %s_%s where id_assoc = %s",
+		   cluster, assoc_table, id);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
@@ -166,9 +225,10 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	 * accounts parent and then do the move.
 	 */
 	query = xstrdup_printf(
-		"select id, lft, rgt from %s where lft between %d and %d "
+		"select id_assoc, lft, rgt from %s_%s "
+		"where lft between %d and %d "
 		"&& acct=\"%s\" && user='' order by lft;",
-		assoc_table, *lft, *rgt,
+		cluster, assoc_table, *lft, *rgt,
 		new_parent);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -198,8 +258,8 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	 * have changed.
 	 */
 	query = xstrdup_printf(
-		"select lft, rgt from %s where id=%s;",
-		assoc_table, id);
+		"select lft, rgt from %s_%s where id_assoc=%s;",
+		cluster, assoc_table, id);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
 	if(!(result =
@@ -234,10 +294,9 @@ static uint32_t _get_parent_id(
 	xassert(parent);
 	xassert(cluster);
 
-	query = xstrdup_printf("select id from %s where user='' "
-			       "and deleted = 0 and acct=\"%s\" "
-			       "and cluster=\"%s\";",
-			       assoc_table, parent, cluster);
+	query = xstrdup_printf("select id_assoc from %s_%s where user='' "
+			       "and deleted = 0 and acct=\"%s\";",
+			       cluster, assoc_table, parent);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
 
@@ -266,10 +325,11 @@ static int _set_assoc_lft_rgt(
 	char *query = NULL;
 	int rc = SLURM_ERROR;
 
+	xassert(assoc->cluster);
 	xassert(assoc->id);
 
-	query = xstrdup_printf("select lft, rgt from %s where id=%u;",
-			       assoc_table, assoc->id);
+	query = xstrdup_printf("select lft, rgt from %s_%s where id_assoc=%u;",
+			       assoc->cluster, assoc_table, assoc->id);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
 
@@ -411,10 +471,9 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	int i;
 
 	char *assoc_req_inx[] = {
-		"id",
+		"id_assoc",
 		"user",
 		"acct",
-		"cluster",
 		"partition",
 		"max_jobs",
 		"max_submit_jobs",
@@ -432,7 +491,6 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_ID,
 		ASSOC_USER,
 		ASSOC_ACCT,
-		ASSOC_CLUSTER,
 		ASSOC_PART,
 		ASSOC_MJ,
 		ASSOC_MSJ,
@@ -447,6 +505,9 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_COUNT
 	};
 
+	xassert(assoc);
+	xassert(assoc->cluster);
+
 	if(!ret_list || !acct)
 		return SLURM_ERROR;
 
@@ -457,12 +518,13 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	}
 
 	/* We want all the sub accounts and user accounts */
-	query = xstrdup_printf("select distinct %s from %s where deleted=0 "
+	query = xstrdup_printf("select distinct %s from %s_%s where deleted=0 "
 			       "&& lft between %d and %d && "
 			       "((user = '' && parent_acct = \"%s\") || "
 			       "(user != '' && acct = \"%s\")) "
 			       "order by lft;",
-			       object, assoc_table, lft, rgt, acct, acct);
+			       object, assoc->cluster, assoc_table,
+			       lft, rgt, acct, acct);
 	xfree(object);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -480,6 +542,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
 		init_acct_association_rec(mod_assoc);
 		mod_assoc->id = atoi(row[ASSOC_ID]);
+		mod_assoc->cluster = xstrdup(assoc->cluster);
 
 		if(!row[ASSOC_MJ] && assoc->max_jobs != NO_VAL) {
 			mod_assoc->max_jobs = assoc->max_jobs;
@@ -585,12 +648,12 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 				// see if there is a partition name
 				object = xstrdup_printf(
 					"C = %-10s A = %-20s U = %-9s P = %s",
-					row[ASSOC_CLUSTER], row[ASSOC_ACCT],
+					assoc->cluster, row[ASSOC_ACCT],
 					row[ASSOC_USER], row[ASSOC_PART]);
 			} else {
 				object = xstrdup_printf(
 					"C = %-10s A = %-20s U = %-9s",
-					row[ASSOC_CLUSTER],
+					assoc->cluster,
 					row[ASSOC_ACCT],
 					row[ASSOC_USER]);
 			}
@@ -601,8 +664,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 				destroy_acct_association_rec(mod_assoc);
 			else
 				if(addto_update_list(mysql_conn->update_list,
-						      ACCT_MODIFY_ASSOC,
-						      mod_assoc)
+						     ACCT_MODIFY_ASSOC,
+						     mod_assoc)
 				   != SLURM_SUCCESS)
 					error("couldn't add to "
 					      "the update list");
@@ -616,17 +679,18 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 }
 
 /* when doing a select on this all the select should have a prefix of
- * t1. */
-static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
-					  char **extra)
+ * t1. Returns "where" clause which needs to be xfreed. */
+static char *_setup_association_cond_qos(acct_association_cond_t *assoc_cond,
+					 char *cluster_name)
 {
 	int set = 0;
 	ListIterator itr = NULL;
 	char *object = NULL;
 	char *prefix = "t1";
+	char *extra = NULL;
 
 	if(!assoc_cond)
-		return 0;
+		return NULL;
 
 	/* we need to check this first so we can update the
 	   with_sub_accts if needed since this the qos_list is a
@@ -638,15 +702,15 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		   really most likely a parent thing */
 		assoc_cond->with_sub_accts = 1;
 		prefix = "t2";
-		xstrfmtcat(*extra, ", %s as t2 where "
+		xstrfmtcat(extra, ", %s_%s as t2 where "
 			   "(t1.lft between t2.lft and t2.rgt) && (",
-			   assoc_table);
+			   cluster_name, assoc_table);
 		set = 0;
 		itr = list_iterator_create(assoc_cond->qos_list);
 		while((object = list_next(itr))) {
 			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra,
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra,
 				   "(%s.qos like '%%,%s' "
 				   "|| %s.qos like '%%,%s,%%' "
 				   "|| %s.delta_qos like '%%,+%s' "
@@ -656,14 +720,27 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(*extra, ") &&");
+		xstrcat(extra, ") &&");
 	} else if(assoc_cond->with_sub_accts) {
 		prefix = "t2";
-		xstrfmtcat(*extra, ", %s as t2 where "
+		xstrfmtcat(extra, ", %s as t2 where "
 			   "(t1.lft between t2.lft and t2.rgt) &&",
 			   assoc_table);
 	} else
-		xstrcat(*extra, " where");
+		xstrcat(extra, " where");
+	return extra;
+}
+
+/* When doing a select on this all the select should have a prefix of t1. */
+static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
+					  const char *prefix, char **extra)
+{
+	int set = 0;
+	ListIterator itr = NULL;
+	char *object = NULL;
+
+	if(!assoc_cond)
+		return 0;
 
 	if(assoc_cond->with_deleted)
 		xstrfmtcat(*extra, " (%s.deleted=0 || %s.deleted=1)",
@@ -679,20 +756,6 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "%s.acct=\"%s\"", prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.cluster=\"%s\"", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -974,6 +1037,328 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 	return set;
 }
 
+static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
+					 MYSQL_RES *result,
+					 acct_association_rec_t *assoc,
+					 acct_user_rec_t *user,
+					 char *cluster_name,
+					 bool is_admin, List ret_list)
+{
+	ListIterator itr = NULL;
+	MYSQL_ROW row;
+	int added = 0;
+	int rc = SLURM_SUCCESS;
+	int set_qos_vals = 0;
+	int moved_parent = 0;
+	char *vals = NULL, *object = NULL, *name_char = NULL;
+	time_t now = time(NULL);
+
+	xassert(result);
+
+	if(!mysql_num_rows(result))
+		return SLURM_SUCCESS;
+
+	while((row = mysql_fetch_row(result))) {
+		acct_association_rec_t *mod_assoc = NULL;
+		int account_type=0;
+		/* If parent changes these also could change
+		   so we need to keep track of the latest
+		   ones.
+		*/
+		uint32_t lft = atoi(row[MASSOC_LFT]);
+		uint32_t rgt = atoi(row[MASSOC_RGT]);
+
+		if(!is_admin) {
+			acct_coord_rec_t *coord = NULL;
+			char *account = row[MASSOC_ACCT];
+
+			/* Here we want to see if the person
+			 * is a coord of the parent account
+			 * since we don't want him to be able
+			 * to alter the limits of the account
+			 * he is directly coord of.  They
+			 * should be able to alter the
+			 * sub-accounts though. If no parent account
+			 * that means we are talking about a user
+			 * association so account is really the parent
+			 * of the user a coord can change that all day long.
+			 */
+			if(row[MASSOC_PACCT][0])
+				account = row[MASSOC_PACCT];
+
+			if(!user->coord_accts) { // This should never
+				// happen
+				error("We are here with no coord accts.");
+				rc = ESLURM_ACCESS_DENIED;
+				goto end_it;
+			}
+			itr = list_iterator_create(user->coord_accts);
+			while((coord = list_next(itr))) {
+				if(!strcasecmp(coord->name, account))
+					break;
+			}
+			list_iterator_destroy(itr);
+
+			if(!coord) {
+				if(row[MASSOC_PACCT][0])
+					error("User %s(%d) can not modify "
+					      "account (%s) because they "
+					      "are not coordinators of "
+					      "parent account \"%s\".",
+					      user->name, user->uid,
+					      row[MASSOC_ACCT],
+					      row[MASSOC_PACCT]);
+				else
+					error("User %s(%d) does not have the "
+					      "ability to modify the account "
+					      "(%s).",
+					      user->name, user->uid,
+					      row[MASSOC_ACCT]);
+
+				rc = ESLURM_ACCESS_DENIED;
+				goto end_it;
+			}
+		}
+
+		if(row[MASSOC_PART][0]) {
+			// see if there is a partition name
+			object = xstrdup_printf(
+				"C = %-10s A = %-20s U = %-9s P = %s",
+				row[MASSOC_COUNT], row[MASSOC_ACCT],
+				row[MASSOC_USER], row[MASSOC_PART]);
+		} else if(row[MASSOC_USER][0]){
+			object = xstrdup_printf(
+				"C = %-10s A = %-20s U = %-9s",
+				row[MASSOC_COUNT], row[MASSOC_ACCT],
+				row[MASSOC_USER]);
+		} else {
+			if(assoc->parent_acct) {
+				if(!strcasecmp(row[MASSOC_ACCT],
+					       assoc->parent_acct)) {
+					error("You can't make an account be a "
+					      "child of it's self");
+					xfree(object);
+					continue;
+				}
+				rc = _move_parent(mysql_conn, user->uid,
+						  &lft, &rgt,
+						  row[MASSOC_COUNT],
+						  row[MASSOC_ID],
+						  row[MASSOC_PACCT],
+						  assoc->parent_acct,
+						  now);
+				if((rc == ESLURM_INVALID_PARENT_ACCOUNT)
+				   || (rc == ESLURM_SAME_PARENT_ACCOUNT)) {
+					continue;
+				} else if(rc != SLURM_SUCCESS)
+					break;
+
+				moved_parent = 1;
+			}
+			if(row[MASSOC_PACCT][0]) {
+				object = xstrdup_printf(
+					"C = %-10s A = %s of %s",
+					row[MASSOC_COUNT], row[MASSOC_ACCT],
+					row[MASSOC_PACCT]);
+			} else {
+				object = xstrdup_printf(
+					"C = %-10s A = %s",
+					row[MASSOC_COUNT], row[MASSOC_ACCT]);
+			}
+			account_type = 1;
+		}
+		list_append(ret_list, object);
+		added++;
+
+		if(name_char)
+			xstrfmtcat(name_char, " || id_assoc=%s",
+				   row[MASSOC_ID]);
+		else
+			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
+
+		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(mod_assoc);
+		mod_assoc->id = atoi(row[MASSOC_ID]);
+		mod_assoc->cluster = xstrdup(cluster_name);
+
+		mod_assoc->shares_raw = assoc->shares_raw;
+
+		mod_assoc->grp_cpus = assoc->grp_cpus;
+		mod_assoc->grp_cpu_mins = assoc->grp_cpu_mins;
+		mod_assoc->grp_jobs = assoc->grp_jobs;
+		mod_assoc->grp_nodes = assoc->grp_nodes;
+		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
+		mod_assoc->grp_wall = assoc->grp_wall;
+
+		mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
+		mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
+		mod_assoc->max_jobs = assoc->max_jobs;
+		mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
+		mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
+		mod_assoc->max_wall_pj = assoc->max_wall_pj;
+
+		/* no need to get the parent id since if we moved
+		 * parent id's we will get it when we send the total list */
+
+		if(!row[MASSOC_USER][0])
+			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
+		if(assoc->qos_list && list_count(assoc->qos_list)) {
+			ListIterator new_qos_itr =
+				list_iterator_create(assoc->qos_list);
+			char *new_qos = NULL, *tmp_qos = NULL;
+
+			mod_assoc->qos_list = list_create(slurm_destroy_char);
+
+			while((new_qos = list_next(new_qos_itr))) {
+				if(new_qos[0] == '-' || new_qos[0] == '+') {
+					list_append(mod_assoc->qos_list,
+						    xstrdup(new_qos));
+				} else if(new_qos[0]) {
+					list_append(mod_assoc->qos_list,
+						    xstrdup_printf("=%s",
+								   new_qos));
+				}
+
+				if(set_qos_vals)
+					continue;
+				/* Now we can set up the values and
+				   make sure we aren't over writing
+				   things that are really from the
+				   parent
+				*/
+				if(new_qos[0] == '-') {
+					xstrfmtcat(vals,
+						   ", qos=if(qos='', '', "
+						   "replace(qos, ',%s', ''))"
+						   ", delta_qos=if(qos='', "
+						   "concat(replace(replace("
+						   "delta_qos, ',+%s', ''), "
+						   "',-%s', ''), ',%s'), '')",
+						   new_qos+1, new_qos+1,
+						   new_qos+1, new_qos);
+				} else if(new_qos[0] == '+') {
+					xstrfmtcat(vals,
+						   ", qos=if(qos='', '', "
+						   "concat_ws(',', "
+						   "replace(qos, ',%s', ''), "
+						   "\"%s\")), delta_qos=if("
+						   "qos='', concat("
+						   "replace(replace("
+						   "delta_qos, ',+%s', ''), "
+						   "',-%s', ''), ',%s'), '')",
+						   new_qos+1, new_qos+1,
+						   new_qos+1, new_qos+1,
+						   new_qos);
+				} else if(new_qos[0])
+					xstrfmtcat(tmp_qos, ",%s", new_qos);
+				else
+					xstrcat(tmp_qos, "");
+
+			}
+			list_iterator_destroy(new_qos_itr);
+
+			if(!set_qos_vals && tmp_qos)
+				xstrfmtcat(vals, ", qos='%s', delta_qos=''",
+					   tmp_qos);
+			xfree(tmp_qos);
+
+			set_qos_vals=1;
+		}
+
+		if(addto_update_list(mysql_conn->update_list,
+				     ACCT_MODIFY_ASSOC,
+				     mod_assoc) != SLURM_SUCCESS)
+			error("couldn't add to the update list");
+		if(account_type) {
+			_modify_unset_users(mysql_conn,
+					    mod_assoc,
+					    row[MASSOC_ACCT],
+					    lft, rgt,
+					    ret_list,
+					    moved_parent);
+		}
+	}
+
+	xstrcat(name_char, ")");
+
+	if(assoc->parent_acct) {
+		if(((rc == ESLURM_INVALID_PARENT_ACCOUNT)
+		    || (rc == ESLURM_SAME_PARENT_ACCOUNT))
+		   && added)
+			rc = SLURM_SUCCESS;
+	}
+
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+
+	if(vals) {
+		char *user_name = uid_to_string((uid_t) user->uid);
+		rc = modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
+				   user_name, assoc_table, name_char, vals,
+				   cluster_name);
+		xfree(user_name);
+		if (rc == SLURM_ERROR) {
+			if(mysql_conn->rollback) {
+				mysql_db_rollback(mysql_conn->db_conn);
+			}
+			list_flush(mysql_conn->update_list);
+			error("Couldn't modify associations");
+			list_destroy(ret_list);
+			ret_list = NULL;
+			goto end_it;
+		}
+	}
+
+	if(moved_parent) {
+		List local_assoc_list = NULL;
+		ListIterator local_itr = NULL;
+		acct_association_rec_t *local_assoc = NULL;
+		acct_association_cond_t local_assoc_cond;
+		/* now we need to send the update of the new parents and
+		 * limits, so just to be safe, send the whole
+		 * tree because we could have some limits that
+		 * were affected but not noticed.
+		 */
+		/* we can probably just look at the mod time now but
+		 * we will have to wait for the next revision number
+		 * since you can't query on mod time here and I don't
+		 * want to rewrite code to make it happen
+		 */
+
+		memset(&local_assoc_cond, 0, sizeof(acct_association_cond_t));
+		local_assoc_cond.cluster_list = list_create(NULL);
+		list_append(local_assoc_cond.cluster_list, cluster_name);
+		local_assoc_list = mysql_get_assocs(
+			mysql_conn, user->uid, &local_assoc_cond);
+		list_destroy(local_assoc_cond.cluster_list);
+		if(!local_assoc_list)
+			   goto end_it;
+		/* NOTE: you can not use list_pop, or list_push
+		   anywhere either, since mysql is
+		   exporting something of the same type as a macro,
+		   which messes everything up (my_list.h is
+		   the bad boy).
+		   So we are just going to delete each item as it
+		   comes out since we are moving it to the update_list.
+		*/
+		local_itr = list_iterator_create(local_assoc_list);
+		while((local_assoc = list_next(local_itr))) {
+			if(addto_update_list(mysql_conn->update_list,
+					     ACCT_MODIFY_ASSOC,
+					     local_assoc) == SLURM_SUCCESS)
+				list_remove(local_itr);
+		}
+		list_iterator_destroy(local_itr);
+		list_destroy(local_assoc_list);
+	}
+
+end_it:
+	xfree(name_char);
+	xfree(vals);
+
+	return rc;
+}
+
 extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			    List association_list)
 {
@@ -995,22 +1380,6 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	char *old_parent = NULL, *old_cluster = NULL;
 	char *last_parent = NULL, *last_cluster = NULL;
-	char *massoc_req_inx[] = {
-		"id",
-		"parent_acct",
-		"lft",
-		"rgt",
-		"deleted"
-	};
-
-	enum {
-		MASSOC_ID,
-		MASSOC_PACCT,
-		MASSOC_LFT,
-		MASSOC_RGT,
-		MASSOC_DELETED,
-		MASSOC_COUNT
-	};
 
 	if(!association_list) {
 		error("No association list given");
@@ -1075,10 +1444,10 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		setup_association_limits(object, &cols, &vals, &extra,
 					  QOS_LEVEL_NONE, 1);
 
-		for(i=0; i<MASSOC_COUNT; i++) {
+		for(i=0; i<AASSOC_COUNT; i++) {
 			if(i)
 				xstrcat(tmp_char, ", ");
-			xstrcat(tmp_char, massoc_req_inx[i]);
+			xstrcat(tmp_char, aassoc_req_inx[i]);
 		}
 
 		xstrfmtcat(query,
@@ -1218,7 +1587,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 /* 				   "values (%s, @myLeft+1, @myLeft+2);", */
 /* 				   assoc_table, cols, */
 /* 				   vals); */
-		} else if(!atoi(row[MASSOC_DELETED])) {
+		} else if(!atoi(row[AASSOC_DELETED])) {
 			/* We don't need to do anything here */
 			debug("This account was added already");
 			xfree(cols);
@@ -1228,25 +1597,25 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(extra);
 			continue;
 		} else {
-			uint32_t lft = atoi(row[MASSOC_LFT]);
-			uint32_t rgt = atoi(row[MASSOC_RGT]);
+			uint32_t lft = atoi(row[AASSOC_LFT]);
+			uint32_t rgt = atoi(row[AASSOC_RGT]);
 
 			/* If it was once deleted we have kept the lft
 			 * and rgt's consant while it was deleted and
 			 * so we can just unset the deleted flag,
 			 * check for the parent and move if needed.
 			 */
-			assoc_id = atoi(row[MASSOC_ID]);
+			assoc_id = atoi(row[AASSOC_ID]);
 			if(object->parent_acct
 			   && strcasecmp(object->parent_acct,
-					 row[MASSOC_PACCT])) {
+					 row[AASSOC_PACCT])) {
 
 				/* We need to move the parent! */
 				if(_move_parent(mysql_conn, uid,
 						&lft, &rgt,
 						object->cluster,
-						row[MASSOC_ID],
-						row[MASSOC_PACCT],
+						row[AASSOC_ID],
+						row[AASSOC_PACCT],
 						object->parent_acct, now)
 				   == SLURM_ERROR)
 					continue;
@@ -1438,41 +1807,14 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
-	time_t now = time(NULL);
-	char *user_name = NULL;
+	char *vals = NULL, *extra = NULL, *query = NULL;
 	int set = 0, i = 0, is_admin=0;
 	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
 	acct_user_rec_t user;
 	char *tmp_char1=NULL, *tmp_char2=NULL;
-	int set_qos_vals = 0;
-	int moved_parent = 0;
-
-	char *massoc_req_inx[] = {
-		"id",
-		"acct",
-		"parent_acct",
-		"cluster",
-		"user",
-		"partition",
-		"lft",
-		"rgt",
-		"qos",
-	};
-
-	enum {
-		MASSOC_ID,
-		MASSOC_ACCT,
-		MASSOC_PACCT,
-		MASSOC_CLUSTER,
-		MASSOC_USER,
-		MASSOC_PART,
-		MASSOC_LFT,
-		MASSOC_RGT,
-		MASSOC_QOS,
-		MASSOC_COUNT
-	};
+	char *cluster_name = NULL;
+	char *prefix = "t1";
+	List use_cluster_list = mysql_cluster_list;
 
 	if(!assoc_cond || !assoc) {
 		error("we need something to change");
@@ -1495,7 +1837,11 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 
-	set = _setup_association_cond_limits(assoc_cond, &extra);
+	if((assoc_cond->qos_list && list_count(assoc_cond->qos_list))
+	   || assoc_cond->with_sub_accts)
+		prefix = "t2";
+
+	set = _setup_association_cond_limits(assoc_cond, prefix, &extra);
 
 	/* This needs to be here to make sure we only modify the
 	   correct set of associations The first clause was already
@@ -1526,349 +1872,62 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(object, "t1.%s", massoc_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select distinct %s from %s as t1%s "
-			       "order by lft FOR UPDATE;",
-			       object, assoc_table, extra);
+
+	ret_list = list_create(slurm_destroy_char);
+
+	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
+		use_cluster_list = assoc_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+
+	itr = list_iterator_create(use_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		char *qos_extra = _setup_association_cond_qos(
+			assoc_cond, cluster_name);
+
+		xstrfmtcat(query, "select distinct %s,'%s' "
+			   "from %s_%s as t1%s%s "
+			   "order by lft FOR UPDATE;",
+			   object, cluster_name,
+			   assoc_table, qos_extra, extra);
+		xfree(qos_extra);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			list_destroy(ret_list);
+			ret_list = NULL;
+			break;
+		}
+		xfree(query);
+		rc = _process_modify_assoc_results(mysql_conn, result, assoc,
+						   &user, cluster_name,
+						   is_admin, ret_list);
+		mysql_free_result(result);
+
+		if(rc != SLURM_SUCCESS) {
+			list_destroy(ret_list);
+			ret_list = NULL;
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
 	xfree(object);
 	xfree(extra);
 
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
-		xfree(query);
+	if(!ret_list)
 		return NULL;
-	}
-	xfree(query);
-
-	rc = SLURM_SUCCESS;
-	set = 0;
-	extra = NULL;
-	ret_list = list_create(slurm_destroy_char);
-	while((row = mysql_fetch_row(result))) {
-		acct_association_rec_t *mod_assoc = NULL;
-		int account_type=0;
-		/* If parent changes these also could change
-		   so we need to keep track of the latest
-		   ones.
-		*/
-		uint32_t lft = atoi(row[MASSOC_LFT]);
-		uint32_t rgt = atoi(row[MASSOC_RGT]);
-
-		if(!is_admin) {
-			acct_coord_rec_t *coord = NULL;
-			char *account = row[MASSOC_ACCT];
-
-			/* Here we want to see if the person
-			 * is a coord of the parent account
-			 * since we don't want him to be able
-			 * to alter the limits of the account
-			 * he is directly coord of.  They
-			 * should be able to alter the
-			 * sub-accounts though. If no parent account
-			 * that means we are talking about a user
-			 * association so account is really the parent
-			 * of the user a coord can change that all day long.
-			 */
-			if(row[MASSOC_PACCT][0])
-				account = row[MASSOC_PACCT];
-
-			if(!user.coord_accts) { // This should never
-						// happen
-				error("We are here with no coord accts.");
-				if(mysql_conn->rollback) {
-					mysql_db_rollback(
-						mysql_conn->db_conn);
-				}
-				errno = ESLURM_ACCESS_DENIED;
-				mysql_free_result(result);
-				xfree(vals);
-				list_destroy(ret_list);
-				return NULL;
-			}
-			itr = list_iterator_create(user.coord_accts);
-			while((coord = list_next(itr))) {
-				if(!strcasecmp(coord->name, account))
-					break;
-			}
-			list_iterator_destroy(itr);
-
-			if(!coord) {
-				if(row[MASSOC_PACCT][0])
-					error("User %s(%d) can not modify "
-					      "account (%s) because they "
-					      "are not coordinators of "
-					      "parent account \"%s\".",
-					      user.name, user.uid,
-					      row[MASSOC_ACCT],
-					      row[MASSOC_PACCT]);
-				else
-					error("User %s(%d) does not have the "
-					      "ability to modify the account "
-					      "(%s).",
-					      user.name, user.uid,
-					      row[MASSOC_ACCT]);
-
-				if(mysql_conn->rollback) {
-					mysql_db_rollback(
-						mysql_conn->db_conn);
-				}
-				errno = ESLURM_ACCESS_DENIED;
-				mysql_free_result(result);
-				xfree(vals);
-				list_destroy(ret_list);
-				return NULL;
-			}
-		}
-
-		if(row[MASSOC_PART][0]) {
-			// see if there is a partition name
-			object = xstrdup_printf(
-				"C = %-10s A = %-20s U = %-9s P = %s",
-				row[MASSOC_CLUSTER], row[MASSOC_ACCT],
-				row[MASSOC_USER], row[MASSOC_PART]);
-		} else if(row[MASSOC_USER][0]){
-			object = xstrdup_printf(
-				"C = %-10s A = %-20s U = %-9s",
-				row[MASSOC_CLUSTER], row[MASSOC_ACCT],
-				row[MASSOC_USER]);
-		} else {
-			if(assoc->parent_acct) {
-				if(!strcasecmp(row[MASSOC_ACCT],
-					       assoc->parent_acct)) {
-					error("You can't make an account be a "
-					      "child of it's self");
-					xfree(object);
-					continue;
-				}
-				rc = _move_parent(mysql_conn, uid,
-						  &lft, &rgt,
-						  row[MASSOC_CLUSTER],
-						  row[MASSOC_ID],
-						  row[MASSOC_PACCT],
-						  assoc->parent_acct,
-						  now);
-				if((rc == ESLURM_INVALID_PARENT_ACCOUNT)
-				   || (rc == ESLURM_SAME_PARENT_ACCOUNT)) {
-					continue;
-				} else if(rc != SLURM_SUCCESS)
-					break;
-
-				moved_parent = 1;
-			}
-			if(row[MASSOC_PACCT][0]) {
-				object = xstrdup_printf(
-					"C = %-10s A = %s of %s",
-					row[MASSOC_CLUSTER], row[MASSOC_ACCT],
-					row[MASSOC_PACCT]);
-			} else {
-				object = xstrdup_printf(
-					"C = %-10s A = %s",
-					row[MASSOC_CLUSTER], row[MASSOC_ACCT]);
-			}
-			account_type = 1;
-		}
-		list_append(ret_list, object);
-
-		if(!set) {
-			xstrfmtcat(name_char, "(id=%s", row[MASSOC_ID]);
-			set = 1;
-		} else {
-			xstrfmtcat(name_char, " || id=%s", row[MASSOC_ID]);
-		}
-
-		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
-		init_acct_association_rec(mod_assoc);
-		mod_assoc->id = atoi(row[MASSOC_ID]);
-
-		mod_assoc->shares_raw = assoc->shares_raw;
-
-		mod_assoc->grp_cpus = assoc->grp_cpus;
-		mod_assoc->grp_cpu_mins = assoc->grp_cpu_mins;
-		mod_assoc->grp_jobs = assoc->grp_jobs;
-		mod_assoc->grp_nodes = assoc->grp_nodes;
-		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
-		mod_assoc->grp_wall = assoc->grp_wall;
-
-		mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
-		mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
-		mod_assoc->max_jobs = assoc->max_jobs;
-		mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
-		mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
-		mod_assoc->max_wall_pj = assoc->max_wall_pj;
-
-		/* no need to get the parent id since if we moved
-		 * parent id's we will get it when we send the total list */
-
-		if(!row[MASSOC_USER][0])
-			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
-		if(assoc->qos_list && list_count(assoc->qos_list)) {
-			ListIterator new_qos_itr =
-				list_iterator_create(assoc->qos_list);
-			char *new_qos = NULL, *tmp_qos = NULL;
-
-			mod_assoc->qos_list = list_create(slurm_destroy_char);
-
-			while((new_qos = list_next(new_qos_itr))) {
-				if(new_qos[0] == '-' || new_qos[0] == '+') {
-					list_append(mod_assoc->qos_list,
-						    xstrdup(new_qos));
-				} else if(new_qos[0]) {
-					list_append(mod_assoc->qos_list,
-						    xstrdup_printf("=%s",
-								   new_qos));
-				}
-
-				if(set_qos_vals)
-					continue;
-				/* Now we can set up the values and
-				   make sure we aren't over writing
-				   things that are really from the
-				   parent
-				*/
-				if(new_qos[0] == '-') {
-					xstrfmtcat(vals,
-						   ", qos=if(qos='', '', "
-						   "replace(qos, ',%s', ''))"
-						   ", delta_qos=if(qos='', "
-						   "concat(replace(replace("
-						   "delta_qos, ',+%s', ''), "
-						   "',-%s', ''), ',%s'), '')",
-						   new_qos+1, new_qos+1,
-						   new_qos+1, new_qos);
-				} else if(new_qos[0] == '+') {
-					xstrfmtcat(vals,
-						   ", qos=if(qos='', '', "
-						   "concat_ws(',', "
-						   "replace(qos, ',%s', ''), "
-						   "\"%s\")), delta_qos=if("
-						   "qos='', concat("
-						   "replace(replace("
-						   "delta_qos, ',+%s', ''), "
-						   "',-%s', ''), ',%s'), '')",
-						   new_qos+1, new_qos+1,
-						   new_qos+1, new_qos+1,
-						   new_qos);
-				} else if(new_qos[0])
-					xstrfmtcat(tmp_qos, ",%s", new_qos);
-				else
-					xstrcat(tmp_qos, "");
-
-			}
-			list_iterator_destroy(new_qos_itr);
-
-			if(!set_qos_vals && tmp_qos)
-				xstrfmtcat(vals, ", qos='%s', delta_qos=''",
-					   tmp_qos);
-			xfree(tmp_qos);
-
-			set_qos_vals=1;
-		}
-
-		if(addto_update_list(mysql_conn->update_list,
-				      ACCT_MODIFY_ASSOC,
-				      mod_assoc) != SLURM_SUCCESS)
-			error("couldn't add to the update list");
-		if(account_type) {
-			_modify_unset_users(mysql_conn,
-					    mod_assoc,
-					    row[MASSOC_ACCT],
-					    lft, rgt,
-					    ret_list,
-					    moved_parent);
-		}
-	}
-	mysql_free_result(result);
-
-	if(assoc->parent_acct) {
-		if(((rc == ESLURM_INVALID_PARENT_ACCOUNT)
-		    || (rc == ESLURM_SAME_PARENT_ACCOUNT))
-		   && list_count(ret_list))
-			rc = SLURM_SUCCESS;
-
-		if(rc != SLURM_SUCCESS) {
-			if(mysql_conn->rollback) {
-				mysql_db_rollback(mysql_conn->db_conn);
-			}
-			list_flush(mysql_conn->update_list);
-			list_destroy(ret_list);
-			xfree(vals);
-			errno = rc;
-			return NULL;
-		}
-	}
-
-
-	if(!list_count(ret_list)) {
+	else if(!list_count(ret_list)) {
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->db_conn);
 		}
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything");
-		xfree(vals);
 		return ret_list;
 	}
-	xstrcat(name_char, ")");
-
-	if(vals) {
-		user_name = uid_to_string((uid_t) uid);
-		rc = modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
-				   user_name, assoc_table, name_char, vals);
-		xfree(user_name);
-		if (rc == SLURM_ERROR) {
-			if(mysql_conn->rollback) {
-				mysql_db_rollback(mysql_conn->db_conn);
-			}
-			list_flush(mysql_conn->update_list);
-			error("Couldn't modify associations");
-			list_destroy(ret_list);
-			ret_list = NULL;
-			goto end_it;
-		}
-	}
-	if(moved_parent) {
-		List local_assoc_list = NULL;
-		ListIterator local_itr = NULL;
-		acct_association_rec_t *local_assoc = NULL;
-		//acct_association_cond_t local_assoc_cond;
-		/* now we need to send the update of the new parents and
-		 * limits, so just to be safe, send the whole
-		 * tree because we could have some limits that
-		 * were affected but not noticed.
-		 */
-		/* we can probably just look at the mod time now but
-		 * we will have to wait for the next revision number
-		 * since you can't query on mod time here and I don't
-		 * want to rewrite code to make it happen
-		 */
-
-		//memset(&local_assoc_cond, 0, sizeof(acct_association_cond_t));
-
-		if(!(local_assoc_list =
-		     mysql_get_assocs(mysql_conn, uid, NULL)))
-			return ret_list;
-		/* NOTE: you can not use list_pop, or list_push
-		   anywhere either, since mysql is
-		   exporting something of the same type as a macro,
-		   which messes everything up (my_list.h is
-		   the bad boy).
-		   So we are just going to delete each item as it
-		   comes out since we are moving it to the update_list.
-		*/
-		local_itr = list_iterator_create(local_assoc_list);
-		while((local_assoc = list_next(local_itr))) {
-			if(addto_update_list(mysql_conn->update_list,
-					      ACCT_MODIFY_ASSOC,
-					      local_assoc) == SLURM_SUCCESS)
-				list_remove(local_itr);
-		}
-		list_iterator_destroy(local_itr);
-		list_destroy(local_assoc_list);
-	}
-
-end_it:
-	xfree(name_char);
-	xfree(vals);
 
 	return ret_list;
 }
@@ -1888,27 +1947,7 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	acct_user_rec_t user;
-
-	/* if this changes you will need to edit the corresponding
-	 * enum below also t1 is step_table */
-	char *rassoc_req_inx[] = {
-		"id",
-		"acct",
-		"parent_acct",
-		"cluster",
-		"user",
-		"partition"
-	};
-
-	enum {
-		RASSOC_ID,
-		RASSOC_ACCT,
-		RASSOC_PACCT,
-		RASSOC_CLUSTER,
-		RASSOC_USER,
-		RASSOC_PART,
-		RASSOC_COUNT
-	};
+	char *prefix = "t1";
 
 	if(!assoc_cond) {
 		error("we need something to change");
@@ -1931,7 +1970,11 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 
-	set = _setup_association_cond_limits(assoc_cond, &extra);
+	if((assoc_cond->qos_list && list_count(assoc_cond->qos_list))
+	   || assoc_cond->with_sub_accts)
+		prefix = "t2";
+
+	set = _setup_association_cond_limits(assoc_cond, prefix, &extra);
 
 	for(i=0; i<RASSOC_COUNT; i++) {
 		if(i)
@@ -2128,6 +2171,7 @@ extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	uint32_t parent_id = 0;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
+	char *prefix = "t1";
 
 	/* needed if we don't have an assoc_cond */
 	uint16_t without_parent_info = 0;
@@ -2218,7 +2262,11 @@ extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 			is_user_any_coord(mysql_conn, &user);
 	}
 
-	set = _setup_association_cond_limits(assoc_cond, &extra);
+	if((assoc_cond->qos_list && list_count(assoc_cond->qos_list))
+	   || assoc_cond->with_sub_accts)
+		prefix = "t2";
+
+	set = _setup_association_cond_limits(assoc_cond, prefix, &extra);
 
 	with_raw_qos = assoc_cond->with_raw_qos;
 	with_usage = assoc_cond->with_usage;

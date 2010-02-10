@@ -627,8 +627,8 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"@delta_qos := CONCAT(delta_qos, @delta_qos), '); "
 		"end if; "
 		"set @s = concat(@s, ' @my_acct := parent_acct from ', "
-		"my_table, ' where acct = \"', @my_acct, '\" && "
-		"cluster = \"', cluster, '\" && user=\"\"'); "
+		"cluster, '_', my_table, ' where "
+		"acct = \"', @my_acct, '\" && user=\"\"'); "
 		"prepare query from @s; "
 		"execute query; "
 		"deallocate prepare query; "
@@ -1208,21 +1208,34 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 			 char *user_name,
 			 char *table,
 			 char *cond_char,
-			 char *vals)
+			 char *vals,
+			 char *cluster_name)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 	char *tmp_cond_char = fix_double_quotes(cond_char);
 	char *tmp_vals = NULL;
+	bool cluster_centric = true;
+
+	/* figure out which tables we need to append the cluster name to */
+	if((table == cluster_table) || (table == acct_coord_table)
+	   || (table == acct_table) || (table == qos_table)
+	   || (table == txn_table) || (table == user_table))
+		cluster_centric = false;
 
 	if(vals[1])
 		tmp_vals = fix_double_quotes(vals+2);
-
-	xstrfmtcat(query,
-		   "update %s set mod_time=%d%s "
-		   "where deleted=0 && %s;",
-		   table, now, vals,
-		   cond_char);
+	if(cluster_centric) {
+		xassert(cluster_name);
+		xstrfmtcat(query,
+			   "update %s_%s set mod_time=%d%s "
+			   "where deleted=0 && %s;",
+			   cluster_name, table, now, vals, cond_char);
+	} else
+		xstrfmtcat(query,
+			   "update %s set mod_time=%d%s "
+			   "where deleted=0 && %s;",
+			   table, now, vals, cond_char);
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "

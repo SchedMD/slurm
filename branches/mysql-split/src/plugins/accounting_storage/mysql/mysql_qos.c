@@ -590,7 +590,7 @@ extern List mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	user_name = uid_to_string((uid_t) uid);
 	rc = modify_common(mysql_conn, DBD_MODIFY_QOS, now,
-			    user_name, qos_table, name_char, vals);
+			   user_name, qos_table, name_char, vals, NULL);
 	xfree(user_name);
 	xfree(name_char);
 	xfree(vals);

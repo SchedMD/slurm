@@ -106,7 +106,8 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 			 char *user_name,
 			 char *table,
 			 char *cond_char,
-			 char *vals);
+			 char *vals,
+			 char *cluster_name);
 extern int remove_common(mysql_conn_t *mysql_conn,
 			 uint16_t type,
 			 time_t now,

@@ -135,26 +135,26 @@ typedef struct {
 
 /* if this changes you will need to edit the corresponding
  * enum below */
-static char *event_req_inx[] = {
+char *event_req_inx[] = {
+	"time_start",
+	"time_end",
 	"node_name",
+	"cluster_nodes",
 	"cpu_count",
-	"state",
-	"period_start",
-	"period_end",
 	"reason",
 	"reason_uid",
-	"cluster_nodes",
+	"state",
 };
 
 enum {
-	EVENT_REQ_NODE,
-	EVENT_REQ_CPU,
-	EVENT_REQ_STATE,
 	EVENT_REQ_START,
 	EVENT_REQ_END,
+	EVENT_REQ_NODE,
+	EVENT_REQ_CNODES,
+	EVENT_REQ_CPU,
 	EVENT_REQ_REASON,
 	EVENT_REQ_REASON_UID,
-	EVENT_REQ_CNODES,
+	EVENT_REQ_STATE,
 	EVENT_REQ_COUNT
 };
 
@@ -162,33 +162,33 @@ enum {
  * enum below */
 static char *job_req_inx[] = {
 	"account",
-	"alloc_cpus",
-	"alloc_nodes",
-	"associd",
-	"blockid",
-	"comp_code",
-	"eligible",
-	"end",
-	"gid",
-	"id",
-	"jobid",
+	"cpus_alloc",
+	"nodes_alloc",
+	"id_assoc",
+	"id_block",
+	"exit_code",
+	"time_eligible",
+	"time_end",
+	"id_group",
+	"job_db_inx",
+	"id_job",
 	"kill_requid",
-	"name",
+	"job_name",
 	"nodelist",
 	"node_inx",
 	"partition",
 	"priority",
 	"qos",
-	"req_cpus",
-	"resvid",
-	"start",
+	"cpus_req",
+	"id_resv",
+	"time_start",
 	"state",
-	"submit",
-	"suspended",
+	"time_submit",
+	"time_suspended",
 	"track_steps",
-	"uid",
+	"id_user",
 	"wckey",
-	"wckeyid",
+	"id_wckey",
 };
 
 enum {
@@ -226,20 +226,20 @@ enum {
 /* if this changes you will need to edit the corresponding
  * enum below */
 static char *step_req_inx[] = {
-	"id",
-	"stepid",
-	"start",
-	"end",
-	"suspended",
-	"name",
+	"job_db_inx",
+	"id_step",
+	"time_start",
+	"time_end",
+	"time_suspended",
+	"step_name",
 	"nodelist",
 	"node_inx",
 	"state",
 	"kill_requid",
-	"comp_code",
-	"nodes",
-	"cpus",
-	"tasks",
+	"exit_code",
+	"nodes_alloc",
+	"cpus_alloc",
+	"task_cnt",
 	"task_dist",
 	"user_sec",
 	"user_usec",
@@ -306,10 +306,10 @@ enum {
 /* if this changes you will need to edit the corresponding
  * enum below */
 static char *suspend_req_inx[] = {
-	"id",
-	"associd",
-	"start",
-	"end",
+	"job_db_inx",
+	"id_assoc",
+	"time_start",
+	"time_end",
 };
 
 enum {
@@ -653,31 +653,6 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 	Buf buffer;
 	int error_code = 0, i = 0;
 
-	/* if this changes you will need to edit the corresponding
-	 * enum below */
-	char *event_req_inx[] = {
-		"node_name",
-		"cpu_count",
-		"state",
-		"period_start",
-		"period_end",
-		"reason",
-		"reason_uid",
-		"cluster_nodes",
-	};
-
-	enum {
-		EVENT_REQ_NODE,
-		EVENT_REQ_CPU,
-		EVENT_REQ_STATE,
-		EVENT_REQ_START,
-		EVENT_REQ_END,
-		EVENT_REQ_REASON,
-		EVENT_REQ_REASON_UID,
-		EVENT_REQ_CNODES,
-		EVENT_REQ_COUNT
-	};
-
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", event_req_inx[0]);
 	for(i=1; i<EVENT_REQ_COUNT; i++) {
@@ -685,9 +660,9 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s where period_start <= %d "
+	query = xstrdup_printf("select %s from %s_%s where period_start <= %d "
 			       "&& period_end != 0 order by period_start asc",
-			       tmp, event_table, period_end);
+			       tmp, cluster_name, event_table, period_end);
 	xfree(tmp);
 
 //	START_TIMER;
@@ -752,7 +727,8 @@ static char *_load_events(uint16_t rpc_version, Buf buffer,
 	local_event_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into %s (%s", event_table, event_req_inx[0]);
+	xstrfmtcat(insert, "insert into %s_%s (%s",
+		   cluster_name, event_table, event_req_inx[0]);
 	xstrcat(format, "('%s'");
 	for(i=1; i<EVENT_REQ_COUNT; i++) {
 		xstrfmtcat(insert, ", %s", event_req_inx[i]);
@@ -810,10 +786,10 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s where "
+	query = xstrdup_printf("select %s from %s_%s where "
 			       "submit < %d && end != 0 && !deleted "
 			       "order by submit asc",
-			       tmp, job_table, period_end);
+			       tmp, cluster_name, job_table, period_end);
 	xfree(tmp);
 
 //	START_TIMER;
@@ -898,7 +874,8 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	local_job_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into %s (%s", job_table, job_req_inx[0]);
+	xstrfmtcat(insert, "insert into %s_%s (%s",
+		   cluster_name, job_table, job_req_inx[0]);
 	xstrcat(format, "('%s'");
 	for(i=1; i<JOB_REQ_COUNT; i++) {
 		xstrfmtcat(insert, ", %s", job_req_inx[i]);
@@ -976,10 +953,10 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s where "
+	query = xstrdup_printf("select %s from %s_%s where "
 			       "start <= %d && end != 0 "
 			       "&& !deleted order by start asc",
-			       tmp, step_table, period_end);
+			       tmp, cluster_name, step_table, period_end);
 	xfree(tmp);
 
 //	START_TIMER;
@@ -1071,7 +1048,8 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 	local_step_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into %s (%s", step_table, step_req_inx[0]);
+	xstrfmtcat(insert, "insert into %s_%s (%s",
+		   cluster_name, step_table, step_req_inx[0]);
 	xstrcat(format, "('%s'");
 	for(i=1; i<STEP_REQ_COUNT; i++) {
 		xstrfmtcat(insert, ", %s", step_req_inx[i]);
@@ -1156,10 +1134,10 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s where "
+	query = xstrdup_printf("select %s from %s_%s where "
 			       "start <= %d && end != 0 "
 			       "order by start asc",
-			       tmp, suspend_table, period_end);
+			       tmp, cluster_name, suspend_table, period_end);
 	xfree(tmp);
 
 //	START_TIMER;
@@ -1220,8 +1198,8 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer,
 	local_suspend_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into %s (%s",
-		   suspend_table, suspend_req_inx[0]);
+	xstrfmtcat(insert, "insert into %s_%s (%s",
+		   cluster_name, suspend_table, suspend_req_inx[0]);
 	xstrcat(format, "('%s'");
 	for(i=1; i<SUSPEND_REQ_COUNT; i++) {
 		xstrfmtcat(insert, ", %s", suspend_req_inx[i]);
@@ -1420,9 +1398,9 @@ static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
 			else if(rc == SLURM_ERROR)
 				return rc;
 		}
-		query = xstrdup_printf("delete from %s where "
+		query = xstrdup_printf("delete from %s_%s where "
 				       "period_start <= %d && period_end != 0",
-				       event_table, curr_end);
+				       cluster_name, event_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -1465,9 +1443,9 @@ exit_events:
 			else if(rc == SLURM_ERROR)
 				return rc;
 		}
-		query = xstrdup_printf("delete from %s where start <= %d "
+		query = xstrdup_printf("delete from %s_%s where start <= %d "
 				       "&& end != 0",
-				       suspend_table, curr_end);
+				       cluster_name, suspend_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -1511,9 +1489,9 @@ exit_suspend:
 				return rc;
 		}
 
-		query = xstrdup_printf("delete from %s where start <= %d "
+		query = xstrdup_printf("delete from %s_%s where start <= %d "
 				       "&& end != 0",
-				       step_table, curr_end);
+				       cluster_name, step_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -1556,9 +1534,9 @@ exit_steps:
 				return rc;
 		}
 
-		query = xstrdup_printf("delete from %s where submit <= %d "
+		query = xstrdup_printf("delete from %s_%s where submit <= %d "
 				       "&& end != 0",
-				       job_table, curr_end);
+				       cluster_name, job_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, __FILE__, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
