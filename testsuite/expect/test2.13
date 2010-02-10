@@ -35,21 +35,27 @@ source ./globals
 set test_id       "2.13"
 set exit_code     0
 set file_in       "test$test_id.input"
+set file_out      "test$test_id.output"
 set job_id        0
 set orig_time     0
 set new_time      0
 
 print_header $test_id
+exec $bin_rm -f $file_in $file_out
 
 #
 # Build input script file
 #
-make_bash_script $file_in "$srun -t5 $bin_sleep 60"
+make_bash_script $file_in "
+  $bin_echo TEST_BEGIN
+  $srun -t5 $bin_sleep 120
+  $bin_echo TEST_FINISH
+"
 
 #
 # Submit a job so we have something to work with
 #
-set srun_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t1 $file_in]
+set srun_pid [spawn $sbatch --output=$file_out -t3 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -64,13 +70,12 @@ expect {
 		wait
 	}
 }
-exec $bin_rm -f $file_in
 if {$job_id == 0} {
 	send_user "\nFAILURE: srun failed to initiate job\n"
 	exit 1
 }
 #
-# Wait for job and step to start running
+# Wait for job _and_ step to start running
 #
 if {[wait_for_job $job_id "RUNNING"] != 0} {
         send_user "\nFAILURE: waiting for job to start running\n"
@@ -103,7 +108,7 @@ if {$orig_time != 5} {
 #
 # Change that job's priority
 #
-spawn $scontrol update StepId=$job_id TimeLimit=12
+spawn $scontrol update StepId=$job_id TimeLimit=1
 expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
@@ -131,15 +136,41 @@ expect {
 		wait
 	}
 }
-if {$orig_time != 12} {
+if {$orig_time != 1} {
         send_user "\nFAILURE: Failed to update step time limit\n"
 	set exit_code 1
 }
 
-if {[cancel_job $job_id] != 0} {
-	set exit_code 1
+#
+# Wait for step to exit and check output file
+# Look for message generated before and after srun (job step) time limit
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+        send_user "\nFAILURE: waiting for job to terminate\n"
+        exit 1
 }
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: job output file not found\n"
+	exit 1
+}
+set matches 0
+spawn $bin_cat $file_out
+expect {
+	-re "(TEST_BEGIN|TIME LIMIT|TEST_FINISH)" {
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 3} {
+        send_user "\nFAILURE: No step time limit message ($matches!=3)\n"
+        exit 1
+}
+
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
