@@ -201,6 +201,7 @@ test2.9    Validate scontrol completing command.
 test2.10   Validate scontrol oneliner mode (--oneliner option).
 test2.11   Validate scontrol listpids command.
 test2.12   Validate scontrol show topology option.
+test2.13   Validate scontrol update command for job steps.
 
 
 test3.#    Testing of scontrol options (best run as SlurmUser or root).
