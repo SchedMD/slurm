@@ -649,8 +649,18 @@ extern List mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	list_destroy(assoc_cond.user_list);
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = remove_common(mysql_conn, DBD_REMOVE_USERS, now,
-			    user_name, user_table, name_char, assoc_char);
+	slurm_mutex_lock(&mysql_cluster_list_lock);
+	itr = list_iterator_create(mysql_cluster_list);
+	while((object = list_next(itr))) {
+		if((rc = remove_common(mysql_conn, DBD_REMOVE_USERS, now,
+				       user_name, user_table, name_char,
+				       assoc_char, object))
+		   != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&mysql_cluster_list_lock);
+
 	xfree(user_name);
 	xfree(name_char);
 	if (rc == SLURM_ERROR) {
@@ -818,8 +828,18 @@ extern List mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	mysql_free_result(result);
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS, now,
-			    user_name, acct_coord_table, extra, NULL);
+	slurm_mutex_lock(&mysql_cluster_list_lock);
+	itr = list_iterator_create(mysql_cluster_list);
+	while((object = list_next(itr))) {
+		if((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS,
+				       now, user_name, acct_coord_table,
+				       extra, NULL, object))
+		   != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&mysql_cluster_list_lock);
+
 	xfree(user_name);
 	xfree(extra);
 	if (rc == SLURM_ERROR) {

@@ -45,10 +45,12 @@
 #include "accounting_storage_mysql.h"
 
 extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
-			       time_t start, time_t end);
+			       char *cluster_name, time_t start, time_t end);
 extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
+			      char *cluster_name,
 			      time_t start, time_t end, uint16_t archive_data);
 extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
+				char *cluster_name,
 				time_t start, time_t end,
 				uint16_t archive_data);
 #endif

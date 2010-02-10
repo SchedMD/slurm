@@ -47,7 +47,6 @@ typedef struct {
 } local_id_usage_t;
 
 typedef struct {
-	char *name;
 	int id; /*only needed for reservations */
 	uint64_t total_time;
 	uint64_t a_cpu;
@@ -63,7 +62,6 @@ typedef struct {
 
 typedef struct {
 	uint64_t a_cpu;
-	char *cluster;
 	int id;
 	List local_assocs; /* list of assocs to spread unused time
 			      over of type local_id_usage_t */
@@ -84,7 +82,6 @@ static void _destroy_local_cluster_usage(void *object)
 {
 	local_cluster_usage_t *c_usage = (local_cluster_usage_t *)object;
 	if(c_usage) {
-		xfree(c_usage->name);
 		xfree(c_usage);
 	}
 }
@@ -93,7 +90,6 @@ static void _destroy_local_resv_usage(void *object)
 {
 	local_resv_usage_t *r_usage = (local_resv_usage_t *)object;
 	if(r_usage) {
-		xfree(r_usage->cluster);
 		if(r_usage->local_assocs)
 			list_destroy(r_usage->local_assocs);
 		xfree(r_usage);
@@ -101,6 +97,7 @@ static void _destroy_local_resv_usage(void *object)
 }
 
 extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
+			       char *cluster_name,
 			       time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
@@ -124,15 +121,13 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 	char *event_req_inx[] = {
 		"node_name",
-		"cluster",
 		"cpu_count",
-		"period_start",
-		"period_end",
+		"time_start",
+		"time_end",
 	};
 	char *event_str = NULL;
 	enum {
 		EVENT_REQ_NAME,
-		EVENT_REQ_CLUSTER,
 		EVENT_REQ_CPU,
 		EVENT_REQ_START,
 		EVENT_REQ_END,
@@ -140,18 +135,17 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	};
 
 	char *job_req_inx[] = {
-		"id",
-		"jobid",
-		"associd",
-		"wckeyid",
-		"cluster",
-		"eligible",
-		"start",
-		"end",
-		"suspended",
-		"alloc_cpus",
-		"req_cpus",
-		"resvid"
+		"job_db_inx",
+		"id_job",
+		"id_assoc",
+		"id_wckey",
+		"time_eligible",
+		"time_start",
+		"time_end",
+		"time_suspended",
+		"cpus_alloc",
+		"cpus_req",
+		"id_resv"
 
 	};
 	char *job_str = NULL;
@@ -160,7 +154,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		JOB_REQ_JOBID,
 		JOB_REQ_ASSOCID,
 		JOB_REQ_WCKEYID,
-		JOB_REQ_CLUSTER,
 		JOB_REQ_ELG,
 		JOB_REQ_START,
 		JOB_REQ_END,
@@ -172,8 +165,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	};
 
 	char *suspend_req_inx[] = {
-		"start",
-		"end"
+		"time_start",
+		"time_end"
 	};
 	char *suspend_str = NULL;
 	enum {
@@ -183,18 +176,16 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	};
 
 	char *resv_req_inx[] = {
-		"id",
-		"cluster",
+		"id_resv",
 		"assoclist",
 		"cpus",
 		"flags",
-		"start",
-		"end"
+		"time_start",
+		"time_end"
 	};
 	char *resv_str = NULL;
 	enum {
 		RESV_REQ_ID,
-		RESV_REQ_CLUSTER,
 		RESV_REQ_ASSOCS,
 		RESV_REQ_CPU,
 		RESV_REQ_FLAGS,
@@ -234,7 +225,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	w_itr = list_iterator_create(wckey_usage_list);
 	r_itr = list_iterator_create(resv_usage_list);
 	while(curr_start < end) {
-		local_cluster_usage_t *last_c_usage = NULL;
 		int last_id = -1;
 		int last_wckeyid = -1;
 		int seconds = 0;
@@ -243,7 +233,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		local_id_usage_t *a_usage = NULL;
 		local_id_usage_t *w_usage = NULL;
 
-		debug3("curr hour is now %d-%d", curr_start, curr_end);
+		debug3("%s curr hour is now %d-%d",
+		       cluster_name, curr_start, curr_end);
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 
@@ -251,12 +242,12 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		 * except things with the maintainance flag set in the
 		 * state.  We handle those later with the reservations.
 		 */
-		query = xstrdup_printf("select %s from %s where "
-				       "!(state & %d) && (period_start < %d "
-				       "&& (period_end >= %d "
-				       "|| period_end = 0)) "
-				       "order by node_name, period_start",
-				       event_str, event_table,
+		query = xstrdup_printf("select %s from %s_%s where "
+				       "!(state & %d) && (time_start < %d "
+				       "&& (time_end >= %d "
+				       "|| time_end = 0)) "
+				       "order by node_name, time_start",
+				       event_str, cluster_name, event_table,
 				       NODE_STATE_MAINT,
 				       curr_end, curr_start);
 
@@ -286,20 +277,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if((row_end - row_start) < 1)
 				continue;
 
-			if(last_c_usage && !strcmp(last_c_usage->name,
-						   row[EVENT_REQ_CLUSTER])) {
-				c_usage = last_c_usage;
-			} else {
-				list_iterator_reset(c_itr);
-				while((c_usage = list_next(c_itr))) {
-					if(!strcmp(c_usage->name,
-						   row[EVENT_REQ_CLUSTER])) {
-						last_c_usage = c_usage;
-						break;
-					}
-				}
-			}
-
 			/* this means we are a cluster registration
 			   entry */
 			if(!row[EVENT_REQ_NAME][0]) {
@@ -312,8 +289,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				if(!c_usage) {
 					c_usage = xmalloc(
 						sizeof(local_cluster_usage_t));
-					c_usage->name =
-						xstrdup(row[EVENT_REQ_CLUSTER]);
 					c_usage->cpu_count = row_cpu;
 					c_usage->total_time =
 						(row_end - row_start) * row_cpu;
@@ -321,7 +296,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					c_usage->end = row_end;
 					list_append(cluster_usage_list,
 						    c_usage);
-					last_c_usage = c_usage;
 				} else {
 					c_usage->cpu_count = row_cpu;
 					c_usage->total_time +=
@@ -362,10 +336,10 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 
 		// now get the reservations during this time
-		query = xstrdup_printf("select %s from %s where "
+		query = xstrdup_printf("select %s from %s_%s where "
 				       "(start < %d && end >= %d) "
 				       "order by cluster, start",
-				       resv_str, resv_table,
+				       resv_str, cluster_name, resv_table,
 				       curr_end, curr_start);
 
 		debug3("%d(%s:%d) query\n%s",
@@ -418,7 +392,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			slurm_addto_char_list(r_usage->local_assocs,
 					      row[RESV_REQ_ASSOCS]);
 
-			r_usage->cluster = xstrdup(row[RESV_REQ_CLUSTER]);
 			r_usage->total_time = (row_end - row_start) * row_cpu;
 			r_usage->start = row_start;
 			r_usage->end = row_end;
@@ -431,19 +404,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			   maintenance then we add the time to planned
 			   down time.
 			*/
-			if(last_c_usage && !strcmp(last_c_usage->name,
-						   r_usage->cluster)) {
-				c_usage = last_c_usage;
-			} else {
-				list_iterator_reset(c_itr);
-				while((c_usage = list_next(c_itr))) {
-					if(!strcmp(c_usage->name,
-						   r_usage->cluster)) {
-						last_c_usage = c_usage;
-						break;
-					}
-				}
-			}
+			
 
 			/* only record time for the clusters that have
 			   registered.  This continue should rarely if
@@ -469,11 +430,11 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 
 		/* now get the jobs during this time only  */
-		query = xstrdup_printf("select %s from %s where "
-				       "(eligible < %d && (end >= %d "
-				       "|| end = 0)) "
-				       "order by associd, eligible",
-				       job_str, job_table,
+		query = xstrdup_printf("select %s from %s_%s where "
+				       "(time_eligible < %d && (time_end >= %d "
+				       "|| time_end = 0)) "
+				       "order by id_assoc, time_eligible",
+				       job_str, cluster_name, job_table,
 				       curr_end, curr_start);
 
 		debug3("%d(%s:%d) query\n%s",
@@ -516,11 +477,12 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				MYSQL_ROW row2;
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
-					"select %s from %s where "
-					"(start < %d && (end >= %d "
-					"|| end = 0)) && id=%s "
+					"select %s from %s_%s where "
+					"(time_start < %d && (time_end >= %d "
+					"|| time_end = 0)) && job_db_inx=%s "
 					"order by start",
-					suspend_str, suspend_table,
+					suspend_str, cluster_name,
+					suspend_table,
 					curr_end, curr_start,
 					row[JOB_REQ_DB_INX]);
 
@@ -593,8 +555,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			w_usage->a_cpu += seconds * row_acpu;
 			/* do the cluster allocated calculation */
 		calc_cluster:
-			if(!row[JOB_REQ_CLUSTER] || !row[JOB_REQ_CLUSTER][0])
-				continue;
 
 			/* first figure out the reservation */
 			if(resv_id) {
@@ -623,9 +583,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   sure all the reservations
 					   are checked to see if such
 					   a thing has happened */
-					if((r_usage->id == resv_id)
-					   && !strcmp(r_usage->cluster,
-						      row[JOB_REQ_CLUSTER])) {
+					if(r_usage->id == resv_id) {
 						int temp_end = row_end;
 						int temp_start = row_start;
 						if(r_usage->start > temp_start)
@@ -644,20 +602,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					}
 				}
 				continue;
-			}
-
-			if(last_c_usage && !strcmp(last_c_usage->name,
-						   row[JOB_REQ_CLUSTER])) {
-				c_usage = last_c_usage;
-			} else {
-				list_iterator_reset(c_itr);
-				while((c_usage = list_next(c_itr))) {
-					if(!strcmp(c_usage->name,
-						   row[JOB_REQ_CLUSTER])) {
-						last_c_usage = c_usage;
-						break;
-					}
-				}
 			}
 
 			/* only record time for the clusters that have
@@ -771,7 +715,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				      "possible (%llu > %llu) for "
 				      "cluster %s(%d) from %s - %s",
 				      c_usage->a_cpu, c_usage->total_time,
-				      c_usage->name, c_usage->cpu_count,
+				      cluster_name, c_usage->cpu_count,
 				      start_char, end_char);
 				xfree(start_char);
 				xfree(end_char);
@@ -796,7 +740,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				      c_usage->a_cpu, c_usage->d_cpu,
 				      c_usage->pd_cpu, total_used,
 				      c_usage->total_time,
-				      c_usage->name, c_usage->cpu_count,
+				      cluster_name, c_usage->cpu_count,
 				      start_char, end_char);
 				xfree(start_char);
 				xfree(end_char);
@@ -859,11 +803,11 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			info("to %s", ctime(&c_usage->end)); */
 			if(query) {
 				xstrfmtcat(query,
-					   ", (%d, %d, '%s', %d, %d, "
+					   ", (%d, %d, %d, %d, "
 					   "%llu, %llu, %llu, "
 					   "%llu, %llu, %llu)",
 					   now, now,
-					   c_usage->name, c_usage->start,
+					   c_usage->start,
 					   c_usage->cpu_count, c_usage->a_cpu,
 					   c_usage->d_cpu, c_usage->pd_cpu,
 					   c_usage->i_cpu, c_usage->o_cpu,
@@ -871,16 +815,17 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			} else {
 				xstrfmtcat(query,
 					   "insert into %s (creation_time, "
-					   "mod_time, cluster, period_start, "
+					   "mod_time, time_start, "
 					   "cpu_count, alloc_cpu_secs, "
 					   "down_cpu_secs, pdown_cpu_secs, "
 					   "idle_cpu_secs, over_cpu_secs, "
 					   "resv_cpu_secs) "
-					   "values (%d, %d, '%s', %d, %d, "
+					   "values (%d, %d, %d, %d, "
 					   "%llu, %llu, %llu, "
 					   "%llu, %llu, %llu)",
-					   cluster_hour_table, now, now,
-					   c_usage->name, c_usage->start,
+					   cluster_name, cluster_hour_table,
+					   now, now,
+					   c_usage->start,
 					   c_usage->cpu_count,
 					   c_usage->a_cpu, c_usage->d_cpu,
 					   c_usage->pd_cpu, c_usage->i_cpu,
@@ -926,11 +871,12 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   a_usage->a_cpu);
 			} else {
 				xstrfmtcat(query,
-					   "insert into %s (creation_time, "
-					   "mod_time, id, period_start, "
+					   "insert into %s_%s (creation_time, "
+					   "mod_time, id_assoc, time_start, "
 					   "alloc_cpu_secs) values "
 					   "(%d, %d, %d, %d, %llu)",
-					   assoc_hour_table, now, now,
+					   cluster_name, assoc_hour_table,
+					   now, now,
 					   a_usage->id, curr_start,
 					   a_usage->a_cpu);
 			}
@@ -968,11 +914,12 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   w_usage->a_cpu);
 			} else {
 				xstrfmtcat(query,
-					   "insert into %s (creation_time, "
-					   "mod_time, id, period_start, "
+					   "insert into %s_%s (creation_time, "
+					   "mod_time, id_wckey, time_start, "
 					   "alloc_cpu_secs) values "
 					   "(%d, %d, %d, %d, %llu)",
-					   wckey_hour_table, now, now,
+					   cluster_name, wckey_hour_table,
+					   now, now,
 					   w_usage->id, curr_start,
 					   w_usage->a_cpu);
 			}
@@ -1022,6 +969,7 @@ end_it:
 	return rc;
 }
 extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
+			      char *cluster_name,
 			      time_t start, time_t end, uint16_t archive_data)
 {
 	/* can't just add 86400 since daylight savings starts and ends every
@@ -1051,49 +999,53 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
-			"insert into %s (creation_time, mod_time, id, "
-			"period_start, alloc_cpu_secs) select %d, %d, id, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s where "
-			"(period_start < %d && period_start >= %d) "
-			"group by id on duplicate key update mod_time=%d, "
-			"alloc_cpu_secs=@ASUM;",
-			assoc_day_table, now, now, curr_start,
-			assoc_hour_table,
+			"insert into %s_%s (creation_time, mod_time, "
+			"id_assoc, "
+			"time_start, alloc_cpu_secs) select %d, %d, "
+			"id_assoc, "
+			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s_%s where "
+			"(time_start < %d && time_start >= %d) "
+			"group by id_assoc on duplicate key update "
+			"mod_time=%d, alloc_cpu_secs=@ASUM;",
+			cluster_name, assoc_day_table, now, now, curr_start,
+			cluster_name, assoc_hour_table,
 			curr_end, curr_start, now);
 		xstrfmtcat(query,
-			   "insert into %s (creation_time, "
-			   "mod_time, cluster, period_start, cpu_count, "
+			   "insert into %s_%s (creation_time, "
+			   "mod_time, time_start, cpu_count, "
 			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
 			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
-			   "select %d, %d, cluster, "
+			   "select %d, %d, "
 			   "%d, @CPU:=MAX(cpu_count), "
 			   "@ASUM:=SUM(alloc_cpu_secs), "
 			   "@DSUM:=SUM(down_cpu_secs), "
 			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
-			   "@RSUM:=SUM(resv_cpu_secs) from %s where "
-			   "(period_start < %d && period_start >= %d) "
-			   "group by cluster on duplicate key update "
+			   "@RSUM:=SUM(resv_cpu_secs) from %s_%s where "
+			   "(time_start < %d && time_start >= %d) "
+			   "on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
 			   "pdown_cpu_secs=@PDSUM, idle_cpu_secs=@ISUM, "
 			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
-			   cluster_day_table, now, now, curr_start,
-			   cluster_hour_table,
+			   cluster_name, cluster_day_table,
+			   now, now, curr_start,
+			   cluster_name, cluster_hour_table,
 			   curr_end, curr_start, now);
 		if(track_wckey) {
 			xstrfmtcat(query,
-				   "insert into %s (creation_time, "
-				   "mod_time, id, period_start, "
+				   "insert into %s_%s (creation_time, "
+				   "mod_time, id, time_start, "
 				   "alloc_cpu_secs) select %d, %d, "
 				   "id, %d, @ASUM:=SUM(alloc_cpu_secs) "
-				   "from %s where (period_start < %d && "
-				   "period_start >= %d) "
-				   "group by id on duplicate key update "
+				   "from %s_%s where (time_start < %d && "
+				   "time_start >= %d) "
+				   "group by id_wckey on duplicate key update "
 				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
-				   wckey_day_table, now, now, curr_start,
-				   wckey_hour_table,
+				   cluster_name, wckey_day_table,
+				   now, now, curr_start,
+				   cluster_name, wckey_hour_table,
 				   curr_end, curr_start, now);
 		}
 		debug3("%d(%s:%d) query\n%s",
@@ -1125,6 +1077,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
+				char *cluster_name,
 				time_t start, time_t end, uint16_t archive_data)
 {
 	int rc = SLURM_SUCCESS;
@@ -1135,6 +1088,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
 	acct_archive_cond_t arch_cond;
+	acct_job_cond_t job_cond;
 
 	if(!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from month start %d", curr_start);
@@ -1153,49 +1107,52 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
-			"insert into %s (creation_time, mod_time, id, "
-			"period_start, alloc_cpu_secs) select %d, %d, id, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s where "
-			"(period_start < %d && period_start >= %d) "
+			"insert into %s_%s (creation_time, mod_time, id, "
+			"time_start, alloc_cpu_secs) select %d, %d, id, "
+			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s_%s where "
+			"(time_start < %d && time_start >= %d) "
 			"group by id on duplicate key update mod_time=%d, "
 			"alloc_cpu_secs=@ASUM;",
-			assoc_month_table, now, now, curr_start,
-			assoc_day_table,
+			cluster_name, assoc_month_table, now, now, curr_start,
+			cluster_name, assoc_day_table,
 			curr_end, curr_start, now);
 		xstrfmtcat(query,
-			   "insert into %s (creation_time, "
-			   "mod_time, cluster, period_start, cpu_count, "
+			   "insert into %s_%s (creation_time, "
+			   "mod_time, time_start, cpu_count, "
 			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
 			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
-			   "select %d, %d, cluster, "
+			   "select %d, %d, "
 			   "%d, @CPU:=MAX(cpu_count), "
 			   "@ASUM:=SUM(alloc_cpu_secs), "
 			   "@DSUM:=SUM(down_cpu_secs), "
 			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
-			   "@RSUM:=SUM(resv_cpu_secs) from %s where "
-			   "(period_start < %d && period_start >= %d) "
-			   "group by cluster on duplicate key update "
+			   "@RSUM:=SUM(resv_cpu_secs) from %s_%s where "
+			   "(time_start < %d && time_start >= %d) "
+			   "on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
 			   "pdown_cpu_secs=@PDSUM, idle_cpu_secs=@ISUM, "
 			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
-			   cluster_month_table, now, now, curr_start,
-			   cluster_day_table,
+			   cluster_name, cluster_month_table,
+			   now, now, curr_start,
+			   cluster_name, cluster_day_table,
 			   curr_end, curr_start, now);
 		if(track_wckey) {
 			xstrfmtcat(query,
-				   "insert into %s (creation_time, mod_time, "
-				   "id, period_start, alloc_cpu_secs) "
+				   "insert into %s_%s "
+				   "(creation_time, mod_time, "
+				   "id, time_start, alloc_cpu_secs) "
 				   "select %d, %d, id, %d, "
 				   "@ASUM:=SUM(alloc_cpu_secs) "
-				   "from %s where (period_start < %d && "
-				   "period_start >= %d) "
+				   "from %s_%s where (time_start < %d && "
+				   "time_start >= %d) "
 				   "group by id on duplicate key update "
 				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
-				   wckey_month_table, now, now, curr_start,
-				   wckey_day_table,
+				   cluster_name, wckey_month_table,
+				   now, now, curr_start,
+				   cluster_name, wckey_day_table,
 				   curr_end, curr_start, now);
 		}
 		debug3("%d(%s:%d) query\n%s",
@@ -1230,6 +1187,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	if(!slurmdbd_conf)
 		return SLURM_SUCCESS;
 
+	memset(&job_cond, 0, sizeof(job_cond));
 	memset(&arch_cond, 0, sizeof(arch_cond));
 	arch_cond.archive_dir = slurmdbd_conf->archive_dir;
 	arch_cond.archive_events = slurmdbd_conf->archive_events;
@@ -1242,5 +1200,12 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	arch_cond.purge_step = slurmdbd_conf->purge_step;
 	arch_cond.purge_suspend = slurmdbd_conf->purge_suspend;
 
-	return mysql_jobacct_process_archive(mysql_conn, &arch_cond);
+	job_cond.cluster_list = list_create(NULL);
+	list_append(job_cond.cluster_list, cluster_name);
+
+	arch_cond.job_cond = &job_cond;
+	rc = mysql_jobacct_process_archive(mysql_conn, &arch_cond);
+	list_destroy(job_cond.cluster_list);
+
+	return rc;
 }

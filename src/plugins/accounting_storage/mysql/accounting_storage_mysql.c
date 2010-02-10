@@ -190,23 +190,25 @@ static int _set_qos_cnt(MYSQL *db_conn)
  * the deleted flag.
  */
 static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
+				      char *cluster_name,
 				      char *assoc_char)
 {
 	char *query = NULL;
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select t0.associd from %s as t0, %s as t1, "
-			       "%s as t2 where t1.lft between "
+	query = xstrdup_printf("select t0.id_assoc from %s_%s as t0, "
+			       "%s_%s as t1, %s_%s as t2 where t1.lft between "
 			       "t2.lft and t2.rgt && (%s) "
-			       "and t0.associd=t1.id limit 1;",
-			       job_table, assoc_table, assoc_table,
+			       "and t0.id_assoc=t1.id_assoc limit 1;",
+			       cluster_name, job_table,
+			       cluster_name, assoc_table,
+			       cluster_name, assoc_table,
 			       assoc_char);
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return rc;
 	}
@@ -223,6 +225,7 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 
 /* Same as above but for associations instead of other tables */
 static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
+					    char *cluster_name,
 					    char *assoc_char)
 {
 	char *query = NULL;
@@ -230,9 +233,10 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 
 	query = xstrdup_printf("select t1.associd from %s as t1, "
-			       "%s as t2 where (%s) "
+			       "%s_%s as t2 where (%s_%s) "
 			       "and t1.associd=t2.id limit 1;",
-			       job_table, assoc_table,
+			       cluster_name, job_table,
+			       cluster_name, assoc_table,
 			       assoc_char);
 
 	debug3("%d(%s:%d) query\n%s",
@@ -256,14 +260,14 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 /* Same as above but for things having nothing to do with associations
  * like qos or wckey */
 static bool _check_jobs_before_remove_without_assoctable(
-	mysql_conn_t *mysql_conn, char *where_char)
+	mysql_conn_t *mysql_conn, char *cluster_name, char *where_char)
 {
 	char *query = NULL;
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select associd from %s where (%s) limit 1;",
-			       job_table, where_char);
+	query = xstrdup_printf("select associd from %s_%s where (%s) limit 1;",
+			       cluster_name, job_table, where_char);
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -1251,7 +1255,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			 char *user_name,
 			 char *table,
 			 char *name_char,
-			 char *assoc_char)
+			 char *assoc_char,
+			 char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
@@ -1261,6 +1266,13 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	time_t day_old = now - DELETE_SEC_BACK;
 	bool has_jobs = false;
 	char *tmp_name_char = fix_double_quotes(name_char);
+	bool cluster_centric = true;
+
+	/* figure out which tables we need to append the cluster name to */
+	if((table == cluster_table) || (table == acct_coord_table)
+	   || (table == acct_table) || (table == qos_table)
+	   || (table == txn_table) || (table == user_table))
+		cluster_centric = false;
 
 	/* If we have jobs associated with this we do not want to
 	 * really delete it for accounting purposes.  This is for
@@ -1272,27 +1284,46 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		 */
 	} else if((table == qos_table) || (table == wckey_table)) {
 		has_jobs = _check_jobs_before_remove_without_assoctable(
-			mysql_conn, assoc_char);
+			mysql_conn, cluster_name, assoc_char);
 	} else if(table != assoc_table) {
-		has_jobs = _check_jobs_before_remove(mysql_conn, assoc_char);
+		has_jobs = _check_jobs_before_remove(
+			mysql_conn, cluster_name, assoc_char);
 	} else {
-		has_jobs = _check_jobs_before_remove_assoc(mysql_conn,
-							   name_char);
+		has_jobs = _check_jobs_before_remove_assoc(
+			mysql_conn, cluster_name, name_char);
 	}
 	/* we want to remove completely all that is less than a day old */
 	if(!has_jobs && table != assoc_table) {
-		query = xstrdup_printf("delete from %s where creation_time>%d "
-				       "&& (%s);"
-				       "alter table %s AUTO_INCREMENT=0;",
-				       table, day_old, name_char, table);
+		if(cluster_centric)
+			query = xstrdup_printf("delete from %s_%s where "
+					       "creation_time>%d "
+					       "&& (%s);"
+					       "alter table %s_%s "
+					       "AUTO_INCREMENT=0;",
+					       cluster_name, table, day_old,
+					       name_char, cluster_name, table);
+		else
+			query = xstrdup_printf("delete from %s where "
+					       "creation_time>%d "
+					       "&& (%s);"
+					       "alter table %s "
+					       "AUTO_INCREMENT=0;",
+					       table, day_old,
+					       name_char, table);
 	}
 
-	if(table != assoc_table)
-		xstrfmtcat(query,
-			   "update %s set mod_time=%d, deleted=1 "
-			   "where deleted=0 && (%s);",
-			   table, now, name_char);
-
+	if(table != assoc_table) {
+		if(cluster_centric)
+			xstrfmtcat(query,
+				   "update %s_%s set mod_time=%d, deleted=1 "
+				   "where deleted=0 && (%s);",
+				   cluster_name, table, now, name_char);
+		else
+			xstrfmtcat(query,
+				   "update %s set mod_time=%d, deleted=1 "
+				   "where deleted=0 && (%s);",
+				   table, now, name_char);
+	}
 	xstrfmtcat(query,
 		   "insert into %s (timestamp, action, name, actor) "
 		   "values (%d, %d, \"%s\", \"%s\");",
@@ -1333,12 +1364,13 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 /* 		query = xstrdup_printf("select lft, rgt " */
 /* 				       "from %s as t2 where %s order by lft;", */
 /* 				       assoc_table, assoc_char); */
-		query = xstrdup_printf("select distinct t1.id "
-				       "from %s as t1, %s as t2 "
+		query = xstrdup_printf("select distinct t1.id_assoc "
+				       "from %s_%s as t1, %s_%s as t2 "
 				       "where (%s) && t1.lft between "
 				       "t2.lft and t2.rgt && t1.deleted=0 "
 				       " && t2.deleted=0;",
-				       assoc_table, assoc_table, assoc_char);
+				       cluster_name, assoc_table,
+				       cluster_name, assoc_table, assoc_char);
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -1357,13 +1389,10 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		loc_assoc_char = NULL;
 		while((row = mysql_fetch_row(result))) {
 			acct_association_rec_t *rem_assoc = NULL;
-			if(!rc) {
-				xstrfmtcat(loc_assoc_char, "id=%s", row[0]);
-				rc = 1;
-			} else {
-				xstrfmtcat(loc_assoc_char,
-					   " || id=%s", row[0]);
-			}
+			if(loc_assoc_char)
+				xstrcat(loc_assoc_char, " || ");
+			xstrfmtcat(loc_assoc_char, "id_assoc=%s", row[0]);
+
 			rem_assoc = xmalloc(sizeof(acct_association_rec_t));
 			rem_assoc->id = atoi(row[0]);
 			if(addto_update_list(mysql_conn->update_list,
@@ -1384,12 +1413,12 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * only delete things that are typos.
 	 */
 	xstrfmtcat(query,
-		   "update %s set mod_time=%d, deleted=1 where (%s);"
-		   "update %s set mod_time=%d, deleted=1 where (%s);"
-		   "update %s set mod_time=%d, deleted=1 where (%s);",
-		   assoc_day_table, now, loc_assoc_char,
-		   assoc_hour_table, now, loc_assoc_char,
-		   assoc_month_table, now, loc_assoc_char);
+		   "update %s_%s set mod_time=%d, deleted=1 where (%s);"
+		   "update %s_%s set mod_time=%d, deleted=1 where (%s);"
+		   "update %s_%s set mod_time=%d, deleted=1 where (%s);",
+		   cluster_name, assoc_day_table, now, loc_assoc_char,
+		   cluster_name, assoc_hour_table, now, loc_assoc_char,
+		   cluster_name, assoc_month_table, now, loc_assoc_char);
 
 	debug3("%d(%s:%d) query\n%s %d",
 	       mysql_conn->conn, __FILE__, __LINE__, query, strlen(query));
@@ -1414,9 +1443,10 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * day, since they are most likely nothing we really wanted in
 	 * the first place.
 	 */
-	query = xstrdup_printf("select id from %s as t1 where "
+	query = xstrdup_printf("select id_assoc from %s_%s as t1 where "
 			       "creation_time>%d && (%s);",
-			       assoc_table, day_old, loc_assoc_char);
+			       cluster_name, assoc_table,
+			       day_old, loc_assoc_char);
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -1441,8 +1471,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		   in the association. */
 		xstrfmtcat(query,
 			   "SELECT lft, rgt, (rgt - lft + 1) "
-			   "FROM %s WHERE id = %s;",
-			   assoc_table, row[0]);
+			   "FROM %s_%s WHERE id = %s;",
+			   cluster_name, assoc_table, row[0]);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, __FILE__, __LINE__, query);
 		if(!(result2 = mysql_db_query_ret(
@@ -1458,14 +1488,15 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		}
 
 		xstrfmtcat(query,
-			   "delete quick from %s where lft between %s AND %s;",
-			   assoc_table, row2[0], row2[1]);
+			   "delete quick from %s_%s where "
+			   "lft between %s AND %s;",
+			   cluster_name, assoc_table, row2[0], row2[1]);
 
 		xstrfmtcat(query,
-			   "UPDATE %s SET rgt = rgt - %s WHERE rgt > %s;"
-			   "UPDATE %s SET lft = lft - %s WHERE lft > %s;",
-			   assoc_table, row2[2], row2[1],
-			   assoc_table, row2[2], row2[1]);
+			   "UPDATE %s_%s SET rgt = rgt - %s WHERE rgt > %s;"
+			   "UPDATE %s_%s SET lft = lft - %s WHERE lft > %s;",
+			   cluster_name, assoc_table, row2[2], row2[1],
+			   cluster_name, assoc_table, row2[2], row2[1]);
 
 		mysql_free_result(result2);
 
@@ -1493,16 +1524,16 @@ just_update:
 	 * we don't want any residue from past associations lingering
 	 * around.
 	 */
-	query = xstrdup_printf("update %s as t1 set mod_time=%d, deleted=1, "
+	query = xstrdup_printf("update %s_%s as t1 set mod_time=%d, deleted=1, "
 			       "fairshare=1, max_jobs=NULL, "
 			       "max_nodes_per_job=NULL, "
 			       "max_wall_duration_per_job=NULL, "
 			       "max_cpu_mins_per_job=NULL "
 			       "where (%s);"
-			       "alter table %s AUTO_INCREMENT=0;",
-			       assoc_table, now,
+			       "alter table %s_%s AUTO_INCREMENT=0;",
+			       cluster_name, assoc_table, now,
 			       loc_assoc_char,
-			       assoc_table);
+			       cluster_name, assoc_table);
 
 	if(table != assoc_table)
 		xfree(loc_assoc_char);
