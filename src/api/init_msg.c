@@ -102,6 +102,19 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 }
 
 /*
+ * slurm_init_update_step_msg - initialize step update message with default 
+ *	values before calling slurm_update_step()
+ * OUT step_msg - step update messasge descriptor
+ */
+extern void slurm_init_update_step_msg (step_update_request_msg_t * step_msg)
+{
+	memset(step_msg, 0, sizeof(step_update_request_msg_t));
+	step_msg->job_id     = NO_VAL;
+	step_msg->step_id    = NO_VAL;
+	step_msg->time_limit = NO_VAL;
+}
+
+/*
  * slurm_init_part_desc_msg - initialize partition descriptor with
  *	default values
  * IN/OUT update_part_msg - user defined partition descriptor

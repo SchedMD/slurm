@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -186,6 +186,14 @@ slurm_update_block ( update_block_msg_t * block_msg )
 	return _slurm_update ((void *) block_msg, REQUEST_UPDATE_BLOCK);
 }
 
+/* Update the time limit of a job step, 
+ * step_id == NO_VAL updates all job steps of the specified job_id
+ * RET 0 or -1 on error */
+int
+slurm_update_step ( step_update_request_msg_t * step_msg )
+{
+	return _slurm_update ((void *) step_msg, REQUEST_UPDATE_JOB_STEP);
+}
 
 /* _slurm_update - issue RPC for all update requests */
 static int

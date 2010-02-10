@@ -274,7 +274,7 @@ typedef struct slurmctld_resv {
 /*****************************************************************************\
  *  JOB parameters and data structures
 \*****************************************************************************/
-extern time_t last_job_update;	/* time of last update to part records */
+extern time_t last_job_update;	/* time of last update to job records */
 
 #define DETAILS_MAGIC	0xdea84e7
 #define JOB_MAGIC	0xf0b7392c
@@ -1548,6 +1548,10 @@ extern int update_node ( update_node_msg_t * update_node_msg )  ;
  *	last_part_update - update time of partition records
  */
 extern int update_part (update_part_msg_t * part_desc, bool create_flag);
+
+/* Process job step update request from specified user,
+ * RET - 0 or error code */
+extern int update_step(step_update_request_msg_t *req, uid_t uid);
 
 /*
  * validate_alloc_node - validate that the allocating node

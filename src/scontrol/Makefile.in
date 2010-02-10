@@ -86,7 +86,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am_scontrol_OBJECTS = create_res.$(OBJEXT) info_block.$(OBJEXT) \
 	info_job.$(OBJEXT) info_node.$(OBJEXT) info_part.$(OBJEXT) \
 	info_res.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
-	update_node.$(OBJEXT) update_part.$(OBJEXT)
+	update_node.$(OBJEXT) update_part.$(OBJEXT) \
+	update_step.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
 am__DEPENDENCIES_2 =
@@ -309,7 +310,8 @@ scontrol_SOURCES = \
 	scontrol.h	\
 	update_job.c	\
 	update_node.c	\
-	update_part.c
+	update_part.c	\
+	update_step.c
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
 scontrol_LDADD = \
@@ -414,6 +416,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_job.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_part.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_step.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

@@ -90,6 +90,9 @@ static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
 					uid_t uid, uint32_t *step_id);
 static int          _make_step_cred(struct step_record *step_rec,
 				    slurm_cred_t **slurm_cred);
+
+inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
+inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
@@ -105,6 +108,7 @@ inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg);
 inline static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
+inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_ready(slurm_msg_t * msg);
@@ -125,11 +129,13 @@ inline static void  _slurm_rpc_resv_delete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_resv_show(slurm_msg_t * msg);
 inline static void  _slurm_rpc_requeue(slurm_msg_t * msg);
 inline static void  _slurm_rpc_takeover(slurm_msg_t * msg);
+inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
 inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_step_layout(slurm_msg_t * msg);
+inline static void  _slurm_rpc_step_update(slurm_msg_t * msg);
 inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_suspend(slurm_msg_t * msg);
 inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg);
@@ -139,11 +145,8 @@ inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
-inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
+
 inline static void  _update_cred_key(void);
-inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
-inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
-inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg);
 
 
 /*
@@ -346,6 +349,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_STEP_LAYOUT:
 		_slurm_rpc_step_layout(msg);
 		slurm_free_job_step_id_msg(msg->data);
+		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		_slurm_rpc_step_update(msg);
+		slurm_free_update_step_msg(msg->data);
 		break;
 	case REQUEST_TRIGGER_SET:
 		_slurm_rpc_trigger_set(msg);
@@ -2176,6 +2183,31 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	slurm_step_layout_destroy(step_layout);
+}
+
+/* _slurm_rpc_step_update - update a job step
+ */
+static void _slurm_rpc_step_update(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	step_update_request_msg_t *req = 
+			(step_update_request_msg_t *) msg->data;
+	/* Locks: Write job */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	int rc;
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_STEP_UPDATE, from uid=%u",
+		(unsigned int) uid);
+
+	lock_slurmctld(job_write_lock);
+	rc = update_step(req, uid);
+	unlock_slurmctld(job_write_lock);
+	END_TIMER2("_slurm_rpc_step_update");
+
+	slurm_send_rc_msg(msg, rc);
 }
 
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */

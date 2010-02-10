@@ -107,10 +107,9 @@ extern int	scontrol_job_notify(int argc, char *argv[]);
 extern int 	scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr);
 extern int 	scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr,
 				     uint16_t show_flags);
-extern int 	scontrol_load_partitions (
-	partition_info_msg_t **part_info_pptr);
-extern int 	scontrol_load_block(
-	block_info_msg_t **block_info_pptr);
+extern int 	scontrol_load_partitions (partition_info_msg_t **
+					  part_info_pptr);
+extern int 	scontrol_load_block (block_info_msg_t **block_info_pptr);
 extern void	scontrol_pid_info(pid_t job_pid);
 extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr,
@@ -131,6 +130,7 @@ extern int	scontrol_update_job (int argc, char *argv[]);
 extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);
 extern int	scontrol_update_res (int argc, char *argv[]);
+extern int	scontrol_update_step (int argc, char *argv[]);
 extern void     scontrol_list_pids(const char *jobid_str,
 				   const char *node_name);
 extern int	scontrol_create_part(int argc, char *argv[]);

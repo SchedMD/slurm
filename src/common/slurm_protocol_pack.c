@@ -550,6 +550,11 @@ static int  _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t **msg,
 					Buf buffer,
 					uint16_t protocol_version);
 
+static void _pack_update_job_step_msg(step_update_request_msg_t * msg, 
+				      Buf buffer, uint16_t protocol_version);
+static int _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, 
+				       Buf buffer, uint16_t protocol_version);
+
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * IN header - the header structure to pack
@@ -684,6 +689,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				   msg->data, buffer,
 				   msg->protocol_version);
 		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		_pack_update_job_step_msg((step_update_request_msg_t *)
+					  msg->data, buffer,
+					  msg->protocol_version);
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
@@ -1146,6 +1155,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_job_desc_msg((job_desc_msg_t **) & (msg->data),
 					  buffer,
 					  msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		rc = _unpack_update_job_step_msg(
+				(step_update_request_msg_t **) & (msg->data),
+				buffer, msg->protocol_version);
 		break;
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_JOB_ALLOCATION_INFO:
@@ -5714,6 +5728,35 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer,
 
 unpack_error:
 	slurm_free_job_step_kill_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_update_job_step_msg(step_update_request_msg_t * msg, Buf buffer,
+			uint16_t protocol_version)
+{
+	pack32(msg->job_id, buffer);
+	pack32(msg->step_id, buffer);
+	pack32(msg->time_limit, buffer);
+}
+
+static int
+_unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, Buf buffer,
+			    uint16_t protocol_version)
+{
+	step_update_request_msg_t *msg;
+
+	msg = xmalloc(sizeof(step_update_request_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->step_id, buffer);
+	safe_unpack32(&msg->time_limit, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_update_step_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

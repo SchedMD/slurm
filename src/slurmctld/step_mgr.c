@@ -2302,7 +2302,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	uint32_t step_id, time_limit;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
-	char *resv_ports = NULL, *name = NULL, *network = NULL, *bit_fmt = NULL;
+	char *resv_ports = NULL, *name = NULL, *network = NULL;
+	char *bit_fmt = NULL;
 	switch_jobinfo_t *switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
@@ -2616,7 +2617,6 @@ check_job_step_time_limit (struct job_record *job_ptr, time_t now)
 			_signal_step_timelimit(job_ptr, step_ptr, now);
 		}
 	}
-
 	list_iterator_destroy (step_iterator);
 }
 
@@ -2638,4 +2638,53 @@ static bool _is_mem_resv(void)
 	}
 
 	return mem_resv_value;
+}
+
+/* Process job step update request from specified user,
+ * RET - 0 or error code */
+extern int update_step(step_update_request_msg_t *req, uid_t uid)
+{
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+	ListIterator step_iterator;
+	int mod_cnt = 0;
+
+	job_ptr = find_job_record(req->job_id);
+	if (job_ptr == NULL) {
+		error("update_step: invalid job id %u", req->job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
+		error("Security violation, STEP_UPDATE RPC from uid %d",
+		      uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+
+	/* No need to limit step time limit as job time limit will kill 
+	 * any steps with any time limit */
+	if (req->step_id == NO_VAL) {
+		step_iterator = list_iterator_create (job_ptr->step_list);
+		while ((step_ptr = (struct step_record *) 
+				   list_next (step_iterator))) {
+			step_ptr->time_limit = req->time_limit;
+			mod_cnt++;
+			info("Updating step %u.%u time limit to %u", 
+			     req->job_id, step_ptr->step_id, req->time_limit);
+		}
+		list_iterator_destroy (step_iterator);
+	} else {
+		step_ptr = find_step_record(job_ptr, req->step_id);
+		if (step_ptr) {
+			step_ptr->time_limit = req->time_limit;
+			mod_cnt++;
+			info("Updating step %u.%u time limit to %u", 
+			     req->job_id, req->step_id, req->time_limit);
+		} else
+			return ESLURM_INVALID_JOB_ID;
+	}
+	if (mod_cnt)
+		last_job_update = time(NULL);
+
+	return SLURM_SUCCESS;
 }
