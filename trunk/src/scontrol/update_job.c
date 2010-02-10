@@ -2,7 +2,7 @@
  *  update_job.c - update job functions for scontrol.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -296,7 +296,7 @@ scontrol_update_job (int argc, char *argv[])
 			return -1;
 		}
 
-		if (strncasecmp(tag, "JobId", MAX(taglen, 1)) == 0) {
+		if (strncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
 			job_msg.job_id =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 		}

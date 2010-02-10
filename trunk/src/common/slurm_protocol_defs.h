@@ -240,7 +240,7 @@ typedef enum {
 	RESPONSE_RUN_JOB_STEP,
 	REQUEST_CANCEL_JOB_STEP,
 	RESPONSE_CANCEL_JOB_STEP,
-	DEFUNCT_REQUEST_COMPLETE_JOB_STEP, /* DEFUNCT */
+	REQUEST_UPDATE_JOB_STEP,
 	DEFUNCT_RESPONSE_COMPLETE_JOB_STEP, /* DEFUNCT */
 	REQUEST_CHECKPOINT,
 	RESPONSE_CHECKPOINT,
@@ -1001,6 +1001,7 @@ void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
 void inline slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg);
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 void inline slurm_free_suspend_msg(suspend_msg_t *msg);
+void slurm_free_update_step_msg(step_update_request_msg_t * msg);
 void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
 void slurm_free_job_alloc_info_response_msg (

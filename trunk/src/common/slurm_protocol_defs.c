@@ -4,7 +4,7 @@
  *	the slurm daemons directly, not for user client use.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -265,6 +265,11 @@ void slurm_free_job_step_id_msg(job_step_id_msg_t * msg)
 }
 
 void slurm_free_job_id_request_msg(job_id_request_msg_t * msg)
+{
+	xfree(msg);
+}
+
+void slurm_free_update_step_msg(step_update_request_msg_t * msg)
 {
 	xfree(msg);
 }
@@ -1956,6 +1961,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_TOPO_INFO:
 		slurm_free_topo_info_msg(data);
 		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		slurm_free_update_step_msg(data);
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;

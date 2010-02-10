@@ -743,6 +743,12 @@ typedef struct job_info_msg {
 	job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
 
+typedef struct step_update_request_msg {
+	uint32_t job_id;
+	uint32_t step_id;
+	uint32_t time_limit;	/* In minutes */
+} step_update_request_msg_t;
+
 typedef struct slurm_step_layout {
 	uint32_t node_cnt;	/* node count */
 	char *node_list;        /* list of nodes in step */
@@ -1898,7 +1904,8 @@ extern void *slurm_ctl_conf_2_key_pairs PARAMS((
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_slurmd_status()
  */
-extern int slurm_load_slurmd_status PARAMS((slurmd_status_t **slurmd_status_ptr));
+extern int slurm_load_slurmd_status PARAMS((
+		slurmd_status_t **slurmd_status_ptr));
 
 /*
  * slurm_free_slurmd_status - free slurmd state information
@@ -1926,6 +1933,19 @@ void slurm_print_slurmd_status PARAMS((
  */
 void slurm_print_key_pairs PARAMS((
 		FILE* out, void* key_pairs, char *title));
+
+/*
+ * slurm_init_update_step_msg - initialize step update message with default 
+ *	values before calling slurm_update_step()
+ * OUT step_msg - step update messasge descriptor
+ */
+extern void slurm_init_update_step_msg PARAMS((
+		step_update_request_msg_t * step_msg));
+
+/* Update the time limit of a job step, 
+ * IN step_msg - step update messasge descriptor
+ * RET 0 or -1 on error */
+extern int slurm_update_step PARAMS(( step_update_request_msg_t * step_msg ));
 
 /*****************************************************************************\
  *	SLURM JOB RESOURCES READ/PRINT FUNCTIONS

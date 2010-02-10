@@ -3,7 +3,7 @@
 slurm_create_partition, slurm_create_reservation,
 slurm_delete_partition, slurm_delete_reservation,
 slurm_init_part_desc_msg, slurm_init_resv_desc_msg,
-slurm_reconfigure, slurm_shutdown, slurm_takeover, slurm_update_job,
+slurm_reconfigure, slurm_shutdown, slurm_takeover, 
 ,slurm_init_update_node_msg slurm_update_node, slurm_update_partition,
 slurm_update_reservation
 \- Slurm administrative functions
@@ -57,12 +57,6 @@ int \fBslurm_shutdown\fR (
 .LP
 int \fBslurm_takeover\fR ( );
 .LP
-int \fBslurm_update_job\fR (
-.br
-	job_desc_msg_t *\fIupdate_job_msg_ptr\fP
-.br
-);
-.LP
 void \fBslurm_init_update_node_msg\fR(
 .br
 	update_node_msg_t *\fIupdate_node_msg_ptr\fP
@@ -103,10 +97,6 @@ See slurm.h for full details on the data structure's contents.
 \fIdelete_resv_msg_ptr\fP
 Specifies the pointer to a reservation delete request specification.
 See slurm.h for full details on the data structure's contents.
-.TP
-\fIupdate_job_msg_ptr\fP
-Specifies the pointer to a job update request specification. See slurm.h
-for full details on the data structure's contents.
 .TP
 \fIupdate_node_msg_ptr\fP
 Specifies the pointer to a node update request specification. See slurm.h
@@ -167,17 +157,6 @@ function may only be successfully executed by user root.
 \fBslurm_takeover\fR Request that the Slurm primary controller shutdown
 immediately and the backup controller take over.
 This function may only be successfully executed by user root.
-.LP
-\fBslurm_update_job\fR Request that the configuration of a job be updated. Note
-that most, but not all parameters of a job may be changed by this function.
-Initialize the data structure using the \fBslurm_init_job_desc_msg\fR function
-prior to setting values of the parameters to be changed. Note:
-\fBslurm_init_job_desc_msg\fR is not equivalent to setting the data structure
-values to zero. This function may only be successfully executed by user root.
-Note the job priority of zero represents a job that will not be scheduled.
-Slurm uses the priority one to represent jobs that can not be scheduled until
-additional nodes are returned to service (i.e. not DOWN, DRAINED, or FAILED).
-This permits lower priority jobs to utilize those resources which are available.
 .LP
 \fBslurm_init_update_node_msg\fR Initialize the contents of an update mpde
 descriptor with default values. Note: \fBslurm_init_update_node_msg\fR is
@@ -281,8 +260,6 @@ int main (int argc, char *argv[])
 .br
 {
 .br
-	job_desc_msg_t          update_job_msg;
-.br
 	update_node_msg_t       update_node_msg;
 .br
 	partition_desc_msg_t    update_part_msg;
@@ -296,20 +273,6 @@ int main (int argc, char *argv[])
 	if (slurm_reconfigure ( )) {
 .br
 		slurm_perror ("slurm_reconfigure error");
-.br
-		exit (1);
-.br
-	}
-.LP
-	slurm_init_job_desc_msg( &update_job_msg );
-.br
-	update_job_msg.job_id = 1234;
-.br
-	update_job_msg time_limit = 200;
-.br
-	if (slurm_update_job (&update_job_msg)) {
-.br
-		slurm_perror ("slurm_update_job error");
 .br
 		exit (1);
 .br

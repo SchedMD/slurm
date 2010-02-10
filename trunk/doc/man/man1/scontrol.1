@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "September 2009" "scontrol 2.1" "Slurm components"
+.TH SCONTROL "1" "February 2010" "scontrol 2.1" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -294,8 +294,8 @@ primary SLURM controller is scheduled down.
 
 .TP
 \fBupdate\fP \fISPECIFICATION\fP
-Update job, node, partition, or reservation configuration per the supplied
-specification. \fISPECIFICATION\fP is in the same format as the Slurm
+Update job, step, node, partition, or reservation configuration per the 
+supplied specification. \fISPECIFICATION\fP is in the same format as the Slurm
 configuration file and the output of the \fIshow\fP command described above. It
 may be desirable to execute the \fIshow\fP command (described above) on the
 specific entity you which to update, then use cut\-and\-paste tools to enter
@@ -543,6 +543,25 @@ a further state such as RUNNING, COMPLETE, etc. In these cases the
 code explicitly returns zero for these values. These values are
 meaningless once the job resources have been allocated and the job has
 started.
+
+.TP
+\fBSPECIFICATIONS FOR UPDATE COMMAND, STEPS\fR
+.TP
+\fIStepId\fP=<job_id>[.<step_id>]
+Identify the step to be updated. 
+If the job_id is given, but no step_id is specified then all steps of 
+the identified job will be modified.
+This specification is required.
+.TP
+\fITimeLimit\fP=<time>
+The job's time limit.
+Output format is [days\-]hours:minutes:seconds or "UNLIMITED".
+Input format (for \fBupdate\fR command) set is minutes, minutes:seconds,
+hours:minutes:seconds, days\-hours, days\-hours:minutes or
+days\-hours:minutes:seconds.
+Time resolution is one minute and second values are rounded up to
+the next minute.
+
 .TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, NODES\fR
 .TP

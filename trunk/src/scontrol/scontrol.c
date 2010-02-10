@@ -3,7 +3,7 @@
  *	provides interface to read, write, update, and configurations.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
@@ -729,8 +729,9 @@ _process_command (int argc, char *argv[])
 					level = -1;
 					exit_code = 1;
 					if (quiet_flag != 1)
-						fprintf(stderr, "invalid debug "
-							"level: %s\n", argv[1]);
+						fprintf(stderr, "invalid "
+							"debug level: %s\n", 
+							argv[1]);
 				}
 			}
 			if (level != -1) {
@@ -1081,7 +1082,7 @@ _update_it (int argc, char *argv[])
 	int i, error_code = SLURM_SUCCESS;
 	int nodetag=0, partag=0, jobtag=0;
 	int blocktag=0, subtag=0, restag=0;
-	int debugtag=0;
+	int debugtag=0, steptag=0;
 
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
@@ -1097,8 +1098,10 @@ _update_it (int argc, char *argv[])
 			nodetag=1;
 		} else if (!strncasecmp(tag, "PartitionName", MAX(taglen, 3))) {
 			partag=1;
-		} else if (!strncasecmp(tag, "JobId", MAX(taglen, 1))) {
+		} else if (!strncasecmp(tag, "JobId", MAX(taglen, 3))) {
 			jobtag=1;
+		} else if (!strncasecmp(tag, "StepId", MAX(taglen, 4))) {
+			steptag=1;
 		} else if (!strncasecmp(tag, "BlockName", MAX(taglen, 3))) {
 			blocktag=1;
 		} else if (!strncasecmp(tag, "SubBPName", MAX(taglen, 3))) {
@@ -1113,14 +1116,16 @@ _update_it (int argc, char *argv[])
 	}
 
 	/* The order of tests matters here.  An update job request can include
-	   partition and reservation tags, possibly before the jobid tag, but
-	   none of the other updates have a jobid tag, so check jobtag first.
-	   Likewise, check restag next, because reservations can have a
-	   partition tag.  The order of the rest doesn't matter because there
-	   aren't any other duplicate tags.  */
+	 * partition and reservation tags, possibly before the jobid tag, but
+	 * none of the other updates have a jobid tag, so check jobtag first.
+	 * Likewise, check restag next, because reservations can have a
+	 * partition tag.  The order of the rest doesn't matter because there
+	 * aren't any other duplicate tags.  */
 
 	if (jobtag)
 		error_code = scontrol_update_job (argc, argv);
+	else if (steptag)
+		error_code = scontrol_update_step (argc, argv);
 	else if (restag)
 		error_code = scontrol_update_res (argc, argv);
 	else if (nodetag)
@@ -1394,8 +1399,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               (the primary controller will be stopped)     \n\
      suspend <job_id>         susend specified job                         \n\
      resume <job_id>          resume previously suspended job              \n\
-     update <SPECIFICATIONS>  update job, node, partition, reservation, or \n\
-                              bluegene block/subbp configuration           \n\
+     update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
+                              step or bluegene block/subbp configuration   \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\

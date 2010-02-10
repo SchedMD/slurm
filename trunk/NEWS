@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
     killing an entire job if one step exceeds its memory limit.
  -- Added configuration parameter VSizeFactor to enforce virtual memory limits 
     for jobs and job steps as a percentage of their real memory allocation.
+ -- Add scontrol ability to update job step time limits.
 
 * Changes in SLURM 2.2.0.pre1
 =============================
