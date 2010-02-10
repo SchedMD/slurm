@@ -325,7 +325,8 @@ extern List mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		send_char = xstrdup_printf("(%s)", name_char);
 		user_name = uid_to_string((uid_t) uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_CLUSTERS, now,
-				   user_name, cluster_table, send_char, vals);
+				   user_name, cluster_table,
+				   send_char, vals, NULL);
 		xfree(user_name);
 		if (rc == SLURM_ERROR) {
 			error("Couldn't modify cluster 1");

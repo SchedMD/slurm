@@ -47,10 +47,11 @@
 static int _get_account_coords(mysql_conn_t *mysql_conn,
 			       acct_account_rec_t *acct)
 {
-	char *query = NULL;
+	char *query = NULL, *cluster_name = NULL;
 	acct_coord_rec_t *coord = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	ListIterator itr;
 
 	if(!acct) {
 		error("We need a account to fill in.");
@@ -78,15 +79,32 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
 
-	query = xstrdup_printf("select distinct t0.user from %s as t0, "
-			       "%s as t1, %s as t2 where t0.acct=t1.acct && "
-			       "t1.lft<t2.lft && t1.rgt>t2.lft && "
-			       "t1.user='' && t2.acct=\"%s\" "
-			       "&& t1.acct!=\"%s\" && !t0.deleted;",
-			       acct_coord_table, assoc_table, assoc_table,
-			       acct->name, acct->name);
-	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+	slurm_mutex_lock(&mysql_cluster_list_lock);
+	itr = list_iterator_create(mysql_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		if(query)
+			xstrcat(query, " union ");
+		xstrfmtcat(query,
+			   "select distinct t0.user from %s as t0, "
+			   "%s_%s as t1, %s_%s as t2 "
+			   "where t0.acct=t1.acct && "
+			   "t1.lft<t2.lft && t1.rgt>t2.lft && "
+			   "t1.user='' && t2.acct=\"%s\" "
+			   "&& t1.acct!=\"%s\" && !t0.deleted",
+			   acct_coord_table, cluster_name, assoc_table,
+			   cluster_name, assoc_table,
+			   acct->name, acct->name);
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&mysql_cluster_list_lock);
+
+	if(!query) {
+		error("No clusters defined?  How could there be accts?");
+		return SLURM_SUCCESS;
+	}
+	xstrcat(query, ";");
+
+	if(!(result =  mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -335,7 +353,7 @@ extern List mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	user_name = uid_to_string((uid_t) uid);
 	rc = modify_common(mysql_conn, DBD_MODIFY_ACCOUNTS, now,
-			    user_name, acct_table, name_char, vals);
+			   user_name, acct_table, name_char, vals, NULL);
 	xfree(user_name);
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify accounts");
