@@ -46,7 +46,6 @@
 #include <dlfcn.h>
 
 #include "slurm/slurm.h"
-#include "hostlist.h"
 
 /*  Define the externally visible functions in this file.
  */
@@ -226,62 +225,15 @@ _hostrange_member(char *hostname, char *str)
 	if (!*hostname || !*str)
 		return 0;
 
-	if ((hl = hostlist_create(str)) == NULL)
+	if ((hl = slurm_hostlist_create(str)) == NULL)
 		return 0;
-	found_host = hostlist_find(hl, hostname);
-	hostlist_destroy(hl);
+	found_host = slurm_hostlist_find(hl, hostname);
+	slurm_hostlist_destroy(hl);
 
 	if (found_host == -1)
 		return 0;
 	else
 		return 1;
-}
-
-/*
- *  Wrapper for SLURM API function slurm_load_jobs ()
- */
-int _slurm_load_jobs (job_info_msg_t **msgp)
-{
-	static int (*load_jobs) (time_t, job_info_msg_t **, uint16_t);
-
-	if (!(load_jobs = dlsym (slurm_h, "slurm_load_jobs"))) {
-		_log_msg (LOG_ERR, "Unable to resolve slurm_load_jobs\n");
-		return -1;
-	}
-    
-	return load_jobs ((time_t) NULL, msgp, (uint16_t) SHOW_ALL);
-}
-
-/*
- *  Wrapper for SLURM API function slurm_strerror ()
- */
-char * _slurm_strerror (int errnum)
-{
-	static char * (*f) (int);
-
-	if (!(f = dlsym (slurm_h, "slurm_strerror"))) {
-		_log_msg (LOG_ERR, "Unable to resolve slurm_strerror\n");
-		return "unknown error";
-	}
-
-	return f (errnum);
-}
-
-/*
- *  Wrapper for slurm_free_job_info_msg ()
- */
-void _free_msg (job_info_msg_t *msg)
-{
-	static void (*free_msg) (job_info_msg_t *);
-
-	if (!(free_msg = dlsym (slurm_h, "slurm_free_job_info_msg"))) {
-		_log_msg (LOG_ERR, "Unable to resolve slurm_free_job...\n");
-		return;
-	}
-
-	free_msg (msg);
-
-	return;
 }
 
 /*
@@ -305,9 +257,9 @@ _slurm_match_allocation(uid_t uid)
 
 	DBG ("does uid %ld have \"%s\" allocated", uid, hostname);
 
-	if (_slurm_load_jobs(&msg) < 0) {
+	if (slurm_load_jobs((time_t) 0, &msg, SHOW_ALL) < 0) {
 		_log_msg(LOG_ERR, "slurm_load_jobs: %s",
-			 _slurm_strerror(errno));
+			 slurm_strerror(errno));
 		return 0;
 	}
 
@@ -329,7 +281,7 @@ _slurm_match_allocation(uid_t uid)
 		}
 	}
 
-	_free_msg (msg);
+	slurm_free_job_info_msg (msg);
 
 	return authorized;
 }
@@ -395,7 +347,7 @@ extern void libpam_slurm_init (void)
 {
 	if (slurm_h)
 		return;
-   
+
 	if (!(slurm_h = dlopen("libslurm.so", RTLD_NOW|RTLD_GLOBAL))) 
 		_log_msg (LOG_ERR, "Unable to dlopen libslurm: %s\n",
 			  dlerror ());

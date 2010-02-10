@@ -26,13 +26,15 @@ rev     = $(SLURM_API_REVISION)
 
 pam_slurm_la_SOURCES = pam_slurm.c
 
-pam_slurm_la_LIBADD = $(top_builddir)/src/common/hostlist.lo
+pam_slurm_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 
 pam_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
 
 force:
 $(pam_slurm_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+	@cd `dirname $@` && $(MAKE)
+#	Don't specify basename or version.map files in src/api will not be built
+#	@cd `dirname $@` && $(MAKE) `basename $@`
 
 else
 EXTRA_pam_slurm_la_SOURCES = pam_slurm.c
