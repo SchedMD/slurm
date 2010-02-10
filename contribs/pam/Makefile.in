@@ -105,7 +105,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 @HAVE_PAM_TRUE@pam_slurm_la_DEPENDENCIES =  \
-@HAVE_PAM_TRUE@	$(top_builddir)/src/common/hostlist.lo
+@HAVE_PAM_TRUE@	$(top_builddir)/src/api/libslurm.la
 am__pam_slurm_la_SOURCES_DIST = pam_slurm.c
 @HAVE_PAM_TRUE@am_pam_slurm_la_OBJECTS = pam_slurm.lo
 am__EXTRA_pam_slurm_la_SOURCES_DIST = pam_slurm.c
@@ -329,8 +329,10 @@ pkglib_LTLIBRARIES = $(pam_lib)
 @HAVE_PAM_TRUE@age = $(SLURM_API_AGE)
 @HAVE_PAM_TRUE@rev = $(SLURM_API_REVISION)
 @HAVE_PAM_TRUE@pam_slurm_la_SOURCES = pam_slurm.c
-@HAVE_PAM_TRUE@pam_slurm_la_LIBADD = $(top_builddir)/src/common/hostlist.lo
+@HAVE_PAM_TRUE@pam_slurm_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 @HAVE_PAM_TRUE@pam_slurm_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
+#	Don't specify basename or version.map files in src/api will not be built
+#	@cd `dirname $@` && $(MAKE) `basename $@`
 @HAVE_PAM_FALSE@EXTRA_pam_slurm_la_SOURCES = pam_slurm.c
 all: all-am
 
@@ -639,7 +641,7 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 @HAVE_PAM_TRUE@force:
 @HAVE_PAM_TRUE@$(pam_slurm_la_LIBADD) : force
-@HAVE_PAM_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+@HAVE_PAM_TRUE@	@cd `dirname $@` && $(MAKE)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
