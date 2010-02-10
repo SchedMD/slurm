@@ -292,6 +292,7 @@ Summary: SLURM interfaces to IBM AIX and Federation switch.
 Group: System Environment/Base
 Requires: slurm
 BuildRequires: proctrack >= 3
+Obsoletes: slurm-aix-federation
 %description aix
 SLURM plugins for IBM AIX and Federation switch.
 %endif
