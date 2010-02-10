@@ -551,6 +551,7 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 	time_t last_month = sent_start;
 	time_t start_time = 0;
   	time_t end_time = 0;
+	ListIterator itr;
 	DEF_TIMERS;
 
 	char *update_req_inx[] = {
@@ -596,37 +597,62 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 			mysql_free_result(result);
 		} else {
 			time_t now = time(NULL);
+			time_t lowest = now;
+
+			mysql_free_result(result);
+
+			slurm_mutex_lock(&mysql_cluster_list_lock);
+			itr = list_iterator_create(mysql_cluster_list);
+			while((tmp = list_next(itr))) {
+				query = xstrdup_printf(
+					"select time_start from %s_%s "
+					"where node_name='' order by "
+					"time_start asc limit 1;",
+					tmp, event_table);
+				debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
+				       __FILE__, __LINE__, query);
+				if(!(result = mysql_db_query_ret(
+					     mysql_conn->db_conn, query, 0))) {
+					xfree(query);
+					break;
+				}
+				xfree(query);
+				if((row = mysql_fetch_row(result))) {
+					time_t check = atoi(row[0]);
+					if(check < lowest)
+						lowest = check;
+				}
+				mysql_free_result(result);
+			}
+			list_iterator_destroy(itr);
+			slurm_mutex_unlock(&mysql_cluster_list_lock);
+
 			/* If we don't have any events like adding a
 			 * cluster this will not work correctly, so we
 			 * will insert now as a starting point.
 			 */
+
 			query = xstrdup_printf(
-				"set @PS = %d;"
-				"select @PS := period_start from %s limit 1;"
 				"insert into %s "
 				"(hourly_rollup, daily_rollup, monthly_rollup) "
-				"values (@PS, @PS, @PS);",
-				now, event_table, last_ran_table);
+				"values (%d, %d, %d);",
+				last_ran_table, lowest, lowest, lowest);
 
 			debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
 			       __FILE__, __LINE__, query);
-			mysql_free_result(result);
-			if(!(result = mysql_db_query_ret(
-				     mysql_conn->db_conn, query, 0))) {
-				xfree(query);
-				return SLURM_ERROR;
-			}
+			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
-			row = mysql_fetch_row(result);
-			if(!row) {
+			if(rc != SLURM_SUCCESS)
+				return SLURM_ERROR;
+
+			if(lowest == now) {
 				debug("No clusters have been added "
 				      "not doing rollup");
 				mysql_free_result(result);
 				return SLURM_SUCCESS;
 			}
 
-			last_hour = last_day = last_month = atoi(row[0]);
-			mysql_free_result(result);
+			last_hour = last_day = last_month = lowest;
 		}
 	}
 
@@ -684,8 +710,17 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 	if(end_time-start_time > 0) {
 		START_TIMER;
-		if((rc = mysql_hourly_rollup(mysql_conn, start_time, end_time))
-		   != SLURM_SUCCESS)
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+		itr = list_iterator_create(mysql_cluster_list);
+		while((tmp = list_next(itr))) {
+			if((rc = mysql_hourly_rollup(mysql_conn, tmp,
+						     start_time, end_time))
+			   != SLURM_SUCCESS)
+				break;
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
+		if(rc != SLURM_SUCCESS)
 			return rc;
 		END_TIMER3("hourly_rollup", 5000000);
 		/* If we have a sent_end do not update the last_run_table */
@@ -716,10 +751,20 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 	if(end_time-start_time > 0) {
 		START_TIMER;
-		if((rc = mysql_daily_rollup(mysql_conn, start_time, end_time,
-					    archive_data))
-		   != SLURM_SUCCESS)
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+		itr = list_iterator_create(mysql_cluster_list);
+		while((tmp = list_next(itr))) {
+			if((rc = mysql_daily_rollup(mysql_conn, tmp,
+						    start_time, end_time,
+						    archive_data))
+			   != SLURM_SUCCESS)
+				break;
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
+		if(rc != SLURM_SUCCESS)
 			return rc;
+
 		END_TIMER2("daily_rollup");
 		if(query && !sent_end)
 			xstrfmtcat(query, ", daily_rollup=%d", end_time);
@@ -757,10 +802,20 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 	if(end_time-start_time > 0) {
 		START_TIMER;
-		if((rc = mysql_monthly_rollup(
-			    mysql_conn, start_time, end_time, archive_data))
-		   != SLURM_SUCCESS)
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+		itr = list_iterator_create(mysql_cluster_list);
+		while((tmp = list_next(itr))) {
+			if((rc = mysql_monthly_rollup(
+				    mysql_conn, tmp,
+				    start_time, end_time, archive_data))
+			   != SLURM_SUCCESS)
+				break;
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
+		if(rc != SLURM_SUCCESS)
 			return rc;
+
 		END_TIMER2("monthly_rollup");
 
 		if(query && !sent_end)

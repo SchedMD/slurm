@@ -325,7 +325,7 @@ extern List mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		send_char = xstrdup_printf("(%s)", name_char);
 		user_name = uid_to_string((uid_t) uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_CLUSTERS, now,
-				    user_name, cluster_table, send_char, vals);
+				   user_name, cluster_table, send_char, vals);
 		xfree(user_name);
 		if (rc == SLURM_ERROR) {
 			error("Couldn't modify cluster 1");
@@ -400,23 +400,9 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
-	while((row = mysql_fetch_row(result))) {
-		char *object = xstrdup(row[0]);
-		list_append(ret_list, object);
-		if(!rc) {
-			xstrfmtcat(name_char, "name=\"%s\"", object);
-			xstrfmtcat(extra, "t2.cluster=\"%s\"", object);
-			xstrfmtcat(assoc_char, "cluster=\"%s\"", object);
-			rc = 1;
-		} else  {
-			xstrfmtcat(name_char, " || name=\"%s\"", object);
-			xstrfmtcat(extra, " || t2.cluster=\"%s\"", object);
-			xstrfmtcat(assoc_char, " || cluster=\"%s\"", object);
-		}
-	}
-	mysql_free_result(result);
 
-	if(!list_count(ret_list)) {
+	if(!mysql_num_rows(result)) {
+		mysql_free_result(result);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
@@ -424,26 +410,43 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	/* We need to remove these clusters from the wckey table */
-	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
-	wckey_cond.cluster_list = ret_list;
-	tmp_list = mysql_remove_wckeys(
-		mysql_conn, uid, &wckey_cond);
-	if(tmp_list)
-		list_destroy(tmp_list);
+	assoc_char = xstrdup_printf("t2.acct='root'");
 
-	/* We should not need to delete any cluster usage just set it
-	 * to deleted */
-	xstrfmtcat(query,
-		   "update %s set period_end=%d where period_end=0 && (%s);"
-		   "update %s set mod_time=%d, deleted=1 where (%s);"
-		   "update %s set mod_time=%d, deleted=1 where (%s);"
-		   "update %s set mod_time=%d, deleted=1 where (%s);",
-		   event_table, now, assoc_char,
-		   cluster_day_table, now, assoc_char,
-		   cluster_hour_table, now, assoc_char,
-		   cluster_month_table, now, assoc_char);
+	user_name = uid_to_string((uid_t) uid);
+	while((row = mysql_fetch_row(result))) {
+		char *object = xstrdup(row[0]);
+		list_append(ret_list, object);
+
+		xfree(name_char);
+		xstrfmtcat(name_char, "name=\"%s\"", object);
+
+		/* We should not need to delete any cluster usage just set it
+		 * to deleted */
+		xstrfmtcat(query,
+			   "update %s_%s set period_end=%d where period_end=0;"
+			   "update %s_%s set mod_time=%d, deleted=1;"
+			   "update %s_%s set mod_time=%d, deleted=1;"
+			   "update %s_%s set mod_time=%d, deleted=1;",
+			   object, event_table, now,
+			   object, cluster_day_table, now,
+			   object, cluster_hour_table, now,
+			   object, cluster_month_table, now);
+		if((rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
+				       user_name, cluster_table,
+				       name_char, assoc_char, object))
+		   != SLURM_SUCCESS)
+			break;
+	}
+	mysql_free_result(result);
+	xfree(user_name);
+	xfree(name_char);
 	xfree(assoc_char);
+
+	if (rc != SLURM_SUCCESS) {
+		list_destroy(ret_list);
+		return NULL;
+	}
+
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -454,24 +457,15 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		list_flush(mysql_conn->update_list);
 		list_destroy(ret_list);
-		xfree(name_char);
-		xfree(extra);
 		return NULL;
 	}
 
-	assoc_char = xstrdup_printf("t2.acct='root' && (%s)", extra);
-	xfree(extra);
-
-	user_name = uid_to_string((uid_t) uid);
-	rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
-			    user_name, cluster_table, name_char, assoc_char);
-	xfree(user_name);
-	xfree(name_char);
-	xfree(assoc_char);
-	if (rc  == SLURM_ERROR) {
-		list_destroy(ret_list);
-		return NULL;
-	}
+	/* We need to remove these clusters from the wckey table */
+	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+	wckey_cond.cluster_list = ret_list;
+	tmp_list = mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
+	if(tmp_list)
+		list_destroy(tmp_list);
 
 	return ret_list;
 }
@@ -602,9 +596,8 @@ empty:
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
 		query = xstrdup_printf(
 			"select cpu_count, cluster_nodes from "
-			"%s where cluster=\"%s\" "
-			"and period_end=0 and node_name='' limit 1",
-			event_table, cluster->name);
+			"%s_%s where period_end=0 and node_name='' limit 1",
+			cluster->name, event_table);
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, __FILE__, __LINE__, query);
 		if(!(result2 = mysql_db_query_ret(
@@ -682,30 +675,29 @@ extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	time_t now = time(NULL);
+	List use_cluster_list = mysql_cluster_list;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *event_req_inx[] = {
-		"node_name",
-		"cluster",
+		"cluster_nodes"
 		"cpu_count",
+		"node_name",
 		"state",
-		"period_start",
-		"period_end",
+		"time_start",
+		"time_end",
 		"reason",
 		"reason_uid",
-		"cluster_nodes"
 	};
 
 	enum {
-		EVENT_REQ_NODE,
-		EVENT_REQ_CLUSTER,
+		EVENT_REQ_CNODES,
 		EVENT_REQ_CPU,
+		EVENT_REQ_NODE,
 		EVENT_REQ_STATE,
 		EVENT_REQ_START,
 		EVENT_REQ_END,
 		EVENT_REQ_REASON,
 		EVENT_REQ_REASON_UID,
-		EVENT_REQ_CNODES,
 		EVENT_REQ_COUNT
 	};
 
@@ -714,21 +706,6 @@ extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if(!event_cond)
 		goto empty;
-
-	if(event_cond->cluster_list
-	   && list_count(event_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(event_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "cluster=\"%s\"", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
 
 	if(event_cond->cpus_min) {
 		if(extra)
@@ -848,38 +825,52 @@ empty:
 		xstrfmtcat(tmp, ", %s", event_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s", tmp, event_table);
-	xfree(tmp);
-	if(extra) {
-		xstrfmtcat(query, " %s", extra);
-		xfree(extra);
-	}
+	if(event_cond->cluster_list && list_count(event_cond->cluster_list))
+		use_cluster_list = event_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
 
 	ret_list = list_create(destroy_acct_event_rec);
-	while((row = mysql_fetch_row(result))) {
-		acct_event_rec_t *event = xmalloc(sizeof(acct_event_rec_t));
 
-		list_append(ret_list, event);
+	itr = list_iterator_create(use_cluster_list);
+	while((object = list_next(itr))) {
+		query = xstrdup_printf("select %s from %s_%s",
+				       tmp, object, event_table);
+		if(extra)
+			xstrfmtcat(query, " %s", extra);
 
-		if(row[EVENT_REQ_NODE] && row[EVENT_REQ_NODE][0])
-			event->node_name = xstrdup(row[EVENT_REQ_NODE]);
+		while((row = mysql_fetch_row(result))) {
+			acct_event_rec_t *event =
+				xmalloc(sizeof(acct_event_rec_t));
 
-		if(row[EVENT_REQ_CLUSTER] && row[EVENT_REQ_CLUSTER][0])
-			event->cluster = xstrdup(row[EVENT_REQ_CLUSTER]);
+			list_append(ret_list, event);
 
-		event->cpu_count = atoi(row[EVENT_REQ_CPU]);
-		event->state = atoi(row[EVENT_REQ_STATE]);
-		event->period_start = atoi(row[EVENT_REQ_START]);
-		event->period_end = atoi(row[EVENT_REQ_END]);
+			event->cluster = xstrdup(object);
 
-		if(row[EVENT_REQ_REASON] && row[EVENT_REQ_REASON][0])
-			event->reason = xstrdup(row[EVENT_REQ_REASON]);
-		event->reason_uid = atoi(row[EVENT_REQ_REASON_UID]);
+			if(row[EVENT_REQ_NODE] && row[EVENT_REQ_NODE][0])
+				event->node_name = xstrdup(row[EVENT_REQ_NODE]);
 
-		if(row[EVENT_REQ_CLUSTER] && row[EVENT_REQ_CLUSTER][0])
-			event->cluster_nodes = xstrdup(row[EVENT_REQ_CNODES]);
+			event->cpu_count = atoi(row[EVENT_REQ_CPU]);
+			event->state = atoi(row[EVENT_REQ_STATE]);
+			event->period_start = atoi(row[EVENT_REQ_START]);
+			event->period_end = atoi(row[EVENT_REQ_END]);
+
+			if(row[EVENT_REQ_REASON] && row[EVENT_REQ_REASON][0])
+				event->reason = xstrdup(row[EVENT_REQ_REASON]);
+			event->reason_uid = atoi(row[EVENT_REQ_REASON_UID]);
+
+			if(row[EVENT_REQ_CNODES] && row[EVENT_REQ_CNODES][0])
+				event->cluster_nodes =
+					xstrdup(row[EVENT_REQ_CNODES]);
+		}
+		mysql_free_result(result);
 	}
-	mysql_free_result(result);
+	list_iterator_destroy(itr);
+	xfree(tmp);
+	xfree(extra);
+
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
 
 	return ret_list;
 }
@@ -915,9 +906,9 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn, char *cluster,
 	debug2("inserting %s(%s) with %u cpus", node_ptr->name, cluster, cpus);
 
 	query = xstrdup_printf(
-		"update %s set period_end=%d where cluster=\"%s\" "
-		"and period_end=0 and node_name=\"%s\";",
-		event_table, event_time, cluster, node_ptr->name);
+		"update %s_%s set period_end=%d where "
+		"time_end=0 and node_name=\"%s\";",
+		cluster, event_table, event_time, node_ptr->name);
 	/* If you are clean-restarting the controller over and over again you
 	 * could get records that are duplicates in the database.  If
 	 * this is the case we will zero out the period_end we are
@@ -927,13 +918,11 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn, char *cluster,
 	 * This way we only get one for the last time we let it run.
 	 */
 	xstrfmtcat(query,
-		   "insert into %s "
-		   "(node_name, state, cluster, cpu_count, "
-		   "period_start, reason) "
-		   "values (\"%s\", %u, \"%s\", %u, %d, \"%s\", %u) "
-		   "on duplicate key "
-		   "update period_end=0;",
-		   event_table, node_ptr->name, node_ptr->node_state, cluster,
+		   "insert into %s_%s "
+		   "(node_name, state, cpu_count, time_start, reason) "
+		   "values (\"%s\", %u, %u, %d, \"%s\", %u) "
+		   "on duplicate key update time_end=0;",
+		   cluster, event_table, node_ptr->name, node_ptr->node_state,
 		   cpus, event_time, my_reason, reason_uid);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -954,9 +943,9 @@ extern int mysql_node_up(mysql_conn_t *mysql_conn, char *cluster,
 		return ESLURM_DB_CONNECTION;
 
 	query = xstrdup_printf(
-		"update %s set period_end=%d where cluster=\"%s\" "
-		"and period_end=0 and node_name=\"%s\";",
-		event_table, event_time, cluster, node_ptr->name);
+		"update %s_%s set time_end=%d where "
+		"time_end=0 and node_name=\"%s\";",
+		cluster, event_table, event_time, node_ptr->name);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -1026,9 +1015,9 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
 
 	/* Record the processor count */
 	query = xstrdup_printf(
-		"select cpu_count, cluster_nodes from %s where cluster=\"%s\" "
-		"and period_end=0 and node_name='' limit 1",
-		event_table, cluster);
+		"select cpu_count, cluster_nodes from %s_%s where "
+		"time_end=0 and node_name='' limit 1",
+		cluster, event_table);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -1062,10 +1051,9 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
 				      "last instance of cluster '%s'.",
 				      cluster_nodes, cluster);
 				query = xstrdup_printf(
-					"update %s set cluster_nodes=\"%s\" "
-					"where cluster=\"%s\" "
-					"and period_end=0 and node_name=''",
-					event_table, cluster_nodes, cluster);
+					"update %s_%s set cluster_nodes=\"%s\" "
+					"where period_end=0 and node_name=''",
+					cluster, event_table, cluster_nodes);
 				rc = mysql_db_query(mysql_conn->db_conn, query);
 				xfree(query);
 				goto end_it;
@@ -1085,9 +1073,8 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
 	   changed some of the downed nodes may have gone away.
 	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
-		"update %s set period_end=%d where cluster=\"%s\" "
-		"and period_end=0",
-		event_table, event_time, cluster);
+		"update %s_%s set period_end=%d where period_end=0",
+		cluster, event_table, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	first = 1;
@@ -1095,10 +1082,10 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
-		"insert into %s (cluster, cluster_nodes, cpu_count, "
-		"period_start, reason) "
-		"values (\"%s\", \"%s\", %u, %d, 'Cluster processor count')",
-		event_table, cluster, cluster_nodes, cpus, event_time);
+		"insert into %s_%s (cluster_nodes, cpu_count, "
+		"time_start, reason) "
+		"values (\"%s\", %u, %d, 'Cluster processor count')",
+		cluster, event_table, cluster_nodes, cpus, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 end_it:

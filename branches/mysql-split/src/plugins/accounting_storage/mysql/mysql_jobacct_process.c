@@ -150,7 +150,6 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	hostlist_t temp_hl = NULL;
 	hostlist_iterator_t h_itr = NULL;
-	char *object = NULL;
 	char *query = NULL;
 
 	if(!job_cond || !job_cond->used_nodes)
@@ -171,20 +170,17 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	h_itr = hostlist_iterator_create(temp_hl);
 
 	query = xstrdup_printf("select cluster_nodes, period_start, "
-			       "period_end from %s where node_name='' "
+			       "period_end from %s_%s where node_name='' "
 			       "&& cluster_nodes !=''",
-			       event_table);
-
-	if((object = list_peek(job_cond->cluster_list)))
-		xstrfmtcat(query, " && cluster='%s'", object);
+			       list_peek(job_cond->cluster_list), event_table);
 
 	if(job_cond->usage_start) {
 		if(!job_cond->usage_end)
 			job_cond->usage_end = now;
 
 		xstrfmtcat(query,
-			   " && ((period_start < %d) "
-			   "&& (period_end >= %d || period_end = 0))",
+			   " && ((time_start < %d) "
+			   "&& (time_end >= %d || time_end = 0))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 

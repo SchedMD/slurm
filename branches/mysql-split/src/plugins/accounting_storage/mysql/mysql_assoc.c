@@ -2065,8 +2065,19 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	mysql_free_result(result);
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
-			    user_name, assoc_table, name_char, assoc_char);
+
+	slurm_mutex_lock(&mysql_cluster_list_lock);
+	itr = list_iterator_create(mysql_cluster_list);
+	while((object = list_next(itr))) {
+		if((rc = remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
+				       user_name, assoc_table, name_char,
+				       assoc_char, object))
+		   != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&mysql_cluster_list_lock);
+
 	xfree(user_name);
 	xfree(name_char);
 	xfree(assoc_char);
