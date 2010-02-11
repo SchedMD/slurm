@@ -42,7 +42,7 @@
 
 #include "accounting_storage_mysql.h"
 
-extern int mysql_job_start(mysql_conn_t *mysql_conn, char *cluster_name,
+extern int mysql_job_start(mysql_conn_t *mysql_conn,
 			   struct job_record *job_ptr);
 
 extern int mysql_job_complete(mysql_conn_t *mysql_conn,

@@ -247,6 +247,7 @@ extern int acct_storage_p_close_connection(pgsql_conn_t **pg_conn)
 	acct_storage_p_commit((*pg_conn), 0); /* discard changes */
 	pgsql_close_db_connection(&(*pg_conn)->db_conn);
 	list_destroy((*pg_conn)->update_list);
+	xfree((*pg_conn)->cluster_name);
 	xfree((*pg_conn));
 
 	return SLURM_SUCCESS;
@@ -531,36 +532,36 @@ extern int acct_storage_p_roll_usage(pgsql_conn_t *pg_conn,
 }
 
 extern int clusteracct_storage_p_node_down(pgsql_conn_t *pg_conn,
-					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason,
 					   uint32_t reason_uid)
 {
-	return cs_p_node_down(pg_conn, cluster, node_ptr, event_time,
+	return cs_p_node_down(pg_conn, node_ptr, event_time,
 			      reason, reason_uid);
 }
 extern int clusteracct_storage_p_node_up(pgsql_conn_t *pg_conn,
-					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
-	return cs_p_node_up(pg_conn, cluster, node_ptr, event_time);
+	return cs_p_node_up(pg_conn, node_ptr, event_time);
 }
 
 extern int clusteracct_storage_p_register_ctld(pgsql_conn_t *pg_conn,
 					       char *cluster,
 					       uint16_t port)
 {
+	if(!pg_conn->cluster_name)
+		pg_conn->cluster_name = xstrdup(cluster);
+
 	return cs_pg_register_ctld(pg_conn, cluster, port);
 }
 
 extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
-					       char *cluster,
 					       char *cluster_nodes,
 					       uint32_t cpus,
 					       time_t event_time)
 {
-	return cs_p_cluster_cpus(pg_conn, cluster, cluster_nodes,
+	return cs_p_cluster_cpus(pg_conn, cluster_nodes,
 				 cpus, event_time);
 }
 
@@ -576,10 +577,9 @@ extern int clusteracct_storage_p_get_usage(
  * load into the storage the start of a job
  */
 extern int jobacct_storage_p_job_start(pgsql_conn_t *pg_conn,
-				       char *cluster_name,
 				       struct job_record *job_ptr)
 {
-	return js_p_job_start(pg_conn, cluster_name, job_ptr);
+	return js_p_job_start(pg_conn, job_ptr);
 }
 
 /*
@@ -657,7 +657,6 @@ extern int acct_storage_p_update_shares_used(void *db_conn,
 }
 
 extern int acct_storage_p_flush_jobs_on_cluster(pgsql_conn_t *pg_conn,
-						char *cluster,
 						time_t event_time)
 {
 	/* put end times for a clean start */

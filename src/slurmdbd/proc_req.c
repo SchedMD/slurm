@@ -964,26 +964,25 @@ static int _cluster_cpus(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 	if (slurmdbd_unpack_cluster_cpus_msg(slurmdbd_conn->rpc_version,
-					      &cluster_cpus_msg, in_buffer) !=
+					     &cluster_cpus_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_CLUSTER_CPUS message";
 		error("%s", comment);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	debug2("DBD_CLUSTER_CPUS: called for %s(%u)",
-	       cluster_cpus_msg->cluster_name,
-	       cluster_cpus_msg->cpu_count);
+	/* debug2("DBD_CLUSTER_CPUS: called for %s(%u)", */
+	/*        cluster_cpus_msg->cluster_name, */
+	/*        cluster_cpus_msg->cpu_count); */
 
 	rc = clusteracct_storage_g_cluster_cpus(
 		slurmdbd_conn->db_conn,
-		cluster_cpus_msg->cluster_name,
 		cluster_cpus_msg->cluster_nodes,
 		cluster_cpus_msg->cpu_count,
 		cluster_cpus_msg->event_time);
 end_it:
 	slurmdbd_free_cluster_cpus_msg(slurmdbd_conn->rpc_version,
-					cluster_cpus_msg);
+				       cluster_cpus_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
 				      rc, comment, DBD_CLUSTER_CPUS);
 	return rc;
@@ -1660,12 +1659,11 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	debug2("DBD_FLUSH_JOBS: called for %s",
-	       cluster_cpus_msg->cluster_name);
+	/* debug2("DBD_FLUSH_JOBS: called for %s", */
+	/*        cluster_cpus_msg->cluster_name); */
 
 	rc = acct_storage_g_flush_jobs_on_cluster(
 		slurmdbd_conn->db_conn,
-		cluster_cpus_msg->cluster_name,
 		cluster_cpus_msg->event_time);
 end_it:
 	slurmdbd_free_cluster_cpus_msg(slurmdbd_conn->rpc_version,
@@ -1873,7 +1871,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 		       job_start_msg->job_id, job_start_msg->name);
 	}
 	id_rc_msg.return_code = jobacct_storage_g_job_start(
-		slurmdbd_conn->db_conn, job_start_msg->cluster, &job);
+		slurmdbd_conn->db_conn, &job);
 	id_rc_msg.id = job.db_index;
 
 	/* just incase job.wckey was set because we didn't send one */
@@ -2500,7 +2498,6 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		       node_state_msg->event_time);
 		rc = clusteracct_storage_g_node_up(
 			slurmdbd_conn->db_conn,
-			node_state_msg->cluster_name,
 			&node_ptr,
 			node_state_msg->event_time);
 	} else {
@@ -2513,7 +2510,6 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		       node_state_msg->event_time);
 		rc = clusteracct_storage_g_node_down(
 			slurmdbd_conn->db_conn,
-			node_state_msg->cluster_name,
 			&node_ptr,
 			node_state_msg->event_time,
 			node_state_msg->reason, node_ptr.reason_uid);

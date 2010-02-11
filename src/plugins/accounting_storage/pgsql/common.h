@@ -434,22 +434,18 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, List wckey_list,
 extern int get_cluster_cpu_nodes(pgsql_conn_t *pg_conn,
 				 acct_cluster_rec_t *cluster);
 extern int clusteracct_storage_p_node_down(pgsql_conn_t *pg_conn,
-					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason,
 					   uint32_t reason_uid);
 extern int cs_p_node_down(pgsql_conn_t *pg_conn,
-			  char *cluster,
 			  struct node_record *node_ptr,
 			  time_t event_time, char *reason,
 			  uint32_t reason_uid);
 
 extern int clusteracct_storage_p_node_up(pgsql_conn_t *pg_conn,
-					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time);
 extern int cs_p_node_up(pgsql_conn_t *pg_conn,
-			char *cluster,
 			struct node_record *node_ptr,
 			time_t event_time);
 
@@ -461,12 +457,10 @@ extern int cs_pg_register_ctld(pgsql_conn_t *pg_conn,
 			       uint16_t port);
 
 extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
-					       char *cluster,
 					       char *cluster_nodes,
 					       uint32_t cpus,
 					       time_t event_time);
 extern int cs_p_cluster_cpus(pgsql_conn_t *pg_conn,
-			     char *cluster,
 			     char *cluster_nodes,
 			     uint32_t cpus,
 			     time_t event_time);
@@ -479,10 +473,8 @@ extern int cs_p_get_usage(
 	acct_cluster_rec_t *cluster_rec, int type, time_t start, time_t end);
 
 extern int jobacct_storage_p_job_start(pgsql_conn_t *pg_conn,
-				       char *cluster_name,
 				       struct job_record *job_ptr);
 extern int js_p_job_start(pgsql_conn_t *pg_conn,
-			  char *cluster_name,
 			  struct job_record *job_ptr);
 
 extern int jobacct_storage_p_job_complete(pgsql_conn_t *pg_conn,
@@ -526,8 +518,8 @@ extern int as_p_update_shares_used(void *db_conn,
 				   List shares_used);
 
 extern int acct_storage_p_flush_jobs_on_cluster(
-	pgsql_conn_t *pg_conn, char *cluster, time_t event_time);
+	pgsql_conn_t *pg_conn, time_t event_time);
 extern int as_p_flush_jobs_on_cluster(
-	pgsql_conn_t *pg_conn, char *cluster, time_t event_time);
+	pgsql_conn_t *pg_conn, time_t event_time);
 
 #endif

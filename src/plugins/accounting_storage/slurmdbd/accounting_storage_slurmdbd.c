@@ -1471,7 +1471,6 @@ extern int acct_storage_p_roll_usage(void *db_conn,
 }
 
 extern int clusteracct_storage_p_node_down(void *db_conn,
-					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason,
 					   uint32_t reason_uid)
@@ -1492,7 +1491,6 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 		my_reason = node_ptr->reason;
 
 	memset(&req, 0, sizeof(dbd_node_state_msg_t));
-	req.cluster_name = cluster;
 	req.cpu_count = cpus;
 	req.hostlist   = node_ptr->name;
 	req.new_state  = DBD_NODE_STATE_DOWN;
@@ -1510,7 +1508,6 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 }
 
 extern int clusteracct_storage_p_node_up(void *db_conn,
-					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
@@ -1518,7 +1515,6 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 	dbd_node_state_msg_t req;
 
 	memset(&req, 0, sizeof(dbd_node_state_msg_t));
-	req.cluster_name = cluster;
 	req.hostlist   = node_ptr->name;
 	req.new_state  = DBD_NODE_STATE_UP;
 	req.event_time = event_time;
@@ -1533,18 +1529,16 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 }
 
 extern int clusteracct_storage_p_cluster_cpus(void *db_conn,
-					       char *cluster,
-					       char *cluster_nodes,
-					       uint32_t cpus,
-					       time_t event_time)
+					      char *cluster_nodes,
+					      uint32_t cpus,
+					      time_t event_time)
 {
 	slurmdbd_msg_t msg;
 	dbd_cluster_cpus_msg_t req;
 	int rc = SLURM_ERROR;
 
-	debug2("Sending info for cluster %s", cluster);
+	debug2("Sending cpu count of %d for cluster", cpus);
 	memset(&req, 0, sizeof(dbd_cluster_cpus_msg_t));
-	req.cluster_name = cluster;
 	req.cluster_nodes = cluster_nodes;
 	req.cpu_count   = cpus;
 	req.event_time   = event_time;
@@ -1628,7 +1622,7 @@ extern int clusteracct_storage_p_get_usage(
 /*
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
+extern int jobacct_storage_p_job_start(void *db_conn,
 				       struct job_record *job_ptr)
 {
 	slurmdbd_msg_t msg, msg_rc;
@@ -1646,7 +1640,6 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	memset(&req, 0, sizeof(dbd_job_start_msg_t));
 
 	req.alloc_cpus    = job_ptr->total_cpus;
-	req.cluster       = cluster_name;
 	req.account       = job_ptr->account;
 	req.assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG
@@ -2076,18 +2069,17 @@ extern int acct_storage_p_update_shares_used(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_flush_jobs_on_cluster(void *db_conn, char *cluster,
+extern int acct_storage_p_flush_jobs_on_cluster(void *db_conn,
 						time_t event_time)
 {
 	slurmdbd_msg_t msg;
 	dbd_cluster_cpus_msg_t req;
 
 	info("Ending any jobs in accounting that were running when controller "
-	     "went down on cluster %s", cluster);
+	     "went down on");
 
 	memset(&req, 0, sizeof(dbd_cluster_cpus_msg_t));
 
-	req.cluster_name = cluster;
 	req.cpu_count   = 0;
 	req.event_time   = event_time;
 

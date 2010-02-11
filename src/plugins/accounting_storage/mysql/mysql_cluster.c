@@ -110,16 +110,21 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
+		if((rc = create_cluster_tables(mysql_conn->db_conn,
+					       object->name))
+		   != SLURM_SUCCESS) {
+			xfree(extra);
+			xfree(cols);
+			xfree(vals);
+			added = 0;
+			break;
+		}
 		xstrfmtcat(query,
-			   "SELECT @MyMax := coalesce(max(rgt), 0) FROM %s "
-			   "FOR UPDATE;",
-			   assoc_table);
-		xstrfmtcat(query,
-			   "insert into %s (%s, lft, rgt) "
-			   "values (%s, @MyMax+1, @MyMax+2) "
+			   "insert into %s_%s (%s, lft, rgt) "
+			   "values (%s, 1, 2) "
 			   "on duplicate key update deleted=0, "
 			   "id=LAST_INSERT_ID(id)%s;",
-			   assoc_table, cols,
+			   object->name, assoc_table, cols,
 			   vals,
 			   extra);
 
@@ -230,6 +235,8 @@ extern List mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(cluster_cond->cluster_list);
 		while((object = list_next(itr))) {
+			if(!mysql_conn->cluster_name)
+				mysql_conn->cluster_name = xstrdup(object);
 			if(set)
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name='%s'", object);
@@ -876,7 +883,7 @@ empty:
 	return ret_list;
 }
 
-extern int mysql_node_down(mysql_conn_t *mysql_conn, char *cluster,
+extern int mysql_node_down(mysql_conn_t *mysql_conn,
 			   struct node_record *node_ptr,
 			   time_t event_time, char *reason,
 			   uint32_t reason_uid)
@@ -904,12 +911,14 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn, char *cluster,
 	else
 		my_reason = node_ptr->reason;
 
-	debug2("inserting %s(%s) with %u cpus", node_ptr->name, cluster, cpus);
+	debug2("inserting %s(%s) with %u cpus",
+	       node_ptr->name, mysql_conn->cluster_name, cpus);
 
 	query = xstrdup_printf(
 		"update %s_%s set period_end=%d where "
 		"time_end=0 and node_name=\"%s\";",
-		cluster, event_table, event_time, node_ptr->name);
+		mysql_conn->cluster_name, event_table,
+		event_time, node_ptr->name);
 	/* If you are clean-restarting the controller over and over again you
 	 * could get records that are duplicates in the database.  If
 	 * this is the case we will zero out the period_end we are
@@ -923,7 +932,8 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn, char *cluster,
 		   "(node_name, state, cpu_count, time_start, reason) "
 		   "values (\"%s\", %u, %u, %d, \"%s\", %u) "
 		   "on duplicate key update time_end=0;",
-		   cluster, event_table, node_ptr->name, node_ptr->node_state,
+		   mysql_conn->cluster_name, event_table,
+		   node_ptr->name, node_ptr->node_state,
 		   cpus, event_time, my_reason, reason_uid);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -933,7 +943,7 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn, char *cluster,
 	return rc;
 }
 
-extern int mysql_node_up(mysql_conn_t *mysql_conn, char *cluster,
+extern int mysql_node_up(mysql_conn_t *mysql_conn,
 			 struct node_record *node_ptr,
 			 time_t event_time)
 {
@@ -946,7 +956,8 @@ extern int mysql_node_up(mysql_conn_t *mysql_conn, char *cluster,
 	query = xstrdup_printf(
 		"update %s_%s set time_end=%d where "
 		"time_end=0 and node_name=\"%s\";",
-		cluster, event_table, event_time, node_ptr->name);
+		mysql_conn->cluster_name, event_table,
+		event_time, node_ptr->name);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -968,6 +979,9 @@ extern int mysql_register_ctld(mysql_conn_t *mysql_conn,
 
 	if(check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
+
+	if(!mysql_conn->cluster_name)
+		mysql_conn->cluster_name = xstrdup(cluster);
 
 	info("Registering slurmctld for cluster %s at port %u in database.",
 	     cluster, port);
@@ -1001,7 +1015,7 @@ extern int mysql_register_ctld(mysql_conn_t *mysql_conn,
 	return mysql_db_query(mysql_conn->db_conn, query);
 }
 
-extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
+extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 			      char *cluster_nodes, uint32_t cpus,
 			      time_t event_time)
 {
@@ -1018,7 +1032,7 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
 	query = xstrdup_printf(
 		"select cpu_count, cluster_nodes from %s_%s where "
 		"time_end=0 and node_name='' limit 1",
-		cluster, event_table);
+		mysql_conn->cluster_name, event_table);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -1029,7 +1043,8 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
 	/* we only are checking the first one here */
 	if(!(row = mysql_fetch_row(result))) {
 		debug("We don't have an entry for this machine %s "
-		      "most likely a first time running.", cluster);
+		      "most likely a first time running.",
+		      mysql_conn->cluster_name);
 
 		/* Get all nodes in a down state and jobs pending or running.
 		 * This is for the first time a cluster registers
@@ -1045,16 +1060,18 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
 
 	if(atoi(row[0]) == cpus) {
 		debug3("we have the same cpu count as before for %s, "
-		       "no need to update the database.", cluster);
+		       "no need to update the database.",
+		       mysql_conn->cluster_name);
 		if(cluster_nodes) {
 			if(!row[1][0]) {
 				debug("Adding cluster nodes '%s' to "
 				      "last instance of cluster '%s'.",
-				      cluster_nodes, cluster);
+				      cluster_nodes, mysql_conn->cluster_name);
 				query = xstrdup_printf(
 					"update %s_%s set cluster_nodes=\"%s\" "
 					"where period_end=0 and node_name=''",
-					cluster, event_table, cluster_nodes);
+					mysql_conn->cluster_name,
+					event_table, cluster_nodes);
 				rc = mysql_db_query(mysql_conn->db_conn, query);
 				xfree(query);
 				goto end_it;
@@ -1068,14 +1085,14 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
 			goto end_it;
 	} else
 		debug("%s has changed from %s cpus to %u",
-		      cluster, row[0], cpus);
+		      mysql_conn->cluster_name, row[0], cpus);
 
 	/* reset all the entries for this cluster since the cpus
 	   changed some of the downed nodes may have gone away.
 	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
 		"update %s_%s set period_end=%d where period_end=0",
-		cluster, event_table, event_time);
+		mysql_conn->cluster_name, event_table, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	first = 1;
@@ -1086,7 +1103,8 @@ add_it:
 		"insert into %s_%s (cluster_nodes, cpu_count, "
 		"time_start, reason) "
 		"values (\"%s\", %u, %d, 'Cluster processor count')",
-		cluster, event_table, cluster_nodes, cpus, event_time);
+		mysql_conn->cluster_name, event_table,
+		cluster_nodes, cpus, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 end_it:

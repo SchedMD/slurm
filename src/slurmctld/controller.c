@@ -1054,7 +1054,6 @@ static int _accounting_cluster_ready()
 	FREE_NULL_BITMAP(total_node_bitmap);
 
 	rc = clusteracct_storage_g_cluster_cpus(acct_db_conn,
-						slurmctld_cluster_name,
 						cluster_nodes,
 						cluster_cpus, event_time);
 	xfree(cluster_nodes);
@@ -1096,7 +1095,6 @@ static int _accounting_mark_all_nodes_down(char *reason)
 	xfree(state_file);
 
 	if((rc = acct_storage_g_flush_jobs_on_cluster(acct_db_conn,
-						      slurmctld_cluster_name,
 						      event_time))
 	   == SLURM_ERROR)
 		return rc;
@@ -1106,7 +1104,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 		if (node_ptr->name == '\0')
 			continue;
 		if((rc = clusteracct_storage_g_node_down(
-			    acct_db_conn, slurmctld_cluster_name,
+			    acct_db_conn,
 			    node_ptr, event_time,
 			    reason, slurm_get_slurm_user_id()))
 		   == SLURM_ERROR)

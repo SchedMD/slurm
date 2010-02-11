@@ -96,6 +96,7 @@ typedef enum {
 extern int check_connection(mysql_conn_t *mysql_conn);
 extern char *fix_double_quotes(char *str);
 extern int last_affected_rows(MYSQL *mysql_db);
+extern int create_cluster_tables(MYSQL *mysql_db, char *cluster_name);
 extern int setup_association_limits(acct_association_rec_t *assoc,
 				    char **cols, char **vals,
 				    char **extra, qos_level_t qos_level,
