@@ -227,6 +227,12 @@ as_p_modify_clusters(pgsql_conn_t *pg_conn, uint32_t uid,
 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	if(!pg_conn->cluster_name
+	   && cluster_cond->cluster_list
+	   && list_count(cluster_cond->cluster_list))
+		pg_conn->cluster_name =
+			xstrdup(list_peek(cluster_cond->cluster_list));
+
 	concat_cond_list(cluster_cond->cluster_list, NULL, "name", &cond);
 	if(cluster_cond->classification) {
 		xstrfmtcat(cond, " AND (classification & %u)",

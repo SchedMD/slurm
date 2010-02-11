@@ -206,8 +206,7 @@ host_fini:	if (rc) {
 	if(update_accounting) {
 		if (job_ptr->details && job_ptr->details->begin_time) {
 			/* Update job record in accounting to reflect changes */
-			jobacct_storage_g_job_start(
-				acct_db_conn, slurmctld_cluster_name, job_ptr);
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 		}
 	}
 

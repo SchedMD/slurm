@@ -782,7 +782,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 				     IS_NODE_FAIL(node_ptr))) {
 					clusteracct_storage_g_node_up(
 						acct_db_conn,
-						slurmctld_cluster_name,
 						node_ptr,
 						now);
 				}
@@ -829,7 +828,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 					trigger_node_up(node_ptr);
 					clusteracct_storage_g_node_up(
 						acct_db_conn,
-						slurmctld_cluster_name,
 						node_ptr,
 						now);
 				} else if (IS_NODE_IDLE(node_ptr)   &&
@@ -837,7 +835,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 					    IS_NODE_FAIL(node_ptr))) {
 					clusteracct_storage_g_node_up(
 						acct_db_conn,
-						slurmctld_cluster_name,
 						node_ptr,
 						now);
 				}	/* else already fully available */
@@ -864,7 +861,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 					trigger_node_drained(node_ptr);
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
-						slurmctld_cluster_name,
 						node_ptr, now, NULL,
 						node_ptr->reason_uid);
 				}
@@ -1229,7 +1225,6 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid )
 			/* no jobs, node is drained */
 			trigger_node_drained(node_ptr);
 			clusteracct_storage_g_node_down(acct_db_conn,
-							slurmctld_cluster_name,
 							node_ptr, now, NULL,
 							reason_uid);
 		}
@@ -1462,8 +1457,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 				node_ptr->reason_time = 0;
 				node_ptr->reason_uid = NO_VAL;
 				clusteracct_storage_g_node_up(
-					acct_db_conn, slurmctld_cluster_name,
-					node_ptr, now);
+					acct_db_conn, node_ptr, now);
 			}
 		} else if (IS_NODE_DOWN(node_ptr) &&
 			   ((slurmctld_conf.ret2service == 2) ||
@@ -1491,8 +1485,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 				node_ptr->reason_time = 0;
 				node_ptr->reason_uid = NO_VAL;
 				clusteracct_storage_g_node_up(
-					acct_db_conn, slurmctld_cluster_name,
-					node_ptr, now);
+					acct_db_conn, node_ptr, now);
 			}
 		} else if (node_ptr->last_response
 			   && (last_restart > node_ptr->last_response)
@@ -1705,7 +1698,6 @@ extern int validate_nodes_via_front_end(
 					node_ptr->reason_uid = NO_VAL;
 					clusteracct_storage_g_node_up(
 						acct_db_conn,
-						slurmctld_cluster_name,
 						node_ptr, now);
 				}
 			} else if (IS_NODE_DOWN(node_ptr) &&
@@ -1730,7 +1722,6 @@ extern int validate_nodes_via_front_end(
 					node_ptr->reason_uid = NO_VAL;
 					clusteracct_storage_g_node_up(
 						acct_db_conn,
-						slurmctld_cluster_name,
 						node_ptr, now);
 				}
 			} else if (IS_NODE_ALLOCATED(node_ptr) &&
@@ -1856,7 +1847,6 @@ static void _node_did_resp(struct node_record *node_ptr)
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			clusteracct_storage_g_node_up(acct_db_conn,
-						      slurmctld_cluster_name,
 						      node_ptr, now);
 		}
 	}
@@ -1875,7 +1865,6 @@ static void _node_did_resp(struct node_record *node_ptr)
 			node_ptr->reason_time = 0;
 			node_ptr->reason_uid = NO_VAL;
 			clusteracct_storage_g_node_up(acct_db_conn,
-						      slurmctld_cluster_name,
 						      node_ptr, now);
 		}
 	}
@@ -2183,7 +2172,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 		if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
 			trigger_node_drained(node_ptr);
 			clusteracct_storage_g_node_down(
-				acct_db_conn, slurmctld_cluster_name,
+				acct_db_conn,
 				node_ptr, now, NULL,
 				slurm_get_slurm_user_id());
 		}
@@ -2218,7 +2207,6 @@ static void _make_node_down(struct node_record *node_ptr, time_t event_time)
 	select_g_update_node_state(inx, node_ptr->node_state);
 	trigger_node_down(node_ptr);
 	clusteracct_storage_g_node_down(acct_db_conn,
-					slurmctld_cluster_name,
 					node_ptr, event_time, NULL,
 					node_ptr->reason_uid);
 }
@@ -2297,7 +2285,6 @@ void make_node_idle(struct node_record *node_ptr,
 		node_ptr->last_idle = now;
 		trigger_node_drained(node_ptr);
 		clusteracct_storage_g_node_down(acct_db_conn,
-						slurmctld_cluster_name,
 						node_ptr, now, NULL,
 						slurm_get_slurm_user_id());
 	} else if (node_ptr->run_job_cnt) {
@@ -2363,7 +2350,6 @@ extern int send_nodes_to_accounting(time_t event_time)
 
 					rc = clusteracct_storage_g_node_down(
 						acct_db_conn,
-						slurmctld_cluster_name,
 						&send_node, event_time,
 						NULL,
 						slurm_get_slurm_user_id());
@@ -2374,7 +2360,6 @@ extern int send_nodes_to_accounting(time_t event_time)
 				continue;
 		}
 		rc = clusteracct_storage_g_node_down(acct_db_conn,
-						     slurmctld_cluster_name,
 						     node_ptr, event_time,
 						     NULL,
 						     slurm_get_slurm_user_id());

@@ -57,19 +57,19 @@ extern List mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 				     acct_event_cond_t *event_cond);
 
-extern int mysql_node_down(mysql_conn_t *mysql_conn, char *cluster,
+extern int mysql_node_down(mysql_conn_t *mysql_conn,
 			   struct node_record *node_ptr,
 			   time_t event_time, char *reason,
 			   uint32_t reason_uid);
 
-extern int mysql_node_up(mysql_conn_t *mysql_conn, char *cluster,
+extern int mysql_node_up(mysql_conn_t *mysql_conn,
 			 struct node_record *node_ptr,
 			 time_t event_time);
 
 extern int mysql_register_ctld(mysql_conn_t *mysql_conn,
 			       char *cluster, uint16_t port);
 
-extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn, char *cluster,
+extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 			      char *cluster_nodes, uint32_t cpus,
 			      time_t event_time);
 #endif

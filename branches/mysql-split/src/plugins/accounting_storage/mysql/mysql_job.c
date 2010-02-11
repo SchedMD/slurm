@@ -46,17 +46,18 @@
 /* Used in job functions for getting the database index based off the
  * submit time, job and assoc id.  0 is returned if none is found
  */
-static int _get_db_index(MYSQL *db_conn,
+static int _get_db_index(mysql_conn_t *mysql_conn,
 			 time_t submit, uint32_t jobid, uint32_t associd)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int db_index = 0;
-	char *query = xstrdup_printf("select job_db_inx from %s where "
+	char *query = xstrdup_printf("select job_db_inx from %s_%s where "
 				     "submit=%d and jobid=%u and associd=%u",
-				     job_table, (int)submit, jobid, associd);
+				     mysql_conn->cluster_name, job_table,
+				     (int)submit, jobid, associd);
 
-	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return 0;
 	}
@@ -76,42 +77,8 @@ static int _get_db_index(MYSQL *db_conn,
 	return db_index;
 }
 
-static char *_get_cluster_from_associd(mysql_conn_t *mysql_conn,
-				       uint32_t associd)
-{
-	char *cluster = NULL;
-	char *query = NULL;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-
-	/* Just so we don't have to keep a
-	   cache of the associations around we
-	   will just query the db for the cluster
-	   name of the association id.  Since
-	   this should sort of be a rare case
-	   this isn't too bad.
-	*/
-	query = xstrdup_printf("select cluster from %s where id_assoc=%u",
-			       assoc_table, associd);
-
-	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
-	if(!(result =
-	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
-		xfree(query);
-		return NULL;
-	}
-	xfree(query);
-
-	if((row = mysql_fetch_row(result)))
-		cluster = xstrdup(row[0]);
-
-	mysql_free_result(result);
-
-	return cluster;
-}
-
-static char *_get_user_from_associd(mysql_conn_t *mysql_conn, uint32_t associd)
+static char *_get_user_from_associd(mysql_conn_t *mysql_conn,
+				    char *cluster, uint32_t associd)
 {
 	char *user = NULL;
 	char *query = NULL;
@@ -125,8 +92,8 @@ static char *_get_user_from_associd(mysql_conn_t *mysql_conn, uint32_t associd)
 	   this should sort of be a rare case
 	   this isn't too bad.
 	*/
-	query = xstrdup_printf("select user from %s where id_assoc=%u",
-			       assoc_table, associd);
+	query = xstrdup_printf("select user from %s_%s where id_assoc=%u",
+			       cluster, assoc_table, associd);
 
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -165,7 +132,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 		/* since we are unable to rely on uids here (someone could
 		   not have there uid in the system yet) we must
 		   first get the user name from the associd */
-		if(!(user = _get_user_from_associd(mysql_conn, associd))) {
+		if(!(user = _get_user_from_associd(
+			     mysql_conn, cluster, associd))) {
 			error("No user for associd %u", associd);
 			goto no_wckeyid;
 		}
@@ -237,7 +205,6 @@ no_wckeyid:
 /* extern functions */
 
 extern int mysql_job_start(mysql_conn_t *mysql_conn,
-			   char *cluster_name,
 			   struct job_record *job_ptr)
 {
 	int rc=SLURM_SUCCESS;
@@ -248,7 +215,6 @@ extern int mysql_job_start(mysql_conn_t *mysql_conn,
 	int reinit = 0;
 	time_t check_time = job_ptr->start_time;
 	uint32_t wckeyid = 0;
-	int no_cluster = 0;
 	int node_cnt = 0;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
@@ -281,9 +247,10 @@ extern int mysql_job_start(mysql_conn_t *mysql_conn,
 		 * first time.
 		 */
 		query = xstrdup_printf("select job_db_inx "
-				       "from %s where jobid=%u and "
-				       "submit=%d and eligible=%d "
-				       "and start=%d;",
+				       "from %s_%s where id_job=%u and "
+				       "time_submit=%d and time_eligible=%d "
+				       "and time_start=%d;",
+				       mysql_conn->cluster_name,
 				       job_table, job_ptr->job_id,
 				       job_ptr->details->submit_time,
 				       job_ptr->details->begin_time,
@@ -312,19 +279,19 @@ extern int mysql_job_start(mysql_conn_t *mysql_conn,
 			      "from %s started then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
-			      job_ptr->job_id, cluster_name);
+			      job_ptr->job_id, mysql_conn->cluster_name);
 		else if(job_ptr->details->begin_time)
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s became eligible then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
-			      job_ptr->job_id, cluster_name);
+			      job_ptr->job_id, mysql_conn->cluster_name);
 		else
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s was submitted then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
-			      job_ptr->job_id, cluster_name);
+			      job_ptr->job_id, mysql_conn->cluster_name);
 
 		global_last_rollup = check_time;
 		slurm_mutex_unlock(&rollup_lock);
@@ -341,13 +308,6 @@ extern int mysql_job_start(mysql_conn_t *mysql_conn,
 		slurm_mutex_unlock(&rollup_lock);
 
 no_rollup_change:
-
-	if(!cluster_name && job_ptr->assoc_id) {
-		no_cluster = 1;
-		cluster_name = _get_cluster_from_associd(mysql_conn,
-							 job_ptr->assoc_id);
-	}
-
 
 	if (job_ptr->name && job_ptr->name[0])
 		jname = job_ptr->name;
@@ -392,7 +352,8 @@ no_rollup_change:
 	if(job_ptr->assoc_id
 	   && (job_ptr->start_time || IS_JOB_CANCELLED(job_ptr)))
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
-				       job_ptr->user_id, cluster_name,
+				       job_ptr->user_id,
+				       mysql_conn->cluster_name,
 				       job_ptr->assoc_id);
 
 
@@ -407,35 +368,32 @@ no_rollup_change:
 			job_ptr->details->begin_time =
 				job_ptr->details->submit_time;
 		query = xstrdup_printf(
-			"insert into %s "
-			"(jobid, associd, wckeyid, uid, "
-			"gid, nodelist, resvid, timelimit, ",
-			job_table);
+			"insert into %s_%s "
+			"(id_job, id_assoc, id_wckey, id_user, "
+			"id_user, nodelist, id_resv, timelimit, ",
+			mysql_conn->cluster_name, job_table);
 
-		if(cluster_name)
-			xstrcat(query, "cluster, ");
 		if(job_ptr->account)
 			xstrcat(query, "account, ");
 		if(job_ptr->partition)
 			xstrcat(query, "partition, ");
 		if(block_id)
-			xstrcat(query, "blockid, ");
+			xstrcat(query, "id_block, ");
 		if(job_ptr->wckey)
 			xstrcat(query, "wckey, ");
 		if(node_inx)
 			xstrcat(query, "node_inx, ");
 
 		xstrfmtcat(query,
-			   "eligible, submit, start, name, track_steps, "
-			   "state, priority, req_cpus, "
-			   "alloc_cpus, alloc_nodes) "
+			   "time_eligible, time_submit, time_start, "
+			   "job_name, track_steps, "
+			   "state, priority, cpus_req, "
+			   "cpus_alloc, nodes_alloc) "
 			   "values (%u, %u, %u, %u, %u, \"%s\", %u, %u, ",
 			   job_ptr->job_id, job_ptr->assoc_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit);
 
-		if(cluster_name)
-			xstrfmtcat(query, "\"%s\", ", cluster_name);
 		if(job_ptr->account)
 			xstrfmtcat(query, "\"%s\", ", job_ptr->account);
 		if(job_ptr->partition)
@@ -451,7 +409,7 @@ no_rollup_change:
 			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u, %u) "
 			   "on duplicate key update "
 			   "job_db_inx=LAST_INSERT_ID(job_db_inx), state=%u, "
-			   "associd=%u, wckeyid=%u, resvid=%u, timelimit=%u",
+			   "id_assoc=%u, id_wckey=%u, id_resv=%u, timelimit=%u",
 			   (int)job_ptr->details->begin_time,
 			   (int)job_ptr->details->submit_time,
 			   (int)job_ptr->start_time,
@@ -469,7 +427,7 @@ no_rollup_change:
 			xstrfmtcat(query, ", partition=\"%s\"",
 				   job_ptr->partition);
 		if(block_id)
-			xstrfmtcat(query, ", blockid=\"%s\"", block_id);
+			xstrfmtcat(query, ", id_block=\"%s\"", block_id);
 		if(job_ptr->wckey)
 			xstrfmtcat(query, ", wckey=\"%s\"", job_ptr->wckey);
 		if(node_inx)
@@ -493,7 +451,8 @@ no_rollup_change:
 				rc = SLURM_ERROR;
 		}
 	} else {
-		query = xstrdup_printf("update %s set nodelist=\"%s\", ",
+		query = xstrdup_printf("update %s_%s set nodelist=\"%s\", ",
+				       mysql_conn->cluster_name,
 				       job_table, nodes);
 
 		if(job_ptr->account)
@@ -525,8 +484,7 @@ no_rollup_change:
 
 	xfree(block_id);
 	xfree(query);
-	if(no_cluster)
-		xfree(cluster_name);
+
 	return rc;
 }
 
@@ -580,7 +538,7 @@ extern int mysql_job_complete(mysql_conn_t *mysql_conn,
 
 	if(!job_ptr->db_index) {
 		if(!(job_ptr->db_index =
-		     _get_db_index(mysql_conn->db_conn,
+		     _get_db_index(mysql_conn,
 				   job_ptr->details->submit_time,
 				   job_ptr->job_id,
 				   job_ptr->assoc_id))) {
@@ -588,7 +546,7 @@ extern int mysql_job_complete(mysql_conn_t *mysql_conn,
 			 * through to avoid an infinite loop
 			 */
 			if(mysql_job_start(
-				   mysql_conn, NULL, job_ptr) == SLURM_ERROR) {
+				   mysql_conn, job_ptr) == SLURM_ERROR) {
 				error("couldn't add job %u at job completion",
 				      job_ptr->job_id);
 				return SLURM_SUCCESS;
@@ -683,15 +641,14 @@ extern int mysql_step_start(mysql_conn_t *mysql_conn,
 
 	if(!step_ptr->job_ptr->db_index) {
 		if(!(step_ptr->job_ptr->db_index =
-		     _get_db_index(mysql_conn->db_conn,
+		     _get_db_index(mysql_conn,
 				   step_ptr->job_ptr->details->submit_time,
 				   step_ptr->job_ptr->job_id,
 				   step_ptr->job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(mysql_job_start(
-				   mysql_conn, NULL, step_ptr->job_ptr)
+			if(mysql_job_start(mysql_conn, step_ptr->job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u at step start",
 				      step_ptr->job_ptr->job_id);
@@ -807,15 +764,14 @@ extern int mysql_step_complete(mysql_conn_t *mysql_conn,
 
 	if(!step_ptr->job_ptr->db_index) {
 		if(!(step_ptr->job_ptr->db_index =
-		     _get_db_index(mysql_conn->db_conn,
+		     _get_db_index(mysql_conn,
 				   step_ptr->job_ptr->details->submit_time,
 				   step_ptr->job_ptr->job_id,
 				   step_ptr->job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(mysql_job_start(mysql_conn, NULL,
-						       step_ptr->job_ptr)
+			if(mysql_job_start(mysql_conn, step_ptr->job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u "
 				      "at step completion",
@@ -886,7 +842,7 @@ extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 		return ESLURM_DB_CONNECTION;
 	if(!job_ptr->db_index) {
 		if(!(job_ptr->db_index =
-		     _get_db_index(mysql_conn->db_conn,
+		     _get_db_index(mysql_conn,
 				   job_ptr->details->submit_time,
 				   job_ptr->job_id,
 				   job_ptr->assoc_id))) {
@@ -894,7 +850,7 @@ extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr)
 			 * through to avoid an infinite loop
 			 */
 			if(mysql_job_start(
-				   mysql_conn, NULL, job_ptr) == SLURM_ERROR) {
+				   mysql_conn, job_ptr) == SLURM_ERROR) {
 				error("couldn't suspend job %u",
 				      job_ptr->job_id);
 				return SLURM_SUCCESS;

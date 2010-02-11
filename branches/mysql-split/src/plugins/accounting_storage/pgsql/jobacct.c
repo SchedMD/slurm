@@ -200,8 +200,7 @@ _check_job_db_index(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(pg_conn, NULL,
-						       job_ptr)
+			if(jobacct_storage_p_job_start(pg_conn, job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u ",
 				      job_ptr->job_id);
@@ -366,14 +365,14 @@ check_jobacct_tables(PGconn *db_conn, char *user)
  * RET: error code
  */
 extern int
-js_p_job_start(pgsql_conn_t *pg_conn, char *cluster_name,
+js_p_job_start(pgsql_conn_t *pg_conn,
 	       struct job_record *job_ptr)
 {
 	int rc=SLURM_SUCCESS, track_steps = 0, reinit = 0;
 	char *jname = NULL, *nodes = NULL, *node_inx = NULL;
 	char *block_id = NULL, *rec = NULL, *query = NULL;
 	time_t check_time;
-	int no_cluster = 0, node_cnt = 0;
+	int node_cnt = 0;
 	uint32_t wckeyid = 0;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
@@ -430,19 +429,19 @@ js_p_job_start(pgsql_conn_t *pg_conn, char *cluster_name,
 			      "from %s started then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
-			      job_ptr->job_id, cluster_name);
+			      job_ptr->job_id, pg_conn->cluster_name);
 		else if(job_ptr->details->begin_time)
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s became eligible then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
-			      job_ptr->job_id, cluster_name);
+			      job_ptr->job_id, pg_conn->cluster_name);
 		else
 			debug("Need to reroll usage from %sJob %u "
 			      "from %s was submitted then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
-			      job_ptr->job_id, cluster_name);
+			      job_ptr->job_id, pg_conn->cluster_name);
 
 		global_last_rollup = check_time;
 		slurm_mutex_unlock(&rollup_lock);
@@ -456,11 +455,6 @@ js_p_job_start(pgsql_conn_t *pg_conn, char *cluster_name,
 		slurm_mutex_unlock(&rollup_lock);
 
 no_rollup_change:
-	if (!cluster_name && job_ptr->assoc_id) {
-		no_cluster = 1;
-		cluster_name = get_cluster_from_associd(pg_conn,
-							job_ptr->assoc_id);
-	}
 
 	if (job_ptr->name && job_ptr->name[0])
 		jname = xstrdup(job_ptr->name);
@@ -505,7 +499,7 @@ no_rollup_change:
 	if(job_ptr->assoc_id
 	   && (job_ptr->start_time || IS_JOB_CANCELLED(job_ptr)))
 		wckeyid = get_wckeyid(pg_conn, &job_ptr->wckey,
-				      job_ptr->user_id, cluster_name,
+				      job_ptr->user_id, pg_conn->cluster_name,
 				      job_ptr->assoc_id);
 
 	/* We need to put a 0 for 'end' incase of funky job state
@@ -534,7 +528,7 @@ no_rollup_change:
 			job_ptr->user_id,
 			job_ptr->group_id,
 
-			cluster_name ?: "",
+			pg_conn->cluster_name ?: "",
 			job_ptr->partition ?: "",
 			block_id ?: "",
 			job_ptr->account ?: "",
