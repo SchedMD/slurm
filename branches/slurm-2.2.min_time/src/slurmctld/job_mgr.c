@@ -1861,7 +1861,7 @@ extern void excise_node_from_job(struct job_record *job_ptr,
  */
 void dump_job_desc(job_desc_msg_t * job_specs)
 {
-	long job_id;
+	long job_id, time_min;
 	long pn_min_cpus, pn_min_memory, pn_min_tmp_disk, min_cpus;
 	long time_limit, priority, contiguous, acctg_freq;
 	long kill_on_node_fail, shared, immediate;
@@ -1914,14 +1914,16 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	time_limit = (job_specs->time_limit != NO_VAL) ?
 		(long) job_specs->time_limit : -1L;
+	time_min = (job_specs->time_min != NO_VAL) ?
+		(long) job_specs->time_min : time_limit;
 	priority   = (job_specs->priority != NO_VAL) ?
 		(long) job_specs->priority : -1L;
 	contiguous = (job_specs->contiguous != (uint16_t) NO_VAL) ?
 		(long) job_specs->contiguous : -1L;
 	shared = (job_specs->shared != (uint16_t) NO_VAL) ?
 		(long) job_specs->shared : -1L;
-	debug3("   time_limit=%ld priority=%ld contiguous=%ld shared=%ld",
-	       time_limit, priority, contiguous, shared);
+	debug3("   time_limit=%ld-%ld priority=%ld contiguous=%ld shared=%ld",
+	       time_min, time_limit, priority, contiguous, shared);
 
 	kill_on_node_fail = (job_specs->kill_on_node_fail !=
 			     (uint16_t) NO_VAL) ?
@@ -4485,6 +4487,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 			pack32(dump_job_ptr->part_ptr->max_time, buffer);
 		else
 			pack32(dump_job_ptr->time_limit, buffer);
+		pack32(dump_job_ptr->time_min, buffer);
 
 		if (dump_job_ptr->details) {
 			pack16(dump_job_ptr->details->nice,  buffer);

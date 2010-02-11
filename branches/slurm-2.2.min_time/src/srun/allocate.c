@@ -2,7 +2,7 @@
  *  src/srun/allocate.c - srun functions for managing node allocations
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -670,6 +670,8 @@ job_desc_msg_create_from_opts ()
 		j->kill_on_node_fail   = 0;
 	if (opt.time_limit != NO_VAL)
 		j->time_limit          = opt.time_limit;
+	if (opt.time_min != NO_VAL)
+		j->time_min            = opt.time_min;
 	j->shared = opt.shared;
 
 	if (opt.warn_signal)

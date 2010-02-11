@@ -2,7 +2,7 @@
  *  opt.c - options processing for srun
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -181,6 +181,7 @@
 #define LONG_OPT_RESTART_DIR     0x14d
 #define LONG_OPT_SIGNAL          0x14e
 #define LONG_OPT_DEBUG_SLURMD    0x14f
+#define LONG_OPT_TIME_MIN        0x150
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -336,6 +337,8 @@ static void _opt_default()
 	opt.mem_bind = NULL;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
+	opt.time_min = NO_VAL;
+	opt.time_min_str = NULL;
 	opt.ckpt_interval = 0;
 	opt.ckpt_interval_str = NULL;
 	opt.ckpt_dir = NULL;
@@ -812,6 +815,7 @@ static void set_options(const int argc, char **argv)
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 		{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
+		{"time-min",         required_argument, 0, LONG_OPT_TIME_MIN},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
 		{"uid",              required_argument, 0, LONG_OPT_UID},
@@ -1423,6 +1427,10 @@ static void set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			break;
+		case LONG_OPT_TIME_MIN:
+			xfree(opt.time_min_str);
+			opt.time_min_str = xstrdup(optarg);
+			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
 				exit(error_exit);
@@ -1909,6 +1917,15 @@ static bool _opt_verify(void)
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
 	}
+	if (opt.time_min_str) {
+		opt.time_min = time_str2mins(opt.time_min_str);
+		if ((opt.time_min < 0) && (opt.time_min != INFINITE)) {
+			error("Invalid time-min specification");
+			exit(error_exit);
+		}
+		if (opt.time_min == 0)
+			opt.time_min = INFINITE;
+	}
 
 	if (opt.ckpt_interval_str) {
 		opt.ckpt_interval = time_str2mins(opt.ckpt_interval_str);
@@ -2114,6 +2131,8 @@ static void _opt_list()
 		info("time_limit     : INFINITE");
 	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
+	if (opt.time_min != NO_VAL)
+		info("time_min       : %d", opt.time_min);
 	if (opt.ckpt_interval)
 		info("checkpoint     : %d mins", opt.ckpt_interval);
 	info("checkpoint_dir : %s", opt.ckpt_dir);
@@ -2208,7 +2227,7 @@ static void _usage(void)
 "            [--jobid=id] [--verbose] [--slurmd_debug=#]\n"
 "            [--core=type] [-T threads] [-W sec] [--checkpoint=time]\n"
 "            [--checkpoint-dir=dir]  [--licenses=names]\n"
-"            [--restart-dir=dir] [--qos=qos]\n"
+"            [--restart-dir=dir] [--qos=qos] [--time-min=minutes]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
@@ -2294,10 +2313,11 @@ static void _help(void)
 "                              from\n"
 "  -s, --share                 share nodes with other jobs\n"
 "      --slurmd-debug=level    slurmd debug level\n"
-"  -t, --time=minutes          time limit\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
 "      --task-prolog=program   run \"program\" before launching task\n"
 "  -T, --threads=threads       set srun launch fanout\n"
+"  -t, --time=minutes          time limit\n"
+"      --time-min=minutes      minimum time limit (if distinct)\n"
 "  -u, --unbuffered            do not line-buffer stdout/err\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -W, --wait=sec              seconds to wait after first task exits\n"
