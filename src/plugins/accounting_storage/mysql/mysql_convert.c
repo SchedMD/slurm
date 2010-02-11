@@ -238,7 +238,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	MYSQL_ROW row;
 	char *id_str = NULL;
 	char *query = NULL;
-	int rc;
+	int rc = SLURM_SUCCESS;
 	bool assocs=0, events=0, jobs=0, resvs=0, steps=0,
 		suspends=0, usage=0, wckeys=0;
 
@@ -484,8 +484,160 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 		xfree(id_str);
 
 		if(assocs) {
-			//char *assoc_id_str = NULL;
-			/*FIXME*/
+			char *assoc_ids = NULL;
+			int diff;
+
+			xstrfmtcat(query,
+				   "insert into %s_%s (creation_time, "
+				   "mod_time, deleted, id_assoc, user, "
+				   "acct, partition, parent_acct, lft, "
+				   "rgt, shares, max_jobs, max_submit_jobs, "
+				   "max_cpus_pj, max_nodes_pj, max_wall_pj, "
+				   "max_cpu_mins_pj, grp_jobs, "
+				   "grp_submit_jobs, grp_cpus, grp_nodes, "
+				   "grp_wall, grp_cpu_mins, qos, delta_qos) "
+				   "select creation_time, mod_time, deleted, "
+				   "id, user, acct, partition, "
+				   "parent_acct, lft, rgt, fairshare, "
+				   "max_jobs, max_submit_jobs, "
+				   "max_cpus_per_job, max_nodes_per_job, "
+				   "max_wall_duration_per_job, "
+				   "max_cpu_mins_per_job, grp_jobs, "
+				   "grp_submit_jobs, grp_cpus, grp_nodes, "
+				   "grp_wall, grp_cpu_mins, qos, delta_qos "
+				   "from %s where cluster='%s' "
+				   "on duplicate key update "
+				   "deleted=VALUES(deleted);",
+				   cluster_name, assoc_table,
+				   assoc_table, cluster_name);
+			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			rc = mysql_db_query(db_conn, query);
+			xfree(query);
+			if(rc != SLURM_SUCCESS) {
+				error("Couldn't update assoc table correctly");
+				break;
+			}
+
+			query = xstrdup_printf("select lft from %s_%s "
+					       "where acct='root' and user=''",
+					       cluster_name, assoc_table);
+			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+				xfree(query);
+				rc = SLURM_ERROR;
+				break;
+			}
+			xfree(query);
+
+			if(!(row = mysql_fetch_row(result))) {
+				mysql_free_result(result);
+				error("Couldn't find root association "
+				      "for cluster %s", cluster_name);
+				rc = SLURM_ERROR;
+				break;
+			}
+			diff = atoi(row[0]) - 1;
+			mysql_free_result(result);
+			if(diff < 0) {
+				error("lft was %s that can't happen!", diff+1);
+				rc = SLURM_ERROR;
+				break;
+			}
+
+			/* This will set the lft and rgts back as if
+			   these were the first cluster added to the
+			   system.
+			*/
+			query = xstrdup_printf("update %s_%s set "
+					       "lft=(lft-%d), rgt=(rgt-%d)",
+					       cluster_name, assoc_table,
+					       diff, diff);
+			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			rc = mysql_db_query(db_conn, query);
+			xfree(query);
+			if(rc != SLURM_SUCCESS) {
+				error("Couldn't update assoc table correctly");
+				break;
+			}
+
+			/* Since there isn't a cluster name in the
+			   assoc usage tables we need to get all the ids from
+			   the assoc_table for this cluster and query
+			   against that.
+			*/
+			query = xstrdup_printf("select id_assoc from %s_%s",
+					       cluster_name, assoc_table);
+			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+				xfree(query);
+				rc = SLURM_ERROR;
+				break;
+			}
+			xfree(query);
+
+			if(mysql_num_rows(result)) {
+				while((row = mysql_fetch_row(result))) {
+					if(assoc_ids)
+						xstrcat(assoc_ids, " || ");
+					else
+						xstrcat(assoc_ids, "(");
+					xstrfmtcat(assoc_ids, "(id=%s)",
+						   row[0]);
+				}
+				xstrcat(assoc_ids, ")");
+			}
+			mysql_free_result(result);
+
+			if(assoc_ids) {
+				xstrfmtcat(query,
+					   "insert into %s_%s (creation_time, "
+					   "mod_time, deleted, id_assoc, "
+					   "time_start, alloc_cpu_secs) "
+					   "select creation_time, mod_time, "
+					   "deleted, id, period_start, "
+					   "alloc_cpu_secs "
+					   "from %s where %s "
+					   "on duplicate key update "
+					   "deleted=VALUES(deleted), "
+					   "time_start=VALUES(time_start);",
+					   cluster_name, assoc_day_table,
+					   assoc_day_table, assoc_ids);
+				xstrfmtcat(query,
+					   "insert into %s_%s (creation_time, "
+					   "mod_time, deleted, id_assoc, "
+					   "time_start, alloc_cpu_secs) "
+					   "select creation_time, mod_time, "
+					   "deleted, id, period_start, "
+					   "alloc_cpu_secs "
+					   "from %s where %s "
+					   "on duplicate key update "
+					   "deleted=VALUES(deleted), "
+					   "time_start=VALUES(time_start);",
+					   cluster_name, assoc_hour_table,
+					   assoc_hour_table, assoc_ids);
+				xstrfmtcat(query,
+					   "insert into %s_%s (creation_time, "
+					   "mod_time, deleted, id_assoc, "
+					   "time_start, alloc_cpu_secs) "
+					   "select creation_time, mod_time, "
+					   "deleted, id, period_start, "
+					   "alloc_cpu_secs "
+					   "from %s where %s "
+					   "on duplicate key update "
+					   "deleted=VALUES(deleted), "
+					   "time_start=VALUES(time_start);",
+					   cluster_name, assoc_month_table,
+					   assoc_month_table, assoc_ids);
+				xfree(assoc_ids);
+				debug3("(%s:%d) query\n%s",
+				      __FILE__, __LINE__, query);
+				rc = mysql_db_query(db_conn, query);
+				xfree(query);
+				if(rc != SLURM_SUCCESS) {
+					error("Couldn't update assoc usage "
+					      "table correctly");
+					break;
+				}
+			}
 		}
 
 		if(events) {
@@ -554,6 +706,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 				xfree(query);
+				rc = SLURM_ERROR;
 				break;
 			}
 			xfree(query);
@@ -652,7 +805,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			if(rc != SLURM_SUCCESS) {
 				error("Couldn't update suspend "
 				      "table correctly");
-				goto end_it;
+				break;
 			}
 		}
 
@@ -749,20 +902,21 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 				xfree(query);
+				rc = SLURM_ERROR;
 				break;
 			}
 			xfree(query);
 
 			if(mysql_num_rows(result)) {
 				while((row = mysql_fetch_row(result))) {
-					if(id_str)
-						xstrcat(id_str, " || ");
+					if(wckey_ids)
+						xstrcat(wckey_ids, " || ");
 					else
-						xstrcat(id_str, "(");
-					xstrfmtcat(id_str, "(id_wckey=%s)",
+						xstrcat(wckey_ids, "(");
+					xstrfmtcat(wckey_ids, "(id=%s)",
 						   row[0]);
 				}
-				xstrcat(id_str, ")");
+				xstrcat(wckey_ids, ")");
 			}
 			mysql_free_result(result);
 
@@ -770,7 +924,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				xstrfmtcat(query,
 					   "insert into %s_%s (creation_time, "
 					   "mod_time, deleted, id_wckey, "
-					   "time_start alloc_cpu_secs, "
+					   "time_start, alloc_cpu_secs, "
 					   "resv_cpu_secs, over_cpu_secs) "
 					   "select creation_time, mod_time, "
 					   "deleted, id, period_start, "
@@ -785,7 +939,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				xstrfmtcat(query,
 					   "insert into %s_%s (creation_time, "
 					   "mod_time, deleted, id_wckey, "
-					   "time_start alloc_cpu_secs, "
+					   "time_start, alloc_cpu_secs, "
 					   "resv_cpu_secs, over_cpu_secs) "
 					   "select creation_time, mod_time, "
 					   "deleted, id, period_start, "
@@ -800,7 +954,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				xstrfmtcat(query,
 					   "insert into %s_%s (creation_time, "
 					   "mod_time, deleted, id_wckey, "
-					   "time_start alloc_cpu_secs, "
+					   "time_start, alloc_cpu_secs, "
 					   "resv_cpu_secs, over_cpu_secs) "
 					   "select creation_time, mod_time, "
 					   "deleted, id, period_start, "
@@ -830,7 +984,114 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&mysql_cluster_list_lock);
 
-	return SLURM_SUCCESS;
+	if(assocs) {
+		query = xstrdup_printf("rename table %s to %s_old,"
+				       "%s to %s_old, %s to %s_old,"
+				       "%s to %s_old;",
+				       assoc_table, assoc_table,
+				       assoc_day_table, assoc_day_table,
+				       assoc_hour_table,
+				       assoc_hour_table,
+				       assoc_month_table,
+				       assoc_month_table);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't rename assoc tables");
+			return rc;
+		}
+	}
+
+	if(events) {
+		query = xstrdup_printf("rename table cluster_event_table "
+				       "to cluster_event_table_old;");
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't rename event table");
+			return rc;
+		}
+	}
+
+	if(jobs) {
+		query = xstrdup_printf("rename table %s to %s_old;",
+				       job_table, job_table);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't rename job table");
+			return rc;
+		}
+	}
+
+	if(resvs) {
+		query = xstrdup_printf("rename table %s to %s_old;",
+				       resv_table, resv_table);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't rename resv table");
+			return rc;
+		}
+	}
+
+	if(steps) {
+		query = xstrdup_printf("rename table %s to %s_old;",
+				       step_table, step_table);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't rename step table");
+			return rc;
+		}
+	}
+
+	if(suspends) {
+		query = xstrdup_printf("rename table %s to %s_old;",
+				       suspend_table, suspend_table);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't rename suspend table");
+			return rc;
+		}
+	}
+
+	if(usage) {
+		query = xstrdup_printf("rename table %s to %s_old,"
+				       "%s to %s_old, %s to %s_old;",
+				       cluster_day_table, cluster_day_table,
+				       cluster_hour_table,
+				       cluster_hour_table,
+				       cluster_month_table,
+				       cluster_month_table);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't rename cluster usage tables");
+			return rc;
+		}
+	}
+
+	if(wckeys) {
+		query = xstrdup_printf("rename table %s to %s_old,"
+				       "%s to %s_old, %s to %s_old,"
+				       "%s to %s_old;",
+				       wckey_table, wckey_table,
+				       wckey_day_table, wckey_day_table,
+				       wckey_hour_table,
+				       wckey_hour_table,
+				       wckey_month_table,
+				       wckey_month_table);
+		rc = mysql_db_query(db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't rename wckey tables");
+			return rc;
+		}
+	}
+
+	return rc;
 
 end_it:
 	if(result)

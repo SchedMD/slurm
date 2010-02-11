@@ -337,8 +337,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		// now get the reservations during this time
 		query = xstrdup_printf("select %s from %s_%s where "
-				       "(start < %d && end >= %d) "
-				       "order by cluster, start",
+				       "(time_start < %d && time_end >= %d) "
+				       "order by time_start",
 				       resv_str, cluster_name, resv_table,
 				       curr_end, curr_start);
 
@@ -814,7 +814,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   c_usage->r_cpu);
 			} else {
 				xstrfmtcat(query,
-					   "insert into %s (creation_time, "
+					   "insert into %s_%s (creation_time, "
 					   "mod_time, time_start, "
 					   "cpu_count, alloc_cpu_secs, "
 					   "down_cpu_secs, pdown_cpu_secs, "
