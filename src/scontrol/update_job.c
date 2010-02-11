@@ -332,9 +332,23 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.nice = NICE_OFFSET + nice;
 			update_cnt++;
 		}
-		/* ReqProcs was replaced by NumTasks in SLURM version 2.1 */
-		else if ((strncasecmp(tag, "ReqProcs", MAX(taglen, 4)) == 0) ||
-			 (strncasecmp(tag, "NumTasks", MAX(taglen, 8)) == 0)) {
+		else if (strncasecmp(tag, "NumCPUs", MAX(taglen, 6)) == 0) {
+			int min_cpus, max_cpus=0;
+			if (!get_resource_arg_range(val, "NumCPUs", &min_cpus,
+						   &max_cpus, false) ||
+			    (min_cpus <= 0) || 
+			    (max_cpus && (max_cpus < min_cpus))) {
+				error("Invalid NumCPUs value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
+			job_msg.min_cpus = min_cpus;
+			if (max_cpus)
+				job_msg.max_cpus = max_cpus;
+			update_cnt++;
+		}
+		/* ReqProcs was removed in SLURM version 2.1 */
+		else if (strncasecmp(tag, "ReqProcs", MAX(taglen, 8)) == 0) {
 			job_msg.num_tasks =
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
@@ -401,6 +415,7 @@ scontrol_update_job (int argc, char *argv[])
 				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
+
 		else if (strncasecmp(tag, "PartitionName",
 				     MAX(taglen, 2)) == 0) {
 			job_msg.partition = val;
