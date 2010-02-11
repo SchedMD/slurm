@@ -5235,8 +5235,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 {
 	int error_code = SLURM_SUCCESS;
 	int super_user = 0;
-	uint32_t save_min_nodes = NO_VAL, save_max_nodes = NO_VAL;
-	uint32_t save_min_cpus = NO_VAL, save_max_cpus = NO_VAL;
+	uint32_t save_min_nodes = 0, save_max_nodes = 0;
+	uint32_t save_min_cpus = 0, save_max_cpus = 0;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
@@ -5438,7 +5438,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			save_max_cpus = NO_VAL;
 		}
 	}
-	if (save_min_cpus != NO_VAL) {
+	if (save_min_cpus) {
 #ifdef HAVE_BG
 		uint32_t node_cnt = detail_ptr->min_cpus;
 		if(cpus_per_node)
@@ -5452,7 +5452,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     save_min_cpus, detail_ptr->min_cpus, job_specs->job_id);
 		update_accounting = true;
 	}
-	if (save_max_cpus != NO_VAL) {
+	if (save_max_cpus) {
 		info("update_job: setting max_cpus from "
 		     "%u to %u for job_id %u",
 		     save_max_cpus, detail_ptr->max_cpus, job_specs->job_id);
@@ -5542,13 +5542,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			save_max_nodes = NO_VAL;
 		}
 	}
-	if (save_min_nodes != NO_VAL) {
+	if (save_min_nodes) {
 		info("update_job: setting min_nodes from "
 		     "%u to %u for job_id %u",
 		     save_min_nodes, detail_ptr->min_nodes, job_specs->job_id);
 		update_accounting = true;
 	}
-	if (save_max_nodes != NO_VAL) {
+	if (save_max_nodes) {
 		info("update_job: setting max_nodes from "
 		     "%u to %u for job_id %u",
 		     save_max_nodes, detail_ptr->max_nodes, job_specs->job_id);
@@ -6149,9 +6149,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		 else {
 			 info("update_job: setting LinuxImage to %s for "
 			      "jobid %u", image, job_ptr->job_id);
-			 select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						     SELECT_JOBDATA_LINUX_IMAGE,
-						     image);
+			 select_g_select_jobinfo_set(
+					job_ptr->select_jobinfo,     
+					SELECT_JOBDATA_LINUX_IMAGE, image);
 		 }
 	 }
 	 select_g_select_jobinfo_get(job_specs->select_jobinfo,

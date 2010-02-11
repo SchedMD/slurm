@@ -421,6 +421,9 @@ Nice value changes are not additive, but overwrite any prior nice
 value and are applied to the job's base priority.
 Only privileged users can specify a negative adjustment.
 .TP
+\fINumCPUs\fP=<min_count>[\-<max_count>]
+Set the job's minimum and optionally maximum count of CPUs to be allocated.
+.TP
 \fINumNodes\fP=<min_count>[\-<max_count>]
 Set the job's minimum and optionally maximum count of nodes to be allocated.
 .TP
