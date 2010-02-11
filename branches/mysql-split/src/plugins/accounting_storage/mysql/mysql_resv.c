@@ -74,9 +74,9 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 	}
 
 	if(resv->name) {
-		xstrcat(*cols, ", name");
+		xstrcat(*cols, ", resv_name");
 		xstrfmtcat(*vals, ", \"%s\"", resv->name);
-		xstrfmtcat(*extra, ", name=\"%s\"", resv->name);
+		xstrfmtcat(*extra, ", resv_name=\"%s\"", resv->name);
 	}
 
 	if(resv->nodes) {
@@ -92,15 +92,15 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 	}
 
 	if(resv->time_end) {
-		xstrcat(*cols, ", end");
+		xstrcat(*cols, ", time_end");
 		xstrfmtcat(*vals, ", %u", resv->time_end);
-		xstrfmtcat(*extra, ", end=%u", resv->time_end);
+		xstrfmtcat(*extra, ", time_end=%u", resv->time_end);
 	}
 
 	if(resv->time_start) {
-		xstrcat(*cols, ", start");
+		xstrcat(*cols, ", time_start");
 		xstrfmtcat(*vals, ", %u", resv->time_start);
-		xstrfmtcat(*extra, ", start=%u", resv->time_start);
+		xstrfmtcat(*extra, ", time_start=%u", resv->time_start);
 	}
 
 
@@ -118,23 +118,6 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 	if(!resv_cond)
 		return 0;
 
-	if(resv_cond->cluster_list && list_count(resv_cond->cluster_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-		itr = list_iterator_create(resv_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.cluster=\"%s\"", prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
 	if(resv_cond->id_list && list_count(resv_cond->id_list)) {
 		set = 0;
 		if(*extra)
@@ -145,7 +128,7 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.id=%s", prefix, object);
+			xstrfmtcat(*extra, "%s.id_resv=%s", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -162,7 +145,8 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.name=\"%s\"", prefix, object);
+			xstrfmtcat(*extra, "%s.resv_name=\"%s\"",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -178,8 +162,8 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra,
-			   "(t1.start < %d "
-			   "&& (t1.end >= %d || t1.end = 0)))",
+			   "(t1.time_start < %d "
+			   "&& (t1.time_end >= %d || t1.time_end = 0)))",
 			   resv_cond->time_end, resv_cond->time_start);
 	} else if(resv_cond->time_end) {
 		if(*extra)
@@ -187,7 +171,7 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra,
-			   "(t1.start < %d))", resv_cond->time_end);
+			   "(t1.time_start < %d))", resv_cond->time_end);
 	}
 
 
@@ -222,10 +206,9 @@ extern int mysql_add_resv(mysql_conn_t *mysql_conn,
 	_setup_resv_limits(resv, &cols, &vals, &extra);
 
 	xstrfmtcat(query,
-		   "insert into %s (id, cluster%s) values (%u, '%s'%s) "
+		   "insert into %s_%s (id%s) values (%u%s) "
 		   "on duplicate key update deleted=0%s;",
-		   resv_table, cols, resv->id, resv->cluster,
-		   vals, extra);
+		   resv->cluster, resv_table, cols, resv->id, vals, extra);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
 
@@ -254,10 +237,10 @@ extern int mysql_modify_resv(mysql_conn_t *mysql_conn,
 	int set = 0;
 	char *resv_req_inx[] = {
 		"assoclist",
-		"start",
-		"end",
+		"time_start",
+		"time_end",
 		"cpus",
-		"name",
+		"resv_name",
 		"nodelist",
 		"node_inx",
 		"flags"
@@ -308,13 +291,12 @@ extern int mysql_modify_resv(mysql_conn_t *mysql_conn,
 	   likely the start time hasn't changed, but something else
 	   may have since the last time we did an update to the
 	   reservation. */
-	query = xstrdup_printf("select %s from %s where id=%u "
-			       "and (start=%d || start=%d) and cluster='%s' "
-			       "and deleted=0 order by start desc "
+	query = xstrdup_printf("select %s from %s_%s where id=%u "
+			       "and (time_start=%d || time_start=%d) "
+			       "and deleted=0 order by time_start desc "
 			       "limit 1 FOR UPDATE;",
-			       cols, resv_table, resv->id,
-			       resv->time_start, resv->time_start_prev,
-			       resv->cluster);
+			       cols, resv->cluster, resv_table, resv->id,
+			       resv->time_start, resv->time_start_prev);
 try_again:
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -327,7 +309,7 @@ try_again:
 		rc = SLURM_ERROR;
 		mysql_free_result(result);
 		error("There is no reservation by id %u, "
-		      "start %d, and cluster '%s'", resv->id,
+		      "time_start %d, and cluster '%s'", resv->id,
 		      resv->time_start_prev, resv->cluster);
 		if(!set && resv->time_end) {
 			/* This should never really happen,
@@ -337,12 +319,12 @@ try_again:
 			   not deleted that hasn't ended yet. */
 			xfree(query);
 			query = xstrdup_printf(
-				"select %s from %s where id=%u "
-				"and start <= %d and cluster='%s' "
-				"and deleted=0 order by start desc "
+				"select %s from %s_%s where id=%u "
+				"and time_start <= %d and cluster='%s' "
+				"and deleted=0 order by time_start desc "
 				"limit 1;",
-				cols, resv_table, resv->id,
-				resv->time_end, resv->cluster);
+				cols, resv->cluster, resv_table, resv->id,
+				resv->time_end);
 			set = 1;
 			goto try_again;
 		}
@@ -402,27 +384,26 @@ try_again:
 		/* we haven't started the reservation yet, or
 		   we are changing the associations or end
 		   time which we can just update it */
-		query = xstrdup_printf("update %s set deleted=0%s "
+		query = xstrdup_printf("update %s_%s set deleted=0%s "
 				       "where deleted=0 and id=%u "
-				       "and start=%d and cluster='%s';",
-				       resv_table, extra, resv->id,
-				       start,
-				       resv->cluster);
+				       "and time_start=%d and cluster='%s';",
+				       resv->cluster, resv_table,
+				       extra, resv->id, start);
 	} else {
 		/* time_start is already done above and we
 		 * changed something that is in need on a new
 		 * entry. */
-		query = xstrdup_printf("update %s set end=%d "
+		query = xstrdup_printf("update %s_%s set time_end=%d "
 				       "where deleted=0 && id=%u "
-				       "&& start=%d and cluster='%s';",
-				       resv_table, resv->time_start-1,
-				       resv->id, start,
-				       resv->cluster);
+				       "&& time_start=%d and cluster='%s';",
+				       resv->cluster, resv_table,
+				       resv->time_start-1,
+				       resv->id, start);
 		xstrfmtcat(query,
-			   "insert into %s (id, cluster%s) "
-			   "values (%u, '%s'%s) "
+			   "insert into %s_%s (id%s) "
+			   "values (%u%s) "
 			   "on duplicate key update deleted=0%s;",
-			   resv_table, cols, resv->id, resv->cluster,
+			   resv->cluster, resv_table, cols, resv->id,
 			   vals, extra);
 	}
 
@@ -462,21 +443,20 @@ extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
 
 
 	/* first delete the resv that hasn't happened yet. */
-	query = xstrdup_printf("delete from %s where start > %d "
-			       "and id=%u and start=%d "
-			       "and cluster='%s';",
-			       resv_table, resv->time_start_prev,
+	query = xstrdup_printf("delete from %s_%s where time_start > %d "
+			       "and id=%u and time_start=%d;",
+			       resv->cluster, resv_table, resv->time_start_prev,
 			       resv->id,
-			       resv->time_start, resv->cluster);
+			       resv->time_start);
 	/* then update the remaining ones with a deleted flag and end
 	 * time of the time_start_prev which is set to when the
 	 * command was issued */
 	xstrfmtcat(query,
-		   "update %s set end=%d, deleted=1 where deleted=0 and "
-		   "id=%u and start=%d and cluster='%s;'",
-		   resv_table, resv->time_start_prev,
-		   resv->id, resv->time_start,
-		   resv->cluster);
+		   "update %s_%s set time_end=%d, "
+		   "deleted=1 where deleted=0 and "
+		   "id_resv=%u and time_start=%d;'",
+		   resv->cluster, resv_table, resv->time_start_prev,
+		   resv->id, resv->time_start);
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -506,28 +486,28 @@ extern List mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	acct_job_cond_t job_cond;
 	void *curr_cluster = NULL;
 	List local_cluster_list = NULL;
-
+	List use_cluster_list = mysql_cluster_list;
+	ListIterator itr = NULL;
+	char *cluster_name = NULL;
 	/* needed if we don't have an resv_cond */
 	uint16_t with_usage = 0;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *resv_req_inx[] = {
-		"id",
-		"name",
-		"cluster",
+		"id_resv",
+		"resv_name",
 		"cpus",
 		"assoclist",
 		"nodelist",
 		"node_inx",
-		"start",
-		"end",
+		"time_start",
+		"time_end",
 		"flags",
 	};
 
 	enum {
 		RESV_REQ_ID,
 		RESV_REQ_NAME,
-		RESV_REQ_CLUSTER,
 		RESV_REQ_CPUS,
 		RESV_REQ_ASSOCS,
 		RESV_REQ_NODES,
@@ -580,10 +560,27 @@ empty:
 		xstrfmtcat(tmp, ", t1.%s", resv_req_inx[i]);
 	}
 
-	//START_TIMER;
-	query = xstrdup_printf("select distinct %s from %s as t1%s "
-			       "order by cluster, name;",
-			       tmp, resv_table, extra);
+	if(resv_cond->cluster_list && list_count(resv_cond->cluster_list))
+		use_cluster_list = resv_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+
+	itr = list_iterator_create(use_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		if(query)
+			xstrcat(query, " union ");
+		//START_TIMER;
+		xstrfmtcat(query, "select distinct %s,'%s' as cluster "
+			   "from %s_%s as t1%s",
+			   tmp, cluster_name, cluster_name, resv_table, extra);
+	}
+	list_iterator_destroy(itr);
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
+
+	if(query)
+		xstrcat(query, " order by cluster, resv_name;");
+
 	xfree(tmp);
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
@@ -615,7 +612,7 @@ empty:
 			list_append(job_cond.resvid_list, row[RESV_REQ_ID]);
 		}
 		resv->name = xstrdup(row[RESV_REQ_NAME]);
-		resv->cluster = xstrdup(row[RESV_REQ_CLUSTER]);
+		resv->cluster = xstrdup(row[RESV_REQ_COUNT]);
 		resv->cpus = atoi(row[RESV_REQ_CPUS]);
 		resv->assocs = xstrdup(row[RESV_REQ_ASSOCS]);
 		resv->nodes = xstrdup(row[RESV_REQ_NODES]);

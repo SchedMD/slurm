@@ -454,7 +454,8 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while((selected_step = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.jobid=%u", selected_step->jobid);
+			xstrfmtcat(*extra, "t1.id_job=%u",
+				   selected_step->jobid);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -610,37 +611,35 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	/* if this changes you will need to edit the corresponding
 	 * enum below also t1 is job_table */
 	char *job_req_inx[] = {
-		"t1.id",
-		"t1.jobid",
-		"t1.associd",
+		"t1.db_job_inx",
+		"t1.id_job",
+		"t1.id_assoc",
 		"t1.wckey",
-		"t1.wckeyid",
-		"t1.uid",
-		"t1.gid",
-		"t1.resvid",
+		"t1.id_wckey",
+		"t1.id_user",
+		"t1.id_group",
+		"t1.id_resv",
 		"t1.partition",
-		"t1.blockid",
-		"t1.cluster",
+		"t1.id_block",
 		"t1.account",
-		"t1.eligible",
-		"t1.submit",
-		"t1.start",
-		"t1.end",
-		"t1.suspended",
-		"t1.name",
+		"t1.time_eligible",
+		"t1.time_submit",
+		"t1.time_start",
+		"t1.time_end",
+		"t1.time_suspended",
+		"t1.job_name",
 		"t1.track_steps",
 		"t1.state",
-		"t1.comp_code",
+		"t1.exit_code",
 		"t1.priority",
-		"t1.req_cpus",
-		"t1.alloc_cpus",
-		"t1.alloc_nodes",
+		"t1.cpus_req",
+		"t1.cpus_alloc",
+		"t1.nodes_alloc",
 		"t1.nodelist",
 		"t1.node_inx",
 		"t1.kill_requid",
 		"t1.qos",
 		"t2.user",
-		"t2.cluster",
 		"t2.acct",
 		"t2.lft"
 	};
@@ -656,7 +655,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_RESVID,
 		JOB_REQ_PARTITION,
 		JOB_REQ_BLOCKID,
-		JOB_REQ_CLUSTER1,
 		JOB_REQ_ACCOUNT1,
 		JOB_REQ_ELIGIBLE,
 		JOB_REQ_SUBMIT,
@@ -676,7 +674,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_QOS,
 		JOB_REQ_USER_NAME,
-		JOB_REQ_CLUSTER,
 		JOB_REQ_ACCOUNT,
 		JOB_REQ_LFT,
 		JOB_REQ_COUNT
@@ -685,19 +682,19 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	/* if this changes you will need to edit the corresponding
 	 * enum below also t1 is step_table */
 	char *step_req_inx[] = {
-		"t1.stepid",
-		"t1.start",
-		"t1.end",
-		"t1.suspended",
-		"t1.name",
+		"t1.id_step",
+		"t1.time_start",
+		"t1.time_end",
+		"t1.time_suspended",
+		"t1.step_name",
 		"t1.nodelist",
 		"t1.node_inx",
 		"t1.state",
 		"t1.kill_requid",
-		"t1.comp_code",
-		"t1.nodes",
-		"t1.cpus",
-		"t1.tasks",
+		"t1.exit_code",
+		"t1.nodes_alloc",
+		"t1.cpus_alloc",
+		"t1.task_cnt",
 		"t1.task_dist",
 		"t1.user_sec",
 		"t1.user_usec",
@@ -915,10 +912,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			job->wckey = xstrdup("");
 		job->wckeyid = atoi(row[JOB_REQ_WCKEYID]);
 
-		if(row[JOB_REQ_CLUSTER] && row[JOB_REQ_CLUSTER][0])
-			job->cluster = xstrdup(row[JOB_REQ_CLUSTER]);
-		else if(row[JOB_REQ_CLUSTER1] && row[JOB_REQ_CLUSTER1][0])
-			job->cluster = xstrdup(row[JOB_REQ_CLUSTER1]);
+		/*FIX ME: this won't work. */
+		if(row[JOB_REQ_COUNT] && row[JOB_REQ_COUNT][0])
+			job->cluster = xstrdup(row[JOB_REQ_COUNT]);
 
 		if(row[JOB_REQ_USER_NAME])
 			job->user = xstrdup(row[JOB_REQ_USER_NAME]);

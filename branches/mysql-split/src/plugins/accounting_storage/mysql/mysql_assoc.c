@@ -477,10 +477,10 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"partition",
 		"max_jobs",
 		"max_submit_jobs",
-		"max_nodes_per_job",
-		"max_cpus_per_job",
-		"max_wall_duration_per_job",
-		"max_cpu_mins_per_job",
+		"max_nodes_pj",
+		"max_cpus_pj",
+		"max_wall_pj",
+		"max_cpu_mins_pj",
 		"qos",
 		"delta_qos",
 		"lft",
@@ -770,7 +770,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.fairshare=\"%s\"",
+			xstrfmtcat(*extra, "%s.shares=\"%s\"",
 				   prefix, object);
 			set = 1;
 		}
@@ -882,7 +882,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_cpu_mins_per_job=\"%s\"",
+			xstrfmtcat(*extra, "%s.max_cpu_mins_pj=\"%s\"",
 				   prefix, object);
 			set = 1;
 		}
@@ -898,7 +898,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_cpus_per_job=\"%s\"",
+			xstrfmtcat(*extra, "%s.max_cpus_pj=\"%s\"",
 				   prefix, object);
 			set = 1;
 		}
@@ -930,7 +930,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_nodes_per_job=\"%s\"",
+			xstrfmtcat(*extra, "%s.max_nodes_pj=\"%s\"",
 				   prefix, object);
 			set = 1;
 		}
@@ -963,7 +963,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra,
-				   "%s.max_wall_duration_per_job=\"%s\"",
+				   "%s.max_wall_duration_pj=\"%s\"",
 				   prefix, object);
 			set = 1;
 		}
@@ -2218,19 +2218,19 @@ extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 		"acct",
 		"cluster",
 		"partition",
-		"fairshare",
+		"shares",
 		"grp_cpu_mins",
 		"grp_cpus",
 		"grp_jobs",
 		"grp_nodes",
 		"grp_submit_jobs",
 		"grp_wall",
-		"max_cpu_mins_per_job",
-		"max_cpus_per_job",
+		"max_cpu_mins_pj",
+		"max_cpus_pj",
 		"max_jobs",
-		"max_nodes_per_job",
+		"max_nodes_pj",
 		"max_submit_jobs",
-		"max_wall_duration_per_job",
+		"max_wall_pj",
 		"parent_acct",
 		"qos",
 		"delta_qos",

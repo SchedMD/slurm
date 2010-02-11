@@ -64,7 +64,8 @@ static int _setup_wckey_cond_limits(acct_wckey_cond_t *wckey_cond, char **extra)
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.name=\"%s\"", prefix, object);
+			xstrfmtcat(*extra, "%s.wckey_name=\"%s\"",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -78,7 +79,7 @@ static int _setup_wckey_cond_limits(acct_wckey_cond_t *wckey_cond, char **extra)
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.id=%s", prefix, object);
+			xstrfmtcat(*extra, "%s.id_wckey=%s", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -189,11 +190,11 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			rc = SLURM_ERROR;
 			continue;
 		}
-		xstrcat(cols, "creation_time, mod_time, cluster, user");
-		xstrfmtcat(vals, "%d, %d, \"%s\", \"%s\"",
-			   now, now, object->cluster, object->user);
-		xstrfmtcat(extra, ", mod_time=%d, cluster=\"%s\", user=\"%s\"",
-			   now, object->cluster, object->user);
+		xstrcat(cols, "creation_time, mod_time, user");
+		xstrfmtcat(vals, "%d, %d, \"%s\"",
+			   now, now, object->user);
+		xstrfmtcat(extra, ", mod_time=%d, user=\"%s\"",
+			   now, object->user);
 
 		if(object->name) {
 			xstrcat(cols, ", name");
@@ -202,10 +203,10 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrfmtcat(query,
-			   "insert into %s (%s) values (%s) "
+			   "insert into %s_%s (%s) values (%s) "
 			   "on duplicate key update deleted=0, "
 			   "id=LAST_INSERT_ID(id)%s;",
-			   wckey_table, cols, vals, extra);
+			   object->cluster, wckey_table, cols, vals, extra);
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, __FILE__, __LINE__, query);
@@ -345,6 +346,7 @@ extern List mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
+	char *cluster_name = NULL;
 	List wckey_list = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
@@ -352,23 +354,23 @@ extern List mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_ROW row;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
+	List use_cluster_list = mysql_cluster_list;
+	ListIterator itr;
 
 	/* needed if we don't have an wckey_cond */
 	uint16_t with_usage = 0;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *wckey_req_inx[] = {
-		"id",
-		"name",
+		"id_wckey",
+		"wckey_name",
 		"user",
-		"cluster",
 	};
 
 	enum {
 		WCKEY_REQ_ID,
 		WCKEY_REQ_NAME,
 		WCKEY_REQ_USER,
-		WCKEY_REQ_CLUSTER,
 		WCKEY_REQ_COUNT
 	};
 
@@ -408,10 +410,30 @@ empty:
 	if(!is_admin && (private_data & PRIVATE_DATA_USERS))
 		xstrfmtcat(extra, " && t1.user='%s'", user.name);
 
+	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
+		use_cluster_list = wckey_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+
 	//START_TIMER;
-	query = xstrdup_printf("select distinct %s from %s as t1%s "
-			       "order by name, cluster, user;",
-			       tmp, wckey_table, extra);
+	itr = list_iterator_create(use_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		if(query)
+			xstrcat(query, " union ");
+		xstrfmtcat(query,
+			   "select distinct %s,'%s' as cluster "
+			   "from %s_%s as t1%s",
+			   tmp, cluster_name, cluster_name,
+			   wckey_table, extra);
+	}
+	list_iterator_destroy(itr);
+
+	if(query)
+		xstrcat(query, " order by wckey_name, cluster, user;");
+
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
+
 	xfree(tmp);
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
@@ -438,7 +460,7 @@ empty:
 		else
 			wckey->name = xstrdup("");
 
-		wckey->cluster = xstrdup(row[WCKEY_REQ_CLUSTER]);
+		wckey->cluster = xstrdup(row[WCKEY_REQ_COUNT]);
 	}
 	mysql_free_result(result);
 
@@ -446,7 +468,6 @@ empty:
 		get_usage_for_list(mysql_conn, DBD_GET_WCKEY_USAGE,
 				   wckey_list, wckey_cond->usage_start,
 				   wckey_cond->usage_end);
-	
 
 	//END_TIMER2("get_wckeys");
 	return wckey_list;

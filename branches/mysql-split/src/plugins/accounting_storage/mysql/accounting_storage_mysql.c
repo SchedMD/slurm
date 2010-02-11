@@ -427,16 +427,16 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"@s, '@msj := max_submit_jobs, '); "
 		"end if; "
 		"if @mcpj is NULL then set @s = CONCAT("
-		"@s, '@mcpj := max_cpus_per_job, ') ;"
+		"@s, '@mcpj := max_cpus_pj, ') ;"
 		"end if; "
 		"if @mnpj is NULL then set @s = CONCAT("
-		"@s, '@mnpj := max_nodes_per_job, ') ;"
+		"@s, '@mnpj := max_nodes_pj, ') ;"
 		"end if; "
 		"if @mwpj is NULL then set @s = CONCAT("
-		"@s, '@mwpj := max_wall_duration_per_job, '); "
+		"@s, '@mwpj := max_wall_pj, '); "
 		"end if; "
 		"if @mcmpj is NULL then set @s = CONCAT("
-		"@s, '@mcmpj := max_cpu_mins_per_job, '); "
+		"@s, '@mcmpj := max_cpu_mins_pj, '); "
 		"end if; "
 		"if @qos = '' then set @s = CONCAT("
 		"@s, '@qos := qos, "
@@ -658,13 +658,13 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 		{ "parent_acct", "tinytext not null default ''" },
 		{ "lft", "int not null" },
 		{ "rgt", "int not null" },
-		{ "fairshare", "int default 1 not null" },
+		{ "shares", "int default 1 not null" },
 		{ "max_jobs", "int default NULL" },
 		{ "max_submit_jobs", "int default NULL" },
-		{ "max_cpus_per_job", "int default NULL" },
-		{ "max_nodes_per_job", "int default NULL" },
-		{ "max_wall_duration_per_job", "int default NULL" },
-		{ "max_cpu_mins_per_job", "bigint default NULL" },
+		{ "max_cpus_pj", "int default NULL" },
+		{ "max_nodes_pj", "int default NULL" },
+		{ "max_wall_pj", "int default NULL" },
+		{ "max_cpu_mins_pj", "bigint default NULL" },
 		{ "grp_jobs", "int default NULL" },
 		{ "grp_submit_jobs", "int default NULL" },
 		{ "grp_cpus", "int default NULL" },
@@ -984,13 +984,13 @@ extern int setup_association_limits(acct_association_rec_t *assoc,
 		return SLURM_ERROR;
 
 	if((int)assoc->shares_raw >= 0) {
-		xstrcat(*cols, ", fairshare");
+		xstrcat(*cols, ", shares");
 		xstrfmtcat(*vals, ", %u", assoc->shares_raw);
-		xstrfmtcat(*extra, ", fairshare=%u", assoc->shares_raw);
+		xstrfmtcat(*extra, ", shares=%u", assoc->shares_raw);
 	} else if (((int)assoc->shares_raw == INFINITE) || get_fs) {
-		xstrcat(*cols, ", fairshare");
+		xstrcat(*cols, ", shares");
 		xstrcat(*vals, ", 1");
-		xstrcat(*extra, ", fairshare=1");
+		xstrcat(*extra, ", shares=1");
 		assoc->shares_raw = 1;
 	}
 
@@ -1059,25 +1059,25 @@ extern int setup_association_limits(acct_association_rec_t *assoc,
 	}
 
 	if((int)assoc->max_cpu_mins_pj >= 0) {
-		xstrcat(*cols, ", max_cpu_mins_per_job");
+		xstrcat(*cols, ", max_cpu_mins_pj");
 		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
-		xstrfmtcat(*extra, ", max_cpu_mins_per_job=%u",
+		xstrfmtcat(*extra, ", max_cpu_mins_pj=%u",
 			   assoc->max_cpu_mins_pj);
 	} else if((int)assoc->max_cpu_mins_pj == INFINITE) {
-		xstrcat(*cols, ", max_cpu_mins_per_job");
+		xstrcat(*cols, ", max_cpu_mins_pj");
 		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpu_mins_per_job=NULL");
+		xstrcat(*extra, ", max_cpu_mins_pj=NULL");
 	}
 
 	if((int)assoc->max_cpus_pj >= 0) {
-		xstrcat(*cols, ", max_cpus_per_job");
+		xstrcat(*cols, ", max_cpus_pj");
 		xstrfmtcat(*vals, ", %u", assoc->max_cpus_pj);
-		xstrfmtcat(*extra, ", max_cpus_per_job=%u",
+		xstrfmtcat(*extra, ", max_cpus_pj=%u",
 			   assoc->max_cpus_pj);
 	} else if((int)assoc->max_cpus_pj == INFINITE) {
-		xstrcat(*cols, ", max_cpus_per_job");
+		xstrcat(*cols, ", max_cpus_pj");
 		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpus_per_job=NULL");
+		xstrcat(*extra, ", max_cpus_pj=NULL");
 	}
 
 	if((int)assoc->max_jobs >= 0) {
@@ -1092,14 +1092,14 @@ extern int setup_association_limits(acct_association_rec_t *assoc,
 	}
 
 	if((int)assoc->max_nodes_pj >= 0) {
-		xstrcat(*cols, ", max_nodes_per_job");
+		xstrcat(*cols, ", max_nodes_pj");
 		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
-		xstrfmtcat(*extra, ", max_nodes_per_job=%u",
+		xstrfmtcat(*extra, ", max_nodes_pj=%u",
 			   assoc->max_nodes_pj);
 	} else if((int)assoc->max_nodes_pj == INFINITE) {
-		xstrcat(*cols, ", max_nodes_per_job");
+		xstrcat(*cols, ", max_nodes_pj");
 		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_nodes_per_job=NULL");
+		xstrcat(*extra, ", max_nodes_pj=NULL");
 	}
 
 	if((int)assoc->max_submit_jobs >= 0) {
@@ -1114,14 +1114,14 @@ extern int setup_association_limits(acct_association_rec_t *assoc,
 	}
 
 	if((int)assoc->max_wall_pj >= 0) {
-		xstrcat(*cols, ", max_wall_duration_per_job");
+		xstrcat(*cols, ", max_wall_pj");
 		xstrfmtcat(*vals, ", %u", assoc->max_wall_pj);
-		xstrfmtcat(*extra, ", max_wall_duration_per_job=%u",
+		xstrfmtcat(*extra, ", max_wall_pj=%u",
 			   assoc->max_wall_pj);
 	} else if((int)assoc->max_wall_pj == INFINITE) {
-		xstrcat(*cols, ", max_wall_duration_per_job");
+		xstrcat(*cols, ", max_wall_pj");
 		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
+		xstrcat(*extra, ", max_wall_pj=NULL");
 	}
 
 	/* when modifying the qos it happens in the actual function
@@ -1515,10 +1515,10 @@ just_update:
 	 * around.
 	 */
 	query = xstrdup_printf("update %s_%s as t1 set mod_time=%d, deleted=1, "
-			       "fairshare=1, max_jobs=NULL, "
-			       "max_nodes_per_job=NULL, "
-			       "max_wall_duration_per_job=NULL, "
-			       "max_cpu_mins_per_job=NULL "
+			       "shares=1, max_jobs=NULL, "
+			       "max_nodes_pj=NULL, "
+			       "max_wall_duration_pj=NULL, "
+			       "max_cpu_mins_pj=NULL "
 			       "where (%s);"
 			       "alter table %s_%s AUTO_INCREMENT=0;",
 			       cluster_name, assoc_table, now,
