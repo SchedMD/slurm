@@ -67,20 +67,6 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		xstrcat(*extra, ")");
 	}
 
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "cluster=\"%s\"", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
 	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
@@ -199,6 +185,9 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	int i = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	List use_cluster_list = mysql_cluster_list;
+	ListIterator itr = NULL;
+	char *cluster_name;
 
 	xassert(ret_list);
 
@@ -206,10 +195,9 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *assoc_req_inx[] = {
-		"id",
+		"id_assoc",
 		"user",
 		"acct",
-		"cluster",
 		"partition",
 		"parent_acct",
 	};
@@ -217,7 +205,6 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		ASSOC_REQ_ID,
 		ASSOC_REQ_USER,
 		ASSOC_REQ_ACCT,
-		ASSOC_REQ_CLUSTER,
 		ASSOC_REQ_PART,
 		ASSOC_REQ_PARENT,
 		ASSOC_REQ_COUNT
@@ -229,11 +216,29 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
 	}
 
-	/* only get the account associations */
-	query = xstrdup_printf("select distinct %s from %s %s "
-			       "&& user='' && lft=(rgt-1)"
-			       "order by cluster,acct;",
-			       tmp, assoc_table, extra);
+	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
+		use_cluster_list = assoc_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+
+	itr = list_iterator_create(use_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		/* only get the account associations */
+		if(query)
+			xstrcat(query, " union ");
+		xstrfmtcat(query, "select distinct %s, '%s' as cluster "
+			   "from %s_%s %s && user='' && lft=(rgt-1)"
+			   "order by cluster, acct;",
+			   tmp, cluster_name, cluster_name,
+			   assoc_table, extra);
+	}
+	list_iterator_destroy(itr);
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
+
+	if(query)
+		xstrcat(query, "order by cluster, acct;");
+
 	xfree(tmp);
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
@@ -256,7 +261,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		if(row[ASSOC_REQ_USER][0])
 			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
-		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
+		assoc->cluster = xstrdup(row[ASSOC_REQ_COUNT]);
 
 		if(row[ASSOC_REQ_PARENT][0])
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
