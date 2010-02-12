@@ -661,7 +661,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space)
 {
-	int j, resv_delay;
+	int32_t j, resv_delay;
 	uint32_t orig_time_limit = job_ptr->time_limit;
 
 	for (j=0; ; ) {
@@ -678,9 +678,11 @@ static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 		if ((j = node_space[j].next) == 0)
 			break;
 	}
-
 	job_ptr->time_limit = MAX(job_ptr->time_min, job_ptr->time_limit);
 	job_ptr->end_time = job_ptr->start_time + (job_ptr->time_limit * 60);
+
+	job_time_adj_resv(job_ptr);
+
 	if (orig_time_limit != job_ptr->time_limit) {
 		info("backfill: job %u time limit changed from %u to %u",
 		     job_ptr->job_id, orig_time_limit, job_ptr->time_limit);
