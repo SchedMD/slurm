@@ -210,7 +210,7 @@ extern int check_wckey_tables(PGconn *db_conn, char *user);
 
 /* API functions */
 extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
-					   bool rollback);
+					   bool rollback, char *cluster_name);
 
 extern int acct_storage_p_close_connection(pgsql_conn_t **pg_conn);
 
@@ -450,7 +450,6 @@ extern int cs_p_node_up(pgsql_conn_t *pg_conn,
 			time_t event_time);
 
 extern int clusteracct_storage_p_register_ctld(pgsql_conn_t *pg_conn,
-					       char *cluster,
 					       uint16_t port);
 extern int cs_pg_register_ctld(pgsql_conn_t *pg_conn,
 			       char *cluster,

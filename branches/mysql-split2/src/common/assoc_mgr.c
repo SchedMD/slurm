@@ -2907,7 +2907,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(assoc_mgr_association_list));
 			slurm_mutex_unlock(&assoc_mgr_association_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
+			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_USERS:
 			error_code = slurmdbd_unpack_list_msg(
@@ -2927,7 +2927,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(assoc_mgr_user_list));
 			slurm_mutex_unlock(&assoc_mgr_user_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
+			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_QOS:
 			error_code = slurmdbd_unpack_list_msg(
@@ -2947,7 +2947,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(assoc_mgr_qos_list));
 			slurm_mutex_unlock(&assoc_mgr_qos_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
+			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_WCKEYS:
 			error_code = slurmdbd_unpack_list_msg(
@@ -2966,7 +2966,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(assoc_mgr_wckey_list));
 			slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
+			slurmdbd_free_list_msg(msg);
 			break;
 		default:
 			error("unknown type %u given", type);

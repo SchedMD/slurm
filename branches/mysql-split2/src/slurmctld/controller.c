@@ -322,7 +322,8 @@ int main(int argc, char *argv[])
 		      slurmctld_conf.accounting_storage_type);
 	}
 
-	acct_db_conn = acct_storage_g_get_connection(true, 0, false);
+	acct_db_conn = acct_storage_g_get_connection(
+		true, 0, false, slurmctld_cluster_name);
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
@@ -444,7 +445,8 @@ int main(int argc, char *argv[])
 
 		if (!acct_db_conn) {
 			acct_db_conn =
-				acct_storage_g_get_connection(true, 0, false);
+				acct_storage_g_get_connection(
+					true, 0, false, slurmctld_cluster_name);
 			/* We only send in a variable the first time
 			   we call this since we are setting up static
 			   variables inside the function sending a
@@ -462,7 +464,6 @@ int main(int argc, char *argv[])
 		info("Running as primary controller");
 		clusteracct_storage_g_register_ctld(
 			acct_db_conn,
-			slurmctld_cluster_name,
 			slurmctld_conf.slurmctld_port);
 
 		_accounting_cluster_ready();
@@ -1598,7 +1599,6 @@ static int _shutdown_backup_controller(int wait_time)
 			 * but just temporarily became non-responsive */
 			clusteracct_storage_g_register_ctld(
 				acct_db_conn,
-				slurmctld_cluster_name,
 				slurmctld_conf.slurmctld_port);
 		}
 	} else {

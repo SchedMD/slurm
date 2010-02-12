@@ -1668,7 +1668,7 @@ extern int fini ( void )
 }
 
 extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
-					   bool rollback)
+					   bool rollback, char *cluster_name)
 {
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));
 
@@ -1679,6 +1679,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 
 	mysql_conn->rollback = rollback;
 	mysql_conn->conn = conn_num;
+	mysql_conn->cluster_name = xstrdup(cluster_name);
 	mysql_conn->update_list = list_create(destroy_acct_update_object);
 
 	errno = SLURM_SUCCESS;
@@ -2017,6 +2018,11 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 					   time_t event_time, char *reason,
 					   uint32_t reason_uid)
 {
+	if(!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
 	return mysql_node_down(mysql_conn, node_ptr,
 			       event_time, reason, reason_uid);
 }
@@ -2025,6 +2031,11 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
+	if(!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
 	return mysql_node_up(mysql_conn, node_ptr, event_time);
 }
 
@@ -2032,10 +2043,14 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
  * assumes some things like rpc_version.
  */
 extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
-					       char *cluster,
 					       uint16_t port)
 {
-	return mysql_register_ctld(mysql_conn, cluster, port);
+	if(!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
+	return mysql_register_ctld(mysql_conn, mysql_conn->cluster_name, port);
 }
 
 extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,

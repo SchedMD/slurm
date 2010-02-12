@@ -67,7 +67,7 @@
 
 typedef struct slurm_acct_storage_ops {
 	void *(*get_conn)          (bool make_agent, int conn_num,
-				    bool rollback);
+				    bool rollback, char *cluster_name);
 	int  (*close_conn)         (void **db_conn);
 	int  (*commit)             (void *db_conn, bool commit);
 	int  (*add_users)          (void *db_conn, uint32_t uid,
@@ -164,8 +164,7 @@ typedef struct slurm_acct_storage_ops {
 	int  (*c_get_usage)        (void *db_conn, uint32_t uid,
 				    void *cluster_rec, int type,
 				    time_t start, time_t end);
-	int  (*register_ctld)      (void *db_conn, char *cluster,
-				    uint16_t port);
+	int  (*register_ctld)      (void *db_conn, uint16_t port);
 	int  (*job_start)          (void *db_conn, struct job_record *job_ptr);
 	int  (*job_complete)       (void *db_conn,
 				    struct job_record *job_ptr);
@@ -8208,12 +8207,12 @@ extern int slurm_acct_storage_fini(void)
 }
 
 extern void *acct_storage_g_get_connection(bool make_agent, int conn_num,
-					   bool rollback)
+					   bool rollback, char *cluster_name)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_conn))(
-		make_agent, conn_num, rollback);
+		make_agent, conn_num, rollback, cluster_name);
 }
 
 extern int acct_storage_g_close_connection(void **db_conn)
@@ -8639,13 +8638,12 @@ extern int clusteracct_storage_g_get_usage(
 		(db_conn, uid, cluster_rec, type, start, end);
 }
 
-extern int clusteracct_storage_g_register_ctld(
-	void *db_conn, char *cluster, uint16_t port)
+extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.register_ctld))
-		(db_conn, cluster, port);
+		(db_conn, port);
 }
 
 /*

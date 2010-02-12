@@ -243,7 +243,7 @@ extern int fini ( void )
 }
 
 extern void * acct_storage_p_get_connection(bool make_agent, int conn_num,
-					    bool rollback)
+					    bool rollback, char *cluster_name)
 {
 	return NULL;
 }
@@ -501,7 +501,6 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 }
 
 extern int clusteracct_storage_p_register_ctld(void *db_conn,
-					       char *cluster,
 					       uint16_t port)
 {
 	return SLURM_SUCCESS;
