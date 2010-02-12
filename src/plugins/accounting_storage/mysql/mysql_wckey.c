@@ -40,6 +40,20 @@
 #include "mysql_wckey.h"
 #include "mysql_usage.h"
 
+/* if this changes you will need to edit the corresponding enum */
+char *wckey_req_inx[] = {
+	"id_wckey",
+	"wckey_name",
+	"user",
+};
+
+enum {
+	WCKEY_REQ_ID,
+	WCKEY_REQ_NAME,
+	WCKEY_REQ_USER,
+	WCKEY_REQ_COUNT
+};
+
 /* when doing a select on this all the select should have a prefix of
  * t1. */
 static int _setup_wckey_cond_limits(acct_wckey_cond_t *wckey_cond, char **extra)
@@ -159,6 +173,64 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
+	return SLURM_SUCCESS;
+}
+
+static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
+			       acct_wckey_cond_t *wckey_cond,
+			       char *fields,
+			       char *extra,
+			       char *cluster_name,
+			       List sent_list)
+{
+	List wckey_list = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = NULL;
+	bool with_usage = 0;
+
+	if(wckey_cond)
+		with_usage = wckey_cond->with_usage;
+
+	xstrfmtcat(query, "select distinct %s from %s_%s as t1%s "
+		   "order by wckey_name, user;",
+		   fields, cluster_name, wckey_table, extra);
+
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	wckey_list = list_create(destroy_acct_wckey_rec);
+
+	while((row = mysql_fetch_row(result))) {
+		acct_wckey_rec_t *wckey = xmalloc(sizeof(acct_wckey_rec_t));
+		list_append(wckey_list, wckey);
+
+		wckey->id = atoi(row[WCKEY_REQ_ID]);
+		wckey->user = xstrdup(row[WCKEY_REQ_USER]);
+
+		/* we want a blank wckey if the name is null */
+		if(row[WCKEY_REQ_NAME])
+			wckey->name = xstrdup(row[WCKEY_REQ_NAME]);
+		else
+			wckey->name = xstrdup("");
+
+		wckey->cluster = xstrdup(cluster_name);
+	}
+	mysql_free_result(result);
+
+	if(with_usage && wckey_list && list_count(wckey_list))
+		get_usage_for_list(mysql_conn, DBD_GET_WCKEY_USAGE,
+				   wckey_list, cluster_name,
+				   wckey_cond->usage_start,
+				   wckey_cond->usage_end);
+	list_transfer(sent_list, wckey_list);
+	list_destroy(wckey_list);
 	return SLURM_SUCCESS;
 }
 
@@ -343,36 +415,16 @@ extern List mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 			     acct_wckey_cond_t *wckey_cond)
 {
 	//DEF_TIMERS;
-	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
 	char *cluster_name = NULL;
 	List wckey_list = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
 	List use_cluster_list = mysql_cluster_list;
 	ListIterator itr;
-
-	/* needed if we don't have an wckey_cond */
-	uint16_t with_usage = 0;
-
-	/* if this changes you will need to edit the corresponding enum */
-	char *wckey_req_inx[] = {
-		"id_wckey",
-		"wckey_name",
-		"user",
-	};
-
-	enum {
-		WCKEY_REQ_ID,
-		WCKEY_REQ_NAME,
-		WCKEY_REQ_USER,
-		WCKEY_REQ_COUNT
-	};
 
 	if(!wckey_cond) {
 		xstrcat(extra, " where deleted=0");
@@ -394,8 +446,6 @@ extern List mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 
 	set = _setup_wckey_cond_limits(wckey_cond, &extra);
 
-	with_usage = wckey_cond->with_usage;
-
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", wckey_req_inx[i]);
@@ -410,6 +460,8 @@ empty:
 	if(!is_admin && (private_data & PRIVATE_DATA_USERS))
 		xstrfmtcat(extra, " && t1.user='%s'", user.name);
 
+	wckey_list = list_create(destroy_acct_wckey_rec);
+
 	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
 		use_cluster_list = wckey_cond->cluster_list;
 	else
@@ -418,56 +470,21 @@ empty:
 	//START_TIMER;
 	itr = list_iterator_create(use_cluster_list);
 	while((cluster_name = list_next(itr))) {
-		if(query)
-			xstrcat(query, " union ");
-		xstrfmtcat(query,
-			   "select distinct %s,'%s' as cluster "
-			   "from %s_%s as t1%s",
-			   tmp, cluster_name, cluster_name,
-			   wckey_table, extra);
+		if(_cluster_get_wckeys(mysql_conn, wckey_cond, tmp, extra,
+				       cluster_name, wckey_list)
+		   != SLURM_SUCCESS) {
+			list_destroy(wckey_list);
+			wckey_list = NULL;
+			break;
+		}
 	}
 	list_iterator_destroy(itr);
-
-	if(query)
-		xstrcat(query, " order by wckey_name, cluster, user;");
 
 	if(use_cluster_list == mysql_cluster_list)
 		slurm_mutex_unlock(&mysql_cluster_list_lock);
 
 	xfree(tmp);
 	xfree(extra);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
-		xfree(query);
-		return NULL;
-	}
-	xfree(query);
-
-	wckey_list = list_create(destroy_acct_wckey_rec);
-
-	while((row = mysql_fetch_row(result))) {
-		acct_wckey_rec_t *wckey = xmalloc(sizeof(acct_wckey_rec_t));
-		list_append(wckey_list, wckey);
-
-		wckey->id = atoi(row[WCKEY_REQ_ID]);
-		wckey->user = xstrdup(row[WCKEY_REQ_USER]);
-
-		/* we want a blank wckey if the name is null */
-		if(row[WCKEY_REQ_NAME])
-			wckey->name = xstrdup(row[WCKEY_REQ_NAME]);
-		else
-			wckey->name = xstrdup("");
-
-		wckey->cluster = xstrdup(row[WCKEY_REQ_COUNT]);
-	}
-	mysql_free_result(result);
-
-	if(with_usage && wckey_list)
-		get_usage_for_list(mysql_conn, DBD_GET_WCKEY_USAGE,
-				   wckey_list, wckey_cond->usage_start,
-				   wckey_cond->usage_end);
 
 	//END_TIMER2("get_wckeys");
 	return wckey_list;

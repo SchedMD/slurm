@@ -139,7 +139,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 */
 extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 			      slurmdbd_msg_type_t type, List object_list,
-			      time_t start, time_t end)
+			      char *cluster_name, time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
@@ -180,8 +180,8 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	case DBD_GET_ASSOC_USAGE:
 	{
 		char *temp_usage[] = {
-			"t3.id",
-			"t1.period_start",
+			"t3.id_assoc",
+			"t1.time_start",
 			"t1.alloc_cpu_secs"
 		};
 		usage_req_inx = temp_usage;
@@ -189,9 +189,10 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		itr = list_iterator_create(object_list);
 		while((assoc = list_next(itr))) {
 			if(id_str)
-				xstrfmtcat(id_str, " || t3.id=%d", assoc->id);
+				xstrfmtcat(id_str, " || t3.id_assoc=%d",
+					   assoc->id);
 			else
-				xstrfmtcat(id_str, "t3.id=%d", assoc->id);
+				xstrfmtcat(id_str, "t3.id_assoc=%d", assoc->id);
 		}
 		list_iterator_destroy(itr);
 
@@ -201,8 +202,8 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	case DBD_GET_WCKEY_USAGE:
 	{
 		char *temp_usage[] = {
-			"id",
-			"period_start",
+			"id_wckey",
+			"time_start",
 			"alloc_cpu_secs"
 		};
 		usage_req_inx = temp_usage;
@@ -210,9 +211,10 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		itr = list_iterator_create(object_list);
 		while((wckey = list_next(itr))) {
 			if(id_str)
-				xstrfmtcat(id_str, " || id=%d", wckey->id);
+				xstrfmtcat(id_str, " || id_wckey=%d",
+					   wckey->id);
 			else
-				xstrfmtcat(id_str, "id=%d", wckey->id);
+				xstrfmtcat(id_str, "id_wckey=%d", wckey->id);
 		}
 		list_iterator_destroy(itr);
 

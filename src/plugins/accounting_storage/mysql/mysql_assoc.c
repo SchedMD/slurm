@@ -40,6 +40,69 @@
 #include "mysql_assoc.h"
 #include "mysql_usage.h"
 
+/* if this changes you will need to edit the corresponding enum */
+char *assoc_req_inx[] = {
+	"id_assoc",
+	"lft",
+	"rgt",
+	"user",
+	"acct",
+	"partition",
+	"shares",
+	"grp_cpu_mins",
+	"grp_cpus",
+	"grp_jobs",
+	"grp_nodes",
+	"grp_submit_jobs",
+	"grp_wall",
+	"max_cpu_mins_pj",
+	"max_cpus_pj",
+	"max_jobs",
+	"max_nodes_pj",
+	"max_submit_jobs",
+	"max_wall_pj",
+	"parent_acct",
+	"qos",
+	"delta_qos",
+};
+enum {
+	ASSOC_REQ_ID,
+	ASSOC_REQ_LFT,
+	ASSOC_REQ_RGT,
+	ASSOC_REQ_USER,
+	ASSOC_REQ_ACCT,
+	ASSOC_REQ_PART,
+	ASSOC_REQ_FS,
+	ASSOC_REQ_GCH,
+	ASSOC_REQ_GC,
+	ASSOC_REQ_GJ,
+	ASSOC_REQ_GN,
+	ASSOC_REQ_GSJ,
+	ASSOC_REQ_GW,
+	ASSOC_REQ_MCMPJ,
+	ASSOC_REQ_MCPJ,
+	ASSOC_REQ_MJ,
+	ASSOC_REQ_MNPJ,
+	ASSOC_REQ_MSJ,
+	ASSOC_REQ_MWPJ,
+	ASSOC_REQ_PARENT,
+	ASSOC_REQ_QOS,
+	ASSOC_REQ_DELTA_QOS,
+	ASSOC_REQ_COUNT
+};
+
+enum {
+	ASSOC2_REQ_PARENT_ID,
+	ASSOC2_REQ_MJ,
+	ASSOC2_REQ_MSJ,
+	ASSOC2_REQ_MCPJ,
+	ASSOC2_REQ_MNPJ,
+	ASSOC2_REQ_MWPJ,
+	ASSOC2_REQ_MCMPJ,
+	ASSOC2_REQ_QOS,
+	ASSOC2_REQ_DELTA_QOS,
+};
+
 static char *aassoc_req_inx[] = {
 	"id_assoc",
 	"parent_acct",
@@ -86,7 +149,6 @@ static char *rassoc_req_inx[] = {
 	"id_assoc",
 	"acct",
 	"parent_acct",
-	"cluster",
 	"user",
 	"partition"
 };
@@ -95,7 +157,6 @@ enum {
 	RASSOC_ID,
 	RASSOC_ACCT,
 	RASSOC_PACCT,
-	RASSOC_CLUSTER,
 	RASSOC_USER,
 	RASSOC_PART,
 	RASSOC_COUNT
@@ -1449,6 +1510,403 @@ end_it:
 	return rc;
 }
 
+static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
+			       acct_user_rec_t *user,
+			       acct_association_cond_t *assoc_cond,
+			       char *cluster_name,
+			       char *fields, char *sent_extra,
+			       bool is_admin, List sent_list)
+{
+	List assoc_list;
+	List delta_qos_list = NULL;
+	ListIterator itr = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	uint32_t parent_mj = INFINITE;
+	uint32_t parent_msj = INFINITE;
+	uint32_t parent_mcpj = INFINITE;
+	uint32_t parent_mnpj = INFINITE;
+	uint32_t parent_mwpj = INFINITE;
+	uint64_t parent_mcmpj = INFINITE;
+	char *parent_acct = NULL;
+	char *parent_qos = NULL;
+	char *parent_delta_qos = NULL;
+	char *last_acct = NULL;
+	char *last_cluster = NULL;
+	uint32_t parent_id = 0;
+	uint16_t private_data = slurm_get_private_data();
+	char *query = NULL;
+	char *extra = xstrdup(sent_extra);
+	char *qos_extra = NULL;
+
+	/* needed if we don't have an assoc_cond */
+	uint16_t without_parent_info = 0;
+	uint16_t without_parent_limits = 0;
+	uint16_t with_usage = 0;
+	uint16_t with_raw_qos = 0;
+
+	if(assoc_cond) {
+		with_raw_qos = assoc_cond->with_raw_qos;
+		with_usage = assoc_cond->with_usage;
+		without_parent_limits = assoc_cond->without_parent_limits;
+		without_parent_info = assoc_cond->without_parent_info;
+	}
+
+	/* this is here to make sure we are looking at only this user
+	 * if this flag is set.  We also include any accounts they may be
+	 * coordinator of.
+	 */
+	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) {
+		int set = 0;
+		query = xstrdup_printf("select lft from %s where user=\"%s\"",
+				       assoc_table, user->name);
+		if(user->coord_accts) {
+			acct_coord_rec_t *coord = NULL;
+			itr = list_iterator_create(user->coord_accts);
+			while((coord = list_next(itr))) {
+				xstrfmtcat(query, " || acct=\"%s\"",
+					   coord->name);
+			}
+			list_iterator_destroy(itr);
+		}
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, __FILE__, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(extra);
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+		set = 0;
+		while((row = mysql_fetch_row(result))) {
+			if(set) {
+				xstrfmtcat(extra,
+					   " || (%s between lft and rgt)",
+					   row[0]);
+			} else {
+				set = 1;
+				xstrfmtcat(extra,
+					   " && ((%s between lft and rgt)",
+					   row[0]);
+			}
+		}
+		if(set)
+			xstrcat(extra,")");
+		mysql_free_result(result);
+	}
+
+	qos_extra = _setup_association_cond_qos(assoc_cond, cluster_name);
+
+
+	//START_TIMER;
+	query = xstrdup_printf("select distinct %s from %s_%s as t1%s%s "
+			       "order by lft;",
+			       fields, cluster_name, assoc_table,
+			       qos_extra, extra);
+	xfree(qos_extra);
+	xfree(extra);
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, __FILE__, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	assoc_list = list_create(destroy_acct_association_rec);
+	delta_qos_list = list_create(slurm_destroy_char);
+	while((row = mysql_fetch_row(result))) {
+		acct_association_rec_t *assoc =
+			xmalloc(sizeof(acct_association_rec_t));
+		MYSQL_RES *result2 = NULL;
+		MYSQL_ROW row2;
+
+		list_append(assoc_list, assoc);
+
+		assoc->id = atoi(row[ASSOC_REQ_ID]);
+		assoc->lft = atoi(row[ASSOC_REQ_LFT]);
+		assoc->rgt = atoi(row[ASSOC_REQ_RGT]);
+
+		if(row[ASSOC_REQ_USER][0])
+			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
+		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
+		assoc->cluster = xstrdup(cluster_name);
+
+		if(row[ASSOC_REQ_GJ])
+			assoc->grp_jobs = atoi(row[ASSOC_REQ_GJ]);
+		else
+			assoc->grp_jobs = INFINITE;
+
+		if(row[ASSOC_REQ_GSJ])
+			assoc->grp_submit_jobs = atoi(row[ASSOC_REQ_GSJ]);
+		else
+			assoc->grp_submit_jobs = INFINITE;
+
+		if(row[ASSOC_REQ_GC])
+			assoc->grp_cpus = atoi(row[ASSOC_REQ_GC]);
+		else
+			assoc->grp_cpus = INFINITE;
+
+		if(row[ASSOC_REQ_GN])
+			assoc->grp_nodes = atoi(row[ASSOC_REQ_GN]);
+		else
+			assoc->grp_nodes = INFINITE;
+		if(row[ASSOC_REQ_GW])
+			assoc->grp_wall = atoi(row[ASSOC_REQ_GW]);
+		else
+			assoc->grp_wall = INFINITE;
+
+		if(row[ASSOC_REQ_GCH])
+			assoc->grp_cpu_mins = atoll(row[ASSOC_REQ_GCH]);
+		else
+			assoc->grp_cpu_mins = INFINITE;
+
+		parent_acct = row[ASSOC_REQ_ACCT];
+		if(!without_parent_info
+		   && row[ASSOC_REQ_PARENT][0]) {
+			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
+			parent_acct = row[ASSOC_REQ_PARENT];
+		} else if(!assoc->user) {
+			/* This is the root association so we have no
+			   parent id */
+			parent_acct = NULL;
+			parent_id = 0;
+		}
+
+		if(row[ASSOC_REQ_PART][0])
+			assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
+		if(row[ASSOC_REQ_FS])
+			assoc->shares_raw = atoi(row[ASSOC_REQ_FS]);
+		else
+			assoc->shares_raw = 1;
+
+		if(!without_parent_info && parent_acct &&
+		   (!last_acct || !last_cluster
+		    || strcmp(parent_acct, last_acct)
+		    || strcmp(cluster_name, last_cluster))) {
+			query = xstrdup_printf(
+				"call get_parent_limits(\"%s\", "
+				"\"%s\", \"%s\", %u);"
+				"select @par_id, @mj, @msj, @mcpj, "
+				"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;",
+				assoc_table, parent_acct,
+				cluster_name,
+				without_parent_limits);
+			debug4("%d(%s:%d) query\n%s",
+			       mysql_conn->conn, __FILE__, __LINE__, query);
+			if(!(result2 = mysql_db_query_ret(
+				     mysql_conn->db_conn, query, 1))) {
+				xfree(query);
+				break;
+			}
+			xfree(query);
+
+			if(!(row2 = mysql_fetch_row(result2))) {
+				parent_id = 0;
+				goto no_parent_limits;
+			}
+
+			parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
+			if(!without_parent_limits) {
+				if(row2[ASSOC2_REQ_MCMPJ])
+					parent_mcmpj =
+						atoi(row2[ASSOC2_REQ_MCMPJ]);
+				else
+					parent_mcmpj = INFINITE;
+
+				if(row2[ASSOC2_REQ_MCPJ])
+					parent_mcpj =
+						atoi(row2[ASSOC2_REQ_MCPJ]);
+				else
+					parent_mcpj = INFINITE;
+
+				if(row2[ASSOC2_REQ_MJ])
+					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
+				else
+					parent_mj = INFINITE;
+
+				if(row2[ASSOC2_REQ_MNPJ])
+					parent_mnpj =
+						atoi(row2[ASSOC2_REQ_MNPJ]);
+				else
+					parent_mnpj = INFINITE;
+
+				if(row2[ASSOC2_REQ_MWPJ])
+					parent_mwpj =
+						atoi(row2[ASSOC2_REQ_MWPJ]);
+				else
+					parent_mwpj = INFINITE;
+
+				if(row2[ASSOC2_REQ_MCMPJ])
+					parent_mcmpj =
+						atoll(row2[ASSOC2_REQ_MCMPJ]);
+				else
+					parent_mcmpj = INFINITE;
+
+				xfree(parent_qos);
+				if(row2[ASSOC2_REQ_QOS][0])
+					parent_qos =
+						xstrdup(row2[ASSOC2_REQ_QOS]);
+				else
+					parent_qos = NULL;
+
+				xfree(parent_delta_qos);
+				if(row2[ASSOC2_REQ_DELTA_QOS][0])
+					xstrcat(parent_delta_qos,
+						row2[ASSOC2_REQ_DELTA_QOS]);
+				else
+					parent_delta_qos = NULL;
+
+				if(row2[ASSOC2_REQ_MSJ])
+					parent_msj = atoi(row2[ASSOC2_REQ_MSJ]);
+				else
+					parent_msj = INFINITE;
+			}
+			last_acct = parent_acct;
+			last_cluster = cluster_name;
+		no_parent_limits:
+			mysql_free_result(result2);
+		}
+		if(row[ASSOC_REQ_MJ])
+			assoc->max_jobs = atoi(row[ASSOC_REQ_MJ]);
+		else
+			assoc->max_jobs = parent_mj;
+
+		if(row[ASSOC_REQ_MSJ])
+			assoc->max_submit_jobs = atoi(row[ASSOC_REQ_MSJ]);
+		else
+			assoc->max_submit_jobs = parent_msj;
+
+		if(row[ASSOC_REQ_MCPJ])
+			assoc->max_cpus_pj =
+				atoi(row[ASSOC_REQ_MCPJ]);
+		else
+			assoc->max_cpus_pj = parent_mcpj;
+
+		if(row[ASSOC_REQ_MNPJ])
+			assoc->max_nodes_pj =
+				atoi(row[ASSOC_REQ_MNPJ]);
+		else
+			assoc->max_nodes_pj = parent_mnpj;
+
+		if(row[ASSOC_REQ_MWPJ])
+			assoc->max_wall_pj =
+				atoi(row[ASSOC_REQ_MWPJ]);
+		else
+			assoc->max_wall_pj = parent_mwpj;
+
+		if(row[ASSOC_REQ_MCMPJ])
+			assoc->max_cpu_mins_pj =
+				atoi(row[ASSOC_REQ_MCMPJ]);
+		else
+			assoc->max_cpu_mins_pj = parent_mcmpj;
+
+		assoc->qos_list = list_create(slurm_destroy_char);
+
+		/* do a plus 1 since a comma is the first thing there
+		 * in the list.  Also you can never have both a qos
+		 * and a delta qos so if you have a qos don't worry
+		 * about the delta.
+		 */
+
+		if(row[ASSOC_REQ_QOS][0])
+			slurm_addto_char_list(assoc->qos_list,
+					      row[ASSOC_REQ_QOS]+1);
+		else {
+			/* if qos is set on the association itself do
+			   not worry about the deltas
+			*/
+
+			/* add the parents first */
+			if(parent_qos)
+				slurm_addto_char_list(assoc->qos_list,
+						      parent_qos+1);
+
+			/* then add the parents delta */
+			if(parent_delta_qos)
+				slurm_addto_char_list(delta_qos_list,
+						      parent_delta_qos+1);
+
+			/* now add the associations */
+			if(row[ASSOC_REQ_DELTA_QOS][0])
+				slurm_addto_char_list(
+					delta_qos_list,
+					row[ASSOC_REQ_DELTA_QOS]+1);
+		}
+
+		/* Sometimes we want to see exactly what is here in
+		   the database instead of a complete list.  This will
+		   give it to us.
+		*/
+		if(with_raw_qos && list_count(delta_qos_list)) {
+			list_transfer(assoc->qos_list, delta_qos_list);
+			list_flush(delta_qos_list);
+		} else if(list_count(delta_qos_list)) {
+			ListIterator curr_qos_itr =
+				list_iterator_create(assoc->qos_list);
+			ListIterator new_qos_itr =
+				list_iterator_create(delta_qos_list);
+			char *new_qos = NULL, *curr_qos = NULL;
+
+			while((new_qos = list_next(new_qos_itr))) {
+				if(new_qos[0] == '-') {
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   new_qos+1)) {
+							list_delete_item(
+								curr_qos_itr);
+							break;
+						}
+					}
+					list_iterator_reset(curr_qos_itr);
+				} else if(new_qos[0] == '+') {
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   new_qos+1)) {
+							break;
+						}
+					}
+					if(!curr_qos) {
+						list_append(assoc->qos_list,
+							    xstrdup(new_qos+1));
+					}
+					list_iterator_reset(curr_qos_itr);
+				}
+			}
+
+			list_iterator_destroy(new_qos_itr);
+			list_iterator_destroy(curr_qos_itr);
+			list_flush(delta_qos_list);
+		}
+
+		assoc->parent_id = parent_id;
+
+		//info("parent id is %d", assoc->parent_id);
+		//log_assoc_rec(assoc);
+	}
+	mysql_free_result(result);
+
+	list_destroy(delta_qos_list);
+
+	xfree(parent_delta_qos);
+	xfree(parent_qos);
+
+	if(with_usage && assoc_list && list_count(assoc_list))
+		get_usage_for_list(mysql_conn, DBD_GET_ASSOC_USAGE,
+				   assoc_list, cluster_name,
+				   assoc_cond->usage_start,
+				   assoc_cond->usage_end);
+
+	list_transfer(sent_list, assoc_list);
+	list_destroy(assoc_list);
+	return SLURM_SUCCESS;
+}
+
+
 extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			    List association_list)
 {
@@ -2177,102 +2635,17 @@ extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 			     acct_association_cond_t *assoc_cond)
 {
 	//DEF_TIMERS;
-	char *query = NULL;
 	char *extra = NULL;
 	char *tmp = NULL;
 	List assoc_list = NULL;
-	List delta_qos_list = NULL;
 	ListIterator itr = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	uint32_t parent_mj = INFINITE;
-	uint32_t parent_msj = INFINITE;
-	uint32_t parent_mcpj = INFINITE;
-	uint32_t parent_mnpj = INFINITE;
-	uint32_t parent_mwpj = INFINITE;
-	uint64_t parent_mcmpj = INFINITE;
-	char *parent_acct = NULL;
-	char *parent_qos = NULL;
-	char *parent_delta_qos = NULL;
-	char *last_acct = NULL;
-	char *last_cluster = NULL;
-	uint32_t parent_id = 0;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
 	char *prefix = "t1";
-
-	/* needed if we don't have an assoc_cond */
-	uint16_t without_parent_info = 0;
-	uint16_t without_parent_limits = 0;
-	uint16_t with_usage = 0;
-	uint16_t with_raw_qos = 0;
-
-	/* if this changes you will need to edit the corresponding enum */
-	char *assoc_req_inx[] = {
-		"id_assoc",
-		"lft",
-		"rgt",
-		"user",
-		"acct",
-		"cluster",
-		"partition",
-		"shares",
-		"grp_cpu_mins",
-		"grp_cpus",
-		"grp_jobs",
-		"grp_nodes",
-		"grp_submit_jobs",
-		"grp_wall",
-		"max_cpu_mins_pj",
-		"max_cpus_pj",
-		"max_jobs",
-		"max_nodes_pj",
-		"max_submit_jobs",
-		"max_wall_pj",
-		"parent_acct",
-		"qos",
-		"delta_qos",
-	};
-	enum {
-		ASSOC_REQ_ID,
-		ASSOC_REQ_LFT,
-		ASSOC_REQ_RGT,
-		ASSOC_REQ_USER,
-		ASSOC_REQ_ACCT,
-		ASSOC_REQ_CLUSTER,
-		ASSOC_REQ_PART,
-		ASSOC_REQ_FS,
-		ASSOC_REQ_GCH,
-		ASSOC_REQ_GC,
-		ASSOC_REQ_GJ,
-		ASSOC_REQ_GN,
-		ASSOC_REQ_GSJ,
-		ASSOC_REQ_GW,
-		ASSOC_REQ_MCMPJ,
-		ASSOC_REQ_MCPJ,
-		ASSOC_REQ_MJ,
-		ASSOC_REQ_MNPJ,
-		ASSOC_REQ_MSJ,
-		ASSOC_REQ_MWPJ,
-		ASSOC_REQ_PARENT,
-		ASSOC_REQ_QOS,
-		ASSOC_REQ_DELTA_QOS,
-		ASSOC_REQ_COUNT
-	};
-
-	enum {
-		ASSOC2_REQ_PARENT_ID,
-		ASSOC2_REQ_MJ,
-		ASSOC2_REQ_MSJ,
-		ASSOC2_REQ_MCPJ,
-		ASSOC2_REQ_MNPJ,
-		ASSOC2_REQ_MWPJ,
-		ASSOC2_REQ_MCMPJ,
-		ASSOC2_REQ_QOS,
-		ASSOC2_REQ_DELTA_QOS,
-	};
+	List use_cluster_list = mysql_cluster_list;
+	char *cluster_name = NULL;
 
 	if(!assoc_cond) {
 		xstrcat(extra, " where deleted=0");
@@ -2298,361 +2671,37 @@ extern List mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	set = _setup_association_cond_limits(assoc_cond, prefix, &extra);
 
-	with_raw_qos = assoc_cond->with_raw_qos;
-	with_usage = assoc_cond->with_usage;
-	without_parent_limits = assoc_cond->without_parent_limits;
-	without_parent_info = assoc_cond->without_parent_info;
-
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", assoc_req_inx[i]);
 	for(i=1; i<ASSOC_REQ_COUNT; i++) {
 		xstrfmtcat(tmp, ", t1.%s", assoc_req_inx[i]);
 	}
+	assoc_list = list_create(destroy_acct_association_rec);
 
-	/* this is here to make sure we are looking at only this user
-	 * if this flag is set.  We also include any accounts they may be
-	 * coordinator of.
-	 */
-	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) {
-		query = xstrdup_printf("select lft from %s where user=\"%s\"",
-				       assoc_table, user.name);
-		if(user.coord_accts) {
-			acct_coord_rec_t *coord = NULL;
-			itr = list_iterator_create(user.coord_accts);
-			while((coord = list_next(itr))) {
-				xstrfmtcat(query, " || acct=\"%s\"",
-					   coord->name);
-			}
-			list_iterator_destroy(itr);
+	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
+		use_cluster_list = assoc_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+
+	itr = list_iterator_create(use_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		int rc;
+		if((rc = _cluster_get_assocs(mysql_conn, &user, assoc_cond,
+					     cluster_name, tmp, extra,
+					     is_admin, assoc_list))
+		   != SLURM_SUCCESS) {
+			list_destroy(assoc_list);
+			assoc_list = NULL;
+			break;
 		}
-		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			xfree(extra);
-			xfree(query);
-			return NULL;
-		}
-		xfree(query);
-		set = 0;
-		while((row = mysql_fetch_row(result))) {
-			if(set) {
-				xstrfmtcat(extra,
-					   " || (%s between lft and rgt)",
-					   row[0]);
-			} else {
-				set = 1;
-				xstrfmtcat(extra,
-					" && ((%s between lft and rgt)",
-					row[0]);
-			}
-		}
-		if(set)
-			xstrcat(extra,")");
-		mysql_free_result(result);
 	}
-
-	//START_TIMER;
-	query = xstrdup_printf("select distinct %s from %s as t1%s "
-			       "order by cluster,lft;",
-			       tmp, assoc_table, extra);
+	list_iterator_destroy(itr);
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
 	xfree(tmp);
 	xfree(extra);
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
-		xfree(query);
-		return NULL;
-	}
-	xfree(query);
 
-	assoc_list = list_create(destroy_acct_association_rec);
-	delta_qos_list = list_create(slurm_destroy_char);
-	while((row = mysql_fetch_row(result))) {
-		acct_association_rec_t *assoc =
-			xmalloc(sizeof(acct_association_rec_t));
-		MYSQL_RES *result2 = NULL;
-		MYSQL_ROW row2;
-
-		list_append(assoc_list, assoc);
-
-		assoc->id = atoi(row[ASSOC_REQ_ID]);
-		assoc->lft = atoi(row[ASSOC_REQ_LFT]);
-		assoc->rgt = atoi(row[ASSOC_REQ_RGT]);
-
-		if(row[ASSOC_REQ_USER][0])
-			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
-		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
-		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
-
-		if(row[ASSOC_REQ_GJ])
-			assoc->grp_jobs = atoi(row[ASSOC_REQ_GJ]);
-		else
-			assoc->grp_jobs = INFINITE;
-
-		if(row[ASSOC_REQ_GSJ])
-			assoc->grp_submit_jobs = atoi(row[ASSOC_REQ_GSJ]);
-		else
-			assoc->grp_submit_jobs = INFINITE;
-
-		if(row[ASSOC_REQ_GC])
-			assoc->grp_cpus = atoi(row[ASSOC_REQ_GC]);
-		else
-			assoc->grp_cpus = INFINITE;
-
-		if(row[ASSOC_REQ_GN])
-			assoc->grp_nodes = atoi(row[ASSOC_REQ_GN]);
-		else
-			assoc->grp_nodes = INFINITE;
-		if(row[ASSOC_REQ_GW])
-			assoc->grp_wall = atoi(row[ASSOC_REQ_GW]);
-		else
-			assoc->grp_wall = INFINITE;
-
-		if(row[ASSOC_REQ_GCH])
-			assoc->grp_cpu_mins = atoll(row[ASSOC_REQ_GCH]);
-		else
-			assoc->grp_cpu_mins = INFINITE;
-
-		parent_acct = row[ASSOC_REQ_ACCT];
-		if(!without_parent_info
-		   && row[ASSOC_REQ_PARENT][0]) {
-			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
-			parent_acct = row[ASSOC_REQ_PARENT];
-		} else if(!assoc->user) {
-			/* This is the root association so we have no
-			   parent id */
-			parent_acct = NULL;
-			parent_id = 0;
-		}
-
-		if(row[ASSOC_REQ_PART][0])
-			assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
-		if(row[ASSOC_REQ_FS])
-			assoc->shares_raw = atoi(row[ASSOC_REQ_FS]);
-		else
-			assoc->shares_raw = 1;
-
-		if(!without_parent_info && parent_acct &&
-		   (!last_acct || !last_cluster
-		    || strcmp(parent_acct, last_acct)
-		    || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster))) {
-			query = xstrdup_printf(
-				"call get_parent_limits(\"%s\", "
-				"\"%s\", \"%s\", %u);"
-				"select @par_id, @mj, @msj, @mcpj, "
-				"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;",
-				assoc_table, parent_acct,
-				row[ASSOC_REQ_CLUSTER],
-				without_parent_limits);
-			debug4("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, __FILE__, __LINE__, query);
-			if(!(result2 = mysql_db_query_ret(
-				     mysql_conn->db_conn, query, 1))) {
-				xfree(query);
-				break;
-			}
-			xfree(query);
-
-			if(!(row2 = mysql_fetch_row(result2))) {
-				parent_id = 0;
-				goto no_parent_limits;
-			}
-
-			parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
-			if(!without_parent_limits) {
-				if(row2[ASSOC2_REQ_MCMPJ])
-					parent_mcmpj =
-						atoi(row2[ASSOC2_REQ_MCMPJ]);
-				else
-					parent_mcmpj = INFINITE;
-
-				if(row2[ASSOC2_REQ_MCPJ])
-					parent_mcpj =
-						atoi(row2[ASSOC2_REQ_MCPJ]);
-				else
-					parent_mcpj = INFINITE;
-
-				if(row2[ASSOC2_REQ_MJ])
-					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
-				else
-					parent_mj = INFINITE;
-
-				if(row2[ASSOC2_REQ_MNPJ])
-					parent_mnpj =
-						atoi(row2[ASSOC2_REQ_MNPJ]);
-				else
-					parent_mnpj = INFINITE;
-
-				if(row2[ASSOC2_REQ_MWPJ])
-					parent_mwpj =
-						atoi(row2[ASSOC2_REQ_MWPJ]);
-				else
-					parent_mwpj = INFINITE;
-
-				if(row2[ASSOC2_REQ_MCMPJ])
-					parent_mcmpj =
-						atoll(row2[ASSOC2_REQ_MCMPJ]);
-				else
-					parent_mcmpj = INFINITE;
-
-				xfree(parent_qos);
-				if(row2[ASSOC2_REQ_QOS][0])
-					parent_qos =
-						xstrdup(row2[ASSOC2_REQ_QOS]);
-				else
-					parent_qos = NULL;
-
-				xfree(parent_delta_qos);
-				if(row2[ASSOC2_REQ_DELTA_QOS][0])
-					xstrcat(parent_delta_qos,
-						row2[ASSOC2_REQ_DELTA_QOS]);
-				else
-					parent_delta_qos = NULL;
-
-				if(row2[ASSOC2_REQ_MSJ])
-					parent_msj = atoi(row2[ASSOC2_REQ_MSJ]);
-				else
-					parent_msj = INFINITE;
-			}
-			last_acct = parent_acct;
-			last_cluster = row[ASSOC_REQ_CLUSTER];
-		no_parent_limits:
-			mysql_free_result(result2);
-		}
-		if(row[ASSOC_REQ_MJ])
-			assoc->max_jobs = atoi(row[ASSOC_REQ_MJ]);
-		else
-			assoc->max_jobs = parent_mj;
-
-		if(row[ASSOC_REQ_MSJ])
-			assoc->max_submit_jobs = atoi(row[ASSOC_REQ_MSJ]);
-		else
-			assoc->max_submit_jobs = parent_msj;
-
-		if(row[ASSOC_REQ_MCPJ])
-			assoc->max_cpus_pj =
-				atoi(row[ASSOC_REQ_MCPJ]);
-		else
-			assoc->max_cpus_pj = parent_mcpj;
-
-		if(row[ASSOC_REQ_MNPJ])
-			assoc->max_nodes_pj =
-				atoi(row[ASSOC_REQ_MNPJ]);
-		else
-			assoc->max_nodes_pj = parent_mnpj;
-
-		if(row[ASSOC_REQ_MWPJ])
-			assoc->max_wall_pj =
-				atoi(row[ASSOC_REQ_MWPJ]);
-		else
-			assoc->max_wall_pj = parent_mwpj;
-
-		if(row[ASSOC_REQ_MCMPJ])
-			assoc->max_cpu_mins_pj =
-				atoi(row[ASSOC_REQ_MCMPJ]);
-		else
-			assoc->max_cpu_mins_pj = parent_mcmpj;
-
-		assoc->qos_list = list_create(slurm_destroy_char);
-
-		/* do a plus 1 since a comma is the first thing there
-		 * in the list.  Also you can never have both a qos
-		 * and a delta qos so if you have a qos don't worry
-		 * about the delta.
-		 */
-
-		if(row[ASSOC_REQ_QOS][0])
-			slurm_addto_char_list(assoc->qos_list,
-					      row[ASSOC_REQ_QOS]+1);
-		else {
-			/* if qos is set on the association itself do
-			   not worry about the deltas
-			*/
-
-			/* add the parents first */
-			if(parent_qos)
-				slurm_addto_char_list(assoc->qos_list,
-						      parent_qos+1);
-
-			/* then add the parents delta */
-			if(parent_delta_qos)
-				slurm_addto_char_list(delta_qos_list,
-						      parent_delta_qos+1);
-
-			/* now add the associations */
-			if(row[ASSOC_REQ_DELTA_QOS][0])
-				slurm_addto_char_list(
-					delta_qos_list,
-					row[ASSOC_REQ_DELTA_QOS]+1);
-		}
-
-		/* Sometimes we want to see exactly what is here in
-		   the database instead of a complete list.  This will
-		   give it to us.
-		*/
-		if(with_raw_qos && list_count(delta_qos_list)) {
-			list_transfer(assoc->qos_list, delta_qos_list);
-			list_flush(delta_qos_list);
-		} else if(list_count(delta_qos_list)) {
-			ListIterator curr_qos_itr =
-				list_iterator_create(assoc->qos_list);
-			ListIterator new_qos_itr =
-				list_iterator_create(delta_qos_list);
-			char *new_qos = NULL, *curr_qos = NULL;
-
-			while((new_qos = list_next(new_qos_itr))) {
-				if(new_qos[0] == '-') {
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   new_qos+1)) {
-							list_delete_item(
-								curr_qos_itr);
-							break;
-						}
-					}
-					list_iterator_reset(curr_qos_itr);
-				} else if(new_qos[0] == '+') {
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   new_qos+1)) {
-							break;
-						}
-					}
-					if(!curr_qos) {
-						list_append(assoc->qos_list,
-							    xstrdup(new_qos+1));
-					}
-					list_iterator_reset(curr_qos_itr);
-				}
-			}
-
-			list_iterator_destroy(new_qos_itr);
-			list_iterator_destroy(curr_qos_itr);
-			list_flush(delta_qos_list);
-		}
-
-		assoc->parent_id = parent_id;
-
-		//info("parent id is %d", assoc->parent_id);
-		//log_assoc_rec(assoc);
-	}
-
-	if(with_usage && assoc_list)
-		get_usage_for_list(mysql_conn, DBD_GET_ASSOC_USAGE,
-				   assoc_list, assoc_cond->usage_start,
-				   assoc_cond->usage_end);
-
-	mysql_free_result(result);
-
-	list_destroy(delta_qos_list);
-
-	xfree(parent_delta_qos);
-	xfree(parent_qos);
 	//END_TIMER2("get_assocs");
 	return assoc_list;
 }
