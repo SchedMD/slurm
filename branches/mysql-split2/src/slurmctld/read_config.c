@@ -1407,15 +1407,13 @@ static void _acct_restore_active_jobs(void)
 
 	info("Reinitializing job accounting state");
 	acct_storage_g_flush_jobs_on_cluster(acct_db_conn,
-					     slurmctld_cluster_name,
 					     time(NULL));
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_SUSPENDED(job_ptr))
 			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
-			jobacct_storage_g_job_start(
-				acct_db_conn, slurmctld_cluster_name, job_ptr);
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 			step_iterator = list_iterator_create(
 				job_ptr->step_list);
 			while ((step_ptr = (struct step_record *)

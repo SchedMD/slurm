@@ -76,8 +76,8 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	07
-#define SLURMDBD_VERSION_MIN	02
+#define SLURMDBD_VERSION	8 /* already changed for 2.2 */
+#define SLURMDBD_VERSION_MIN	7
 
 /* SLURM DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
@@ -178,8 +178,7 @@ typedef struct {
 } dbd_acct_coord_msg_t;
 
 typedef struct dbd_cluster_cpus_msg {
-	char *cluster_name;	/* name of cluster */
-	char *cluster_nodes;	/* name of cluster */
+	char *cluster_nodes;	/* nodes in cluster */
 	uint32_t cpu_count;	/* total processor count */
 	time_t event_time;	/* time of transition */
 } dbd_cluster_cpus_msg_t;
@@ -254,7 +253,6 @@ typedef struct dbd_job_start_msg {
 	uint32_t alloc_cpus;	/* count of allocated processors */
 	uint32_t alloc_nodes;   /* how many nodes used in job */
 	uint32_t assoc_id;	/* accounting association id */
-	char *   cluster;       /* cluster job is being ran on */
 	char *   block_id;      /* Bluegene block id */
 	uint32_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */
@@ -307,7 +305,6 @@ typedef struct {
 #define DBD_NODE_STATE_DOWN  1
 #define DBD_NODE_STATE_UP    2
 typedef struct dbd_node_state_msg {
-	char *cluster_name;	/* name of cluster */
 	uint32_t cpu_count;     /* number of cpus on node */
 	time_t event_time;	/* time of transition */
 	char *hostlist;		/* name of hosts */

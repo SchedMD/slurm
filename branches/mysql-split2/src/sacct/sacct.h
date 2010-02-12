@@ -73,7 +73,6 @@
 
 #define LONG_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,state,start,end,timelimit"
 
-#define BUFFER_SIZE 4096
 #define STATE_COUNT 10
 
 #define MAX_PRINTFIELDS 100

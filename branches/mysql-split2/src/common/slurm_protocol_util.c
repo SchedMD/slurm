@@ -130,7 +130,7 @@ void init_header(header_t *header, slurm_msg_t *msg,
 	   || msg->msg_type == ACCOUNTING_FIRST_REG) {
 		uint32_t rpc_version =
 			((accounting_update_msg_t *)msg->data)->rpc_version;
-		if(rpc_version >= 7)
+		if(rpc_version >= 8)
 			header->version = SLURM_PROTOCOL_VERSION;
 		else if(rpc_version >= 6)
 			header->version = SLURM_2_1_PROTOCOL_VERSION;

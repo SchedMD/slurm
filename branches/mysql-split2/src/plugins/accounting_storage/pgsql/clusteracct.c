@@ -111,7 +111,7 @@ get_cluster_cpu_nodes(pgsql_conn_t *pg_conn, acct_cluster_rec_t *cluster)
  * RET: error code
  */
 extern int
-cs_p_node_down(pgsql_conn_t *pg_conn, char *cluster,
+cs_p_node_down(pgsql_conn_t *pg_conn,
 	       struct node_record *node_ptr,
 	       time_t event_time, char *reason, uint32_t reason_uid)
 {
@@ -137,17 +137,19 @@ cs_p_node_down(pgsql_conn_t *pg_conn, char *cluster,
 	else
 		my_reason = node_ptr->reason;
 
-	debug2("inserting %s(%s) with %u cpus", node_ptr->name, cluster, cpus);
+	debug2("inserting %s(%s) with %u cpus",
+	       node_ptr->name, pg_conn->cluster_name, cpus);
 
 	query = xstrdup_printf(
 		"UPDATE %s SET period_end=%d WHERE cluster='%s' "
 		"AND period_end=0 AND node_name='%s';",
-		event_table, (event_time-1), cluster, node_ptr->name);
+		event_table, (event_time-1), pg_conn->cluster_name,
+		node_ptr->name);
 	xstrfmtcat(query, "INSERT INTO %s "
 		   "(node_name, cluster, cpu_count, period_start, "
 		   "reason, reason_uid) "
 		   "VALUES ('%s', '%s', %u, %d, $$%s$$, %d);",
-		   event_table, node_ptr->name, cluster,
+		   event_table, node_ptr->name, pg_conn->cluster_name,
 		   cpus, event_time, my_reason ?: "", reason_uid);
 	rc = DEF_QUERY_RET_RC;
 	return rc;
@@ -160,7 +162,7 @@ cs_p_node_down(pgsql_conn_t *pg_conn, char *cluster,
  * RET: error code
  */
 extern int
-cs_p_node_up(pgsql_conn_t *pg_conn, char *cluster,
+cs_p_node_up(pgsql_conn_t *pg_conn,
 	     struct node_record *node_ptr, time_t event_time)
 {
 	char* query;
@@ -172,7 +174,8 @@ cs_p_node_up(pgsql_conn_t *pg_conn, char *cluster,
 	query = xstrdup_printf(
 		"UPDATE %s SET period_end=%d WHERE cluster='%s' "
 		"AND period_end=0 AND node_name='%s'",
-		event_table, (event_time-1), cluster, node_ptr->name);
+		event_table, (event_time-1), pg_conn->cluster_name,
+		node_ptr->name);
 	rc = DEF_QUERY_RET_RC;
 	return rc;
 }
@@ -238,7 +241,7 @@ cs_p_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
  * RET: error code
  */
 extern int
-cs_p_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster, char *cluster_nodes,
+cs_p_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 		   uint32_t cpus, time_t event_time)
 {
 	PGresult *result = NULL;
@@ -252,7 +255,7 @@ cs_p_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster, char *cluster_nodes,
 	query = xstrdup_printf(
 		"SELECT cpu_count, cluster_nodes FROM %s WHERE cluster='%s' "
 		"AND period_end=0 AND node_name='' LIMIT 1;",
-		event_table, cluster);
+		event_table, pg_conn->cluster_name);
 	result = DEF_QUERY_RET;
 	if(!result)
 		return SLURM_ERROR;
@@ -260,7 +263,8 @@ cs_p_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster, char *cluster_nodes,
 	/* we only are checking the first one here */
 	if(!PQntuples(result)) {
 		debug("We don't have an entry for this machine %s "
-		      "most likely a first time running.", cluster);
+		      "most likely a first time running.",
+		      pg_conn->cluster_name);
 		/* Get all nodes in a down state and jobs pending or running.
 		 * This is for the first time a cluster registers
 		 *
@@ -275,17 +279,19 @@ cs_p_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster, char *cluster_nodes,
 	got_cpus = atoi(PG_VAL(0));
 	if(got_cpus == cpus) {
 		debug3("we have the same cpu count as before for %s, "
-		       "no need to update the database.", cluster);
+		       "no need to update the database.",
+		       pg_conn->cluster_name);
 		if(cluster_nodes) {
 			if(PG_EMPTY(1)) {
 				debug("Adding cluster nodes '%s' to "
 				      "last instance of cluster '%s'.",
-				      cluster_nodes, cluster);
+				      cluster_nodes, pg_conn->cluster_name);
 				query = xstrdup_printf(
 					"UPDATE %s SET cluster_nodes='%s' "
 					"WHERE cluster='%s' "
 					"AND period_end=0 AND node_name='';",
-					event_table, cluster_nodes, cluster);
+					event_table, cluster_nodes,
+					pg_conn->cluster_name);
 				rc = DEF_QUERY_RET_RC;
 				goto end_it;
 			} else if(!strcmp(cluster_nodes,
@@ -299,14 +305,15 @@ cs_p_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster, char *cluster_nodes,
 			goto end_it;
 	} else
 		debug("%s has changed from %d cpus to %u",
-		      cluster, got_cpus, cpus);
+		      pg_conn->cluster_name, got_cpus, cpus);
 
 	/* reset all the entries for this cluster since the cpus
 	   changed some of the downed nodes may have gone away.
 	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf("UPDATE %s SET period_end=%u "
 			       "WHERE cluster='%s' AND period_end=0;",
-			       event_table, (event_time-1), cluster);
+			       event_table, (event_time-1),
+			       pg_conn->cluster_name);
 	rc = DEF_QUERY_RET_RC;
 	first = 1;
 	if(rc != SLURM_SUCCESS)
@@ -315,7 +322,7 @@ add_it:
 	query = xstrdup_printf(
 		"INSERT INTO %s (cluster, cpu_count, period_start, reason) "
 		"VALUES ('%s', %u, %d, 'Cluster processor count')",
-		event_table, cluster, cpus, event_time);
+		event_table, pg_conn->cluster_name, cpus, event_time);
 	rc = DEF_QUERY_RET_RC;
 
 end_it:
