@@ -602,6 +602,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t task_dist;	/* see enum task_dist_state */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */
+	uint32_t time_min;	/* minimum run time in minutes, default is
+				 * time_limit */
 	uint32_t user_id;	/* set only if different from current UID,
 				 * can only be explicitly set by user root */
 	uint16_t warn_signal;	/* signal to send when approaching end time */
@@ -732,6 +734,7 @@ typedef struct job_info {
 	time_t submit_time;	/* time of job submission */
 	time_t suspend_time;	/* time job last suspended or resumed */
 	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
+	uint32_t time_min;	/* minimum run time in minutes or INFINITE */
 	uint32_t user_id;	/* user the job runs as */
 	char *wckey;            /* wckey for job */
 	char *work_dir;		/* pathname of working directory */

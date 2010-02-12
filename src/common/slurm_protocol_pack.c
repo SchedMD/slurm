@@ -3269,6 +3269,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		safe_unpack32(&job->alloc_sid,    buffer);
 		safe_unpack32(&job->time_limit,   buffer);
+		safe_unpack32(&job->time_min,   buffer);
 
 		safe_unpack16(&job->nice, buffer);
 
@@ -3371,6 +3372,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		safe_unpack32(&job->alloc_sid,    buffer);
 		safe_unpack32(&job->time_limit,   buffer);
+		job->time_min = job->time_limit;
 
 		safe_unpack16(&job->nice, buffer);
 
@@ -4435,8 +4437,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 
 		packstr(job_desc_ptr->req_nodes, buffer);
 		packstr(job_desc_ptr->exc_nodes, buffer);
-		packstr_array(job_desc_ptr->environment, job_desc_ptr->env_size,
-			      buffer);
+		packstr_array(job_desc_ptr->environment, 
+			      job_desc_ptr->env_size, buffer);
 		packstr_array(job_desc_ptr->spank_job_env,
 			      job_desc_ptr->spank_job_env_size, buffer);
 		packstr(job_desc_ptr->script, buffer);
@@ -4463,6 +4465,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->mem_bind, buffer);
 
 		pack32(job_desc_ptr->time_limit, buffer);
+		pack32(job_desc_ptr->time_min, buffer);
 		pack32(job_desc_ptr->min_cpus, buffer);
 		pack32(job_desc_ptr->max_cpus, buffer);
 		pack32(job_desc_ptr->min_nodes, buffer);
@@ -4575,8 +4578,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 
 		packstr(job_desc_ptr->req_nodes, buffer);
 		packstr(job_desc_ptr->exc_nodes, buffer);
-		packstr_array(job_desc_ptr->environment, job_desc_ptr->env_size,
-			      buffer);
+		packstr_array(job_desc_ptr->environment, 
+			      job_desc_ptr->env_size, buffer);
 		packstr_array(job_desc_ptr->spank_job_env,
 			      job_desc_ptr->spank_job_env_size, buffer);
 		packstr(job_desc_ptr->script, buffer);
@@ -4732,7 +4735,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->comment,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->nice, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp, 
+				       buffer);
 
 		safe_unpack8(&job_desc_ptr->open_mode,   buffer);
 		safe_unpack8(&job_desc_ptr->overcommit,  buffer);
@@ -4747,7 +4751,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_array(&job_desc_ptr->environment,
 				     &job_desc_ptr->env_size, buffer);
 		safe_unpackstr_array(&job_desc_ptr->spank_job_env,
-				     &job_desc_ptr->spank_job_env_size, buffer);
+				     &job_desc_ptr->spank_job_env_size, 
+				     buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_array(&job_desc_ptr->argv,
@@ -4781,6 +4786,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 
 		safe_unpack32(&job_desc_ptr->time_limit, buffer);
+		safe_unpack32(&job_desc_ptr->time_min, buffer);
 		safe_unpack32(&job_desc_ptr->min_cpus, buffer);
 		safe_unpack32(&job_desc_ptr->max_cpus, buffer);
 		safe_unpack32(&job_desc_ptr->min_nodes, buffer);
@@ -4859,7 +4865,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->comment,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->nice, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp, 
+				       buffer);
 
 		safe_unpack8(&job_desc_ptr->open_mode,   buffer);
 		safe_unpack8(&job_desc_ptr->overcommit,  buffer);
@@ -4874,7 +4881,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_array(&job_desc_ptr->environment,
 				     &job_desc_ptr->env_size, buffer);
 		safe_unpackstr_array(&job_desc_ptr->spank_job_env,
-				     &job_desc_ptr->spank_job_env_size, buffer);
+				     &job_desc_ptr->spank_job_env_size, 
+				     buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_array(&job_desc_ptr->argv,

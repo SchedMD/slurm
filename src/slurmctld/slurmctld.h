@@ -467,6 +467,9 @@ struct job_record {
 	time_t time_last_active;	/* time of last job activity */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
 					 * NO_VAL implies partition max_time */
+	uint32_t time_min;		/* minimum time_limit minutes or 
+					 * INFINITE,
+					 * zero implies same as time_limit */
 	time_t tot_sus_time;		/* total time in suspend state */
 	uint32_t total_cpus;		/* number of allocated cpus,
 					 * for accounting */

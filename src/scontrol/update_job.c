@@ -304,7 +304,7 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.comment = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 2)) == 0) {
+		else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 5)) == 0) {
 			int time_limit = time_str2mins(val);
 			if ((time_limit < 0) && (time_limit != INFINITE)) {
 				error("Invalid TimeLimit value");
@@ -312,6 +312,16 @@ scontrol_update_job (int argc, char *argv[])
 				return 0;
 			}
 			job_msg.time_limit = time_limit;
+			update_cnt++;
+		}
+		else if (strncasecmp(tag, "TimeMin", MAX(taglen, 5)) == 0) {
+			int time_min = time_str2mins(val);
+			if ((time_min < 0) && (time_min != INFINITE)) {
+				error("Invalid TimeMin value");
+				exit_code = 1;
+				return 0;
+			}
+			job_msg.time_min = time_min;
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Priority", MAX(taglen, 2)) == 0) {
