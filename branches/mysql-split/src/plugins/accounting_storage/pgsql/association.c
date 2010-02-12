@@ -1567,7 +1567,7 @@ as_p_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	if(rc == SLURM_SUCCESS) {
 		if(txn_query) {
 			xstrcat(txn_query, ";");
-			debug3("as/pg(%s:%d) query\n%s", __FILE__,
+			debug3("as/pg(%s:%d) query\n%s", THIS_FILE,
 			       __LINE__, txn_query);
 			rc = pgsql_db_query(pg_conn->db_conn, txn_query);
 			xfree(txn_query);

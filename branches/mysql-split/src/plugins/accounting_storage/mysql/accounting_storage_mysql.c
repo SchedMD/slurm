@@ -207,7 +207,7 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 			       assoc_char);
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return rc;
@@ -240,7 +240,7 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 			       assoc_char);
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -270,7 +270,7 @@ static bool _check_jobs_before_remove_without_assoctable(
 			       cluster_name, job_table, where_char);
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -1222,7 +1222,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	xfree(tmp_cond_char);
 	xfree(tmp_vals);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -1322,7 +1322,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	xfree(tmp_name_char);
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
@@ -1363,7 +1363,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				       cluster_name, assoc_table, assoc_char);
 
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -1411,7 +1411,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		   cluster_name, assoc_month_table, now, loc_assoc_char);
 
 	debug3("%d(%s:%d) query\n%s %d",
-	       mysql_conn->conn, __FILE__, __LINE__, query, strlen(query));
+	       mysql_conn->conn, THIS_FILE, __LINE__, query, strlen(query));
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
@@ -1439,7 +1439,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			       day_old, loc_assoc_char);
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -1464,7 +1464,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			   "FROM %s_%s WHERE id = %s;",
 			   cluster_name, assoc_table, row[0]);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result2 = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -1491,7 +1491,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		mysql_free_result(result2);
 
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1529,7 +1529,7 @@ just_update:
 		xfree(loc_assoc_char);
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {

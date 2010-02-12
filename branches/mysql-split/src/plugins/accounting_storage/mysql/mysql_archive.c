@@ -667,7 +667,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 
 //	START_TIMER;
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -794,7 +794,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 
 //	START_TIMER;
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -961,7 +961,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 
 //	START_TIMER;
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -1142,7 +1142,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 
 //	START_TIMER;
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -1402,7 +1402,7 @@ static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
 				       "period_start <= %d && period_end != 0",
 				       cluster_name, event_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1447,7 +1447,7 @@ exit_events:
 				       "&& end != 0",
 				       cluster_name, suspend_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1493,7 +1493,7 @@ exit_suspend:
 				       "&& end != 0",
 				       cluster_name, step_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1538,7 +1538,7 @@ exit_steps:
 				       "&& end != 0",
 				       cluster_name, job_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1721,7 +1721,7 @@ got_sql:
 		return SLURM_ERROR;
 	}
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, data);
+	       mysql_conn->conn, THIS_FILE, __LINE__, data);
 	error_code = mysql_db_query_check_after(mysql_conn->db_conn, data);
 	xfree(data);
 	if(error_code != SLURM_SUCCESS) {

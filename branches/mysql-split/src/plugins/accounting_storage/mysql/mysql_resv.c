@@ -210,7 +210,7 @@ extern int mysql_add_resv(mysql_conn_t *mysql_conn,
 		   "on duplicate key update deleted=0%s;",
 		   resv->cluster, resv_table, cols, resv->id, vals, extra);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
 	if((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
@@ -299,7 +299,7 @@ extern int mysql_modify_resv(mysql_conn_t *mysql_conn,
 			       resv->time_start, resv->time_start_prev);
 try_again:
 	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		rc = SLURM_ERROR;
@@ -408,7 +408,7 @@ try_again:
 	}
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
 	if((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
@@ -459,7 +459,7 @@ extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
 		   resv->id, resv->time_start);
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
 	if((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
@@ -584,7 +584,7 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		if(local_cluster_list)

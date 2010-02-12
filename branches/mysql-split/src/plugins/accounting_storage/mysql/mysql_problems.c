@@ -242,7 +242,7 @@ extern int mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	xfree(tmp);
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
