@@ -57,5 +57,5 @@ extern int mysql_step_complete(mysql_conn_t *mysql_conn,
 extern int mysql_suspend(mysql_conn_t *mysql_conn, struct job_record *job_ptr);
 
 extern int mysql_flush_jobs_on_cluster(
-	mysql_conn_t *mysql_conn, char *cluster, time_t event_time);
+	mysql_conn_t *mysql_conn, time_t event_time);
 #endif

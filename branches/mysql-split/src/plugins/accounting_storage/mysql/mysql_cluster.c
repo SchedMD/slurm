@@ -161,9 +161,15 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
-		} else
+		} else {
 			added++;
-
+			/* add it to the list and sort */
+			slurm_mutex_lock(&mysql_cluster_list_lock);
+			list_append(mysql_cluster_list, xstrdup(object->name));
+			list_sort(mysql_cluster_list,
+				  (ListCmpF)slurm_sort_char_list_asc);
+			slurm_mutex_unlock(&mysql_cluster_list_lock);
+		}
 		/* Add user root by default to run from the root
 		 * association.  This gets popped off so we need to
 		 * read it every time here.
@@ -181,7 +187,6 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			error("Problem adding root user association");
 			rc = SLURM_ERROR;
 		}
-
 	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
@@ -354,12 +359,12 @@ end_it:
 extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				  acct_cluster_cond_t *cluster_cond)
 {
-	ListIterator itr = NULL;
+	ListIterator itr = NULL, itr2 = NULL;
 	List ret_list = NULL;
 	List tmp_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *extra = NULL, *query = NULL,
+	char *extra = NULL, *query = NULL, *cluster_name = NULL,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
@@ -475,6 +480,34 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(tmp_list)
 		list_destroy(tmp_list);
 
+	slurm_mutex_lock(&mysql_cluster_list_lock);
+	itr2 = list_iterator_create(mysql_cluster_list);
+
+	itr = list_iterator_create(ret_list);
+	while((object = list_next(itr))) {
+		while((cluster_name = list_next(itr2))) {
+			if(!strcmp(cluster_name, object)) {
+				list_delete_item(itr2);
+				break;
+			}
+		}
+		list_iterator_reset(itr2);
+		if((rc = remove_cluster_tables(mysql_conn->db_conn, object))
+		   != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(itr2);
+	slurm_mutex_unlock(&mysql_cluster_list_lock);
+
+	if(rc != SLURM_SUCCESS) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->db_conn);
+		}
+		list_flush(mysql_conn->update_list);
+		list_destroy(ret_list);
+		return NULL;
+	}
 	return ret_list;
 }
 
