@@ -468,7 +468,7 @@ no_rollup_change:
 			xstrfmtcat(query, "node_inx=\"%s\", ", node_inx);
 
 		xstrfmtcat(query, "time_start=%d, job_name=\"%s\", state=%u, "
-			   "alloc_cpus=%u, alloc_nodes=%u, "
+			   "cpus_alloc=%u, nodes_alloc=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, timelimit=%u "
 			   "where job_db_inx=%d",
 			   (int)job_ptr->start_time,
