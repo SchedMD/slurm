@@ -2976,7 +2976,6 @@ static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now)
 		    IS_NODE_FAIL(node_ptr)) {
 			clusteracct_storage_g_node_down(
 				acct_db_conn,
-				slurmctld_cluster_name,
 				node_ptr, now, NULL,
 				slurm_get_slurm_user_id());
 		}

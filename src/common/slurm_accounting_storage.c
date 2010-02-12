@@ -153,24 +153,20 @@ typedef struct slurm_acct_storage_ops {
 				    time_t sent_start, time_t sent_end,
 				    uint16_t archive_data);
 	int  (*node_down)          (void *db_conn,
-				    char *cluster,
 				    struct node_record *node_ptr,
 				    time_t event_time,
 				    char *reason, uint32_t reason_uid);
 	int  (*node_up)            (void *db_conn,
-				    char *cluster,
 				    struct node_record *node_ptr,
 				    time_t event_time);
-	int  (*cluster_cpus)      (void *db_conn,
-				   char *cluster, char *cluster_nodes,
+	int  (*cluster_cpus)      (void *db_conn, char *cluster_nodes,
 				   uint32_t cpus, time_t event_time);
 	int  (*c_get_usage)        (void *db_conn, uint32_t uid,
 				    void *cluster_rec, int type,
 				    time_t start, time_t end);
 	int  (*register_ctld)      (void *db_conn, char *cluster,
 				    uint16_t port);
-	int  (*job_start)          (void *db_conn, char *cluster_name,
-				    struct job_record *job_ptr);
+	int  (*job_start)          (void *db_conn, struct job_record *job_ptr);
 	int  (*job_complete)       (void *db_conn,
 				    struct job_record *job_ptr);
 	int  (*step_start)         (void *db_conn,
@@ -188,7 +184,6 @@ typedef struct slurm_acct_storage_ops {
 	int (*update_shares_used)  (void *db_conn,
 				    List shares_used);
 	int (*flush_jobs)          (void *db_conn,
-				    char *cluster,
 				    time_t event_time);
 } slurm_acct_storage_ops_t;
 
@@ -236,7 +231,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_add_wckeys",
 		"acct_storage_p_add_reservation",
 		"acct_storage_p_modify_users",
-		"acct_storage_p_modify_accounts",
+		"acct_storage_p_modify_accts",
 		"acct_storage_p_modify_clusters",
 		"acct_storage_p_modify_associations",
 		"acct_storage_p_modify_qos",
@@ -2425,6 +2420,7 @@ extern void pack_acct_event_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack_time(0, buffer);
 		pack_time(0, buffer);
 		packnull(buffer);
+		pack32(NO_VAL, buffer);
 		pack16((uint16_t)NO_VAL, buffer);
 		return;
 	}
@@ -2436,6 +2432,7 @@ extern void pack_acct_event_rec(void *in, uint16_t rpc_version, Buf buffer)
 	pack_time(object->period_start, buffer);
 	pack_time(object->period_end, buffer);
 	packstr(object->reason, buffer);
+	pack32(object->reason_uid, buffer);
 	pack16(object->state, buffer);
 }
 
@@ -2452,6 +2449,7 @@ extern int unpack_acct_event_rec(void **object, uint16_t rpc_version,
 	safe_unpack_time(&object_ptr->period_start, buffer);
 	safe_unpack_time(&object_ptr->period_end, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->reason, &uint32_tmp, buffer);
+	safe_unpack32(&object_ptr->reason_uid, buffer);
 	safe_unpack16(&object_ptr->state, buffer);
 
 	return SLURM_SUCCESS;
@@ -8566,7 +8564,6 @@ extern int acct_storage_g_roll_usage(void *db_conn,
 }
 
 extern int clusteracct_storage_g_node_down(void *db_conn,
-					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time,
 					   char *reason, uint32_t reason_uid)
@@ -8574,11 +8571,10 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.node_down))
-		(db_conn, cluster, node_ptr, event_time, reason, reason_uid);
+		(db_conn, node_ptr, event_time, reason, reason_uid);
 }
 
 extern int clusteracct_storage_g_node_up(void *db_conn,
-					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
@@ -8611,18 +8607,17 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 			send_node.node_state = NODE_STATE_ERROR;
 
 			return (*(g_acct_storage_context->ops.node_down))
-				(db_conn, cluster, &send_node,
+				(db_conn, &send_node,
 				 event_time, reason, slurm_get_slurm_user_id());
 		}
 	}
 
  	return (*(g_acct_storage_context->ops.node_up))
-		(db_conn, cluster, node_ptr, event_time);
+		(db_conn, node_ptr, event_time);
 }
 
 
 extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
-					      char *cluster,
 					      char *cluster_nodes,
 					      uint32_t cpus,
 					      time_t event_time)
@@ -8630,7 +8625,7 @@ extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.cluster_cpus))
-		(db_conn, cluster, cluster_nodes, cpus, event_time);
+		(db_conn, cluster_nodes, cpus, event_time);
 }
 
 
@@ -8657,7 +8652,7 @@ extern int clusteracct_storage_g_register_ctld(
  * load into the storage information about a job,
  * typically when it begins execution, but possibly earlier
  */
-extern int jobacct_storage_g_job_start (void *db_conn, char *cluster_name,
+extern int jobacct_storage_g_job_start (void *db_conn,
 					struct job_record *job_ptr)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
@@ -8672,13 +8667,12 @@ extern int jobacct_storage_g_job_start (void *db_conn, char *cluster_name,
 		time_t orig_start_time = job_ptr->start_time;
 		job_ptr->start_time = (time_t) 0;
 		rc = (*(g_acct_storage_context->ops.job_start))(
-			db_conn, cluster_name, job_ptr);
+			db_conn, job_ptr);
 		job_ptr->start_time = orig_start_time;
 		return rc;
 	}
 
-	return (*(g_acct_storage_context->ops.job_start))(
-		db_conn, cluster_name, job_ptr);
+	return (*(g_acct_storage_context->ops.job_start))(db_conn, job_ptr);
 }
 
 /*
@@ -8786,12 +8780,12 @@ extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_flush_jobs_on_cluster(
-	void *db_conn, char *cluster, time_t event_time)
+	void *db_conn, time_t event_time)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.flush_jobs))
-		(db_conn, cluster, event_time);
+		(db_conn, event_time);
 
 }
 

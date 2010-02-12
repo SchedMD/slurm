@@ -306,6 +306,7 @@ typedef struct {
 	time_t period_start;    /* Start of period */
 	char *reason;           /* reason node is in state during time
 				   period (only set in a node event) */
+	uint32_t reason_uid;    /* uid of that who set the reason */
 	uint16_t state;         /* State of node during time
 				   period (only set in a node event) */
 } acct_event_rec_t;
@@ -583,8 +584,8 @@ typedef struct {
 } acct_archive_cond_t;
 
 typedef struct {
-	char *archive_file;  /* archive file containing an insert line
-				of jobs since past */
+	char *archive_file;  /* archive file containing data that was
+				once flushed from the database */
 	char *insert;     /* an sql statement to be ran containing the
 			     insert of jobs since past */
 } acct_archive_rec_t;
@@ -1117,23 +1118,20 @@ extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list);
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_flush_jobs_on_cluster(
-	void *db_conn, char *cluster, time_t event_time);
+	void *db_conn, time_t event_time);
 
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
 extern int clusteracct_storage_g_node_down(void *db_conn,
-					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time,
 					   char *reason, uint32_t reason_uid);
 
 extern int clusteracct_storage_g_node_up(void *db_conn,
-					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time);
 
 extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
-					      char *cluster,
 					      char *cluster_nodes,
 					      uint32_t cpus,
 					      time_t event_time);
@@ -1156,7 +1154,7 @@ extern int clusteracct_storage_g_get_usage(
 /*
  * load into the storage the start of a job
  */
-extern int jobacct_storage_g_job_start (void *db_conn, char *cluster_name,
+extern int jobacct_storage_g_job_start (void *db_conn,
 					struct job_record *job_ptr);
 
 /*
