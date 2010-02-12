@@ -701,6 +701,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->user_id, buffer);
 	pack32(dump_job_ptr->group_id, buffer);
 	pack32(dump_job_ptr->time_limit, buffer);
+	pack32(dump_job_ptr->time_min, buffer);
 	pack32(dump_job_ptr->priority, buffer);
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->total_cpus, buffer);
@@ -790,9 +791,9 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer, uint16_t protocol_version)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t exit_code, assoc_id, db_index, name_len;
-	uint32_t next_step_id, total_cpus, cpu_cnt,
-		resv_id, spank_job_env_size = 0;
+	uint32_t exit_code, assoc_id, db_index, name_len, time_min;
+	uint32_t next_step_id, total_cpus, cpu_cnt;
+	uint32_t resv_id, spank_job_env_size = 0;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t now = time(NULL);
 	uint16_t job_state, details, batch_flag, step_flag;
@@ -841,6 +842,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&user_id, buffer);
 		safe_unpack32(&group_id, buffer);
 		safe_unpack32(&time_limit, buffer);
+		safe_unpack32(&time_min, buffer);
 		safe_unpack32(&priority, buffer);
 		safe_unpack32(&alloc_sid, buffer);
 		safe_unpack32(&total_cpus, buffer);
@@ -969,6 +971,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&user_id, buffer);
 		safe_unpack32(&group_id, buffer);
 		safe_unpack32(&time_limit, buffer);
+		time_min = 0;
 		safe_unpack32(&priority, buffer);
 		safe_unpack32(&alloc_sid, buffer);
 		safe_unpack32(&min_cpus, buffer);
@@ -1174,7 +1177,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->suspend_time = suspend_time;
 	job_ptr->time_last_active = now;
 	job_ptr->time_limit   = time_limit;
-	job_ptr->total_cpus  = total_cpus;
+	job_ptr->time_min     = time_min;
+	job_ptr->total_cpus   = total_cpus;
 	job_ptr->cpu_cnt      = cpu_cnt;
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->user_id      = user_id;
@@ -2672,6 +2676,23 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_INVALID_TIME_LIMIT;
 		return error_code;
 	}
+	if ((job_desc->time_min != NO_VAL) &&
+	    (job_desc->time_min > part_ptr->max_time) &&
+	    slurmctld_conf.enforce_part_limits) {
+		info("_job_create: job's time greater than partition's "
+		     "(%u > %u)",
+		     job_desc->time_min, part_ptr->max_time);
+		error_code = ESLURM_INVALID_TIME_LIMIT;
+		return error_code;
+	}
+	if ((job_desc->time_min != NO_VAL) &&
+	    (job_desc->time_min > job_desc->time_limit)) {
+		info("_job_create: job's min_time greater time limit "
+		     "(%u > %u)",
+		     job_desc->time_min, job_desc->time_limit);
+		error_code = ESLURM_INVALID_TIME_LIMIT;
+		return error_code;
+	}
 
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
 		return error_code;
@@ -3614,6 +3635,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
 	job_ptr->job_state  = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
+	if (job_desc->time_min != NO_VAL)
+		job_ptr->time_min = job_desc->time_min;
 	job_ptr->alloc_sid  = job_desc->alloc_sid;
 	job_ptr->alloc_node = xstrdup(job_desc->alloc_node);
 	job_ptr->account    = xstrdup(job_desc->account);
@@ -5562,8 +5585,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (IS_JOB_FINISHED(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else if (job_ptr->time_limit == job_specs->time_limit) {
-			verbose("update_job: new time limit identical to old "
-				"time limit %u", job_specs->job_id);
+			debug("update_job: new time limit identical to old "
+			      "time limit %u", job_specs->job_id);
 		} else if (super_user ||
 			   (job_ptr->time_limit > job_specs->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
@@ -5606,6 +5629,19 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("Attempt to increase time limit for job %u",
 			     job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+
+	if ((job_specs->time_min != NO_VAL) && IS_JOB_PENDING(job_ptr)) {
+		if (job_specs->time_min > job_ptr->time_limit) {
+			info("update_job: attempt to set TimeMin > TimeLimit "
+			     "(%u > %u)", 
+			     job_specs->time_min, job_ptr->time_limit);
+			error_code = ESLURM_INVALID_TIME_LIMIT;
+		} else {
+			job_ptr->time_min = job_specs->time_min;
+			info("update_job: setting TimeMin to %u for job_id %u",
+			     job_specs->time_min, job_specs->job_id);
 		}
 	}
 
@@ -8070,7 +8106,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern int send_jobs_to_accounting()
+extern int send_jobs_to_accounting(void)
 {
 	ListIterator itr = NULL;
 	struct job_record *job_ptr;
@@ -8430,11 +8466,12 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->shared            = details->shared;
 	job_desc->task_dist         = details->task_dist;
 	job_desc->time_limit        = job_ptr->time_limit;
+	job_desc->time_min          = job_ptr->time_min;
 	job_desc->user_id           = job_ptr->user_id;
 	job_desc->work_dir          = xstrdup(details->work_dir);
-	job_desc->pn_min_cpus      = details->pn_min_cpus;
-	job_desc->pn_min_memory    = details->pn_min_memory;
-	job_desc->pn_min_tmp_disk  = details->pn_min_tmp_disk;
+	job_desc->pn_min_cpus       = details->pn_min_cpus;
+	job_desc->pn_min_memory     = details->pn_min_memory;
+	job_desc->pn_min_tmp_disk   = details->pn_min_tmp_disk;
 	job_desc->min_cpus          = details->min_cpus;
 	job_desc->max_cpus          = details->max_cpus;
 	job_desc->min_nodes         = details->min_nodes;

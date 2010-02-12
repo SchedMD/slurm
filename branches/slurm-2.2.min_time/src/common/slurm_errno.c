@@ -2,7 +2,7 @@
  *  slurm_errno.c - error codes and functions for slurm
  ******************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -231,7 +231,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job violates accounting policy (job submit limit, user's "
 	  "size and/or time limits)"},
 	{ ESLURM_INVALID_TIME_LIMIT,
-	  "Requested time limit exceeds partition limit"	},
+	  "Requested time limit is invalid (exceeds some limit)"},
 	{ ESLURM_RESERVATION_ACCESS,
 	  "Access denied to requested reservation"		},
 	{ ESLURM_RESERVATION_INVALID,

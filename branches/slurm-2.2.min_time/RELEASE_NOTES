@@ -48,6 +48,11 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
 * sinfo -R now has the user and timestamp in separate fields from the reason.
 
+* Job submission commands (salloc, sbatch and srun) have a new option, 
+  --time-min, that permits the job's time limit to be reduced to the extent
+  required to start early through backfill scheduling with the minimum value
+  as specified.
+
 BLUEGENE SPECIFIC CHANGES
 =========================
 
@@ -62,6 +67,11 @@ OTHER CHANGES
 * Added support for spank_get_item() to get S_STEP_ALLOC_CORES and 
   S_STEP_ALLOC_MEM. Support will remain for S_JOB_ALLOC_CORES and 
   S_JOB_ALLOC_MEM. 
+
+* Changed error mesage from "Requested time limit exceeds partition limit"
+  "Requested time limit is invalid (exceeds some limit)". The error can be
+  triggered by a time limit exceeding the user/bank limit or the time-min
+  exceeding the job or partition's time limit.
 
 API CHANGES
 ===========
@@ -79,8 +89,12 @@ job_desc_msg_t
 	job_min_tmp_disk -> pn_min_tmp_disk
 
 * Added the following struct definitions:
+job_info_t
+	time_min
+
 job_desc_msg_t
 	max_cpus
+	time_min
 
 node_info_t
 	reason_time

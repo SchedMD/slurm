@@ -782,6 +782,7 @@ Set a minimum time limit on the job allocation.
 If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
 no lower than \fB\-\-time\-min\fR if doing so permits the job to begin
 execution earlier than otherwise possible. 
+The job's time limit will not be changed after the job is allocated resources.
 This is performed by a backfill scheduling algorithm to allocate resources 
 otherwise reserved for higher priority jobs.
 Acceptable time formats include "minutes", "minutes:seconds", 
