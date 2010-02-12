@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	if (xsignal_block(dbd_sigarray) < 0)
 		error("Unable to block signals");
 
-	db_conn = acct_storage_g_get_connection(false, 0, false);
+	db_conn = acct_storage_g_get_connection(false, 0, false, NULL);
 
 	/* Create attached thread for signal handling */
 	slurm_attr_init(&thread_attr);

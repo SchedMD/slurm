@@ -760,7 +760,7 @@ extern int slurm_acct_storage_fini(void); /* unload the plugin */
  * RET: pointer used to access db
  */
 extern void *acct_storage_g_get_connection(bool make_agent, int conn_num,
-					   bool rollback);
+					   bool rollback, char *cluster_name);
 
 /*
  * release connection to the storage unit
@@ -1136,8 +1136,7 @@ extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
 					      uint32_t cpus,
 					      time_t event_time);
 
-extern int clusteracct_storage_g_register_ctld(
-	void *db_conn, char *cluster, uint16_t port);
+extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port);
 
 /*
  * get info from the storage
