@@ -583,7 +583,7 @@ _process_resv_idle_time(List resv_usage_list, List assoc_usage_list)
 {
 	ListIterator r_itr;
 	local_resv_usage_t *r_usage;
-	local_id_usage_t *a_usage;
+	local_id_usage_t *a_usage = NULL;
 	int seconds;
 	int last_id = -1;
 
