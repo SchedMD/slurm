@@ -12,9 +12,8 @@ documents those changes that are of interest to users and admins.
     for jobs and job steps as a percentage of their real memory allocation.
  -- Add scontrol ability to update job step's time limits.
  -- Add scontrol ability to update job's NumCPUs count.
- -- Add --time-min options to salloc, sbatch and srun. The squeue command
-    has been modified to display the new field. The scontrol command has been 
-    modified to display and modify the new field. 
+ -- Add --time-min options to salloc, sbatch and srun. The scontrol command 
+    has been modified to display and modify the new field. 
 
 * Changes in SLURM 2.2.0.pre1
 =============================

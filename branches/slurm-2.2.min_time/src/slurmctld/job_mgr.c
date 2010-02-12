@@ -2677,8 +2677,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		return error_code;
 	}
 	if ((job_desc->time_min != NO_VAL) &&
-	    (job_desc->time_min > part_ptr->max_time) &&
-	    slurmctld_conf.enforce_part_limits) {
+	    (job_desc->time_min > part_ptr->max_time)) {
 		info("_job_create: job's time greater than partition's "
 		     "(%u > %u)",
 		     job_desc->time_min, part_ptr->max_time);
