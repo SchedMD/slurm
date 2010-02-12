@@ -247,7 +247,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	/* now do associations */
 	query = xstrdup_printf("show tables like '%s';", assoc_table);
 
-	debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
@@ -288,7 +288,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 
 	/* now do events */
 	query = xstrdup_printf("show tables like 'cluster_event_table';");
-	debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
@@ -311,7 +311,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	/* now do jobs */
 	query = xstrdup_printf("show tables like '%s';", job_table);
 
-	debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
@@ -335,7 +335,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	/* now do reservations */
 	query = xstrdup_printf("show tables like '%s';", resv_table);
 
-	debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
@@ -358,7 +358,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	/* now do steps */
 	query = xstrdup_printf("show tables like '%s';", step_table);
 
-	debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
@@ -380,7 +380,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	/* now do suspends */
 	query = xstrdup_printf("show tables like '%s';", suspend_table);
 
-	debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
@@ -402,7 +402,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	/* now do usage */
 	query = xstrdup_printf("show tables like '%s';", cluster_hour_table);
 
-	debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
@@ -440,7 +440,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 	/* now do wckeys */
 	query = xstrdup_printf("show tables like '%s';", wckey_table);
 
-	debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+	debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
 		goto end_it;
@@ -510,7 +510,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				   "deleted=VALUES(deleted);",
 				   cluster_name, assoc_table,
 				   assoc_table, cluster_name);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -551,7 +551,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					       "lft=(lft-%d), rgt=(rgt-%d)",
 					       cluster_name, assoc_table,
 					       diff, diff);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -566,7 +566,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			*/
 			query = xstrdup_printf("select id_assoc from %s_%s",
 					       cluster_name, assoc_table);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
@@ -629,7 +629,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   assoc_month_table, assoc_ids);
 				xfree(assoc_ids);
 				debug3("(%s:%d) query\n%s",
-				      __FILE__, __LINE__, query);
+				      THIS_FILE, __LINE__, query);
 				rc = mysql_db_query(db_conn, query);
 				xfree(query);
 				if(rc != SLURM_SUCCESS) {
@@ -653,7 +653,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				"time_end=VALUES(time_end);",
 				cluster_name, event_table,
 				"cluster_event_table", cluster_name);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -686,7 +686,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				"time_end=VALUES(time_end);",
 				cluster_name, job_table,
 				job_table, cluster_name);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -703,7 +703,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			*/
 			query = xstrdup_printf("select job_db_inx from %s_%s",
 					       cluster_name, job_table);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
@@ -740,7 +740,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				"time_end=VALUES(time_end);",
 				cluster_name, resv_table,
 				resv_table, cluster_name);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -780,7 +780,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				"time_end=VALUES(time_end);",
 				cluster_name, step_table,
 				step_table, id_str);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -799,7 +799,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				"time_end=VALUES(time_end);",
 				cluster_name, suspend_table,
 				suspend_table, id_str);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -860,7 +860,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				   "time_start=VALUES(time_start);",
 				   cluster_name, cluster_month_table,
 				   cluster_month_table, cluster_name);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -884,7 +884,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 				   "deleted=VALUES(deleted);",
 				   cluster_name, wckey_table,
 				   wckey_table, cluster_name);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -899,7 +899,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 			*/
 			query = xstrdup_printf("select id_wckey from %s_%s",
 					       cluster_name, wckey_table);
-			debug3("(%s:%d) query\n%s", __FILE__, __LINE__, query);
+			debug3("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 			if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 				xfree(query);
 				rc = SLURM_ERROR;
@@ -968,7 +968,7 @@ extern int mysql_convert_tables(MYSQL *db_conn)
 					   wckey_month_table, wckey_ids);
 				xfree(wckey_ids);
 				debug3("(%s:%d) query\n%s",
-				      __FILE__, __LINE__, query);
+				      THIS_FILE, __LINE__, query);
 				rc = mysql_db_query(db_conn, query);
 				xfree(query);
 				if(rc != SLURM_SUCCESS) {

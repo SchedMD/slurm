@@ -178,7 +178,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		"SELECT lft from %s_%s where acct=\"%s\" && user='';",
 		cluster, assoc_table, parent);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -248,7 +248,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		   "select lft, rgt from %s_%s where id_assoc = %s",
 		   cluster, assoc_table, id);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -292,7 +292,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 		cluster, assoc_table, *lft, *rgt,
 		new_parent);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -322,7 +322,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 		"select lft, rgt from %s_%s where id_assoc=%s;",
 		cluster, assoc_table, id);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -359,7 +359,7 @@ static uint32_t _get_parent_id(
 			       "and deleted = 0 and acct=\"%s\";",
 			       cluster, assoc_table, parent);
 	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
 		xfree(query);
@@ -392,7 +392,7 @@ static int _set_assoc_lft_rgt(
 	query = xstrdup_printf("select lft, rgt from %s_%s where id_assoc=%u;",
 			       assoc->cluster, assoc_table, assoc->id);
 	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
 		xfree(query);
@@ -449,7 +449,7 @@ static int _set_assoc_limits_for_add(
 			       "@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;",
 			       assoc_table, parent, assoc->cluster, 0);
 	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -588,7 +588,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			       lft, rgt, acct, acct);
 	xfree(object);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -1570,7 +1570,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			list_iterator_destroy(itr);
 		}
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(extra);
@@ -1607,7 +1607,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	xfree(qos_extra);
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -1695,7 +1695,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				cluster_name,
 				without_parent_limits);
 			debug4("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, __FILE__, __LINE__, query);
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			if(!(result2 = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 1))) {
 				xfree(query);
@@ -2006,7 +2006,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			   tmp_char, object->cluster, assoc_table, update);
 		xfree(tmp_char);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -2059,7 +2059,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 						object->cluster, assoc_table);
 					debug3("%d(%s:%d) query\n%s",
 					       mysql_conn->conn,
-					       __FILE__, __LINE__, up_query);
+					       THIS_FILE, __LINE__, up_query);
 					rc = mysql_db_query(
 						mysql_conn->db_conn,
 						up_query);
@@ -2076,7 +2076,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				}
 
 				debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
-				       __FILE__, __LINE__, sel_query);
+				       THIS_FILE, __LINE__, sel_query);
 				if(!(sel_result = mysql_db_query_ret(
 					     mysql_conn->db_conn,
 					     sel_query, 0))) {
@@ -2188,7 +2188,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(vals);
 		xfree(update);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -2277,7 +2277,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			my_left,
 			old_cluster, assoc_table);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, up_query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, up_query);
 		rc = mysql_db_query(mysql_conn->db_conn, up_query);
 		xfree(up_query);
 		if(rc != SLURM_SUCCESS)
@@ -2291,7 +2291,7 @@ end_it:
 		if(txn_query) {
 			xstrcat(txn_query, ";");
 			debug4("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, __FILE__, __LINE__, txn_query);
+			       mysql_conn->conn, THIS_FILE, __LINE__, txn_query);
 			rc = mysql_db_query(mysql_conn->db_conn,
 					    txn_query);
 			xfree(txn_query);
@@ -2444,7 +2444,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			   assoc_table, qos_extra, extra);
 		xfree(qos_extra);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -2554,7 +2554,7 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				       qos_extra, extra);
 		xfree(qos_extra);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -2583,7 +2583,7 @@ extern List mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				       object,
 				       cluster_name, assoc_table, name_char);
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);

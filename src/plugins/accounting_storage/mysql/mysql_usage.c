@@ -102,7 +102,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 	xfree(tmp);
 	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -268,7 +268,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	xfree(tmp);
 
 	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -511,7 +511,7 @@ is_user:
 
 	xfree(tmp);
 	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -583,7 +583,7 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 		xfree(tmp);
 
 		debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
-		       __FILE__, __LINE__, query);
+		       THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -612,7 +612,7 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 					"time_start asc limit 1;",
 					tmp, event_table);
 				debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
-				       __FILE__, __LINE__, query);
+				       THIS_FILE, __LINE__, query);
 				if(!(result = mysql_db_query_ret(
 					     mysql_conn->db_conn, query, 0))) {
 					xfree(query);
@@ -641,7 +641,7 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 				last_ran_table, lowest, lowest, lowest);
 
 			debug3("%d(%s:%d) query\n%s", mysql_conn->conn,
-			       __FILE__, __LINE__, query);
+			       THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS)
@@ -833,7 +833,7 @@ extern int mysql_roll_usage(mysql_conn_t *mysql_conn,
 
 	if(query) {
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 	}

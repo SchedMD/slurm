@@ -331,7 +331,7 @@ extern int mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid, List qos_list)
 
 
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		object->id = mysql_insert_ret_id(mysql_conn->db_conn, query);
 		xfree(query);
 		if(!object->id) {
@@ -730,7 +730,7 @@ extern List mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			       assoc_table, now, extra);
 	xfree(extra);
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
@@ -896,7 +896,7 @@ empty:
 	xfree(extra);
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);

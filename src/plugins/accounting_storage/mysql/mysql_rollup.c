@@ -252,7 +252,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       curr_end, curr_start);
 
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -343,7 +343,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       curr_end, curr_start);
 
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -438,7 +438,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       curr_end, curr_start);
 
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -487,7 +487,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					row[JOB_REQ_DB_INX]);
 
 				debug4("%d(%s:%d) query\n%s",
-				       mysql_conn->conn, __FILE__,
+				       mysql_conn->conn, THIS_FILE,
 				       __LINE__, query);
 				if(!(result2 = mysql_db_query_ret(
 					     mysql_conn->db_conn,
@@ -849,7 +849,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   "resv_cpu_secs=VALUES(resv_cpu_secs)",
 				   now);
 			debug3("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, __FILE__, __LINE__, query);
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -889,7 +889,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   now);
 
 			debug3("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, __FILE__, __LINE__, query);
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -932,7 +932,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   now);
 
 			debug3("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, __FILE__, __LINE__, query);
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -1049,7 +1049,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 				   curr_end, curr_start, now);
 		}
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1156,7 +1156,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 				   curr_end, curr_start, now);
 		}
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {

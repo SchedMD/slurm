@@ -43,6 +43,8 @@
 
 #include "src/common/assoc_mgr.h"
 
+#define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
+
 extern char *fix_double_quotes(char *str);
 
 extern int send_accounting_update(List update_list, char *cluster, char *host,

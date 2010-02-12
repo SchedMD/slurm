@@ -181,7 +181,7 @@ extern List mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		xfree(assoc_extra);
 
 		debug3("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, __FILE__, __LINE__, query);
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -364,7 +364,7 @@ empty:
 	xfree(tmp);
 
 	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, __FILE__, __LINE__, query);
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -401,7 +401,7 @@ empty:
 				"order by cluster) from %s where %s",
 				assoc_table, row[TXN_REQ_NAME]);
 			debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
-			       __FILE__, __LINE__, query);
+			       THIS_FILE, __LINE__, query);
 			if(!(result2 = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 0))) {
 				xfree(query);
