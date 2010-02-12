@@ -2058,6 +2058,11 @@ extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
 					       uint32_t cpus,
 					       time_t event_time)
 {
+	if(!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
 	return mysql_cluster_cpus(mysql_conn,
 				  cluster_nodes, cpus, event_time);
 }
