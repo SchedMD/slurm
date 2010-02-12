@@ -76,7 +76,7 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	06
+#define SLURMDBD_VERSION	07
 #define SLURMDBD_VERSION_MIN	02
 
 /* SLURM DBD message types */
@@ -218,6 +218,7 @@ typedef struct dbd_get_jobs_msg {
 } dbd_get_jobs_msg_t;
 
 typedef struct dbd_init_msg {
+	char *cluster_name;     /* cluster this message is coming from */
 	uint16_t rollback;      /* to allow rollbacks or not */
 	uint16_t version;	/* protocol version */
 	uint32_t uid;		/* UID originating connection,
@@ -537,8 +538,7 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 				    dbd_cond_msg_t **msg, Buf buffer);
 int inline slurmdbd_unpack_get_jobs_msg(uint16_t rpc_version,
 					dbd_get_jobs_msg_t **msg, Buf buffer);
-int inline slurmdbd_unpack_init_msg(uint16_t rpc_version,
-				    dbd_init_msg_t **msg, Buf buffer,
+int inline slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer,
 				    char *auth_info);
 int inline slurmdbd_unpack_fini_msg(uint16_t rpc_version,
 				    dbd_fini_msg_t **msg, Buf buffer);

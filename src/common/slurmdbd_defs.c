@@ -92,6 +92,7 @@ static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 static slurm_fd  slurmdbd_fd         = -1;
 static char *    slurmdbd_auth_info  = NULL;
+static char *    slurmdbd_cluster    = NULL;
 static bool      rollback_started    = 0;
 static bool      halt_agent          = 0;
 
@@ -141,6 +142,9 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent,
 	if (auth_info)
 		slurmdbd_auth_info = xstrdup(auth_info);
 
+	xfree(slurmdbd_cluster);
+	slurmdbd_cluster = slurm_get_cluster_name();
+
 	rollback_started = rollback;
 
 	if (slurmdbd_fd < 0) {
@@ -182,6 +186,7 @@ extern int slurm_close_slurmdbd_conn(void)
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
 	xfree(slurmdbd_auth_info);
+	xfree(slurmdbd_cluster);
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	return SLURM_SUCCESS;
@@ -656,8 +661,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 			(dbd_get_jobs_msg_t **)&resp->data, buffer);
 		break;
 	case DBD_INIT:
-		rc = slurmdbd_unpack_init_msg(rpc_version,
-					      (dbd_init_msg_t **)&resp->data,
+		rc = slurmdbd_unpack_init_msg((dbd_init_msg_t **)&resp->data,
 					      buffer,
 					      slurmdbd_auth_info);
 		break;
@@ -1326,6 +1330,7 @@ static int _send_init_msg()
 
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
+	req.cluster_name = slurmdbd_cluster;
 	req.rollback = rollback_started;
 	req.version  = SLURMDBD_VERSION;
 	slurmdbd_pack_init_msg(SLURMDBD_VERSION, &req, buffer,
@@ -1670,6 +1675,7 @@ static void _create_agent(void)
 	/* this needs to be set because the agent thread will do
 	   nothing if the connection was closed and then opened again */
 	agent_shutdown = 0;
+
 	if (agent_list == NULL) {
 		agent_list = list_create(_agent_queue_del);
 		if (agent_list == NULL)
@@ -2169,7 +2175,10 @@ void inline slurmdbd_free_get_jobs_msg(uint16_t rpc_version,
 void inline slurmdbd_free_init_msg(uint16_t rpc_version,
 				   dbd_init_msg_t *msg)
 {
-	xfree(msg);
+	if(msg) {
+		xfree(msg->cluster_name);
+		xfree(msg);
+	}
 }
 
 void inline slurmdbd_free_fini_msg(uint16_t rpc_version,
@@ -2724,8 +2733,16 @@ slurmdbd_pack_init_msg(uint16_t rpc_version, dbd_init_msg_t *msg,
 	int rc;
 	void *auth_cred;
 
+	info("sending version %d", rpc_version);
 	pack16(msg->rollback, buffer);
 	pack16(msg->version, buffer);
+
+	/* Adding anything to this needs to happen after the version
+	   since this is where the reciever gets the version from. */
+	if(rpc_version >= 7) {
+		packstr(msg->cluster_name, buffer);
+	}
+
 	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
 	if (auth_cred == NULL) {
 		error("Creating authentication credential: %s",
@@ -2738,24 +2755,32 @@ slurmdbd_pack_init_msg(uint16_t rpc_version, dbd_init_msg_t *msg,
 			      g_slurm_auth_errstr(
 				      g_slurm_auth_errno(auth_cred)));
 			errno = g_slurm_auth_errno(auth_cred);
-
 		}
 		(void) g_slurm_auth_destroy(auth_cred);
 	}
 }
 
 int inline
-slurmdbd_unpack_init_msg(uint16_t rpc_version, dbd_init_msg_t **msg,
+slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
 			 Buf buffer, char *auth_info)
 {
+	int rc = SLURM_SUCCESS;
 	void *auth_cred;
+	uint32_t tmp32;
 
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
+
 	*msg = msg_ptr;
-	int rc = SLURM_SUCCESS;
 
 	safe_unpack16(&msg_ptr->rollback, buffer);
 	safe_unpack16(&msg_ptr->version, buffer);
+
+	/* We find out the version of the caller right here so use
+	   that as the rpc_version. */
+	if(msg_ptr->version >= 7) {
+		safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &tmp32, buffer);
+	}
+
 	auth_cred = g_slurm_auth_unpack(buffer);
 	if (auth_cred == NULL) {
 		error("Unpacking authentication credential: %s",
@@ -2770,12 +2795,11 @@ slurmdbd_unpack_init_msg(uint16_t rpc_version, dbd_init_msg_t **msg,
 		rc = ESLURM_ACCESS_DENIED;
 		goto unpack_error;
 	}
-
 	g_slurm_auth_destroy(auth_cred);
 	return rc;
 
 unpack_error:
-	slurmdbd_free_init_msg(rpc_version, msg_ptr);
+	slurmdbd_free_init_msg(msg_ptr->version, msg_ptr);
 	*msg = NULL;
 	if(rc == SLURM_SUCCESS)
 		rc = SLURM_ERROR;

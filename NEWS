@@ -28,6 +28,9 @@ documents those changes that are of interest to users and admins.
  -- sacct - fixed bug when checking jobs against a reservation
  -- In select/cons_res, fix support for job allocation with --ntasks_per_node
     option. Previously could allocate too few CPUs on some nodes.  
+ -- Adjustment made to init message to the slurmdbd to allow backwards
+    compatibility with future 2.2 release. YOU NEED TO UPGRADE SLURMDBD
+    BEFORE ANYTHING ELSE.
 
 * Changes in SLURM 2.1.2
 =============================
