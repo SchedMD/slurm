@@ -2733,7 +2733,6 @@ slurmdbd_pack_init_msg(uint16_t rpc_version, dbd_init_msg_t *msg,
 	int rc;
 	void *auth_cred;
 
-	info("sending version %d", rpc_version);
 	pack16(msg->rollback, buffer);
 	pack16(msg->version, buffer);
 
