@@ -2480,7 +2480,8 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 			      resv_ptr->name);
 			goto no_assocs;
 		}
-		snprintf(tmp_char, sizeof(tmp_char), ",%u,", job_ptr->assoc_id);
+		snprintf(tmp_char, sizeof(tmp_char), ",%u,", 
+			 job_ptr->assoc_id);
 		if(strstr(resv_ptr->assoc_list, tmp_char))
 			return SLURM_SUCCESS;
 	} else {
@@ -2535,6 +2536,36 @@ extern int job_test_resv_now(struct job_record *job_ptr)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+/* Adjust a job's time_limit and end_time as needed to avoid using 
+ *	reserved resources. Don't go below job's time_min value. */
+extern void job_time_adj_resv(struct job_record *job_ptr)
+{
+	ListIterator iter;
+	slurmctld_resv_t * resv_ptr;
+	time_t now = time(NULL);
+	int32_t resv_begin_time;
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((job_ptr->resv_ptr == resv_ptr) ||
+		    (resv_ptr->start_time <= now))
+			continue;	/* authorized user of reservation */
+		if (resv_ptr->start_time >= job_ptr->end_time)
+			continue;	/* reservation starts after job ends */
+		if ((resv_ptr->node_bitmap == NULL) ||
+		    (bit_overlap(resv_ptr->node_bitmap, 
+				 job_ptr->node_bitmap) == 0))
+			continue;	/* disjoint resources */
+		resv_begin_time = difftime(resv_ptr->start_time, now) / 60;
+		job_ptr->time_limit = MIN(job_ptr->time_limit,resv_begin_time);
+	}
+	list_iterator_destroy(iter);
+	job_ptr->time_limit = MAX(job_ptr->time_limit, job_ptr->time_min);
+	job_ptr->end_time = job_ptr->start_time + (job_ptr->time_limit * 60);
 }
 
 /* For a given license_list, return the total count of licenses of the

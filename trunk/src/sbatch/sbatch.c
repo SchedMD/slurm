@@ -2,7 +2,7 @@
  *  sbatch.c - Submit a SLURM batch script.$
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -296,6 +296,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->kill_on_node_fail = 0;
 	if (opt.time_limit != NO_VAL)
 		desc->time_limit = opt.time_limit;
+	if (opt.time_min  != NO_VAL)
+		desc->time_min = opt.time_min;
 	desc->shared = opt.shared;
 
 	if (opt.warn_signal)

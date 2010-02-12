@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -116,6 +116,8 @@ typedef struct srun_options {
 	bool extra_set;		/* true if extra node info explicitly set */
 	int  time_limit;	/* --time,   -t	(int minutes)	*/
 	char *time_limit_str;	/* --time,   -t (string)	*/
+	int  time_min;		/* --min-time   (int minutes)	*/
+	char *time_min_str;	/* --min-time (string)		*/
 	int  ckpt_interval;	/* --checkpoint (int minutes)	*/
 	char *ckpt_interval_str;/* --checkpoint (string)	*/
 	char *ckpt_dir;  	/* --checkpoint-dir (string)   */

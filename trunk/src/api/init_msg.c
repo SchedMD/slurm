@@ -2,7 +2,7 @@
  *  init_msg.c - initialize RPC messages contents
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -98,6 +98,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->shared		= (uint16_t) NO_VAL;
 	job_desc_msg->task_dist		= (uint16_t) NO_VAL;
 	job_desc_msg->time_limit	= NO_VAL;
+	job_desc_msg->time_min		= NO_VAL;
 	job_desc_msg->user_id		= NO_VAL;
 }
 

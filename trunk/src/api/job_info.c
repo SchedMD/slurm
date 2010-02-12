@@ -2,7 +2,7 @@
  *  job_info.c - get/print the job state information of slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -264,12 +264,19 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	snprintf(tmp_line, sizeof(tmp_line), "TimeLimit=");
 	xstrcat(out, tmp_line);
-	if (job_ptr->time_limit == INFINITE)
-		sprintf(tmp_line, "UNLIMITED");
-	else if (job_ptr->time_limit == NO_VAL)
+	if (job_ptr->time_limit == NO_VAL)
 		sprintf(tmp_line, "Partition_Limit");
 	else {
 		secs2time_str(job_ptr->time_limit * 60, tmp_line,
+			      sizeof(tmp_line));
+	}
+	xstrcat(out, tmp_line);
+	snprintf(tmp_line, sizeof(tmp_line), " TimeMin=");
+	xstrcat(out, tmp_line);
+	if (job_ptr->time_min == 0)
+		sprintf(tmp_line, "N/A");
+	else {
+		secs2time_str(job_ptr->time_min * 60, tmp_line,
 			      sizeof(tmp_line));
 	}
 	xstrcat(out, tmp_line);
