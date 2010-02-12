@@ -2434,7 +2434,7 @@ void inline
 slurmdbd_pack_cluster_cpus_msg(uint16_t rpc_version,
 			       dbd_cluster_cpus_msg_t *msg, Buf buffer)
 {
-	if(rpc_version >= 7) {
+	if(rpc_version >= 8) {
 		packstr(msg->cluster_nodes, buffer);
 		pack32(msg->cpu_count,    buffer);
 		pack_time(msg->event_time, buffer);
@@ -2461,7 +2461,7 @@ slurmdbd_unpack_cluster_cpus_msg(uint16_t rpc_version,
 	msg_ptr = xmalloc(sizeof(dbd_cluster_cpus_msg_t));
 	*msg = msg_ptr;
 
-	if(rpc_version >= 7) {
+	if(rpc_version >= 8) {
 		safe_unpackstr_xmalloc(&msg_ptr->cluster_nodes,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->cpu_count, buffer);
@@ -2910,7 +2910,7 @@ void inline
 slurmdbd_pack_job_start_msg(uint16_t rpc_version,
 			    dbd_job_start_msg_t *msg, Buf buffer)
 {
-	if(rpc_version >= 7) {
+	if(rpc_version >= 8) {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_cpus, buffer);
 		pack32(msg->alloc_nodes, buffer);
@@ -3006,7 +3006,7 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
 
-	if(rpc_version >= 7) {
+	if(rpc_version >= 8) {
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
 		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
@@ -3445,7 +3445,7 @@ void inline
 slurmdbd_pack_node_state_msg(uint16_t rpc_version,
 			     dbd_node_state_msg_t *msg, Buf buffer)
 {
-	if(rpc_version >= 7) {
+	if(rpc_version >= 8) {
 		pack32(msg->cpu_count, buffer);
 		packstr(msg->hostlist, buffer);
 		packstr(msg->reason, buffer);
@@ -3484,7 +3484,7 @@ slurmdbd_unpack_node_state_msg(uint16_t rpc_version,
 
 	msg_ptr->reason_uid = NO_VAL;
 
-	if(rpc_version >= 7) {
+	if(rpc_version >= 8) {
 		safe_unpack32(&msg_ptr->cpu_count, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);

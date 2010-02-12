@@ -975,6 +975,54 @@ extern int create_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	return SLURM_SUCCESS;
 }
 
+extern int remove_cluster_tables(MYSQL *db_conn, char *cluster_name)
+{
+	char *query = NULL;
+	int rc = SLURM_SUCCESS;
+	MYSQL_RES *result = NULL;
+
+	query = xstrdup_printf("select id_assoc from %s_%s limit 1;",
+			       cluster_name, assoc_table);
+	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
+		xfree(query);
+		error("no result given when querying cluster %s", cluster_name);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if(mysql_num_rows(result)) {
+		mysql_free_result(result);
+		debug4("we still have associations, can't remove tables");
+		return SLURM_SUCCESS;
+	}
+	mysql_free_result(result);
+	query = xstrdup_printf("drop table %s_%s, %s_%s, %s_%s, %s_%s, "
+			       "%s_%s, %s_%s, %s_%s, %s_%s, %s_%s, %s_%s, "
+			       "s_%s, %s_%s, %s_%s, %s_%s, %s_%s, %s_%s;",
+			       cluster_name, assoc_table,
+			       cluster_name, assoc_day_table,
+			       cluster_name, assoc_hour_table,
+			       cluster_name, assoc_month_table,
+			       cluster_name, cluster_day_table,
+			       cluster_name, cluster_hour_table,
+			       cluster_name, cluster_month_table,
+			       cluster_name, event_table,
+			       cluster_name, job_table,
+			       cluster_name, resv_table,
+			       cluster_name, step_table,
+			       cluster_name, suspend_table,
+			       cluster_name, wckey_table,
+			       cluster_name, wckey_day_table,
+			       cluster_name, wckey_hour_table,
+			       cluster_name, wckey_month_table);
+	rc = mysql_db_query(db_conn, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS)
+		error("Couldn't drop cluster tables");
+
+	return rc;
+}
+
 extern int setup_association_limits(acct_association_rec_t *assoc,
 				    char **cols, char **vals,
 				    char **extra, qos_level_t qos_level,
@@ -2103,7 +2151,7 @@ extern int acct_storage_p_update_shares_used(mysql_conn_t *mysql_conn,
 }
 
 extern int acct_storage_p_flush_jobs_on_cluster(
-	mysql_conn_t *mysql_conn, char *cluster, time_t event_time)
+	mysql_conn_t *mysql_conn, time_t event_time)
 {
-	return mysql_flush_jobs_on_cluster(mysql_conn, cluster, event_time);
+	return mysql_flush_jobs_on_cluster(mysql_conn, event_time);
 }
