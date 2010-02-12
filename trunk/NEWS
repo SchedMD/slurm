@@ -58,11 +58,22 @@ documents those changes that are of interest to users and admins.
     specify the directory into which PAM modules get installed, although it
     should pick the proper directory by default. "make install" and "rpmbuild"
     should now put the pam_slurm.so file in the proper directory.
+ -- Modify PAM module to link against SLURM API shared library and use exported
+    slurm_hostlist functions.
  -- Do not block new jobs with --immediate option while another job is in the
     process of being requeued (which can take a long time for some node failure
     modes).
  -- For topology/tree, log invalid hostnames in a single hostlist expression
     rather than one per line.
+ -- A job step's default time limit will be UNLIMITED rather than partition's 
+    default time limit. The step will automatically be cancelled as part of the
+    job termination logic when the job's time limit is reached.
+ -- sacct - fixed bug when checking jobs against a reservation
+ -- In select/cons_res, fix support for job allocation with --ntasks_per_node
+    option. Previously could allocate too few CPUs on some nodes.  
+ -- Adjustment made to init message to the slurmdbd to allow backwards
+    compatibility with future 2.2 release. YOU NEED TO UPGRADE SLURMDBD
+    BEFORE ANYTHING ELSE.
 
 * Changes in SLURM 2.1.2
 =============================

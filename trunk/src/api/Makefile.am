@@ -152,7 +152,7 @@ libslurm.o: $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 
 
 force:
-$(libslurm_o_LDADD) $(convenience_libs) : force
+$(libslurm_o_LDADD) $(convenience_libs) $(slurmapi_add) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 
