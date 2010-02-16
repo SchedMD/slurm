@@ -162,6 +162,28 @@ enum {
 	RASSOC_COUNT
 };
 
+static int _assoc_sort_cluster_acct(acct_association_rec_t *rec_a,
+				    acct_association_rec_t *rec_b)
+{
+	int diff = strcmp(rec_a->cluster, rec_b->cluster);
+
+	if (diff < 0)
+		return -1;
+	else if (diff > 0)
+		return 1;
+
+	diff = strcmp(rec_a->acct, rec_b->acct);
+
+	if (diff < 0)
+		return -1;
+	else if (diff > 0)
+		return 1;
+
+	return 0;
+}
+
+
+
 /* This should take care of all the lft and rgts when you move an
  * account.  This handles deleted associations also.
  */
@@ -1102,7 +1124,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 MYSQL_RES *result,
 					 acct_association_rec_t *assoc,
 					 acct_user_rec_t *user,
-					 char *cluster_name,
+					 char *cluster_name, char *sent_vals,
 					 bool is_admin, List ret_list)
 {
 	ListIterator itr = NULL;
@@ -1111,7 +1133,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	int set_qos_vals = 0;
 	int moved_parent = 0;
-	char *vals = NULL, *object = NULL, *name_char = NULL;
+	char *vals = xstrdup(sent_vals), *object = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 
 	xassert(result);
@@ -1185,12 +1207,12 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			// see if there is a partition name
 			object = xstrdup_printf(
 				"C = %-10s A = %-20s U = %-9s P = %s",
-				row[MASSOC_COUNT], row[MASSOC_ACCT],
+				cluster_name, row[MASSOC_ACCT],
 				row[MASSOC_USER], row[MASSOC_PART]);
 		} else if(row[MASSOC_USER][0]){
 			object = xstrdup_printf(
 				"C = %-10s A = %-20s U = %-9s",
-				row[MASSOC_COUNT], row[MASSOC_ACCT],
+				cluster_name, row[MASSOC_ACCT],
 				row[MASSOC_USER]);
 		} else {
 			if(assoc->parent_acct) {
@@ -1203,7 +1225,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				}
 				rc = _move_parent(mysql_conn, user->uid,
 						  &lft, &rgt,
-						  row[MASSOC_COUNT],
+						  cluster_name,
 						  row[MASSOC_ID],
 						  row[MASSOC_PACCT],
 						  assoc->parent_acct,
@@ -1219,12 +1241,12 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			if(row[MASSOC_PACCT][0]) {
 				object = xstrdup_printf(
 					"C = %-10s A = %s of %s",
-					row[MASSOC_COUNT], row[MASSOC_ACCT],
+					cluster_name, row[MASSOC_ACCT],
 					row[MASSOC_PACCT]);
 			} else {
 				object = xstrdup_printf(
 					"C = %-10s A = %s",
-					row[MASSOC_COUNT], row[MASSOC_ACCT]);
+					cluster_name, row[MASSOC_ACCT]);
 			}
 			account_type = 1;
 		}
@@ -1496,7 +1518,6 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 			error("couldn't add to the update list");
 
 	}
-	mysql_free_result(result);
 
 	user_name = uid_to_string((uid_t) user->uid);
 
@@ -1940,6 +1961,9 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	local_cluster_list = list_create(NULL);
 	user_name = uid_to_string((uid_t) uid);
+	/* these need to be in a specific order */
+	list_sort(association_list, (ListCmpF)_assoc_sort_cluster_acct);
+
 	itr = list_iterator_create(association_list);
 	while((object = list_next(itr))) {
 		if(!object->cluster || !object->cluster[0]
@@ -2052,11 +2076,11 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 						"&& deleted < 2;"
 						"UPDATE %s_%s SET deleted = 0 "
 						"WHERE deleted = 2;",
-						object->cluster, assoc_table,
+						old_cluster, assoc_table,
 						incr, my_left,
-						object->cluster, assoc_table,
+						old_cluster, assoc_table,
 						incr, my_left,
-						object->cluster, assoc_table);
+						old_cluster, assoc_table);
 					debug3("%d(%s:%d) query\n%s",
 					       mysql_conn->conn,
 					       THIS_FILE, __LINE__, up_query);
@@ -2437,7 +2461,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		char *qos_extra = _setup_association_cond_qos(
 			assoc_cond, cluster_name);
 
-		xstrfmtcat(query, "select distinct %s,'%s' "
+		xstrfmtcat(query, "select distinct %s "
 			   "from %s_%s as t1%s%s "
 			   "order by lft FOR UPDATE;",
 			   object, cluster_name,
@@ -2454,7 +2478,7 @@ extern List mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		xfree(query);
 		rc = _process_modify_assoc_results(mysql_conn, result, assoc,
-						   &user, cluster_name,
+						   &user, cluster_name, vals,
 						   is_admin, ret_list);
 		mysql_free_result(result);
 
