@@ -1024,7 +1024,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 			if(set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra,
-				   "%s.max_wall_duration_pj=\"%s\"",
+				   "%s.max_wall_pj=\"%s\"",
 				   prefix, object);
 			set = 1;
 		}
@@ -1073,7 +1073,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.id=%s", prefix, object);
+			xstrfmtcat(*extra, "%s.id_assoc=%s", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -1961,7 +1961,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrcat(cols, "creation_time, mod_time, acct");
-		xstrfmtcat(vals, "%d, %d, \"%s\", \"%s\"",
+		xstrfmtcat(vals, "%d, %d, \"%s\"",
 			   now, now, object->acct);
 		xstrfmtcat(update, "where acct=\"%s\"", object->acct);
 
@@ -2001,7 +2001,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrfmtcat(query,
-			   "select distinct %s_%s from %s %s order by lft "
+			   "select distinct %s from %s_%s %s order by lft "
 			   "FOR UPDATE;",
 			   tmp_char, object->cluster, assoc_table, update);
 		xfree(tmp_char);
@@ -2178,7 +2178,7 @@ extern int mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			affect_rows = 2;
 			xstrfmtcat(query,
 				   "update %s_%s set deleted=0, "
-				   "id=LAST_INSERT_ID(id)%s %s;",
+				   "id_assoc=LAST_INSERT_ID(id_assoc)%s %s;",
 				   object->cluster, assoc_table,
 				   extra, update);
 		}

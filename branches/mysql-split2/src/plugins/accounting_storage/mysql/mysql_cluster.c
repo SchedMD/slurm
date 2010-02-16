@@ -70,8 +70,8 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		xstrcat(cols, "creation_time, mod_time, acct, cluster");
-		xstrfmtcat(vals, "%d, %d, 'root', \"%s\"",
+		xstrcat(cols, "creation_time, mod_time, acct");
+		xstrfmtcat(vals, "%d, %d, 'root'",
 			   now, now, object->name);
 		xstrfmtcat(extra, ", mod_time=%d", now);
 		if(object->root_assoc)
@@ -123,7 +123,7 @@ extern int mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "insert into %s_%s (%s, lft, rgt) "
 			   "values (%s, 1, 2) "
 			   "on duplicate key update deleted=0, "
-			   "id=LAST_INSERT_ID(id)%s;",
+			   "id_assoc=LAST_INSERT_ID(id_assoc)%s;",
 			   object->name, assoc_table, cols,
 			   vals,
 			   extra);
@@ -436,7 +436,7 @@ extern List mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		/* We should not need to delete any cluster usage just set it
 		 * to deleted */
 		xstrfmtcat(query,
-			   "update %s_%s set period_end=%d where period_end=0;"
+			   "update %s_%s set time_end=%d where time_end=0;"
 			   "update %s_%s set mod_time=%d, deleted=1;"
 			   "update %s_%s set mod_time=%d, deleted=1;"
 			   "update %s_%s set mod_time=%d, deleted=1;",
@@ -637,7 +637,7 @@ empty:
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
 		query = xstrdup_printf(
 			"select cpu_count, cluster_nodes from "
-			"%s_%s where period_end=0 and node_name='' limit 1",
+			"%s_%s where time_end=0 and node_name='' limit 1",
 			cluster->name, event_table);
 		debug4("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -817,8 +817,8 @@ extern List mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrcat(extra, " where (");
 
 		xstrfmtcat(query,
-			   "(period_start < %d) "
-			   "&& (period_end >= %d || period_end = 0))",
+			   "(time_start < %d) "
+			   "&& (time_end >= %d || time_end = 0))",
 			   event_cond->period_end, event_cond->period_start);
 	}
 
@@ -948,13 +948,13 @@ extern int mysql_node_down(mysql_conn_t *mysql_conn,
 	       node_ptr->name, mysql_conn->cluster_name, cpus);
 
 	query = xstrdup_printf(
-		"update %s_%s set period_end=%d where "
+		"update %s_%s set time_end=%d where "
 		"time_end=0 and node_name=\"%s\";",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
 	/* If you are clean-restarting the controller over and over again you
 	 * could get records that are duplicates in the database.  If
-	 * this is the case we will zero out the period_end we are
+	 * this is the case we will zero out the time_end we are
 	 * just filled in.  This will cause the last time to be erased
 	 * from the last restart, but if you are restarting things
 	 * this often the pervious one didn't mean anything anyway.
@@ -1102,7 +1102,7 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 				      cluster_nodes, mysql_conn->cluster_name);
 				query = xstrdup_printf(
 					"update %s_%s set cluster_nodes=\"%s\" "
-					"where period_end=0 and node_name=''",
+					"where time_end=0 and node_name=''",
 					mysql_conn->cluster_name,
 					event_table, cluster_nodes);
 				rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -1124,7 +1124,7 @@ extern int mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 	   changed some of the downed nodes may have gone away.
 	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
-		"update %s_%s set period_end=%d where period_end=0",
+		"update %s_%s set time_end=%d where time_end=0",
 		mysql_conn->cluster_name, event_table, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);

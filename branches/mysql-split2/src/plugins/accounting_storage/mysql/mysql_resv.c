@@ -291,7 +291,7 @@ extern int mysql_modify_resv(mysql_conn_t *mysql_conn,
 	   likely the start time hasn't changed, but something else
 	   may have since the last time we did an update to the
 	   reservation. */
-	query = xstrdup_printf("select %s from %s_%s where id=%u "
+	query = xstrdup_printf("select %s from %s_%s where id_resv=%u "
 			       "and (time_start=%d || time_start=%d) "
 			       "and deleted=0 order by time_start desc "
 			       "limit 1 FOR UPDATE;",
@@ -319,7 +319,7 @@ try_again:
 			   not deleted that hasn't ended yet. */
 			xfree(query);
 			query = xstrdup_printf(
-				"select %s from %s_%s where id=%u "
+				"select %s from %s_%s where id_resv=%u "
 				"and time_start <= %d and cluster='%s' "
 				"and deleted=0 order by time_start desc "
 				"limit 1;",
@@ -385,7 +385,7 @@ try_again:
 		   we are changing the associations or end
 		   time which we can just update it */
 		query = xstrdup_printf("update %s_%s set deleted=0%s "
-				       "where deleted=0 and id=%u "
+				       "where deleted=0 and id_resv=%u "
 				       "and time_start=%d and cluster='%s';",
 				       resv->cluster, resv_table,
 				       extra, resv->id, start);
@@ -394,7 +394,7 @@ try_again:
 		 * changed something that is in need on a new
 		 * entry. */
 		query = xstrdup_printf("update %s_%s set time_end=%d "
-				       "where deleted=0 && id=%u "
+				       "where deleted=0 && id_resv=%u "
 				       "&& time_start=%d and cluster='%s';",
 				       resv->cluster, resv_table,
 				       resv->time_start-1,
@@ -444,7 +444,7 @@ extern int mysql_remove_resv(mysql_conn_t *mysql_conn,
 
 	/* first delete the resv that hasn't happened yet. */
 	query = xstrdup_printf("delete from %s_%s where time_start > %d "
-			       "and id=%u and time_start=%d;",
+			       "and id_resv=%u and time_start=%d;",
 			       resv->cluster, resv_table, resv->time_start_prev,
 			       resv->id,
 			       resv->time_start);

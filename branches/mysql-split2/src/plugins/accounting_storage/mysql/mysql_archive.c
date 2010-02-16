@@ -660,8 +660,8 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from %s_%s where period_start <= %d "
-			       "&& period_end != 0 order by period_start asc",
+	query = xstrdup_printf("select %s from %s_%s where time_start <= %d "
+			       "&& time_end != 0 order by time_start asc",
 			       tmp, cluster_name, event_table, period_end);
 	xfree(tmp);
 
@@ -1399,7 +1399,7 @@ static int _execute_archive(mysql_conn_t *mysql_conn, time_t last_submit,
 				return rc;
 		}
 		query = xstrdup_printf("delete from %s_%s where "
-				       "period_start <= %d && period_end != 0",
+				       "time_start <= %d && time_end != 0",
 				       cluster_name, event_table, curr_end);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);

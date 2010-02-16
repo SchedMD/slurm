@@ -169,8 +169,8 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	}
 	h_itr = hostlist_iterator_create(temp_hl);
 
-	query = xstrdup_printf("select cluster_nodes, period_start, "
-			       "period_end from %s_%s where node_name='' "
+	query = xstrdup_printf("select cluster_nodes, time_start, "
+			       "time_end from %s_%s where node_name='' "
 			       "&& cluster_nodes !=''",
 			       list_peek(job_cond->cluster_list), event_table);
 
@@ -294,7 +294,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t3.id=%s", object);
+			xstrfmtcat(*extra, "t3.id_assoc=%s", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -336,7 +336,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.uid='%s'", object);
+			xstrfmtcat(*extra, "t1.id_user='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -353,7 +353,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.gid='%s'", object);
+			xstrfmtcat(*extra, "t1.id_group='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -438,7 +438,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.resvid='%s'", object);
+			xstrfmtcat(*extra, "t1.id_resv='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -851,7 +851,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	query = xstrdup_printf("select %s from %s as t1 left join %s as t2 "
-			       "on t1.associd=t2.id",
+			       "on t1.id_assoc=t2.id_assoc",
 			       tmp, job_table, assoc_table);
 	xfree(tmp);
 	if(extra) {
@@ -965,7 +965,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				query = xstrdup_printf(
 					"select start, end from %s where "
 					"(start < %d && (end >= %d "
-					"|| end = 0)) && id=%s "
+					"|| end = 0)) && job_db_inx=%s "
 					"order by start",
 					suspend_table,
 					job_cond->usage_end,
@@ -1072,7 +1072,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				else
 					xstrcat(extra, " && (");
 
-				xstrfmtcat(extra, "t1.stepid=%u",
+				xstrfmtcat(extra, "t1.id_step=%u",
 					   selected_step->stepid);
 				set = 1;
 				job->show_full = 0;
@@ -1086,7 +1086,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				xstrcat(tmp, ", ");
 			xstrcat(tmp, step_req_inx[i]);
 		}
-		query =	xstrdup_printf("select %s from %s t1 where t1.id=%s",
+		query =	xstrdup_printf("select %s from %s t1 "
+				       "where t1.job_db_inx=%s",
 				       tmp, step_table, id);
 		xfree(tmp);
 
