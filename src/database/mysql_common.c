@@ -507,13 +507,25 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	mysql_clear_results(mysql_db);
 //try_again:
 	if(mysql_query(mysql_db, query)) {
+		errno = mysql_errno(mysql_db);
+		if(errno == ER_NO_SUCH_TABLE) {
+			debug4("This could happen often and is expected.\n"
+			       "mysql_query failed: %d %s\n%s",
+			       mysql_errno(mysql_db),
+			       mysql_error(mysql_db), query);
+			errno = 0;
+			goto end_it;
+		}
 		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db), query);
-		errno = mysql_errno(mysql_db);
 #ifdef MYSQL_NOT_THREAD_SAFE
 		slurm_mutex_unlock(&mysql_lock);
 #endif
+		if(errno == ER_LOCK_WAIT_TIMEOUT)
+			fatal("mysql gave ER_LOCK_WAIT_TIMEOUT as an error. "
+			      "The only way to fix this is restart the "
+			      "calling program");
 		/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
 		to restart the connections, but it appears restarting
 		the calling program is the only way to handle this.
@@ -524,7 +536,7 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 
 		return SLURM_ERROR;
 	}
-
+end_it:
 #ifdef MYSQL_NOT_THREAD_SAFE
 	slurm_mutex_unlock(&mysql_lock);
 #endif
