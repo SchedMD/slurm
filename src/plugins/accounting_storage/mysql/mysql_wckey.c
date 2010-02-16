@@ -277,7 +277,7 @@ extern int mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "insert into %s_%s (%s) values (%s) "
 			   "on duplicate key update deleted=0, "
-			   "id=LAST_INSERT_ID(id)%s;",
+			   "id_wckey=LAST_INSERT_ID(id_wckey)%s;",
 			   object->cluster, wckey_table, cols, vals, extra);
 
 		debug3("%d(%s:%d) query\n%s",

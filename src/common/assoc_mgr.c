@@ -1685,7 +1685,12 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				destroy_acct_association_rec(object);
 				continue;
 			}
+		} else if(assoc_mgr_cluster_name) {
+			error("we don't have a cluster here, no "
+			      "idea if this is our association.");
+			continue;
 		}
+
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
 			if(object->id) {
@@ -1981,7 +1986,12 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 				destroy_acct_wckey_rec(object);
 				continue;
 			}
+		} else if(assoc_mgr_cluster_name) {
+			error("we don't have a cluster here, no "
+			      "idea if this is our association.");
+			continue;
 		}
+
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
 			if(object->id) {

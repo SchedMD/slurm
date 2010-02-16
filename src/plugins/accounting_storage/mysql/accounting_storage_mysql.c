@@ -137,7 +137,8 @@ static List _get_cluster_names(MYSQL *db_conn)
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	List ret_list = NULL;
-	char *query = xstrdup_printf("select name from %s", cluster_table);
+	char *query = xstrdup_printf("select name from %s where deleted=0",
+				     cluster_table);
 
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
@@ -232,9 +233,9 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select t1.associd from %s as t1, "
+	query = xstrdup_printf("select t1.id_assoc from %s as t1, "
 			       "%s_%s as t2 where (%s_%s) "
-			       "and t1.associd=t2.id limit 1;",
+			       "and t1.id_assoc=t2.id_assoc limit 1;",
 			       cluster_name, job_table,
 			       cluster_name, assoc_table,
 			       assoc_char);
@@ -998,7 +999,7 @@ extern int remove_cluster_tables(MYSQL *db_conn, char *cluster_name)
 	mysql_free_result(result);
 	query = xstrdup_printf("drop table %s_%s, %s_%s, %s_%s, %s_%s, "
 			       "%s_%s, %s_%s, %s_%s, %s_%s, %s_%s, %s_%s, "
-			       "s_%s, %s_%s, %s_%s, %s_%s, %s_%s, %s_%s;",
+			       "%s_%s, %s_%s, %s_%s, %s_%s, %s_%s, %s_%s;",
 			       cluster_name, assoc_table,
 			       cluster_name, assoc_day_table,
 			       cluster_name, assoc_hour_table,
@@ -1433,6 +1434,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 
 			rem_assoc = xmalloc(sizeof(acct_association_rec_t));
 			rem_assoc->id = atoi(row[0]);
+			rem_assoc->cluster = xstrdup(cluster_name);
 			if(addto_update_list(mysql_conn->update_list,
 					      ACCT_REMOVE_ASSOC,
 					      rem_assoc) != SLURM_SUCCESS)
@@ -1509,7 +1511,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		   in the association. */
 		xstrfmtcat(query,
 			   "SELECT lft, rgt, (rgt - lft + 1) "
-			   "FROM %s_%s WHERE id = %s;",
+			   "FROM %s_%s WHERE id_assoc = %s;",
 			   cluster_name, assoc_table, row[0]);
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -1565,7 +1567,7 @@ just_update:
 	query = xstrdup_printf("update %s_%s as t1 set mod_time=%d, deleted=1, "
 			       "shares=1, max_jobs=NULL, "
 			       "max_nodes_pj=NULL, "
-			       "max_wall_duration_pj=NULL, "
+			       "max_wall_pj=NULL, "
 			       "max_cpu_mins_pj=NULL "
 			       "where (%s);"
 			       "alter table %s_%s AUTO_INCREMENT=0;",
