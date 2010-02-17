@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.2
-05 February 2010 (through SLURM 2.2.0-pre1+)
+17 February 2010 (through SLURM 2.2.0-pre1+)
 
 
 IMPORTANT NOTE:
@@ -38,6 +38,9 @@ HIGHLIGHTS
   Old logic preserved node Feature plus partition state after "slurmctld" or 
   "scontrol reconfig" rather than recreating it from slurm.conf. Node Weight 
   was formerly always recreated from slurm.conf. 
+
+* Support has been added for TotalView to attach to a subset of launched tasks
+  instead of requiring that all tasks be attached to.
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
