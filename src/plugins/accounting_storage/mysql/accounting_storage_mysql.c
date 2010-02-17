@@ -233,8 +233,8 @@ static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select t1.id_assoc from %s as t1, "
-			       "%s_%s as t2 where (%s_%s) "
+	query = xstrdup_printf("select t1.id_assoc from %s_%s as t1, "
+			       "%s_%s as t2 where (%s) "
 			       "and t1.id_assoc=t2.id_assoc limit 1;",
 			       cluster_name, job_table,
 			       cluster_name, assoc_table,
@@ -267,7 +267,7 @@ static bool _check_jobs_before_remove_without_assoctable(
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select associd from %s_%s where (%s) limit 1;",
+	query = xstrdup_printf("select id_assoc from %s_%s where (%s) limit 1;",
 			       cluster_name, job_table, where_char);
 
 	debug3("%d(%s:%d) query\n%s",

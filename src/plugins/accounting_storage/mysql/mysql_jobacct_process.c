@@ -51,6 +51,154 @@ typedef struct {
 	bitstr_t *asked_bitmap;
 } local_cluster_t;
 
+/* if this changes you will need to edit the corresponding
+ * enum below also t1 is job_table */
+char *job_req_inx[] = {
+	"t1.job_db_inx",
+	"t1.id_job",
+	"t1.id_assoc",
+	"t1.wckey",
+	"t1.id_wckey",
+	"t1.id_user",
+	"t1.id_group",
+	"t1.id_resv",
+	"t1.partition",
+	"t1.id_block",
+	"t1.account",
+	"t1.time_eligible",
+	"t1.time_submit",
+	"t1.time_start",
+	"t1.time_end",
+	"t1.time_suspended",
+	"t1.job_name",
+	"t1.track_steps",
+	"t1.state",
+	"t1.exit_code",
+	"t1.priority",
+	"t1.cpus_req",
+	"t1.cpus_alloc",
+	"t1.nodes_alloc",
+	"t1.nodelist",
+	"t1.node_inx",
+	"t1.kill_requid",
+	"t1.qos",
+	"t2.user",
+	"t2.acct",
+	"t2.lft"
+};
+
+enum {
+	JOB_REQ_ID,
+	JOB_REQ_JOBID,
+	JOB_REQ_ASSOCID,
+	JOB_REQ_WCKEY,
+	JOB_REQ_WCKEYID,
+	JOB_REQ_UID,
+	JOB_REQ_GID,
+	JOB_REQ_RESVID,
+	JOB_REQ_PARTITION,
+	JOB_REQ_BLOCKID,
+	JOB_REQ_ACCOUNT1,
+	JOB_REQ_ELIGIBLE,
+	JOB_REQ_SUBMIT,
+	JOB_REQ_START,
+	JOB_REQ_END,
+	JOB_REQ_SUSPENDED,
+	JOB_REQ_NAME,
+	JOB_REQ_TRACKSTEPS,
+	JOB_REQ_STATE,
+	JOB_REQ_COMP_CODE,
+	JOB_REQ_PRIORITY,
+	JOB_REQ_REQ_CPUS,
+	JOB_REQ_ALLOC_CPUS,
+	JOB_REQ_ALLOC_NODES,
+	JOB_REQ_NODELIST,
+	JOB_REQ_NODE_INX,
+	JOB_REQ_KILL_REQUID,
+	JOB_REQ_QOS,
+	JOB_REQ_USER_NAME,
+	JOB_REQ_ACCOUNT,
+	JOB_REQ_LFT,
+	JOB_REQ_COUNT
+};
+
+/* if this changes you will need to edit the corresponding
+ * enum below also t1 is step_table */
+char *step_req_inx[] = {
+	"t1.id_step",
+	"t1.time_start",
+	"t1.time_end",
+	"t1.time_suspended",
+	"t1.step_name",
+	"t1.nodelist",
+	"t1.node_inx",
+	"t1.state",
+	"t1.kill_requid",
+	"t1.exit_code",
+	"t1.nodes_alloc",
+	"t1.cpus_alloc",
+	"t1.task_cnt",
+	"t1.task_dist",
+	"t1.user_sec",
+	"t1.user_usec",
+	"t1.sys_sec",
+	"t1.sys_usec",
+	"t1.max_vsize",
+	"t1.max_vsize_task",
+	"t1.max_vsize_node",
+	"t1.ave_vsize",
+	"t1.max_rss",
+	"t1.max_rss_task",
+	"t1.max_rss_node",
+	"t1.ave_rss",
+	"t1.max_pages",
+	"t1.max_pages_task",
+	"t1.max_pages_node",
+	"t1.ave_pages",
+	"t1.min_cpu",
+	"t1.min_cpu_task",
+	"t1.min_cpu_node",
+	"t1.ave_cpu"
+};
+
+enum {
+	STEP_REQ_STEPID,
+	STEP_REQ_START,
+	STEP_REQ_END,
+	STEP_REQ_SUSPENDED,
+	STEP_REQ_NAME,
+	STEP_REQ_NODELIST,
+	STEP_REQ_NODE_INX,
+	STEP_REQ_STATE,
+	STEP_REQ_KILL_REQUID,
+	STEP_REQ_COMP_CODE,
+	STEP_REQ_NODES,
+	STEP_REQ_CPUS,
+	STEP_REQ_TASKS,
+	STEP_REQ_TASKDIST,
+	STEP_REQ_USER_SEC,
+	STEP_REQ_USER_USEC,
+	STEP_REQ_SYS_SEC,
+	STEP_REQ_SYS_USEC,
+	STEP_REQ_MAX_VSIZE,
+	STEP_REQ_MAX_VSIZE_TASK,
+	STEP_REQ_MAX_VSIZE_NODE,
+	STEP_REQ_AVE_VSIZE,
+	STEP_REQ_MAX_RSS,
+	STEP_REQ_MAX_RSS_TASK,
+	STEP_REQ_MAX_RSS_NODE,
+	STEP_REQ_AVE_RSS,
+	STEP_REQ_MAX_PAGES,
+	STEP_REQ_MAX_PAGES_TASK,
+	STEP_REQ_MAX_PAGES_NODE,
+	STEP_REQ_AVE_PAGES,
+	STEP_REQ_MIN_CPU,
+	STEP_REQ_MIN_CPU_TASK,
+	STEP_REQ_MIN_CPU_NODE,
+	STEP_REQ_AVE_CPU,
+	STEP_REQ_COUNT
+};
+
 static void _state_time_string(char **extra, uint32_t state,
 			       uint32_t start, uint32_t end)
 {
@@ -140,671 +288,42 @@ static void _destroy_local_cluster(void *object)
 	}
 }
 
-extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
-					acct_job_cond_t *job_cond,
-					void **curr_cluster)
+static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
+			     acct_user_rec_t *user,
+			     acct_job_cond_t *job_cond,
+			     char *cluster_name,
+			     char *job_fields, char *step_fields,
+			     char *sent_extra,
+			     bool is_admin, int only_pending, List sent_list)
 {
-	List local_cluster_list = NULL;
-	time_t now = time(NULL);
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	hostlist_t temp_hl = NULL;
-	hostlist_iterator_t h_itr = NULL;
 	char *query = NULL;
-
-	if(!job_cond || !job_cond->used_nodes)
-		return NULL;
-
-	if(!job_cond->cluster_list || list_count(job_cond->cluster_list) != 1) {
-		error("If you are doing a query against nodes "
-		      "you must only have 1 cluster "
-		      "you are asking for.");
-		return NULL;
-	}
-
-	temp_hl = hostlist_create(job_cond->used_nodes);
-	if(!hostlist_count(temp_hl)) {
-		error("we didn't get any real hosts to look for.");
-		goto no_hosts;
-	}
-	h_itr = hostlist_iterator_create(temp_hl);
-
-	query = xstrdup_printf("select cluster_nodes, time_start, "
-			       "time_end from %s_%s where node_name='' "
-			       "&& cluster_nodes !=''",
-			       list_peek(job_cond->cluster_list), event_table);
-
-	if(job_cond->usage_start) {
-		if(!job_cond->usage_end)
-			job_cond->usage_end = now;
-
-		xstrfmtcat(query,
-			   " && ((time_start < %d) "
-			   "&& (time_end >= %d || time_end = 0))",
-			   job_cond->usage_end, job_cond->usage_start);
-	}
-
-	debug3("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
-		xfree(query);
-		hostlist_destroy(temp_hl);
-		return NULL;
-	}
-	xfree(query);
-
-	local_cluster_list = list_create(_destroy_local_cluster);
-	while((row = mysql_fetch_row(result))) {
-		char *host = NULL;
-		int loc = 0;
-		local_cluster_t *local_cluster =
-			xmalloc(sizeof(local_cluster_t));
-		local_cluster->hl = hostlist_create(row[0]);
-		local_cluster->start = atoi(row[1]);
-		local_cluster->end   = atoi(row[2]);
-		local_cluster->asked_bitmap =
-			bit_alloc(hostlist_count(local_cluster->hl));
-		while((host = hostlist_next(h_itr))) {
-			if((loc = hostlist_find(
-				    local_cluster->hl, host)) != -1)
-				bit_set(local_cluster->asked_bitmap, loc);
-			free(host);
-		}
-		hostlist_iterator_reset(h_itr);
-		if(bit_ffs(local_cluster->asked_bitmap) != -1) {
-			list_append(local_cluster_list, local_cluster);
-			if(local_cluster->end == 0) {
-				local_cluster->end = now;
-				(*curr_cluster) = local_cluster;
-			}
-		} else
-			_destroy_local_cluster(local_cluster);
-	}
-	mysql_free_result(result);
-	hostlist_iterator_destroy(h_itr);
-	if(!list_count(local_cluster_list)) {
-		hostlist_destroy(temp_hl);
-		list_destroy(local_cluster_list);
-		return NULL;
-	}
-no_hosts:
-
-	hostlist_destroy(temp_hl);
-
-	return local_cluster_list;
-}
-
-extern int good_nodes_from_inx(List local_cluster_list,
-			       void **object, char *node_inx,
-			       int submit)
-{
-	local_cluster_t **curr_cluster = (local_cluster_t **)object;
-
-	/* check the bitmap to see if this is one of the jobs
-	   we are looking for */
-	if(*curr_cluster) {
-		bitstr_t *job_bitmap = NULL;
-		if(!node_inx || !node_inx[0])
-			return 0;
-		if((submit < (*curr_cluster)->start)
-		   || (submit > (*curr_cluster)->end)) {
-			local_cluster_t *local_cluster = NULL;
-
-			ListIterator itr =
-				list_iterator_create(local_cluster_list);
-			while((local_cluster = list_next(itr))) {
-				if((submit >= local_cluster->start)
-				   && (submit <= local_cluster->end)) {
-					*curr_cluster = local_cluster;
-						break;
-				}
-			}
-			list_iterator_destroy(itr);
-			if(!local_cluster)
-				return 0;
-		}
-		job_bitmap = bit_alloc(hostlist_count((*curr_cluster)->hl));
-		bit_unfmt(job_bitmap, node_inx);
-		if(!bit_overlap((*curr_cluster)->asked_bitmap, job_bitmap)) {
-			FREE_NULL_BITMAP(job_bitmap);
-			return 0;
-		}
-		FREE_NULL_BITMAP(job_bitmap);
-	}
-	return 1;
-}
-
-extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
-				 acct_job_cond_t *job_cond, char **extra)
-{
-	int set = 0;
-	ListIterator itr = NULL;
-	char *object = NULL;
-	char *table_level = "t2";
+	char *extra = xstrdup(sent_extra);
+	uint16_t private_data = slurm_get_private_data();
 	jobacct_selected_step_t *selected_step = NULL;
-
-	if(!job_cond)
-		return 0;
-
-	/* THIS ASSOCID CHECK ALWAYS NEEDS TO BE FIRST!!!!!!! */
-	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
-		set = 0;
-		xstrfmtcat(*extra, ", %s as t3 where (", assoc_table);
-		itr = list_iterator_create(job_cond->associd_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t3.id_assoc=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-		table_level="t3";
-		/* just incase the association is gone */
-		if(set)
-			xstrcat(*extra, " || ");
-		xstrfmtcat(*extra, "t3.id is null) && "
-			   "(t2.lft between t3.lft and t3.rgt "
-			   "|| t2.lft is null)");
-	}
-
-	if(job_cond->acct_list && list_count(job_cond->acct_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-		itr = list_iterator_create(job_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.account='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if(job_cond->userid_list && list_count(job_cond->userid_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-
-		itr = list_iterator_create(job_cond->userid_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.id_user='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if(job_cond->groupid_list && list_count(job_cond->groupid_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-		itr = list_iterator_create(job_cond->groupid_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.id_group='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-		itr = list_iterator_create(job_cond->partition_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.partition='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	/* this must be done before resvid_list since we set
-	   resvid_list up here */
-	if(job_cond->resv_list && list_count(job_cond->resv_list)) {
-		char *query = xstrdup_printf(
-			"select distinct job_db_inx from %s where (",
-			job_table);
-		int my_set = 0;
-		MYSQL_RES *result = NULL;
-		MYSQL_ROW row;
-
-		if(job_cond->cluster_list
-		   && list_count(job_cond->cluster_list)) {
-
-			itr = list_iterator_create(job_cond->cluster_list);
-			while((object = list_next(itr))) {
-				if(my_set)
-					xstrcat(query, " || ");
-				xstrfmtcat(query, "cluster='%s'", object);
-				my_set = 1;
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if(my_set)
-			xstrcat(query, ") && (");
-
-		itr = list_iterator_create(job_cond->resv_list);
-		while((object = list_next(itr))) {
-			if(my_set)
-				xstrcat(query, " || ");
-			xstrfmtcat(query, "name='%s'", object);
-			my_set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(query, ")");
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			xfree(query);
-			error("couldn't query the database");
-			goto no_resv;
-		}
-		xfree(query);
-		if(!job_cond->resvid_list)
-			job_cond->resvid_list = list_create(slurm_destroy_char);
-		while((row = mysql_fetch_row(result))) {
-			list_append(job_cond->resvid_list, xstrdup(row[0]));
-		}
-		mysql_free_result(result);
-	}
-	no_resv:
-
-	if(job_cond->resvid_list && list_count(job_cond->resvid_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-		itr = list_iterator_create(job_cond->resvid_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.id_resv='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if(job_cond->step_list && list_count(job_cond->step_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-		itr = list_iterator_create(job_cond->step_list);
-		while((selected_step = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.id_job=%u",
-				   selected_step->jobid);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if(job_cond->cpus_min) {
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-
-		if(job_cond->cpus_max) {
-			xstrfmtcat(*extra, "(t1.alloc_cpus between %u and %u))",
-				   job_cond->cpus_min, job_cond->cpus_max);
-
-		} else {
-			xstrfmtcat(*extra, "(t1.alloc_cpus='%u'))",
-				   job_cond->cpus_min);
-
-		}
-	}
-
-	if(job_cond->nodes_min) {
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-
-		if(job_cond->nodes_max) {
-			xstrfmtcat(*extra,
-				   "(t1.alloc_nodes between %u and %u))",
-				   job_cond->nodes_min, job_cond->nodes_max);
-
-		} else {
-			xstrfmtcat(*extra, "(t1.alloc_nodes='%u'))",
-				   job_cond->nodes_min);
-
-		}
-	}
-	if(job_cond->state_list && list_count(job_cond->state_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-
-		itr = list_iterator_create(job_cond->state_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			_state_time_string(extra, (uint32_t)atoi(object),
-					   job_cond->usage_start,
-					   job_cond->usage_end);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	} else {
-		/* Only do this (default of all eligible jobs) if no
-		   state is given */
-		if(job_cond->usage_start) {
-			if(*extra)
-				xstrcat(*extra, " && (");
-			else
-				xstrcat(*extra, " where (");
-
-			if(!job_cond->usage_end)
-				xstrfmtcat(*extra,
-					   "(t1.end >= %d || t1.end = 0))",
-					   job_cond->usage_start);
-			else
-				xstrfmtcat(*extra,
-					   "(t1.eligible < %d "
-					   "&& (t1.end >= %d || t1.end = 0)))",
-					   job_cond->usage_end,
-					   job_cond->usage_start);
-		} else if(job_cond->usage_end) {
-			if(*extra)
-				xstrcat(*extra, " && (");
-			else
-				xstrcat(*extra, " where (");
-			xstrfmtcat(*extra,
-				   "(t1.eligible < %d))", job_cond->usage_end);
-		}
-	}
-
-	/* we need to put all the associations (t2) stuff together here */
-	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-
-		itr = list_iterator_create(job_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra,
-				   "(t1.cluster='%s' || %s.cluster='%s')",
-				   object, table_level, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if(job_cond->wckey_list && list_count(job_cond->wckey_list)) {
-		set = 0;
-		if(*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-
-		itr = list_iterator_create(job_cond->wckey_list);
-		while((object = list_next(itr))) {
-			if(set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.wckey='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-	return set;
-}
-
-extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
-					   acct_job_cond_t *job_cond)
-{
-
-	char *query = NULL;
-	char *extra = NULL;
-	char *tmp = NULL;
-	jobacct_selected_step_t *selected_step = NULL;
-	ListIterator itr = NULL;
-	int set = 0, is_admin=1;
-	char *table_level="t2";
 	MYSQL_RES *result = NULL, *step_result = NULL;
 	MYSQL_ROW row, step_row;
-	int i, last_id = -1, curr_id = -1;
 	jobacct_job_rec_t *job = NULL;
 	jobacct_step_rec_t *step = NULL;
 	time_t now = time(NULL);
 	List job_list = list_create(destroy_jobacct_job_rec);
-	uint16_t private_data = 0;
-	acct_user_rec_t user;
-	local_cluster_t *curr_cluster = NULL;
+	ListIterator itr = NULL;
 	List local_cluster_list = NULL;
-	int only_pending = 0;
-
-	/* if this changes you will need to edit the corresponding
-	 * enum below also t1 is job_table */
-	char *job_req_inx[] = {
-		"t1.db_job_inx",
-		"t1.id_job",
-		"t1.id_assoc",
-		"t1.wckey",
-		"t1.id_wckey",
-		"t1.id_user",
-		"t1.id_group",
-		"t1.id_resv",
-		"t1.partition",
-		"t1.id_block",
-		"t1.account",
-		"t1.time_eligible",
-		"t1.time_submit",
-		"t1.time_start",
-		"t1.time_end",
-		"t1.time_suspended",
-		"t1.job_name",
-		"t1.track_steps",
-		"t1.state",
-		"t1.exit_code",
-		"t1.priority",
-		"t1.cpus_req",
-		"t1.cpus_alloc",
-		"t1.nodes_alloc",
-		"t1.nodelist",
-		"t1.node_inx",
-		"t1.kill_requid",
-		"t1.qos",
-		"t2.user",
-		"t2.acct",
-		"t2.lft"
-	};
-
-	enum {
-		JOB_REQ_ID,
-		JOB_REQ_JOBID,
-		JOB_REQ_ASSOCID,
-		JOB_REQ_WCKEY,
-		JOB_REQ_WCKEYID,
-		JOB_REQ_UID,
-		JOB_REQ_GID,
-		JOB_REQ_RESVID,
-		JOB_REQ_PARTITION,
-		JOB_REQ_BLOCKID,
-		JOB_REQ_ACCOUNT1,
-		JOB_REQ_ELIGIBLE,
-		JOB_REQ_SUBMIT,
-		JOB_REQ_START,
-		JOB_REQ_END,
-		JOB_REQ_SUSPENDED,
-		JOB_REQ_NAME,
-		JOB_REQ_TRACKSTEPS,
-		JOB_REQ_STATE,
-		JOB_REQ_COMP_CODE,
-		JOB_REQ_PRIORITY,
-		JOB_REQ_REQ_CPUS,
-		JOB_REQ_ALLOC_CPUS,
-		JOB_REQ_ALLOC_NODES,
-		JOB_REQ_NODELIST,
-		JOB_REQ_NODE_INX,
-		JOB_REQ_KILL_REQUID,
-		JOB_REQ_QOS,
-		JOB_REQ_USER_NAME,
-		JOB_REQ_ACCOUNT,
-		JOB_REQ_LFT,
-		JOB_REQ_COUNT
-	};
-
-	/* if this changes you will need to edit the corresponding
-	 * enum below also t1 is step_table */
-	char *step_req_inx[] = {
-		"t1.id_step",
-		"t1.time_start",
-		"t1.time_end",
-		"t1.time_suspended",
-		"t1.step_name",
-		"t1.nodelist",
-		"t1.node_inx",
-		"t1.state",
-		"t1.kill_requid",
-		"t1.exit_code",
-		"t1.nodes_alloc",
-		"t1.cpus_alloc",
-		"t1.task_cnt",
-		"t1.task_dist",
-		"t1.user_sec",
-		"t1.user_usec",
-		"t1.sys_sec",
-		"t1.sys_usec",
-		"t1.max_vsize",
-		"t1.max_vsize_task",
-		"t1.max_vsize_node",
-		"t1.ave_vsize",
-		"t1.max_rss",
-		"t1.max_rss_task",
-		"t1.max_rss_node",
-		"t1.ave_rss",
-		"t1.max_pages",
-		"t1.max_pages_task",
-		"t1.max_pages_node",
-		"t1.ave_pages",
-		"t1.min_cpu",
-		"t1.min_cpu_task",
-		"t1.min_cpu_node",
-		"t1.ave_cpu"
-	};
-
-	enum {
-		STEP_REQ_STEPID,
-		STEP_REQ_START,
-		STEP_REQ_END,
-		STEP_REQ_SUSPENDED,
-		STEP_REQ_NAME,
-		STEP_REQ_NODELIST,
-		STEP_REQ_NODE_INX,
-		STEP_REQ_STATE,
-		STEP_REQ_KILL_REQUID,
-		STEP_REQ_COMP_CODE,
-		STEP_REQ_NODES,
-		STEP_REQ_CPUS,
-		STEP_REQ_TASKS,
-		STEP_REQ_TASKDIST,
-		STEP_REQ_USER_SEC,
-		STEP_REQ_USER_USEC,
-		STEP_REQ_SYS_SEC,
-		STEP_REQ_SYS_USEC,
-		STEP_REQ_MAX_VSIZE,
-		STEP_REQ_MAX_VSIZE_TASK,
-		STEP_REQ_MAX_VSIZE_NODE,
-		STEP_REQ_AVE_VSIZE,
-		STEP_REQ_MAX_RSS,
-		STEP_REQ_MAX_RSS_TASK,
-		STEP_REQ_MAX_RSS_NODE,
-		STEP_REQ_AVE_RSS,
-		STEP_REQ_MAX_PAGES,
-		STEP_REQ_MAX_PAGES_TASK,
-		STEP_REQ_MAX_PAGES_NODE,
-		STEP_REQ_AVE_PAGES,
-		STEP_REQ_MIN_CPU,
-		STEP_REQ_MIN_CPU_TASK,
-		STEP_REQ_MIN_CPU_NODE,
-		STEP_REQ_AVE_CPU,
-		STEP_REQ_COUNT
-	};
-
-	memset(&user, 0, sizeof(acct_user_rec_t));
-	user.uid = uid;
-
-	private_data = slurm_get_private_data();
-	if (private_data & PRIVATE_DATA_JOBS) {
-		if(!(is_admin = is_user_min_admin_level(
-			     mysql_conn, uid, ACCT_ADMIN_OPERATOR)))
-			is_user_any_coord(mysql_conn, &user);
-	}
-
-
-	/* Here we set up environment to check used nodes of jobs.
-	   Since we store the bitmap of the entire cluster we can use
-	   that to set up a hostlist and set up the bitmap to make
-	   things work.  This should go before the setup of conds
-	   since we could update the start/end time.
-	*/
-	if(job_cond && job_cond->used_nodes) {
-		local_cluster_list = setup_cluster_list_with_inx(
-			mysql_conn, job_cond, (void **)&curr_cluster);
-		if(!local_cluster_list) {
-			list_destroy(job_list);
-			return NULL;
-		}
-	}
-
-	if(job_cond->state_list && (list_count(job_cond->state_list) == 1)
-	   && (atoi(list_peek(job_cond->state_list)) == JOB_PENDING))
-		only_pending = 1;
-
-	setup_job_cond_limits(mysql_conn, job_cond, &extra);
-
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", job_req_inx[0]);
-	for(i=1; i<JOB_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
-	}
+	int set = 0;
+	char *prefix="t2";
+	int rc = SLURM_SUCCESS;
+	int last_id = -1, curr_id = -1;
+	local_cluster_t *curr_cluster = NULL;
 
 	/* This is here to make sure we are looking at only this user
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
-		query = xstrdup_printf("select lft from %s where user='%s'",
-				       assoc_table, user.name);
-		if(user.coord_accts) {
+		query = xstrdup_printf("select lft from %s_%s where user='%s'",
+				       cluster_name, assoc_table, user->name);
+		if(user->coord_accts) {
 			acct_coord_rec_t *coord = NULL;
-			itr = list_iterator_create(user.coord_accts);
+			itr = list_iterator_create(user->coord_accts);
 			while((coord = list_next(itr))) {
 				xstrfmtcat(query, " || acct='%s'",
 					   coord->name);
@@ -817,10 +336,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(extra);
 			xfree(query);
-			list_destroy(job_list);
-			if(local_cluster_list)
-				list_destroy(local_cluster_list);
-			return NULL;
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 		xfree(query);
 		set = 0;
@@ -828,21 +345,21 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			if(set) {
 				xstrfmtcat(extra,
 					   " || (%s between %s.lft and %s.rgt)",
-					   row[0], table_level, table_level);
+					   row[0], prefix, prefix);
 			} else {
 				set = 1;
 				if(extra)
 					xstrfmtcat(extra,
 						   " && ((%s between %s.lft "
 						   "and %s.rgt)",
-						   row[0], table_level,
-						   table_level);
+						   row[0], prefix,
+						   prefix);
 				else
 					xstrfmtcat(extra,
 						   " where ((%s between %s.lft "
 						   "and %s.rgt)",
-						   row[0], table_level,
-						   table_level);
+						   row[0], prefix,
+						   prefix);
 			}
 		}
 		if(set)
@@ -850,10 +367,11 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		mysql_free_result(result);
 	}
 
-	query = xstrdup_printf("select %s from %s as t1 left join %s as t2 "
+	query = xstrdup_printf("select %s from %s_%s as t1 "
+			       "left join %s_%s as t2 "
 			       "on t1.id_assoc=t2.id_assoc",
-			       tmp, job_table, assoc_table);
-	xfree(tmp);
+			       job_fields, cluster_name, job_table,
+			       cluster_name, assoc_table);
 	if(extra) {
 		xstrcat(query, extra);
 		xfree(extra);
@@ -863,18 +381,16 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	   easy to look for duplicates
 	*/
 	if(job_cond && !job_cond->duplicates)
-		xstrcat(query, " order by t1.cluster, jobid, submit desc");
+		xstrcat(query, " order by id_job, time_submit desc");
 	else
-		xstrcat(query, " order by t1.cluster, submit desc");
+		xstrcat(query, " order by time_submit desc");
 
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
-		list_destroy(job_list);
-		if(local_cluster_list)
-			list_destroy(local_cluster_list);
-		return NULL;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 	xfree(query);
 
@@ -906,16 +422,14 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job->associd = atoi(row[JOB_REQ_ASSOCID]);
 		job->resvid = atoi(row[JOB_REQ_RESVID]);
 
+		job->cluster = xstrdup(cluster_name);
+
 		/* we want a blank wckey if the name is null */
 		if(row[JOB_REQ_WCKEY])
 			job->wckey = xstrdup(row[JOB_REQ_WCKEY]);
 		else
 			job->wckey = xstrdup("");
 		job->wckeyid = atoi(row[JOB_REQ_WCKEYID]);
-
-		/*FIX ME: this won't work. */
-		if(row[JOB_REQ_COUNT] && row[JOB_REQ_COUNT][0])
-			job->cluster = xstrdup(row[JOB_REQ_COUNT]);
 
 		if(row[JOB_REQ_USER_NAME])
 			job->user = xstrdup(row[JOB_REQ_USER_NAME]);
@@ -963,11 +477,12 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				MYSQL_ROW row2;
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
-					"select start, end from %s where "
-					"(start < %d && (end >= %d "
-					"|| end = 0)) && job_db_inx=%s "
-					"order by start",
-					suspend_table,
+					"select time_start, time_end from "
+					"%s_%s where "
+					"(time_start < %d && (time_end >= %d "
+					"|| time_end = 0)) && job_db_inx=%s "
+					"order by time_start",
+					cluster_name, suspend_table,
 					job_cond->usage_end,
 					job_cond->usage_start,
 					id);
@@ -1081,16 +596,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			if(set)
 				xstrcat(extra, ")");
 		}
-		for(i=0; i<STEP_REQ_COUNT; i++) {
-			if(i)
-				xstrcat(tmp, ", ");
-			xstrcat(tmp, step_req_inx[i]);
-		}
-		query =	xstrdup_printf("select %s from %s t1 "
+		query =	xstrdup_printf("select %s from %s_%s t1 "
 				       "where t1.job_db_inx=%s",
-				       tmp, step_table, id);
-		xfree(tmp);
-
+				       step_fields, cluster_name,
+				       step_table, id);
 		if(extra) {
 			xstrcat(query, extra);
 			xfree(extra);
@@ -1100,10 +609,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		if(!(step_result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
-			list_destroy(job_list);
-			if(local_cluster_list)
-				list_destroy(local_cluster_list);
-			return NULL;
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 		xfree(query);
 
@@ -1242,8 +749,532 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		step = NULL;
 	}
 	mysql_free_result(result);
+
+end_it:
 	if(local_cluster_list)
 		list_destroy(local_cluster_list);
+
+	if(rc == SLURM_SUCCESS)
+		list_transfer(sent_list, job_list);
+
+	list_destroy(job_list);
+	return rc;
+}
+
+extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
+					acct_job_cond_t *job_cond,
+					void **curr_cluster)
+{
+	List local_cluster_list = NULL;
+	time_t now = time(NULL);
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	hostlist_t temp_hl = NULL;
+	hostlist_iterator_t h_itr = NULL;
+	char *query = NULL;
+
+	if(!job_cond || !job_cond->used_nodes)
+		return NULL;
+
+	if(!job_cond->cluster_list || list_count(job_cond->cluster_list) != 1) {
+		error("If you are doing a query against nodes "
+		      "you must only have 1 cluster "
+		      "you are asking for.");
+		return NULL;
+	}
+
+	temp_hl = hostlist_create(job_cond->used_nodes);
+	if(!hostlist_count(temp_hl)) {
+		error("we didn't get any real hosts to look for.");
+		goto no_hosts;
+	}
+	h_itr = hostlist_iterator_create(temp_hl);
+
+	query = xstrdup_printf("select cluster_nodes, time_start, "
+			       "time_end from %s_%s where node_name='' "
+			       "&& cluster_nodes !=''",
+			       list_peek(job_cond->cluster_list), event_table);
+
+	if(job_cond->usage_start) {
+		if(!job_cond->usage_end)
+			job_cond->usage_end = now;
+
+		xstrfmtcat(query,
+			   " && ((time_start < %d) "
+			   "&& (time_end >= %d || time_end = 0))",
+			   job_cond->usage_end, job_cond->usage_start);
+	}
+
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		hostlist_destroy(temp_hl);
+		return NULL;
+	}
+	xfree(query);
+
+	local_cluster_list = list_create(_destroy_local_cluster);
+	while((row = mysql_fetch_row(result))) {
+		char *host = NULL;
+		int loc = 0;
+		local_cluster_t *local_cluster =
+			xmalloc(sizeof(local_cluster_t));
+		local_cluster->hl = hostlist_create(row[0]);
+		local_cluster->start = atoi(row[1]);
+		local_cluster->end   = atoi(row[2]);
+		local_cluster->asked_bitmap =
+			bit_alloc(hostlist_count(local_cluster->hl));
+		while((host = hostlist_next(h_itr))) {
+			if((loc = hostlist_find(
+				    local_cluster->hl, host)) != -1)
+				bit_set(local_cluster->asked_bitmap, loc);
+			free(host);
+		}
+		hostlist_iterator_reset(h_itr);
+		if(bit_ffs(local_cluster->asked_bitmap) != -1) {
+			list_append(local_cluster_list, local_cluster);
+			if(local_cluster->end == 0) {
+				local_cluster->end = now;
+				(*curr_cluster) = local_cluster;
+			}
+		} else
+			_destroy_local_cluster(local_cluster);
+	}
+	mysql_free_result(result);
+	hostlist_iterator_destroy(h_itr);
+	if(!list_count(local_cluster_list)) {
+		hostlist_destroy(temp_hl);
+		list_destroy(local_cluster_list);
+		return NULL;
+	}
+no_hosts:
+
+	hostlist_destroy(temp_hl);
+
+	return local_cluster_list;
+}
+
+extern int good_nodes_from_inx(List local_cluster_list,
+			       void **object, char *node_inx,
+			       int submit)
+{
+	local_cluster_t **curr_cluster = (local_cluster_t **)object;
+
+	/* check the bitmap to see if this is one of the jobs
+	   we are looking for */
+	if(*curr_cluster) {
+		bitstr_t *job_bitmap = NULL;
+		if(!node_inx || !node_inx[0])
+			return 0;
+		if((submit < (*curr_cluster)->start)
+		   || (submit > (*curr_cluster)->end)) {
+			local_cluster_t *local_cluster = NULL;
+
+			ListIterator itr =
+				list_iterator_create(local_cluster_list);
+			while((local_cluster = list_next(itr))) {
+				if((submit >= local_cluster->start)
+				   && (submit <= local_cluster->end)) {
+					*curr_cluster = local_cluster;
+						break;
+				}
+			}
+			list_iterator_destroy(itr);
+			if(!local_cluster)
+				return 0;
+		}
+		job_bitmap = bit_alloc(hostlist_count((*curr_cluster)->hl));
+		bit_unfmt(job_bitmap, node_inx);
+		if(!bit_overlap((*curr_cluster)->asked_bitmap, job_bitmap)) {
+			FREE_NULL_BITMAP(job_bitmap);
+			return 0;
+		}
+		FREE_NULL_BITMAP(job_bitmap);
+	}
+	return 1;
+}
+
+extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
+					   acct_job_cond_t *job_cond,
+					   char *cluster_name)
+{
+	int set = 0;
+	ListIterator itr = NULL;
+	char *object = NULL;
+	char *extra = NULL;
+
+	if(!job_cond)
+		return NULL;
+
+	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
+		set = 0;
+		xstrfmtcat(extra, ", %s_%s as t3 where (",
+			   cluster_name, assoc_table);
+		itr = list_iterator_create(job_cond->associd_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "t3.id_assoc=%s", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+		/* just incase the association is gone */
+		if(set)
+			xstrcat(extra, " || ");
+		xstrfmtcat(extra, "t3.id_assoc is null) && "
+			   "(t2.lft between t3.lft and t3.rgt "
+			   "|| t2.lft is null)");
+	}
+
+	/* this must be done before resvid_list since we set
+	   resvid_list up here */
+	if(job_cond->resv_list && list_count(job_cond->resv_list)) {
+		char *query = xstrdup_printf(
+			"select distinct job_db_inx from %s_%s where (",
+			cluster_name, job_table);
+		int my_set = 0;
+		MYSQL_RES *result = NULL;
+		MYSQL_ROW row;
+
+		itr = list_iterator_create(job_cond->resv_list);
+		while((object = list_next(itr))) {
+			if(my_set)
+				xstrcat(query, " || ");
+			xstrfmtcat(query, "resv_name='%s'", object);
+			my_set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(query, ")");
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			error("couldn't query the database");
+			goto no_resv;
+		}
+		xfree(query);
+		if(!job_cond->resvid_list)
+			job_cond->resvid_list = list_create(slurm_destroy_char);
+		while((row = mysql_fetch_row(result))) {
+			list_append(job_cond->resvid_list, xstrdup(row[0]));
+		}
+		mysql_free_result(result);
+	}
+	no_resv:
+
+	if(job_cond->resvid_list && list_count(job_cond->resvid_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(job_cond->resvid_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "t1.id_resv='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	return extra;
+}
+
+extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
+				 acct_job_cond_t *job_cond,
+				 const char *prefix, char **extra)
+{
+	int set = 0;
+	ListIterator itr = NULL;
+	char *object = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
+
+	if(!job_cond)
+		return 0;
+
+	if(job_cond->acct_list && list_count(job_cond->acct_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->acct_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.account='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->userid_list && list_count(job_cond->userid_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->userid_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.id_user='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->groupid_list && list_count(job_cond->groupid_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->groupid_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.id_group='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->partition_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.partition='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->step_list && list_count(job_cond->step_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->step_list);
+		while((selected_step = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.id_job=%u",
+				   selected_step->jobid);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->cpus_min) {
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		if(job_cond->cpus_max) {
+			xstrfmtcat(*extra, "(t1.alloc_cpus between %u and %u))",
+				   job_cond->cpus_min, job_cond->cpus_max);
+
+		} else {
+			xstrfmtcat(*extra, "(t1.alloc_cpus='%u'))",
+				   job_cond->cpus_min);
+
+		}
+	}
+
+	if(job_cond->nodes_min) {
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		if(job_cond->nodes_max) {
+			xstrfmtcat(*extra,
+				   "(t1.alloc_nodes between %u and %u))",
+				   job_cond->nodes_min, job_cond->nodes_max);
+
+		} else {
+			xstrfmtcat(*extra, "(t1.alloc_nodes='%u'))",
+				   job_cond->nodes_min);
+
+		}
+	}
+	if(job_cond->state_list && list_count(job_cond->state_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->state_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			_state_time_string(extra, (uint32_t)atoi(object),
+					   job_cond->usage_start,
+					   job_cond->usage_end);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	} else {
+		/* Only do this (default of all eligible jobs) if no
+		   state is given */
+		if(job_cond->usage_start) {
+			if(*extra)
+				xstrcat(*extra, " && (");
+			else
+				xstrcat(*extra, " where (");
+
+			if(!job_cond->usage_end)
+				xstrfmtcat(*extra,
+					   "(t1.time_end >= %d "
+					   "|| t1.time_end = 0))",
+					   job_cond->usage_start);
+			else
+				xstrfmtcat(*extra,
+					   "(t1.time_eligible < %d "
+					   "&& (t1.time_end >= %d "
+					   "|| t1.time_end = 0)))",
+					   job_cond->usage_end,
+					   job_cond->usage_start);
+		} else if(job_cond->usage_end) {
+			if(*extra)
+				xstrcat(*extra, " && (");
+			else
+				xstrcat(*extra, " where (");
+			xstrfmtcat(*extra,
+				   "(t1.time_eligible < %d))",
+				   job_cond->usage_end);
+		}
+	}
+
+	if(job_cond->wckey_list && list_count(job_cond->wckey_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->wckey_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.wckey='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+	return set;
+}
+
+extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
+					   acct_job_cond_t *job_cond)
+{
+	char *extra = NULL;
+	char *tmp = NULL, *tmp2 = NULL;
+	ListIterator itr = NULL;
+	int is_admin=1;
+	char *prefix="t2";
+	int i;
+	List job_list = NULL;
+	uint16_t private_data = 0;
+	acct_user_rec_t user;
+	local_cluster_t *curr_cluster = NULL;
+	List local_cluster_list = NULL;
+	int only_pending = 0;
+	List use_cluster_list = mysql_cluster_list;
+	char *cluster_name;
+
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+
+	private_data = slurm_get_private_data();
+	if (private_data & PRIVATE_DATA_JOBS) {
+		if(!(is_admin = is_user_min_admin_level(
+			     mysql_conn, uid, ACCT_ADMIN_OPERATOR)))
+			is_user_any_coord(mysql_conn, &user);
+	}
+
+
+	/* Here we set up environment to check used nodes of jobs.
+	   Since we store the bitmap of the entire cluster we can use
+	   that to set up a hostlist and set up the bitmap to make
+	   things work.  This should go before the setup of conds
+	   since we could update the start/end time.
+	*/
+	if(job_cond && job_cond->used_nodes) {
+		local_cluster_list = setup_cluster_list_with_inx(
+			mysql_conn, job_cond, (void **)&curr_cluster);
+		if(!local_cluster_list)
+			return NULL;
+	}
+
+	if(job_cond->state_list && (list_count(job_cond->state_list) == 1)
+	   && (atoi(list_peek(job_cond->state_list)) == JOB_PENDING))
+		only_pending = 1;
+
+	if((job_cond->associd_list && list_count(job_cond->associd_list)))
+		prefix="t3";
+
+	setup_job_cond_limits(mysql_conn, job_cond, prefix, &extra);
+
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", job_req_inx[0]);
+	for(i=1; i<JOB_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
+	}
+
+	xfree(tmp2);
+	xstrfmtcat(tmp2, "%s", step_req_inx[0]);
+	for(i=0; i<STEP_REQ_COUNT; i++) {
+		xstrfmtcat(tmp2, ", %s", step_req_inx[i]);
+	}
+
+	if(job_cond->cluster_list && list_count(job_cond->cluster_list))
+		use_cluster_list = job_cond->cluster_list;
+	else
+		slurm_mutex_lock(&mysql_cluster_list_lock);
+
+	job_list = list_create(destroy_jobacct_job_rec);
+	itr = list_iterator_create(use_cluster_list);
+	while((cluster_name = list_next(itr))) {
+		int rc;
+		if((rc = _cluster_get_jobs(mysql_conn, &user, job_cond,
+					   cluster_name, tmp, tmp2, extra,
+					   is_admin, only_pending, job_list))
+		   != SLURM_SUCCESS) {
+			list_destroy(job_list);
+			job_list = NULL;
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+
+	if(use_cluster_list == mysql_cluster_list)
+		slurm_mutex_unlock(&mysql_cluster_list_lock);
+
+	xfree(tmp);
+	xfree(tmp2);
+	xfree(extra);
 
 	return job_list;
 }
