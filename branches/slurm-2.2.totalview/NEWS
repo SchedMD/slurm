@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     has been modified to display and modify the new field. sched/backfill
     plugin has been changed to alter time limits of jobs with the 
     --time-min option if doing so permit earlier job initiation.
+ -- Add support for TotalView symbol MPIR_partial_attach_ok with srun support
+    to release processes which TotalView does not attach to.
 
 * Changes in SLURM 2.2.0.pre1
 =============================

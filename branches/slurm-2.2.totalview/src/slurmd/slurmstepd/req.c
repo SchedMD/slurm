@@ -60,11 +60,12 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/slurmstepd.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/mgr.h"
+#include "src/slurmd/slurmstepd/pdebug.h"
+#include "src/slurmd/slurmstepd/req.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 
 static void *_handle_accept(void *arg);
@@ -794,6 +795,12 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	if ((sig == SIG_TIME_LIMIT) || (sig == SIG_NODE_FAIL) ||
 	    (sig == SIG_FAILURE))
 		goto done;
+	if (sig == SIG_DEBUG_WAKE) {
+		int i;
+		for (i = 0; i < job->ntasks; i++)
+			pdebug_wake_process(job, job->task[i]->pid);
+		goto done;
+	}
 	if (sig == SIG_ABORT) {
 		sig = SIGKILL;
 		job->aborted = true;

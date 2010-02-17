@@ -1719,9 +1719,8 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 #  endif
 #endif
 
-	if (signal == SIG_TIME_LIMIT) {
-		/* notify this step that it has exceeded its time limit */
-		rc = stepd_signal_container(fd, SIG_TIME_LIMIT);
+	if ((signal == SIG_TIME_LIMIT) || (signal == SIG_DEBUG_WAKE)) {
+		rc = stepd_signal_container(fd, signal);
 	} else {
 		rc = stepd_signal(fd, signal);
 		if (rc == -1)

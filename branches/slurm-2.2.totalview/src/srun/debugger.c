@@ -2,7 +2,8 @@
  *  debugger.c - Definitions needed for parallel debugger
  *  $Id: debugger.c 11149 2007-03-14 20:53:19Z morrone $
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -55,6 +56,7 @@ VOLATILE int MPIR_debug_gate;
 int MPIR_being_debugged;
 int MPIR_i_am_starter;
 int MPIR_acquired_pre_main;
+int MPIR_partial_attach_ok;
 char *totalview_jobid;
 
 void MPIR_Breakpoint(void)

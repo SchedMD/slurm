@@ -1,7 +1,8 @@
 /*****************************************************************************\
- * src/slurmd/slurmstepd/ptrace_debug.c - ptrace functions for slurmstepd
+ * pdebug.c - ptrace functions for slurmstepd
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -16,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -121,4 +122,25 @@ pdebug_stop_current(slurmd_job_t *job)
 #endif
 #endif
 		error("ptrace: %m");
+}
+
+/*
+ * Wake tasks currently stopped for parallel debugger attach
+ */
+void pdebug_wake_process(slurmd_job_t *job, pid_t pid)
+{
+	if (job->task_flags & TASK_PARALLEL_DEBUG) {
+		int status;
+/* May want to use NOHANG option and/or check waitpid return value
+ * Might waht to use waitid as an alternative */
+		waitpid(pid, &status, WUNTRACED);
+		if (WIFSTOPPED(status)) {
+			if ((pid > (pid_t) 0) && (kill(pid, SIGCONT) < 0))
+				error("kill(%lu): %m", (unsigned long) pid);
+			else
+				info("woke pid %lu", (unsigned long) pid);
+		} else {
+			info("pid %lu not stopped", (unsigned long) pid);
+		}
+	}
 }
