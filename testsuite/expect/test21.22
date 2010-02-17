@@ -299,7 +299,7 @@ proc _remove_cluster {name} {
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
+			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
 		-re "No associations" {
@@ -375,7 +375,7 @@ proc _remove_acct { cluster name } {
 			incr exit_code 1
 		}
 		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
+			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
 		-re "No associations" {
