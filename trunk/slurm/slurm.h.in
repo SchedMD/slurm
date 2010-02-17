@@ -1848,7 +1848,12 @@ extern void slurm_step_launch_abort PARAMS((slurm_step_ctx_t *ctx));
  * Forward a signal to all those nodes with running tasks
  */
 extern void slurm_step_launch_fwd_signal PARAMS((slurm_step_ctx_t *ctx,
-	 int signo));
+						 int signo));
+
+/*
+ * Wake tasks stopped for debugging on nodes with running tasks
+ */
+extern void slurm_step_launch_fwd_wake PARAMS((slurm_step_ctx_t *ctx));
 
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
