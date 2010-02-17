@@ -1396,9 +1396,6 @@ static void _handle_signal(int signo)
 	case SIGCONT:
 		debug3("got SIGCONT");
 		break;
-case SIGUSR1:
-MPIR_debug_gate=1;
-break;
 	default:
 		slurm_step_launch_fwd_signal(job->step_ctx, signo);
 		break;

@@ -131,16 +131,14 @@ void pdebug_wake_process(slurmd_job_t *job, pid_t pid)
 {
 	if (job->task_flags & TASK_PARALLEL_DEBUG) {
 		int status;
-/* May want to use NOHANG option and/or check waitpid return value
- * Might waht to use waitid as an alternative */
-		waitpid(pid, &status, WUNTRACED);
+		waitpid(pid, &status, (WUNTRACED | WNOHANG));
 		if (WIFSTOPPED(status)) {
 			if ((pid > (pid_t) 0) && (kill(pid, SIGCONT) < 0))
 				error("kill(%lu): %m", (unsigned long) pid);
 			else
-				info("woke pid %lu", (unsigned long) pid);
+				debug("woke pid %lu", (unsigned long) pid);
 		} else {
-			info("pid %lu not stopped", (unsigned long) pid);
+			debug("pid %lu not stopped", (unsigned long) pid);
 		}
 	}
 }
